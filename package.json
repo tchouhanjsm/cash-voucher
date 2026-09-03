@@ -1,0 +1,16 @@
+{
+  "name": "cash-voucher",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cash Voucher Management System",
+  "scripts": {
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "devDependencies": {
+    "eslint": "^10.9.1",
+    "prettier": "^3.9.6"
+  }
+}
