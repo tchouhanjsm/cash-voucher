@@ -4,100 +4,42 @@
  * VENDOR MANAGEMENT
  *******************************************************/
 
-function createVendor(
-  token,
-  vendorData
-) {
+function createVendor(token, vendorData) {
+  const user = requirePermission_('create', token);
 
-  const user =
-    requirePermission_(
-      'create',
-      token
-    );
+  const vendorName = String(vendorData.vendorName || '').trim();
 
-  const vendorName =
-    String(
-      vendorData.vendorName || ''
-    ).trim();
+  const companyName = String(vendorData.companyName || '').trim();
 
-  const companyName =
-    String(
-      vendorData.companyName || ''
-    ).trim();
-
-  const mobile =
-    String(
-      vendorData.mobile || ''
-    ).trim();
-
+  const mobile = String(vendorData.mobile || '').trim();
 
   if (!vendorName) {
-
-    throw new Error(
-      'Vendor name is required.'
-    );
-
+    throw new Error('Vendor name is required.');
   }
 
-
-  if (
-    mobile &&
-    !/^[0-9+\-\s]{7,15}$/.test(
-      mobile
-    )
-  ) {
-
-    throw new Error(
-      'Please enter a valid mobile number.'
-    );
-
+  if (mobile && !/^[0-9+\-\s]{7,15}$/.test(mobile)) {
+    throw new Error('Please enter a valid mobile number.');
   }
 
+  const sheet = getSheet_(APP_CONFIG.SHEETS.VENDORS);
 
-  const sheet =
-    getSheet_(
-      APP_CONFIG.SHEETS.VENDORS
-    );
+  const data = sheet.getDataRange().getValues();
 
-  const data =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  for (
-    let i = 1;
-    i < data.length;
-    i++
-  ) {
-
+  for (let i = 1; i < data.length; i++) {
     if (
-      String(
-        data[i][1] || ''
-      )
-      .trim()
-      .toLowerCase() ===
-      vendorName.toLowerCase()
+      String(data[i][1] || '')
+        .trim()
+        .toLowerCase() === vendorName.toLowerCase()
     ) {
-
-      throw new Error(
-        'This vendor already exists.'
-      );
-
+      throw new Error('This vendor already exists.');
     }
-
   }
 
+  const vendorId = Utilities.getUuid();
 
-  const vendorId =
-    Utilities.getUuid();
-
-  const now =
-    new Date();
-
+  const now = new Date();
 
   sheet.appendRow([
-
     vendorId,
 
     vendorName,
@@ -114,307 +56,131 @@ function createVendor(
 
     '',
 
-    ''
-
+    '',
   ]);
 
-
   SpreadsheetApp.flush();
-
 
   writeAuditLog_(
     user,
     'CREATE_VENDOR',
     vendorId,
-    'Created vendor ' +
-    vendorName
+    'Created vendor ' + vendorName
   );
-
 
   return {
-
     success: true,
 
-    vendorId:
-      vendorId,
+    vendorId: vendorId,
 
-    vendorName:
-      vendorName
-
+    vendorName: vendorName,
   };
-
 }
 
-
 function getVendors(token) {
+  requirePermission_('view', token);
 
-  requirePermission_(
-    'view',
-    token
-  );
+  const sheet = getSheet_(APP_CONFIG.SHEETS.VENDORS);
 
-  const sheet =
-    getSheet_(
-      APP_CONFIG.SHEETS.VENDORS
-    );
+  const lastRow = sheet.getLastRow();
 
-  const lastRow =
-    sheet.getLastRow();
-
-  if (
-    lastRow <= 1
-  ) {
+  if (lastRow <= 1) {
     return [];
   }
 
-  const data =
-    sheet
-      .getRange(
-        2,
-        1,
-        lastRow - 1,
-        9
-      )
-      .getValues();
-
+  const data = sheet.getRange(2, 1, lastRow - 1, 9).getValues();
 
   return data
 
-    .filter(
-      function(row) {
+    .filter(function (row) {
+      return row[0];
+    })
 
-        return row[0];
+    .map(function (row) {
+      return {
+        vendorId: String(row[0] || ''),
 
-      }
-    )
+        vendorName: String(row[1] || ''),
 
-    .map(
-      function(row) {
+        companyName: String(row[2] || ''),
 
-        return {
+        mobile: String(row[3] || ''),
 
-          vendorId:
-            String(row[0] || ''),
-
-          vendorName:
-            String(row[1] || ''),
-
-          companyName:
-            String(row[2] || ''),
-
-          mobile:
-            String(row[3] || ''),
-
-          active:
-            row[4] === true
-
-        };
-
-      }
-    );
-
+        active: row[4] === true,
+      };
+    });
 }
 
+function updateVendor(token, vendorId, vendorData) {
+  const user = requirePermission_('edit', token);
 
-function updateVendor(
-  token,
-  vendorId,
-  vendorData
-) {
+  const sheet = getSheet_(APP_CONFIG.SHEETS.VENDORS);
 
-  const user =
-    requirePermission_(
-      'edit',
-      token
-    );
+  const data = sheet.getDataRange().getValues();
 
-  const sheet =
-    getSheet_(
-      APP_CONFIG.SHEETS.VENDORS
-    );
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(vendorId)) {
+      const vendorName = String(vendorData.vendorName || '').trim();
 
-  const data =
-    sheet
-      .getDataRange()
-      .getValues();
+      const companyName = String(vendorData.companyName || '').trim();
 
-
-  for (
-    let i = 1;
-    i < data.length;
-    i++
-  ) {
-
-    if (
-      String(data[i][0]) ===
-      String(vendorId)
-    ) {
-
-      const vendorName =
-        String(
-          vendorData.vendorName || ''
-        ).trim();
-
-      const companyName =
-        String(
-          vendorData.companyName || ''
-        ).trim();
-
-      const mobile =
-        String(
-          vendorData.mobile || ''
-        ).trim();
-
+      const mobile = String(vendorData.mobile || '').trim();
 
       if (!vendorName) {
-
-        throw new Error(
-          'Vendor name is required.'
-        );
-
+        throw new Error('Vendor name is required.');
       }
 
-
       sheet
-        .getRange(
-          i + 1,
-          2,
-          1,
-          3
-        )
-        .setValues([[
-          vendorName,
-          companyName,
-          mobile
-        ]]);
+        .getRange(i + 1, 2, 1, 3)
+        .setValues([[vendorName, companyName, mobile]]);
 
-
-      sheet
-        .getRange(
-          i + 1,
-          8,
-          1,
-          2
-        )
-        .setValues([[
-          user.email,
-          new Date()
-        ]]);
-
+      sheet.getRange(i + 1, 8, 1, 2).setValues([[user.email, new Date()]]);
 
       SpreadsheetApp.flush();
-
 
       writeAuditLog_(
         user,
         'UPDATE_VENDOR',
         vendorId,
-        'Updated vendor ' +
-        vendorName
+        'Updated vendor ' + vendorName
       );
 
-
       return {
-        success: true
+        success: true,
       };
-
     }
-
   }
 
-
-  throw new Error(
-    'Vendor not found.'
-  );
-
+  throw new Error('Vendor not found.');
 }
 
+function setVendorActive(token, vendorId, active) {
+  const user = requirePermission_('edit', token);
 
-function setVendorActive(
-  token,
-  vendorId,
-  active
-) {
+  const sheet = getSheet_(APP_CONFIG.SHEETS.VENDORS);
 
-  const user =
-    requirePermission_(
-      'edit',
-      token
-    );
+  const data = sheet.getDataRange().getValues();
 
-  const sheet =
-    getSheet_(
-      APP_CONFIG.SHEETS.VENDORS
-    );
+  for (let i = 1; i < data.length; i++) {
+    if (String(data[i][0]) === String(vendorId)) {
+      sheet.getRange(i + 1, 5).setValue(Boolean(active));
 
-  const data =
-    sheet
-      .getDataRange()
-      .getValues();
-
-
-  for (
-    let i = 1;
-    i < data.length;
-    i++
-  ) {
-
-    if (
-      String(data[i][0]) ===
-      String(vendorId)
-    ) {
-
-      sheet
-        .getRange(
-          i + 1,
-          5
-        )
-        .setValue(
-          Boolean(active)
-        );
-
-
-      sheet
-        .getRange(
-          i + 1,
-          8,
-          1,
-          2
-        )
-        .setValues([[
-          user.email,
-          new Date()
-        ]]);
-
+      sheet.getRange(i + 1, 8, 1, 2).setValues([[user.email, new Date()]]);
 
       SpreadsheetApp.flush();
 
-
       writeAuditLog_(
         user,
-        active
-          ? 'ACTIVATE_VENDOR'
-          : 'DEACTIVATE_VENDOR',
+        active ? 'ACTIVATE_VENDOR' : 'DEACTIVATE_VENDOR',
         vendorId,
-        (
-          active
-            ? 'Activated vendor'
-            : 'Deactivated vendor'
-        )
+        active ? 'Activated vendor' : 'Deactivated vendor'
       );
 
-
       return {
-        success: true
+        success: true,
       };
-
     }
-
   }
 
-
-  throw new Error(
-    'Vendor not found.'
-  );
-
+  throw new Error('Vendor not found.');
 }

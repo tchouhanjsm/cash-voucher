@@ -1,1273 +1,712 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+  <head>
+    <base target="_top" />
 
-<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 
-  <base target="_top">
+    <?!= include('Styles'); ?>
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1">
+    <title>Hotel Garh Jaisal Haveli</title>
+  </head>
 
-  <?!= include('Styles'); ?>
+  <body>
+    <!-- LOGIN -->
 
-  <title>
-    Hotel Garh Jaisal Haveli
-  </title>
+    <div id="loginScreen" class="login-screen">
+      <div class="login-card">
+        <div class="login-brand">
+          <div class="login-property">Hotel Garh Jaisal Haveli</div>
 
-
-</head>
-
-<body>
-
-<!-- LOGIN -->
-
-<div id="loginScreen" class="login-screen">
-
-  <div class="login-card">
-
-    <div class="login-brand">
-
-      <div class="login-property">
-        Hotel Garh Jaisal Haveli
-      </div>
-
-      <div class="login-subtitle">
-        Cash Payment Register
-      </div>
-
-    </div>
-
-    <button
-      id="vendorsNavItem"
-      type="button"
-      class="nav-item"
-      data-view="vendorsView"
-      onclick="showView('vendorsView', this)">
-
-      <span>Vendors</span>
-
-    </button>
-
-    <form id="loginForm">
-
-      <div class="login-group">
-
-        <label for="loginEmail">
-          Email
-        </label>
-
-        <input
-          id="loginEmail"
-          type="email"
-          autocomplete="username"
-          required>
-
-      </div>
-
-      <div class="login-group">
-
-        <label for="loginPin">
-          6-Digit PIN
-        </label>
-
-        <input
-          id="loginPin"
-          type="password"
-          inputmode="numeric"
-          maxlength="6"
-          autocomplete="current-password"
-          required>
-
-      </div>
-
-      <button
-        id="loginButton"
-        type="submit"
-        class="btn btn-primary login-button">
-
-        Login
-
-      </button>
-
-      <div
-        id="loginError"
-        class="login-error hidden">
-      </div>
-
-    </form>
-
-  </div>
-
-</div>
-
-
-<!-- APPLICATION -->
-
-<div
-  id="mainApplication"
-  class="app-shell hidden">
-
-
-  <!-- SIDEBAR -->
-
-  <aside class="sidebar">
-
-    <div class="sidebar-brand">
-
-      <div class="sidebar-property">
-        Garh Jaisal Haveli
-      </div>
-
-      <div class="sidebar-product">
-        Cash Control
-      </div>
-
-    </div>
-
-
-    <nav class="sidebar-nav">
-
-      <button
-        type="button"
-        class="nav-item active"
-        data-view="overviewView"
-        onclick="showView('overviewView', this)">
-
-        <span>Overview</span>
-
-      </button>
-
-
-      <button
-        type="button"
-        class="nav-item"
-        data-view="paymentView"
-        onclick="showView('paymentView', this)">
-
-        <span>New Payment</span>
-
-      </button>
-
-
-      <button
-        type="button"
-        class="nav-item"
-        data-view="registerView"
-        onclick="showView('registerView', this)">
-
-        <span>Payment Register</span>
-
-      </button>
-
-     <button
-        id="vendorsNavItem"
-        type="button"
-        class="nav-item"
-        data-view="vendorsView"
-        onclick="showView('vendorsView', this)">  
-
-        <span>Vendors</span>
-
-      </button>
-
-      <button
-        type="button"
-        class="nav-item"
-        data-view="reportsView"
-        onclick="showView('reportsView', this)">
-
-        <span>Reports</span>
-
-      </button>
-
-
-      <div class="nav-divider"></div>
-
-
-      <button
-        type="button"
-        class="nav-item"
-        data-view="profileView"
-        onclick="showView('profileView', this)">
-
-        <span>Profile</span>
-
-      </button>
-
-
-      <button
-        id="adminNavItem"
-        type="button"
-        class="nav-item hidden"
-        data-view="adminView"
-        onclick="showView('adminView', this)">
-
-        <span>Administration</span>
-
-      </button>
-
-    </nav>
-
-
-    <div class="sidebar-bottom">
-
-      <div class="sidebar-user">
-
-        <div
-          id="sidebarUserName">
-          -
+          <div class="login-subtitle">Cash Payment Register</div>
         </div>
 
-        <div
-          id="sidebarUserRole">
-          -
-        </div>
+        <button
+          id="vendorsNavItem"
+          type="button"
+          class="nav-item"
+          data-view="vendorsView"
+          onclick="showView('vendorsView', this)"
+        >
+          <span>Vendors</span>
+        </button>
 
-      </div>
+        <form id="loginForm">
+          <div class="login-group">
+            <label for="loginEmail"> Email </label>
 
-
-      <button
-        type="button"
-        class="logout-link"
-        onclick="logout()">
-
-        Logout
-
-      </button>
-
-    </div>
-
-  </aside>
-
-
-  <!-- MAIN -->
-
-  <div class="app-content">
-
-
-    <!-- TOPBAR -->
-
-    <header class="app-topbar">
-
-      <div>
-
-        <div
-          id="pageTitle"
-          class="page-title">
-
-          Overview
-
-        </div>
-
-        <div
-          id="pageSubtitle"
-          class="page-subtitle">
-
-          Hotel cash payment activity
-
-        </div>
-
-      </div>
-
-
-      <div class="topbar-user">
-
-        <div
-          id="userName"
-          class="user-name">
-        </div>
-
-        <div
-          id="userRole"
-          class="role-badge">
-        </div>
-
-      </div>
-
-    </header>
-
-
-    <main class="page-container">
-
-
-      <!-- ALERT -->
-
-      <div
-        id="alert"
-        class="alert hidden">
-      </div>
-
-
-      <!-- =================================================
-           OVERVIEW
-      ================================================= -->
-
-      <section
-        id="overviewView"
-        class="app-view">
-
-
-        <div class="page-heading">
-
-          <div>
-
-            <h1>
-              Today's Overview
-            </h1>
-
-            <p>
-              Cash payments recorded at the hotel.
-            </p>
-
+            <input
+              id="loginEmail"
+              type="email"
+              autocomplete="username"
+              required
+            />
           </div>
 
+          <div class="login-group">
+            <label for="loginPin"> 6-Digit PIN </label>
+
+            <input
+              id="loginPin"
+              type="password"
+              inputmode="numeric"
+              maxlength="6"
+              autocomplete="current-password"
+              required
+            />
+          </div>
+
+          <button
+            id="loginButton"
+            type="submit"
+            class="btn btn-primary login-button"
+          >
+            Login
+          </button>
+
+          <div id="loginError" class="login-error hidden"></div>
+        </form>
+      </div>
+    </div>
+
+    <!-- APPLICATION -->
+
+    <div id="mainApplication" class="app-shell hidden">
+      <!-- SIDEBAR -->
+
+      <aside class="sidebar">
+        <div class="sidebar-brand">
+          <div class="sidebar-property">Garh Jaisal Haveli</div>
+
+          <div class="sidebar-product">Cash Control</div>
+        </div>
+
+        <nav class="sidebar-nav">
+          <button
+            type="button"
+            class="nav-item active"
+            data-view="overviewView"
+            onclick="showView('overviewView', this)"
+          >
+            <span>Overview</span>
+          </button>
 
           <button
             type="button"
-            class="btn btn-primary"
-            onclick="showView('paymentView')">
-
-            + New Payment
-
+            class="nav-item"
+            data-view="paymentView"
+            onclick="showView('paymentView', this)"
+          >
+            <span>New Payment</span>
           </button>
 
+          <button
+            type="button"
+            class="nav-item"
+            data-view="registerView"
+            onclick="showView('registerView', this)"
+          >
+            <span>Payment Register</span>
+          </button>
+
+          <button
+            id="vendorsNavItem"
+            type="button"
+            class="nav-item"
+            data-view="vendorsView"
+            onclick="showView('vendorsView', this)"
+          >
+            <span>Vendors</span>
+          </button>
+
+          <button
+            type="button"
+            class="nav-item"
+            data-view="reportsView"
+            onclick="showView('reportsView', this)"
+          >
+            <span>Reports</span>
+          </button>
+
+          <div class="nav-divider"></div>
+
+          <button
+            type="button"
+            class="nav-item"
+            data-view="profileView"
+            onclick="showView('profileView', this)"
+          >
+            <span>Profile</span>
+          </button>
+
+          <button
+            id="adminNavItem"
+            type="button"
+            class="nav-item hidden"
+            data-view="adminView"
+            onclick="showView('adminView', this)"
+          >
+            <span>Administration</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <div class="sidebar-user">
+            <div id="sidebarUserName">-</div>
+
+            <div id="sidebarUserRole">-</div>
+          </div>
+
+          <button type="button" class="logout-link" onclick="logout()">
+            Logout
+          </button>
         </div>
+      </aside>
 
+      <!-- MAIN -->
 
-        <div class="dashboard-summary">
+      <div class="app-content">
+        <!-- TOPBAR -->
 
+        <header class="app-topbar">
+          <div>
+            <div id="pageTitle" class="page-title">Overview</div>
 
-          <div class="summary-card">
-
-            <div class="summary-label">
-              Today's Cash Paid
+            <div id="pageSubtitle" class="page-subtitle">
+              Hotel cash payment activity
             </div>
-
-            <div
-              id="todayCashOut"
-              class="summary-value">
-
-              ₹0.00
-
-            </div>
-
           </div>
 
+          <div class="topbar-user">
+            <div id="userName" class="user-name"></div>
 
-          <div class="summary-card">
-
-            <div class="summary-label">
-              Today's Payments
-            </div>
-
-            <div
-              id="todayVoucherCount"
-              class="summary-value">
-
-              0
-
-            </div>
-
+            <div id="userRole" class="role-badge"></div>
           </div>
+        </header>
 
+        <main class="page-container">
+          <!-- ALERT -->
 
-          <div class="summary-card">
+          <div id="alert" class="alert hidden"></div>
 
-            <div class="summary-label">
-              Latest Voucher
+          <!-- =================================================
+           OVERVIEW
+      ================================================= -->
+
+          <section id="overviewView" class="app-view">
+            <div class="page-heading">
+              <div>
+                <h1>Today's Overview</h1>
+
+                <p>Cash payments recorded at the hotel.</p>
+              </div>
+
+              <button
+                type="button"
+                class="btn btn-primary"
+                onclick="showView('paymentView')"
+              >
+                + New Payment
+              </button>
             </div>
 
-            <div
-              id="latestVoucherNo"
-              class="summary-value">
+            <div class="dashboard-summary">
+              <div class="summary-card">
+                <div class="summary-label">Today's Cash Paid</div>
 
-              —
+                <div id="todayCashOut" class="summary-value">₹0.00</div>
+              </div>
 
+              <div class="summary-card">
+                <div class="summary-label">Today's Payments</div>
+
+                <div id="todayVoucherCount" class="summary-value">0</div>
+              </div>
+
+              <div class="summary-card">
+                <div class="summary-label">Latest Voucher</div>
+
+                <div id="latestVoucherNo" class="summary-value">—</div>
+
+                <div id="latestVoucherText" class="summary-help">
+                  No payments yet
+                </div>
+              </div>
             </div>
 
-            <div
-              id="latestVoucherText"
-              class="summary-help">
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Recent Payments</h2>
 
-              No payments yet
+                  <p>Latest vendor cash payments.</p>
+                </div>
 
-            </div>
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onclick="showView('registerView')"
+                >
+                  View Register
+                </button>
+              </div>
 
-          </div>
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Voucher</th>
+                      <th>Date</th>
+                      <th>Vendor</th>
+                      <th>Amount</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
 
+                  <tbody id="overviewTableBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </section>
 
-        </div>
-
-
-        <section class="card">
-
-          <div class="card-header">
-
-            <div>
-
-              <h2>
-                Recent Payments
-              </h2>
-
-              <p>
-                Latest vendor cash payments.
-              </p>
-
-            </div>
-
-            <button
-              type="button"
-              class="btn btn-secondary"
-              onclick="showView('registerView')">
-
-              View Register
-
-            </button>
-
-          </div>
-
-
-          <div class="table-wrapper">
-
-            <table>
-
-              <thead>
-
-                <tr>
-
-                  <th>Voucher</th>
-                  <th>Date</th>
-                  <th>Vendor</th>
-                  <th>Amount</th>
-                  <th>Status</th>
-
-                </tr>
-
-              </thead>
-
-              <tbody
-                id="overviewTableBody">
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-        </section>
-
-
-      </section>
-
-
-      <!-- =================================================
+          <!-- =================================================
            NEW PAYMENT
       ================================================= -->
 
-      <section
-        id="paymentView"
-        class="app-view hidden">
+          <section id="paymentView" class="app-view hidden">
+            <div class="page-heading">
+              <div>
+                <h1>New Cash Payment</h1>
 
-
-        <div class="page-heading">
-
-          <div>
-
-            <h1>
-              New Cash Payment
-            </h1>
-
-            <p>
-              Record cash paid to a vendor.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <section class="card payment-card">
-
-
-          <form id="voucherForm">
-
-
-            <div class="form-grid">
-
-
-              <div class="form-group">
-
-                <label for="voucherDate">
-                  Date
-                </label>
-
-                <input
-                  type="date"
-                  id="voucherDate"
-                  required>
-
+                <p>Record cash paid to a vendor.</p>
               </div>
-
-
             </div>
 
+            <section class="card payment-card">
+              <form id="voucherForm">
+                <div class="form-grid">
+                  <div class="form-group">
+                    <label for="voucherDate"> Date </label>
 
-            <div class="bulk-entry-header">
+                    <input type="date" id="voucherDate" required />
+                  </div>
+                </div>
 
-              <div>Vendor</div>
+                <div class="bulk-entry-header">
+                  <div>Vendor</div>
 
-              <div>Amount</div>
+                  <div>Amount</div>
 
-              <div></div>
+                  <div></div>
+                </div>
 
-            </div>
+                <div id="paymentEntries"></div>
 
+                <div class="form-actions">
+                  <button
+                    type="button"
+                    class="btn btn-secondary"
+                    onclick="addPaymentRow()"
+                  >
+                    + Add Another Vendor
+                  </button>
 
-            <div id="paymentEntries"></div>
+                  <button type="submit" id="saveButton" class="btn btn-primary">
+                    Save All Payments
+                  </button>
 
+                  <button
+                    type="button"
+                    id="resetButton"
+                    class="btn btn-secondary"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </form>
+            </section>
+          </section>
 
-            <div class="form-actions">
+          <!-- =================================================
+           REGISTER
+      ================================================= -->
 
+          <section id="registerView" class="app-view hidden">
+            <div class="page-heading">
+              <div>
+                <h1>Payment Register</h1>
+
+                <p>Search and review vendor payments.</p>
+              </div>
 
               <button
                 type="button"
                 class="btn btn-secondary"
-                onclick="addPaymentRow()">
-
-                + Add Another Vendor
-
+                onclick="loadVouchers()"
+              >
+                Refresh
               </button>
-
-
-              <button
-                type="submit"
-                id="saveButton"
-                class="btn btn-primary">
-
-                Save All Payments
-
-              </button>
-
-
-              <button
-                type="button"
-                id="resetButton"
-                class="btn btn-secondary">
-
-                Clear
-
-              </button>
-
-
             </div>
 
+            <section class="card">
+              <div class="register-toolbar">
+                <input
+                  type="search"
+                  id="searchInput"
+                  placeholder="Search vendor or voucher number"
+                />
 
-          </form>
+                <select id="vendorFilter">
+                  <option value="">All Vendors</option>
+                </select>
 
+                <input type="date" id="filterFromDate" />
 
-        </section>
+                <input type="date" id="filterToDate" />
 
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onclick="clearRegisterFilters()"
+                >
+                  Clear
+                </button>
 
-      </section>
+                <div id="registerTotal" class="register-total">₹0.00</div>
+              </div>
 
+              <div class="table-wrapper">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Voucher</th>
+                      <th>Date</th>
+                      <th>Vendor</th>
+                      <th>Amount</th>
+                      <th>Added By</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
 
-      <!-- =================================================
-           REGISTER
-      ================================================= -->
+                  <tbody id="voucherTableBody">
+                    <tr>
+                      <td colspan="6" class="empty-state">
+                        Loading payments...
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          </section>
 
-      <section
-        id="registerView"
-        class="app-view hidden">
-
-
-        <div class="page-heading">
-
-          <div>
-
-            <h1>
-              Payment Register
-            </h1>
-
-            <p>
-              Search and review vendor payments.
-            </p>
-
-          </div>
-
-
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="loadVouchers()">
-
-            Refresh
-
-          </button>
-
-        </div>
-
-
-        <section class="card">
-
-
-<div class="register-toolbar">
-
-  <input
-    type="search"
-    id="searchInput"
-    placeholder="Search vendor or voucher number">
-
-  <select id="vendorFilter">
-
-    <option value="">
-      All Vendors
-    </option>
-
-  </select>
-
-  <input
-    type="date"
-    id="filterFromDate">
-
-  <input
-    type="date"
-    id="filterToDate">
-
-  <button
-    type="button"
-    class="btn btn-secondary"
-    onclick="clearRegisterFilters()">
-
-    Clear
-
-  </button>
-
-  <div
-    id="registerTotal"
-    class="register-total">
-
-    ₹0.00
-
-  </div>
-
-</div>
-
-
-          <div class="table-wrapper">
-
-            <table>
-
-              <thead>
-
-                 <tr>
-
-                  <th>Voucher</th>
-                  <th>Date</th>
-                  <th>Vendor</th>
-                  <th>Amount</th>
-                  <th>Added By</th>
-                  <th>Actions</th>
-
-                </tr>
-
-              </thead>
-
-              <tbody
-                id="voucherTableBody">
-
-                <tr>
-
-                  <td
-                    colspan="6"
-                    class="empty-state">
-
-                    Loading payments...
-
-                  </td>
-
-                </tr>
-
-              </tbody>
-
-            </table>
-
-          </div>
-
-
-        </section>
-
-
-      </section>
-
-
-      <!-- =================================================
+          <!-- =================================================
            REPORTS
       ================================================= -->
 
-      <section
-        id="reportsView"
-        class="app-view hidden">
+          <section id="reportsView" class="app-view hidden">
+            <div class="page-heading">
+              <div>
+                <h1>Reports</h1>
 
+                <p>Payment summaries and exports.</p>
+              </div>
+            </div>
 
-        <div class="page-heading">
+            <section class="card">
+              <div class="empty-state">Reports will be added here.</div>
+            </section>
+          </section>
 
-          <div>
-
-            <h1>
-              Reports
-            </h1>
-
-            <p>
-              Payment summaries and exports.
-            </p>
-
-          </div>
-
-        </div>
-
-
-        <section class="card">
-
-          <div class="empty-state">
-
-            Reports will be added here.
-
-          </div>
-
-        </section>
-
-
-      </section>
-
-
-      <!-- =================================================
+          <!-- =================================================
            PROFILE
       ================================================= -->
 
-<section
-  id="profileView"
-  class="app-view hidden">
-
-  <div class="page-heading">
-
-    <div>
-
-      <h1>My Profile</h1>
-
-      <p>
-        Manage your account and security.
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <section class="card profile-card">
-
-    <div class="profile-row">
-      <span>Name</span>
-      <strong id="profileName">-</strong>
-    </div>
-
-    <div class="profile-row">
-      <span>Email</span>
-      <strong id="profileEmail">-</strong>
-    </div>
-
-    <div class="profile-row">
-      <span>Role</span>
-      <strong id="profileRole">-</strong>
-    </div>
-
-  </section>
-
-
-  <section class="card">
-
-    <div class="card-header">
-
-      <div>
-
-        <h2>Change PIN</h2>
-
-        <p>
-          Update your 6-digit login PIN.
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <div class="form-grid">
-
-      <div class="form-group">
-
-        <label for="currentPin">
-          Current PIN
-        </label>
-
-        <input
-          type="password"
-          id="currentPin"
-          maxlength="6"
-          inputmode="numeric">
-
-      </div>
-
-
-      <div class="form-group">
-
-        <label for="newPin">
-          New PIN
-        </label>
-
-        <input
-          type="password"
-          id="newPin"
-          maxlength="6"
-          inputmode="numeric">
-
-      </div>
-
-    </div>
-
-
-    <div class="form-actions">
-
-      <button
-        type="button"
-        class="btn btn-primary"
-        onclick="changeMyPin()">
-
-        Change PIN
-
-      </button>
-
-    </div>
-
-  </section>
-
-</section>
-
-<section
-  id="vendorsView"
-  class="app-view hidden">
-
-
-  <div class="page-heading">
-
-    <div>
-
-      <h1>
-        Vendors
-      </h1>
-
-      <p>
-        Manage your regular payment vendors.
-      </p>
-
-    </div>
-
-  </div>
-
-
-  <section class="card">
-
-    <div class="card-header">
-
-      <div>
-
-        <h2>
-          Add Vendor
-        </h2>
-
-        <p>
-          Save vendor details for faster payments.
-        </p>
-
-      </div>
-
-    </div>
-
-
-    <div class="form-grid">
-
-
-      <div class="form-group">
-
-        <label for="vendorNameInput">
-          Vendor Name
-        </label>
-
-        <input
-          id="vendorNameInput"
-          type="text"
-          placeholder="Vendor / person name">
-
-      </div>
-
-
-      <div class="form-group">
-
-        <label for="companyNameInput">
-          Company Name
-        </label>
-
-        <input
-          id="companyNameInput"
-          type="text"
-          placeholder="Company name">
-
-      </div>
-
-
-      <div class="form-group">
-
-        <label for="vendorMobileInput">
-          Mobile Number
-        </label>
-
-        <input
-          id="vendorMobileInput"
-          type="tel"
-          inputmode="numeric"
-          maxlength="15"
-          placeholder="Mobile number">
-
-      </div>
-
-
-    </div>
-
-
-    <div class="form-actions">
-
-      <button
-        type="button"
-        class="btn btn-primary"
-        onclick="saveVendor()">
-
-        Add Vendor
-
-      </button>
-
-
-      <button
-        type="button"
-        class="btn btn-secondary"
-        onclick="clearVendorForm()">
-
-        Clear
-
-      </button>
-
-    </div>
-
-  </section>
-
-
-  <section class="card">
-
-    <div class="card-header">
-
-      <div>
-
-        <h2>
-          Vendor List
-        </h2>
-
-      </div>
-
-    </div>
-
-
-    <div
-      id="vendorList"
-      class="users-list">
-
-      Loading vendors...
-
-    </div>
-
-  </section>
-
-
-</section>
-
-      <!-- =================================================
+          <section id="profileView" class="app-view hidden">
+            <div class="page-heading">
+              <div>
+                <h1>My Profile</h1>
+
+                <p>Manage your account and security.</p>
+              </div>
+            </div>
+
+            <section class="card profile-card">
+              <div class="profile-row">
+                <span>Name</span>
+                <strong id="profileName">-</strong>
+              </div>
+
+              <div class="profile-row">
+                <span>Email</span>
+                <strong id="profileEmail">-</strong>
+              </div>
+
+              <div class="profile-row">
+                <span>Role</span>
+                <strong id="profileRole">-</strong>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Change PIN</h2>
+
+                  <p>Update your 6-digit login PIN.</p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="currentPin"> Current PIN </label>
+
+                  <input
+                    type="password"
+                    id="currentPin"
+                    maxlength="6"
+                    inputmode="numeric"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="newPin"> New PIN </label>
+
+                  <input
+                    type="password"
+                    id="newPin"
+                    maxlength="6"
+                    inputmode="numeric"
+                  />
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="changeMyPin()"
+                >
+                  Change PIN
+                </button>
+              </div>
+            </section>
+          </section>
+
+          <section id="vendorsView" class="app-view hidden">
+            <div class="page-heading">
+              <div>
+                <h1>Vendors</h1>
+
+                <p>Manage your regular payment vendors.</p>
+              </div>
+            </div>
+
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Add Vendor</h2>
+
+                  <p>Save vendor details for faster payments.</p>
+                </div>
+              </div>
+
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="vendorNameInput"> Vendor Name </label>
+
+                  <input
+                    id="vendorNameInput"
+                    type="text"
+                    placeholder="Vendor / person name"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="companyNameInput"> Company Name </label>
+
+                  <input
+                    id="companyNameInput"
+                    type="text"
+                    placeholder="Company name"
+                  />
+                </div>
+
+                <div class="form-group">
+                  <label for="vendorMobileInput"> Mobile Number </label>
+
+                  <input
+                    id="vendorMobileInput"
+                    type="tel"
+                    inputmode="numeric"
+                    maxlength="15"
+                    placeholder="Mobile number"
+                  />
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="saveVendor()"
+                >
+                  Add Vendor
+                </button>
+
+                <button
+                  type="button"
+                  class="btn btn-secondary"
+                  onclick="clearVendorForm()"
+                >
+                  Clear
+                </button>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Vendor List</h2>
+                </div>
+              </div>
+
+              <div id="vendorList" class="users-list">Loading vendors...</div>
+            </section>
+          </section>
+
+          <!-- =================================================
            ADMINISTRATION
       ================================================= -->
 
-      <section
-        id="adminView"
-        class="app-view hidden">
+          <section id="adminView" class="app-view hidden">
+            <div class="page-heading">
+              <div>
+                <h1>Administration</h1>
 
+                <p>Manage users and portal access.</p>
+              </div>
+            </div>
 
-        <div class="page-heading">
+            <section class="card">
+              <div class="card-header">
+                <div>
+                  <h2>Add User</h2>
+                </div>
+              </div>
 
-          <div>
+              <div class="form-grid">
+                <div class="form-group">
+                  <label for="newUserName"> Name </label>
 
-            <h1>
-              Administration
-            </h1>
+                  <input id="newUserName" type="text" />
+                </div>
 
-            <p>
-              Manage users and portal access.
-            </p>
+                <div class="form-group">
+                  <label for="newUserEmail"> Email </label>
 
-          </div>
+                  <input id="newUserEmail" type="email" />
+                </div>
 
+                <div class="form-group">
+                  <label for="newUserRole"> Role </label>
+
+                  <select id="newUserRole">
+                    <option value="staff">Staff</option>
+
+                    <option value="manager">Manager</option>
+
+                    <option value="owner">Owner</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label for="newUserPin"> 6-Digit PIN </label>
+
+                  <input
+                    id="newUserPin"
+                    type="password"
+                    maxlength="6"
+                    inputmode="numeric"
+                  />
+                </div>
+              </div>
+
+              <div class="form-actions">
+                <button
+                  type="button"
+                  class="btn btn-primary"
+                  onclick="createNewUser()"
+                >
+                  Add User
+                </button>
+              </div>
+            </section>
+
+            <section class="card">
+              <div class="card-header">
+                <h2>Portal Users</h2>
+              </div>
+
+              <div id="usersList" class="users-list">Loading users...</div>
+            </section>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <div id="editModal" class="modal hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h2>Edit Payment</h2>
+
+          <button type="button" class="close-button" onclick="closeEditModal()">
+            ×
+          </button>
         </div>
 
+        <input type="hidden" id="editVoucherId" />
 
-        <section class="card">
+        <div class="form-grid">
+          <div class="form-group">
+            <label> Date </label>
 
-
-          <div class="card-header">
-
-            <div>
-
-              <h2>
-                Add User
-              </h2>
-
-            </div>
-
+            <input type="date" id="editVoucherDate" />
           </div>
 
+          <div class="form-group">
+            <label> Vendor </label>
 
-          <div class="form-grid">
-
-
-            <div class="form-group">
-
-              <label for="newUserName">
-                Name
-              </label>
-
-              <input
-                id="newUserName"
-                type="text">
-
-            </div>
-
-
-            <div class="form-group">
-
-              <label for="newUserEmail">
-                Email
-              </label>
-
-              <input
-                id="newUserEmail"
-                type="email">
-
-            </div>
-
-
-            <div class="form-group">
-
-              <label for="newUserRole">
-                Role
-              </label>
-
-              <select id="newUserRole">
-
-                <option value="staff">
-                  Staff
-                </option>
-
-                <option value="manager">
-                  Manager
-                </option>
-
-                <option value="owner">
-                  Owner
-                </option>
-
-              </select>
-
-            </div>
-
-
-            <div class="form-group">
-
-              <label for="newUserPin">
-                6-Digit PIN
-              </label>
-
-              <input
-                id="newUserPin"
-                type="password"
-                maxlength="6"
-                inputmode="numeric">
-
-            </div>
-
-
+            <input type="text" id="editVendor" />
           </div>
 
+          <div class="form-group">
+            <label> Amount </label>
 
-          <div class="form-actions">
-
-            <button
-              type="button"
-              class="btn btn-primary"
-              onclick="createNewUser()">
-
-              Add User
-
-            </button>
-
+            <input type="number" id="editAmount" min="0.01" step="0.01" />
           </div>
+        </div>
 
+        <div class="modal-actions">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            onclick="closeEditModal()"
+          >
+            Cancel
+          </button>
 
-        </section>
-
-
-        <section class="card">
-
-
-          <div class="card-header">
-
-            <h2>
-              Portal Users
-            </h2>
-
-          </div>
-
-
-          <div
-            id="usersList"
-            class="users-list">
-
-            Loading users...
-
-          </div>
-
-
-        </section>
-
-
-      </section>
-
-
-    </main>
-
-  </div>
-
-</div>
-
-
-<div
-  id="editModal"
-  class="modal hidden">
-
-  <div class="modal-card">
-
-    <div class="modal-header">
-
-      <h2>
-        Edit Payment
-      </h2>
-
-      <button
-        type="button"
-        class="close-button"
-        onclick="closeEditModal()">
-
-        ×
-
-      </button>
-
+          <button
+            type="button"
+            class="btn btn-primary"
+            onclick="saveEditedVoucher()"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
     </div>
 
-
-    <input
-      type="hidden"
-      id="editVoucherId">
-
-
-    <div class="form-grid">
-
-
-      <div class="form-group">
-
-        <label>
-          Date
-        </label>
-
-        <input
-          type="date"
-          id="editVoucherDate">
-
-      </div>
-
-
-      <div class="form-group">
-
-        <label>
-          Vendor
-        </label>
-
-        <input
-          type="text"
-          id="editVendor">
-
-      </div>
-
-
-      <div class="form-group">
-
-        <label>
-          Amount
-        </label>
-
-        <input
-          type="number"
-          id="editAmount"
-          min="0.01"
-          step="0.01">
-
-      </div>
-
-
-    </div>
-
-
-    <div class="modal-actions">
-
-      <button
-        type="button"
-        class="btn btn-secondary"
-        onclick="closeEditModal()">
-
-        Cancel
-
-      </button>
-
-
-      <button
-        type="button"
-        class="btn btn-primary"
-        onclick="saveEditedVoucher()">
-
-        Save Changes
-
-      </button>
-
-    </div>
-
-  </div>
-
-</div>
-
-
-<?!= include('Script'); ?>
-
-</body>
-
+    <?!= include('Script'); ?>
+  </body>
 </html>

@@ -1,133 +1,75 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
+  <head>
+    <base target="_top" />
 
-<head>
+    <meta charset="UTF-8" />
 
-  <base target="_top">
+    <title>Cash Payment Voucher</title>
 
-  <meta charset="UTF-8">
+    <?!= include('PrintStyles'); ?>
+  </head>
 
-  <title>
-    Cash Payment Voucher
-  </title>
+  <body class="print-body">
+    <div class="print-toolbar">
+      <button onclick="window.print()">Print Voucher</button>
 
-  <?!= include('PrintStyles'); ?>
-
-</head>
-
-<body class="print-body">
-
-  <div class="print-toolbar">
-
-    <button onclick="window.print()">
-      Print Voucher
-    </button>
-
-    <button
-      onclick="window.close()"
-      style="background:#777;">
-      Close
-    </button>
-
-  </div>
-
-
-  <div class="print-paper">
-
-    <div class="print-header">
-
-      <div class="print-hotel-name">
-        Hotel Garh Jaisal Haveli
-      </div>
-
-      <div class="print-address">
-        Inside Fort, Kotari Para, Jaisalmer<br>
-        Rajasthan, India - 345001
-      </div>
-
-      <div class="print-title">
-        CASH PAYMENT VOUCHER
-      </div>
-
+      <button onclick="window.close()" style="background: #777">Close</button>
     </div>
 
+    <div class="print-paper">
+      <div class="print-header">
+        <div class="print-hotel-name">Hotel Garh Jaisal Haveli</div>
 
-    <div class="print-meta">
+        <div class="print-address">
+          Inside Fort, Kotari Para, Jaisalmer<br />
+          Rajasthan, India - 345001
+        </div>
 
-      <div>
-        Voucher No:
-        <strong>
-          <?= voucher.voucherNo ?>
-        </strong>
+        <div class="print-title">CASH PAYMENT VOUCHER</div>
       </div>
 
-      <div>
-        Date:
-        <strong>
-          <?= voucher.voucherDate ?>
-        </strong>
+      <div class="print-meta">
+        <div>
+          Voucher No:
+          <strong> <?= voucher.voucherNo ?> </strong>
+        </div>
+
+        <div>
+          Date:
+          <strong> <?= voucher.voucherDate ?> </strong>
+        </div>
       </div>
 
+      <div class="print-row">
+        <div class="print-label">Paid To</div>
+
+        <div class="print-value"><?= voucher.vendor ?></div>
+      </div>
+
+      <div class="print-row">
+        <div class="print-label">Amount Paid</div>
+
+        <div class="print-value print-amount">
+          ₹<?= voucher.amountFormatted ?>
+        </div>
+      </div>
+
+      <div class="print-amount-words">
+        <strong> Amount in Words </strong>
+
+        <br /><br />
+
+        <?= voucher.amountInWords ?>
+      </div>
+
+      <div class="print-signatures">
+        <div class="print-signature">Prepared By</div>
+
+        <div class="print-signature">Paid By</div>
+
+        <div class="print-signature">Receiver Signature</div>
+      </div>
     </div>
-
-
-    <div class="print-row">
-
-      <div class="print-label">
-        Paid To
-      </div>
-
-      <div class="print-value">
-        <?= voucher.vendor ?>
-      </div>
-
-    </div>
-
-
-    <div class="print-row">
-
-      <div class="print-label">
-        Amount Paid
-      </div>
-
-      <div class="print-value print-amount">
-        ₹<?= voucher.amountFormatted ?>
-      </div>
-
-    </div>
-
-
-    <div class="print-amount-words">
-
-      <strong>
-        Amount in Words
-      </strong>
-
-      <br><br>
-
-      <?= voucher.amountInWords ?>
-
-    </div>
-
-
-    <div class="print-signatures">
-
-      <div class="print-signature">
-        Prepared By
-      </div>
-
-      <div class="print-signature">
-        Paid By
-      </div>
-
-      <div class="print-signature">
-        Receiver Signature
-      </div>
-
-    </div>
-
-  </div>
-
-</body>
-
+  </body>
 </html>
