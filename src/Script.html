@@ -1,0 +1,2343 @@
+<script>
+
+let sessionToken = '';
+let currentUser = null;
+let vouchers = [];
+let vendors = [];
+let userCache = [];
+let vendorCache = [];
+
+
+/* =====================================================
+   STARTUP
+===================================================== */
+
+document.addEventListener(
+  'DOMContentLoaded',
+  function() {
+
+    setTodayDate_();
+    addPaymentRow();
+
+    document
+      .getElementById('loginForm')
+      .addEventListener(
+        'submit',
+        login
+      );
+
+    document
+  .getElementById('vendorFilter')
+  .addEventListener(
+    'change',
+    renderVouchers
+  );
+
+    document
+      .getElementById('voucherForm')
+      .addEventListener(
+        'submit',
+        saveVoucher
+      );
+
+    document
+      .getElementById('resetButton')
+      .addEventListener(
+        'click',
+        resetVoucherForm
+      );
+
+    document
+  .getElementById('searchInput')
+  .addEventListener(
+    'input',
+    renderVouchers
+  );
+
+document
+  .getElementById('filterFromDate')
+  .addEventListener(
+    'change',
+    renderVouchers
+  );
+
+document
+  .getElementById('filterToDate')
+  .addEventListener(
+    'change',
+    renderVouchers
+  );
+
+  }
+);
+
+
+/* =====================================================
+   LOGIN
+===================================================== */
+function login(event) {
+
+  event.preventDefault();
+
+  const email =
+    document.getElementById('loginEmail')
+      .value.trim();
+
+  const pin =
+    document.getElementById('loginPin')
+      .value.trim();
+
+  const button =
+    document.getElementById('loginButton');
+
+  const error =
+    document.getElementById('loginError');
+
+  error.classList.add('hidden');
+
+  button.disabled = true;
+  button.textContent = 'Logging in...';
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(result) {
+
+        button.disabled = false;
+        button.textContent = 'Login';
+
+        if (
+          !result ||
+          !result.token ||
+          !result.user
+        ) {
+
+          error.textContent =
+            'Login failed.';
+
+          error.classList.remove(
+            'hidden'
+          );
+
+          return;
+        }
+
+        sessionToken =
+          result.token;
+
+        currentUser =
+          result.user;
+
+
+        /* USER DISPLAY */
+
+        setUserDisplay_();
+
+
+        /* SHOW APP */
+
+        document
+          .getElementById('loginScreen')
+          .classList
+          .add('hidden');
+
+        document
+          .getElementById('mainApplication')
+          .classList
+          .remove('hidden');
+
+
+        /* OWNER ADMIN */
+
+        if (
+          currentUser.role === 'owner'
+        ) {
+
+          const admin =
+            document.getElementById(
+              'adminNavItem'
+            );
+
+          if (admin) {
+            admin.classList.remove(
+              'hidden'
+            );
+          }
+
+          loadUsers();
+
+        }
+
+
+        /* LOAD DATA AFTER LOGIN */
+
+        loadVouchers();
+
+        loadVendors();
+
+
+        /*
+         * Ensure at least one payment row.
+         */
+
+        const entries =
+          document.getElementById(
+            'paymentEntries'
+          );
+
+        if (
+          entries &&
+          entries.children.length === 0
+        ) {
+
+          addPaymentRow();
+
+        }
+
+      }
+    )
+
+    .withFailureHandler(
+      function(errorResponse) {
+
+        button.disabled = false;
+        button.textContent = 'Login';
+
+        error.textContent =
+          getErrorMessage_(
+            errorResponse
+          );
+
+        error.classList.remove(
+          'hidden'
+        );
+
+      }
+    )
+
+    .loginUser(
+      email,
+      pin
+    );
+
+}
+
+
+/* =====================================================
+   LOGOUT
+===================================================== */
+
+function logout() {
+
+  const token =
+    sessionToken;
+
+  sessionToken = '';
+  currentUser = null;
+
+  sessionStorage.clear();
+
+
+  if (!token) {
+
+    window.location.reload();
+
+    return;
+
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function() {
+
+        window.location.reload();
+
+      }
+    )
+
+    .withFailureHandler(
+      function() {
+
+        window.location.reload();
+
+      }
+    )
+
+    .logoutUser(
+      token
+    );
+
+}
+
+
+/* =====================================================
+   LOAD VOUCHERS
+===================================================== */
+
+function loadVendors() {
+
+  if (!sessionToken) {
+    return;
+  }
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(data) {
+
+        vendors =
+          Array.isArray(data)
+            ? data
+            : [];
+
+        ensureVendorDatalist_();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        console.error(
+          'Vendor memory error:',
+          error
+        );
+
+        vendors = [];
+
+      }
+    )
+
+    .getVendors(
+      sessionToken
+    );
+
+}
+
+
+/* =====================================================
+   RESET FORM
+===================================================== */
+
+function resetVoucherForm() {
+
+  const container =
+    document.getElementById(
+      'paymentEntries'
+    );
+
+  container.innerHTML = '';
+
+  setTodayDate_();
+
+  addPaymentRow();
+
+}
+
+/* =====================================================
+   PAYMENT ROWS
+===================================================== */
+
+function addPaymentRow() {
+
+  const container =
+    document.getElementById(
+      'paymentEntries'
+    );
+
+  if (!container) {
+    return;
+  }
+
+  const row =
+    document.createElement(
+      'div'
+    );
+
+  row.className =
+    'payment-entry-row';
+
+  row.innerHTML = `
+
+    <input
+      type="text"
+      class="vendor-input"
+      placeholder="Vendor name"
+      list="vendorSuggestions"
+      autocomplete="off">
+
+    <input
+      type="number"
+      class="amount-input"
+      min="0.01"
+      step="0.01"
+      placeholder="Amount">
+
+    <button
+      type="button"
+      class="remove-row-button"
+      title="Remove">
+
+      ×
+
+    </button>
+
+
+  row
+    .querySelector(
+      '.remove-row-button'
+    )
+    .addEventListener(
+      'click',
+      function() {
+
+        const rows =
+          container.querySelectorAll(
+            '.payment-entry-row'
+          );
+
+        if (rows.length === 1) {
+
+          row.querySelector(
+            '.vendor-input'
+          ).value = '';
+
+          row.querySelector(
+            '.amount-input'
+          ).value = '';
+
+          return;
+
+        }
+
+        row.remove();
+
+      }
+    );
+
+  container.appendChild(row);
+
+}
+
+
+function ensureVendorDatalist_() {
+
+  let datalist =
+    document.getElementById(
+      'vendorSuggestions'
+    );
+
+  if (!datalist) {
+
+    datalist =
+      document.createElement(
+        'datalist'
+      );
+
+    datalist.id =
+      'vendorSuggestions';
+
+    document.body.appendChild(
+      datalist
+    );
+
+  }
+
+  datalist.innerHTML = '';
+
+  vendors.forEach(
+    function(vendor) {
+
+      const option =
+        document.createElement(
+          'option'
+        );
+
+      option.value =
+        vendor;
+
+      datalist.appendChild(
+        option
+      );
+
+    }
+  );
+
+}
+
+
+/* =====================================================
+   LOAD VENDOR MEMORY
+===================================================== */
+
+function loadVendors() {
+
+  if (!sessionToken) {
+    return;
+  }
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(data) {
+
+        vendors =
+          Array.isArray(data)
+            ? data
+            : [];
+
+        ensureVendorDatalist_();
+
+      }
+    )
+
+    .withFailureHandler(
+      function() {
+
+        /*
+         * Vendor memory failure
+         * should not block operations.
+         */
+
+        vendors = [];
+
+      }
+    )
+
+    .getVendors(
+      sessionToken
+    );
+
+}
+
+
+/* =====================================================
+   RENDER REGISTER
+===================================================== */
+
+function renderVouchers() {
+
+  const tableBody =
+    document.getElementById(
+      'voucherTableBody'
+    );
+
+  const search =
+    document.getElementById(
+      'searchInput'
+    ).value
+      .trim()
+      .toLowerCase();
+
+  const vendorFilter =
+    document.getElementById(
+      'vendorFilter'
+    ).value
+      .trim()
+      .toLowerCase();
+
+  const fromDate =
+    document.getElementById(
+      'filterFromDate'
+    ).value;
+
+  const toDate =
+    document.getElementById(
+      'filterToDate'
+    ).value;
+
+
+  const filtered =
+    vouchers.filter(
+      function(voucher) {
+
+        const vendor =
+          String(
+            voucher.vendor || ''
+          );
+
+        const number =
+          String(
+            voucher.voucherNo || ''
+          );
+
+        const date =
+          normalizeDate_(
+            voucher.voucherDate
+          );
+
+
+        return (
+
+          (
+            !search ||
+            vendor
+              .toLowerCase()
+              .includes(search) ||
+            number
+              .toLowerCase()
+              .includes(search)
+          )
+
+          &&
+
+          (
+            !vendorFilter ||
+            vendor
+              .toLowerCase() ===
+            vendorFilter
+          )
+
+          &&
+
+          (
+            !fromDate ||
+            date >= fromDate
+          )
+
+          &&
+
+          (
+            !toDate ||
+            date <= toDate
+          )
+
+        );
+
+      }
+    );
+
+
+  let total = 0;
+
+  filtered.forEach(
+    function(voucher) {
+
+      if (
+        voucher.status !==
+        'CANCELLED'
+      ) {
+
+        total +=
+          Number(
+            voucher.amount || 0
+          );
+
+      }
+
+    }
+  );
+
+
+  const totalElement =
+    document.getElementById(
+      'registerTotal'
+    );
+
+  if (totalElement) {
+
+    totalElement.textContent =
+      formatCurrency_(total);
+
+  }
+
+
+  if (!filtered.length) {
+
+    tableBody.innerHTML =
+      '<tr>' +
+      '<td colspan="6" class="empty-state">' +
+      'No payments found.' +
+      '</td>' +
+      '</tr>';
+
+    return;
+
+  }
+
+
+  tableBody.innerHTML =
+    filtered
+      .map(
+        function(voucher) {
+
+          const cancelled =
+            voucher.status ===
+            'CANCELLED';
+
+
+          return `
+
+            <tr>
+
+              <td>
+                <strong>
+                  #${escapeHtml_(
+                    voucher.voucherNo
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml_(
+                  voucher.voucherDate
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml_(
+                  voucher.vendor
+                )}
+              </td>
+
+              <td class="amount-cell">
+                ${formatCurrency_(
+                  voucher.amount
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml_(
+                  voucher.createdBy
+                )}
+              </td>
+
+              <td>
+
+                <button
+                  class="btn btn-small btn-secondary"
+                  onclick="printVoucher('${escapeJs_(
+                    voucher.voucherId
+                  )}')">
+
+                  Print
+
+                </button>
+
+                ${
+                  !cancelled &&
+                  canEditVoucher_()
+                    ? `
+                      <button
+                        class="btn btn-small btn-secondary"
+                        onclick="openEditModal('${escapeJs_(
+                          voucher.voucherId
+                        )}')">
+
+                        Edit
+
+                      </button>
+                    `
+                    : ''
+                }
+
+                ${
+                  !cancelled &&
+                  canDeleteVoucher_()
+                    ? `
+                      <button
+                        class="btn btn-small btn-danger"
+                        onclick="cancelVoucher('${escapeJs_(
+                          voucher.voucherId
+                        )}')">
+
+                        Cancel
+
+                      </button>
+                    `
+                    : ''
+                }
+
+              </td>
+
+            </tr>
+
+          `;
+
+        }
+      )
+      .join('');
+
+}
+
+
+function clearRegisterFilters() {
+
+  document
+    .getElementById('searchInput')
+    .value = '';
+
+  document
+    .getElementById('filterFromDate')
+    .value = '';
+
+  document
+    .getElementById('filterToDate')
+    .value = '';
+
+  renderVouchers();
+
+}
+
+
+/* =====================================================
+   DASHBOARD
+===================================================== */
+
+function updateDashboard() {
+
+  const today =
+    getTodayString_();
+
+  let todayTotal = 0;
+  let todayCount = 0;
+
+  vouchers.forEach(
+    function(voucher) {
+
+      if (
+        voucher.status === 'CANCELLED'
+      ) {
+        return;
+      }
+
+      const voucherDate =
+        normalizeDate_(
+          voucher.voucherDate
+        );
+
+      if (
+        voucherDate === today
+      ) {
+
+        todayTotal +=
+          Number(
+            voucher.amount || 0
+          );
+
+        todayCount++;
+
+      }
+
+    }
+  );
+
+  document
+    .getElementById('todayCashOut')
+    .textContent =
+    formatCurrency_(todayTotal);
+
+  document
+    .getElementById('todayVoucherCount')
+    .textContent =
+    todayCount;
+
+  if (vouchers.length > 0) {
+
+    const latest =
+      vouchers[0];
+
+    document
+      .getElementById('latestVoucherNo')
+      .textContent =
+      '#' +
+      latest.voucherNo;
+
+    document
+      .getElementById('latestVoucherText')
+      .textContent =
+      latest.vendor ||
+      '';
+
+  } else {
+
+    document
+      .getElementById('latestVoucherNo')
+      .textContent =
+      '—';
+
+    document
+      .getElementById('latestVoucherText')
+      .textContent =
+      'No payments';
+
+  }
+
+}
+
+
+/* =====================================================
+   EDIT
+===================================================== */
+
+function openEditModal(voucherId) {
+
+  const voucher =
+    vouchers.find(
+      function(item) {
+
+        return (
+          item.voucherId ===
+          voucherId
+        );
+
+      }
+    );
+
+  if (!voucher) {
+    return;
+  }
+
+  document
+    .getElementById('editVoucherId')
+    .value =
+    voucher.voucherId;
+
+  document
+    .getElementById('editVoucherDate')
+    .value =
+    normalizeDate_(
+      voucher.voucherDate
+    );
+
+  document
+    .getElementById('editVendor')
+    .value =
+    voucher.vendor || '';
+
+  document
+    .getElementById('editAmount')
+    .value =
+    voucher.amount || '';
+
+  document
+    .getElementById('editModal')
+    .classList
+    .remove('hidden');
+
+}
+
+
+function closeEditModal() {
+
+  document
+    .getElementById('editModal')
+    .classList
+    .add('hidden');
+
+}
+
+
+function saveEditedVoucher() {
+
+  const voucherId =
+    document
+      .getElementById('editVoucherId')
+      .value;
+
+  const formData = {
+
+    voucherDate:
+      document
+        .getElementById('editVoucherDate')
+        .value,
+
+    vendor:
+      document
+        .getElementById('editVendor')
+        .value
+        .trim(),
+
+    amount:
+      Number(
+        document
+          .getElementById('editAmount')
+          .value
+      )
+
+  };
+
+  google.script.run
+
+    .withSuccessHandler(
+      function() {
+
+        closeEditModal();
+
+        showAlert(
+          'Payment updated successfully.',
+          'success'
+        );
+
+        loadVouchers();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(err) {
+
+        showAlert(
+          getErrorMessage_(err),
+          'error'
+        );
+
+      }
+    )
+
+    .updateVoucher(
+      sessionToken,
+      voucherId,
+      formData
+    );
+
+}
+
+
+/* =====================================================
+   CANCEL
+===================================================== */
+
+function cancelVoucher(voucherId) {
+
+  const voucher =
+    vouchers.find(
+      function(item) {
+
+        return (
+          item.voucherId ===
+          voucherId
+        );
+
+      }
+    );
+
+  if (!voucher) {
+    return;
+  }
+
+  const confirmed =
+    confirm(
+      'Cancel voucher #' +
+      voucher.voucherNo +
+      '?'
+    );
+
+  if (!confirmed) {
+    return;
+  }
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(result) {
+
+        showAlert(
+          result.message ||
+          'Voucher cancelled.',
+          'success'
+        );
+
+        loadVouchers();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(err) {
+
+        showAlert(
+          getErrorMessage_(err),
+          'error'
+        );
+
+      }
+    )
+
+    .deleteVoucher(
+      sessionToken,
+      voucherId
+    );
+
+}
+
+
+/* =====================================================
+   PRINT
+===================================================== */
+function printVoucher(voucherId) {
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(html) {
+
+        const printWindow =
+          window.open(
+            '',
+            '_blank',
+            'width=850,height=800'
+          );
+
+        if (!printWindow) {
+
+          showAlert(
+            'Please allow pop-ups for printing.',
+            'error'
+          );
+
+          return;
+
+        }
+
+        printWindow.document.open();
+
+        printWindow.document.write(
+          html
+        );
+
+        printWindow.document.close();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        showAlert(
+          getErrorMessage_(error),
+          'error'
+        );
+
+      }
+    )
+
+    .getVoucherPrintPage(
+      sessionToken,
+      voucherId
+    );
+
+}
+
+/* =====================================================
+   PERMISSIONS
+===================================================== */
+
+function canEditVoucher_() {
+
+  if (!currentUser) {
+    return false;
+  }
+
+  return (
+    currentUser.role === 'owner' ||
+    currentUser.role === 'manager'
+  );
+
+}
+
+
+function canDeleteVoucher_() {
+
+  if (!currentUser) {
+    return false;
+  }
+
+  return (
+    currentUser.role === 'owner' ||
+    currentUser.role === 'manager'
+  );
+
+}
+
+
+/* =====================================================
+   ALERT
+===================================================== */
+
+function showAlert(message, type) {
+
+  const alert =
+    document
+      .getElementById('alert');
+
+  alert.textContent =
+    message;
+
+  alert.className =
+    'alert alert-' +
+    type;
+
+  alert.classList.remove(
+    'hidden'
+  );
+
+  setTimeout(
+    function() {
+
+      alert.classList.add(
+        'hidden'
+      );
+
+    },
+    5000
+  );
+
+}
+
+
+/* =====================================================
+   DATE HELPERS
+===================================================== */
+
+function setTodayDate_() {
+
+  const input =
+    document
+      .getElementById('voucherDate');
+
+  if (input) {
+
+    input.value =
+      getTodayString_();
+
+  }
+
+}
+
+
+function getTodayString_() {
+
+  const date =
+    new Date();
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      '0'
+    );
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      '0'
+    );
+
+  return (
+    year +
+    '-' +
+    month +
+    '-' +
+    day
+  );
+
+}
+
+
+function normalizeDate_(value) {
+
+  if (!value) {
+    return '';
+  }
+
+  /*
+   * Already yyyy-mm-dd.
+   */
+
+  if (
+    /^\d{4}-\d{2}-\d{2}$/
+      .test(value)
+  ) {
+    return value;
+  }
+
+  /*
+   * Apps Script may return dd/MM/yyyy.
+   */
+
+  const match =
+    String(value)
+      .match(
+        /^(\d{1,2})\/(\d{1,2})\/(\d{4})/
+      );
+
+  if (match) {
+
+    return (
+      match[3] +
+      '-' +
+      String(match[2])
+        .padStart(2, '0') +
+      '-' +
+      String(match[1])
+        .padStart(2, '0')
+    );
+
+  }
+
+  const date =
+    new Date(value);
+
+  if (
+    isNaN(
+      date.getTime()
+    )
+  ) {
+    return '';
+  }
+
+  return (
+    date.getFullYear() +
+    '-' +
+    String(
+      date.getMonth() + 1
+    ).padStart(2, '0') +
+    '-' +
+    String(
+      date.getDate()
+    ).padStart(2, '0')
+  );
+
+}
+
+
+/* =====================================================
+   FORMATTING
+===================================================== */
+
+function formatCurrency_(amount) {
+
+  return new Intl.NumberFormat(
+    'en-IN',
+    {
+      style: 'currency',
+      currency: 'INR',
+      minimumFractionDigits: 2
+    }
+  )
+  .format(
+    Number(amount || 0)
+  );
+
+}
+
+
+function getErrorMessage_(error) {
+
+  if (!error) {
+    return 'Something went wrong.';
+  }
+
+  return (
+    error.message ||
+    String(error)
+  );
+
+}
+
+
+function escapeHtml_(value) {
+
+  return String(
+    value === undefined ||
+    value === null
+      ? ''
+      : value
+  )
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
+}
+
+
+function escapeJs_(value) {
+
+  return String(
+    value || ''
+  )
+    .replace(/\\/g, '\\\\')
+    .replace(/'/g, "\\'");
+
+}
+
+function loadUsers() {
+
+  if (!sessionToken) {
+    return;
+  }
+
+  const usersList =
+    document.getElementById(
+      'usersList'
+    );
+
+  if (!usersList) {
+    return;
+  }
+
+  usersList.innerHTML =
+    'Loading users...';
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(users) {
+        userCache =
+          Array.isArray(users)
+          ? users
+          : [];
+
+          renderUsers(
+            userCache
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function(err) {
+
+        usersList.innerHTML =
+          'Unable to load users: ' +
+          escapeHtml_(
+            getErrorMessage_(err)
+          );
+
+      }
+    )
+
+    .getUsers(
+      sessionToken
+    );
+
+}
+
+
+function createNewUser() {
+
+  const name =
+    document
+      .getElementById('newUserName')
+      .value
+      .trim();
+
+  const email =
+    document
+      .getElementById('newUserEmail')
+      .value
+      .trim();
+
+  const role =
+    document
+      .getElementById('newUserRole')
+      .value;
+
+  const pin =
+    document
+      .getElementById('newUserPin')
+      .value
+      .trim();
+
+
+  if (!name || !email || !pin) {
+
+    showAlert(
+      'Name, email and PIN are required.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  if (!/^\d{6}$/.test(pin)) {
+
+    showAlert(
+      'PIN must be exactly 6 digits.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function(result) {
+
+        document
+          .getElementById('newUserName')
+          .value = '';
+
+        document
+          .getElementById('newUserEmail')
+          .value = '';
+
+        document
+          .getElementById('newUserPin')
+          .value = '';
+
+        document
+          .getElementById('newUserRole')
+          .value = 'staff';
+
+
+        showAlert(
+          'User created successfully.',
+          'success'
+        );
+
+        loadUsers();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(err) {
+
+        showAlert(
+          getErrorMessage_(err),
+          'error'
+        );
+
+      }
+    )
+
+    .addUser(
+      sessionToken,
+      {
+        name: name,
+        email: email,
+        role: role,
+        pin: pin
+      }
+    );
+
+}
+
+
+function renderUsers(users) {
+
+  const usersList =
+    document.getElementById('usersList');
+
+  if (!usersList) return;
+
+  if (!users.length) {
+    usersList.innerHTML =
+      '<div class="empty-state">No users found.</div>';
+    return;
+  }
+
+  usersList.innerHTML =
+    users.map(function(user) {
+
+      const active =
+        user.active === true;
+
+      return `
+        <div class="user-item">
+
+          <div class="user-info">
+
+            <strong>
+              ${escapeHtml_(user.name)}
+            </strong>
+
+            <span>
+              ${escapeHtml_(user.email)}
+            </span>
+
+            <span>
+              ${escapeHtml_(user.role)}
+            </span>
+
+          </div>
+
+          <div>
+
+            <button
+              type="button"
+              class="btn btn-small btn-secondary"
+              onclick="editUser('${escapeJs_(user.userId)}')">
+
+              Edit
+
+            </button>
+
+            <button
+              type="button"
+              class="btn btn-small ${
+                active
+                  ? 'btn-danger'
+                  : 'btn-secondary'
+              }"
+              onclick="toggleUser('${escapeJs_(user.userId)}', ${active})">
+
+              ${active ? 'Deactivate' : 'Activate'}
+
+            </button>
+
+          </div>
+
+        </div>
+      `;
+
+    }).join('');
+}
+
+/* =====================================================
+   NAVIGATION
+===================================================== */
+
+function showView(viewId, button) {
+
+  const views =
+    document.querySelectorAll(
+      '.app-view'
+    );
+
+  views.forEach(
+    function(view) {
+
+      view.classList.add(
+        'hidden'
+      );
+
+    }
+  );
+
+
+  const target =
+    document.getElementById(
+      viewId
+    );
+
+  if (target) {
+
+    target.classList.remove(
+      'hidden'
+    );
+
+  }
+
+
+  document
+    .querySelectorAll(
+      '.nav-item'
+    )
+    .forEach(
+      function(item) {
+
+        item.classList.remove(
+          'active'
+        );
+
+      }
+    );
+
+
+  if (button) {
+
+    button.classList.add(
+      'active'
+    );
+
+  }
+
+
+  const titles = {
+
+    overviewView: [
+      'Overview',
+      'Hotel cash payment activity'
+    ],
+
+    paymentView: [
+      'New Cash Payment',
+      'Record cash paid to a vendor'
+    ],
+
+    registerView: [
+      'Payment Register',
+      'Search and review vendor payments'
+    ],
+
+    reportsView: [
+      'Reports',
+      'Payment summaries and exports'
+    ],
+
+    profileView: [
+      'My Profile',
+      'Your portal account'
+    ],
+
+    adminView: [
+      'Administration',
+      'Manage users and portal access'
+    ],
+
+    vendorsView: [
+      'Vendors',
+      'Manage your regular payment vendors'
+    ],
+
+  };
+
+
+  const title =
+    titles[viewId];
+
+
+  if (title) {
+
+    document
+      .getElementById('pageTitle')
+      .textContent =
+      title[0];
+
+    document
+      .getElementById('pageSubtitle')
+      .textContent =
+      title[1];
+
+  }
+  if (viewId === 'vendorsView') {
+  loadVendorManagement();
+}
+
+}
+
+document.addEventListener(
+  'DOMContentLoaded',
+  function() {
+
+    setTimeout(
+      function() {
+
+        if (
+          sessionToken &&
+          document
+            .getElementById('mainApplication')
+            .classList
+            .contains('hidden') === false
+        ) {
+
+          loadVouchers();
+
+        }
+
+      },
+      800
+    );
+
+  }
+);
+
+function changeMyPin() {
+
+  const currentPin =
+    document
+      .getElementById('currentPin')
+      .value
+      .trim();
+
+  const newPin =
+    document
+      .getElementById('newPin')
+      .value
+      .trim();
+
+
+  if (
+    !/^\d{6}$/.test(currentPin) ||
+    !/^\d{6}$/.test(newPin)
+  ) {
+
+    showAlert(
+      'PIN must contain exactly 6 digits.',
+      'error'
+    );
+
+    return;
+
+  }
+
+
+  google.script.run
+
+    .withSuccessHandler(
+      function() {
+
+        document
+          .getElementById('currentPin')
+          .value = '';
+
+        document
+          .getElementById('newPin')
+          .value = '';
+
+        showAlert(
+          'PIN changed successfully.',
+          'success'
+        );
+
+      }
+    )
+
+    .withFailureHandler(
+      function(err) {
+
+        showAlert(
+          getErrorMessage_(err),
+          'error'
+        );
+
+      }
+    )
+
+    .changeMyPin(
+      sessionToken,
+      currentPin,
+      newPin
+    );
+
+}
+
+function setUserDisplay_() {
+
+  if (!currentUser) {
+    return;
+  }
+
+  const name =
+    currentUser.name ||
+    currentUser.email ||
+    '';
+
+  const role =
+    currentUser.role ||
+    '';
+
+
+  const ids = [
+
+    'userName',
+    'sidebarUserName',
+    'profileName'
+
+  ];
+
+
+  ids.forEach(
+    function(id) {
+
+      const element =
+        document.getElementById(id);
+
+      if (element) {
+
+        element.textContent =
+          name;
+
+      }
+
+    }
+  );
+
+
+  const roleIds = [
+
+    'userRole',
+    'sidebarUserRole',
+    'profileRole'
+
+  ];
+
+
+  roleIds.forEach(
+    function(id) {
+
+      const element =
+        document.getElementById(id);
+
+      if (element) {
+
+        element.textContent =
+          role;
+
+      }
+
+    }
+  );
+
+
+  const email =
+    document.getElementById(
+      'profileEmail'
+    );
+
+  if (email) {
+
+    email.textContent =
+      currentUser.email || '';
+
+  }
+
+}
+
+function populateVendorFilter() {
+
+  const select =
+    document.getElementById(
+      'vendorFilter'
+    );
+
+  if (!select) {
+    return;
+  }
+
+
+  const names =
+    vouchers
+      .map(
+        function(voucher) {
+
+          return String(
+            voucher.vendor || ''
+          ).trim();
+
+        }
+      )
+      .filter(
+        function(name) {
+
+          return name !== '';
+
+        }
+      );
+
+
+  const unique =
+    [...new Set(
+      names.map(
+        function(name) {
+          return name;
+        }
+      )
+    )]
+    .sort(
+      function(a, b) {
+        return a.localeCompare(b);
+      }
+    );
+
+
+  select.innerHTML =
+    '<option value="">All Vendors</option>';
+
+
+  unique.forEach(
+    function(name) {
+
+      const option =
+        document.createElement(
+          'option'
+        );
+
+      option.value =
+        name;
+
+      option.textContent =
+        name;
+
+      select.appendChild(
+        option
+      );
+
+    }
+  );
+
+}
+
+
+function renderOverviewPayments() {
+
+  const body =
+    document.getElementById(
+      'overviewTableBody'
+    );
+
+  if (!body) {
+    return;
+  }
+
+
+  const recent =
+    vouchers.slice(0, 5);
+
+
+  if (!recent.length) {
+
+    body.innerHTML =
+      '<tr>' +
+      '<td colspan="6" class="empty-state">' +
+      'No payments yet.' +
+      '</td>' +
+      '</tr>';
+
+    return;
+
+  }
+
+
+  body.innerHTML =
+    recent
+      .map(
+        function(voucher) {
+
+          return `
+            <tr>
+
+              <td>
+                <strong>
+                  #${escapeHtml_(
+                    voucher.voucherNo
+                  )}
+                </strong>
+              </td>
+
+              <td>
+                ${escapeHtml_(
+                  voucher.voucherDate
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml_(
+                  voucher.vendor
+                )}
+              </td>
+
+              <td class="amount-cell">
+                ${formatCurrency_(
+                  voucher.amount
+                )}
+              </td>
+
+              <td>
+                ${escapeHtml_(
+                  voucher.createdBy
+                )}
+              </td>
+
+            </tr>
+          `;
+
+        }
+      )
+      .join('');
+
+}
+
+function editUser(userId) {
+
+  const user =
+    userCache.find(
+      function(item) {
+        return item.userId === userId;
+      }
+    );
+
+  if (!user) {
+    return;
+  }
+
+  document.getElementById('newUserName').value =
+    user.name || '';
+
+  document.getElementById('newUserEmail').value =
+    user.email || '';
+
+  document.getElementById('newUserRole').value =
+    user.role || 'staff';
+
+  document.getElementById('newUserPin').value = '';
+
+  document
+    .getElementById('newUserName')
+    .dataset.editingUserId =
+    user.userId;
+
+  showAlert(
+    'Edit the details and click Add User to save.',
+    'success'
+  );
+}
+
+
+function toggleUser(
+  userId,
+  currentlyActive
+) {
+
+  const user =
+    userCache.find(
+      function(item) {
+        return item.userId === userId;
+      }
+    );
+
+  if (!user) {
+    return;
+  }
+
+  google.script.run
+
+    .withSuccessHandler(
+      function() {
+
+        showAlert(
+          currentlyActive
+            ? 'User deactivated.'
+            : 'User activated.',
+          'success'
+        );
+
+        loadUsers();
+
+      }
+    )
+
+    .withFailureHandler(
+      function(error) {
+
+        showAlert(
+          getErrorMessage_(error),
+          'error'
+        );
+
+      }
+    )
+
+    .updateUser(
+      sessionToken,
+      userId,
+      {
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        active: !currentlyActive
+      }
+    );
+
+}
+
+
+function loadVendorManagement() {
+
+  if (!sessionToken) {
+    return;
+  }
+
+  google.script.run
+    .withSuccessHandler(function(data) {
+
+      vendorCache =
+        Array.isArray(data)
+          ? data
+          : [];
+
+      renderVendorList(
+        vendorCache
+      );
+
+    })
+    .withFailureHandler(function(error) {
+
+      showAlert(
+        getErrorMessage_(error),
+        'error'
+      );
+
+    })
+    .getVendors(
+      sessionToken
+    );
+}
+
+
+function renderVendorList(vendors) {
+
+  const container =
+    document.getElementById(
+      'vendorList'
+    );
+
+  if (!container) {
+    return;
+  }
+
+  if (!vendors.length) {
+
+    container.innerHTML =
+      '<div class="empty-state">' +
+      'No vendors added yet.' +
+      '</div>';
+
+    return;
+  }
+
+  container.innerHTML =
+    vendors.map(function(vendor) {
+
+      return `
+        <div class="user-item">
+
+          <div class="user-info">
+
+            <strong>
+              ${escapeHtml_(
+                vendor.vendorName
+              )}
+            </strong>
+
+            <span>
+              ${escapeHtml_(
+                vendor.companyName || ''
+              )}
+            </span>
+
+            <span>
+              ${escapeHtml_(
+                vendor.mobile || ''
+              )}
+            </span>
+
+          </div>
+
+        </div>
+      `;
+
+    }).join('');
+}
+
+
+function saveVendor() {
+
+  const vendorName =
+    document
+      .getElementById(
+        'vendorNameInput'
+      )
+      .value
+      .trim();
+
+  const companyName =
+    document
+      .getElementById(
+        'companyNameInput'
+      )
+      .value
+      .trim();
+
+  const mobile =
+    document
+      .getElementById(
+        'vendorMobileInput'
+      )
+      .value
+      .trim();
+
+
+  if (!vendorName) {
+
+    showAlert(
+      'Vendor name is required.',
+      'error'
+    );
+
+    return;
+  }
+
+
+  google.script.run
+    .withSuccessHandler(function() {
+
+      showAlert(
+        'Vendor added successfully.',
+        'success'
+      );
+
+      clearVendorForm();
+
+      loadVendorManagement();
+
+      loadVendors();
+
+    })
+    .withFailureHandler(function(error) {
+
+      showAlert(
+        getErrorMessage_(error),
+        'error'
+      );
+
+    })
+    .createVendor(
+      sessionToken,
+      {
+        vendorName:
+          vendorName,
+
+        companyName:
+          companyName,
+
+        mobile:
+          mobile
+      }
+    );
+}
+
+
+function clearVendorForm() {
+
+  document
+    .getElementById(
+      'vendorNameInput'
+    )
+    .value = '';
+
+  document
+    .getElementById(
+      'companyNameInput'
+    )
+    .value = '';
+
+  document
+    .getElementById(
+      'vendorMobileInput'
+    )
+    .value = '';
+
+}
+
+
+
+</script>
