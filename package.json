@@ -11,7 +11,7 @@
     "html:check": "htmlhint \"src/**/*.html\"",
     "test": "vitest run",
     "test:watch": "vitest",
-    "audit": "npm audit --audit-level=high"
+    "audit": "npm audit --audit-level=high --registry=https://registry.npmjs.org"
   },
   "devDependencies": {
     "eslint": "^10.9.1",
