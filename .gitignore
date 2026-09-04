@@ -13,6 +13,7 @@ node_modules/
 .clasp.json
 .clasp.*.json
 !.clasp.dev.json
+!.clasp.staging.json
 
 # Logs
 *.log
