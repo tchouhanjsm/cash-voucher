@@ -41,6 +41,4 @@ jobs:
           printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
 
       - name: Deploy to DEV
-        env:
-          CLASP_CONFIG: .clasp.dev.json
-        run: clasp push
+        run: clasp push --project .clasp.dev.json
