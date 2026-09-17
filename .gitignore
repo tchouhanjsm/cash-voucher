@@ -11,6 +11,8 @@ node_modules/
 
 # Google Apps Script
 .clasp.json
+.clasp.*.json
+!.clasp.dev.json
 
 # Logs
 *.log
