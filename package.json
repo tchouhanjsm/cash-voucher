@@ -21,7 +21,11 @@
     "status": "clasp status",
     "push": "clasp push",
     "watch": "clasp push --watch",
-    "open": "clasp open"
+    "open": "clasp open",
+    "fix": "npm run fix:format && npm run fix:lint && npm run check",
+    "fix:format": "prettier --write .",
+    "fix:lint": "eslint . --fix",
+    "ship": "node scripts/ship.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
