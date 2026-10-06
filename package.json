@@ -1,0 +1,29 @@
+{
+  "name": "cash-voucher-v2",
+  "private": true,
+  "version": "2.0.0",
+  "description": "Cash voucher web application with Google Apps Script backend.",
+  "engines": {
+    "node": ">=20 <23"
+  },
+  "scripts": {
+    "test": "node test/test-backend.js",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "validate:json": "node scripts/validate-json.js",
+    "check:syntax": "node scripts/check-js.js",
+    "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm test",
+    "status": "clasp status",
+    "push": "clasp push",
+    "watch": "clasp push --watch",
+    "open": "clasp open"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@google/clasp": "^3.1.4",
+    "eslint": "^9.39.1",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2"
+  }
+}

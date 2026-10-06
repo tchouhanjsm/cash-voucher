@@ -1,0 +1,12 @@
+node_modules/
+.clasprc.json
+.clasp.json
+.DS_Store
+*.zip
+.env
+.env.*
+!.env.example
+*.log
+coverage/
+.vscode/
+.idea/
