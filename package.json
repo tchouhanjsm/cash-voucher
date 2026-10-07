@@ -21,7 +21,8 @@
     "status": "clasp status",
     "push": "clasp push",
     "watch": "clasp push --watch",
-    "open": "clasp open"
+    "open": "clasp open",
+    "release": "node scripts/release.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
