@@ -55,6 +55,29 @@ module.exports = [
   },
 
   {
+    files: ['frontend/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+        console: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+
+  {
     files: ['backend/**/*.gs'],
     languageOptions: {
       ecmaVersion: 'latest',
