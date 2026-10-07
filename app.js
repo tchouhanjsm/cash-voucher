@@ -133,12 +133,15 @@
 
   /* ---------------- modal ---------------- */
   function closeModal() {
-    $('#modal').classList.add('hidden');
-    $('#modal').innerHTML = '';
+    const m = $('#modal');
+    m.classList.add('hidden');
+    m.setAttribute('aria-hidden', 'true');
+    m.innerHTML = '';
   }
   function dialog(title, body, onSubmit, ok = 'Save') {
     const m = $('#modal');
     m.classList.remove('hidden');
+    m.setAttribute('aria-hidden', 'false');
     m.innerHTML = `<form class="card mcard" autocomplete="off"><h2>${title}</h2>${body}<p class="error" id="mErr"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button class="btn primary">${ok}</button>` : ''}</div></form>`;
     const f = $('form', m);
     $('[data-x]', f).onclick = closeModal;
@@ -1534,13 +1537,21 @@
   function init() {
     S.url = (window.CV_CONFIG && CV_CONFIG.API_URL) || ls.get('cv.url') || '';
     S.token = ls.get('cv.token') || '';
+
     if (location.protocol.startsWith('http') && 'serviceWorker' in navigator)
       navigator.serviceWorker.register('sw.js').catch(() => {});
+
     showBanner();
+
     if (S.token && S.url) {
       $('#login').classList.add('hidden');
       start();
-    } else showLogin();
+    } else {
+      showLogin();
+    }
+
+    $('#boot').classList.add('hidden');
   }
+
   init();
 })();

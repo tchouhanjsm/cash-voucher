@@ -3,27 +3,53 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+
+    <meta
+      name="description"
+      content="Cash Payment Vouchers — secure voucher and payment management."
+    />
     <meta name="theme-color" content="#1f3a4d" />
+
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
+
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="apple-touch-icon" href="icons/icon-192.png" />
     <link rel="icon" href="icons/icon-192.png" />
+
     <title>Cash Payment Vouchers</title>
+
     <link rel="stylesheet" href="style.css" />
   </head>
+
   <body>
-    <section id="login" class="lock hidden">
+    <a class="skip-link" href="#main-content">Skip to content</a>
+
+    <div id="boot" class="boot" role="status" aria-live="polite">
+      <div class="boot-card">
+        <strong>Cash Vouchers</strong>
+        <span>Loading application…</span>
+      </div>
+    </div>
+
+    <section id="login" class="lock hidden" aria-labelledby="loginTitle">
       <form id="loginForm" class="card lock-card" autocomplete="on">
         <h1 id="loginTitle">Cash Vouchers</h1>
+
         <p class="muted">Sign in to continue</p>
+
         <input
           id="lUrl"
           type="url"
           placeholder="Server URL (https://script.google.com/…)"
+          autocomplete="url"
           class="hidden"
         />
+
+        <label class="sr-only" for="lEmail">Email</label>
         <input id="lEmail" type="email" placeholder="Email" autocomplete="username" required />
+
+        <label class="sr-only" for="lPin">PIN</label>
         <input
           id="lPin"
           type="password"
@@ -33,26 +59,35 @@
           autocomplete="current-password"
           required
         />
-        <button class="btn primary" id="lBtn">Sign in</button>
-        <p id="lErr" class="error"></p>
+
+        <button type="submit" class="btn primary" id="lBtn">Sign in</button>
+
+        <p id="lErr" class="error" role="alert" aria-live="assertive"></p>
       </form>
     </section>
 
     <div id="app" class="app hidden">
-      <aside class="side">
+      <aside class="side" aria-label="Application navigation">
         <div class="brand" id="brand">Cash Vouchers</div>
-        <nav id="nav"></nav>
+
+        <nav id="nav" aria-label="Primary"></nav>
+
         <div class="who" id="who"></div>
       </aside>
-      <main class="main">
-        <div id="banner" class="banner hidden"></div>
+
+      <main id="main-content" class="main" tabindex="-1">
+        <div id="banner" class="banner hidden" role="status" aria-live="polite"></div>
+
         <div id="view"></div>
       </main>
     </div>
 
-    <div id="modal" class="modal hidden"></div>
-    <div id="toast" class="toast hidden"></div>
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
     <div id="printArea"></div>
+
     <script src="config.js"></script>
     <script src="app.js"></script>
   </body>
