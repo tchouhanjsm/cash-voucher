@@ -1,3 +1,5 @@
+import { createApi } from './frontend/core/api.js';
+
 /* Cash Payment Vouchers — static PWA front end. Talks to the Apps Script API (backend/Code.gs). */
 (() => {
   'use strict';
@@ -74,44 +76,25 @@
   const rcats = () => S.settings.receiptCategories || ['Other'];
 
   /* ---------------- API ---------------- */
+  const apiTransport = createApi({
+    getUrl: () => S.url,
+    getToken: () => S.token,
+  });
+
   async function api(action, payload = {}) {
-    if (!S.url) throw Object.assign(new Error('Server URL is not set.'), { code: 'NOURL' });
-    const ctl = new AbortController(),
-      t = setTimeout(() => ctl.abort(), 70000);
-    let res;
     try {
-      res = await fetch(S.url, {
-        method: 'POST',
-        body: JSON.stringify({ action, token: S.token, ...payload }),
-        signal: ctl.signal,
-      });
-    } catch {
-      throw Object.assign(
-        new Error('No connection to the server. Check your internet and try again.'),
-        { code: 'NET' },
-      );
-    } finally {
-      clearTimeout(t);
-    }
-    let j;
-    try {
-      j = await res.json();
-    } catch {
-      throw Object.assign(
-        new Error('Unexpected server response. Check the Server URL / deployment.'),
-        { code: 'BAD' },
-      );
-    }
-    if (!j.ok) {
-      if (j.code === 'SESSION') {
+      return await apiTransport(action, payload);
+    } catch (e) {
+      if (e.code === 'SESSION') {
         signOut(true);
       }
-      if (j.code === 'PIN_CHANGE') {
+
+      if (e.code === 'PIN_CHANGE') {
         forcePinChange();
       }
-      throw Object.assign(new Error(j.error || 'Request failed.'), { code: j.code });
+
+      throw e;
     }
-    return j.data;
   }
   let toastT;
   function toast(msg, kind) {
