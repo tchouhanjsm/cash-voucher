@@ -1,22 +1,31 @@
-const { execFileSync } = require('node:child_process');
-const readline = require('node:readline');
+const { spawnSync } = require('child_process');
+const readline = require('readline');
 
 function run(command, args = []) {
-  console.log(`\n> ${command} ${args.join(' ')}`);
-  execFileSync(command, args, {
+  console.log(`\n$ ${command} ${args.join(' ')}`);
+
+  const result = spawnSync(command, args, {
     stdio: 'inherit',
+    shell: false,
   });
+
+  if (result.status !== 0) {
+    process.exit(result.status || 1);
+  }
 }
 
 function capture(command, args = []) {
-  return execFileSync(command, args, {
+  const result = spawnSync(command, args, {
     encoding: 'utf8',
-  }).trim();
-}
+    shell: false,
+  });
 
-function fail(message) {
-  console.error(`\nSHIP STOPPED: ${message}`);
-  process.exit(1);
+  if (result.status !== 0) {
+    process.stderr.write(result.stderr || '');
+    process.exit(result.status || 1);
+  }
+
+  return result.stdout.trim();
 }
 
 function ask(question) {
@@ -34,74 +43,53 @@ function ask(question) {
 }
 
 async function main() {
-  console.log('=== Cash Voucher Ship ===');
-
   const branch = capture('git', ['branch', '--show-current']);
 
   if (!branch) {
-    fail('You are not on a named Git branch.');
+    console.error('SHIP ERROR: Could not determine the current Git branch.');
+    process.exit(1);
   }
 
-  const beforeStatus = capture('git', ['status', '--porcelain']);
-
-  if (beforeStatus) {
-    console.error('\nUncommitted changes detected:\n');
-    console.error(beforeStatus);
-    fail(
-      'Working tree must be clean before npm run ship. Commit or stash unrelated changes first.',
-    );
+  if (branch === 'main') {
+    console.error('SHIP STOPPED: Run this workflow from a feature/fix branch, not main.');
+    console.error('Example: git switch -c feature/my-change');
+    process.exit(1);
   }
 
-  console.log(`\nBranch: ${branch}`);
+  console.log(`Shipping branch: ${branch}`);
 
-  console.log('\n1. Running automatic fixes...');
-  run('npm', ['run', 'fix']);
+  run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'fix']);
+  run(process.platform === 'win32' ? 'npm.cmd' : 'npm', ['run', 'check']);
 
-  const changedFiles = capture('git', ['status', '--short']);
+  const changes = capture('git', ['status', '--short']);
 
-  if (!changedFiles) {
-    console.log('\nNo changes were produced. Nothing to commit or push.');
-    return;
+  if (!changes) {
+    console.log('\nSHIP STOPPED: No changes to commit.');
+    process.exit(0);
   }
 
-  console.log('\n2. Changed files:');
-  console.log(changedFiles);
+  console.log('\nFiles ready to commit:');
+  console.log(changes);
 
-  console.log('\n3. Checking whitespace errors...');
-  run('git', ['diff', '--check']);
+  const message = await ask('\nCommit message: ');
 
-  console.log('\n4. Change summary:');
-  run('git', ['diff', '--stat']);
-
-  const commitMessage = await ask('\nEnter commit message (leave blank to cancel): ');
-
-  if (!commitMessage) {
-    console.log('\nShip cancelled. No commit or push was performed.');
-    return;
+  if (!message) {
+    console.error('SHIP STOPPED: Commit message cannot be empty.');
+    process.exit(1);
   }
 
-  console.log('\n5. Staging changes...');
   run('git', ['add', '-A']);
+  run('git', ['diff', '--cached', '--check']);
+  run('git', ['commit', '-m', message]);
+  run('git', ['push', '--set-upstream', 'origin', branch]);
 
-  console.log('\n6. Staged files:');
-  run('git', ['diff', '--cached', '--name-status']);
-
-  console.log('\n7. Creating commit...');
-  run('git', ['commit', '-m', commitMessage]);
-
-  console.log('\n8. Pushing current branch...');
-  run('git', ['push', '-u', 'origin', 'HEAD']);
-
-  console.log('\n=== SHIP COMPLETE ===');
-  console.log(`Branch: ${branch}`);
-  console.log(`Commit: ${commitMessage}`);
-
-  console.log('\nFinal Git status:');
-  run('git', ['status', '--short', '--branch']);
+  console.log('\nSHIP COMPLETE: branch pushed successfully.');
+  console.log(
+    'Next step: open a Pull Request into main and let GitHub CI be the final quality gate.',
+  );
 }
 
 main().catch((error) => {
-  console.error('\nSHIP FAILED');
-  console.error(error.message);
+  console.error(`\nSHIP ERROR: ${error.message}`);
   process.exit(1);
 });
