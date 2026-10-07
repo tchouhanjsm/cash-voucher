@@ -26,19 +26,61 @@ module.exports = [
   eslint.configs.recommended,
 
   {
-    files: ['app.js', 'config.js', 'sw.js'],
+    files: ['app.js', 'frontend/**/*.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        ...globals.browser,
+        CV_CONFIG: 'readonly',
+        XLSX: 'readonly',
+        console: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+
+  {
+    files: ['config.js'],
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'script',
       globals: {
         ...globals.browser,
-        ...globals.serviceworker,
-        CV_CONFIG: 'readonly',
-        XLSX: 'readonly',
         console: 'readonly',
-        setup: 'readonly',
-        doGet: 'readonly',
-        doPost: 'readonly',
+      },
+    },
+    rules: {
+      'no-console': 'off',
+      'no-empty': ['error', { allowEmptyCatch: true }],
+      'no-unused-vars': [
+        'error',
+        {
+          args: 'after-used',
+          argsIgnorePattern: '^_',
+        },
+      ],
+    },
+  },
+
+  {
+    files: ['sw.js'],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'script',
+      globals: {
+        ...globals.serviceworker,
+        console: 'readonly',
       },
     },
     rules: {
