@@ -1,4 +1,5 @@
 import { createApi } from './frontend/core/api.js';
+import { createAuth } from './frontend/features/auth.js';
 
 /* Cash Payment Vouchers — static PWA front end. Talks to the Apps Script API (backend/Code.gs). */
 (() => {
@@ -75,7 +76,8 @@ import { createApi } from './frontend/core/api.js';
   const bySeq = (a, b) => String(b.createdAt).localeCompare(String(a.createdAt)) || b.no - a.no;
   const rcats = () => S.settings.receiptCategories || ['Other'];
 
-  /* ---------------- API ---------------- */
+  let auth;
+
   const apiTransport = createApi({
     getUrl: () => S.url,
     getToken: () => S.token,
@@ -85,17 +87,14 @@ import { createApi } from './frontend/core/api.js';
     try {
       return await apiTransport(action, payload);
     } catch (e) {
-      if (e.code === 'SESSION') {
-        signOut(true);
-      }
-
-      if (e.code === 'PIN_CHANGE') {
-        forcePinChange();
+      if (auth) {
+        auth.handleApiError(e);
       }
 
       throw e;
     }
   }
+
   let toastT;
   function toast(msg, kind) {
     const el = $('#toast');
@@ -145,69 +144,6 @@ import { createApi } from './frontend/core/api.js';
     return f;
   }
 
-  /* ---------------- login ---------------- */
-  function showLogin(msg) {
-    $('#app').classList.add('hidden');
-    $('#login').classList.remove('hidden');
-    $('#lUrl').classList.toggle('hidden', !!(window.CV_CONFIG && CV_CONFIG.API_URL));
-    $('#lUrl').value = ls.get('cv.url') || '';
-    $('#lPin').value = '';
-    $('#lErr').textContent = msg || '';
-    $('#loginTitle').textContent = ls.get('cv.name') || 'Cash Vouchers';
-    const lastEmail = ls.get('cv.email');
-    if (lastEmail) $('#lEmail').value = lastEmail;
-  }
-  $('#loginForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const err = $('#lErr');
-    err.textContent = '';
-    S.url = (window.CV_CONFIG && CV_CONFIG.API_URL) || $('#lUrl').value.trim();
-    if (!/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1))/.test(S.url))
-      return (err.textContent = 'Enter the Server URL (starts with https://).');
-    S.token = '';
-    await busy($('#lBtn'), async () => {
-      try {
-        const d = await api('login', {
-          email: $('#lEmail').value.trim(),
-          pin: $('#lPin').value.trim(),
-        });
-        S.token = d.token;
-        ls.set('cv.token', d.token);
-        ls.set('cv.url', S.url);
-        ls.set('cv.email', $('#lEmail').value.trim());
-        await start(d.user.mustChangePin);
-      } catch (er) {
-        err.textContent = er.message;
-      }
-    });
-  });
-  function signOut(expired) {
-    if (S.token && !expired) api('logout').catch(() => {});
-    S.token = '';
-    S.me = null;
-    ls.del('cv.token');
-    closeModal();
-    showLogin(expired ? 'Session expired. Please sign in again.' : '');
-  }
-  function forcePinChange() {
-    dialog(
-      'Choose a new PIN',
-      `<p class="muted">Your PIN was set by an administrator. Please choose your own 6-digit PIN.</p>
-    <input id="op" type="password" inputmode="numeric" maxlength="6" placeholder="Current (temporary) PIN" required>
-    <input id="np" type="password" inputmode="numeric" maxlength="6" placeholder="New PIN" required style="margin-top:8px">`,
-      async (_f) => {
-        const d = await api('changePin', { oldPin: $('#op').value, newPin: $('#np').value });
-        S.token = d.token;
-        ls.set('cv.token', d.token);
-        closeModal();
-        toast('PIN changed.', 'ok');
-        await start();
-      },
-      'Change PIN',
-    );
-    $('[data-x]').onclick = () => signOut();
-  }
-
   /* ---------------- boot / nav ---------------- */
   const NAV = [
     ['dash', '📊', 'Dashboard', () => true],
@@ -245,7 +181,7 @@ import { createApi } from './frontend/core/api.js';
     $('#login').classList.add('hidden');
     if (mustChange) {
       $('#app').classList.add('hidden');
-      return forcePinChange();
+      return auth.forcePinChange();
     }
     let offline = false;
     try {
@@ -285,6 +221,16 @@ import { createApi } from './frontend/core/api.js';
       toast('Offline — you can still add payments; they upload when you are back online.');
     else flushOutbox();
   }
+
+  auth = createAuth({
+    S,
+    api,
+    busy,
+    dialog,
+    closeModal,
+    toast,
+    start,
+  });
   $('#nav').addEventListener('click', (e) => {
     const b = e.target.closest('[data-v]');
     if (b) go(b.dataset.v);
@@ -323,14 +269,6 @@ import { createApi } from './frontend/core/api.js';
     }
   });
   window.addEventListener('online', () => flushOutbox());
-  let idleT;
-  const arm = () => {
-    clearTimeout(idleT);
-    if (S.me) idleT = setTimeout(() => signOut(true), 30 * 60000);
-  };
-  ['click', 'keydown', 'touchstart'].forEach((ev) =>
-    document.addEventListener(ev, arm, { passive: true }),
-  );
   const head = (t, extra = '') => `<div class="head"><h1>${t}</h1><div>${extra}</div></div>`;
   const refreshBtn = '<button class="btn sm" data-act="refresh">↻ Refresh</button>';
 
@@ -1493,7 +1431,7 @@ import { createApi } from './frontend/core/api.js';
           deferredInstall = null;
         }
       },
-      signout: () => signOut(),
+      signout: () => auth.signOut(),
     };
     if (acts[a]) acts[a]();
   });
@@ -1530,7 +1468,7 @@ import { createApi } from './frontend/core/api.js';
       $('#login').classList.add('hidden');
       start();
     } else {
-      showLogin();
+      auth.showLogin();
     }
 
     $('#boot').classList.add('hidden');
