@@ -62,15 +62,12 @@ function newClientId_() {
 }
 
 function normalizeEntry_(entry, index) {
-  const clientId = String(entry?.clientId || '').trim();
-
-  if (!clientId) {
-    throw new Error('Offline payment is missing its client ID.');
-  }
+  const clientId = String(entry?.clientId || '').trim() || newClientId_();
+  const normalizedEntry = { ...entry, clientId };
 
   return {
     clientId,
-    entry,
+    entry: normalizedEntry,
     status: 'pending',
     attempts: 0,
     leaseOwner: '',
