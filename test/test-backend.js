@@ -21,8 +21,6 @@ ok(malformedJson.ok === false && malformedJson.code === 'VALIDATION', 'malformed
 const arrayRequest = g.raw('[]');
 ok(arrayRequest.code === 'VALIDATION', 'array request rejected');
 
-const unknownAction = g.call('doesNotExist');
-ok(unknownAction.code === 'NOT_FOUND', 'unknown action rejected');
 ok(!g.props.OWNER_PIN, 'owner PIN property removed after setup');
 // login
 ok(!g.call('login', { email: 'owner@test.com', pin: '000000' }).ok, 'wrong pin rejected');
@@ -31,6 +29,8 @@ ok(r.ok && r.data.user.role === 'owner', 'owner login');
 const as = (t, a, p) => g.call(a, { token: t, ...p });
 ok(as(r.data.token, 'bootstrap').code === 'PIN_CHANGE', 'owner must change setup PIN');
 let T = as(r.data.token, 'changePin', { oldPin: '483921', newPin: '579246' }).data.token;
+const unknownAction = as(T, 'doesNotExist');
+ok(unknownAction.code === 'NOT_FOUND', 'unknown action rejected');
 ok(
   g.call('bootstrap').error && g.call('bootstrap').code === 'SESSION',
   'no token => session error',
