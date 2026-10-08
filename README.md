@@ -94,3 +94,15 @@ clasp deploy -i AKfy… -d "message"              # release; keeps the same URL
 ```
 
 See PROJECT.md → "Avoiding GAS / clasp conflicts".
+
+## Browser E2E
+
+Install Playwright once, then run the complete browser workflow against the local mock backend:
+
+```bash
+python3 -m pip install playwright
+python3 -m playwright install chromium
+npm run test:e2e
+```
+
+The browser suite never uses the production API; the local runner injects its mock API endpoint explicitly.
