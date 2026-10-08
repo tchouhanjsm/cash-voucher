@@ -7,7 +7,7 @@ const g = create();
 g.props.OWNER_EMAIL = 'owner@test.com';
 g.props.OWNER_PIN = '483921';
 g.setup();
-let dropNextResponse = false;
+let droppedClientResponse = false;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -27,8 +27,15 @@ http
           const o = JSON.parse(b);
           j = JSON.stringify(g.call(o.action, o));
 
-          if (requestUrl.searchParams.get('drop') === 'once' && !dropNextResponse) {
-            dropNextResponse = true;
+          const dropVendor = requestUrl.searchParams.get('drop_vendor');
+          const shouldDrop =
+            o.action === 'createVouchers' &&
+            dropVendor &&
+            Array.isArray(o.entries) &&
+            o.entries.some((entry) => String(entry.vendor || '') === dropVendor);
+
+          if (shouldDrop && !droppedClientResponse) {
+            droppedClientResponse = true;
             req.socket.destroy();
             return;
           }
