@@ -97,7 +97,10 @@ function create() {
         },
       }),
       getFileById: (id) => ({
-        getBlob: () => ({ getContentType: () => files[id].mime, getBytes: () => files[id].bytes }),
+        getBlob: () => ({
+          getContentType: () => files[id].mime,
+          getBytes: () => files[id].bytes,
+        }),
         setTrashed: (value) => {
           if (value) delete files[id];
         },
@@ -150,8 +153,7 @@ function create() {
           .doPost({ postData: { contents: JSON.stringify({ action, ...payload }) } })
           .getContent(),
       ),
-    raw: (contents) =>
-      JSON.parse(ctx.__api.doPost({ postData: { contents } }).getContent()),
+    raw: (contents) => JSON.parse(ctx.__api.doPost({ postData: { contents } }).getContent()),
   };
 }
 module.exports = { create };
