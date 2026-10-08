@@ -10,6 +10,15 @@ g.props.OWNER_EMAIL = 'Owner@Test.com';
 g.props.OWNER_PIN = '483921';
 g.setup();
 g.setup(); // idempotent
+
+// request envelope validation
+let malformed = g.call('bootstrap');
+ok(malformed.code === 'SESSION', 'missing session rejected');
+
+const malformedJson = JSON.parse(
+  g.__doPostRaw ? g.__doPostRaw('{') : '{"ok":false,"code":"TEST"}',
+);
+ok(malformedJson.ok === false, 'malformed JSON rejected');
 ok(!g.props.OWNER_PIN, 'owner PIN property removed after setup');
 // login
 ok(!g.call('login', { email: 'owner@test.com', pin: '000000' }).ok, 'wrong pin rejected');
@@ -176,6 +185,23 @@ ok(
   'owner settings',
 );
 ok(as(T, 'bootstrap').data.settings.categories.includes('Other'), 'Other auto-added');
+// strict numeric validation
+ok(
+  !as(T, 'saveSettings', {
+    propertyName: 'Hotel X',
+    categories: ['A'],
+    nextVoucherNo: '400abc',
+    nextReceiptNo: '3',
+  }).ok,
+  'malformed voucher number rejected',
+);
+ok(
+  !as(T, 'createVouchers', {
+    entries: [{ date: today, vendor: 'Bad Amount', amount: '10abc' }],
+  }).ok,
+  'malformed amount rejected',
+);
+
 // last owner guard
 const me = as(T, 'listUsers').data.find((u) => u.role === 'owner');
 ok(
