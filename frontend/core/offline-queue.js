@@ -187,9 +187,7 @@ export async function enqueue(entries) {
 
 export async function list() {
   return tx_('readonly', (store) =>
-    request_(store.getAll()).then((records) =>
-      records.sort((a, b) => a.createdAt - b.createdAt),
-    ),
+    request_(store.getAll()).then((records) => records.sort((a, b) => a.createdAt - b.createdAt)),
   );
 }
 
