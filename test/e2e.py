@@ -156,7 +156,7 @@ with sync_playwright() as p:
 
     context.set_offline(False)
     page.wait_for_function(
-        "'Connection to server was lost.' in document.querySelector('#banner').innerText",
+        "document.querySelector('#banner').innerText.includes('Connection to server was lost.')",
         timeout=8000,
     )
     check(not page.locator('#banner').is_hidden(), 'queue remains after lost server response')
