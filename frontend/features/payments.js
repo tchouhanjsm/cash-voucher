@@ -1,20 +1,11 @@
 import { $, $$ } from '../core/dom.js';
+import { catOpts, vendorList } from '../core/form-options.js';
 import { ls } from '../core/storage.js';
-import { addDays, esc, money, parseAmt, today, uid } from '../core/utils.js';
+import { S, vno } from '../core/state.js';
+import { busy, fail, head, toast } from '../core/ui.js';
+import { addDays, compress, esc, money, parseAmt, today, uid } from '../core/utils.js';
 
-export function createPayments({
-  S,
-  api,
-  busy,
-  toast,
-  fail,
-  refresh,
-  head,
-  vendorList,
-  catOpts,
-  vno,
-  compress,
-}) {
+export function createPayments({ api, refresh }) {
   let NT = 'PAYMENT';
   let flushing = false;
 
