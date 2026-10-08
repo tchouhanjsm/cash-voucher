@@ -25,13 +25,6 @@ function openDb_() {
   });
 }
 
-function request_(request) {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('Offline storage request failed.'));
-  });
-}
-
 function tx_(mode, work) {
   return readyPromise.then(
     (db) =>
