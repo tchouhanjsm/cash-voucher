@@ -144,6 +144,8 @@ registerActions({
 
   flush: () => payments.flushOutbox(),
 
+  'export-pending': () => payments.exportOutbox(),
+
   discard: () => payments.discardOutbox(),
 
   tpl: () => bulk.downloadTemplate(),
