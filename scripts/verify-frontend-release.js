@@ -80,9 +80,9 @@ function manifestIcons() {
 const entrypoints = indexModuleEntrypoints();
 if (entrypoints.length !== 1 || entrypoints[0] !== 'frontend/main.js') {
   console.error(
-    `Expected exactly one active frontend entry point at frontend/main.js; found: ${entrypoints.join(
-      ', ',
-    ) || '(none)'}`,
+    `Expected exactly one active frontend entry point at frontend/main.js; found: ${
+      entrypoints.join(', ') || '(none)'
+    }`,
   );
   process.exit(1);
 }
@@ -101,21 +101,29 @@ const requiredShell = new Set([
 const missingModules = graph.missing;
 const missingShell = [...requiredShell].filter((file) => !shell.has(file));
 const missingShellFiles = [...shell].filter((file) => file !== '.' && !exists(file));
-const duplicates = serviceWorkerShell().filter(
-  (file, index, all) => all.indexOf(file) !== index,
-);
-const retiredAppReference = shell.has('app.js') || /<script\b[^>]*src=["']app\.js["']/i.test(read('index.html'));
+const duplicates = serviceWorkerShell().filter((file, index, all) => all.indexOf(file) !== index);
+const retiredAppReference =
+  shell.has('app.js') || /<script\b[^>]*src=["']app\.js["']/i.test(read('index.html'));
 
-if (missingModules.length || missingShell.length || missingShellFiles.length || duplicates.length || retiredAppReference) {
+if (
+  missingModules.length ||
+  missingShell.length ||
+  missingShellFiles.length ||
+  duplicates.length ||
+  retiredAppReference
+) {
   console.error('Frontend release integrity FAILED.');
 
   if (missingModules.length) console.error('Missing imported modules:', missingModules);
   if (missingShell.length) console.error('Module/shell assets missing from sw.js:', missingShell);
   if (missingShellFiles.length) console.error('sw.js references missing files:', missingShellFiles);
-  if (duplicates.length) console.error('Duplicate service-worker shell entries:', [...new Set(duplicates)]);
+  if (duplicates.length)
+    console.error('Duplicate service-worker shell entries:', [...new Set(duplicates)]);
   if (retiredAppReference) console.error('Retired app.js is still referenced by the active shell.');
 
   process.exit(1);
 }
 
-console.log(`Frontend release integrity OK — ${graph.files.length} local modules + shell assets verified.`);
+console.log(
+  `Frontend release integrity OK — ${graph.files.length} local modules + shell assets verified.`,
+);

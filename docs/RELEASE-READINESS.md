@@ -4,17 +4,17 @@ Status: **Pilot candidate after release-readiness gates pass**
 
 ## Current baseline
 
-| Gate | Status | Evidence |
-| --- | --- | --- |
-| Backend validation and persistence hardening | ✅ PASS | Waves 1–2 merged |
-| Idempotency / retry safety | ✅ PASS | PR #14 merged; 71 backend checks locally |
-| Frontend modular architecture | ✅ PASS | frontend/main.js is the active composition root |
-| CI quality gate | ✅ PASS | GitHub Actions runs npm run check on main and PRs |
-| PWA shell integrity | 🟡 IN PROGRESS | Service-worker shell is being aligned with the active module graph |
-| Browser E2E | 🟡 REQUIRED | test/run-e2e.sh + test/e2e.py exist; run against the current main branch |
-| Production backend deployment | ⬜ NOT RELEASED | Must deploy the reviewed Code.gs version intentionally |
-| Hotel operational pilot | ⬜ NOT STARTED | Requires real hotel users/device workflow verification |
-| Production cutover | ⬜ NOT STARTED | Requires pilot sign-off and backup/recovery confirmation |
+| Gate                                         | Status          | Evidence                                                                 |
+| -------------------------------------------- | --------------- | ------------------------------------------------------------------------ |
+| Backend validation and persistence hardening | ✅ PASS         | Waves 1–2 merged                                                         |
+| Idempotency / retry safety                   | ✅ PASS         | PR #14 merged; 71 backend checks locally                                 |
+| Frontend modular architecture                | ✅ PASS         | frontend/main.js is the active composition root                          |
+| CI quality gate                              | ✅ PASS         | GitHub Actions runs npm run check on main and PRs                        |
+| PWA shell integrity                          | 🟡 IN PROGRESS  | Service-worker shell is being aligned with the active module graph       |
+| Browser E2E                                  | 🟡 REQUIRED     | test/run-e2e.sh + test/e2e.py exist; run against the current main branch |
+| Production backend deployment                | ⬜ NOT RELEASED | Must deploy the reviewed Code.gs version intentionally                   |
+| Hotel operational pilot                      | ⬜ NOT STARTED  | Requires real hotel users/device workflow verification                   |
+| Production cutover                           | ⬜ NOT STARTED  | Requires pilot sign-off and backup/recovery confirmation                 |
 
 ## Release gates
 
