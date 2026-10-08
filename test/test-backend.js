@@ -15,9 +15,7 @@ g.setup(); // idempotent
 let malformed = g.call('bootstrap');
 ok(malformed.code === 'SESSION', 'missing session rejected');
 
-const malformedJson = JSON.parse(
-  g.__doPostRaw ? g.__doPostRaw('{') : '{"ok":false,"code":"TEST"}',
-);
+const malformedJson = g.raw('{');
 ok(malformedJson.ok === false, 'malformed JSON rejected');
 ok(!g.props.OWNER_PIN, 'owner PIN property removed after setup');
 // login
