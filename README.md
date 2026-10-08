@@ -78,7 +78,7 @@ Permissions are enforced **on the server** (Apps Script), not just hidden in the
 
 ## Tests (optional)
 
-`node test/test-backend.js` — runs Code.gs against a mock of Google services (55 checks).
+`node test/test-backend.js` — runs Code.gs against a mock of Google services (71 checks).
 `test/run-e2e.sh` — headless-browser run of the whole app (needs Python Playwright).
 
 ## Developing with clasp (local → Apps Script)
@@ -94,3 +94,15 @@ clasp deploy -i AKfy… -d "message"              # release; keeps the same URL
 ```
 
 See PROJECT.md → "Avoiding GAS / clasp conflicts".
+
+## Browser E2E
+
+Install Playwright once, then run the complete browser workflow against the local mock backend:
+
+```bash
+python3 -m pip install playwright
+python3 -m playwright install chromium
+npm run test:e2e
+```
+
+The browser suite never uses the production API; the local runner injects its mock API endpoint explicitly.
