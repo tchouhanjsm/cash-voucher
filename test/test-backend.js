@@ -206,7 +206,6 @@ ok(
   'malformed amount rejected',
 );
 
-
 // persistence/schema integrity
 g.sheets.Vouchers.rows[0][1] = 'BrokenVoucherNo';
 const schemaFailure = as(T, 'bootstrap');

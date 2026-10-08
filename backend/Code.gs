@@ -622,7 +622,10 @@ function saveReceipt_(r, no, i) {
   return DriveApp.getFolderById(props_().getProperty('RECEIPT_FOLDER_ID')).createFile(blob).getId();
 }
 function nextNumber_(configured, existing, isReceipt, fallback) {
-  const current = positiveInteger_(configured || String(fallback), isReceipt ? 'next receipt number' : 'next voucher number');
+  const current = positiveInteger_(
+    configured || String(fallback),
+    isReceipt ? 'next receipt number' : 'next voucher number',
+  );
   const max = existing
     .filter(function (v) {
       return (v.Type === 'RECEIPT') === isReceipt;
