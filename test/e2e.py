@@ -6,7 +6,7 @@ import urllib.parse
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get('E2E_BASE', 'http://127.0.0.1:8765').rstrip('/')
-API = BASE + '/api'
+API = BASE + '/api?drop_vendor=' + urllib.parse.quote('Offline Vendor')
 URL = BASE + '/?' + urllib.parse.urlencode({'api': API})
 errs = []
 ok = 0
@@ -141,11 +141,24 @@ with sync_playwright() as p:
     check('Saved on this device' in page.inner_text('#nres'), 'offline queued')
     check(not page.locator('#banner').is_hidden(), 'banner shown')
 
+    with page.expect_download() as download_info:
+        page.click('[data-act=export-pending]')
+    pending_download = download_info.value
+    check(
+        pending_download.suggested_filename.startswith('cash-vouchers-pending-')
+        and pending_download.suggested_filename.endswith('.json'),
+        'pending export downloads JSON',
+    )
+
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
 
     context.set_offline(False)
+    page.wait_for_timeout(1200)
+    check(not page.locator('#banner').is_hidden(), 'queue remains after lost server response')
+
+    page.click('[data-act=flush]')
     page.wait_for_function(
         "document.querySelector('#banner').classList.contains('hidden')",
         timeout=8000,
@@ -154,7 +167,7 @@ with sync_playwright() as p:
     page.wait_for_timeout(500)
     page.click('[data-act=refresh]')
     page.wait_for_timeout(500)
-    check(page.locator('#rbody tr').count() == 3, 'offline entry synced')
+    check(page.locator('#rbody tr').count() == 3, 'lost-response retry is idempotent')
 
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
