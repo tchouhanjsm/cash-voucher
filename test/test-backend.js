@@ -100,14 +100,25 @@ ok(
 ok(r.data.created[0].receipts.length === 1, 'receipt stored');
 const filesAfterFirstCreate = Object.keys(g.files).length;
 const dup = as(S, 'createVouchers', {
-  entries: [{ clientId: 'c1', date: today, vendor: 'x', amount: 1, receipts: [{ mime: 'image/png', data: tiny }] }],
+  entries: [
+    {
+      clientId: 'c1',
+      date: today,
+      vendor: 'x',
+      amount: 1,
+      receipts: [{ mime: 'image/png', data: tiny }],
+    },
+  ],
 });
 ok(dup.data.skipped === 1 && dup.data.created[0].no === 201, 'same-user retry is idempotent');
 ok(Object.keys(g.files).length === filesAfterFirstCreate, 'duplicate retry creates no receipt');
 const collision = as(A, 'createVouchers', {
   entries: [{ clientId: 'c1', date: today, vendor: 'private', amount: 999999 }],
 });
-ok(!collision.ok && collision.code === 'CONFLICT' && !collision.data, 'cross-user client ID collision is blocked');
+ok(
+  !collision.ok && collision.code === 'CONFLICT' && !collision.data,
+  'cross-user client ID collision is blocked',
+);
 ok(
   !as(S, 'createVouchers', {
     entries: [{ clientId: 'x'.repeat(61), date: today, vendor: 'x', amount: 1 }],
@@ -123,8 +134,20 @@ ok(
 const filesBeforeBatchDuplicate = Object.keys(g.files).length;
 const sameRequest = as(S, 'createVouchers', {
   entries: [
-    { clientId: 'c3', date: today, vendor: 'Batch', amount: 10, receipts: [{ mime: 'image/png', data: tiny }] },
-    { clientId: 'c3', date: today, vendor: 'Batch duplicate', amount: 20, receipts: [{ mime: 'image/png', data: tiny }] },
+    {
+      clientId: 'c3',
+      date: today,
+      vendor: 'Batch',
+      amount: 10,
+      receipts: [{ mime: 'image/png', data: tiny }],
+    },
+    {
+      clientId: 'c3',
+      date: today,
+      vendor: 'Batch duplicate',
+      amount: 20,
+      receipts: [{ mime: 'image/png', data: tiny }],
+    },
   ],
 });
 ok(
@@ -135,7 +158,10 @@ ok(
     sameRequest.data.created[1].no === 203,
   'same-request duplicate is deduplicated',
 );
-ok(Object.keys(g.files).length === filesBeforeBatchDuplicate + 1, 'same-request duplicate creates one receipt');
+ok(
+  Object.keys(g.files).length === filesBeforeBatchDuplicate + 1,
+  'same-request duplicate creates one receipt',
+);
 ok(
   !as(S, 'createVouchers', { entries: [{ date: '2999-01-01', vendor: 'x', amount: 1 }] }).ok,
   'future date rejected',

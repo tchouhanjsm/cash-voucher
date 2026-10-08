@@ -409,8 +409,13 @@ function clean_(v, max) {
 function clientId_(v) {
   const text = String(v === undefined || v === null ? '' : v).trim();
   if (!text) return '';
-  if (text.length > 60 || /[\u0000-\u001f\u007f]/.test(text))
-    throw err_('Invalid client ID.', 'VALIDATION');
+  if (text.length > 60) throw err_('Invalid client ID.', 'VALIDATION');
+
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (code <= 31 || code === 127) throw err_('Invalid client ID.', 'VALIDATION');
+  }
+
   return text;
 }
 function pinOk_(p) {
@@ -694,8 +699,7 @@ function createVouchers_(user, req) {
     clean.forEach(function (c) {
       if (c.clientId && byClient[c.clientId]) {
         const duplicate = byClient[c.clientId];
-        if (!canSee_(user, duplicate))
-          throw err_('This client ID is already in use.', 'CONFLICT');
+        if (!canSee_(user, duplicate)) throw err_('This client ID is already in use.', 'CONFLICT');
         skipped++;
         created.push(vOut_(duplicate));
         return;
