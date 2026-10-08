@@ -141,6 +141,10 @@ with sync_playwright() as p:
     check('Saved on this device' in page.inner_text('#nres'), 'offline queued')
     check(not page.locator('#banner').is_hidden(), 'banner shown')
 
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
+    check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
+
     context.set_offline(False)
     page.wait_for_function(
         "document.querySelector('#banner').classList.contains('hidden')",
