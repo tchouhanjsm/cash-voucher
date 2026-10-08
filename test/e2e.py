@@ -126,6 +126,7 @@ with sync_playwright() as p:
     check(page.locator('.rimg').count() >= 1, 'receipt viewable')
     page.click('[data-x]')
 
+    page.locator('[data-act=print]').first.evaluate("window.print = () => {}")
     page.locator('[data-act=print]').first.click()
     page.wait_for_timeout(200)
     print_text = page.locator('#printArea').inner_text()
