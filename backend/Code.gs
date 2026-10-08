@@ -12,6 +12,7 @@ const CFG = {
   MAX_NORMAL: 25,
   MAX_RECEIPTS: 3,
   MAX_B64: 2200000, // ~1.6 MB image
+  MAX_REQUEST: 8000000, // 8 MB JSON request envelope
   MAX_AMOUNT: 10000000,
   DEFAULT_RCATS: [
     'Room Revenue',
@@ -160,13 +161,24 @@ function doGet() {
 function doPost(e) {
   let out;
   try {
-    const req = JSON.parse((e && e.postData && e.postData.contents) || '{}');
+    const raw = String((e && e.postData && e.postData.contents) || '');
+    if (!raw) throw err_('Request body is required.', 'VALIDATION');
+    if (raw.length > CFG.MAX_REQUEST) throw err_('Request is too large.', 'PAYLOAD');
+
+    let req;
+    try {
+      req = JSON.parse(raw);
+    } catch {
+      throw err_('Invalid request format.', 'VALIDATION');
+    }
+
+    validateRequest_(req);
     out = { ok: true, data: route_(req) };
   } catch (err) {
     out = {
       ok: false,
       error: err.userMessage || 'Something went wrong. Please try again.',
-      code: err.code || '',
+      code: err.code || 'SERVER',
     };
     if (!err.userMessage) console.error((err && err.stack) || err);
   }
@@ -205,10 +217,24 @@ const WRITES = {
   saveSettings: 1,
 };
 
+function validateRequest_(req) {
+  if (!req || typeof req !== 'object' || Array.isArray(req)) {
+    throw err_('Invalid request.', 'VALIDATION');
+  }
+
+  const action = typeof req.action === 'string' ? req.action.trim() : '';
+  if (!action) throw err_('Action is required.', 'VALIDATION');
+  if (action.length > 50) throw err_('Invalid action.', 'VALIDATION');
+  if (action !== 'login' && action !== 'logout' && typeof req.token !== 'string') {
+    throw err_('Session token is required.', 'SESSION');
+  }
+}
+
 function route_(req) {
+  validateRequest_(req);
   if (req.action === 'login') return login_(req);
   const fn = ACTIONS[req.action];
-  if (!fn) throw err_('Unknown action.');
+  if (!fn) throw err_('Unknown action.', 'NOT_FOUND');
   const user = auth_(req.token);
   if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
     throw err_('Please change your PIN first.', 'PIN_CHANGE');
@@ -226,8 +252,36 @@ function route_(req) {
 function err_(msg, code) {
   const e = new Error(msg);
   e.userMessage = msg;
-  e.code = code || '';
+  e.code = code || 'SERVER';
   return e;
+}
+
+function finiteNumber_(value, label) {
+  const text = String(value === undefined || value === null ? '' : value).trim();
+  if (!/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) throw err_('Invalid ' + label + '.', 'VALIDATION');
+  const number = Number(text);
+  if (!isFinite(number)) throw err_('Invalid ' + label + '.', 'VALIDATION');
+  return number;
+}
+
+function positiveInteger_(value, label) {
+  const text = String(value === undefined || value === null ? '' : value).trim();
+  if (!/^\d+$/.test(text)) throw err_('Invalid ' + label + '.', 'VALIDATION');
+  const number = Number(text);
+  if (!isFinite(number) || !Number.isInteger(number) || number < 1) {
+    throw err_('Invalid ' + label + '.', 'VALIDATION');
+  }
+  return number;
+}
+
+function trashFiles_(ids) {
+  (ids || []).forEach(function (id) {
+    try {
+      if (id) DriveApp.getFileById(id).setTrashed(true);
+    } catch (e) {
+      console.error('Receipt cleanup failed for ' + id + ':', e);
+    }
+  });
 }
 function props_() {
   return PropertiesService.getScriptProperties();
@@ -580,9 +634,8 @@ function createVouchers_(user, req) {
     if (!validDate_(date)) throw err_(row + 'invalid date.');
     const vendor = clean_(en.vendor, 200);
     if (!vendor) throw err_(row + 'vendor is required.');
-    const amount = Math.round(Number(en.amount) * 100) / 100;
-    if (!isFinite(amount) || amount <= 0 || amount > CFG.MAX_AMOUNT)
-      throw err_(row + 'invalid amount.');
+    const amount = Math.round(finiteNumber_(en.amount, row + 'amount') * 100) / 100;
+    if (amount <= 0 || amount > CFG.MAX_AMOUNT) throw err_(row + 'invalid amount.');
     const rec = Array.isArray(en.receipts) ? en.receipts : [];
     if (rec.length > CFG.MAX_RECEIPTS) throw err_(row + 'too many receipts.');
     const type = en.type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT',
@@ -603,42 +656,50 @@ function createVouchers_(user, req) {
     created = [],
     skipped = 0,
     newObjs = [];
-  clean.forEach(function (c) {
-    if (c.clientId && byClient[c.clientId]) {
-      skipped++;
-      created.push(vOut_(byClient[c.clientId]));
-      return;
-    }
-    const no = c.type === 'RECEIPT' ? nextR++ : next++,
-      ids = [];
-    c.receipts.forEach(function (r, i) {
-      ids.push(saveReceipt_(r, no, i));
+  const createdFileIds = [];
+  try {
+    clean.forEach(function (c) {
+      if (c.clientId && byClient[c.clientId]) {
+        skipped++;
+        created.push(vOut_(byClient[c.clientId]));
+        return;
+      }
+      const no = c.type === 'RECEIPT' ? nextR++ : next++,
+        ids = [];
+      c.receipts.forEach(function (r, i) {
+        const id = saveReceipt_(r, no, i);
+        ids.push(id);
+        createdFileIds.push(id);
+      });
+      const o = {
+        VoucherID: Utilities.getUuid(),
+        VoucherNo: no,
+        Date: c.date,
+        Vendor: c.vendor,
+        Amount: c.amount,
+        Category: c.category,
+        Notes: c.notes,
+        Status: 'ACTIVE',
+        CreatedBy: user.email,
+        CreatedAt: nowIso_(),
+        UpdatedBy: '',
+        UpdatedAt: '',
+        Receipts: ids.join(','),
+        CancelReason: '',
+        ClientID: c.clientId,
+        Type: c.type,
+      };
+      if (c.clientId) byClient[c.clientId] = o;
+      newObjs.push(o);
+      created.push(vOut_(o));
     });
-    const o = {
-      VoucherID: Utilities.getUuid(),
-      VoucherNo: no,
-      Date: c.date,
-      Vendor: c.vendor,
-      Amount: c.amount,
-      Category: c.category,
-      Notes: c.notes,
-      Status: 'ACTIVE',
-      CreatedBy: user.email,
-      CreatedAt: nowIso_(),
-      UpdatedBy: '',
-      UpdatedAt: '',
-      Receipts: ids.join(','),
-      CancelReason: '',
-      ClientID: c.clientId,
-      Type: c.type,
-    };
-    if (c.clientId) byClient[c.clientId] = o;
-    newObjs.push(o);
-    created.push(vOut_(o));
-  });
-  appendRows_('Vouchers', newObjs);
-  setSetting_('nextVoucherNo', String(next));
-  setSetting_('nextReceiptNo', String(nextR));
+    appendRows_('Vouchers', newObjs);
+    setSetting_('nextVoucherNo', String(next));
+    setSetting_('nextReceiptNo', String(nextR));
+  } catch (e) {
+    trashFiles_(createdFileIds);
+    throw e;
+  }
   audit_(
     user,
     req.bulk ? 'BULK_CREATE' : 'CREATE',
@@ -716,12 +777,18 @@ function addReceipt_(user, req) {
   const have = o.Receipts ? String(o.Receipts).split(',').filter(Boolean) : [];
   if (have.length >= CFG.MAX_RECEIPTS)
     throw err_('Maximum ' + CFG.MAX_RECEIPTS + ' receipts per voucher.');
-  have.push(saveReceipt_(req.receipt, o.VoucherNo, have.length));
-  updateRow_('Vouchers', o._row, {
-    Receipts: have.join(','),
-    UpdatedBy: user.email,
-    UpdatedAt: nowIso_(),
-  });
+  const fileId = saveReceipt_(req.receipt, o.VoucherNo, have.length);
+  have.push(fileId);
+  try {
+    updateRow_('Vouchers', o._row, {
+      Receipts: have.join(','),
+      UpdatedBy: user.email,
+      UpdatedAt: nowIso_(),
+    });
+  } catch (e) {
+    trashFiles_([fileId]);
+    throw e;
+  }
   audit_(user, 'RECEIPT_ADD', '#' + o.VoucherNo, '');
   return vOut_(Object.assign({}, o, { Receipts: have.join(',') }));
 }
@@ -889,13 +956,14 @@ function saveSettings_(user, req) {
           return Math.max(m, Number(v.VoucherNo) || 0);
         }, 0);
     };
-  const next = parseInt(req.nextVoucherNo, 10),
-    nextR = parseInt(req.nextReceiptNo || '1', 10),
-    open = Number(req.openingBalance || 0);
+  const next = positiveInteger_(req.nextVoucherNo, 'next voucher number'),
+    nextR = positiveInteger_(req.nextReceiptNo || '1', 'next receipt number'),
+    open = finiteNumber_(req.openingBalance || 0, 'opening balance');
   if (!(next > mx(false)))
-    throw err_('Next voucher number must be greater than ' + mx(false) + '.');
-  if (!(nextR > mx(true))) throw err_('Next receipt number must be greater than ' + mx(true) + '.');
-  if (!isFinite(open) || Math.abs(open) > 1e9) throw err_('Invalid opening balance.');
+    throw err_('Next voucher number must be greater than ' + mx(false) + '.', 'VALIDATION');
+  if (!(nextR > mx(true)))
+    throw err_('Next receipt number must be greater than ' + mx(true) + '.', 'VALIDATION');
+  if (Math.abs(open) > 1e9) throw err_('Invalid opening balance.', 'VALIDATION');
   const rc = [];
   (req.receiptCategories || []).forEach(function (c) {
     c = clean_(c, 40);

@@ -10,6 +10,17 @@ g.props.OWNER_EMAIL = 'Owner@Test.com';
 g.props.OWNER_PIN = '483921';
 g.setup();
 g.setup(); // idempotent
+
+// request envelope validation
+let malformed = g.call('bootstrap');
+ok(malformed.code === 'SESSION', 'missing session rejected');
+
+const malformedJson = g.raw('{');
+ok(malformedJson.ok === false && malformedJson.code === 'VALIDATION', 'malformed JSON rejected');
+
+const arrayRequest = g.raw('[]');
+ok(arrayRequest.code === 'VALIDATION', 'array request rejected');
+
 ok(!g.props.OWNER_PIN, 'owner PIN property removed after setup');
 // login
 ok(!g.call('login', { email: 'owner@test.com', pin: '000000' }).ok, 'wrong pin rejected');
@@ -18,6 +29,8 @@ ok(r.ok && r.data.user.role === 'owner', 'owner login');
 const as = (t, a, p) => g.call(a, { token: t, ...p });
 ok(as(r.data.token, 'bootstrap').code === 'PIN_CHANGE', 'owner must change setup PIN');
 let T = as(r.data.token, 'changePin', { oldPin: '483921', newPin: '579246' }).data.token;
+const unknownAction = as(T, 'doesNotExist');
+ok(unknownAction.code === 'NOT_FOUND', 'unknown action rejected');
 ok(
   g.call('bootstrap').error && g.call('bootstrap').code === 'SESSION',
   'no token => session error',
@@ -176,6 +189,23 @@ ok(
   'owner settings',
 );
 ok(as(T, 'bootstrap').data.settings.categories.includes('Other'), 'Other auto-added');
+// strict numeric validation
+ok(
+  !as(T, 'saveSettings', {
+    propertyName: 'Hotel X',
+    categories: ['A'],
+    nextVoucherNo: '400abc',
+    nextReceiptNo: '3',
+  }).ok,
+  'malformed voucher number rejected',
+);
+ok(
+  !as(T, 'createVouchers', {
+    entries: [{ date: today, vendor: 'Bad Amount', amount: '10abc' }],
+  }).ok,
+  'malformed amount rejected',
+);
+
 // last owner guard
 const me = as(T, 'listUsers').data.find((u) => u.role === 'owner');
 ok(
