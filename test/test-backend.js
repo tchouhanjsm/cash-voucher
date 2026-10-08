@@ -10,6 +10,7 @@ g.props.OWNER_EMAIL = 'Owner@Test.com';
 g.props.OWNER_PIN = '483921';
 g.setup();
 g.setup(); // idempotent
+ok(!!g.props.BACKUP_FOLDER_ID, 'backup folder configured');
 
 // request envelope validation
 let malformed = g.call('bootstrap');
