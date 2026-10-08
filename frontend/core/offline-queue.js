@@ -76,6 +76,12 @@ function normalizeEntry_(entry, index) {
   };
 }
 
+async function requestPersistentStorage_() {
+  try {
+    if (navigator.storage?.persist) await navigator.storage.persist();
+  } catch {}
+}
+
 async function migrateLegacy_(db) {
   let raw;
 
@@ -104,6 +110,14 @@ async function migrateLegacy_(db) {
     return;
   }
 
+  const normalizedEntries = entries.map((entry, index) => normalizeEntry_(entry, index).entry);
+
+  try {
+    localStorage.setItem(LEGACY_KEY, JSON.stringify(normalizedEntries));
+  } catch {
+    throw new Error('Existing offline payments could not be prepared safely for migration. Do not clear browser storage.');
+  }
+
   await new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE, 'readwrite');
     const store = transaction.objectStore(STORE);
@@ -117,7 +131,7 @@ async function migrateLegacy_(db) {
     try {
       const seen = new Set();
 
-      entries.forEach((entry, index) => {
+      normalizedEntries.forEach((entry, index) => {
         const record = normalizeEntry_(entry, index);
 
         if (seen.has(record.clientId)) {
@@ -137,7 +151,11 @@ async function migrateLegacy_(db) {
 }
 
 dbPromise = openDb_();
-readyPromise = dbPromise.then(migrateLegacy_);
+readyPromise = dbPromise.then(async (db) => {
+  await migrateLegacy_(db);
+  await requestPersistentStorage_();
+  return db;
+});
 
 export async function ready() {
   return readyPromise;
