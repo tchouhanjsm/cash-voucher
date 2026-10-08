@@ -1,6 +1,6 @@
 # Cash Payment Vouchers v2 — Project Guide
 
-Status as of 6 Oct 2026. A free, installable web app for recording cash paid out and cash received, with receipts, roles, bulk upload and a dashboard. Website on **GitHub Pages**, data in **Google Sheets**, receipt photos in **Google Drive**, logic in a small **Google Apps Script (GAS) API**.
+Status as of 8 Oct 2026. A free, installable web app for recording cash paid out and cash received, with receipts, roles, bulk upload and a dashboard. Website on **GitHub Pages**, data in **Google Sheets**, receipt photos in **Google Drive**, logic in a small **Google Apps Script (GAS) API**.
 
 ---
 
@@ -218,6 +218,6 @@ Upgrading an older Sheet: paste the new `Code.gs`, run `setup` again (it adds an
 
 **Engineering hygiene**
 
-- Add a GitHub Action that runs `node test/test-backend.js` on every push.
+- Keep the GitHub Actions quality gate running `npm run check` on every push/PR.
 - Version the API (`apiVersion` in bootstrap) so old installed apps are told to refresh.
 - Split `app.js` into modules once it grows past a few thousand lines.

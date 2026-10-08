@@ -14,7 +14,7 @@
     "validate:json": "node scripts/validate-json.js",
     "check:syntax": "node scripts/check-js.js",
     "inspect:frontend": "node scripts/inspect-frontend.js",
-    "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm test",
+    "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm run check:frontend && npm test",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint . --fix",
     "fix": "npm run fix:format && npm run fix:lint && npm run check",
@@ -23,7 +23,8 @@
     "push": "clasp push",
     "watch": "clasp push --watch",
     "open": "clasp open",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "check:frontend": "node scripts/verify-frontend-release.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
