@@ -197,7 +197,7 @@ export function createPayments({ api, refresh }) {
       await showBanner();
       await refresh(true);
     } catch (error) {
-      await showBanner(error.code === 'NET' ? '' : error.message);
+      await showBanner(error.code === 'NET' ? 'Connection to server was lost.' : error.message);
     } finally {
       flushing = false;
     }
