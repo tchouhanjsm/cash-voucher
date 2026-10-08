@@ -168,7 +168,7 @@ function doPost(e) {
     let req;
     try {
       req = JSON.parse(raw);
-    } catch (parseError) {
+    } catch (_parseError) {
       throw err_('Invalid request format.', 'VALIDATION');
     }
 
