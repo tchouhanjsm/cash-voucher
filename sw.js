@@ -1,6 +1,32 @@
 // App-shell cache only. API calls (POST) are never cached.
-const C = 'cv2-v1',
-  F = ['./', 'index.html', 'style.css', 'app.js', 'config.js', 'manifest.webmanifest'];
+const C = 'cv2-v2',
+  F = [
+    './',
+    'index.html',
+    'style.css',
+    'config.js',
+    'manifest.webmanifest',
+    'frontend/main.js',
+    'frontend/core/actions.js',
+    'frontend/core/api.js',
+    'frontend/core/dom.js',
+    'frontend/core/form-options.js',
+    'frontend/core/state.js',
+    'frontend/core/storage.js',
+    'frontend/core/ui.js',
+    'frontend/core/utils.js',
+    'frontend/features/administration.js',
+    'frontend/features/auth.js',
+    'frontend/features/bulk.js',
+    'frontend/features/dashboard.js',
+    'frontend/features/navigation.js',
+    'frontend/features/payments.js',
+    'frontend/features/printing.js',
+    'frontend/features/register.js',
+    'icons/icon-192.png',
+    'icons/icon-512.png',
+    'icons/maskable-512.png',
+  ];
 self.addEventListener('install', (e) => {
   e.waitUntil(
     caches
