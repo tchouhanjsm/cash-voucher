@@ -155,7 +155,10 @@ with sync_playwright() as p:
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
 
     context.set_offline(False)
-    page.wait_for_timeout(1200)
+    page.wait_for_function(
+        "'Connection to server was lost.' in document.querySelector('#banner').innerText",
+        timeout=8000,
+    )
     check(not page.locator('#banner').is_hidden(), 'queue remains after lost server response')
 
     page.click('[data-act=flush]')
