@@ -17,7 +17,7 @@ const types = {
 };
 http
   .createServer((req, res) => {
-    if (req.method === 'POST' && req.url === '/api') {
+    if (req.method === 'POST' && req.url.split('?')[0] === '/api') {
       let b = '';
       req.on('data', (d) => (b += d));
       req.on('end', () => {
