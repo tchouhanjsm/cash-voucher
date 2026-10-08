@@ -16,7 +16,13 @@ let malformed = g.call('bootstrap');
 ok(malformed.code === 'SESSION', 'missing session rejected');
 
 const malformedJson = g.raw('{');
-ok(malformedJson.ok === false, 'malformed JSON rejected');
+ok(malformedJson.ok === false && malformedJson.code === 'VALIDATION', 'malformed JSON rejected');
+
+const arrayRequest = g.raw('[]');
+ok(arrayRequest.code === 'VALIDATION', 'array request rejected');
+
+const unknownAction = g.call('doesNotExist');
+ok(unknownAction.code === 'NOT_FOUND', 'unknown action rejected');
 ok(!g.props.OWNER_PIN, 'owner PIN property removed after setup');
 // login
 ok(!g.call('login', { email: 'owner@test.com', pin: '000000' }).ok, 'wrong pin rejected');
