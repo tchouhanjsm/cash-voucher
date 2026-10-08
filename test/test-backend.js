@@ -50,6 +50,10 @@ ok(
   'staff created',
 );
 ok(
+  as(T, 'saveUser', { name: 'Alex Staff', email: 'a@test.com', role: 'staff', pin: '112233' }).ok,
+  'second staff created',
+);
+ok(
   !as(T, 'saveUser', { name: 'X', email: 'M@test.com', role: 'staff', pin: '135791' }).ok,
   'dup email rejected',
 );
@@ -63,6 +67,8 @@ const M = cp.data.token;
 ok(as(M, 'bootstrap').ok, 'new token works');
 const S0 = g.call('login', { email: 's@test.com', pin: '135790' }).data.token;
 const S = as(S0, 'changePin', { oldPin: '135790', newPin: '975310' }).data.token;
+const A0 = g.call('login', { email: 'a@test.com', pin: '112233' }).data.token;
+const A = as(A0, 'changePin', { oldPin: '112233', newPin: '224466' }).data.token;
 // create vouchers
 const today = new Date().toISOString().slice(0, 10);
 const tiny = Buffer.from('fakejpeg').toString('base64');
@@ -92,10 +98,44 @@ ok(
   'amount rounded to 2dp',
 );
 ok(r.data.created[0].receipts.length === 1, 'receipt stored');
+const filesAfterFirstCreate = Object.keys(g.files).length;
 const dup = as(S, 'createVouchers', {
-  entries: [{ clientId: 'c1', date: today, vendor: 'x', amount: 1 }],
+  entries: [{ clientId: 'c1', date: today, vendor: 'x', amount: 1, receipts: [{ mime: 'image/png', data: tiny }] }],
 });
-ok(dup.data.skipped === 1 && dup.data.created[0].no === 201, 'idempotent by clientId');
+ok(dup.data.skipped === 1 && dup.data.created[0].no === 201, 'same-user retry is idempotent');
+ok(Object.keys(g.files).length === filesAfterFirstCreate, 'duplicate retry creates no receipt');
+const collision = as(A, 'createVouchers', {
+  entries: [{ clientId: 'c1', date: today, vendor: 'private', amount: 999999 }],
+});
+ok(!collision.ok && collision.code === 'CONFLICT' && !collision.data, 'cross-user client ID collision is blocked');
+ok(
+  !as(S, 'createVouchers', {
+    entries: [{ clientId: 'x'.repeat(61), date: today, vendor: 'x', amount: 1 }],
+  }).ok,
+  'oversized client ID rejected',
+);
+ok(
+  !as(S, 'createVouchers', {
+    entries: [{ clientId: 'bad\u0001id', date: today, vendor: 'x', amount: 1 }],
+  }).ok,
+  'control character in client ID rejected',
+);
+const filesBeforeBatchDuplicate = Object.keys(g.files).length;
+const sameRequest = as(S, 'createVouchers', {
+  entries: [
+    { clientId: 'c3', date: today, vendor: 'Batch', amount: 10, receipts: [{ mime: 'image/png', data: tiny }] },
+    { clientId: 'c3', date: today, vendor: 'Batch duplicate', amount: 20, receipts: [{ mime: 'image/png', data: tiny }] },
+  ],
+});
+ok(
+  sameRequest.ok &&
+    sameRequest.data.created.length === 2 &&
+    sameRequest.data.skipped === 1 &&
+    sameRequest.data.created[0].no === 203 &&
+    sameRequest.data.created[1].no === 203,
+  'same-request duplicate is deduplicated',
+);
+ok(Object.keys(g.files).length === filesBeforeBatchDuplicate + 1, 'same-request duplicate creates one receipt');
 ok(
   !as(S, 'createVouchers', { entries: [{ date: '2999-01-01', vendor: 'x', amount: 1 }] }).ok,
   'future date rejected',
@@ -124,7 +164,7 @@ ok(
   !as(S, 'listUsers').ok && !as(S, 'auditLog').ok && !as(M, 'listUsers').ok,
   'non-owners blocked from admin',
 );
-ok(as(S, 'bootstrap').data.vouchers.length === 2, 'staff sees own');
+ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff sees own');
 const mv = as(M, 'createVouchers', {
   bulk: true,
   entries: Array.from({ length: 50 }, (_, i) => ({
@@ -134,9 +174,9 @@ const mv = as(M, 'createVouchers', {
     category: 'Other',
   })),
 });
-ok(mv.ok && mv.data.created.length === 50 && mv.data.created[49].no === 252, 'manager bulk 50');
-ok(as(S, 'bootstrap').data.vouchers.length === 2, 'staff still sees only own after bulk');
-ok(as(M, 'bootstrap').data.vouchers.length === 52, 'manager sees all');
+ok(mv.ok && mv.data.created.length === 50 && mv.data.created[49].no === 253, 'manager bulk 50');
+ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff still sees only own after bulk');
+ok(as(M, 'bootstrap').data.vouchers.length === 53, 'manager sees all');
 ok(
   as(M, 'updateVoucher', { id: id1, fields: { amount: 175 } }).data.amount === 175,
   'manager edit',
