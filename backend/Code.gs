@@ -168,7 +168,7 @@ function doPost(e) {
     let req;
     try {
       req = JSON.parse(raw);
-    } catch (_parseError) {
+    } catch {
       throw err_('Invalid request format.', 'VALIDATION');
     }
 
@@ -672,23 +672,23 @@ function createVouchers_(user, req) {
         createdFileIds.push(id);
       });
       const o = {
-      VoucherID: Utilities.getUuid(),
-      VoucherNo: no,
-      Date: c.date,
-      Vendor: c.vendor,
-      Amount: c.amount,
-      Category: c.category,
-      Notes: c.notes,
-      Status: 'ACTIVE',
-      CreatedBy: user.email,
-      CreatedAt: nowIso_(),
-      UpdatedBy: '',
-      UpdatedAt: '',
-      Receipts: ids.join(','),
-      CancelReason: '',
-      ClientID: c.clientId,
-      Type: c.type,
-    };
+        VoucherID: Utilities.getUuid(),
+        VoucherNo: no,
+        Date: c.date,
+        Vendor: c.vendor,
+        Amount: c.amount,
+        Category: c.category,
+        Notes: c.notes,
+        Status: 'ACTIVE',
+        CreatedBy: user.email,
+        CreatedAt: nowIso_(),
+        UpdatedBy: '',
+        UpdatedAt: '',
+        Receipts: ids.join(','),
+        CancelReason: '',
+        ClientID: c.clientId,
+        Type: c.type,
+      };
       if (c.clientId) byClient[c.clientId] = o;
       newObjs.push(o);
       created.push(vOut_(o));
@@ -781,8 +781,8 @@ function addReceipt_(user, req) {
   have.push(fileId);
   try {
     updateRow_('Vouchers', o._row, {
-    Receipts: have.join(','),
-    UpdatedBy: user.email,
+      Receipts: have.join(','),
+      UpdatedBy: user.email,
       UpdatedAt: nowIso_(),
     });
   } catch (e) {
