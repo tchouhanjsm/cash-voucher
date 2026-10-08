@@ -206,6 +206,23 @@ ok(
   'malformed amount rejected',
 );
 
+// persistence/schema integrity
+g.sheets.Vouchers.rows[0][1] = 'BrokenVoucherNo';
+const schemaFailure = as(T, 'bootstrap');
+ok(schemaFailure.code === 'SCHEMA', 'invalid sheet schema rejected');
+g.sheets.Vouchers.rows[0][1] = 'VoucherNo';
+const maxVoucher = as(T, 'bootstrap').data.vouchers.reduce((m, v) => Math.max(m, v.no), 0);
+ok(maxVoucher > 0, 'voucher data readable after schema repair');
+const voucherCounter = g.sheets.Settings.rows.find((row) => row[0] === 'nextVoucherNo');
+voucherCounter[1] = '1';
+const reconciled = as(T, 'createVouchers', {
+  entries: [{ date: today, vendor: 'Counter Recovery', amount: 10 }],
+});
+ok(
+  reconciled.ok && reconciled.data.created[0].no > maxVoucher,
+  'voucher numbering reconciles with existing data',
+);
+
 // last owner guard
 const me = as(T, 'listUsers').data.find((u) => u.role === 'owner');
 ok(

@@ -291,7 +291,17 @@ function sheet_(n) {
   if (!id) throw err_('Server is not set up yet. Run setup() in the script editor.');
   const s = SpreadsheetApp.openById(id).getSheetByName(n);
   if (!s) throw err_('Sheet "' + n + '" is missing. Run setup() again.');
+  validateSheetSchema_(s, n);
   return s;
+}
+function validateSheetSchema_(s, name) {
+  const expected = CFG.H[name];
+  if (!expected) throw err_('Unknown sheet schema.', 'SERVER');
+  const actual = s.getRange(1, 1, 1, expected.length).getValues()[0];
+  for (let i = 0; i < expected.length; i++) {
+    if (actual[i] !== expected[i])
+      throw err_('Sheet "' + name + '" has an invalid header. Run setup() to repair it.', 'SCHEMA');
+  }
 }
 function ensureSheet_(name) {
   const ss = SpreadsheetApp.openById(props_().getProperty('SS_ID'));
@@ -611,6 +621,21 @@ function saveReceipt_(r, no, i) {
   );
   return DriveApp.getFolderById(props_().getProperty('RECEIPT_FOLDER_ID')).createFile(blob).getId();
 }
+function nextNumber_(configured, existing, isReceipt, fallback) {
+  const current = positiveInteger_(
+    configured || String(fallback),
+    isReceipt ? 'next receipt number' : 'next voucher number',
+  );
+  const max = existing
+    .filter(function (v) {
+      return (v.Type === 'RECEIPT') === isReceipt;
+    })
+    .reduce(function (m, v) {
+      return Math.max(m, positiveInteger_(v.VoucherNo, 'voucher number'));
+    }, 0);
+  return Math.max(current, max + 1);
+}
+
 function createVouchers_(user, req) {
   need_(user, 'create');
   const entries = req.entries;
@@ -651,8 +676,9 @@ function createVouchers_(user, req) {
       receipts: rec,
     });
   });
-  let next = Number(settings_().nextVoucherNo || 201),
-    nextR = Number(settings_().nextReceiptNo || 1),
+  const st = settings_();
+  let next = nextNumber_(st.nextVoucherNo, existing, false, 201),
+    nextR = nextNumber_(st.nextReceiptNo, existing, true, 1),
     created = [],
     skipped = 0,
     newObjs = [];
