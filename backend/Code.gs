@@ -167,11 +167,7 @@ function installBackupTrigger_() {
   triggers.forEach(function (trigger) {
     if (trigger.getHandlerFunction() === 'backupData_') ScriptApp.deleteTrigger(trigger);
   });
-  ScriptApp.newTrigger('backupData_')
-    .timeBased()
-    .atHour(CFG.BACKUP_HOUR)
-    .everyDays(1)
-    .create();
+  ScriptApp.newTrigger('backupData_').timeBased().atHour(CFG.BACKUP_HOUR).everyDays(1).create();
 }
 function csvCell_(value) {
   return '"' + String(value === undefined || value === null ? '' : value).replace(/"/g, '""') + '"';
@@ -187,7 +183,11 @@ function backupData_() {
       backupRootId = p.getProperty('BACKUP_FOLDER_ID');
     if (!ssId || !sourceReceiptFolderId || !backupRootId)
       throw new Error('Backup infrastructure is not configured. Run setup() first.');
-    const stamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmmss'),
+    const stamp = Utilities.formatDate(
+        new Date(),
+        Session.getScriptTimeZone(),
+        'yyyy-MM-dd_HHmmss',
+      ),
       root = DriveApp.getFolderById(backupRootId),
       sourceSheet = DriveApp.getFileById(ssId);
     snapshot = root.createFolder('backup-' + stamp);
@@ -202,7 +202,12 @@ function backupData_() {
       if (file.isTrashed()) continue;
       const copy = file.makeCopy(file.getName(), receiptBackup);
       copied.push(copy.getId());
-      manifest.push([file.getId(), copy.getId(), file.getName(), file.getDateCreated().toISOString()]);
+      manifest.push([
+        file.getId(),
+        copy.getId(),
+        file.getName(),
+        file.getDateCreated().toISOString(),
+      ]);
     }
     const rows = manifest.map(function (row) {
       return row.map(csvCell_).join(',');

@@ -9,6 +9,7 @@ The hotel must be able to recover financial records after an accidental edit, de
 The backend creates a daily Google Drive backup using an Apps Script installable time-driven trigger.
 
 Each backup contains:
+
 - a copy of the Google Sheet database
 - a copy of every receipt image currently in the receipt folder
 - a CSV manifest mapping original receipt file IDs to backup receipt file IDs
@@ -27,6 +28,7 @@ The script stores BACKUP_LAST_SUCCESS, BACKUP_LAST_ERROR and BACKUP_FOLDER_ID in
 ## Recovery procedure
 
 If the live Sheet is damaged:
+
 1. Stop using the application.
 2. Identify the last known-good backup folder.
 3. Open the backed-up spreadsheet copy.
@@ -45,6 +47,7 @@ The backend backup protects data that has successfully reached Google Sheets and
 It does not protect an unsynced offline entry stored only inside a user's browser.
 
 The offline queue therefore needs its own durability work before production cutover:
+
 - use IndexedDB instead of localStorage for queued financial entries
 - make queued entries durable across browser restarts
 - provide an explicit pending-sync state
@@ -56,6 +59,7 @@ The offline queue therefore needs its own durability work before production cuto
 ## Release rule
 
 No production cutover should occur until:
+
 - at least one real backup has completed successfully
 - a backup can be opened
 - receipt recovery has been demonstrated
