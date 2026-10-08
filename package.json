@@ -13,6 +13,7 @@
     "format:check": "prettier --check .",
     "validate:json": "node scripts/validate-json.js",
     "check:syntax": "node scripts/check-js.js",
+    "inspect:frontend": "node scripts/inspect-frontend.js",
     "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm test",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint . --fix",
