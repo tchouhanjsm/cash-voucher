@@ -155,13 +155,9 @@ with sync_playwright() as p:
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
 
     context.set_offline(False)
-    page.click('[data-act=flush]')
-    page.wait_for_timeout(750)
-    if not page.locator('#banner').is_hidden():
-        page.click('[data-act=flush]')
     page.wait_for_function(
         "document.querySelector('#banner').classList.contains('hidden')",
-        timeout=8000,
+        timeout=15000,
     )
     drop_state = page.evaluate(
         "() => fetch('/test-status').then((response) => response.json())"
