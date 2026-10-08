@@ -23,7 +23,8 @@
     "push": "clasp push",
     "watch": "clasp push --watch",
     "open": "clasp open",
-    "release": "node scripts/release.js"
+    "release": "node scripts/release.js",
+    "test:e2e": "bash test/run-e2e.sh"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
