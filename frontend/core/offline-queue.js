@@ -98,11 +98,15 @@ async function migrateLegacy_(db) {
   try {
     entries = JSON.parse(raw);
   } catch {
-    throw new Error('Existing offline payments could not be migrated. Do not clear browser storage.');
+    throw new Error(
+      'Existing offline payments could not be migrated. Do not clear browser storage.',
+    );
   }
 
   if (!Array.isArray(entries)) {
-    throw new Error('Existing offline payments have an invalid format. Do not clear browser storage.');
+    throw new Error(
+      'Existing offline payments have an invalid format. Do not clear browser storage.',
+    );
   }
 
   if (!entries.length) {
@@ -115,7 +119,9 @@ async function migrateLegacy_(db) {
   try {
     localStorage.setItem(LEGACY_KEY, JSON.stringify(normalizedEntries));
   } catch {
-    throw new Error('Existing offline payments could not be prepared safely for migration. Do not clear browser storage.');
+    throw new Error(
+      'Existing offline payments could not be prepared safely for migration. Do not clear browser storage.',
+    );
   }
 
   await new Promise((resolve, reject) => {
@@ -228,7 +234,11 @@ export async function ack(clientIds, owner) {
       const ids = new Set(clientIds);
 
       request.result.forEach((record) => {
-        if (ids.has(record.clientId) && record.status === 'sending' && record.leaseOwner === owner) {
+        if (
+          ids.has(record.clientId) &&
+          record.status === 'sending' &&
+          record.leaseOwner === owner
+        ) {
           store.delete(record.clientId);
         }
       });
@@ -246,7 +256,11 @@ export async function release(clientIds, owner) {
       const ids = new Set(clientIds);
 
       request.result.forEach((record) => {
-        if (ids.has(record.clientId) && record.status === 'sending' && record.leaseOwner === owner) {
+        if (
+          ids.has(record.clientId) &&
+          record.status === 'sending' &&
+          record.leaseOwner === owner
+        ) {
           record.status = 'pending';
           record.leaseOwner = '';
           record.leaseUntil = 0;
