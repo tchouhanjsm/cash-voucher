@@ -12,7 +12,9 @@ const CFG = {
   MAX_NORMAL: 25,
   MAX_RECEIPTS: 3,
   MAX_B64: 2200000, // ~1.6 MB image
-  MAX_REQUEST: 8000000, // 8 MB JSON request envelope
+  MAX_REQUEST: 8000000,
+  BACKUP_RETENTION_DAYS: 90,
+  BACKUP_HOUR: 2, // 8 MB JSON request envelope
   MAX_AMOUNT: 10000000,
   DEFAULT_RCATS: [
     'Room Revenue',
@@ -127,6 +129,7 @@ function setup() {
   Object.keys(CFG.H).forEach(ensureSheet_);
   if (!p.getProperty('RECEIPT_FOLDER_ID'))
     p.setProperty('RECEIPT_FOLDER_ID', DriveApp.createFolder('Cash Voucher Receipts').getId());
+  ensureBackupInfrastructure_();
   const set = settings_();
   if (set.propertyName === undefined) setSetting_('propertyName', 'My Property');
   if (set.propertyAddress === undefined) setSetting_('propertyAddress', '');
@@ -150,6 +153,84 @@ function setup() {
     audit_({ email: 'system' }, 'SETUP', '', 'Owner created: ' + email);
   }
   Logger.log('Setup complete. Now deploy as a Web app.');
+}
+
+/* ============ backup / recovery ============ */
+function ensureBackupInfrastructure_() {
+  const p = props_();
+  if (!p.getProperty('BACKUP_FOLDER_ID'))
+    p.setProperty('BACKUP_FOLDER_ID', DriveApp.createFolder('Cash Voucher Backups').getId());
+  if (typeof ScriptApp !== 'undefined') installBackupTrigger_();
+}
+function installBackupTrigger_() {
+  const triggers = ScriptApp.getProjectTriggers();
+  triggers.forEach(function (trigger) {
+    if (trigger.getHandlerFunction() === 'backupData_') ScriptApp.deleteTrigger(trigger);
+  });
+  ScriptApp.newTrigger('backupData_')
+    .timeBased()
+    .atHour(CFG.BACKUP_HOUR)
+    .everyDays(1)
+    .create();
+}
+function csvCell_(value) {
+  return '"' + String(value === undefined || value === null ? '' : value).replace(/"/g, '""') + '"';
+}
+function backupData_() {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(30000);
+  const p = props_();
+  let snapshot;
+  try {
+    const ssId = p.getProperty('SS_ID'),
+      sourceReceiptFolderId = p.getProperty('RECEIPT_FOLDER_ID'),
+      backupRootId = p.getProperty('BACKUP_FOLDER_ID');
+    if (!ssId || !sourceReceiptFolderId || !backupRootId)
+      throw new Error('Backup infrastructure is not configured. Run setup() first.');
+    const stamp = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd_HHmmss'),
+      root = DriveApp.getFolderById(backupRootId),
+      sourceSheet = DriveApp.getFileById(ssId);
+    snapshot = root.createFolder('backup-' + stamp);
+    sourceSheet.makeCopy('Cash Voucher Sheet - ' + stamp, snapshot);
+    const receiptBackup = snapshot.createFolder('receipts'),
+      sourceReceipts = DriveApp.getFolderById(sourceReceiptFolderId),
+      files = sourceReceipts.getFiles(),
+      manifest = [['originalFileId', 'backupFileId', 'name', 'createdAt']],
+      copied = [];
+    while (files.hasNext()) {
+      const file = files.next();
+      if (file.isTrashed()) continue;
+      const copy = file.makeCopy(file.getName(), receiptBackup);
+      copied.push(copy.getId());
+      manifest.push([file.getId(), copy.getId(), file.getName(), file.getDateCreated().toISOString()]);
+    }
+    const rows = manifest.map(function (row) {
+      return row.map(csvCell_).join(',');
+    });
+    snapshot.createFile('receipt-manifest.csv', rows.join('\\n'), MimeType.CSV);
+    pruneBackups_(root);
+    p.setProperty('BACKUP_LAST_SUCCESS', new Date().toISOString());
+    p.deleteProperty('BACKUP_LAST_ERROR');
+    Logger.log('Backup complete: ' + snapshot.getName() + ', receipts=' + copied.length);
+    return { folderId: snapshot.getId(), receiptCount: copied.length };
+  } catch (e) {
+    p.setProperty('BACKUP_LAST_ERROR', String(e && e.message ? e.message : e));
+    throw e;
+  } finally {
+    lock.releaseLock();
+  }
+}
+function pruneBackups_(root) {
+  const cutoff = Date.now() - CFG.BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000,
+    folders = [],
+    it = root.getFolders();
+  while (it.hasNext()) {
+    const folder = it.next();
+    if (/^backup-\\d{4}-\\d{2}-\\d{2}_\\d{6}$/.test(folder.getName())) folders.push(folder);
+  }
+  folders.forEach(function (folder) {
+    if (folder.getDateCreated().getTime() < cutoff) folder.setTrashed(true);
+  });
 }
 
 /* ============ web app entry ============ */
