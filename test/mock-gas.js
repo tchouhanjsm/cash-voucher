@@ -98,6 +98,9 @@ function create() {
       }),
       getFileById: (id) => ({
         getBlob: () => ({ getContentType: () => files[id].mime, getBytes: () => files[id].bytes }),
+        setTrashed: (value) => {
+          if (value) delete files[id];
+        },
       }),
     },
     Utilities: {
