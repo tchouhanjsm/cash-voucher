@@ -406,6 +406,13 @@ function clean_(v, max) {
   if (/^[=+\-@]/.test(s)) s = "'" + s; // block spreadsheet formula injection
   return s;
 }
+function clientId_(v) {
+  const text = String(v === undefined || v === null ? '' : v).trim();
+  if (!text) return '';
+  if (text.length > 60 || /[\u0000-\u001f\u007f]/.test(text))
+    throw err_('Invalid client ID.', 'VALIDATION');
+  return text;
+}
 function pinOk_(p) {
   return /^\d{6}$/.test(p) && !/^(\d)\1{5}$/.test(p) && p !== '123456' && p !== '654321';
 }
@@ -672,7 +679,7 @@ function createVouchers_(user, req) {
       amount: amount,
       category: cats.indexOf(en.category) >= 0 ? en.category : 'Other',
       notes: clean_(en.notes, 500),
-      clientId: clean_(en.clientId, 60),
+      clientId: clientId_(en.clientId),
       receipts: rec,
     });
   });
@@ -686,8 +693,11 @@ function createVouchers_(user, req) {
   try {
     clean.forEach(function (c) {
       if (c.clientId && byClient[c.clientId]) {
+        const duplicate = byClient[c.clientId];
+        if (!canSee_(user, duplicate))
+          throw err_('This client ID is already in use.', 'CONFLICT');
         skipped++;
-        created.push(vOut_(byClient[c.clientId]));
+        created.push(vOut_(duplicate));
         return;
       }
       const no = c.type === 'RECEIPT' ? nextR++ : next++,
