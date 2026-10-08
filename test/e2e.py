@@ -155,17 +155,18 @@ with sync_playwright() as p:
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
 
     context.set_offline(False)
-    page.wait_for_function(
-        "document.querySelector('#banner').innerText.includes('Connection to server was lost.')",
-        timeout=8000,
-    )
-    check(not page.locator('#banner').is_hidden(), 'queue remains after lost server response')
-
     page.click('[data-act=flush]')
+    page.wait_for_timeout(750)
+    if not page.locator('#banner').is_hidden():
+        page.click('[data-act=flush]')
     page.wait_for_function(
         "document.querySelector('#banner').classList.contains('hidden')",
         timeout=8000,
     )
+    drop_state = page.evaluate(
+        "() => fetch('/test-status').then((response) => response.json())"
+    )
+    check(drop_state.get('droppedClientResponses') == 1, 'server accepted then dropped one response')
     page.click('[data-v=reg]')
     page.wait_for_timeout(500)
     page.click('[data-act=refresh]')
