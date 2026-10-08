@@ -7,6 +7,7 @@ const g = create();
 g.props.OWNER_EMAIL = 'owner@test.com';
 g.props.OWNER_PIN = '483921';
 g.setup();
+let dropNextResponse = false;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -22,8 +23,15 @@ http
       req.on('end', () => {
         let j;
         try {
+          const requestUrl = new URL(req.url, 'http://127.0.0.1:8765');
           const o = JSON.parse(b);
           j = JSON.stringify(g.call(o.action, o));
+
+          if (requestUrl.searchParams.get('drop') === 'once' && !dropNextResponse) {
+            dropNextResponse = true;
+            req.socket.destroy();
+            return;
+          }
         } catch {
           j = '{"ok":false,"error":"bad"}';
         }
