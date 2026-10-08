@@ -214,7 +214,8 @@ ok(schemaFailure.code === 'SCHEMA', 'invalid sheet schema rejected');
 g.sheets.Vouchers.rows[0][1] = 'VoucherNo';
 const maxVoucher = as(T, 'bootstrap').data.vouchers.reduce((m, v) => Math.max(m, v.no), 0);
 ok(maxVoucher > 0, 'voucher data readable after schema repair');
-g.sheets.Settings.rows.push(['nextVoucherNo', '1']);
+const voucherCounter = g.sheets.Settings.rows.find((row) => row[0] === 'nextVoucherNo');
+voucherCounter[1] = '1';
 const reconciled = as(T, 'createVouchers', {
   entries: [{ date: today, vendor: 'Counter Recovery', amount: 10 }],
 });
