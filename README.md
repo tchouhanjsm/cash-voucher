@@ -78,7 +78,7 @@ Permissions are enforced **on the server** (Apps Script), not just hidden in the
 
 ## Tests (optional)
 
-`node test/test-backend.js` — runs Code.gs against a mock of Google services (72 checks).
+`node test/test-backend.js` — runs Code.gs against a mock of Google services (71 checks).
 `test/run-e2e.sh` — headless-browser run of the whole app (needs Python Playwright).
 
 ## Developing with clasp (local → Apps Script)

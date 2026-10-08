@@ -12,11 +12,12 @@ function openDb_() {
 
     request.onupgradeneeded = () => {
       const db = request.result;
-      if (db.objectStoreNames.contains(STORE)) db.deleteObjectStore(STORE);
 
-      const store = db.createObjectStore(STORE, { keyPath: 'clientId' });
-      store.createIndex('createdAt', 'createdAt', { unique: false });
-      store.createIndex('status', 'status', { unique: false });
+      if (!db.objectStoreNames.contains(STORE)) {
+        const store = db.createObjectStore(STORE, { keyPath: 'clientId' });
+        store.createIndex('createdAt', 'createdAt', { unique: false });
+        store.createIndex('status', 'status', { unique: false });
+      }
     };
 
     request.onsuccess = () => resolve(request.result);
@@ -205,29 +206,39 @@ export async function claim(limit, owner, leaseMs = 120000) {
 export async function ack(clientIds, owner) {
   if (!clientIds.length) return;
 
-  await tx_('readwrite', async (store) => {
-    for (const clientId of clientIds) {
-      const record = await request_(store.get(clientId));
-      if (record && record.status === 'sending' && record.leaseOwner === owner) {
-        store.delete(clientId);
-      }
-    }
+  await tx_('readwrite', (store) => {
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const ids = new Set(clientIds);
+
+      request.result.forEach((record) => {
+        if (ids.has(record.clientId) && record.status === 'sending' && record.leaseOwner === owner) {
+          store.delete(record.clientId);
+        }
+      });
+    };
   });
 }
 
 export async function release(clientIds, owner) {
   if (!clientIds.length) return;
 
-  await tx_('readwrite', async (store) => {
-    for (const clientId of clientIds) {
-      const record = await request_(store.get(clientId));
-      if (record && record.status === 'sending' && record.leaseOwner === owner) {
-        record.status = 'pending';
-        record.leaseOwner = '';
-        record.leaseUntil = 0;
-        store.put(record);
-      }
-    }
+  await tx_('readwrite', (store) => {
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const ids = new Set(clientIds);
+
+      request.result.forEach((record) => {
+        if (ids.has(record.clientId) && record.status === 'sending' && record.leaseOwner === owner) {
+          record.status = 'pending';
+          record.leaseOwner = '';
+          record.leaseUntil = 0;
+          store.put(record);
+        }
+      });
+    };
   });
 }
 
@@ -235,6 +246,13 @@ export async function clear() {
   await tx_('readwrite', (store) => store.clear());
 }
 
-export async function exportRecords() {
-  return list();
-}
+export const offlineQueue = {
+  ready,
+  enqueue,
+  list,
+  count,
+  claim,
+  ack,
+  release,
+  clear,
+};
