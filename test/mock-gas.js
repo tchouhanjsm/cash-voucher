@@ -150,6 +150,8 @@ function create() {
           .doPost({ postData: { contents: JSON.stringify({ action, ...payload }) } })
           .getContent(),
       ),
+    raw: (contents) =>
+      JSON.parse(ctx.__api.doPost({ postData: { contents } }).getContent()),
   };
 }
 module.exports = { create };
