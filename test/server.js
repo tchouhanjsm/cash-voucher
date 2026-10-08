@@ -7,7 +7,8 @@ const g = create();
 g.props.OWNER_EMAIL = 'owner@test.com';
 g.props.OWNER_PIN = '483921';
 g.setup();
-let droppedClientResponse = false;
+let droppedClientResponse = false,
+  droppedClientResponses = 0;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -17,6 +18,12 @@ const types = {
 };
 http
   .createServer((req, res) => {
+    if (req.method === 'GET' && req.url.split('?')[0] === '/test-status') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ droppedClientResponses }));
+      return;
+    }
+
     if (req.method === 'POST' && req.url.split('?')[0] === '/api') {
       let b = '';
       req.on('data', (d) => (b += d));
@@ -36,6 +43,7 @@ http
 
           if (shouldDrop && !droppedClientResponse) {
             droppedClientResponse = true;
+            droppedClientResponses += 1;
             req.socket.destroy();
             return;
           }
