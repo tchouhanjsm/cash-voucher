@@ -249,8 +249,8 @@ export function createRegister({ api, go }) {
       voucher.receipts.length < 3 &&
       (can('receiptAny') || voucher.createdBy === S.me.email);
     const form = dialog(
-      \`Receipts · #\${vno(voucher)}\`,
-      \`<div id="rimgs" aria-live="polite"></div>\${canAdd ? '<label class="btn" style="margin:0">📷 Add receipt<input type="file" id="radd" accept="image/*" hidden></label>' : ''}\`,
+      `Receipts · #${vno(voucher)}`,
+      `<div id="rimgs" aria-live="polite"></div>${canAdd ? '<label class="btn" style="margin:0">📷 Add receipt<input type="file" id="radd" accept="image/*" hidden></label>' : ''}`,
     );
 
     const loadReceipt = async (fileId, item) => {
@@ -269,7 +269,7 @@ export function createRegister({ api, go }) {
 
         // Receipt data comes from the API; allow only base64-encoded raster images.
         // Build the element with DOM APIs so the value never enters an HTML attribute.
-        if (!/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
+        if (!/^data:image\\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
           throw new Error('Receipt image response was not a supported image.');
         }
 
