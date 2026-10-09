@@ -7,7 +7,8 @@ function create() {
   const sheets = {},
     propsStore = {},
     cacheStore = {},
-    files = {};
+    files = {},
+    lockStats = { waits: 0, releases: 0 };
   const mkSheet = (name) => {
     const rows = [];
     const rng = (r, c, nr, nc) => ({
@@ -74,7 +75,16 @@ function create() {
         remove: (k) => delete cacheStore[k],
       }),
     },
-    LockService: { getScriptLock: () => ({ waitLock() {}, releaseLock() {} }) },
+    LockService: {
+      getScriptLock: () => ({
+        waitLock() {
+          lockStats.waits++;
+        },
+        releaseLock() {
+          lockStats.releases++;
+        },
+      }),
+    },
     ContentService: {
       MimeType: { JSON: 'json' },
       createTextOutput: (t) => ({
@@ -145,6 +155,7 @@ function create() {
     props: propsStore,
     files,
     cache: cacheStore,
+    lockStats,
     sheets,
     setup: () => ctx.__api.setup(),
     call: (action, payload = {}) =>
