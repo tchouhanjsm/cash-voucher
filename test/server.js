@@ -8,7 +8,8 @@ g.props.OWNER_EMAIL = 'owner@test.com';
 g.props.OWNER_PIN = '483921';
 g.setup();
 let droppedClientResponse = false,
-  droppedClientResponses = 0;
+  droppedClientResponses = 0,
+  countedCreateRequests = 0;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -20,7 +21,7 @@ http
   .createServer((req, res) => {
     if (req.method === 'GET' && req.url.split('?')[0] === '/test-status') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ droppedClientResponses }));
+      res.end(JSON.stringify({ droppedClientResponses, countedCreateRequests }));
       return;
     }
 
@@ -35,11 +36,21 @@ http
           j = JSON.stringify(g.call(o.action, o));
 
           const dropVendor = requestUrl.searchParams.get('drop_vendor');
+          const countVendor = requestUrl.searchParams.get('count_vendor');
           const shouldDrop =
             o.action === 'createVouchers' &&
             dropVendor &&
             Array.isArray(o.entries) &&
             o.entries.some((entry) => String(entry.vendor || '') === dropVendor);
+
+          if (
+            o.action === 'createVouchers' &&
+            countVendor &&
+            Array.isArray(o.entries) &&
+            o.entries.some((entry) => String(entry.vendor || '') === countVendor)
+          ) {
+            countedCreateRequests += 1;
+          }
 
           if (shouldDrop && !droppedClientResponse) {
             droppedClientResponse = true;

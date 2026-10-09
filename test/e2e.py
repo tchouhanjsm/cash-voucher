@@ -7,7 +7,7 @@ import urllib.parse
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get('E2E_BASE', 'http://127.0.0.1:8765').rstrip('/')
-API = BASE + '/api?drop_vendor=' + urllib.parse.quote('Offline Vendor')
+API = BASE + '/api?' + urllib.parse.urlencode({'drop_vendor': 'Offline Vendor', 'count_vendor': 'Multi-tab Vendor'})
 URL = BASE + '/?' + urllib.parse.urlencode({'api': API})
 errs = []
 ok = 0
@@ -224,6 +224,46 @@ with sync_playwright() as p:
         'restoring an already-synced export does not create a duplicate voucher',
     )
 
+    second_page = context.new_page()
+    second_page.goto(URL)
+    second_page.wait_for_selector('#nav button')
+    check(second_page.locator('#nav button').count() == 4, 'second tab shares the staff session')
+
+    context.set_offline(True)
+    page.click('[data-v=new]')
+    page.fill('.rv', 'Multi-tab Vendor')
+    page.fill('.ra', '525')
+    page.click('#nsave')
+    page.wait_for_selector('.ok-panel')
+    check('Saved on this device' in page.inner_text('#nres'), 'multi-tab payment queued locally')
+    second_page.wait_for_function(
+        "document.querySelector('#banner').innerText.includes('1 payment waiting to upload')",
+        timeout=8000,
+    )
+
+    context.set_offline(False)
+    page.wait_for_function(
+        "document.querySelector('#banner').classList.contains('hidden')",
+        timeout=15000,
+    )
+    second_page.wait_for_function(
+        "document.querySelector('#banner').classList.contains('hidden')",
+        timeout=15000,
+    )
+    multi_tab_state = page.evaluate(
+        "() => fetch('/test-status').then((response) => response.json())"
+    )
+    check(
+        multi_tab_state.get('countedCreateRequests') == 1,
+        'two tabs submit one create request for the same queued transaction',
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_timeout(400)
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(400)
+    check(page.locator('#rbody tr').count() == 4, 'multi-tab sync creates exactly one voucher')
+    second_page.close()
+
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
     page.wait_for_selector('#loginForm')
@@ -308,6 +348,89 @@ with sync_playwright() as p:
         and 'INTERNET_DISCONNECTED' not in message
     ]
     check(not real_errors, 'no console errors: ' + '; '.join(real_errors[:3]))
+
+    legacy_entry = {
+        'date': datetime.date.today().isoformat(),
+        'type': 'PAYMENT',
+        'vendor': 'Legacy Migration Vendor',
+        'amount': 321,
+        'category': 'Other',
+        'notes': 'phase 21 migration',
+        'receipts': [],
+    }
+    legacy_json = json.dumps([legacy_entry], separators=(',', ':'))
+    migration_context = browser.new_context()
+    migration_context.add_init_script(
+        script=(
+            "if (!localStorage.getItem('cv.phase21.migrationSeeded')) {"
+            "localStorage.setItem('cv.outbox', "
+            + json.dumps(legacy_json)
+            + ");"
+            "localStorage.setItem('cv.phase21.migrationSeeded', '1');"
+            "}"
+        )
+    )
+    migration_page_a = migration_context.new_page()
+    migration_page_b = migration_context.new_page()
+    migration_page_a.goto(URL, wait_until='commit')
+    migration_page_b.goto(URL, wait_until='domcontentloaded')
+    migration_page_a.wait_for_function(
+        "localStorage.getItem('cv.outbox') === null",
+        timeout=10000,
+    )
+    migration_page_b.wait_for_function(
+        "localStorage.getItem('cv.outbox') === null",
+        timeout=10000,
+    )
+    migrated_records = migration_page_a.evaluate(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const records = await new Promise((resolve, reject) => {
+            const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          db.close();
+          return records.map((record) => ({
+            clientId: record.clientId,
+            status: record.status,
+            vendor: record.entry.vendor,
+            entryClientId: record.entry.clientId,
+          }));
+        }"""
+    )
+    check(len(migrated_records) == 1, 'legacy queue migrated once across two tabs')
+    check(
+        migrated_records[0]['status'] == 'pending'
+        and migrated_records[0]['vendor'] == 'Legacy Migration Vendor'
+        and migrated_records[0]['clientId'] == migrated_records[0]['entryClientId']
+        and migrated_records[0]['clientId'].startswith('legacy-'),
+        'legacy migration persists deterministic client ID and transaction',
+    )
+    migration_context.close()
+
+    corrupt_context = browser.new_context()
+    corrupt_context.add_init_script(
+        "localStorage.setItem('cv.outbox', '{malformed legacy queue');"
+    )
+    corrupt_page = corrupt_context.new_page()
+    corrupt_page.goto(URL, wait_until='domcontentloaded')
+    corrupt_page.wait_for_function(
+        "document.querySelector('#banner').textContent.includes('Existing offline payments could not be migrated.')",
+        timeout=8000,
+    )
+    legacy_after_failure = corrupt_page.evaluate(
+        "() => localStorage.getItem('cv.outbox')"
+    )
+    check(
+        legacy_after_failure == '{malformed legacy queue',
+        'failed legacy migration preserves original localStorage data',
+    )
+    corrupt_context.close()
 
     browser.close()
 

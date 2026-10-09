@@ -8,6 +8,24 @@ import { addDays, compress, esc, money, parseAmt, today, uid } from '../core/uti
 export function createPayments({ api, refresh }) {
   let NT = 'PAYMENT';
   let flushing = false;
+  const outboxChannel =
+    typeof BroadcastChannel === 'function' ? new BroadcastChannel('cash-voucher-outbox') : null;
+
+  function announceOutboxChange(type = 'changed') {
+    try {
+      outboxChannel?.postMessage({ type });
+    } catch {}
+  }
+
+  outboxChannel?.addEventListener('message', (event) => {
+    if (!['changed', 'queued'].includes(event.data?.type)) return;
+
+    showBanner();
+
+    if (event.data.type === 'queued' && navigator.onLine) {
+      flushOutbox();
+    }
+  });
 
   function rowHtml() {
     return `<div class="erow"><div class="top"><input class="rv" list="vlist" placeholder="${NT === 'RECEIPT' ? 'Received from' : 'Paid to (vendor)'}" autocapitalize="words"><input class="ra" inputmode="decimal" placeholder="Amount ₹"><button type="button" class="x" data-act="delrow" title="Remove">✕</button></div>
@@ -138,6 +156,7 @@ export function createPayments({ api, refresh }) {
     try {
       await offlineQueue.enqueue(entries);
       await showBanner();
+      announceOutboxChange('queued');
       return true;
     } catch (error) {
       toast(
@@ -163,7 +182,10 @@ export function createPayments({ api, refresh }) {
       b.innerHTML = `<span>📤 ${n} payment${n > 1 ? 's' : ''} waiting to upload${errMsg ? ' — ' + esc(errMsg) : ''}</span><button class="btn sm" data-act="flush">Retry now</button><button class="btn sm" data-act="export-pending">Export</button><button class="btn sm" data-act="import-pending">Import</button><button class="btn sm danger" data-act="discard">Discard</button>`;
     } catch (error) {
       b.className = 'banner err';
-      b.innerHTML = `<span>⚠️ Offline storage is unavailable. Reconnect before saving unsynced payments.</span>`;
+      const message =
+        error.message ||
+        'Offline storage is unavailable. Reconnect before saving unsynced payments.';
+      b.innerHTML = `<span>⚠️ ${esc(message)}</span>`;
       console.error('Offline queue unavailable:', error);
     }
   }
@@ -188,8 +210,10 @@ export function createPayments({ api, refresh }) {
       try {
         await api('createVouchers', { entries });
         await offlineQueue.ack(clientIds, owner);
+        announceOutboxChange('changed');
       } catch (error) {
         await offlineQueue.release(clientIds, owner);
+        announceOutboxChange('changed');
         throw error;
       }
 
@@ -373,6 +397,7 @@ export function createPayments({ api, refresh }) {
 
           const result = await offlineQueue.restore(payload.records);
           await showBanner();
+          announceOutboxChange('changed');
           toast(
             result.added +
               ' payment(s) restored; ' +
@@ -398,7 +423,13 @@ export function createPayments({ api, refresh }) {
     }
 
     if (confirm('Discard all payments waiting to upload? This cannot be undone.')) {
-      offlineQueue.clear().then(showBanner).catch(fail);
+      offlineQueue
+        .clear()
+        .then(() => {
+          announceOutboxChange('changed');
+          return showBanner();
+        })
+        .catch(fail);
     }
   }
 
