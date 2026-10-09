@@ -71,7 +71,7 @@ Permissions are enforced **on the server** (Apps Script), not just hidden in the
 ## Good to know
 
 - Receipts are compressed on the phone (~200–400 KB), stored in Drive folder _Cash Voucher Receipts_, and shown only to people allowed to see that voucher.
-- Offline: payments entered without internet are saved in IndexedDB on the device and uploaded automatically when back online. Pending payments can be exported as a JSON recovery file. A browser/device storage copy is not a replacement for the Google Sheet + Drive backup.
+- Offline: payments entered without internet are saved in IndexedDB on the device and uploaded automatically when back online. Pending payments can be exported to JSON and restored from that file on the New Payment screen. Recovery imports keep their original IDs; matching queued records are skipped and ID collisions with different details are rejected. Keep recovery files private. A browser/device storage copy is not a replacement for the Google Sheet + Drive backup.
 - Apps Script is ~1–3 s per request and has daily quotas — plenty for one property.
 - Don't edit the Vouchers/Users sheets by hand unless you know the columns; use the app. Reading/filtering/charting the Sheet yourself is always fine.
 - Back up: File → Make a copy of the Sheet occasionally (and the Receipts folder in Drive).
