@@ -115,7 +115,7 @@ registerActions({
 
   clrrec: ({ element }) => payments.clearReceipt(element),
 
-  newagain: () => payments.open('PAYMENT'),
+  newagain: () => payments.newAgain(),
 
   ntype: ({ key }) => payments.open(key),
 
