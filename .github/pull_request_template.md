@@ -23,7 +23,6 @@ State whether API/schema/dependencies/production data/configuration/deployment a
 
 List remaining risks, assumptions, external dependencies and any live Google-account, backup-restore, accessibility or device checks that were not performed. Use "None identified in scope" only when a real review supports it.
 
-
 ## Handoff documentation requirement
 
 Before requesting review, create or update `docs/pr-handoffs/PR-<number>.md` and update `docs/HANDOFF.md`. Record the purpose, actual changes, changed contracts/files, exact verification status, key decisions, residual risks and release boundary. Keep exact-head CI/E2E links in this PR description. Do not merge or deploy on behalf of the owner.

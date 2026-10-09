@@ -213,11 +213,7 @@ function backupDataWithServices_(services) {
       backupRootId = p.getProperty('BACKUP_FOLDER_ID');
     if (!ssId || !sourceReceiptFolderId || !backupRootId)
       throw new Error('Backup infrastructure is not configured. Run setup() first.');
-    const stamp = services.formatDate(
-        services.now(),
-        services.getTimeZone(),
-        'yyyy-MM-dd_HHmmss',
-      ),
+    const stamp = services.formatDate(services.now(), services.getTimeZone(), 'yyyy-MM-dd_HHmmss'),
       root = services.getFolderById(backupRootId),
       sourceSheet = services.getFileById(ssId);
     snapshot = root.createFolder('backup-' + stamp);
@@ -251,8 +247,7 @@ function backupDataWithServices_(services) {
       recordBackupFailure_(p, snapshot, snapshotComplete, e, services.logger);
     } else {
       services.logger(
-        'Could not record backup failure metadata: ' +
-          String(e && e.message ? e.message : e),
+        'Could not record backup failure metadata: ' + String(e && e.message ? e.message : e),
       );
     }
     throw e;
@@ -261,16 +256,17 @@ function backupDataWithServices_(services) {
   }
 }
 function recordBackupFailure_(p, snapshot, snapshotComplete, error, logger) {
-  const log = logger || function (message) {
-    Logger.log(message);
-  };
+  const log =
+    logger ||
+    function (message) {
+      Logger.log(message);
+    };
   let failureMessage = String(error && error.message ? error.message : error);
   if (snapshot && !snapshotComplete) {
     const cleanupMessage = trashIncompleteBackup_(snapshot);
     if (cleanupMessage) {
       const cleanupNote = cleanupMessage.slice(0, 120);
-      failureMessage =
-        failureMessage.slice(0, Math.max(0, 300 - cleanupNote.length)) + cleanupNote;
+      failureMessage = failureMessage.slice(0, Math.max(0, 300 - cleanupNote.length)) + cleanupNote;
     }
   }
   try {
@@ -290,7 +286,7 @@ function trashIncompleteBackup_(snapshot) {
   } catch (cleanupError) {
     return (
       '; incomplete snapshot cleanup failed: ' +
-        String(cleanupError && cleanupError.message ? cleanupError.message : cleanupError)
+      String(cleanupError && cleanupError.message ? cleanupError.message : cleanupError)
     );
   }
 }
