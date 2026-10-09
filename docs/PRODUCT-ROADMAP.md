@@ -77,6 +77,7 @@ The design must settle these points before schema/API changes:
 Candidate calculation for review: expected physical cash = approved opening cash + active cash receipts in the selected close period − active cash payments in that period, with every included voucher drillable from the report. A non-zero variance should require an explanation. Any post-close correction should be a separate, attributable event rather than a silent rewrite. These are proposed rules, not implemented behavior or owner-approved policy.
 
 Exit gate: owner reviews the business-rule/decision table and accepts the MVP boundary before an implementation PR. No schema migration, approval/sign-off workflow, day lock, Apps Script deployment or production-data change is included in the design PR.
+
 ### P2 — Approval and exception controls
 
 - Manager approval for high-value entries, cancellations or post-close corrections; configurable limit and reason.

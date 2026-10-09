@@ -21,16 +21,16 @@ No new role, approval hierarchy or mandatory second-person sign-off is assumed i
 
 ## 3. Current versus desired behavior
 
-| Area | Current source behavior | Desired close workflow |
-|---|---|---|
-| Opening cash | One global setting; no date-specific history | A clearly defined opening amount for each close period |
-| Book movement | Active PAYMENT and RECEIPT vouchers; cancelled vouchers remain visible but excluded from active totals | Explicit, repeatable inclusion rules for the selected period |
-| Physical count | No count entry or denomination breakdown | Enter and review actual cash counted; denomination rows only if the owner confirms they help operations |
-| Variance | No close-specific variance calculation or explanation | Show expected, counted and variance as labeled amounts and words; require a reason for non-zero variance if accepted as policy |
-| Close state | No close record or sealed period | A durable record with period, totals, actor and timestamps; edit/correction semantics must be agreed first |
-| Corrections | Active vouchers may be edited; cancellations have a reason and audit event | Avoid silent post-close changes; define an attributable correction/reconciliation trail |
-| Offline queue | Pending vouchers remain on the originating browser until synced | Surface pending/offline records and prevent a misleading claim that the central ledger is reconciled |
-| Report | Voucher CSV/print exists; no close report | Printable/exportable close report with links or identifiers for included vouchers |
+| Area           | Current source behavior                                                                                | Desired close workflow                                                                                                         |
+| -------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------ |
+| Opening cash   | One global setting; no date-specific history                                                           | A clearly defined opening amount for each close period                                                                         |
+| Book movement  | Active PAYMENT and RECEIPT vouchers; cancelled vouchers remain visible but excluded from active totals | Explicit, repeatable inclusion rules for the selected period                                                                   |
+| Physical count | No count entry or denomination breakdown                                                               | Enter and review actual cash counted; denomination rows only if the owner confirms they help operations                        |
+| Variance       | No close-specific variance calculation or explanation                                                  | Show expected, counted and variance as labeled amounts and words; require a reason for non-zero variance if accepted as policy |
+| Close state    | No close record or sealed period                                                                       | A durable record with period, totals, actor and timestamps; edit/correction semantics must be agreed first                     |
+| Corrections    | Active vouchers may be edited; cancellations have a reason and audit event                             | Avoid silent post-close changes; define an attributable correction/reconciliation trail                                        |
+| Offline queue  | Pending vouchers remain on the originating browser until synced                                        | Surface pending/offline records and prevent a misleading claim that the central ledger is reconciled                           |
+| Report         | Voucher CSV/print exists; no close report                                                              | Printable/exportable close report with links or identifiers for included vouchers                                              |
 
 ## 4. Candidate calculation (not yet an approved accounting policy)
 
@@ -51,20 +51,20 @@ For a defined close period:
 
 These questions are deliberately unresolved; the implementation PR must not guess.
 
-| Decision | Why it changes correctness | Options to discuss |
-|---|---|---|
-| Business period | Determines voucher inclusion and date boundary | Property-local calendar day (source timezone is Asia/Kolkata) or named shift with explicit start/end |
-| Opening cash | Current setting is global, not dated | Carry forward the prior accepted close's counted amount; explicit manual opening; or another owner-defined process |
-| Missing prior close | A carry-forward chain can have gaps | Block close until resolved, or allow an explicitly explained opening amount |
-| Drawer/shift count | Determines uniqueness and aggregation | One drawer/property/day; named drawers; or shifts. Start with one only if it matches actual operations |
-| Cash movement categories | Category labels alone do not prove cash movement semantics | Define treatment of Bank Withdrawal, Owner Deposit, Bank Deposit/transfer, Refund Received and any non-cash items |
-| Backdated vouchers | A late voucher can change a previously reported period | Disallow after close, reopen/restate with an audit trail, or record a separate adjustment |
-| Edits and cancellations | Current active vouchers can be edited; cancellation is allowed with a reason | Block mutations affecting a closed period; or preserve the close and post a separate correction/reconciliation event |
-| Offline entries | Unsynced entries are not in the central Sheet | Require queue empty and server refresh before close; or allow close marked provisional with an explicit exception |
-| Physical count input | Denominations may slow a small-property close | Single total; optional denomination rows; or required denominations |
-| Close authority | Current roles are owner/manager/staff; no new approval workflow is specified | Define which existing role may create a close. Second-person confirmation remains optional until explicitly agreed |
-| Variance policy | A reason helps explain discrepancies but may not resolve them | Require reason for non-zero variance; decide whether zero variance can close without extra fields |
-| Corrections after close | Audit log is best-effort, not tamper-evident | Define correction event fields, permissions, report restatement and whether any reopening exists |
+| Decision                 | Why it changes correctness                                                   | Options to discuss                                                                                                   |
+| ------------------------ | ---------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Business period          | Determines voucher inclusion and date boundary                               | Property-local calendar day (source timezone is Asia/Kolkata) or named shift with explicit start/end                 |
+| Opening cash             | Current setting is global, not dated                                         | Carry forward the prior accepted close's counted amount; explicit manual opening; or another owner-defined process   |
+| Missing prior close      | A carry-forward chain can have gaps                                          | Block close until resolved, or allow an explicitly explained opening amount                                          |
+| Drawer/shift count       | Determines uniqueness and aggregation                                        | One drawer/property/day; named drawers; or shifts. Start with one only if it matches actual operations               |
+| Cash movement categories | Category labels alone do not prove cash movement semantics                   | Define treatment of Bank Withdrawal, Owner Deposit, Bank Deposit/transfer, Refund Received and any non-cash items    |
+| Backdated vouchers       | A late voucher can change a previously reported period                       | Disallow after close, reopen/restate with an audit trail, or record a separate adjustment                            |
+| Edits and cancellations  | Current active vouchers can be edited; cancellation is allowed with a reason | Block mutations affecting a closed period; or preserve the close and post a separate correction/reconciliation event |
+| Offline entries          | Unsynced entries are not in the central Sheet                                | Require queue empty and server refresh before close; or allow close marked provisional with an explicit exception    |
+| Physical count input     | Denominations may slow a small-property close                                | Single total; optional denomination rows; or required denominations                                                  |
+| Close authority          | Current roles are owner/manager/staff; no new approval workflow is specified | Define which existing role may create a close. Second-person confirmation remains optional until explicitly agreed   |
+| Variance policy          | A reason helps explain discrepancies but may not resolve them                | Require reason for non-zero variance; decide whether zero variance can close without extra fields                    |
+| Corrections after close  | Audit log is best-effort, not tamper-evident                                 | Define correction event fields, permissions, report restatement and whether any reopening exists                     |
 
 ## 6. Proposed narrow MVP boundary
 
