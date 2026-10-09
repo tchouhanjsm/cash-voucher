@@ -43,10 +43,12 @@ Keep all action eligibility tied to existing client capability checks and rely o
 **PR:** https://github.com/tchouhanjsm/cash-voucher/pull/57.
 Base is the verified `main` SHA above.
 
+**Current gate:** CI failed on the candidate head at Prettier for `docs/HANDOFF.md` and `frontend/features/register.js`. Browser E2E is still running; no same-head green pair exists yet. Local commands were not run because the execution environment could not connect to GitHub.
+
 Next steps:
-1. Re-run CI and Browser E2E against the current exact PR head.
-2. Verify register totals, filtering, CSV data, sorting, and action permissions remain unchanged.
-3. Review exact-head workflow results and leave merge to the owner.
+1. Run the repository's pinned Prettier on the two files and commit only the actual formatter output.
+2. Require CI and Browser E2E to pass on one identical final SHA.
+3. Inspect final diff and residual risks; leave merge to the owner.
 
 ## Operational gates still open
 
