@@ -16,19 +16,56 @@ The active application uses HTML template strings for several views. The review 
 
 ## Reviewed rendering surfaces
 
-| File / surface | Current handling observed | Remaining review note |
-| --- | --- | --- |
-| `frontend/core/ui.js` dialog shell | Dialog title and submit label use `esc()`; error content is assigned with `textContent`. The `body` parameter is intentionally inserted as HTML. | Treat `body` as trusted, caller-authored markup only. Each caller must escape any interpolated persisted or user-controlled value. Consider replacing this raw-template contract in a separately tested refactor. |
-| `frontend/features/administration.js` | Vendor fields, user identity fields, settings text fields, IDs in attributes, and audit-log values use `esc()`; role options are sourced from an in-code allowlist. | Verify future fields at the insertion site, including both element text and attribute values. |
-| `frontend/core/form-options.js` | Category labels and vendor names in datalist value attributes use `esc()`. | Cached browser data is treated as untrusted input and escaped when rendered. |
-| `frontend/features/bulk.js` | Vendor/category/error text is escaped; parsed dates are validated; formatted date output now receives HTML escaping. Progress/results are built from numeric counters and fixed text. | Excel/CSV parsing remains a separate input-validation boundary. Keep imported text escaped even when server validation exists. |
-| `frontend/features/dashboard.js` | Vendor/category bars escape visible labels and title attributes; custom date input values and formatted date-range text are escaped; chart labels are escaped. | Numeric geometry is derived from amounts and counts, not raw strings. |
-| `frontend/features/navigation.js` | Display name and role are escaped. Navigation labels, icons, keys and action markup are static constants. | Keep navigation metadata in the source-controlled allowlist. |
-| `frontend/features/payments.js` | Receipt previews use DOM APIs and assign generated `blob:` URLs through `img.src`; receipt API data URLs are checked against supported base64 raster-image patterns before assignment. Vendor/ID/error values interpolated in templates use `esc()`. | Revoke generated preview object URLs on removal/clear/save in a future resource-lifecycle improvement. The preview conversion is not a substitute for backend receipt authorization. |
-| `frontend/features/register.js` | Vendor/category/note/user/cancellation text and voucher IDs in attributes use `esc()`; formatted voucher date output now receives HTML escaping. | Voucher formatting still relies on the backend for semantic date validation; output escaping protects the HTML context if persisted data is malformed. |
-| `frontend/features/printing.js` | Property and voucher text, category, notes and amount-in-words are escaped; formatted voucher date output now receives HTML escaping. | Print correctness and physical print fidelity have not been validated on a real printer/device in this audit. |
-| `frontend/core/ui.js` and feature renderers generally | Remaining `innerHTML` assignments render app-owned template structure. | A source-based review is required for every new interpolation; this audit has not replaced all template rendering with DOM APIs. |
+### Shared modal shell — `frontend/core/ui.js`
 
+- The dialog title and submit label use `esc()`; error content is assigned with `textContent`.
+- The `body` parameter is intentionally inserted as HTML. Treat it as trusted, caller-authored markup only. Each caller must escape every interpolated persisted or user-controlled value.
+- Consider replacing this raw-template contract in a separately tested refactor.
+
+### Administration and audit — `frontend/features/administration.js`
+
+- Vendor fields, user identity fields, settings text fields, IDs in attributes, and audit-log values use `esc()`; role options are sourced from an in-code allowlist.
+- Verify future fields at the insertion site, including both element text and attribute values.
+
+### Shared form options — `frontend/core/form-options.js`
+
+- Category labels and vendor names in datalist value attributes use `esc()`.
+- Cached browser data is treated as untrusted input and escaped when rendered.
+
+### Bulk import — `frontend/features/bulk.js`
+
+- Vendor/category/error text is escaped; parsed dates are validated; formatted date output now receives HTML escaping.
+- Progress/results are built from numeric counters and fixed text. Excel/CSV parsing remains a separate input-validation boundary; imported text must remain escaped even when server validation exists.
+
+### Dashboard — `frontend/features/dashboard.js`
+
+- Vendor/category bars escape visible labels and title attributes; custom date input values and formatted date-range text are escaped; chart labels are escaped.
+- Numeric chart geometry is derived from amounts and counts, not raw strings.
+
+### Navigation — `frontend/features/navigation.js`
+
+- Display name and role are escaped. Navigation labels, icons, keys and action markup are static constants.
+- Keep navigation metadata in the source-controlled allowlist.
+
+### Payments and receipt handling — `frontend/features/payments.js`
+
+- Receipt previews use DOM APIs and assign generated `blob:` URLs through `img.src`; receipt API data URLs are checked against supported base64 raster-image patterns before assignment. Vendor/ID/error values interpolated in templates use `esc()`.
+- Revoke generated preview object URLs on removal/clear/save in a future resource-lifecycle improvement. The preview conversion is not a substitute for backend receipt authorization.
+
+### Register — `frontend/features/register.js`
+
+- Vendor/category/note/user/cancellation text and voucher IDs in attributes use `esc()`; formatted voucher date output now receives HTML escaping.
+- Voucher formatting still relies on the backend for semantic date validation; output escaping protects the HTML context if persisted data is malformed.
+
+### Printing — `frontend/features/printing.js`
+
+- Property and voucher text, category, notes and amount-in-words are escaped; formatted voucher date output now receives HTML escaping.
+- Print correctness and physical print fidelity have not been validated on a real printer/device in this audit.
+
+### Other active template renderers
+
+- Remaining `innerHTML` assignments render structured markup templates, but each interpolation still requires a source-level security review.
+- This audit has not replaced all template rendering with DOM APIs or formally proved all interpolations safe.
 ## Browser regression coverage
 
 Added to `test/e2e.py` in this PR:
