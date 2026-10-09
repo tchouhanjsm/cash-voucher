@@ -13,9 +13,9 @@ if (!root) {
 
 const tokens = new Map();
 
-for (const match of root[1].matchAll(
-  /(--[\w-]+)\s*:\s*(#[\da-fA-F]{3,8})\s*;/g,
-)) {
+const tokenPattern = /(--[\w-]+)\s*:\s*(#[\da-fA-F]{3,8})\s*;/g;
+
+for (const match of root[1].matchAll(tokenPattern)) {
   tokens.set(match[1], match[2]);
 }
 
