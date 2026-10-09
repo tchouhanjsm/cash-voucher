@@ -240,13 +240,23 @@ function backupStatus_(user) {
       p.getProperty('RECEIPT_FOLDER_ID') &&
       p.getProperty('BACKUP_FOLDER_ID'),
   );
+  const lastAttempt = p.getProperty('BACKUP_LAST_ATTEMPT') || '';
+  const lastSuccess = p.getProperty('BACKUP_LAST_SUCCESS') || '';
+  let state = 'not_configured';
+
+  if (configured) {
+    if (lastError) state = 'failed';
+    else if (!lastSuccess) state = lastAttempt ? 'incomplete' : 'never_run';
+    else if (lastAttempt && Date.parse(lastAttempt) > Date.parse(lastSuccess)) state = 'incomplete';
+    else state = 'success';
+  }
 
   return {
     configured: configured,
-    state: !configured ? 'not_configured' : lastError ? 'failed' : p.getProperty('BACKUP_LAST_SUCCESS') ? 'success' : 'never_run',
+    state: state,
     retentionDays: CFG.BACKUP_RETENTION_DAYS,
-    lastAttempt: p.getProperty('BACKUP_LAST_ATTEMPT') || '',
-    lastSuccess: p.getProperty('BACKUP_LAST_SUCCESS') || '',
+    lastAttempt: lastAttempt,
+    lastSuccess: lastSuccess,
     lastError: lastError.slice(0, 300),
   };
 }
