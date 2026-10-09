@@ -135,6 +135,7 @@ export function createPayments({ api, refresh }) {
     const row = button.closest('.erow');
     row._rec = [];
     $('.rp', row).replaceChildren();
+    updateSaveLabel();
   }
 
   document.addEventListener('change', async (e) => {
