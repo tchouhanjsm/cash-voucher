@@ -15,6 +15,7 @@ This index is a durable map for future development threads. The dedicated handof
 - **PR #49 — [Responsive layout and keyboard-focus guardrails](https://github.com/tchouhanjsm/cash-voucher/pull/49):** Merged on 9 October 2026 (merge commit `dd70819f02c564ad4df433e27342d7a53dd004b6`). Browser E2E passed 93 checks; see live PR for exact CI evidence.
 - **PR #50 — [Measured contrast and dialog keyboard accessibility](https://github.com/tchouhanjsm/cash-voucher/pull/50):** Merged on 9 October 2026 (merge commit `c9ccc829076b9d461372cd6a2959342286cc04a4`).
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged on 9 October 2026 (merge commit `64655a5b11956d0289b4e6098599df7cd8932860`); exact-head CI and Browser E2E passed, 98 checks / 0 failures.
+- **PR #53 — [Mobile payment reflow and reduced-motion coverage](https://github.com/tchouhanjsm/cash-voucher/pull/53):** Merged on 9 October 2026 (merge commit `a6bb1ace7547114c9c8072dd7359ca901387980d`); exact-head CI passed and Browser E2E passed 101 checks / 0 failures.
 
 ## Per-PR handoff contract
 
@@ -34,8 +35,9 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PRs #46, #48, #49, #50 and #52 are merged; PRs #47 and #51 are closed without merge. PR #53 is the active mobile reflow/reduced-motion batch.
+- PRs #46, #48, #49, #50, #52 and #53 are merged; PRs #47 and #51 are closed without merge. PR #54 is the active register empty-state batch.
 - The owner merges PRs. No agent merge or production deployment.
 
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged; merge commit `64655a5b11956d0289b4e6098599df7cd8932860`.
-- **PR #53 — Mobile payment reflow and reduced-motion regression guardrails:** Active batch; exact-head CI/E2E evidence and owner review status are maintained in the live PR.
+- **PR #53 — [Mobile payment reflow and reduced-motion coverage](https://github.com/tchouhanjsm/cash-voucher/pull/53):** Merged; merge commit `a6bb1ace7547114c9c8072dd7359ca901387980d`.
+- **PR #54 — Register empty-state clarity and clear-filters recovery:** Active batch; exact-head CI/E2E evidence and owner review status are maintained in the live PR.
