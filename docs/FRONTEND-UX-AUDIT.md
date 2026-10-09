@@ -1,0 +1,35 @@
+# Frontend UX and Accessibility Review
+
+**Review date:** 9 October 2026  
+**Baseline:** `main` at `4d80152edc986011375230288c9801a0d8d0a505`  
+**Scope:** shared modal/dialog primitive, primary navigation semantics, keyboard focus styling and release verification. This is a targeted source/browser review, not a full WCAG conformance audit.
+
+## Findings and changes in this batch
+
+| Finding | Risk / user effect | Change |
+| --- | --- | --- |
+| Shared dialog lacked an accessible name even though its container used `role="dialog"` and `aria-modal`. | Screen-reader users may not hear the purpose of the dialog. | Associate the dialog with its visible heading using `aria-labelledby`. |
+| Keyboard focus was moved into a dialog but was not contained when tabbing past the first/last control. | Keyboard users can leave the modal interaction while it is open. | Cycle Tab and Shift+Tab within visible dialog controls; restore focus to the invoking element when it remains available after close. |
+| Dialog errors were plain text without an assertive live announcement. | Users relying on assistive technology may miss submit errors. | Use a stable error ID with `role="alert"` and `aria-live="assertive"`. |
+| Dialog submit code assumed a submit button existed and remained connected. | Implicit form submission or a dialog closing during an async submit could produce a secondary JS error. | Guard the optional submit button and only re-enable it while still connected. |
+| Navigation used visual selected styling only; icon glyphs were exposed as names. | Current location was not programmatically announced and emoji could add noise. | Set `aria-current="page"` for the selected view, clear stale values, mark icons decorative, and set navigation buttons to `type="button"`. |
+| Gold accent was used for keyboard outlines and the active nav background with white text. | Focus/selected state contrast could be insufficient. | Use a darker focus token and active-nav color; use a light focus ring on the dark sidebar. |
+| The tag-based Release workflow ran `npm run check` but skipped the explicit advisory policy and Browser E2E workflow. | A tagged release could be created without the same dependency gate and core browser journey checks used on PRs. | Run `npm run audit:deps` and `npm run test:e2e` before verifying the release tag/creating the release. Use `.nvmrc` as the Node version source and retain diagnostic artifacts if E2E fails. |
+
+## Browser verification added
+
+- Dialog has a discoverable accessible name.
+- Opening the forced-PIN dialog places focus on its first field.
+- Tab and Shift+Tab wrap around the first and last dialog controls.
+- The selected navigation button exposes `aria-current="page"`; switching views moves that state.
+- Decorative navigation glyphs are hidden from assistive technology.
+
+## Intentionally not changed
+
+- Escape/backdrop dismissal was not introduced because several dialogs contain unsaved user input or mandatory PIN-change steps. Closing remains explicit through each dialog's existing Close action; forced PIN change continues to sign out when its Close control is used.
+- No payment, cancellation, permissions, API payload, Sheets schema, offline-queue, cash-close or production deployment behavior was changed.
+- This patch does not claim a complete contrast audit, screen-reader certification, touch-device audit, live Apps Script verification or WCAG conformance. Real-device checks and a broader form/validation review remain release-readiness items.
+
+## Release gate
+
+The tag-based workflow must pass dependency advisory policy, the repository quality gate, Browser E2E and the existing package-version/tag match before it creates a GitHub Release. Workflow success is not proof of a production Apps Script deployment or live Google account permissions.
