@@ -62,6 +62,15 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   $('[data-x]', form).onclick = closeModal;
 
   modal.onkeydown = (event) => {
+    if (event.key === 'Escape') {
+      const submitButton = $('.primary', modal);
+      if (submitButton && submitButton.disabled) return;
+
+      event.preventDefault();
+      closeModal();
+      return;
+    }
+
     if (event.key !== 'Tab') return;
 
     const focusable = [
