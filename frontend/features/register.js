@@ -57,7 +57,8 @@ export function createRegister({ api, go }) {
           const receiptCount = voucher.receipts.length;
           const receiptAction =
             receiptCount ||
-            (voucher.status === 'ACTIVE' && (can('receiptAny') || voucher.createdBy === S.me.email));
+            (voucher.status === 'ACTIVE' &&
+              (can('receiptAny') || voucher.createdBy === S.me.email));
           const kind = isIn(voucher) ? 'Receipt' : 'Payment';
           const actions = [
             `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
@@ -77,7 +78,10 @@ export function createRegister({ api, go }) {
               : '',
           ].filter(Boolean).join('');
           return `<tr class="voucher-row ${voucher.status === 'ACTIVE' ? '' : 'cx'}">
-            <td class="nw"><b>${vno(voucher)}</b><div class="cat voucher-kind">${kind}</div></td>
+            <td class="nw">
+              <b>${vno(voucher)}</b>
+              <div class="cat voucher-kind">${kind}</div>
+            </td>
             <td class="nw">${esc(dmy(voucher.date))}</td>
             <td>
               <span class="voucher-vendor">${esc(voucher.vendor)}</span>
@@ -89,7 +93,9 @@ export function createRegister({ api, go }) {
               class="r nw amt"
               ${isIn(voucher) ? 'style="color:var(--ok)"' : ''}
             >
-              <span class="voucher-amount">${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}</span>
+              <span class="voucher-amount">
+                ${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}
+              </span>
             </td>
             <td class="nw cat">${esc(nm(voucher.createdBy))}</td>
             <td>
