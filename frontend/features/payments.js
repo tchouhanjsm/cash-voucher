@@ -96,7 +96,7 @@ export function createPayments({ api, refresh }) {
   }
 
   function updateSaveLabel() {
-    const count = $('#rows .erow').filter(
+    const count = Array.from(document.querySelectorAll('#rows .erow')).filter(
       (row) =>
         $('.rv', row).value.trim() ||
         $('.ra', row).value.trim() ||
