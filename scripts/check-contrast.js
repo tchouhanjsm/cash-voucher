@@ -23,8 +23,12 @@ function resolveColor(value) {
   const token = value.match(/^var\((--[\w-]+)\)$/);
   const color = token ? tokens.get(token[1]) : value;
 
-  if (!color || !/^#[\da-fA-F]{6}$/.test(color)) {
+  if (!color || !/^#(?:[\da-fA-F]{3}|[\da-fA-F]{6})$/.test(color)) {
     throw new Error(`Unsupported or missing color: ${value}`);
+  }
+
+  if (color.length === 4) {
+    return `#${[...color.slice(1)].map((channel) => channel + channel).join('')}`;
   }
 
   return color;
