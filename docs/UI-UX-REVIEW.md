@@ -75,3 +75,8 @@ Phase 22 addresses authentication controls and documentation drift. It does not 
 ## Follow-up: backup status clarity
 
 The owner Settings screen now includes a `🛡️ Backup & recovery` status panel with configuration presence, retention period, last attempt, last recorded success and the latest recorded error. The panel explicitly states that recorded metadata does not prove Drive contents are complete or that a restore will succeed. It is owner-only through the server API permission check; mock E2E covers the visible never-run state. This is an operational status affordance, not the broader visual redesign. Real-device contrast/usability and a live restore drill remain outstanding.
+
+
+## Modal background isolation and keyboard focus — October 2026
+
+PR #52 makes the application container inert while a modal is open and restores its previous inert state on close. Browser E2E covers accessible modal/title semantics, background isolation, Tab/Shift+Tab wraparound, Escape handling when the primary action is disabled, and return of focus to the exact opener. This improves keyboard and assistive-technology isolation, but does not replace real screen-reader testing, dialog-by-dialog manual traversal, zoom/reflow checks, or testing across browser/assistive-technology combinations.
