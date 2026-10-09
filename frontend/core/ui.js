@@ -3,6 +3,7 @@ import { esc } from './utils.js';
 
 let toastTimer;
 let returnFocusTo = null;
+let restoreAppInert = null;
 
 export function toast(message, kind) {
   const element = $('#toast');
@@ -28,6 +29,12 @@ export function closeModal() {
   const modal = $('#modal');
   const restoreTarget = returnFocusTo;
   returnFocusTo = null;
+  const app = $('#app');
+
+  if (app && restoreAppInert !== null) {
+    app.inert = restoreAppInert;
+    restoreAppInert = null;
+  }
 
   modal.onkeydown = null;
   modal.classList.add('hidden');
@@ -51,7 +58,17 @@ export function closeModal() {
  */
 export function dialog(title, body, onSubmit, ok = 'Save') {
   const modal = $('#modal');
-  returnFocusTo = modal.classList.contains('hidden') ? document.activeElement : returnFocusTo;
+  const openingDialog = modal.classList.contains('hidden');
+
+  if (openingDialog) {
+    returnFocusTo = document.activeElement;
+    const app = $('#app');
+
+    if (app) {
+      restoreAppInert = app.inert;
+      app.inert = true;
+    }
+  }
 
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
