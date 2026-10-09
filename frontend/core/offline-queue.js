@@ -173,7 +173,7 @@ function validateClientId_(value) {
       return code <= 31 || code === 127;
     })
   ) {
-    throw new Error('Recovery file contains an invalid payment ID.');
+    throw new Error('Offline payment contains an invalid payment ID.');
   }
 
   return clientId;
@@ -246,7 +246,7 @@ function assertUniqueIds_(records) {
 
   records.forEach((record) => {
     if (seen.has(record.clientId)) {
-      throw new Error('Recovery file contains duplicate payment IDs.');
+      throw new Error('Offline payments contain duplicate payment IDs.');
     }
     seen.add(record.clientId);
   });
