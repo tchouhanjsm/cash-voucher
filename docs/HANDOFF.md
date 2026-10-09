@@ -46,6 +46,7 @@ Base is the verified `main` SHA above.
 **Current gate:** On candidate head `556e6b3ea9a4f1aef47e133255968d0daea27da3`, CI is `failure` and Browser E2E is `pending`. The last completed CI attempt failed at Prettier for `docs/HANDOFF.md` and `frontend/features/register.js`; that formatter output must be generated in a connected checkout before the batch can be considered ready.
 
 Next steps:
+
 1. In a connected checkout, run `npx prettier --write docs/HANDOFF.md frontend/features/register.js` and commit the formatter output.
 2. Require CI and Browser E2E to pass on one identical final SHA.
 3. Inspect final diff and residual risks; leave merge to the owner.
