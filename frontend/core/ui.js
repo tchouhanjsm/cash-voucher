@@ -1,4 +1,4 @@
-import { $, $ } from './dom.js';
+import { $, $$ } from './dom.js';
 import { esc } from './utils.js';
 
 let toastTimer;
