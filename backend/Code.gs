@@ -255,8 +255,7 @@ function backupStatus_(user) {
     const attemptTime = lastAttempt ? Date.parse(lastAttempt) : null;
     const invalidAttempt = lastAttempt && !isFinite(attemptTime);
     const newerAttempt = lastAttempt && attemptTime > successTime;
-    state =
-      !isFinite(successTime) || invalidAttempt || newerAttempt ? 'incomplete' : 'success';
+    state = !isFinite(successTime) || invalidAttempt || newerAttempt ? 'incomplete' : 'success';
   }
 
   return {
