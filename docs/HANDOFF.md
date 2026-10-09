@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-09  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA:** `b716217f1e89bdbabe87ae9b2b9e426e8a3a3a69`  
+**Verified main SHA:** `49142bd92eb3ef45a0dee70610d874612c40523a`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -15,8 +15,9 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 
 - PR #46 is merged to `main`; backup failure cleanup, lock safety, and removal of the arbitrary commit-count ceiling are in the integration history. Its mock tests do not prove live Drive/restore behavior.
 - PR #47 is closed without merge to avoid stacking; its formatting correction was included in #46.
-- PR #48 is the only active review target: [UI contrast and financial readability](https://github.com/tchouhanjsm/cash-voucher/pull/48), branch `ui/mobile-accessibility-foundation`.
-- Exact-head CI/E2E evidence is maintained in PR #48's live description. Before owner review, verify both linked runs target the current head SHA and passed; any further commit requires re-verification.
+- PR #48 is merged into `main` (merge commit `49142bd92eb3ef45a0dee70610d874612c40523a`); its contrast/financial readability foundation passed CI and 75 Browser E2E checks.
+- PR #49 is the only active review target: [responsive layout and keyboard-focus guardrails](https://github.com/tchouhanjsm/cash-voucher/pull/49), branch `ui/responsive-accessibility-guardrails`.
+- Exact-head CI/E2E evidence is maintained in PR #49's live description. Verify both linked runs target the current head and pass before owner review; any further commit requires re-verification.
 - No Apps Script production deployment, live backup/restore, or production-data operation has been performed.
 
 ## Process decisions
@@ -27,16 +28,16 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #48
+## Current batch: PR #49
 
-Scope: shared muted-text contrast, tabular financial figures, mobile horizontal-overflow assertion, and documentation updates. No backend/API, permission, voucher schema, or accounting semantics changed.
+Scope: responsive overflow checks for Dashboard and Register at seven viewport widths, 44px mobile navigation target height, keyboard-visible focus assertion, and handoff/roadmap updates. No backend/API, permission, voucher schema, or accounting semantics changed.
 
 Next steps:
 
-1. Wait for CI and Browser E2E on the live PR #48 head.
+1. Verify CI and Browser E2E on the exact live PR #49 head.
 2. If either fails, diagnose and fix on the same branch; do not create a stacked PR.
-3. Review the final diff and exact-head evidence, then leave PR #48 for owner review/merge.
-4. Continue UI/UX work with broader viewport, contrast, keyboard and assisted-technology checks after this foundation batch.
+3. Review the final diff and exact-head evidence, then leave PR #49 for owner review/merge.
+4. Next phase: complete a measured contrast audit and keyboard/screen-reader review, then improve one-thumb task flows based on the findings.
 
 ## Operational gates still open
 

@@ -585,11 +585,45 @@ with sync_playwright() as p:
     page.click('[data-v=dash]')
     page.wait_for_selector('.two')
     page.screenshot(path='/tmp/desktop.png')
-    page.set_viewport_size({'width': 390, 'height': 800})
-    mobile_overflow = page.evaluate(
-        'document.documentElement.scrollWidth > document.documentElement.clientWidth'
+
+    # Keyboard focus must remain visible after navigation moves from pointer to keyboard.
+    page.keyboard.press('Tab')
+    keyboard_focus_visible = page.evaluate(
+        """() => {
+          const element = document.activeElement;
+          const style = getComputedStyle(element);
+          return element.matches(':focus-visible')
+            && style.outlineStyle === 'solid'
+            && style.outlineWidth === '3px';
+        }"""
     )
-    check(not mobile_overflow, '390px viewport has no page-level horizontal overflow')
+    check(keyboard_focus_visible, 'keyboard navigation exposes a visible 3px focus indicator')
+
+    viewport_widths = (320, 360, 390, 768, 801, 1024, 1280)
+    for width in viewport_widths:
+        page.set_viewport_size({'width': width, 'height': 800})
+        page_overflow = page.evaluate(
+            'document.documentElement.scrollWidth > document.documentElement.clientWidth'
+        )
+        check(not page_overflow, f'{width}px dashboard has no page-level horizontal overflow')
+        if width <= 800:
+            nav_height = page.locator('#nav button').first.evaluate(
+                '(element) => element.getBoundingClientRect().height'
+            )
+            check(nav_height >= 44, f'{width}px mobile navigation targets are at least 44px tall')
+
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rbody')
+    for width in viewport_widths:
+        page.set_viewport_size({'width': width, 'height': 800})
+        page_overflow = page.evaluate(
+            'document.documentElement.scrollWidth > document.documentElement.clientWidth'
+        )
+        check(not page_overflow, f'{width}px register has no page-level horizontal overflow')
+
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.click('[data-v=dash]')
+    page.wait_for_selector('.two')
     amount_style = page.locator('.stats b').first.evaluate(
         '(element) => getComputedStyle(element).fontVariantNumeric'
     )
@@ -604,6 +638,7 @@ with sync_playwright() as p:
         muted_color == 'rgb(89, 105, 120)',
         'muted interface text uses the reviewed higher-contrast token',
     )
+    page.set_viewport_size({'width': 390, 'height': 800})
     page.screenshot(path='/tmp/mobile.png')
 
     real_errors = [

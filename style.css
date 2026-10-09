@@ -579,6 +579,7 @@ tr.cx .amt {
     padding: 8px 12px;
     border-radius: 0;
     min-width: 64px;
+    min-height: 44px;
     align-items: center;
   }
   nav .ic {
