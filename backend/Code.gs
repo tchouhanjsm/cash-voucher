@@ -172,6 +172,13 @@ function installBackupTrigger_() {
 function csvCell_(value) {
   return '"' + String(value === undefined || value === null ? '' : value).replace(/"/g, '""') + '"';
 }
+function backupManifestCsv_(manifest) {
+  return manifest
+    .map(function (row) {
+      return row.map(csvCell_).join(',');
+    })
+    .join('\n');
+}
 function backupData_() {
   const lock = LockService.getScriptLock();
   lock.waitLock(30000);
@@ -209,10 +216,7 @@ function backupData_() {
         file.getDateCreated().toISOString(),
       ]);
     }
-    const rows = manifest.map(function (row) {
-      return row.map(csvCell_).join(',');
-    });
-    snapshot.createFile('receipt-manifest.csv', rows.join('\\n'), MimeType.CSV);
+    snapshot.createFile('receipt-manifest.csv', backupManifestCsv_(manifest), MimeType.CSV);
     pruneBackups_(root);
     p.setProperty('BACKUP_LAST_SUCCESS', new Date().toISOString());
     p.deleteProperty('BACKUP_LAST_ERROR');
@@ -231,7 +235,7 @@ function pruneBackups_(root) {
     it = root.getFolders();
   while (it.hasNext()) {
     const folder = it.next();
-    if (/^backup-\\d{4}-\\d{2}-\\d{2}_\\d{6}$/.test(folder.getName())) folders.push(folder);
+    if (/^backup-\d{4}-\d{2}-\d{2}_\d{6}$/.test(folder.getName())) folders.push(folder);
   }
   folders.forEach(function (folder) {
     if (folder.getDateCreated().getTime() < cutoff) folder.setTrashed(true);
