@@ -22,7 +22,7 @@ const body = [
   'This boundary test does not merge, release or deploy any source code.',
   '## Residual risks / not verified',
   'This verifies the commit-count guard contract and not GitHub server configuration.',
-].join('\\n\\n');
+].join('\n\n');
 
 function runGate(commitCount) {
   fs.writeFileSync(eventPath, JSON.stringify({ pull_request: { commits: commitCount, body } }));
