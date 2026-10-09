@@ -11,21 +11,24 @@ const tempDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-pr-qua
 const eventPath = path.join(tempDirectory, 'event.json');
 const body = [
   '## Outcome',
-  'Raises the pull request batch guard and protects its boundary with deterministic tests.',
+  'Prevents an incomplete handoff from passing the pull request quality gate.',
   '## Acceptance criteria',
-  'Twenty commits are accepted while twenty-one commits are rejected by the pull request gate.',
+  'All required sections are present, useful, and free of unresolved placeholders.',
   '## Verification evidence',
   'The test invokes the actual gate with isolated synthetic event payloads.',
   '## Security and failure review',
   'Only a temporary test event is written; no repository or production state is changed.',
   '## Release boundary',
-  'This boundary test does not merge, release or deploy any source code.',
+  'This quality-gate test does not merge, release or deploy source code.',
   '## Residual risks / not verified',
-  'This verifies the commit-count guard contract and not GitHub server configuration.',
+  'This verifies the handoff contract and not GitHub server configuration.',
 ].join('\n\n');
 
-function runGate(commitCount) {
-  fs.writeFileSync(eventPath, JSON.stringify({ pull_request: { commits: commitCount, body } }));
+function runGate(commitCount, prBody = body) {
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({ pull_request: { commits: commitCount, body: prBody } }),
+  );
 
   return spawnSync(process.execPath, [path.join(root, 'scripts/check-pr-quality.js')], {
     encoding: 'utf8',
@@ -34,19 +37,19 @@ function runGate(commitCount) {
 }
 
 try {
-  const boundary = runGate(20);
+  const manyCommits = runGate(29);
   assert.equal(
-    boundary.status,
+    manyCommits.status,
     0,
-    `The gate should accept 20 commits. Output: ${boundary.stdout} ${boundary.stderr}`,
+    `The gate must not reject a coherent PR solely for commit count. Output: ${manyCommits.stdout} ${manyCommits.stderr}`,
   );
-  assert.match(boundary.stdout, /20 commits/);
+  assert.match(manyCommits.stdout, /all 6 required handoff sections/);
 
-  const overLimit = runGate(21);
-  assert.equal(overLimit.status, 1, 'The gate must reject 21 commits.');
-  assert.match(overLimit.stderr, /limit is 20/);
+  const missingEvidence = runGate(29, body.replace('## Security and failure review', '## Security review'));
+  assert.equal(missingEvidence.status, 1, 'The gate must reject a missing required handoff section.');
+  assert.match(missingEvidence.stderr, /missing the required "## Security and failure review"/);
 
-  console.log('PR quality guard OK — 20 commits accepted; 21 commits rejected.');
+  console.log('PR quality gate OK — no hard commit ceiling; required handoff sections are enforced.');
 } finally {
   fs.rmSync(tempDirectory, { recursive: true, force: true });
 }

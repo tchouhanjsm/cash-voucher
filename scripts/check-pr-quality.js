@@ -30,17 +30,6 @@ if (!pullRequest) {
   process.exit(0);
 }
 
-const failures = [];
-const commitCount = Number(pullRequest.commits);
-
-if (!Number.isInteger(commitCount) || commitCount < 1) {
-  failures.push('Could not verify a valid pull-request commit count from the event payload.');
-} else if (commitCount > 20) {
-  failures.push(
-    `This batch contains ${commitCount} commits; the limit is 20. Split only at a coherent boundary—do not rewrite or force-push history to bypass this gate.`,
-  );
-}
-
 const requiredHeadings = [
   'Outcome',
   'Acceptance criteria',
@@ -64,6 +53,8 @@ for (const line of body.split(/\r?\n/)) {
     sections.get(currentHeading).push(line);
   }
 }
+
+const failures = [];
 
 for (const heading of requiredHeadings) {
   const section = sections.get(heading.toLowerCase());
@@ -90,12 +81,8 @@ if (failures.length) {
     console.error(`- ${failure}`);
   }
 
-  console.error(
-    'Use .github/pull_request_template.md and keep each PR/batch at 20 commits or fewer.',
-  );
+  console.error('Use .github/pull_request_template.md and provide meaningful, reviewable handoff evidence.');
   process.exit(1);
 }
 
-console.log(
-  `PR quality gate passed: ${commitCount} commits; all ${requiredHeadings.length} required handoff sections are populated.`,
-);
+console.log(`PR quality gate passed: all ${requiredHeadings.length} required handoff sections are populated.`);

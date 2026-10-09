@@ -2,43 +2,50 @@
 
 **Updated:** 2026-10-09  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main:** `1a956e04e460c8e55b422b4c1e3dc2f4d20cb2ad`
+**Verified main SHA:** `ff649a1f2095071723bc50d7c0b8ed59589b73a5`  
+**Source of truth:** live GitHub refs and exact-head workflow runs; this document is a navigation and continuation aid.
 
-## Current state
+## Product and architecture
 
-- Phase 22 and cleanup PR #23 are merged.
-- PR #24 is merged; its post-merge CI run #94 passed.
-- Phase 24 design refinement PR #25 is merged at `1a956e04e460c8e55b422b4c1e3dc2f4d20cb2ad`.
-- PR #25 CI run #98 passed on head `0e4f9fbd5236a48358795b67252d74e242de1d08`; Browser E2E run #42 also passed on that exact PR head.
-- Post-merge CI run #99 passed on main commit `1a956e04e460c8e55b422b4c1e3dc2f4d20cb2ad`.
-- No production Apps Script deployment has been performed as part of these documentation phases.
-- Local working-tree state is not verified; GitHub is the source of truth for the work recorded here.
+Cash Voucher is a single-property cash-voucher PWA backed by Google Apps Script, Google Sheets and Drive. `index.html` loads `frontend/main.js`; `frontend/core/` owns shared infrastructure; `frontend/features/` owns feature behavior; `backend/Code.gs` is the API source. Root `app.js` is a legacy artifact and is not loaded by `index.html`.
 
-## Active phase
+Server-side authorization is authoritative. Browser-local offline entries are not centrally backed up until synchronized. Recorded backup status does not prove snapshot completeness or restoreability. Daily cash close remains design-only until the owner approves the open accounting and operational decisions in `docs/DAILY-CASH-CLOSE-DESIGN.md`.
 
-Phase 25 — define the product requirements baseline from the supplied code-review memo and current repository evidence. This is documentation-only. The objective is to separate current capabilities, near-term owner value, proposed requirements, candidate metrics, unresolved decisions, and speculative hosted fintech/multi-property options.
+## Current PR state
 
-## Current design gate
+- PR #45 is merged into `main`; it adds the owner-only backup status panel and clearer recovery-status semantics.
+- PR #46 is the active backup-failure cleanup PR: [PR #46](https://github.com/tchouhanjsm/cash-voucher/pull/46).
+- PR #47 was opened as a formatting-only child PR against the #46 branch. To avoid stacked PRs, fold any needed formatting correction directly into #46 and close #47 without merging it.
+- PR #46's previously verified head was `075cf2181990554b34465e1935551fa7e644b656`; its CI failed in `prettier --check .` on `backend/Code.gs`, while Browser E2E passed on that same head. These are historical results; use the PR body and live Actions page for current results after subsequent changes.
+- PR #46's current functional test coverage primarily invokes `recordBackupFailure_()` directly. Orchestration-level failures and lock-acquisition behavior require explicit review and regression coverage before calling the fix complete.
+- No PR has been merged and no Apps Script production deployment or production data change has been performed by this workflow.
 
-Daily cash close remains design-only in `docs/DAILY-CASH-CLOSE-DESIGN.md`. The proposed `CASH_IN`, `CASH_OUT`, `NO_CASH`, and `UNCLASSIFIED` vocabulary is not an approved schema or policy.
+## Process decisions
 
-Do not begin product-code, API, Sheet-schema, migration, or deployment work for cash close until the owner accepts the cash-impact semantics, historical-voucher policy, close period/opening cash, offline handling, permissions, variance handling, and correction rules.
+- No hard commit-count ceiling. Do not add or retain a numeric PR commit limit in docs, scripts or tests. Keep commits meaningful; evaluate scope, final diff, evidence and risk.
+- Do not rewrite or force-push history to improve presentation. Correct the branch with forward commits.
+- Do not stack dependent PRs for formatting or small corrections; fold them into the active PR when safe and coherent.
+- Every PR must have a dedicated `docs/pr-handoffs/PR-<number>.md` record and the current `docs/HANDOFF.md` updated.
+- The PR description is the authoritative place for exact-head CI/E2E links and review status.
+- Owner reviews and merges. No merge, Apps Script push, new deployment version or production-data operation by the agent.
 
-## Phase 25 scope
+## Engineering sequence
 
-- Add `docs/PRODUCT-REQUIREMENTS.md` to state the product objective, user jobs, principles, current boundaries, proposed requirements, candidate measures, and owner decisions.
-- Link the requirements baseline from `docs/PRODUCT-ROADMAP.md`.
-- Keep the roadmap and handoff consistent with the merged Phase 24 design gate.
-- Change no product code, API, schema, dependencies, production data, or deployment settings.
+`main` → feature/fix branch → two-pass review → local `npm run check` + `npm run test:e2e` → push → PR → CI + Browser E2E on exact head → final diff/security review → owner merge.
 
-## Next step
+Do not claim local checks were run when the local checkout or dependencies were unavailable. A mock test is not proof of real Drive/Sheets behavior.
 
-Review PR #26 and its CI and Browser E2E results on the exact final PR head. The owner reviews and merges it; do not merge it or begin the next phase on the owner's behalf.
+## Next steps for PR #46
 
-## Open risks / unverified
+1. Remove the hard commit-count failure gate and its boundary test; preserve the six required handoff-section checks.
+2. Keep the formatter correction on #46 and close #47 after verifying it is no longer needed as a separate review.
+3. Fix lock handling so the lock is released after any successful acquisition, including failures while obtaining properties; do not release a lock when acquisition fails.
+4. Add orchestration-level tests for partial copy/manifest failures, cleanup failure, complete snapshot preservation after retention failure, failure-metadata write failure, and lock acquisition.
+5. Update `docs/pr-handoffs/PR-46.md` and this file with final scope, exact-head results and remaining operational gates.
+6. Review the final changed-file list and PR body. Do not merge or deploy; wait for owner review.
 
-- Business-day versus shift boundary, opening-cash carry-forward, drawer count and category treatment are not approved.
-- Policy for backdated vouchers, post-close edits/cancellations, offline queue entries and corrections is unresolved.
-- The existing audit logger is best-effort; it is not a tamper-evident ledger.
-- Live Google deployment permissions, real-account behavior, backup/restore, device usability/accessibility, and representative-volume performance remain operational verification items.
-- Historical credentials reported in the supplied review were not corroborated in the current source paths. The repository has not had a general Git object/secret scan, and this does not certify all historical commits are clean.
+## Operational gates still open
+
+- Live Drive permissions, scheduled trigger behavior, backup completeness and restore into a separate Sheet/folder are not verified.
+- Real Apps Script lock contention and Google service quotas/timeouts are not proven by the mock suite.
+- Daily cash close semantics and schema remain unapproved; do not implement them as part of backup work.
