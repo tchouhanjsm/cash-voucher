@@ -20,7 +20,7 @@ This is a docs-only design gate. No product code, API, Sheet schema, service wor
 
 ## Next step
 
-Open the Phase 23 PR, review its exact diff and green CI/Browser E2E results, then merge it only after the business rules are accepted. Do not implement the close workflow or begin another phase until the owner confirms this PR is merged and the merge commit is verified on `main`.
+PR #24 is open: https://github.com/tchouhanjsm/cash-voucher/pull/24. Review its exact diff and the CI/Browser E2E results on the final head SHA, then merge only after the business rules are accepted. Do not implement the close workflow or begin another phase until the owner confirms this PR is merged and the merge commit is verified on `main`.
 
 ## Open risks / unverified
 
