@@ -21,7 +21,7 @@ The current backend source:
 - prunes backup folders older than the configured 90-day retention period;
 - records last-success/error metadata in Script Properties.
 
-**Operational status:** the implementation is present in source and mock setup tests. A successful run on the live property account, the backup folder permissions, the completeness of a real snapshot, and a restore drill have not been verified in this review. Do not mark recovery-ready until those gates pass.
+**Operational status:** the owner-only Settings panel now displays the recorded backup configuration, retention period, last attempt, last success and latest recorded error. A recorded success is only metadata written by the script; it does not prove the live Drive snapshot is complete or restorable. A successful run on the live property account, backup-folder permissions, snapshot completeness and a restore drill remain unverified. Do not mark recovery-ready until those gates pass.
 
 ## Browser outbox safeguards
 
@@ -60,7 +60,7 @@ This procedure is a guide; it has not been demonstrated against a real backup du
 Before production cutover, the owner must witness all of the following:
 
 - [ ] at least one backup completes under the actual owner account;
-- [ ] backup status and location can be retrieved by an operator;
+- [ ] backup status and location can be retrieved by an operator; (the status panel reports Script Properties and timestamps, but does not expose the folder ID or verify folder access);
 - [ ] spreadsheet copy opens and receipt mapping matches actual files;
 - [ ] restore into a separate recovery Sheet is demonstrated;
 - [ ] offline queue and recovery import are tested on the actual phone/browser;

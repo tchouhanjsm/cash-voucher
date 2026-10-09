@@ -155,6 +155,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       head('Settings') +
       `<form id="sf" class="card" autocomplete="off"><h2>Property</h2><label>Name<input id="sn" value="${esc(S.settings.propertyName)}" required></label><label>Address (printed on vouchers)<textarea id="sa" rows="2">${esc(S.settings.propertyAddress)}</textarea></label>
     <label>Categories (one per line)<textarea id="sc" rows="8">${esc(categories().join('\n'))}</textarea></label><div class="grid g2"><label>Next payment voucher no.<input id="sq" type="number" min="1" value="${S.settings.nextVoucherNo}"></label><label>Next cash-received no. (R-)<input id="sr" type="number" min="1" value="${S.settings.nextReceiptNo}"></label><label>Opening cash balance ₹<input id="so" inputmode="decimal" value="${S.settings.openingBalance || 0}"></label></div><label>Cash-received categories (one per line)<textarea id="sx" rows="5">${esc(rcats().join('\n'))}</textarea></label><button class="btn primary">Save settings</button></form>
+    <section class="card" id="backup-status" aria-live="polite"><h2>🛡️ Backup &amp; recovery</h2><p class="muted">Loading backup status…</p></section>
     <div class="card"><h2>Audit log <span class="muted">(latest 200)</span></h2><div class="table-wrap" style="max-height:420px;overflow:auto"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Details</th></tr></thead><tbody id="aud"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody></table></div></div>`;
 
     try {
@@ -183,6 +184,84 @@ export function createAdministration({ api, getNavigation, signOut }) {
     } catch (error) {
       fail(error);
     }
+
+    await renderBackupStatus();
+  }
+
+  async function renderBackupStatus() {
+    const card = $('#backup-status');
+    if (!card) return;
+
+    try {
+      const status = await api('backupStatus');
+      const labels = {
+        not_configured: 'Not configured',
+        never_run: 'No completed backup recorded',
+        incomplete: 'Latest attempt may not have completed',
+        failed: 'Latest backup attempt failed',
+        success: 'Last recorded backup succeeded',
+      };
+      const title = document.createElement('h2');
+      title.textContent = '🛡️ Backup & recovery';
+
+      const state = document.createElement('p');
+      state.className = 'badge';
+      if (status.state === 'failed') state.classList.add('bad');
+      else if (status.state !== 'success') state.classList.add('warn');
+      state.textContent = labels[status.state] || 'Status unavailable';
+
+      const details = document.createElement('div');
+      details.className = 'backup-status-details';
+      const rows = [
+        [
+          'Configuration',
+          status.configured
+            ? 'Required Script Properties are present'
+            : 'Required Script Properties are missing',
+        ],
+        ['Retention', `${status.retentionDays} days`],
+        ['Last attempt', formatBackupTimestamp(status.lastAttempt)],
+        ['Last success', formatBackupTimestamp(status.lastSuccess)],
+      ];
+
+      if (status.lastError) rows.push(['Latest error', status.lastError]);
+
+      rows.forEach(([label, value]) => {
+        const line = document.createElement('p');
+        const name = document.createElement('strong');
+        name.textContent = `${label}: `;
+        const text = document.createElement('span');
+        text.textContent = String(value);
+        line.append(name, text);
+        details.appendChild(line);
+      });
+
+      const note = document.createElement('p');
+      note.className = 'muted';
+      note.textContent =
+        'This is recorded Apps Script status only. It does not verify the current Drive backup contents or prove that a restore will succeed.';
+
+      card.replaceChildren(title, state, details, note);
+    } catch {
+      const title = document.createElement('h2');
+      title.textContent = '🛡️ Backup & recovery';
+      const message = document.createElement('p');
+      message.className = 'error';
+      message.textContent =
+        'Backup status could not be loaded. Check the connection and refresh Settings.';
+      card.replaceChildren(title, message);
+    }
+  }
+
+  function formatBackupTimestamp(value) {
+    if (!value) return 'Not recorded';
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? String(value)
+      : date.toLocaleString('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
   }
 
   async function saveSettings() {
