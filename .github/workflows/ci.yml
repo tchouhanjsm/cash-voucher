@@ -30,26 +30,5 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Phase 22 format diagnostics (temporary)
-        run: |
-          files=(
-            backend/Code.gs
-            test/test-backend.js
-            README.md
-            PROJECT.md
-            docs/DEVELOPMENT-WORKFLOW.md
-            docs/ENGINEERING-METHOD.md
-            docs/INTEGRATION-CHECKLIST.md
-            docs/MODULE-CONTRACTS.md
-            docs/PRODUCT-ROADMAP.md
-            docs/RELEASE-READINESS.md
-          )
-          npx prettier --write "${files[@]}"
-          for file in "${files[@]}"; do
-            printf 'PHASE22_FORMAT_BEGIN:%s\n' "$file"
-            base64 -w0 "$file"
-            printf '\nPHASE22_FORMAT_END:%s\n' "$file"
-          done
-
       - name: Run quality gate
         run: npm run check

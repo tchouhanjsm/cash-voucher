@@ -27,10 +27,10 @@ Use this checklist whenever an active frontend module, route, shared component o
 
 ## Required verification
 
-~~~bash
+```bash
 npm run check
 npm run test:e2e
 git diff --check
-~~~
+```
 
 Inspect desktop and mobile browser results for the touched workflow; don't infer visual quality solely from passing tests. No production Apps Script deployment is part of this checklist.

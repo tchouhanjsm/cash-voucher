@@ -2,12 +2,12 @@
 
 ## Session start and branch safety
 
-~~~bash
+```bash
 cd "$(git rev-parse --show-toplevel)"
 git status --short
 git branch --show-current
 npm run check
-~~~
+```
 
 If the working tree is unexpectedly dirty, stop and reconcile it before editing. Start every phase branch from the latest merged `main` and leave existing branches untouched unless the owner explicitly authorizes a branch operation.
 
@@ -27,7 +27,7 @@ If the working tree is unexpectedly dirty, stop and reconcile it before editing.
 
 Record:
 
-~~~text
+```text
 Change:
 User / role:
 Outcome:
@@ -39,7 +39,7 @@ Files out of scope:
 Acceptance criteria:
 Failure and recovery paths:
 Risks:
-~~~
+```
 
 Read the active implementation, consumers, public interfaces and side effects before editing. Separate facts from assumptions. Reconcile incoming review findings to current file paths, not an earlier implementation's names.
 
@@ -47,21 +47,21 @@ Read the active implementation, consumers, public interfaces and side effects be
 
 Use the smallest coherent scope that satisfies an observable outcome.
 
-~~~text
+```text
 Discover → define → design → implementation → integration
          → static checks → behavioral checks → two-pass review → PR
-~~~
+```
 
 Run:
 
-~~~bash
+```bash
 npm ci
 npm run check
 npm run test:e2e
 git diff --check
 git status --short
 git diff --stat
-~~~
+```
 
 Run relevant checks after changing code; inspect the actual diff. If browser E2E requires extra dependencies, report that explicitly rather than implying it ran. A passing mock does not prove behavior on a real Google account. Neither CI workflow deploys the Apps Script backend.
 
