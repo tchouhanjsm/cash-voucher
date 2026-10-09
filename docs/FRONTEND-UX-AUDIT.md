@@ -1,7 +1,7 @@
 # Frontend UX and Accessibility Review
 
 **Review date:** 9 October 2026  
-**Baseline:** `main` at `4d80152edc986011375230288c9801a0d8d0a505`  
+**Baseline:** `main` at `cf09769ce741480cc95e5161a3e4c72877b7e534` (post-PR #41)  
 **Scope:** shared modal/dialog primitive, primary navigation semantics, keyboard focus styling and release verification. This is a targeted source/browser review, not a full WCAG conformance audit.
 
 The workflows in this batch also move checkout, Node setup, Python setup and failure-artifact upload to current Node 24-compatible action major versions, removing the observed Node 20 action-runtime deprecation warning.
@@ -55,3 +55,11 @@ This remains a targeted form pass. It does not establish full WCAG conformance, 
 - The shared `dialog()` body and `head()` extra slots remain trusted, app-authored HTML fragments. Persisted/API/user-controlled values must be escaped in their correct HTML context; untrusted strings must never be passed as whole fragments. This is an explicit review contract, not a sanitizer.
 - Browser E2E now probes a stored HTML payload in the voucher register, printable voucher, and manager edit dialog, checking that it remains text and does not create image/SVG elements or execute an event handler.
 - Complex screens still use template-based `innerHTML` rendering. This is a focused regression pass, not a formal proof of safety or a replacement for reviewing every future interpolation and live Apps Script response.
+
+## Follow-up: context-safe DOM rendering and PR batch guard
+
+- Signed-in account labels and navigation buttons are now constructed with DOM APIs and `textContent`; stored account names no longer enter an HTML string.
+- Audit-log rows are built as table cells with `textContent`, so untrusted user/action/target/details values are inserted as text instead of being interpolated into markup.
+- Browser E2E now probes persisted malicious-looking strings in property name/address fields, the signed-in account label and register vendor filter options, alongside the existing register/print/dialog/audit/bulk paths.
+- The PR-quality guard limit is now 20 commits, with an automated boundary test that accepts 20 and rejects 21 commits. This is a batch-size policy change, not permission to bypass coherent code review.
+- Remaining screen templates continue to use HTML strings. Review must still verify every data interpolation's HTML/text/attribute context; this batch is not a complete sanitizer migration or full DOM-sink audit certification.

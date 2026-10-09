@@ -179,10 +179,23 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'audit-log details are rendered as text, not executable HTML',
     )
+    page.fill('#sn', xss_payload)
+    page.fill('#sa', xss_company)
+    page.click('#sf .primary')
+    page.wait_for_function("document.querySelector('#brand').textContent === " + json.dumps(xss_payload))
+    page.wait_for_timeout(300)
+    check(
+        page.locator('#brand').inner_text() == xss_payload
+        and page.locator('#brand img, #brand svg').count() == 0
+        and page.locator('#sa').input_value() == xss_company
+        and page.locator('#sf img, #sf svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'stored property name and address remain inert text in navigation and settings',
+    )
     page.fill('#sn', 'Hotel Test')
     page.fill('#sa', '1 Fort Road')
     page.click('#sf .primary')
-    page.wait_for_timeout(400)
+    page.wait_for_function("document.querySelector('#brand').textContent === 'Hotel Test'")
     check(page.locator('#brand').inner_text() == 'Hotel Test', 'settings saved')
 
     page.click('[data-v=acct]')
@@ -193,6 +206,22 @@ with sync_playwright() as p:
         page.fill('#lEmail', email)
         page.fill('#lPin', pin)
         page.click('#lBtn')
+
+    login('stored-xss@test.com', '258369')
+    page.wait_for_selector('#op')
+    page.fill('#op', '258369')
+    page.fill('#np', '852741')
+    page.click('.mcard .primary')
+    page.wait_for_selector('#nav button')
+    check(
+        xss_payload in page.locator('#who').inner_text()
+        and page.locator('#who img, #who svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'stored user name is inert text in the signed-in account label',
+    )
+    page.click('[data-v=acct]')
+    page.click('[data-act=signout]')
+    page.wait_for_selector('#loginForm')
 
     login('s@test.com', '135790')
     page.wait_for_selector('#op')
@@ -500,6 +529,12 @@ with sync_playwright() as p:
 
     page.click('[data-v=reg]')
     page.wait_for_selector('[data-act=edit]')
+    check(
+        xss_payload in page.locator('#rv').locator('option').all_text_contents()
+        and page.locator('#rv img, #rv svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'stored vendor values remain inert text in register filter options',
+    )
     note_row = page.locator('#rbody tr', has_text='Ram Traders').first
     note_row.locator('[data-act=edit]').click()
     page.wait_for_selector('#modal #en')
