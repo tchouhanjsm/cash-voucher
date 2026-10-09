@@ -12,7 +12,8 @@ This index is a durable map for future development threads. The dedicated handof
 - **PR #46 — [Backup failure cleanup and lock handling](https://github.com/tchouhanjsm/cash-voucher/pull/46):** Merged on 9 October 2026. Mock tests do not prove live Drive/restore behavior.
 - **PR #47 — [Formatting-only correction](https://github.com/tchouhanjsm/cash-voucher/pull/47):** Closed without merge to avoid stacking; its correction was included in PR #46.
 - **PR #48 — [UI contrast and financial-number readability](https://github.com/tchouhanjsm/cash-voucher/pull/48):** Merged on 9 October 2026; exact-head CI and Browser E2E passed.
-- **PR #49 — [Responsive layout and keyboard-focus guardrails](https://github.com/tchouhanjsm/cash-voucher/pull/49):** Open; live PR description is authoritative for exact-head CI/E2E status. Owner review pending.
+- **PR #49 — [Responsive layout and keyboard-focus guardrails](https://github.com/tchouhanjsm/cash-voucher/pull/49):** Merged on 9 October 2026 (merge commit `dd70819f02c564ad4df433e27342d7a53dd004b6`). Browser E2E passed 93 checks; see live PR for exact CI evidence.
+- **PR #50 — [Measured contrast and dialog keyboard accessibility](https://github.com/tchouhanjsm/cash-voucher/pull/50):** Open; live PR description is authoritative for exact-head CI/E2E status. Owner review pending.
 
 ## Per-PR handoff contract
 
@@ -32,5 +33,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PR #46 and #48 are merged; PR #47 is closed without merge. PR #49 is the active responsive/keyboard UI quality batch.
+- PR #46, #48 and #49 are merged; PR #47 is closed without merge. PR #50 is the active contrast/dialog accessibility batch.
 - The owner merges PRs. No agent merge or production deployment.
