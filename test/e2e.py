@@ -913,6 +913,21 @@ with sync_playwright() as p:
     )
     corrupt_context.close()
 
+    # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
+    page.set_viewport_size({'width': 390, 'height': 800})
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.click('[data-k=RECEIPT]')
+    page.fill('.erow .rv', 'Mobile cash receipt workflow')
+    page.fill('.erow .ra', '25')
+    check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash receipt form has matching save action')
+    page.click('#nsave')
+    page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1 cash receipt')")
+    check('Saved 1 cash receipt' in page.locator('#nres').inner_text(), 'saved confirmation uses cash-receipt terminology')
+    page.click('#nres [data-act=newagain]')
+    page.wait_for_selector('#nf')
+    check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'new cash receipt action preserves the selected mode')
+
     browser.close()
 
 print(f'e2e: {ok} checks passed, {len(errs)} failed')
