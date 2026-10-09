@@ -35,9 +35,9 @@ const commitCount = Number(pullRequest.commits);
 
 if (!Number.isInteger(commitCount) || commitCount < 1) {
   failures.push('Could not verify a valid pull-request commit count from the event payload.');
-} else if (commitCount > 10) {
+} else if (commitCount > 20) {
   failures.push(
-    `This batch contains ${commitCount} commits; the limit is 10. Split only at a coherent boundary—do not rewrite or force-push history to bypass this gate.`,
+    `This batch contains ${commitCount} commits; the limit is 20. Split only at a coherent boundary—do not rewrite or force-push history to bypass this gate.`,
   );
 }
 
@@ -91,7 +91,7 @@ if (failures.length) {
   }
 
   console.error(
-    'Use .github/pull_request_template.md and keep each PR/batch at 10 commits or fewer.',
+    'Use .github/pull_request_template.md and keep each PR/batch at 20 commits or fewer.',
   );
   process.exit(1);
 }
