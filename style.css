@@ -6,6 +6,8 @@
   --line: #e1e6eb;
   --brand: #1f3a4d;
   --accent: #b8862f;
+  --focus: #725018;
+  --nav-active: #755016;
   --bad: #b3261e;
   --ok: #1b7a43;
   --warn: #9a6700;
@@ -78,7 +80,7 @@ textarea {
 input:focus,
 select:focus,
 textarea:focus {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--focus);
   outline-offset: -1px;
 }
 label {
@@ -209,7 +211,7 @@ nav button:hover {
   background: #ffffff14;
 }
 nav button.on {
-  background: var(--accent);
+  background: var(--nav-active);
   color: #fff;
   font-weight: 600;
 }
@@ -666,7 +668,7 @@ tr.cx .amt {
 /* ---------------- Frontend foundation ---------------- */
 
 :focus-visible {
-  outline: 3px solid var(--accent);
+  outline: 3px solid var(--focus);
   outline-offset: 2px;
 }
 
@@ -740,8 +742,13 @@ button {
   font-size: 13px;
 }
 
-.main:focus {
+.main:focus:not(:focus-visible) {
   outline: none;
+}
+
+.side nav button:focus-visible {
+  outline-color: #f3d17c;
+  outline-offset: -3px;
 }
 
 @media (prefers-reduced-motion: reduce) {
