@@ -158,9 +158,12 @@ with sync_playwright() as p:
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
 
     def import_recovery_file(file_path):
+        selector = '#banner [data-act=import-pending]'
+        if not page.locator(selector).is_visible():
+            selector = '#view [data-act=import-pending]'
         page.once('dialog', lambda dialog: dialog.accept())
         with page.expect_file_chooser() as chooser_info:
-            page.click('[data-act=import-pending]')
+            page.locator(selector).click()
         chooser_info.value.set_files(file_path)
 
     import_recovery_file(pending_export_path)
@@ -202,6 +205,24 @@ with sync_playwright() as p:
     page.click('[data-act=refresh]')
     page.wait_for_timeout(500)
     check(page.locator('#rbody tr').count() == 3, 'lost-response retry is idempotent')
+
+    page.click('[data-v=new]')
+    import_recovery_file(pending_export_path)
+    page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
+    check('1 payment waiting to upload' in page.inner_text('#banner'), 'synced recovery export can be restored')
+    page.click('#banner [data-act=flush]')
+    page.wait_for_function(
+        "document.querySelector('#banner').classList.contains('hidden')",
+        timeout=8000,
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_timeout(500)
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(500)
+    check(
+        page.locator('#rbody tr').count() == 3,
+        'restoring an already-synced export does not create a duplicate voucher',
+    )
 
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
