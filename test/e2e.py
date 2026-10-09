@@ -234,7 +234,7 @@ with sync_playwright() as p:
     )
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
-    xss_note = '<img src=x onerror=alert(1)>'
+    xss_note = '<img src=x onerror=window.__xssFired=true>'
     page.fill('.rn', xss_note)
     with open('/tmp/r.png', 'wb') as image_file:
         image_file.write(png)
@@ -294,11 +294,18 @@ with sync_playwright() as p:
     check(page.locator('.rimg').count() >= 1, 'receipt viewable')
     page.click('[data-x]')
 
-    page.locator('[data-act=print]').first.evaluate("window.print = () => {}")
-    page.locator('[data-act=print]').first.click()
+    note_row = page.locator('#rbody tr', has_text='Ram Traders').first
+    note_row.locator('[data-act=print]').evaluate("window.print = () => {}")
+    note_row.locator('[data-act=print]').click()
     page.wait_for_timeout(200)
     print_text = page.locator('#printArea').inner_text()
-    check('Rupees' in print_text, 'print has words')
+    check(
+        'Rupees' in print_text
+        and xss_note in print_text
+        and page.locator('#printArea img, #printArea svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'stored voucher note remains text in printable output',
+    )
 
     context.set_offline(True)
     page.click('[data-v=new]')
@@ -492,6 +499,18 @@ with sync_playwright() as p:
     check(page.locator('.hb').count() >= 3, 'dashboard bars')
 
     page.click('[data-v=reg]')
+    page.wait_for_selector('[data-act=edit]')
+    note_row = page.locator('#rbody tr', has_text='Ram Traders').first
+    note_row.locator('[data-act=edit]').click()
+    page.wait_for_selector('#modal #en')
+    check(
+        page.locator('#modal img, #modal svg').count() == 0
+        and page.locator('#en').input_value() == xss_note
+        and not page.evaluate('window.__xssFired === true'),
+        'stored vendor and note remain text in edit dialog fields',
+    )
+    page.click('#modal [data-x]')
+    page.wait_for_selector('#modal.hidden')
     page.wait_for_selector('[data-act=cancel]')
     page.locator('[data-act=cancel]').first.click()
     page.fill('#cr', 'entered twice')
