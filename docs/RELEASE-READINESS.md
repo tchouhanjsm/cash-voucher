@@ -14,7 +14,7 @@
 | PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                             |
 | CI quality gate                                             | PASS on current main  | Post-merge CI passed on `4d80152`; each later PR must still be checked at its exact head                 |
 | Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
-| Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
+| Daily backup mechanism                                      | Implemented in source | Owner-only status panel reports recorded metadata; live trigger success, backup contents and restore drill remain unverified |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
 | Production Apps Script deployment                           | NOT RELEASED          | No deployment performed in this work                                                                     |
 | Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
@@ -42,7 +42,7 @@
 - [ ] Verify Script Properties and the owner account; rotate the owner PIN if a reported legacy setup value was ever used.
 - [ ] Deploy reviewed backend source intentionally, creating a new Web App version while preserving the intended URL.
 - [ ] Verify lockout, PIN change, session invalidation, role restrictions, voucher numbering/idempotency and receipt access against the actual deployment.
-- [ ] Observe at least one scheduled backup run; open its Sheet copy and verify copied receipts/manifest.
+- [ ] Observe at least one scheduled backup run; compare status-panel timestamps with Drive; open its Sheet copy and verify copied receipts/manifest.
 - [ ] Perform restore into a separate Sheet/folder and validate record counts and voucher numbering.
 
 ## Gate 4 — controlled hotel pilot
