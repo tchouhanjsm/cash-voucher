@@ -162,22 +162,140 @@ export async function ready() {
   return readyPromise;
 }
 
-export async function enqueue(entries) {
-  if (!Array.isArray(entries) || !entries.length) return;
+function validateClientId_(value) {
+  const clientId = String(value || '').trim();
 
-  const records = entries.map(normalizeEntry_);
+  if (
+    !clientId ||
+    clientId.length > 60 ||
+    [...clientId].some((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 31 || code === 127;
+    })
+  ) {
+    throw new Error('Offline payment contains an invalid payment ID.');
+  }
+
+  return clientId;
+}
+
+function sameEntry_(left, right) {
+  return JSON.stringify(left) === JSON.stringify(right);
+}
+
+function addRecordsSafely_(incoming) {
+  return readyPromise.then(
+    (db) =>
+      new Promise((resolve, reject) => {
+        const transaction = db.transaction(STORE, 'readwrite');
+        const store = transaction.objectStore(STORE);
+        let result;
+        let failure;
+
+        transaction.oncomplete = () => resolve(result);
+        transaction.onerror = () =>
+          reject(failure || transaction.error || new Error('Offline storage transaction failed.'));
+        transaction.onabort = () =>
+          reject(failure || transaction.error || new Error('Offline storage transaction aborted.'));
+
+        const request = store.getAll();
+
+        request.onerror = () => {
+          failure = request.error || new Error('Could not inspect pending payments.');
+        };
+
+        request.onsuccess = () => {
+          const existing = new Map(request.result.map((record) => [record.clientId, record]));
+          const toAdd = [];
+          let skipped = 0;
+
+          for (const record of incoming) {
+            const previous = existing.get(record.clientId);
+
+            if (previous) {
+              if (!sameEntry_(previous.entry, record.entry)) {
+                failure = new Error(
+                  'A payment ID already exists with different details. Nothing was imported.',
+                );
+                transaction.abort();
+                return;
+              }
+
+              skipped++;
+              continue;
+            }
+
+            existing.set(record.clientId, record);
+            toAdd.push(record);
+          }
+
+          try {
+            toAdd.forEach((record) => store.add(record));
+            result = { added: toAdd.length, skipped };
+          } catch (error) {
+            failure = error;
+            transaction.abort();
+          }
+        };
+      }),
+  );
+}
+
+function assertUniqueIds_(records) {
   const seen = new Set();
 
   records.forEach((record) => {
     if (seen.has(record.clientId)) {
-      throw new Error('Duplicate offline payment client ID.');
+      throw new Error('Offline payments contain duplicate payment IDs.');
     }
     seen.add(record.clientId);
   });
+}
 
-  await tx_('readwrite', (store) => {
-    records.forEach((record) => store.put(record));
+export async function enqueue(entries) {
+  if (!Array.isArray(entries) || !entries.length) return { added: 0, skipped: 0 };
+
+  const records = entries.map((entry, index) => {
+    const record = normalizeEntry_(entry, index);
+    record.clientId = validateClientId_(record.clientId);
+    record.entry.clientId = record.clientId;
+    return record;
   });
+
+  assertUniqueIds_(records);
+  return addRecordsSafely_(records);
+}
+
+export async function restore(exportRecords) {
+  if (!Array.isArray(exportRecords) || !exportRecords.length) {
+    throw new Error('Recovery file contains no pending payments.');
+  }
+
+  const records = exportRecords.map((item, index) => {
+    const clientId = validateClientId_(item?.clientId);
+    const entry = item?.entry;
+
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error('Recovery file contains a payment with invalid details.');
+    }
+
+    if (validateClientId_(entry.clientId) !== clientId) {
+      throw new Error('Recovery file payment IDs do not match their transaction details.');
+    }
+
+    return {
+      clientId,
+      entry: { ...entry, clientId },
+      status: 'pending',
+      attempts: 0,
+      leaseOwner: '',
+      leaseUntil: 0,
+      createdAt: Date.now() + index,
+    };
+  });
+
+  assertUniqueIds_(records);
+  return addRecordsSafely_(records);
 }
 
 export async function list() {
@@ -281,6 +399,7 @@ export async function clear() {
 export const offlineQueue = {
   ready,
   enqueue,
+  restore,
   list,
   count,
   claim,

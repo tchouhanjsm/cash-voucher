@@ -1,5 +1,6 @@
 import base64
 import datetime
+import json
 import os
 import urllib.parse
 
@@ -144,15 +145,51 @@ with sync_playwright() as p:
     with page.expect_download() as download_info:
         page.click('[data-act=export-pending]')
     pending_download = download_info.value
+    pending_export_path = pending_download.path()
     check(
         pending_download.suggested_filename.startswith('cash-vouchers-pending-')
-        and pending_download.suggested_filename.endswith('.json'),
+        and pending_download.suggested_filename.endswith('.json')
+        and pending_export_path is not None,
         'pending export downloads JSON',
     )
 
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
+
+    def import_recovery_file(file_path):
+        selector = '#banner [data-act=import-pending]'
+        if not page.locator(selector).is_visible():
+            selector = '#view [data-act=import-pending]'
+        page.once('dialog', lambda dialog: dialog.accept())
+        with page.expect_file_chooser() as chooser_info:
+            page.locator(selector).click()
+        chooser_info.value.set_files(file_path)
+
+    import_recovery_file(pending_export_path)
+    page.wait_for_function(
+        "document.querySelector('#toast').innerText.includes('matching item(s) already queued and skipped')",
+        timeout=8000,
+    )
+    check('1 payment waiting to upload' in page.inner_text('#banner'), 'duplicate recovery import is skipped')
+
+    with open(pending_export_path, encoding='utf-8') as recovery_file:
+        recovery_payload = json.load(recovery_file)
+    conflicting_payload = json.loads(json.dumps(recovery_payload))
+    conflicting_payload['records'][0]['entry']['vendor'] = 'Conflicting Vendor'
+    conflict_path = '/tmp/cash-voucher-recovery-conflict.json'
+    with open(conflict_path, 'w', encoding='utf-8') as conflict_file:
+        json.dump(conflicting_payload, conflict_file)
+
+    import_recovery_file(conflict_path)
+    page.wait_for_function(
+        "document.querySelector('#toast').innerText.includes('different details. Nothing was imported.')",
+        timeout=8000,
+    )
+    check(
+        '1 payment waiting to upload' in page.inner_text('#banner'),
+        'conflicting recovery import preserves original queued payment',
+    )
 
     context.set_offline(False)
     page.wait_for_function(
@@ -168,6 +205,24 @@ with sync_playwright() as p:
     page.click('[data-act=refresh]')
     page.wait_for_timeout(500)
     check(page.locator('#rbody tr').count() == 3, 'lost-response retry is idempotent')
+
+    page.click('[data-v=new]')
+    import_recovery_file(pending_export_path)
+    page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
+    check('1 payment waiting to upload' in page.inner_text('#banner'), 'synced recovery export can be restored')
+    page.click('#banner [data-act=flush]')
+    page.wait_for_function(
+        "document.querySelector('#banner').classList.contains('hidden')",
+        timeout=8000,
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_timeout(500)
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(500)
+    check(
+        page.locator('#rbody tr').count() == 3,
+        'restoring an already-synced export does not create a duplicate voucher',
+    )
 
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
