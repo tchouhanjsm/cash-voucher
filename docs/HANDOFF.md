@@ -43,7 +43,7 @@ Keep all action eligibility tied to existing client capability checks and rely o
 **PR:** https://github.com/tchouhanjsm/cash-voucher/pull/57.
 Base is the verified `main` SHA above.
 
-**Current gate:** CI failed at Prettier on candidate head `49d96a81c4e09d4052c682d549a21c6cadba3f9f`, reporting `docs/HANDOFF.md` and `frontend/features/register.js`. Browser E2E is still running on the same SHA: [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37967743805), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37967743822). The local shell cannot reach GitHub to install/run the repository formatter. No same-head green pair exists.
+**Current gate:** On candidate head `556e6b3ea9a4f1aef47e133255968d0daea27da3`, CI is `failure` and Browser E2E is `pending`. The last completed CI attempt failed at Prettier for `docs/HANDOFF.md` and `frontend/features/register.js`; that formatter output must be generated in a connected checkout before the batch can be considered ready.
 
 Next steps:
 1. In a connected checkout, run `npx prettier --write docs/HANDOFF.md frontend/features/register.js` and commit the formatter output.
