@@ -616,6 +616,33 @@ with sync_playwright() as p:
 
     page.click('[data-v=reg]')
     page.wait_for_selector('[data-act=edit]')
+    page.set_viewport_size({'width': 390, 'height': 844})
+    manager_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
+    check(
+        manager_row.locator('.voucher-kind').inner_text() == 'Cash paid',
+        'manager register identifies cash-paid voucher rows explicitly',
+    )
+    check(
+        manager_row.locator('.voucher-actions').get_attribute('role') == 'group'
+        and manager_row.locator('.voucher-actions').get_attribute('aria-label').startswith('Actions for'),
+        'manager voucher actions have a labelled action group',
+    )
+    manager_targets = manager_row.locator('.voucher-actions button').evaluate_all(
+        "elements => elements.map(element => ({label: element.innerText, height: element.getBoundingClientRect().height}))"
+    )
+    check(
+        all(target['height'] >= 44 for target in manager_targets),
+        'manager register row actions meet 44px mobile target height',
+    )
+    check(
+        not page.evaluate('document.documentElement.scrollWidth > document.documentElement.clientWidth'),
+        'manager register mobile layout has no page-level horizontal overflow',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    check(
+        manager_row.locator('.voucher-actions').evaluate("element => getComputedStyle(element).display") == 'flex',
+        'desktop register keeps a grouped action layout',
+    )
     check(
         xss_payload in page.locator('#rv').locator('option').all_text_contents()
         and page.locator('#rv img, #rv svg').count() == 0
