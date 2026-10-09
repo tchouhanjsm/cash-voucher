@@ -77,17 +77,17 @@ export function createRegister({ api, go }) {
     $('#view').innerHTML =
       head('Payment Register', refreshBtn) +
       `<div class="card filters" id="rf">
-    <input id="rq" placeholder="Search no / vendor / note" value="${esc(R.q)}">
-    <select id="rv"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select>
-    <select id="rc"><option value="">All categories</option>${categories()
+    <input id="rq" aria-label="Search vouchers by number, vendor or note" placeholder="Search no / vendor / note" value="${esc(R.q)}">
+    <select id="rv" aria-label="Filter by vendor"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select>
+    <select id="rc" aria-label="Filter by category"><option value="">All categories</option>${categories()
       .map(
         (category) => `<option${category === R.cat ? ' selected' : ''}>${esc(category)}</option>`,
       )
       .join('')}</select>
-    ${can('viewAll') ? `<select id="ru"><option value="">All users</option>${users.map((user) => `<option value="${esc(user)}"${user === R.user ? ' selected' : ''}>${esc(nm(user))}</option>`).join('')}</select>` : ''}
+    ${can('viewAll') ? `<select id="ru" aria-label="Filter by user"><option value="">All users</option>${users.map((user) => `<option value="${esc(user)}"${user === R.user ? ' selected' : ''}>${esc(nm(user))}</option>`).join('')}</select>` : ''}
     <label>From<input type="date" id="rfrom" value="${esc(R.from)}"></label><label>To<input type="date" id="rto" value="${esc(R.to)}"></label>
-    <select id="rt"><option value="">Paid & received</option><option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option><option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option></select>
-    <select id="rs">${[
+    <select id="rt" aria-label="Filter by transaction type"><option value="">Paid & received</option><option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option><option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option></select>
+    <select id="rs" aria-label="Filter by status">${[
       ['ACTIVE', 'Active'],
       ['CANCELLED', 'Cancelled'],
       ['ALL', 'All'],
