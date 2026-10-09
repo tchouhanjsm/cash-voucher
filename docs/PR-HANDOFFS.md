@@ -5,7 +5,7 @@ This index is a durable map for future development threads. The dedicated handof
 ## Recent reviewed PR sequence
 
 | PR                                                         | Outcome                                                                | Durable record / important boundary                                                                                       |
-|------------------------------------------------------------|------------------------------------------------------------------------|---------------------------------------------------------------------------------------------------------------------------|
+| ---------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | [#41](https://github.com/tchouhanjsm/cash-voucher/pull/41) | Targeted hardening of HTML rendering sinks and stored-XSS regressions. | Merged. Not a complete sanitizer migration; full dynamic HTML sink audit remains open.                                    |
 | [#42](https://github.com/tchouhanjsm/cash-voucher/pull/42) | DOM text rendering and commit-count gate raised to 20.                 | Merged. The commit-count ceiling is being removed in #46; required PR handoff sections remain enforced.                   |
 | [#43](https://github.com/tchouhanjsm/cash-voucher/pull/43) | Fixed dated-backup retention matching and CSV manifest line breaks.    | Merged. Live Drive and restore behavior were not verified.                                                                |
