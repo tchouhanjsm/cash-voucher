@@ -52,66 +52,64 @@ export function createRegister({ api, go }) {
       `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>`;
 
     $('#rbody').innerHTML = shown
-      .map(
-        (voucher) => {
-          const receiptCount = voucher.receipts.length;
-          const receiptAction =
-            receiptCount ||
-            (voucher.status === 'ACTIVE' &&
-              (can('receiptAny') || voucher.createdBy === S.me.email));
-          const kind = isIn(voucher) ? 'Receipt' : 'Payment';
-          const cancelledNote =
-            voucher.status === 'ACTIVE'
-              ? ''
-              : ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}`;
-          const actions = [
-            `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
-            receiptAction
-              ? `<button
-                  class="btn sm"
-                  data-act="rec"
-                  data-id="${esc(voucher.id)}"
-                  aria-label="Receipts for ${esc(vno(voucher))}"
-                >${receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
-              : '',
-            voucher.status === 'ACTIVE' && can('edit')
-              ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>`
-              : '',
-            voucher.status === 'ACTIVE' && can('cancel')
-              ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(voucher.id)}">Cancel</button>`
-              : '',
-          ].filter(Boolean).join('');
-          return `<tr class="voucher-row ${voucher.status === 'ACTIVE' ? '' : 'cx'}">
-            <td class="nw">
-              <b>${vno(voucher)}</b>
-              <div class="cat voucher-kind">${kind}</div>
-            </td>
-            <td class="nw">${esc(dmy(voucher.date))}</td>
-            <td>
-              <span class="voucher-vendor">${esc(voucher.vendor)}</span>
-              <div class="cat">
-                ${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${cancelledNote}
-              </div>
-            </td>
-            <td
-              class="r nw amt"
-              ${isIn(voucher) ? 'style="color:var(--ok)"' : ''}
-            >
-              <span class="voucher-amount">
-                ${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}
-              </span>
-            </td>
-            <td class="nw cat">${esc(nm(voucher.createdBy))}</td>
-            <td>
-              <div
-                class="voucher-actions"
-                role="group"
-                aria-label="Actions for ${esc(vno(voucher))}"
-              >${actions}</div>
-            </td>
-          </tr>`;
-        },
-      )
+      .map((voucher) => {
+        const receiptCount = voucher.receipts.length;
+        const receiptAction =
+          receiptCount ||
+          (voucher.status === 'ACTIVE' &&
+            (can('receiptAny') || voucher.createdBy === S.me.email));
+        const kind = isIn(voucher) ? 'Receipt' : 'Payment';
+        const cancelledNote =
+          voucher.status === 'ACTIVE'
+            ? ''
+            : ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}`;
+        const actions = [
+          `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
+          receiptAction
+            ? `<button
+                class="btn sm"
+                data-act="rec"
+                data-id="${esc(voucher.id)}"
+                aria-label="Receipts for ${esc(vno(voucher))}"
+              >${receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
+            : '',
+          voucher.status === 'ACTIVE' && can('edit')
+            ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>`
+            : '',
+          voucher.status === 'ACTIVE' && can('cancel')
+            ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(voucher.id)}">Cancel</button>`
+            : '',
+        ].filter(Boolean).join('');
+        return `<tr class="voucher-row ${voucher.status === 'ACTIVE' ? '' : 'cx'}">
+          <td class="nw">
+            <b>${vno(voucher)}</b>
+            <div class="cat voucher-kind">${kind}</div>
+          </td>
+          <td class="nw">${esc(dmy(voucher.date))}</td>
+          <td>
+            <span class="voucher-vendor">${esc(voucher.vendor)}</span>
+            <div class="cat">
+              ${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${cancelledNote}
+            </div>
+          </td>
+          <td
+            class="r nw amt"
+            ${isIn(voucher) ? 'style="color:var(--ok)"' : ''}
+          >
+            <span class="voucher-amount">
+              ${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}
+            </span>
+          </td>
+          <td class="nw cat">${esc(nm(voucher.createdBy))}</td>
+          <td>
+            <div
+              class="voucher-actions"
+              role="group"
+              aria-label="Actions for ${esc(vno(voucher))}"
+            >${actions}</div>
+          </td>
+        </tr>`;
+      })
       .join('');
 
     const emptyState = $('#rempty');
