@@ -140,12 +140,27 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
   }
 
   async function refresh(quiet) {
+    const button = $('[data-act="refresh"]');
+    const originalLabel = button?.textContent || '↻ Refresh';
+
+    if (button) {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+      button.textContent = 'Refreshing…';
+    }
+
     try {
       await load();
       go(S.view);
       if (!quiet) toast('Updated.', 'ok');
     } catch (error) {
       if (!quiet) fail(error);
+    } finally {
+      if (button?.isConnected) {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        button.textContent = originalLabel;
+      }
     }
   }
 
