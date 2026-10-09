@@ -1,6 +1,5 @@
 import { $, $$ } from '../core/dom.js';
 import { S, can } from '../core/state.js';
-import { esc } from '../core/utils.js';
 import { fail, toast } from '../core/ui.js';
 import { ls } from '../core/storage.js';
 
@@ -81,13 +80,32 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     $('#app').classList.remove('hidden');
     $('#brand').textContent = S.settings.propertyName || 'Cash Vouchers';
     document.title = S.settings.propertyName || 'Vouchers';
-    $('#who').innerHTML = `${esc(S.me.name)}<br>${esc(S.me.role)}`;
-    $('#nav').innerHTML = NAV.filter((item) => item[3]())
-      .map(
-        (item) =>
-          `<button type="button" data-v="${item[0]}"><span class="ic" aria-hidden="true">${item[1]}</span><span>${item[2]}</span></button>`,
-      )
-      .join('');
+    const who = $('#who');
+    who.replaceChildren(
+      document.createTextNode(String(S.me.name || '')),
+      document.createElement('br'),
+      document.createTextNode(String(S.me.role || '')),
+    );
+
+    const nav = $('#nav');
+    const navContent = document.createDocumentFragment();
+    NAV.filter((item) => item[3]()).forEach(([view, icon, label]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.v = view;
+
+      const iconElement = document.createElement('span');
+      iconElement.className = 'ic';
+      iconElement.setAttribute('aria-hidden', 'true');
+      iconElement.textContent = icon;
+
+      const labelElement = document.createElement('span');
+      labelElement.textContent = label;
+
+      button.append(iconElement, labelElement);
+      navContent.appendChild(button);
+    });
+    nav.replaceChildren(navContent);
 
     go(
       offline
