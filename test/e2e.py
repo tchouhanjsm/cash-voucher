@@ -554,8 +554,19 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'stored vendor and note remain text in edit dialog fields',
     )
-    page.click('#modal [data-x]')
+    check(
+        page.locator('#modal').get_attribute('role') == 'dialog'
+        and page.locator('#modal').get_attribute('aria-modal') == 'true'
+        and page.locator('#modal').get_attribute('aria-labelledby') == 'modalTitle'
+        and page.locator('#modal #modalTitle').count() == 1,
+        'edit dialog exposes modal semantics and an accessible title',
+    )
+    page.keyboard.press('Escape')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+    check(
+        page.evaluate("document.activeElement === document.querySelector('[data-act=edit]')"),
+        'Escape closes an idle dialog and restores focus to its opener',
+    )
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
     xss_vendor_row.locator('[data-act=cancel]').click()
     page.wait_for_selector('#modal #cr')
