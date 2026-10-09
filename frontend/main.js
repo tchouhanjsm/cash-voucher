@@ -1,5 +1,5 @@
 import { createApi } from './core/api.js';
-import { $, $$ } from './core/dom.js';
+import { $ } from './core/dom.js';
 import { registerActions, installActionDelegation } from './core/actions.js';
 import { S } from './core/state.js';
 import { ls } from './core/storage.js';
@@ -111,13 +111,7 @@ registerActions({
 
   addrow: () => payments.addRow(),
 
-  delrow: ({ element }) => {
-    const rows = $$('#rows .erow');
-
-    if (rows.length > 1) {
-      element.closest('.erow').remove();
-    }
-  },
+  delrow: ({ element }) => payments.removeRow(element),
 
   clrrec: ({ element }) => payments.clearReceipt(element),
 
