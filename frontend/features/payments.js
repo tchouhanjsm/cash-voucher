@@ -100,7 +100,7 @@ export function createPayments({ api, refresh }) {
       $('.rv', row).value.trim() || $('.ra', row).value.trim() || row._rec.length,
     ).length;
     const button = $('#nsave');
-    if (button) button.textContent = 'Save ' + entryNoun(count === 1 ? 1 : 2);
+    if (button) button.textContent = 'Save ' + entryNoun(count > 1 ? 2 : 1);
   }
 
   function vNew() {
