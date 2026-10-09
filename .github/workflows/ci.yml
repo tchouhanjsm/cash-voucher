@@ -31,6 +31,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Temporary Prettier diff diagnostics
+        run: |
+          for file in docs/PR-HANDOFFS.md test/test-backup-failure.js test/test-pr-quality.js; do
+            echo "=== Prettier diff: $file ==="
+            npx prettier "$file" | diff -u "$file" - || true
+          done
+
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
