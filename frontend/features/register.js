@@ -317,9 +317,7 @@ export function createRegister({ api, go }) {
         return item;
       });
 
-      await Promise.all(
-        voucher.receipts.map((fileId, index) => loadReceipt(fileId, items[index])),
-      );
+      await Promise.all(voucher.receipts.map((fileId, index) => loadReceipt(fileId, items[index])));
     };
 
     await draw();
