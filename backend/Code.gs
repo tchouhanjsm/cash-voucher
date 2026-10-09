@@ -235,7 +235,6 @@ function backupStatus_(user) {
   need_(user, 'settings');
   const p = props_();
   const lastError = String(p.getProperty('BACKUP_LAST_ERROR') || '');
-
   const configured = Boolean(
     p.getProperty('SS_ID') &&
       p.getProperty('RECEIPT_FOLDER_ID') &&
@@ -243,18 +242,22 @@ function backupStatus_(user) {
   );
   const lastAttempt = p.getProperty('BACKUP_LAST_ATTEMPT') || '';
   const lastSuccess = p.getProperty('BACKUP_LAST_SUCCESS') || '';
-  let state = 'not_configured';
+  let state;
 
-  if (configured) {
-    if (lastError) state = 'failed';
-    else if (!lastSuccess) state = lastAttempt ? 'incomplete' : 'never_run';
-    else if (!isFinite(Date.parse(lastSuccess))) state = 'incomplete';
-    else if (
-      lastAttempt &&
-      (!isFinite(Date.parse(lastAttempt)) || Date.parse(lastAttempt) > Date.parse(lastSuccess))
-    )
-      state = 'incomplete';
-    else state = 'success';
+  if (!configured) {
+    state = 'not_configured';
+  } else if (lastError) {
+    state = 'failed';
+  } else if (!lastSuccess) {
+    state = lastAttempt ? 'incomplete' : 'never_run';
+  } else {
+    const successTime = Date.parse(lastSuccess);
+    const attemptTime = lastAttempt ? Date.parse(lastAttempt) : null;
+    state =
+      !isFinite(successTime) ||
+      (lastAttempt && (!isFinite(attemptTime) || attemptTime > successTime))
+        ? 'incomplete'
+        : 'success';
   }
 
   return {
