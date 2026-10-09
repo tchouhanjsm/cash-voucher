@@ -86,7 +86,6 @@ PR #53 adds a compact-width layout for payment rows at widths up to 380 CSS pixe
 
 The stylesheet already contained a `prefers-reduced-motion: reduce` rule; PR #53 adds a browser assertion that the preference is detected and transition/animation durations are minimized. These checks approximate the narrow viewport used by 400% zoom at a 1280px desktop width, but they do not simulate every browser zoom behavior or replace manual keyboard-order, real-device and assistive-technology checks.
 
-
 ## Register empty states — October 2026
 
 PR #54 distinguishes a populated register whose current filters return no matches from a register with no vouchers available to show. The filtered-empty state exposes a polite status announcement and an in-context Clear filters action with a 44px minimum height. The no-data message includes safe next steps without assuming that an empty in-memory list proves the server has no historical vouchers. Browser E2E covers the filtered-empty state and recovery action; offline/real-device and assistive-technology behavior remain separate validation items.
