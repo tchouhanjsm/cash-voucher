@@ -145,7 +145,9 @@ async function migrateLegacy_(db) {
     }
 
     const existingId = String(entry.clientId || '').trim();
-    const clientId = existingId || legacyClientId_(entry, index);
+    const clientId = existingId
+      ? validateClientId_(existingId)
+      : legacyClientId_(entry, index);
 
     return { ...entry, clientId };
   });
@@ -253,8 +255,22 @@ function validateClientId_(value) {
   return clientId;
 }
 
+function stableJson_(value) {
+  if (value === null || typeof value !== 'object') return JSON.stringify(value);
+  if (Array.isArray(value)) return '[' + value.map(stableJson_).join(',') + ']';
+
+  return (
+    '{' +
+    Object.keys(value)
+      .sort()
+      .map((key) => JSON.stringify(key) + ':' + stableJson_(value[key]))
+      .join(',') +
+    '}'
+  );
+}
+
 function sameEntry_(left, right) {
-  return JSON.stringify(left) === JSON.stringify(right);
+  return stableJson_(left) === stableJson_(right);
 }
 
 function addRecordsSafely_(incoming) {
