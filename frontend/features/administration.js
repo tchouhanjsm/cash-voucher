@@ -213,7 +213,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
       const details = document.createElement('div');
       details.className = 'backup-status-details';
       const rows = [
-        ['Configuration', status.configured ? 'Required Script Properties are present' : 'Required Script Properties are missing'],
+        [
+          'Configuration',
+          status.configured
+            ? 'Required Script Properties are present'
+            : 'Required Script Properties are missing',
+        ],
         ['Retention', `${status.retentionDays} days`],
         ['Last attempt', formatBackupTimestamp(status.lastAttempt)],
         ['Last success', formatBackupTimestamp(status.lastSuccess)],
@@ -242,7 +247,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
       title.textContent = '🛡️ Backup & recovery';
       const message = document.createElement('p');
       message.className = 'error';
-      message.textContent = 'Backup status could not be loaded. Check the connection and refresh Settings.';
+      message.textContent =
+        'Backup status could not be loaded. Check the connection and refresh Settings.';
       card.replaceChildren(title, message);
     }
   }
@@ -252,7 +258,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const date = new Date(value);
     return Number.isNaN(date.getTime())
       ? String(value)
-      : date.toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short' });
+      : date.toLocaleString('en-IN', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+        });
   }
 
   async function saveSettings() {
