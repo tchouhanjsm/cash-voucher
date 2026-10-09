@@ -49,7 +49,6 @@ This follow-up batch addresses the screen-level form findings identified during 
 
 This remains a targeted form pass. It does not establish full WCAG conformance, validate every possible server-side error message, or replace real-device and screen-reader evaluation.
 
-
 ## Follow-up: HTML rendering sink review
 
 - Clear-only operations for the shared dialog, receipt preview, and receipt viewer now use DOM APIs instead of assigning an empty `innerHTML` string. Navigation checks modal state without reading its markup.
