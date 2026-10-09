@@ -16,7 +16,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #45 is merged into `main`; it adds the owner-only backup status panel and clearer recovery-status semantics.
 - PR #46 is the active backup-failure cleanup PR: [PR #46](https://github.com/tchouhanjsm/cash-voucher/pull/46).
 - PR #47 was closed without merge to avoid stacking. The single review/merge target is PR #46; its formatter issue is being corrected on the #46 branch.
-- The implementation candidate `8904d1b6fa8ece5f18b00277dc95e6865e7f6372` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37931571149): 88 backend checks plus the backup-orchestration and PR-quality regressions; [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37931571006) passed with 72 checks and 0 failures. This handoff update changes documentation only, so its resulting head still needs exact-head verification.
+- Exact-current-head CI and Browser E2E links are maintained in PR #46's `Verification evidence` section. Before owner review, confirm both workflow runs target the live PR head SHA; any new commit requires re-verification.
 - PR #46 now introduces a dependency-injected backup orchestration helper with regression cases for copy/manifest failures, cleanup failure, retention failure, metadata-write failure, lock acquisition and success. Exact-head CI must confirm these tests pass.
 - No PR has been merged and no Apps Script production deployment or production data change has been performed by this workflow.
 
@@ -37,8 +37,8 @@ Do not claim local checks were run when the local checkout or dependencies were 
 
 ## Next steps for PR #46
 
-1. Verify CI and Browser E2E on the exact current PR #46 head after this handoff-only update.
-2. If both pass, complete the final diff/security review and leave PR #46 open for owner review and merge.
+1. Confirm the live CI and Browser E2E results match the current PR #46 head SHA.
+2. Complete the final diff/security review and leave PR #46 open for owner review and merge.
 3. Do not merge, push Apps Script or deploy.
 
 ## Operational gates still open
