@@ -185,6 +185,8 @@ function backupData_() {
   const p = props_();
   let snapshot;
   try {
+    p.setProperty('BACKUP_LAST_ATTEMPT', new Date().toISOString());
+    p.deleteProperty('BACKUP_LAST_ERROR');
     const ssId = p.getProperty('SS_ID'),
       sourceReceiptFolderId = p.getProperty('RECEIPT_FOLDER_ID'),
       backupRootId = p.getProperty('BACKUP_FOLDER_ID');
@@ -228,6 +230,46 @@ function backupData_() {
   } finally {
     lock.releaseLock();
   }
+}
+function backupStatus_(user) {
+  need_(user, 'settings');
+  const p = props_();
+  const lastError = String(p.getProperty('BACKUP_LAST_ERROR') || '');
+  const configured = Boolean(
+    p.getProperty('SS_ID') &&
+      p.getProperty('RECEIPT_FOLDER_ID') &&
+      p.getProperty('BACKUP_FOLDER_ID'),
+  );
+  const lastAttempt = p.getProperty('BACKUP_LAST_ATTEMPT') || '';
+  const lastSuccess = p.getProperty('BACKUP_LAST_SUCCESS') || '';
+  let state;
+
+  if (!configured) {
+    state = 'not_configured';
+  } else if (lastError) {
+    state = 'failed';
+  } else if (!lastSuccess) {
+    state = lastAttempt ? 'incomplete' : 'never_run';
+  } else {
+    const successTime = Date.parse(lastSuccess);
+    const attemptTime = lastAttempt ? Date.parse(lastAttempt) : null;
+    const invalidAttempt = lastAttempt && !isFinite(attemptTime);
+    const newerAttempt = lastAttempt && attemptTime > successTime;
+    if (!isFinite(successTime) || invalidAttempt || newerAttempt) {
+      state = 'incomplete';
+    } else {
+      state = 'success';
+    }
+  }
+
+  return {
+    configured: configured,
+    state: state,
+    retentionDays: CFG.BACKUP_RETENTION_DAYS,
+    lastAttempt: lastAttempt,
+    lastSuccess: lastSuccess,
+    lastError: lastError.slice(0, 300),
+  };
 }
 function pruneBackups_(root) {
   const cutoff = Date.now() - CFG.BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000,
@@ -292,6 +334,7 @@ const ACTIONS = {
   changePin: changePin_,
   saveSettings: saveSettings_,
   auditLog: auditLog_,
+  backupStatus: backupStatus_,
   logout: logout_,
 };
 const WRITES = {

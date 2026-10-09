@@ -48,7 +48,7 @@ The repository is public. This review did not perform a general Git object/secre
 ### Not yet a guarantee
 
 - No tamper-evident ledger: edits/cancellations are represented in ordinary Sheets records plus audit events, not a hash-chained immutable ledger.
-- No verified live backup restore or real-device/PWA upgrade drill.
+- No verified live backup restore or real-device/PWA upgrade drill. The owner-only status panel exposes recorded backup metadata, but live Drive access and restoreability remain unverified.
 - Browser-local queue is not central backup until synchronized.
 - No owner-approved daily cash close or physical denomination reconciliation.
 - No real latency/load benchmark, formal contrast audit, assisted-technology test, external pen test or full dynamic-HTML sink audit.
@@ -100,7 +100,7 @@ The static review is recorded in `docs/UI-UX-REVIEW.md`. This PR does not redesi
 
 ### P5 — Operational automation
 
-- Real daily backup monitoring and restore drill; clear last-backup status for owner.
+- Complete a live backup/restore drill and verify Drive permissions and snapshot integrity. The owner-only recorded-status panel is implemented; it is not a substitute for a restore drill.
 - Owner daily close summary after close workflow semantics are agreed.
 - Recurring vouchers, petty-cash floats and vendor ledger only after observing actual repetitive tasks.
 - User-facing version/help/report-problem affordance, support/runbook and volume thresholds.

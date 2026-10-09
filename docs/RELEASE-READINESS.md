@@ -19,6 +19,8 @@
 | Production Apps Script deployment                           | NOT RELEASED          | No deployment performed in this work                                                                     |
 | Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
 
+The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
+
 ## Gate 1 — source and CI
 
 - [ ] Owner-reviewed PR is merged to `main`.
@@ -42,7 +44,7 @@
 - [ ] Verify Script Properties and the owner account; rotate the owner PIN if a reported legacy setup value was ever used.
 - [ ] Deploy reviewed backend source intentionally, creating a new Web App version while preserving the intended URL.
 - [ ] Verify lockout, PIN change, session invalidation, role restrictions, voucher numbering/idempotency and receipt access against the actual deployment.
-- [ ] Observe at least one scheduled backup run; open its Sheet copy and verify copied receipts/manifest.
+- [ ] Observe at least one scheduled backup run; compare status-panel timestamps with Drive; open its Sheet copy and verify copied receipts/manifest.
 - [ ] Perform restore into a separate Sheet/folder and validate record counts and voucher numbering.
 
 ## Gate 4 — controlled hotel pilot
