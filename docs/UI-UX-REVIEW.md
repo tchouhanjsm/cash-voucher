@@ -41,6 +41,14 @@ The old memo's numerical UI scores referred to a different implementation and we
 - Test with a staff, manager and owner using realistic but non-production data; observe task completion and errors.
 - Add targeted browser assertions where behavior can be automated; don't treat automated scores as a substitute for usability research.
 
+## Measured contrast and dialog keyboard behavior — October 2026
+
+The source-token contrast pass is recorded in `docs/ACCESSIBILITY-CONTRAST-AUDIT.md`. It identified two concrete gaps: warning badge text at 4.34:1 against its pale-yellow surface, and the chart hover accent at 2.85:1 against the chart track. The warning token is now `#895b00` (5.26:1); the chart accent is now `#946515` (4.48:1). A dependency-free Node check verifies 19 explicitly selected pairs as part of `npm run check`.
+
+Dialog keyboard behavior is also strengthened: Escape closes an idle dialog, and Browser E2E checks modal semantics, its accessible title, and focus restoration to the exact opener. Escape does not dismiss a dialog while its primary submit action is disabled.
+
+This is a source-token audit, not a complete WCAG audit. Manual keyboard traversal, real screen-reader testing, rendered-state inspection and role-based usability review remain open.
+
 ## Responsive and keyboard guardrails — October 2026
 
 PR #49 adds regression coverage at 320, 360, 390, 768, 801, 1024 and 1280 CSS-pixel widths for both Dashboard and Register page-level overflow. Horizontal scrolling remains allowed inside purpose-built containers such as the mobile navigation and register table wrapper.
