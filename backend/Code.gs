@@ -186,6 +186,7 @@ function backupData_() {
   let snapshot;
   try {
     p.setProperty('BACKUP_LAST_ATTEMPT', new Date().toISOString());
+    p.deleteProperty('BACKUP_LAST_ERROR');
     const ssId = p.getProperty('SS_ID'),
       sourceReceiptFolderId = p.getProperty('RECEIPT_FOLDER_ID'),
       backupRootId = p.getProperty('BACKUP_FOLDER_ID');
@@ -247,7 +248,12 @@ function backupStatus_(user) {
   if (configured) {
     if (lastError) state = 'failed';
     else if (!lastSuccess) state = lastAttempt ? 'incomplete' : 'never_run';
-    else if (lastAttempt && Date.parse(lastAttempt) > Date.parse(lastSuccess)) state = 'incomplete';
+    else if (!isFinite(Date.parse(lastSuccess))) state = 'incomplete';
+    else if (
+      lastAttempt &&
+      (!isFinite(Date.parse(lastAttempt)) || Date.parse(lastAttempt) > Date.parse(lastSuccess))
+    )
+      state = 'incomplete';
     else state = 'success';
   }
 
