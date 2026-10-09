@@ -62,7 +62,12 @@ export function createRegister({ api, go }) {
           const actions = [
             `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
             receiptAction
-              ? `<button class="btn sm" data-act="rec" data-id="${esc(voucher.id)}" aria-label="Receipts for ${esc(vno(voucher))}">${receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
+              ? `<button
+                  class="btn sm"
+                  data-act="rec"
+                  data-id="${esc(voucher.id)}"
+                  aria-label="Receipts for ${esc(vno(voucher))}"
+                >${receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
               : '',
             voucher.status === 'ACTIVE' && can('edit')
               ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>`
@@ -80,9 +85,20 @@ export function createRegister({ api, go }) {
                 ${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${voucher.status !== 'ACTIVE' ? ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}` : ''}
               </div>
             </td>
-            <td class="r nw amt"${isIn(voucher) ? ' style="color:var(--ok)"' : ''}><span class="voucher-amount">${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}</span></td>
+            <td
+              class="r nw amt"
+              ${isIn(voucher) ? 'style="color:var(--ok)"' : ''}
+            >
+              <span class="voucher-amount">${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}</span>
+            </td>
             <td class="nw cat">${esc(nm(voucher.createdBy))}</td>
-            <td><div class="voucher-actions" role="group" aria-label="Actions for ${esc(vno(voucher))}">${actions}</div></td>
+            <td>
+              <div
+                class="voucher-actions"
+                role="group"
+                aria-label="Actions for ${esc(vno(voucher))}"
+              >${actions}</div>
+            </td>
           </tr>`;
         },
       )
