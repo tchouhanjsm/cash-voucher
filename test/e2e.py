@@ -102,6 +102,8 @@ with sync_playwright() as p:
     page.fill('.rv', 'Ram Traders')
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
+    xss_note = '<img src=x onerror=alert(1)>'
+    page.fill('.rn', xss_note)
     with open('/tmp/r.png', 'wb') as image_file:
         image_file.write(png)
     page.set_input_files('.rf', '/tmp/r.png')
@@ -117,6 +119,11 @@ with sync_playwright() as p:
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody tr')
     check(page.locator('#rbody tr').count() == 2, 'staff register 2 rows')
+    check(
+        xss_note in page.locator('#rbody').inner_text()
+        and page.locator('#rbody img').count() == 0,
+        'user-controlled note is rendered as text, not executable HTML',
+    )
     check(
         page.locator('[data-act=edit]').count() == 0 and page.locator('[data-act=cancel]').count() == 0,
         'staff has no edit/cancel',
