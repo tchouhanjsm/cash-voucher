@@ -260,7 +260,7 @@ function trashIncompleteBackup_(snapshot) {
   } catch (cleanupError) {
     return (
       '; incomplete snapshot cleanup failed: ' +
-        String(cleanupError && cleanupError.message ? cleanupError.message : cleanupError)
+      String(cleanupError && cleanupError.message ? cleanupError.message : cleanupError)
     );
   }
 }
