@@ -649,7 +649,8 @@ with sync_playwright() as p:
           const token = (name) => root.getPropertyValue(name).trim();
           const rgb = (value) => {
             if (value.startsWith('#')) {
-              const hex = value.slice(1);
+              let hex = value.slice(1);
+              if (hex.length === 3) hex = [...hex].map((part) => part + part).join('');
               return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
             }
             const match = value.match(/[\\d.]+/g);
