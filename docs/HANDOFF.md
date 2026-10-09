@@ -16,7 +16,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #45 is merged into `main`; it adds the owner-only backup status panel and clearer recovery-status semantics.
 - PR #46 is the active backup-failure cleanup PR: [PR #46](https://github.com/tchouhanjsm/cash-voucher/pull/46).
 - PR #47 was closed without merge to avoid stacking. The single review/merge target is PR #46; its formatter issue is being corrected on the #46 branch.
-- The most recently verified candidate head before the current follow-up was `81b321e84a576096aa58b98b549612bf3230d70d`: [CI passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37931188568) with 88 backend checks and [Browser E2E passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37931188584) with 72 checks, 0 failures. The current follow-up adds additional backup regressions; verify its new exact head before owner review.
+- The implementation candidate `8904d1b6fa8ece5f18b00277dc95e6865e7f6372` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37931571149): 88 backend checks plus the backup-orchestration and PR-quality regressions; [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37931571006) passed with 72 checks and 0 failures. This handoff update changes documentation only, so its resulting head still needs exact-head verification.
 - PR #46 now introduces a dependency-injected backup orchestration helper with regression cases for copy/manifest failures, cleanup failure, retention failure, metadata-write failure, lock acquisition and success. Exact-head CI must confirm these tests pass.
 - No PR has been merged and no Apps Script production deployment or production data change has been performed by this workflow.
 
@@ -37,9 +37,9 @@ Do not claim local checks were run when the local checkout or dependencies were 
 
 ## Next steps for PR #46
 
-1. Run CI and Browser E2E on the exact current PR #46 head after the additional Sheet-copy and metadata-bound regression cases.
-2. Review the complete diff, PR body, handoff record and changed-file list; record exact-head workflow URLs in the PR description.
-3. Keep the PR open for owner review. Do not merge or deploy.
+1. Verify CI and Browser E2E on the exact current PR #46 head after this handoff-only update.
+2. If both pass, complete the final diff/security review and leave PR #46 open for owner review and merge.
+3. Do not merge, push Apps Script or deploy.
 
 ## Operational gates still open
 
