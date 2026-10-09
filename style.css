@@ -305,6 +305,7 @@ td.amt,
 .pv-amt {
   font-variant-numeric: tabular-nums;
 }
+
 .stat small {
   font-size: 12px;
 }
