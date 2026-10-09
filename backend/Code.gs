@@ -237,8 +237,8 @@ function backupStatus_(user) {
   const lastError = String(p.getProperty('BACKUP_LAST_ERROR') || '');
   const configured = Boolean(
     p.getProperty('SS_ID') &&
-      p.getProperty('RECEIPT_FOLDER_ID') &&
-      p.getProperty('BACKUP_FOLDER_ID'),
+    p.getProperty('RECEIPT_FOLDER_ID') &&
+    p.getProperty('BACKUP_FOLDER_ID'),
   );
   const lastAttempt = p.getProperty('BACKUP_LAST_ATTEMPT') || '';
   const lastSuccess = p.getProperty('BACKUP_LAST_SUCCESS') || '';
