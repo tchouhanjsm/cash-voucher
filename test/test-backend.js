@@ -24,7 +24,15 @@ ok(arrayRequest.code === 'VALIDATION', 'array request rejected');
 
 ok(!g.props.OWNER_PIN, 'owner PIN property removed after setup');
 // login
-ok(!g.call('login', { email: 'owner@test.com', pin: '000000' }).ok, 'wrong pin rejected');
+const loginLockWaits = g.lockStats.waits;
+const loginLockReleases = g.lockStats.releases;
+const badOwnerLogin = g.call('login', { email: 'owner@test.com', pin: '000000' });
+ok(
+  !badOwnerLogin.ok &&
+    g.lockStats.waits === loginLockWaits + 1 &&
+    g.lockStats.releases === loginLockReleases + 1,
+  'failed login is rejected while holding and releasing the script lock',
+);
 let r = g.call('login', { email: 'OWNER@test.com', pin: '483921' });
 ok(r.ok && r.data.user.role === 'owner', 'owner login');
 const as = (t, a, p) => g.call(a, { token: t, ...p });
@@ -66,6 +74,18 @@ ok(cp.ok, 'pin changed');
 ok(as(M0, 'bootstrap').code === 'SESSION', 'old token invalid after pin change');
 const M = cp.data.token;
 ok(as(M, 'bootstrap').ok, 'new token works');
+const failedPinChanges = [];
+for (let i = 0; i < 5; i++) {
+  failedPinChanges.push(as(M, 'changePin', { oldPin: '000000', newPin: '864209' }));
+}
+ok(
+  failedPinChanges.every((result) => !result.ok && result.code !== 'LOCKED'),
+  'wrong current PIN attempts are counted before lockout',
+);
+ok(
+  as(M, 'changePin', { oldPin: '864209', newPin: '112244' }).code === 'LOCKED',
+  'PIN change is locked after five incorrect current PIN attempts',
+);
 const S0 = g.call('login', { email: 's@test.com', pin: '135790' }).data.token;
 const S = as(S0, 'changePin', { oldPin: '135790', newPin: '975310' }).data.token;
 const A0 = g.call('login', { email: 'a@test.com', pin: '112233' }).data.token;
@@ -367,7 +387,21 @@ ok(
   as(T, 'resetPin', {
     id: as(T, 'listUsers').data.find((u) => u.email === 'm@test.com').id,
     pin: '314159',
-  }).ok && g.call('login', { email: 'm@test.com', pin: '314159' }).ok,
-  'owner reset pin clears lock',
+  }).ok,
+  'owner reset pin succeeds',
+);
+const resetLogin = g.call('login', { email: 'm@test.com', pin: '314159' });
+ok(resetLogin.ok, 'owner reset pin clears login lockout');
+const resetChange = as(resetLogin.data.token, 'changePin', {
+  oldPin: '314159',
+  newPin: '417258',
+});
+ok(
+  resetChange.ok && as(resetChange.data.token, 'bootstrap').ok,
+  'owner PIN reset also clears PIN-change throttle',
+);
+ok(
+  g.lockStats.waits === g.lockStats.releases,
+  'all acquired script locks are released',
 );
 console.log(`backend OK — ${n} checks passed`);

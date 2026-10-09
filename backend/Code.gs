@@ -321,13 +321,20 @@ function route_(req) {
   if (req.action === 'login') return login_(req);
   const fn = ACTIONS[req.action];
   if (!fn) throw err_('Unknown action.', 'NOT_FOUND');
-  const user = auth_(req.token);
-  if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
-    throw err_('Please change your PIN first.', 'PIN_CHANGE');
-  if (!WRITES[req.action]) return fn(user, req);
+
+  if (!WRITES[req.action]) {
+    const user = auth_(req.token);
+    if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
+      throw err_('Please change your PIN first.', 'PIN_CHANGE');
+    return fn(user, req);
+  }
+
   const lock = LockService.getScriptLock();
   lock.waitLock(25000);
   try {
+    const user = auth_(req.token);
+    if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
+      throw err_('Please change your PIN first.', 'PIN_CHANGE');
     return fn(user, req);
   } finally {
     lock.releaseLock();
@@ -585,27 +592,34 @@ function findUserByEmail_(email) {
   })[0];
 }
 function login_(req) {
-  const email = String(req.email || '')
-      .trim()
-      .toLowerCase(),
-    pin = String(req.pin || '').trim();
-  const cache = CacheService.getScriptCache(),
-    fk = 'f:' + email;
-  const fails = Number(cache.get(fk) || 0);
-  if (fails >= CFG.MAX_FAILS) throw err_('Too many attempts. Try again in 15 minutes.', 'LOCKED');
-  const u = findUserByEmail_(email);
-  const active = u && (u.Active === true || u.Active === 'TRUE');
-  if (!u || !active || !same_(hashPin_(u.Salt, pin), u.PinHash)) {
-    cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
-    if (u) audit_({ email: email }, 'LOGIN_FAILED', '', '');
-    throw err_('Invalid email or PIN.');
+  const lock = LockService.getScriptLock();
+  lock.waitLock(25000);
+  try {
+    const email = String(req.email || '')
+        .trim()
+        .toLowerCase(),
+      pin = String(req.pin || '').trim();
+    const cache = CacheService.getScriptCache(),
+      fk = 'f:' + email;
+    const fails = Number(cache.get(fk) || 0);
+    if (fails >= CFG.MAX_FAILS)
+      throw err_('Too many attempts. Try again in 15 minutes.', 'LOCKED');
+    const u = findUserByEmail_(email);
+    const active = u && (u.Active === true || u.Active === 'TRUE');
+    if (!u || !active || !same_(hashPin_(u.Salt, pin), u.PinHash)) {
+      cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
+      if (u) audit_({ email: email }, 'LOGIN_FAILED', '', '');
+      throw err_('Invalid email or PIN.');
+    }
+    cache.remove(fk);
+    const token = Utilities.getUuid() + Utilities.getUuid();
+    cache.put('s:' + token, JSON.stringify({ email: email, salt: u.Salt }), CFG.SESSION_TTL);
+    updateRow_('Users', u._row, { LastLogin: nowIso_() });
+    audit_({ email: email }, 'LOGIN', '', '');
+    return { token: token, user: pubUser_(u) };
+  } finally {
+    lock.releaseLock();
   }
-  cache.remove(fk);
-  const token = Utilities.getUuid() + Utilities.getUuid();
-  cache.put('s:' + token, JSON.stringify({ email: email, salt: u.Salt }), CFG.SESSION_TTL);
-  updateRow_('Users', u._row, { LastLogin: nowIso_() });
-  audit_({ email: email }, 'LOGIN', '', '');
-  return { token: token, user: pubUser_(u) };
 }
 function auth_(token) {
   const raw = token && CacheService.getScriptCache().get('s:' + token);
@@ -1033,20 +1047,31 @@ function resetPin_(user, req) {
     PinHash: hashPin_(salt, String(req.pin)),
     MustChangePin: true,
   });
-  CacheService.getScriptCache().remove('f:' + String(t.Email).toLowerCase());
+  const cache = CacheService.getScriptCache();
+  cache.remove('f:' + String(t.Email).toLowerCase());
+  cache.remove('pf:' + String(t.UserID));
   audit_(user, 'PIN_RESET', t.Email, '');
   return { ok: true };
 }
 function changePin_(user, req) {
   const u = user._u,
     oldPin = String(req.oldPin || ''),
-    newPin = String(req.newPin || '');
-  if (!same_(hashPin_(u.Salt, oldPin), u.PinHash)) throw err_('Current PIN is wrong.');
+    newPin = String(req.newPin || ''),
+    cache = CacheService.getScriptCache(),
+    fk = 'pf:' + u.UserID;
+  const fails = Number(cache.get(fk) || 0);
+  if (fails >= CFG.MAX_FAILS)
+    throw err_('Too many PIN-change attempts. Try again in 15 minutes.', 'LOCKED');
+  if (!same_(hashPin_(u.Salt, oldPin), u.PinHash)) {
+    cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
+    audit_(user, 'PIN_CHANGE_FAILED', '', '');
+    throw err_('Current PIN is wrong.');
+  }
+  cache.remove(fk);
   if (!pinOk_(newPin))
     throw err_('New PIN must be 6 digits and not too simple (e.g. 123456, 111111).');
   if (newPin === oldPin) throw err_('New PIN must be different.');
-  const salt = Utilities.getUuid(),
-    cache = CacheService.getScriptCache();
+  const salt = Utilities.getUuid();
   updateRow_('Users', u._row, {
     Salt: salt,
     PinHash: hashPin_(salt, newPin),
@@ -1058,7 +1083,6 @@ function changePin_(user, req) {
   audit_(user, 'PIN_CHANGE', '', '');
   return { token: token };
 }
-
 /* ============ settings / audit (owner) ============ */
 function saveSettings_(user, req) {
   need_(user, 'settings');

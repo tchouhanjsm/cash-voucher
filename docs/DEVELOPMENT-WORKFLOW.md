@@ -1,97 +1,85 @@
 # Development Workflow
 
-## Starting a work session
+## Session start and branch safety
 
-```bash
+~~~bash
 cd "$(git rev-parse --show-toplevel)"
 git status --short
 git branch --show-current
 npm run check
-```
+~~~
 
-If the working tree is unexpectedly dirty, stop and reconcile before changing files.
+If the working tree is unexpectedly dirty, stop and reconcile it before editing. Start every phase branch from the latest merged `main` and leave existing branches untouched unless the owner explicitly authorizes a branch operation.
 
-## Before implementation
+**Hard rules:** do not delete a repository or branch, rename a branch, or force-update a branch without explicit permission. Do not merge a PR on the owner's behalf. Do not start the next phase until the owner has reviewed and merged the current PR.
 
-Create a change note using this structure:
+## Active architecture
 
-```text
-# Change
+- `index.html` loads `frontend/main.js` as the only active JavaScript entry point.
+- `frontend/main.js` is the composition root; it assembles shared core modules and feature controllers.
+- `frontend/core/` owns infrastructure and cross-cutting primitives.
+- `frontend/features/` owns feature behavior and feature-specific event listeners.
+- `backend/Code.gs` is the Apps Script API source; `backend/appsscript.json` is the deployment manifest.
+- Root `app.js` is retained as a legacy artifact but is not loaded by `index.html`.
+- `test/test-backend.js` uses the in-memory Google services mock. `test/e2e.py` runs browser journeys against `test/server.js`, not the production Web App.
 
-## Goal
+## Change note before implementation
 
-## Current behavior
+Record:
 
-## Target behavior
+~~~text
+Change:
+User / role:
+Outcome:
+Current behavior:
+Desired behavior:
+API and data contracts:
+Files in scope:
+Files out of scope:
+Acceptance criteria:
+Failure and recovery paths:
+Risks:
+~~~
 
-## Ownership
+Read the active implementation, consumers, public interfaces and side effects before editing. Separate facts from assumptions. Reconcile incoming review findings to current file paths, not an earlier implementation's names.
 
-## Contract
+## Build and verify
 
-## Files in scope
+Use the smallest coherent scope that satisfies an observable outcome.
 
-## Files out of scope
+~~~text
+Discover → define → design → implementation → integration
+         → static checks → behavioral checks → two-pass review → PR
+~~~
 
-## Acceptance criteria
+Run:
 
-## Risks
-```
-
-## During implementation
-
-Use this order:
-
-```text
-Contract → implementation → wiring → static check → behavioral review
-```
-
-Do not mix unrelated cleanup into the same wave.
-
-## Before commit
-
-```bash
+~~~bash
+npm ci
 npm run check
+npm run test:e2e
 git diff --check
 git status --short
 git diff --stat
-```
+~~~
 
-Then inspect the actual diff, not only the status summary.
+Run relevant checks after changing code; inspect the actual diff. If browser E2E requires extra dependencies, report that explicitly rather than implying it ran. A passing mock does not prove behavior on a real Google account. Neither CI workflow deploys the Apps Script backend.
 
-## Commit / PR boundary
+## Two-pass review gate
 
-A commit should describe the engineering change, not the editing activity.
+**Pass 1 — product and functional:** verify the user need, roles, acceptance criteria, data/API contract, normal flow, visible feedback, responsive layout and accessibility implications.
 
-Bad:
+**Pass 2 — principal engineering and recovery:** verify auth/permission boundaries, concurrency, idempotency, partial failures, stale sessions, storage limits, migrations, offline behavior, safe rollback and regression exposure.
 
-```text
-updates
-fix
-changes
-```
+Resolve findings introduced by the change before requesting review. Document accepted residual risks and unverified external dependencies.
 
-Good:
+## Apps Script release boundary
 
-```text
-refactor(frontend): move register workflow behind feature controller
-```
+Only the backend folder belongs in clasp. Before a backend upload, inspect the working tree and run `clasp status`. A merged backend source change is not a deployed Web App. `clasp push` and Apps Script **Deploy → New version** must be intentional release operations, not automatic consequences of a merge. No production deployment is included in normal PR work.
 
-## Frontend runtime rule
+## PR and phase boundary
 
-The frontend currently contains legacy `app.js` behavior plus extracted feature modules. During modularization:
-
-- extracted modules are the candidate implementation
-- `main.js` is the composition root
-- `app.js` remains the compatibility implementation until behavior parity is demonstrated
-- backend deployment is not required for frontend-only changes
-
-## Stop conditions
-
-Stop and reassess when:
-
-- a module needs many unrelated dependencies
-- `main.js` begins accumulating business logic
-- a feature imports another feature's internals
-- the backend contract must change to complete a frontend refactor
-- the same helper appears in multiple modules
-- static checks pass but runtime ownership is unclear
+- Keep one PR focused and reviewable.
+- Include what changed, commands/checks actually run, their outcomes, and remaining risks.
+- Leave the PR open for owner review.
+- Stop after the PR is ready; wait for owner review and merge before beginning another phase.

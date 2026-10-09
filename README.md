@@ -1,108 +1,83 @@
-# Cash Payment Vouchers v2 — GitHub Pages + Google Sheet
+# Cash Payment Vouchers v2
 
-Installable web app (works on phone, tablet, desktop). Your **Google Sheet is the database**, receipt photos go to **Google Drive**, the site is hosted free on **GitHub Pages**.
+A lightweight, installable PWA for recording cash paid out and cash received at a single property. The web client is hosted as static files; Google Apps Script enforces authentication and permissions; Google Sheets stores records; Google Drive stores receipt images and daily backups.
 
-```
-index.html style.css app.js sw.js config.js manifest.webmanifest icons/   ← the website (repo root)
-backend/Code.gs  backend/appsscript.json                                   ← paste into Apps Script
-test/                                                                      ← optional automated tests
-```
+## Current architecture
 
-## One-time setup (≈10 minutes)
+~~~text
+index.html
+  └── frontend/main.js                 composition root
+       ├── frontend/core/               API, state, storage, UI, actions, offline queue
+       └── frontend/features/            auth, payments, dashboard, register, bulk,
+                                         administration, navigation, printing
+style.css · config.js · sw.js · manifest.webmanifest · icons/
+backend/Code.gs · backend/appsscript.json
+test/ · scripts/ · docs/
+~~~
 
-### 1) Backend (Google Sheet + Apps Script)
+`app.js` is retained in the repository as a legacy artifact but is **not loaded by `index.html`**. The active browser entry point is `frontend/main.js`.
 
-1. Create a new empty Google Sheet (e.g. "Cash Vouchers DB").
-2. **Extensions → Apps Script**. Delete the sample code, paste all of `backend/Code.gs`.
-   (Optional: Project Settings → tick "Show appsscript.json" and paste `backend/appsscript.json`.)
-3. **Project Settings → Script properties → Add**:
-   - `OWNER_EMAIL` = your email · `OWNER_PIN` = a temporary 6-digit PIN · `OWNER_NAME` = your name (optional)
-4. Select function **`setup`** → **Run** → approve the permissions (Sheets + Drive). It creates the tabs, a Drive folder for receipts, your owner login, and **deletes OWNER_PIN** afterwards.
-5. **Deploy → New deployment → Web app** → Execute as: **Me** · Who has access: **Anyone** → Deploy → copy the **Web app URL**.
-   _When you change Code.gs later: Deploy → Manage deployments → ✏️ → Version: New version._
+## What exists today
 
-### 2) Website (GitHub Pages)
+- Email + PIN login, first-login PIN change, lockout, six-hour session TTL, and server-side role checks.
+- Staff can create entries and see their own; managers can view all entries, edit/cancel, bulk import, and manage vendors; owners can manage users/settings and view the audit log.
+- Cash payments and cash receipts with separate number series and categories.
+- Receipt images stored in Drive, with access checked by the API.
+- Dashboard, searchable/filterable register, CSV export, printing, and CSV/Excel/pasted bulk import with validation.
+- Installable PWA and a durable IndexedDB offline outbox. Open tabs broadcast queue changes; stable client IDs support idempotent retries; pending records can be exported and safely re-imported.
+- Automated daily Sheet/receipt backup infrastructure, including a manifest and 90-day retention policy in code.
 
-1. New GitHub repo → upload the contents of this folder (web files at the repo root).
-2. Edit `config.js` and paste the Web app URL into `API_URL` (or skip and type it once on the login screen).
-3. Repo **Settings → Pages → Deploy from a branch → main / (root)**. Your site: `https://<user>.github.io/<repo>/`.
+The existence of code and green mock/browser tests does not prove the real property's deployment, scheduled backups, restore drill, phone install/update path, or cash reconciliation have been verified. See `docs/RELEASE-READINESS.md`.
 
-### 3) First sign-in
+## One-time backend setup
 
-Open the site → sign in with OWNER_EMAIL + temporary PIN → you're forced to choose your own PIN.
-Then **Users** → add managers/staff with temporary PINs (they must change it at first login).
+1. Create a dedicated Google Sheet and open **Extensions → Apps Script**.
+2. Add the backend source from `backend/Code.gs` and set the manifest from `backend/appsscript.json` if needed.
+3. In **Project Settings → Script properties**, set `OWNER_EMAIL` and a temporary, non-trivial six-digit `OWNER_PIN`; optionally set `OWNER_NAME`.
+4. Run `setup` and approve the required Sheets/Drive permissions. Setup creates the data tabs, receipt/backup folders, backup trigger and initial owner. On successful owner creation, the temporary `OWNER_PIN` property is removed; the user must change the PIN at first sign-in.
+5. Deploy a Web App that executes as the deploying account. Anonymous HTTP access is needed for the static GitHub Pages client, but the app must authenticate each action itself. **Keep the underlying Sheet and Drive folders private; do not grant staff direct access.**
+6. Record the Web App URL for the frontend.
 
-## Cash received (new)
+When a backend change is merged, it is still only source code: production changes require an intentional `clasp push` and new Apps Script deployment version. Do not deploy automatically just because a frontend PR merged.
 
-New Payment page → toggle **Cash received**. Receipts get their own series (R-1, R-2…), their own categories, can carry a photo, print as _Cash Receipt Voucher_, and can be bulk-uploaded (toggle on the Bulk page). Dashboard shows **Cash in hand = opening balance + received − paid**; owners set the opening balance, categories and next numbers in Settings.
+## Website setup
 
-## Put it on GitHub (pick one)
+1. Push this repository to GitHub.
+2. In repository **Settings → Pages**, publish from `main` / repository root.
+3. Set the Apps Script Web App URL in `config.js` (`API_URL`), commit, and wait for Pages to publish.
+4. Open the Pages URL, sign in as owner, change the temporary PIN, and add individual manager/staff accounts.
+5. Verify the deployed version using a clean browser before using real financial records.
 
-**A. Browser only (easiest):** github.com → **+ → New repository** (name e.g. `cash-voucher-web`, Public) → **uploading an existing file** → unzip this package on your computer, drag **everything inside the folder** (index.html, app.js, … icons, backend, test) into the page → **Commit changes**. Then Settings → Pages → _Deploy from a branch_ → `main` / `(root)`.
-**B. Command line:**
+## Development and checks
 
-```
-cd cash-voucher-v2
-git init -b main
-git add .
-git commit -m "Cash vouchers v2"
-git remote add origin https://github.com/<you>/cash-voucher-web.git
-git push -u origin main
-```
+Install dependencies with Node 20:
 
-To update later: change files → `git add . && git commit -m "update" && git push` (or edit/upload on github.com). Pages refreshes in ~1 minute; reload the app twice on phones to pick up the new version.
-If you already deployed an older version: paste the new `Code.gs`, run `setup` once more, then **Deploy → Manage deployments → ✏️ → New version**.
-
-## Install on phones
-
-- **Android/Chrome:** menu → _Install app_. **iPhone/Safari:** Share → _Add to Home Screen_.
-
-## Roles
-
-|                                                                    | Staff    | Manager | Owner |
-| ------------------------------------------------------------------ | -------- | ------- | ----- |
-| Add payments + attach receipts                                     | ✔        | ✔       | ✔     |
-| See entries                                                        | own only | all     | all   |
-| Edit / cancel vouchers, bulk upload, vendors, dashboard (all data) | –        | ✔       | ✔     |
-| Users, settings, categories, audit log                             | –        | –       | ✔     |
-
-Permissions are enforced **on the server** (Apps Script), not just hidden in the page.
-
-## Good to know
-
-- Receipts are compressed on the phone (~200–400 KB), stored in Drive folder _Cash Voucher Receipts_, and shown only to people allowed to see that voucher.
-- Offline: payments entered without internet are saved in IndexedDB on the device and uploaded automatically when back online. Open tabs coordinate queue updates, while IndexedDB transactions prevent the same pending record from being claimed by two tabs at once. Pending payments can be exported to JSON and restored from the New Payment screen. Recovery imports keep their original IDs; matching queued records are skipped and ID collisions with different details are rejected. Legacy localStorage migration keeps stable IDs across tabs and preserves the original data if migration fails. Keep recovery files private. A browser/device storage copy is not a replacement for the Google Sheet + Drive backup.
-- Apps Script is ~1–3 s per request and has daily quotas — plenty for one property.
-- Don't edit the Vouchers/Users sheets by hand unless you know the columns; use the app. Reading/filtering/charting the Sheet yourself is always fine.
-- Back up: File → Make a copy of the Sheet occasionally (and the Receipts folder in Drive).
-
-## Tests (optional)
-
-`node test/test-backend.js` — runs Code.gs against a mock of Google services (72 checks).
-`test/run-e2e.sh` — headless-browser run of the whole app (needs Python Playwright).
-
-## Developing with clasp (local → Apps Script)
-
-```
-npm i -g @google/clasp && clasp login          # enable the Apps Script API once: script.google.com/home/usersettings
-cp .clasp.json.example .clasp.json              # put your Script ID inside (keeps "rootDir":"backend","fileExtension":"gs")
-clasp status                                    # must list only Code.gs + appsscript.json
-clasp pull                                      # first time only, if the script already contains code
-npm test && clasp push                          # test, then upload   (clasp push --watch to auto-upload)
-clasp deployments                               # copy the AKfy… id once
-clasp deploy -i AKfy… -d "message"              # release; keeps the same URL
-```
-
-See PROJECT.md → "Avoiding GAS / clasp conflicts".
-
-## Browser E2E
-
-Install Playwright once, then run the complete browser workflow against the local mock backend:
-
-```bash
-python3 -m pip install playwright
-python3 -m playwright install chromium
+~~~bash
+npm ci
+npm run check
 npm run test:e2e
-```
+~~~
 
-The browser suite never uses the production API; the local runner injects its mock API endpoint explicitly.
+- `npm run check` runs lint, formatting, JSON validation, JS syntax checks, the frontend release-integrity check, and the mock Apps Script backend suite.
+- `npm run test:e2e` runs the browser suite against the local mock server; it must not use the production API. See `docs/DEVELOPMENT-WORKFLOW.md`.
+- The mock Apps Script layer does not replace tests against a real Google account or load/concurrency testing against the live service.
+
+For local Apps Script development, follow `docs/DEVELOPMENT-WORKFLOW.md` and inspect `clasp status` before every push. Never run `clasp push` or `clasp deploy` without a deliberate backend release decision.
+
+## Offline data and recovery
+
+- Pending transactions live in IndexedDB on that browser/device until they synchronize with Apps Script.
+- Export pending transactions if browser storage is unstable or a device must be replaced. Import validates the recovery file and preserves original IDs; matching records are skipped and conflicting IDs with different content are rejected.
+- Browser-local records are not part of Google Sheet/Drive backups until synchronized. IndexedDB is not a cross-device backup.
+- Backend code installs a scheduled backup trigger. A real successful backup and restore drill still need operational verification.
+
+See `docs/DATA-DURABILITY.md`.
+
+## Product direction
+
+The app is currently a single-property cash-voucher tool, not a hosted multi-tenant fintech platform. The next owner-value priorities are a controlled daily cash close/reconciliation workflow, better exception/approval controls, accountant-friendly exports, and a measured accessibility/UI review. Do not start a multi-property, digital-payout, or AI/network build before users, controls, regulatory requirements, and economics are validated.
+
+- Product gap register: `docs/PRODUCT-ROADMAP.md`
+- UI/UX source review and next design criteria: `docs/UI-UX-REVIEW.md`
+- Engineering method: `docs/ENGINEERING-METHOD.md`
+- Release checklist: `docs/RELEASE-READINESS.md`
