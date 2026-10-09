@@ -111,13 +111,7 @@ registerActions({
 
   addrow: () => payments.addRow(),
 
-  delrow: ({ element }) => {
-    const rows = $$('#rows .erow');
-
-    if (rows.length > 1) {
-      element.closest('.erow').remove();
-    }
-  },
+  delrow: ({ element }) => payments.removeRow(element),
 
   clrrec: ({ element }) => payments.clearReceipt(element),
 
