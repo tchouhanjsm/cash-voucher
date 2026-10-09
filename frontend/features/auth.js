@@ -70,8 +70,8 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     dialog(
       'Choose a new PIN',
       `<p class="muted">Your PIN was set by an administrator. Please choose your own 6-digit PIN.</p>
-    <input id="op" type="password" inputmode="numeric" maxlength="6" placeholder="Current (temporary) PIN" required>
-    <input id="np" type="password" inputmode="numeric" maxlength="6" placeholder="New PIN" required style="margin-top:8px">`,
+    <input id="op" aria-label="Current temporary PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="current-password" placeholder="Current (temporary) PIN" required>
+    <input id="np" aria-label="New PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="New PIN" required style="margin-top:8px">`,
       async () => {
         const data = await api('changePin', {
           oldPin: $('#op').value,

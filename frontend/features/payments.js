@@ -8,6 +8,7 @@ import { addDays, compress, esc, money, parseAmt, today, uid } from '../core/uti
 export function createPayments({ api, refresh }) {
   let NT = 'PAYMENT';
   let flushing = false;
+  let rowErrorSeq = 0;
   const outboxChannel =
     typeof BroadcastChannel === 'function' ? new BroadcastChannel('cash-voucher-outbox') : null;
 
@@ -33,6 +34,61 @@ export function createPayments({ api, refresh }) {
   <div class="chips"><label class="btn sm" style="margin:0">📷 Receipt<input type="file" class="rf" accept="image/*" multiple hidden></label><span class="rp"></span></div></div>`;
   }
 
+  function labelRows() {
+    const direction = NT === 'RECEIPT' ? 'Cash received from' : 'Payee / vendor';
+
+    $$('#rows .erow').forEach((row, index) => {
+      const number = index + 1;
+      $('.rv', row).setAttribute('aria-label', `${direction}, row ${number}`);
+      $('.ra', row).setAttribute('aria-label', `Amount in rupees, row ${number}`);
+      $('.rc', row).setAttribute('aria-label', `Category, row ${number}`);
+      $('.rn', row).setAttribute('aria-label', `Note, row ${number}`);
+      $('.rf', row).setAttribute('aria-label', `Receipt images, row ${number}`);
+      $('[data-act="delrow"]', row).setAttribute('aria-label', `Remove row ${number}`);
+    });
+  }
+
+  function clearRowError(row) {
+    $('.row-error', row)?.remove();
+
+    ['.rv', '.ra'].forEach((selector) => {
+      const field = $(selector, row);
+      field.removeAttribute('aria-invalid');
+      field.removeAttribute('aria-describedby');
+    });
+  }
+
+  function showRowError(row, field, message) {
+    clearRowError(row);
+    const error = document.createElement('p');
+    error.className = 'row-error';
+    error.id = `payment-row-error-${++rowErrorSeq}`;
+    error.setAttribute('role', 'alert');
+    error.textContent = message;
+    row.appendChild(error);
+    field.setAttribute('aria-invalid', 'true');
+    field.setAttribute('aria-describedby', error.id);
+    field.focus();
+  }
+
+  function showFormError(message) {
+    $('#nres').innerHTML = `<p class="error form-error" role="alert">${esc(message)}</p>`;
+    const firstRow = $$('#rows .erow')[0];
+    if (firstRow) $('.rv', firstRow).focus();
+  }
+
+  function removeRow(button) {
+    const rows = $$('#rows .erow');
+    if (rows.length <= 1) return;
+
+    const row = button.closest('.erow');
+    const target = row?.previousElementSibling || row?.nextElementSibling;
+    if (!row) return;
+    row.remove();
+    labelRows();
+    if (target) $('.rv', target).focus();
+  }
+
   function vNew() {
     $('#view').innerHTML =
       head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment') +
@@ -54,6 +110,8 @@ export function createPayments({ api, refresh }) {
     const r = d.firstElementChild;
     r._rec = [];
     $('#rows').appendChild(r);
+    $('#nres').querySelector('.form-error')?.remove();
+    labelRows();
     const v = $('.rv', r);
     if ($$('#rows .erow').length > 1) v.focus();
   }
@@ -112,18 +170,41 @@ export function createPayments({ api, refresh }) {
     }
   });
 
+  document.addEventListener('input', (event) => {
+    if (!event.target.matches('.rv, .ra')) return;
+
+    const row = event.target.closest('.erow');
+    if (row) clearRowError(row);
+    $('#nres .form-error')?.remove();
+  });
+
   async function saveNew(btn) {
     const date = $('#nd').value;
     const entries = [];
+    const rows = $$('#rows .erow');
+    rows.forEach(clearRowError);
 
-    for (const r of $$('#rows .erow')) {
+    for (const r of rows) {
       const vendor = $('.rv', r).value.trim();
       const raw = $('.ra', r).value.trim();
       const amount = parseAmt(raw);
 
       if (!vendor && !raw && !r._rec.length) continue;
-      if (!vendor) return toast('Vendor is required in every row.', 'err');
-      if (!(amount > 0)) return toast('Enter a valid amount for ' + vendor + '.', 'err');
+      if (!vendor) {
+        showRowError(
+          r,
+          $('.rv', r),
+          NT === 'RECEIPT'
+            ? 'Enter who the cash was received from.'
+            : 'Enter a payee or vendor for this row.',
+        );
+        return;
+      }
+
+      if (!(amount > 0)) {
+        showRowError(r, $('.ra', r), 'Enter a valid amount greater than ₹0.');
+        return;
+      }
 
       entries.push({
         clientId: r._cid || (r._cid = uid()),
@@ -137,8 +218,15 @@ export function createPayments({ api, refresh }) {
       });
     }
 
-    if (!date) return toast('Date is required.', 'err');
-    if (!entries.length) return toast('Add at least one payment.', 'err');
+    if (!date) {
+      toast('Date is required.', 'err');
+      $('#nd').focus();
+      return;
+    }
+    if (!entries.length) {
+      showFormError(NT === 'RECEIPT' ? 'Add at least one cash receipt before saving.' : 'Add at least one payment before saving.');
+      return;
+    }
 
     await busy(btn, async () => {
       try {
@@ -453,6 +541,7 @@ export function createPayments({ api, refresh }) {
     open,
     addRow,
     clearReceipt,
+    removeRow,
     showBanner,
     flushOutbox,
     exportOutbox,

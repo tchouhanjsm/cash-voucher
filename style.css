@@ -55,6 +55,23 @@ h3 {
   margin: 6px 0 0;
   font-size: 14px;
 }
+.row-error {
+  color: var(--bad);
+  font-size: 13px;
+  font-weight: 600;
+  margin: 6px 0 0;
+  grid-column: 1 / -1;
+}
+.erow [aria-invalid='true'] {
+  border-color: var(--bad);
+  box-shadow: 0 0 0 1px var(--bad);
+}
+.form-error {
+  padding: 10px 12px;
+  border: 1px solid #e5b5b1;
+  border-radius: 8px;
+  background: #fdeceb;
+}
 .r {
   text-align: right;
 }
