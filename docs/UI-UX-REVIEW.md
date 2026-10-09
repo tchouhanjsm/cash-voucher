@@ -41,6 +41,17 @@ The old memo's numerical UI scores referred to a different implementation and we
 - Test with a staff, manager and owner using realistic but non-production data; observe task completion and errors.
 - Add targeted browser assertions where behavior can be automated; don't treat automated scores as a substitute for usability research.
 
+## Implemented foundation — October 2026
+
+The current UI foundation batch makes two low-risk, cross-screen improvements:
+
+- The shared muted-text token is darkened from `#667585` to `#596978` to improve legibility on the light surfaces used by labels, metadata, table headings and supporting text.
+- Cancelled register rows now use the shared muted token instead of a lighter one-off gray; cancellation remains indicated by the explicit status label and struck-through amount rather than relying on color alone.
+- Dashboard statistics, chart values, register amounts and printed voucher amounts use tabular numerals for easier financial comparison.
+- Browser E2E now checks the mobile viewport for page-level horizontal overflow and verifies the financial-number and muted-color styles.
+
+This is a focused foundation change, not a complete redesign or formal WCAG conformance claim. CI/E2E results and the exact reviewed head are authoritative in the PR. Real-device, keyboard/screen-reader, contrast-tool and role-based usability checks remain open.
+
 ## Phase boundary
 
 Phase 22 addresses authentication controls and documentation drift. It does not change visual styling, markup, or feature navigation. A visual redesign should follow the separate design/acceptance review above, so it can be tested without mixing security changes into the visual diff.
