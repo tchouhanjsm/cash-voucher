@@ -138,7 +138,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     });
 
     document.addEventListener('visibilitychange', () => {
-      if (!document.hidden && S.me && Date.now() - S.loadedAt > 120000 && !$('#modal').innerHTML) {
+      if (!document.hidden && S.me && Date.now() - S.loadedAt > 120000 && !$('#modal').hasChildNodes()) {
         if (S.view !== 'new' && S.view !== 'bulk') refresh(true);
         getPayments().flushOutbox();
       }
