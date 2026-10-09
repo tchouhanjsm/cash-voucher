@@ -106,7 +106,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
 
   function go(view) {
     S.view = view;
-    $('#nav button').forEach((button) => {
+    $$$('#nav button').forEach((button) => {
       const active = button.dataset.v === view;
       button.classList.toggle('on', active);
 
