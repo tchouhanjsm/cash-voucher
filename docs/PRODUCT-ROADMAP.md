@@ -92,6 +92,8 @@ Candidate expected physical cash = opening physical cash + classified CASH_IN am
 
 **PR #49 implementation:** broaden responsive overflow coverage across Dashboard and Register at 320–1280px, assert mobile navigation touch-target height, and verify visible keyboard focus. This improves regression detection but does not complete the formal accessibility or usability review.
 
+**PR #50 implementation:** measured key shared text/status pairings and selected non-text pairings using the WCAG relative-luminance formula. Fixed the light-surface control-border contrast, keyboard focus ring on dark navigation, and chart hover accent against its track. Browser E2E now asserts the selected token-pair thresholds and dialog focus restoration. This remains a targeted source/token audit, not a full WCAG conformance claim.
+
 **Incremental progress:** the October 2026 UI foundation batch darkens the shared muted-text token, aligns financial figures with tabular numerals, and adds Browser E2E assertions for mobile page overflow and these styles. This does not close the full UI/UX phase or establish WCAG conformance. See `docs/UI-UX-REVIEW.md`; real-device and assisted-technology review remain outstanding.
 
 - Establish/verify design tokens for type, color, spacing, radius, elevation, and focus/selected/error states.
