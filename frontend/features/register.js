@@ -240,12 +240,24 @@ export function createRegister({ api, go }) {
       for (const fileId of voucher.receipts) {
         try {
           receiptCache[fileId] ||= (await api('getReceipt', { id, fileId })).dataUrl;
-          box.insertAdjacentHTML(
-            'beforeend',
-            `<img class="rimg" src="${receiptCache[fileId]}" alt="receipt">`,
-          );
+          const dataUrl = receiptCache[fileId];
+
+          // Receipt data comes from the API; allow only base64-encoded raster images.
+          // Build the element with DOM APIs so the value never enters an HTML attribute.
+          if (!/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
+            throw new Error('Receipt image response was not a supported image.');
+          }
+
+          const image = document.createElement('img');
+          image.className = 'rimg';
+          image.alt = 'receipt';
+          image.src = dataUrl;
+          box.appendChild(image);
         } catch (error) {
-          box.insertAdjacentHTML('beforeend', `<p class="error">${esc(error.message)}</p>`);
+          const message = document.createElement('p');
+          message.className = 'error';
+          message.textContent = error.message || 'Could not display this receipt.';
+          box.appendChild(message);
         }
       }
     };
