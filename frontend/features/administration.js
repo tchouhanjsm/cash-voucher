@@ -159,12 +159,27 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     try {
       const audit = await api('auditLog');
-      $('#aud').innerHTML = audit
-        .map(
-          (row) =>
-            `<tr><td class="nw">${esc(row.time.replace('T', ' '))}</td><td>${esc(row.user)}</td><td class="nw">${esc(row.action)}</td><td>${esc(row.target)} ${esc(row.details)}</td></tr>`,
-        )
-        .join('');
+      const auditBody = $('#aud');
+      auditBody.replaceChildren();
+
+      audit.forEach((row) => {
+        const tr = document.createElement('tr');
+        const cells = [
+          { value: String(row.time ?? '').replace('T', ' '), className: 'nw' },
+          { value: row.user },
+          { value: row.action, className: 'nw' },
+          { value: `${row.target ?? ''} ${row.details ?? ''}` },
+        ];
+
+        cells.forEach(({ value, className }) => {
+          const td = document.createElement('td');
+          if (className) td.className = className;
+          td.textContent = String(value ?? '');
+          tr.appendChild(td);
+        });
+
+        auditBody.appendChild(tr);
+      });
     } catch (error) {
       fail(error);
     }
