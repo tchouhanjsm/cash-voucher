@@ -25,13 +25,6 @@ function openDb_() {
   });
 }
 
-function request_(request) {
-  return new Promise((resolve, reject) => {
-    request.onsuccess = () => resolve(request.result);
-    request.onerror = () => reject(request.error || new Error('Offline storage request failed.'));
-  });
-}
-
 function tx_(mode, work) {
   return readyPromise.then(
     (db) =>
@@ -46,7 +39,9 @@ function tx_(mode, work) {
           reject(transaction.error || new Error('Offline storage transaction aborted.'));
 
         try {
-          result = work(transaction.objectStore(STORE));
+          work(transaction.objectStore(STORE), (value) => {
+            result = value;
+          });
         } catch (error) {
           transaction.abort();
           reject(error);
@@ -186,21 +181,31 @@ export async function enqueue(entries) {
 }
 
 export async function list() {
-  return tx_('readonly', (store) =>
-    request_(store.getAll()).then((records) => records.sort((a, b) => a.createdAt - b.createdAt)),
-  );
+  return tx_('readonly', (store, setResult) => {
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const records = request.result.sort((a, b) => a.createdAt - b.createdAt);
+      setResult(records);
+    };
+  });
 }
 
 export async function count() {
-  return tx_('readonly', (store) => request_(store.count()));
+  return tx_('readonly', (store, setResult) => {
+    const request = store.count();
+    request.onsuccess = () => setResult(request.result);
+  });
 }
 
 export async function claim(limit, owner, leaseMs = 120000) {
   const now = Date.now();
 
-  return tx_('readwrite', (store) =>
-    request_(store.getAll()).then((records) => {
-      const available = records
+  return tx_('readwrite', (store, setResult) => {
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      const available = request.result
         .filter(
           (record) =>
             record.status === 'pending' ||
@@ -217,9 +222,9 @@ export async function claim(limit, owner, leaseMs = 120000) {
         store.put(record);
       });
 
-      return available;
-    }),
-  );
+      setResult(available);
+    };
+  });
 }
 
 export async function ack(clientIds, owner) {

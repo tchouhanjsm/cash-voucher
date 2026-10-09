@@ -160,7 +160,7 @@ export function createPayments({ api, refresh }) {
       if (!n) return b.classList.add('hidden');
 
       b.className = 'banner' + (errMsg ? ' err' : '');
-      b.innerHTML = `<span>📤 ${n} payment${n > 1 ? 's' : ''} waiting to upload${errMsg ? ' — ' + esc(errMsg) : ''}</span><button class="btn sm" data-act="flush">Retry now</button><button class="btn sm danger" data-act="discard">Discard</button>`;
+      b.innerHTML = `<span>📤 ${n} payment${n > 1 ? 's' : ''} waiting to upload${errMsg ? ' — ' + esc(errMsg) : ''}</span><button class="btn sm" data-act="flush">Retry now</button><button class="btn sm" data-act="export-pending">Export</button><button class="btn sm danger" data-act="discard">Discard</button>`;
     } catch (error) {
       b.className = 'banner err';
       b.innerHTML = `<span>⚠️ Offline storage is unavailable. Reconnect before saving unsynced payments.</span>`;
@@ -197,9 +197,48 @@ export function createPayments({ api, refresh }) {
       await showBanner();
       await refresh(true);
     } catch (error) {
-      await showBanner(error.code === 'NET' ? '' : error.message);
+      await showBanner(error.code === 'NET' ? 'Connection to server was lost.' : error.message);
     } finally {
       flushing = false;
+    }
+  }
+
+  async function exportOutbox() {
+    try {
+      const records = await offlineQueue.list();
+
+      if (!records.length) {
+        toast('There are no pending payments to export.', 'ok');
+        return;
+      }
+
+      const payload = {
+        format: 'cash-voucher.pending',
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        records: records.map((record) => ({
+          clientId: record.clientId,
+          status: record.status,
+          attempts: record.attempts,
+          queuedAt: new Date(record.createdAt).toISOString(),
+          entry: record.entry,
+        })),
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: 'application/json',
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+
+      link.href = url;
+      link.download = 'cash-vouchers-pending-' + today() + '.json';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      toast('Pending payments exported. Keep the file secure.', 'ok');
+    } catch (error) {
+      fail(error);
     }
   }
 
@@ -222,6 +261,7 @@ export function createPayments({ api, refresh }) {
     clearReceipt,
     showBanner,
     flushOutbox,
+    exportOutbox,
     discardOutbox,
   };
 }
