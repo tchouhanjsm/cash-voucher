@@ -184,6 +184,7 @@ function backupData_() {
   lock.waitLock(30000);
   const p = props_();
   let snapshot;
+  let snapshotComplete = false;
   try {
     p.setProperty('BACKUP_LAST_ATTEMPT', new Date().toISOString());
     p.deleteProperty('BACKUP_LAST_ERROR');
@@ -219,16 +220,40 @@ function backupData_() {
       ]);
     }
     snapshot.createFile('receipt-manifest.csv', backupManifestCsv_(manifest), MimeType.CSV);
+    snapshotComplete = true;
     pruneBackups_(root);
     p.setProperty('BACKUP_LAST_SUCCESS', new Date().toISOString());
     p.deleteProperty('BACKUP_LAST_ERROR');
     Logger.log('Backup complete: ' + snapshot.getName() + ', receipts=' + copied.length);
     return { folderId: snapshot.getId(), receiptCount: copied.length };
   } catch (e) {
-    p.setProperty('BACKUP_LAST_ERROR', String(e && e.message ? e.message : e));
+    let failureMessage = String(e && e.message ? e.message : e);
+    if (snapshot && !snapshotComplete) {
+      failureMessage += trashIncompleteBackup_(snapshot);
+    }
+    try {
+      p.setProperty('BACKUP_LAST_ERROR', failureMessage.slice(0, 300));
+    } catch (metadataError) {
+      Logger.log(
+        'Could not record backup failure metadata: ' +
+          String(metadataError && metadataError.message ? metadataError.message : metadataError),
+      );
+    }
     throw e;
   } finally {
     lock.releaseLock();
+  }
+}
+function trashIncompleteBackup_(snapshot) {
+  if (!snapshot) return '';
+  try {
+    snapshot.setTrashed(true);
+    return '';
+  } catch (cleanupError) {
+    return (
+      '; incomplete snapshot cleanup failed: ' +
+      String(cleanupError && cleanupError.message ? cleanupError.message : cleanupError)
+    );
   }
 }
 function backupStatus_(user) {
