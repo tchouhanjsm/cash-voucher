@@ -96,8 +96,11 @@ export function createPayments({ api, refresh }) {
   }
 
   function updateSaveLabel() {
-    const count = $('#rows .erow').filter((row) =>
-      $('.rv', row).value.trim() || $('.ra', row).value.trim() || row._rec.length,
+    const count = $('#rows .erow').filter(
+      (row) =>
+        $('.rv', row).value.trim() ||
+        $('.ra', row).value.trim() ||
+        row._rec.length,
     ).length;
     const button = $('#nsave');
     if (button) button.textContent = 'Save ' + entryNoun(count > 1 ? 2 : 1);
