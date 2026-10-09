@@ -14,7 +14,7 @@
     "validate:json": "node scripts/validate-json.js",
     "check:syntax": "node scripts/check-js.js",
     "inspect:frontend": "node scripts/inspect-frontend.js",
-    "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm run check:frontend && npm test",
+    "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm run check:contrast && npm run check:frontend && npm test",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint . --fix",
     "fix": "npm run fix:format && npm run fix:lint && npm run check",
@@ -27,7 +27,8 @@
     "check:frontend": "node scripts/verify-frontend-release.js",
     "check:pr-quality": "node scripts/check-pr-quality.js",
     "test:e2e": "bash test/run-e2e.sh",
-    "audit:deps": "node scripts/dependency-audit.js"
+    "audit:deps": "node scripts/dependency-audit.js",
+    "check:contrast": "node scripts/check-contrast.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
