@@ -400,8 +400,5 @@ ok(
   resetChange.ok && as(resetChange.data.token, 'bootstrap').ok,
   'owner PIN reset also clears PIN-change throttle',
 );
-ok(
-  g.lockStats.waits === g.lockStats.releases,
-  'all acquired script locks are released',
-);
+ok(g.lockStats.waits === g.lockStats.releases, 'all acquired script locks are released');
 console.log(`backend OK — ${n} checks passed`);

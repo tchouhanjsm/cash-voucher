@@ -4,7 +4,7 @@ A lightweight, installable PWA for recording cash paid out and cash received at 
 
 ## Current architecture
 
-~~~text
+```text
 index.html
   └── frontend/main.js                 composition root
        ├── frontend/core/               API, state, storage, UI, actions, offline queue
@@ -13,7 +13,7 @@ index.html
 style.css · config.js · sw.js · manifest.webmanifest · icons/
 backend/Code.gs · backend/appsscript.json
 test/ · scripts/ · docs/
-~~~
+```
 
 `app.js` is retained in the repository as a legacy artifact but is **not loaded by `index.html`**. The active browser entry point is `frontend/main.js`.
 
@@ -52,11 +52,11 @@ When a backend change is merged, it is still only source code: production change
 
 Install dependencies with Node 20:
 
-~~~bash
+```bash
 npm ci
 npm run check
 npm run test:e2e
-~~~
+```
 
 - `npm run check` runs lint, formatting, JSON validation, JS syntax checks, the frontend release-integrity check, and the mock Apps Script backend suite.
 - `npm run test:e2e` runs the browser suite against the local mock server; it must not use the production API. See `docs/DEVELOPMENT-WORKFLOW.md`.

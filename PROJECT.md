@@ -28,7 +28,7 @@ Do not treat strategic ideas in the review document as agreed requirements. The 
 
 ## 2. Runtime architecture
 
-~~~text
+```text
 index.html ──loads──> frontend/main.js
                          │
                          ├── frontend/core/
@@ -43,19 +43,19 @@ index.html ──loads──> frontend/main.js
                               backend/Code.gs (Apps Script JSON API)
                                   ├── Google Sheet tabs
                                   └── private Drive receipt/backup folders
-~~~
+```
 
 `app.js` remains in the repository but is not an active runtime import. The source tree is modular; do not restart the old one-module-per-PR extraction plan.
 
 ## 3. Data model
 
-| Sheet | Purpose |
-|---|---|
-| `Users` | User ID, name, email, role, active flag, per-user salt/hash, forced PIN change, timestamps |
+| Sheet      | Purpose                                                                                                                       |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `Users`    | User ID, name, email, role, active flag, per-user salt/hash, forced PIN change, timestamps                                    |
 | `Vouchers` | Payments/receipts, separate type and number series, notes, status, actor/timestamps, receipts, cancellation reason, client ID |
-| `Vendors` | Vendor identity/contact and active status |
-| `Settings` | Property details, categories, numbering counters, opening balance |
-| `AuditLog` | Timestamp, user, action, target and details |
+| `Vendors`  | Vendor identity/contact and active status                                                                                     |
+| `Settings` | Property details, categories, numbering counters, opening balance                                                             |
+| `AuditLog` | Timestamp, user, action, target and details                                                                                   |
 
 Dates are normalized by the API. Monetary inputs are validated and rounded to two decimal places in the current backend. A future ledger redesign should use integer minor units and explicit currency at the domain boundary; do not change the current API or persisted schema as an incidental refactor.
 
@@ -73,11 +73,11 @@ Phase 22 serializes login failure counting and throttles repeated current-PIN fa
 
 ## 5. Develop, test, release
 
-~~~bash
+```bash
 npm ci
 npm run check
 npm run test:e2e
-~~~
+```
 
 `npm run check` includes lint, Prettier, JSON/syntax checks, frontend release integrity and the mock backend tests. Browser E2E uses the local mock API. Neither is a production Google-account test.
 
