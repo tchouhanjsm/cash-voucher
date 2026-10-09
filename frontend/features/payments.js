@@ -98,11 +98,7 @@ export function createPayments({ api, refresh }) {
   function updateSaveLabel() {
     let count = 0;
     document.querySelectorAll('#rows .erow').forEach((row) => {
-      if (
-        $('.rv', row).value.trim() ||
-        $('.ra', row).value.trim() ||
-        row._rec.length
-      ) {
+      if ($('.rv', row).value.trim() || $('.ra', row).value.trim() || row._rec.length) {
         count += 1;
       }
     });
