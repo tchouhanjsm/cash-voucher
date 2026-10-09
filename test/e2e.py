@@ -341,11 +341,75 @@ with sync_playwright() as p:
         'staff has no edit/cancel',
     )
 
+    receipt_failure = {'remaining': 1}
+
+    def fail_first_receipt(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') == 'getReceipt' and receipt_failure['remaining']:
+            receipt_failure['remaining'] -= 1
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({
+                    'ok': False,
+                    'error': 'Temporary receipt service error.',
+                    'code': 'TEMP',
+                }),
+            )
+        else:
+            route.continue_()
+
+    page.route('**/api?*', fail_first_receipt)
     page.locator('#rbody tr', has_text='Ram Traders').locator('[data-act=rec]').click()
+    page.wait_for_selector('#rimgs [data-act=retry-receipt]')
+    check(
+        'Temporary receipt service error.' in page.locator('#rimgs').inner_text()
+        and page.locator('#rimgs [role=alert]').count() == 1,
+        'receipt load failure is announced and exposes a retry action',
+    )
+    page.click('#rimgs [data-act=retry-receipt]')
     page.wait_for_selector('.rimg')
-    check(page.locator('.rimg').count() >= 1, 'receipt viewable')
+    check(
+        page.locator('.rimg').count() >= 1
+        and page.locator('#rimgs [data-act=retry-receipt]').count() == 0,
+        'receipt retry recovers and displays the image',
+    )
+    page.unroute('**/api?*', fail_first_receipt)
     page.click('[data-x]')
 
+    # Force one bootstrap failure to verify visible refresh progress and recovery.
+    page.evaluate("""() => {
+      const originalFetch = window.fetch.bind(window);
+      window.__failNextBootstrap = true;
+      window.fetch = (input, init = {}) => {
+        let body;
+        try { body = JSON.parse(init.body || '{}'); } catch {}
+        if (window.__failNextBootstrap && body?.action === 'bootstrap') {
+          window.__failNextBootstrap = false;
+          return new Promise((resolve, reject) => {
+            setTimeout(() => reject(new TypeError('Failed to fetch')), 200);
+          });
+        }
+        return originalFetch(input, init);
+      };
+    }""")
+    page.locator('[data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelector('[data-act=refresh]')?.getAttribute('aria-busy') === 'true'"
+    )
+    check(
+        page.locator('[data-act=refresh]').is_disabled()
+        and page.locator('[data-act=refresh]').inner_text() == 'Refreshing…',
+        'register refresh exposes a disabled progress state',
+    )
+    page.wait_for_function(
+        "document.querySelector('.toast.err')?.innerText.includes('No connection to the server')"
+    )
+    check(
+        not page.locator('[data-act=refresh]').is_disabled()
+        and page.locator('[data-act=refresh]').get_attribute('aria-busy') is None,
+        'failed register refresh restores the control for retry',
+    )
     note_row = page.locator('#rbody tr', has_text='Ram Traders').first
     note_row.locator('[data-act=print]').evaluate("window.print = () => {}")
     note_row.locator('[data-act=print]').click()

@@ -250,39 +250,74 @@ export function createRegister({ api, go }) {
       (can('receiptAny') || voucher.createdBy === S.me.email);
     const form = dialog(
       `Receipts · #${vno(voucher)}`,
-      `<div id="rimgs">${voucher.receipts.length ? '<p class="muted">Loading…</p>' : '<p class="muted">No receipts yet.</p>'}</div>${canAdd ? '<label class="btn" style="margin:0">📷 Add receipt<input type="file" id="radd" accept="image/*" hidden></label>' : ''}`,
+      `<div id="rimgs" aria-live="polite"></div>${canAdd ? '<label class="btn" style="margin:0">📷 Add receipt<input type="file" id="radd" accept="image/*" hidden></label>' : ''}`,
     );
+
+    const loadReceipt = async (fileId, item) => {
+      item.replaceChildren();
+      const status = document.createElement('p');
+      status.className = 'muted receipt-status';
+      status.setAttribute('role', 'status');
+      status.textContent = 'Loading receipt…';
+      item.appendChild(status);
+
+      try {
+        let dataUrl = receiptCache[fileId];
+        if (!dataUrl) {
+          dataUrl = (await api('getReceipt', { id, fileId })).dataUrl;
+        }
+
+        // Receipt data comes from the API; allow only base64-encoded raster images.
+        // Build the element with DOM APIs so the value never enters an HTML attribute.
+        if (!/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
+          throw new Error('Receipt image response was not a supported image.');
+        }
+
+        receiptCache[fileId] = dataUrl;
+        const image = document.createElement('img');
+        image.className = 'rimg';
+        image.alt = 'Receipt image';
+        image.src = dataUrl;
+        item.replaceChildren(image);
+      } catch (error) {
+        item.replaceChildren();
+        const message = document.createElement('p');
+        message.className = 'error receipt-error';
+        message.setAttribute('role', 'alert');
+        message.textContent = error.message || 'Could not display this receipt.';
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'btn';
+        retry.dataset.act = 'retry-receipt';
+        retry.textContent = 'Retry loading receipt';
+        retry.onclick = () => {
+          retry.disabled = true;
+          loadReceipt(fileId, item);
+        };
+        item.append(message, retry);
+      }
+    };
 
     const draw = async () => {
       const box = $('#rimgs', form);
-
-      if (!voucher.receipts.length) return;
-
       box.replaceChildren();
 
-      for (const fileId of voucher.receipts) {
-        try {
-          receiptCache[fileId] ||= (await api('getReceipt', { id, fileId })).dataUrl;
-          const dataUrl = receiptCache[fileId];
-
-          // Receipt data comes from the API; allow only base64-encoded raster images.
-          // Build the element with DOM APIs so the value never enters an HTML attribute.
-          if (!/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
-            throw new Error('Receipt image response was not a supported image.');
-          }
-
-          const image = document.createElement('img');
-          image.className = 'rimg';
-          image.alt = 'receipt';
-          image.src = dataUrl;
-          box.appendChild(image);
-        } catch (error) {
-          const message = document.createElement('p');
-          message.className = 'error';
-          message.textContent = error.message || 'Could not display this receipt.';
-          box.appendChild(message);
-        }
+      if (!voucher.receipts.length) {
+        const empty = document.createElement('p');
+        empty.className = 'muted';
+        empty.textContent = 'No receipts yet.';
+        box.appendChild(empty);
+        return;
       }
+
+      const items = voucher.receipts.map(() => {
+        const item = document.createElement('div');
+        item.className = 'receipt-item';
+        box.appendChild(item);
+        return item;
+      });
+
+      await Promise.all(voucher.receipts.map((fileId, index) => loadReceipt(fileId, items[index])));
     };
 
     await draw();
@@ -291,6 +326,9 @@ export function createRegister({ api, go }) {
 
     if (add) {
       add.onchange = async () => {
+        if (!add.files?.length) return;
+
+        add.disabled = true;
         try {
           const receipt = await compress(add.files[0]);
           Object.assign(
@@ -305,6 +343,8 @@ export function createRegister({ api, go }) {
           receipts(id);
         } catch (error) {
           fail(error);
+        } finally {
+          if (add.isConnected) add.disabled = false;
         }
       };
     }
