@@ -60,22 +60,24 @@ The repository is public. This review did not perform a general Git object/secre
 
 Exit gate: exact PR CI and browser workflow pass; code-review findings are accurately labeled; no production deploy. This phase must be reviewed and merged by the owner before the next phase starts.
 
-### P1 — Daily cash close and physical reconciliation (recommended next)
+### P1 — Daily cash close and physical reconciliation (Phase 23 design)
 
-Problem: a cash-in-hand number is not proof that the physical drawer matches the ledger.
+**Status:** design proposal only; no close workflow is implemented. Phase 23 records the current source constraints, candidate business rules, failure cases and owner decisions required before a money-affecting implementation. See `docs/DAILY-CASH-CLOSE-DESIGN.md`.
 
-Design an owner/manager close workflow before implementing it:
+Current source has a single global `Settings.openingBalance`, active/cancelled voucher statuses, separate PAYMENT/RECEIPT types, editable active vouchers, and best-effort audit events. It does not have dated opening balances, close records, close-state enforcement or a correction ledger. The dashboard's cash-in-hand figure uses the global opening balance plus all active receipts minus all active payments; it is not a daily reconciliation report.
 
-1. Compute expected cash from opening balance + active receipts − active payments for the chosen shift/day.
-2. Let the operator enter actual cash count; use denomination rows if the hotel needs them.
-3. Display expected amount, counted amount, and variance as numbers and words—not color alone.
-4. Require a reason for any non-zero variance; optionally require a second manager/owner confirmation after workflows are agreed.
-5. Seal the close record and prohibit silent retroactive edits. Corrections should be separate, attributable events with reason, actor and timestamp.
-6. Provide a printable/exportable close report and drill-through to vouchers behind every total.
+The design must settle these points before schema/API changes:
 
-Before building, confirm how to handle cash withdrawals/deposits, multiple drawers/shifts, backdated receipts, cancellations, cash transfers and days with offline entries. Don't use a decorative “signed close” label unless the resulting record has a defined, tested integrity model.
+- how a business day's opening cash is established and carried forward;
+- whether one property has one drawer or multiple drawers/shifts;
+- how Bank Withdrawal, Owner Deposit, bank deposits/transfers and other categories affect physical cash;
+- how backdated entries and cancellation/edit after close are handled;
+- how device-local offline entries are surfaced and reconciled before a close;
+- whether denomination rows are needed, and who may close/reopen/correct a close.
 
-Success measures to baseline during pilot: cash variance by day/shift; percentage of closes completed; time to close; number of unexplained adjustments.
+Candidate calculation for review: expected physical cash = approved opening cash + active cash receipts in the selected close period − active cash payments in that period, with every included voucher drillable from the report. A non-zero variance should require an explanation. Any post-close correction should be a separate, attributable event rather than a silent rewrite. These are proposed rules, not implemented behavior or owner-approved policy.
+
+Exit gate: owner reviews the business-rule/decision table and accepts the MVP boundary before an implementation PR. No schema migration, approval/sign-off workflow, day lock, Apps Script deployment or production-data change is included in the design PR.
 
 ### P2 — Approval and exception controls
 
