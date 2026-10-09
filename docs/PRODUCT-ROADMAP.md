@@ -90,6 +90,8 @@ Candidate expected physical cash = opening physical cash + classified CASH_IN am
 
 ### P4 — Product UI/UX quality pass
 
+**Incremental progress:** the October 2026 UI foundation batch darkens the shared muted-text token, aligns financial figures with tabular numerals, and adds Browser E2E assertions for mobile page overflow and these styles. This does not close the full UI/UX phase or establish WCAG conformance. See `docs/UI-UX-REVIEW.md`; real-device and assisted-technology review remain outstanding.
+
 - Establish/verify design tokens for type, color, spacing, radius, elevation, and focus/selected/error states.
 - Improve one-thumb mobile tasks, density/scanability, filter discoverability, empty states, loading/success/error/offline feedback.
 - Formal contrast, keyboard/focus, screen-reader, zoom and motion checks; usability observation with at least one real user from each role is a starting point, not statistical validation.

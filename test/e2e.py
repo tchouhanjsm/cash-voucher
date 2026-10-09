@@ -586,6 +586,24 @@ with sync_playwright() as p:
     page.wait_for_selector('.two')
     page.screenshot(path='/tmp/desktop.png')
     page.set_viewport_size({'width': 390, 'height': 800})
+    mobile_overflow = page.evaluate(
+        'document.documentElement.scrollWidth > document.documentElement.clientWidth'
+    )
+    check(not mobile_overflow, '390px viewport has no page-level horizontal overflow')
+    amount_style = page.locator('.stats b').first.evaluate(
+        '(element) => getComputedStyle(element).fontVariantNumeric'
+    )
+    check(
+        'tabular-nums' in amount_style,
+        'dashboard financial figures use tabular numerals',
+    )
+    muted_color = page.locator('.muted').first.evaluate(
+        '(element) => getComputedStyle(element).color'
+    )
+    check(
+        muted_color == 'rgb(89, 105, 120)',
+        'muted interface text uses the reviewed higher-contrast token',
+    )
     page.screenshot(path='/tmp/mobile.png')
 
     real_errors = [

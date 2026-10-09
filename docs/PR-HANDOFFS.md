@@ -4,15 +4,16 @@ This index is a durable map for future development threads. The dedicated handof
 
 ## Recent reviewed PR sequence
 
-| PR                                                         | Outcome                                                                | Durable record / important boundary                                                                     |
-| ---------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| [#41](https://github.com/tchouhanjsm/cash-voucher/pull/41) | Targeted hardening of HTML rendering sinks and stored-XSS regressions. | Merged. Not a complete sanitizer migration; full dynamic HTML sink audit remains open.                  |
-| [#42](https://github.com/tchouhanjsm/cash-voucher/pull/42) | DOM text rendering and commit-count gate raised to 20.                 | Merged. The commit-count ceiling is being removed in #46; required PR handoff sections remain enforced. |
-| [#43](https://github.com/tchouhanjsm/cash-voucher/pull/43) | Fixed dated-backup retention matching and CSV manifest line breaks.    | Merged. Live Drive and restore behavior were not verified.                                              |
-| [#44](https://github.com/tchouhanjsm/cash-voucher/pull/44) | Initial owner-only backup status implementation.                       | Closed unmerged; the reviewed replacement is #45.                                                       |
-| [#45](https://github.com/tchouhanjsm/cash-voucher/pull/45) | Added owner-only backup status and clearer recovery-state messaging.   | Merged. Status metadata does not prove snapshot completeness or restoreability.                         |
-| [#46](https://github.com/tchouhanjsm/cash-voucher/pull/46) | Clean up incomplete backup snapshots and harden failure/lock handling. | Active. See [PR-46 handoff](pr-handoffs/PR-46.md) and live PR checks.                                   |
-| [#47](https://github.com/tchouhanjsm/cash-voucher/pull/47) | Formatting-only child PR created while correcting #46.                 | Closed without merge to avoid stacked PRs; the active review target is #46.                             |
+| PR                                                         | Outcome                                                                | Durable record / important boundary                                                                                       |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| [#41](https://github.com/tchouhanjsm/cash-voucher/pull/41) | Targeted hardening of HTML rendering sinks and stored-XSS regressions. | Merged. Not a complete sanitizer migration; full dynamic HTML sink audit remains open.                                    |
+| [#42](https://github.com/tchouhanjsm/cash-voucher/pull/42) | DOM text rendering and commit-count gate raised to 20.                 | Merged. The commit-count ceiling is being removed in #46; required PR handoff sections remain enforced.                   |
+| [#43](https://github.com/tchouhanjsm/cash-voucher/pull/43) | Fixed dated-backup retention matching and CSV manifest line breaks.    | Merged. Live Drive and restore behavior were not verified.                                                                |
+| [#44](https://github.com/tchouhanjsm/cash-voucher/pull/44) | Initial owner-only backup status implementation.                       | Closed unmerged; the reviewed replacement is #45.                                                                         |
+| [#45](https://github.com/tchouhanjsm/cash-voucher/pull/45) | Added owner-only backup status and clearer recovery-state messaging.   | Merged. Status metadata does not prove snapshot completeness or restoreability.                                           |
+| [#46](https://github.com/tchouhanjsm/cash-voucher/pull/46) | Clean up incomplete backup snapshots and harden failure/lock handling. | Merged on 9 October 2026. Mock tests do not prove live Drive/restore behavior. See [PR-46 handoff](pr-handoffs/PR-46.md). |
+| [#47](https://github.com/tchouhanjsm/cash-voucher/pull/47) | Formatting-only child PR created while correcting #46.                 | Closed without merge to avoid stacking; its correction was included in #46.                                               |
+| [#48](https://github.com/tchouhanjsm/cash-voucher/pull/48) | Improve shared UI contrast and financial-number readability.           | Open; exact-head CI/E2E and owner review pending. See [PR-48 handoff](pr-handoffs/PR-48.md).                              |
 
 ## Per-PR handoff contract
 
@@ -32,4 +33,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
+- PR #46 is merged; PR #47 is closed without merge. PR #48 is the active UI accessibility foundation batch.
 - The owner merges PRs. No agent merge or production deployment.

@@ -2,7 +2,7 @@
   --bg: #f3f5f7;
   --card: #fff;
   --ink: #1c2630;
-  --muted: #667585;
+  --muted: #596978;
   --line: #e1e6eb;
   --brand: #1f3a4d;
   --accent: #b8862f;
@@ -297,6 +297,15 @@ nav .ic {
   display: block;
   margin-top: 2px;
 }
+
+/* Keep financial figures aligned and easier to compare while scanning. */
+.stat b,
+.hb-v,
+td.amt,
+.pv-amt {
+  font-variant-numeric: tabular-nums;
+}
+
 .stat small {
   font-size: 12px;
 }
@@ -416,7 +425,7 @@ th.r {
   text-align: right;
 }
 tr.cx td {
-  color: #97a3af;
+  color: var(--muted);
 }
 tr.cx .amt {
   text-decoration: line-through;
