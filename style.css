@@ -153,6 +153,12 @@ label > textarea {
   flex-wrap: wrap;
   margin-top: 8px;
 }
+
+/* Keep the primary staff-entry controls comfortable to tap on phones. */
+#nf .actions .btn,
+.seg button[data-act='ntype'] {
+  min-height: 44px;
+}
 .grid {
   display: grid;
   gap: 10px;

@@ -741,7 +741,24 @@ with sync_playwright() as p:
         ),
         '320px payment entry has no page-level horizontal overflow',
     )
-    row_layout = page.locator('.erow .top').evaluate(
+    check(page.locator('#nsave').inner_text() == 'Save payment', 'payment form uses a clear singular save action')
+    touch_targets = page.locator('#nsave, .seg button[data-act=ntype]').evaluate_all(
+        "elements => elements.map(element => ({label: element.innerText, height: element.getBoundingClientRect().height}))"
+    )
+    check(
+        all(target['height'] >= 44 for target in touch_targets),
+        'payment save and payment/receipt switch targets are at least 44px tall on mobile',
+    )
+    page.click('[data-k=RECEIPT]')
+    check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash-receipt mode uses matching save terminology')
+    page.click('[data-k=PAYMENT]')
+    page.locator('.erow .rv').first.fill('Mobile workflow vendor')
+    page.locator('.erow .ra').first.fill('42')
+    check(page.locator('#nsave').inner_text() == 'Save payment', 'single-entry save label stays singular')
+    page.click('[data-act=addrow]')
+    page.locator('.erow .rv').nth(1).fill('Second workflow vendor')
+    check(page.locator('#nsave').inner_text() == 'Save payments', 'save label reflects multiple entered payments')
+    row_layout = page.locator('.erow .top').first.evaluate(
         """(element) => {
           const vendor = element.querySelector('.rv').getBoundingClientRect();
           const amount = element.querySelector('.ra').getBoundingClientRect();
@@ -895,6 +912,21 @@ with sync_playwright() as p:
         'failed legacy migration preserves original localStorage data',
     )
     corrupt_context.close()
+
+    # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
+    page.set_viewport_size({'width': 390, 'height': 800})
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.click('[data-k=RECEIPT]')
+    page.fill('.erow .rv', 'Mobile cash receipt workflow')
+    page.fill('.erow .ra', '25')
+    check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash receipt form has matching save action')
+    page.click('#nsave')
+    page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1 cash receipt')")
+    check('Saved 1 cash receipt' in page.locator('#nres').inner_text(), 'saved confirmation uses cash-receipt terminology')
+    page.click('#nres [data-act=newagain]')
+    page.wait_for_selector('#nf')
+    check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'new cash receipt action preserves the selected mode')
 
     browser.close()
 

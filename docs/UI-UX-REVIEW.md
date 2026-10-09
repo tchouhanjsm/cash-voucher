@@ -93,3 +93,9 @@ PR #54 distinguishes a populated register whose current filters return no matche
 ## Receipt loading and register refresh feedback — October 2026
 
 PR #55 adds explicit per-receipt loading status and a retry action when a receipt fetch or image validation fails. Failed receipt content is not cached, so retry can make a fresh request. The register refresh control announces its busy state, disables duplicate refresh clicks, and is restored if the request fails; the existing toast communicates the error while preserving the last rendered register data. Browser E2E injects one transient receipt failure and one bootstrap failure, then verifies recovery affordances. This does not prove live Google service behavior, real-device behavior, or screen-reader output across assistive-technology combinations.
+
+## Staff mobile entry task clarity — October 2026
+
+PR #56 improves the first staff-facing task journey without changing the underlying voucher model: the primary save action now names the selected workflow (payment or cash receipt), switches between singular and plural as entered rows change, and the saved result uses the same task terminology. Save outcomes are exposed as a polite status region. On mobile, the save button and payment/cash-receipt mode controls have a minimum 44px target height.
+
+Browser E2E asserts the dynamic labels and touch-target dimensions at 320 CSS pixels. This is automated viewport coverage, not a substitute for staff observation on a physical phone, thumb-reach testing, screen-reader output checks, or validating manager and owner journeys.

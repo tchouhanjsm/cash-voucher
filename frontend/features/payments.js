@@ -86,7 +86,24 @@ export function createPayments({ api, refresh }) {
     if (!row) return;
     row.remove();
     labelRows();
+    updateSaveLabel();
     if (target) $('.rv', target).focus();
+  }
+
+  function entryNoun(count = 1) {
+    if (NT === 'RECEIPT') return count === 1 ? 'cash receipt' : 'cash receipts';
+    return count === 1 ? 'payment' : 'payments';
+  }
+
+  function updateSaveLabel() {
+    let count = 0;
+    document.querySelectorAll('#rows .erow').forEach((row) => {
+      if ($('.rv', row).value.trim() || $('.ra', row).value.trim() || row._rec.length) {
+        count += 1;
+      }
+    });
+    const button = $('#nsave');
+    if (button) button.textContent = 'Save ' + entryNoun(count > 1 ? 2 : 1);
   }
 
   function vNew() {
@@ -94,7 +111,7 @@ export function createPayments({ api, refresh }) {
       head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment') +
       `<div class="seg"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">💸 Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">💰 Cash received</button></div><form id="nf" class="card" autocomplete="off">${vendorList()}
     <label style="max-width:220px">Date<input type="date" id="nd" value="${today()}" max="${addDays(today(), 1)}" required></label><div id="rows"></div>
-    <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save payments</button><button type="button" class="btn" data-act="import-pending">Import recovery file</button></div>
+    <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button><button type="button" class="btn" data-act="import-pending">Import recovery file</button></div>
     <p class="muted">Tip: tap “Receipt” to take a photo or pick a screenshot (up to 3 per payment).</p></form><div id="nres"></div>`;
     addRow();
   }
@@ -102,6 +119,10 @@ export function createPayments({ api, refresh }) {
   function open(type = 'PAYMENT') {
     NT = type;
     vNew();
+  }
+
+  function newAgain() {
+    open(NT);
   }
 
   function addRow() {
@@ -112,6 +133,7 @@ export function createPayments({ api, refresh }) {
     $('#rows').appendChild(r);
     $('#nres').querySelector('.form-error')?.remove();
     labelRows();
+    updateSaveLabel();
     const v = $('.rv', r);
     if ($$('#rows .erow').length > 1) v.focus();
   }
@@ -120,6 +142,7 @@ export function createPayments({ api, refresh }) {
     const row = button.closest('.erow');
     row._rec = [];
     $('.rp', row).replaceChildren();
+    updateSaveLabel();
   }
 
   document.addEventListener('change', async (e) => {
@@ -151,6 +174,8 @@ export function createPayments({ api, refresh }) {
       preview.appendChild(image);
     });
 
+    updateSaveLabel();
+
     if (row._rec.length) {
       const clear = document.createElement('button');
       clear.type = 'button';
@@ -176,6 +201,7 @@ export function createPayments({ api, refresh }) {
     const row = event.target.closest('.erow');
     if (row) clearRowError(row);
     $('#nres .form-error')?.remove();
+    updateSaveLabel();
   });
 
   async function saveNew(btn) {
@@ -240,13 +266,13 @@ export function createPayments({ api, refresh }) {
         });
         $('#nf').classList.add('hidden');
         $('#nres').innerHTML =
-          `<div class="card ok-panel"><h2>✔ Saved ${d.created.length} payment${d.created.length > 1 ? 's' : ''}</h2>${d.created.map((c) => `<div style="margin:8px 0">#${vno(c)} · ${esc(c.vendor)} · <b>${money(c.amount)}</b> <button class="btn sm" data-act="print" data-id="${esc(c.id)}">Print</button></div>`).join('')}<div class="actions"><button class="btn primary" data-act="newagain">New payment</button></div></div>`;
+          `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Saved ${d.created.length} ${entryNoun(d.created.length)}</h2>${d.created.map((c) => `<div style="margin:8px 0">#${vno(c)} · ${esc(c.vendor)} · <b>${money(c.amount)}</b> <button class="btn sm" data-act="print" data-id="${esc(c.id)}">Print</button></div>`).join('')}<div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
       } catch (e) {
         if (e.code !== 'NET') return fail(e);
         if (!(await queue(entries))) return;
         $('#nf').classList.add('hidden');
         $('#nres').innerHTML =
-          `<div class="card ok-panel"><h2>📴 Saved on this device</h2><p>You're offline. These ${entries.length} payment(s) will upload automatically when you're back online.</p><div class="actions"><button class="btn primary" data-act="newagain">New payment</button></div></div>`;
+          `<div class="card ok-panel" role="status" aria-live="polite"><h2>📴 Saved on this device</h2><p>You're offline. These ${entries.length} ${entryNoun(entries.length)} will upload automatically when you're back online.</p><div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
       }
     });
   }
@@ -543,6 +569,7 @@ export function createPayments({ api, refresh }) {
 
   return {
     open,
+    newAgain,
     addRow,
     clearReceipt,
     removeRow,
