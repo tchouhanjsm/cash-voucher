@@ -546,7 +546,9 @@ with sync_playwright() as p:
         'stored vendor values remain inert text in register filter options',
     )
     note_row = page.locator('#rbody tr', has_text='Ram Traders').first
-    note_row.locator('[data-act=edit]').click()
+    edit_trigger = note_row.locator('[data-act=edit]')
+    edit_trigger.evaluate("(element) => element.dataset.focusRestoreProbe = 'edit-dialog-trigger'")
+    edit_trigger.click()
     page.wait_for_selector('#modal #en')
     check(
         page.locator('#modal img, #modal svg').count() == 0
@@ -564,9 +566,12 @@ with sync_playwright() as p:
     page.keyboard.press('Escape')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
     check(
-        page.evaluate("document.activeElement === document.querySelector('[data-act=edit]')"),
+        page.evaluate(
+            "document.activeElement === document.querySelector('[data-focus-restore-probe=\\"edit-dialog-trigger\\"]')"
+        ),
         'Escape closes an idle dialog and restores focus to its opener',
     )
+    edit_trigger.evaluate("(element) => element.removeAttribute('data-focus-restore-probe')")
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
     xss_vendor_row.locator('[data-act=cancel]').click()
     page.wait_for_selector('#modal #cr')
