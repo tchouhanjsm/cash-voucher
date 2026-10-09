@@ -12,7 +12,7 @@ This index is a durable map for future development threads. The dedicated handof
 | [#44](https://github.com/tchouhanjsm/cash-voucher/pull/44) | Initial owner-only backup status implementation.                       | Closed unmerged; the reviewed replacement is #45.                                                       |
 | [#45](https://github.com/tchouhanjsm/cash-voucher/pull/45) | Added owner-only backup status and clearer recovery-state messaging.   | Merged. Status metadata does not prove snapshot completeness or restoreability.                         |
 | [#46](https://github.com/tchouhanjsm/cash-voucher/pull/46) | Clean up incomplete backup snapshots and harden failure/lock handling. | Merged on 9 October 2026. Mock tests do not prove live Drive/restore behavior. See [PR-46 handoff](pr-handoffs/PR-46.md). |
-| [#47](https://github.com/tchouhanjsm/cash-voucher/pull/47) | Formatting-only child PR created while correcting #46.                 | Closed without merge to avoid stacked PRs; the active review target is #46.                             |
+| [#47](https://github.com/tchouhanjsm/cash-voucher/pull/47) | Formatting-only child PR created while correcting #46.                 | Closed without merge to avoid stacking; its correction was included in #46.                           |
 
 ## Per-PR handoff contract
 
