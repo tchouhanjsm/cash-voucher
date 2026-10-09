@@ -58,8 +58,7 @@ export function createRegister({ api, go }) {
           const receiptAction =
             receiptCount ||
             (voucher.status === 'ACTIVE' && (can('receiptAny') || voucher.createdBy === S.me.email));
-          const kind = isIn(voucher) ? 'Cash received' : 'Cash paid';
-          const status = voucher.status === 'ACTIVE' ? 'Active' : 'Cancelled';
+          const kind = isIn(voucher) ? 'Receipt' : 'Payment';
           const actions = [
             `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
             receiptAction
