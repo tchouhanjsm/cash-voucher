@@ -12,6 +12,56 @@ g.setup();
 g.setup(); // idempotent
 ok(!!g.props.BACKUP_FOLDER_ID, 'backup folder configured');
 
+const retentionDayMs = 24 * 60 * 60 * 1000;
+function retentionFolder(name, ageDays) {
+  return {
+    name,
+    createdAt: new Date(Date.now() - ageDays * retentionDayMs),
+    trashed: false,
+    getName() {
+      return this.name;
+    },
+    getDateCreated() {
+      return this.createdAt;
+    },
+    setTrashed(value) {
+      this.trashed = value;
+    },
+  };
+}
+const expiredBackup = retentionFolder('backup-2026-01-01_020000', 91);
+const recentBackup = retentionFolder('backup-2026-10-09_020000', 2);
+const unmanagedFolder = retentionFolder('backup-manual-old', 200);
+const unrelatedFolder = retentionFolder('receipts', 200);
+const retentionFolders = [expiredBackup, recentBackup, unmanagedFolder, unrelatedFolder];
+let retentionIndex = 0;
+g.pruneBackups({
+  getFolders() {
+    retentionIndex = 0;
+    return {
+      hasNext: () => retentionIndex < retentionFolders.length,
+      next: () => retentionFolders[retentionIndex++],
+    };
+  },
+});
+ok(expiredBackup.trashed, 'backup retention trashes valid backups older than 90 days');
+ok(
+  !recentBackup.trashed && !unmanagedFolder.trashed && !unrelatedFolder.trashed,
+  'backup retention preserves recent backups and folders outside its naming contract',
+);
+const manifestCsv = g.backupManifestCsv([
+  ['originalFileId', 'backupFileId', 'name', 'createdAt'],
+  ['receipt-1', 'backup-receipt-1', 'Receipt, "front".jpg', '2026-10-09T02:00:00.000Z'],
+]);
+ok(
+  manifestCsv.split('\n').length === 2 && !manifestCsv.includes('\\n'),
+  'receipt manifest separates records with real CSV line breaks',
+);
+ok(
+  manifestCsv.includes('"Receipt, ""front"".jpg"'),
+  'receipt manifest correctly quotes commas and embedded double quotes',
+);
+
 // request envelope validation
 let malformed = g.call('bootstrap');
 ok(malformed.code === 'SESSION', 'missing session rejected');
