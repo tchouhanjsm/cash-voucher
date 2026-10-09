@@ -3,7 +3,7 @@
 **As of:** 9 October 2026  
 **Purpose:** reconcile the attached code-review memo with the actual current v2 repository and prioritize improvements by the value and risk to a property owner.
 
-This is a single-property cash-voucher PWA today. The attached memo's hosted fintech/multi-property concept is a strategic scenario, not an agreed requirement.
+This is a single-property cash-voucher PWA today. The attached memo's hosted fintech/multi-property concept is a strategic scenario, not an agreed requirement. The product-level scope, user outcomes, candidate measures, and owner decisions are consolidated in [Product Requirements Baseline](PRODUCT-REQUIREMENTS.md).
 
 ## 1. Code-review findings reconciled against current v2
 
