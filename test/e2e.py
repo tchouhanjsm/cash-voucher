@@ -560,8 +560,9 @@ with sync_playwright() as p:
         page.locator('#modal').get_attribute('role') == 'dialog'
         and page.locator('#modal').get_attribute('aria-modal') == 'true'
         and page.locator('#modal').get_attribute('aria-labelledby') == 'modalTitle'
-        and page.locator('#modal #modalTitle').count() == 1,
-        'edit dialog exposes modal semantics and an accessible title',
+        and page.locator('#modal #modalTitle').count() == 1
+        and page.locator('#app').evaluate('(element) => element.inert'),
+        'edit dialog exposes modal semantics/title and isolates the background app',
     )
     page.locator('#modal .primary').evaluate("(element) => element.setAttribute('disabled', '')")
     page.keyboard.press('Escape')
@@ -583,8 +584,9 @@ with sync_playwright() as p:
     page.keyboard.press('Escape')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
     check(
-        page.evaluate("document.activeElement?.dataset.focusRestoreProbe === 'edit-dialog-trigger'"),
-        'Escape closes an idle dialog and restores focus to its opener',
+        page.evaluate("document.activeElement?.dataset.focusRestoreProbe === 'edit-dialog-trigger'")
+        and not page.locator('#app').evaluate('(element) => element.inert'),
+        'Escape closes dialog, restores opener focus, and re-enables the app',
     )
     edit_trigger.evaluate("(element) => element.removeAttribute('data-focus-restore-probe')")
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
