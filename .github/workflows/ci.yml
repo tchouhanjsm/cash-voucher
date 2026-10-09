@@ -34,15 +34,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: Diagnose exact Prettier output for the active batch
-        run: |
-          for file in docs/HANDOFF.md frontend/features/register.js; do
-            echo "::group::Prettier diff for $file"
-            npx prettier "$file" > "/tmp/$(basename "$file").prettier"
-            diff -u "$file" "/tmp/$(basename "$file").prettier" || true
-            echo "::endgroup::"
-          done
-
       - name: Run quality gate
         run: npm run check
 
