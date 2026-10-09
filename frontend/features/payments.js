@@ -96,12 +96,16 @@ export function createPayments({ api, refresh }) {
   }
 
   function updateSaveLabel() {
-    const count = Array.from(document.querySelectorAll('#rows .erow')).filter(
-      (row) =>
+    let count = 0;
+    document.querySelectorAll('#rows .erow').forEach((row) => {
+      if (
         $('.rv', row).value.trim() ||
         $('.ra', row).value.trim() ||
-        row._rec.length,
-    ).length;
+        row._rec.length
+      ) {
+        count += 1;
+      }
+    });
     const button = $('#nsave');
     if (button) button.textContent = 'Save ' + entryNoun(count > 1 ? 2 : 1);
   }
