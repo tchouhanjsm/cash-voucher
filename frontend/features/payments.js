@@ -119,7 +119,7 @@ export function createPayments({ api, refresh }) {
   function clearReceipt(button) {
     const row = button.closest('.erow');
     row._rec = [];
-    $('.rp', row).innerHTML = '';
+    $('.rp', row).replaceChildren();
   }
 
   document.addEventListener('change', async (e) => {

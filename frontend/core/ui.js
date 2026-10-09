@@ -33,7 +33,7 @@ export function closeModal() {
   modal.classList.add('hidden');
   modal.setAttribute('aria-hidden', 'true');
   modal.removeAttribute('aria-labelledby');
-  modal.innerHTML = '';
+  modal.replaceChildren();
 
   if (
     restoreTarget &&
@@ -45,6 +45,10 @@ export function closeModal() {
   }
 }
 
+/**
+ * `body` is trusted, app-authored markup. Escape every persisted/API/user value
+ * before interpolation; never pass server-controlled HTML into this slot.
+ */
 export function dialog(title, body, onSubmit, ok = 'Save') {
   const modal = $('#modal');
   returnFocusTo = modal.classList.contains('hidden') ? document.activeElement : returnFocusTo;
@@ -113,6 +117,7 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   return form;
 }
 
+// `extra` is also a trusted app-authored HTML fragment, not a data string.
 export const head = (title, extra = '') =>
   `<div class="head"><h1>${esc(title)}</h1><div>${extra}</div></div>`;
 
