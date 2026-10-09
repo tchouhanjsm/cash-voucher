@@ -77,15 +77,34 @@ const vulnerabilities = Object.entries(report.vulnerabilities || {}).sort((a, b)
   );
 });
 
+const totals = {
+  total: metadata.total ?? vulnerabilities.length,
+  critical: metadata.critical ?? 0,
+  high: metadata.high ?? 0,
+  moderate: metadata.moderate ?? 0,
+  low: metadata.low ?? 0,
+  info: metadata.info ?? 0,
+};
 console.log(
-  `npm audit summary: total=${metadata.total ?? vulnerabilities.length}, critical=${metadata.critical ?? 0}, high=${metadata.high ?? 0}, moderate=${metadata.moderate ?? 0}, low=${metadata.low ?? 0}, info=${metadata.info ?? 0}`,
+  'npm audit summary: ' +
+    Object.entries(totals)
+      .map(([name, value]) => `${name}=${value}`)
+      .join(', '),
 );
 
 for (const [name, item] of vulnerabilities) {
   const fix = item.fixAvailable === undefined ? 'unknown' : JSON.stringify(item.fixAvailable);
-  console.log(
-    `- ${name}: severity=${item.severity}; direct=${item.isDirect}; range=${item.range}; installedPaths=${(item.nodes || []).join(', ') || 'not reported'}; fixAvailable=${fix}`,
-  );
+  const details = {
+    severity: item.severity,
+    direct: item.isDirect,
+    range: item.range,
+    installedPaths: (item.nodes || []).join(', ') || 'not reported',
+    fixAvailable: fix,
+  };
+  const detailText = Object.entries(details)
+    .map(([key, value]) => `${key}=${value}`)
+    .join('; ');
+  console.log(`- ${name}: ${detailText}`);
 
   for (const advisory of item.via || []) {
     if (typeof advisory === 'string') {
@@ -94,9 +113,10 @@ for (const [name, item] of vulnerabilities) {
     }
 
     const id = advisoryId(advisory) || advisory.source || 'unknown-id';
-    console.log(
-      `  advisory: ${id}; ${advisory.title || advisory.name || 'untitled'}; url=${advisory.url || 'not provided'}`,
-    );
+    const title = advisory.title || advisory.name || 'untitled';
+    const url = advisory.url || 'not provided';
+    console.log(`  advisory: ${id}; ${title}`);
+    console.log(`    url: ${url}`);
   }
 }
 
@@ -118,16 +138,20 @@ for (const [name, item] of vulnerabilities) {
 for (const id of allowedIds) {
   const exception = exceptions[id];
   console.log(
-    `REVIEWED EXCEPTION: ${id}; package=${exception.packageName}; reviewBy=${exception.reviewBy}; ${exception.rationale}`,
+    `REVIEWED EXCEPTION: ${id}; package=${exception.packageName}; reviewBy=${exception.reviewBy}`,
   );
+  console.log(`  rationale: ${exception.rationale}`);
 }
 
 if (reportOnly) {
   console.log('Report-only mode: no advisories were enforced by this diagnostic run.');
 } else if (blocking.length) {
-  console.error(
-    `Dependency security gate failed: ${blocking.length} high/critical findings are not covered by a current documented exception: ${[...new Set(blocking)].join(', ')}.`,
-  );
+  const message = [
+    'Dependency security gate failed:',
+    `${blocking.length} high/critical findings are not covered by a current documented exception:`,
+    [...new Set(blocking)].join(', '),
+  ].join(' ');
+  console.error(message);
   process.exit(1);
 } else {
   console.log(
