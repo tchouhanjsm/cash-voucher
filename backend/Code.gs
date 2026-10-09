@@ -248,11 +248,7 @@ function recordBackupFailure_(p, snapshot, snapshotComplete, error) {
   } catch (metadataError) {
     Logger.log(
       'Could not record backup failure metadata: ' +
-        String(
-          metadataError && metadataError.message
-            ? metadataError.message
-            : metadataError,
-        ),
+        String(metadataError && metadataError.message ? metadataError.message : metadataError),
     );
   }
 }
