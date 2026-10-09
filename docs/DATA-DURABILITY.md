@@ -19,7 +19,8 @@ The current backend source:
 - writes a receipt ID mapping manifest;
 - uses the script lock to avoid overlapping application writes;
 - prunes backup folders older than the configured 90-day retention period;
-- records last-success/error metadata in Script Properties.
+- records last-success/error metadata in Script Properties;
+- trashes a snapshot if an error occurs before the Sheet copy, receipt copies and manifest are complete. A snapshot is preserved if only the subsequent retention-pruning step fails.
 
 **Operational status:** the owner-only Settings panel now displays the recorded backup configuration, retention period, last attempt, last success and latest recorded error. A recorded success is only metadata written by the script; it does not prove the live Drive snapshot is complete or restorable. A successful run on the live property account, backup-folder permissions, snapshot completeness and a restore drill remain unverified. Do not mark recovery-ready until those gates pass.
 
