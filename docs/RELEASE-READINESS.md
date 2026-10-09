@@ -8,12 +8,12 @@
 | ----------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
 | Backend validation, schema checks and number reconciliation | Implemented           | Current `backend/Code.gs` and mock backend suite; not a live Google-account test                         |
 | PIN hash and session protection                             | Implemented           | HMAC-SHA256 with per-user salt + script property pepper; salt rotation invalidates old session tokens    |
-| Login/PIN-change attempt throttling                         | Phase 22 change       | Verify the Phase 22 PR checks before merge; not deployed to Apps Script                                  |
+| Login/PIN-change attempt throttling                         | Implemented in source | PR #32 is merged and post-merge CI passed; not deployed to Apps Script                                   |
 | Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                        |
 | Active frontend architecture                                | PASS on current main  | `index.html` loads `frontend/main.js`; source graph is modular                                           |
 | PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                             |
-| CI quality gate                                             | PASS on current main  | CI passed on merge commit `df6af85`; subsequent PR checks must be inspected per change                   |
-| Browser E2E                                                 | PASS on PR #21 head   | Does not verify live Google services or visual/accessibility quality on actual devices                   |
+| CI quality gate                                             | PASS on current main  | Post-merge CI passed on `4d80152`; each later PR must still be checked at its exact head                 |
+| Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
 | Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
 | Production Apps Script deployment                           | NOT RELEASED          | No deployment performed in this work                                                                     |

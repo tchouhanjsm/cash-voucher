@@ -85,7 +85,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     $('#nav').innerHTML = NAV.filter((item) => item[3]())
       .map(
         (item) =>
-          `<button data-v="${item[0]}"><span class="ic">${item[1]}</span><span>${item[2]}</span></button>`,
+          `<button type="button" data-v="${item[0]}"><span class="ic" aria-hidden="true">${item[1]}</span><span>${item[2]}</span></button>`,
       )
       .join('');
 
@@ -106,7 +106,13 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
 
   function go(view) {
     S.view = view;
-    $$('#nav button').forEach((button) => button.classList.toggle('on', button.dataset.v === view));
+    $$('#nav button').forEach((button) => {
+      const active = button.dataset.v === view;
+      button.classList.toggle('on', active);
+
+      if (active) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
 
     const render = renderers[view];
     if (!render) return;

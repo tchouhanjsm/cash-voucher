@@ -53,14 +53,47 @@ with sync_playwright() as p:
     page.fill('#lPin', '483921')
     page.click('#lBtn')
     page.wait_for_selector('#mErr')
+    check(
+        page.get_by_role('dialog', name='Choose a new PIN').count() == 1,
+        'PIN dialog has an accessible name',
+    )
+    check(
+        page.evaluate("document.activeElement?.id === 'op'"),
+        'dialog moves keyboard focus to the first field',
+    )
+    page.locator('.mcard .primary').focus()
+    page.keyboard.press('Tab')
+    check(
+        page.evaluate("document.activeElement?.id === 'op'"),
+        'Tab wraps from the last dialog control to the first',
+    )
+    page.locator('#op').focus()
+    page.keyboard.press('Shift+Tab')
+    check(
+        page.evaluate("document.activeElement?.matches('.mcard .primary')"),
+        'Shift+Tab wraps from the first dialog control to the last',
+    )
     page.fill('#op', '483921')
     page.fill('#np', '579246')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 8, 'owner sees 8 nav items')
+    check(
+        page.locator('[data-v=dash]').get_attribute('aria-current') == 'page',
+        'current navigation view is announced to assistive technology',
+    )
+    check(
+        page.locator('[data-v=dash] .ic').get_attribute('aria-hidden') == 'true',
+        'decorative navigation icon is hidden from assistive technology',
+    )
 
     page.click('[data-v=users]')
     page.wait_for_selector('#uf')
+    check(
+        page.locator('[data-v=users]').get_attribute('aria-current') == 'page'
+        and page.locator('[data-v=dash]').get_attribute('aria-current') is None,
+        'navigation current-page state follows the selected view',
+    )
     for name, email, role, pin in [
         ('Mona', 'm@test.com', 'manager', '246810'),
         ('Sam', 's@test.com', 'staff', '135790'),
