@@ -168,34 +168,7 @@ ok(
 delete g.props.BACKUP_LAST_ATTEMPT;
 delete g.props.BACKUP_LAST_SUCCESS;
 delete g.props.BACKUP_LAST_ERROR;
-ok(as(S, 'backupStatus').code === 'FORBIDDEN', 'staff cannot read owner backup status');
-ok(as(M, 'backupStatus').code === 'FORBIDDEN', 'manager cannot read owner backup status');
-let backupStatus = as(T, 'backupStatus').data;
-ok(
-  backupStatus.state === 'never_run' &&
-    backupStatus.configured &&
-    backupStatus.retentionDays === 90 &&
-    !backupStatus.lastSuccess,
-  'owner backup status distinguishes configured but never-run backups',
-);
-g.props.BACKUP_LAST_ATTEMPT = '2026-10-09T10:00:00.000Z';
-backupStatus = as(T, 'backupStatus').data;
-ok(
-  backupStatus.state === 'incomplete' && backupStatus.lastAttempt === g.props.BACKUP_LAST_ATTEMPT,
-  'owner backup status flags an attempt without a completed success',
-);
-g.props.BACKUP_LAST_SUCCESS = '2026-10-09T10:01:00.000Z';
-backupStatus = as(T, 'backupStatus').data;
-ok(backupStatus.state === 'success', 'owner backup status reports recorded success');
-g.props.BACKUP_LAST_ERROR = 'Drive copy failed';
-backupStatus = as(T, 'backupStatus').data;
-ok(
-  backupStatus.state === 'failed' && backupStatus.lastError === 'Drive copy failed',
-  'owner backup status reports latest recorded failure',
-);
-delete g.props.BACKUP_LAST_ATTEMPT;
-delete g.props.BACKUP_LAST_SUCCESS;
-delete g.props.BACKUP_LAST_ERROR;
+
 // create vouchers
 const today = new Date().toISOString().slice(0, 10);
 const tiny = Buffer.from('fakejpeg').toString('base64');
