@@ -30,6 +30,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Run dependency advisory inventory
+        run: npm run audit:deps -- --report-only
+
       - name: Run quality gate
         run: npm run check
 
