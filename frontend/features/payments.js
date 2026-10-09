@@ -118,6 +118,10 @@ export function createPayments({ api, refresh }) {
     vNew();
   }
 
+  function newAgain() {
+    open(NT);
+  }
+
   function addRow() {
     const d = document.createElement('div');
     d.innerHTML = rowHtml();
@@ -562,6 +566,7 @@ export function createPayments({ api, refresh }) {
 
   return {
     open,
+    newAgain,
     addRow,
     clearReceipt,
     removeRow,
