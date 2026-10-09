@@ -155,12 +155,12 @@ Therefore:
 
 ### Proposed cash-impact vocabulary
 
-| Value | Meaning | Drawer calculation |
-| --- | --- | --- |
-| `CASH_IN` | Physical notes/coins actually enter the drawer | Add amount |
-| `CASH_OUT` | Physical notes/coins actually leave the drawer | Subtract amount |
-| `NO_CASH` | Voucher records a transaction without physical drawer movement | No drawer effect |
-| `UNCLASSIFIED` | Cash impact is not yet established | Resolve or apply an explicitly owner-approved exception policy before final close |
+| Value          | Meaning                                                        | Drawer calculation                                                                |
+| -------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `CASH_IN`      | Physical notes/coins actually enter the drawer                 | Add amount                                                                        |
+| `CASH_OUT`     | Physical notes/coins actually leave the drawer                 | Subtract amount                                                                   |
+| `NO_CASH`      | Voucher records a transaction without physical drawer movement | No drawer effect                                                                  |
+| `UNCLASSIFIED` | Cash impact is not yet established                             | Resolve or apply an explicitly owner-approved exception policy before final close |
 
 This is a proposed data concept, not an existing field or approved schema. How it is stored—on the voucher or in a separately governed movement record—must be reviewed before implementation.
 
@@ -174,18 +174,18 @@ Only active, in-period vouchers with resolved cash impact contribute. Cancelled 
 
 ### Examples — illustrative, not automatic category mappings
 
-| Example of actual event | Drawer impact | Reason |
-| --- | --- | --- |
-| Room/restaurant revenue received as cash | `CASH_IN` | The same category can also be paid digitally |
-| Guest advance received in cash | `CASH_IN` | A digital transfer does not enter the drawer |
-| Bank withdrawal where cash is collected into the drawer | `CASH_IN` | A bank-to-bank transfer is not drawer cash |
-| Owner contributes physical cash | `CASH_IN` | An owner bank transfer is not physical cash |
-| Vendor expense paid from the drawer | `CASH_OUT` | The same category may be paid from a bank account |
-| Guest refund paid in cash | `CASH_OUT` | A digital refund does not leave the drawer |
-| Notes/coins deposited from the drawer into the bank | `CASH_OUT` | A cash transfer, not an operating expense |
-| Bank charges paid from the bank account | `NO_CASH` | Bank balance changes, drawer does not |
-| Room revenue received only by UPI/card/bank | `NO_CASH` | Non-cash funds increase, drawer does not |
-| “Bank Withdrawal” without physical cash entering the drawer | `NO_CASH` | The category name does not prove a physical withdrawal |
+| Example of actual event                                     | Drawer impact | Reason                                                 |
+| ----------------------------------------------------------- | ------------- | ------------------------------------------------------ |
+| Room/restaurant revenue received as cash                    | `CASH_IN`     | The same category can also be paid digitally           |
+| Guest advance received in cash                              | `CASH_IN`     | A digital transfer does not enter the drawer           |
+| Bank withdrawal where cash is collected into the drawer     | `CASH_IN`     | A bank-to-bank transfer is not drawer cash             |
+| Owner contributes physical cash                             | `CASH_IN`     | An owner bank transfer is not physical cash            |
+| Vendor expense paid from the drawer                         | `CASH_OUT`    | The same category may be paid from a bank account      |
+| Guest refund paid in cash                                   | `CASH_OUT`    | A digital refund does not leave the drawer             |
+| Notes/coins deposited from the drawer into the bank         | `CASH_OUT`    | A cash transfer, not an operating expense              |
+| Bank charges paid from the bank account                     | `NO_CASH`     | Bank balance changes, drawer does not                  |
+| Room revenue received only by UPI/card/bank                 | `NO_CASH`     | Non-cash funds increase, drawer does not               |
+| “Bank Withdrawal” without physical cash entering the drawer | `NO_CASH`     | The category name does not prove a physical withdrawal |
 
 These examples classify the actual physical event. They must not become automatic mappings based on category names: `Bank Withdrawal`, `Owner Deposit`, `Guest Advance`, `Guest Refund`, `Bank Charges`, and `Other` can have different cash impacts depending on settlement.
 
