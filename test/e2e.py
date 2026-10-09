@@ -127,7 +127,7 @@ with sync_playwright() as p:
         page.wait_for_timeout(300)
     check(page.locator('tbody tr').count() == 3, '3 users listed')
 
-    xss_payload = '<img src=x onerror=window.__xssFired=true>'
+    xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
     page.fill('#ue', 'stored-xss@test.com')
     page.select_option('#ur', 'staff')
@@ -508,6 +508,17 @@ with sync_playwright() as p:
         and page.locator('#en').input_value() == xss_note
         and not page.evaluate('window.__xssFired === true'),
         'stored vendor and note remain text in edit dialog fields',
+    )
+    page.click('#modal [data-x]')
+    page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+    xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
+    xss_vendor_row.locator('[data-act=cancel]').click()
+    page.wait_for_selector('#modal #cr')
+    check(
+        page.locator('#modal img, #modal svg').count() == 0
+        and xss_payload in page.locator('#modal').inner_text()
+        and not page.evaluate('window.__xssFired === true'),
+        'stored vendor remains text in cancellation dialog',
     )
     page.click('#modal [data-x]')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
