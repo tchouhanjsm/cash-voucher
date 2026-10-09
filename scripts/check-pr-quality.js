@@ -81,8 +81,12 @@ if (failures.length) {
     console.error(`- ${failure}`);
   }
 
-  console.error('Use .github/pull_request_template.md and provide meaningful, reviewable handoff evidence.');
+  console.error(
+    'Use .github/pull_request_template.md and provide meaningful, reviewable handoff evidence.',
+  );
   process.exit(1);
 }
 
-console.log(`PR quality gate passed: all ${requiredHeadings.length} required handoff sections are populated.`);
+console.log(
+  `PR quality gate passed: all ${requiredHeadings.length} required handoff sections are populated.`,
+);
