@@ -53,13 +53,34 @@ export function createRegister({ api, go }) {
 
     $('#rbody').innerHTML = shown
       .map(
-        (voucher) =>
-          `<tr class="${voucher.status === 'ACTIVE' ? '' : 'cx'}"><td class="nw"><b>${vno(voucher)}</b></td><td class="nw">${esc(dmy(voucher.date))}</td>
-    <td>${esc(voucher.vendor)}<div class="cat">${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${voucher.status !== 'ACTIVE' ? ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}` : ''}</div></td>
-    <td class="r nw amt"${isIn(voucher) ? ' style="color:var(--ok)"' : ''}>${isIn(voucher) ? '+' : ''}${money(voucher.amount)}</td><td class="nw cat">${esc(nm(voucher.createdBy))}</td>
-    <td class="r nw"><button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>
-    ${voucher.receipts.length || (voucher.status === 'ACTIVE' && (can('receiptAny') || voucher.createdBy === S.me.email)) ? `<button class="btn sm" data-act="rec" data-id="${esc(voucher.id)}">📎${voucher.receipts.length || ''}</button>` : ''}
-    ${voucher.status === 'ACTIVE' && can('edit') ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>` : ''}${voucher.status === 'ACTIVE' && can('cancel') ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(voucher.id)}">Cancel</button>` : ''}</td></tr>`,
+        (voucher) => {
+          const receiptCount = voucher.receipts.length;
+          const receiptAction =
+            receiptCount ||
+            (voucher.status === 'ACTIVE' && (can('receiptAny') || voucher.createdBy === S.me.email));
+          const kind = isIn(voucher) ? 'Cash received' : 'Cash paid';
+          const status = voucher.status === 'ACTIVE' ? 'Active' : 'Cancelled';
+          const actions = [
+            `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
+            receiptAction
+              ? `<button class="btn sm" data-act="rec" data-id="${esc(voucher.id)}" aria-label="Receipts for ${esc(vno(voucher))}">${receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
+              : '',
+            voucher.status === 'ACTIVE' && can('edit')
+              ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>`
+              : '',
+            voucher.status === 'ACTIVE' && can('cancel')
+              ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(voucher.id)}">Cancel</button>`
+              : '',
+          ].filter(Boolean).join('');
+          return `<tr class="voucher-row ${voucher.status === 'ACTIVE' ? '' : 'cx'}">
+            <td class="nw"><b>${vno(voucher)}</b><div class="cat voucher-kind">${kind}</div></td>
+            <td class="nw">${esc(dmy(voucher.date))}</td>
+            <td><span class="voucher-vendor">${esc(voucher.vendor)}</span><div class="cat">${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${voucher.status !== 'ACTIVE' ? ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}` : ''}</div></td>
+            <td class="r nw amt"${isIn(voucher) ? ' style="color:var(--ok)"' : ''}><span class="voucher-amount">${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}</span></td>
+            <td class="nw cat">${esc(nm(voucher.createdBy))}</td>
+            <td><div class="voucher-actions" role="group" aria-label="Actions for ${esc(vno(voucher))}">${actions}</div></td>
+          </tr>`;
+        },
       )
       .join('');
 
@@ -121,7 +142,7 @@ export function createRegister({ api, go }) {
       )
       .join('')}</select>
     <button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div>
-    <div class="card"><div id="rtot" style="margin-bottom:8px"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap"><table><thead><tr><th>No</th><th>Date</th><th>Paid to</th><th class="r">Amount</th><th>By</th><th></th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
+    <div class="card"><div id="rtot" style="margin-bottom:8px"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
 
     renderRows();
   }
