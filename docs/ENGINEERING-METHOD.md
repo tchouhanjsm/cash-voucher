@@ -40,21 +40,21 @@ The batch should be broad enough to deliver a complete, coherent outcome but bou
 
 ## 3. Architecture and ownership
 
-| Concern | Current owner |
-| --- | --- |
-| Composition and feature wiring | `frontend/main.js` |
-| API transport | `frontend/core/api.js` |
-| App state / permission flags | `frontend/core/state.js` |
-| DOM helpers | `frontend/core/dom.js` |
-| Shared UI feedback | `frontend/core/ui.js` |
-| Browser storage | `frontend/core/storage.js` |
-| Durable offline queue | `frontend/core/offline-queue.js` |
-| Action delegation | `frontend/core/actions.js` |
-| Auth | `frontend/features/auth.js` and server auth in `backend/Code.gs` |
-| Payments and offline recovery UX | `frontend/features/payments.js` |
-| Dashboard / register / bulk / administration / navigation / printing | matching `frontend/features/*.js` modules |
-| Persisted rules, validation and authorization | `backend/Code.gs` |
-| Integration and regression coverage | `test/` |
+| Concern                                                              | Current owner                                                    |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Composition and feature wiring                                       | `frontend/main.js`                                               |
+| API transport                                                        | `frontend/core/api.js`                                           |
+| App state / permission flags                                         | `frontend/core/state.js`                                         |
+| DOM helpers                                                          | `frontend/core/dom.js`                                           |
+| Shared UI feedback                                                   | `frontend/core/ui.js`                                            |
+| Browser storage                                                      | `frontend/core/storage.js`                                       |
+| Durable offline queue                                                | `frontend/core/offline-queue.js`                                 |
+| Action delegation                                                    | `frontend/core/actions.js`                                       |
+| Auth                                                                 | `frontend/features/auth.js` and server auth in `backend/Code.gs` |
+| Payments and offline recovery UX                                     | `frontend/features/payments.js`                                  |
+| Dashboard / register / bulk / administration / navigation / printing | matching `frontend/features/*.js` modules                        |
+| Persisted rules, validation and authorization                        | `backend/Code.gs`                                                |
+| Integration and regression coverage                                  | `test/`                                                          |
 
 Prefer focused module contracts and dependency injection. Do not add a framework/library merely for convention or move business logic into the composition root. Server-side permissions are authoritative; hidden UI is not a security boundary.
 

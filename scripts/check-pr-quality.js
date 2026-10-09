@@ -90,8 +90,12 @@ if (failures.length) {
     console.error(`- ${failure}`);
   }
 
-  console.error('Use .github/pull_request_template.md and keep each PR/batch at 10 commits or fewer.');
+  console.error(
+    'Use .github/pull_request_template.md and keep each PR/batch at 10 commits or fewer.',
+  );
   process.exit(1);
 }
 
-console.log(`PR quality gate passed: ${commitCount} commits; all ${requiredHeadings.length} required handoff sections are populated.`);
+console.log(
+  `PR quality gate passed: ${commitCount} commits; all ${requiredHeadings.length} required handoff sections are populated.`,
+);
