@@ -45,11 +45,20 @@ try {
   );
   assert.match(manyCommits.stdout, /all 6 required handoff sections/);
 
-  const missingEvidence = runGate(29, body.replace('## Security and failure review', '## Security review'));
-  assert.equal(missingEvidence.status, 1, 'The gate must reject a missing required handoff section.');
+  const missingEvidence = runGate(
+    29,
+    body.replace('## Security and failure review', '## Security review'),
+  );
+  assert.equal(
+    missingEvidence.status,
+    1,
+    'The gate must reject a missing required handoff section.',
+  );
   assert.match(missingEvidence.stderr, /missing the required "## Security and failure review"/);
 
-  console.log('PR quality gate OK — no hard commit ceiling; required handoff sections are enforced.');
+  console.log(
+    'PR quality gate OK — no hard commit ceiling; required handoff sections are enforced.',
+  );
 } finally {
   fs.rmSync(tempDirectory, { recursive: true, force: true });
 }

@@ -132,7 +132,11 @@ function expectBackupFailure(options, expectedMessage) {
 }
 
 let state = expectBackupFailure({ failReceiptCopy: true }, 'receipt copy failed');
-assert.equal(state.snapshots[0].trashed, true, 'receipt-copy failure trashes the incomplete snapshot');
+assert.equal(
+  state.snapshots[0].trashed,
+  true,
+  'receipt-copy failure trashes the incomplete snapshot',
+);
 assert.equal(state.props.BACKUP_LAST_ERROR, 'receipt copy failed');
 assert.equal(state.lockWaits, 1);
 assert.equal(state.lockReleases, 1, 'lock is released after an acquired lock');
@@ -141,16 +145,30 @@ state = expectBackupFailure({ failManifest: true }, 'manifest creation failed');
 assert.equal(state.snapshots[0].trashed, true, 'manifest failure trashes the incomplete snapshot');
 
 state = expectBackupFailure({ failCleanup: true, failManifest: true }, 'manifest creation failed');
-assert.equal(state.snapshots[0].trashed, false, 'failed cleanup does not mask the triggering failure');
+assert.equal(
+  state.snapshots[0].trashed,
+  false,
+  'failed cleanup does not mask the triggering failure',
+);
 assert.match(state.props.BACKUP_LAST_ERROR, /manifest creation failed/);
 assert.match(state.props.BACKUP_LAST_ERROR, /Drive permission denied/);
 
 state = expectBackupFailure({ failRetention: true }, 'retention pruning failed');
-assert.equal(state.snapshots[0].trashed, false, 'complete snapshot is preserved when retention pruning fails');
+assert.equal(
+  state.snapshots[0].trashed,
+  false,
+  'complete snapshot is preserved when retention pruning fails',
+);
 assert.equal(state.props.BACKUP_LAST_ERROR, 'retention pruning failed');
 
-state = expectBackupFailure({ failManifest: true, failMetadataWrite: true }, 'manifest creation failed');
-assert.match(state.logs.join('\n'), /Could not record backup failure metadata: metadata store unavailable/);
+state = expectBackupFailure(
+  { failManifest: true, failMetadataWrite: true },
+  'manifest creation failed',
+);
+assert.match(
+  state.logs.join('\n'),
+  /Could not record backup failure metadata: metadata store unavailable/,
+);
 assert.equal(state.lockReleases, 1, 'metadata write failure still releases the acquired lock');
 
 state = expectBackupFailure({ failLockAcquire: true }, 'lock acquisition timed out');
@@ -159,8 +177,15 @@ assert.equal(state.lockReleases, 0, 'a lock that was not acquired is never relea
 assert.equal(state.snapshots.length, 0, 'backup does not start after lock acquisition failure');
 
 state = expectBackupFailure({ failPropertiesAccess: true }, 'properties service unavailable');
-assert.equal(state.lockReleases, 1, 'lock is released if properties access fails after acquisition');
-assert.match(state.logs.join('\n'), /Could not record backup failure metadata: properties service unavailable/);
+assert.equal(
+  state.lockReleases,
+  1,
+  'lock is released if properties access fails after acquisition',
+);
+assert.match(
+  state.logs.join('\n'),
+  /Could not record backup failure metadata: properties service unavailable/,
+);
 
 const success = makeServices();
 const result = g.backupDataWithServices(success.services);
