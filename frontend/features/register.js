@@ -60,6 +60,10 @@ export function createRegister({ api, go }) {
             (voucher.status === 'ACTIVE' &&
               (can('receiptAny') || voucher.createdBy === S.me.email));
           const kind = isIn(voucher) ? 'Receipt' : 'Payment';
+          const cancelledNote =
+            voucher.status === 'ACTIVE'
+              ? ''
+              : ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}`;
           const actions = [
             `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
             receiptAction
@@ -86,7 +90,7 @@ export function createRegister({ api, go }) {
             <td>
               <span class="voucher-vendor">${esc(voucher.vendor)}</span>
               <div class="cat">
-                ${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${voucher.status !== 'ACTIVE' ? ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}` : ''}
+                ${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${cancelledNote}
               </div>
             </td>
             <td
