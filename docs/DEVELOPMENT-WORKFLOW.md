@@ -23,12 +23,11 @@ Before editing, verify the live GitHub PR state, target branch SHA, active branc
 
 ## Batch model
 
-Prefer a complete, coherent batch over one PR per small subtask. A batch can contain related product fixes, docs, targeted regression tests and CI guardrails; use multiple meaningful commits on the same PR while keeping the total at **20 commits or fewer**. Work in parallel across files only when changes do not race, then integrate and review the whole final diff.
+Prefer a complete, coherent batch over one PR per small subtask. A batch can contain related product fixes, docs, targeted regression tests and CI guardrails; use multiple meaningful commits on the same PR. There is no hard commit-count ceiling: reviewability is governed by scope, clarity, final diff, test evidence and risk—not an arbitrary number. Avoid noisy corrective commits and split only when the work has a genuinely independent outcome or risk boundary. Work in parallel across files only when changes do not race, then integrate and review the whole final diff.
 
 - Start from the latest confirmed base or extend the currently active PR when that is the agreed workflow. Avoid overlapping PRs that duplicate each other's commits.
 - Define the outcome and acceptance criteria before implementation.
 - Keep unrelated features and unapproved product-policy changes out of the batch.
-- If the work cannot be completed safely within 20 commits, stop at a coherent boundary and describe the dependency for a later batch.
 - Do not force push or rewrite history to make the commit count fit.
 
 ## Active architecture
@@ -74,7 +73,7 @@ git diff --stat
 git diff
 ```
 
-The CI workflow runs `npm run check`; the Browser E2E workflow separately runs `npm run test:e2e`. The PR quality check also blocks PRs with more than 20 commits or missing handoff sections. The exact head SHA must be checked after the last commit, not just an earlier commit.
+The CI workflow runs `npm run check`; the Browser E2E workflow separately runs `npm run test:e2e`. The PR quality check enforces complete handoff sections; it does not impose a commit-count ceiling. The exact head SHA must be checked after the last commit, not just an earlier commit.
 
 If browser E2E or another environment-dependent check has not run, report it as pending/not run. A passing mock is not proof of behavior on a real Google account. Neither normal CI workflow deploys the Apps Script backend.
 
@@ -88,6 +87,8 @@ Fix findings introduced by the batch before handoff. Record accepted residual ri
 
 ## Evidence-based PR handoff
 
+For every PR, create or update `docs/pr-handoffs/PR-<number>.md` with the intent, implementation summary, changed contracts/files, verification status, decisions, residual risks and merge/deployment boundary. Update `docs/HANDOFF.md` with the current main SHA, active PR/head SHA, current blockers and next exact steps. Keep the PR description as the authoritative place for exact-head CI/E2E links and current review status. Do this before requesting owner review; after each merge, update the handoff in the next coherent change if the merged SHA has changed.
+
 The PR description must state:
 
 - The user problem and observable outcome.
@@ -98,7 +99,7 @@ The PR description must state:
 - Remaining risks, not-run checks and any real-world verification still needed.
 - Explicit statement that merge/deployment was not performed, where relevant.
 
-Do not call a check passed unless the actual run for the exact head passed. Review the final file list, commit count, diff and workflow run details before stopping.
+Do not call a check passed unless the actual run for the exact head passed. Review the final file list, commit progression, diff and workflow run details before stopping.
 
 ## Apps Script release boundary
 

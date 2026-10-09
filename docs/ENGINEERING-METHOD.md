@@ -7,7 +7,7 @@ DISCOVER → PRIORITIZE → PLAN BATCH → IMPLEMENT → VERIFY CONTINUOUSLY
          → INDEPENDENT SELF-REVIEW → PR HANDOFF
 ```
 
-A batch may include several related fixes, documentation updates, regression tests and workflow improvements when they share a clear product or risk outcome. Use multiple focused commits on the same branch; the hard limit is **10 commits per PR/batch**. Prefer fewer, coherent review cycles over opening a PR for every small subtask.
+A batch may include several related fixes, documentation updates, regression tests and workflow improvements when they share a clear product or risk outcome. Use meaningful commits on the same branch. There is no hard commit-count limit; prefer a readable history and a coherent, reviewable final diff over commit-count optimization. Split only when scope, ownership, risk or release boundaries justify separate PRs.
 
 ## 1. Establish the actual state first
 
@@ -36,7 +36,7 @@ Release boundary:
 Verification plan:
 ```
 
-The batch should be broad enough to deliver a complete, coherent outcome but bounded enough to review. Do not combine unrelated product changes simply to reduce PR count. If a batch would require more than 10 commits, pause at a safe boundary and split it into dependent, reviewable batches.
+The batch should be broad enough to deliver a complete, coherent outcome but bounded enough to review. Do not combine unrelated product changes simply to reduce PR count. If reviewability degrades, split at a genuine functional or risk boundary; do not split solely to meet a commit-count target.
 
 ## 3. Architecture and ownership
 
@@ -98,14 +98,13 @@ Fix findings introduced by the batch. Record remaining risk and what could not b
 A batch is ready for owner review only when:
 
 1. The PR body has outcome, acceptance criteria, verification, security/failure review, release boundary and residual risks.
-2. The PR has no more than 10 commits.
-3. The quality workflow passes on the exact current head SHA.
-4. Browser E2E passes for changed browser behavior; relevant tests are added for regressions.
-5. The exact diff and changed-file list have been reviewed after the final commit.
-6. Each reported result is backed by a workflow run, command output or clearly labeled static review. Pending, skipped and unverified checks are not described as passed.
-7. The handoff lists known limitations and makes no unsupported claim about deployment or production readiness.
+2. The quality workflow passes on the exact current head SHA.
+3. Browser E2E passes for changed browser behavior; relevant tests are added for regressions.
+4. The exact diff and changed-file list have been reviewed after the final commit.
+5. Each reported result is backed by a workflow run, command output or clearly labeled static review. Pending, skipped and unverified checks are not described as passed.
+6. The handoff is recorded in `docs/pr-handoffs/PR-<number>.md`, `docs/HANDOFF.md` is current, and neither makes unsupported claims about deployment or production readiness.
 
-The PR workflow quality gate enforces the commit ceiling and required handoff sections. It is an additional guardrail, not a substitute for code review, behavioral tests or human approval.
+The PR workflow quality gate enforces required handoff sections. It is an additional guardrail, not a substitute for code review, behavioral tests or human approval.
 
 ## 7. UI/UX direction
 

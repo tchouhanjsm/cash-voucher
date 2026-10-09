@@ -148,7 +148,7 @@ function create() {
   vm.createContext(ctx);
   vm.runInContext(
     fs.readFileSync(path.join(__dirname, '../backend/Code.gs'), 'utf8') +
-      '\n;this.__api={setup,doPost,PERMS,pruneBackups_,backupManifestCsv_};',
+      '\n;this.__api={setup,doPost,PERMS,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_};',
     ctx,
   );
   return {
@@ -167,6 +167,10 @@ function create() {
     raw: (contents) => JSON.parse(ctx.__api.doPost({ postData: { contents } }).getContent()),
     pruneBackups: (root) => ctx.__api.pruneBackups_(root),
     backupManifestCsv: (rows) => ctx.__api.backupManifestCsv_(rows),
+    trashIncompleteBackup: (snapshot) => ctx.__api.trashIncompleteBackup_(snapshot),
+    recordBackupFailure: (properties, snapshot, snapshotComplete, error) =>
+      ctx.__api.recordBackupFailure_(properties, snapshot, snapshotComplete, error),
+    backupDataWithServices: (services) => ctx.__api.backupDataWithServices_(services),
   };
 }
 module.exports = { create };

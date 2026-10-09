@@ -180,29 +180,46 @@ function backupManifestCsv_(manifest) {
     .join('\n');
 }
 function backupData_() {
-  const lock = LockService.getScriptLock();
-  lock.waitLock(30000);
-  const p = props_();
+  return backupDataWithServices_({
+    getLock: () => LockService.getScriptLock(),
+    getProperties: () => props_(),
+    now: () => new Date(),
+    formatDate: (date, timeZone, format) => Utilities.formatDate(date, timeZone, format),
+    getTimeZone: () => Session.getScriptTimeZone(),
+    getFolderById: (id) => DriveApp.getFolderById(id),
+    getFileById: (id) => DriveApp.getFileById(id),
+    pruneBackups: (root) => pruneBackups_(root),
+    logger: (message) => Logger.log(message),
+    mimeCsv: MimeType.CSV,
+  });
+}
+function backupDataWithServices_(services) {
+  let lock;
+  let lockAcquired = false;
+  let p;
   let snapshot;
+  let snapshotComplete = false;
+
   try {
-    p.setProperty('BACKUP_LAST_ATTEMPT', new Date().toISOString());
+    lock = services.getLock();
+    lock.waitLock(30000);
+    lockAcquired = true;
+
+    p = services.getProperties();
+    p.setProperty('BACKUP_LAST_ATTEMPT', services.now().toISOString());
     p.deleteProperty('BACKUP_LAST_ERROR');
     const ssId = p.getProperty('SS_ID'),
       sourceReceiptFolderId = p.getProperty('RECEIPT_FOLDER_ID'),
       backupRootId = p.getProperty('BACKUP_FOLDER_ID');
     if (!ssId || !sourceReceiptFolderId || !backupRootId)
       throw new Error('Backup infrastructure is not configured. Run setup() first.');
-    const stamp = Utilities.formatDate(
-        new Date(),
-        Session.getScriptTimeZone(),
-        'yyyy-MM-dd_HHmmss',
-      ),
-      root = DriveApp.getFolderById(backupRootId),
-      sourceSheet = DriveApp.getFileById(ssId);
+    const stamp = services.formatDate(services.now(), services.getTimeZone(), 'yyyy-MM-dd_HHmmss'),
+      root = services.getFolderById(backupRootId),
+      sourceSheet = services.getFileById(ssId);
     snapshot = root.createFolder('backup-' + stamp);
     sourceSheet.makeCopy('Cash Voucher Sheet - ' + stamp, snapshot);
     const receiptBackup = snapshot.createFolder('receipts'),
-      sourceReceipts = DriveApp.getFolderById(sourceReceiptFolderId),
+      sourceReceipts = services.getFolderById(sourceReceiptFolderId),
       files = sourceReceipts.getFiles(),
       manifest = [['originalFileId', 'backupFileId', 'name', 'createdAt']],
       copied = [];
@@ -218,17 +235,59 @@ function backupData_() {
         file.getDateCreated().toISOString(),
       ]);
     }
-    snapshot.createFile('receipt-manifest.csv', backupManifestCsv_(manifest), MimeType.CSV);
-    pruneBackups_(root);
-    p.setProperty('BACKUP_LAST_SUCCESS', new Date().toISOString());
+    snapshot.createFile('receipt-manifest.csv', backupManifestCsv_(manifest), services.mimeCsv);
+    snapshotComplete = true;
+    services.pruneBackups(root);
+    p.setProperty('BACKUP_LAST_SUCCESS', services.now().toISOString());
     p.deleteProperty('BACKUP_LAST_ERROR');
-    Logger.log('Backup complete: ' + snapshot.getName() + ', receipts=' + copied.length);
+    services.logger('Backup complete: ' + snapshot.getName() + ', receipts=' + copied.length);
     return { folderId: snapshot.getId(), receiptCount: copied.length };
   } catch (e) {
-    p.setProperty('BACKUP_LAST_ERROR', String(e && e.message ? e.message : e));
+    if (p) {
+      recordBackupFailure_(p, snapshot, snapshotComplete, e, services.logger);
+    } else {
+      services.logger(
+        'Could not record backup failure metadata: ' + String(e && e.message ? e.message : e),
+      );
+    }
     throw e;
   } finally {
-    lock.releaseLock();
+    if (lockAcquired) lock.releaseLock();
+  }
+}
+function recordBackupFailure_(p, snapshot, snapshotComplete, error, logger) {
+  const log =
+    logger ||
+    function (message) {
+      Logger.log(message);
+    };
+  let failureMessage = String(error && error.message ? error.message : error);
+  if (snapshot && !snapshotComplete) {
+    const cleanupMessage = trashIncompleteBackup_(snapshot);
+    if (cleanupMessage) {
+      const cleanupNote = cleanupMessage.slice(0, 120);
+      failureMessage = failureMessage.slice(0, Math.max(0, 300 - cleanupNote.length)) + cleanupNote;
+    }
+  }
+  try {
+    p.setProperty('BACKUP_LAST_ERROR', failureMessage.slice(0, 300));
+  } catch (metadataError) {
+    log(
+      'Could not record backup failure metadata: ' +
+        String(metadataError && metadataError.message ? metadataError.message : metadataError),
+    );
+  }
+}
+function trashIncompleteBackup_(snapshot) {
+  if (!snapshot) return '';
+  try {
+    snapshot.setTrashed(true);
+    return '';
+  } catch (cleanupError) {
+    return (
+      '; incomplete snapshot cleanup failed: ' +
+      String(cleanupError && cleanupError.message ? cleanupError.message : cleanupError)
+    );
   }
 }
 function backupStatus_(user) {
