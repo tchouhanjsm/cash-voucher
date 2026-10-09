@@ -45,7 +45,6 @@ The old memo's numerical UI scores referred to a different implementation and we
 
 Phase 22 addresses authentication controls and documentation drift. It does not change visual styling, markup, or feature navigation. A visual redesign should follow the separate design/acceptance review above, so it can be tested without mixing security changes into the visual diff.
 
-
 ## Follow-up: backup status clarity
 
 The owner Settings screen now includes a `🛡️ Backup & recovery` status panel with configuration presence, retention period, last attempt, last recorded success and the latest recorded error. The panel explicitly states that recorded metadata does not prove Drive contents are complete or that a restore will succeed. It is owner-only through the server API permission check; mock E2E covers the visible never-run state. This is an operational status affordance, not the broader visual redesign. Real-device contrast/usability and a live restore drill remain outstanding.
