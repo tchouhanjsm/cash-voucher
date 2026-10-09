@@ -602,8 +602,7 @@ function login_(req) {
     const cache = CacheService.getScriptCache(),
       fk = 'f:' + email;
     const fails = Number(cache.get(fk) || 0);
-    if (fails >= CFG.MAX_FAILS)
-      throw err_('Too many attempts. Try again in 15 minutes.', 'LOCKED');
+    if (fails >= CFG.MAX_FAILS) throw err_('Too many attempts. Try again in 15 minutes.', 'LOCKED');
     const u = findUserByEmail_(email);
     const active = u && (u.Active === true || u.Active === 'TRUE');
     if (!u || !active || !same_(hashPin_(u.Salt, pin), u.PinHash)) {
