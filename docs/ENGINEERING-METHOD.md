@@ -2,9 +2,9 @@
 
 The product is built using a small-scope, evidence-led loop:
 
-~~~text
+```text
 DISCOVER → DEFINE → DESIGN → CONTRACT → BUILD → VERIFY → REVIEW → PR
-~~~
+```
 
 The objective is to improve reliability and owner value without speculative rewrites.
 
@@ -14,7 +14,7 @@ Before changing files, establish the current base commit, branch state, runtime 
 
 ## 2. Define a measurable change
 
-~~~text
+```text
 User/role:
 Outcome:
 Existing behavior and source:
@@ -24,27 +24,27 @@ In-scope / out-of-scope files:
 Acceptance criteria:
 Failure modes:
 Release boundary:
-~~~
+```
 
 Don't implement a strategy idea as a requirement until the intended users, decision maker and success metric are clear.
 
 ## 3. Architecture and ownership
 
-| Concern | Current owner |
-|---|---|
-| Composition and feature wiring | `frontend/main.js` |
-| API transport | `frontend/core/api.js` |
-| App state / permission flags | `frontend/core/state.js` |
-| DOM helpers | `frontend/core/dom.js` |
-| Shared UI feedback | `frontend/core/ui.js` |
-| Browser storage | `frontend/core/storage.js` |
-| Durable offline queue | `frontend/core/offline-queue.js` |
-| Action delegation | `frontend/core/actions.js` |
-| Auth | `frontend/features/auth.js` and server auth in `backend/Code.gs` |
-| Payments and offline recovery UX | `frontend/features/payments.js` |
-| Dashboard / register / bulk / administration / navigation / printing | matching `frontend/features/*.js` modules |
-| Persisted rules, validation and authorization | `backend/Code.gs` |
-| Integration and regression coverage | `test/` |
+| Concern                                                              | Current owner                                                    |
+| -------------------------------------------------------------------- | ---------------------------------------------------------------- |
+| Composition and feature wiring                                       | `frontend/main.js`                                               |
+| API transport                                                        | `frontend/core/api.js`                                           |
+| App state / permission flags                                         | `frontend/core/state.js`                                         |
+| DOM helpers                                                          | `frontend/core/dom.js`                                           |
+| Shared UI feedback                                                   | `frontend/core/ui.js`                                            |
+| Browser storage                                                      | `frontend/core/storage.js`                                       |
+| Durable offline queue                                                | `frontend/core/offline-queue.js`                                 |
+| Action delegation                                                    | `frontend/core/actions.js`                                       |
+| Auth                                                                 | `frontend/features/auth.js` and server auth in `backend/Code.gs` |
+| Payments and offline recovery UX                                     | `frontend/features/payments.js`                                  |
+| Dashboard / register / bulk / administration / navigation / printing | matching `frontend/features/*.js` modules                        |
+| Persisted rules, validation and authorization                        | `backend/Code.gs`                                                |
+| Integration and regression coverage                                  | `test/`                                                          |
 
 Prefer focused module contracts and dependency injection. Do not add a framework/library merely for convention. Do not move business logic into the composition root. Server-side permissions are authoritative; hidden UI is not a security boundary.
 
@@ -72,11 +72,11 @@ Fix defects introduced by the change; document residual risks and tests that the
 
 ## 5. Verification
 
-~~~bash
+```bash
 npm run check
 npm run test:e2e
 git diff --check
-~~~
+```
 
 The quality gate covers lint, formatting, JSON/JS checks, frontend release integrity and mock backend tests. Browser E2E exercises local mock-backend workflows. Neither replaces actual Google-account permission checks, live backup/restore or device usability testing. State only commands and checks verified in CI or locally.
 
