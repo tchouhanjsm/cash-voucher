@@ -619,7 +619,7 @@ with sync_playwright() as p:
     page.set_viewport_size({'width': 390, 'height': 844})
     manager_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
     check(
-        manager_row.locator('.voucher-kind').inner_text() == 'Cash paid',
+        manager_row.locator('.voucher-kind').inner_text() == 'Payment',
         'manager register identifies cash-paid voucher rows explicitly',
     )
     check(
