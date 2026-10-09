@@ -4,19 +4,20 @@ This index is a durable map for future development threads. The dedicated handof
 
 ## Recent reviewed PR sequence
 
-| PR | Outcome | Durable record / important boundary |
-| --- | --- | --- |
-| [#41](https://github.com/tchouhanjsm/cash-voucher/pull/41) | Targeted hardening of HTML rendering sinks and stored-XSS regressions. | Merged. Not a complete sanitizer migration; full dynamic HTML sink audit remains open. |
-| [#42](https://github.com/tchouhanjsm/cash-voucher/pull/42) | DOM text rendering and commit-count gate raised to 20. | Merged. The commit-count ceiling is being removed in #46; required PR handoff sections remain enforced. |
-| [#43](https://github.com/tchouhanjsm/cash-voucher/pull/43) | Fixed dated-backup retention matching and CSV manifest line breaks. | Merged. Live Drive and restore behavior were not verified. |
-| [#44](https://github.com/tchouhanjsm/cash-voucher/pull/44) | Initial owner-only backup status implementation. | Closed unmerged; the reviewed replacement is #45. |
-| [#45](https://github.com/tchouhanjsm/cash-voucher/pull/45) | Added owner-only backup status and clearer recovery-state messaging. | Merged. Status metadata does not prove snapshot completeness or restoreability. |
-| [#46](https://github.com/tchouhanjsm/cash-voucher/pull/46) | Clean up incomplete backup snapshots and harden failure/lock handling. | Active. See [PR-46 handoff](pr-handoffs/PR-46.md) and live PR checks. |
-| [#47](https://github.com/tchouhanjsm/cash-voucher/pull/47) | Formatting-only child PR created while correcting #46. | Closed without merge to avoid stacked PRs; the active review target is #46. |
+| PR                                                         | Outcome                                                                | Durable record / important boundary                                                                     |
+| ---------------------------------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| [#41](https://github.com/tchouhanjsm/cash-voucher/pull/41) | Targeted hardening of HTML rendering sinks and stored-XSS regressions. | Merged. Not a complete sanitizer migration; full dynamic HTML sink audit remains open.                  |
+| [#42](https://github.com/tchouhanjsm/cash-voucher/pull/42) | DOM text rendering and commit-count gate raised to 20.                 | Merged. The commit-count ceiling is being removed in #46; required PR handoff sections remain enforced. |
+| [#43](https://github.com/tchouhanjsm/cash-voucher/pull/43) | Fixed dated-backup retention matching and CSV manifest line breaks.    | Merged. Live Drive and restore behavior were not verified.                                              |
+| [#44](https://github.com/tchouhanjsm/cash-voucher/pull/44) | Initial owner-only backup status implementation.                       | Closed unmerged; the reviewed replacement is #45.                                                       |
+| [#45](https://github.com/tchouhanjsm/cash-voucher/pull/45) | Added owner-only backup status and clearer recovery-state messaging.   | Merged. Status metadata does not prove snapshot completeness or restoreability.                         |
+| [#46](https://github.com/tchouhanjsm/cash-voucher/pull/46) | Clean up incomplete backup snapshots and harden failure/lock handling. | Active. See [PR-46 handoff](pr-handoffs/PR-46.md) and live PR checks.                                   |
+| [#47](https://github.com/tchouhanjsm/cash-voucher/pull/47) | Formatting-only child PR created while correcting #46.                 | Closed without merge to avoid stacked PRs; the active review target is #46.                             |
 
 ## Per-PR handoff contract
 
 Every PR must create or update `docs/pr-handoffs/PR-<number>.md` before owner review. Include:
+
 - User/operator outcome and acceptance criteria.
 - What changed, with relevant files, functions, interfaces and data contracts.
 - Tests and exact verification status; distinguish passed, failed, skipped and not run.
