@@ -90,7 +90,6 @@ The stylesheet already contained a `prefers-reduced-motion: reduce` rule; PR #53
 
 PR #54 distinguishes a populated register whose current filters return no matches from a register with no vouchers available to show. The filtered-empty state exposes a polite status announcement and an in-context Clear filters action with a 44px minimum height. The no-data message includes safe next steps without assuming that an empty in-memory list proves the server has no historical vouchers. Browser E2E covers the filtered-empty state and recovery action; offline/real-device and assistive-technology behavior remain separate validation items.
 
-
 ## Receipt loading and register refresh feedback — October 2026
 
 PR #55 adds explicit per-receipt loading status and a retry action when a receipt fetch or image validation fails. Failed receipt content is not cached, so retry can make a fresh request. The register refresh control announces its busy state, disables duplicate refresh clicks, and is restored if the request fails; the existing toast communicates the error while preserving the last rendered register data. Browser E2E injects one transient receipt failure and one bootstrap failure, then verifies recovery affordances. This does not prove live Google service behavior, real-device behavior, or screen-reader output across assistive-technology combinations.
