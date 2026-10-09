@@ -72,9 +72,7 @@ function coveredByReviewedException(packageName, ancestors = []) {
 const metadata = report.metadata?.vulnerabilities || {};
 const vulnerabilities = Object.entries(report.vulnerabilities || {}).sort((a, b) => {
   const rank = { critical: 0, high: 1, moderate: 2, low: 3, info: 4 };
-  return (
-    (rank[a[1].severity] ?? 5) - (rank[b[1].severity] ?? 5) || a[0].localeCompare(b[0])
-  );
+  return (rank[a[1].severity] ?? 5) - (rank[b[1].severity] ?? 5) || a[0].localeCompare(b[0]);
 });
 
 const totals = {
@@ -154,9 +152,7 @@ if (reportOnly) {
   console.error(message);
   process.exit(1);
 } else {
-  console.log(
-    'Dependency security gate passed: no unexcepted high or critical advisories remain.',
-  );
+  console.log('Dependency security gate passed: no unexcepted high or critical advisories remain.');
 }
 
 if (result.status !== 0 && !vulnerabilities.length) {
