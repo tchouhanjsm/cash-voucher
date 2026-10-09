@@ -8,19 +8,17 @@
 - Phase 22 and cleanup PR #23 are merged.
 - Verified `main` baseline: `f0377937b260d9e873360ae3f726258e0ae8c272`.
 - PR #23 CI run 88 and Browser E2E run 34 passed on head `4b93513b000533a83b6ab0840521f483498c523a`.
-- No open pull requests were present at recovery time.
+- PR #24 is merged; Phase 24 design refinement is tracked in PR #25.
 - No local shell was available; local `cash-voucher-v2` working-tree state is not verified. GitHub is the source of truth for this PR.
 - No production Apps Script deployment has been performed.
 
 ## Active phase
 
-Phase 23 — design the Daily Cash Close and Physical Reconciliation workflow. Branch: `docs/daily-cash-close-design`.
-
-This is a docs-only design gate. No product code, API, Sheet schema, service worker, dependencies, or production data are changed. The design proposal lists existing source constraints, candidate calculations, failure cases and owner decisions that must be resolved before implementation.
+Phase 24 — refine cash-versus-bank semantics for Daily Cash Close. PR #25 is documentation-only. Product implementation remains blocked pending owner decisions. The design proposes explicit `CASH_IN`, `CASH_OUT`, `NO_CASH`, and `UNCLASSIFIED` states and prohibits silent category-based classification.
 
 ## Next step
 
-PR #24 is open: https://github.com/tchouhanjsm/cash-voucher/pull/24. Review its exact diff and the CI/Browser E2E results on the final head SHA, then merge only after the business rules are accepted. Do not implement the close workflow or begin another phase until the owner confirms this PR is merged and the merge commit is verified on `main`.
+PR #24 is merged. Review PR #25 at https://github.com/tchouhanjsm/cash-voucher/pull/25 and its CI/Browser E2E results. Do not begin product-code implementation until the owner accepts the cash-impact vocabulary, historical-voucher policy, close period/opening cash, offline handling, and correction rules, and the design PR is merged.
 
 ## Open risks / unverified
 
