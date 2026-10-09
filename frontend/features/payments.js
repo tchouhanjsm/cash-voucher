@@ -134,7 +134,7 @@ export function createPayments({ api, refresh }) {
         });
         $('#nf').classList.add('hidden');
         $('#nres').innerHTML =
-          `<div class="card ok-panel"><h2>✔ Saved ${d.created.length} payment${d.created.length > 1 ? 's' : ''}</h2>${d.created.map((c) => `<div style="margin:8px 0">#${vno(c)} · ${esc(c.vendor)} · <b>${money(c.amount)}</b> <button class="btn sm" data-act="print" data-id="${c.id}">Print</button></div>`).join('')}<div class="actions"><button class="btn primary" data-act="newagain">New payment</button></div></div>`;
+          `<div class="card ok-panel"><h2>✔ Saved ${d.created.length} payment${d.created.length > 1 ? 's' : ''}</h2>${d.created.map((c) => `<div style="margin:8px 0">#${vno(c)} · ${esc(c.vendor)} · <b>${money(c.amount)}</b> <button class="btn sm" data-act="print" data-id="${esc(c.id)}">Print</button></div>`).join('')}<div class="actions"><button class="btn primary" data-act="newagain">New payment</button></div></div>`;
       } catch (e) {
         if (e.code !== 'NET') return fail(e);
         if (!(await queue(entries))) return;
