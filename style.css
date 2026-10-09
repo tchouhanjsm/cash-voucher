@@ -5,8 +5,10 @@
   --muted: #596978;
   --line: #e1e6eb;
   --brand: #1f3a4d;
-  --accent: #b8862f;
+  --accent: #9b6b1c;
   --focus: #725018;
+  --focus-on-dark: #f3d28a;
+  --control-border: #7b8792;
   --nav-active: #755016;
   --bad: #b3261e;
   --ok: #1b7a43;
@@ -87,7 +89,7 @@ select,
 textarea {
   font: inherit;
   padding: 10px;
-  border: 1px solid #c9d1d9;
+  border: 1px solid var(--control-border);
   border-radius: 8px;
   background: #fff;
   width: 100%;
@@ -116,7 +118,7 @@ label > textarea {
   font-weight: 600;
   padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid #c9d1d9;
+  border: 1px solid var(--control-border);
   background: #fff;
   color: var(--ink);
   cursor: pointer;
@@ -322,7 +324,7 @@ td.amt,
   margin-bottom: 12px;
 }
 .seg button {
-  border: 1px solid #c9d1d9;
+  border: 1px solid var(--control-border);
   background: #fff;
   border-radius: 99px;
   padding: 6px 14px;
@@ -697,6 +699,11 @@ tr.cx .amt {
 :focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
+}
+
+/* The default focus color is for light surfaces; navigation sits on dark brand colors. */
+nav button:focus-visible {
+  outline-color: var(--focus-on-dark);
 }
 
 button,
