@@ -43,13 +43,13 @@ Keep all action eligibility tied to existing client capability checks and rely o
 **PR:** https://github.com/tchouhanjsm/cash-voucher/pull/57.
 Base is the verified `main` SHA above.
 
-**Current gate:** On candidate head `556e6b3ea9a4f1aef47e133255968d0daea27da3`, CI is `failure` and Browser E2E is `pending`. The last completed CI attempt failed at Prettier for `docs/HANDOFF.md` and `frontend/features/register.js`; that formatter output must be generated in a connected checkout before the batch can be considered ready.
+**Current gate:** Formatting corrections have been applied after earlier CI runs rejected `docs/HANDOFF.md` and `frontend/features/register.js`. The current branch SHA and exact-head CI/E2E links are maintained in [PR #57](https://github.com/tchouhanjsm/cash-voucher/pull/57). Do not treat results from superseded heads as current; both workflows must pass on the same head before owner review. Local checks were not run because this environment could not connect to GitHub directly.
 
 Next steps:
 
-1. In a connected checkout, run `npx prettier --write docs/HANDOFF.md frontend/features/register.js` and commit the formatter output.
-2. Require CI and Browser E2E to pass on one identical final SHA.
-3. Inspect final diff and residual risks; leave merge to the owner.
+1. Confirm CI and Browser E2E pass on the same current PR head.
+2. Inspect the final diff for mobile behavior, existing filter/totals/CSV semantics, and permission visibility.
+3. Leave review and merge to the owner.
 
 ## Operational gates still open
 
