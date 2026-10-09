@@ -7,7 +7,7 @@
     "node": ">=20 <23"
   },
   "scripts": {
-    "test": "node test/test-backend.js",
+    "test": "node test/test-backend.js && node test/test-dependency-audit.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -26,7 +26,8 @@
     "release": "node scripts/release.js",
     "check:frontend": "node scripts/verify-frontend-release.js",
     "check:pr-quality": "node scripts/check-pr-quality.js",
-    "test:e2e": "bash test/run-e2e.sh"
+    "test:e2e": "bash test/run-e2e.sh",
+    "audit:deps": "node scripts/dependency-audit.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
