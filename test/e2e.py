@@ -171,6 +171,16 @@ with sync_playwright() as p:
     page.click('[data-v=set]')
     page.wait_for_selector('#aud tr')
     page.wait_for_function(
+        "document.querySelector('#backup-status').innerText.includes('No completed backup recorded')"
+    )
+    check(
+        'Backup & recovery' in page.locator('#backup-status').inner_text()
+        and '90 days' in page.locator('#backup-status').inner_text()
+        and 'Last success: Not recorded' in page.locator('#backup-status').inner_text()
+        and 'does not verify the current Drive backup contents' in page.locator('#backup-status').inner_text(),
+        'owner settings show honest backup status and recovery limitations',
+    )
+    page.wait_for_function(
         "document.querySelector('#aud').innerText.includes('<svg onload=window.__xssFired=true></svg>')"
     )
     check(
