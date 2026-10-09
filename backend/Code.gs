@@ -185,6 +185,7 @@ function backupData_() {
   const p = props_();
   let snapshot;
   try {
+    p.setProperty('BACKUP_LAST_ATTEMPT', new Date().toISOString());
     const ssId = p.getProperty('SS_ID'),
       sourceReceiptFolderId = p.getProperty('RECEIPT_FOLDER_ID'),
       backupRootId = p.getProperty('BACKUP_FOLDER_ID');
@@ -228,6 +229,26 @@ function backupData_() {
   } finally {
     lock.releaseLock();
   }
+}
+function backupStatus_(user) {
+  need_(user, 'settings');
+  const p = props_();
+  const lastError = String(p.getProperty('BACKUP_LAST_ERROR') || '');
+
+  const configured = Boolean(
+    p.getProperty('SS_ID') &&
+      p.getProperty('RECEIPT_FOLDER_ID') &&
+      p.getProperty('BACKUP_FOLDER_ID'),
+  );
+
+  return {
+    configured: configured,
+    state: !configured ? 'not_configured' : lastError ? 'failed' : p.getProperty('BACKUP_LAST_SUCCESS') ? 'success' : 'never_run',
+    retentionDays: CFG.BACKUP_RETENTION_DAYS,
+    lastAttempt: p.getProperty('BACKUP_LAST_ATTEMPT') || '',
+    lastSuccess: p.getProperty('BACKUP_LAST_SUCCESS') || '',
+    lastError: lastError.slice(0, 300),
+  };
 }
 function pruneBackups_(root) {
   const cutoff = Date.now() - CFG.BACKUP_RETENTION_DAYS * 24 * 60 * 60 * 1000,
@@ -292,6 +313,7 @@ const ACTIONS = {
   changePin: changePin_,
   saveSettings: saveSettings_,
   auditLog: auditLog_,
+  backupStatus: backupStatus_,
   logout: logout_,
 };
 const WRITES = {
