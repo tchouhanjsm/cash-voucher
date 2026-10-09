@@ -328,10 +328,15 @@ with sync_playwright() as p:
         'staff has no edit/cancel',
     )
 
-    page.locator('#rbody tr', has_text='Ram Traders').locator('[data-act=rec]').click()
+    receipt_trigger = page.locator('#rbody tr', has_text='Ram Traders').locator('[data-act=rec]')
+    receipt_trigger.click()
     page.wait_for_selector('.rimg')
     check(page.locator('.rimg').count() >= 1, 'receipt viewable')
     page.click('[data-x]')
+    check(
+        page.evaluate("document.activeElement?.matches('[data-act=rec]')"),
+        'closing receipt dialog restores focus to its trigger',
+    )
 
     note_row = page.locator('#rbody tr', has_text='Ram Traders').first
     note_row.locator('[data-act=print]').evaluate("window.print = () => {}")
@@ -637,6 +642,69 @@ with sync_playwright() as p:
     check(
         muted_color == 'rgb(89, 105, 120)',
         'muted interface text uses the reviewed higher-contrast token',
+    )
+    contrast = page.evaluate(
+        """() => {
+          const root = getComputedStyle(document.documentElement);
+          const token = (name) => root.getPropertyValue(name).trim();
+          const rgb = (value) => {
+            if (value.startsWith('#')) {
+              const hex = value.slice(1);
+              return [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16));
+            }
+            const match = value.match(/[\\d.]+/g);
+            return match.slice(0, 3).map(Number);
+          };
+          const luminance = (value) => {
+            const channels = rgb(value).map((v) => {
+              v /= 255;
+              return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+            });
+            return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2];
+          };
+          const ratio = (foreground, background) => {
+            const values = [luminance(foreground), luminance(background)].sort((a, b) => b - a);
+            return (values[0] + 0.05) / (values[1] + 0.05);
+          };
+          const pairs = {
+            inkOnCard: ratio(token('--ink'), token('--card')),
+            mutedOnCard: ratio(token('--muted'), token('--card')),
+            mutedOnPage: ratio(token('--muted'), token('--bg')),
+            errorOnCard: ratio(token('--bad'), token('--card')),
+            successOnCard: ratio(token('--ok'), token('--card')),
+            warningOnCard: ratio(token('--warn'), token('--card')),
+            navTextOnBrand: ratio('#d6e0e8', token('--brand')),
+            accountTextOnBrand: ratio('#b9c8d4', token('--brand')),
+            errorBadge: ratio(token('--bad'), '#fbe4e2'),
+            successBadge: ratio(token('--ok'), '#e3f3ea'),
+            warningBadge: ratio(token('--warn'), '#fff1cf'),
+            focusOnCard: ratio(token('--focus'), token('--card')),
+            focusOnPage: ratio(token('--focus'), token('--bg')),
+            focusOnBrand: ratio(token('--focus-on-dark'), token('--brand')),
+            focusOnActiveNav: ratio(token('--focus-on-dark'), token('--nav-active')),
+            controlBorderOnCard: ratio(token('--control-border'), token('--card')),
+            controlBorderOnPage: ratio(token('--control-border'), token('--bg')),
+            chartAccentOnTrack: ratio(token('--accent'), '#eef1f4'),
+          };
+          return pairs;
+        }"""
+    )
+    text_pairs = [
+        'inkOnCard', 'mutedOnCard', 'mutedOnPage', 'errorOnCard',
+        'successOnCard', 'warningOnCard', 'navTextOnBrand',
+        'accountTextOnBrand', 'errorBadge', 'successBadge', 'warningBadge',
+    ]
+    check(
+        all(contrast[name] >= 4.5 for name in text_pairs),
+        'measured normal-text and status-pair contrast meets WCAG AA 4.5:1',
+    )
+    non_text_pairs = [
+        'focusOnCard', 'focusOnPage', 'focusOnBrand', 'focusOnActiveNav',
+        'controlBorderOnCard', 'controlBorderOnPage', 'chartAccentOnTrack',
+    ]
+    check(
+        all(contrast[name] >= 3 for name in non_text_pairs),
+        'measured focus, control-boundary and chart-accent contrast meets 3:1',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
     page.screenshot(path='/tmp/mobile.png')
