@@ -62,6 +62,27 @@ ok(
   'receipt manifest correctly quotes commas and embedded double quotes',
 );
 
+let incompleteSnapshotTrashed = false;
+const cleanupResult = g.trashIncompleteBackup({
+  setTrashed(value) {
+    incompleteSnapshotTrashed = value;
+  },
+});
+ok(
+  incompleteSnapshotTrashed && cleanupResult === '',
+  'incomplete backup snapshot is trashed after a failed operation',
+);
+const cleanupFailure = g.trashIncompleteBackup({
+  setTrashed() {
+    throw new Error('Drive permission denied');
+  },
+});
+ok(
+  cleanupFailure.includes('Drive permission denied'),
+  'snapshot cleanup failure is surfaced for backup error metadata',
+);
+ok(g.trashIncompleteBackup(null) === '', 'no snapshot needs no cleanup');
+
 // request envelope validation
 let malformed = g.call('bootstrap');
 ok(malformed.code === 'SESSION', 'missing session rejected');
