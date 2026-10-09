@@ -1,5 +1,5 @@
 // App-shell cache only. API calls (POST) are never cached.
-const C = 'cv2-v3',
+const C = 'cv2-v4',
   F = [
     './',
     'index.html',
