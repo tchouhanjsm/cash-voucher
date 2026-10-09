@@ -242,6 +242,146 @@ export function createPayments({ api, refresh }) {
     }
   }
 
+  async function importOutbox() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json,application/json';
+    input.hidden = true;
+
+    input.addEventListener('cancel', () => input.remove(), { once: true });
+    input.addEventListener(
+      'change',
+      async () => {
+        const file = input.files && input.files[0];
+        input.remove();
+
+        if (!file) return;
+        if (file.size > 25 * 1024 * 1024) {
+          return toast('Recovery file exceeds the 25 MB limit.', 'err');
+        }
+
+        try {
+          const payload = JSON.parse(await file.text());
+
+          if (
+            !payload ||
+            payload.format !== 'cash-voucher.pending' ||
+            payload.version !== 1 ||
+            !Array.isArray(payload.records)
+          ) {
+            throw new Error('This is not a supported Cash Vouchers recovery file.');
+          }
+
+          if (!payload.records.length) {
+            throw new Error('Recovery file contains no pending payments.');
+          }
+
+          if (payload.records.length > 500) {
+            throw new Error('Recovery file exceeds the 500-payment limit.');
+          }
+
+          const ids = new Set();
+
+          payload.records.forEach((record) => {
+            const clientId = String(record?.clientId || '').trim();
+            const entry = record?.entry;
+
+            if (
+              !clientId ||
+              clientId.length > 60 ||
+              [...clientId].some((character) => {
+                const code = character.charCodeAt(0);
+                return code <= 31 || code === 127;
+              })
+            ) {
+              throw new Error('Recovery file contains an invalid payment ID.');
+            }
+
+            if (ids.has(clientId)) {
+              throw new Error('Recovery file contains duplicate payment IDs.');
+            }
+            ids.add(clientId);
+
+            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+              throw new Error('Recovery file contains a payment with invalid details.');
+            }
+
+            if (String(entry.clientId || '').trim() !== clientId) {
+              throw new Error('Recovery file payment IDs do not match their details.');
+            }
+
+            const dateText = String(entry.date || '');
+            const parsedDate = new Date(dateText + 'T00:00:00Z');
+            if (
+              !/^\\d{4}-\\d{2}-\\d{2}$/.test(dateText) ||
+              Number.isNaN(parsedDate.getTime()) ||
+              parsedDate.toISOString().slice(0, 10) !== dateText
+            ) {
+              throw new Error('Recovery file contains an invalid payment date.');
+            }
+
+            if (
+              !['PAYMENT', 'RECEIPT'].includes(entry.type) ||
+              typeof entry.vendor !== 'string' ||
+              !entry.vendor.trim() ||
+              entry.vendor.length > 200
+            ) {
+              throw new Error('Recovery file contains an invalid payment type or vendor.');
+            }
+
+            const amount = Number(entry.amount);
+            if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
+              throw new Error('Recovery file contains an invalid payment amount.');
+            }
+
+            const receipts = entry.receipts === undefined ? [] : entry.receipts;
+            if (!Array.isArray(receipts) || receipts.length > 3) {
+              throw new Error('Recovery file contains an invalid receipt list.');
+            }
+
+            receipts.forEach((receipt) => {
+              if (
+                !receipt ||
+                !/^image\\/(jpeg|png|webp)$/.test(String(receipt.mime || '')) ||
+                typeof receipt.data !== 'string' ||
+                receipt.data.length === 0 ||
+                receipt.data.length > 2200000 ||
+                !/^[A-Za-z0-9+/]+={0,2}$/.test(receipt.data)
+              ) {
+                throw new Error('Recovery file contains an invalid or oversized receipt.');
+              }
+            });
+          });
+
+          const confirmed = confirm(
+            'Restore ' +
+              payload.records.length +
+              ' payment(s) to this device? Matching queued IDs will be skipped. ' +
+              'Restored payments remain pending until you retry synchronization.',
+          );
+
+          if (!confirmed) return;
+
+          const result = await offlineQueue.restore(payload.records);
+          await showBanner();
+          toast(
+            result.added +
+              ' payment(s) restored; ' +
+              result.skipped +
+              ' matching item(s) already queued and skipped. Review before syncing.',
+            'ok',
+          );
+        } catch (error) {
+          toast(error.message || 'Could not restore this recovery file.', 'err');
+        }
+      },
+      { once: true },
+    );
+
+    document.body.appendChild(input);
+    input.click();
+  }
+
   function discardOutbox() {
     if (flushing) {
       toast('Wait for the current upload to finish.', 'err');
@@ -262,6 +402,7 @@ export function createPayments({ api, refresh }) {
     showBanner,
     flushOutbox,
     exportOutbox,
+    importOutbox,
     discardOutbox,
   };
 }
