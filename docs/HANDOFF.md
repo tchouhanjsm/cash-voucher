@@ -32,6 +32,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 Scope: shared muted-text contrast, tabular financial figures, mobile horizontal-overflow assertion, and documentation updates. No backend/API, permission, voucher schema, or accounting semantics changed.
 
 Next steps:
+
 1. Wait for CI and Browser E2E on the live PR #48 head.
 2. If either fails, diagnose and fix on the same branch; do not create a stacked PR.
 3. Review the final diff and exact-head evidence, then leave PR #48 for owner review/merge.
