@@ -20,7 +20,7 @@ export function createPayments({ api, refresh }) {
       head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment') +
       `<div class="seg"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">💸 Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">💰 Cash received</button></div><form id="nf" class="card" autocomplete="off">${vendorList()}
     <label style="max-width:220px">Date<input type="date" id="nd" value="${today()}" max="${addDays(today(), 1)}" required></label><div id="rows"></div>
-    <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save payments</button></div>
+    <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save payments</button><button type="button" class="btn" data-act="import-pending">Import recovery file</button></div>
     <p class="muted">Tip: tap “Receipt” to take a photo or pick a screenshot (up to 3 per payment).</p></form><div id="nres"></div>`;
     addRow();
   }
@@ -160,7 +160,7 @@ export function createPayments({ api, refresh }) {
       if (!n) return b.classList.add('hidden');
 
       b.className = 'banner' + (errMsg ? ' err' : '');
-      b.innerHTML = `<span>📤 ${n} payment${n > 1 ? 's' : ''} waiting to upload${errMsg ? ' — ' + esc(errMsg) : ''}</span><button class="btn sm" data-act="flush">Retry now</button><button class="btn sm" data-act="export-pending">Export</button><button class="btn sm danger" data-act="discard">Discard</button>`;
+      b.innerHTML = `<span>📤 ${n} payment${n > 1 ? 's' : ''} waiting to upload${errMsg ? ' — ' + esc(errMsg) : ''}</span><button class="btn sm" data-act="flush">Retry now</button><button class="btn sm" data-act="export-pending">Export</button><button class="btn sm" data-act="import-pending">Import</button><button class="btn sm danger" data-act="discard">Discard</button>`;
     } catch (error) {
       b.className = 'banner err';
       b.innerHTML = `<span>⚠️ Offline storage is unavailable. Reconnect before saving unsynced payments.</span>`;
