@@ -1,160 +1,64 @@
 # Frontend Module Contracts
 
-## Contract format
+These contracts describe the modules wired by the current `frontend/main.js`. Update this document when a public factory argument or returned method intentionally changes.
 
-Every feature should document its public surface in this form:
+## Core modules
 
-```text
-Module:
-Factory:
-Dependencies:
-Public methods:
-Public state:
-Listeners installed:
-DOM roots owned:
-API actions:
-Side effects:
-```
+| Module | Public surface | Responsibility |
+|---|---|---|
+| `frontend/core/api.js` | `createApi({ getUrl, getToken })` | JSON POST transport, timeout and normalized API errors |
+| `frontend/core/dom.js` | `$`, `$$` | DOM querying |
+| `frontend/core/state.js` | `S`, `can`, `nm`, `isIn`, `vno`, `pays`, `recs`, `bySeq`, `rcats`, `categories` | Shared state and derived voucher/permission helpers |
+| `frontend/core/storage.js` | `ls` | Browser localStorage wrapper |
+| `frontend/core/ui.js` | `toast`, `fail`, `busy`, `closeModal`, `dialog`, `head`, `refreshBtn` | Common UI feedback, modal and page-header helpers |
+| `frontend/core/actions.js` | `registerActions`, `installActionDelegation` | Cross-feature click action registry/delegation |
+| `frontend/core/offline-queue.js` | `ready`, `enqueue`, `restore`, `list`, `count`, `claim`, `ack`, `release`, `clear`, `offlineQueue` | IndexedDB queue, migrations, leases and safe recovery operations |
+| `frontend/core/utils.js` | Pure formatting/validation/date/escaping/compression helpers | Shared pure utilities |
 
-## Current target contracts
+## Feature factories
 
-### Auth
-
-Factory: `createAuth({ S, api, busy, dialog, closeModal, toast, start })`
-
-Public methods:
-
-- `showLogin`
-- `signOut`
-- `forcePinChange`
-- `handleApiError`
-
-Auth owns login form binding and session-idle behavior.
+### Authentication
+Factory: `createAuth({ S, api, busy, dialog, closeModal, toast, start })`  
+Returns: `showLogin`, `signOut`, `forcePinChange`, `handleApiError`.  
+Owns login interaction, forced PIN-change dialog and inactivity/session feedback.
 
 ### Payments
-
-Factory: `createPayments({ S, api, busy, toast, fail, refresh, head, vendorList, catOpts, vno, compress })`
-
-Public methods:
-
-- `open`
-- `addRow`
-- `clearReceipt`
-- `showBanner`
-- `flushOutbox`
-- `discardOutbox`
-
-Payments owns payment-entry UI, receipt attachment handling, offline queue, and online flush behavior.
+Factory: `createPayments({ api, refresh })`  
+Returns: `open`, `addRow`, `clearReceipt`, `showBanner`, `flushOutbox`, `exportOutbox`, `importOutbox`, `discardOutbox`.  
+Owns payment/cash-receipt entry, receipt capture, pending queue display, recovery actions, cross-tab announcements and upload retry.
 
 ### Dashboard
-
-Factory: `createDashboard()`
-
-Public methods:
-
-- `render`
-
-Public state:
-
-- `state` (dashboard view state)
+Factory: `createDashboard()`  
+Returns: `render` and `state`.  
+Owns dashboard query range and aggregate presentation.
 
 ### Register
-
-Factory: `createRegister({ api, go })`
-
-Public methods:
-
-- `bind`
-- `render`
-- `renderRows`
-- `clearFilters`
-- `csvExport`
-- `edit`
-- `cancel`
-- `receipts`
-
-Public state:
-
-- `state`
+Factory: `createRegister({ api, go })`  
+Returns: `bind`, `render`, `renderRows`, `clearFilters`, `csvExport`, `edit`, `cancel`, `receipts`, `state`.  
+Owns filtering/search, register list and entry-level operations displayed according to the API-provided permission model.
 
 ### Bulk
-
-Factory: `createBulk({ api, refresh, go })`
-
-Public methods:
-
-- `bind`
-- `render`
-- `parseInput`
-- `runImport`
-- `toggleDuplicates`
-- `goRegister`
-- `renderAgain`
-- `downloadTemplate`
+Factory: `createBulk({ api, refresh, go })`  
+Returns: `bind`, `render`, `parseInput`, `runImport`, `toggleDuplicates`, `goRegister`, `renderAgain`, `downloadTemplate`.  
+Owns parse/preview/import workflow.
 
 ### Administration
-
-Factory: `createAdministration({ api, getNavigation, signOut })`
-
-Public methods:
-
-- `bind`
-- `vendors`
-- `users`
-- `settings`
-- `account`
-- `handleSubmit`
-- `editVendor`
-- `toggleVendor`
-- `toggleUser`
-- `updateRole`
-- `resetPin`
-- `install`
-- `signOut`
+Factory: `createAdministration({ api, getNavigation, signOut })`  
+Returns: `bind`, `vendors`, `users`, `settings`, `account`, `handleSubmit`, `editVendor`, `toggleVendor`, `toggleUser`, `updateRole`, `resetPin`, `install`, `signOut`.  
+The audit table is currently rendered from the owner Settings view by an internal API call to `auditLog`; there is no dedicated audit route/method today.
 
 ### Navigation
-
-Factory: `createNavigation({ api, getAuth, getPayments, renderers })`
-
-Public methods:
-
-- `NAV`
-- `bind`
-- `load`
-- `start`
-- `go`
-- `refresh`
-
-Navigation owns application loading, permission-filtered navigation, view selection, refresh, and visibility-based refresh behavior.
+Factory: `createNavigation({ api, getAuth, getPayments, renderers })`  
+Returns: `NAV`, `bind`, `load`, `start`, `go`, `refresh`.  
+Owns navigation filtering, bootstrap, view routing and visibility-driven refresh.
 
 ### Printing
+Stateless named exports: `amountInWords`, `printVoucher`.
 
-Stateless exports:
+## Integration rules
 
-- `amountInWords`
-- `printVoucher`
-
-Printing is intentionally not forced into a factory merely for symmetry.
-
-## Event ownership
-
-### Centralized action delegation
-
-`frontend/core/actions.js` owns click delegation for `[data-act]` controls.
-
-### Feature-owned listeners
-
-Feature modules may own listeners for behavior that is intrinsic to the feature:
-
-- auth: login form and activity timeout
-- payments: receipt file changes, keyboard row navigation, new-payment submit, online flush
-- bulk: preview/file-related changes
-- register: filter inputs
-- administration: settings/vendor/user form submission and install prompt
-- navigation: navigation clicks and visibility refresh
-
-Do not centralize every listener merely for uniformity.
-
-### Special case: `change`
-
-Not every `data-act` belongs to click delegation. For example, `data-act="urole"` is a select-change workflow and remains on the change-event path.
+- `frontend/main.js` is the composition root; keep it wiring-focused.
+- Server/API permissions are authoritative. UI guards improve usability only.
+- Preserve action names when refactoring UI controllers.
+- Keep feature-owned listeners local when they are intrinsic to a feature.
+- When changing imports or cached modules, update and test `sw.js`.

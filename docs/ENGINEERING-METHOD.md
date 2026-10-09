@@ -1,245 +1,91 @@
-# Engineering Build Method (EBL v1)
+# Engineering Method
 
-This project uses a repeatable engineering loop for feature work, refactoring, and releases.
+The product is built using a small-scope, evidence-led loop:
 
-## Core loop
+~~~text
+DISCOVER → DEFINE → DESIGN → CONTRACT → BUILD → VERIFY → REVIEW → PR
+~~~
 
-```text
-DISCOVER → DEFINE → DESIGN → CONTRACT → BUILD → VERIFY → INTEGRATE → REVIEW → SHIP → LEARN
-                                      ↑                                             │
-                                      └─────────────────────────────────────────────┘
-```
+The objective is to improve reliability and owner value without speculative rewrites.
 
 ## 1. Discover
 
-Before editing code, establish:
+Before changing files, establish the current base commit, branch state, runtime entry points, public interfaces, dependency direction and relevant tests. Read current code and docs; review files from an attached audit against actual current paths. Label each finding **present**, **already resolved**, **not applicable to this codebase**, or **not verified**.
 
-- current branch and working tree
-- current behavior
-- relevant files and dependency direction
-- public interfaces and side effects
-- API/data contracts
-- files that are explicitly out of scope
+## 2. Define a measurable change
 
-Required baseline commands:
-
-```bash
-git status --short
-git branch --show-current
-git diff --check
-npm run check
-```
-
-Do not use a file simply because it is convenient. Identify its owner, consumers, dependencies, public interface, and side effects first.
-
-## 2. Define
-
-Write a compact change definition:
-
-```text
-Change:
-Why:
-Current behavior:
-Desired behavior:
-Files likely affected:
-Files explicitly not affected:
+~~~text
+User/role:
+Outcome:
+Existing behavior and source:
+Target behavior:
+API/data contract:
+In-scope / out-of-scope files:
 Acceptance criteria:
-Risk:
-```
+Failure modes:
+Release boundary:
+~~~
 
-A change is not ready to build until the acceptance criteria are observable.
+Don't implement a strategy idea as a requirement until the intended users, decision maker and success metric are clear.
 
-## 3. Design
+## 3. Architecture and ownership
 
-Assign ownership before implementation.
+| Concern | Current owner |
+|---|---|
+| Composition and feature wiring | `frontend/main.js` |
+| API transport | `frontend/core/api.js` |
+| App state / permission flags | `frontend/core/state.js` |
+| DOM helpers | `frontend/core/dom.js` |
+| Shared UI feedback | `frontend/core/ui.js` |
+| Browser storage | `frontend/core/storage.js` |
+| Durable offline queue | `frontend/core/offline-queue.js` |
+| Action delegation | `frontend/core/actions.js` |
+| Auth | `frontend/features/auth.js` and server auth in `backend/Code.gs` |
+| Payments and offline recovery UX | `frontend/features/payments.js` |
+| Dashboard / register / bulk / administration / navigation / printing | matching `frontend/features/*.js` modules |
+| Persisted rules, validation and authorization | `backend/Code.gs` |
+| Integration and regression coverage | `test/` |
 
-For the frontend:
+Prefer focused module contracts and dependency injection. Do not add a framework/library merely for convention. Do not move business logic into the composition root. Server-side permissions are authoritative; hidden UI is not a security boundary.
 
-| Concern                | Owner                                 |
-| ---------------------- | ------------------------------------- |
-| application state      | `frontend/core/state.js`              |
-| API transport          | `frontend/core/api.js`                |
-| shared UI primitives   | `frontend/core/ui.js`                 |
-| pure utilities         | `frontend/core/utils.js`              |
-| local storage          | `frontend/core/storage.js`            |
-| action dispatch        | `frontend/core/actions.js`            |
-| authentication         | `frontend/features/auth.js`           |
-| payments/offline queue | `frontend/features/payments.js`       |
-| dashboard              | `frontend/features/dashboard.js`      |
-| register               | `frontend/features/register.js`       |
-| bulk upload            | `frontend/features/bulk.js`           |
-| administration         | `frontend/features/administration.js` |
-| printing               | `frontend/features/printing.js`       |
-| navigation/lifecycle   | `frontend/features/navigation.js`     |
-| dependency composition | `frontend/main.js`                    |
+## 4. Two-pass self-review
 
-`main.js` is a composition root. It must not become another business-logic monolith.
+### Pass A: product, workflow and UI
 
-## 4. Contract
+- Does the feature address a real owner/operator problem?
+- Is the primary action apparent, and does the screen explain loading, empty, success, failure and offline states?
+- Are role differences understandable and confirmed by server-side permissions?
+- Is keyboard, touch, mobile viewport and screen-reader behavior preserved?
+- Does a new screen reuse established tokens/components rather than inventing one-off styles?
 
-Before wiring a module, record:
+### Pass B: security, failure and operational recovery
 
-```text
-Factory/function:
-Inputs/dependencies:
-Public API:
-Events installed:
-DOM owned:
-State read:
-State written:
-API actions used:
-Side effects:
-```
+- Is authentication revalidated correctly around concurrent writes?
+- Are rate limits and counters safe under concurrency?
+- Are writes idempotent and financial records recoverable after a lost response?
+- What happens on timeout, quota exhaustion, duplicate ID, stale session, malformed data or storage failure?
+- Are user-controlled strings escaped at rendering boundaries?
+- What data remains only on the device versus synced to the Sheet/Drive?
+- Is rollback/recovery possible without deleting or overwriting the only copy?
 
-Internal implementation may change without changing the public contract unless the change is intentional and reviewed.
+Fix defects introduced by the change; document residual risks and tests that the environment cannot perform.
 
-## 5. Build
+## 5. Verification
 
-Work in vertical waves, not one-file micro-batches.
-
-A wave should contain:
-
-1. preparation
-2. implementation
-3. integration
-4. verification
-5. review
-
-A wave may touch many files when they form one cohesive architectural change.
-
-## 6. Verify
-
-Every wave has two verification levels.
-
-### Static
-
-```bash
+~~~bash
 npm run check
+npm run test:e2e
 git diff --check
-```
+~~~
 
-### Behavioral
+The quality gate covers lint, formatting, JSON/JS checks, frontend release integrity and mock backend tests. Browser E2E exercises local mock-backend workflows. Neither replaces actual Google-account permission checks, live backup/restore or device usability testing. State only commands and checks verified in CI or locally.
 
-Verify the affected user workflows and regression-sensitive behavior. Static checks do not prove runtime wiring.
+## 6. UI/UX direction
 
-For frontend architectural changes, at minimum consider:
+Adopt a restrained, polished cash-control interface: clear hierarchy, typography and spacing; consistent color/radius/shadow tokens; stable high-contrast content; clear status text in addition to color; responsive tables/forms; predictable focus states; accessible dialogs; and strong empty/loading/error/offline feedback. Use blur/translucency only where it improves contextual layering, such as a modal or floating overlay. Do not place blur over financial tables, receipts, or primary form content. Keep receipt/print layouts legible and separate from screen decoration.
 
-- login/session
-- navigation
-- dashboard
-- new payment / cash received
-- register
-- bulk upload
-- administration
-- printing
-- offline queue
-- permission-gated navigation
+See `docs/UI-UX-REVIEW.md` for the current source review and validation plan.
 
-## 7. Integrate
+## 7. PR ownership and phase gates
 
-The application dependency direction is:
-
-```text
-index.html
-    ↓
-frontend/main.js
-    ↓
-feature modules
-    ↓
-core modules
-    ↓
-API transport
-    ↓
-Apps Script
-```
-
-`main.js` creates services, creates feature controllers, connects dependencies, registers cross-feature actions, and starts the application.
-
-It must not contain large feature renderers or duplicate shared utilities.
-
-## 8. Review
-
-Review every substantial wave from three perspectives:
-
-### Engineering
-
-- coupling and cohesion
-- dependency direction
-- failure behavior
-- security/permission boundaries
-- maintainability
-- performance
-
-### Product/UX
-
-- workflow continuity
-- behavior preservation
-- understandable feedback
-- accessibility and keyboard/touch behavior
-
-### Operations/business
-
-- operator workflow
-- offline/recovery behavior
-- data safety
-- permission correctness
-- recoverability from failure
-
-## 9. Ship
-
-Use the normal Git path:
-
-```text
-main
-  ↓
-feature/<purpose>
-  ↓
-local verification
-  ↓
-commit
-  ↓
-push
-  ↓
-PR
-  ↓
-CI
-  ↓
-review
-  ↓
-merge
-```
-
-Prefer meaningful commits such as:
-
-```text
-feat(frontend): ...
-refactor(frontend): ...
-fix(frontend): ...
-docs(engineering): ...
-chore(ci): ...
-```
-
-## 10. Learn
-
-After each substantial wave record:
-
-```text
-What worked?
-What caused confusion?
-What repeated?
-What should become reusable?
-What should become a script or rule?
-```
-
-The engineering process itself is part of the project and should improve over time.
-
-## Non-negotiable rules
-
-1. Do not change behavior accidentally while refactoring.
-2. Do not change backend/API contracts during a frontend-only architecture change.
-3. Do not introduce a framework or dependency without a demonstrated problem it solves.
-4. Do not delete the legacy path until parity is established.
-5. Prefer composition over inheritance for frontend features.
-6. Prefer shared utilities over duplicated helpers.
-7. Keep feature-specific event listeners inside the feature unless there is a clear cross-feature reason to centralize them.
-8. Keep action names stable during refactors unless the change is explicitly part of the feature contract.
+Branch from merged `main`; run checks; open a focused PR; review the exact patch and Actions results. **The owner reviews and merges. The agent must not merge the PR or begin the next phase before the owner has reviewed and merged this one.** Never delete/rename branches or force-update refs without explicit permission. Backend deployments and release tags are separate, explicit actions.

@@ -1,81 +1,61 @@
 # Release Readiness
 
-Status: **Pilot candidate after release-readiness gates pass**
+**Status: engineering candidate; not yet verified as production-ready.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
 
-## Current baseline
+## Evidence-based baseline
 
-| Gate                                         | Status          | Evidence                                                                 |
-| -------------------------------------------- | --------------- | ------------------------------------------------------------------------ |
-| Backend validation and persistence hardening | ✅ PASS         | Waves 1–2 merged                                                         |
-| Idempotency / retry safety                   | ✅ PASS         | PR #14 merged; 71 backend checks locally                                 |
-| Frontend modular architecture                | ✅ PASS         | frontend/main.js is the active composition root                          |
-| CI quality gate                              | ✅ PASS         | GitHub Actions runs npm run check on main and PRs                        |
-| PWA shell integrity                          | 🟡 IN PROGRESS  | Service-worker shell is being aligned with the active module graph       |
-| Browser E2E                                  | 🟡 REQUIRED     | test/run-e2e.sh + test/e2e.py exist; run against the current main branch |
-| Production backend deployment                | ⬜ NOT RELEASED | Must deploy the reviewed Code.gs version intentionally                   |
-| Hotel operational pilot                      | ⬜ NOT STARTED  | Requires real hotel users/device workflow verification                   |
-| Production cutover                           | ⬜ NOT STARTED  | Requires pilot sign-off and backup/recovery confirmation                 |
+| Area | Current status | Evidence / limitation |
+|---|---|---|
+| Backend validation, schema checks and number reconciliation | Implemented | Current `backend/Code.gs` and mock backend suite; not a live Google-account test |
+| PIN hash and session protection | Implemented | HMAC-SHA256 with per-user salt + script property pepper; salt rotation invalidates old session tokens |
+| Login/PIN-change attempt throttling | Phase 22 change | Verify the Phase 22 PR checks before merge; not deployed to Apps Script |
+| Server-side role enforcement | Implemented | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary |
+| Active frontend architecture | PASS on current main | `index.html` loads `frontend/main.js`; source graph is modular |
+| PWA/outbox recovery | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup |
+| CI quality gate | PASS on current main | CI passed on merge commit `df6af85`; subsequent PR checks must be inspected per change |
+| Browser E2E | PASS on PR #21 head | Does not verify live Google services or visual/accessibility quality on actual devices |
+| Daily backup mechanism | Implemented in source | Live trigger success, backup contents and restore drill remain unverified |
+| Accessibility / design audit | NOT VERIFIED | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
+| Production Apps Script deployment | NOT RELEASED | No deployment performed in this work |
+| Hotel operational pilot / cash reconciliation | NOT STARTED | Requires real operators/devices and an owner-approved trial |
 
-## Release gates
+## Gate 1 — source and CI
 
-### Gate 1 — Engineering
+- [ ] Owner-reviewed PR is merged to `main`.
+- [ ] CI `npm run check` passes on the exact merged commit.
+- [ ] Browser E2E passes for any affected user journey.
+- [ ] Diff reviewed for permission boundaries, XSS/HTML insertion, lock scope and changed contracts.
+- [ ] No unreviewed source changes or unintended branches involved.
 
-- [ ] npm run check passes on the release candidate
-- [ ] git diff --check is clean
-- [ ] frontend release integrity check passes
-- [ ] no unintended open PRs
-- [ ] release candidate is merged to main
-- [ ] package version and release tag agree
+## Gate 2 — Web/PWA on real devices
 
-### Gate 2 — Browser / PWA
+- [ ] Confirm current Pages URL serves the intended source version.
+- [ ] Verify a clean install/start and update after service-worker cache version changes.
+- [ ] Test a narrow phone viewport and desktop/tablet layouts.
+- [ ] Test screen-reader/status announcements, keyboard focus and contrast on key screens.
+- [ ] Verify login, PIN change, payment, cash receipt, receipt photo, register, bulk upload, audit view, printing, offline queue and recovery.
 
-- [ ] run the complete browser E2E suite
-- [ ] verify owner, manager and staff workflows
-- [ ] verify payment, cash received and receipt workflows
-- [ ] verify bulk upload, dashboard, register and printing
-- [ ] verify offline queue and reconnect
-- [ ] verify install/update behavior on at least one Android device and one desktop browser
-- [ ] verify a fresh PWA launch works with the current app-shell cache
+## Gate 3 — live Apps Script and data
 
-### Gate 3 — Hotel backend
+- [ ] Keep production Sheet and Drive folders private; verify staff have no direct spreadsheet edit access.
+- [ ] Confirm deployment executes as the intended owner/deployer and points at the intended Sheet.
+- [ ] Verify Script Properties and the owner account; rotate the owner PIN if a reported legacy setup value was ever used.
+- [ ] Deploy reviewed backend source intentionally, creating a new Web App version while preserving the intended URL.
+- [ ] Verify lockout, PIN change, session invalidation, role restrictions, voucher numbering/idempotency and receipt access against the actual deployment.
+- [ ] Observe at least one scheduled backup run; open its Sheet copy and verify copied receipts/manifest.
+- [ ] Perform restore into a separate Sheet/folder and validate record counts and voucher numbering.
 
-- [ ] make a backup/copy of the production Google Sheet
-- [ ] verify the production Apps Script project points to the intended Sheet
-- [ ] review Script Properties and permissions
-- [ ] deploy the reviewed backend version without changing the web-app URL
-- [ ] verify login, PIN change, RBAC, voucher creation and receipts against the real backend
+## Gate 4 — controlled hotel pilot
 
-### Gate 4 — Hotel pilot
+- [ ] Owner, manager and staff accounts tested by the intended people.
+- [ ] Real payment and receipt capture verified; cash-received record verified.
+- [ ] Manager edit/cancel and cancellation reason confirmed.
+- [ ] Physical cash count compared with book balance at day end.
+- [ ] Offline entry/reconnect/recovery tested on actual devices and spotty connectivity.
+- [ ] Printing/export accepted by the person who processes accounts.
+- [ ] Operators understand when an entry is device-local versus server-synchronized.
+- [ ] Current process retained as a fallback until the owner signs off.
 
-Use a controlled pilot before replacing the current process.
+## Release rule
 
-- [ ] owner account validated
-- [ ] one manager account validated
-- [ ] one staff account validated
-- [ ] real devices used by the actual operators
-- [ ] at least one payment with receipt
-- [ ] at least one cash-received entry
-- [ ] edit/cancel tested by manager
-- [ ] bulk import tested with a small real operational file
-- [ ] dashboard/register/printing verified
-- [ ] offline queue tested on a real mobile connection
-- [ ] end-of-day reconciliation matches the physical cash drawer
-- [ ] backup/recovery procedure demonstrated
-
-### Gate 5 — Production release
-
-Release only when all previous gates are green.
-
-1. Freeze the release candidate.
-2. Run the complete quality gate.
-3. Deploy the reviewed backend version.
-4. Publish the GitHub Pages frontend.
-5. Verify the live URL from a clean browser/device.
-6. Record the release version and deployment date.
-7. Keep the previous hotel process available as a fallback during the initial cutover.
-
-## Release decision
-
-The application should be considered **pilot-ready**, not broadly production-ready, once Gates 1–3 pass and the real hotel workflow has been verified.
-
-The final production decision belongs to the hotel operator after Gate 4 confirms that the system records cash correctly and can recover from network/device problems.
+Passing CI is necessary, not sufficient. Do not declare production readiness until Gates 1–4 are complete and an owner-approved recovery drill succeeds. Backend source commits do not deploy Apps Script automatically; no live deployment or cutover is included by this checklist.

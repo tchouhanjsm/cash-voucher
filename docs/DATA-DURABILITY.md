@@ -1,67 +1,68 @@
 # Data Durability and Recovery
 
-## Objective
+## The two durability boundaries
 
-The hotel must be able to recover financial records after an accidental edit, deletion, failed deployment, browser/device loss, or a Google Drive/Sheet operational mistake.
+The application has two distinct stores and two recovery paths:
 
-## Backend backup model
+1. **Backend records:** Google Sheets records and Drive receipt images, covered by the Apps Script daily backup mechanism after a transaction is synchronized.
+2. **Unsynchronized browser records:** pending payments held in IndexedDB on the originating browser/device. They are not in the backend backup until successfully uploaded.
 
-The backend creates a daily Google Drive backup using an Apps Script installable time-driven trigger.
+A browser queue export is a recovery aid, not a substitute for backend backup. IndexedDB can be cleared, evicted, corrupted, or lost with the device; it does not replicate pending entries to another device.
 
-Each backup contains:
+## Backend backup mechanism
 
-- a copy of the Google Sheet database
-- a copy of every receipt image currently in the receipt folder
-- a CSV manifest mapping original receipt file IDs to backup receipt file IDs
-- a timestamped backup folder
+The current backend source:
 
-The backup job is serialized with the same ScriptLock used by application writes so a backup does not run concurrently with a voucher write.
+- creates a backup root folder and installs a daily time-driven trigger during setup;
+- takes a copy of the Sheet;
+- copies receipt images into a timestamped snapshot;
+- writes a receipt ID mapping manifest;
+- uses the script lock to avoid overlapping application writes;
+- prunes backup folders older than the configured 90-day retention period;
+- records last-success/error metadata in Script Properties.
 
-The default retention is 90 days.
+**Operational status:** the implementation is present in source and mock setup tests. A successful run on the live property account, the backup folder permissions, the completeness of a real snapshot, and a restore drill have not been verified in this review. Do not mark recovery-ready until those gates pass.
 
-Apps Script installable triggers run under the account that created the trigger, so the backup trigger must be installed by the hotel owner account that owns the Sheet and Drive data. Google documents time-driven installable triggers and their execution identity here: https://developers.google.com/apps-script/guides/triggers/installable
+## Browser outbox safeguards
 
-## Backup status
+The current frontend implements:
 
-The script stores BACKUP_LAST_SUCCESS, BACKUP_LAST_ERROR and BACKUP_FOLDER_ID in Script Properties.
+- IndexedDB persistence across page restarts;
+- stable client IDs and backend idempotency for retries after ambiguous server responses;
+- transaction-scoped queue operations and leases;
+- cross-tab announcements so open tabs refresh pending state;
+- non-destructive JSON export of pending payments;
+- recovery import with size/record/content validation;
+- skip of matching records and rejection of same-ID/different-content collisions;
+- deterministic legacy IDs and preservation of old localStorage content when migration fails.
 
-## Recovery procedure
+If a transaction shows as saved on this device, it is **not yet confirmed in the central Sheet**. Users must keep the device/browser available and watch for the pending banner to clear, or export the pending queue if they need to recover/transfer it.
 
-If the live Sheet is damaged:
+## Backend recovery procedure
 
-1. Stop using the application.
-2. Identify the last known-good backup folder.
-3. Open the backed-up spreadsheet copy.
-4. Confirm the Vouchers, Users, Vendors, Settings and AuditLog tabs.
-5. Confirm receipt images and receipt-manifest.csv.
-6. Preserve the damaged production Sheet for investigation.
-7. Restore data into a new recovery Sheet rather than overwriting the original immediately.
-8. Repoint the Apps Script SS_ID only after the recovered data has been verified.
-9. Deploy the reviewed backend version.
-10. Verify login, permissions, voucher numbering and receipt access before reopening the application.
+If the production Sheet or receipt folder may be damaged:
 
-## Important frontend boundary
+1. Pause financial entry and preserve the affected production files.
+2. Identify a timestamped backup created before the incident.
+3. Open the backed-up spreadsheet and confirm the expected tabs and plausible voucher totals.
+4. Confirm the receipt folder and manifest map expected source receipts to backup copies.
+5. Restore to a new Sheet/folder first; do not overwrite the only remaining copy.
+6. Verify row counts, numbering counters, statuses, users, settings and receipt references.
+7. Repoint Apps Script Script Properties only after the recovered set is reviewed.
+8. Deploy a reviewed backend version only if required, recording the deployment version.
+9. Verify owner login, staff/manager permissions, voucher create/cancel, audit output and receipt access.
+10. Record the incident, restore point and any transactions that need reconciliation.
 
-The backend backup protects data that has successfully reached Google Sheets and Drive.
+This procedure is a guide; it has not been demonstrated against a real backup during this code review.
 
-It does not protect an unsynced offline entry stored only inside a user's browser.
+## Release gate
 
-The offline queue therefore needs its own durability work before production cutover:
+Before production cutover, the owner must witness all of the following:
 
-- use IndexedDB instead of localStorage for queued financial entries
-- make queued entries durable across browser restarts
-- provide an explicit pending-sync state
-- prevent accidental discard
-- provide a user-visible export/recovery mechanism for entries that cannot sync
-- keep client IDs stable across retries
-- verify recovery after browser restart and temporary storage/network loss
-
-## Release rule
-
-No production cutover should occur until:
-
-- at least one real backup has completed successfully
-- a backup can be opened
-- receipt recovery has been demonstrated
-- the offline queue recovery workflow has been verified on the actual hotel device
-- the hotel owner knows where backups are stored and how recovery is initiated
+- [ ] at least one backup completes under the actual owner account;
+- [ ] backup status and location can be retrieved by an operator;
+- [ ] spreadsheet copy opens and receipt mapping matches actual files;
+- [ ] restore into a separate recovery Sheet is demonstrated;
+- [ ] offline queue and recovery import are tested on the actual phone/browser;
+- [ ] a pending device-local payment is distinguished clearly from a server-saved voucher;
+- [ ] the owner and operators know who is responsible for exporting/retaining pending records.

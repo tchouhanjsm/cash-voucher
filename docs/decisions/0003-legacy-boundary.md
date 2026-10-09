@@ -1,26 +1,15 @@
-# ADR 0003 — Temporary Legacy Boundary
+# ADR 0003 — Legacy Frontend Boundary
 
-Status: Accepted
+**Status: historical / superseded for runtime entry.**
 
-## Decision
+## Original decision
 
-Keep `app.js` as a compatibility implementation during frontend modularization. Do not remove it until the modular composition root demonstrates behavioral parity for the affected workflows.
+During modularization, retain root `app.js` as a compatibility implementation until the module composition root has behavioral parity. Deleting a legacy path and changing runtime ownership in the same patch would have expanded the failure surface.
 
-## Rationale
+## Current state
 
-A refactor that replaces runtime ownership and deletes the old path simultaneously has too large a failure surface. The legacy implementation provides a known behavioral reference while the module graph is assembled.
+`index.html` loads `frontend/main.js` directly. `frontend/main.js` composes the active ES modules. Root `app.js` remains in the repository but is not loaded by the HTML entry point.
 
-## Exit criteria
+## Guardrail
 
-`app.js` can be retired only when:
-
-1. `frontend/main.js` boots the application without importing `app.js`.
-2. all required views are reachable.
-3. authentication and session handling work.
-4. payment and receipt workflows work.
-5. register and bulk workflows work.
-6. administration workflows work.
-7. printing works.
-8. offline queue behavior is preserved.
-9. `npm run check` passes.
-10. the affected behavior has been manually verified.
+Do not delete `app.js` as incidental cleanup. If removing it is desired, use a separate owner-reviewed PR that checks references/history and proves that no deployed or supported workflow depends on it. Do not force-update or rewrite history without explicit owner permission.
