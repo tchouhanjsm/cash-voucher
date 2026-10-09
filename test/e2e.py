@@ -563,6 +563,16 @@ with sync_playwright() as p:
         and page.locator('#modal #modalTitle').count() == 1,
         'edit dialog exposes modal semantics and an accessible title',
     )
+    page.keyboard.press('Shift+Tab')
+    check(
+        page.evaluate("document.activeElement?.matches('#modal .primary')"),
+        'Shift+Tab from the first dialog field wraps to the last control',
+    )
+    page.keyboard.press('Tab')
+    check(
+        page.evaluate("document.activeElement?.matches('#modal #en')"),
+        'Tab from the last dialog control wraps to the first field',
+    )
     page.keyboard.press('Escape')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
     check(
