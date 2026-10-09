@@ -319,13 +319,13 @@ with sync_playwright() as p:
     )
     check(page.locator('#rbody tr').count() == 2, 'staff register 2 rows')
     page.fill('#rq', 'No matching voucher 987654')
-    page.wait_for_selector('#rbody .empty-state')
+    page.wait_for_function("!document.querySelector('#rempty').classList.contains('hidden')")
     check(
-        page.locator('#rbody [role=status]').inner_text() == 'No vouchers match the current filters.'
-        and page.locator('#rbody [data-act=rclear]').is_visible(),
+        page.locator('#rempty .empty-state-message').inner_text() == 'No vouchers match the current filters.'
+        and page.locator('#rempty [data-act=rclear]').is_visible(),
         'register explains an empty filter result and offers a clear-filters action',
     )
-    page.click('#rbody [data-act=rclear]')
+    page.click('#rempty [data-act=rclear]')
     check(
         page.locator('#rq').input_value() == ''
         and page.locator('#rbody tr').count() == 2,
