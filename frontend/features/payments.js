@@ -37,7 +37,7 @@ export function createPayments({ api, refresh }) {
   function labelRows() {
     const direction = NT === 'RECEIPT' ? 'Cash received from' : 'Payee / vendor';
 
-    $('#rows .erow').forEach((row, index) => {
+    $$('#rows .erow').forEach((row, index) => {
       const number = index + 1;
       $('.rv', row).setAttribute('aria-label', `${direction}, row ${number}`);
       $('.ra', row).setAttribute('aria-label', `Amount in rupees, row ${number}`);
@@ -73,12 +73,12 @@ export function createPayments({ api, refresh }) {
 
   function showFormError(message) {
     $('#nres').innerHTML = `<p class="error form-error" role="alert">${esc(message)}</p>`;
-    const firstRow = $('#rows .erow')[0];
+    const firstRow = $$('#rows .erow')[0];
     if (firstRow) $('.rv', firstRow).focus();
   }
 
   function removeRow(button) {
-    const rows = $('#rows .erow');
+    const rows = $$('#rows .erow');
     if (rows.length <= 1) return;
 
     const row = button.closest('.erow');
@@ -181,7 +181,7 @@ export function createPayments({ api, refresh }) {
   async function saveNew(btn) {
     const date = $('#nd').value;
     const entries = [];
-    const rows = $('#rows .erow');
+    const rows = $$('#rows .erow');
     rows.forEach(clearRowError);
 
     for (const r of rows) {
