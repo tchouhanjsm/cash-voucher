@@ -155,7 +155,7 @@ export function createDashboard() {
     <div class="card stat"><span>Cash received</span><b style="color:var(--ok)">${money(received)}</b><small class="muted">${receipts.length} entries · net ${money(received - total)}</small></div>
     ${can('viewAll') ? `<div class="card stat"><span>Cash in hand</span><b>${money(cashInHand)}</b><small class="muted">opening + received − paid</small></div>` : ''}
   </div>
-  <div class="card"><h2>Spending trend <span class="muted">${dmy(from)} – ${dmy(to)}</span></h2>${trendSvg(current, from, to)}</div>
+  <div class="card"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(current, from, to)}</div>
   <div class="two"><div class="card"><h2>Top vendors</h2>${bars(group(current, (voucher) => voucher.vendor))}</div><div class="card"><h2>By category</h2>${bars(group(current, (voucher) => voucher.category || 'Other'))}</div></div>
   ${
     can('viewAll')

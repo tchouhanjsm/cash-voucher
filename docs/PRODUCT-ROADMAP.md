@@ -30,6 +30,8 @@ This is a single-property cash-voucher PWA today. The attached memo's hosted fin
 
 ### Security follow-up note
 
+`docs/SECURITY-RENDERING-AUDIT.md` records the incremental rendering audit and targeted regressions. The complete dynamic-HTML sink review remains open.
+
 The repository is public. This review did not perform a general Git object/secret scan and cannot certify that all past commits are clean. The cited old paths returned no path-history records in this repository. A history purge could disrupt consumers and requires a deliberate owner-approved migration; no force push or history rewrite is part of Phase 22.
 
 ## 2. What the owner can rely on—and what still needs proof

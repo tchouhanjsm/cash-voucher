@@ -218,7 +218,7 @@ export function createBulk({ api, refresh, go }) {
       .slice(0, 300)
       .map(
         (row) =>
-          `<tr><td>${row.n}</td><td class="nw">${row.date ? dmy(row.date) : '–'}</td><td>${esc(row.vendor)}</td><td class="r nw">${row.amount > 0 ? money(row.amount) : '–'}</td><td>${esc(row.category)}</td><td class="nw">${row.errs.length ? `<span class="badge bad">${esc(row.errs.join(', '))}</span>` : row.dup ? '<span class="badge warn">duplicate?</span>' : row.warns.length ? `<span class="badge warn">${esc(row.warns[0])}</span>` : '<span class="badge">OK</span>'}</td></tr>`,
+          `<tr><td>${row.n}</td><td class="nw">${row.date ? esc(dmy(row.date)) : '–'}</td><td>${esc(row.vendor)}</td><td class="r nw">${row.amount > 0 ? money(row.amount) : '–'}</td><td>${esc(row.category)}</td><td class="nw">${row.errs.length ? `<span class="badge bad">${esc(row.errs.join(', '))}</span>` : row.dup ? '<span class="badge warn">duplicate?</span>' : row.warns.length ? `<span class="badge warn">${esc(row.warns[0])}</span>` : '<span class="badge">OK</span>'}</td></tr>`,
       )
       .join('')}</tbody></table></div>
     ${rows.length > 300 ? `<p class="muted">Showing first 300 of ${rows.length} rows.</p>` : ''}<div class="actions"><button class="btn primary" data-act="import" ${ready.length ? '' : 'disabled'}>Import ${ready.length} payments</button></div><p id="bprog" class="muted"></p></div>`;
