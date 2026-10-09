@@ -52,7 +52,7 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
   modal.setAttribute('aria-labelledby', 'modalTitle');
-  modal.innerHTML = `<form class="card mcard" autocomplete="off"><h2 id="modalTitle">${esc(title)}</h2>${body}<p class="error" id="modalError" role="alert" aria-live="assertive"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button type="submit" class="btn primary">${esc(ok)}</button>` : ''}</div></form>`;
+  modal.innerHTML = `<form class="card mcard" autocomplete="off"><h2 id="modalTitle">${esc(title)}</h2>${body}<p class="error" id="mErr" role="alert" aria-live="assertive"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button type="submit" class="btn primary">${esc(ok)}</button>` : ''}</div></form>`;
 
   const form = $('form', modal);
   $('[data-x]', form).onclick = closeModal;
@@ -97,7 +97,7 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
     try {
       await onSubmit(form);
     } catch (error) {
-      $('#modalError').textContent = error.message || String(error);
+      $('#mErr', form).textContent = error.message || String(error);
     } finally {
       if (button && button.isConnected) button.disabled = false;
     }
@@ -105,7 +105,7 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
 
   const first = $('input,select,textarea', form);
   if (first) first.focus();
-  else form.focus();
+  else $('[data-x]', form).focus();
 
   return form;
 }
