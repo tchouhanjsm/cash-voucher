@@ -34,6 +34,12 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
+      - name: Diagnose exact Prettier output for the active batch
+        run: |
+          file="frontend/features/register.js"
+          npx prettier "$file" > /tmp/register.js.prettier
+          diff -u "$file" /tmp/register.js.prettier || true
+
       - name: Run quality gate
         run: npm run check
 
