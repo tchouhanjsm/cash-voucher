@@ -30,6 +30,17 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Prepare formatted dependency audit helper (temporary)
+        if: github.event_name == 'pull_request' && github.head_ref == 'security/dependency-maintenance'
+        run: npx prettier scripts/dependency-audit.js > /tmp/dependency-audit.js
+
+      - name: Upload formatter output (temporary)
+        if: github.event_name == 'pull_request' && github.head_ref == 'security/dependency-maintenance'
+        uses: actions/upload-artifact@v4
+        with:
+          name: formatted-dependency-audit
+          path: /tmp/dependency-audit.js
+
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
