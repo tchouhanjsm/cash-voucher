@@ -13,14 +13,22 @@ Before editing, verify the live GitHub PR state, target branch SHA, active branc
 
 **Hard safety rules:** do not delete a repository or branch, rename a branch, or force-update a ref without explicit permission. Do not merge a PR or deploy to production on the owner's behalf.
 
+## Branch lifecycle
+
+- Keep `main` as the protected integration branch. Do not create a new branch for every individual commit or small edit.
+- Create one short-lived feature/fix/docs branch per coherent pull request. Put related incremental commits on that same branch while the pull request is active.
+- A merged feature branch is not a permanent archive; its commits remain in Git history. Enable GitHub's **Automatically delete head branches** setting so merged PR branches are removed by the platform.
+- Before deleting older branches manually, verify that no open PR uses the ref and compare its commits/diff with `main`. Merged branch references are cleanup candidates; branches from closed-unmerged PRs or branches without PRs need an individual diff/commit review first.
+- Do not automate deletion of stale/closed branches without a reviewed allowlist and explicit owner approval. Never delete `main`, a protected branch, or a branch containing unique work that has not been preserved.
+
 ## Batch model
 
-Prefer a complete, coherent batch over one PR per small subtask. A batch can contain related product fixes, docs, targeted regression tests and CI guardrails; use multiple meaningful commits on the same PR while keeping the total at **10 commits or fewer**. Work in parallel across files only when changes do not race, then integrate and review the whole final diff.
+Prefer a complete, coherent batch over one PR per small subtask. A batch can contain related product fixes, docs, targeted regression tests and CI guardrails; use multiple meaningful commits on the same PR while keeping the total at **20 commits or fewer**. Work in parallel across files only when changes do not race, then integrate and review the whole final diff.
 
 - Start from the latest confirmed base or extend the currently active PR when that is the agreed workflow. Avoid overlapping PRs that duplicate each other's commits.
 - Define the outcome and acceptance criteria before implementation.
 - Keep unrelated features and unapproved product-policy changes out of the batch.
-- If the work cannot be completed safely within 10 commits, stop at a coherent boundary and describe the dependency for a later batch.
+- If the work cannot be completed safely within 20 commits, stop at a coherent boundary and describe the dependency for a later batch.
 - Do not force push or rewrite history to make the commit count fit.
 
 ## Active architecture
@@ -66,7 +74,7 @@ git diff --stat
 git diff
 ```
 
-The CI workflow runs `npm run check`; the Browser E2E workflow separately runs `npm run test:e2e`. The PR quality check also blocks PRs with more than 10 commits or missing handoff sections. The exact head SHA must be checked after the last commit, not just an earlier commit.
+The CI workflow runs `npm run check`; the Browser E2E workflow separately runs `npm run test:e2e`. The PR quality check also blocks PRs with more than 20 commits or missing handoff sections. The exact head SHA must be checked after the last commit, not just an earlier commit.
 
 If browser E2E or another environment-dependent check has not run, report it as pending/not run. A passing mock is not proof of behavior on a real Google account. Neither normal CI workflow deploys the Apps Script backend.
 
