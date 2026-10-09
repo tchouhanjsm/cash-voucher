@@ -28,3 +28,11 @@ PR #24 is open: https://github.com/tchouhanjsm/cash-voucher/pull/24. Review its 
 - Policy for backdated vouchers, post-close edits/cancellations, offline queue entries and corrections is unresolved.
 - The existing audit logger is best-effort; it is not a tamper-evident ledger.
 - Real-account Apps Script behavior, backup/restore and device usability remain operational gates.
+
+## Phase 24 update — design only
+
+PR #24 is merged on main at `30a929a82236132a4619cd814c30fa9eb8717b7d`; post-merge CI run #94 passed. Phase 24 refines the cash-close design only. Implementation is blocked pending owner decisions.
+
+The voucher schema has PAYMENT/RECEIPT and Category, but no settlement method or explicit physical-cash-impact value. Category names do not prove whether physical cash moved. The design now proposes `CASH_IN`, `CASH_OUT`, `NO_CASH`, and `UNCLASSIFIED`, plus a no-silent-backfill policy for existing vouchers. The proposed model is not approved or implemented.
+
+Next: review the Phase 24 design PR and its checks. Do not begin product-code changes until the owner accepts the cash-impact vocabulary, historical-voucher policy, close rules, and correction semantics.
