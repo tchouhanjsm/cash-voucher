@@ -758,7 +758,7 @@ with sync_playwright() as p:
     page.click('[data-act=addrow]')
     page.locator('.erow .rv').nth(1).fill('Second workflow vendor')
     check(page.locator('#nsave').inner_text() == 'Save payments', 'save label reflects multiple entered payments')
-    row_layout = page.locator('.erow .top').evaluate(
+    row_layout = page.locator('.erow .top').first.evaluate(
         """(element) => {
           const vendor = element.querySelector('.rv').getBoundingClientRect();
           const amount = element.querySelector('.ra').getBoundingClientRect();
