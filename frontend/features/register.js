@@ -85,7 +85,7 @@ export function createRegister({ api, go }) {
       )
       .join('')}</select>
     ${can('viewAll') ? `<select id="ru"><option value="">All users</option>${users.map((user) => `<option value="${esc(user)}"${user === R.user ? ' selected' : ''}>${esc(nm(user))}</option>`).join('')}</select>` : ''}
-    <label>From<input type="date" id="rfrom" value="${R.from}"></label><label>To<input type="date" id="rto" value="${R.to}"></label>
+    <label>From<input type="date" id="rfrom" value="${esc(R.from)}"></label><label>To<input type="date" id="rto" value="${esc(R.to)}"></label>
     <select id="rt"><option value="">Paid & received</option><option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option><option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option></select>
     <select id="rs">${[
       ['ACTIVE', 'Active'],
@@ -181,7 +181,7 @@ export function createRegister({ api, go }) {
 
     dialog(
       `Edit #${vno(voucher)}`,
-      `<label>Date<input type="date" id="ed" value="${voucher.date}" required></label><label>Paid to<input id="ev" list="vlist" value="${esc(voucher.vendor)}" required></label>${vendorList()}
+      `<label>Date<input type="date" id="ed" value="${esc(voucher.date)}" required></label><label>Paid to<input id="ev" list="vlist" value="${esc(voucher.vendor)}" required></label>${vendorList()}
     <label>Amount (₹)<input id="ea" inputmode="decimal" value="${voucher.amount}" required></label><label>Category<select id="ec">${catOpts(voucher.category, voucher.type)}</select></label><label>Note<input id="en" value="${esc(voucher.notes)}"></label>`,
       async () => {
         const updated = await api('updateVoucher', {
