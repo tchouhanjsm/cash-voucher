@@ -563,6 +563,13 @@ with sync_playwright() as p:
         and page.locator('#modal #modalTitle').count() == 1,
         'edit dialog exposes modal semantics and an accessible title',
     )
+    page.locator('#modal .primary').evaluate("(element) => element.setAttribute('disabled', '')")
+    page.keyboard.press('Escape')
+    check(
+        not page.locator('#modal').evaluate("(element) => element.classList.contains('hidden')"),
+        'Escape leaves the dialog open while its primary action is disabled',
+    )
+    page.locator('#modal .primary').evaluate("(element) => element.removeAttribute('disabled')")
     page.keyboard.press('Shift+Tab')
     check(
         page.evaluate("document.activeElement?.matches('#modal .primary')"),
