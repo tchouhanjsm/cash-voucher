@@ -146,6 +146,8 @@ registerActions({
 
   'export-pending': () => payments.exportOutbox(),
 
+  'import-pending': () => payments.importOutbox(),
+
   discard: () => payments.discardOutbox(),
 
   tpl: () => bulk.downloadTemplate(),
