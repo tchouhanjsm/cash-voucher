@@ -35,3 +35,16 @@ The workflows in this batch also move checkout, Node setup, Python setup and fai
 ## Release gate
 
 The tag-based workflow must pass dependency advisory policy, the repository quality gate, Browser E2E and the existing package-version/tag match before it creates a GitHub Release. Workflow success is not proof of a production Apps Script deployment or live Google account permissions.
+
+## Follow-up: form control semantics and validation
+
+This follow-up batch addresses the screen-level form findings identified during the previous review.
+
+- Payment entry rows now receive distinct accessible names for payee/vendor, amount, category, note, receipt upload and row removal. Dynamic rows are renumbered after removal, and focus returns to a useful field.
+- Invalid payment rows show an inline live error, associate it with the relevant field through `aria-describedby`, set `aria-invalid`, and focus the field needing correction. The error clears as the user edits the vendor or amount.
+- Empty submissions receive a live error rather than only a transient toast.
+- Register search and status/type/vendor/category/user filters have explicit accessible names without changing the filter layout.
+- Vendor/user and PIN forms have explicit accessible names. Temporary/current/new PIN inputs are masked, use numeric input hints and use native six-digit pattern validation.
+- Browser E2E covers the row error, focus/invalid state, clearing after correction, accessible field names, and remove-row focus/renumber behavior.
+
+This remains a targeted form pass. It does not establish full WCAG conformance, validate every possible server-side error message, or replace real-device and screen-reader evaluation.

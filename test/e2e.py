@@ -61,6 +61,16 @@ with sync_playwright() as p:
         page.evaluate("document.activeElement?.id === 'op'"),
         'dialog moves keyboard focus to the first field',
     )
+    check(
+        page.locator('#op').get_attribute('aria-label') == 'Current temporary PIN'
+        and page.locator('#np').get_attribute('aria-label') == 'New PIN',
+        'forced PIN change fields have explicit accessible names',
+    )
+    check(
+        page.locator('#op').get_attribute('pattern') == '[0-9]{6}'
+        and page.locator('#np').get_attribute('pattern') == '[0-9]{6}',
+        'forced PIN change fields require six numeric digits',
+    )
     page.locator('.mcard .primary').focus()
     page.keyboard.press('Tab')
     check(
@@ -89,6 +99,17 @@ with sync_playwright() as p:
 
     page.click('[data-v=users]')
     page.wait_for_selector('#uf')
+    check(
+        page.locator('#un').get_attribute('aria-label') == 'User name'
+        and page.locator('#ue').get_attribute('aria-label') == 'Email address'
+        and page.locator('#ur').get_attribute('aria-label') == 'New user role',
+        'add-user form fields have explicit accessible names',
+    )
+    check(
+        page.locator('#up').get_attribute('type') == 'password'
+        and page.locator('#up').get_attribute('pattern') == '[0-9]{6}',
+        'temporary user PIN is masked and constrained to six digits',
+    )
     check(
         page.locator('[data-v=users]').get_attribute('aria-current') == 'page'
         and page.locator('[data-v=dash]').get_attribute('aria-current') is None,
@@ -126,6 +147,12 @@ with sync_playwright() as p:
     xss_company = '<img src=x onerror=window.__xssFired=true>'
     page.click('[data-v=vend]')
     page.wait_for_selector('#vf')
+    check(
+        page.locator('#vn').get_attribute('aria-label') == 'Vendor name'
+        and page.locator('#vc').get_attribute('aria-label') == 'Company name (optional)'
+        and page.locator('#vm').get_attribute('aria-label') == 'Mobile number (optional)',
+        'vendor form fields have explicit accessible names',
+    )
     page.fill('#vn', xss_vendor)
     page.fill('#vc', xss_company)
     page.fill('#vm', '9876543210')
@@ -177,7 +204,34 @@ with sync_playwright() as p:
 
     page.click('[data-v=new]')
     page.wait_for_selector('#nf')
+    check(
+        page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
+        and page.locator('.ra').first.get_attribute('aria-label') == 'Amount in rupees, row 1'
+        and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1',
+        'payment row fields have explicit accessible names',
+    )
+    page.click('#nsave')
+    page.wait_for_selector('#nres .form-error')
+    check(
+        'Add at least one payment' in page.inner_text('#nres')
+        and page.evaluate("document.activeElement === document.querySelector('.rv')"),
+        'empty form submission is announced and focuses the first row',
+    )
     page.fill('.rv', 'Ram Traders')
+    page.click('#nsave')
+    page.wait_for_selector('.row-error')
+    check(
+        'valid amount' in page.inner_text('.row-error')
+        and page.locator('.ra').first.get_attribute('aria-invalid') == 'true'
+        and page.evaluate("document.activeElement === document.querySelector('.ra')"),
+        'invalid payment amount is announced and focused for correction',
+    )
+    page.fill('.ra', '1,250.50')
+    page.wait_for_function("document.querySelector('.row-error') === null")
+    check(
+        page.locator('.ra').first.get_attribute('aria-invalid') is None,
+        'payment validation state clears when the amount is corrected',
+    )
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
     xss_note = '<img src=x onerror=alert(1)>'
@@ -192,6 +246,22 @@ with sync_playwright() as p:
     )
     page.press('.ra', 'Enter')
     check(page.locator('.erow').count() == 2, 'enter adds row')
+    check(
+        page.locator('.rv').nth(1).get_attribute('aria-label') == 'Payee / vendor, row 2'
+        and page.locator('.ra').nth(1).get_attribute('aria-label') == 'Amount in rupees, row 2',
+        'added payment row receives distinct accessible names',
+    )
+    page.locator('.rv').nth(1).fill('Shiv Gas')
+    page.locator('.ra').nth(1).fill('900')
+    page.locator('.erow').nth(1).locator('[data-act=delrow]').click()
+    check(
+        page.locator('.erow').count() == 1
+        and page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
+        and page.evaluate("document.activeElement === document.querySelector('.rv')"),
+        'removing a row restores focus and keeps the remaining row labelled',
+    )
+    page.click('[data-act=addrow]')
+    page.wait_for_function("document.querySelectorAll('.erow').length === 2")
     page.locator('.rv').nth(1).fill('Shiv Gas')
     page.locator('.ra').nth(1).fill('900')
     page.click('#nsave')
@@ -200,6 +270,14 @@ with sync_playwright() as p:
 
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody tr')
+    check(
+        page.locator('#rq').get_attribute('aria-label') == 'Search vouchers by number, vendor or note'
+        and page.locator('#rv').get_attribute('aria-label') == 'Filter by vendor'
+        and page.locator('#rc').get_attribute('aria-label') == 'Filter by category'
+        and page.locator('#rt').get_attribute('aria-label') == 'Filter by transaction type'
+        and page.locator('#rs').get_attribute('aria-label') == 'Filter by status',
+        'register search and filter controls have explicit accessible names',
+    )
     check(page.locator('#rbody tr').count() == 2, 'staff register 2 rows')
     check(
         xss_note in page.locator('#rbody').inner_text()
