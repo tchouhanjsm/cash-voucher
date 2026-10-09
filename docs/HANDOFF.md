@@ -43,10 +43,10 @@ Keep all action eligibility tied to existing client capability checks and rely o
 **PR:** https://github.com/tchouhanjsm/cash-voucher/pull/57.
 Base is the verified `main` SHA above.
 
-**Current gate:** CI failed on candidate head `02ca235b4d5c706976906f94f1a1bb13d6aaace6` at Prettier for `docs/HANDOFF.md` and `frontend/features/register.js`. Browser E2E passed on the same candidate head, but no same-head green CI/E2E pair exists. Local commands were not run because the execution environment could not connect to GitHub.
+**Current gate:** CI failed at Prettier on candidate head `49d96a81c4e09d4052c682d549a21c6cadba3f9f`, reporting `docs/HANDOFF.md` and `frontend/features/register.js`. Browser E2E is still running on the same SHA: [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37967743805), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/37967743822). The local shell cannot reach GitHub to install/run the repository formatter. No same-head green pair exists.
 
 Next steps:
-1. In a connected checkout, run `npx prettier --write docs/HANDOFF.md frontend/features/register.js` and commit only that formatter output.
+1. In a connected checkout, run `npx prettier --write docs/HANDOFF.md frontend/features/register.js` and commit the formatter output.
 2. Require CI and Browser E2E to pass on one identical final SHA.
 3. Inspect final diff and residual risks; leave merge to the owner.
 
