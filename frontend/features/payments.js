@@ -351,9 +351,7 @@ export function createPayments({ api, refresh }) {
             receipts.forEach((receipt) => {
               if (
                 !receipt ||
-                !['image/jpeg', 'image/png', 'image/webp'].includes(
-                  String(receipt.mime || ''),
-                ) ||
+                !['image/jpeg', 'image/png', 'image/webp'].includes(String(receipt.mime || '')) ||
                 typeof receipt.data !== 'string' ||
                 receipt.data.length === 0 ||
                 receipt.data.length > 2200000 ||
