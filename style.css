@@ -598,6 +598,37 @@ tr.cx .amt {
     grid-template-columns: 1fr 110px 36px;
   }
 }
+
+/* At narrow reflow widths, keep payment entry fields readable and row actions tappable. */
+@media (max-width: 380px) {
+  .erow .top {
+    grid-template-columns: minmax(0, 1fr) 44px;
+  }
+
+  .erow .rv {
+    grid-column: 1 / -1;
+    min-width: 0;
+  }
+
+  .erow .ra {
+    grid-column: 1;
+    min-width: 0;
+  }
+
+  .erow .x {
+    grid-column: 2;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .erow .bot {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .erow .bot > * {
+    min-width: 0;
+  }
+}
 /* A5 voucher print */
 @page {
   size: A5 portrait;
