@@ -105,7 +105,7 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
 
   const first = $('input,select,textarea', form);
   if (first) first.focus();
-  else form.focus();
+  else $('[data-x]', form).focus();
 
   return form;
 }
