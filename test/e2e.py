@@ -578,7 +578,7 @@ with sync_playwright() as p:
     )
     page.keyboard.press('Tab')
     check(
-        page.evaluate("document.activeElement?.matches('#modal #en')"),
+        page.evaluate("document.activeElement?.matches('#modal #ed')"),
         'Tab from the last dialog control wraps to the first field',
     )
     page.keyboard.press('Escape')
