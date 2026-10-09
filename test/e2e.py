@@ -210,6 +210,13 @@ with sync_playwright() as p:
         and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1',
         'payment row fields have explicit accessible names',
     )
+    page.click('#nsave')
+    page.wait_for_selector('#nres .form-error')
+    check(
+        'Add at least one payment' in page.inner_text('#nres')
+        and page.evaluate("document.activeElement === document.querySelector('.rv')"),
+        'empty form submission is announced and focuses the first row',
+    )
     page.fill('.rv', 'Ram Traders')
     page.click('#nsave')
     page.wait_for_selector('.row-error')
