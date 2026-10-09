@@ -14,7 +14,7 @@
     "validate:json": "node scripts/validate-json.js",
     "check:syntax": "node scripts/check-js.js",
     "inspect:frontend": "node scripts/inspect-frontend.js",
-    "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm run check:frontend && npm test",
+    "check": "npm run lint && node scripts/format-diagnostic.js && npm run format:check && npm run validate:json && npm run check:syntax && npm run check:frontend && npm test",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint . --fix",
     "fix": "npm run fix:format && npm run fix:lint && npm run check",
