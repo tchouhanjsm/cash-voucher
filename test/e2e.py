@@ -546,7 +546,9 @@ with sync_playwright() as p:
         'stored vendor values remain inert text in register filter options',
     )
     note_row = page.locator('#rbody tr', has_text='Ram Traders').first
-    note_row.locator('[data-act=edit]').click()
+    edit_trigger = note_row.locator('[data-act=edit]')
+    edit_trigger.evaluate("(element) => element.dataset.focusRestoreProbe = 'edit-dialog-trigger'")
+    edit_trigger.click()
     page.wait_for_selector('#modal #en')
     check(
         page.locator('#modal img, #modal svg').count() == 0
@@ -554,8 +556,20 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'stored vendor and note remain text in edit dialog fields',
     )
-    page.click('#modal [data-x]')
+    check(
+        page.locator('#modal').get_attribute('role') == 'dialog'
+        and page.locator('#modal').get_attribute('aria-modal') == 'true'
+        and page.locator('#modal').get_attribute('aria-labelledby') == 'modalTitle'
+        and page.locator('#modal #modalTitle').count() == 1,
+        'edit dialog exposes modal semantics and an accessible title',
+    )
+    page.keyboard.press('Escape')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+    check(
+        page.evaluate("document.activeElement?.dataset.focusRestoreProbe === 'edit-dialog-trigger'"),
+        'Escape closes an idle dialog and restores focus to its opener',
+    )
+    edit_trigger.evaluate("(element) => element.removeAttribute('data-focus-restore-probe')")
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
     xss_vendor_row.locator('[data-act=cancel]').click()
     page.wait_for_selector('#modal #cr')
