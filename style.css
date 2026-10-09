@@ -399,6 +399,24 @@ td.amt,
 .table-wrap {
   overflow-x: auto;
 }
+
+.empty-state {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 0;
+}
+
+.empty-state > span {
+  flex: 1 1 220px;
+}
+
+.empty-state .btn {
+  min-height: 44px;
+}
+
 table {
   width: 100%;
   border-collapse: collapse;
