@@ -140,6 +140,34 @@ const S0 = g.call('login', { email: 's@test.com', pin: '135790' }).data.token;
 const S = as(S0, 'changePin', { oldPin: '135790', newPin: '975310' }).data.token;
 const A0 = g.call('login', { email: 'a@test.com', pin: '112233' }).data.token;
 const A = as(A0, 'changePin', { oldPin: '112233', newPin: '224466' }).data.token;
+ok(as(S, 'backupStatus').code === 'FORBIDDEN', 'staff cannot read owner backup status');
+ok(as(M, 'backupStatus').code === 'FORBIDDEN', 'manager cannot read owner backup status');
+let backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.state === 'never_run' &&
+    backupStatus.configured &&
+    backupStatus.retentionDays === 90 &&
+    !backupStatus.lastSuccess,
+  'owner backup status distinguishes configured but never-run backups',
+);
+g.props.BACKUP_LAST_ATTEMPT = '2026-10-09T10:00:00.000Z';
+backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.state === 'incomplete' && backupStatus.lastAttempt === g.props.BACKUP_LAST_ATTEMPT,
+  'owner backup status flags an attempt without a completed success',
+);
+g.props.BACKUP_LAST_SUCCESS = '2026-10-09T10:01:00.000Z';
+backupStatus = as(T, 'backupStatus').data;
+ok(backupStatus.state === 'success', 'owner backup status reports recorded success');
+g.props.BACKUP_LAST_ERROR = 'Drive copy failed';
+backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.state === 'failed' && backupStatus.lastError === 'Drive copy failed',
+  'owner backup status reports latest recorded failure',
+);
+delete g.props.BACKUP_LAST_ATTEMPT;
+delete g.props.BACKUP_LAST_SUCCESS;
+delete g.props.BACKUP_LAST_ERROR;
 // create vouchers
 const today = new Date().toISOString().slice(0, 10);
 const tiny = Buffer.from('fakejpeg').toString('base64');
