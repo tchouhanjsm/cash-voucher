@@ -9,9 +9,7 @@ export function createPayments({ api, refresh }) {
   let NT = 'PAYMENT';
   let flushing = false;
   const outboxChannel =
-    typeof BroadcastChannel === 'function'
-      ? new BroadcastChannel('cash-voucher-outbox')
-      : null;
+    typeof BroadcastChannel === 'function' ? new BroadcastChannel('cash-voucher-outbox') : null;
 
   function announceOutboxChange(type = 'changed') {
     try {
