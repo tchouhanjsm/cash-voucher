@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-09  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA:** `64655a5b11956d0289b4e6098599df7cd8932860`  
+**Verified main SHA:** `a6bb1ace7547114c9c8072dd7359ca901387980d`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -19,6 +19,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #49 merged on 9 October 2026 (merge commit `dd70819f02c564ad4df433e27342d7a53dd004b6`). Its Browser E2E passed 93 checks; use the live PR description for exact CI evidence.
 - PR #50 merged on 9 October 2026 (merge commit `c9ccc829076b9d461372cd6a2959342286cc04a4`); it adds a 19-pair contrast check and dialog Escape/focus-return handling.
 - PR #52 merged on 9 October 2026 (merge commit `64655a5b11956d0289b4e6098599df7cd8932860`); it isolates modal background interaction and adds focus-containment browser coverage. Exact-head CI/E2E passed 98 checks, 0 failures.
+- PR #53 merged on 9 October 2026 (merge commit `a6bb1ace7547114c9c8072dd7359ca901387980d`); narrow payment-row reflow and reduced-motion browser coverage passed CI and 101 Browser E2E checks.
 - No Apps Script production deployment, live backup/restore, or production-data operation has been performed.
 
 ## Process decisions
@@ -29,18 +30,18 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #53
+## Current batch: PR #54
 
-Scope: improve payment-entry usability at narrow reflow widths, make the remove-row target easier to tap, and add browser guardrails for 320px layout and reduced-motion preferences. No backend/API, permission, voucher schema, accounting semantics or production behavior changes.
+Scope: make register empty states distinguish unavailable records from filters with no matches, and provide an accessible, one-tap clear-filters recovery action. No backend/API, permission, voucher schema, accounting semantics or production behavior changes.
 
-**Branch:** `ui/mobile-reflow-motion`. Exact current head and workflow evidence are maintained in the live PR.
+**Branch:** `ui/register-empty-state`. Exact current head and workflow evidence are maintained in the live PR.
 
 Next steps:
 
-1. Verify CI and Browser E2E on the exact live PR #53 head.
-2. Review the final CSS and viewport assertions for layout/keyboard-order regressions.
-3. Leave PR #53 for owner review/merge; owner controls merge and deployment.
-4. Next phase after merge: continue the broader design pass with empty/loading/error states and high-frequency one-thumb workflows; plan manual screen-reader and real-device validation separately.
+1. Verify CI and Browser E2E on the exact live PR #54 head.
+2. Review the empty-state wording, accessible status announcement and clear-filters action.
+3. Leave PR #54 for owner review/merge; owner controls merge and deployment.
+4. Next phase after merge: improve loading/error feedback for receipt and register workflows, then continue the role-based mobile usability review.
 
 ## Operational gates still open
 
