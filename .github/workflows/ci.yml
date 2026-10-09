@@ -34,9 +34,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: Show formatted contrast checker for correction
-        run: npx prettier scripts/check-contrast.js
-
       - name: Run quality gate
         run: npm run check
 
