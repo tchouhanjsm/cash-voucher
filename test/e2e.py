@@ -34,6 +34,7 @@ with sync_playwright() as p:
     )
     page = context.new_page()
     logs = []
+    page.add_init_script('window.__xssFired = false;')
     page.on('console', lambda message: logs.append(message.text) if message.type == 'error' else None)
     page.on('pageerror', lambda error: logs.append('PAGEERR ' + str(error)))
 
@@ -72,8 +73,52 @@ with sync_playwright() as p:
         page.wait_for_timeout(300)
     check(page.locator('tbody tr').count() == 3, '3 users listed')
 
+    xss_payload = '<img src=x onerror=window.__xssFired=true>'
+    page.fill('#un', xss_payload)
+    page.fill('#ue', 'stored-xss@test.com')
+    page.select_option('#ur', 'staff')
+    page.fill('#up', '258369')
+    page.click('#uf .primary')
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('stored-xss@test.com')"
+    )
+    check(
+        page.locator('#view img, #view svg').count() == 0
+        and xss_payload in page.locator('#view').inner_text()
+        and not page.evaluate('window.__xssFired === true'),
+        'user name is rendered as text, not executable HTML',
+    )
+
+    xss_vendor = '<svg onload=window.__xssFired=true></svg>'
+    xss_company = '<img src=x onerror=window.__xssFired=true>'
+    page.click('[data-v=vend]')
+    page.wait_for_selector('#vf')
+    page.fill('#vn', xss_vendor)
+    page.fill('#vc', xss_company)
+    page.fill('#vm', '9876543210')
+    page.click('#vf .primary')
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('9876543210')"
+    )
+    check(
+        page.locator('#view img, #view svg').count() == 0
+        and xss_vendor in page.locator('#view').inner_text()
+        and xss_company in page.locator('#view').inner_text()
+        and not page.evaluate('window.__xssFired === true'),
+        'vendor name and company are rendered as text, not executable HTML',
+    )
+
     page.click('[data-v=set]')
     page.wait_for_selector('#aud tr')
+    page.wait_for_function(
+        "document.querySelector('#aud').innerText.includes('<svg onload=window.__xssFired=true></svg>')"
+    )
+    check(
+        page.locator('#aud img, #aud svg').count() == 0
+        and xss_vendor in page.locator('#aud').inner_text()
+        and not page.evaluate('window.__xssFired === true'),
+        'audit-log details are rendered as text, not executable HTML',
+    )
     page.fill('#sn', 'Hotel Test')
     page.fill('#sa', '1 Fort Road')
     page.click('#sf .primary')
@@ -305,7 +350,7 @@ with sync_playwright() as p:
         f'{date_text}\tNew Vendor\t₹ 3,000\tFuel\t\n'
         '31/02/2026\tBad Date\t10\t\t\n'
         f'{date_text}\t\t50\t\t\n'
-        f'{date_text}\tOdd Cat\t40\tNonsense\t'
+        f'{date_text}\t{xss_payload}\t40\tNonsense\t'
     )
     page.fill('#bt', rows)
     page.click('[data-act=parse]')
@@ -317,6 +362,12 @@ with sync_playwright() as p:
     )
     check(page.locator('.badge.bad').count() == 2, '2 error rows')
     check(page.locator('.badge.warn').count() == 2, 'dup + category warn')
+    check(
+        xss_payload in preview_text
+        and page.locator('#bprev img, #bprev svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'bulk preview renders imported vendor values as text, not executable HTML',
+    )
 
     page.click('[data-act=import]')
     page.wait_for_selector('.ok-panel')
