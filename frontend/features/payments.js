@@ -321,6 +321,8 @@ export function createPayments({ api, refresh }) {
               );
             if (
               !dateShapeValid ||
+              dateText < '2000-01-01' ||
+              dateText > addDays(today(), 1) ||
               Number.isNaN(parsedDate.getTime()) ||
               parsedDate.toISOString().slice(0, 10) !== dateText
             ) {
