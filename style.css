@@ -517,6 +517,15 @@ tr.cx .amt {
   background: #eef1f4;
   margin-bottom: 10px;
 }
+.receipt-item {
+  margin-bottom: 12px;
+}
+.receipt-item .receipt-status {
+  padding: 10px 0;
+}
+.receipt-item .receipt-error {
+  margin-bottom: 8px;
+}
 .modal {
   position: fixed;
   inset: 0;
