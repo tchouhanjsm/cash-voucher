@@ -510,7 +510,7 @@ with sync_playwright() as p:
         'stored vendor and note remain text in edit dialog fields',
     )
     page.click('#modal [data-x]')
-    page.wait_for_selector('#modal.hidden')
+    page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
     page.wait_for_selector('[data-act=cancel]')
     page.locator('[data-act=cancel]').first.click()
     page.fill('#cr', 'entered twice')
