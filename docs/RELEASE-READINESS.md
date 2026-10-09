@@ -14,10 +14,12 @@
 | PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                             |
 | CI quality gate                                             | PASS on current main  | Post-merge CI passed on `4d80152`; each later PR must still be checked at its exact head                 |
 | Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
-| Daily backup mechanism                                      | Implemented in source | Owner-only panel reports metadata; live trigger, backup contents and restore remain unverified |
+| Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
 | Production Apps Script deployment                           | NOT RELEASED          | No deployment performed in this work                                                                     |
 | Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
+
+The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
 
 ## Gate 1 — source and CI
 
