@@ -35,7 +35,9 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 
 ## Current batch: PR #57 — manager register mobile review
 
-Scope: identify payment-versus-receipt and status at a glance; make register actions clearly labelled and easier to tap on phones; reflow register rows and filters into a compact card layout at mobile widths. Keep all action eligibility tied to existing client capability checks and rely on server authorization as the security boundary. No API, schema, accounting, or production behavior change.
+Scope: identify payment-versus-receipt and status at a glance; make register actions clearly labelled and easier to tap on phones; reflow register rows and filters into a compact card layout at mobile widths.
+
+Keep all action eligibility tied to existing client capability checks and rely on server authorization as the security boundary. No API, schema, accounting, or production behavior change.
 
 **Branch:** `ui/manager-register-mobile-review`.
 **PR:** https://github.com/tchouhanjsm/cash-voucher/pull/57.
