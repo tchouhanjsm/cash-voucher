@@ -67,4 +67,6 @@ g.recordBackupFailure(
 assert.strictEqual(properties.BACKUP_LAST_ERROR.length, 300);
 assert.match(properties.BACKUP_LAST_ERROR, /incomplete snapshot cleanup failed/);
 
-console.log('Backup failure handling OK — partial cleanup, complete snapshot preservation, error reporting and bounds.');
+console.log(
+  'Backup failure handling OK — partial cleanup, complete snapshot preservation, error reporting and bounds.',
+);
