@@ -74,7 +74,12 @@ export function createRegister({ api, go }) {
           return `<tr class="voucher-row ${voucher.status === 'ACTIVE' ? '' : 'cx'}">
             <td class="nw"><b>${vno(voucher)}</b><div class="cat voucher-kind">${kind}</div></td>
             <td class="nw">${esc(dmy(voucher.date))}</td>
-            <td><span class="voucher-vendor">${esc(voucher.vendor)}</span><div class="cat">${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${voucher.status !== 'ACTIVE' ? ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}` : ''}</div></td>
+            <td>
+              <span class="voucher-vendor">${esc(voucher.vendor)}</span>
+              <div class="cat">
+                ${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${voucher.status !== 'ACTIVE' ? ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}` : ''}
+              </div>
+            </td>
             <td class="r nw amt"${isIn(voucher) ? ' style="color:var(--ok)"' : ''}><span class="voucher-amount">${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}</span></td>
             <td class="nw cat">${esc(nm(voucher.createdBy))}</td>
             <td><div class="voucher-actions" role="group" aria-label="Actions for ${esc(vno(voucher))}">${actions}</div></td>
