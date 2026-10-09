@@ -227,21 +227,24 @@ function backupData_() {
     Logger.log('Backup complete: ' + snapshot.getName() + ', receipts=' + copied.length);
     return { folderId: snapshot.getId(), receiptCount: copied.length };
   } catch (e) {
-    let failureMessage = String(e && e.message ? e.message : e);
-    if (snapshot && !snapshotComplete) {
-      failureMessage += trashIncompleteBackup_(snapshot);
-    }
-    try {
-      p.setProperty('BACKUP_LAST_ERROR', failureMessage.slice(0, 300));
-    } catch (metadataError) {
-      Logger.log(
-        'Could not record backup failure metadata: ' +
-          String(metadataError && metadataError.message ? metadataError.message : metadataError),
-      );
-    }
+    recordBackupFailure_(p, snapshot, snapshotComplete, e);
     throw e;
   } finally {
     lock.releaseLock();
+  }
+}
+function recordBackupFailure_(p, snapshot, snapshotComplete, error) {
+  let failureMessage = String(error && error.message ? error.message : error);
+  if (snapshot && !snapshotComplete) {
+    failureMessage += trashIncompleteBackup_(snapshot);
+  }
+  try {
+    p.setProperty('BACKUP_LAST_ERROR', failureMessage.slice(0, 300));
+  } catch (metadataError) {
+    Logger.log(
+      'Could not record backup failure metadata: ' +
+        String(metadataError && metadataError.message ? metadataError.message : metadataError),
+    );
   }
 }
 function trashIncompleteBackup_(snapshot) {
