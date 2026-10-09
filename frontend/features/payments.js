@@ -312,8 +312,15 @@ export function createPayments({ api, refresh }) {
 
             const dateText = String(entry.date || '');
             const parsedDate = new Date(dateText + 'T00:00:00Z');
+            const dateShapeValid =
+              dateText.length === 10 &&
+              dateText[4] === '-' &&
+              dateText[7] === '-' &&
+              [...dateText.slice(0, 4), ...dateText.slice(5, 7), ...dateText.slice(8)].every(
+                (character) => character >= '0' && character <= '9',
+              );
             if (
-              !/^\\d{4}-\\d{2}-\\d{2}$/.test(dateText) ||
+              !dateShapeValid ||
               Number.isNaN(parsedDate.getTime()) ||
               parsedDate.toISOString().slice(0, 10) !== dateText
             ) {
@@ -342,7 +349,9 @@ export function createPayments({ api, refresh }) {
             receipts.forEach((receipt) => {
               if (
                 !receipt ||
-                !/^image\\/(jpeg|png|webp)$/.test(String(receipt.mime || '')) ||
+                !['image/jpeg', 'image/png', 'image/webp'].includes(
+                  String(receipt.mime || ''),
+                ) ||
                 typeof receipt.data !== 'string' ||
                 receipt.data.length === 0 ||
                 receipt.data.length > 2200000 ||
