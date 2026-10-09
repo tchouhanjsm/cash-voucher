@@ -32,4 +32,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
+- PR #46 is merged; PR #47 is closed without merge. PR #48 is the active UI accessibility foundation batch.
 - The owner merges PRs. No agent merge or production deployment.
