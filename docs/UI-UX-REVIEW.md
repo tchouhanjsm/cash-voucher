@@ -79,3 +79,10 @@ The owner Settings screen now includes a `🛡️ Backup & recovery` status pane
 ## Modal background isolation and keyboard focus — October 2026
 
 PR #52 makes the application container inert while a modal is open and restores its previous inert state on close. Browser E2E covers accessible modal/title semantics, background isolation, Tab/Shift+Tab wraparound, Escape handling when the primary action is disabled, and return of focus to the exact opener. This improves keyboard and assistive-technology isolation, but does not replace real screen-reader testing, dialog-by-dialog manual traversal, zoom/reflow checks, or testing across browser/assistive-technology combinations.
+
+
+## Narrow payment-entry reflow and reduced motion — October 2026
+
+PR #53 adds a compact-width layout for payment rows at widths up to 380 CSS pixels. Vendor input spans the row, amount and remove action sit on the next line, category and note fields stack, and the remove-row target is at least 44 × 44 CSS pixels. Browser E2E checks that the payment form has no page-level horizontal overflow at 320 CSS pixels and that the row geometry remains within the viewport.
+
+The stylesheet already contained a `prefers-reduced-motion: reduce` rule; PR #53 adds a browser assertion that the preference is detected and transition/animation durations are minimized. These checks approximate the narrow viewport used by 400% zoom at a 1280px desktop width, but they do not simulate every browser zoom behavior or replace manual keyboard-order, real-device and assistive-technology checks.
