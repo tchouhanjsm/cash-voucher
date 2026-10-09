@@ -167,6 +167,7 @@ function create() {
     raw: (contents) => JSON.parse(ctx.__api.doPost({ postData: { contents } }).getContent()),
     pruneBackups: (root) => ctx.__api.pruneBackups_(root),
     backupManifestCsv: (rows) => ctx.__api.backupManifestCsv_(rows),
+    trashIncompleteBackup: (snapshot) => ctx.__api.trashIncompleteBackup_(snapshot),
   };
 }
 module.exports = { create };
