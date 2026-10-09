@@ -67,6 +67,7 @@ Exit gate: exact PR CI and browser workflow pass; code-review findings are accur
 Current source has a single global `Settings.openingBalance`, active/cancelled voucher statuses, separate PAYMENT/RECEIPT types, editable active vouchers, and best-effort audit events. It does not have dated opening balances, close records, close-state enforcement or a correction ledger. The dashboard's cash-in-hand figure uses the global opening balance plus all active receipts minus all active payments; it is not a daily reconciliation report.
 
 The design must settle these points before schema/API changes:
+
 - how a business day's opening cash is established and carried forward;
 - whether one property has one drawer or multiple drawers/shifts;
 - how Bank Withdrawal, Owner Deposit, bank deposits/transfers and other categories affect physical cash;
