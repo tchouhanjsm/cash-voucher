@@ -141,6 +141,10 @@ assert.equal(state.props.BACKUP_LAST_ERROR, 'receipt copy failed');
 assert.equal(state.lockWaits, 1);
 assert.equal(state.lockReleases, 1, 'lock is released after an acquired lock');
 
+state = expectBackupFailure({ failSheetCopy: true }, 'Sheet copy failed');
+assert.equal(state.snapshots[0].trashed, true, 'Sheet-copy failure trashes the incomplete snapshot');
+assert.equal(state.props.BACKUP_LAST_ERROR, 'Sheet copy failed');
+
 state = expectBackupFailure({ failManifest: true }, 'manifest creation failed');
 assert.equal(state.snapshots[0].trashed, true, 'manifest failure trashes the incomplete snapshot');
 
@@ -194,6 +198,38 @@ assert.equal(success.state.snapshots[0].trashed, false);
 assert.equal(success.state.snapshots[0].files[0].name, 'receipt-manifest.csv');
 assert.equal(success.state.lockReleases, 1);
 assert.ok(success.state.props.BACKUP_LAST_SUCCESS);
+
+const boundedProperties = {
+  value: '',
+  setProperty(key, value) {
+    this.value = String(value);
+  },
+};
+g.recordBackupFailure(boundedProperties, null, false, new Error('x'.repeat(500)));
+assert.equal(boundedProperties.value.length, 300, 'failure metadata is capped at 300 characters');
+
+const boundedCleanupProperties = {
+  value: '',
+  setProperty(key, value) {
+    this.value = String(value);
+  },
+};
+g.recordBackupFailure(
+  boundedCleanupProperties,
+  {
+    setTrashed() {
+      throw new Error('cleanup failure '.repeat(20));
+    },
+  },
+  false,
+  new Error('original failure '.repeat(40)),
+);
+assert.equal(
+  boundedCleanupProperties.value.length,
+  300,
+  'combined failure and cleanup metadata stays within the 300-character cap',
+);
+assert.match(boundedCleanupProperties.value, /incomplete snapshot cleanup failed/);
 
 console.log(
   'Backup orchestration OK — copy/manifest failures, cleanup failure, retention failure, metadata failure, lock acquisition and success.',
