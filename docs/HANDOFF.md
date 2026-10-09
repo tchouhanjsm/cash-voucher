@@ -40,8 +40,8 @@ Scope: identify payment-versus-receipt and status at a glance; make register act
 **Branch:** `ui/manager-register-mobile-review`. **PR:** https://github.com/tchouhanjsm/cash-voucher/pull/57. Base is the verified `main` SHA above.
 
 Next steps:
-1. Resolve formatting failures and re-run CI and Browser E2E against the updated exact PR head.
-2. Verify that the final diff preserves register totals, filtering, CSV data, sorting, and existing action permissions.
+1. Re-run CI and Browser E2E against the current exact PR head.
+2. Verify register totals, filtering, CSV data, sorting, and action permissions remain unchanged.
 3. Review exact-head workflow results and leave merge to the owner.
 
 ## Operational gates still open
