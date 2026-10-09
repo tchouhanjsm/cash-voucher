@@ -55,7 +55,7 @@ export function createRegister({ api, go }) {
       shown
         .map(
           (voucher) =>
-            `<tr class="${voucher.status === 'ACTIVE' ? '' : 'cx'}"><td class="nw"><b>${vno(voucher)}</b></td><td class="nw">${dmy(voucher.date)}</td>
+            `<tr class="${voucher.status === 'ACTIVE' ? '' : 'cx'}"><td class="nw"><b>${vno(voucher)}</b></td><td class="nw">${esc(dmy(voucher.date))}</td>
     <td>${esc(voucher.vendor)}<div class="cat">${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${voucher.status !== 'ACTIVE' ? ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}` : ''}</div></td>
     <td class="r nw amt"${isIn(voucher) ? ' style="color:var(--ok)"' : ''}>${isIn(voucher) ? '+' : ''}${money(voucher.amount)}</td><td class="nw cat">${esc(nm(voucher.createdBy))}</td>
     <td class="r nw"><button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>
