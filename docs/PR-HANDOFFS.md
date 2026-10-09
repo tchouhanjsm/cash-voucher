@@ -13,7 +13,8 @@ This index is a durable map for future development threads. The dedicated handof
 | [#45](https://github.com/tchouhanjsm/cash-voucher/pull/45) | Added owner-only backup status and clearer recovery-state messaging.   | Merged. Status metadata does not prove snapshot completeness or restoreability.                                           |
 | [#46](https://github.com/tchouhanjsm/cash-voucher/pull/46) | Clean up incomplete backup snapshots and harden failure/lock handling. | Merged on 9 October 2026. Mock tests do not prove live Drive/restore behavior. See [PR-46 handoff](pr-handoffs/PR-46.md). |
 | [#47](https://github.com/tchouhanjsm/cash-voucher/pull/47) | Formatting-only child PR created while correcting #46.                 | Closed without merge to avoid stacking; its correction was included in #46.                                               |
-| [#48](https://github.com/tchouhanjsm/cash-voucher/pull/48) | Improve shared UI contrast and financial-number readability.           | Open; exact-head CI/E2E and owner review pending. See [PR-48 handoff](pr-handoffs/PR-48.md).                              |
+| [#48](https://github.com/tchouhanjsm/cash-voucher/pull/48) | Improve shared UI contrast and financial-number readability.           | Merged on 9 October 2026; exact-head CI and Browser E2E passed. See [PR-48 handoff](pr-handoffs/PR-48.md).              |
+| [#49](https://github.com/tchouhanjsm/cash-voucher/pull/49) | Add responsive layout and keyboard-focus regression guardrails.       | Open; exact-head CI/E2E and owner review pending. See [PR-49 handoff](pr-handoffs/PR-49.md).                              |
 
 ## Per-PR handoff contract
 
@@ -33,5 +34,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PR #46 is merged; PR #47 is closed without merge. PR #48 is the active UI accessibility foundation batch.
+- PR #46 and #48 are merged; PR #47 is closed without merge. PR #49 is the active responsive/keyboard UI quality batch.
 - The owner merges PRs. No agent merge or production deployment.
