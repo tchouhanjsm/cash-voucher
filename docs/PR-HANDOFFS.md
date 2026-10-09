@@ -14,7 +14,7 @@ This index is a durable map for future development threads. The dedicated handof
 | [#46](https://github.com/tchouhanjsm/cash-voucher/pull/46) | Clean up incomplete backup snapshots and harden failure/lock handling. | Merged on 9 October 2026. Mock tests do not prove live Drive/restore behavior. See [PR-46 handoff](pr-handoffs/PR-46.md). |
 | [#47](https://github.com/tchouhanjsm/cash-voucher/pull/47) | Formatting-only child PR created while correcting #46.                 | Closed without merge to avoid stacking; its correction was included in #46.                                               |
 | [#48](https://github.com/tchouhanjsm/cash-voucher/pull/48) | Improve shared UI contrast and financial-number readability.           | Merged on 9 October 2026; exact-head CI and Browser E2E passed. See [PR-48 handoff](pr-handoffs/PR-48.md).                |
-| [#49](https://github.com/tchouhanjsm/cash-voucher/pull/49) | Add responsive layout and keyboard-focus regression guardrails.        | Open; exact-head CI/E2E and owner review pending. See [PR-49 handoff](pr-handoffs/PR-49.md).                              |
+| [#49](https://github.com/tchouhanjsm/cash-voucher/pull/49) | Add responsive layout and keyboard-focus regression guardrails.        | Open; live PR description tracks exact-head CI/E2E; owner review pending. See [PR-49 handoff](pr-handoffs/PR-49.md).                              |
 
 ## Per-PR handoff contract
 
