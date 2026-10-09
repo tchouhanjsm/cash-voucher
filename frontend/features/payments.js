@@ -224,7 +224,11 @@ export function createPayments({ api, refresh }) {
       return;
     }
     if (!entries.length) {
-      showFormError(NT === 'RECEIPT' ? 'Add at least one cash receipt before saving.' : 'Add at least one payment before saving.');
+      showFormError(
+        NT === 'RECEIPT'
+          ? 'Add at least one cash receipt before saving.'
+          : 'Add at least one payment before saving.',
+      );
       return;
     }
 
