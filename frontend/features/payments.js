@@ -184,7 +184,10 @@ export function createPayments({ api, refresh }) {
       b.innerHTML = `<span>📤 ${n} payment${n > 1 ? 's' : ''} waiting to upload${errMsg ? ' — ' + esc(errMsg) : ''}</span><button class="btn sm" data-act="flush">Retry now</button><button class="btn sm" data-act="export-pending">Export</button><button class="btn sm" data-act="import-pending">Import</button><button class="btn sm danger" data-act="discard">Discard</button>`;
     } catch (error) {
       b.className = 'banner err';
-      b.innerHTML = `<span>⚠️ Offline storage is unavailable. Reconnect before saving unsynced payments.</span>`;
+      const message =
+        error.message ||
+        'Offline storage is unavailable. Reconnect before saving unsynced payments.';
+      b.innerHTML = `<span>⚠️ ${esc(message)}</span>`;
       console.error('Offline queue unavailable:', error);
     }
   }
