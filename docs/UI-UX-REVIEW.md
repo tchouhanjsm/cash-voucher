@@ -43,7 +43,7 @@ The old memo's numerical UI scores referred to a different implementation and we
 
 ## Responsive and keyboard guardrails — October 2026
 
-The next UI quality batch adds regression coverage at 320, 360, 390, 768, 801, 1024 and 1280 CSS-pixel widths for both Dashboard and Register page-level overflow. Horizontal scrolling remains allowed inside purpose-built containers such as the mobile navigation and register table wrapper.
+PR #49 adds regression coverage at 320, 360, 390, 768, 801, 1024 and 1280 CSS-pixel widths for both Dashboard and Register page-level overflow. Horizontal scrolling remains allowed inside purpose-built containers such as the mobile navigation and register table wrapper.
 
 Mobile navigation controls now have a minimum 44px height. Browser E2E checks the target height at mobile widths and verifies that keyboard navigation exposes the shared 3px focus indicator.
 
