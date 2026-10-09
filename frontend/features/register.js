@@ -59,8 +59,8 @@ export function createRegister({ api, go }) {
     <td>${esc(voucher.vendor)}<div class="cat">${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${voucher.status !== 'ACTIVE' ? ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}` : ''}</div></td>
     <td class="r nw amt"${isIn(voucher) ? ' style="color:var(--ok)"' : ''}>${isIn(voucher) ? '+' : ''}${money(voucher.amount)}</td><td class="nw cat">${esc(nm(voucher.createdBy))}</td>
     <td class="r nw"><button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>
-    ${voucher.receipts.length || (voucher.status === 'ACTIVE' && (can('receiptAny') || voucher.createdBy === S.me.email)) ? `<button class="btn sm" data-act="rec" data-id="${voucher.id}">📎${voucher.receipts.length || ''}</button>` : ''}
-    ${voucher.status === 'ACTIVE' && can('edit') ? `<button class="btn sm" data-act="edit" data-id="${voucher.id}">Edit</button>` : ''}${voucher.status === 'ACTIVE' && can('cancel') ? `<button class="btn sm danger" data-act="cancel" data-id="${voucher.id}">Cancel</button>` : ''}</td></tr>`,
+    ${voucher.receipts.length || (voucher.status === 'ACTIVE' && (can('receiptAny') || voucher.createdBy === S.me.email)) ? `<button class="btn sm" data-act="rec" data-id="${esc(voucher.id)}">📎${voucher.receipts.length || ''}</button>` : ''}
+    ${voucher.status === 'ACTIVE' && can('edit') ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>` : ''}${voucher.status === 'ACTIVE' && can('cancel') ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(voucher.id)}">Cancel</button>` : ''}</td></tr>`,
         )
         .join('') || '<tr><td colspan="6" class="muted">No payments match.</td></tr>';
 
