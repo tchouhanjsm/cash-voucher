@@ -66,6 +66,7 @@ The active application uses HTML template strings for several views. The review 
 
 - Remaining `innerHTML` assignments render structured markup templates, but each interpolation still requires a source-level security review.
 - This audit has not replaced all template rendering with DOM APIs or formally proved all interpolations safe.
+
 ## Browser regression coverage
 
 Added to `test/e2e.py` in this PR:
