@@ -48,3 +48,11 @@ This follow-up batch addresses the screen-level form findings identified during 
 - Browser E2E covers the row error, focus/invalid state, clearing after correction, accessible field names, and remove-row focus/renumber behavior.
 
 This remains a targeted form pass. It does not establish full WCAG conformance, validate every possible server-side error message, or replace real-device and screen-reader evaluation.
+
+
+## Follow-up: HTML rendering sink review
+
+- Clear-only operations for the shared dialog, receipt preview, and receipt viewer now use DOM APIs instead of assigning an empty `innerHTML` string. Navigation checks modal state without reading its markup.
+- The shared `dialog()` body and `head()` extra slots remain trusted, app-authored HTML fragments. Persisted/API/user-controlled values must be escaped in their correct HTML context; untrusted strings must never be passed as whole fragments. This is an explicit review contract, not a sanitizer.
+- Browser E2E now probes a stored HTML payload in the voucher register, printable voucher, and manager edit dialog, checking that it remains text and does not create image/SVG elements or execute an event handler.
+- Complex screens still use template-based `innerHTML` rendering. This is a focused regression pass, not a formal proof of safety or a replacement for reviewing every future interpolation and live Apps Script response.
