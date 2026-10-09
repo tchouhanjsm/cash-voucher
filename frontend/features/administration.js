@@ -18,7 +18,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(
         (vendor) =>
-          `<tr><td>${esc(vendor.name)}</td><td>${esc(vendor.company)}</td><td>${esc(vendor.mobile)}</td><td><span class="badge ${vendor.active ? '' : 'bad'}">${vendor.active ? 'ACTIVE' : 'INACTIVE'}</span></td><td class="r nw"><button class="btn sm" data-act="vedit" data-id="${vendor.id}">Edit</button> <button class="btn sm" data-act="vtog" data-id="${vendor.id}">${vendor.active ? 'Deactivate' : 'Activate'}</button></td></tr>`,
+          `<tr><td>${esc(vendor.name)}</td><td>${esc(vendor.company)}</td><td>${esc(vendor.mobile)}</td><td><span class="badge ${vendor.active ? '' : 'bad'}">${vendor.active ? 'ACTIVE' : 'INACTIVE'}</span></td><td class="r nw"><button class="btn sm" data-act="vedit" data-id="${esc(vendor.id)}">Edit</button> <button class="btn sm" data-act="vtog" data-id="${vendor.id}">${vendor.active ? 'Deactivate' : 'Activate'}</button></td></tr>`,
       )
       .join('') ||
     '<tr><td colspan="5" class="muted">No vendors yet — vendors you pay are also remembered automatically.</td></tr>'
@@ -78,7 +78,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
   <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>${users
     .map(
       (user) =>
-        `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select data-act="urole" data-id="${user.id}" style="min-height:34px;padding:4px">${roles.map((role) => `<option${role === user.role ? ' selected' : ''}>${role}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
+        `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select data-act="urole" data-id="${esc(user.id)}" style="min-height:34px;padding:4px">${roles.map((role) => `<option${role === user.role ? ' selected' : ''}>${role}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
     <td class="r nw"><button class="btn sm" data-act="upin" data-id="${user.id}">Reset PIN</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${user.id}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
     )
     .join('')}</tbody></table></div></div>`;
