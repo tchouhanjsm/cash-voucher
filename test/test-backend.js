@@ -165,6 +165,13 @@ ok(
   backupStatus.state === 'failed' && backupStatus.lastError === 'Drive copy failed',
   'owner backup status reports latest recorded failure',
 );
+delete g.props.BACKUP_LAST_ERROR;
+g.props.BACKUP_LAST_SUCCESS = 'not-a-timestamp';
+backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.state === 'incomplete',
+  'owner backup status does not trust malformed success timestamps',
+);
 delete g.props.BACKUP_LAST_ATTEMPT;
 delete g.props.BACKUP_LAST_SUCCESS;
 delete g.props.BACKUP_LAST_ERROR;
