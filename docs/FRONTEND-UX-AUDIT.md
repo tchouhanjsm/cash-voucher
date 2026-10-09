@@ -56,7 +56,6 @@ This remains a targeted form pass. It does not establish full WCAG conformance, 
 - Browser E2E now probes a stored HTML payload in the voucher register, printable voucher, and manager edit dialog, checking that it remains text and does not create image/SVG elements or execute an event handler.
 - Complex screens still use template-based `innerHTML` rendering. This is a focused regression pass, not a formal proof of safety or a replacement for reviewing every future interpolation and live Apps Script response.
 
-
 ## Follow-up: context-safe DOM rendering and PR batch guard
 
 - Signed-in account labels and navigation buttons are now constructed with DOM APIs and `textContent`; stored account names no longer enter an HTML string.
