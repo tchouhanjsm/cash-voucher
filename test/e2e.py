@@ -224,6 +224,46 @@ with sync_playwright() as p:
         'restoring an already-synced export does not create a duplicate voucher',
     )
 
+    second_page = context.new_page()
+    second_page.goto(URL)
+    second_page.wait_for_selector('#nav button')
+    check(second_page.locator('#nav button').count() == 4, 'second tab shares the staff session')
+
+    context.set_offline(True)
+    page.click('[data-v=new]')
+    page.fill('.rv', 'Multi-tab Vendor')
+    page.fill('.ra', '525')
+    page.click('#nsave')
+    page.wait_for_selector('.ok-panel')
+    check('Saved on this device' in page.inner_text('#nres'), 'multi-tab payment queued locally')
+    second_page.wait_for_function(
+        "document.querySelector('#banner').innerText.includes('1 payment waiting to upload')",
+        timeout=8000,
+    )
+
+    context.set_offline(False)
+    page.wait_for_function(
+        "document.querySelector('#banner').classList.contains('hidden')",
+        timeout=15000,
+    )
+    second_page.wait_for_function(
+        "document.querySelector('#banner').classList.contains('hidden')",
+        timeout=15000,
+    )
+    multi_tab_state = page.evaluate(
+        "() => fetch('/test-status').then((response) => response.json())"
+    )
+    check(
+        multi_tab_state.get('countedCreateRequests') == 1,
+        'two tabs submit one create request for the same queued transaction',
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_timeout(400)
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(400)
+    check(page.locator('#rbody tr').count() == 4, 'multi-tab sync creates exactly one voucher')
+    second_page.close()
+
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
     page.wait_for_selector('#loginForm')
