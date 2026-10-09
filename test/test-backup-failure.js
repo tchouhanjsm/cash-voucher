@@ -142,7 +142,11 @@ assert.equal(state.lockWaits, 1);
 assert.equal(state.lockReleases, 1, 'lock is released after an acquired lock');
 
 state = expectBackupFailure({ failSheetCopy: true }, 'Sheet copy failed');
-assert.equal(state.snapshots[0].trashed, true, 'Sheet-copy failure trashes the incomplete snapshot');
+assert.equal(
+  state.snapshots[0].trashed,
+  true,
+  'Sheet-copy failure trashes the incomplete snapshot',
+);
 assert.equal(state.props.BACKUP_LAST_ERROR, 'Sheet copy failed');
 
 state = expectBackupFailure({ failManifest: true }, 'manifest creation failed');
