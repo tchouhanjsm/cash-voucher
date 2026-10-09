@@ -741,6 +741,23 @@ with sync_playwright() as p:
         ),
         '320px payment entry has no page-level horizontal overflow',
     )
+    check(page.locator('#nsave').inner_text() == 'Save payment', 'payment form uses a clear singular save action')
+    touch_targets = page.locator('#nsave, .seg button[data-act=ntype]').evaluate_all(
+        "elements => elements.map(element => ({label: element.innerText, height: element.getBoundingClientRect().height}))"
+    )
+    check(
+        all(target['height'] >= 44 for target in touch_targets),
+        'payment save and payment/receipt switch targets are at least 44px tall on mobile',
+    )
+    page.click('[data-k=RECEIPT]')
+    check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash-receipt mode uses matching save terminology')
+    page.click('[data-k=PAYMENT]')
+    page.locator('.erow .rv').first.fill('Mobile workflow vendor')
+    page.locator('.erow .ra').first.fill('42')
+    check(page.locator('#nsave').inner_text() == 'Save payment', 'single-entry save label stays singular')
+    page.click('[data-act=addrow]')
+    page.locator('.erow .rv').nth(1).fill('Second workflow vendor')
+    check(page.locator('#nsave').inner_text() == 'Save payments', 'save label reflects multiple entered payments')
     row_layout = page.locator('.erow .top').evaluate(
         """(element) => {
           const vendor = element.querySelector('.rv').getBoundingClientRect();
