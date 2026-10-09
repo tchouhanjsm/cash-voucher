@@ -67,3 +67,21 @@ Phase 22 addresses authentication controls and documentation drift. It does not 
 ## Follow-up: backup status clarity
 
 The owner Settings screen now includes a `🛡️ Backup & recovery` status panel with configuration presence, retention period, last attempt, last recorded success and the latest recorded error. The panel explicitly states that recorded metadata does not prove Drive contents are complete or that a restore will succeed. It is owner-only through the server API permission check; mock E2E covers the visible never-run state. This is an operational status affordance, not the broader visual redesign. Real-device contrast/usability and a live restore drill remain outstanding.
+
+
+## Measured contrast audit — October 2026 (PR #50)
+
+Ratios below are calculated from the current CSS token values and specified UI pairings using the WCAG relative-luminance formula. They are source-based measurements, not a claim that every rendered state or surface has been audited.
+
+| Pairing | Before | WCAG target | Disposition |
+| --- | ---: | ---: | --- |
+| Shared muted text `#596978` on white | 5.65:1 | 4.5:1 for normal text | Pass |
+| Shared muted text `#596978` on page `#f3f5f7` | 5.17:1 | 4.5:1 for normal text | Pass |
+| Error `#b3261e`, success `#1b7a43`, warning `#9a6700` text on white | 6.54:1, 5.37:1, 4.87:1 | 4.5:1 for normal text | Pass |
+| Control border `#c9d1d9` on white | 1.54:1 | 3:1 where the boundary is needed to identify a control | Fix in PR #50 |
+| Focus ring `#725018` on dark brand `#1f3a4d` | 1.62:1 | 3:1 for visible non-text focus indication | Fix in PR #50 |
+| Chart hover accent `#b8862f` on chart track `#eef1f4` | 2.84:1 | 3:1 for meaningful graphical objects | Fix in PR #50 |
+
+PR #50 changes the shared control-border token to `#7b8792`, adds a light focus token `#f3d28a` for keyboard-focused navigation on dark surfaces, and darkens the chart accent to `#9b6b1c`. Browser E2E computes contrast ratios from CSS tokens and asserts the selected text pairings meet 4.5:1 and selected non-text pairings meet 3:1. It also checks focus returns to the receipt trigger when its dialog closes.
+
+This is a targeted token-pair audit. It does not prove conformance for every component, state, browser, or translucent/overlapping surface. Manual review of dialogs, screen-reader announcements, 200%/400% zoom and reflow, reduced motion, real devices and role-specific workflows remains open.
