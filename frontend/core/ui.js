@@ -1,4 +1,5 @@
-import { $, $$ } from './dom.js';
+import { $, $ } from './dom.js';
+import { esc } from './utils.js';
 
 let toastTimer;
 
@@ -33,7 +34,7 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   const modal = $('#modal');
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
-  modal.innerHTML = `<form class="card mcard" autocomplete="off"><h2>${title}</h2>${body}<p class="error" id="mErr"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button class="btn primary">${ok}</button>` : ''}</div></form>`;
+  modal.innerHTML = `<form class="card mcard" autocomplete="off"><h2>${esc(title)}</h2>${body}<p class="error" id="mErr"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button class="btn primary">${esc(ok)}</button>` : ''}</div></form>`;
 
   const form = $('form', modal);
   $('[data-x]', form).onclick = closeModal;
@@ -59,7 +60,7 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
 }
 
 export const head = (title, extra = '') =>
-  `<div class="head"><h1>${title}</h1><div>${extra}</div></div>`;
+  `<div class="head"><h1>${esc(title)}</h1><div>${extra}</div></div>`;
 
 export const refreshBtn = '<button class="btn sm" data-act="refresh">↻ Refresh</button>';
 
