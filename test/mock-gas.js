@@ -148,7 +148,7 @@ function create() {
   vm.createContext(ctx);
   vm.runInContext(
     fs.readFileSync(path.join(__dirname, '../backend/Code.gs'), 'utf8') +
-      '\n;this.__api={setup,doPost,PERMS};',
+      '\n;this.__api={setup,doPost,PERMS,pruneBackups_,backupManifestCsv_};',
     ctx,
   );
   return {
@@ -165,6 +165,8 @@ function create() {
           .getContent(),
       ),
     raw: (contents) => JSON.parse(ctx.__api.doPost({ postData: { contents } }).getContent()),
+    pruneBackups: (root) => ctx.__api.pruneBackups_(root),
+    backupManifestCsv: (rows) => ctx.__api.backupManifestCsv_(rows),
   };
 }
 module.exports = { create };
