@@ -349,6 +349,89 @@ with sync_playwright() as p:
     ]
     check(not real_errors, 'no console errors: ' + '; '.join(real_errors[:3]))
 
+    legacy_entry = {
+        'date': datetime.date.today().isoformat(),
+        'type': 'PAYMENT',
+        'vendor': 'Legacy Migration Vendor',
+        'amount': 321,
+        'category': 'Other',
+        'notes': 'phase 21 migration',
+        'receipts': [],
+    }
+    legacy_json = json.dumps([legacy_entry], separators=(',', ':'))
+    migration_context = browser.new_context()
+    migration_context.add_init_script(
+        script=(
+            "if (!localStorage.getItem('cv.phase21.migrationSeeded')) {"
+            "localStorage.setItem('cv.outbox', "
+            + json.dumps(legacy_json)
+            + ");"
+            "localStorage.setItem('cv.phase21.migrationSeeded', '1');"
+            "}"
+        )
+    )
+    migration_page_a = migration_context.new_page()
+    migration_page_b = migration_context.new_page()
+    migration_page_a.goto(URL, wait_until='commit')
+    migration_page_b.goto(URL, wait_until='domcontentloaded')
+    migration_page_a.wait_for_function(
+        "localStorage.getItem('cv.outbox') === null",
+        timeout=10000,
+    )
+    migration_page_b.wait_for_function(
+        "localStorage.getItem('cv.outbox') === null",
+        timeout=10000,
+    )
+    migrated_records = migration_page_a.evaluate(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const records = await new Promise((resolve, reject) => {
+            const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          db.close();
+          return records.map((record) => ({
+            clientId: record.clientId,
+            status: record.status,
+            vendor: record.entry.vendor,
+            entryClientId: record.entry.clientId,
+          }));
+        }"""
+    )
+    check(len(migrated_records) == 1, 'legacy queue migrated once across two tabs')
+    check(
+        migrated_records[0]['status'] == 'pending'
+        and migrated_records[0]['vendor'] == 'Legacy Migration Vendor'
+        and migrated_records[0]['clientId'] == migrated_records[0]['entryClientId']
+        and migrated_records[0]['clientId'].startswith('legacy-'),
+        'legacy migration persists deterministic client ID and transaction',
+    )
+    migration_context.close()
+
+    corrupt_context = browser.new_context()
+    corrupt_context.add_init_script(
+        "localStorage.setItem('cv.outbox', '{malformed legacy queue');"
+    )
+    corrupt_page = corrupt_context.new_page()
+    corrupt_page.goto(URL, wait_until='domcontentloaded')
+    corrupt_page.wait_for_function(
+        "document.querySelector('#banner').textContent.includes('Existing offline payments could not be migrated.')",
+        timeout=8000,
+    )
+    legacy_after_failure = corrupt_page.evaluate(
+        "() => localStorage.getItem('cv.outbox')"
+    )
+    check(
+        legacy_after_failure == '{malformed legacy queue',
+        'failed legacy migration preserves original localStorage data',
+    )
+    corrupt_context.close()
+
     browser.close()
 
 print(f'e2e: {ok} checks passed, {len(errs)} failed')
