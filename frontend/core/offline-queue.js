@@ -77,13 +77,35 @@ async function requestPersistentStorage_() {
   } catch {}
 }
 
+function stableHash_(value, seed) {
+  let hash = seed >>> 0;
+
+  for (let i = 0; i < value.length; i++) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+
+  return hash.toString(16).padStart(8, '0');
+}
+
+function legacyClientId_(entry, index) {
+  const source = JSON.stringify({ index, entry });
+  const parts = [2166136261, 2246822519, 3266489917, 668265263].map((seed) =>
+    stableHash_(source, seed),
+  );
+
+  return 'legacy-' + parts.join('') + '-' + index;
+}
+
 async function migrateLegacy_(db) {
   let raw;
 
   try {
     raw = localStorage.getItem(LEGACY_KEY);
   } catch {
-    return;
+    throw new Error(
+      'Could not access legacy offline payment storage. Do not clear browser storage.',
+    );
   }
 
   if (!raw) return;
@@ -105,11 +127,38 @@ async function migrateLegacy_(db) {
   }
 
   if (!entries.length) {
-    localStorage.removeItem(LEGACY_KEY);
+    try {
+      localStorage.removeItem(LEGACY_KEY);
+    } catch {
+      throw new Error(
+        'The empty legacy offline queue could not be cleared. Do not clear browser storage.',
+      );
+    }
     return;
   }
 
-  const normalizedEntries = entries.map((entry, index) => normalizeEntry_(entry, index).entry);
+  const normalizedEntries = entries.map((entry, index) => {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw new Error(
+        'Existing offline payments contain invalid data. Do not clear browser storage.',
+      );
+    }
+
+    const existingId = String(entry.clientId || '').trim();
+    const clientId = existingId || legacyClientId_(entry, index);
+
+    return { ...entry, clientId };
+  });
+  const seen = new Set();
+
+  normalizedEntries.forEach((entry) => {
+    if (seen.has(entry.clientId)) {
+      throw new Error(
+        'Existing offline payments contain duplicate client IDs. Do not clear browser storage.',
+      );
+    }
+    seen.add(entry.clientId);
+  });
 
   try {
     localStorage.setItem(LEGACY_KEY, JSON.stringify(normalizedEntries));
@@ -119,36 +168,61 @@ async function migrateLegacy_(db) {
     );
   }
 
+  const records = normalizedEntries.map((entry, index) => normalizeEntry_(entry, index));
+
   await new Promise((resolve, reject) => {
     const transaction = db.transaction(STORE, 'readwrite');
     const store = transaction.objectStore(STORE);
+    let failure;
 
     transaction.oncomplete = resolve;
     transaction.onerror = () =>
-      reject(transaction.error || new Error('Could not migrate offline payments.'));
+      reject(failure || transaction.error || new Error('Could not migrate offline payments.'));
     transaction.onabort = () =>
-      reject(transaction.error || new Error('Could not migrate offline payments.'));
+      reject(failure || transaction.error || new Error('Could not migrate offline payments.'));
 
-    try {
-      const seen = new Set();
+    const request = store.getAll();
 
-      normalizedEntries.forEach((entry, index) => {
-        const record = normalizeEntry_(entry, index);
+    request.onerror = () => {
+      failure = request.error || new Error('Could not inspect offline payments for migration.');
+    };
 
-        if (seen.has(record.clientId)) {
-          throw new Error('Existing offline payments contain duplicate client IDs.');
+    request.onsuccess = () => {
+      const existing = new Map(request.result.map((record) => [record.clientId, record]));
+
+      for (const record of records) {
+        const previous = existing.get(record.clientId);
+
+        if (previous) {
+          if (!sameEntry_(previous.entry, record.entry)) {
+            failure = new Error(
+              'A legacy payment ID exists with different details. Do not clear browser storage.',
+            );
+            transaction.abort();
+            return;
+          }
+          continue;
         }
 
-        seen.add(record.clientId);
-        store.put(record);
-      });
-    } catch (error) {
-      transaction.abort();
-      reject(error);
-    }
+        existing.set(record.clientId, record);
+        try {
+          store.add(record);
+        } catch (error) {
+          failure = error;
+          transaction.abort();
+          return;
+        }
+      }
+    };
   });
 
-  localStorage.removeItem(LEGACY_KEY);
+  try {
+    localStorage.removeItem(LEGACY_KEY);
+  } catch {
+    throw new Error(
+      'Payments were copied into browser storage, but the legacy copy could not be removed. Do not clear browser storage.',
+    );
+  }
 }
 
 dbPromise = openDb_();
