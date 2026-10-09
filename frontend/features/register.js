@@ -269,7 +269,11 @@ export function createRegister({ api, go }) {
 
         // Receipt data comes from the API; allow only base64-encoded raster images.
         // Build the element with DOM APIs so the value never enters an HTML attribute.
-        if (!/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
+        if (
+          !/^data:image\/(?:jpeg|png|webp|gif);base64,[A-Za-z0-9+/]+={0,2}$/.test(
+            dataUrl,
+          )
+        ) {
           throw new Error('Receipt image response was not a supported image.');
         }
 
