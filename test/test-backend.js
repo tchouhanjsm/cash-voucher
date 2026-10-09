@@ -79,7 +79,8 @@ g.recordBackupFailure(
   new Error('receipt copy failed'),
 );
 ok(
-  incompleteSnapshotTrashed && failureProperties.BACKUP_LAST_ERROR === 'receipt copy failed',
+  incompleteSnapshotTrashed &&
+    failureProperties.BACKUP_LAST_ERROR === 'receipt copy failed',
   'failed partial backup is trashed and the original error is recorded',
 );
 let completeSnapshotTrashed = false;
