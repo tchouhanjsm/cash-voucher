@@ -98,11 +98,11 @@ Fix findings introduced by the batch. Record remaining risk and what could not b
 A batch is ready for owner review only when:
 
 1. The PR body has outcome, acceptance criteria, verification, security/failure review, release boundary and residual risks.
-3. The quality workflow passes on the exact current head SHA.
-4. Browser E2E passes for changed browser behavior; relevant tests are added for regressions.
-5. The exact diff and changed-file list have been reviewed after the final commit.
-6. Each reported result is backed by a workflow run, command output or clearly labeled static review. Pending, skipped and unverified checks are not described as passed.
-7. The handoff is recorded in `docs/pr-handoffs/PR-<number>.md`, `docs/HANDOFF.md` is current, and neither makes unsupported claims about deployment or production readiness.
+2. The quality workflow passes on the exact current head SHA.
+3. Browser E2E passes for changed browser behavior; relevant tests are added for regressions.
+4. The exact diff and changed-file list have been reviewed after the final commit.
+5. Each reported result is backed by a workflow run, command output or clearly labeled static review. Pending, skipped and unverified checks are not described as passed.
+6. The handoff is recorded in `docs/pr-handoffs/PR-<number>.md`, `docs/HANDOFF.md` is current, and neither makes unsupported claims about deployment or production readiness.
 
 The PR workflow quality gate enforces required handoff sections. It is an additional guardrail, not a substitute for code review, behavioral tests or human approval.
 
