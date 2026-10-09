@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-09  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA:** `dd70819f02c564ad4df433e27342d7a53dd004b6`  
+**Verified main SHA:** `c9ccc829076b9d461372cd6a2959342286cc04a4`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -17,7 +17,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #47 is closed without merge to avoid stacking; its formatting correction was included in #46.
 - PR #48 is merged into `main` (merge commit `49142bd92eb3ef45a0dee70610d874612c40523a`); its contrast/financial readability foundation passed CI and 75 Browser E2E checks.
 - PR #49 merged on 9 October 2026 (merge commit `dd70819f02c564ad4df433e27342d7a53dd004b6`). Its Browser E2E passed 93 checks; use the live PR description for exact CI evidence.
-- PR #50 is the only active review target: [measured contrast and dialog keyboard accessibility](https://github.com/tchouhanjsm/cash-voucher/pull/50), branch `ui/contrast-dialog-accessibility`.
+- PR #50 merged on 9 October 2026 (merge commit `c9ccc829076b9d461372cd6a2959342286cc04a4`); it adds a 19-pair contrast check and dialog Escape/focus-return handling. The live PR records the exact-head CI/E2E evidence.
 - No Apps Script production deployment, live backup/restore, or production-data operation has been performed.
 
 ## Process decisions
@@ -28,16 +28,16 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #50
+## Current batch: PR #52
 
-Scope: audit 19 source-token color pairs, fix warning/chart contrast, add a dependency-free contrast check to CI, and improve dialog Escape/focus behavior with Browser E2E coverage. No backend/API, permission, voucher schema, or accounting semantics changed.
+Scope: isolate the background app from keyboard/screen-reader interaction while a modal is open, and extend browser regression coverage for focus cycling and Escape behavior. No backend/API, permission, voucher schema, or accounting semantics change.
 
 Next steps:
 
-1. Verify CI and Browser E2E on the exact live PR #50 head.
+1. Verify CI and Browser E2E on the exact live PR #52 head.
 2. If either fails, diagnose and fix on the same branch; do not create a stacked PR.
-3. Review the complete final diff and exact-head evidence; leave PR #50 for owner review/merge.
-4. Next phase after merge: perform the manual screen-reader/keyboard and zoom/reflow review, then prioritize one-thumb mobile task flows from the findings.
+3. Leave PR #52 for owner review/merge; owner controls merge and deployment.
+4. After merge, continue with zoom/reflow and reduced-motion review, then prioritize one-thumb mobile task flows. Real screen-reader review still requires manual assistive-technology testing.
 
 ## Operational gates still open
 
