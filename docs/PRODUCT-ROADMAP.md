@@ -60,24 +60,17 @@ The repository is public. This review did not perform a general Git object/secre
 
 Exit gate: exact PR CI and browser workflow pass; code-review findings are accurately labeled; no production deploy. This phase must be reviewed and merged by the owner before the next phase starts.
 
-### P1 — Daily cash close and physical reconciliation (Phase 23 design)
+### P1 — Daily cash close and physical reconciliation (Phases 23–24 design gates)
 
-**Status:** design proposal only; no close workflow is implemented. Phase 23 records the current source constraints, candidate business rules, failure cases and owner decisions required before a money-affecting implementation. See `docs/DAILY-CASH-CLOSE-DESIGN.md`.
+**Status:** design-only; no close workflow is implemented. Phase 23 documented the close workflow and open business decisions. Phase 24 refines cash-versus-bank semantics and documents why existing voucher type/category values cannot reliably establish physical-cash movement. See `docs/DAILY-CASH-CLOSE-DESIGN.md`.
 
-Current source has a single global `Settings.openingBalance`, active/cancelled voucher statuses, separate PAYMENT/RECEIPT types, editable active vouchers, and best-effort audit events. It does not have dated opening balances, close records, close-state enforcement or a correction ledger. The dashboard's cash-in-hand figure uses the global opening balance plus all active receipts minus all active payments; it is not a daily reconciliation report.
+Current source has a global `Settings.openingBalance`, active/cancelled voucher statuses, separate PAYMENT/RECEIPT types, editable active vouchers, and best-effort audit events. The Vouchers schema has no settlement method or physical-cash-impact field. Receipt categories include `Bank Withdrawal`, `Owner Deposit`, `Guest Advance`, and `Refund Received`; payment categories include `Bank Charges` and `Guest Refund`. These labels do not prove physical cash entering or leaving the drawer. Dashboard “cash in hand” is global opening balance + active receipts − active payments, not daily physical-cash reconciliation.
 
-The design must settle these points before schema/API changes:
+The refined proposal uses an explicit per-voucher cash-impact concept: `CASH_IN`, `CASH_OUT`, `NO_CASH`, or `UNCLASSIFIED`. This is not an existing field or approved schema. Category names must not be used as silent classification heuristics; the same category can be cash or non-cash depending on settlement. Existing vouchers have no classification and need an owner-approved resolution policy.
 
-- how a business day's opening cash is established and carried forward;
-- whether one property has one drawer or multiple drawers/shifts;
-- how Bank Withdrawal, Owner Deposit, bank deposits/transfers and other categories affect physical cash;
-- how backdated entries and cancellation/edit after close are handled;
-- how device-local offline entries are surfaced and reconciled before a close;
-- whether denomination rows are needed, and who may close/reopen/correct a close.
+Candidate expected physical cash = opening physical cash + classified CASH_IN amounts − classified CASH_OUT amounts. NO_CASH vouchers have no drawer effect but may affect bank balances or other financial reporting. Recommendation: block final close while active in-period vouchers remain UNCLASSIFIED, unless the owner explicitly approves a visibly provisional exception policy.
 
-Candidate calculation for review: expected physical cash = approved opening cash + active cash receipts in the selected close period − active cash payments in that period, with every included voucher drillable from the report. A non-zero variance should require an explanation. Any post-close correction should be a separate, attributable event rather than a silent rewrite. These are proposed rules, not implemented behavior or owner-approved policy.
-
-Exit gate: owner reviews the business-rule/decision table and accepts the MVP boundary before an implementation PR. No schema migration, approval/sign-off workflow, day lock, Apps Script deployment or production-data change is included in the design PR.
+**Exit gate:** owner accepts the cash-impact vocabulary, historical-data policy, category semantics, and close-period/correction rules before product-code or schema changes. Phase 24 changes documentation only; no product code, API, Sheet schema, deployment, or production data is changed.
 
 ### P2 — Approval and exception controls
 
