@@ -125,5 +125,4 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **PR #53 merged:** narrow payment-entry reflow and reduced-motion browser coverage is integrated in merge commit `a6bb1ace7547114c9c8072dd7359ca901387980d`. Next focused batch (PR #54) distinguishes register filters with no matches from an empty/unavailable register and provides an accessible clear-filters action.
 
-
 **PR #54 merged:** register empty-state messaging and filter recovery are integrated in merge commit `a87c1d90405b1e7cd1097c6328668f91f8cc9af4`; CI and 103 Browser E2E checks passed. **Next batch (PR #55):** visible refresh progress/error recovery and retryable receipt loading failures, without changing accounting or authorization behavior.
