@@ -108,6 +108,10 @@ with sync_playwright() as p:
         image_file.write(png)
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_selector('.thumb')
+    check(
+        page.locator('.thumb').first.get_attribute('src').startswith('blob:'),
+        'receipt preview source is assigned as a generated blob URL',
+    )
     page.press('.ra', 'Enter')
     check(page.locator('.erow').count() == 2, 'enter adds row')
     page.locator('.rv').nth(1).fill('Shiv Gas')
