@@ -139,30 +139,29 @@ This phase changes documentation only. Rollback is a normal reviewed revert of t
 
 **Owner gate:** review the decision table and approve the MVP accounting/operational rules before a separate implementation phase is opened.
 
-## 10. Cash-versus-bank semantics — Phase 24 design refinement
+## 12. Cash-versus-bank semantics — Phase 24 design refinement
 
 ### Current-source facts
 
 The voucher schema records `Type` (`PAYMENT` or `RECEIPT`), `Category`, `Date`, `Amount`, `Status`, and other metadata. It does **not** record a settlement method, bank account, or explicit physical-cash effect.
 
-Default receipt categories include `Room Revenue`, `Restaurant`, `Guest Advance`, `Bank Withdrawal`, `Refund Received`, `Owner Deposit`, and `Other`. Payment categories include `Bank Charges`, `Guest Refund`, `Vendor Payment`, and others. Categories are configurable. These labels describe business context; they do not prove whether notes/coins entered or left the drawer.
+Default receipt categories include `Room Revenue`, `Restaurant`, `Guest Advance`, `Bank Withdrawal`, `Refund Received`, `Owner Deposit`, and `Other`. Payment categories include `Bank Charges`, `Guest Refund`, `Vendor Payment`, and others. Categories are configurable. These labels describe business context; they do not prove whether notes or coins entered or left the drawer.
 
 Therefore:
+
 - `PAYMENT` / `RECEIPT` is not sufficient to determine physical-cash direction.
-- The same category may be settled in cash or through UPI/card/bank transfer.
-- Do not use category-name heuristics to calculate physical cash.
-- Existing vouchers have no reliable cash-impact classification; do not silently infer one from their category or type.
+- The same category may be settled in cash or through UPI, card, or bank transfer.
+- Category-name heuristics must not calculate physical cash.
+- Existing vouchers have no reliable cash-impact classification. Do not silently infer one from category or voucher type.
 
 ### Proposed cash-impact vocabulary
 
-| Value          | Meaning                                                        | Drawer calculation                                                                |
-| -------------- | -------------------------------------------------------------- | --------------------------------------------------------------------------------- |
-| `CASH_IN`      | Physical notes/coins actually enter the drawer                 | Add amount                                                                        |
-| `CASH_OUT`     | Physical notes/coins actually leave the drawer                 | Subtract amount                                                                   |
-| `NO_CASH`      | Voucher records a transaction without physical drawer movement | No drawer effect                                                                  |
-| `UNCLASSIFIED` | Cash impact is not yet established                             | Resolve or apply an explicitly owner-approved exception policy before final close |
+- `CASH_IN`: physical notes or coins actually enter the drawer; add the amount.
+- `CASH_OUT`: physical notes or coins actually leave the drawer; subtract the amount.
+- `NO_CASH`: a transaction occurs without physical drawer movement; it has no drawer effect.
+- `UNCLASSIFIED`: physical-cash impact is not established; resolve it or apply an explicitly owner-approved exception policy before final close.
 
-This is a proposed data concept, not an existing field or approved schema. How it is stored—on the voucher or in a separately governed movement record—must be reviewed before implementation.
+This is a proposed data concept, not an existing field or approved schema. Whether it belongs on a voucher or in a separately governed movement record must be reviewed before implementation.
 
 Candidate calculation:
 
@@ -170,45 +169,41 @@ Candidate calculation:
 
 `Variance = counted physical cash - expected physical cash`
 
-Only active, in-period vouchers with resolved cash impact contribute. Cancelled vouchers remain visible in history but do not contribute to expected cash. The report must show included and unresolved voucher IDs so totals are traceable.
+Only active, in-period vouchers with resolved cash impact contribute. Cancelled vouchers remain visible in history but do not contribute to expected cash. The report must show included and unresolved voucher IDs so totals remain traceable.
 
 ### Examples — illustrative, not automatic category mappings
 
-| Example of actual event                                     | Drawer impact | Reason                                                 |
-| ----------------------------------------------------------- | ------------- | ------------------------------------------------------ |
-| Room/restaurant revenue received as cash                    | `CASH_IN`     | The same category can also be paid digitally           |
-| Guest advance received in cash                              | `CASH_IN`     | A digital transfer does not enter the drawer           |
-| Bank withdrawal where cash is collected into the drawer     | `CASH_IN`     | A bank-to-bank transfer is not drawer cash             |
-| Owner contributes physical cash                             | `CASH_IN`     | An owner bank transfer is not physical cash            |
-| Vendor expense paid from the drawer                         | `CASH_OUT`    | The same category may be paid from a bank account      |
-| Guest refund paid in cash                                   | `CASH_OUT`    | A digital refund does not leave the drawer             |
-| Notes/coins deposited from the drawer into the bank         | `CASH_OUT`    | A cash transfer, not an operating expense              |
-| Bank charges paid from the bank account                     | `NO_CASH`     | Bank balance changes, drawer does not                  |
-| Room revenue received only by UPI/card/bank                 | `NO_CASH`     | Non-cash funds increase, drawer does not               |
-| “Bank Withdrawal” without physical cash entering the drawer | `NO_CASH`     | The category name does not prove a physical withdrawal |
+- Room or restaurant revenue received as physical cash: `CASH_IN`. The same category settled digitally has no drawer impact.
+- Guest advance received in cash: `CASH_IN`. A digital transfer does not enter the drawer.
+- Bank withdrawal where physical cash is collected into the drawer: `CASH_IN`. A bank-to-bank transfer is not drawer cash.
+- Owner contribution in physical cash: `CASH_IN`. An owner bank transfer is not physical cash.
+- Vendor expense or guest refund paid from the drawer: `CASH_OUT`. The same category paid digitally does not reduce drawer cash.
+- Notes or coins deposited from the drawer into the bank: `CASH_OUT`. This is a cash transfer, not an operating expense.
+- Bank charges paid from the bank account, or room revenue received only by UPI, card, or bank transfer: `NO_CASH`.
+- A `Bank Withdrawal` category without physical cash entering the drawer: `NO_CASH`.
 
-These examples classify the actual physical event. They must not become automatic mappings based on category names: `Bank Withdrawal`, `Owner Deposit`, `Guest Advance`, `Guest Refund`, `Bank Charges`, and `Other` can have different cash impacts depending on settlement.
+These examples classify the actual physical event. They must not become automatic mappings by category name: `Bank Withdrawal`, `Owner Deposit`, `Guest Advance`, `Guest Refund`, `Bank Charges`, and `Other` can have different cash impacts depending on settlement.
 
 ### Existing vouchers and migration boundary
 
-Before implementation, choose a policy for active historical vouchers that have no cash-impact value:
+Before implementation, choose a policy for active historical vouchers without a cash-impact value:
 
 1. **Resolve on close:** list unclassified vouchers and require an authorized user to classify them before finalizing the period.
-2. **One-time historical review:** build a separately reviewed migration/reconciliation path with attribution and correction support.
+2. **One-time historical review:** build a separately reviewed migration and reconciliation path with attribution and correction support.
 3. **Provisional exception:** allow a visibly provisional close while unresolved items remain, but never call it fully reconciled.
 
 **Recommendation:** do not backfill from category labels. Block a final close while active in-period vouchers remain `UNCLASSIFIED`; provide a deliberate resolution path. If an exception is needed, it must remain visibly provisional. This recommendation is not owner-approved policy.
 
 ### Decisions required before any product-code PR
 
-- Approve/revise the four-state vocabulary.
-- Decide whether users classify impact at voucher creation/edit, during close review, or both.
+- Approve or revise the four-state vocabulary.
+- Decide whether users classify impact during voucher creation/edit, during close review, or both.
 - Decide whether classification is mandatory for new vouchers or enforced at close.
 - Decide historical-voucher treatment and whether a one-time backfill is needed.
-- Decide which roles can set/change the classification and whether changes require a reason and audit record.
-- Define `NO_CASH` as “no physical drawer movement” only; bank/accounting reporting remains a separate concern.
+- Decide which roles can set or change classification and whether changes require a reason and audit record.
+- Define `NO_CASH` as “no physical drawer movement” only; bank/accounting reporting is a separate concern.
 - Decide whether category defaults are suggestions only or enforced rules. They must never override explicit transaction-level classification.
-- Decide whether unresolved vouchers or pending offline vouchers block a final close or permit an explicitly provisional close.
+- Decide whether unresolved vouchers or pending offline vouchers block final close or permit an explicitly provisional close.
 
 ### Future implementation acceptance criteria
 
@@ -216,6 +211,6 @@ Before implementation, choose a policy for active historical vouchers that have 
 - UI copy explains that `NO_CASH` means no drawer movement, not “no financial impact”.
 - Every active voucher in the period is classified or appears in an unresolved list.
 - Tests cover cash and non-cash settlement within the same category, bank withdrawal into cash, cash deposit into bank, cancellations, edits/backdating, concurrent/retried closes, and voucher-to-total traceability.
-- Schema/migration/rollback and backup/restore behavior for existing rows are documented before adding fields or records.
+- Schema, migration, rollback, and backup/restore behavior for existing rows are documented before adding fields or records.
 
 This Phase 24 refinement is documentation-only: no product code, API, Sheet schema, or production data changes.
