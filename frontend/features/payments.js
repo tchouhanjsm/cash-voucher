@@ -82,11 +82,25 @@ export function createPayments({ api, refresh }) {
       }
     }
 
-    $('.rp', row).innerHTML =
-      row._rec.map((r) => `<img class="thumb" src="${r.preview}" alt="receipt">`).join('') +
-      (row._rec.length
-        ? ` <button type="button" class="btn sm" data-act="clrrec">Clear</button>`
-        : '');
+    const preview = $('.rp', row);
+    preview.replaceChildren();
+
+    row._rec.forEach((receipt) => {
+      const image = document.createElement('img');
+      image.className = 'thumb';
+      image.alt = 'receipt';
+      image.src = receipt.preview;
+      preview.appendChild(image);
+    });
+
+    if (row._rec.length) {
+      const clear = document.createElement('button');
+      clear.type = 'button';
+      clear.className = 'btn sm';
+      clear.dataset.act = 'clrrec';
+      clear.textContent = 'Clear';
+      preview.append(' ', clear);
+    }
   });
 
   document.addEventListener('keydown', (e) => {

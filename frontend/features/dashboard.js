@@ -146,7 +146,7 @@ export function createDashboard() {
         `<button data-act="range" data-k="${key}" class="${D.r === key ? 'on' : ''}">${label}</button>`,
     )
     .join('')}</div>
-  ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${D.from || from}"></label><label>To<input type="date" id="dTo" value="${D.to || to}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
+  ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
   <div class="stats">
     <div class="card stat"><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
     <div class="card stat"><span>Vouchers</span><b>${current.length}</b><small class="muted">avg ${money(current.length ? total / current.length : 0)}</small></div>
