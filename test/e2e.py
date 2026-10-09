@@ -654,6 +654,59 @@ with sync_playwright() as p:
         )
         check(not page_overflow, f'{width}px register has no page-level horizontal overflow')
 
+    # Exercise the payment-entry workflow at the narrow reflow width used for 400% zoom.
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.set_viewport_size({'width': 320, 'height': 800})
+    check(
+        not page.evaluate(
+            'document.documentElement.scrollWidth > document.documentElement.clientWidth'
+        ),
+        '320px payment entry has no page-level horizontal overflow',
+    )
+    row_layout = page.locator('.erow .top').evaluate(
+        """(element) => {
+          const vendor = element.querySelector('.rv').getBoundingClientRect();
+          const amount = element.querySelector('.ra').getBoundingClientRect();
+          const remove = element.querySelector('.x').getBoundingClientRect();
+          return {
+            columns: getComputedStyle(element).gridTemplateColumns.split(' ').length,
+            vendorWidth: vendor.width,
+            amountTop: amount.top,
+            vendorBottom: vendor.bottom,
+            amountRight: amount.right,
+            removeLeft: remove.left,
+            removeWidth: remove.width,
+            removeHeight: remove.height,
+            viewportWidth: document.documentElement.clientWidth,
+          };
+        }"""
+    )
+    check(
+        row_layout['columns'] == 2
+        and row_layout['vendorWidth'] > 0
+        and row_layout['amountTop'] >= row_layout['vendorBottom']
+        and row_layout['amountRight'] <= row_layout['removeLeft']
+        and row_layout['removeWidth'] >= 44
+        and row_layout['removeHeight'] >= 44
+        and row_layout['removeLeft'] + row_layout['removeWidth'] <= row_layout['viewportWidth'],
+        'narrow payment rows reflow fields and preserve a 44px remove target',
+    )
+
+    page.emulate_media(reduced_motion='reduce')
+    motion = page.locator('#nsave').evaluate(
+        """(element) => ({
+          preferred: matchMedia('(prefers-reduced-motion: reduce)').matches,
+          transition: Number.parseFloat(getComputedStyle(element).transitionDuration),
+          animation: Number.parseFloat(getComputedStyle(element).animationDuration),
+        })"""
+    )
+    check(
+        motion['preferred'] and motion['transition'] <= 0.0001 and motion['animation'] <= 0.0001,
+        'reduced-motion preference minimizes transition and animation durations',
+    )
+    page.emulate_media(reduced_motion='no-preference')
+
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.click('[data-v=dash]')
     page.wait_for_selector('.two')
