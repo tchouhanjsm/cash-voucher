@@ -235,7 +235,7 @@ export function createRegister({ api, go }) {
 
       if (!voucher.receipts.length) return;
 
-      box.innerHTML = '';
+      box.replaceChildren();
 
       for (const fileId of voucher.receipts) {
         try {
