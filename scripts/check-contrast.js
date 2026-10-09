@@ -174,10 +174,7 @@ for (const check of checks) {
     const passed = ratio >= check.minimum;
     const status = passed ? 'PASS' : 'FAIL';
 
-    console.log(
-      `${status} ${check.name}: ${ratio.toFixed(2)}:1 ` +
-        `(minimum ${check.minimum}:1)`,
-    );
+    console.log(`${status} ${check.name}: ${ratio.toFixed(2)}:1 ` + `(minimum ${check.minimum}:1)`);
 
     if (!passed) failures += 1;
   } catch (error) {
