@@ -248,7 +248,7 @@ function backupDataWithServices_(services) {
     return { folderId: snapshot.getId(), receiptCount: copied.length };
   } catch (e) {
     if (p) {
-      recordBackupFailure_(p, snapshot, snapshotComplete, e);
+      recordBackupFailure_(p, snapshot, snapshotComplete, e, services.logger);
     } else {
       services.logger(
         'Could not record backup failure metadata: ' +
@@ -258,6 +258,40 @@ function backupDataWithServices_(services) {
     throw e;
   } finally {
     if (lockAcquired) lock.releaseLock();
+  }
+}
+function recordBackupFailure_(p, snapshot, snapshotComplete, error, logger) {
+  const log = logger || function (message) {
+    Logger.log(message);
+  };
+  let failureMessage = String(error && error.message ? error.message : error);
+  if (snapshot && !snapshotComplete) {
+    const cleanupMessage = trashIncompleteBackup_(snapshot);
+    if (cleanupMessage) {
+      const cleanupNote = cleanupMessage.slice(0, 120);
+      failureMessage =
+        failureMessage.slice(0, Math.max(0, 300 - cleanupNote.length)) + cleanupNote;
+    }
+  }
+  try {
+    p.setProperty('BACKUP_LAST_ERROR', failureMessage.slice(0, 300));
+  } catch (metadataError) {
+    log(
+      'Could not record backup failure metadata: ' +
+        String(metadataError && metadataError.message ? metadataError.message : metadataError),
+    );
+  }
+}
+function trashIncompleteBackup_(snapshot) {
+  if (!snapshot) return '';
+  try {
+    snapshot.setTrashed(true);
+    return '';
+  } catch (cleanupError) {
+    return (
+      '; incomplete snapshot cleanup failed: ' +
+        String(cleanupError && cleanupError.message ? cleanupError.message : cleanupError)
+    );
   }
 }
 function backupStatus_(user) {
