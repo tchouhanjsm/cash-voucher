@@ -145,9 +145,7 @@ async function migrateLegacy_(db) {
     }
 
     const existingId = String(entry.clientId || '').trim();
-    const clientId = existingId
-      ? validateClientId_(existingId)
-      : legacyClientId_(entry, index);
+    const clientId = existingId ? validateClientId_(existingId) : legacyClientId_(entry, index);
 
     return { ...entry, clientId };
   });
@@ -179,13 +177,9 @@ async function migrateLegacy_(db) {
 
     transaction.oncomplete = resolve;
     transaction.onerror = () =>
-      reject(
-        failure || transaction.error || new Error('Could not migrate offline payments.'),
-      );
+      reject(failure || transaction.error || new Error('Could not migrate offline payments.'));
     transaction.onabort = () =>
-      reject(
-        failure || transaction.error || new Error('Could not migrate offline payments.'),
-      );
+      reject(failure || transaction.error || new Error('Could not migrate offline payments.'));
 
     const request = store.getAll();
 
@@ -288,13 +282,9 @@ function addRecordsSafely_(incoming) {
 
         transaction.oncomplete = () => resolve(result);
         transaction.onerror = () =>
-          reject(
-            failure || transaction.error || new Error('Offline storage transaction failed.'),
-          );
+          reject(failure || transaction.error || new Error('Offline storage transaction failed.'));
         transaction.onabort = () =>
-          reject(
-            failure || transaction.error || new Error('Offline storage transaction aborted.'),
-          );
+          reject(failure || transaction.error || new Error('Offline storage transaction aborted.'));
 
         const request = store.getAll();
 
