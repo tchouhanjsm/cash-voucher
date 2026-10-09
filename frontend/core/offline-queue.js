@@ -165,7 +165,14 @@ export async function ready() {
 function validateClientId_(value) {
   const clientId = String(value || '').trim();
 
-  if (!clientId || clientId.length > 60 || /[\\u0000-\\u001f\\u007f]/.test(clientId)) {
+  if (
+    !clientId ||
+    clientId.length > 60 ||
+    [...clientId].some((character) => {
+      const code = character.charCodeAt(0);
+      return code <= 31 || code === 127;
+    })
+  ) {
     throw new Error('Recovery file contains an invalid payment ID.');
   }
 
