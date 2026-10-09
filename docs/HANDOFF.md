@@ -32,6 +32,8 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 
 Scope: isolate the background app from keyboard/screen-reader interaction while a modal is open, and extend browser regression coverage for focus cycling and Escape behavior. No backend/API, permission, voucher schema, or accounting semantics change.
 
+**Active PR head:** `e5498ebffa67e60d254421e00153401a65a3638f` (fresh CI and Browser E2E results are linked from PR #52).
+
 Next steps:
 
 1. Verify CI and Browser E2E on the exact live PR #52 head.
