@@ -566,9 +566,7 @@ with sync_playwright() as p:
     page.keyboard.press('Escape')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
     check(
-        page.evaluate(
-            "document.activeElement === document.querySelector('[data-focus-restore-probe=\\"edit-dialog-trigger\\"]')"
-        ),
+        page.evaluate("document.activeElement?.dataset.focusRestoreProbe === 'edit-dialog-trigger'"),
         'Escape closes an idle dialog and restores focus to its opener',
     )
     edit_trigger.evaluate("(element) => element.removeAttribute('data-focus-restore-probe')")
