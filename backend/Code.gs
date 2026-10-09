@@ -236,7 +236,12 @@ function backupData_() {
 function recordBackupFailure_(p, snapshot, snapshotComplete, error) {
   let failureMessage = String(error && error.message ? error.message : error);
   if (snapshot && !snapshotComplete) {
-    failureMessage += trashIncompleteBackup_(snapshot);
+    const cleanupMessage = trashIncompleteBackup_(snapshot);
+    if (cleanupMessage) {
+      const cleanupNote = cleanupMessage.slice(0, 120);
+      failureMessage =
+        failureMessage.slice(0, Math.max(0, 300 - cleanupNote.length)) + cleanupNote;
+    }
   }
   try {
     p.setProperty('BACKUP_LAST_ERROR', failureMessage.slice(0, 300));
