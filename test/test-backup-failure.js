@@ -54,4 +54,17 @@ assert.match(properties.BACKUP_LAST_ERROR, /Drive permission denied/);
 g.recordBackupFailure(properties, null, false, new Error('x'.repeat(500)));
 assert.strictEqual(properties.BACKUP_LAST_ERROR.length, 300);
 
+g.recordBackupFailure(
+  properties,
+  {
+    setTrashed() {
+      throw new Error('Drive permission denied');
+    },
+  },
+  false,
+  new Error('x'.repeat(500)),
+);
+assert.strictEqual(properties.BACKUP_LAST_ERROR.length, 300);
+assert.match(properties.BACKUP_LAST_ERROR, /incomplete snapshot cleanup failed/);
+
 console.log('Backup failure handling OK — partial cleanup, complete snapshot preservation, error reporting and bounds.');
