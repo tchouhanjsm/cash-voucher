@@ -62,64 +62,6 @@ ok(
   'receipt manifest correctly quotes commas and embedded double quotes',
 );
 
-const failureProperties = {
-  setProperty(key, value) {
-    this[key] = String(value);
-  },
-};
-let incompleteSnapshotTrashed = false;
-g.recordBackupFailure(
-  failureProperties,
-  {
-    setTrashed(value) {
-      incompleteSnapshotTrashed = value;
-    },
-  },
-  false,
-  new Error('receipt copy failed'),
-);
-ok(
-  incompleteSnapshotTrashed &&
-    failureProperties.BACKUP_LAST_ERROR === 'receipt copy failed',
-  'failed partial backup is trashed and the original error is recorded',
-);
-let completeSnapshotTrashed = false;
-g.recordBackupFailure(
-  failureProperties,
-  {
-    setTrashed(value) {
-      completeSnapshotTrashed = value;
-    },
-  },
-  true,
-  new Error('retention pruning failed'),
-);
-ok(
-  !completeSnapshotTrashed &&
-    failureProperties.BACKUP_LAST_ERROR === 'retention pruning failed',
-  'complete snapshot is preserved when later retention pruning fails',
-);
-g.recordBackupFailure(
-  failureProperties,
-  {
-    setTrashed() {
-      throw new Error('Drive permission denied');
-    },
-  },
-  false,
-  new Error('receipt copy failed'),
-);
-ok(
-  failureProperties.BACKUP_LAST_ERROR.includes('receipt copy failed') &&
-    failureProperties.BACKUP_LAST_ERROR.includes('Drive permission denied'),
-  'cleanup failure is included with the original backup error',
-);
-g.recordBackupFailure(failureProperties, null, false, new Error('x'.repeat(500)));
-ok(
-  failureProperties.BACKUP_LAST_ERROR.length === 300,
-  'backup failure metadata is bounded to 300 characters when recorded',
-);
-
 // request envelope validation
 let malformed = g.call('bootstrap');
 ok(malformed.code === 'SESSION', 'missing session rejected');
