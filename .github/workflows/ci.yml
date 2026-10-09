@@ -40,3 +40,9 @@ jobs:
       - name: Enforce PR batch size and handoff evidence
         if: github.event_name == 'pull_request'
         run: npm run check:pr-quality
+
+      - name: Temporary formatter diagnostic
+        if: failure()
+        run: |
+          npx prettier backend/Code.gs > /tmp/Code.gs.formatted
+          diff -u backend/Code.gs /tmp/Code.gs.formatted || true
