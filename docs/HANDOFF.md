@@ -16,7 +16,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #46 is merged to `main`; backup failure cleanup, lock safety, and removal of the arbitrary commit-count ceiling are in the integration history. Its mock tests do not prove live Drive/restore behavior.
 - PR #47 is closed without merge to avoid stacking; its formatting correction was included in #46.
 - PR #48 is the only active review target: [UI contrast and financial readability](https://github.com/tchouhanjsm/cash-voucher/pull/48), branch `ui/mobile-accessibility-foundation`.
-- Exact-head CI and Browser E2E are pending for PR #48; use its live description and workflow runs as the source of truth. Any further commit requires exact-head re-verification.
+- Exact-head CI/E2E evidence is maintained in PR #48's live description. Before owner review, verify both linked runs target the current head SHA and passed; any further commit requires re-verification.
 - No Apps Script production deployment, live backup/restore, or production-data operation has been performed.
 
 ## Process decisions
