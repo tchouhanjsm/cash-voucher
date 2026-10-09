@@ -7,7 +7,7 @@ import urllib.parse
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get('E2E_BASE', 'http://127.0.0.1:8765').rstrip('/')
-API = BASE + '/api?drop_vendor=' + urllib.parse.quote('Offline Vendor')
+API = BASE + '/api?' + urllib.parse.urlencode({'drop_vendor': 'Offline Vendor', 'count_vendor': 'Multi-tab Vendor'})
 URL = BASE + '/?' + urllib.parse.urlencode({'api': API})
 errs = []
 ok = 0
