@@ -292,8 +292,11 @@ with sync_playwright() as p:
     page.wait_for_timeout(250)
     check(
         page.locator('#sf svg, #sf img').count() == 0
-        and not page.evaluate('window.__xssFired === true'),
-        'malformed bootstrap settings remain inert in numeric input attributes',
+        and not page.evaluate('window.__xssFired === true')
+        and page.locator('#sq').get_attribute('value') == settings_attribute_payload
+        and page.locator('#sr').get_attribute('value') == settings_attribute_payload
+        and page.locator('#so').get_attribute('value') == settings_attribute_payload,
+        'malformed bootstrap settings remain literal attribute data, not active markup',
     )
     page.unroute('**/api?*', tamper_bootstrap_settings)
     page.reload(wait_until='domcontentloaded')
