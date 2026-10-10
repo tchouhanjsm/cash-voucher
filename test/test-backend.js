@@ -611,4 +611,10 @@ ok(
     .code === 'VALIDATION',
   'invalid report status rejected',
 );
+// Backup integrity report is owner-only.
+ok(as(A, 'backupIntegrityReport').code === 'FORBIDDEN', 'staff cannot inspect backup contents');
+ok(
+  as(resetChange.data.token, 'backupIntegrityReport').code === 'FORBIDDEN',
+  'manager cannot inspect backup contents',
+);
 console.log(`backend OK — ${n} checks passed`);

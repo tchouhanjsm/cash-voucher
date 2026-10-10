@@ -36,7 +36,7 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PRs #46, #48, #49, #50, #52, #53, #54, #55, #56, #57, #58, #59 and #60 are merged; PRs #47 and #51 are closed without merge.
+- PRs #46, #48–#50 and #52–#65 are merged; PR #66 is the active implementation PR; PRs #47 and #51 are closed without merge.
 - The owner merges PRs. No agent merge or production deployment.
 
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged; merge commit `64655a5b11956d0289b4e6098599df7cd8932860`.
@@ -56,6 +56,6 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 - **PR #64 — Owner-only voucher data-quality scan:** active on `feature/data-quality-exceptions`. Adds backend checks, Settings UI and mock regression tests; no schema migration, accounting inference or deployment.
 
 - **PR #63 — Apps Script release readiness:** merged. Owner reports backend upload and update of the configured existing deployment to version 4; live smoke tests and restore remain unverified.
-- **PR #64 — Owner-only voucher data-quality scan:** active on `feature/data-quality-exceptions`. Adds backend checks, Settings UI and mock regression tests; no schema migration, accounting inference or deployment.
-
-- **PR #65 — Recorded voucher movement report:** proposed on `feature/recorded-movement-report`; adds role-gated date/type/status filters, source rows, active/cancelled totals and safe CSV. No cash classification, tax logic, schema migration or deployment.
+- **PR #64 — Owner-only voucher data-quality scan:** merged. Structural record checks only; live Google behavior remains unverified.
+- **PR #65 — [Recorded voucher movement report](https://github.com/tchouhanjsm/cash-voucher/pull/65):** merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`; exact-head CI and Browser E2E passed.
+- **PR #66 — Backup integrity inspection:** active on `feature/backup-integrity-report`, based on `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. Owner-only read-only structural checks; no restore, deletion or deployment.

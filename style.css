@@ -1000,3 +1000,36 @@ button {
     width: 100%;
   }
 }
+
+/* Owner-only backup integrity inspection results. */
+#backup-integrity-results {
+  display: grid;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.backup-integrity-item {
+  min-width: 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--line);
+}
+
+.backup-integrity-item h3 {
+  margin: 0 0 6px;
+  overflow-wrap: anywhere;
+  font-size: 15px;
+}
+
+.backup-integrity-item p {
+  overflow-wrap: anywhere;
+}
+
+.backup-integrity-item ul {
+  padding-left: 20px;
+  margin: 8px 0 0;
+}
+
+.backup-integrity-item li {
+  margin: 6px 0;
+  overflow-wrap: anywhere;
+}

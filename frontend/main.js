@@ -179,6 +179,8 @@ registerActions({
 
   dqscan: () => administration.dataQualityScan(),
 
+  bkintegrity: () => administration.backupIntegrityScan(),
+
   reportRun: () => reports.load(),
 
   reportCsv: () => reports.exportCsv(),

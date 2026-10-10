@@ -511,6 +511,302 @@ function recordedMovementReport_(user, req) {
   };
 }
 
+
+function backupIntegrityReport_(user) {
+  need_(user, 'settings');
+  const backupRootId = props_().getProperty('BACKUP_FOLDER_ID');
+  if (!backupRootId) throw err_('Backup folder is not configured.', 'VALIDATION');
+
+  return backupIntegrityReportWithServices_({
+    now: function () {
+      return nowIso_();
+    },
+    listBackupFolders: function () {
+      const root = DriveApp.getFolderById(backupRootId);
+      const folders = [];
+      const iterator = root.getFolders();
+      while (iterator.hasNext()) {
+        const folder = iterator.next();
+        if (!/^backup-\d{4}-\d{2}-\d{2}_\d{6}$/.test(folder.getName())) continue;
+        folders.push({
+          id: folder.getId(),
+          name: folder.getName(),
+          createdAt: folder.getDateCreated().toISOString(),
+        });
+      }
+      return folders;
+    },
+    inspectSnapshot: function (snapshot) {
+      const folder = DriveApp.getFolderById(snapshot.id);
+      const files = [];
+      const fileIterator = folder.getFiles();
+      while (fileIterator.hasNext()) {
+        const file = fileIterator.next();
+        if (!file.isTrashed()) {
+          files.push({
+            id: file.getId(),
+            name: file.getName(),
+            mimeType: file.getMimeType(),
+            file: file,
+          });
+        }
+      }
+
+      const sheetFile = files.find(function (file) {
+        return (
+          file.mimeType === 'application/vnd.google-apps.spreadsheet' &&
+          file.name.indexOf('Cash Voucher Sheet - ') === 0
+        );
+      });
+      const manifestFile = files.find(function (file) {
+        return file.name === 'receipt-manifest.csv';
+      });
+      let receiptFolder = null;
+      const folderIterator = folder.getFolders();
+      while (folderIterator.hasNext()) {
+        const child = folderIterator.next();
+        if (child.getName() === 'receipts') {
+          receiptFolder = child;
+          break;
+        }
+      }
+
+      const receiptFiles = [];
+      if (receiptFolder) {
+        const receiptIterator = receiptFolder.getFiles();
+        while (receiptIterator.hasNext()) {
+          const file = receiptIterator.next();
+          if (!file.isTrashed()) receiptFiles.push(file);
+        }
+      }
+
+      let manifestRows = [];
+      let manifestReadable = false;
+      if (manifestFile) {
+        try {
+          manifestRows = Utilities.parseCsv(manifestFile.file.getBlob().getDataAsString());
+          manifestReadable = true;
+        } catch (error) {
+          manifestReadable = false;
+        }
+      }
+
+      let sheetReadable = false;
+      let missingSheets = [];
+      let invalidHeaders = [];
+      const rowCounts = {};
+      if (sheetFile) {
+        try {
+          const spreadsheet = SpreadsheetApp.openById(sheetFile.id);
+          Object.keys(CFG.H).forEach(function (sheetName) {
+            const sheet = spreadsheet.getSheetByName(sheetName);
+            if (!sheet) {
+              missingSheets.push(sheetName);
+              return;
+            }
+            rowCounts[sheetName] = sheet.getLastRow();
+            const expectedHeaders = CFG.H[sheetName];
+            const actualHeaders = sheet
+              .getRange(1, 1, 1, expectedHeaders.length)
+              .getValues()[0]
+              .map(function (value) {
+                return String(value || '');
+              });
+            if (
+              expectedHeaders.some(function (header, index) {
+                return actualHeaders[index] !== header;
+              })
+            ) {
+              invalidHeaders.push(sheetName);
+            }
+          });
+          sheetReadable = true;
+        } catch (error) {
+          sheetReadable = false;
+        }
+      }
+
+      const manifestHeader = ['originalFileId', 'backupFileId', 'name', 'createdAt'];
+      const header = manifestRows.length ? manifestRows[0] : [];
+      const manifestHeaderValid =
+        manifestReadable &&
+        manifestHeader.every(function (name, index) {
+          return header[index] === name;
+        }) &&
+        header.length === manifestHeader.length;
+      const records = manifestRows.slice(1).filter(function (row) {
+        return row.some(function (value) {
+          return String(value || '') !== '';
+        });
+      });
+      const originals = records.map(function (row) {
+        return String(row[0] || '');
+      });
+      const backupIds = records.map(function (row) {
+        return String(row[1] || '');
+      });
+      const receiptIds = receiptFiles.map(function (file) {
+        return file.getId();
+      });
+      const unique = function (values) {
+        return values.every(function (value, index) {
+          return Boolean(value) && values.indexOf(value) === index;
+        });
+      };
+      const copiesPresent = backupIds.every(function (id) {
+        return receiptIds.indexOf(id) !== -1;
+      });
+
+      return {
+        sheet: {
+          present: Boolean(sheetFile),
+          readable: sheetReadable,
+          missingSheets: missingSheets,
+          invalidHeaders: invalidHeaders,
+          rowCounts: rowCounts,
+        },
+        manifest: {
+          present: Boolean(manifestFile),
+          readable: manifestReadable,
+          headerValid: manifestHeaderValid,
+          recordCount: records.length,
+          uniqueIds: unique(originals) && unique(backupIds),
+          copiesPresent: copiesPresent,
+        },
+        receipts: {
+          present: Boolean(receiptFolder),
+          count: receiptFiles.length,
+        },
+      };
+    },
+  });
+}
+
+function backupIntegrityReportWithServices_(services) {
+  const folders = services
+    .listBackupFolders()
+    .slice()
+    .sort(function (a, b) {
+      return String(b.name).localeCompare(String(a.name));
+    })
+    .slice(0, 10);
+
+  const snapshots = folders.map(function (folder) {
+    const checks = [];
+    let inspection;
+    try {
+      inspection = services.inspectSnapshot(folder);
+    } catch (error) {
+      inspection = null;
+    }
+
+    const add = function (code, passed, detail, warning) {
+      checks.push({
+        code: code,
+        state: passed ? 'pass' : warning ? 'warning' : 'fail',
+        detail: detail,
+      });
+    };
+
+    if (!inspection) {
+      add('SNAPSHOT_READABLE', false, 'Snapshot contents could not be inspected.');
+    } else {
+      add(
+        'SHEET_COPY',
+        inspection.sheet.present,
+        inspection.sheet.present ? 'Spreadsheet copy is present.' : 'Spreadsheet copy is missing.',
+      );
+      add(
+        'SHEET_READABLE',
+        inspection.sheet.readable,
+        inspection.sheet.readable
+          ? 'Spreadsheet copy opened successfully.'
+          : 'Spreadsheet copy could not be opened.',
+      );
+      add(
+        'REQUIRED_SHEETS',
+        inspection.sheet.missingSheets.length === 0,
+        inspection.sheet.missingSheets.length
+          ? 'Missing tabs: ' + inspection.sheet.missingSheets.join(', ')
+          : 'All required tabs are present.',
+      );
+      add(
+        'HEADER_SCHEMA',
+        inspection.sheet.invalidHeaders.length === 0,
+        inspection.sheet.invalidHeaders.length
+          ? 'Header mismatch in: ' +
+              inspection.sheet.invalidHeaders.join(', ') +
+              '. The snapshot may predate the current schema; review before restore.'
+          : 'Required headers match the current schema.',
+        inspection.sheet.invalidHeaders.length > 0,
+      );
+      add(
+        'RECEIPT_FOLDER',
+        inspection.receipts.present,
+        inspection.receipts.present
+          ? 'Receipt backup folder is present.'
+          : 'Receipt backup folder is missing.',
+      );
+      add(
+        'MANIFEST',
+        inspection.manifest.present && inspection.manifest.readable && inspection.manifest.headerValid,
+        inspection.manifest.present && inspection.manifest.readable && inspection.manifest.headerValid
+          ? 'Receipt manifest is readable and has the expected columns.'
+          : 'Receipt manifest is missing, unreadable or has unexpected columns.',
+      );
+      add(
+        'RECEIPT_COUNT',
+        inspection.manifest.recordCount === inspection.receipts.count,
+        'Manifest records: ' +
+          inspection.manifest.recordCount +
+          '; copied receipt files found: ' +
+          inspection.receipts.count +
+          '.',
+      );
+      add(
+        'RECEIPT_REFERENCES',
+        inspection.manifest.uniqueIds && inspection.manifest.copiesPresent,
+        inspection.manifest.uniqueIds && inspection.manifest.copiesPresent
+          ? 'Manifest receipt references are unique and resolve inside the receipt folder.'
+          : 'Manifest receipt references are duplicated or a referenced copy is missing.',
+      );
+    }
+
+    const failed = checks.some(function (check) {
+      return check.state === 'fail';
+    });
+    const warning = checks.some(function (check) {
+      return check.state === 'warning';
+    });
+    return {
+      name: String(folder.name || ''),
+      createdAt: String(folder.createdAt || ''),
+      state: failed ? 'fail' : warning ? 'warning' : 'pass',
+      checks: checks,
+      rowCounts: inspection ? inspection.sheet.rowCounts : {},
+      receiptCount: inspection ? inspection.receipts.count : 0,
+      manifestCount: inspection ? inspection.manifest.recordCount : 0,
+    };
+  });
+
+  return {
+    generatedAt: services.now(),
+    inspected: snapshots.length,
+    limit: 10,
+    passCount: snapshots.filter(function (snapshot) {
+      return snapshot.state === 'pass';
+    }).length,
+    warningCount: snapshots.filter(function (snapshot) {
+      return snapshot.state === 'warning';
+    }).length,
+    failCount: snapshots.filter(function (snapshot) {
+      return snapshot.state === 'fail';
+    }).length,
+    snapshots: snapshots,
+    note: 'Structural inspection only. A successful report does not prove a restore will succeed; restore into a separate recovery destination and validate it.',
+  };
+}
+
 function backupStatus_(user) {
   need_(user, 'settings');
   const p = props_();
@@ -615,6 +911,7 @@ const ACTIONS = {
   saveSettings: saveSettings_,
   auditLog: auditLog_,
   backupStatus: backupStatus_,
+  backupIntegrityReport: backupIntegrityReport_,
   dataQualityReport: dataQualityReport_,
   recordedMovementReport: recordedMovementReport_,
   logout: logout_,

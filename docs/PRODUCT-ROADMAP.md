@@ -147,12 +147,25 @@ Do not rerun `setup()` during a normal release. Do not push a new backend versio
 
 **Next product phase after deployment/recovery evidence:** source-traceable data-quality exception reports and daily/monthly recorded-voucher movement reports. Keep GST/TDS, general-ledger claims, daily cash close and destination-specific accountant export behind existing owner/accountant/CA decision gates.
 
-## Current implementation phase — PR #64
+## Current implementation status — PR #65 merged
 
-**PR #63 release outcome:** reviewed Apps Script files were uploaded locally and the existing configured Web App deployment was updated to version 4. Local unit/static checks passed; Browser E2E did not run because Playwright was unavailable. Live permissions and backup/restore are not yet verified.
+PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. Its exact PR head `09eaac429307e4243d7a7d2fce1f16ef3402b029` passed CI and Browser E2E. The feature adds manager/owner-only recorded voucher movement reporting with source rows, validated filters, active/cancelled totals and CSV safety. It does not classify physical cash, calculate tax, or establish profit/bank balance.
 
-**PR #64 — owner-only voucher data-quality scan:** add a real backend action and Settings UI that lists source voucher exceptions (missing values, invalid amount/date/type/status, duplicate voucher numbers and ClientIDs). This is not tax validation, physical-cash classification, a ledger, or an accountant certification. The PR must include automated backend regressions and exact-head CI/browser evidence; no deployment as part of the PR.
+## Next phase — PR #66: backup integrity inspection
 
-## Next implementation — recorded voucher movement report (PR #65)
+Prioritize operational assurance before expanding financial reporting. Add an owner-only read-only inspection for the ten latest managed backup snapshots:
+- Verify a spreadsheet copy exists and can be opened.
+- Verify required tabs and report header-schema differences as compatibility warnings.
+- Verify the receipts folder and manifest exist, manifest columns are valid, manifest count matches copied receipt count, and each listed copy is present.
+- Show per-snapshot pass/warning/fail results and sheet row counts without exposing Drive IDs.
+- Fail closed when a snapshot cannot be inspected.
 
-Add manager/owner-only reporting from source voucher rows. Include inclusive date range, PAYMENT/RECEIPT and ACTIVE/CANCELLED/ALL filters, row counts, selected-row totals, active-only totals, source details and formula-safe CSV. Label every amount as recorded voucher movement, never physical cash, profit, bank balance or tax liability. Daily cash close and accountant/tax integrations remain behind their existing approval gates.
+This is structural inspection only. It does not run a restore, mutate production, prune backups, or prove a restored workbook behaves correctly. The operational P0 remains a witnessed restore into a separate recovery Sheet/folder, with record counts and voucher numbering validated.
+
+## Release and product boundaries
+
+- The existing deployment was last reported at version 4 before PRs #64 and #65 merged. Current `main` must not be assumed deployed.
+- No Clasp push, Web App deployment, `setup()`, or production-data operation is part of PR #66.
+- Daily cash close, physical cash classification, GST/TDS, general-ledger claims and accountant-specific exports remain behind explicit owner/accountant/CA decisions.
+- Live authorization, scheduled backup execution, Drive permissions, restoreability, real-device PWA update/install, accessibility and hotel pilot remain unverified.
+- Node v24 is outside the declared Node 20–22 range; npm previously reported three high-severity dependency findings that still need triage.

@@ -148,7 +148,7 @@ function create() {
   vm.createContext(ctx);
   vm.runInContext(
     fs.readFileSync(path.join(__dirname, '../backend/Code.gs'), 'utf8') +
-      '\n;this.__api={setup,doPost,PERMS,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_};',
+      '\n;this.__api={setup,doPost,PERMS,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
     ctx,
   );
   return {
