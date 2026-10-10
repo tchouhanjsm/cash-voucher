@@ -837,6 +837,7 @@ with sync_playwright() as p:
     # Exercise the recorded movement report through the actual browser/API mock.
     page.click('[data-v=reports]')
     page.wait_for_selector('#movementFilters')
+    page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
         "document.querySelector('#view').innerText.includes('Source vouchers')"
     )
