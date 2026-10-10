@@ -64,7 +64,7 @@ export function download(name, text, type) {
 export const csvCell = (value) =>
   `"${String(value ?? '')
     .replace(/"/g, '""')
-    .replace(/^([=+\\-@\\t\\r\\n])/, "'$1")}"`;
+    .replace(/^([=+@\\t\\r\\n]|-)/, "'$1")}"`;
 
 export function readFileB64(blob) {
   return new Promise((resolve, reject) => {
