@@ -135,16 +135,14 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **Historical batch (completed by PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
 
-## Current phase status — PR #61 merged, PR #62 offline sync assurance
+## Current phase status — PR #62 merged, PR #63 Apps Script release readiness
 
-**PR #61 merged:** the accountant recordkeeping and reporting blueprint is integrated in merge commit `c4a4af4d0d27bf09e89a0650f31d56f170f2acbb`. It inventories current source data and defines reporting, evidence, reconciliation, export and tax-data decision gates without adding tax fields or calculations.
+**PR #62 merged:** offline sync/idempotency assurance is integrated at merge commit `49f2a3db297f84093d46b247a54c93c9372f3684`. Its reviewed PR head passed CI and Browser E2E (126 checks, 0 failures), but mock tests do not establish live Google behavior.
 
-**PR #62 — Offline sync and idempotency assurance:** active on `feature/offline-sync-idempotency-assurance`. The implementation rejects a reused ClientID when its normalized voucher details differ from the stored voucher, rather than silently acknowledging changed financial data. Tests cover matching retries, changed-payload conflicts, a server commit followed by a lost response, cross-tab retry, and recovery of an expired IndexedDB lease. Exact-head CI and Browser E2E evidence must be checked in the live PR before owner review.
+**PR #63 — Apps Script release readiness and controlled deployment:** documentation-only runbook and handoff reconciliation. Before further finance feature work, verify local Clasp authentication and project target, compare the existing deployment ID with the URL in `config.js`, upload only the reviewed backend folder, publish a new version against the verified existing deployment, and perform a controlled live smoke test. See `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md`.
 
-**Next phase after PR #62:** build source-traceable data-quality exception reports and daily/monthly reports of recorded voucher movement, with accessible drill-through tables and reconciliation totals. Keep GST/TDS, profit/loss or balance-sheet claims, daily cash close and target-accounting-system export out of scope until the owner/accountant/CA decisions documented in `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md` are satisfied.
+Do not commit local `.clasp.json` or `.clasprc.json`. Do not run `clasp push` until the intended project and existing deployment have been verified. Do not rerun `setup()` during a normal code release: it can create infrastructure and replace the daily backup trigger.
 
-**Operational P0:** witness a backup run and restore into a separate recovery destination before claiming operational recovery readiness.
+**Operational P0 after deployment:** observe a real backup and perform a restore into a separate recovery Sheet/folder. Until then, the project is not recovery-verified or production-ready.
 
-**Accountant export gate:** do not implement destination-specific export until the owner identifies the receiving accountant's accounting product/version and the accountant approves an anonymized sample mapping and reconciliation totals. Keep GST/TDS and other tax treatment unimplemented until a qualified Indian CA validates the entity's actual obligations and data rules.
-
-Daily cash close remains blocked pending owner approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`. No scheduled summaries, recurring vouchers, external delivery or cash-close automation are approved.
+**Next product phase after deployment/recovery evidence:** source-traceable data-quality exception reports and daily/monthly recorded-voucher movement reports. Keep GST/TDS, general-ledger claims, daily cash close and destination-specific accountant export behind existing owner/accountant/CA decision gates.
