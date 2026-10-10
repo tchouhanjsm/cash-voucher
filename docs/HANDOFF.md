@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #72 merge):** `13a1fd84a013d85952d04c512313e8fcf9e36475`  
+**Verified main SHA (PR #73 merge):** `71033675cc9f52ad391f8b2d06a362551a224be6`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -115,13 +115,20 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Scope:** browser workflow for report disclosure/totals, active/cancelled and transaction-type filters, and CSV parity against filtered rows.
 - **Boundary:** mock-backed verification only; it is not accounting certification or live Google-service evidence.
 
-## Current development phase — PR #73: escape report date-range rendering
+## Completed phase — PR #73: escape report date-range rendering
 
-- **Base SHA:** `13a1fd84a013d85952d04c512313e8fcf9e36475`.
-- **Branch:** `feature/escape-report-date-range-rendering`.
-- **Outcome:** escape both formatted date-range labels in the Recorded Movement Report HTML template and prove malformed state remains inert text in Browser E2E.
-- **Why now:** the sink-by-sink rendering audit found `dmy(R.from)` and `dmy(R.to)` interpolated into HTML without `esc()`. The native date control constrains normal input, but output-context escaping is still required for tampered or malformed state.
-- **Verification:** exact-head full flight, CI and Browser E2E are required. The agent has no local checkout in this environment; do not claim local checks.
-- **Release boundary:** frontend rendering + browser test + handoff docs only. No Apps Script upload/deployment, `setup()`, or production mutation.
-- **Open production P0:** owner confirmation of the target project/settings, live role and receipt checks, real scheduled backup and witnessed isolated restore remain unverified.
+- **Merged main:** `71033675cc9f52ad391f8b2d06a362551a224be6`.
+- **Exact tested PR head:** `4cc407932c86e583a43d50286e5ac3178165cb31`.
+- **Evidence:** full flight, normal CI and Browser E2E passed; 110 backend checks and 141 browser checks, zero failures.
+- **Scope:** escaped the formatted report date range and added a hostile-state browser regression. This remains a targeted fix, not XSS certification.
+
+## Current development phase — PR #74: escape voucher number in save confirmation
+
+- **Base SHA:** `71033675cc9f52ad391f8b2d06a362551a224be6`.
+- **Branch:** `feature/escape-payment-success-voucher-number`.
+- **Outcome:** escape the voucher number in the successful payment/receipt save confirmation and add a hostile API-response browser regression.
+- **Why now:** the save confirmation interpolated `vno(c)` into `#nres.innerHTML` without `esc()`. PR #70 fixed register/print sinks, but the success panel was a separate remaining sink.
+- **Verification:** exact-head full flight, CI and Browser E2E are required. No local checkout is available here; local checks are not claimed.
+- **Release boundary:** frontend rendering + Browser E2E + handoff docs only. No Apps Script upload/deployment, `setup()`, or production mutation.
+- **Open production P0:** target/settings confirmation, live role/receipt checks, real scheduled backup and witnessed isolated restore remain unverified.
 - **Local preservation:** do not stage or overwrite the owner's local `docs/AI-ENGINEERING-PROTOCOL.md`.
