@@ -36,7 +36,7 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PRs #46, #48, #49, #50, #52, #53, #54, #55 and #56 are merged; PRs #47 and #51 are closed without merge.
+- PRs #46, #48, #49, #50, #52, #53, #54, #55, #56, #57, #58, #59 and #60 are merged; PRs #47 and #51 are closed without merge.
 - The owner merges PRs. No agent merge or production deployment.
 
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged; merge commit `64655a5b11956d0289b4e6098599df7cd8932860`.
@@ -48,4 +48,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - **PR #58 — [Owner audit discoverability](https://github.com/tchouhanjsm/cash-voucher/pull/58):** Merged on 10 October 2026 (merge commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`). Adds the owner-only Audit log route, latest-200 disclosure, filters and filtered CSV export; live Google authorization and accountant compatibility remain unverified.
 - **PR #59 — [Reporting export and workflow automation contract](https://github.com/tchouhanjsm/cash-voucher/pull/59):** Merged on 10 October 2026 (merge commit `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`). Documentation-only decision gate; no runtime behavior, scheduled triggers, deployment or production data changes.
-- **PR #60 — Cross-functional product and engineering retrospective:** active on `feature/pr60-cross-functional-retrospective`. Documentation-only review of achievements, backend/frontend, CI/CD, security, QA, realistic scenarios, risks and prioritized next steps. See `docs/PRODUCT-AND-ENGINEERING-RETROSPECTIVE.md` and `docs/pr-handoffs/PR-60.md`.
+- **PR #60 — Cross-functional product and engineering retrospective:** Merged. Documentation-only review of achievements, backend/frontend, CI/CD, security, QA, realistic scenarios, risks and prioritized next steps. See `docs/PRODUCT-AND-ENGINEERING-RETROSPECTIVE.md` and `docs/pr-handoffs/PR-60.md`.
+- **PR #61 — Accountant recordkeeping and reporting blueprint:** active on `feature/accountant-recordkeeping-blueprint`. Documentation-only finance review inventories current source fields and defines reporting, chart, reconciliation, accountant export, tax-data candidate and workflow requirements. See `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md` and `docs/pr-handoffs/PR-61.md`.
