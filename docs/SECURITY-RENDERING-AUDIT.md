@@ -69,7 +69,7 @@ The active application uses HTML template strings for several views. The review 
 
 ## Browser regression coverage
 
-Added to `test/e2e.py` in this PR:
+Existing Browser E2E regression coverage in `test/e2e.py` includes:
 
 - **User list:** malicious user name is rendered as text.
 - **Vendor list:** malicious vendor name and company are rendered as text.
@@ -96,7 +96,7 @@ The E2E suite runs against the repository's local mock Apps Script service. It d
 - Build category options, vendor datalist options, and user-derived summary text using DOM properties rather than HTML interpolation.
 - Add a Browser E2E regression that creates a voucher with hostile vendor text and exercises edit/cancel dialogs, asserting no injected image/SVG nodes and no payload execution.
 - This is a targeted reduction in the shared modal attack surface, not a full migration of every `innerHTML` renderer.
- 
+
 ## Acceptance gate
 
 Before considering this batch ready for review, the CI quality gate and Browser E2E must both pass on the exact final PR head. If an assertion fails, fix the test or product defect and rerun both workflows; do not report an earlier SHA's result as final.
