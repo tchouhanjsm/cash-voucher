@@ -308,7 +308,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
       row.action,
       row.target,
       row.details,
-    ])].map((record) => record.map(csvCell).join(',')).join('\\r\\n');
+      .map((record) => record.map(csvCell).join(','))
+      .join('\r\n');
     download(
       `cash-voucher-audit-${new Date().toISOString().slice(0, 10)}.csv`,
       csv,
