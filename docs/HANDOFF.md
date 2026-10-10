@@ -39,7 +39,8 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 **Base main SHA:** `d63e146ac76b79fad7cc930813c303db009fd59b`.
 
 Scope: dedicated owner-only Audit log navigation and search/user/action/date filters, with a visible
-latest-200 limitation, safe text rendering, and CSV export of filtered loaded events. Reuse the existing
+latest-200 limitation, safe text rendering, and CSV export of filtered loaded events.
+Reuse the existing `auditLog` API and server-side permission; no backend/schema/accounting changes.
 `auditLog` API and server-side permission; no backend/schema/accounting changes.
 
 Current gate: implementation and targeted Browser E2E coverage are in progress. Local commands are
