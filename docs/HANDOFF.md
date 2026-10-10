@@ -12,6 +12,7 @@ Branch: `process/single-handoff-documentation`
 Base: `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`
 
 Adopt three distinct sources of information:
+
 - This file is the current state, blockers and next actions.
 - Each GitHub PR description is the permanent record of that change, acceptance criteria, exact-head verification and review decisions.
 - Domain documents change only when their substance changes.
