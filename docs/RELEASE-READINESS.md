@@ -72,7 +72,6 @@ Passing CI is necessary, not sufficient. Do not declare production readiness unt
 
 PR #67 adds browser assertions for the data-quality report's user-facing scope disclaimer and the backup-integrity scan's announced failure/retry behavior in the mock environment. These checks strengthen UI regression coverage only. They do not close Gate 3 live authorization, real backup observation, or isolated restore. Production readiness remains **not verified** until the owner completes the operational gates above.
 
-
 ## PR #67 merged — updated local evidence (10 October 2026)
 
 - Node `v20.20.2` satisfies the repository's declared Node 20–22 range.
