@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Status: not verified as production-ready. Current main is ea99e4e19be0f29e8c1afdc25828bf1b5ecce399 (PR #71 merge). PR #71's exact tested source tree passed the full flight workflow (110 backend checks and 130 Browser E2E checks, 0 failures); merged-main CI also passed. PR #72 adds browser coverage for the recorded movement report. The configured URL matches the existing version-4 deployment ID, but current backend deployment, live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
+**Status: not verified as production-ready. Current `main` is `13a1fd84a013d85952d04c512313e8fcf9e36475` (PR #72 merge). PR #72's exact tested source tree passed the full flight workflow (110 backend checks and 140 Browser E2E checks, 0 failures); normal CI also passed. PR #73 is a focused rendering-security follow-up. The configured URL matches the existing version-4 deployment ID, but current backend deployment, live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
 
 ## Evidence-based baseline
 

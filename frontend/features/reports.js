@@ -134,7 +134,7 @@ export function createReports({ api }) {
           </div>
         </div>
         <div class="card">
-          <h2>Source vouchers <span class="muted">${dmy(R.from)} – ${dmy(R.to)}</span></h2>
+          <h2>Source vouchers <span class="muted">${esc(dmy(R.from))} – ${esc(dmy(R.to))}</span></h2>
           <p class="muted">
             Generated ${esc(summary.generatedAt)} · ${summary.count} rows · Type: ${esc(summary.type)} · Status: ${esc(summary.status)}
           </p>

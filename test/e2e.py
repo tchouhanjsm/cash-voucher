@@ -864,6 +864,39 @@ with sync_playwright() as p:
         'default active report lists active source vouchers and excludes cancelled records',
     )
 
+    # Adversarially tamper with the date control's value getter so malformed
+    # state reaches the renderer; user-facing date inputs normally constrain it.
+    range_payload = '<svg onload=window.__xssFired=true></svg>'
+    page.evaluate(
+        """payload => {
+          const input = document.querySelector('#movementFrom');
+          Object.defineProperty(input, 'value', {
+            configurable: true,
+            get: () => payload,
+          });
+        }""",
+        range_payload,
+    )
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Choose a valid date range')"
+    )
+    check(
+        page.locator('#view svg').count() == 0
+        and range_payload in page.locator('#view').inner_text()
+        and not page.evaluate('window.__xssFired === true'),
+        'malformed report date-range value remains inert text in rendered HTML',
+    )
+    # Restore a valid month-to-date filter before continuing the report workflow.
+    page.locator('#movementFrom').fill(datetime.date.today().replace(day=1).isoformat())
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#movementFilters button[type=submit]').innerText.trim() === 'Run report'"
+    )
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
+    )
+
     page.select_option('#movementStatus', 'CANCELLED')
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(

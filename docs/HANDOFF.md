@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #71 merge):** `ea99e4e19be0f29e8c1afdc25828bf1b5ecce399`  
+**Verified main SHA (PR #72 merge):** `13a1fd84a013d85952d04c512313e8fcf9e36475`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -107,14 +107,21 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Evidence:** [full flight](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38043779296) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38043779316) · [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38043779443).
 - **Boundary:** automated/mock-backed checks only; no live Google authorization, Drive backup or restoreability claim.
 
-## Current development phase — PR #72: report workflow flight coverage
+## Completed phase — PR #72: report workflow flight coverage
 
-- **Base SHA:** ea99e4e19be0f29e8c1afdc25828bf1b5ecce399.
-- **Branch:** feature/recorded-report-flight-coverage.
-- **Outcome:** exercise the accountant-facing Recorded Movement Report in Browser E2E, including default active-source rows, cancelled-only filtering, receipt-only filtering, cancellation metadata in CSV, and CSV contents matching the selected filters.
-- **Why this phase:** backend movement-report validation already has unit coverage, but the real browser-to-mock API-to-render/export path was not asserted by the current E2E suite. This closes a concrete functional verification gap rather than adding documentation alone.
-- **Verification:** exact-head full flight, CI and Browser E2E status/URLs are
-  maintained in the PR #72 description. Owner review is blocked until all three
-  pass on the final head. Local checks are not claimed in this environment.
-- **Operational P0:** live Apps Script target/authorization, role/receipt access, real scheduled backup and isolated restore remain open. No clasp push, deployment, setup(), or production mutation.
-- **Local preservation:** do not stage or commit the owner's untracked docs/AI-ENGINEERING-PROTOCOL.md.
+- **Merged main:** `13a1fd84a013d85952d04c512313e8fcf9e36475`.
+- **Exact tested PR head:** `d7f9e928f542a831d4588935d1c05dd96ed28979`.
+- **Evidence:** full flight, normal CI and Browser E2E passed; backend suite had 110 checks and Browser E2E had 140 checks / 0 failures.
+- **Scope:** browser workflow for report disclosure/totals, active/cancelled and transaction-type filters, and CSV parity against filtered rows.
+- **Boundary:** mock-backed verification only; it is not accounting certification or live Google-service evidence.
+
+## Current development phase — PR #73: escape report date-range rendering
+
+- **Base SHA:** `13a1fd84a013d85952d04c512313e8fcf9e36475`.
+- **Branch:** `feature/escape-report-date-range-rendering`.
+- **Outcome:** escape both formatted date-range labels in the Recorded Movement Report HTML template and prove malformed state remains inert text in Browser E2E.
+- **Why now:** the sink-by-sink rendering audit found `dmy(R.from)` and `dmy(R.to)` interpolated into HTML without `esc()`. The native date control constrains normal input, but output-context escaping is still required for tampered or malformed state.
+- **Verification:** exact-head full flight, CI and Browser E2E are required. The agent has no local checkout in this environment; do not claim local checks.
+- **Release boundary:** frontend rendering + browser test + handoff docs only. No Apps Script upload/deployment, `setup()`, or production mutation.
+- **Open production P0:** owner confirmation of the target project/settings, live role and receipt checks, real scheduled backup and witnessed isolated restore remain unverified.
+- **Local preservation:** do not stage or overwrite the owner's local `docs/AI-ENGINEERING-PROTOCOL.md`.
