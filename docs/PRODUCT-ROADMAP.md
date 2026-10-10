@@ -183,10 +183,19 @@ PR #67 is merged at `628f691fe9e4353cc6b701bd57c95c3e169aa495`. The owner-provid
 
 Before feature expansion, confirm the intended project, active deployment, Sheet binding and Script Properties in the Apps Script editor. Then complete live role/receipt authorization checks, observe a real scheduled backup, and witness a restore into a separate recovery Sheet/folder. No upload, deployment, `setup()`, or production mutation is authorized by this documentation update. After operational P0 evidence is complete, resume the frontend rendering-security audit as a focused PR.
 
-## Current development phase — PR #69: DOM-only modal rendering
+## Completed phase — PR #69: DOM-only modal rendering
 
 The next implementation batch narrows the shared modal's attack surface. `frontend/core/ui.js` must accept only a DOM Node/DocumentFragment for dialog body content; existing modal callers should create form controls, option values and user-derived text with DOM APIs. Retain the hostile persisted-vendor regression coverage for voucher edit and cancellation dialogs.
 
 **Exit gate:** every current `dialog()` caller is migrated, the shared API rejects string bodies, CI and Browser E2E pass on the exact PR head, and the PR handoff/audit are updated. This does not certify the remaining view-level `innerHTML` sinks; continue the sink-by-sink audit in a later focused phase.
 
 **Operational P0 remains a production-readiness blocker:** current `main` is not proven deployed, live role/receipt authorization has not been evidenced, and real backup/isolated restore have not been witnessed. No deployment or production mutation is authorized by this code phase.
+
+
+## Current development phase — PR #70: escape persisted voucher numbers
+
+PR #69 is merged. PR #70 escapes voucher numbers in the register and print template and adds Browser E2E coverage that injects a hostile persisted number through the mock bootstrap response. This closes two concrete text-context sinks without expanding into a full DOM-renderer rewrite.
+
+**Exit gate:** two-pass review confirms both output sinks and consumers; CI and Browser E2E pass on the exact final PR head; rendering audit, handoff, PR index and dedicated handoff are updated. Other dynamic HTML sinks remain open.
+
+**Operational P0 remains a production-readiness blocker.** No Apps Script deployment or production mutation is authorized by this code phase.
