@@ -59,3 +59,6 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 - **PR #64 — Owner-only voucher data-quality scan:** merged. Structural record checks only; live Google behavior remains unverified.
 - **PR #65 — [Recorded voucher movement report](https://github.com/tchouhanjsm/cash-voucher/pull/65):** merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`; exact-head CI and Browser E2E passed.
 - **PR #66 — Backup integrity inspection:** active on `feature/backup-integrity-report`, based on `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. Owner-only read-only structural checks; no restore, deletion or deployment.
+
+
+- **PR #67 — Owner inspection Browser E2E coverage:** pending review. Adds browser checks for data-quality report results/limitations and backup-integrity failure/retry behavior. Mock-browser coverage does not verify live Drive access or restoreability. See `docs/pr-handoffs/PR-67.md`.
