@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #62 merge):** `49f2a3db297f84093d46b247a54c93c9372f3684`  
+**Verified main SHA (PR #63 merge):** `51de4c6b9008bd06f2451b192f5ff8eab01c8199`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -41,7 +41,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 
 PR #63 is merged. The owner uploaded the reviewed Apps Script source and updated the existing configured Web App deployment to version 4. Local `npm run check` passed, but local Browser E2E did not run because Playwright is missing. Node v24 is outside the declared Node 20–22 range, and npm reported three high-severity dependency findings. Live role smoke tests and a separate-destination backup/restore drill remain open.
 
-PR #64 adds an owner-only report that scans voucher rows for missing IDs/fields, invalid dates/amounts/types/statuses, duplicate voucher numbers and duplicate ClientIDs. It presents source-linked exceptions in Settings. This is a structural data-quality report only: it does not classify physical cash, calculate tax, or claim accountant compliance. Exact-head CI/E2E must pass before merge; do not deploy this PR until the local browser-test environment is repaired and owner authorizes release.
+PR #64 adds an owner-only report that scans voucher rows for missing IDs/fields, invalid dates/amounts/types/statuses, duplicate voucher numbers and duplicate ClientIDs. It presents source-linked exceptions in Settings. This is a structural data-quality report only: it does not classify physical cash, calculate tax, or claim accountant compliance. Exact head `15441c6e96c9211b63bca2d5df85ffdabb37579a` passed CI (100 backend checks) and Browser E2E (126 checks, 0 failures). Do not deploy this PR until live release gates are completed and the owner authorizes release.
 
 **Next phase after PR #64:** live release verification and witnessed backup/restore; then extend source-traceable reporting once data-quality findings are reviewed. Daily cash close, physical cash classification, tax fields and destination-specific exports remain behind explicit owner/accountant/CA decisions.
 
