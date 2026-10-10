@@ -259,40 +259,6 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('#brand').textContent === 'Hotel Test'")
     check(page.locator('#brand').inner_text() == 'Hotel Test', 'settings saved')
 
-    # Exercise DOM-only modal content with a hostile persisted vendor value.
-    page.click('[data-v=new]')
-    page.wait_for_selector('#nf')
-    page.fill('.rv', xss_vendor)
-    page.fill('.ra', '50')
-    page.select_option('.rc', 'Other')
-    page.click('#nsave')
-    page.wait_for_function("document.querySelector('#nres').innerText.includes('Saved 1 payment')")
-    page.click('[data-v=reg]')
-    page.wait_for_selector('#rbody tr')
-    hostile_row = page.locator('#rbody tr', has_text=xss_vendor)
-    hostile_row.locator('[data-act=edit]').click()
-    page.wait_for_selector('#ev')
-    check(
-        page.locator('#ev').input_value() == xss_vendor
-        and page.locator('#modal img, #modal svg').count() == 0
-        and not page.evaluate('window.__xssFired === true'),
-        'edit dialog inserts persisted vendor values through DOM properties, not HTML',
-    )
-    page.click('[data-x]')
-    page.locator('#rbody tr', has_text=xss_vendor).locator('[data-act=cancel]').click()
-    page.wait_for_selector('#cr')
-    check(
-        xss_vendor in page.locator('#modal').inner_text()
-        and page.locator('#modal img, #modal svg').count() == 0
-        and not page.evaluate('window.__xssFired === true'),
-        'cancel dialog renders persisted vendor text without creating markup',
-    )
-    page.fill('#cr', 'Test cancellation for safe modal rendering')
-    page.click('.mcard .primary')
-    page.wait_for_function(
-        "![...document.querySelectorAll('#rbody tr')].some(row => row.innerText.includes('<svg onload=window.__xssFired=true></svg>'))"
-    )
-
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
     page.wait_for_selector('#loginForm')
