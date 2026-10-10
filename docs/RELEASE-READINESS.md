@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Status: not verified as production-ready. Current `main` is `13a1fd84a013d85952d04c512313e8fcf9e36475` (PR #72 merge). PR #72's exact tested source tree passed the full flight workflow (110 backend checks and 140 Browser E2E checks, 0 failures) and normal CI. PR #73 is a focused rendering-security follow-up.** The configured URL's prior alignment with a version-4 deployment ID is not proof that current `main` is deployed. Live authorization, scheduled backup and isolated restore remain unverified. Production readiness remains unverified until these operational gates are complete.
+**Status: not verified as production-ready. Current `main` is `13a1fd84a013d85952d04c512313e8fcf9e36475` (PR #72 merge). PR #72's exact tested source tree passed the full flight workflow (110 backend checks and 140 Browser E2E checks, 0 failures); normal CI also passed. PR #73 is a focused rendering-security follow-up. The configured URL matches the existing version-4 deployment ID, but current backend deployment, live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
 
 ## Evidence-based baseline
 
@@ -80,15 +80,3 @@ PR #67 adds browser assertions for the data-quality report's user-facing scope d
 - `git diff --check` passed. Preserve the untracked `docs/AI-ENGINEERING-PROTOCOL.md`; do not commit it.
 - Clasp reports four numbered versions. The configured URL matches version 4's deployment ID; a separate `@HEAD` deployment exists. This is not evidence that the latest `main` source is deployed.
 - Still open: owner confirmation of project identity, deployment settings, Sheet binding and Script Properties in the Apps Script editor; live owner/manager/staff and receipt authorization; a real scheduled backup; witnessed restore to a separate recovery Sheet/folder; dependency vulnerability triage.
-
-
-## PR #72 merged — current mock-backed evidence
-
-- Main merge SHA: `13a1fd84a013d85952d04c512313e8fcf9e36475`.
-- Exact tested PR #72 head: `d7f9e928f542a831d4588935d1c05dd96ed28979`.
-- Full flight, CI and Browser E2E passed; Browser E2E had 140 checks / 0 failures.
-- This evidence covers mock-backed workflows only. It does not close live Apps Script identity/authorization, real backup or witnessed restore gates.
-
-## PR #73 — report date-range rendering security
-
-The report rendering follow-up escapes both formatted date-range labels and adds a hostile-state Browser E2E regression. Treat verification as pending until Full Flight Test, CI and Browser E2E pass on the exact final PR head. This frontend/test PR does not deploy Apps Script or close any live operational gate.
