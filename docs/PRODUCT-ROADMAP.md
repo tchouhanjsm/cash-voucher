@@ -207,13 +207,17 @@ PR #72 merged at `13a1fd84a013d85952d04c512313e8fcf9e36475`. Its exact PR head `
 
 PR #73 merged at `71033675cc9f52ad391f8b2d06a362551a224be6`. Its tested head passed Full Flight Test, normal CI and Browser E2E; 110 backend checks and 141 browser checks passed with zero failures. The change escapes the report date labels and tests malformed state. It is one sink-level fix, not a full XSS certification.
 
-## Current engineering phase — PR #74: payment success voucher-number rendering
+## Completed phase — PR #74: payment success voucher-number rendering
 
-The payment/receipt save confirmation interpolated `vno(c)` into `#nres.innerHTML` without `esc()`. Escape the voucher number at this sink and add Browser E2E coverage using a hostile API response, asserting literal text, no injected SVG node and no payload execution. PR #70 covered register/print sinks; this is a separate user-visible confirmation sink.
+PR #74 merged to `main` as `970475dc440a3dc84b788087e60a73836d3d8814`. Its exact tested head `96fcc2b62e126c92318b97b3d8678302ef6dec11` passed Full Flight Test, normal CI and Browser E2E (110 backend checks; 142 browser checks, zero failures). It escaped the server-returned voucher number in the success panel and added hostile-response browser coverage. This remains a targeted fix, not complete XSS certification.
 
-**Exit gate:** Full Flight Test, normal CI and Browser E2E pass on the exact same final PR head. Keep the change limited to this sink, regression test and handoff updates.
+## Current engineering phase — PR #75: bulk import completion feedback
 
-## Product priorities after PR #74
+Improve the bulk-import completion panel so assistive technology receives a polite status announcement and the copy accurately distinguishes cash receipts from payments. Keep the change limited to the existing completion panel, focused Browser E2E coverage and synchronized handoff docs; no import contract, data semantics, or backend behavior changes.
+
+**Exit gate:** Full Flight Test, normal CI and Browser E2E pass on the exact same final PR head. No deployment or production mutation.
+
+## Product priorities after PR #75
 
 1. **P0 — Operational assurance:** owner confirms the live Apps Script target/settings, verifies role and receipt permissions, observes a real scheduled backup and witnesses restore into a separate recovery destination. Code/CI does not replace these operations.
 2. **P1 — Rendering-security audit:** continue the source-by-source inventory with regression tests for confirmed unsafe sinks. Do not claim full XSS certification until the inventory has been reviewed.
