@@ -179,6 +179,24 @@ with sync_playwright() as p:
         and 'does not verify the current Drive backup contents' in page.locator('#backup-status').inner_text(),
         'owner settings show honest backup status and recovery limitations',
     )
+    page.click('[data-act=dqscan]')
+    page.wait_for_function("document.querySelector('#dq-results').innerText.includes('Scanned')")
+    dq_text = page.locator('#dq-results').inner_text()
+    check(
+        'structural consistency' in dq_text
+        and 'does not determine tax compliance' in dq_text,
+        'owner data-quality scan shows results and its accounting/tax limitation',
+    )
+    page.click('[data-act=bkintegrity]')
+    page.wait_for_function(
+        "document.querySelector('#backup-integrity-results').innerText.includes('Backup integrity inspection failed.')"
+    )
+    check(
+        page.locator('#backup-integrity-results').get_attribute('role') == 'status'
+        and 'Backup integrity inspection failed.' in page.locator('#backup-integrity-results').inner_text()
+        and not page.locator('[data-act=bkintegrity]').is_disabled(),
+        'backup inspection failure is announced and the retry action is restored',
+    )
     check(page.locator('#aud').count() == 0, 'audit events are no longer embedded in Settings')
     check(page.locator('[data-v=audit]').count() == 1, 'owner has a dedicated audit navigation item')
     page.click('[data-v=audit]')

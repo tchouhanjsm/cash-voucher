@@ -151,7 +151,7 @@ Do not rerun `setup()` during a normal release. Do not push a new backend versio
 
 PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. Its exact PR head `09eaac429307e4243d7a7d2fce1f16ef3402b029` passed CI and Browser E2E. The feature adds manager/owner-only recorded voucher movement reporting with source rows, validated filters, active/cancelled totals and CSV safety. It does not classify physical cash, calculate tax, or establish profit/bank balance.
 
-## Next phase — PR #66: backup integrity inspection
+## Completed phase — PR #66: backup integrity inspection
 
 Prioritize operational assurance before expanding financial reporting. Add an owner-only read-only inspection for the ten latest managed backup snapshots:
 
@@ -161,7 +161,7 @@ Prioritize operational assurance before expanding financial reporting. Add an ow
 - Show per-snapshot pass/warning/fail results and sheet row counts without exposing Drive IDs.
 - Fail closed when a snapshot cannot be inspected.
 
-This is structural inspection only. It does not run a restore, mutate production, prune backups, or prove a restored workbook behaves correctly. The operational P0 remains a witnessed restore into a separate recovery Sheet/folder, with record counts and voucher numbering validated.
+PR #66 is merged at `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`. This is structural inspection only. It does not run a restore, mutate production, prune backups, or prove a restored workbook behaves correctly. The operational P0 remains a witnessed restore into a separate recovery Sheet/folder, with record counts and voucher numbering validated.
 
 ## Release and product boundaries
 
@@ -170,3 +170,9 @@ This is structural inspection only. It does not run a restore, mutate production
 - Daily cash close, physical cash classification, GST/TDS, general-ledger claims and accountant-specific exports remain behind explicit owner/accountant/CA decisions.
 - Live authorization, scheduled backup execution, Drive permissions, restoreability, real-device PWA update/install, accessibility and hotel pilot remain unverified.
 - Node v24 is outside the declared Node 20–22 range; npm previously reported three high-severity dependency findings that still need triage.
+
+## Current engineering phase — PR #67: inspection UI regression coverage
+
+Before adding another product feature, extend browser regression coverage around the existing owner-only data-quality and backup-integrity inspection surfaces. Verify the data-quality results and its explicit accounting/tax limitation; verify backup-integrity failure messaging and retry restoration in the browser mock. This is UI failure-path coverage only, not live Drive or recovery evidence.
+
+**Operational P0 remains independent of this PR:** verify the intended Apps Script deployment and live role boundaries, observe a real scheduled backup, and complete a witnessed restore into a separate recovery Sheet/folder. Do not declare production readiness or claim restoreability from mock tests.

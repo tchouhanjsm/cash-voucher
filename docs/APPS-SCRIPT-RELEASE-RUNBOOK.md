@@ -125,3 +125,7 @@ PR #64 merged at `e266d0fba4d1468cdffac077bfac5ffef2a6ea90`. The owner reports l
 - PR #66 adds an owner-only structural scan of the latest ten managed backup snapshots. It checks the spreadsheet copy, required tabs, header compatibility, receipt folder, manifest and receipt-copy references. It is read-only and does not restore or mutate data.
 - A successful integrity scan is not restore proof. The P0 release gate remains a witnessed restore into a separate recovery Sheet/folder, followed by record-count and voucher-number validation.
 - Never run `setup()` as a routine release step. Never test by overwriting the only production copy.
+
+## Post-PR #66 / PR #67 verification note
+
+PR #67 adds browser coverage for owner Settings data-quality results and backup-integrity inspection failure/retry behavior under the mock Google services. This does not verify live Drive permissions, actual snapshot contents, the configured Web App deployment, or restoration. The local report supplied after PR #66 showed Node v24 (outside the declared Node 20–22 range) and Browser E2E not run because Playwright was missing for the selected Python interpreter. Use supported Node and require exact-head GitHub CI plus Browser E2E before merge. Keep the existing deployment unchanged unless the owner separately authorizes a release after target verification.

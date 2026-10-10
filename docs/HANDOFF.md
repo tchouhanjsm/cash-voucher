@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #65 merge):** `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`  
+**Verified main SHA (PR #66 merge):** `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -40,10 +40,11 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #65 adds a manager/owner-only read-only recorded voucher movement report with date/type/status filters, source rows, active/cancelled totals and CSV formula-prefix protection.
 - The Apps Script deployment was last reported at version 4 before PRs #64 and #65 merged. Do **not** assume current `main` is deployed. No deployment is authorized by this phase.
 
-## Current phase — PR #66: backup integrity inspection
+## Completed phase — PR #66: backup integrity inspection
 
 - **Branch:** `feature/backup-integrity-report`.
 - **Base:** `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`.
+- **Merged:** `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`.
 - **Outcome:** add an owner-only, read-only inspection of the ten most recent managed backup snapshots. Check spreadsheet-copy presence/readability, required tabs, header compatibility, receipt folder, manifest format/count and manifest references to copied receipt files.
 - **Safety:** no restore, deletion, retention pruning, source mutation, setup, Clasp push or deployment. A pass means structural checks passed only; it does not prove restoreability. Header mismatches are warnings because a backup can predate the current schema.
 - **Verification:** exact head `5436bf9e233c8bf68bcb44e3b4ca33f19229f24f` passed CI and Browser E2E (126 checks, 0 failures). [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38028051313) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38028051295). Live Drive behavior remains unverified.
@@ -64,3 +65,11 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - Verify live refs and exact-head workflows; distinguish source, CI/mock, deployed and live operational evidence.
 - The owner reviews and merges PRs and retains all production deployment authority.
 - Never run `setup()` for a routine release, change deployment targets by guess, mutate production records for tests, force-push, or claim backup success proves restoreability.
+
+## Current phase — PR #67: owner inspection Browser E2E coverage
+
+- **Base SHA:** `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`.
+- **Scope:** add browser assertions for the owner Settings data-quality scan and the backup-integrity inspection's user-visible failure/retry behavior in the mock-Google environment.
+- **Evidence boundary:** the browser mock cannot prove live Drive access or restoreability. Backup integrity success-path structure remains covered by injected-service backend tests; this E2E addition deliberately verifies that the UI announces a failure and re-enables retry when the mock lacks Drive folder inspection support.
+- **Local evidence from owner-provided terminal output:** `npm run check` passed at PR #66 merge with 110 backend checks; Browser E2E did not run locally because Playwright is missing for the selected Python interpreter. Node v24 is outside the declared Node 20–22 range. Exact-head GitHub workflows are the merge gate for this PR.
+- **Unchanged operational P0:** live owner/manager/staff authorization checks, a real scheduled backup, and a witnessed restore to a separate recovery Sheet/folder remain open. No Clasp push, deployment, setup, or production mutation.
