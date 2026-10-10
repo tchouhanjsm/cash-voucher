@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #73 merge):** `71033675cc9f52ad391f8b2d06a362551a224be6`  
+**Verified main SHA (PR #75 base):** `970475dc440a3dc84b788087e60a73836d3d8814` (PR #74 merge)  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -122,13 +122,19 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Evidence:** full flight, normal CI and Browser E2E passed; 110 backend checks and 141 browser checks, zero failures.
 - **Scope:** escaped the formatted report date range and added a hostile-state browser regression. This remains a targeted fix, not XSS certification.
 
-## Current development phase — PR #74: escape voucher number in save confirmation
+## Completed phase — PR #74: escape voucher number in save confirmation
 
-- **Base SHA:** `71033675cc9f52ad391f8b2d06a362551a224be6`.
-- **Branch:** `feature/escape-payment-success-voucher-number`.
-- **Outcome:** escape the voucher number in the successful payment/receipt save confirmation and add a hostile API-response browser regression.
-- **Why now:** the save confirmation interpolated `vno(c)` into `#nres.innerHTML` without `esc()`. PR #70 fixed register/print sinks, but the success panel was a separate remaining sink.
-- **Verification:** exact-head full flight, CI and Browser E2E are required. No local checkout is available here; local checks are not claimed.
-- **Release boundary:** frontend rendering + Browser E2E + handoff docs only. No Apps Script upload/deployment, `setup()`, or production mutation.
-- **Open production P0:** target/settings confirmation, live role/receipt checks, real scheduled backup and witnessed isolated restore remain unverified.
-- **Local preservation:** do not stage or overwrite the owner's local `docs/AI-ENGINEERING-PROTOCOL.md`.
+- **Merged main:** `970475dc440a3dc84b788087e60a73836d3d8814`.
+- **Exact tested PR head:** `96fcc2b62e126c92318b97b3d8678302ef6dec11`.
+- **Evidence:** [Full Flight Test passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38054704268), [Browser E2E passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38054704208) (142 checks, 0 failures), and [CI passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38054704222). Full flight confirms 110 backend checks.
+- **Scope:** escape API-returned voucher number in the save confirmation and add a hostile-response regression.
+- **Operational P0 remains open:** owner confirmation of live Apps Script target/settings, live role/receipt authorization, a real scheduled backup, and witnessed restore into a separate recovery Sheet/folder. No deployment or production mutation is authorized by PR #75.
+
+## Current development phase — PR #75: bulk import completion feedback
+
+- **Branch:** `feature/harden-bulk-upload-rendering`.
+- **Base SHA:** `970475dc440a3dc84b788087e60a73836d3d8814`.
+- **Outcome:** announce bulk import completion through a polite status region and distinguish imported cash receipts from payments in the confirmation.
+- **Verification:** pending until CI, Browser E2E and Full Flight Test pass on the exact final head.
+- **Release boundary:** UI/test/docs only. No backend/API/schema/dependency/production data change, Clasp push, Apps Script deployment, or `setup()`.
+- **Preserve:** do not stage or overwrite the owner's local `docs/AI-ENGINEERING-PROTOCOL.md`.
