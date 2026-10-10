@@ -1,6 +1,6 @@
 import { $ } from '../core/dom.js';
 import { can, categories, isIn, nm, S, vno, bySeq } from '../core/state.js';
-import { catOptionsNode, catOpts, vendorList, vendorListNode } from '../core/form-options.js';
+import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import { compress, csvCell, dmy, download, esc, money, parseAmt, today } from '../core/utils.js';
 import { closeModal, dialog, fail, head, refreshBtn, toast } from '../core/ui.js';
 
