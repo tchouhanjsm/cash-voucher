@@ -104,7 +104,6 @@ Browser E2E asserts the dynamic labels and touch-target dimensions at 320 CSS pi
 
 The manager register currently presents edit/cancel/receipt/print as compact controls inside a horizontally scrollable table. The mobile pass gives each voucher clearer type and amount identity, reflows the record into a compact card-like row at phone widths, arranges filters for narrow screens, and groups actions under an accessible label. Row action targets are raised to at least 44px on mobile. These are source-level and browser viewport guardrails; they do not establish real-device thumb reach, assistive-technology quality, or a complete WCAG conformance result. Existing capability checks are presentation only; server authorization remains authoritative.
 
-
 ## Owner audit discoverability — October 2026
 
 The audit log has moved from the bottom of Settings to a dedicated owner-only navigation route. The view provides search, user/action filters, date bounds, an explicit loaded-record count, clear-filter recovery, and CSV export. It uses the existing `auditLog` API and keeps audit values rendered with `textContent`.
