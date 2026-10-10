@@ -1,6 +1,12 @@
 # Release Readiness
 
-**Status: not verified as production-ready. Current `main` is `13a1fd84a013d85952d04c512313e8fcf9e36475` (PR #72 merge). PR #72's exact tested source tree passed the full flight workflow (110 backend checks and 140 Browser E2E checks, 0 failures); normal CI also passed. PR #73 is a focused rendering-security follow-up. The configured URL matches the existing version-4 deployment ID, but current backend deployment, live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
+**Status: not verified as production-ready. Current `main` is
+`71033675cc9f52ad391f8b2d06a362551a224be6` (PR #73 merge).** PR #73's exact
+tested tree passed Full Flight Test, normal CI and Browser E2E (110 backend
+checks and 141 browser checks, zero failures). PR #74 is a focused frontend
+rendering-security follow-up. The configured URL's prior alignment with
+version 4 does not prove current `main` is deployed. Live authorization,
+scheduled backup and isolated restore remain unverified.
 
 ## Evidence-based baseline
 
@@ -80,3 +86,18 @@ PR #67 adds browser assertions for the data-quality report's user-facing scope d
 - `git diff --check` passed. Preserve the untracked `docs/AI-ENGINEERING-PROTOCOL.md`; do not commit it.
 - Clasp reports four numbered versions. The configured URL matches version 4's deployment ID; a separate `@HEAD` deployment exists. This is not evidence that the latest `main` source is deployed.
 - Still open: owner confirmation of project identity, deployment settings, Sheet binding and Script Properties in the Apps Script editor; live owner/manager/staff and receipt authorization; a real scheduled backup; witnessed restore to a separate recovery Sheet/folder; dependency vulnerability triage.
+
+
+## PR #73 merged — rendering regression evidence
+
+- Merge SHA: `71033675cc9f52ad391f8b2d06a362551a224be6`.
+- Exact tested head: `4cc407932c86e583a43d50286e5ac3178165cb31`.
+- Full Flight Test, CI and Browser E2E passed. Browser E2E reported 141 checks,
+  zero failures. This is mock-backed evidence only.
+
+## PR #74 — save-confirmation rendering security
+
+PR #74 escapes a server-returned voucher number in the success panel and adds a
+hostile-response browser regression. Verification remains pending until Full
+Flight Test, normal CI and Browser E2E all pass on the exact final PR head. This
+change does not deploy Apps Script or close live operational gates.
