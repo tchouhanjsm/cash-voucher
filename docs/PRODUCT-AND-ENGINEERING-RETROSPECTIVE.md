@@ -300,7 +300,7 @@ point**, not a scheduled financial operation.
 1. Keep CI quality and Browser E2E as required, separate checks.
 2. Require exact-final-SHA evidence in the PR handoff.
 3. Run a small focused test locally for changed logic, then full `npm run check` and `npm run
-   test:e2e` when the environment permits.
+test:e2e` when the environment permits.
 4. Keep dependency audit, formatting, syntax, contrast, frontend-release consistency and handoff
    validation in CI.
 5. Provide failure diagnostics/artifacts and avoid duplicated concurrent runs.
