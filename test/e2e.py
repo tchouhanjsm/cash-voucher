@@ -515,7 +515,7 @@ with sync_playwright() as p:
     )
 
     stale_lease_count = page.evaluate(
-        \"\"\"async () => {
+        """async () => {
           const db = await new Promise((resolve, reject) => {
             const request = indexedDB.open('cash-voucher', 1);
             request.onsuccess = () => resolve(request.result);
@@ -542,7 +542,7 @@ with sync_playwright() as p:
             };
             request.onerror = () => reject(request.error);
           });
-        }\"\"\"
+        }"""
     )
     check(stale_lease_count == 1, 'test seeds one expired lease from an abandoned tab')
 
