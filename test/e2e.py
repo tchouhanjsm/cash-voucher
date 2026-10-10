@@ -843,11 +843,16 @@ with sync_playwright() as p:
     )
     report_text = page.locator('#view').inner_text()
     check(
-        'Recorded Movement Report' in report_text
-        and 'does not establish physical cash' in report_text
-        and 'Selected payment total' in report_text
-        and 'Selected receipt total' in report_text,
-        'movement report explains its scope and exposes payment/receipt totals',
+        'Recorded Movement Report' in report_text,
+        'movement report heading is visible',
+    )
+    check(
+        'does not establish physical cash' in report_text,
+        'movement report discloses that it is not a physical-cash reconciliation',
+    )
+    check(
+        'Selected payment total' in report_text and 'Selected receipt total' in report_text,
+        'movement report exposes payment and receipt totals',
     )
     report_rows = page.locator('#view table tbody tr')
     check(
