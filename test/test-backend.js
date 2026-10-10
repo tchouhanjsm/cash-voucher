@@ -524,9 +524,9 @@ ok(
 );
 ok(g.lockStats.waits === g.lockStats.releases, 'all acquired script locks are released');
 // owner-only data-quality report: scan source records, do not infer accounting treatment
-ok(as(S, 'dataQualityReport').code === 'FORBIDDEN', 'staff cannot read data-quality report');
+ok(as(A, 'dataQualityReport').code === 'FORBIDDEN', 'staff cannot read data-quality report');
 ok(
-  as(M, 'dataQualityReport').code === 'FORBIDDEN',
+  as(resetChange.data.token, 'dataQualityReport').code === 'FORBIDDEN',
   'manager cannot read owner data-quality report',
 );
 
