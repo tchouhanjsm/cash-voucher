@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Status: not verified as production-ready. Current `main` is `13a1fd84a013d85952d04c512313e8fcf9e36475` (PR #72 merge). PR #72's exact tested source tree passed the full flight workflow (110 backend checks and 140 Browser E2E checks, 0 failures) and normal CI. PR #73 is a focused rendering-security follow-up. The configured URL's prior alignment with a version-4 deployment ID is not proof that current `main` is deployed. Live authorization, scheduled backup and isolated restore remain unverified.**
+**Status: not verified as production-ready. Current `main` is `13a1fd84a013d85952d04c512313e8fcf9e36475` (PR #72 merge). PR #72's exact tested source tree passed the full flight workflow (110 backend checks and 140 Browser E2E checks, 0 failures) and normal CI. PR #73 is a focused rendering-security follow-up.** The configured URL's prior alignment with a version-4 deployment ID is not proof that current `main` is deployed. Live authorization, scheduled backup and isolated restore remain unverified. Production readiness remains unverified until these operational gates are complete.
 
 ## Evidence-based baseline
 
