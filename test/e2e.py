@@ -848,11 +848,13 @@ with sync_playwright() as p:
         and 'Selected receipt total' in report_text,
         'movement report explains its scope and exposes payment/receipt totals',
     )
+    report_rows = page.locator('#view table tbody tr')
     check(
         'Guest Room 5' in report_text
         and 'RECEIPT' in report_text
-        and 'Ram Traders' not in page.locator('#view table tbody').inner_text(),
-        'default active report lists active source vouchers and excludes cancelled payment',
+        and report_rows.count() >= 1
+        and all(row.locator('td').nth(5).inner_text() == 'ACTIVE' for row in report_rows.all()),
+        'default active report lists active source vouchers and excludes cancelled records',
     )
 
     page.select_option('#movementStatus', 'CANCELLED')
