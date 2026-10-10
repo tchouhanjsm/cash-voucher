@@ -1,8 +1,8 @@
 # Engineering Handoff
 
-**Updated:** 2026-10-09  
+**Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #57 base):** `9249d753daf361798c457d237ab16d121d13b47e`  
+**Verified main SHA (PR #58 base):** `d63e146ac76b79fad7cc930813c303db009fd59b`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -33,23 +33,19 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #57 — manager register mobile review
+## Current batch: PR #58 — owner audit discoverability
 
-Scope: identify payment-versus-receipt and status at a glance; make register actions clearly labelled and easier to tap on phones; reflow register rows and filters into a compact card layout at mobile widths.
+**Branch:** `feature/owner-audit-discoverability`.  
+**Base main SHA:** `d63e146ac76b79fad7cc930813c303db009fd59b`.
 
-Keep all action eligibility tied to existing client capability checks and rely on server authorization as the security boundary. No API, schema, accounting, or production behavior change.
+Scope: dedicated owner-only Audit log navigation, search/user/action/date filters, visible latest-200 limitation, safe text rendering, and CSV export of the filtered loaded events. Reuse the existing `auditLog` API and server-side permission; no backend/schema/accounting changes.
 
-**Branch:** `ui/manager-register-mobile-review`.
-**PR:** https://github.com/tchouhanjsm/cash-voucher/pull/57.
-Base is the verified `main` SHA above.
-
-**Current gate:** Formatting corrections have been applied after earlier CI runs rejected `docs/HANDOFF.md` and `frontend/features/register.js`. The current branch SHA and exact-head CI/E2E links are maintained in [PR #57](https://github.com/tchouhanjsm/cash-voucher/pull/57). Do not treat results from superseded heads as current; both workflows must pass on the same head before owner review. Local checks were not run because this environment could not connect to GitHub directly.
+Current gate: implementation and targeted Browser E2E coverage are in progress. Local commands are not run from this connector-only environment; exact-head CI/E2E evidence will be linked from the PR description. No merge, deployment, live Drive operation or production-data change is authorized.
 
 Next steps:
-
-1. Confirm CI and Browser E2E pass on the same current PR head.
-2. Inspect the final diff for mobile behavior, existing filter/totals/CSV semantics, and permission visibility.
-3. Leave review and merge to the owner.
+1. Complete two-pass product/security review and regression tests.
+2. Verify CI and Browser E2E on the same exact PR head.
+3. Leave merge to the owner.
 
 ## Operational gates still open
 
