@@ -114,7 +114,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E installs a hostile value getter on the report's date input, submits the malformed range, and asserts the payload appears only as literal text with no injected SVG node or handler execution. This validates output-context escaping under malformed state, not a claim that ordinary date inputs permit markup.
 - Remaining active template renderers still need ongoing source-level review; this change does not provide full XSS certification.
 
-
 ## PR #74 — Escape voucher number in save confirmation
 
 - The successful payment/receipt save panel interpolated `vno(c)` directly into
