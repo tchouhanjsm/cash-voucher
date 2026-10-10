@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Status: engineering candidate; not yet verified as production-ready.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
+**Status: engineering candidate; not yet verified as production-ready. PR #62 is merged; live Apps Script deployment and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
 
 ## Evidence-based baseline
 
@@ -16,7 +16,7 @@
 | Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
 | Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
-| Production Apps Script deployment                           | NOT RELEASED          | No deployment performed in this work                                                                     |
+| Production Apps Script deployment                           | NOT VERIFIED          | PR #62 source is merged, but live Clasp target, deployed version and production behavior have not been verified in this work |
 | Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
 
 The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
@@ -38,6 +38,8 @@ The owner-only Settings panel reports recorded backup metadata, but does not ver
 - [ ] Verify login, PIN change, payment, cash receipt, receipt photo, register, bulk upload, audit view, printing, offline queue and recovery.
 
 ## Gate 3 — live Apps Script and data
+
+Before upload, follow [`Apps Script Release Runbook`](APPS-SCRIPT-RELEASE-RUNBOOK.md). Confirm the local `.clasp.json` target and match the current deployment ID to `config.js`; do not guess a script ID or rerun `setup()` for a routine code update.
 
 - [ ] Keep production Sheet and Drive folders private; verify staff have no direct spreadsheet edit access.
 - [ ] Confirm deployment executes as the intended owner/deployer and points at the intended Sheet.
