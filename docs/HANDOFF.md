@@ -42,15 +42,9 @@ Scope: dedicated owner-only Audit log navigation, search/user/action/date filter
 limitation, safe text rendering, and CSV export of filtered loaded events.
 Reuse the existing `auditLog` API and server-side permission; no backend/schema/accounting changes.
 
-Current gate: implementation and targeted Browser E2E coverage are in progress. Local commands are
-not run from this connector-only environment; exact-head CI/E2E evidence will be linked from the PR
-description. No merge, deployment, live Drive operation or production-data change is authorized.
+Verified PR head: `b51676e8cb45fad81078b1e0516709dc1367ef09`. CI passed and Browser E2E passed 125 checks / 0 failures on this same SHA. The browser suite uses a local mock API; live Google authorization, full audit-history completeness, and real-device accessibility remain unverified.
 
-Next steps:
-
-1. Complete two-pass product/security review and regression tests.
-2. Verify CI and Browser E2E on the same exact PR head.
-3. Leave merge to the owner.
+Next: owner review and merge. No Apps Script push, deployment, live Drive operation, or production-data change is authorized.
 
 ## Operational gates still open
 
