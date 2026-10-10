@@ -342,7 +342,7 @@ function dataQualityReport_(user) {
     if (!id)
       add(voucher, 'VoucherID', 'VOUCHER_ID_MISSING', 'Voucher ID is missing.', 'error');
 
-    if (!/^\\d+$/.test(number) || Number(number) < 1) {
+    if (!/^[0-9]+$/.test(number) || Number(number) < 1) {
       add(
         voucher,
         'VoucherNo',
