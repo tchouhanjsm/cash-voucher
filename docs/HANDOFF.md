@@ -46,7 +46,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Base:** `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`.
 - **Outcome:** add an owner-only, read-only inspection of the ten most recent managed backup snapshots. Check spreadsheet-copy presence/readability, required tabs, header compatibility, receipt folder, manifest format/count and manifest references to copied receipt files.
 - **Safety:** no restore, deletion, retention pruning, source mutation, setup, Clasp push or deployment. A pass means structural checks passed only; it does not prove restoreability. Header mismatches are warnings because a backup can predate the current schema.
-- **Verification:** exact-head CI and Browser E2E required before merge; live Drive behavior remains unverified in this environment.
+- **Verification:** exact head `5436bf9e233c8bf68bcb44e3b4ca33f19229f24f` passed CI and Browser E2E (126 checks, 0 failures). [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38028051313) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38028051295). Live Drive behavior remains unverified.
 
 ## Operational gates still open
 
