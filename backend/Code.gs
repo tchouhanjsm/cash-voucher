@@ -429,6 +429,88 @@ function dataQualityReport_(user) {
   };
 }
 
+function recordedMovementReport_(user, req) {
+  need_(user, 'viewAll');
+  const from = String(req.from || '').trim();
+  const to = String(req.to || '').trim();
+
+  if (!validDate_(from) || !validDate_(to) || from > to) {
+    throw err_('Choose a valid reporting date range.', 'VALIDATION');
+  }
+
+  const type = String(req.type || 'ALL').trim();
+  if (type !== 'ALL' && type !== 'PAYMENT' && type !== 'RECEIPT') {
+    throw err_('Choose a valid voucher type.', 'VALIDATION');
+  }
+
+  const status = String(req.status || 'ACTIVE').trim();
+  if (status !== 'ALL' && status !== 'ACTIVE' && status !== 'CANCELLED') {
+    throw err_('Choose a valid voucher status.', 'VALIDATION');
+  }
+
+  const items = readAll_('Vouchers')
+    .filter(function (voucher) {
+      const date = isoDate_(voucher.Date);
+      return (
+        date >= from &&
+        date <= to &&
+        (type === 'ALL' || voucher.Type === type) &&
+        (status === 'ALL' || voucher.Status === status)
+      );
+    })
+    .sort(function (a, b) {
+      return (
+        isoDate_(a.Date).localeCompare(isoDate_(b.Date)) ||
+        String(a.Type).localeCompare(String(b.Type)) ||
+        Number(a.VoucherNo) - Number(b.VoucherNo)
+      );
+    })
+    .map(function (voucher) {
+      return {
+        id: String(voucher.VoucherID || ''),
+        voucherNo: String(voucher.VoucherNo || ''),
+        date: isoDate_(voucher.Date),
+        vendor: String(voucher.Vendor || ''),
+        category: String(voucher.Category || ''),
+        notes: String(voucher.Notes || ''),
+        type: String(voucher.Type || ''),
+        status: String(voucher.Status || ''),
+        amount: Number(voucher.Amount) || 0,
+        createdBy: String(voucher.CreatedBy || ''),
+        cancelReason: String(voucher.CancelReason || ''),
+      };
+    });
+
+  const active = items.filter(function (item) {
+    return item.status === 'ACTIVE';
+  });
+  const sum = function (list, wantedType) {
+    return list
+      .filter(function (item) {
+        return !wantedType || item.type === wantedType;
+      })
+      .reduce(function (total, item) {
+        return total + item.amount;
+      }, 0);
+  };
+
+  return {
+    generatedAt: nowIso_(),
+    from: from,
+    to: to,
+    type: type,
+    status: status,
+    count: items.length,
+    activeCount: active.length,
+    cancelledCount: items.length - active.length,
+    paymentTotal: sum(items, 'PAYMENT'),
+    receiptTotal: sum(items, 'RECEIPT'),
+    activePaymentTotal: sum(active, 'PAYMENT'),
+    activeReceiptTotal: sum(active, 'RECEIPT'),
+    items: items,
+  };
+}
+
 function backupStatus_(user) {
   need_(user, 'settings');
   const p = props_();
@@ -534,6 +616,7 @@ const ACTIONS = {
   auditLog: auditLog_,
   backupStatus: backupStatus_,
   dataQualityReport: dataQualityReport_,
+  recordedMovementReport: recordedMovementReport_,
   logout: logout_,
 };
 const WRITES = {

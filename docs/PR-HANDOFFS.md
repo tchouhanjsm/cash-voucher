@@ -57,3 +57,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - **PR #63 — Apps Script release readiness:** merged. Owner reports backend upload and update of the configured existing deployment to version 4; live smoke tests and restore remain unverified.
 - **PR #64 — Owner-only voucher data-quality scan:** active on `feature/data-quality-exceptions`. Adds backend checks, Settings UI and mock regression tests; no schema migration, accounting inference or deployment.
+
+- **PR #65 — Recorded voucher movement report:** proposed on `feature/recorded-movement-report`; adds role-gated date/type/status filters, source rows, active/cancelled totals and safe CSV. No cash classification, tax logic, schema migration or deployment.

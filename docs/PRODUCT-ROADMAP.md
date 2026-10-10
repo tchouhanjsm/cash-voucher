@@ -152,3 +152,7 @@ Do not rerun `setup()` during a normal release. Do not push a new backend versio
 **PR #63 release outcome:** reviewed Apps Script files were uploaded locally and the existing configured Web App deployment was updated to version 4. Local unit/static checks passed; Browser E2E did not run because Playwright was unavailable. Live permissions and backup/restore are not yet verified.
 
 **PR #64 — owner-only voucher data-quality scan:** add a real backend action and Settings UI that lists source voucher exceptions (missing values, invalid amount/date/type/status, duplicate voucher numbers and ClientIDs). This is not tax validation, physical-cash classification, a ledger, or an accountant certification. The PR must include automated backend regressions and exact-head CI/browser evidence; no deployment as part of the PR.
+
+## Next implementation — recorded voucher movement report (PR #65)
+
+Add manager/owner-only reporting from source voucher rows. Include inclusive date range, PAYMENT/RECEIPT and ACTIVE/CANCELLED/ALL filters, row counts, selected-row totals, active-only totals, source details and formula-safe CSV. Label every amount as recorded voucher movement, never physical cash, profit, bank balance or tax liability. Daily cash close and accountant/tax integrations remain behind their existing approval gates.
