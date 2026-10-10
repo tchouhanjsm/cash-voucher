@@ -212,8 +212,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   function populateAuditOptions() {
-    const usersList = [...new Set(auditRows.map((row) => String(row.user || '')).filter(Boolean))].sort();
-    const actionsList = [...new Set(auditRows.map((row) => String(row.action || '')).filter(Boolean))].sort();
+    const usersList = [
+      ...new Set(auditRows.map((row) => String(row.user || '')).filter(Boolean)),
+    ].sort();
+    const actionsList = [
+      ...new Set(auditRows.map((row) => String(row.action || '')).filter(Boolean)),
+    ].sort();
     const userSelect = $('#aud-user');
     const actionSelect = $('#aud-action');
     if (!userSelect || !actionSelect) return;
@@ -305,7 +309,11 @@ export function createAdministration({ api, getNavigation, signOut }) {
       row.target,
       row.details,
     ])].map((record) => record.map(csvCell).join(',')).join('\\r\\n');
-    download(`cash-voucher-audit-${new Date().toISOString().slice(0, 10)}.csv`, csv, 'text/csv;charset=utf-8');
+    download(
+      `cash-voucher-audit-${new Date().toISOString().slice(0, 10)}.csv`,
+      csv,
+      'text/csv;charset=utf-8',
+    );
     toast(`Exported ${rows.length} audit events from the loaded latest-200 window.`, 'ok');
   }
 
