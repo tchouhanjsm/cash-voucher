@@ -107,7 +107,6 @@ The E2E suite runs against the repository's local mock Apps Script service. It d
 
 Before considering this batch ready for review, the CI quality gate and Browser E2E must both pass on the exact final PR head. If an assertion fails, fix the test or product defect and rerun both workflows; do not report an earlier SHA's result as final.
 
-
 ## PR #73 — Escape report date-range labels
 
 - The Recorded Movement Report previously interpolated `dmy(R.from)` and `dmy(R.to)` directly into the `#view.innerHTML` template. The date control constrains ordinary input, but `dmy()` is only a formatter and does not encode HTML.
