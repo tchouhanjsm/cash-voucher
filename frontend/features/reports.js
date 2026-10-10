@@ -21,7 +21,8 @@ export function createReports({ api }) {
     }
 
     const rows = R.rows
-      .map((item) => `
+      .map(
+        (item) => `
         <tr>
           <td class="nw">${esc(dmy(item.date))}</td>
           <td class="nw">${esc(item.type === 'RECEIPT' ? 'R-' : '')}${esc(item.voucherNo)}</td>
@@ -35,7 +36,8 @@ export function createReports({ api }) {
           <td>${esc(item.status)}</td>
           <td class="r nw amt">${money(item.amount)}</td>
         </tr>
-      `)
+      `,
+      )
       .join('');
 
     return `
@@ -140,7 +142,8 @@ export function createReports({ api }) {
         </div>
       `;
     } else if (!R.loading && !R.error) {
-      results = '<div class="card"><p class="muted">Run the report to see recorded voucher movements.</p></div>';
+      results =
+        '<div class="card"><p class="muted">Run the report to see recorded voucher movements.</p></div>';
     }
 
     $('#view').innerHTML = head('Recorded Movement Report') + filters + error + results;

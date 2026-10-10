@@ -4,19 +4,10 @@ const fs = require('node:fs');
 const source = fs.readFileSync(require.resolve('../frontend/core/utils.js'), 'utf8');
 
 async function run() {
-  const moduleUrl =
-    'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
+  const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
   const { csvCell } = await import(moduleUrl);
 
-  for (const value of [
-    '=SUM(1,1)',
-    '+cmd',
-    '-cmd',
-    '@cmd',
-    '\t=cmd',
-    '\r=cmd',
-    '\n=cmd',
-  ]) {
+  for (const value of ['=SUM(1,1)', '+cmd', '-cmd', '@cmd', '\t=cmd', '\r=cmd', '\n=cmd']) {
     assert.match(
       csvCell(value),
       /^"'/,
