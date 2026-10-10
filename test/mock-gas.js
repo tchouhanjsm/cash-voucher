@@ -171,6 +171,8 @@ function create() {
     recordBackupFailure: (properties, snapshot, snapshotComplete, error) =>
       ctx.__api.recordBackupFailure_(properties, snapshot, snapshotComplete, error),
     backupDataWithServices: (services) => ctx.__api.backupDataWithServices_(services),
+    backupIntegrityReportWithServices: (services) =>
+      ctx.__api.backupIntegrityReportWithServices_(services),
   };
 }
 module.exports = { create };
