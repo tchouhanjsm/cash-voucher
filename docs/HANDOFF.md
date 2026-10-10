@@ -113,6 +113,6 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Branch:** feature/recorded-report-flight-coverage.
 - **Outcome:** exercise the accountant-facing Recorded Movement Report in Browser E2E, including default active-source rows, cancelled-only filtering, receipt-only filtering, cancellation metadata in CSV, and CSV contents matching the selected filters.
 - **Why this phase:** backend movement-report validation already has unit coverage, but the real browser-to-mock API-to-render/export path was not asserted by the current E2E suite. This closes a concrete functional verification gap rather than adding documentation alone.
-- **Verification:** pending on the final PR #72 head; the full flight workflow must pass before owner review. Local checks are not claimed in this environment.
+- **Verification:** exact-head full flight, CI and Browser E2E status/URLs are maintained in the PR #72 description. Owner review is blocked until all three pass on the final head. Local checks are not claimed in this environment.
 - **Operational P0:** live Apps Script target/authorization, role/receipt access, real scheduled backup and isolated restore remain open. No clasp push, deployment, setup(), or production mutation.
 - **Local preservation:** do not stage or commit the owner's untracked docs/AI-ENGINEERING-PROTOCOL.md.
