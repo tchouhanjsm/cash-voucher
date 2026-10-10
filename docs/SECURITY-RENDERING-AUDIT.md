@@ -1,7 +1,7 @@
 # Frontend Rendering Security Audit
 
 **Status:** incremental; not a full security certification  
-**Baseline:** merged source at `970475dc440a3dc84b788087e60a73836d3d8814` (PR #74 merge)  
+**Baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -11,6 +11,7 @@ The active application uses HTML template strings for several views. The review 
 ## Changes in this batch
 
 - Apply `esc(dmy(...))` where formatted voucher or date-range values are written into HTML in the register, printed voucher, dashboard, and bulk-preview renderers. `dmy()` is a display formatter, not an HTML sanitizer.
+- Escape the three settings values interpolated into quoted numeric-input `value` attributes (`nextVoucherNo`, `nextReceiptNo`, `openingBalance`). Although the normal backend contract emits numbers, malformed API/cache state must remain inert at an HTML sink.
 - Add Browser E2E regression cases using hostile markup in user name, vendor name, vendor company, audit details, and a pasted/bulk-preview vendor value. Tests assert the values remain visible as literal text, no injected `img`/ `svg` nodes appear in those view containers, and the payload handler does not execute.
 - Preserve existing coverage for a hostile voucher note in the register and for receipt previews being rendered with DOM APIs and generated blob URLs.
 
@@ -78,6 +79,7 @@ Existing Browser E2E regression coverage in `test/e2e.py` includes:
 - **Existing register check:** malicious voucher note remains text with no injected image.
 - **Modal edit/cancel:** hostile persisted vendor text remains in the input/text context and creates no `img`/`svg` nodes.
 - **Existing receipt preview check:** preview source is a generated blob URL.
+- **Settings numeric inputs:** a hostile bootstrap response attempts to break out of each `value` attribute; the settings form must contain no injected image/SVG nodes and the payload handler must not execute.
 
 The E2E suite runs against the repository's local mock Apps Script service. It does not verify a live Google deployment, real Sheet/Drive permissions, backup restoration, or every possible payload/output context.
 
@@ -120,3 +122,9 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Escape the formatted voucher number at the HTML text sink.
 - Browser E2E tampers with the `createVouchers` response and asserts the number appears as literal text, no SVG node is created, and the payload handler does not execute.
 - PR #70 covered register and print sinks; this is a separate success-panel sink. Other active template renderers remain in the review scope.
+
+## PR #77 — Escape numeric settings attributes
+
+- The settings renderer interpolated `nextVoucherNo`, `nextReceiptNo` and `openingBalance` directly into quoted HTML input `value` attributes. These fields are numeric under the normal backend contract, but a malformed response can still alter the HTML parser's attribute context.
+- Apply `esc()` at each of the three attribute sinks. This is an output-encoding fix, not a replacement for backend validation or a claim that every active template sink is safe.
+- Browser E2E tampers with the bootstrap response to place a quote-breaking SVG payload into all three fields, then asserts no image/SVG node is created and no payload handler runs. The test restores a normal bootstrap response before proceeding.
