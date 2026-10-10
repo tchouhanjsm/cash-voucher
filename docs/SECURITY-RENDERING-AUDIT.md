@@ -1,7 +1,7 @@
 # Frontend Rendering Security Audit
 
 **Status:** incremental; not a full security certification  
-**Baseline:** merged source at `15c98c9c2470e1149828b249760661290257544a`, extended in this PR  
+**Baseline:** merged source at `9751df49db6ba524376a2e39f79d744e4b36ec11`, extended in PR #69  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -19,8 +19,8 @@ The active application uses HTML template strings for several views. The review 
 ### Shared modal shell — `frontend/core/ui.js`
 
 - The dialog title and submit label use `esc()`; error content is assigned with `textContent`.
-- The `body` parameter is intentionally inserted as HTML. Treat it as trusted, caller-authored markup only. Each caller must escape every interpolated persisted or user-controlled value.
-- Consider replacing this raw-template contract in a separately tested refactor.
+- `dialog()` accepts only a DOM `Node` or `DocumentFragment`; string bodies are rejected before modal state changes.
+- Modal callsites build controls with DOM APIs, use `textContent` for user-derived visible text, and assign input/option values through DOM properties. The modal shell remains a static template with escaped title/submit labels and text-only error output.
 
 ### Administration and audit — `frontend/features/administration.js`
 
@@ -76,6 +76,7 @@ Added to `test/e2e.py` in this PR:
 - **Owner audit log:** vendor details remain text when displayed from audit records.
 - **Bulk preview:** imported vendor content remains text.
 - **Existing register check:** malicious voucher note remains text with no injected image.
+- **Modal edit/cancel:** hostile persisted vendor text remains in the input/text context and creates no `img`/`svg` nodes.
 - **Existing receipt preview check:** preview source is a generated blob URL.
 
 The E2E suite runs against the repository's local mock Apps Script service. It does not verify a live Google deployment, real Sheet/Drive permissions, backup restoration, or every possible payload/output context.
@@ -84,10 +85,18 @@ The E2E suite runs against the repository's local mock Apps Script service. It d
 
 - No claim that every dynamic HTML sink has been exhaustively or formally proven safe.
 - No full taint analysis, external penetration test, DOM-XSS fuzzing campaign, or real Google-account test was performed.
-- Raw HTML slots such as `dialog(title, body, ...)` remain part of the current architecture. Keep arguments caller-authored and review all interpolation paths.
+- Other active `innerHTML` template renderers remain in the architecture and still require a complete sink-by-sink review; this PR narrows only the shared modal contract and its current callers.
 - The reported dependency audit findings (three high-severity advisories during dependency installation) are a separate dependency-maintenance task. This PR does not change dependency versions.
 - No production data, API schema, Apps Script deployment, branch protection, or cash-close behavior is changed.
 
+## PR #69 — DOM-only modal body contract
+
+- Replace the shared dialog's raw HTML body slot with a required DOM `Node`/`DocumentFragment` contract and fail fast on strings.
+- Migrate PIN reset, forced PIN change, voucher edit, voucher cancellation and receipt dialogs to DOM-created nodes.
+- Build category options, vendor datalist options, and user-derived summary text using DOM properties rather than HTML interpolation.
+- Add a Browser E2E regression that creates a voucher with hostile vendor text and exercises edit/cancel dialogs, asserting no injected image/SVG nodes and no payload execution.
+- This is a targeted reduction in the shared modal attack surface, not a full migration of every `innerHTML` renderer.
+ 
 ## Acceptance gate
 
 Before considering this batch ready for review, the CI quality gate and Browser E2E must both pass on the exact final PR head. If an assertion fails, fix the test or product defect and rerun both workflows; do not report an earlier SHA's result as final.
