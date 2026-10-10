@@ -414,10 +414,10 @@ with sync_playwright() as p:
         'malformed persisted voucher number remains inert text in the register',
     )
     page.locator('#rbody [data-act=print]').first.click()
-    page.wait_for_selector('#printArea .pv')
+    page.wait_for_function("document.querySelector('#printArea .pv') !== null")
     check(
         page.locator('#printArea svg').count() == 0
-        and number_payload in page.locator('#printArea').inner_text()
+        and number_payload in (page.locator('#printArea').text_content() or '')
         and not page.evaluate('window.__xssFired === true'),
         'malformed persisted voucher number remains inert text in the print template',
     )
