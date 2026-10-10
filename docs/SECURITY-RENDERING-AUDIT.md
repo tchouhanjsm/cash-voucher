@@ -125,11 +125,3 @@ Before considering this batch ready for review, the CI quality gate and Browser 
   not execute.
 - PR #70 covered register and print sinks; this is a separate success-panel sink.
   Other active template renderers remain in the review scope.
-
-
-## PR #75 — Bulk import completion status
-
-- Bulk import completion is exposed as a polite status update so keyboard and screen-reader users receive feedback when the preview is replaced by the success panel.
-- The success message distinguishes payment imports from cash-receipt imports using the selected import type; counts and skipped rows remain based on the existing API response.
-- Browser E2E asserts the completion panel has `role="status"` and `aria-live="polite"`.
-- No raw user/API-derived value is introduced into HTML. This small accessibility/copy improvement does not close the broader sink audit.
