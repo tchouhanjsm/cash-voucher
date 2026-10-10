@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Status: not verified as production-ready. The owner last reported deployment version 4 before PRs #64 and #65 merged; the currently merged backend is not confirmed deployed. Live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
+**Status: not verified as production-ready. Current `main` is `628f691fe9e4353cc6b701bd57c95c3e169aa495` (PR #67 merge). The configured URL matches the existing version-4 deployment ID, but the current backend is not confirmed deployed. Local quality checks and Browser E2E pass; live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
 
 ## Evidence-based baseline
 
@@ -71,3 +71,12 @@ Passing CI is necessary, not sufficient. Do not declare production readiness unt
 ## PR #67 — inspection browser regression coverage
 
 PR #67 adds browser assertions for the data-quality report's user-facing scope disclaimer and the backup-integrity scan's announced failure/retry behavior in the mock environment. These checks strengthen UI regression coverage only. They do not close Gate 3 live authorization, real backup observation, or isolated restore. Production readiness remains **not verified** until the owner completes the operational gates above.
+
+## PR #67 merged — updated local evidence (10 October 2026)
+
+- Node `v20.20.2` satisfies the repository's declared Node 20–22 range.
+- Owner-provided `npm run check` passed, including 110 backend checks and the backup, integrity, CSV, dependency-audit and PR-quality suites. One existing ESLint warning remains for unused `backupData_` in `backend/Code.gs`.
+- Owner-provided Browser E2E passed **128 checks, 0 failures** with Playwright `1.52.0` and Chromium.
+- `git diff --check` passed. Preserve the untracked `docs/AI-ENGINEERING-PROTOCOL.md`; do not commit it.
+- Clasp reports four numbered versions. The configured URL matches version 4's deployment ID; a separate `@HEAD` deployment exists. This is not evidence that the latest `main` source is deployed.
+- Still open: owner confirmation of project identity, deployment settings, Sheet binding and Script Properties in the Apps Script editor; live owner/manager/staff and receipt authorization; a real scheduled backup; witnessed restore to a separate recovery Sheet/folder; dependency vulnerability triage.
