@@ -75,7 +75,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     $('#view').innerHTML =
       head('Users') +
-      .join('\\r\\n');
+      .join('\r\n');
     <p class="muted"><b>Staff</b>: add payments + receipts, see own entries · <b>Manager</b>: also view all, edit, cancel, bulk upload, vendors · <b>Owner</b>: also users, settings, audit log.</p></div>
   <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>${users
     .map(
