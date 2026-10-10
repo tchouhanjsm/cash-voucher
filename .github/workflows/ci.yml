@@ -34,11 +34,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: Diagnose PR 72 Markdown formatting
-        run: |
-          npx prettier docs/pr-handoffs/PR-72.md --write
-          git diff -- docs/pr-handoffs/PR-72.md
-
       - name: Run quality gate
         run: npm run check
 
