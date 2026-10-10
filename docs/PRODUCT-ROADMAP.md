@@ -191,7 +191,6 @@ The next implementation batch narrows the shared modal's attack surface. `fronte
 
 **Operational P0 remains a production-readiness blocker:** current `main` is not proven deployed, live role/receipt authorization has not been evidenced, and real backup/isolated restore have not been witnessed. No deployment or production mutation is authorized by this code phase.
 
-
 ## Current development phase — PR #70: escape persisted voucher numbers
 
 PR #69 is merged. PR #70 escapes voucher numbers in the register and print template and adds Browser E2E coverage that injects a hostile persisted number through the mock bootstrap response. This closes two concrete text-context sinks without expanding into a full DOM-renderer rewrite.
