@@ -35,9 +35,9 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 
 ## Current phase: PR #64 — owner-only voucher data-quality scan
 
-**Main base:** `51de4c6b9008bd06f2451b192f5ff8eab01c8199` (PR #63 merge).  
-**Active branch:** `feature/data-quality-exceptions`.  
-**Scope:** working backend scan + owner-facing Settings UI + mock regression tests. No schema migration or accounting/tax inference.
+- **Main base:** `51de4c6b9008bd06f2451b192f5ff8eab01c8199` (PR #63 merge).
+- **Active branch:** `feature/data-quality-exceptions`.
+- **Scope:** working backend scan, owner-facing Settings UI and mock regression tests. No schema migration or accounting/tax inference.
 
 PR #63 is merged. The owner uploaded the reviewed Apps Script source and updated the existing configured Web App deployment to version 4. Local `npm run check` passed, but local Browser E2E did not run because Playwright is missing. Node v24 is outside the declared Node 20–22 range, and npm reported three high-severity dependency findings. Live role smoke tests and a separate-destination backup/restore drill remain open.
 
