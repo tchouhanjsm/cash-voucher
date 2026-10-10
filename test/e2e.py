@@ -834,6 +834,84 @@ with sync_playwright() as p:
     page.select_option('#rs', 'CANCELLED')
     check(page.locator('#rbody tr.cx').count() == 1, 'cancelled voucher visible under filter')
 
+    # Exercise the recorded movement report through the actual browser/API mock.
+    page.click('[data-v=reports]')
+    page.wait_for_selector('#movementFilters')
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Source vouchers')"
+    )
+    report_text = page.locator('#view').inner_text()
+    check(
+        'Recorded Movement Report' in report_text
+        and 'does not establish physical cash' in report_text
+        and 'Selected payment total' in report_text
+        and 'Selected receipt total' in report_text,
+        'movement report explains its scope and exposes payment/receipt totals',
+    )
+    check(
+        'Guest Room 5' in report_text
+        and 'RECEIPT' in report_text
+        and 'Ram Traders' not in page.locator('#view table tbody').inner_text(),
+        'default active report lists active source vouchers and excludes cancelled payment',
+    )
+
+    page.select_option('#movementStatus', 'CANCELLED')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Type: ALL · Status: CANCELLED')"
+    )
+    cancelled_report_rows = page.locator('#view table tbody tr')
+    check(
+        cancelled_report_rows.count() >= 1
+        and all('CANCELLED' in row.inner_text() for row in cancelled_report_rows.all()),
+        'cancelled-only report filter returns only cancelled source vouchers',
+    )
+    with page.expect_download() as movement_download_info:
+        page.click('[data-act=reportCsv]')
+    movement_download = movement_download_info.value
+    movement_csv_path = movement_download.path()
+    with open(movement_csv_path, 'r', encoding='utf-8') as movement_file:
+        cancelled_csv = movement_file.read()
+    check(
+        movement_download.suggested_filename.startswith('recorded-movement-')
+        and movement_download.suggested_filename.endswith('.csv')
+        and 'cancelReason' in cancelled_csv
+        and 'entered twice' in cancelled_csv
+        and 'CANCELLED' in cancelled_csv,
+        'movement CSV preserves cancellation status and reason in the exported source rows',
+    )
+
+    page.select_option('#movementType', 'RECEIPT')
+    page.select_option('#movementStatus', 'ACTIVE')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Type: RECEIPT · Status: ACTIVE')"
+    )
+    receipt_rows = page.locator('#view table tbody tr')
+    receipt_table_text = page.locator('#view table tbody').inner_text()
+    check(
+        receipt_rows.count() >= 1
+        and 'Guest Room 5' in receipt_table_text
+        and all('RECEIPT' in row.locator('td').nth(2).inner_text() for row in receipt_rows.all())
+        and 'CANCELLED' not in receipt_table_text,
+        'receipt-only active report filters by transaction type and status',
+    )
+    with page.expect_download() as receipt_report_download_info:
+        page.click('[data-act=reportCsv]')
+    receipt_report_download = receipt_report_download_info.value
+    with open(receipt_report_download.path(), 'r', encoding='utf-8') as receipt_file:
+        receipt_csv = receipt_file.read()
+    check(
+        receipt_report_download.suggested_filename.startswith('recorded-movement-')
+        and 'Guest Room 5' in receipt_csv
+        and 'RECEIPT' in receipt_csv
+        and 'Ram Traders' not in receipt_csv,
+        'receipt-only report CSV matches the active type/status filters',
+    )
+
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rbody')
+
     with page.expect_download() as download_info:
         page.click('[data-act=csv]')
     check(download_info.value.suggested_filename.endswith('.csv'), 'csv downloads')
