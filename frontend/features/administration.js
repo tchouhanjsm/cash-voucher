@@ -140,9 +140,27 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   function resetPin(id) {
+    const body = document.createDocumentFragment();
+    const help = document.createElement('p');
+    help.className = 'muted';
+    help.textContent = 'Set a temporary PIN. The user must change it at next sign-in.';
+
+    const pin = document.createElement('input');
+    pin.id = 'tp';
+    pin.setAttribute('aria-label', 'Temporary six-digit PIN');
+    pin.type = 'password';
+    pin.inputMode = 'numeric';
+    pin.pattern = '[0-9]{6}';
+    pin.title = 'Enter exactly 6 digits';
+    pin.maxLength = 6;
+    pin.autocomplete = 'new-password';
+    pin.placeholder = 'Temporary 6-digit PIN';
+    pin.required = true;
+
+    body.append(help, pin);
     dialog(
       'Reset PIN',
-      '<p class="muted">Set a temporary PIN. The user must change it at next sign-in.</p><input id="tp" aria-label="Temporary six-digit PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit PIN" required>',
+      body,
       async () => {
         await api('resetPin', { id, pin: $('#tp').value });
         closeModal();
