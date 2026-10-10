@@ -171,7 +171,6 @@ This is structural inspection only. It does not run a restore, mutate production
 - Live authorization, scheduled backup execution, Drive permissions, restoreability, real-device PWA update/install, accessibility and hotel pilot remain unverified.
 - Node v24 is outside the declared Node 20–22 range; npm previously reported three high-severity dependency findings that still need triage.
 
-
 ## Current engineering phase — PR #67: inspection UI regression coverage
 
 Before adding another product feature, extend browser regression coverage around the existing owner-only data-quality and backup-integrity inspection surfaces. Verify the data-quality results and its explicit accounting/tax limitation; verify backup-integrity failure messaging and retry restoration in the browser mock. This is UI failure-path coverage only, not live Drive or recovery evidence.

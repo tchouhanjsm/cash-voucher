@@ -68,7 +68,6 @@ Before upload, follow [`Apps Script Release Runbook`](APPS-SCRIPT-RELEASE-RUNBOO
 
 Passing CI is necessary, not sufficient. Do not declare production readiness until Gates 1–4 are complete and an owner-approved recovery drill succeeds. Backend source commits do not deploy Apps Script automatically; no live deployment or cutover is included by this checklist.
 
-
 ## PR #67 — inspection browser regression coverage
 
 PR #67 adds browser assertions for the data-quality report's user-facing scope disclaimer and the backup-integrity scan's announced failure/retry behavior in the mock environment. These checks strengthen UI regression coverage only. They do not close Gate 3 live authorization, real backup observation, or isolated restore. Production readiness remains **not verified** until the owner completes the operational gates above.

@@ -65,7 +65,6 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges PRs and retains all production deployment authority.
 - Never run `setup()` for a routine release, change deployment targets by guess, mutate production records for tests, force-push, or claim backup success proves restoreability.
 
-
 ## Current phase — PR #67: owner inspection Browser E2E coverage
 
 - **Base SHA:** `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`.
