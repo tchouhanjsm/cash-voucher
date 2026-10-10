@@ -66,5 +66,5 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. Finish PR #76's documentation-governance change, obtain exact-head CI + Browser E2E + Full Flight Test evidence, then request owner review. Do not merge on the owner's behalf.
+5. PR #76's documentation-governance change is implemented and its exact tested head has passed CI, Browser E2E and Full Flight Test. The next action is owner review and merge; do not merge on the owner's behalf.
 6. After PR #76 is merged, update this handoff in the next implementation PR with the verified new `main` SHA and continue the P1 rendering-security audit by tracing active frontend sinks and selecting the next confirmed risk.
