@@ -191,10 +191,14 @@ The next implementation batch narrows the shared modal's attack surface. `fronte
 
 **Operational P0 remains a production-readiness blocker:** current `main` is not proven deployed, live role/receipt authorization has not been evidenced, and real backup/isolated restore have not been witnessed. No deployment or production mutation is authorized by this code phase.
 
-## Current development phase — PR #70: escape persisted voucher numbers
+## Completed phase — PR #70: escape persisted voucher numbers
 
-PR #69 is merged. PR #70 escapes voucher numbers in the register and print template and adds Browser E2E coverage that injects a hostile persisted number through the mock bootstrap response. This closes two concrete text-context sinks without expanding into a full DOM-renderer rewrite.
+PR #70 is merged at `1e656dee0266dba38d35500150889ce6020d8045`. Its exact PR head passed CI and Browser E2E (130 checks, 0 failures), including hostile persisted voucher-number coverage in register and print views.
 
-**Exit gate:** two-pass review confirms both output sinks and consumers; CI and Browser E2E pass on the exact final PR head; rendering audit, handoff, PR index and dedicated handoff are updated. Other dynamic HTML sinks remain open.
+## Current development phase — PR #71: executable full flight test
 
-**Operational P0 remains a production-readiness blocker.** No Apps Script deployment or production mutation is authorized by this code phase.
+Add `npm run test:flight` and a dedicated GitHub Actions workflow that runs dependency policy, all quality/backend tests, and the complete Browser E2E suite against one commit. The workflow runs for PRs and supports manual dispatch so the owner can repeat the full suite after merge without editing documentation or source.
+
+**Exit gate:** exact-head full flight workflow passes; CI and handoff evidence are current; no test failures are waived. This validates the mock-backed application suite, not production Google services. The active browser suite already covers owner/manager/staff paths, voucher entry and cancellation, bulk import, CSV exports, audit/data-quality/backup inspection, offline recovery/idempotency, responsive layout, keyboard/accessibility and rendering-security regressions.
+
+**Operational P0 remains a separate production-readiness blocker:** live Apps Script target/authorization, real backup and isolated restore remain unverified. No deployment or production mutation is authorized.
