@@ -475,7 +475,20 @@ export function createAdministration({ api, getNavigation, signOut }) {
       note.textContent =
         'This is recorded Apps Script status only. It does not verify the current Drive backup contents or prove that a restore will succeed.';
 
-      card.replaceChildren(title, state, details, note);
+      const integrityButton = document.createElement('button');
+      integrityButton.type = 'button';
+      integrityButton.className = 'btn';
+      integrityButton.dataset.act = 'bkintegrity';
+      integrityButton.textContent = 'Inspect recent snapshots';
+      const integrityResults = document.createElement('div');
+      integrityResults.id = 'backup-integrity-results';
+      integrityResults.setAttribute('role', 'status');
+      integrityResults.setAttribute('aria-live', 'polite');
+      integrityResults.className = 'backup-integrity-results';
+      integrityResults.textContent =
+        'Structural inspection checks snapshot files, sheet headers and receipt manifests; it does not prove restoreability.';
+
+      card.replaceChildren(title, state, details, note, integrityButton, integrityResults);
     } catch {
       const title = document.createElement('h2');
       title.textContent = '🛡️ Backup & recovery';
@@ -484,6 +497,91 @@ export function createAdministration({ api, getNavigation, signOut }) {
       message.textContent =
         'Backup status could not be loaded. Check the connection and refresh Settings.';
       card.replaceChildren(title, message);
+    }
+  }
+
+  async function backupIntegrityScan() {
+    const results = $('#backup-integrity-results');
+    const button = $('[data-act="bkintegrity"]');
+    if (!results) return;
+    if (button) {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    }
+    results.textContent = 'Inspecting the 10 most recent backup snapshots…';
+
+    try {
+      const report = await api('backupIntegrityReport');
+      results.replaceChildren();
+
+      const summary = document.createElement('p');
+      summary.textContent =
+        'Inspected ' +
+        report.inspected +
+        ' snapshot(s) · ' +
+        report.passCount +
+        ' pass · ' +
+        report.warningCount +
+        ' warning · ' +
+        report.failCount +
+        ' failed · generated ' +
+        formatBackupTimestamp(report.generatedAt) +
+        '.';
+      results.appendChild(summary);
+
+      if (!report.snapshots.length) {
+        const empty = document.createElement('p');
+        empty.className = 'muted';
+        empty.textContent = 'No backup snapshots matching the managed naming pattern were found.';
+        results.appendChild(empty);
+      }
+
+      report.snapshots.forEach((snapshot) => {
+        const article = document.createElement('article');
+        article.className = 'backup-integrity-item';
+
+        const title = document.createElement('h3');
+        title.textContent = snapshot.name + ' · ' + snapshot.state.toUpperCase();
+        article.appendChild(title);
+
+        const details = document.createElement('p');
+        details.className = 'muted';
+        details.textContent =
+          formatBackupTimestamp(snapshot.createdAt) +
+          ' · ' +
+          Object.entries(snapshot.rowCounts || {})
+            .map(([name, count]) => name + ': ' + count + ' rows')
+            .join(' · ') +
+          ' · receipts: ' +
+          snapshot.receiptCount +
+          ' · manifest records: ' +
+          snapshot.manifestCount;
+        article.appendChild(details);
+
+        const list = document.createElement('ul');
+        snapshot.checks.forEach((check) => {
+          const item = document.createElement('li');
+          const marker = check.state === 'pass' ? '✓ ' : check.state === 'warning' ? '⚠ ' : '✗ ';
+          item.textContent = marker + check.detail;
+          list.appendChild(item);
+        });
+        article.appendChild(list);
+        results.appendChild(article);
+      });
+
+      const note = document.createElement('p');
+      note.className = 'muted';
+      note.textContent = report.note;
+      results.appendChild(note);
+    } catch (error) {
+      results.textContent =
+        'Backup integrity inspection failed. Check Drive permissions and retry. ' +
+        (error && error.message ? error.message : '');
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
     }
   }
 
@@ -583,6 +681,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     clearAuditFilters,
     exportAuditCsv,
     dataQualityScan,
+    backupIntegrityScan,
     account,
     handleSubmit,
     editVendor,

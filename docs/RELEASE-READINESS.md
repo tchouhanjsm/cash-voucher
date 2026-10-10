@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Status: engineering candidate; not yet verified as production-ready. PR #63 is merged and the owner reports deployment version 4; live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
+**Status: not verified as production-ready. The owner last reported deployment version 4 before PRs #64 and #65 merged; the currently merged backend is not confirmed deployed. Live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
 
 ## Evidence-based baseline
 
@@ -16,10 +16,14 @@
 | Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
 | Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
-| Production Apps Script deployment                           | Deployed (v4)         | Owner reports `clasp push` and version 4; live smoke/restore tests remain open                           |
+| Production Apps Script deployment                           | Unconfirmed           | Owner reported version 4 before PRs #64/#65; current merged backend deployment is unconfirmed            |
 | Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
 
 The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
+
+## Post-PR #65 / PR #66 status
+
+PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`; exact-head CI and Browser E2E passed. PR #66 adds read-only structural inspection of the ten latest managed backups. Even if that scan passes, a witnessed restore into a separate destination is still mandatory. Do not treat the version-4 deployment report as evidence that PRs #64/#65 are live.
 
 ## Gate 1 — source and CI
 

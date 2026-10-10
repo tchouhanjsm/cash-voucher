@@ -4,7 +4,7 @@
 
 ## Current release boundary
 
-PR #62 is merged at `49f2a3db297f84093d46b247a54c93c9372f3684`. It contains a backend idempotency change. The repository's CI and browser tests use mocks; they do not deploy Apps Script or prove live Google Sheets/Drive behavior.
+PR #65 is merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. PRs #64 and #65 changed the backend after the previously reported version-4 deployment. The current merged backend must not be assumed deployed. CI/browser tests do not deploy Apps Script or prove live Google Sheets/Drive behavior.
 
 The frontend `config.js` already contains a Web App `/exec` URL. Do not replace it or create a different URL until the local Clasp deployment list proves which Apps Script project and deployment serve that URL.
 
@@ -116,3 +116,12 @@ Before deployment, record the current deployment ID and active version. If the n
 ## Post-PR #64 source baseline
 
 PR #64 merged at `e266d0fba4d1468cdffac077bfac5ffef2a6ea90`. The owner reports local static/unit checks passed on this SHA, but Browser E2E did not run because Playwright is unavailable for the selected Python interpreter. Node v24 is outside the declared Node 20–22 range. Clasp listed the configured existing deployment `AKfycbys21L1jrEYXmdjN5lf1dYlAQJnqGRU3WjGQrvpPwjW7_zVJNb7w6ExRDnmbrkkFdM` at version 4 and a separate deployment at HEAD; do not target the latter by default. PR #64 deployment remains unconfirmed. Live authorization and a witnessed isolated restore remain open gates.
+
+## Post-PR #65 / backup integrity inspection
+
+- Main source baseline: `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`.
+- PR #65 CI and Browser E2E passed on exact head `09eaac429307e4243d7a7d2fce1f16ef3402b029`.
+- The deployment last reported at version 4 predates PRs #64 and #65. Do not upload until the owner verifies the exact project and intended existing deployment, completes required checks, and explicitly authorizes release.
+- PR #66 adds an owner-only structural scan of the latest ten managed backup snapshots. It checks the spreadsheet copy, required tabs, header compatibility, receipt folder, manifest and receipt-copy references. It is read-only and does not restore or mutate data.
+- A successful integrity scan is not restore proof. The P0 release gate remains a witnessed restore into a separate recovery Sheet/folder, followed by record-count and voucher-number validation.
+- Never run `setup()` as a routine release step. Never test by overwriting the only production copy.
