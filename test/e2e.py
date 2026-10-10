@@ -514,6 +514,38 @@ with sync_playwright() as p:
         'conflicting recovery import preserves original queued payment',
     )
 
+    stale_lease_count = page.evaluate(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          return await new Promise((resolve, reject) => {
+            const transaction = db.transaction('outbox', 'readwrite');
+            const store = transaction.objectStore('outbox');
+            let count = 0;
+            transaction.oncomplete = () => {
+              db.close();
+              resolve(count);
+            };
+            transaction.onerror = () => reject(transaction.error);
+            const request = store.getAll();
+            request.onsuccess = () => {
+              request.result.forEach((record) => {
+                record.status = 'sending';
+                record.leaseOwner = 'abandoned-tab';
+                record.leaseUntil = Date.now() - 1000;
+                store.put(record);
+                count++;
+              });
+            };
+            request.onerror = () => reject(request.error);
+          });
+        }"""
+    )
+    check(stale_lease_count == 1, 'test seeds one expired lease from an abandoned tab')
+
     context.set_offline(False)
     page.wait_for_function(
         "document.querySelector('#banner').classList.contains('hidden')",

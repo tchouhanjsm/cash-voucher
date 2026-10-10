@@ -211,14 +211,50 @@ const dup = as(S, 'createVouchers', {
     {
       clientId: 'c1',
       date: today,
-      vendor: 'x',
-      amount: 1,
-      receipts: [{ mime: 'image/png', data: tiny }],
+      vendor: '=HYPERLINK("x")',
+      amount: '150.555',
+      category: 'Fuel',
+      receipts: [{ mime: 'image/jpeg', data: tiny }],
     },
   ],
 });
-ok(dup.data.skipped === 1 && dup.data.created[0].no === 201, 'same-user retry is idempotent');
+ok(
+  dup.ok && dup.data.skipped === 1 && dup.data.created[0].no === 201,
+  'same-user retry with matching details is idempotent',
+);
 ok(Object.keys(g.files).length === filesAfterFirstCreate, 'duplicate retry creates no receipt');
+const changedPayloads = [
+  { date: new Date(Date.now() - 86400000).toISOString().slice(0, 10) },
+  { vendor: 'Different vendor' },
+  { amount: 999 },
+  { category: 'Kitchen' },
+  { notes: 'changed notes' },
+  { type: 'RECEIPT' },
+];
+const changedPayloadResults = changedPayloads.map((override) =>
+  as(S, 'createVouchers', {
+    entries: [
+      {
+        clientId: 'c1',
+        date: today,
+        vendor: '=HYPERLINK("x")',
+        amount: '150.555',
+        category: 'Fuel',
+        notes: '',
+        type: 'PAYMENT',
+        ...override,
+      },
+    ],
+  }),
+);
+ok(
+  changedPayloadResults.every((result) => !result.ok && result.code === 'CONFLICT'),
+  'same-user client ID rejects changed date, counterparty, amount, category, notes and type',
+);
+ok(
+  Object.keys(g.files).length === filesAfterFirstCreate,
+  'changed-payload conflict creates no duplicate receipt files',
+);
 const collision = as(A, 'createVouchers', {
   entries: [{ clientId: 'c1', date: today, vendor: 'private', amount: 999999 }],
 });
@@ -251,8 +287,8 @@ const sameRequest = as(S, 'createVouchers', {
     {
       clientId: 'c3',
       date: today,
-      vendor: 'Batch duplicate',
-      amount: 20,
+      vendor: 'Batch',
+      amount: 10,
       receipts: [{ mime: 'image/png', data: tiny }],
     },
   ],

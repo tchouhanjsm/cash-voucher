@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #61 base):** `d4742a34d57bc973d0fda849b65ae6d35259bf22`  
+**Verified main SHA (PR #61 merge):** `c4a4af4d0d27bf09e89a0650f31d56f170f2acbb`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -33,18 +33,20 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #61 — accountant recordkeeping and reporting blueprint
+## Current batch: PR #62 — offline sync and idempotency assurance
 
-**PR:** branch `feature/accountant-recordkeeping-blueprint`, based on verified `main` SHA `d4742a34d57bc973d0fda849b65ae6d35259bf22`.  
-**Scope:** documentation-only finance/accounting review. See `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md` and `docs/pr-handoffs/PR-61.md`.
+**PR:** branch `feature/offline-sync-idempotency-assurance`, based on verified PR #61 merge commit `c4a4af4d0d27bf09e89a0650f31d56f170f2acbb`.  
+**Scope:** harden server-side duplicate-client-ID handling and extend fault-injection coverage for changed-payload conflicts and expired outbox leases. See `docs/pr-handoffs/PR-62.md`.
 
-The review inventories current voucher fields, recordkeeping workflows, reports/charts, evidence and reconciliation rules, accountant export safeguards, and tax-data candidates. It explicitly distinguishes voucher movements from physical cash, profit, taxable turnover, GST/TDS liability and a general ledger. No tax treatment is inferred; a qualified CA and the receiving accountant must validate requirements.
+PR #61 is merged (merge commit `c4a4af4d0d27bf09e89a0650f31d56f170f2acbb`). The accountant recordkeeping blueprint remains the requirements baseline. Destination-specific exports remain blocked until the owner selects the accounting product/version and the receiving accountant approves an anonymized mapping fixture. Tax rules require qualified Indian CA validation.
 
-**Next engineering phase after PR #61:** offline sync/idempotency assurance with commit-then-lost-response, repeated client ID, changed-content collision, cross-tab retry and stale-lease tests. A witnessed backup/restore drill remains an operational gate requiring the owner and a separate recovery destination.
+PR #62 preserves the existing voucher schema and API shape. A repeated ClientID with matching normalized voucher details is idempotent; a reused ClientID with changed date, counterparty, amount, category, notes or type returns a visible `CONFLICT` instead of silently returning a different voucher. Browser E2E already covers accepted-but-lost response and cross-tab duplicate submission; this phase adds explicit expired-lease recovery coverage.
 
-PR #60 final PR head `7ffebaf23f838babc48ddd47dce99d14d1321d98` passed CI and Browser E2E together (125 checks, 0 failures). Current PR exact-head evidence is authoritative in its live description. Local checks are not run from this connector-only environment.
+**Next phase after PR #62:** implement finance data-quality exception reports and source-traceable daily/monthly recorded-voucher movement reports, while keeping tax reports, general-ledger claims, daily cash close and destination-specific exports behind their documented decision gates.
 
-Leave merge to the owner. Local repository synchronization is the owner's post-approval step.
+The operational P0 remains a witnessed backup/restore drill into a separate recovery destination. No Apps Script production deployment, live backup/restore or production-data operation has been performed.
+
+Owner review and merge remain required. Local repository synchronization is the owner's post-approval step.
 
 ## Operational gates still open
 

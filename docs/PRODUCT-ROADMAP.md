@@ -135,13 +135,13 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **Historical batch (completed by PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
 
-## Current phase status — PR #60 merged, PR #61 accountant review
+## Current phase status — PR #61 merged, PR #62 offline sync assurance
 
-**PR #60 merged:** cross-functional retrospective and ranked engineering backlog are documented in `docs/PRODUCT-AND-ENGINEERING-RETROSPECTIVE.md`. The main residual risks remain operational confidence (live backup/restore and authorization), offline sync/idempotency, and finance-ready recordkeeping.
+**PR #61 merged:** the accountant recordkeeping and reporting blueprint is integrated in merge commit `c4a4af4d0d27bf09e89a0650f31d56f170f2acbb`. It inventories current source data and defines reporting, evidence, reconciliation, export and tax-data decision gates without adding tax fields or calculations.
 
-**PR #61 — Accountant recordkeeping and reporting blueprint:** see `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md`. This documentation-only phase inventories current source data and defines the workflows, reports, charts, evidence controls, export requirements and tax-data candidates needed for an accountant handoff. It does not add tax fields or calculate tax.
+**PR #62 — Offline sync and idempotency assurance:** active on `feature/offline-sync-idempotency-assurance`. The implementation rejects a reused ClientID when its normalized voucher details differ from the stored voucher, rather than silently acknowledging changed financial data. Tests cover matching retries, changed-payload conflicts, a server commit followed by a lost response, cross-tab retry, and recovery of an expired IndexedDB lease. Exact-head CI and Browser E2E evidence must be checked in the live PR before owner review.
 
-**Next engineering implementation after PR #61:** offline sync/idempotency assurance. Tests should cover commit-then-lost-response, repeated client ID, same ID with changed content, cross-tab retry and stale lease recovery. Ensure reports/exports do not silently include device-local pending records.
+**Next phase after PR #62:** build source-traceable data-quality exception reports and daily/monthly reports of recorded voucher movement, with accessible drill-through tables and reconciliation totals. Keep GST/TDS, profit/loss or balance-sheet claims, daily cash close and target-accounting-system export out of scope until the owner/accountant/CA decisions documented in `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md` are satisfied.
 
 **Operational P0:** witness a backup run and restore into a separate recovery destination before claiming operational recovery readiness.
 
