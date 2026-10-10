@@ -135,7 +135,6 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **Next batch (PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
 
-
 ## Current phase status — PR #58 merged, PR #59 active
 
 **PR #58 merged** in commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`. Owner audit discoverability now includes a dedicated Audit log route, filters over the returned latest 200 events, and filtered CSV export. It is not a full-history export and has not been validated against an accountant's import workflow.
