@@ -15,6 +15,49 @@ export function createReports({ api }) {
     loading: false,
   };
 
+  function renderRows() {
+    if (!R.rows.length) {
+      return '<p class="muted">No vouchers match these filters.</p>';
+    }
+
+    const rows = R.rows
+      .map((item) => `
+        <tr>
+          <td class="nw">${esc(dmy(item.date))}</td>
+          <td class="nw">${esc(item.type === 'RECEIPT' ? 'R-' : '')}${esc(item.voucherNo)}</td>
+          <td>${esc(item.type)}</td>
+          <td>${esc(item.vendor)}</td>
+          <td>
+            ${esc(item.category)}
+            ${item.notes ? ' · ' + esc(item.notes) : ''}
+            ${item.cancelReason ? '<div class="muted">Cancellation: ' + esc(item.cancelReason) + '</div>' : ''}
+          </td>
+          <td>${esc(item.status)}</td>
+          <td class="r nw amt">${money(item.amount)}</td>
+        </tr>
+      `)
+      .join('');
+
+    return `
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Voucher</th>
+              <th>Type</th>
+              <th>Counterparty</th>
+              <th>Category / notes</th>
+              <th>Status</th>
+              <th class="r">Amount</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+    `;
+  }
+
   function render() {
     if (!can('viewAll')) {
       $('#view').innerHTML =
@@ -23,43 +66,84 @@ export function createReports({ api }) {
       return;
     }
 
-    const s = R.summary;
-    $('#view').innerHTML = head('Recorded Movement Report') + `
+    const summary = R.summary;
+    const filters = `
       <div class="card">
         <p class="muted">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p>
         <form id="movementFilters" class="filters" autocomplete="off">
           <label>From<input id="movementFrom" type="date" value="${esc(R.from)}" required></label>
           <label>To<input id="movementTo" type="date" value="${esc(R.to)}" required></label>
-          <label>Type<select id="movementType">
-            <option value="ALL"${R.type === 'ALL' ? ' selected' : ''}>Payments and receipts</option>
-            <option value="PAYMENT"${R.type === 'PAYMENT' ? ' selected' : ''}>Payments only</option>
-            <option value="RECEIPT"${R.type === 'RECEIPT' ? ' selected' : ''}>Receipts only</option>
-          </select></label>
-          <label>Status<select id="movementStatus">
-            <option value="ACTIVE"${R.status === 'ACTIVE' ? ' selected' : ''}>Active only</option>
-            <option value="CANCELLED"${R.status === 'CANCELLED' ? ' selected' : ''}>Cancelled only</option>
-            <option value="ALL"${R.status === 'ALL' ? ' selected' : ''}>All statuses</option>
-          </select></label>
-          <button class="btn primary" type="submit" ${R.loading ? 'disabled' : ''}>${R.loading ? 'Loading…' : 'Run report'}</button>
-          <button class="btn" type="button" data-act="reportCsv" ${R.summary ? '' : 'disabled'}>Export CSV</button>
+          <label>Type
+            <select id="movementType">
+              <option value="ALL"${R.type === 'ALL' ? ' selected' : ''}>Payments and receipts</option>
+              <option value="PAYMENT"${R.type === 'PAYMENT' ? ' selected' : ''}>Payments only</option>
+              <option value="RECEIPT"${R.type === 'RECEIPT' ? ' selected' : ''}>Receipts only</option>
+            </select>
+          </label>
+          <label>Status
+            <select id="movementStatus">
+              <option value="ACTIVE"${R.status === 'ACTIVE' ? ' selected' : ''}>Active only</option>
+              <option value="CANCELLED"${R.status === 'CANCELLED' ? ' selected' : ''}>Cancelled only</option>
+              <option value="ALL"${R.status === 'ALL' ? ' selected' : ''}>All statuses</option>
+            </select>
+          </label>
+          <button class="btn primary" type="submit" ${R.loading ? 'disabled' : ''}>
+            ${R.loading ? 'Loading…' : 'Run report'}
+          </button>
+          <button class="btn" type="button" data-act="reportCsv" ${R.summary ? '' : 'disabled'}>
+            Export CSV
+          </button>
         </form>
       </div>
-      ${R.error ? `<div class="card form-error" role="alert">${esc(R.error)} <button class="btn sm" type="button" data-act="reportRun">Retry</button></div>` : ''}
-      ${s ? `
+    `;
+
+    const error = R.error
+      ? `
+          <div class="card form-error" role="alert">
+            ${esc(R.error)}
+            <button class="btn sm" type="button" data-act="reportRun">Retry</button>
+          </div>
+        `
+      : '';
+
+    let results = '';
+    if (summary) {
+      results = `
         <div class="stats">
-          <div class="card stat"><span>Selected payment total</span><b>${money(s.paymentTotal)}</b><small class="muted">${s.count} rows · ${s.activeCount} active · ${s.cancelledCount} cancelled</small></div>
-          <div class="card stat"><span>Selected receipt total</span><b>${money(s.receiptTotal)}</b><small class="muted">Includes cancelled rows when selected</small></div>
-          <div class="card stat"><span>Active payments</span><b>${money(s.activePaymentTotal)}</b><small class="muted">Cancelled rows excluded</small></div>
-          <div class="card stat"><span>Active receipts</span><b>${money(s.activeReceiptTotal)}</b><small class="muted">Cancelled rows excluded</small></div>
+          <div class="card stat">
+            <span>Selected payment total</span>
+            <b>${money(summary.paymentTotal)}</b>
+            <small class="muted">${summary.count} rows · ${summary.activeCount} active · ${summary.cancelledCount} cancelled</small>
+          </div>
+          <div class="card stat">
+            <span>Selected receipt total</span>
+            <b>${money(summary.receiptTotal)}</b>
+            <small class="muted">Includes cancelled rows when selected</small>
+          </div>
+          <div class="card stat">
+            <span>Active payments</span>
+            <b>${money(summary.activePaymentTotal)}</b>
+            <small class="muted">Cancelled rows excluded</small>
+          </div>
+          <div class="card stat">
+            <span>Active receipts</span>
+            <b>${money(summary.activeReceiptTotal)}</b>
+            <small class="muted">Cancelled rows excluded</small>
+          </div>
         </div>
         <div class="card">
           <h2>Source vouchers <span class="muted">${dmy(R.from)} – ${dmy(R.to)}</span></h2>
-          <p class="muted">Generated ${esc(s.generatedAt)} · ${s.count} rows · Type: ${esc(s.type)} · Status: ${esc(s.status)}</p>
-          ${R.rows.length ? `<div class="table-wrap"><table><thead><tr><th>Date</th><th>Voucher</th><th>Type</th><th>Counterparty</th><th>Category / notes</th><th>Status</th><th class="r">Amount</th></tr></thead><tbody>${R.rows.map((item) => `<tr><td class="nw">${esc(dmy(item.date))}</td><td class="nw">${esc(item.type === 'RECEIPT' ? 'R-' : '')}${esc(item.voucherNo)}</td><td>${esc(item.type)}</td><td>${esc(item.vendor)}</td><td>${esc(item.category)}${item.notes ? ' · ' + esc(item.notes) : ''}${item.cancelReason ? '<div class="muted">Cancellation: ' + esc(item.cancelReason) + '</div>' : ''}</td><td>${esc(item.status)}</td><td class="r nw amt">${money(item.amount)}</td></tr>`).join('')}</tbody></table></div>` : '<p class="muted">No vouchers match these filters.</p>'}
+          <p class="muted">
+            Generated ${esc(summary.generatedAt)} · ${summary.count} rows · Type: ${esc(summary.type)} · Status: ${esc(summary.status)}
+          </p>
+          ${renderRows()}
         </div>
-      ` : (!R.loading && !R.error ? '<div class="card"><p class="muted">Run the report to see recorded voucher movements.</p></div>' : '')}
-    `;
+      `;
+    } else if (!R.loading && !R.error) {
+      results = '<div class="card"><p class="muted">Run the report to see recorded voucher movements.</p></div>';
+    }
 
+    $('#view').innerHTML = head('Recorded Movement Report') + filters + error + results;
     $('#movementFilters')?.addEventListener('submit', (event) => {
       event.preventDefault();
       R.from = $('#movementFrom').value;
@@ -118,7 +202,7 @@ export function createReports({ api }) {
     const rows = [fields, ...R.rows.map((item) => fields.map((field) => item[field] ?? ''))];
     download(
       `recorded-movement-${R.from}-to-${R.to}.csv`,
-      rows.map((row) => row.map(csvCell).join(',')).join('\\r\\n'),
+      rows.map((row) => row.map(csvCell).join(',')).join('\r\n'),
       'text/csv;charset=utf-8',
     );
     toast('Report CSV downloaded.', 'ok');
