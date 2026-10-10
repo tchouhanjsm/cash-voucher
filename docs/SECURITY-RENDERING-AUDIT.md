@@ -1,7 +1,7 @@
 # Frontend Rendering Security Audit
 
 **Status:** incremental; not a full security certification  
-**Baseline:** merged source at `9751df49db6ba524376a2e39f79d744e4b36ec11`, extended in PR #69  
+**Baseline:** merged source at `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d`, extended in PR #70  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -96,6 +96,12 @@ The E2E suite runs against the repository's local mock Apps Script service. It d
 - Build category options, vendor datalist options, and user-derived summary text using DOM properties rather than HTML interpolation.
 - Add a Browser E2E regression that creates a voucher with hostile vendor text and exercises edit/cancel dialogs, asserting no injected image/SVG nodes and no payload execution.
 - This is a targeted reduction in the shared modal attack surface, not a full migration of every `innerHTML` renderer.
+
+## PR #70 — Escape voucher numbers in register and print
+
+- Escape `vno(voucher)` at the register-row and printed-voucher text sinks; voucher numbers are normally backend-generated but persisted values remain untrusted at rendering time.
+- Browser E2E tampers with a bootstrap response so a persisted voucher number contains hostile SVG markup, then asserts literal text in the register and print preview, with no injected SVG or payload execution.
+- This is a narrow output-context fix. Other active dynamic HTML sinks remain in scope.
 
 ## Acceptance gate
 

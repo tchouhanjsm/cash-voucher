@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #68 merge):** `9751df49db6ba524376a2e39f79d744e4b36ec11`  
+**Verified main SHA (PR #69 merge):** `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -83,7 +83,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Next:** owner confirms the project/resources and authorizes any upload; then controlled live role/receipt checks, real scheduled-backup verification, and a witnessed restore into a separate recovery Sheet/folder.
 - **Hard boundary:** no `clasp push`, `clasp deploy`, `setup()`, production mutation or merge performed by the assistant. Preserve local untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
 
-## Current development phase — PR #69: DOM-only modal rendering
+## Completed phase — PR #69: DOM-only modal rendering
 
 - **Base SHA:** `9751df49db6ba524376a2e39f79d744e4b36ec11` (PR #68 merge).
 - **Branch:** `feature/dom-safe-dialog-content`.
@@ -92,3 +92,13 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Validation plan:** run `npm run check`, Browser E2E, `git diff --check`, two-pass review and exact-head CI/E2E. CI status is not inferred from prior SHAs.
 - **Operational P0 remains open:** confirm the intended Apps Script project, active deployment and Sheet/Script Properties; verify live role/receipt permissions; observe a real scheduled backup; and witness restore into a separate recovery Sheet/folder. No `clasp push`, deployment, `setup()`, or production mutation is part of PR #69.
 - **Local preservation:** never stage or commit the owner's untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
+
+## Current development phase — PR #70: escape persisted voucher numbers
+
+- **Verified base SHA:** `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d` (PR #69 merge).
+- **Branch:** `feature/escape-voucher-number-rendering`.
+- **Scope:** escape `vno(voucher)` in register and print HTML; add Browser E2E coverage for hostile persisted voucher numbers in both views.
+- **Validation:** require CI and Browser E2E on the exact final PR head. Local checks have not been run by the agent; do not represent them as passed.
+- **Residual security risk:** other active dynamic HTML sinks remain under audit; this is not full XSS certification.
+- **Operational P0:** verify the intended Apps Script project/deployment/Sheet binding/Script Properties, live role and receipt access, a real scheduled backup, and a witnessed restore into a separate recovery Sheet/folder. No `clasp push`, deployment, `setup()`, or production mutation.
+- **Local preservation:** do not stage or commit the owner's untracked `docs/AI-ENGINEERING-PROTOCOL.md`.

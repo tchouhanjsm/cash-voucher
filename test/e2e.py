@@ -387,6 +387,45 @@ with sync_playwright() as p:
         and page.locator('#rbody img').count() == 0,
         'user-controlled note is rendered as text, not executable HTML',
     )
+
+    # Treat a malformed persisted voucher number as untrusted at every HTML sink.
+    number_payload = '<svg onload=window.__xssFired=true></svg>'
+
+    def tamper_bootstrap_voucher_number(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        vouchers = payload.get('data', {}).get('vouchers', [])
+        if request_data.get('action') == 'bootstrap' and vouchers:
+            vouchers[0]['no'] = number_payload
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_bootstrap_voucher_number)
+    page.locator('[data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelector('#rbody').innerText.includes(" + json.dumps(number_payload) + ")"
+    )
+    check(
+        page.locator('#rbody svg').count() == 0
+        and number_payload in page.locator('#rbody').inner_text()
+        and not page.evaluate('window.__xssFired === true'),
+        'malformed persisted voucher number remains inert text in the register',
+    )
+    page.locator('#rbody [data-act=print]').first.click()
+    page.wait_for_function("document.querySelector('#printArea .pv') !== null")
+    check(
+        page.locator('#printArea svg').count() == 0
+        and number_payload in (page.locator('#printArea').text_content() or '')
+        and not page.evaluate('window.__xssFired === true'),
+        'malformed persisted voucher number remains inert text in the print template',
+    )
+    page.unroute('**/api?*', tamper_bootstrap_voucher_number)
+    page.locator('[data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelector('#rbody').innerText.includes('Ram Traders')"
+    )
     check(
         page.locator('[data-act=edit]').count() == 0 and page.locator('[data-act=cancel]').count() == 0,
         'staff has no edit/cancel',
