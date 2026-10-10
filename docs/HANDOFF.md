@@ -2,8 +2,8 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #75 base):** `970475dc440a3dc84b788087e60a73836d3d8814` (PR #74 merge)  
-**Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
+**Verified main SHA (PR #75 merge):** `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`  
+**Source of truth:** live GitHub refs and exact-head workflow runs. This is the single current-state handoff; PR descriptions hold the permanent details and exact-head CI/E2E evidence for each change.
 
 ## Product and architecture
 
@@ -130,11 +130,28 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Scope:** escape API-returned voucher number in the save confirmation and add a hostile-response regression.
 - **Operational P0 remains open:** owner confirmation of live Apps Script target/settings, live role/receipt authorization, a real scheduled backup, and witnessed restore into a separate recovery Sheet/folder. No deployment or production mutation is authorized by PR #75.
 
-## Current development phase — PR #75: bulk import completion feedback
+## Completed phase — PR #75: bulk import completion feedback
 
-- **Branch:** `feature/harden-bulk-upload-rendering`.
-- **Base SHA:** `970475dc440a3dc84b788087e60a73836d3d8814`.
-- **Outcome:** announce bulk import completion through a polite status region and distinguish imported cash receipts from payments in the confirmation.
-- **Verification:** pending until CI, Browser E2E and Full Flight Test pass on the exact final head.
-- **Release boundary:** UI/test/docs only. No backend/API/schema/dependency/production data change, Clasp push, Apps Script deployment, or `setup()`.
-- **Preserve:** do not stage or overwrite the owner's local `docs/AI-ENGINEERING-PROTOCOL.md`.
+- **Merged main:** `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`.
+- **Exact tested PR head:** `dd01c66ff66b5a7778966c1121bd91a3d4cf042f`.
+- **Verification:** [CI passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38056268548), [Browser E2E passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38056267831) with 145 checks / 0 failures, and [Full Flight Test passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38056267800), including 110 backend checks and 145 browser checks.
+- **Outcome:** bulk import completion is announced to assistive technology; the confirmation distinguishes payment imports and cash-receipt imports.
+- **Boundary:** frontend/test/docs only. Live deployment and operational readiness remain unverified.
+
+## Current phase — PR #76: simplify engineering handoffs
+
+- **Branch:** `process/single-handoff-documentation`.
+- **Base SHA:** `0d9a6a4ae904862d213144e7a823ca1ec5d547f9` (PR #75 merge).
+- **Outcome:** make `docs/HANDOFF.md` the one live chat/session handoff; use the GitHub PR description as each change's permanent record; update domain docs only when their substance changes.
+- **Explicitly not doing:** no changes to app behavior, APIs, schema, dependencies, production data or Apps Script deployment; no deletion of old handoff files.
+- **After PR #76:** resume the P1 rendering-security audit and select the next verified active HTML sink from current `main`.
+- **Durable blockers:** live Apps Script target/settings, role/receipt authorization, scheduled backup, and witnessed isolated restore remain unverified.
+- **Local preservation:** never stage or overwrite the owner's local `docs/AI-ENGINEERING-PROTOCOL.md`.
+
+## How to resume in a new ChatGPT thread
+
+1. Read this file first.
+2. Verify live GitHub `main` SHA and open PR/branch state; this file is a handoff, not authority over live refs.
+3. Read `docs/DEVELOPMENT-WORKFLOW.md` for engineering process and safety rules.
+4. Read `docs/PRODUCT-ROADMAP.md`, `docs/SECURITY-RENDERING-AUDIT.md`, or `docs/RELEASE-READINESS.md` only when relevant to the next task.
+5. Continue from the next exact action above; never assume a merge or test result from prior chat alone.
