@@ -40,3 +40,12 @@ jobs:
       - name: Validate PR handoff evidence
         if: github.event_name == 'pull_request'
         run: npm run check:pr-quality
+
+      - name: Temporary backup-integrity formatting diagnostics
+        if: always()
+        run: |
+          for file in backend/Code.gs docs/APPS-SCRIPT-RELEASE-RUNBOOK.md docs/PRODUCT-ROADMAP.md docs/RELEASE-READINESS.md frontend/features/administration.js test/test-backup-integrity.js; do
+            echo "=== Prettier diff: $file ==="
+            npx prettier "$file" > /tmp/prettier-output
+            diff -u "$file" /tmp/prettier-output || true
+          done
