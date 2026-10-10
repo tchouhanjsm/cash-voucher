@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #58 base):** `d63e146ac76b79fad7cc930813c303db009fd59b`  
+**Verified main SHA (PR #59 base):** `544e0170fdb9333d62f7efa40dc512c84a28c1a6`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -23,7 +23,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #54 merged on 9 October 2026 (merge commit `a87c1d90405b1e7cd1097c6328668f91f8cc9af4`); register empty-state clarity and filter recovery passed CI and 103 Browser E2E checks.
 - PR #55 merged on 9 October 2026 (merge commit `b73aee24b91a4b5808e05bda2e84537188c5028f`); receipt retry and register refresh recovery are integrated. Exact-head CI and Browser E2E passed on PR head `54b2cae724a6dcb6c9a63e1a996f745e99e38427` (106 checks, 0 failures).
 - PR #56 merged on 9 October 2026 (merge commit `9249d753daf361798c457d237ab16d121d13b47e`); exact PR head `9a06246c125594ff7af1201cf1f897000a744857`, CI passed and Browser E2E passed 114 checks / 0 failures.
-- No Apps Script production deployment, live backup/restore, or production-data operation has been performed.
+- PR #58 merged on 10 October 2026 (merge commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`): owner-only Audit log route, filters, latest-200 disclosure, and filtered CSV export. The export is not full audit history; live Google authorization and accountant compatibility remain unverified.\n- No Apps Script production deployment, live backup/restore, or production-data operation has been performed.
 
 ## Process decisions
 
@@ -33,18 +33,16 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #58 — owner audit discoverability
+## Current batch: PR #59 — reporting and workflow automation contract
 
-**Branch:** `feature/owner-audit-discoverability`.  
-**Base main SHA:** `d63e146ac76b79fad7cc930813c303db009fd59b`.
+**Branch:** `feature/reporting-automation-contracts`.  
+**Base main SHA:** `544e0170fdb9333d62f7efa40dc512c84a28c1a6`.
 
-Scope: dedicated owner-only Audit log navigation, search/user/action/date filters, visible latest-200
-limitation, safe text rendering, and CSV export of filtered loaded events.
-Reuse the existing `auditLog` API and server-side permission; no backend/schema/accounting changes.
+Scope is documentation-only: define the destination decision and safety contract for accounting exports, inventory automation candidates, and specify idempotency, authorization, visibility, failure/retry, auditability, privacy and kill-switch expectations. No application code, API, schema, scheduled trigger, deployment or production-data behavior changes.
 
-CI and Browser E2E passed together on the implementation head before the final documentation-only handoff updates. The live PR description is authoritative for the current head SHA and exact-head workflow links. The browser suite uses a local mock API; live Google authorization, full audit-history completeness, and real-device accessibility remain unverified.
+**PR #60 is reserved** for a cross-functional retrospective/code review of actual merged code and evidence: product outcomes, backend/API, frontend UI/UX, CI/CD, security, QA, real-world scenarios, and workflow automation priorities. Keep it a review and ranked backlog, not a catch-all implementation PR.
 
-Next: owner review and merge. No Apps Script push, deployment, live Drive operation, or production-data change is authorized.
+Current gate: review this contract, run CI and Browser E2E on the same exact PR head, and leave merge to the owner. Daily cash close remains blocked on approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`.
 
 ## Operational gates still open
 
