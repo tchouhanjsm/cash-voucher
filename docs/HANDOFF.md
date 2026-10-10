@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #62 merge):** `49f2a3db297f84093d46b247a54c93c9372f3684`  
+**Verified main SHA (PR #63 merge):** `51de4c6b9008bd06f2451b192f5ff8eab01c8199`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -23,7 +23,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #54 merged on 9 October 2026 (merge commit `a87c1d90405b1e7cd1097c6328668f91f8cc9af4`); register empty-state clarity and filter recovery passed CI and 103 Browser E2E checks.
 - PR #55 merged on 9 October 2026 (merge commit `b73aee24b91a4b5808e05bda2e84537188c5028f`); receipt retry and register refresh recovery are integrated. Exact-head CI and Browser E2E passed on PR head `54b2cae724a6dcb6c9a63e1a996f745e99e38427` (106 checks, 0 failures).
 - PR #56 merged on 9 October 2026 (merge commit `9249d753daf361798c457d237ab16d121d13b47e`); exact PR head `9a06246c125594ff7af1201cf1f897000a744857`, CI passed and Browser E2E passed 114 checks / 0 failures.
-- PR #58 merged on 10 October 2026 (merge commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`): owner-only Audit log route, filters, latest-200 disclosure, and filtered CSV export. The export is not full audit history; live Google authorization and accountant compatibility remain unverified.\n- No Apps Script production deployment, live backup/restore, or production-data operation has been evidenced for the current v2 release.
+- PR #58 merged on 10 October 2026 (merge commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`): owner-only Audit log route, filters, latest-200 disclosure, and filtered CSV export. The export is not full audit history; live Google authorization and accountant compatibility remain unverified.\n- PR #63 release: the owner reports uploading the reviewed backend and updating the configured Web App deployment to version 4. Live role smoke tests and backup/restore remain unverified.
 
 ## Process decisions
 
@@ -33,23 +33,19 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current phase: PR #63 — Apps Script release readiness and controlled deployment
+## Current phase: PR #64 — owner-only voucher data-quality scan
 
-**Verified main SHA:** `49f2a3db297f84093d46b247a54c93c9372f3684` (merge commit for PR #62).  
-**Active branch:** `feature/apps-script-release-readiness`.  
-**Scope:** release runbook and handoff reconciliation only. See `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md`.
+- **Main base:** `51de4c6b9008bd06f2451b192f5ff8eab01c8199` (PR #63 merge).
+- **Active branch:** `feature/data-quality-exceptions`.
+- **Scope:** working backend scan, owner-facing Settings UI and mock regression tests. No schema migration or accounting/tax inference.
 
-PR #62 is merged. It hardens server-side duplicate ClientID handling and adds expired IndexedDB lease coverage. Exact-head CI passed and Browser E2E passed 126 checks / 0 failures on PR head `26aa8c00510e56aaa0f078de906a7e1c36848204`. These are mock/backend and browser tests; they do not deploy Apps Script.
+PR #63 is merged. The owner uploaded the reviewed Apps Script source and updated the existing configured Web App deployment to version 4. Local `npm run check` passed, but local Browser E2E did not run because Playwright is missing. Node v24 is outside the declared Node 20–22 range, and npm reported three high-severity dependency findings. Live role smoke tests and a separate-destination backup/restore drill remain open.
 
-The frontend `config.js` contains a Web App `/exec` URL, but this review cannot authenticate to Google or prove which live Apps Script deployment currently serves it. The repository intentionally ignores local `.clasp.json` and `.clasprc.json`; local Clasp target/auth must be verified by the owner before any push. Do not guess the script ID or change the URL without matching the deployment ID.
+PR #64 adds an owner-only report that scans voucher rows for missing IDs/fields, invalid dates/amounts/types/statuses, duplicate voucher numbers and duplicate ClientIDs. It presents source-linked exceptions in Settings. This is a structural data-quality report only: it does not classify physical cash, calculate tax, or claim accountant compliance. Exact head `15441c6e96c9211b63bca2d5df85ffdabb37579a` passed CI (100 backend checks) and Browser E2E (126 checks, 0 failures). Do not deploy this PR until live release gates are completed and the owner authorizes release.
 
-**Deployment gate:** locally sync `main`, run `npm ci`, `npm run check`, `npm run test:e2e`, `git diff --check`, then inspect `npx clasp status` and `npx clasp deployments`. Confirm the project and existing deployment before `clasp push`; publish a new version against the verified existing deployment to preserve the URL.
+**Next phase after PR #64:** live release verification and witnessed backup/restore; then extend source-traceable reporting once data-quality findings are reviewed. Daily cash close, physical cash classification, tax fields and destination-specific exports remain behind explicit owner/accountant/CA decisions.
 
-**Critical setup guard:** do not rerun `setup()` as part of an ordinary release. It can create folders/sheets/defaults and replaces the backup trigger. Run it only after verifying a new/empty project and deliberately authorizing initialization.
-
-**Next phase after controlled deployment:** live smoke tests for owner/staff/manager permissions, voucher idempotency, receipts, and backup; then a witnessed restore into a separate recovery destination. Only after the deployment/recovery baseline is recorded should the next product batch implement source-traceable finance data-quality and daily/monthly recorded-voucher reports.
-
-Owner retains control of local Clasp authentication, source upload, deployment version selection, live data checks and merge decisions. No deployment or production-data mutation has been performed by this workflow.
+Owner retains merge and deployment authority.
 
 ## Operational gates still open
 

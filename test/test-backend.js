@@ -523,4 +523,52 @@ ok(
   'owner PIN reset also clears PIN-change throttle',
 );
 ok(g.lockStats.waits === g.lockStats.releases, 'all acquired script locks are released');
+// owner-only data-quality report: scan source records, do not infer accounting treatment
+ok(as(A, 'dataQualityReport').code === 'FORBIDDEN', 'staff cannot read data-quality report');
+ok(
+  as(resetChange.data.token, 'dataQualityReport').code === 'FORBIDDEN',
+  'manager cannot read owner data-quality report',
+);
+
+const dataQualityRow = [
+  'dq-test-id',
+  '201',
+  today,
+  '',
+  0,
+  '',
+  '',
+  'BROKEN',
+  '',
+  '',
+  '',
+  '',
+  '',
+  '',
+  'c1',
+  'PAYMENT',
+];
+g.sheets.Vouchers.rows.push(dataQualityRow);
+const dqReport = as(T, 'dataQualityReport').data;
+const dqCodes = dqReport.issues.map((issue) => issue.code);
+
+ok(
+  dqReport.scanned === g.sheets.Vouchers.rows.length - 1,
+  'data-quality report scans source voucher rows',
+);
+ok(
+  dqCodes.includes('VOUCHER_NUMBER_DUPLICATE'),
+  'data-quality report finds duplicate voucher numbers',
+);
+ok(dqCodes.includes('VENDOR_MISSING'), 'data-quality report finds missing vendor');
+ok(dqCodes.includes('AMOUNT_INVALID'), 'data-quality report finds invalid amount');
+ok(dqCodes.includes('CATEGORY_MISSING'), 'data-quality report finds missing category');
+ok(dqCodes.includes('STATUS_INVALID'), 'data-quality report finds unknown status');
+ok(dqCodes.includes('CLIENT_ID_DUPLICATE'), 'data-quality report finds duplicate client IDs');
+ok(
+  dqReport.issueCount >= dqReport.issues.length,
+  'data-quality report exposes total and capped issue list',
+);
+g.sheets.Vouchers.rows.pop();
+
 console.log(`backend OK — ${n} checks passed`);

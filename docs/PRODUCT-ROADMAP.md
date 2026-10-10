@@ -139,10 +139,16 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **PR #62 merged:** offline sync/idempotency assurance is integrated at merge commit `49f2a3db297f84093d46b247a54c93c9372f3684`. Its reviewed PR head passed CI and Browser E2E (126 checks, 0 failures), but mock tests do not establish live Google behavior.
 
-**PR #63 — Apps Script release readiness and controlled deployment:** documentation-only runbook and handoff reconciliation. Before further finance feature work, verify local Clasp authentication and project target, compare the existing deployment ID with the URL in `config.js`, upload only the reviewed backend folder, publish a new version against the verified existing deployment, and perform a controlled live smoke test. See `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md`.
+**PR #63 — Apps Script release readiness and controlled deployment:** merged. The owner reports uploading the reviewed backend source and updating the configured existing Web App deployment to version 4. The local static/unit checks passed, but Browser E2E did not run because Playwright was missing. Node v24 is outside the repository's Node 20–22 range; npm reported three high-severity dependency findings that require triage. Live role checks and restore remain unverified.
 
-Do not commit local `.clasp.json` or `.clasprc.json`. Do not run `clasp push` until the intended project and existing deployment have been verified. Do not rerun `setup()` during a normal code release: it can create infrastructure and replace the daily backup trigger.
+Do not rerun `setup()` during a normal release. Do not push a new backend version until the intended project and existing deployment have been re-verified and required checks pass.
 
 **Operational P0 after deployment:** observe a real backup and perform a restore into a separate recovery Sheet/folder. Until then, the project is not recovery-verified or production-ready.
 
 **Next product phase after deployment/recovery evidence:** source-traceable data-quality exception reports and daily/monthly recorded-voucher movement reports. Keep GST/TDS, general-ledger claims, daily cash close and destination-specific accountant export behind existing owner/accountant/CA decision gates.
+
+## Current implementation phase — PR #64
+
+**PR #63 release outcome:** reviewed Apps Script files were uploaded locally and the existing configured Web App deployment was updated to version 4. Local unit/static checks passed; Browser E2E did not run because Playwright was unavailable. Live permissions and backup/restore are not yet verified.
+
+**PR #64 — owner-only voucher data-quality scan:** add a real backend action and Settings UI that lists source voucher exceptions (missing values, invalid amount/date/type/status, duplicate voucher numbers and ClientIDs). This is not tax validation, physical-cash classification, a ledger, or an accountant certification. The PR must include automated backend regressions and exact-head CI/browser evidence; no deployment as part of the PR.

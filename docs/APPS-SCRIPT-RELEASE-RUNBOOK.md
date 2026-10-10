@@ -106,6 +106,9 @@ Before deployment, record the current deployment ID and active version. If the n
 
 ## Release status
 
-- PR #62 source is merged; source upload and Web App deployment are not evidenced by GitHub CI.
-- The current deployment URL is present in `config.js`, but this tool-only review cannot authenticate to the user's Google account or inspect live deployments/Script Properties.
-- Do not mark production-ready until the live smoke test and separate-destination backup/restore gates are witnessed and recorded.
+- PR #63 is merged. On 10 October 2026, the owner ran `npx clasp push` and updated the existing configured Web App deployment using its verified deployment ID; Clasp reported deployment version 4.
+- The owner’s local `npm run check` passed, including 90 backend checks, but `npm run test:e2e` exited before running because Playwright is not installed for the selected Python interpreter. Do not describe Browser E2E as passed for this local release.
+- Local Node v24.14.0 is outside the repository's declared Node `>=20 <23` range. Use the supported Node version for repeatable release checks.
+- npm reported three high-severity dependency findings; inspect the dependency paths and resolve them in a separate reviewed dependency-security change.
+- Live owner/staff/manager smoke tests, receipt authorization checks, real backup verification and restore into a separate recovery Sheet/folder are still required. The deployment version number alone does not establish operational readiness.
+- Do not rerun `setup()`, overwrite production records, or claim restoreability until the owner has witnessed the recovery drill.

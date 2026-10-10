@@ -290,6 +290,145 @@ function trashIncompleteBackup_(snapshot) {
     );
   }
 }
+
+function dataQualityReport_(user) {
+  need_(user, 'settings');
+  const sheet = sheet_('Vouchers');
+  const grid = sheet.getDataRange().getValues();
+  const headers = CFG.H.Vouchers;
+  const vouchers = [];
+  const issues = [];
+  const voucherNumbers = Object.create(null);
+  const clientIds = Object.create(null);
+
+  for (let i = 1; i < grid.length; i++) {
+    if (
+      !grid[i].some(function (value) {
+        return value !== '' && value !== null;
+      })
+    )
+      continue;
+
+    const voucher = { _row: i + 1 };
+    headers.forEach(function (header, index) {
+      voucher[header] = grid[i][index];
+    });
+    vouchers.push(voucher);
+  }
+
+  const add = function (voucher, field, code, message, severity) {
+    issues.push({
+      severity: severity || 'warning',
+      code: code,
+      sourceRow: voucher._row,
+      voucherId: String(voucher.VoucherID || ''),
+      voucherNo: String(voucher.VoucherNo || ''),
+      date: isoDate_(voucher.Date),
+      type: String(voucher.Type || ''),
+      field: field,
+      message: message,
+    });
+  };
+
+  vouchers.forEach(function (voucher) {
+    const id = String(voucher.VoucherID || '').trim();
+    const type = String(voucher.Type || '').trim();
+    const number = String(voucher.VoucherNo || '').trim();
+    const status = String(voucher.Status || '').trim();
+    const date = isoDate_(voucher.Date);
+    const amount = Number(voucher.Amount);
+    const clientId = String(voucher.ClientID || '').trim();
+
+    if (!id) add(voucher, 'VoucherID', 'VOUCHER_ID_MISSING', 'Voucher ID is missing.', 'error');
+
+    if (!/^[0-9]+$/.test(number) || Number(number) < 1) {
+      add(
+        voucher,
+        'VoucherNo',
+        'VOUCHER_NUMBER_INVALID',
+        'Voucher number must be a positive integer.',
+        'error',
+      );
+    } else {
+      const numberKey = type + ':' + number;
+      if (voucherNumbers[numberKey]) {
+        add(
+          voucher,
+          'VoucherNo',
+          'VOUCHER_NUMBER_DUPLICATE',
+          'Voucher number is duplicated within this voucher type.',
+          'error',
+        );
+      } else {
+        voucherNumbers[numberKey] = true;
+      }
+    }
+
+    if (!validDate_(date))
+      add(
+        voucher,
+        'Date',
+        'DATE_INVALID',
+        'Voucher date is missing or outside the supported date range.',
+        'error',
+      );
+
+    if (!String(voucher.Vendor || '').trim())
+      add(voucher, 'Vendor', 'VENDOR_MISSING', 'Counterparty/vendor is missing.');
+
+    if (!isFinite(amount) || amount <= 0 || amount > CFG.MAX_AMOUNT) {
+      add(
+        voucher,
+        'Amount',
+        'AMOUNT_INVALID',
+        'Amount must be positive and within the supported limit.',
+        'error',
+      );
+    }
+
+    if (!String(voucher.Category || '').trim())
+      add(voucher, 'Category', 'CATEGORY_MISSING', 'Category is missing.');
+
+    if (type !== 'PAYMENT' && type !== 'RECEIPT')
+      add(voucher, 'Type', 'TYPE_INVALID', 'Voucher type must be PAYMENT or RECEIPT.', 'error');
+
+    if (status !== 'ACTIVE' && status !== 'CANCELLED')
+      add(voucher, 'Status', 'STATUS_INVALID', 'Voucher status is not recognized.', 'error');
+
+    if (!String(voucher.CreatedBy || '').trim())
+      add(voucher, 'CreatedBy', 'CREATOR_MISSING', 'Creator attribution is missing.');
+
+    if (clientId) {
+      if (clientIds[clientId]) {
+        add(
+          voucher,
+          'ClientID',
+          'CLIENT_ID_DUPLICATE',
+          'Client ID is associated with more than one voucher.',
+          'error',
+        );
+      } else {
+        clientIds[clientId] = true;
+      }
+    }
+  });
+
+  const visibleIssues = issues.slice(0, 500);
+  return {
+    generatedAt: nowIso_(),
+    scanned: vouchers.length,
+    issueCount: issues.length,
+    errors: issues.filter(function (issue) {
+      return issue.severity === 'error';
+    }).length,
+    warnings: issues.filter(function (issue) {
+      return issue.severity !== 'error';
+    }).length,
+    truncated: issues.length > visibleIssues.length,
+    issues: visibleIssues,
+  };
+}
+
 function backupStatus_(user) {
   need_(user, 'settings');
   const p = props_();
@@ -394,6 +533,7 @@ const ACTIONS = {
   saveSettings: saveSettings_,
   auditLog: auditLog_,
   backupStatus: backupStatus_,
+  dataQualityReport: dataQualityReport_,
   logout: logout_,
 };
 const WRITES = {
