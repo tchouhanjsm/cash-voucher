@@ -53,10 +53,15 @@ export function closeModal() {
 }
 
 /**
- * `body` is trusted, app-authored markup. Escape every persisted/API/user value
- * before interpolation; never pass server-controlled HTML into this slot.
+ * Dialog content must be a DOM Node or DocumentFragment. Build user/API-derived
+ * values with textContent, form properties, and explicit attributes at the callsite;
+ * never pass an HTML string into this shared modal.
  */
 export function dialog(title, body, onSubmit, ok = 'Save') {
+  if (!body || typeof body.nodeType !== 'number') {
+    throw new TypeError('Dialog body must be a DOM Node or DocumentFragment.');
+  }
+
   const modal = $('#modal');
   const openingDialog = modal.classList.contains('hidden');
 
@@ -73,9 +78,10 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
   modal.setAttribute('aria-labelledby', 'modalTitle');
-  modal.innerHTML = `<form class="card mcard" autocomplete="off"><h2 id="modalTitle">${esc(title)}</h2>${body}<p class="error" id="mErr" role="alert" aria-live="assertive"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button type="submit" class="btn primary">${esc(ok)}</button>` : ''}</div></form>`;
+  modal.innerHTML = `<form class="card mcard" autocomplete="off"><h2 id="modalTitle">${esc(title)}</h2><p class="error" id="mErr" role="alert" aria-live="assertive"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button type="submit" class="btn primary">${esc(ok)}</button>` : ''}</div></form>`;
 
   const form = $('form', modal);
+  form.insertBefore(body, $('#mErr', form));
   $('[data-x]', form).onclick = closeModal;
 
   modal.onkeydown = (event) => {
