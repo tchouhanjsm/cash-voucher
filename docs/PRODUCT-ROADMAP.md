@@ -203,17 +203,21 @@ PR #71 merged at ea99e4e19be0f29e8c1afdc25828bf1b5ecce399. Its exact PR head pas
 
 PR #72 merged at `13a1fd84a013d85952d04c512313e8fcf9e36475`. Its exact PR head `d7f9e928f542a831d4588935d1c05dd96ed28979` passed the full flight test, CI and Browser E2E; the browser suite passed 140 checks / 0 failures. Coverage exercises report disclosure/totals, active/cancelled and type filters, and CSV row parity with the filtered table. This remains evidence for recorded voucher movement, not physical cash, general-ledger, profit/loss or tax calculations.
 
-## Current engineering phase — PR #73: close a report HTML-rendering gap
+## Completed phase — PR #73: report date-range rendering
 
-The security audit found the report's displayed date range interpolated `dmy(R.from)` and `dmy(R.to)` into an HTML template without the HTML escaper. Escape both values and add an adversarial Browser E2E case that injects malformed state through the control value getter, then proves no SVG node or payload execution occurs. This is deliberately narrow; remaining active template sinks still require review.
+PR #73 merged at `71033675cc9f52ad391f8b2d06a362551a224be6`. Its tested head passed Full Flight Test, normal CI and Browser E2E; 110 backend checks and 141 browser checks passed with zero failures. The change escapes the report date labels and tests malformed state. It is one sink-level fix, not a full XSS certification.
 
-**Exit gate:** exact-head full flight, CI and Browser E2E pass; handoff and security audit identify the changed sink and residual scope. No broad renderer rewrite.
+## Current engineering phase — PR #74: payment success voucher-number rendering
 
-## Product priorities after PR #73
+The payment/receipt save confirmation interpolated `vno(c)` into `#nres.innerHTML` without `esc()`. Escape the voucher number at this sink and add Browser E2E coverage using a hostile API response, asserting literal text, no injected SVG node and no payload execution. PR #70 covered register/print sinks; this is a separate user-visible confirmation sink.
 
-1. **P0 — Operational assurance:** owner confirms the live Apps Script target/settings, verifies role and receipt permissions, observes a real scheduled backup, and witnesses restore into a separate recovery destination. Code/CI work does not replace these operations.
-2. **P1 — Rendering-security audit:** continue the source-by-source inventory, with tests for confirmed tainted values at the actual sink. Do not call the application XSS-certified.
-3. **P2 — UI/UX quality pass:** inventory the core staff/manager/owner tasks and friction points first; then select a genuinely free Figma community kit as a visual reference (not a production dependency), define reusable tokens/components, and improve the existing flows incrementally. Prioritize voucher entry, register filters, import review, report export, and loading/empty/error feedback over a broad redesign.
-4. **P3 — Workflow additions:** prototype daily cash close and physical reconciliation only after the owner/accountant defines opening float, counted denominations, variance handling, inclusion/exclusion of cancelled vouchers and sign-off. Keep approvals and scheduled automation as decision-gated features; do not silently infer ledger/tax semantics.
+**Exit gate:** Full Flight Test, normal CI and Browser E2E pass on the exact same final PR head. Keep the change limited to this sink, regression test and handoff updates.
 
-**Operational P0 remains a separate production-readiness blocker:** live target/authorization, real backup and isolated restore remain unverified. No deployment or production mutation is authorized.
+## Product priorities after PR #74
+
+1. **P0 — Operational assurance:** owner confirms the live Apps Script target/settings, verifies role and receipt permissions, observes a real scheduled backup and witnesses restore into a separate recovery destination. Code/CI does not replace these operations.
+2. **P1 — Rendering-security audit:** continue the source-by-source inventory with regression tests for confirmed unsafe sinks. Do not claim full XSS certification until the inventory has been reviewed.
+3. **P2 — UI/UX quality pass:** map staff, manager and owner tasks, then choose a free Figma community kit as a reference. Define reusable tokens and components and improve voucher entry, register filters, import review, report export, and loading/empty/error feedback incrementally.
+4. **P3 — Workflow additions:** design daily cash close and physical reconciliation only after owner/accountant decisions on opening float, counted cash, variance handling, cancelled vouchers and sign-off. Keep approvals and scheduled automation behind explicit decisions; do not infer accounting/tax semantics.
+
+**Production boundary:** live target/authorization, real backup and isolated restore remain unverified. No deployment or production mutation is authorized by this code phase.
