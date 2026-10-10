@@ -291,27 +291,23 @@ export function createRegister({ api, go }) {
     note.value = voucher.notes;
     body.appendChild(labeledControl('Note', note));
 
-    dialog(
-      `Edit #${vno(voucher)}`,
-      body,
-      async () => {
-        const updated = await api('updateVoucher', {
-          id,
-          fields: {
-            date: $('#ed').value,
-            vendor: $('#ev').value,
-            amount: parseAmt($('#ea').value),
-            category: $('#ec').value,
-            notes: $('#en').value,
-          },
-        });
+    dialog(`Edit #${vno(voucher)}`, body, async () => {
+      const updated = await api('updateVoucher', {
+        id,
+        fields: {
+          date: $('#ed').value,
+          vendor: $('#ev').value,
+          amount: parseAmt($('#ea').value),
+          category: $('#ec').value,
+          notes: $('#en').value,
+        },
+      });
 
-        Object.assign(voucher, updated);
-        closeModal();
-        toast('Updated.', 'ok');
-        go(S.view);
-      },
-    );
+      Object.assign(voucher, updated);
+      closeModal();
+      toast('Updated.', 'ok');
+      go(S.view);
+    });
   }
 
   function cancel(id) {
