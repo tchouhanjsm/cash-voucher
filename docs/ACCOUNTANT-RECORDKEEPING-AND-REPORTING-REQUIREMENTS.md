@@ -18,22 +18,22 @@ The current app has a useful operational base: payment and receipt vouchers, sep
 
 The current `Vouchers` sheet schema is:
 
-| Field | Current meaning / use | Accountant's assessment |
-| --- | --- | --- |
-| `VoucherID` | Internal voucher identity | Preserve as immutable source key in every export. |
-| `VoucherNo` | Human-readable number; payment and receipt series are separate | Export together with voucher type and internal ID; never rely on number alone. |
-| `Date` | Voucher/business date | Need explicit business-date semantics, timezone and period inclusion rules. |
-| `Vendor` | Free-text counterparty / description | Too ambiguous for tax reporting; distinguish supplier/customer/employee/owner/bank and link to a stable party record. |
-| `Amount` | Single amount | No explicit gross/net/tax-inclusive definition or debit/credit sign convention. |
-| `Category` | Operational category | Not an approved chart of accounts and must not be mapped automatically to tax treatment. |
-| `Notes` | Free text | Helpful context but not a substitute for invoice fields or a structured business purpose. |
-| `Status` | Active/cancelled state | Export must retain cancellation state/reason and define whether cancelled records are excluded from totals. |
-| `CreatedBy`, `CreatedAt` | Creator and timestamp | Useful for traceability; normalize timestamps and preserve original creation time. |
-| `UpdatedBy`, `UpdatedAt` | Last editor and timestamp | Last-update fields alone do not preserve a complete before/after history. |
-| `Receipts` | Drive file IDs | Evidence references exist, but evidence type, invoice number, tax fields and review outcome are not structured. |
-| `CancelReason` | Cancellation explanation | Keep in operational/audit exports; do not delete cancelled source records from history. |
-| `ClientID` | Retry/idempotency identifier | Technical identity; do not expose session secrets or treat it as an accounting document number. |
-| `Type` | PAYMENT or RECEIPT | Useful cash-operation classification, but does not alone prove physical cash impact, income, expense, bank movement or tax category. |
+| Field                    | Current meaning / use                                          | Accountant's assessment                                                                                                              |
+| ------------------------ | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `VoucherID`              | Internal voucher identity                                      | Preserve as immutable source key in every export.                                                                                    |
+| `VoucherNo`              | Human-readable number; payment and receipt series are separate | Export together with voucher type and internal ID; never rely on number alone.                                                       |
+| `Date`                   | Voucher/business date                                          | Need explicit business-date semantics, timezone and period inclusion rules.                                                          |
+| `Vendor`                 | Free-text counterparty / description                           | Too ambiguous for tax reporting; distinguish supplier/customer/employee/owner/bank and link to a stable party record.                |
+| `Amount`                 | Single amount                                                  | No explicit gross/net/tax-inclusive definition or debit/credit sign convention.                                                      |
+| `Category`               | Operational category                                           | Not an approved chart of accounts and must not be mapped automatically to tax treatment.                                             |
+| `Notes`                  | Free text                                                      | Helpful context but not a substitute for invoice fields or a structured business purpose.                                            |
+| `Status`                 | Active/cancelled state                                         | Export must retain cancellation state/reason and define whether cancelled records are excluded from totals.                          |
+| `CreatedBy`, `CreatedAt` | Creator and timestamp                                          | Useful for traceability; normalize timestamps and preserve original creation time.                                                   |
+| `UpdatedBy`, `UpdatedAt` | Last editor and timestamp                                      | Last-update fields alone do not preserve a complete before/after history.                                                            |
+| `Receipts`               | Drive file IDs                                                 | Evidence references exist, but evidence type, invoice number, tax fields and review outcome are not structured.                      |
+| `CancelReason`           | Cancellation explanation                                       | Keep in operational/audit exports; do not delete cancelled source records from history.                                              |
+| `ClientID`               | Retry/idempotency identifier                                   | Technical identity; do not expose session secrets or treat it as an accounting document number.                                      |
+| `Type`                   | PAYMENT or RECEIPT                                             | Useful cash-operation classification, but does not alone prove physical cash impact, income, expense, bank movement or tax category. |
 
 Supporting sheets are `Users`, `Vendors`, `Settings`, and `AuditLog`. The audit log is documented as best-effort, so it must not be represented as tamper-proof or as a complete immutable change journal.
 
@@ -64,6 +64,7 @@ No voucher should be labelled “accountant-ready” merely because it was saved
 A close report should compare recorded movements to independent evidence (cash count, bank statement, deposit/withdrawal record, receipts and source vouchers). A calculated dashboard balance is not a physical cash count. Daily cash close remains blocked until the owner approves `docs/DAILY-CASH-CLOSE-DESIGN.md`.
 
 Minimum close workflow, after policy approval:
+
 - Select period and business location/property (currently single-property).
 - Show opening balance provenance and date; do not reuse a single global opening balance as if it were period history.
 - List included payments/receipts and explicitly exclude or separately show cancelled, pending-sync and unclassified items.
@@ -89,20 +90,20 @@ The product should later support an export manifest with period, row count, tota
 
 Prioritize reports that help the owner and accountant identify exceptions and reconcile to source records. Every chart must have a linked detail table, defined metric and explicit period.
 
-| Report / visualization | What it answers | Required data / rules | Status |
-| --- | --- | --- | --- |
-| Daily receipts vs payments | How much was recorded in each direction each day? | Business date, voucher type, amount, status, timezone; drill-down by voucher ID | Feasible for recorded voucher movements; not necessarily physical cash |
-| Monthly cash movement trend | How do recorded inflows/outflows change month to month? | Same rules, period boundaries, explicit cancellations and late entries | Feasible with caveats |
-| Expense by operational category | Where are recorded payments categorized? | Payment records, category, amount, uncategorized bucket, cancellation policy | Feasible as operational analysis, not a tax-deductible-expense report |
-| Spend by supplier/counterparty | Which counterparties account for recorded payments? | Stable party identity, role/type, amount, date; duplicate-name review | Partially feasible; current vendor is ambiguous/free-text |
-| Receipt/evidence coverage | Which vouchers lack supporting evidence? | Voucher ID, transaction class, evidence IDs and approved evidence rules | Feasible as a gap report; mandatory rules need owner/accountant approval |
-| Cancellation/edit exceptions | What changed, was cancelled and why? | Source status, reason, creator/update data, audit history limitations | Partial; audit is best-effort and not full before/after history |
-| Pending sync / failure queue | Which device records are not centrally confirmed? | Actual outbox state, attempt age, retry outcome and safe recovery action | Device-specific view; never mix silently into server totals |
-| Cash reconciliation / variance | Does recorded expected cash match a physical count? | Approved dated opening, cash-impact policy, close count, correction/period lock | Blocked pending owner approval and workflow design |
-| GST output/input summary | What tax amounts might be reportable? | Verified registration, tax invoice data, taxable value, tax type/rate/amount, place-of-supply and valid classifications as applicable | Not supportable from current schema; requires CA-approved fields/rules |
-| TDS review register | Which payments may need TDS review? | Party type/PAN where legally needed, payment/credit dates, nature/section/rate, threshold context, amount and deposit/return references | Not supportable from current schema; do not auto-infer |
-| Profit & loss / balance sheet | What is accounting profit and financial position? | Double-entry journal, chart of accounts, accruals, liabilities, assets, inventory, depreciation, settlements and adjustments | Out of scope for current voucher-only data |
-| Tax filing pack | What evidence supports accountant-prepared filings? | Reconciled ledgers, source invoices, tax classifications, return-period rules, credits/adjustments and external records | Future accountant workflow; not a filing-ready output today |
+| Report / visualization          | What it answers                                         | Required data / rules                                                                                                                   | Status                                                                   |
+| ------------------------------- | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Daily receipts vs payments      | How much was recorded in each direction each day?       | Business date, voucher type, amount, status, timezone; drill-down by voucher ID                                                         | Feasible for recorded voucher movements; not necessarily physical cash   |
+| Monthly cash movement trend     | How do recorded inflows/outflows change month to month? | Same rules, period boundaries, explicit cancellations and late entries                                                                  | Feasible with caveats                                                    |
+| Expense by operational category | Where are recorded payments categorized?                | Payment records, category, amount, uncategorized bucket, cancellation policy                                                            | Feasible as operational analysis, not a tax-deductible-expense report    |
+| Spend by supplier/counterparty  | Which counterparties account for recorded payments?     | Stable party identity, role/type, amount, date; duplicate-name review                                                                   | Partially feasible; current vendor is ambiguous/free-text                |
+| Receipt/evidence coverage       | Which vouchers lack supporting evidence?                | Voucher ID, transaction class, evidence IDs and approved evidence rules                                                                 | Feasible as a gap report; mandatory rules need owner/accountant approval |
+| Cancellation/edit exceptions    | What changed, was cancelled and why?                    | Source status, reason, creator/update data, audit history limitations                                                                   | Partial; audit is best-effort and not full before/after history          |
+| Pending sync / failure queue    | Which device records are not centrally confirmed?       | Actual outbox state, attempt age, retry outcome and safe recovery action                                                                | Device-specific view; never mix silently into server totals              |
+| Cash reconciliation / variance  | Does recorded expected cash match a physical count?     | Approved dated opening, cash-impact policy, close count, correction/period lock                                                         | Blocked pending owner approval and workflow design                       |
+| GST output/input summary        | What tax amounts might be reportable?                   | Verified registration, tax invoice data, taxable value, tax type/rate/amount, place-of-supply and valid classifications as applicable   | Not supportable from current schema; requires CA-approved fields/rules   |
+| TDS review register             | Which payments may need TDS review?                     | Party type/PAN where legally needed, payment/credit dates, nature/section/rate, threshold context, amount and deposit/return references | Not supportable from current schema; do not auto-infer                   |
+| Profit & loss / balance sheet   | What is accounting profit and financial position?       | Double-entry journal, chart of accounts, accruals, liabilities, assets, inventory, depreciation, settlements and adjustments            | Out of scope for current voucher-only data                               |
+| Tax filing pack                 | What evidence supports accountant-prepared filings?     | Reconciled ledgers, source invoices, tax classifications, return-period rules, credits/adjustments and external records                 | Future accountant workflow; not a filing-ready output today              |
 
 ### Dashboard design principles
 
@@ -119,12 +120,14 @@ Prioritize reports that help the owner and accountant identify exceptions and re
 The following are candidate fields. Add only the fields that the owner and qualified accountant confirm are necessary for the chosen accounting method, entity and destination.
 
 ### Party / supplier / customer master
+
 - Stable Party ID; legal/display name; party role (supplier, customer, employee, owner, bank or other).
 - Address and country/state where relevant.
 - GSTIN and PAN only where legally applicable and access/privacy policy permits.
 - Duplicate/merge workflow preserving old IDs and history.
 
 ### Source document and settlement
+
 - Source document type, invoice/receipt number, invoice date, due date where relevant.
 - Supplier/customer reference, original voucher reference and credit/debit note link where applicable.
 - Payment method/account (cash drawer, bank account, card/UPI or other) and settlement reference.
@@ -133,6 +136,7 @@ The following are candidate fields. Add only the fields that the owner and quali
 - Business purpose and reviewer/approval metadata where the owner's policy requires it.
 
 ### Tax-specific data (CA-approved only)
+
 - Tax registration status and effective dates.
 - Tax type and classification; applicable rate and taxable base; separate tax components as required.
 - Place-of-supply/supply-type details where relevant.
@@ -148,6 +152,7 @@ Do not implement all these fields speculatively. Some data may belong in an acco
 Generic export and destination-specific import are different products. First destination remains unselected. Before building an import template, the owner and receiving accountant must approve a representative, anonymized sample.
 
 ### Required export metadata
+
 - Property/entity identifier and confirmed currency.
 - Period start/end, business timezone, generated-at timestamp and source dataset/version.
 - Voucher type, internal VoucherID, VoucherNo, business date, party identity, category, amount, status, creation/update metadata, cancellation reason and source evidence references where permitted.
@@ -157,6 +162,7 @@ Generic export and destination-specific import are different products. First des
 - No session token, PIN, secret, unnecessary personal data or public Drive link.
 
 ### Safety and reconciliation
+
 - CSV formula-injection defense for text fields beginning with `=`, `+`, `-`, `@`, tab or line-break/control characters, in addition to proper quoting/escaping.
 - Preserve Unicode, commas, quotes and newlines; test decimal/date conventions in the target tool.
 - Keep raw numeric amounts separate from display-formatted amounts.
@@ -169,27 +175,32 @@ Generic export and destination-specific import are different products. First des
 ## 7. Recommended staged implementation plan
 
 ### Stage A — requirements and source data audit (this PR)
+
 - Record current fields and their accounting meaning/limitations.
 - Define report catalog, charts, workflow, tax-data candidates and export acceptance contract.
 - Make no runtime/schema/tax-calculation changes.
 
 ### Stage B — integrity and recovery (next engineering phase after this review)
+
 - Harden and test offline sync/idempotency, including commit-then-lost-response, repeated client ID, changed-content collision, cross-tab retry and stale lease recovery.
 - Make server-confirmed vs local-only states unambiguous; do not let accountant exports silently include local-only records.
 - Perform the witnessed backup/restore drill as an operational gate using a separate recovery destination.
 
 ### Stage C — data-quality reports
+
 - Implement exception lists for missing evidence, uncategorized/unknown parties, cancellations/edits, pending sync and invalid dates/amounts.
 - Build linked daily/monthly receipt-payment and category reports using only fields whose semantics are confirmed.
 - Add count/total reconciliation tests and CSV-injection regression tests.
 
 ### Stage D — destination-specific export
+
 - Select the target accounting product/version and import route.
 - Obtain accountant-approved column mapping and anonymized fixture.
 - Test successful import, rejected rows, duplicate re-import, cancellation/credit note behavior, date/decimal/currency conventions and totals.
 - Only then mark the export as compatible with that destination.
 
 ### Stage E — tax and ledger capabilities, only if required
+
 - Have the accountant define applicable tax rules, data ownership, review and effective dates.
 - Decide whether the app should capture tax data or defer to the accounting package.
 - Do not call the current app a general ledger or produce filing calculations without a defined and tested accounting model.
