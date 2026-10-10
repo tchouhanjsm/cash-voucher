@@ -123,5 +123,4 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E tampers with the `createVouchers` response and asserts the number
   appears as literal text, no SVG node is created, and the payload handler does
   not execute.
-- PR #70 covered register and print sinks; this is a separate success-panel sink.
-  Other active template renderers remain in the review scope.
+- PR #70 covered register and print sinks; this is a separate success-panel sink. Other active template renderers remain in the review scope.
