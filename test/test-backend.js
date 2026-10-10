@@ -223,22 +223,33 @@ ok(
   'same-user retry with matching details is idempotent',
 );
 ok(Object.keys(g.files).length === filesAfterFirstCreate, 'duplicate retry creates no receipt');
-const changedPayloadConflict = as(S, 'createVouchers', {
-  entries: [
-    {
-      clientId: 'c1',
-      date: today,
-      vendor: '=HYPERLINK("x")',
-      amount: 999,
-      category: 'Fuel',
-    },
-  ],
-});
+const changedPayloads = [
+  { date: new Date(Date.now() - 86400000).toISOString().slice(0, 10) },
+  { vendor: 'Different vendor' },
+  { amount: 999 },
+  { category: 'Kitchen' },
+  { notes: 'changed notes' },
+  { type: 'RECEIPT' },
+];
+const changedPayloadResults = changedPayloads.map((override) =>
+  as(S, 'createVouchers', {
+    entries: [
+      {
+        clientId: 'c1',
+        date: today,
+        vendor: '=HYPERLINK("x")',
+        amount: '150.555',
+        category: 'Fuel',
+        notes: '',
+        type: 'PAYMENT',
+        ...override,
+      },
+    ],
+  }),
+);
 ok(
-  !changedPayloadConflict.ok &&
-    changedPayloadConflict.code === 'CONFLICT' &&
-    changedPayloadConflict.error.includes('different voucher details'),
-  'same-user client ID with changed financial details is rejected',
+  changedPayloadResults.every((result) => !result.ok && result.code === 'CONFLICT'),
+  'same-user client ID rejects changed date, counterparty, amount, category, notes and type',
 );
 ok(
   Object.keys(g.files).length === filesAfterFirstCreate,
