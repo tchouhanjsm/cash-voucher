@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #70 merge):** `1e656dee0266dba38d35500150889ce6020d8045`  
+**Verified main SHA (PR #71 merge):** `ea99e4e19be0f29e8c1afdc25828bf1b5ecce399`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -99,12 +99,22 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - Exact PR head `061d0a5bc8c13f195fe6a929361e0c7f00e8acb3`: CI passed; Browser E2E passed 130 checks / 0 failures.
 - Scope: escaped voucher numbers in register/print templates and added hostile persisted-number regression coverage.
 
-## Current development phase — PR #71: full flight-test runner
+## Completed phase — PR #71: executable full flight test
 
-- **Verified base SHA:** `1e656dee0266dba38d35500150889ce6020d8045` (PR #70 merge).
-- **Branch:** `feature/full-flight-test`.
-- **Goal:** add one repeatable command and one GitHub Actions run that executes dependency policy, the complete quality/backend test gate and Browser E2E on the same commit. This is executable validation, not a documentation-only phase.
-- **Evidence:** PR checks must pass on the exact final head. The latest merged-main CI passed; the post-merge Browser E2E on `main` has not yet been run separately. The new workflow will run on the PR and can later be manually dispatched.
-- **Limit:** tests use the repository's in-memory Google-service mock; they cannot prove live Apps Script authorization, Drive backup, or restoreability.
-- **Operational P0:** owner verification of deployment target, live role/receipt access, scheduled backup and isolated restore remains open. No `clasp push`, deployment, `setup()`, or production mutation.
-- **Local preservation:** do not stage or commit the owner's untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
+- **Merged main:** ea99e4e19be0f29e8c1afdc25828bf1b5ecce399; merge commit tree matches the PR #71 head tree.
+- **Exact PR #71 head:** 57236be70832b57e7d07fe5eed8d2e0b586a6e95.
+- **Full flight:** passed on the PR #71 head — dependency advisory policy, complete npm run check, then Browser E2E. Backend suite: 110 checks; Browser E2E: 130 checks / 0 failures.
+- **Evidence:** [full flight](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38043779296) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38043779316) · [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38043779443).
+- **Boundary:** automated/mock-backed checks only; no live Google authorization, Drive backup or restoreability claim.
+
+## Current development phase — PR #72: report workflow flight coverage
+
+- **Base SHA:** ea99e4e19be0f29e8c1afdc25828bf1b5ecce399.
+- **Branch:** feature/recorded-report-flight-coverage.
+- **Outcome:** exercise the accountant-facing Recorded Movement Report in Browser E2E, including default active-source rows, cancelled-only filtering, receipt-only filtering, cancellation metadata in CSV, and CSV contents matching the selected filters.
+- **Why this phase:** backend movement-report validation already has unit coverage, but the real browser-to-mock API-to-render/export path was not asserted by the current E2E suite. This closes a concrete functional verification gap rather than adding documentation alone.
+- **Verification:** exact-head full flight, CI and Browser E2E status/URLs are
+  maintained in the PR #72 description. Owner review is blocked until all three
+  pass on the final head. Local checks are not claimed in this environment.
+- **Operational P0:** live Apps Script target/authorization, role/receipt access, real scheduled backup and isolated restore remain open. No clasp push, deployment, setup(), or production mutation.
+- **Local preservation:** do not stage or commit the owner's untracked docs/AI-ENGINEERING-PROTOCOL.md.

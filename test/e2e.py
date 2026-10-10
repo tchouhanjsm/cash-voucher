@@ -1,4 +1,5 @@
 import base64
+import csv
 import datetime
 import json
 import os
@@ -833,6 +834,114 @@ with sync_playwright() as p:
     page.wait_for_timeout(500)
     page.select_option('#rs', 'CANCELLED')
     check(page.locator('#rbody tr.cx').count() == 1, 'cancelled voucher visible under filter')
+
+    # Exercise the recorded movement report through the actual browser/API mock.
+    page.click('[data-v=reports]')
+    page.wait_for_selector('#movementFilters')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Source vouchers')"
+    )
+    report_text = page.locator('#view').inner_text()
+    check(
+        'Recorded Movement Report' in report_text,
+        'movement report heading is visible',
+    )
+    check(
+        'does not establish physical cash' in report_text,
+        'movement report discloses that it is not a physical-cash reconciliation',
+    )
+    check(
+        'SELECTED PAYMENT TOTAL' in report_text.upper() and 'SELECTED RECEIPT TOTAL' in report_text.upper(),
+        'movement report exposes payment and receipt totals',
+    )
+    report_rows = page.locator('#view table tbody tr')
+    check(
+        'Guest Room 5' in report_text
+        and 'RECEIPT' in report_text
+        and report_rows.count() >= 1
+        and all(row.locator('td').nth(5).inner_text() == 'ACTIVE' for row in report_rows.all()),
+        'default active report lists active source vouchers and excludes cancelled records',
+    )
+
+    page.select_option('#movementStatus', 'CANCELLED')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Type: ALL · Status: CANCELLED')"
+    )
+    cancelled_report_rows = page.locator('#view table tbody tr')
+    check(
+        cancelled_report_rows.count() >= 1
+        and all('CANCELLED' in row.inner_text() for row in cancelled_report_rows.all()),
+        'cancelled-only report filter returns only cancelled source vouchers',
+    )
+    with page.expect_download() as movement_download_info:
+        page.click('[data-act=reportCsv]')
+    movement_download = movement_download_info.value
+    movement_csv_path = movement_download.path()
+    with open(movement_csv_path, 'r', encoding='utf-8', newline='') as movement_file:
+        cancelled_reader = csv.DictReader(movement_file)
+        cancelled_csv_fields = set(cancelled_reader.fieldnames or [])
+        cancelled_csv_rows = list(cancelled_reader)
+    cancelled_vouchers = {
+        row.locator('td').nth(1).inner_text().removeprefix('R-')
+        for row in cancelled_report_rows.all()
+    }
+    exported_cancelled_vouchers = [row['voucherNo'] for row in cancelled_csv_rows]
+    check(
+        movement_download.suggested_filename.startswith('recorded-movement-')
+        and movement_download.suggested_filename.endswith('.csv')
+        and 'cancelReason' in cancelled_csv_fields
+        and any(row['cancelReason'] == 'entered twice' for row in cancelled_csv_rows)
+        and all(row['status'] == 'CANCELLED' for row in cancelled_csv_rows),
+        'movement CSV preserves cancellation status and reason only for cancelled source rows',
+    )
+    check(
+        len(exported_cancelled_vouchers) == len(cancelled_vouchers)
+        and set(exported_cancelled_vouchers) == cancelled_vouchers,
+        'cancelled report CSV contains exactly the voucher rows shown by the selected filter',
+    )
+
+    page.select_option('#movementType', 'RECEIPT')
+    page.select_option('#movementStatus', 'ACTIVE')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Type: RECEIPT · Status: ACTIVE')"
+    )
+    receipt_rows = page.locator('#view table tbody tr')
+    receipt_table_text = page.locator('#view table tbody').inner_text()
+    check(
+        receipt_rows.count() >= 1
+        and 'Guest Room 5' in receipt_table_text
+        and all('RECEIPT' in row.locator('td').nth(2).inner_text() for row in receipt_rows.all())
+        and 'CANCELLED' not in receipt_table_text,
+        'receipt-only active report filters by transaction type and status',
+    )
+    with page.expect_download() as receipt_report_download_info:
+        page.click('[data-act=reportCsv]')
+    receipt_report_download = receipt_report_download_info.value
+    with open(receipt_report_download.path(), 'r', encoding='utf-8', newline='') as receipt_file:
+        receipt_reader = csv.DictReader(receipt_file)
+        receipt_csv_rows = list(receipt_reader)
+    receipt_vouchers = {
+        row.locator('td').nth(1).inner_text().removeprefix('R-')
+        for row in receipt_rows.all()
+    }
+    exported_receipt_vouchers = [row['voucherNo'] for row in receipt_csv_rows]
+    check(
+        receipt_report_download.suggested_filename.startswith('recorded-movement-')
+        and any(row['vendor'] == 'Guest Room 5' for row in receipt_csv_rows)
+        and all(row['type'] == 'RECEIPT' and row['status'] == 'ACTIVE' for row in receipt_csv_rows),
+        'receipt-only report CSV contains active receipt rows only',
+    )
+    check(
+        len(exported_receipt_vouchers) == len(receipt_vouchers)
+        and set(exported_receipt_vouchers) == receipt_vouchers,
+        'receipt report CSV contains exactly the voucher rows shown by the selected filters',
+    )
+
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rbody')
 
     with page.expect_download() as download_info:
         page.click('[data-act=csv]')
