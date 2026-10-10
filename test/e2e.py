@@ -1,4 +1,5 @@
 import base64
+import csv
 import datetime
 import json
 import os
@@ -878,15 +879,27 @@ with sync_playwright() as p:
         page.click('[data-act=reportCsv]')
     movement_download = movement_download_info.value
     movement_csv_path = movement_download.path()
-    with open(movement_csv_path, 'r', encoding='utf-8') as movement_file:
-        cancelled_csv = movement_file.read()
+    with open(movement_csv_path, 'r', encoding='utf-8', newline='') as movement_file:
+        cancelled_reader = csv.DictReader(movement_file)
+        cancelled_csv_fields = set(cancelled_reader.fieldnames or [])
+        cancelled_csv_rows = list(cancelled_reader)
+    cancelled_vouchers = {
+        row.locator('td').nth(1).inner_text().removeprefix('R-')
+        for row in cancelled_report_rows.all()
+    }
+    exported_cancelled_vouchers = [row['voucherNo'] for row in cancelled_csv_rows]
     check(
         movement_download.suggested_filename.startswith('recorded-movement-')
         and movement_download.suggested_filename.endswith('.csv')
-        and 'cancelReason' in cancelled_csv
-        and 'entered twice' in cancelled_csv
-        and 'CANCELLED' in cancelled_csv,
-        'movement CSV preserves cancellation status and reason in the exported source rows',
+        and 'cancelReason' in cancelled_csv_fields
+        and any(row['cancelReason'] == 'entered twice' for row in cancelled_csv_rows)
+        and all(row['status'] == 'CANCELLED' for row in cancelled_csv_rows),
+        'movement CSV preserves cancellation status and reason only for cancelled source rows',
+    )
+    check(
+        len(exported_cancelled_vouchers) == len(cancelled_vouchers)
+        and set(exported_cancelled_vouchers) == cancelled_vouchers,
+        'cancelled report CSV contains exactly the voucher rows shown by the selected filter',
     )
 
     page.select_option('#movementType', 'RECEIPT')
@@ -907,14 +920,24 @@ with sync_playwright() as p:
     with page.expect_download() as receipt_report_download_info:
         page.click('[data-act=reportCsv]')
     receipt_report_download = receipt_report_download_info.value
-    with open(receipt_report_download.path(), 'r', encoding='utf-8') as receipt_file:
-        receipt_csv = receipt_file.read()
+    with open(receipt_report_download.path(), 'r', encoding='utf-8', newline='') as receipt_file:
+        receipt_reader = csv.DictReader(receipt_file)
+        receipt_csv_rows = list(receipt_reader)
+    receipt_vouchers = {
+        row.locator('td').nth(1).inner_text().removeprefix('R-')
+        for row in receipt_rows.all()
+    }
+    exported_receipt_vouchers = [row['voucherNo'] for row in receipt_csv_rows]
     check(
         receipt_report_download.suggested_filename.startswith('recorded-movement-')
-        and 'Guest Room 5' in receipt_csv
-        and 'RECEIPT' in receipt_csv
-        and 'Ram Traders' not in receipt_csv,
-        'receipt-only report CSV matches the active type/status filters',
+        and any(row['vendor'] == 'Guest Room 5' for row in receipt_csv_rows)
+        and all(row['type'] == 'RECEIPT' and row['status'] == 'ACTIVE' for row in receipt_csv_rows),
+        'receipt-only report CSV contains active receipt rows only',
+    )
+    check(
+        len(exported_receipt_vouchers) == len(receipt_vouchers)
+        and set(exported_receipt_vouchers) == receipt_vouchers,
+        'receipt report CSV contains exactly the voucher rows shown by the selected filters',
     )
 
     page.click('[data-v=reg]')
