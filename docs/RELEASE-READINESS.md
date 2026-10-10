@@ -1,10 +1,10 @@
 # Release Readiness
 
 **Status: not verified as production-ready. Current `main` is
-`71033675cc9f52ad391f8b2d06a362551a224be6` (PR #73 merge).** PR #73's exact
-tested tree passed Full Flight Test, normal CI and Browser E2E (110 backend
-checks and 141 browser checks, zero failures). PR #74 is a focused frontend
-rendering-security follow-up. The configured URL's prior alignment with
+`970475dc440a3dc84b788087e60a73836d3d8814` (PR #74 merge).** PR #74's exact
+tested head passed Full Flight Test, normal CI and Browser E2E (110 backend
+checks and 142 browser checks, zero failures). PR #75 is a focused frontend
+accessibility/feedback improvement and has not been merged or released. The configured URL's prior alignment with
 version 4 does not prove current `main` is deployed. Live authorization,
 scheduled backup and isolated restore remain unverified.
 
@@ -94,9 +94,10 @@ PR #67 adds browser assertions for the data-quality report's user-facing scope d
 - Full Flight Test, CI and Browser E2E passed. Browser E2E reported 141 checks,
   zero failures. This is mock-backed evidence only.
 
-## PR #74 — save-confirmation rendering security
+## PR #74 merged — save-confirmation rendering security
 
-PR #74 escapes a server-returned voucher number in the success panel and adds a
-hostile-response browser regression. Verification remains pending until Full
-Flight Test, normal CI and Browser E2E all pass on the exact final PR head. This
-change does not deploy Apps Script or close live operational gates.
+PR #74 merged at `970475dc440a3dc84b788087e60a73836d3d8814`. Its exact tested head passed Full Flight Test, normal CI and Browser E2E (142 browser checks, zero failures). It does not deploy Apps Script or close live operational gates.
+
+## PR #75 under review — bulk import completion feedback
+
+Adds a polite status announcement and accurate receipt/payment completion wording. No live deployment or data mutation; exact-head tests are pending.
