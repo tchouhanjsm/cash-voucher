@@ -47,7 +47,8 @@ Do not create or guess a script ID. Confirm the project in the Apps Script edito
 
 Then inspect the local Clasp connection without writing:
 
-```npx clasp --version
+```bash
+npx clasp --version
 npx clasp status
 npx clasp deployments
 ```
@@ -72,7 +73,8 @@ In the Apps Script editor, inspect the project and existing deployments. Create 
 
 The equivalent Clasp deployment command may be used only after the exact existing deployment ID has been verified:
 
-```npx clasp deploy -i <verified-existing-deployment-id> -d "Cash Voucher reviewed backend release"
+```bash
+npx clasp deploy -i <verified-existing-deployment-id> -d "Cash Voucher reviewed backend release"
 ```
 
 Do not run `clasp deploy` without the verified ID; do not create a parallel deployment and silently leave the frontend pointed at the old version.
