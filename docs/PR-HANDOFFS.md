@@ -46,4 +46,4 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 - **PR #56 — [Role-based mobile payment/cash-receipt entry](https://github.com/tchouhanjsm/cash-voucher/pull/56):** Merged; merge commit `9249d753daf361798c457d237ab16d121d13b47e`; exact reviewed head CI passed and Browser E2E passed 114 checks / 0 failures.
 - **PR #57 — [Manager register mobile review](https://github.com/tchouhanjsm/cash-voucher/pull/57):** Merged by the owner after exact-head CI and Browser E2E passed. Real-device thumb reach and assistive-technology testing remain outstanding.
 
-- **PR #58 — Owner audit discoverability:** In progress on `feature/owner-audit-discoverability`. Dedicated owner-only audit route, filters, latest-200 scope disclosure, and safe filtered CSV export. Exact-head CI/E2E evidence will be maintained in the live PR description.
+- **PR #58 — [Owner audit discoverability](https://github.com/tchouhanjsm/cash-voucher/pull/58):** Open for owner review on `feature/owner-audit-discoverability`. Exact head `b51676e8cb45fad81078b1e0516709dc1367ef09`; CI passed and Browser E2E passed 125 checks / 0 failures on the same SHA. No merge or deployment.
