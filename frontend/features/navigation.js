@@ -8,6 +8,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     ['dash', '📊', 'Dashboard', () => true],
     ['new', '➕', 'New Entry', () => can('create')],
     ['reg', '📒', 'Register', () => true],
+    ['reports', '📈', 'Reports', () => can('viewAll')],
     ['bulk', '📥', 'Bulk Upload', () => can('bulk')],
     ['vend', '🏪', 'Vendors', () => can('vendors')],
     ['users', '👥', 'Users', () => can('users')],

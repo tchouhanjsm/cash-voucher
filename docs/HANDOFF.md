@@ -53,3 +53,10 @@ Owner retains merge and deployment authority.
 - Real Apps Script lock contention and Google service quotas/timeouts are not proven by mocks.
 - Daily cash close semantics/schema remain unapproved.
 - Real-device PWA install/update, formal accessibility evaluation and hotel pilot remain outstanding.
+
+
+## Current phase — recorded voucher movement report (PR #65 pending)
+
+**Baseline:** `e266d0fba4d1468cdffac077bfac5ffef2a6ea90` (PR #64 merge). Owner-reported `npm run check` passed with 100 backend checks; Browser E2E did not run because Playwright is unavailable for the selected Python interpreter. Node v24 is outside the declared Node 20–22 range. The untracked local `docs/AI-ENGINEERING-PROTOCOL.md` is intentionally excluded from this PR.
+
+**Scope:** manager/owner-only recorded movement report with date/type/status filters, source rows, active/cancelled totals and CSV export safety. Read-only; no schema migration, physical-cash inference, tax calculations or deployment.

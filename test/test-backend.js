@@ -571,4 +571,14 @@ ok(
 );
 g.sheets.Vouchers.rows.pop();
 
+// Recorded movement report: permission, validation and totals.
+ok(as(S, 'recordedMovementReport', { from: today, to: today }).code === 'FORBIDDEN', 'staff denied all-voucher movement report');
+const movement = as(T, 'recordedMovementReport', { from: today, to: today, type: 'ALL', status: 'ALL' });
+ok(movement.ok, 'owner reads date-scoped movement report');
+ok(movement.data.count === movement.data.items.length, 'report count matches source rows');
+ok(movement.data.paymentTotal >= movement.data.activePaymentTotal, 'payment total includes cancelled rows when selected');
+ok(movement.data.receiptTotal >= movement.data.activeReceiptTotal, 'receipt total includes cancelled rows when selected');
+ok(as(T, 'recordedMovementReport', { from: today, to: today, type: 'INVALID', status: 'ALL' }).code === 'VALIDATION', 'invalid report type rejected');
+ok(as(T, 'recordedMovementReport', { from: '2026-12-31', to: today, type: 'ALL', status: 'ALL' }).code === 'VALIDATION', 'reversed reporting dates rejected');
+ok(as(T, 'recordedMovementReport', { from: today, to: today, type: 'ALL', status: 'INVALID' }).code === 'VALIDATION', 'invalid report status rejected');
 console.log(`backend OK — ${n} checks passed`);

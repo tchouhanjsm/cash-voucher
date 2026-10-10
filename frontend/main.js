@@ -8,6 +8,7 @@ import { busy, closeModal, dialog, fail, toast } from './core/ui.js';
 import { createAuth } from './features/auth.js';
 import { createPayments } from './features/payments.js';
 import { createDashboard } from './features/dashboard.js';
+import { createReports } from './features/reports.js';
 import { createRegister } from './features/register.js';
 import { createBulk } from './features/bulk.js';
 import { createAdministration } from './features/administration.js';
@@ -33,6 +34,7 @@ async function api(action, payload = {}) {
 }
 
 const dashboard = createDashboard();
+const reports = createReports({ api });
 
 const authStart = (...args) => navigation.start(...args);
 const paymentRefresh = (...args) => navigation.refresh(...args);
@@ -76,6 +78,7 @@ navigation = createNavigation({
   getPayments: () => payments,
   renderers: {
     dash: dashboard.render,
+    reports: reports.render,
     new: () => payments.open('PAYMENT'),
     reg: register.render,
     bulk: bulk.render,
@@ -175,6 +178,10 @@ registerActions({
   audcsv: () => administration.exportAuditCsv(),
 
   dqscan: () => administration.dataQualityScan(),
+
+  reportRun: () => reports.load(),
+
+  reportCsv: () => reports.exportCsv(),
 
   install: () => administration.install(),
 
