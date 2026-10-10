@@ -87,7 +87,6 @@ PR #67 adds browser assertions for the data-quality report's user-facing scope d
 - Clasp reports four numbered versions. The configured URL matches version 4's deployment ID; a separate `@HEAD` deployment exists. This is not evidence that the latest `main` source is deployed.
 - Still open: owner confirmation of project identity, deployment settings, Sheet binding and Script Properties in the Apps Script editor; live owner/manager/staff and receipt authorization; a real scheduled backup; witnessed restore to a separate recovery Sheet/folder; dependency vulnerability triage.
 
-
 ## PR #73 merged — rendering regression evidence
 
 - Merge SHA: `71033675cc9f52ad391f8b2d06a362551a224be6`.
