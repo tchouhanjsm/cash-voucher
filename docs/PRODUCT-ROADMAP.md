@@ -199,10 +199,21 @@ PR #70 is merged at `1e656dee0266dba38d35500150889ce6020d8045`. Its exact PR hea
 
 PR #71 merged at ea99e4e19be0f29e8c1afdc25828bf1b5ecce399. Its exact PR head passed the full flight workflow: dependency advisory policy, complete quality/backend gate (110 backend checks), and Browser E2E (130 checks, 0 failures). The merge commit and tested PR head share the same source tree. [Full flight run](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38043779296).
 
-## Current development phase — PR #72: Recorded Movement Report browser journey
+## Completed phase — PR #72: Recorded Movement Report browser journey
 
-Extend the existing Browser E2E to exercise the report UI through the mock API: active source rows and scope disclosures, cancelled-only filtering, receipt-only active filtering, and CSV exports that preserve cancellation metadata and match the selected filters.
+PR #72 merged at `13a1fd84a013d85952d04c512313e8fcf9e36475`. Its exact PR head `d7f9e928f542a831d4588935d1c05dd96ed28979` passed the full flight test, CI and Browser E2E; the browser suite passed 140 checks / 0 failures. Coverage exercises report disclosure/totals, active/cancelled and type filters, and CSV row parity with the filtered table. This remains evidence for recorded voucher movement, not physical cash, general-ledger, profit/loss or tax calculations.
 
-**Exit gate:** full flight, CI and Browser E2E pass on the exact PR #72 head. The report is operational evidence for recorded voucher movement only; it is not a physical cash reconciliation, general ledger, profit/loss report or tax calculation. The suite remains mock-backed.
+## Current engineering phase — PR #73: close a report HTML-rendering gap
 
-**Operational P0 remains a separate production-readiness blocker:** live Apps Script target/authorization, real backup and isolated restore remain unverified. No deployment or production mutation is authorized.
+The security audit found the report's displayed date range interpolated `dmy(R.from)` and `dmy(R.to)` into an HTML template without the HTML escaper. Escape both values and add an adversarial Browser E2E case that injects malformed state through the control value getter, then proves no SVG node or payload execution occurs. This is deliberately narrow; remaining active template sinks still require review.
+
+**Exit gate:** exact-head full flight, CI and Browser E2E pass; handoff and security audit identify the changed sink and residual scope. No broad renderer rewrite.
+
+## Product priorities after PR #73
+
+1. **P0 — Operational assurance:** owner confirms the live Apps Script target/settings, verifies role and receipt permissions, observes a real scheduled backup, and witnesses restore into a separate recovery destination. Code/CI work does not replace these operations.
+2. **P1 — Rendering-security audit:** continue the source-by-source inventory, with tests for confirmed tainted values at the actual sink. Do not call the application XSS-certified.
+3. **P2 — UI/UX quality pass:** inventory the core staff/manager/owner tasks and friction points first; then select a genuinely free Figma community kit as a visual reference (not a production dependency), define reusable tokens/components, and improve the existing flows incrementally. Prioritize voucher entry, register filters, import review, report export, and loading/empty/error feedback over a broad redesign.
+4. **P3 — Workflow additions:** prototype daily cash close and physical reconciliation only after the owner/accountant defines opening float, counted denominations, variance handling, inclusion/exclusion of cancelled vouchers and sign-off. Keep approvals and scheduled automation as decision-gated features; do not silently infer ledger/tax semantics.
+
+**Operational P0 remains a separate production-readiness blocker:** live target/authorization, real backup and isolated restore remain unverified. No deployment or production mutation is authorized.
