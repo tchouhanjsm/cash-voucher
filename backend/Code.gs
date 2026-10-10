@@ -948,10 +948,12 @@ function validateRequest_(req) {
 function route_(req) {
   validateRequest_(req);
   if (req.action === 'login') return login_(req);
+  if (!Object.prototype.hasOwnProperty.call(ACTIONS, req.action)) {
+    throw err_('Unknown action.', 'NOT_FOUND');
+  }
   const fn = ACTIONS[req.action];
-  if (!fn) throw err_('Unknown action.', 'NOT_FOUND');
 
-  if (!WRITES[req.action]) {
+  if (!Object.prototype.hasOwnProperty.call(WRITES, req.action)) {
     const user = auth_(req.token);
     if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
       throw err_('Please change your PIN first.', 'PIN_CHANGE');
@@ -1205,7 +1207,9 @@ function audit_(user, action, target, details) {
   }
 }
 function can_(user, perm) {
-  return !!(PERMS[user.role] && PERMS[user.role][perm]);
+  if (!user || !Object.prototype.hasOwnProperty.call(PERMS, user.role)) return false;
+  const permissions = PERMS[user.role];
+  return Object.prototype.hasOwnProperty.call(permissions, perm) && !!permissions[perm];
 }
 function need_(user, perm) {
   if (!can_(user, perm)) {
@@ -1653,7 +1657,7 @@ function saveUser_(user, req) {
     role = req.role;
   if (!name) throw err_('Name is required.');
   if (!/^\S+@\S+\.\S+$/.test(email)) throw err_('Enter a valid email.');
-  if (!PERMS[role]) throw err_('Invalid role.');
+  if (!Object.prototype.hasOwnProperty.call(PERMS, role)) throw err_('Invalid role.');
   const all = readAll_('Users'),
     dup = all.filter(function (u) {
       return String(u.Email).toLowerCase() === email && u.UserID !== req.id;
