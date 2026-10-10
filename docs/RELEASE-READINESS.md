@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Status: engineering candidate; not yet verified as production-ready. PR #62 is merged; live Apps Script deployment and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
+**Status: engineering candidate; not yet verified as production-ready. PR #63 is merged and the owner reports deployment version 4; live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
 
 ## Evidence-based baseline
 
@@ -16,7 +16,7 @@
 | Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
 | Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
-| Production Apps Script deployment                           | NOT VERIFIED          | PR #62 merged; live Clasp target/version remain unverified                                               |
+| Production Apps Script deployment                           | Version 4 deployed    | Owner reports successful `clasp push` and update of the configured deployment; live smoke tests remain open |
 | Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
 
 The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
