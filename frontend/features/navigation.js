@@ -12,6 +12,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     ['vend', '🏪', 'Vendors', () => can('vendors')],
     ['users', '👥', 'Users', () => can('users')],
     ['set', '⚙️', 'Settings', () => can('settings')],
+    ['audit', '🧾', 'Audit log', () => can('audit')],
     ['acct', '👤', 'Account', () => true],
   ];
 
