@@ -4,7 +4,7 @@
 
 ## Current release boundary
 
-PR #65 is merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. PRs #64 and #65 changed the backend after the previously reported version-4 deployment. The current merged backend must not be assumed deployed. CI/browser tests do not deploy Apps Script or prove live Google Sheets/Drive behavior.
+PR #67 is merged; the current `main` baseline is `628f691fe9e4353cc6b701bd57c95c3e169aa495`. PRs #64–#66 include backend changes after the previously reported version-4 deployment. The current merged backend must not be assumed deployed. Local quality checks and mock Browser E2E do not deploy Apps Script or prove live Google Sheets/Drive behavior.
 
 The frontend `config.js` already contains a Web App `/exec` URL. Do not replace it or create a different URL until the local Clasp deployment list proves which Apps Script project and deployment serve that URL.
 
@@ -129,3 +129,14 @@ PR #64 merged at `e266d0fba4d1468cdffac077bfac5ffef2a6ea90`. The owner reports l
 ## Post-PR #66 / PR #67 verification note
 
 PR #67 adds browser coverage for owner Settings data-quality results and backup-integrity inspection failure/retry behavior under the mock Google services. This does not verify live Drive permissions, actual snapshot contents, the configured Web App deployment, or restoration. The local report supplied after PR #66 showed Node v24 (outside the declared Node 20–22 range) and Browser E2E not run because Playwright was missing for the selected Python interpreter. Use supported Node and require exact-head GitHub CI plus Browser E2E before merge. Keep the existing deployment unchanged unless the owner separately authorizes a release after target verification.
+
+
+## Post-PR #67 / local release gate update — 10 October 2026
+
+- Verified Git baseline: `628f691fe9e4353cc6b701bd57c95c3e169aa495` (`main`, PR #67 merge).
+- Owner-provided local checks on Node `v20.20.2` passed: `npm run check`, including 110 backend checks, backup orchestration/integrity, CSV export safety, dependency-audit tests and PR quality gate. ESLint reports one existing warning: `backupData_` is defined but unused in `backend/Code.gs`.
+- Owner-provided Browser E2E passed: **128 checks, 0 failures**, using an isolated Python virtual environment with Playwright `1.52.0` and Chromium installed.
+- `git diff --check` reported no issues. The only reported untracked file is `docs/AI-ENGINEERING-PROTOCOL.md`; keep it local and uncommitted.
+- `npx clasp status` lists only `backend/appsscript.json` and `backend/Code.gs`. `npx clasp versions` reports four numbered versions; version 4 is named `Cash Voucher reviewed backend release`. The configured `config.js` Web App URL matches the version-4 deployment ID, and a separate `@HEAD` deployment exists.
+- These checks establish deployment ID alignment, not that current `main` is deployed. Owner confirmation in the Apps Script editor of the intended project, deployment, Sheet binding and Script Properties remains outstanding. Do not run `clasp push`, `clasp deploy`, or `setup()` until the owner confirms the target and explicitly authorizes release.
+- npm still reports three high-severity dependency findings; do not use `npm audit fix --force`. Live role/receipt authorization, a real scheduled backup, and a witnessed restore into a separate recovery Sheet/folder remain unverified.

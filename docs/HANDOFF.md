@@ -55,7 +55,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - Live owner/manager/staff authorization and receipt-access smoke tests remain unverified.
 - Observe a real scheduled backup; verify Sheet copy, receipt copies and manifest in Drive.
 - Perform a witnessed restore into a separate recovery Sheet/folder and validate data/numbering. Do not overwrite production.
-- Node v24 is outside the declared Node 20–22 range; use supported Node for local checks.
+- Supported Node is now verified locally: `v20.20.2`. Browser E2E passed 128 checks / 0 failures.
 - Three high-severity dependency findings were reported by npm; dependency paths still need triage.
 - Real-device PWA update/install, assistive-technology testing and a controlled hotel pilot remain outstanding.
 
@@ -66,10 +66,19 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges PRs and retains all production deployment authority.
 - Never run `setup()` for a routine release, change deployment targets by guess, mutate production records for tests, force-push, or claim backup success proves restoreability.
 
-## Current phase — PR #67: owner inspection Browser E2E coverage
+## Completed phase — PR #67: owner inspection Browser E2E coverage
 
 - **Base SHA:** `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`.
 - **Scope:** add browser assertions for the owner Settings data-quality scan and the backup-integrity inspection's user-visible failure/retry behavior in the mock-Google environment.
 - **Evidence boundary:** the browser mock cannot prove live Drive access or restoreability. Backup integrity success-path structure remains covered by injected-service backend tests; this E2E addition deliberately verifies that the UI announces a failure and re-enables retry when the mock lacks Drive folder inspection support.
-- **Local evidence from owner-provided terminal output:** `npm run check` passed at PR #66 merge with 110 backend checks; Browser E2E did not run locally because Playwright is missing for the selected Python interpreter. Node v24 is outside the declared Node 20–22 range. Exact-head GitHub workflows are the merge gate for this PR.
+- **Local evidence after PR #67 merge:** `npm run check` passed on Node `v20.20.2`, including 110 backend checks; Browser E2E passed 128 checks / 0 failures using Playwright `1.52.0` and Chromium. `git diff --check` passed. ESLint still reports one unused-function warning for `backupData_`; npm reports three high-severity dependency findings.
 - **Unchanged operational P0:** live owner/manager/staff authorization checks, a real scheduled backup, and a witnessed restore to a separate recovery Sheet/folder remain open. No Clasp push, deployment, setup, or production mutation.
+
+
+## Current phase — P0 Apps Script release target and recovery verification
+
+- **Source baseline:** `628f691fe9e4353cc6b701bd57c95c3e169aa495` on `main`.
+- **Read-only Clasp evidence:** local root is `backend`; tracked files are `backend/appsscript.json` and `backend/Code.gs`; four numbered versions exist; the configured URL matches the existing version-4 deployment ID; a separate `@HEAD` deployment exists.
+- **Not yet verified:** the owner has not yet confirmed the intended Apps Script project, active deployment settings, Sheet binding and Script Properties in the Apps Script editor. Matching the URL's deployment ID does not prove current `main` is deployed.
+- **Next:** owner confirms the project/resources and authorizes any upload; then controlled live role/receipt checks, real scheduled-backup verification, and a witnessed restore into a separate recovery Sheet/folder.
+- **Hard boundary:** no `clasp push`, `clasp deploy`, `setup()`, production mutation or merge performed by the assistant. Preserve local untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
