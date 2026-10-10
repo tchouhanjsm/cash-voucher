@@ -85,15 +85,23 @@ If browser E2E or another environment-dependent check has not run, report it as 
 
 Fix findings introduced by the batch before handoff. Record accepted residual risks and external dependencies that could not be verified. Do not state or imply that checks guarantee the absence of all defects.
 
-## Evidence-based PR handoff
+## Evidence-based handoff model — single live handoff
 
-For every PR, create or update `docs/pr-handoffs/PR-<number>.md` with the intent, implementation summary, changed contracts/files, verification status, decisions, residual risks and merge/deployment boundary. Update `docs/HANDOFF.md` with the current main SHA, active PR/head SHA, current blockers and next exact steps. Keep the PR description as the authoritative place for exact-head CI/E2E links and current review status. Do this before requesting owner review; after each merge, update the handoff in the next coherent change if the merged SHA has changed.
+Use three information locations and keep their responsibilities distinct:
+
+1. **`docs/HANDOFF.md` is the single current-state handoff for the next engineering/chat session.** Update it in every PR so it records the verified current main SHA, current phase or active PR/head SHA, concise outcome of the just-completed phase, unresolved blockers, durable constraints, and the next exact action. Keep it operational and scannable; do not copy complete PR narratives, test logs, or old history into it.
+2. **The GitHub PR description is the permanent per-change record.** GitHub preserves the description, commits, reviews and checks. Include the outcome, acceptance criteria, changed files/contracts, exact-head verification links/results, security/failure review, release boundary, and residual risks there. Do not duplicate this content into a new Markdown file for each PR.
+3. **Domain documents are maintained only when their substance changes.** Update the roadmap when priorities/decisions change; the rendering audit when security surfaces/findings change; release readiness when a real readiness gate/evidence changes; requirements/design documents when product policy changes. Do not touch each document just to advance its displayed main SHA or note another PR merge.
+
+Do **not** create `docs/pr-handoffs/PR-<number>.md` for new PRs. Keep existing files as legacy historical records; do not delete or rewrite them solely to adopt this process. `docs/PR-HANDOFFS.md` is a frozen historical index through PR #75, not a live register. Use GitHub's PR history for older per-change details and verify current PR/branch/main state from live GitHub rather than relying on historical notes.
+
+Before requesting review, ensure `docs/HANDOFF.md` describes the current state at the PR's base SHA and points to the active branch/head; the PR description must record exact-head test evidence. After merge, the next engineering PR updates the handoff to the newly verified main SHA and marks the previous phase complete. Do not make a post-merge docs-only PR solely to change handoff metadata.
 
 The PR description must state:
 
 - The user problem and observable outcome.
 - Acceptance criteria and how each is verified.
-- Commands or CI workflows run, with exact result and head SHA.
+- Commands or CI workflows run, with exact result and tested head SHA.
 - Security, failure-mode and recovery review.
 - Files/contracts changed and files intentionally out of scope.
 - Remaining risks, not-run checks and any real-world verification still needed.
