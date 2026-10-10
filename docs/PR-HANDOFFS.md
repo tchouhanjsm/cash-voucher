@@ -36,7 +36,7 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PRs #46, #48–#50 and #52–#68 are merged; PR #69 is merged; PR #70 is the active voucher-number rendering hardening PR; PRs #47 and #51 are closed without merge.
+- PRs #46, #48–#50 and #52–#68 are merged; PRs #69–#70 are merged; PR #71 is the active full flight-test PR; PRs #47 and #51 are closed without merge.
 - The owner merges PRs. No agent merge or production deployment.
 
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged; merge commit `64655a5b11956d0289b4e6098599df7cd8932860`.
@@ -64,4 +64,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 - **PR #68 — P0 release gate evidence and handoff refresh:** documentation-only; records current local validation, Clasp deployment inventory and remaining live operational blockers. It does not upload or deploy Apps Script. See `docs/pr-handoffs/PR-68.md`.
 
 - **PR #69 — [DOM-only modal rendering hardening](https://github.com/tchouhanjsm/cash-voucher/pull/69):** merged at `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d`; shared dialog requires DOM Node/DocumentFragment content. Remaining view-level HTML sinks stay in scope.
-- **PR #70 — Escape persisted voucher numbers:** active on `feature/escape-voucher-number-rendering`, based on PR #69 merge `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d`. Escapes voucher numbers in register/print templates and adds hostile persisted-number Browser E2E coverage. No Apps Script deployment.
+- **PR #70 — [Escape persisted voucher numbers](https://github.com/tchouhanjsm/cash-voucher/pull/70):** merged at `1e656dee0266dba38d35500150889ce6020d8045`; CI and Browser E2E passed (130 checks / 0 failures) on exact PR head.
+- **PR #71 — Full flight-test runner:** active on `feature/full-flight-test`, based on PR #70 merge `1e656dee0266dba38d35500150889ce6020d8045`. Adds `npm run test:flight` and a repeatable workflow running dependency policy, all quality/backend tests, and Browser E2E on one commit. Does not test live Google services or deploy Apps Script.
