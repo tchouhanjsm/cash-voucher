@@ -40,14 +40,14 @@ Until those are agreed, retain the existing generic audit CSV and do not add spe
 
 Automation should remove repetitive work without hiding financial state or creating duplicate transactions. These are candidates, not approved commitments.
 
-| Candidate | User value | Preconditions / safeguards | Recommendation |
-|---|---|---|---|
-| Pending-sync reminder and recovery entry point | Helps staff notice records that are local-only or failed to sync | Must read the real outbox state; never label local-only data as centrally saved; avoid repeated noisy alerts | High-value candidate for the #60 review |
-| Reusable voucher presets | Speeds up genuinely repetitive entries | Owner confirms which fields may be prefilled; never auto-submit a financial voucher; show a review/confirm step | Validate through observed staff tasks first |
-| Scheduled owner summary | Reduces manual reporting | Owner-approved metrics, timezone, schedule, recipient, delivery channel, privacy and retry behavior | Blocked on explicit policy and delivery decisions |
-| Automated backup/restore assurance | Improves recovery confidence | A status ping is not a restore drill; test in a separate destination, verify snapshot integrity and permissions | Operational drill before automation claims |
-| Daily cash close and variance notifications | Supports physical cash reconciliation | Requires approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`, dated opening balances, cash-impact rules, period locking and correction policy | **Blocked; do not implement yet** |
-| Recurring vouchers / petty-cash floats | Avoids repeated setup | Validate actual usage, recurrence boundaries, cancellation, duplicate prevention and authorization | Defer until evidence from real users |
+| Candidate                                      | User value                                                       | Preconditions / safeguards                                                                                                              | Recommendation                                    |
+| ---------------------------------------------- | ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| Pending-sync reminder and recovery entry point | Helps staff notice records that are local-only or failed to sync | Must read the real outbox state; never label local-only data as centrally saved; avoid repeated noisy alerts                            | High-value candidate for the #60 review           |
+| Reusable voucher presets                       | Speeds up genuinely repetitive entries                           | Owner confirms which fields may be prefilled; never auto-submit a financial voucher; show a review/confirm step                         | Validate through observed staff tasks first       |
+| Scheduled owner summary                        | Reduces manual reporting                                         | Owner-approved metrics, timezone, schedule, recipient, delivery channel, privacy and retry behavior                                     | Blocked on explicit policy and delivery decisions |
+| Automated backup/restore assurance             | Improves recovery confidence                                     | A status ping is not a restore drill; test in a separate destination, verify snapshot integrity and permissions                         | Operational drill before automation claims        |
+| Daily cash close and variance notifications    | Supports physical cash reconciliation                            | Requires approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`, dated opening balances, cash-impact rules, period locking and correction policy | **Blocked; do not implement yet**                 |
+| Recurring vouchers / petty-cash floats         | Avoids repeated setup                                            | Validate actual usage, recurrence boundaries, cancellation, duplicate prevention and authorization                                      | Defer until evidence from real users              |
 
 ## 4. Automation safety contract
 
