@@ -28,7 +28,8 @@
     "check:pr-quality": "node scripts/check-pr-quality.js",
     "test:e2e": "bash test/run-e2e.sh",
     "audit:deps": "node scripts/dependency-audit.js",
-    "check:contrast": "node scripts/check-contrast.js"
+    "check:contrast": "node scripts/check-contrast.js",
+    "test:flight": "npm run audit:deps && npm run check && npm run test:e2e"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",

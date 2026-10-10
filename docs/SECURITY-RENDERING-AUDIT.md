@@ -1,7 +1,7 @@
 # Frontend Rendering Security Audit
 
 **Status:** incremental; not a full security certification  
-**Baseline:** merged source at `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d`, extended in PR #70  
+**Baseline:** merged source at `1e656dee0266dba38d35500150889ce6020d8045` (PR #70 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
