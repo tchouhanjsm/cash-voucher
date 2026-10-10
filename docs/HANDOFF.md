@@ -42,7 +42,7 @@ Scope: dedicated owner-only Audit log navigation, search/user/action/date filter
 limitation, safe text rendering, and CSV export of filtered loaded events.
 Reuse the existing `auditLog` API and server-side permission; no backend/schema/accounting changes.
 
-Verified PR head: `b51676e8cb45fad81078b1e0516709dc1367ef09`. CI passed and Browser E2E passed 125 checks / 0 failures on this same SHA. The browser suite uses a local mock API; live Google authorization, full audit-history completeness, and real-device accessibility remain unverified.
+CI and Browser E2E passed together on the implementation head before the final documentation-only handoff updates. The live PR description is authoritative for the current head SHA and exact-head workflow links. The browser suite uses a local mock API; live Google authorization, full audit-history completeness, and real-device accessibility remain unverified.
 
 Next: owner review and merge. No Apps Script push, deployment, live Drive operation, or production-data change is authorized.
 
