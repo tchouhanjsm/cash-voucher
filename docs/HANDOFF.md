@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #69 merge):** `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d`  
+**Verified main SHA (PR #70 merge):** `1e656dee0266dba38d35500150889ce6020d8045`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -93,12 +93,18 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Operational P0 remains open:** confirm the intended Apps Script project, active deployment and Sheet/Script Properties; verify live role/receipt permissions; observe a real scheduled backup; and witness restore into a separate recovery Sheet/folder. No `clasp push`, deployment, `setup()`, or production mutation is part of PR #69.
 - **Local preservation:** never stage or commit the owner's untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
 
-## Current development phase — PR #70: escape persisted voucher numbers
+## Completed phase — PR #70: escape persisted voucher numbers
 
-- **Verified base SHA:** `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d` (PR #69 merge).
-- **Branch:** `feature/escape-voucher-number-rendering`.
-- **Scope:** escape `vno(voucher)` in register and print HTML; add Browser E2E coverage for hostile persisted voucher numbers in both views.
-- **Validation:** require CI and Browser E2E on the exact final PR head. Local checks have not been run by the agent; do not represent them as passed.
-- **Residual security risk:** other active dynamic HTML sinks remain under audit; this is not full XSS certification.
-- **Operational P0:** verify the intended Apps Script project/deployment/Sheet binding/Script Properties, live role and receipt access, a real scheduled backup, and a witnessed restore into a separate recovery Sheet/folder. No `clasp push`, deployment, `setup()`, or production mutation.
+- Merged to `main` as `1e656dee0266dba38d35500150889ce6020d8045`.
+- Exact PR head `061d0a5bc8c13f195fe6a929361e0c7f00e8acb3`: CI passed; Browser E2E passed 130 checks / 0 failures.
+- Scope: escaped voucher numbers in register/print templates and added hostile persisted-number regression coverage.
+
+## Current development phase — PR #71: full flight-test runner
+
+- **Verified base SHA:** `1e656dee0266dba38d35500150889ce6020d8045` (PR #70 merge).
+- **Branch:** `feature/full-flight-test`.
+- **Goal:** add one repeatable command and one GitHub Actions run that executes dependency policy, the complete quality/backend test gate and Browser E2E on the same commit. This is executable validation, not a documentation-only phase.
+- **Evidence:** PR checks must pass on the exact final head. The latest merged-main CI passed; the post-merge Browser E2E on `main` has not yet been run separately. The new workflow will run on the PR and can later be manually dispatched.
+- **Limit:** tests use the repository's in-memory Google-service mock; they cannot prove live Apps Script authorization, Drive backup, or restoreability.
+- **Operational P0:** owner verification of deployment target, live role/receipt access, scheduled backup and isolated restore remains open. No `clasp push`, deployment, `setup()`, or production mutation.
 - **Local preservation:** do not stage or commit the owner's untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
