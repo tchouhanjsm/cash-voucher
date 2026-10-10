@@ -2,14 +2,14 @@
 
 **Updated:** 10 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `0d9a6a4ae904862d213144e7a823ca1ec5d547f9` (PR #75 merge)  
+**Verified `main` SHA:** `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #76 — [Simplify engineering handoffs](https://github.com/tchouhanjsm/cash-voucher/pull/76)**  
-Branch: `process/single-handoff-documentation`  
-Base: `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`
+**PR #77 — Escape settings numeric input attributes**  
+Branch: `security/escape-settings-number-attributes`  
+Base: `b1f2a3234577301e4e9536dd424695976f1d8fca`
 
 Adopt three distinct sources of information:
 
@@ -57,6 +57,7 @@ These remain open regardless of green mock-backed CI:
 - **PR #73 — Report date-range escaping:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/73); 141 browser checks passed.
 - **PR #74 — Save-confirmation voucher-number escaping:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/74); Full Flight, CI and Browser E2E passed, with 142 browser checks.
 - **PR #75 — Bulk import completion feedback:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/75) at `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`; CI passed, Browser E2E passed 145 checks / 0 failures, and Full Flight Test passed 110 backend checks plus 145 browser checks.
+- **PR #76 — Consolidate engineering handoff documentation:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/76) at `b1f2a3234577301e4e9536dd424695976f1d8fca`; three exact-head workflows passed. No application behavior or deployment changed.
 
 For full acceptance criteria, diffs, review discussions and CI evidence, use those GitHub PR records. Do not copy their full histories into this handoff.
 
@@ -66,5 +67,5 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #76's documentation-governance change is implemented and its exact tested head has passed CI, Browser E2E and Full Flight Test. The next action is owner review and merge; do not merge on the owner's behalf.
-6. After PR #76 is merged, update this handoff in the next implementation PR with the verified new `main` SHA and continue the P1 rendering-security audit by tracing active frontend sinks and selecting the next confirmed risk.
+5. PR #76's documentation-governance change is merged at the verified `main` SHA above. PR #77 targets the confirmed unescaped numeric settings attributes in `frontend/features/administration.js`, with a hostile-bootstrap Browser E2E regression.
+6. Continue one focused PR at a time; update this handoff in the implementation PR, and do not create a separate post-merge docs-only PR.
