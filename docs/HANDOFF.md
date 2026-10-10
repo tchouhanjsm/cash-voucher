@@ -93,7 +93,6 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Operational P0 remains open:** confirm the intended Apps Script project, active deployment and Sheet/Script Properties; verify live role/receipt permissions; observe a real scheduled backup; and witness restore into a separate recovery Sheet/folder. No `clasp push`, deployment, `setup()`, or production mutation is part of PR #69.
 - **Local preservation:** never stage or commit the owner's untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
 
-
 ## Current development phase — PR #70: escape persisted voucher numbers
 
 - **Verified base SHA:** `62106df1fcc0fb6761d4d0ea57df9f31c78ca71d` (PR #69 merge).
