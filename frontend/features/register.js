@@ -89,7 +89,7 @@ export function createRegister({ api, go }) {
           .join('');
         return `<tr class="voucher-row ${voucher.status === 'ACTIVE' ? '' : 'cx'}">
           <td class="nw">
-            <b>${vno(voucher)}</b>
+            <b>${esc(vno(voucher))}</b>
             <div class="cat voucher-kind">${kind}</div>
           </td>
           <td class="nw">${esc(dmy(voucher.date))}</td>
