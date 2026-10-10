@@ -73,7 +73,7 @@ export function printVoucher(id) {
 
   $('#printArea').innerHTML =
     `<div class="pv"><div class="pv-head"><div class="pv-hotel">${esc(S.settings.propertyName)}</div><div class="pv-addr">${esc(S.settings.propertyAddress)}</div><div class="pv-title">${isIn(voucher) ? 'CASH RECEIPT VOUCHER' : 'CASH PAYMENT VOUCHER'}</div></div>
-  <div class="pv-meta"><div>Voucher No: <b>${vno(voucher)}</b></div><div>Date: <b>${esc(dmy(voucher.date))}</b></div></div>
+  <div class="pv-meta"><div>Voucher No: <b>${esc(vno(voucher))}</b></div><div>Date: <b>${esc(dmy(voucher.date))}</b></div></div>
   <div class="pv-row"><div class="l">${isIn(voucher) ? 'Received From' : 'Paid To'}</div><div class="v">${esc(voucher.vendor)}</div></div>
   ${voucher.category ? `<div class="pv-row"><div class="l">Category</div><div class="v">${esc(voucher.category)}${voucher.notes ? ' — ' + esc(voucher.notes) : ''}</div></div>` : ''}
   <div class="pv-row"><div class="l">Amount ${isIn(voucher) ? 'Received' : 'Paid'}</div><div class="v pv-amt">${money(voucher.amount)}</div></div>
