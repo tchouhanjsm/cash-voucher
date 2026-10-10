@@ -218,7 +218,10 @@ const dup = as(S, 'createVouchers', {
     },
   ],
 });
-ok(dup.ok && dup.data.skipped === 1 && dup.data.created[0].no === 201, 'same-user retry with matching details is idempotent');
+ok(
+  dup.ok && dup.data.skipped === 1 && dup.data.created[0].no === 201,
+  'same-user retry with matching details is idempotent',
+);
 ok(Object.keys(g.files).length === filesAfterFirstCreate, 'duplicate retry creates no receipt');
 const changedPayloadConflict = as(S, 'createVouchers', {
   entries: [
