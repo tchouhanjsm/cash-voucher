@@ -147,13 +147,6 @@ Do not rerun `setup()` during a normal release. Do not push a new backend versio
 
 **Next product phase after deployment/recovery evidence:** source-traceable data-quality exception reports and daily/monthly recorded-voucher movement reports. Keep GST/TDS, general-ledger claims, daily cash close and destination-specific accountant export behind existing owner/accountant/CA decision gates.
 
-
-## Current implementation phase — PR #64
-
-**PR #63 release outcome:** reviewed Apps Script files were uploaded locally and the existing configured Web App deployment was updated to version 4. Local unit/static checks passed; Browser E2E did not run because Playwright was unavailable. Live permissions and backup/restore are not yet verified.
-
-**PR #64 — owner-only voucher data-quality scan:** add a real backend action and Settings UI that lists source voucher exceptions (missing values, invalid amount/date/type/status, duplicate voucher numbers and ClientIDs). This is not tax validation, physical-cash classification, a ledger, or an accountant certification. The PR must include automated backend regressions and exact-head CI/browser evidence; no deployment as part of the PR.
-
 ## Current implementation phase — PR #64
 
 **PR #63 release outcome:** reviewed Apps Script files were uploaded locally and the existing configured Web App deployment was updated to version 4. Local unit/static checks passed; Browser E2E did not run because Playwright was unavailable. Live permissions and backup/restore are not yet verified.
