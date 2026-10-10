@@ -339,8 +339,7 @@ function dataQualityReport_(user) {
     const amount = Number(voucher.Amount);
     const clientId = String(voucher.ClientID || '').trim();
 
-    if (!id)
-      add(voucher, 'VoucherID', 'VOUCHER_ID_MISSING', 'Voucher ID is missing.', 'error');
+    if (!id) add(voucher, 'VoucherID', 'VOUCHER_ID_MISSING', 'Voucher ID is missing.', 'error');
 
     if (!/^[0-9]+$/.test(number) || Number(number) < 1) {
       add(
