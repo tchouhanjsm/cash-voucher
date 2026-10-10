@@ -110,7 +110,6 @@ The audit log has moved from the bottom of Settings to a dedicated owner-only na
 
 The current backend returns at most the latest 200 events. Filters and CSV export operate only on that loaded window; this is intentionally stated in the UI so users do not mistake a filtered export for a complete audit archive. The existing server permission remains the security boundary; a hidden navigation item is not authorization. Browser E2E covers route visibility for the owner, safe rendering of untrusted audit text, filtering, clearing, and CSV download. Live Google-account authorization and audit-history completeness remain unverified.
 
-
 ## Reporting and automation UX — PR #59 design gate
 
 Automation must make state more understandable, not hide work or imply that a financial operation completed when it did not.
