@@ -47,6 +47,7 @@ not run from this connector-only environment; exact-head CI/E2E evidence will be
 description. No merge, deployment, live Drive operation or production-data change is authorized.
 
 Next steps:
+
 1. Complete two-pass product/security review and regression tests.
 2. Verify CI and Browser E2E on the same exact PR head.
 3. Leave merge to the owner.
