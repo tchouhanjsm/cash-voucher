@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #60 base):** `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`  
+**Verified main SHA (PR #61 base):** `d4742a34d57bc973d0fda849b65ae6d35259bf22`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -33,14 +33,16 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #60 — cross-functional retrospective
+## Current batch: PR #61 — accountant recordkeeping and reporting blueprint
 
-**PR:** created from `main` at `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`; live PR URL and final head are authoritative once opened.  
-**Branch:** `feature/pr60-cross-functional-retrospective`.
+**PR:** branch `feature/accountant-recordkeeping-blueprint`, based on verified `main` SHA `d4742a34d57bc973d0fda849b65ae6d35259bf22`.  
+**Scope:** documentation-only finance/accounting review. See `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md` and `docs/pr-handoffs/PR-61.md`.
 
-Scope is documentation-only: verified achievements, cross-functional source review, real-world failure scenarios, prioritized backlog, risk register, and automation boundaries. Recommended first implementation is offline sync/idempotency assurance; the owner may prioritize the witnessed restore drill first. No runtime code, API, schema, dependencies, scheduled trigger, deployment or production-data change is included.
+The review inventories current voucher fields, recordkeeping workflows, reports/charts, evidence and reconciliation rules, accountant export safeguards, and tax-data candidates. It explicitly distinguishes voucher movements from physical cash, profit, taxable turnover, GST/TDS liability and a general ledger. No tax treatment is inferred; a qualified CA and the receiving accountant must validate requirements.
 
-PR #59 exact-head CI and Browser E2E passed together on `4d9ef3b86bdfa80ab1220ef119877b2604820248` (125 checks, 0 failures); post-merge main CI passed on `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`. A post-merge main E2E run was not verified. Local checks are not run from this connector-only environment.
+**Next engineering phase after PR #61:** offline sync/idempotency assurance with commit-then-lost-response, repeated client ID, changed-content collision, cross-tab retry and stale-lease tests. A witnessed backup/restore drill remains an operational gate requiring the owner and a separate recovery destination.
+
+PR #60 final PR head `7ffebaf23f838babc48ddd47dce99d14d1321d98` passed CI and Browser E2E together (125 checks, 0 failures). Current PR exact-head evidence is authoritative in its live description. Local checks are not run from this connector-only environment.
 
 Leave merge to the owner. Local repository synchronization is the owner's post-approval step.
 

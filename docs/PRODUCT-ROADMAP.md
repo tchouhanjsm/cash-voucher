@@ -135,12 +135,16 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **Historical batch (completed by PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
 
-## Current phase status — PR #59 merged, PR #60 retrospective
+## Current phase status — PR #60 merged, PR #61 accountant review
 
-**PR #59 merged** in commit `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`. It defines accounting-export decision gates and safe automation requirements; it adds no runtime behavior.
+**PR #60 merged:** cross-functional retrospective and ranked engineering backlog are documented in `docs/PRODUCT-AND-ENGINEERING-RETROSPECTIVE.md`. The main residual risks remain operational confidence (live backup/restore and authorization), offline sync/idempotency, and finance-ready recordkeeping.
 
-**PR #60 — cross-functional retrospective:** see `docs/PRODUCT-AND-ENGINEERING-RETROSPECTIVE.md`. The review confirms that the highest residual risk is the gap between mocked/source-level confidence and live operational confidence. First priority is a witnessed backup/restore drill (operational gate) and focused offline-sync/idempotency assurance (recommended implementation PR). The owner may choose the sequence.
+**PR #61 — Accountant recordkeeping and reporting blueprint:** see `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md`. This documentation-only phase inventories current source data and defines the workflows, reports, charts, evidence controls, export requirements and tax-data candidates needed for an accountant handoff. It does not add tax fields or calculate tax.
 
-**Next implementation recommendation:** a bounded offline sync/idempotency assurance PR with fault-injection tests for commit-then-lost-response, repeated client ID, changed-content collision, two-tab retry and stale lease recovery. If the owner prioritizes operational confidence first, complete the witnessed restore drill before feature work.
+**Next engineering implementation after PR #61:** offline sync/idempotency assurance. Tests should cover commit-then-lost-response, repeated client ID, same ID with changed content, cross-tab retry and stale lease recovery. Ensure reports/exports do not silently include device-local pending records.
 
-Accounting destination-specific export remains blocked on an owner-selected target and accountant-reviewed template. Daily cash close remains blocked pending owner approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`. No scheduled summaries, recurring vouchers, external delivery or cash-close automation are approved.
+**Operational P0:** witness a backup run and restore into a separate recovery destination before claiming operational recovery readiness.
+
+**Accountant export gate:** do not implement destination-specific export until the owner identifies the receiving accountant's accounting product/version and the accountant approves an anonymized sample mapping and reconciliation totals. Keep GST/TDS and other tax treatment unimplemented until a qualified Indian CA validates the entity's actual obligations and data rules.
+
+Daily cash close remains blocked pending owner approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`. No scheduled summaries, recurring vouchers, external delivery or cash-close automation are approved.
