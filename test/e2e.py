@@ -87,7 +87,7 @@ with sync_playwright() as p:
     page.fill('#np', '579246')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
-    check(page.locator('#nav button').count() == 9, 'owner sees 9 nav items including audit log')
+    check(page.locator('#nav button').count() == 10, 'owner sees 10 nav items including reports and audit log')
     check(
         page.locator('[data-v=dash]').get_attribute('aria-current') == 'page',
         'current navigation view is announced to assistive technology',

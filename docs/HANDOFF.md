@@ -54,7 +54,6 @@ Owner retains merge and deployment authority.
 - Daily cash close semantics/schema remain unapproved.
 - Real-device PWA install/update, formal accessibility evaluation and hotel pilot remain outstanding.
 
-
 ## Current phase — recorded voucher movement report (PR #65 pending)
 
 **Baseline:** `e266d0fba4d1468cdffac077bfac5ffef2a6ea90` (PR #64 merge). Owner-reported `npm run check` passed with 100 backend checks; Browser E2E did not run because Playwright is unavailable for the selected Python interpreter. Node v24 is outside the declared Node 20–22 range. The untracked local `docs/AI-ENGINEERING-PROTOCOL.md` is intentionally excluded from this PR.
