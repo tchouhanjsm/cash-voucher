@@ -632,6 +632,122 @@ tr.cx .amt {
   }
 }
 
+/* Register actions need room for clear labels and reliable phone taps. */
+.voucher-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.voucher-actions .btn {
+  min-height: 40px;
+}
+
+.voucher-kind {
+  margin-top: 3px;
+}
+
+.voucher-vendor {
+  font-weight: 600;
+}
+
+@media (max-width: 800px) {
+  #rf {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  #rf > input,
+  #rf > select,
+  #rf > label,
+  #rf > .btn {
+    min-width: 0;
+    width: 100%;
+    flex: initial;
+  }
+
+  #rf #rq {
+    grid-column: 1 / -1;
+  }
+
+  #rf > label {
+    display: flex;
+    flex-direction: column;
+  }
+
+  #rf > .btn {
+    min-height: 44px;
+  }
+
+  #rbody tr.voucher-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 3px 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin: 0 0 10px;
+    padding: 10px;
+    background: var(--card);
+  }
+
+  #rbody tr.voucher-row > td {
+    min-width: 0;
+    white-space: normal;
+    border: 0;
+    padding: 2px 0;
+  }
+
+  #rbody tr.voucher-row > td:nth-child(1) {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  #rbody tr.voucher-row > td:nth-child(2) {
+    grid-column: 2;
+    grid-row: 1;
+    text-align: right;
+  }
+
+  #rbody tr.voucher-row > td:nth-child(3) {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    overflow-wrap: anywhere;
+  }
+
+  #rbody tr.voucher-row > td:nth-child(4) {
+    grid-column: 1;
+    grid-row: 3;
+    text-align: left;
+  }
+
+  #rbody tr.voucher-row > td:nth-child(5) {
+    grid-column: 2;
+    grid-row: 3;
+    text-align: right;
+  }
+
+  #rbody tr.voucher-row > td:nth-child(6) {
+    grid-column: 1 / -1;
+    grid-row: 4;
+    padding-top: 8px;
+  }
+
+  .voucher-actions {
+    justify-content: flex-start;
+    gap: 8px;
+  }
+
+  .voucher-actions .btn {
+    flex: 1 1 auto;
+    min-width: 84px;
+    min-height: 44px;
+  }
+}
+
 /* At narrow reflow widths, keep payment entry fields readable and row actions tappable. */
 @media (max-width: 380px) {
   .erow .top {

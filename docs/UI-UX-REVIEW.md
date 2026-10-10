@@ -99,3 +99,7 @@ PR #55 adds explicit per-receipt loading status and a retry action when a receip
 PR #56 improves the first staff-facing task journey without changing the underlying voucher model: the primary save action now names the selected workflow (payment or cash receipt), switches between singular and plural as entered rows change, and the saved result uses the same task terminology. Save outcomes are exposed as a polite status region. On mobile, the save button and payment/cash-receipt mode controls have a minimum 44px target height.
 
 Browser E2E asserts the dynamic labels and touch-target dimensions at 320 CSS pixels. This is automated viewport coverage, not a substitute for staff observation on a physical phone, thumb-reach testing, screen-reader output checks, or validating manager and owner journeys.
+
+## Manager register mobile review — October 2026
+
+The manager register currently presents edit/cancel/receipt/print as compact controls inside a horizontally scrollable table. The mobile pass gives each voucher clearer type and amount identity, reflows the record into a compact card-like row at phone widths, arranges filters for narrow screens, and groups actions under an accessible label. Row action targets are raised to at least 44px on mobile. These are source-level and browser viewport guardrails; they do not establish real-device thumb reach, assistive-technology quality, or a complete WCAG conformance result. Existing capability checks are presentation only; server authorization remains authoritative.

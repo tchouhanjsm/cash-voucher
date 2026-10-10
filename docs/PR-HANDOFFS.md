@@ -16,6 +16,7 @@ This index is a durable map for future development threads. The dedicated handof
 - **PR #50 — [Measured contrast and dialog keyboard accessibility](https://github.com/tchouhanjsm/cash-voucher/pull/50):** Merged on 9 October 2026 (merge commit `c9ccc829076b9d461372cd6a2959342286cc04a4`).
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged on 9 October 2026 (merge commit `64655a5b11956d0289b4e6098599df7cd8932860`); exact-head CI and Browser E2E passed, 98 checks / 0 failures.
 - **PR #53 — [Mobile payment reflow and reduced-motion coverage](https://github.com/tchouhanjsm/cash-voucher/pull/53):** Merged on 9 October 2026 (merge commit `a6bb1ace7547114c9c8072dd7359ca901387980d`); exact-head CI passed and Browser E2E passed 101 checks / 0 failures.
+- **PR #56 — [Role-based mobile payment and cash-receipt entry](https://github.com/tchouhanjsm/cash-voucher/pull/56):** Merged on 9 October 2026 (merge commit `9249d753daf361798c457d237ab16d121d13b47e`); exact reviewed head CI passed and Browser E2E passed 114 checks / 0 failures.
 
 ## Per-PR handoff contract
 
@@ -35,11 +36,12 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PRs #46, #48, #49, #50, #52, #53, #54 and #55 are merged; PRs #47 and #51 are closed without merge. PR #56 is the active role-based mobile entry batch.
+- PRs #46, #48, #49, #50, #52, #53, #54, #55 and #56 are merged; PRs #47 and #51 are closed without merge.
 - The owner merges PRs. No agent merge or production deployment.
 
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged; merge commit `64655a5b11956d0289b4e6098599df7cd8932860`.
 - **PR #53 — [Mobile payment reflow and reduced-motion coverage](https://github.com/tchouhanjsm/cash-voucher/pull/53):** Merged; merge commit `a6bb1ace7547114c9c8072dd7359ca901387980d`.
 - **PR #54 — [Register empty-state clarity and filter recovery](https://github.com/tchouhanjsm/cash-voucher/pull/54):** Merged; merge commit `a87c1d90405b1e7cd1097c6328668f91f8cc9af4`, CI passed and Browser E2E passed 103 checks / 0 failures.
 - **PR #55 — [Receipt retry and register refresh feedback](https://github.com/tchouhanjsm/cash-voucher/pull/55):** Merged; merge commit `b73aee24b91a4b5808e05bda2e84537188c5028f`. Exact reviewed head CI passed and Browser E2E passed 106 checks / 0 failures.
-- **PR #56 — Role-based mobile payment/cash-receipt entry:** Active batch; exact-head CI/E2E evidence and owner review status are maintained in the live PR.
+- **PR #56 — [Role-based mobile payment/cash-receipt entry](https://github.com/tchouhanjsm/cash-voucher/pull/56):** Merged; merge commit `9249d753daf361798c457d237ab16d121d13b47e`; exact reviewed head CI passed and Browser E2E passed 114 checks / 0 failures.
+- **PR #57 — [Manager register mobile review](https://github.com/tchouhanjsm/cash-voucher/pull/57):** Open and unmerged. Formatting corrections have been applied after earlier CI attempts reported two Prettier failures; exact current head and CI/E2E status are maintained in the live PR description. Both workflows must pass on the same final SHA before owner review/merge.

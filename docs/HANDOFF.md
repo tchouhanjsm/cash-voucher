@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-09  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA:** `b73aee24b91a4b5808e05bda2e84537188c5028f`  
+**Verified main SHA (PR #57 base):** `9249d753daf361798c457d237ab16d121d13b47e`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -22,6 +22,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #53 merged on 9 October 2026 (merge commit `a6bb1ace7547114c9c8072dd7359ca901387980d`); narrow payment-row reflow and reduced-motion browser coverage passed CI and 101 Browser E2E checks.
 - PR #54 merged on 9 October 2026 (merge commit `a87c1d90405b1e7cd1097c6328668f91f8cc9af4`); register empty-state clarity and filter recovery passed CI and 103 Browser E2E checks.
 - PR #55 merged on 9 October 2026 (merge commit `b73aee24b91a4b5808e05bda2e84537188c5028f`); receipt retry and register refresh recovery are integrated. Exact-head CI and Browser E2E passed on PR head `54b2cae724a6dcb6c9a63e1a996f745e99e38427` (106 checks, 0 failures).
+- PR #56 merged on 9 October 2026 (merge commit `9249d753daf361798c457d237ab16d121d13b47e`); exact PR head `9a06246c125594ff7af1201cf1f897000a744857`, CI passed and Browser E2E passed 114 checks / 0 failures.
 - No Apps Script production deployment, live backup/restore, or production-data operation has been performed.
 
 ## Process decisions
@@ -32,18 +33,23 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #56
+## Current batch: PR #57 — manager register mobile review
 
-Scope: improve the staff mobile entry journey with payment-versus-cash-receipt terminology that follows the selected workflow, singular/plural save labels that reflect entered rows, announced save outcomes, and 44px mobile targets for the primary save and transaction-type controls. No backend/API, authorization, voucher schema, accounting semantics, or production behavior changes.
+Scope: identify payment-versus-receipt and status at a glance; make register actions clearly labelled and easier to tap on phones; reflow register rows and filters into a compact card layout at mobile widths.
 
-**Branch:** `ui/role-based-mobile-entry`. Exact current head and workflow evidence are maintained in the live PR.
+Keep all action eligibility tied to existing client capability checks and rely on server authorization as the security boundary. No API, schema, accounting, or production behavior change.
+
+**Branch:** `ui/manager-register-mobile-review`.
+**PR:** https://github.com/tchouhanjsm/cash-voucher/pull/57.
+Base is the verified `main` SHA above.
+
+**Current gate:** Formatting corrections have been applied after earlier CI runs rejected `docs/HANDOFF.md` and `frontend/features/register.js`. The current branch SHA and exact-head CI/E2E links are maintained in [PR #57](https://github.com/tchouhanjsm/cash-voucher/pull/57). Do not treat results from superseded heads as current; both workflows must pass on the same head before owner review. Local checks were not run because this environment could not connect to GitHub directly.
 
 Next steps:
 
-1. Verify CI and Browser E2E on the exact live PR #56 head.
-2. Review dynamic labels, receipt terminology, keyboard interaction, and 320px touch-target assertions.
-3. Leave PR #56 for owner review/merge; owner controls merge and deployment.
-4. Next phase after merge: continue role-based task review for manager review/correction and owner reporting, then schedule manual real-device and assistive-technology validation.
+1. Confirm CI and Browser E2E pass on the same current PR head.
+2. Inspect the final diff for mobile behavior, existing filter/totals/CSV semantics, and permission visibility.
+3. Leave review and merge to the owner.
 
 ## Operational gates still open
 
