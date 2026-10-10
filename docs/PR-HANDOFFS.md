@@ -36,7 +36,7 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PRs #46, #48–#50 and #52–#65 are merged; PR #66 is the active implementation PR; PRs #47 and #51 are closed without merge.
+- PRs #46, #48–#50 and #52–#68 are merged; PR #69 is the active DOM-only modal rendering hardening PR; PRs #47 and #51 are closed without merge.
 - The owner merges PRs. No agent merge or production deployment.
 
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged; merge commit `64655a5b11956d0289b4e6098599df7cd8932860`.
@@ -62,3 +62,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - **PR #67 — [Owner inspection Browser E2E coverage](https://github.com/tchouhanjsm/cash-voucher/pull/67):** merged at `628f691fe9e4353cc6b701bd57c95c3e169aa495`. Browser E2E subsequently passed locally with 128 checks / 0 failures. Mock-browser coverage does not verify live Drive access or restoreability. See `docs/pr-handoffs/PR-67.md`.
 - **PR #68 — P0 release gate evidence and handoff refresh:** documentation-only; records current local validation, Clasp deployment inventory and remaining live operational blockers. It does not upload or deploy Apps Script. See `docs/pr-handoffs/PR-68.md`.
+
+- **PR #69 — DOM-only modal rendering hardening:** active on `feature/dom-safe-dialog-content`, based on PR #68 merge `9751df49db6ba524376a2e39f79d744e4b36ec11`. Requires DOM Node/DocumentFragment dialog content and migrates PIN reset/change, voucher edit/cancel and receipt dialogs. Exact-head CI/E2E and owner review remain required; no Apps Script deployment.
