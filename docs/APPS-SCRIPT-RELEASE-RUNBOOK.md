@@ -130,7 +130,6 @@ PR #64 merged at `e266d0fba4d1468cdffac077bfac5ffef2a6ea90`. The owner reports l
 
 PR #67 adds browser coverage for owner Settings data-quality results and backup-integrity inspection failure/retry behavior under the mock Google services. This does not verify live Drive permissions, actual snapshot contents, the configured Web App deployment, or restoration. The local report supplied after PR #66 showed Node v24 (outside the declared Node 20–22 range) and Browser E2E not run because Playwright was missing for the selected Python interpreter. Use supported Node and require exact-head GitHub CI plus Browser E2E before merge. Keep the existing deployment unchanged unless the owner separately authorizes a release after target verification.
 
-
 ## Post-PR #67 / local release gate update — 10 October 2026
 
 - Verified Git baseline: `628f691fe9e4353cc6b701bd57c95c3e169aa495` (`main`, PR #67 merge).
