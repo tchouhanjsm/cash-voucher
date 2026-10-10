@@ -851,7 +851,7 @@ with sync_playwright() as p:
         'movement report discloses that it is not a physical-cash reconciliation',
     )
     check(
-        'Selected payment total' in report_text and 'Selected receipt total' in report_text,
+        'SELECTED PAYMENT TOTAL' in report_text.upper() and 'SELECTED RECEIPT TOTAL' in report_text.upper(),
         'movement report exposes payment and receipt totals',
     )
     report_rows = page.locator('#view table tbody tr')
