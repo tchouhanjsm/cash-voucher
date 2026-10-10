@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #59 base):** `544e0170fdb9333d62f7efa40dc512c84a28c1a6`  
+**Verified main SHA (PR #60 base):** `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -33,18 +33,16 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - The owner reviews and merges. Do not merge, deploy Apps Script, or mutate production data on the owner's behalf.
 - Local repository synchronization is the owner's post-approval step; do not ask for a local sync while the PR is under review.
 
-## Current batch: PR #59 — reporting and workflow automation contract
+## Current batch: PR #60 — cross-functional retrospective
 
-**PR:** [#59 — Define reporting export and workflow automation contract](https://github.com/tchouhanjsm/cash-voucher/pull/59).  
-**Branch:** `feature/reporting-automation-contracts`.  
-**Base main SHA:** `544e0170fdb9333d62f7efa40dc512c84a28c1a6`.  
-**Current head and exact-head CI/E2E links:** authoritative in the live PR description, because each handoff update creates a new commit.
+**PR:** created from `main` at `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`; live PR URL and final head are authoritative once opened.  
+**Branch:** `feature/pr60-cross-functional-retrospective`.
 
-Scope is documentation-only: define the destination decision and safety contract for accounting exports, inventory automation candidates, and specify idempotency, authorization, visibility, failure/retry, auditability, privacy and kill-switch expectations. No application code, API, schema, scheduled trigger, deployment or production-data behavior changes.
+Scope is documentation-only: verified achievements, cross-functional source review, real-world failure scenarios, prioritized backlog, risk register, and automation boundaries. Recommended first implementation is offline sync/idempotency assurance; the owner may prioritize the witnessed restore drill first. No runtime code, API, schema, dependencies, scheduled trigger, deployment or production-data change is included.
 
-**PR #60 is reserved** for a cross-functional retrospective/code review of actual merged code and evidence: product outcomes, backend/API, frontend UI/UX, CI/CD, security, QA, real-world scenarios, and workflow automation priorities. Keep it a review and ranked backlog, not a catch-all implementation PR.
+PR #59 exact-head CI and Browser E2E passed together on `4d9ef3b86bdfa80ab1220ef119877b2604820248` (125 checks, 0 failures); post-merge main CI passed on `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`. A post-merge main E2E run was not verified. Local checks are not run from this connector-only environment.
 
-Current gate: CI and Browser E2E have passed together on the current implementation head; rerun both after any additional source commit. The live PR description records the authoritative verified SHA and links. Leave merge to the owner. Daily cash close remains blocked on approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`.
+Leave merge to the owner. Local repository synchronization is the owner's post-approval step.
 
 ## Operational gates still open
 
