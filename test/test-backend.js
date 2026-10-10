@@ -90,6 +90,15 @@ ok(as(r.data.token, 'bootstrap').code === 'PIN_CHANGE', 'owner must change setup
 let T = as(r.data.token, 'changePin', { oldPin: '483921', newPin: '579246' }).data.token;
 const unknownAction = as(T, 'doesNotExist');
 ok(unknownAction.code === 'NOT_FOUND', 'unknown action rejected');
+const inheritedActionResults = ['constructor', 'toString', '__proto__', 'hasOwnProperty'].map(
+  (action) => as(T, action),
+);
+ok(
+  inheritedActionResults.every(
+    (result) => !result.ok && result.code === 'NOT_FOUND' && result.data === undefined,
+  ),
+  'inherited object properties are rejected as API actions without returning auth data',
+);
 ok(
   g.call('bootstrap').error && g.call('bootstrap').code === 'SESSION',
   'no token => session error',
@@ -98,6 +107,19 @@ ok(
 ok(
   !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', pin: '111111' }).ok,
   'weak PIN rejected',
+);
+const inheritedRoleResults = ['constructor', 'toString', '__proto__', 'hasOwnProperty'].map(
+  (role, index) =>
+    as(T, 'saveUser', {
+      name: 'Invalid role user',
+      email: 'invalid-role-' + index + '@test.com',
+      role,
+      pin: '135792',
+    }),
+);
+ok(
+  inheritedRoleResults.every((result) => !result.ok && result.error === 'Invalid role.'),
+  'inherited object properties cannot be assigned as user roles',
 );
 ok(
   as(T, 'saveUser', { name: 'Mona Manager', email: 'm@test.com', role: 'manager', pin: '246810' })
