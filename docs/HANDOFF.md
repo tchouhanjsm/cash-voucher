@@ -47,8 +47,6 @@ PR #64 adds an owner-only report that scans voucher rows for missing IDs/fields,
 
 Owner retains merge and deployment authority.
 
-
-
 ## Operational gates still open
 
 - Live Drive permissions, scheduled trigger behavior, backup completeness and restore into a separate Sheet/folder are unverified.
