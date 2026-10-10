@@ -36,7 +36,7 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 
 - GitHub live refs and workflow runs outrank stale handoff text.
 - No hard commit-count ceiling. Coherence, reviewability, exact-head verification and documented risk determine readiness.
-- PRs #46, #48–#50 and #52–#72 are merged; PR #73 is the active report date-range rendering hardening PR; PRs #47 and #51 are closed without merge.
+- PRs #46, #48–#73 are merged; PR #74 is the active payment success voucher-number rendering fix; PRs #47 and #51 are closed without merge.
 - The owner merges PRs. No agent merge or production deployment.
 
 - **PR #52 — [Modal background isolation and keyboard focus containment](https://github.com/tchouhanjsm/cash-voucher/pull/52):** Merged; merge commit `64655a5b11956d0289b4e6098599df7cd8932860`.
@@ -67,4 +67,5 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 - **PR #70 — [Escape persisted voucher numbers](https://github.com/tchouhanjsm/cash-voucher/pull/70):** merged at `1e656dee0266dba38d35500150889ce6020d8045`; CI and Browser E2E passed (130 checks / 0 failures) on exact PR head.
 - **PR #71 — [Full flight-test runner](https://github.com/tchouhanjsm/cash-voucher/pull/71):** merged at ea99e4e19be0f29e8c1afdc25828bf1b5ecce399. Exact PR head passed dependency policy, full quality/backend checks (110 backend checks), and Browser E2E (130 checks / 0 failures). Mock-backed only; no live Google service verification.
 - **PR #72 — [Recorded Movement Report browser journey](https://github.com/tchouhanjsm/cash-voucher/pull/72):** merged at `13a1fd84a013d85952d04c512313e8fcf9e36475`; exact PR head passed full flight, CI and Browser E2E (140 checks / 0 failures). Checks report filters and CSV row parity; no runtime code changed.
-- **PR #73 — Escape report date-range rendering:** active on `feature/escape-report-date-range-rendering`, based on `13a1fd84a013d85952d04c512313e8fcf9e36475`. Escapes formatted report date labels at the HTML sink and adds adversarial browser regression coverage. Exact-head workflows required before owner merge.
+- **PR #73 — [Escape report date-range rendering](https://github.com/tchouhanjsm/cash-voucher/pull/73):** merged at `71033675cc9f52ad391f8b2d06a362551a224be6`; exact tested head passed Full Flight Test, CI and Browser E2E (141 browser checks, 0 failures).
+- **PR #74 — Escape payment success voucher number:** active on `feature/escape-payment-success-voucher-number`, based on `71033675cc9f52ad391f8b2d06a362551a224be6`. Escapes the server-returned voucher number at the save confirmation sink and adds an adversarial browser regression. Await exact-head CI/E2E/flight evidence.
