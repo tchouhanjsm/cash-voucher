@@ -158,9 +158,78 @@ export function createAdministration({ api, getNavigation, signOut }) {
       `<form id="sf" class="card" autocomplete="off"><h2>Property</h2><label>Name<input id="sn" value="${esc(S.settings.propertyName)}" required></label><label>Address (printed on vouchers)<textarea id="sa" rows="2">${esc(S.settings.propertyAddress)}</textarea></label>
     <label>Categories (one per line)<textarea id="sc" rows="8">${esc(categories().join('\n'))}</textarea></label><div class="grid g2"><label>Next payment voucher no.<input id="sq" type="number" min="1" value="${S.settings.nextVoucherNo}"></label><label>Next cash-received no. (R-)<input id="sr" type="number" min="1" value="${S.settings.nextReceiptNo}"></label><label>Opening cash balance ₹<input id="so" inputmode="decimal" value="${S.settings.openingBalance || 0}"></label></div><label>Cash-received categories (one per line)<textarea id="sx" rows="5">${esc(rcats().join('\n'))}</textarea></label><button class="btn primary">Save settings</button></form>
     <section class="card" id="backup-status" aria-live="polite"><h2>🛡️ Backup &amp; recovery</h2><p class="muted">Loading backup status…</p></section>
+    <section class="card" id="data-quality"><h2>🔎 Voucher data quality</h2><p class="muted">Scan saved vouchers for missing required values, invalid amounts/dates/statuses, and duplicate identifiers. This is a record-quality check, not an accounting or tax certification.</p><button class="btn primary" type="button" data-act="dqscan">Run data-quality scan</button><div id="dq-results" role="status" aria-live="polite"><p class="muted">Run a scan to review exceptions.</p></div></section>
 `;
 
     await renderBackupStatus();
+  }
+
+  async function dataQualityScan() {
+    const results = $('#dq-results');
+    const button = $('[data-act="dqscan"]');
+    if (!results) return;
+    if (button) {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    }
+    results.textContent = 'Scanning voucher records…';
+    try {
+      const report = await api('dataQualityReport');
+      results.replaceChildren();
+      const summary = document.createElement('p');
+      summary.textContent = `Scanned ${report.scanned} vouchers · ${report.errors} errors · ${report.warnings} warnings · generated ${formatBackupTimestamp(report.generatedAt)}.`;
+      results.appendChild(summary);
+      const note = document.createElement('p');
+      note.className = 'muted';
+      note.textContent = 'This scan checks record completeness and structural consistency. It does not determine tax compliance, cash impact, or accounting correctness.';
+      results.appendChild(note);
+      if (!report.issues.length) {
+        const empty = document.createElement('p');
+        empty.className = 'badge';
+        empty.textContent = 'No structural exceptions found.';
+        results.appendChild(empty);
+      } else {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'table-wrap';
+        const table = document.createElement('table');
+        const thead = document.createElement('thead');
+        const header = document.createElement('tr');
+        ['Severity', 'Voucher', 'Date', 'Type', 'Field', 'Finding'].forEach((label) => {
+          const cell = document.createElement('th');
+          cell.textContent = label;
+          header.appendChild(cell);
+        });
+        thead.appendChild(header);
+        const body = document.createElement('tbody');
+        report.issues.forEach((issue) => {
+          const row = document.createElement('tr');
+          const values = [issue.severity.toUpperCase(), issue.voucherNo ? `#${issue.voucherNo}` : issue.voucherId || `Sheet row ${issue.sourceRow}`, issue.date || '—', issue.type || '—', issue.field, issue.message];
+          values.forEach((value) => {
+            const cell = document.createElement('td');
+            cell.textContent = String(value ?? '');
+            row.appendChild(cell);
+          });
+          body.appendChild(row);
+        });
+        table.append(thead, body);
+        wrapper.appendChild(table);
+        results.appendChild(wrapper);
+      }
+      if (report.truncated) {
+        const limited = document.createElement('p');
+        limited.className = 'muted';
+        limited.textContent = 'Showing the first 500 exceptions. The summary counts include all detected exceptions.';
+        results.appendChild(limited);
+      }
+    } catch (error) {
+      results.textContent = 'The data-quality scan failed. Check the connection and retry.';
+      fail(error);
+    } finally {
+      if (button?.isConnected) {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
+    }
   }
 
   function auditView() {
@@ -491,6 +560,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     audit: auditView,
     clearAuditFilters,
     exportAuditCsv,
+    dataQualityScan,
     account,
     handleSubmit,
     editVendor,
