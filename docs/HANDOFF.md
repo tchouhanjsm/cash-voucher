@@ -35,14 +35,16 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 
 ## Current batch: PR #59 — reporting and workflow automation contract
 
+**PR:** [#59 — Define reporting export and workflow automation contract](https://github.com/tchouhanjsm/cash-voucher/pull/59).  
 **Branch:** `feature/reporting-automation-contracts`.  
-**Base main SHA:** `544e0170fdb9333d62f7efa40dc512c84a28c1a6`.
+**Base main SHA:** `544e0170fdb9333d62f7efa40dc512c84a28c1a6`.  
+**Current head and exact-head CI/E2E links:** authoritative in the live PR description, because each handoff update creates a new commit.
 
 Scope is documentation-only: define the destination decision and safety contract for accounting exports, inventory automation candidates, and specify idempotency, authorization, visibility, failure/retry, auditability, privacy and kill-switch expectations. No application code, API, schema, scheduled trigger, deployment or production-data behavior changes.
 
 **PR #60 is reserved** for a cross-functional retrospective/code review of actual merged code and evidence: product outcomes, backend/API, frontend UI/UX, CI/CD, security, QA, real-world scenarios, and workflow automation priorities. Keep it a review and ranked backlog, not a catch-all implementation PR.
 
-Current gate: review this contract, run CI and Browser E2E on the same exact PR head, and leave merge to the owner. Daily cash close remains blocked on approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`.
+Current gate: CI and Browser E2E have passed together on the current implementation head; rerun both after any additional source commit. The live PR description records the authoritative verified SHA and links. Leave merge to the owner. Daily cash close remains blocked on approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`.
 
 ## Operational gates still open
 
