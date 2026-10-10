@@ -891,6 +891,9 @@ with sync_playwright() as p:
     page.locator('#movementFrom').fill(datetime.date.today().replace(day=1).isoformat())
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
+        "document.querySelector('#movementFilters button[type=submit]').innerText.trim() === 'Run report'"
+    )
+    page.wait_for_function(
         "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
     )
 
