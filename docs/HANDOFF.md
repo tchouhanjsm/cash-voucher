@@ -75,7 +75,6 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Local evidence after PR #67 merge:** `npm run check` passed on Node `v20.20.2`, including 110 backend checks; Browser E2E passed 128 checks / 0 failures using Playwright `1.52.0` and Chromium. `git diff --check` passed. ESLint still reports one unused-function warning for `backupData_`; npm reports three high-severity dependency findings.
 - **Unchanged operational P0:** live owner/manager/staff authorization checks, a real scheduled backup, and a witnessed restore to a separate recovery Sheet/folder remain open. No Clasp push, deployment, setup, or production mutation.
 
-
 ## Current phase — P0 Apps Script release target and recovery verification
 
 - **Source baseline:** `628f691fe9e4353cc6b701bd57c95c3e169aa495` on `main`.
