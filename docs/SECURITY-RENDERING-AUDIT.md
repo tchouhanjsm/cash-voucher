@@ -1,7 +1,7 @@
 # Frontend Rendering Security Audit
 
 **Status:** incremental; not a full security certification  
-**Baseline:** merged source at `ea99e4e19be0f29e8c1afdc25828bf1b5ecce399` (PR #71 merge)  
+**Baseline:** merged source at `13a1fd84a013d85952d04c512313e8fcf9e36475` (PR #72 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -106,3 +106,11 @@ The E2E suite runs against the repository's local mock Apps Script service. It d
 ## Acceptance gate
 
 Before considering this batch ready for review, the CI quality gate and Browser E2E must both pass on the exact final PR head. If an assertion fails, fix the test or product defect and rerun both workflows; do not report an earlier SHA's result as final.
+
+
+## PR #73 — Escape report date-range labels
+
+- The Recorded Movement Report previously interpolated `dmy(R.from)` and `dmy(R.to)` directly into the `#view.innerHTML` template. The date control constrains ordinary input, but `dmy()` is only a formatter and does not encode HTML.
+- Escape both formatted labels with `esc()` at the rendering sink.
+- Browser E2E installs a hostile value getter on the report's date input, submits the malformed range, and asserts the payload appears only as literal text with no injected SVG node or handler execution. This validates output-context escaping under malformed state, not a claim that ordinary date inputs permit markup.
+- Remaining active template renderers still need ongoing source-level review; this change does not provide full XSS certification.
