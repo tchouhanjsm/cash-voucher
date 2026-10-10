@@ -260,6 +260,45 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('#brand').textContent === 'Hotel Test'")
     check(page.locator('#brand').inner_text() == 'Hotel Test', 'settings saved')
 
+    # Malformed bootstrap values must not escape quoted numeric-input value attributes.
+    settings_attribute_payload = '"><svg onload=window.__xssFired=true></svg><input value="'
+
+    def tamper_bootstrap_settings(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        settings = payload.get('data', {}).get('settings', {})
+        if request_data.get('action') == 'bootstrap' and settings:
+            settings['propertyName'] = 'Attribute Context Test'
+            settings['nextVoucherNo'] = settings_attribute_payload
+            settings['nextReceiptNo'] = settings_attribute_payload
+            settings['openingBalance'] = settings_attribute_payload
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_bootstrap_settings)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'bootstrap'
+    ):
+        page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.wait_for_function(
+        "document.querySelector('#brand').textContent === 'Attribute Context Test'"
+    )
+    page.click('[data-v=set]')
+    page.wait_for_selector('#sq')
+    page.wait_for_timeout(250)
+    check(
+        page.locator('#sf svg, #sf img').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'malformed bootstrap settings remain inert in numeric input attributes',
+    )
+    page.unroute('**/api?*', tamper_bootstrap_settings)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
     page.wait_for_selector('#loginForm')
