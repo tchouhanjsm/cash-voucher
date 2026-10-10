@@ -302,14 +302,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
       return;
     }
     const header = ['Time', 'User', 'Action', 'Target', 'Details'];
-    const csv = [header, ...rows.map((row) => [
-      row.time,
-      row.user,
-      row.action,
-      row.target,
-      row.details,
+    const csv = [
+      header,
+      ...rows.map((row) => [row.time, row.user, row.action, row.target, row.details]),
+    ]
       .map((record) => record.map(csvCell).join(','))
-      .join('\r\n');
+      .join('\\r\\n');
     download(
       `cash-voucher-audit-${new Date().toISOString().slice(0, 10)}.csv`,
       csv,
