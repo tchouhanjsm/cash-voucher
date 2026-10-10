@@ -23,7 +23,7 @@ The owner-only Settings panel reports recorded backup metadata, but does not ver
 
 ## Post-PR #65 / PR #66 status
 
-PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`; exact-head CI and Browser E2E passed. PR #66 adds read-only structural inspection of the ten latest managed backups. Even if that scan passes, a witnessed restore into a separate destination is still mandatory. Do not treat the version-4 deployment report as evidence that PRs #64/#65 are live.
+PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`; exact-head CI and Browser E2E passed. PR #66 is merged at `3c93ddd6d45052f2e53e04c713060f0da72ccdd6` and adds read-only structural inspection of the ten latest managed backups. Even if that scan passes, a witnessed restore into a separate destination is still mandatory. Do not treat the version-4 deployment report as evidence that PRs #64/#65 are live.
 
 ## Gate 1 — source and CI
 

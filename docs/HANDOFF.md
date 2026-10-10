@@ -40,10 +40,11 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #65 adds a manager/owner-only read-only recorded voucher movement report with date/type/status filters, source rows, active/cancelled totals and CSV formula-prefix protection.
 - The Apps Script deployment was last reported at version 4 before PRs #64 and #65 merged. Do **not** assume current `main` is deployed. No deployment is authorized by this phase.
 
-## Current phase — PR #66: backup integrity inspection
+## Completed phase — PR #66: backup integrity inspection
 
 - **Branch:** `feature/backup-integrity-report`.
 - **Base:** `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`.
+- **Merged:** `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`.
 - **Outcome:** add an owner-only, read-only inspection of the ten most recent managed backup snapshots. Check spreadsheet-copy presence/readability, required tabs, header compatibility, receipt folder, manifest format/count and manifest references to copied receipt files.
 - **Safety:** no restore, deletion, retention pruning, source mutation, setup, Clasp push or deployment. A pass means structural checks passed only; it does not prove restoreability. Header mismatches are warnings because a backup can predate the current schema.
 - **Verification:** exact head `5436bf9e233c8bf68bcb44e3b4ca33f19229f24f` passed CI and Browser E2E (126 checks, 0 failures). [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38028051313) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38028051295). Live Drive behavior remains unverified.
