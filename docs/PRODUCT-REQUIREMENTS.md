@@ -47,7 +47,7 @@ The product should prioritize trustworthy records and clear exceptions over a la
 
 ### Accountant — proposed future role
 
-A read-only report/export role may be valuable, but it is not an existing role or approved requirement. Confirm the first accounting destination and access boundaries before designing it.
+A read-only report/export role may be valuable, but it is not an existing role or approved requirement. Confirm the receiving accountant's accounting product/version, the first export format and access boundaries before designing it. The source-field inventory, finance workflows, chart catalog, reconciliation controls and tax-data decision gates are documented in `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md`.
 
 ## 4. Product principles
 
