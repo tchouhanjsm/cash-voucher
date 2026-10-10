@@ -23,7 +23,7 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - PR #54 merged on 9 October 2026 (merge commit `a87c1d90405b1e7cd1097c6328668f91f8cc9af4`); register empty-state clarity and filter recovery passed CI and 103 Browser E2E checks.
 - PR #55 merged on 9 October 2026 (merge commit `b73aee24b91a4b5808e05bda2e84537188c5028f`); receipt retry and register refresh recovery are integrated. Exact-head CI and Browser E2E passed on PR head `54b2cae724a6dcb6c9a63e1a996f745e99e38427` (106 checks, 0 failures).
 - PR #56 merged on 9 October 2026 (merge commit `9249d753daf361798c457d237ab16d121d13b47e`); exact PR head `9a06246c125594ff7af1201cf1f897000a744857`, CI passed and Browser E2E passed 114 checks / 0 failures.
-- PR #58 merged on 10 October 2026 (merge commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`): owner-only Audit log route, filters, latest-200 disclosure, and filtered CSV export. The export is not full audit history; live Google authorization and accountant compatibility remain unverified.\n- No Apps Script production deployment, live backup/restore, or production-data operation has been evidenced for the current v2 release.
+- PR #58 merged on 10 October 2026 (merge commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`): owner-only Audit log route, filters, latest-200 disclosure, and filtered CSV export. The export is not full audit history; live Google authorization and accountant compatibility remain unverified.\n- PR #63 release: the owner reports uploading the reviewed backend and updating the configured Web App deployment to version 4. Live role smoke tests and backup/restore remain unverified.
 
 ## Process decisions
 
