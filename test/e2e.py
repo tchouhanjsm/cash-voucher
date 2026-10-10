@@ -87,7 +87,7 @@ with sync_playwright() as p:
     page.fill('#np', '579246')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
-    check(page.locator('#nav button').count() == 8, 'owner sees 8 nav items')
+    check(page.locator('#nav button').count() == 9, 'owner sees 9 nav items including audit log')
     check(
         page.locator('[data-v=dash]').get_attribute('aria-current') == 'page',
         'current navigation view is announced to assistive technology',
@@ -169,7 +169,6 @@ with sync_playwright() as p:
     )
 
     page.click('[data-v=set]')
-    page.wait_for_selector('#aud tr')
     page.wait_for_function(
         "document.querySelector('#backup-status').innerText.includes('No completed backup recorded')"
     )
@@ -180,6 +179,10 @@ with sync_playwright() as p:
         and 'does not verify the current Drive backup contents' in page.locator('#backup-status').inner_text(),
         'owner settings show honest backup status and recovery limitations',
     )
+    check(page.locator('#aud').count() == 0, 'audit events are no longer embedded in Settings')
+    check(page.locator('[data-v=audit]').count() == 1, 'owner has a dedicated audit navigation item')
+    page.click('[data-v=audit]')
+    page.wait_for_selector('#aud tr')
     page.wait_for_function(
         "document.querySelector('#aud').innerText.includes('<svg onload=window.__xssFired=true></svg>')"
     )
@@ -188,6 +191,34 @@ with sync_playwright() as p:
         and xss_vendor in page.locator('#aud').inner_text()
         and not page.evaluate('window.__xssFired === true'),
         'audit-log details are rendered as text, not executable HTML',
+    )
+    check(
+        'latest 200' in page.locator('#audit-scope').inner_text().lower()
+        and 'not the full audit history' in page.locator('#audit-scope').inner_text(),
+        'audit page explains server limit and filtered export scope',
+    )
+    page.fill('#aud-q', xss_vendor)
+    page.wait_for_function(
+        "document.querySelector('#aud-count').innerText.includes('of')"
+    )
+    check(
+        xss_vendor in page.locator('#aud').inner_text()
+        and 'VENDOR_CREATE' in page.locator('#aud').inner_text(),
+        'audit search filters loaded events by user-controlled detail text',
+    )
+    with page.expect_download() as audit_download_info:
+        page.click('[data-act=audcsv]')
+    audit_download = audit_download_info.value
+    check(
+        audit_download.suggested_filename.startswith('cash-voucher-audit-')
+        and audit_download.suggested_filename.endswith('.csv'),
+        'audit export downloads a CSV for the active filters',
+    )
+    page.click('[data-act=audclear]')
+    check(
+        'No audit events match these filters.' not in page.locator('#aud').inner_text()
+        and page.locator('#aud-q').input_value() == '',
+        'clear audit filters restores the loaded event list',
     )
     page.fill('#sn', xss_payload)
     page.fill('#sa', xss_company)
