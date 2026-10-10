@@ -117,7 +117,6 @@ Before deployment, record the current deployment ID and active version. If the n
 
 PR #64 merged at `e266d0fba4d1468cdffac077bfac5ffef2a6ea90`. The owner reports local static/unit checks passed on this SHA, but Browser E2E did not run because Playwright is unavailable for the selected Python interpreter. Node v24 is outside the declared Node 20–22 range. Clasp listed the configured existing deployment `AKfycbys21L1jrEYXmdjN5lf1dYlAQJnqGRU3WjGQrvpPwjW7_zVJNb7w6ExRDnmbrkkFdM` at version 4 and a separate deployment at HEAD; do not target the latter by default. PR #64 deployment remains unconfirmed. Live authorization and a witnessed isolated restore remain open gates.
 
-
 ## Post-PR #65 / backup integrity inspection
 
 - Main source baseline: `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`.

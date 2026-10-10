@@ -511,7 +511,6 @@ function recordedMovementReport_(user, req) {
   };
 }
 
-
 function backupIntegrityReport_(user) {
   need_(user, 'settings');
   const backupRootId = props_().getProperty('BACKUP_FOLDER_ID');
@@ -586,7 +585,7 @@ function backupIntegrityReport_(user) {
         try {
           manifestRows = Utilities.parseCsv(manifestFile.file.getBlob().getDataAsString());
           manifestReadable = true;
-        } catch (error) {
+        } catch {
           manifestReadable = false;
         }
       }
@@ -621,7 +620,7 @@ function backupIntegrityReport_(user) {
             }
           });
           sheetReadable = true;
-        } catch (error) {
+        } catch {
           sheetReadable = false;
         }
       }
@@ -696,7 +695,7 @@ function backupIntegrityReportWithServices_(services) {
     let inspection;
     try {
       inspection = services.inspectSnapshot(folder);
-    } catch (error) {
+    } catch {
       inspection = null;
     }
 
@@ -749,8 +748,12 @@ function backupIntegrityReportWithServices_(services) {
       );
       add(
         'MANIFEST',
-        inspection.manifest.present && inspection.manifest.readable && inspection.manifest.headerValid,
-        inspection.manifest.present && inspection.manifest.readable && inspection.manifest.headerValid
+        inspection.manifest.present &&
+          inspection.manifest.readable &&
+          inspection.manifest.headerValid,
+        inspection.manifest.present &&
+          inspection.manifest.readable &&
+          inspection.manifest.headerValid
           ? 'Receipt manifest is readable and has the expected columns.'
           : 'Receipt manifest is missing, unreadable or has unexpected columns.',
       );

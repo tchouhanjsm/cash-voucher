@@ -65,18 +65,16 @@ assert.equal(
   'fail',
   'a missing manifest receipt copy fails the snapshot',
 );
-assert.equal(
-  report.snapshots[1].state,
-  'fail',
-  'an unreadable snapshot fails closed',
-);
+assert.equal(report.snapshots[1].state, 'fail', 'an unreadable snapshot fails closed');
 assert.equal(
   report.snapshots[2].state,
   'warning',
   'a current-schema mismatch is warned about without claiming the snapshot is corrupt',
 );
 assert.ok(
-  report.snapshots[0].checks.some((check) => check.code === 'RECEIPT_REFERENCES' && check.state === 'fail'),
+  report.snapshots[0].checks.some(
+    (check) => check.code === 'RECEIPT_REFERENCES' && check.state === 'fail',
+  ),
   'receipt-reference failure is visible',
 );
 assert.equal(report.failCount, 2, 'failed snapshot count is explicit');
@@ -89,4 +87,6 @@ assert.equal(
   'older snapshots outside the ten-item window are omitted',
 );
 
-console.log('Backup integrity report OK — bounded scan, newest-first ordering, fail-closed inspection and receipt-reference checks.');
+console.log(
+  'Backup integrity report OK — bounded scan, newest-first ordering, fail-closed inspection and receipt-reference checks.',
+);

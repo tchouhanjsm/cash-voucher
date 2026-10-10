@@ -485,7 +485,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
       integrityResults.setAttribute('role', 'status');
       integrityResults.setAttribute('aria-live', 'polite');
       integrityResults.className = 'backup-integrity-results';
-      integrityResults.textContent = 'Structural inspection checks snapshot files, sheet headers and receipt manifests; it does not prove restoreability.';
+      integrityResults.textContent =
+        'Structural inspection checks snapshot files, sheet headers and receipt manifests; it does not prove restoreability.';
 
       card.replaceChildren(title, state, details, note, integrityButton, integrityResults);
     } catch {
@@ -498,7 +499,6 @@ export function createAdministration({ api, getNavigation, signOut }) {
       card.replaceChildren(title, message);
     }
   }
-
 
   async function backupIntegrityScan() {
     const results = $('#backup-integrity-results');

@@ -154,6 +154,7 @@ PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. Its exact PR head `
 ## Next phase — PR #66: backup integrity inspection
 
 Prioritize operational assurance before expanding financial reporting. Add an owner-only read-only inspection for the ten latest managed backup snapshots:
+
 - Verify a spreadsheet copy exists and can be opened.
 - Verify required tabs and report header-schema differences as compatibility warnings.
 - Verify the receipts folder and manifest exist, manifest columns are valid, manifest count matches copied receipt count, and each listed copy is present.

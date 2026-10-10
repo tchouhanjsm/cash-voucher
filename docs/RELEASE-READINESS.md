@@ -16,7 +16,7 @@
 | Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
 | Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
-| Production Apps Script deployment                           | Prior version reported | Owner reported version 4 before PRs #64/#65; current merged backend deployment is unconfirmed              |
+| Production Apps Script deployment                           | Unconfirmed           | Owner reported version 4 before PRs #64/#65; current merged backend deployment is unconfirmed              |
 | Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
 
 The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
