@@ -967,3 +967,36 @@ button {
     animation-duration: 0.01ms !important;
   }
 }
+
+/* Dedicated owner audit review: filters remain usable without forcing page overflow. */
+.audit-filters {
+  margin: 12px 0;
+}
+
+.audit-filters label {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+.audit-filters input,
+.audit-filters select {
+  width: 100%;
+}
+
+#aud-count {
+  margin: 12px 0 8px;
+}
+
+#aud td {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 600px) {
+  .audit-filters > * {
+    flex-basis: 100%;
+  }
+
+  .audit-filters .btn {
+    width: 100%;
+  }
+}

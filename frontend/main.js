@@ -82,6 +82,7 @@ navigation = createNavigation({
     vend: administration.vendors,
     users: administration.users,
     set: administration.settings,
+    audit: administration.audit,
     acct: administration.account,
   },
 });
@@ -168,6 +169,10 @@ registerActions({
   utog: ({ id }) => administration.toggleUser(id),
 
   urole: ({ id, element }) => administration.updateRole(id, element.value),
+
+  audclear: () => administration.clearAuditFilters(),
+
+  audcsv: () => administration.exportAuditCsv(),
 
   install: () => administration.install(),
 

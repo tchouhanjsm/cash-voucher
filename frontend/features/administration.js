@@ -1,12 +1,14 @@
 import { $ } from '../core/dom.js';
 import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
-import { esc } from '../core/utils.js';
+import { csvCell, download, esc } from '../core/utils.js';
 import { closeModal, dialog, fail, head, toast } from '../core/ui.js';
 
 export function createAdministration({ api, getNavigation, signOut }) {
   let deferredInstall;
   let users = [];
+  let auditRows = [];
+  const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
 
   function vendors() {
     $('#view').innerHTML =
@@ -156,36 +158,177 @@ export function createAdministration({ api, getNavigation, signOut }) {
       `<form id="sf" class="card" autocomplete="off"><h2>Property</h2><label>Name<input id="sn" value="${esc(S.settings.propertyName)}" required></label><label>Address (printed on vouchers)<textarea id="sa" rows="2">${esc(S.settings.propertyAddress)}</textarea></label>
     <label>Categories (one per line)<textarea id="sc" rows="8">${esc(categories().join('\n'))}</textarea></label><div class="grid g2"><label>Next payment voucher no.<input id="sq" type="number" min="1" value="${S.settings.nextVoucherNo}"></label><label>Next cash-received no. (R-)<input id="sr" type="number" min="1" value="${S.settings.nextReceiptNo}"></label><label>Opening cash balance ₹<input id="so" inputmode="decimal" value="${S.settings.openingBalance || 0}"></label></div><label>Cash-received categories (one per line)<textarea id="sx" rows="5">${esc(rcats().join('\n'))}</textarea></label><button class="btn primary">Save settings</button></form>
     <section class="card" id="backup-status" aria-live="polite"><h2>🛡️ Backup &amp; recovery</h2><p class="muted">Loading backup status…</p></section>
-    <div class="card"><h2>Audit log <span class="muted">(latest 200)</span></h2><div class="table-wrap" style="max-height:420px;overflow:auto"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Details</th></tr></thead><tbody id="aud"><tr><td colspan="4" class="muted">Loading…</td></tr></tbody></table></div></div>`;
-
-    try {
-      const audit = await api('auditLog');
-      const auditBody = $('#aud');
-      auditBody.replaceChildren();
-
-      audit.forEach((row) => {
-        const tr = document.createElement('tr');
-        const cells = [
-          { value: String(row.time ?? '').replace('T', ' '), className: 'nw' },
-          { value: row.user },
-          { value: row.action, className: 'nw' },
-          { value: `${row.target ?? ''} ${row.details ?? ''}` },
-        ];
-
-        cells.forEach(({ value, className }) => {
-          const td = document.createElement('td');
-          if (className) td.className = className;
-          td.textContent = String(value ?? '');
-          tr.appendChild(td);
-        });
-
-        auditBody.appendChild(tr);
-      });
-    } catch (error) {
-      fail(error);
-    }
+`;
 
     await renderBackupStatus();
+  }
+
+  function auditView() {
+    auditFilters.query = '';
+    auditFilters.user = '';
+    auditFilters.action = '';
+    auditFilters.from = '';
+    auditFilters.to = '';
+    auditRows = [];
+
+    $('#view').innerHTML =
+      head('Audit log') +
+      `<section class="card" aria-describedby="audit-scope">
+        <p id="audit-scope" class="muted">Showing the latest 200 events returned by the server. Filters and CSV export apply only to these loaded events, not the full audit history.</p>
+        <div class="filters audit-filters">
+          <label>Search<input id="aud-q" type="search" aria-label="Search audit events" placeholder="Search details, target or user"></label>
+          <label>User<select id="aud-user" aria-label="Filter audit events by user"><option value="">All users</option></select></label>
+          <label>Action<select id="aud-action" aria-label="Filter audit events by action"><option value="">All actions</option></select></label>
+          <label>From<input id="aud-from" type="date" aria-label="Audit start date"></label>
+          <label>To<input id="aud-to" type="date" aria-label="Audit end date"></label>
+          <button class="btn" type="button" data-act="audclear">Clear filters</button>
+          <button class="btn primary" type="button" data-act="audcsv">Export filtered CSV</button>
+        </div>
+        <p id="aud-count" class="muted" role="status" aria-live="polite">Loading audit events…</p>
+        <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="aud"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
+      </section>`;
+
+    api('auditLog')
+      .then((rows) => {
+        auditRows = Array.isArray(rows) ? rows : [];
+        if (!$('#aud')) return;
+        populateAuditOptions();
+        renderAuditRows();
+      })
+      .catch((error) => {
+        const body = $('#aud');
+        if (!body) return;
+        body.replaceChildren();
+        const row = document.createElement('tr');
+        const cell = document.createElement('td');
+        cell.colSpan = 5;
+        cell.className = 'error';
+        cell.textContent = 'Audit events could not be loaded. Check your connection and retry.';
+        row.appendChild(cell);
+        body.appendChild(row);
+        $('#aud-count').textContent = 'Audit events unavailable.';
+        fail(error);
+      });
+  }
+
+  function populateAuditOptions() {
+    const usersList = [
+      ...new Set(auditRows.map((row) => String(row.user || '')).filter(Boolean)),
+    ].sort();
+    const actionsList = [
+      ...new Set(auditRows.map((row) => String(row.action || '')).filter(Boolean)),
+    ].sort();
+    const userSelect = $('#aud-user');
+    const actionSelect = $('#aud-action');
+    if (!userSelect || !actionSelect) return;
+
+    userSelect.replaceChildren(new Option('All users', ''));
+    usersList.forEach((user) => userSelect.add(new Option(user, user)));
+    userSelect.value = auditFilters.user;
+    actionSelect.replaceChildren(new Option('All actions', ''));
+    actionsList.forEach((action) => actionSelect.add(new Option(action, action)));
+    actionSelect.value = auditFilters.action;
+  }
+
+  function filteredAuditRows() {
+    const query = auditFilters.query.trim().toLowerCase();
+    return auditRows.filter((row) => {
+      const time = String(row.time || '');
+      const day = time.slice(0, 10);
+      const searchable = [row.user, row.action, row.target, row.details, time]
+        .map((value) => String(value ?? '').toLowerCase())
+        .join(' ');
+      return (
+        (!query || searchable.includes(query)) &&
+        (!auditFilters.user || String(row.user || '') === auditFilters.user) &&
+        (!auditFilters.action || String(row.action || '') === auditFilters.action) &&
+        (!auditFilters.from || day >= auditFilters.from) &&
+        (!auditFilters.to || day <= auditFilters.to)
+      );
+    });
+  }
+
+  function renderAuditRows() {
+    const body = $('#aud');
+    const count = $('#aud-count');
+    if (!body || !count) return;
+    const rows = filteredAuditRows();
+    body.replaceChildren();
+
+    rows.forEach((row) => {
+      const tr = document.createElement('tr');
+      [
+        { value: String(row.time ?? '').replace('T', ' '), className: 'nw' },
+        { value: row.user },
+        { value: row.action, className: 'nw' },
+        { value: row.target },
+        { value: row.details },
+      ].forEach(({ value, className }) => {
+        const cell = document.createElement('td');
+        if (className) cell.className = className;
+        cell.textContent = String(value ?? '');
+        tr.appendChild(cell);
+      });
+      body.appendChild(tr);
+    });
+
+    if (!rows.length) {
+      const tr = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 5;
+      cell.className = 'muted';
+      cell.textContent = auditRows.length
+        ? 'No audit events match these filters.'
+        : 'No audit events are available in the latest 200 records.';
+      tr.appendChild(cell);
+      body.appendChild(tr);
+    }
+    count.textContent = `Showing ${rows.length} of ${auditRows.length} loaded events.`;
+  }
+
+  function clearAuditFilters() {
+    Object.assign(auditFilters, { query: '', user: '', action: '', from: '', to: '' });
+    ['aud-q', 'aud-user', 'aud-action', 'aud-from', 'aud-to'].forEach((id) => {
+      const field = $('#' + id);
+      if (field) field.value = '';
+    });
+    renderAuditRows();
+  }
+
+  function exportAuditCsv() {
+    const rows = filteredAuditRows();
+    if (!rows.length) {
+      toast('No audit events match the current filters.', 'err');
+      return;
+    }
+    const header = ['Time', 'User', 'Action', 'Target', 'Details'];
+    const csv = [
+      header,
+      ...rows.map((row) => [row.time, row.user, row.action, row.target, row.details]),
+    ]
+      .map((record) => record.map(csvCell).join(','))
+      .join('\r\n');
+    download(
+      `cash-voucher-audit-${new Date().toISOString().slice(0, 10)}.csv`,
+      csv,
+      'text/csv;charset=utf-8',
+    );
+    toast(`Exported ${rows.length} audit events from the loaded latest-200 window.`, 'ok');
+  }
+
+  function handleAuditFilters(event) {
+    const field = event.target;
+    const values = {
+      'aud-q': 'query',
+      'aud-user': 'user',
+      'aud-action': 'action',
+      'aud-from': 'from',
+      'aud-to': 'to',
+    };
+    const key = values[field.id];
+    if (!key) return;
+    auditFilters[key] = field.value;
+    renderAuditRows();
   }
 
   async function renderBackupStatus() {
@@ -336,6 +479,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
     });
 
     $('#view').addEventListener('submit', handleSubmit);
+    $('#view').addEventListener('input', handleAuditFilters);
+    $('#view').addEventListener('change', handleAuditFilters);
   }
 
   return {
@@ -343,6 +488,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
     vendors,
     users: usersView,
     settings,
+    audit: auditView,
+    clearAuditFilters,
+    exportAuditCsv,
     account,
     handleSubmit,
     editVendor,

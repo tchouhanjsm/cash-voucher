@@ -1,6 +1,6 @@
 # Product Gap Register and Roadmap
 
-**As of:** 9 October 2026  
+**As of:** 10 October 2026  
 **Purpose:** reconcile the attached code-review memo with the actual current v2 repository and prioritize improvements by the value and risk to a property owner.
 
 This is a single-property cash-voucher PWA today. The attached memo's hosted fintech/multi-property concept is a strategic scenario, not an agreed requirement. The product-level scope, user outcomes, candidate measures, and owner decisions are consolidated in [Product Requirements Baseline](PRODUCT-REQUIREMENTS.md).
@@ -131,4 +131,6 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **PR #56 merged:** staff payment/cash-receipt entry now uses task-specific save/status wording and preserves the selected mode for the next entry. The exact PR head `9a06246c125594ff7af1201cf1f897000a744857` passed CI and Browser E2E (114 checks, 0 failures); these mock-browser results do not verify Google-account behavior or physical-device ergonomics.
 
-**Next batch (PR #57 planned): manager register on mobile.** Improve at-a-glance transaction identity and bring row actions into a clearly labelled, touch-friendly group. The batch is UI-only: existing server-side permissions remain authoritative; no approval semantics, voucher fields, accounting calculations, or production operations are introduced. Owner reporting/audit discoverability remains a later focused journey after this manager pass.
+**PR #57 merged:** manager register mobile review improved at-a-glance payment/receipt identity, grouped actions and narrow-screen register layout without changing backend or accounting semantics.
+
+**Next batch (PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
