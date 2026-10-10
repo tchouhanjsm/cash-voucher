@@ -116,11 +116,7 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 
 ## PR #74 — Escape voucher number in save confirmation
 
-- The successful payment/receipt save panel interpolated `vno(c)` directly into
-  `#nres.innerHTML`. The API response is a trust boundary even though normal
-  voucher numbers are server-generated.
+- The successful payment/receipt save panel interpolated `vno(c)` directly into the `#nres.innerHTML` template. The API response is a trust boundary even though normal voucher numbers are server-generated.
 - Escape the formatted voucher number at the HTML text sink.
-- Browser E2E tampers with the `createVouchers` response and asserts the number
-  appears as literal text, no SVG node is created, and the payload handler does
-  not execute.
+- Browser E2E tampers with the `createVouchers` response and asserts the number appears as literal text, no SVG node is created, and the payload handler does not execute.
 - PR #70 covered register and print sinks; this is a separate success-panel sink. Other active template renderers remain in the review scope.
