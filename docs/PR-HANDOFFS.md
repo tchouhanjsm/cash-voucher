@@ -1,6 +1,6 @@
-# PR Handoffs and Engineering History
+# Historical PR Index — frozen through PR #75
 
-This index is a durable map for future development threads. The dedicated handoff for each new PR belongs in `docs/pr-handoffs/PR-<number>.md`. The PR description remains the source for exact-head CI/E2E URLs and owner review status. Do not infer current state from old notes: verify live GitHub base/head SHAs first.
+**Archived:** 10 October 2026. This file is retained only as a historical index for earlier phases; it is no longer the current handoff or an index to extend for future PRs. From PR #76 onward, use `docs/HANDOFF.md` for the single current ChatGPT/session handoff and the GitHub PR description/check history for the permanent details of each change. Existing `docs/pr-handoffs/PR-<number>.md` files remain legacy historical artifacts; new PRs must not create more of them. Always verify current state from live GitHub refs.
 
 ## Recent reviewed PR sequence
 
@@ -69,4 +69,4 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 - **PR #72 — [Recorded Movement Report browser journey](https://github.com/tchouhanjsm/cash-voucher/pull/72):** merged at `13a1fd84a013d85952d04c512313e8fcf9e36475`; exact PR head passed full flight, CI and Browser E2E (140 checks / 0 failures). Checks report filters and CSV row parity; no runtime code changed.
 - **PR #73 — [Escape report date-range rendering](https://github.com/tchouhanjsm/cash-voucher/pull/73):** merged at `71033675cc9f52ad391f8b2d06a362551a224be6`; exact tested head passed Full Flight Test, CI and Browser E2E (141 browser checks, 0 failures).
 - **PR #74 — [Escape payment success voucher number](https://github.com/tchouhanjsm/cash-voucher/pull/74):** merged as `970475dc440a3dc84b788087e60a73836d3d8814`; exact tested head `96fcc2b62e126c92318b97b3d8678302ef6dec11` passed Full Flight Test, CI and Browser E2E (142 browser checks, 0 failures).
-- **PR #75 — [Bulk import completion feedback](https://github.com/tchouhanjsm/cash-voucher/pull/75):** active on `feature/harden-bulk-upload-rendering`, based on `970475dc440a3dc84b788087e60a73836d3d8814`. Adds polite completion announcement and accurate receipt/payment confirmation copy; exact-head workflow verification pending.
+- **PR #75 — [Bulk import completion feedback](https://github.com/tchouhanjsm/cash-voucher/pull/75):** merged at `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`; exact tested PR head `dd01c66ff66b5a7778966c1121bd91a3d4cf042f` passed CI, Browser E2E (145 checks / 0 failures) and Full Flight Test (110 backend checks; 145 browser checks / 0 failures).

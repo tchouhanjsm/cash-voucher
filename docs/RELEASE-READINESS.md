@@ -1,12 +1,6 @@
 # Release Readiness
 
-**Status: not verified as production-ready. Current `main` is
-`970475dc440a3dc84b788087e60a73836d3d8814` (PR #74 merge).** PR #74's exact
-tested head passed Full Flight Test, normal CI and Browser E2E (110 backend
-checks and 142 browser checks, zero failures). PR #75 is a focused frontend
-accessibility/feedback improvement and has not been merged or released. The configured URL's prior alignment with
-version 4 does not prove current `main` is deployed. Live authorization,
-scheduled backup and isolated restore remain unverified.
+**Status: not verified as production-ready.** This document tracks operational release gates, not the latest source SHA or routine PR history. Verify the current `main` commit and current deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified.
 
 ## Evidence-based baseline
 
@@ -98,6 +92,6 @@ PR #67 adds browser assertions for the data-quality report's user-facing scope d
 
 PR #74 merged at `970475dc440a3dc84b788087e60a73836d3d8814`. Its exact tested head passed Full Flight Test, normal CI and Browser E2E (142 browser checks, zero failures). It does not deploy Apps Script or close live operational gates.
 
-## PR #75 under review — bulk import completion feedback
+## PR #75 merged — bulk import completion feedback
 
-Adds a polite status announcement and accurate receipt/payment completion wording. No live deployment or data mutation; exact-head tests are pending.
+Merged at `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`. Its exact tested PR head passed CI, Browser E2E (145 checks / 0 failures) and Full Flight Test (110 backend checks; 145 browser checks / 0 failures). This frontend change does not alter the status of live authorization, scheduled backup or isolated restore gates.
