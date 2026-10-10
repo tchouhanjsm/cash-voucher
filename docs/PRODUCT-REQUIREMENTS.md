@@ -1,7 +1,7 @@
 # Product Requirements Baseline
 
 **Status:** Proposed baseline for owner review  
-**Updated:** 9 October 2026  
+**Updated:** 10 October 2026  
 **Product today:** Single-property cash-voucher PWA using a static frontend, Google Apps Script API, Google Sheets, and Google Drive.
 
 ## 1. Purpose and decision boundary
@@ -148,6 +148,10 @@ A future close must use server-authoritative source records, approved period and
 ### PR-08 — Export ownership
 
 Before adding accounting-specific exports, define the target accounting system, column mapping, amount/date conventions, tax-field responsibility, privacy boundaries, and reconciliation expectations.
+
+### PR-09 — Safe workflow automation
+
+Automation should reduce repetitive operator work without obscuring financial state or creating duplicate records. Each workflow needs an explicit trigger, timezone where relevant, authorization check, idempotency rule, visible outcome, retry/failure behavior, audit trail, privacy boundary and owner-controlled disable path. Scheduled summaries, recurring vouchers, cash-close automation and external delivery remain proposals until their business rules and accountable owners are agreed. See `docs/REPORTING-AND-AUTOMATION-DESIGN.md`.
 
 ## 8. Candidate success measures
 

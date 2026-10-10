@@ -109,3 +109,16 @@ The manager register currently presents edit/cancel/receipt/print as compact con
 The audit log has moved from the bottom of Settings to a dedicated owner-only navigation route. The view provides search, user/action filters, date bounds, an explicit loaded-record count, clear-filter recovery, and CSV export. It uses the existing `auditLog` API and keeps audit values rendered with `textContent`.
 
 The current backend returns at most the latest 200 events. Filters and CSV export operate only on that loaded window; this is intentionally stated in the UI so users do not mistake a filtered export for a complete audit archive. The existing server permission remains the security boundary; a hidden navigation item is not authorization. Browser E2E covers route visibility for the owner, safe rendering of untrusted audit text, filtering, clearing, and CSV download. Live Google-account authorization and audit-history completeness remain unverified.
+
+## Reporting and automation UX — PR #59 design gate
+
+Automation must make state more understandable, not hide work or imply that a financial operation completed when it did not.
+
+- **Pending synchronization:** distinguish local-only, pending, synchronized, failed and recovery-required records. Provide a direct recovery action and avoid repetitive alerts that train staff to dismiss warnings.
+- **Reusable voucher setup:** prefill only owner-approved fields; always show a review step before saving. A preset must never auto-submit a financial voucher.
+- **Scheduled summaries:** expose schedule/timezone, recipient, data scope, last outcome and next run. Provide a clear disable action and actionable retry/error state. Do not expose financial details in broad or public notifications.
+- **Backup/restore:** distinguish a recorded backup event from verified snapshot integrity and successful restore. Avoid green “safe” states unless evidence supports the claim.
+- **Accounting exports:** show the selected period, record scope, included statuses, generated time and reconciliation totals. Clearly state destination compatibility only after an accountant-reviewed sample passes.
+- **Audit export:** preserve the latest-200 disclosure until a paginated/full-history backend contract is separately designed; do not make the generic audit CSV look like a complete accounting ledger.
+
+PR #60 should test the real-world task journeys at staff, manager and owner level, including slow/offline network, stale session, permission denial, duplicate tap/retry, empty and filtered data, failed export, and small-screen use. Review keyboard/focus and assistive-technology behavior alongside visual hierarchy. Automated browser checks and screenshots are evidence, not substitutes for live Google service tests or observation with real users.

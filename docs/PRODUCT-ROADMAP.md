@@ -133,4 +133,12 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **PR #57 merged:** manager register mobile review improved at-a-glance payment/receipt identity, grouped actions and narrow-screen register layout without changing backend or accounting semantics.
 
-**Next batch (PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
+**Historical batch (completed by PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
+
+## Current phase status — PR #58 merged, PR #59 active
+
+**PR #58 merged** in commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`. Owner audit discoverability now includes a dedicated Audit log route, filters over the returned latest 200 events, and filtered CSV export. It is not a full-history export and has not been validated against an accountant's import workflow.
+
+**PR #59 — reporting and workflow automation contract:** define the destination-specific export decision gate and safe automation requirements before adding financial fields, scheduled actions, or new roles. See `docs/REPORTING-AND-AUTOMATION-DESIGN.md`. Candidate automation includes pending-sync recovery guidance, reusable voucher presets, owner summaries, and backup/restore assurance; each requires its own preconditions, authorization, idempotency, failure/retry and privacy design. Daily cash close remains blocked pending owner approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`.
+
+**PR #60 — planned retrospective/review phase:** inspect actual merged code and tests from the product-owner, principal-engineering, CI/CD, security, QA and UI/UX perspectives. Walk through real-world staff, manager and owner scenarios; review backend/API and frontend interaction paths; identify gaps in recovery, permissions, test coverage and safe workflow automation; rank a small evidence-based backlog. Keep this as a review and prioritized recommendations, not a catch-all code change. Implement the top approved item in a separate PR after review.
