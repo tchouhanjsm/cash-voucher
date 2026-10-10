@@ -319,7 +319,7 @@ export function createBulk({ api, refresh, go }) {
         }
 
         $('#bprev').innerHTML =
-          `<div class="card ok-panel"><h2>✔ Imported ${done} payments</h2>${skipped ? `<p class="muted">${skipped} already existed and were skipped.</p>` : ''}<div class="actions"><button class="btn primary" data-act="goreg">Open register</button><button class="btn" data-act="bulkagain">Import more</button></div></div>`;
+          `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Imported ${done} ${type === 'RECEIPT' ? 'cash receipts' : 'payments'}</h2>${skipped ? `<p class="muted">${skipped} already existed and were skipped.</p>` : ''}<div class="actions"><button class="btn primary" data-act="goreg">Open register</button><button class="btn" data-act="bulkagain">Import more</button></div></div>`;
       } catch (error) {
         fail(error);
         $('#bprog').textContent =

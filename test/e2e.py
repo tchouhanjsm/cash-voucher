@@ -751,7 +751,33 @@ with sync_playwright() as p:
 
     page.click('[data-act=import]')
     page.wait_for_selector('.ok-panel')
-    check('Imported 2' in page.inner_text('#bprev'), 'imported 2')
+    check('Imported 2 payments' in page.inner_text('#bprev'), 'payment import completion names payments')
+    check(
+        page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
+        and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite',
+        'bulk import completion is announced as a polite status update',
+    )
+
+    # Import one receipt to ensure completion wording reflects the selected operation type.
+    page.click('[data-v=bulk]')
+    page.wait_for_selector('#bt')
+    page.fill(
+        '#bt',
+        'Date\tVendor\tAmount\tCategory\tNotes\n'
+        f'{date_text}\tBulk Receipt Test\t25\tOther\treceipt completion wording',
+    )
+    page.select_option('#bt2', 'RECEIPT')
+    page.click('[data-act=parse]')
+    page.wait_for_selector('#bprev table')
+    check('1 ready' in page.inner_text('#bprev').replace('\n', ' '), 'receipt import row is ready')
+    page.click('[data-act=import]')
+    page.wait_for_function("document.querySelector('#bprev .ok-panel')?.innerText.includes('Imported 1 cash receipts')")
+    check(
+        'Imported 1 cash receipts' in page.inner_text('#bprev')
+        and page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
+        and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite',
+        'receipt import completion is accurate and announced',
+    )
 
     page.click('[data-v=dash]')
     page.wait_for_selector('svg.chart')
