@@ -68,4 +68,3 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
 5. Finish PR #76's documentation-governance change, obtain exact-head CI + Browser E2E + Full Flight Test evidence, then request owner review. Do not merge on the owner's behalf.
 6. After PR #76 is merged, update this handoff in the next implementation PR with the verified new `main` SHA and continue the P1 rendering-security audit by tracing active frontend sinks and selecting the next confirmed risk.
-
