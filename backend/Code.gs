@@ -853,6 +853,17 @@ function nextNumber_(configured, existing, isReceipt, fallback) {
   return Math.max(current, max + 1);
 }
 
+function sameClientVoucherPayload_(voucher, entry) {
+  return (
+    isoDate_(voucher.Date) === entry.date &&
+    String(voucher.Vendor || '') === entry.vendor &&
+    Number(voucher.Amount) === Number(entry.amount) &&
+    String(voucher.Category || '') === entry.category &&
+    String(voucher.Notes || '') === entry.notes &&
+    (voucher.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT') === entry.type
+  );
+}
+
 function createVouchers_(user, req) {
   need_(user, 'create');
   const entries = req.entries;
@@ -905,6 +916,12 @@ function createVouchers_(user, req) {
       if (c.clientId && byClient[c.clientId]) {
         const duplicate = byClient[c.clientId];
         if (!canSee_(user, duplicate)) throw err_('This client ID is already in use.', 'CONFLICT');
+        if (!sameClientVoucherPayload_(duplicate, c)) {
+          throw err_(
+            'This client ID is already associated with different voucher details. Review the pending item before retrying.',
+            'CONFLICT',
+          );
+        }
         skipped++;
         created.push(vOut_(duplicate));
         return;
