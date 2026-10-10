@@ -174,6 +174,8 @@ registerActions({
 
   audcsv: () => administration.exportAuditCsv(),
 
+  dqscan: () => administration.dataQualityScan(),
+
   install: () => administration.install(),
 
   signout: () => administration.signOut(),
