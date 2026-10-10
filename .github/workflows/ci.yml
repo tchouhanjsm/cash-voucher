@@ -34,12 +34,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: Diagnose handoff Markdown formatting (temporary PR #76 aid)
-        if: github.event.pull_request.number == 76
-        run: |
-          npx prettier docs/HANDOFF.md > /tmp/HANDOFF.prettier.md
-          diff -u docs/HANDOFF.md /tmp/HANDOFF.prettier.md || true
-
       - name: Run quality gate
         run: npm run check
 
