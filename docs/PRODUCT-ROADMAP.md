@@ -153,3 +153,9 @@ Do not commit local `.clasp.json` or `.clasprc.json`. Do not run `clasp push` un
 **PR #63 release outcome:** reviewed Apps Script files were uploaded locally and the existing configured Web App deployment was updated to version 4. Local unit/static checks passed; Browser E2E did not run because Playwright was unavailable. Live permissions and backup/restore are not yet verified.
 
 **PR #64 — owner-only voucher data-quality scan:** add a real backend action and Settings UI that lists source voucher exceptions (missing values, invalid amount/date/type/status, duplicate voucher numbers and ClientIDs). This is not tax validation, physical-cash classification, a ledger, or an accountant certification. The PR must include automated backend regressions and exact-head CI/browser evidence; no deployment as part of the PR.
+
+## Current implementation phase — PR #64
+
+**PR #63 release outcome:** reviewed Apps Script files were uploaded locally and the existing configured Web App deployment was updated to version 4. Local unit/static checks passed; Browser E2E did not run because Playwright was unavailable. Live permissions and backup/restore are not yet verified.
+
+**PR #64 — owner-only voucher data-quality scan:** add a real backend action and Settings UI that lists source voucher exceptions (missing values, invalid amount/date/type/status, duplicate voucher numbers and ClientIDs). This is not tax validation, physical-cash classification, a ledger, or an accountant certification. The PR must include automated backend regressions and exact-head CI/browser evidence; no deployment as part of the PR.
