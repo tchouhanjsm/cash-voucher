@@ -1,7 +1,7 @@
 # Frontend Rendering Security Audit
 
 **Status:** incremental; not a full security certification  
-**Baseline:** merged source at `13a1fd84a013d85952d04c512313e8fcf9e36475` (PR #72 merge)  
+**Baseline:** merged source at `71033675cc9f52ad391f8b2d06a362551a224be6` (PR #73 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -113,3 +113,15 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Escape both formatted labels with `esc()` at the rendering sink.
 - Browser E2E installs a hostile value getter on the report's date input, submits the malformed range, and asserts the payload appears only as literal text with no injected SVG node or handler execution. This validates output-context escaping under malformed state, not a claim that ordinary date inputs permit markup.
 - Remaining active template renderers still need ongoing source-level review; this change does not provide full XSS certification.
+
+## PR #74 — Escape voucher number in save confirmation
+
+- The successful payment/receipt save panel interpolated `vno(c)` directly into
+  `#nres.innerHTML`. The API response is a trust boundary even though normal
+  voucher numbers are server-generated.
+- Escape the formatted voucher number at the HTML text sink.
+- Browser E2E tampers with the `createVouchers` response and asserts the number
+  appears as literal text, no SVG node is created, and the payload handler does
+  not execute.
+- PR #70 covered register and print sinks; this is a separate success-panel sink.
+  Other active template renderers remain in the review scope.

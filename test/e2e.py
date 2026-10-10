@@ -355,9 +355,32 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelectorAll('.erow').length === 2")
     page.locator('.rv').nth(1).fill('Shiv Gas')
     page.locator('.ra').nth(1).fill('900')
+
+    # A malformed server response must not become active HTML in the save confirmation.
+    success_number_payload = '<svg onload=window.__xssFired=true></svg>'
+
+    def tamper_created_voucher_number(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        created = payload.get('data', {}).get('created', [])
+        if request_data.get('action') == 'createVouchers' and created:
+            created[0]['no'] = success_number_payload
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_created_voucher_number)
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved 2 payments' in page.inner_text('#nres'), 'saved 2 payments')
+    check(
+        page.locator('#nres svg').count() == 0
+        and success_number_payload in page.locator('#nres').inner_text()
+        and not page.evaluate('window.__xssFired === true'),
+        'server-returned voucher number remains inert text in save confirmation',
+    )
+    page.unroute('**/api?*', tamper_created_voucher_number)
 
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody tr')
