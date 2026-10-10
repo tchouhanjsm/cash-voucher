@@ -220,6 +220,8 @@ with sync_playwright() as p:
         and page.locator('#aud-q').input_value() == '',
         'clear audit filters restores the loaded event list',
     )
+    page.click('[data-v=set]')
+    page.wait_for_selector('#sn')
     page.fill('#sn', xss_payload)
     page.fill('#sa', xss_company)
     page.click('#sf .primary')
