@@ -135,10 +135,12 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **Historical batch (completed by PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
 
-## Current phase status — PR #58 merged, PR #59 active
+## Current phase status — PR #59 merged, PR #60 retrospective
 
-**PR #58 merged** in commit `544e0170fdb9333d62f7efa40dc512c84a28c1a6`. Owner audit discoverability now includes a dedicated Audit log route, filters over the returned latest 200 events, and filtered CSV export. It is not a full-history export and has not been validated against an accountant's import workflow.
+**PR #59 merged** in commit `d02c6e3f95ec838a285bb86ef2bf0bd1cdee994c`. It defines accounting-export decision gates and safe automation requirements; it adds no runtime behavior.
 
-**PR #59 — reporting and workflow automation contract:** define the destination-specific export decision gate and safe automation requirements before adding financial fields, scheduled actions, or new roles. See `docs/REPORTING-AND-AUTOMATION-DESIGN.md`. Candidate automation includes pending-sync recovery guidance, reusable voucher presets, owner summaries, and backup/restore assurance; each requires its own preconditions, authorization, idempotency, failure/retry and privacy design. Daily cash close remains blocked pending owner approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`.
+**PR #60 — cross-functional retrospective:** see `docs/PRODUCT-AND-ENGINEERING-RETROSPECTIVE.md`. The review confirms that the highest residual risk is the gap between mocked/source-level confidence and live operational confidence. First priority is a witnessed backup/restore drill (operational gate) and focused offline-sync/idempotency assurance (recommended implementation PR). The owner may choose the sequence.
 
-**PR #60 — planned retrospective/review phase:** inspect actual merged code and tests from the product-owner, principal-engineering, CI/CD, security, QA and UI/UX perspectives. Walk through real-world staff, manager and owner scenarios; review backend/API and frontend interaction paths; identify gaps in recovery, permissions, test coverage and safe workflow automation; rank a small evidence-based backlog. Keep this as a review and prioritized recommendations, not a catch-all code change. Implement the top approved item in a separate PR after review.
+**Next implementation recommendation:** a bounded offline sync/idempotency assurance PR with fault-injection tests for commit-then-lost-response, repeated client ID, changed-content collision, two-tab retry and stale lease recovery. If the owner prioritizes operational confidence first, complete the witnessed restore drill before feature work.
+
+Accounting destination-specific export remains blocked on an owner-selected target and accountant-reviewed template. Daily cash close remains blocked pending owner approval of `docs/DAILY-CASH-CLOSE-DESIGN.md`. No scheduled summaries, recurring vouchers, external delivery or cash-close automation are approved.
