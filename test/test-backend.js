@@ -573,7 +573,7 @@ g.sheets.Vouchers.rows.pop();
 
 // Recorded movement report: permission, validation and totals.
 ok(
-  as(S, 'recordedMovementReport', { from: today, to: today }).code === 'FORBIDDEN',
+  as(A, 'recordedMovementReport', { from: today, to: today }).code === 'FORBIDDEN',
   'staff denied all-voucher movement report',
 );
 const movement = as(T, 'recordedMovementReport', {
