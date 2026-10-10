@@ -752,6 +752,11 @@ with sync_playwright() as p:
     page.click('[data-act=import]')
     page.wait_for_selector('.ok-panel')
     check('Imported 2' in page.inner_text('#bprev'), 'imported 2')
+    check(
+        page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
+        and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite',
+        'bulk import completion is announced as a polite status update',
+    )
 
     page.click('[data-v=dash]')
     page.wait_for_selector('svg.chart')
