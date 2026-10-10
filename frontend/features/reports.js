@@ -4,13 +4,25 @@ import { csvCell, dmy, download, esc, money, today } from '../core/utils.js';
 import { head, toast } from '../core/ui.js';
 
 export function createReports({ api }) {
-  const R = { from: today().slice(0, 7) + '-01', to: today(), type: 'ALL', status: 'ACTIVE', rows: [], summary: null, error: '', loading: false };
+  const R = {
+    from: today().slice(0, 7) + '-01',
+    to: today(),
+    type: 'ALL',
+    status: 'ACTIVE',
+    rows: [],
+    summary: null,
+    error: '',
+    loading: false,
+  };
 
   function render() {
     if (!can('viewAll')) {
-      $('#view').innerHTML = head('Recorded Movement Report') + '<div class="card"><p>Reports are available to managers and owners only.</p></div>';
+      $('#view').innerHTML =
+        head('Recorded Movement Report') +
+        '<div class="card"><p>Reports are available to managers and owners only.</p></div>';
       return;
     }
+
     const s = R.summary;
     $('#view').innerHTML = head('Recorded Movement Report') + `
       <div class="card">
@@ -18,8 +30,16 @@ export function createReports({ api }) {
         <form id="movementFilters" class="filters" autocomplete="off">
           <label>From<input id="movementFrom" type="date" value="${esc(R.from)}" required></label>
           <label>To<input id="movementTo" type="date" value="${esc(R.to)}" required></label>
-          <label>Type<select id="movementType"><option value="ALL"${R.type === 'ALL' ? ' selected' : ''}>Payments and receipts</option><option value="PAYMENT"${R.type === 'PAYMENT' ? ' selected' : ''}>Payments only</option><option value="RECEIPT"${R.type === 'RECEIPT' ? ' selected' : ''}>Receipts only</option></select></label>
-          <label>Status<select id="movementStatus"><option value="ACTIVE"${R.status === 'ACTIVE' ? ' selected' : ''}>Active only</option><option value="CANCELLED"${R.status === 'CANCELLED' ? ' selected' : ''}>Cancelled only</option><option value="ALL"${R.status === 'ALL' ? ' selected' : ''}>All statuses</option></select></label>
+          <label>Type<select id="movementType">
+            <option value="ALL"${R.type === 'ALL' ? ' selected' : ''}>Payments and receipts</option>
+            <option value="PAYMENT"${R.type === 'PAYMENT' ? ' selected' : ''}>Payments only</option>
+            <option value="RECEIPT"${R.type === 'RECEIPT' ? ' selected' : ''}>Receipts only</option>
+          </select></label>
+          <label>Status<select id="movementStatus">
+            <option value="ACTIVE"${R.status === 'ACTIVE' ? ' selected' : ''}>Active only</option>
+            <option value="CANCELLED"${R.status === 'CANCELLED' ? ' selected' : ''}>Cancelled only</option>
+            <option value="ALL"${R.status === 'ALL' ? ' selected' : ''}>All statuses</option>
+          </select></label>
           <button class="btn primary" type="submit" ${R.loading ? 'disabled' : ''}>${R.loading ? 'Loading…' : 'Run report'}</button>
           <button class="btn" type="button" data-act="reportCsv" ${R.summary ? '' : 'disabled'}>Export CSV</button>
         </form>
@@ -39,33 +59,68 @@ export function createReports({ api }) {
         </div>
       ` : (!R.loading && !R.error ? '<div class="card"><p class="muted">Run the report to see recorded voucher movements.</p></div>' : '')}
     `;
+
     $('#movementFilters')?.addEventListener('submit', (event) => {
       event.preventDefault();
-      R.from = $('#movementFrom').value; R.to = $('#movementTo').value;
-      R.type = $('#movementType').value; R.status = $('#movementStatus').value;
+      R.from = $('#movementFrom').value;
+      R.to = $('#movementTo').value;
+      R.type = $('#movementType').value;
+      R.status = $('#movementStatus').value;
       load();
     });
   }
 
   async function load() {
     if (!can('viewAll')) return render();
-    if (!R.from || !R.to || R.from > R.to) { R.error = 'Choose a valid date range (From must not be after To).'; render(); return; }
-    R.loading = true; R.error = ''; render();
+
+    if (!R.from || !R.to || R.from > R.to) {
+      R.error = 'Choose a valid date range (From must not be after To).';
+      render();
+      return;
+    }
+
+    R.loading = true;
+    R.error = '';
+    render();
+
     try {
-      R.summary = await api('recordedMovementReport', { from: R.from, to: R.to, type: R.type, status: R.status });
+      R.summary = await api('recordedMovementReport', {
+        from: R.from,
+        to: R.to,
+        type: R.type,
+        status: R.status,
+      });
       R.rows = R.summary.items || [];
     } catch (error) {
       R.error = error.message || 'The report could not be loaded.';
     } finally {
-      R.loading = false; render();
+      R.loading = false;
+      render();
     }
   }
 
   function exportCsv() {
     if (!R.summary) return;
-    const fields = ['date', 'voucherNo', 'type', 'vendor', 'category', 'notes', 'amount', 'status', 'cancelReason', 'createdBy', 'id'];
+
+    const fields = [
+      'date',
+      'voucherNo',
+      'type',
+      'vendor',
+      'category',
+      'notes',
+      'amount',
+      'status',
+      'cancelReason',
+      'createdBy',
+      'id',
+    ];
     const rows = [fields, ...R.rows.map((item) => fields.map((field) => item[field] ?? ''))];
-    download(`recorded-movement-${R.from}-to-${R.to}.csv`, rows.map((row) => row.map(csvCell).join(',')).join('\r\n'), 'text/csv;charset=utf-8');
+    download(
+      `recorded-movement-${R.from}-to-${R.to}.csv`,
+      rows.map((row) => row.map(csvCell).join(',')).join('\\r\\n'),
+      'text/csv;charset=utf-8',
+    );
     toast('Report CSV downloaded.', 'ok');
   }
 
