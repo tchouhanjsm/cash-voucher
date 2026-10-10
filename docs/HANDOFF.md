@@ -2,7 +2,7 @@
 
 **Updated:** 2026-10-10  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified main SHA (PR #66 merge):** `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`  
+**Verified main SHA (PR #68 merge):** `9751df49db6ba524376a2e39f79d744e4b36ec11`  
 **Source of truth:** live GitHub refs and exact-head workflow runs. PR descriptions hold the authoritative current CI/E2E links.
 
 ## Product and architecture
@@ -82,3 +82,13 @@ Server-side authorization is authoritative. Browser-local offline entries are no
 - **Not yet verified:** the owner has not yet confirmed the intended Apps Script project, active deployment settings, Sheet binding and Script Properties in the Apps Script editor. Matching the URL's deployment ID does not prove current `main` is deployed.
 - **Next:** owner confirms the project/resources and authorizes any upload; then controlled live role/receipt checks, real scheduled-backup verification, and a witnessed restore into a separate recovery Sheet/folder.
 - **Hard boundary:** no `clasp push`, `clasp deploy`, `setup()`, production mutation or merge performed by the assistant. Preserve local untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
+
+## Current development phase — PR #69: DOM-only modal rendering
+
+- **Base SHA:** `9751df49db6ba524376a2e39f79d744e4b36ec11` (PR #68 merge).
+- **Branch:** `feature/dom-safe-dialog-content`.
+- **Goal:** remove raw HTML strings from the shared modal body's contract. `dialog()` now requires a DOM Node/DocumentFragment and rejects string bodies. Current PIN reset, forced PIN change, voucher edit, cancellation, and receipt dialogs are being migrated to DOM-built controls and text/value properties.
+- **Security boundary:** targeted shared-modal hardening only. Other active view renderers still use HTML templates and remain in the complete sink-by-sink audit scope.
+- **Validation plan:** run `npm run check`, Browser E2E, `git diff --check`, two-pass review and exact-head CI/E2E. CI status is not inferred from prior SHAs.
+- **Operational P0 remains open:** confirm the intended Apps Script project, active deployment and Sheet/Script Properties; verify live role/receipt permissions; observe a real scheduled backup; and witness restore into a separate recovery Sheet/folder. No `clasp push`, deployment, `setup()`, or production mutation is part of PR #69.
+- **Local preservation:** never stage or commit the owner's untracked `docs/AI-ENGINEERING-PROTOCOL.md`.

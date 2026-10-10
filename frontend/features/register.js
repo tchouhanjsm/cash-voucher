@@ -1,6 +1,6 @@
 import { $ } from '../core/dom.js';
 import { can, categories, isIn, nm, S, vno, bySeq } from '../core/state.js';
-import { catOpts, vendorList } from '../core/form-options.js';
+import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import { compress, csvCell, dmy, download, esc, money, parseAmt, today } from '../core/utils.js';
 import { closeModal, dialog, fail, head, refreshBtn, toast } from '../core/ui.js';
 
@@ -17,6 +17,12 @@ export function createRegister({ api, go }) {
     limit: 100,
   };
   const receiptCache = {};
+
+  function labeledControl(text, control) {
+    const label = document.createElement('label');
+    label.append(document.createTextNode(text), control);
+    return label;
+  }
 
   function filtered() {
     const query = R.q.toLowerCase();
@@ -252,36 +258,77 @@ export function createRegister({ api, go }) {
   function edit(id) {
     const voucher = S.vouchers.find((item) => item.id === id);
 
-    dialog(
-      `Edit #${vno(voucher)}`,
-      `<label>Date<input type="date" id="ed" value="${esc(voucher.date)}" required></label><label>Paid to<input id="ev" list="vlist" value="${esc(voucher.vendor)}" required></label>${vendorList()}
-    <label>Amount (₹)<input id="ea" inputmode="decimal" value="${voucher.amount}" required></label><label>Category<select id="ec">${catOpts(voucher.category, voucher.type)}</select></label><label>Note<input id="en" value="${esc(voucher.notes)}"></label>`,
-      async () => {
-        const updated = await api('updateVoucher', {
-          id,
-          fields: {
-            date: $('#ed').value,
-            vendor: $('#ev').value,
-            amount: parseAmt($('#ea').value),
-            category: $('#ec').value,
-            notes: $('#en').value,
-          },
-        });
+    const body = document.createDocumentFragment();
 
-        Object.assign(voucher, updated);
-        closeModal();
-        toast('Updated.', 'ok');
-        go(S.view);
-      },
-    );
+    const date = document.createElement('input');
+    date.type = 'date';
+    date.id = 'ed';
+    date.value = voucher.date;
+    date.required = true;
+    body.appendChild(labeledControl('Date', date));
+
+    const vendor = document.createElement('input');
+    vendor.id = 'ev';
+    vendor.setAttribute('list', 'vlist');
+    vendor.value = voucher.vendor;
+    vendor.required = true;
+    body.append(labeledControl('Paid to', vendor), vendorListNode());
+
+    const amount = document.createElement('input');
+    amount.id = 'ea';
+    amount.inputMode = 'decimal';
+    amount.value = String(voucher.amount);
+    amount.required = true;
+    body.appendChild(labeledControl('Amount (₹)', amount));
+
+    const category = document.createElement('select');
+    category.id = 'ec';
+    category.appendChild(catOptionsNode(voucher.category, voucher.type));
+    body.appendChild(labeledControl('Category', category));
+
+    const note = document.createElement('input');
+    note.id = 'en';
+    note.value = voucher.notes;
+    body.appendChild(labeledControl('Note', note));
+
+    dialog(`Edit #${vno(voucher)}`, body, async () => {
+      const updated = await api('updateVoucher', {
+        id,
+        fields: {
+          date: $('#ed').value,
+          vendor: $('#ev').value,
+          amount: parseAmt($('#ea').value),
+          category: $('#ec').value,
+          notes: $('#en').value,
+        },
+      });
+
+      Object.assign(voucher, updated);
+      closeModal();
+      toast('Updated.', 'ok');
+      go(S.view);
+    });
   }
 
   function cancel(id) {
     const voucher = S.vouchers.find((item) => item.id === id);
 
+    const body = document.createDocumentFragment();
+    const summary = document.createElement('p');
+    const amountSummary = document.createElement('b');
+    amountSummary.textContent = money(voucher.amount);
+    summary.append(document.createTextNode(`${voucher.vendor} · `), amountSummary);
+
+    const reason = document.createElement('input');
+    reason.id = 'cr';
+    reason.required = true;
+    reason.minLength = 3;
+    reason.maxLength = 200;
+    body.append(summary, labeledControl('Reason (required)', reason));
+
     dialog(
       `Cancel #${vno(voucher)}?`,
-      `<p>${esc(voucher.vendor)} · <b>${money(voucher.amount)}</b></p><label>Reason (required)<input id="cr" required minlength="3" maxlength="200"></label>`,
+      body,
       async () => {
         Object.assign(voucher, await api('cancelVoucher', { id, reason: $('#cr').value }));
         closeModal();
@@ -298,10 +345,28 @@ export function createRegister({ api, go }) {
       voucher.status === 'ACTIVE' &&
       voucher.receipts.length < 3 &&
       (can('receiptAny') || voucher.createdBy === S.me.email);
-    const form = dialog(
-      `Receipts · #${vno(voucher)}`,
-      `<div id="rimgs" aria-live="polite"></div>${canAdd ? '<label class="btn" style="margin:0">📷 Add receipt<input type="file" id="radd" accept="image/*" hidden></label>' : ''}`,
-    );
+    const body = document.createDocumentFragment();
+    const images = document.createElement('div');
+    images.id = 'rimgs';
+    images.setAttribute('aria-live', 'polite');
+    body.appendChild(images);
+
+    if (canAdd) {
+      const addLabel = document.createElement('label');
+      addLabel.className = 'btn';
+      addLabel.style.margin = '0';
+      addLabel.appendChild(document.createTextNode('📷 Add receipt'));
+
+      const addInput = document.createElement('input');
+      addInput.type = 'file';
+      addInput.id = 'radd';
+      addInput.accept = 'image/*';
+      addInput.hidden = true;
+      addLabel.appendChild(addInput);
+      body.appendChild(addLabel);
+    }
+
+    const form = dialog(`Receipts · #${vno(voucher)}`, body);
 
     const loadReceipt = async (fileId, item) => {
       item.replaceChildren();

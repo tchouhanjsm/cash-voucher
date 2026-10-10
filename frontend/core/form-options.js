@@ -35,3 +35,30 @@ export const vendorList = () =>
   `<datalist id="vlist">${vendorNames()
     .map((name) => `<option value="${esc(name)}">`)
     .join('')}</datalist>`;
+
+export const catOptionsNode = (selected, type) => {
+  const options = document.createDocumentFragment();
+
+  (type === 'RECEIPT' ? rcats() : categories()).forEach((category) => {
+    const option = document.createElement('option');
+    option.value = category;
+    option.textContent = category;
+    option.selected = category === selected;
+    options.appendChild(option);
+  });
+
+  return options;
+};
+
+export const vendorListNode = () => {
+  const list = document.createElement('datalist');
+  list.id = 'vlist';
+
+  vendorNames().forEach((name) => {
+    const option = document.createElement('option');
+    option.value = name;
+    list.appendChild(option);
+  });
+
+  return list;
+};

@@ -67,11 +67,40 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
   }
 
   function forcePinChange() {
+    const body = document.createDocumentFragment();
+    const help = document.createElement('p');
+    help.className = 'muted';
+    help.textContent = 'Your PIN was set by an administrator. Please choose your own 6-digit PIN.';
+
+    const currentPin = document.createElement('input');
+    currentPin.id = 'op';
+    currentPin.setAttribute('aria-label', 'Current temporary PIN');
+    currentPin.type = 'password';
+    currentPin.inputMode = 'numeric';
+    currentPin.pattern = '[0-9]{6}';
+    currentPin.title = 'Enter exactly 6 digits';
+    currentPin.maxLength = 6;
+    currentPin.autocomplete = 'current-password';
+    currentPin.placeholder = 'Current (temporary) PIN';
+    currentPin.required = true;
+
+    const newPin = document.createElement('input');
+    newPin.id = 'np';
+    newPin.setAttribute('aria-label', 'New PIN');
+    newPin.type = 'password';
+    newPin.inputMode = 'numeric';
+    newPin.pattern = '[0-9]{6}';
+    newPin.title = 'Enter exactly 6 digits';
+    newPin.maxLength = 6;
+    newPin.autocomplete = 'new-password';
+    newPin.placeholder = 'New PIN';
+    newPin.required = true;
+    newPin.style.marginTop = '8px';
+
+    body.append(help, currentPin, newPin);
     dialog(
       'Choose a new PIN',
-      `<p class="muted">Your PIN was set by an administrator. Please choose your own 6-digit PIN.</p>
-    <input id="op" aria-label="Current temporary PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="current-password" placeholder="Current (temporary) PIN" required>
-    <input id="np" aria-label="New PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="New PIN" required style="margin-top:8px">`,
+      body,
       async () => {
         const data = await api('changePin', {
           oldPin: $('#op').value,
