@@ -195,10 +195,14 @@ The next implementation batch narrows the shared modal's attack surface. `fronte
 
 PR #70 is merged at `1e656dee0266dba38d35500150889ce6020d8045`. Its exact PR head passed CI and Browser E2E (130 checks, 0 failures), including hostile persisted voucher-number coverage in register and print views.
 
-## Current development phase — PR #71: executable full flight test
+## Completed phase — PR #71: executable full flight test
 
-Add `npm run test:flight` and a dedicated GitHub Actions workflow that runs dependency policy, all quality/backend tests, and the complete Browser E2E suite against one commit. The workflow runs for PRs and supports manual dispatch so the owner can repeat the full suite after merge without editing documentation or source.
+PR #71 merged at ea99e4e19be0f29e8c1afdc25828bf1b5ecce399. Its exact PR head passed the full flight workflow: dependency advisory policy, complete quality/backend gate (110 backend checks), and Browser E2E (130 checks, 0 failures). The merge commit and tested PR head share the same source tree. [Full flight run](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38043779296).
 
-**Exit gate:** exact-head full flight workflow passes; CI and handoff evidence are current; no test failures are waived. This validates the mock-backed application suite, not production Google services. The active browser suite already covers owner/manager/staff paths, voucher entry and cancellation, bulk import, CSV exports, audit/data-quality/backup inspection, offline recovery/idempotency, responsive layout, keyboard/accessibility and rendering-security regressions.
+## Current development phase — PR #72: Recorded Movement Report browser journey
+
+Extend the existing Browser E2E to exercise the report UI through the mock API: active source rows and scope disclosures, cancelled-only filtering, receipt-only active filtering, and CSV exports that preserve cancellation metadata and match the selected filters.
+
+**Exit gate:** full flight, CI and Browser E2E pass on the exact PR #72 head. The report is operational evidence for recorded voucher movement only; it is not a physical cash reconciliation, general ledger, profit/loss report or tax calculation. The suite remains mock-backed.
 
 **Operational P0 remains a separate production-readiness blocker:** live Apps Script target/authorization, real backup and isolated restore remain unverified. No deployment or production mutation is authorized.
