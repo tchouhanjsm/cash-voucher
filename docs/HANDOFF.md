@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**PR #77 — Escape settings numeric input attributes**  
+**PR #77 — [Escape settings numeric input attributes](https://github.com/tchouhanjsm/cash-voucher/pull/77)**  
 Branch: `security/escape-settings-number-attributes`  
 Base: `b1f2a3234577301e4e9536dd424695976f1d8fca`
 
