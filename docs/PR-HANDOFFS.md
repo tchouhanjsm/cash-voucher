@@ -53,7 +53,6 @@ Update `docs/HANDOFF.md` in every active work batch with the verified `main` SHA
 - **PR #62 — Offline sync and idempotency assurance:** merged on 10 October 2026 (merge commit `49f2a3db297f84093d46b247a54c93c9372f3684`). CI and Browser E2E passed on exact PR head `26aa8c00510e56aaa0f078de906a7e1c36848204` (126 checks, 0 failures). See `docs/pr-handoffs/PR-62.md`.
 - **PR #63 — Apps Script release readiness and controlled deployment:** merged. Owner reports backend upload and update of the configured existing deployment to version 4; live smoke tests and restore remain unverified. See `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md` and `docs/pr-handoffs/PR-63.md`.
 
-
 - **PR #64 — Owner-only voucher data-quality scan:** active on `feature/data-quality-exceptions`. Adds backend checks, Settings UI and mock regression tests; no schema migration, accounting inference or deployment.
 
 - **PR #63 — Apps Script release readiness:** merged. Owner reports backend upload and update of the configured existing deployment to version 4; live smoke tests and restore remain unverified.
