@@ -1,6 +1,6 @@
 # Release Readiness
 
-**Status: not verified as production-ready. Current `main` is `628f691fe9e4353cc6b701bd57c95c3e169aa495` (PR #67 merge). The configured URL matches the existing version-4 deployment ID, but the current backend is not confirmed deployed. Local quality checks and Browser E2E pass; live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
+**Status: not verified as production-ready. Current `main` is `1e656dee0266dba38d35500150889ce6020d8045` (PR #70 merge). Post-merge CI passed on this SHA; PR #70 Browser E2E passed 130 checks on its exact PR head. A full post-merge-main flight run is being added in PR #71. The configured URL matches the existing version-4 deployment ID, but current backend deployment, live behavior and recovery remain unverified.** The static app, mock backend checks and browser workflow have been developed, but real Google-account, recovery and hotel-operation gates remain open.
 
 ## Evidence-based baseline
 
