@@ -75,7 +75,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     $('#view').innerHTML =
       head('Users') +
-      .join('\r\n');
+      `<div class="card"><h2>Add user</h2><form id="uf" class="filters" autocomplete="off"><input id="un" aria-label="User name" autocomplete="name" placeholder="Name" required><input id="ue" aria-label="Email address" autocomplete="email" type="email" placeholder="Email" required><select id="ur" aria-label="New user role">${roles.map((role) => `<option>${role}</option>`).join('')}</select><input id="up" aria-label="Temporary six-digit PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit PIN" required><button class="btn primary">Add</button></form>
     <p class="muted"><b>Staff</b>: add payments + receipts, see own entries · <b>Manager</b>: also view all, edit, cancel, bulk upload, vendors · <b>Owner</b>: also users, settings, audit log.</p></div>
   <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>${users
     .map(
@@ -307,7 +307,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       ...rows.map((row) => [row.time, row.user, row.action, row.target, row.details]),
     ]
       .map((record) => record.map(csvCell).join(','))
-      .join('\\r\\n');
+      .join('\r\n');
     download(
       `cash-voucher-audit-${new Date().toISOString().slice(0, 10)}.csv`,
       csv,
