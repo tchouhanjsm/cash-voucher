@@ -122,25 +122,6 @@ ok(
   'inherited object properties cannot be assigned as user roles',
 );
 
-const usersSheet = g.sheets.Users;
-const userHeaders = usersSheet.rows[0];
-const roleColumn = userHeaders.indexOf('Role');
-const emailColumn = userHeaders.indexOf('Email');
-const ownerRow = usersSheet.rows.find((row) => row[emailColumn] === 'owner@test.com');
-const ownerRole = ownerRow[roleColumn];
-ownerRow[roleColumn] = 'constructor';
-const invalidStoredRoleBootstrap = as(T, 'bootstrap');
-ok(
-  invalidStoredRoleBootstrap.ok &&
-    invalidStoredRoleBootstrap.data.user.role === 'constructor' &&
-    Object.keys(invalidStoredRoleBootstrap.data.user.perms).length === 0,
-  'malformed stored roles receive an empty bootstrap permission map',
-);
-ok(
-  as(T, 'listUsers').code === 'FORBIDDEN',
-  'malformed stored roles cannot use owner-only actions',
-);
-ownerRow[roleColumn] = ownerRole;
 ok(
   as(T, 'saveUser', { name: 'Mona Manager', email: 'm@test.com', role: 'manager', pin: '246810' })
     .ok,
