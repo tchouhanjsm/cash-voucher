@@ -19,7 +19,9 @@ export function createPayments({ api, refresh }) {
   }
 
   function queueOwnerKey() {
-    const email = String(S.me?.email || '').trim().toLowerCase();
+    const email = String(S.me?.email || '')
+      .trim()
+      .toLowerCase();
     const endpoint = String(S.url || '').trim();
     if (!email || !endpoint) return '';
 
@@ -33,10 +35,7 @@ export function createPayments({ api, refresh }) {
 
   function isRecordRejection(error) {
     if (['VALIDATION', 'CONFLICT'].includes(String(error?.code || ''))) return true;
-    return (
-      error?.code === 'SERVER' &&
-      /^\[\d+\]\s/.test(String(error?.message || ''))
-    );
+    return error?.code === 'SERVER' && /^\[\d+\]\s/.test(String(error?.message || ''));
   }
 
   outboxChannel?.addEventListener('message', (event) => {
@@ -373,11 +372,7 @@ export function createPayments({ api, refresh }) {
       const failedReview = failedDetails
         ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
           failedDetails +
-          (failed.length > 5
-            ? '<li>+' +
-              (failed.length - 5) +
-              ' more; export the queue for full details.</li>'
-            : '') +
+          (failed.length > 5 ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>' : '') +
           '</ul></details>'
         : '';
       if (unbound.length) {
@@ -393,12 +388,12 @@ export function createPayments({ api, refresh }) {
 
       b.className = 'banner' + (errMsg || failed.length || unbound.length ? ' err' : '');
       b.innerHTML =
-        '<span>' + messages.map((message) => esc(message)).join('<br>') + '</span>' +
+        '<span>' +
+        messages.map((message) => esc(message)).join('<br>') +
+        '</span>' +
         failedReview +
         (pending.length ? '<button class="btn sm" data-act="flush">Retry now</button>' : '') +
-        (visible.length
-          ? '<button class="btn sm" data-act="export-pending">Export</button>'
-          : '') +
+        (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
         '<button class="btn sm" data-act="import-pending">Import</button>' +
         (owned.length
           ? '<button class="btn sm danger" data-act="discard">Discard my payments</button>'
@@ -517,7 +512,7 @@ export function createPayments({ api, refresh }) {
           'The offline queue contains ' +
             unbound.length +
             ' older payment(s) with no recorded owner. Export includes them. ' +
-              'Continue only if you are authorised to access these records.',
+            'Continue only if you are authorised to access these records.',
         )
       ) {
         return;
@@ -761,7 +756,7 @@ export function createPayments({ api, refresh }) {
         toast(
           unboundCount
             ? 'Older payments are not bound to an account and were preserved. ' +
-              'Export or explicitly restore them to confirm ownership.'
+                'Export or explicitly restore them to confirm ownership.'
             : 'There are no pending payments for this account to discard.',
           unboundCount ? 'err' : 'ok',
         );
