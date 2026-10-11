@@ -28,6 +28,24 @@ http
       return;
     }
 
+    if (req.method === 'POST' && req.url.split('?')[0] === '/test-backup-failure') {
+      const lastSuccess = '2026-10-11T14:00:00.000Z';
+      g.props.BACKUP_LAST_ATTEMPT = '2026-10-11T14:10:00.000Z';
+      g.props.BACKUP_LAST_SUCCESS = lastSuccess;
+      g.props.BACKUP_LAST_ERROR = 'Drive permission denied';
+      g.props.BACKUP_LAST_ALERT_ERROR = 'Mail service unavailable';
+      g.props.BACKUP_LAST_SUCCESS_METRICS = JSON.stringify({
+        completedAt: lastSuccess,
+        durationMs: 1250,
+        receiptCount: 12,
+        receiptBytes: 7340032,
+        receiptBytesKnown: true,
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
+
     if (req.method === 'POST' && req.url.split('?')[0] === '/api') {
       let b = '';
       req.on('data', (d) => (b += d));
