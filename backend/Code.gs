@@ -1325,7 +1325,9 @@ function bootstrap_(user) {
       name: user.name,
       email: user.email,
       role: user.role,
-      perms: PERMS[user.role],
+      perms: Object.prototype.hasOwnProperty.call(PERMS, user.role)
+        ? PERMS[user.role]
+        : {},
     },
     settings: {
       propertyName: st.propertyName || '',
