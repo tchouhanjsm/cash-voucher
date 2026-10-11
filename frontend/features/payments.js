@@ -326,10 +326,9 @@ export function createPayments({ api, refresh }) {
     const b = $('#banner');
 
     try {
+      const allRecords = await offlineQueue.list();
       const ownerKey = queueOwnerKey();
       if (!ownerKey) return b.classList.add('hidden');
-
-      const allRecords = await offlineQueue.list();
       const owned = allRecords.filter((record) => String(record.ownerKey || '') === ownerKey);
       const unbound = allRecords.filter((record) => !String(record.ownerKey || ''));
       const visible = owned.concat(unbound);
@@ -350,34 +349,37 @@ export function createPayments({ api, refresh }) {
       }
       if (failed.length) {
         messages.push(
-          '⚠️ ' + failed.length + ' payment' + (failed.length === 1 ? '' : 's') +
+          '⚠️ ' +
+            failed.length +
+            ' payment' +
+            (failed.length === 1 ? '' : 's') +
             ' need review; automatic retry stopped',
         );
       }
 
       const failedDetails = failed
         .slice(0, 5)
-        .map((record) =>
-          '<li><b>' +
-          esc(record.entry?.vendor || 'Unnamed payment') +
-          '</b> — ₹' +
-          esc(String(record.entry?.amount ?? 'unknown')) +
-          ': ' +
-          esc(record.failure || 'Rejected by server') +
-          '</li>',
+        .map(
+          (record) =>
+            '<li><b>' +
+            esc(record.entry?.vendor || 'Unnamed payment') +
+            '</b> — ₹' +
+            esc(String(record.entry?.amount ?? 'unknown')) +
+            ': ' +
+            esc(record.failure || 'Rejected by server') +
+            '</li>',
         )
         .join('');
-      const failedReview =
-        failedDetails
-          ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
-            failedDetails +
-            (failed.length > 5
-              ? '<li>+' +
-                (failed.length - 5) +
-                ' more; export the queue for full details.</li>'
-              : '') +
-            '</ul></details>'
-          : '';
+      const failedReview = failedDetails
+        ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
+          failedDetails +
+          (failed.length > 5
+            ? '<li>+' +
+              (failed.length - 5) +
+              ' more; export the queue for full details.</li>'
+            : '') +
+          '</ul></details>'
+        : '';
       if (unbound.length) {
         messages.push(
           '⚠️ ' + unbound.length + ' older payment' + (unbound.length === 1 ? '' : 's') +
