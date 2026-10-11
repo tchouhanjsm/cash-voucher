@@ -40,10 +40,3 @@ jobs:
       - name: Validate PR handoff evidence
         if: github.event_name == 'pull_request'
         run: npm run check:pr-quality
-      - name: Diagnose authentication formatting (temporary)
-        if: failure()
-        run: |
-          npx prettier backend/Code.gs > /tmp/backend.formatted.gs
-          diff -u backend/Code.gs /tmp/backend.formatted.gs || true
-          npx prettier test/test-backend.js > /tmp/backend-tests.formatted.js
-          diff -u test/test-backend.js /tmp/backend-tests.formatted.js || true
