@@ -153,7 +153,8 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
 
     try {
       await load();
-      go(S.view);
+      // Background outbox sync may refresh data while a staff member is drafting an entry.
+      if (S.view !== 'new') go(S.view);
       if (!quiet) toast('Updated.', 'ok');
     } catch (error) {
       if (!quiet) fail(error);
