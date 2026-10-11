@@ -1307,9 +1307,13 @@ with sync_playwright() as p:
         ),
         'dashboard SVG trend bars keep finite non-negative vertical geometry',
     )
+    hostile_vendor_visible = any(
+        hostile_vendor in label
+        for label in page.locator('.hb-l').all_inner_texts()
+    )
     check(
         page.locator('.hb-l').filter(has_text='numeric-string').count() == 1
-        and page.locator('.hb-l').filter(has_text=hostile_vendor).count() == 1
+        and hostile_vendor_visible
         and page.locator('.hb-l svg, .hb-t svg, .hb-v svg, svg.chart svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
         'hostile vendor text remains inert while malformed numeric values are rendered',
