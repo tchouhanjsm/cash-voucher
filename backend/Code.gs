@@ -316,6 +316,21 @@ function backupDataWithServices_(services) {
       services.logger(
         'Could not record backup failure metadata: ' + String(e && e.message ? e.message : e),
       );
+      // A lock timeout can occur before the normal status properties are acquired.
+      // Notify using separate incident state without overwriting another run's backup status.
+      try {
+        const alertProperties = services.getProperties();
+        notifyBackupFailure_(alertProperties, services, e);
+      } catch (alertSetupError) {
+        services.logger(
+          'Could not prepare backup failure alert: ' +
+            String(
+              alertSetupError && alertSetupError.message
+                ? alertSetupError.message
+                : alertSetupError,
+            ),
+        );
+      }
     }
     throw e;
   } finally {
