@@ -341,7 +341,11 @@ export function createPayments({ api, refresh }) {
       const messages = [];
       if (pending.length) {
         messages.push(
-          '📤 ' + pending.length + ' payment' + (pending.length === 1 ? '' : 's') + ' waiting to upload',
+          '📤 ' +
+            pending.length +
+            ' payment' +
+            (pending.length === 1 ? '' : 's') +
+            ' waiting to upload',
         );
       }
       if (failed.length) {
@@ -367,7 +371,11 @@ export function createPayments({ api, refresh }) {
         failedDetails
           ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
             failedDetails +
-            (failed.length > 5 ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>' : '') +
+            (failed.length > 5
+              ? '<li>+' +
+                (failed.length - 5) +
+                ' more; export the queue for full details.</li>'
+              : '') +
             '</ul></details>'
           : '';
       if (unbound.length) {
@@ -383,9 +391,13 @@ export function createPayments({ api, refresh }) {
         '<span>' + messages.map((message) => esc(message)).join('<br>') + '</span>' +
         failedReview +
         (pending.length ? '<button class="btn sm" data-act="flush">Retry now</button>' : '') +
-        (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
+        (visible.length
+          ? '<button class="btn sm" data-act="export-pending">Export</button>'
+          : '') +
         '<button class="btn sm" data-act="import-pending">Import</button>' +
-        (owned.length ? '<button class="btn sm danger" data-act="discard">Discard my payments</button>' : '');
+        (owned.length
+          ? '<button class="btn sm danger" data-act="discard">Discard my payments</button>'
+          : '');
     } catch (error) {
       b.className = 'banner err';
       const message =
@@ -461,7 +473,8 @@ export function createPayments({ api, refresh }) {
       if (rejected) {
         toast(
           rejected + ' payment' + (rejected === 1 ? '' : 's') +
-            ' need review and will not retry automatically. Export the queue before discarding any item.',
+            ' need review and will not retry automatically. ' +
+            'Export the queue before discarding any item.',
           'err',
         );
       }
@@ -663,17 +676,21 @@ export function createPayments({ api, refresh }) {
               unboundCount +
               ' older payment(s) that are not bound to an account. Importing will bind them to ' +
               accountName +
-              ' on this server. Continue only if you verified these records belong to this account. Matching IDs are checked before import.'
+              ' on this server. Continue only if you verified these records belong to ' +
+              'this account. Matching IDs are checked before import.'
             : 'Restore ' +
               payload.records.length +
               ' payment(s) for ' +
               accountName +
-              ' to this device? Matching queued IDs will be skipped. Restored payments remain pending until you retry synchronization.';
+              ' to this device? Matching queued IDs will be skipped. Restored payments ' +
+              'remain pending until you retry synchronization.';
           const confirmed = confirm(confirmation);
 
           if (!confirmed) return;
           if (!S.token || queueOwnerKey() !== ownerKey) {
-            throw new Error('The signed-in account changed. Sign in and retry the recovery import.');
+            throw new Error(
+              'The signed-in account changed. Sign in and retry the recovery import.',
+            );
           }
 
           const result = await offlineQueue.restore(payload.records, ownerKey);
@@ -715,7 +732,8 @@ export function createPayments({ api, refresh }) {
       if (!ownedCount) {
         toast(
           unboundCount
-            ? 'Older payments are not bound to an account and were preserved. Export or explicitly restore them to confirm ownership.'
+            ? 'Older payments are not bound to an account and were preserved. ' +
+              'Export or explicitly restore them to confirm ownership.'
             : 'There are no pending payments for this account to discard.',
           unboundCount ? 'err' : 'ok',
         );
@@ -723,8 +741,10 @@ export function createPayments({ api, refresh }) {
       }
 
       const message =
-        'Discard ' + ownedCount +
-        ' payment(s) bound to this account? Items belonging to other accounts and older unbound payments will be kept. This cannot be undone.';
+        'Discard ' +
+        ownedCount +
+        ' payment(s) bound to this account? Items belonging to other accounts and older ' +
+        'unbound payments will be kept. This cannot be undone.';
 
       if (confirm(message)) {
         await offlineQueue.clear(ownerKey);
