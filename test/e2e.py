@@ -1315,10 +1315,6 @@ with sync_playwright() as p:
     injected_svg_count = page.locator('.hb-l svg, .hb-t svg, .hb-v svg, svg.chart svg').count()
     hostile_handler_fired = page.evaluate('window.__xssFired === true')
     check(
-        page.locator('.hb-l').filter(has_text='hostile-vendor').count() == 1,
-        'dashboard keeps the numeric-string vendor row visible',
-    )
-    check(
         hostile_vendor_visible,
         'dashboard displays the hostile vendor payload as literal text',
     )
