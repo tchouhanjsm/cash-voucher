@@ -22,7 +22,9 @@ http
   .createServer((req, res) => {
     if (req.method === 'GET' && req.url.split('?')[0] === '/test-status') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ droppedClientResponses, countedCreateRequests, rejectedClientRequests }));
+      res.end(
+        JSON.stringify({ droppedClientResponses, countedCreateRequests, rejectedClientRequests }),
+      );
       return;
     }
 
