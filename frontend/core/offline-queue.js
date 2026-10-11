@@ -396,7 +396,9 @@ export async function restore(exportRecords, ownerKey) {
     const sourceOwner = String(item?.ownerKey || '').trim();
 
     if (sourceOwner && sourceOwner !== ownerKey) {
-      throw new Error('Recovery file belongs to a different account or server. Sign in to its original account before restoring it.');
+      throw new Error(
+        'Recovery file is bound to another endpoint or user; restore it while signed in to the matching account.',
+      );
     }
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       throw new Error('Recovery file contains a payment with invalid details.');
