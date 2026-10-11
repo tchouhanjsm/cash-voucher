@@ -63,11 +63,13 @@ export function createDashboard() {
   function trendSvg(list, from, to) {
     const days = Math.round((new Date(to) - new Date(from)) / 864e5) + 1;
     const monthly = days > 62;
-    const amounts = {};
+    const amounts = new Map();
 
     list.forEach((voucher) => {
       const key = monthly ? voucher.date.slice(0, 7) : voucher.date;
-      amounts[key] = (amounts[key] || 0) + voucher.amount;
+      const amount = Number(voucher.amount);
+      if (!Number.isFinite(amount)) return;
+      amounts.set(key, (amounts.get(key) || 0) + amount);
     });
 
     const keys = [];
@@ -86,7 +88,7 @@ export function createDashboard() {
       }
     }
 
-    const values = keys.map((key) => amounts[key] || 0);
+    const values = keys.map((key) => amounts.get(key) || 0);
     const max = Math.max(1, ...values);
     const width = Math.max(280, Math.min(1100, innerWidth - (innerWidth > 800 ? 262 : 24) - 34));
     const height = 190;
