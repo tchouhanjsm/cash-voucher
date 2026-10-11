@@ -27,3 +27,13 @@ This gate does not waive moderate/low findings; it prints them for review withou
 ## Runtime dependencies
 
 The current `package.json` defines only development dependencies; the app frontend is static JavaScript and the backend is Apps Script source. This reduces deployed application exposure to npm package code, but it does not remove the developer/CI toolchain risk. Do not treat `npm audit --omit=dev` alone as a substitute for auditing the development toolchain.
+
+
+## Runtime-loaded browser scripts
+
+Runtime-loaded browser scripts are a separate supply-chain surface from npm `devDependencies`; the dependency audit above does not cover scripts appended to the document at runtime.
+
+- **Previously loaded:** the bulk importer dynamically loaded `xlsx@0.18.5` from jsDelivr when an `.xls` or `.xlsx` file was selected.
+- **Advisory:** [GHSA-4r6h-8v6p-xvw6](https://github.com/advisories/GHSA-4r6h-8v6p-xvw6) identifies SheetJS CE versions through 0.19.2 as affected by prototype pollution in specially crafted workbooks. The advisory states that a fixed 0.19.3 build is available from SheetJS's CDN, not the npm registry.
+- **Containment in PR #79:** reject `.xls/.xlsx` before parsing, remove dynamic script loading, and retain CSV/TSV/TXT and pasted-row import. The UI explains the safe conversion/paste fallback. This avoids accepting untrusted workbook files through the vulnerable runtime-loaded parser.
+- **Re-enable gate:** only after a vetted, licensed build is self-hosted, its provenance and checksum are recorded, workbook import is covered by adversarial and compatibility tests, and no runtime request to an unpinned third-party script is required. SRI or a CSP alone would not repair vulnerable parser logic.
