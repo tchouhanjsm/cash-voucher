@@ -2,16 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `dd1a00a1dced79346bbdcb514eea1be7669bcac5` (PR #83 merge)  
+**Verified `main` SHA:** `280d3f9d08bac5ca771cf0c23b3cc99070441ac5` (PR #84 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #84 — Dashboard prototype-key aggregation hardening**  
-Branch: `security/dashboard-prototype-key-aggregation`  
-Base: `dd1a00a1dced79346bbdcb514eea1be7669bcac5`
+**PR #85 — Dashboard numeric rendering integrity**  
+Branch: `security/dashboard-numeric-rendering`  
+Base: `280d3f9d08bac5ca771cf0c23b3cc99070441ac5`
 
-Scope: replace the dashboard's plain-object grouping dictionary with a `Map`, so user-controlled vendor/category names such as `constructor`, `__proto__`, `toString`, and `hasOwnProperty` aggregate as ordinary values rather than colliding with inherited object properties. Add Browser E2E regression coverage for group visibility and unchanged built-in object/function properties. PR #83 is merged; its live MailApp authorization, scheduled backup observation and isolated restore remain owner-authorized operational gates.
+Scope: guard the active dashboard bar-width CSS sink against malformed persisted/bootstrap amount values by normalizing non-finite group totals for presentation and clamping widths to finite percentages. Add Browser E2E regression coverage. PR #84 is merged with exact-head CI, Browser E2E, and Full Flight Test success; its full record remains in GitHub.
 
 Adopt three distinct sources of information:
 
@@ -77,5 +77,5 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
 5. PR #83 is merged at verified `main` SHA `dd1a00a1dced79346bbdcb514eea1be7669bcac5`; its exact tested head passed CI, Browser E2E and Full Flight Test.
-6. PR #84 is the current code phase: use `Map` for dashboard grouping and verify prototype-named vendor/category values remain visible without mutating built-in object/function properties.
+6. PR #84 is merged. PR #85 is the next focused rendering-integrity phase; verify live PR/main state and exact-head workflow results before reporting outcomes.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
