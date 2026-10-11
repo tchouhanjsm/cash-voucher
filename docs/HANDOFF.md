@@ -2,14 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `3ac0c387d52fc2631f26b48f6169a5b6c03a995d` (PR #78 merge)  
+**Verified `main` SHA:** `df6f3354c4ef30321941c0bf1d9b9b15a399a066` (PR #79 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #79 — [Disable vulnerable runtime Excel parser](https://github.com/tchouhanjsm/cash-voucher/pull/79)**  
-Branch: `security/disable-vulnerable-excel-import`  
-Base: `3ac0c387d52fc2631f26b48f6169a5b6c03a995d`
+**PR #80 — [Isolate offline outbox failures and bind queued payments to users](https://github.com/tchouhanjsm/cash-voucher/pull/80)**  
+Branch: `fix/offline-outbox-account-isolation`  
+Base: `df6f3354c4ef30321941c0bf1d9b9b15a399a066`
+
+Scope: persist an origin server/account binding on each new offline queue record, isolate row-specific server rejections from unrelated entries, keep failed records for explicit review/recovery, scope export/discard/sync to the signed-in account, preserve older unbound records until an explicit recovery confirmation, and protect the New Entry draft during a background refresh. This is mock-backed code work only; no production deployment or live operational verification.
 
 Adopt three distinct sources of information:
 
@@ -60,6 +62,7 @@ These remain open regardless of green mock-backed CI:
 - **PR #76 — Consolidate engineering handoff documentation:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/76) at `b1f2a3234577301e4e9536dd424695976f1d8fca`; three exact-head workflows passed. No application behavior or deployment changed.
 - **PR #77 — Escape settings numeric input attributes:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/77) at `539d5d8afd101136f0f1a3922068fc9624d12890`; CI, Browser E2E and Full Flight Test passed at its exact tested head with 146 browser checks.
 - **PR #78 — Harden backend action and role allowlists:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/78) at `3ac0c387d52fc2631f26b48f6169a5b6c03a995d`; exact tested head passed CI (112 backend/unit checks), Browser E2E (146 checks) and Full Flight Test.
+- **PR #79 — Disable vulnerable runtime Excel parser:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/79) at `df6f3354c4ef30321941c0bf1d9b9b15a399a066`; exact tested head passed CI (112 backend/unit checks), Browser E2E (152 checks) and Full Flight Test. Excel workbook import remains intentionally disabled; CSV/TSV/TXT and paste remain available.
 
 For full acceptance criteria, diffs, review discussions and CI evidence, use those GitHub PR records. Do not copy their full histories into this handoff.
 
@@ -69,5 +72,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #78 is merged at the verified `main` SHA above. PR #79 disables the runtime-loaded `xlsx@0.18.5` parser and adds Browser E2E coverage for rejected Excel files plus retained CSV/paste behavior.
-6. After PR #79 is merged, prioritize outbox per-record failure isolation and shared-device user binding before cash-close. Keep those risks in focused, regression-driven PRs; cash close remains behind the existing owner/accountant decisions.
+5. PR #79 is merged at the verified `main` SHA above. It disables the runtime-loaded vulnerable Excel parser; workbook import remains unavailable pending a separately reviewed self-hosted parser.
+6. PR #80 is the current phase: isolate row-specific offline upload rejections, bind queued items to the origin server/account, prevent cross-account sync/export/discard, and preserve the New Entry draft during background refresh. Run CI, Browser E2E and Full Flight Test against one exact final PR head; the owner reviews and merges.
+7. Keep live Apps Script target/permissions, real scheduled backup and isolated restore, physical-device PWA tests and the controlled pilot as separate unverified operational gates. Daily cash close remains behind the existing owner/accountant decisions.
