@@ -135,7 +135,9 @@ Where a receipt or attachment is expected, the product should show whether evide
 
 ### PR-05 — Correctable, attributable records
 
-Edits, cancellations, approvals, and future close corrections must have defined permissions, reasons where required, and attributable history. Do not describe the existing best-effort audit log as tamper-proof.
+Voucher edits are restricted by server-enforced edit permissions and must include a reason of 3–200 characters whenever one or more editable fields actually change. Each correction audit event records the actor, timestamp, voucher target, reason, and the changed fields' before/after values. No-op edits are rejected rather than creating a misleading correction event. Cancellation continues to require its own reason.
+
+This history is stored in the existing best-effort AuditLog sheet; it is not a tamper-proof ledger, and failure of the audit write is not an atomic rollback of the voucher update. Do not rely on this history as a cash-close control until reliability and recovery behavior have been reviewed. Approvals and future close corrections still require explicitly agreed permissions and policy.
 
 ### PR-06 — Recoverability
 
