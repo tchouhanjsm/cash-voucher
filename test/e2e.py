@@ -518,6 +518,55 @@ with sync_playwright() as p:
         'navigating away from an unsaved entry revokes its receipt preview URL',
     )
 
+    # Force image compression to finish after its row has been detached.
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.evaluate(
+        """() => {
+            window.__nativeToBlob = HTMLCanvasElement.prototype.toBlob;
+            window.__pendingToBlob = null;
+            HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
+                window.__pendingToBlob = { canvas: this, callback, type, quality };
+            };
+        }"""
+    )
+    created_before = page.evaluate('window.__createdObjectUrls.length')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_function('window.__pendingToBlob !== null')
+    page.click('[data-v=dash]')
+    page.wait_for_function(
+        "document.querySelector('[data-v=dash]')?.getAttribute('aria-current') === 'page'"
+    )
+    page.evaluate(
+        """() => {
+            const pending = window.__pendingToBlob;
+            window.__pendingToBlob = null;
+            HTMLCanvasElement.prototype.toBlob = window.__nativeToBlob;
+            if (!pending) throw new Error('Expected the delayed canvas conversion.');
+            window.__nativeToBlob.call(
+                pending.canvas,
+                pending.callback,
+                pending.type,
+                pending.quality,
+            );
+        }"""
+    )
+    page.wait_for_function(
+        'count => window.__createdObjectUrls.length >= count',
+        arg=created_before + 2,
+    )
+    late_preview_url = page.evaluate(
+        'window.__createdObjectUrls[window.__createdObjectUrls.length - 1]'
+    )
+    page.wait_for_function(
+        'url => window.__revokedObjectUrls.includes(url)', arg=late_preview_url
+    )
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", late_preview_url)
+        and page.locator('#nf').count() == 0,
+        'compression finishing after navigation revokes its preview URL instead of retaining it',
+    )
+
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody tr')
     check(

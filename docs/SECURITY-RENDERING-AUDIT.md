@@ -53,7 +53,11 @@ The active application uses HTML template strings for several views. The review 
 ### Payments and receipt handling — `frontend/features/payments.js`
 
 - Receipt previews use DOM APIs and assign generated `blob:` URLs through `img.src`; receipt API data URLs are checked against supported base64 raster-image patterns before assignment. Vendor/ID/error values interpolated in templates use `esc()`.
-- PR #88 closes the preview-resource lifecycle gap: release generated preview object URLs on clear, row removal, successful online/offline save, form replacement, and navigation away. If asynchronous compression completes after its owning row leaves the active form, its generated URL is revoked instead of retained. The preview conversion is not a substitute for backend receipt authorization.
+- PR #88 closes the preview-resource lifecycle gap: release generated preview object URLs on
+  clear, row removal, successful online/offline save, form replacement, and navigation away. If
+  asynchronous compression completes after its owning row leaves the active form, its generated
+  URL is revoked instead of retained. The preview conversion is not a substitute for backend
+  receipt authorization.
 
 ### Register — `frontend/features/register.js`
 
@@ -149,7 +153,17 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 
 ## PR #88 — Release receipt preview object URLs
 
-- **Confirmed resource-lifecycle defect:** receipt previews created by `compress()` use browser-managed `blob:` URLs. The active payment form did not release them when receipts were cleared, rows were removed, saves completed, forms were replaced, or SPA navigation discarded an unsaved draft.
-- Centralize preview URL revocation in the payment controller and release URLs at those lifecycle boundaries. A preview produced by asynchronous compression after its row is detached is immediately revoked and is not added to the stale row. Cleanup errors do not block payment entry or navigation.
-- Browser E2E instruments object URL creation/revocation and covers clear, row removal, successful online save, and navigation away from an unsaved entry. Existing receipt data remains available to the save/outbox payload because preview URLs are presentation-only and are not submitted to the API.
-- This is resource cleanup, not receipt authorization or input-content validation. Backend receipt permissions and live Google deployment behavior remain separate verification gates.
+- **Confirmed resource-lifecycle defect:** receipt previews created by `compress()` use
+  browser-managed `blob:` URLs. The active payment form did not release them when receipts were
+  cleared, rows were removed, saves completed, forms were replaced, or SPA navigation discarded
+  an unsaved draft.
+- Centralize preview URL revocation in the payment controller and release URLs at those lifecycle
+  boundaries. A preview produced by asynchronous compression after its row is detached is
+  immediately revoked and is not added to the stale row. Cleanup errors do not block payment
+  entry or navigation.
+- Browser E2E instruments object URL creation/revocation and covers clear, row removal, successful
+  online save, navigation away from an unsaved entry, and compression completing after navigation.
+  Existing receipt data remains available to the save/outbox payload because preview URLs are
+  presentation-only and are not submitted to the API.
+- This is resource cleanup, not receipt authorization or input-content validation. Backend receipt
+  permissions and live Google deployment behavior remain separate verification gates.
