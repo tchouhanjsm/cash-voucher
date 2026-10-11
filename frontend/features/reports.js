@@ -115,7 +115,7 @@ export function createReports({ api }) {
           <div class="card stat">
             <span>Selected payment total</span>
             <b>${money(summary.paymentTotal)}</b>
-            <small class="muted">${summary.count} rows · ${summary.activeCount} active · ${summary.cancelledCount} cancelled</small>
+            <small class="muted">${esc(summary.count)} rows · ${esc(summary.activeCount)} active · ${esc(summary.cancelledCount)} cancelled</small>
           </div>
           <div class="card stat">
             <span>Selected receipt total</span>
@@ -136,7 +136,7 @@ export function createReports({ api }) {
         <div class="card">
           <h2>Source vouchers <span class="muted">${esc(dmy(R.from))} – ${esc(dmy(R.to))}</span></h2>
           <p class="muted">
-            Generated ${esc(summary.generatedAt)} · ${summary.count} rows · Type: ${esc(summary.type)} · Status: ${esc(summary.status)}
+            Generated ${esc(summary.generatedAt)} · ${esc(summary.count)} rows · Type: ${esc(summary.type)} · Status: ${esc(summary.status)}
           </p>
           ${renderRows()}
         </div>
