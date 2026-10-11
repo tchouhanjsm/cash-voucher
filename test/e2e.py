@@ -1588,7 +1588,7 @@ with sync_playwright() as p:
         page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
         "payload => document.querySelector('#view')?.innerText.includes(payload)",
-        report_count_payload,
+        arg=report_count_payload,
     )
     report_text = page.locator('#view').inner_text()
     page.wait_for_timeout(100)
