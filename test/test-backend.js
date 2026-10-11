@@ -125,9 +125,8 @@ ok(
 const usersSheet = g.sheets.Users;
 const userHeaders = usersSheet.rows[0];
 const roleColumn = userHeaders.indexOf('Role');
-const ownerRow = usersSheet.rows.find(
-  (row) => String(row[userHeaders.indexOf('Email')]).toLowerCase() === 'owner@test.com',
-);
+const emailColumn = userHeaders.indexOf('Email');
+const ownerRow = usersSheet.rows.find((row) => row[emailColumn] === 'owner@test.com');
 const ownerRole = ownerRow[roleColumn];
 ownerRow[roleColumn] = 'constructor';
 const invalidStoredRoleBootstrap = as(T, 'bootstrap');
