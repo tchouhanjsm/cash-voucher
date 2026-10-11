@@ -40,3 +40,10 @@ jobs:
       - name: Validate PR handoff evidence
         if: github.event_name == 'pull_request'
         run: npm run check:pr-quality
+      - name: Diagnose backup observability formatting (temporary)
+        if: failure()
+        run: |
+          for file in backend/Code.gs frontend/features/administration.js test/test-backup-observability.js; do
+            npx prettier "$file" > "/tmp/$(basename "$file").formatted"
+            diff -u "$file" "/tmp/$(basename "$file").formatted" || true
+          done
