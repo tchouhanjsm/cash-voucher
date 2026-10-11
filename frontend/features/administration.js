@@ -357,6 +357,43 @@ export function createAdministration({ api, getNavigation, signOut }) {
     });
   }
 
+  function auditDetailsText(row) {
+    const details = String(row.details ?? '');
+    if (row.action !== 'UPDATE') return details;
+
+    try {
+      const parsed = JSON.parse(details);
+      if (parsed.version !== 1 || !Array.isArray(parsed.changes) || !parsed.reason) return details;
+
+      const labels = {
+        date: 'Date',
+        vendor: 'Vendor',
+        amount: 'Amount',
+        category: 'Category',
+        notes: 'Notes',
+      };
+      const valueText = (value) =>
+        typeof value === 'string'
+          ? JSON.stringify(value)
+          : value === null || value === undefined
+            ? '—'
+            : String(value);
+      const changes = parsed.changes
+        .map((change) => {
+          const label = Object.prototype.hasOwnProperty.call(labels, change.field)
+            ? labels[change.field]
+            : String(change.field || 'Field');
+          return label + ': ' + valueText(change.before) + ' → ' + valueText(change.after);
+        })
+        .join('; ');
+
+      return 'Reason: ' + String(parsed.reason) + ' | Changes: ' + changes;
+    } catch {
+      // Legacy audit rows are plain text. Preserve them instead of rejecting the row.
+      return details;
+    }
+  }
+
   function renderAuditRows() {
     const body = $('#aud');
     const count = $('#aud-count');
@@ -371,7 +408,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         { value: row.user },
         { value: row.action, className: 'nw' },
         { value: row.target },
-        { value: row.details },
+        { value: auditDetailsText(row) },
       ].forEach(({ value, className }) => {
         const cell = document.createElement('td');
         if (className) cell.className = className;
@@ -413,7 +450,13 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const header = ['Time', 'User', 'Action', 'Target', 'Details'];
     const csv = [
       header,
-      ...rows.map((row) => [row.time, row.user, row.action, row.target, row.details]),
+      ...rows.map((row) => [
+        row.time,
+        row.user,
+        row.action,
+        row.target,
+        auditDetailsText(row),
+      ]),
     ]
       .map((record) => record.map(csvCell).join(','))
       .join('\r\n');
