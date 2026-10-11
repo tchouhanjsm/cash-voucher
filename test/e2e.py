@@ -1213,6 +1213,8 @@ with sync_playwright() as p:
     page.wait_for_selector('#nav button')
 
     # Malformed bootstrap data must not produce invalid CSS geometry.
+    hostile_vendor = '<svg onload=window.__xssFired=true></svg>'
+
     def tamper_dashboard_numeric_values(route):
         request_data = json.loads(route.request.post_data or '{}')
         response = route.fetch()
@@ -1237,7 +1239,6 @@ with sync_playwright() as p:
                 'receipts': [],
                 'cancelReason': '',
             }
-            hostile_vendor = '<svg onload=window.__xssFired=true></svg>'
             values = [
                 ('numeric-nan', 'NaN', 'numeric-nan'),
                 ('numeric-infinity', 'Infinity', 'numeric-infinity'),
