@@ -401,7 +401,10 @@ ok(
 );
 // RBAC
 const id1 = r.data.created[0].id;
-ok(!as(S, 'updateVoucher', { id: id1, fields: { amount: 1 } }).ok, 'staff cannot edit');
+ok(
+  !as(S, 'updateVoucher', { id: id1, reason: 'Not allowed', fields: { amount: 1 } }).ok,
+  'staff cannot edit',
+);
 ok(!as(S, 'cancelVoucher', { id: id1, reason: 'test' }).ok, 'staff cannot cancel');
 ok(
   !as(S, 'listUsers').ok && !as(S, 'auditLog').ok && !as(M, 'listUsers').ok,
@@ -420,9 +423,104 @@ const mv = as(M, 'createVouchers', {
 ok(mv.ok && mv.data.created.length === 50 && mv.data.created[49].no === 253, 'manager bulk 50');
 ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff still sees only own after bulk');
 ok(as(M, 'bootstrap').data.vouchers.length === 53, 'manager sees all');
+
+const beforeReasonFailure = as(M, 'bootstrap').data.vouchers.find((voucher) => voucher.id === id1);
+const auditUpdatesBefore = g.sheets.AuditLog.rows.filter(
+  (row) => row[2] === 'UPDATE' && row[3] === '#201',
+).length;
+const missingReasonEdit = as(M, 'updateVoucher', {
+  id: id1,
+  fields: { amount: 175 },
+});
 ok(
-  as(M, 'updateVoucher', { id: id1, fields: { amount: 175 } }).data.amount === 175,
-  'manager edit',
+  !missingReasonEdit.ok && missingReasonEdit.code === 'VALIDATION',
+  'voucher correction without a reason is rejected',
+);
+const shortReasonEdit = as(M, 'updateVoucher', {
+  id: id1,
+  reason: 'no',
+  fields: { amount: 175 },
+});
+ok(
+  !shortReasonEdit.ok && shortReasonEdit.code === 'VALIDATION',
+  'voucher correction reason must contain at least three characters',
+);
+const longReasonEdit = as(M, 'updateVoucher', {
+  id: id1,
+  reason: 'r'.repeat(201),
+  fields: { amount: 175 },
+});
+ok(
+  !longReasonEdit.ok && longReasonEdit.code === 'VALIDATION',
+  'voucher correction reason exceeding 200 characters is rejected',
+);
+const unchangedEdit = as(M, 'updateVoucher', {
+  id: id1,
+  reason: 'Reviewed the voucher and confirmed the current values.',
+  fields: { amount: beforeReasonFailure.amount },
+});
+ok(
+  !unchangedEdit.ok && unchangedEdit.code === 'VALIDATION',
+  'unchanged voucher edits are rejected instead of creating misleading audit events',
+);
+const afterRejectedEdits = as(M, 'bootstrap').data.vouchers.find((voucher) => voucher.id === id1);
+ok(
+  afterRejectedEdits.amount === beforeReasonFailure.amount &&
+    g.sheets.AuditLog.rows.filter((row) => row[2] === 'UPDATE' && row[3] === '#201').length ===
+      auditUpdatesBefore,
+  'rejected/no-op edits leave voucher data and the correction audit unchanged',
+);
+
+const correction = as(M, 'updateVoucher', {
+  id: id1,
+  reason: 'Corrected after comparing the paper receipt.',
+  fields: {
+    date: '2026-10-01',
+    amount: 175,
+    vendor: 'Corrected supplier',
+    category: 'Kitchen',
+    notes: 'Verified against paper receipt',
+  },
+});
+ok(
+  correction.ok &&
+    correction.data.date === '2026-10-01' &&
+    correction.data.amount === 175 &&
+    correction.data.vendor === 'Corrected supplier' &&
+    correction.data.category === 'Kitchen' &&
+    correction.data.notes === 'Verified against paper receipt',
+  'manager can apply a reasoned voucher correction',
+);
+const updateAuditRow = g.sheets.AuditLog.rows
+  .filter((row) => row[2] === 'UPDATE' && row[3] === '#201')
+  .slice(-1)[0];
+let updateAuditDetails = null;
+try {
+  updateAuditDetails = JSON.parse(updateAuditRow[4]);
+} catch {
+  updateAuditDetails = null;
+}
+ok(
+  updateAuditDetails &&
+    updateAuditDetails.version === 1 &&
+    updateAuditDetails.reason === 'Corrected after comparing the paper receipt.',
+  'correction audit records the attributable reason in structured details',
+);
+const auditedFields = new Map(
+  (updateAuditDetails?.changes || []).map((change) => [change.field, change]),
+);
+ok(
+  auditedFields.get('date')?.before === beforeReasonFailure.date &&
+    auditedFields.get('date')?.after === '2026-10-01' &&
+    auditedFields.get('amount')?.before === beforeReasonFailure.amount &&
+    auditedFields.get('amount')?.after === 175 &&
+    auditedFields.get('vendor')?.before === beforeReasonFailure.vendor &&
+    auditedFields.get('vendor')?.after === 'Corrected supplier' &&
+    auditedFields.get('category')?.before === beforeReasonFailure.category &&
+    auditedFields.get('category')?.after === 'Kitchen' &&
+    auditedFields.get('notes')?.before === beforeReasonFailure.notes &&
+    auditedFields.get('notes')?.after === 'Verified against paper receipt',
+  'correction audit records before/after values for every changed field',
 );
 ok(!as(M, 'cancelVoucher', { id: id1, reason: '' }).ok, 'cancel needs reason');
 ok(

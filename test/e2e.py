@@ -1165,7 +1165,114 @@ with sync_playwright() as p:
         and not page.locator('#app').evaluate('(element) => element.inert'),
         'Escape closes dialog, restores opener focus, and re-enables the app',
     )
-    edit_trigger.evaluate("(element) => element.removeAttribute('data-focus-restore-probe')")
+
+    update_requests = []
+
+    def capture_voucher_update(request):
+        if request.method != 'POST':
+            return
+        try:
+            payload = json.loads(request.post_data or '{}')
+        except json.JSONDecodeError:
+            return
+        if payload.get('action') == 'updateVoucher':
+            update_requests.append(payload)
+
+    page.on('request', capture_voucher_update)
+    edit_trigger.click()
+    page.wait_for_selector('#modal #er')
+    reason_field = page.locator('#modal #er')
+    check(
+        reason_field.get_attribute('required') is not None
+        and reason_field.get_attribute('minlength') == '3'
+        and reason_field.get_attribute('maxlength') == '200',
+        'voucher correction dialog requires a bounded reason',
+    )
+    page.fill('#ea', '177.77')
+    page.click('#modal .primary')
+    check(
+        len(update_requests) == 0
+        and not reason_field.evaluate('(element) => element.checkValidity()')
+        and not page.locator('#modal').evaluate("(element) => element.classList.contains('hidden')"),
+        'voucher edit cannot be submitted without a correction reason',
+    )
+    correction_reason = 'Corrected after receipt review <svg onload=window.__xssFired=true></svg>'
+    page.fill('#er', correction_reason)
+    page.click('#modal .primary')
+    page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+    page.remove_listener('request', capture_voucher_update)
+    check(
+        len(update_requests) == 1
+        and update_requests[0].get('reason') == correction_reason
+        and update_requests[0].get('fields', {}).get('amount') == 177.77,
+        'voucher edit sends its reason alongside the actual field changes',
+    )
+    check(
+        page.locator('#rbody tr', has_text='Ram Traders').locator('.voucher-amount').inner_text()
+        and '177.77' in page.locator('#rbody tr', has_text='Ram Traders').inner_text(),
+        'corrected amount appears in the register after saving',
+    )
+
+    audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
+    audit_page = audit_context.new_page()
+    audit_page.add_init_script('window.__xssFired = false;')
+
+    legacy_update_text = 'amount,vendor <svg onload=window.__xssFired=true></svg>'
+
+    def inject_legacy_update_audit(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'auditLog':
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        if payload.get('ok') and isinstance(payload.get('data'), list):
+            payload['data'].append(
+                {
+                    'time': '2026-10-11T15:00:00',
+                    'user': 'owner@test.com',
+                    'action': 'UPDATE',
+                    'target': '#legacy',
+                    'details': legacy_update_text,
+                }
+            )
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    audit_page.route('**/api?*', inject_legacy_update_audit)
+    audit_page.goto(URL)
+    audit_page.fill('#lEmail', 'owner@test.com')
+    audit_page.fill('#lPin', '579246')
+    audit_page.click('#lBtn')
+    audit_page.wait_for_selector('[data-v=audit]')
+    audit_page.click('[data-v=audit]')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud').innerText.includes('Corrected after receipt review')",
+        timeout=10000,
+    )
+    correction_audit_text = audit_page.locator('#aud').inner_text()
+    check(
+        'Reason: Corrected after receipt review' in correction_audit_text
+        and '<svg onload=window.__xssFired=true></svg>' in correction_audit_text
+        and 'Amount:' in correction_audit_text
+        and '177.77' in correction_audit_text
+        and '→' in correction_audit_text
+        and audit_page.locator('#aud svg, #aud img').count() == 0
+        and not audit_page.evaluate('window.__xssFired === true'),
+        'owner audit log displays correction reason and field deltas as inert text',
+    )
+    legacy_row = audit_page.locator('#aud tr', has_text='#legacy')
+    check(
+        legacy_row.count() == 1
+        and legacy_update_text in legacy_row.inner_text()
+        and legacy_row.locator('svg, img').count() == 0
+        and not audit_page.evaluate('window.__xssFired === true'),
+        'legacy free-text update details remain compatible and render as inert text',
+    )
+    audit_context.close()
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
     xss_vendor_row.locator('[data-act=cancel]').click()
     page.wait_for_selector('#modal #cr')

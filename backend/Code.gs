@@ -1186,7 +1186,7 @@ function pubUser_(u) {
     mustChangePin: u.MustChangePin === true || u.MustChangePin === 'TRUE',
   };
 }
-function audit_(user, action, target, details) {
+function audit_(user, action, target, details, detailsMaxLength) {
   try {
     appendRows_('AuditLog', [
       {
@@ -1194,7 +1194,7 @@ function audit_(user, action, target, details) {
         User: user.email,
         Action: action,
         Target: target || '',
-        Details: clean_(details, 300),
+        Details: clean_(details, detailsMaxLength || 300),
       },
     ]);
   } catch (e) {
@@ -1516,32 +1516,68 @@ function updateVoucher_(user, req) {
   need_(user, 'edit');
   const o = findVoucher_(req.id);
   if (o.Status !== 'ACTIVE') throw err_('Cancelled vouchers cannot be edited.');
-  const f = req.fields || {},
-    patch = {};
+
+  const f = req.fields || {};
+  const patch = {};
+  const changes = [];
+
+  function recordChange(field, property, before, after) {
+    if (before === after) return;
+    patch[property] = after;
+    changes.push({ field: field, before: before, after: after });
+  }
+
   if (f.date !== undefined) {
-    if (!validDate_(String(f.date))) throw err_('Invalid date.');
-    patch.Date = String(f.date);
+    if (!validDate_(String(f.date))) throw err_('Invalid date.', 'VALIDATION');
+    recordChange('date', 'Date', isoDate_(o.Date), String(f.date));
   }
   if (f.vendor !== undefined) {
-    const v = clean_(f.vendor, 200);
-    if (!v) throw err_('Vendor is required.');
-    patch.Vendor = v;
+    const vendor = clean_(f.vendor, 200);
+    if (!vendor) throw err_('Vendor is required.', 'VALIDATION');
+    recordChange('vendor', 'Vendor', String(o.Vendor || ''), vendor);
   }
   if (f.amount !== undefined) {
-    const a = Math.round(Number(f.amount) * 100) / 100;
-    if (!isFinite(a) || a <= 0 || a > CFG.MAX_AMOUNT) throw err_('Invalid amount.');
-    patch.Amount = a;
+    const amount = Math.round(Number(f.amount) * 100) / 100;
+    if (!isFinite(amount) || amount <= 0 || amount > CFG.MAX_AMOUNT) {
+      throw err_('Invalid amount.', 'VALIDATION');
+    }
+    recordChange('amount', 'Amount', Number(o.Amount), amount);
   }
-  if (f.category !== undefined)
-    patch.Category =
+  if (f.category !== undefined) {
+    const category =
       (o.Type === 'RECEIPT' ? receiptCategories_() : categories_()).indexOf(f.category) >= 0
         ? f.category
         : 'Other';
-  if (f.notes !== undefined) patch.Notes = clean_(f.notes, 500);
+    recordChange('category', 'Category', String(o.Category || ''), category);
+  }
+  if (f.notes !== undefined) {
+    recordChange('notes', 'Notes', String(o.Notes || ''), clean_(f.notes, 500));
+  }
+
+  if (!changes.length) {
+    throw err_('No changes were detected. The voucher was not updated.', 'VALIDATION');
+  }
+
+  if (typeof req.reason !== 'string') {
+    throw err_('Please give a correction reason of 3 to 200 characters.', 'VALIDATION');
+  }
+  const rawReason = req.reason.trim();
+  if (rawReason.length > 200) {
+    throw err_('Correction reason must be 200 characters or fewer.', 'VALIDATION');
+  }
+  const reason = clean_(rawReason, 200);
+  if (reason.length < 3) {
+    throw err_('Please give a correction reason of 3 to 200 characters.', 'VALIDATION');
+  }
+
   patch.UpdatedBy = user.email;
   patch.UpdatedAt = nowIso_();
   updateRow_('Vouchers', o._row, patch);
-  audit_(user, 'UPDATE', '#' + o.VoucherNo, Object.keys(patch).join(','));
+
+  const details = JSON.stringify({ version: 1, reason: reason, changes: changes });
+  // Field-level correction details need more room than the legacy 300-character audit summary.
+  audit_(user, 'UPDATE', '#' + o.VoucherNo, details, 5000);
+
   return vOut_(Object.assign({}, o, patch));
 }
 function cancelVoucher_(user, req) {

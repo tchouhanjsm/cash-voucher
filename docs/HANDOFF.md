@@ -2,16 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `cb98b8ae9e329d34ebb9c068de38a78c3f6902ac` (PR #80 merge)  
+**Verified `main` SHA:** `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc` (PR #81 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #81 — Authentication lockout serialization and contention handling**  
-Branch: `security/auth-lock-contention-serialization`  
-Base: `cb98b8ae9e329d34ebb9c068de38a78c3f6902ac`
+**PR #82 — Voucher correction history and required edit reasons**  
+Branch: `feature/voucher-correction-audit-history`  
+Base: `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc`
 
-Scope: use one shared lock helper for login and the write router. Login acquires it directly; write actions acquire it once in `route_`, which authenticates inside the lock before calling PIN-change/reset handlers. Handlers must not acquire the ScriptLock again. Lock wait timeout returns retryable `BUSY`; failed-attempt counters, PIN changes and reset-counter clearing stay serialized. Mock tests verify timeout fail-closed behavior and acquisition/release accounting. This does not measure real Apps Script contention or change the deployment.
+Scope: require a 3–200 character reason for a changed voucher edit; capture the actual changed editable fields with before/after values and reason in structured audit details; render those details readably in the owner audit log. Reject edits without a reason, no-op edits and invalid changes. Keep the existing 5-column AuditLog sheet/API contract; this is application audit history, not a tamper-proof ledger or a completed cash-close control.
 
 Adopt three distinct sources of information:
 
@@ -64,6 +64,7 @@ These remain open regardless of green mock-backed CI:
 - **PR #78 — Harden backend action and role allowlists:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/78) at `3ac0c387d52fc2631f26b48f6169a5b6c03a995d`; exact tested head passed CI (112 backend/unit checks), Browser E2E (146 checks) and Full Flight Test.
 - **PR #79 — Disable vulnerable runtime Excel parser:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/79) at `df6f3354c4ef30321941c0bf1d9b9b15a399a066`; exact tested head passed CI (112 backend/unit checks), Browser E2E (152 checks) and Full Flight Test. Excel workbook import remains intentionally disabled; CSV/TSV/TXT and paste remain available.
 - **PR #80 — Offline outbox failure isolation and account binding:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/80) at `cb98b8ae9e329d34ebb9c068de38a78c3f6902ac`; exact tested head `95c3252a2f58a5453ec5a9e55a88e6f67d69dcc7` passed CI (112 backend/unit checks), Browser E2E (165 checks) and Full Flight Test (112 backend + 165 browser checks).
+- **PR #81 — Serialize authentication lockout transitions and handle contention safely:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/81) at `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc`; exact tested head `46410471c025b3f2476807db39ee73f5cc1fcb6e` passed CI (120 backend/unit checks), Browser E2E (165 checks) and Full Flight Test (120 backend + 165 browser checks).
 
 For full acceptance criteria, diffs, review discussions and CI evidence, use those GitHub PR records. Do not copy their full histories into this handoff.
 
@@ -73,6 +74,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #80 is merged at verified `main` SHA `cb98b8ae9e329d34ebb9c068de38a78c3f6902ac`. Its exact tested head passed CI, Browser E2E and Full Flight Test with 112 backend/unit and 165 browser checks.
-6. PR #81 is the current phase: serialize login and PIN-change/reset lockout transitions, surface safe retry guidance on lock-acquisition timeout, and verify timeout paths do not count failed attempts or release a lock that was never acquired. The global ScriptLock remains deliberately shared; do not claim reduced live contention without measuring the deployed Apps Script.
+5. PR #81 is merged at verified `main` SHA `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc`. Its exact tested head passed CI (120 backend/unit checks), Browser E2E (165 checks) and Full Flight Test.
+6. PR #82 is the current phase: require an attributable reason for every actual voucher correction, write changed-field before/after values into structured audit details, and make the owner audit log readable. Keep the existing sheet/API structure; do not describe the audit log as tamper-proof or ready as a cash-close control.
 7. Keep live Apps Script target/permissions, real scheduled backup and isolated restore, physical-device PWA tests and the controlled pilot as separate unverified operational gates. Daily cash close remains behind the existing owner/accountant decisions.
