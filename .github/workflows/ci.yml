@@ -40,8 +40,3 @@ jobs:
       - name: Validate PR handoff evidence
         if: github.event_name == 'pull_request'
         run: npm run check:pr-quality
-      - name: Diagnose seeded benchmark formatting (temporary)
-        if: failure()
-        run: |
-          npx prettier test/test-backup-observability.js > /tmp/test-backup-observability.formatted.js
-          diff -u test/test-backup-observability.js /tmp/test-backup-observability.formatted.js || true
