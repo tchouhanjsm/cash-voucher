@@ -1,6 +1,6 @@
 # Product Gap Register and Roadmap
 
-**As of:** 10 October 2026  
+**As of:** 11 October 2026  
 **Purpose:** reconcile the attached code-review memo with the actual current v2 repository and prioritize improvements by the value and risk to a property owner.
 
 This is a single-property cash-voucher PWA today. The attached memo's hosted fintech/multi-property concept is a strategic scenario, not an agreed requirement. The product-level scope, user outcomes, candidate measures, and owner decisions are consolidated in [Product Requirements Baseline](PRODUCT-REQUIREMENTS.md).
@@ -224,8 +224,9 @@ Adopt the report's risk-first direction, but verify each finding against current
 1. **P0 — Operational assurance:** owner confirms the live Apps Script target/settings, verifies live role and receipt permissions, observes a real scheduled backup and witnesses restore into a separate recovery destination. Code/CI does not replace these operations.
 2. **P0 — Stabilise runtime integrity before expanding financial workflows:**
    - **Completed in PR #78:** hardened action and role allowlists with own-property checks and regression coverage.
-   - **PR #79 — Excel parser containment:** the active code previously loaded `xlsx@0.18.5` from jsDelivr at runtime. [GitHub Advisory GHSA-4r6h-8v6p-xvw6](https://github.com/advisories/GHSA-4r6h-8v6p-xvw6) identifies npm releases through 0.19.2 as affected by prototype pollution; a fixed 0.19.3 build is available via SheetJS's CDN rather than npm. PR #79 disables workbook parsing and retains CSV/TSV/TXT and paste until a vetted build is self-hosted and adversarial-file tests are added.
-   - Next, fix offline outbox failure isolation so one invalid record cannot indefinitely block unrelated valid records. Bind queued entries to the creating user so a shared device cannot upload one person's work under another person's session. Test that a background flush does not overwrite an in-progress New Entry form.
+   - **PR #79 — Excel parser containment (merged):** the active code previously loaded `xlsx@0.18.5` from jsDelivr at runtime. [GitHub Advisory GHSA-4r6h-8v6p-xvw6](https://github.com/advisories/GHSA-4r6h-8v6p-xvw6) identifies npm releases through 0.19.2 as affected by prototype pollution; PR #79 disables workbook parsing and retains CSV/TSV/TXT and paste until a vetted build is self-hosted and adversarial-file tests are added. Merged to `main` at `df6f3354c4ef30321941c0bf1d9b9b15a399a066`.
+   - **PR #80 — Offline outbox failure isolation and account binding (current phase):** queue records are scoped by API endpoint and creating user's email; foreign-account records must not sync, export or discard under the current session. Row-specific rejections are kept in a failed/review state while independent valid entries continue. Legacy unbound records require explicit confirmation before binding, and background refresh must preserve New Entry drafts.
+   - Keep global/system/network failures retryable and stop the flush without marking unrelated entries failed. Preserve client-ID idempotency for accepted requests whose response is lost. These mock-backed checks do not replace live account/endpoint validation or device-level offline/restore testing.
    - Review login lock contention without weakening serialized lockout-counter updates.
    - Strengthen voucher correction history with field-level before/after values and an attributable reason; design this before using the audit trail as a cash-close control.
    - Measure backup runtime and receipt-copy growth with seeded data, alert on backup failure, and complete an isolated restore drill. Do not assume a quota/execution failure threshold without evidence.
