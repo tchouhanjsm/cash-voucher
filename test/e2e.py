@@ -824,8 +824,29 @@ with sync_playwright() as p:
         'offline payment stores the creating account binding',
     )
     original_owner_key = account_records[0]['ownerKey']
-    update_outbox_owner('Account-bound Vendor', original_owner_key.rsplit('|', 1)[0] + '|another-user@test.com')
 
+    # Legacy/unbound records are visible for recovery but are not eligible for generic discard.
+    update_outbox_owner('Account-bound Vendor', '')
+    page.evaluate(
+        """() => {
+          const channel = new BroadcastChannel('cash-voucher-outbox');
+          channel.postMessage({ type: 'changed' });
+          channel.close();
+        }"""
+    )
+    page.wait_for_function(
+        "document.querySelector('#banner').innerText.includes('need account confirmation')",
+        timeout=8000,
+    )
+    check(
+        page.locator('#banner [data-act=discard]').count() == 0,
+        'legacy unbound entries cannot be discarded through the signed-in account action',
+    )
+
+    update_outbox_owner(
+        'Account-bound Vendor',
+        original_owner_key.rsplit('|', 1)[0] + '|another-user@test.com',
+    )
     context.set_offline(False)
     page.wait_for_timeout(500)
     foreign_records = outbox_vendor_records('Account-bound Vendor')
