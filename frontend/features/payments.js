@@ -587,7 +587,8 @@ export function createPayments({ api, refresh }) {
 
             if (recordOwner && recordOwner !== ownerKey) {
               throw new Error(
-                'Recovery file belongs to a different account or server. Sign in to its original account before restoring it.',
+                'Recovery file is bound to another endpoint or user; restore it while signed in ' +
+                  'to the matching account.',
               );
             }
 
