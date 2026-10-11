@@ -256,7 +256,7 @@ function backupDataWithServices_(services) {
             : typeof file.getSize === 'function'
               ? file.getSize()
               : null;
-      } catch (_) {
+      } catch {
         receiptBytesKnown = false;
       }
       if (typeof fileSize === 'number' && isFinite(fileSize) && fileSize >= 0) {
@@ -375,7 +375,7 @@ function notifyBackupFailure_(p, services, error) {
   let timestamp;
   try {
     timestamp = services.now().toISOString();
-  } catch (_) {
+  } catch {
     timestamp = new Date().toISOString();
   }
 
@@ -983,7 +983,7 @@ function backupStatus_(user) {
   try {
     const storedMetrics = JSON.parse(p.getProperty('BACKUP_LAST_SUCCESS_METRICS') || 'null');
     if (storedMetrics && storedMetrics.completedAt === lastSuccess) metrics = storedMetrics;
-  } catch (_) {
+  } catch {
     metrics = null;
   }
   let state;
