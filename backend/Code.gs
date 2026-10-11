@@ -1230,7 +1230,7 @@ function authLock_(work) {
     lock.waitLock(25000);
   } catch (error) {
     throw err_(
-      'Authentication is busy. No login or PIN attempt was recorded. Please retry shortly.',
+      'Authentication is busy. No login or PIN change was processed. Please retry shortly.',
       'BUSY',
     );
   }
