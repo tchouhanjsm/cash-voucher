@@ -43,14 +43,18 @@ export function createDashboard() {
   }
 
   function bars(rows, limit = 8) {
-    const top = rows.slice(0, limit);
+    // Persisted/bootstrap data is untrusted; keep non-finite totals out of CSS geometry.
+    const top = rows.slice(0, limit).map((row) => ({
+      ...row,
+      s: Number.isFinite(Number(row.s)) ? Number(row.s) : 0,
+    }));
     const max = Math.max(1, ...top.map((row) => row.s));
 
     return (
       top
         .map(
           (row) =>
-            `<div class="hb"><div class="hb-l" title="${esc(row.k)}">${esc(row.k)}</div><div class="hb-t"><i style="width:${Math.max(2, (row.s / max) * 100)}%"></i></div><div class="hb-v">${money(row.s)}</div></div>`,
+            `<div class="hb"><div class="hb-l" title="${esc(row.k)}">${esc(row.k)}</div><div class="hb-t"><i style="width:${Math.min(100, Math.max(2, (row.s / max) * 100))}%"></i></div><div class="hb-v">${money(row.s)}</div></div>`,
         )
         .join('') || '<p class="muted">No data in this period.</p>'
     );
