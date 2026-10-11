@@ -188,8 +188,26 @@ function backupData_() {
     getTimeZone: () => Session.getScriptTimeZone(),
     getFolderById: (id) => DriveApp.getFolderById(id),
     getFileById: (id) => DriveApp.getFileById(id),
+    getReceiptSize: (file) => file.getSize(),
+    nowMilliseconds: () => Date.now(),
     pruneBackups: (root) => pruneBackups_(root),
     logger: (message) => Logger.log(message),
+    sendFailureAlert: (alert) => {
+      const recipient = String(props_().getProperty('OWNER_EMAIL') || '').trim();
+      if (!/^\\S+@\\S+\\.\\S+$/.test(recipient)) {
+        throw new Error('OWNER_EMAIL is not configured; backup failure alert was not sent.');
+      }
+      MailApp.sendEmail(
+        recipient,
+        'Cash Voucher backup failed',
+        'A Cash Voucher backup attempt failed at ' +
+          alert.timestamp +
+          '.\\n\\nError: ' +
+          alert.message +
+          '\\n\\nOpen Cash Voucher Settings to review backup status. Check Apps Script logs and Drive permissions. ' +
+          'A recorded status does not prove that a restore will succeed.',
+      );
+    },
     mimeCsv: MimeType.CSV,
   });
 }
@@ -199,8 +217,12 @@ function backupDataWithServices_(services) {
   let p;
   let snapshot;
   let snapshotComplete = false;
+  let startedAtMs = null;
+  let receiptBytes = 0;
+  let receiptBytesKnown = true;
 
   try {
+    startedAtMs = backupNowMilliseconds_(services);
     lock = services.getLock();
     lock.waitLock(30000);
     lockAcquired = true;
@@ -226,6 +248,22 @@ function backupDataWithServices_(services) {
     while (files.hasNext()) {
       const file = files.next();
       if (file.isTrashed()) continue;
+      let fileSize = null;
+      try {
+        fileSize =
+          typeof services.getReceiptSize === 'function'
+            ? services.getReceiptSize(file)
+            : typeof file.getSize === 'function'
+              ? file.getSize()
+              : null;
+      } catch (_) {
+        receiptBytesKnown = false;
+      }
+      if (typeof fileSize === 'number' && isFinite(fileSize) && fileSize >= 0) {
+        receiptBytes += fileSize;
+      } else {
+        receiptBytesKnown = false;
+      }
       const copy = file.makeCopy(file.getName(), receiptBackup);
       copied.push(copy.getId());
       manifest.push([
@@ -238,13 +276,42 @@ function backupDataWithServices_(services) {
     snapshot.createFile('receipt-manifest.csv', backupManifestCsv_(manifest), services.mimeCsv);
     snapshotComplete = true;
     services.pruneBackups(root);
-    p.setProperty('BACKUP_LAST_SUCCESS', services.now().toISOString());
+    const successAt = services.now().toISOString();
+    const durationMs = Math.max(0, Math.round(backupNowMilliseconds_(services) - startedAtMs));
+    p.setProperty('BACKUP_LAST_SUCCESS', successAt);
     p.deleteProperty('BACKUP_LAST_ERROR');
-    services.logger('Backup complete: ' + snapshot.getName() + ', receipts=' + copied.length);
-    return { folderId: snapshot.getId(), receiptCount: copied.length };
+    recordBackupSuccessMetrics_(
+      p,
+      {
+        completedAt: successAt,
+        durationMs: durationMs,
+        receiptCount: copied.length,
+        receiptBytes: receiptBytesKnown ? receiptBytes : null,
+        receiptBytesKnown: receiptBytesKnown,
+      },
+      services.logger,
+    );
+    clearBackupFailureAlertState_(p, services.logger);
+    services.logger(
+      'Backup complete: ' +
+        snapshot.getName() +
+        ', receipts=' +
+        copied.length +
+        ', receiptBytes=' +
+        (receiptBytesKnown ? receiptBytes : 'unknown') +
+        ', durationMs=' +
+        durationMs,
+    );
+    return {
+      folderId: snapshot.getId(),
+      receiptCount: copied.length,
+      durationMs: durationMs,
+      receiptBytes: receiptBytesKnown ? receiptBytes : null,
+    };
   } catch (e) {
     if (p) {
       recordBackupFailure_(p, snapshot, snapshotComplete, e, services.logger);
+      notifyBackupFailure_(p, services, e);
     } else {
       services.logger(
         'Could not record backup failure metadata: ' + String(e && e.message ? e.message : e),
@@ -253,6 +320,96 @@ function backupDataWithServices_(services) {
     throw e;
   } finally {
     if (lockAcquired) lock.releaseLock();
+  }
+}
+function backupNowMilliseconds_(services) {
+  if (services && typeof services.nowMilliseconds === 'function') {
+    const milliseconds = Number(services.nowMilliseconds());
+    if (isFinite(milliseconds)) return milliseconds;
+  }
+  const now = services.now();
+  const milliseconds =
+    now && typeof now.getTime === 'function' ? now.getTime() : new Date(now).getTime();
+  return isFinite(milliseconds) ? milliseconds : Date.now();
+}
+function recordBackupSuccessMetrics_(p, metrics, logger) {
+  try {
+    p.setProperty('BACKUP_LAST_SUCCESS_METRICS', JSON.stringify(metrics));
+  } catch (error) {
+    const log = logger || function (message) { Logger.log(message); };
+    log(
+      'Could not record backup workload metrics: ' +
+        String(error && error.message ? error.message : error),
+    );
+  }
+}
+function clearBackupFailureAlertState_(p, logger) {
+  const log = logger || function (message) { Logger.log(message); };
+  ['BACKUP_ALERT_ACTIVE', 'BACKUP_LAST_ALERT_ERROR'].forEach(function (key) {
+    try {
+      p.deleteProperty(key);
+    } catch (error) {
+      log(
+        'Could not clear backup alert state: ' +
+          String(error && error.message ? error.message : error),
+      );
+    }
+  });
+}
+function notifyBackupFailure_(p, services, error) {
+  const log = services.logger || function (message) { Logger.log(message); };
+  if (!p || typeof services.sendFailureAlert !== 'function') return;
+
+  try {
+    if (p.getProperty('BACKUP_ALERT_ACTIVE') === '1') return;
+    p.setProperty('BACKUP_ALERT_ACTIVE', '1');
+  } catch (stateError) {
+    log(
+      'Could not reserve backup failure alert state: ' +
+        String(stateError && stateError.message ? stateError.message : stateError),
+    );
+    return;
+  }
+
+  const message = String(error && error.message ? error.message : error).slice(0, 300);
+  let timestamp;
+  try {
+    timestamp = services.now().toISOString();
+  } catch (_) {
+    timestamp = new Date().toISOString();
+  }
+
+  try {
+    services.sendFailureAlert({ timestamp: timestamp, message: message });
+    try {
+      p.deleteProperty('BACKUP_LAST_ALERT_ERROR');
+    } catch (stateError) {
+      log(
+        'Could not clear prior backup alert delivery error: ' +
+          String(stateError && stateError.message ? stateError.message : stateError),
+      );
+    }
+  } catch (alertError) {
+    try {
+      p.deleteProperty('BACKUP_ALERT_ACTIVE');
+    } catch (stateError) {
+      log(
+        'Could not reset backup failure alert state: ' +
+          String(stateError && stateError.message ? stateError.message : stateError),
+      );
+    }
+    const deliveryMessage = String(
+      alertError && alertError.message ? alertError.message : alertError,
+    ).slice(0, 300);
+    try {
+      p.setProperty('BACKUP_LAST_ALERT_ERROR', deliveryMessage);
+    } catch (stateError) {
+      log(
+        'Could not record backup alert delivery error: ' +
+          String(stateError && stateError.message ? stateError.message : stateError),
+      );
+    }
+    log('Could not send backup failure alert: ' + deliveryMessage);
   }
 }
 function recordBackupFailure_(p, snapshot, snapshotComplete, error, logger) {
@@ -821,6 +978,14 @@ function backupStatus_(user) {
   );
   const lastAttempt = p.getProperty('BACKUP_LAST_ATTEMPT') || '';
   const lastSuccess = p.getProperty('BACKUP_LAST_SUCCESS') || '';
+  const lastAlertError = String(p.getProperty('BACKUP_LAST_ALERT_ERROR') || '').slice(0, 300);
+  let metrics = null;
+  try {
+    const storedMetrics = JSON.parse(p.getProperty('BACKUP_LAST_SUCCESS_METRICS') || 'null');
+    if (storedMetrics && storedMetrics.completedAt === lastSuccess) metrics = storedMetrics;
+  } catch (_) {
+    metrics = null;
+  }
   let state;
 
   if (!configured) {
@@ -848,6 +1013,30 @@ function backupStatus_(user) {
     lastAttempt: lastAttempt,
     lastSuccess: lastSuccess,
     lastError: lastError.slice(0, 300),
+    lastAlertError: lastAlertError,
+    lastSuccessDurationMs:
+      metrics && typeof metrics.durationMs === 'number' && isFinite(metrics.durationMs) && metrics.durationMs >= 0
+        ? metrics.durationMs
+        : null,
+    lastSuccessReceiptCount:
+      metrics && typeof metrics.receiptCount === 'number' && isFinite(metrics.receiptCount) && metrics.receiptCount >= 0
+        ? metrics.receiptCount
+        : null,
+    lastSuccessReceiptBytesKnown: Boolean(
+      metrics &&
+        metrics.receiptBytesKnown === true &&
+        typeof metrics.receiptBytes === 'number' &&
+        isFinite(metrics.receiptBytes) &&
+        metrics.receiptBytes >= 0,
+    ),
+    lastSuccessReceiptBytes:
+      metrics &&
+      metrics.receiptBytesKnown === true &&
+      typeof metrics.receiptBytes === 'number' &&
+      isFinite(metrics.receiptBytes) &&
+      metrics.receiptBytes >= 0
+        ? metrics.receiptBytes
+        : null,
   };
 }
 function pruneBackups_(root) {
