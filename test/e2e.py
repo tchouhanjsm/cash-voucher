@@ -1145,7 +1145,7 @@ with sync_playwright() as p:
                     'date': datetime.date.today().isoformat(),
                     'vendor': value,
                     'category': value,
-                    'amount': 17 + index,
+                    'amount': 900001 + index,
                     'type': 'PAYMENT',
                     'status': 'ACTIVE',
                     'createdBy': 'owner@test.com',
