@@ -2,16 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `4082503cf96bf08a2aa6408bde14fbd0bef14d2c` (PR #82 merge)  
+**Verified `main` SHA:** `dd1a00a1dced79346bbdcb514eea1be7669bcac5` (PR #83 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #83 — Backup workload telemetry and owner failure alerts**  
-Branch: `feature/backup-observability-and-alerts`  
-Base: `4082503cf96bf08a2aa6408bde14fbd0bef14d2c`
+**PR #84 — Dashboard prototype-key aggregation hardening**  
+Branch: `security/dashboard-prototype-key-aggregation`  
+Base: `dd1a00a1dced79346bbdcb514eea1be7669bcac5`
 
-Scope: record elapsed duration, copied receipt count and total receipt bytes for each successful backup; expose timestamp-matched metrics and assertive owner Settings failure feedback; send one owner email per continuous backup-failure incident and separately record alert-delivery errors; add a seeded mock workload benchmark. The real Apps Script Mail permission needs owner authorization before live use. No cloud performance threshold is inferred from mock timing, and a real isolated restore remains an owner-run operational gate.
+Scope: replace the dashboard's plain-object grouping dictionary with a `Map`, so user-controlled vendor/category names such as `constructor`, `__proto__`, `toString`, and `hasOwnProperty` aggregate as ordinary values rather than colliding with inherited object properties. Add Browser E2E regression coverage for group visibility and unchanged built-in object/function properties. PR #83 is merged; its live MailApp authorization, scheduled backup observation and isolated restore remain owner-authorized operational gates.
 
 Adopt three distinct sources of information:
 
@@ -66,6 +66,7 @@ These remain open regardless of green mock-backed CI:
 - **PR #80 — Offline outbox failure isolation and account binding:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/80) at `cb98b8ae9e329d34ebb9c068de38a78c3f6902ac`; exact tested head `95c3252a2f58a5453ec5a9e55a88e6f67d69dcc7` passed CI (112 backend/unit checks), Browser E2E (165 checks) and Full Flight Test (112 backend + 165 browser checks).
 - **PR #81 — Serialize authentication lockout transitions and handle contention safely:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/81) at `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc`; exact tested head `46410471c025b3f2476807db39ee73f5cc1fcb6e` passed CI (120 backend/unit checks), Browser E2E (165 checks) and Full Flight Test (120 backend + 165 browser checks).
 - **PR #82 — Voucher correction history and required edit reasons:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/82) at `4082503cf96bf08a2aa6408bde14fbd0bef14d2c`; exact tested head `8b894512bc6903c824c8a69fd4a8bdadc70ad4d6` passed CI (127 backend checks), Browser E2E (171 checks) and Full Flight Test (127 backend + 171 browser checks). Existing AuditLog remains an operational audit, not a tamper-proof ledger.
+- **PR #83 — Backup workload observability and failure alerts:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/83) at `dd1a00a1dced79346bbdcb514eea1be7669bcac5`; exact tested head `60b60f25fe7fe0d0d07922930e6215f98a6a7cbc` passed CI, Browser E2E and Full Flight Test. Live MailApp authorization, real scheduled backup observation and isolated restore remain unverified.
 
 For full acceptance criteria, diffs, review discussions and CI evidence, use those GitHub PR records. Do not copy their full histories into this handoff.
 
@@ -75,6 +76,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #82 is merged at verified `main` SHA `4082503cf96bf08a2aa6408bde14fbd0bef14d2c`. Its exact tested head passed CI (127 backend checks), Browser E2E (171 checks) and Full Flight Test.
-6. PR #83 is the current phase: add successful-backup elapsed time, receipt count/bytes telemetry; owner email alerts for new failure streaks; independent tracking of alert delivery failures; and seeded benchmark regression coverage. No live deployment is implied.
-7. Real backup observation and restoration into a separate recovery Sheet/folder remain mandatory operational gates. The new MailApp permission must be authorized and live alert delivery verified by the owner before relying on email notifications. Preserve the owner's local untracked engineering protocol and do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization.
+5. PR #83 is merged at verified `main` SHA `dd1a00a1dced79346bbdcb514eea1be7669bcac5`; its exact tested head passed CI, Browser E2E and Full Flight Test.
+6. PR #84 is the current code phase: use `Map` for dashboard grouping and verify prototype-named vendor/category values remain visible without mutating built-in object/function properties.
+7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.

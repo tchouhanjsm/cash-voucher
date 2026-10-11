@@ -39,7 +39,19 @@ with sync_playwright() as p:
     )
     page = context.new_page()
     logs = []
-    page.add_init_script('window.__xssFired = false;')
+    page.add_init_script(
+        """window.__xssFired = false;
+        window.__dashboardKeyBaseline = [
+            Object.prototype,
+            Object,
+            Object.prototype.toString,
+            Object.prototype.hasOwnProperty,
+        ].map((target) => ({
+            target,
+            n: Object.getOwnPropertyDescriptor(target, 'n'),
+            s: Object.getOwnPropertyDescriptor(target, 's'),
+        }));"""
+    )
     page.on('console', lambda message: logs.append(message.text) if message.type == 'error' else None)
     page.on('pageerror', lambda error: logs.append('PAGEERR ' + str(error)))
 
@@ -1109,6 +1121,96 @@ with sync_playwright() as p:
     page.wait_for_selector('.stats')
     check('cash in hand' in page.inner_text('.stats').lower(), 'dashboard shows cash in hand')
     check(page.locator('.hb').count() >= 3, 'dashboard bars')
+
+    # Prototype-named user data must be ordinary aggregation keys, not Object properties.
+    prototype_group_values = ['constructor', '__proto__', 'toString', 'hasOwnProperty']
+
+    def tamper_dashboard_groups(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {})
+        if request_data.get('action') == 'bootstrap':
+            vouchers = data.get('vouchers', [])
+            template = vouchers[0].copy() if vouchers else {
+                'id': '',
+                'no': 0,
+                'date': datetime.date.today().isoformat(),
+                'vendor': '',
+                'amount': 1,
+                'category': '',
+                'notes': '',
+                'type': 'PAYMENT',
+                'status': 'ACTIVE',
+                'createdBy': 'owner@test.com',
+                'createdAt': '',
+                'updatedBy': '',
+                'updatedAt': '',
+                'receipts': [],
+                'cancelReason': '',
+            }
+            for index, value in enumerate(prototype_group_values):
+                entry = template.copy()
+                entry.update({
+                    'id': 'prototype-dashboard-' + str(index),
+                    'no': 900001 + index,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': value,
+                    'category': value,
+                    'amount': 900001 + index,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'owner@test.com',
+                    'receipts': [],
+                })
+                vouchers.append(entry)
+            data['vouchers'] = vouchers
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_dashboard_groups)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'bootstrap'
+    ):
+        page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.click('[data-v=dash]')
+    page.wait_for_selector('.hb-l')
+    vendor_labels = page.locator('.two .card').nth(0).locator('.hb-l').all_inner_texts()
+    category_labels = page.locator('.two .card').nth(1).locator('.hb-l').all_inner_texts()
+    check(
+        all(value in vendor_labels for value in prototype_group_values),
+        'dashboard preserves constructor, __proto__ and toString vendor groups',
+    )
+    check(
+        all(value in category_labels for value in prototype_group_values),
+        'dashboard preserves prototype-named category groups',
+    )
+    builtins_unchanged = page.evaluate(
+        """() => {
+          const baseline = window.__dashboardKeyBaseline || [];
+          const changed = baseline.some(({ target, n, s }) =>
+            JSON.stringify(Object.getOwnPropertyDescriptor(target, 'n') || null) !== JSON.stringify(n || null) ||
+            JSON.stringify(Object.getOwnPropertyDescriptor(target, 's') || null) !== JSON.stringify(s || null)
+          );
+          baseline.forEach(({ target, n, s }) => {
+            if (n) Object.defineProperty(target, 'n', n);
+            else delete target.n;
+            if (s) Object.defineProperty(target, 's', s);
+            else delete target.s;
+          });
+          return !changed;
+        }"""
+    )
+    check(
+        builtins_unchanged,
+        'prototype-like dashboard labels do not mutate built-in object/function properties',
+    )
+    page.unroute('**/api?*', tamper_dashboard_groups)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
 
     page.click('[data-v=reg]')
     page.wait_for_selector('[data-act=edit]')

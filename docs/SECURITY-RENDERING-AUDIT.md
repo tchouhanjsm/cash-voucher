@@ -43,6 +43,8 @@ The active application uses HTML template strings for several views. The review 
 - Vendor/category bars escape visible labels and title attributes; custom date input values and formatted date-range text are escaped; chart labels are escaped.
 - Numeric chart geometry is derived from amounts and counts, not raw strings.
 
+- Dashboard aggregation keys are user-controlled vendor, category and user-name values. A plain object used as the grouping dictionary collides with inherited keys such as `constructor`, `__proto__`, `toString` and `hasOwnProperty`, causing valid groups to be lost or corrupted before rendering and allowing inherited properties to be touched. The follow-up uses `Map` and tests those values end-to-end.
+
 ### Navigation — `frontend/features/navigation.js`
 
 - Display name and role are escaped. Navigation labels, icons, keys and action markup are static constants.
@@ -80,6 +82,7 @@ Existing Browser E2E regression coverage in `test/e2e.py` includes:
 - **Modal edit/cancel:** hostile persisted vendor text remains in the input/text context and creates no `img`/`svg` nodes.
 - **Existing receipt preview check:** preview source is a generated blob URL.
 - **Settings numeric inputs:** a hostile bootstrap response attempts to break out of each `value` attribute; the settings form must contain no injected image/SVG nodes and the payload handler must not execute.
+- **Dashboard grouping keys:** a tampered bootstrap response supplies vendor/category values `constructor`, `__proto__`, `toString` and `hasOwnProperty`; every group must remain visible. The test also asserts the relevant built-in object/function properties remain unchanged, restoring any changed test-only descriptors to avoid contaminating later journeys. This is a data-integrity regression for dynamic keys, not a full XSS certification.
 
 The E2E suite runs against the repository's local mock Apps Script service. It does not verify a live Google deployment, real Sheet/Drive permissions, backup restoration, or every possible payload/output context.
 
