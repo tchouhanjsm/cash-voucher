@@ -1243,7 +1243,9 @@ with sync_playwright() as p:
                 ('numeric-nan', 'NaN', 'numeric-nan'),
                 ('numeric-infinity', 'Infinity', 'numeric-infinity'),
                 ('numeric-negative', -500, 'numeric-negative'),
+                # A non-finite amount must stay in its own vendor group but never poison chart geometry.
                 ('numeric-string', hostile_vendor, 'numeric-string'),
+                # Large valid values make the hostile text row deterministic in the top-eight vendor chart.
                 ('hostile-vendor', 910005, hostile_vendor),
             ]
             for index, (suffix, amount, vendor) in enumerate(values):
@@ -1313,7 +1315,7 @@ with sync_playwright() as p:
     injected_svg_count = page.locator('.hb-l svg, .hb-t svg, .hb-v svg, svg.chart svg').count()
     hostile_handler_fired = page.evaluate('window.__xssFired === true')
     check(
-        page.locator('.hb-l').filter(has_text='numeric-string').count() == 1,
+        page.locator('.hb-l').filter(has_text='hostile-vendor').count() == 1,
         'dashboard keeps the numeric-string vendor row visible',
     )
     check(
