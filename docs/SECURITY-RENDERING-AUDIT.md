@@ -134,7 +134,7 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 
 ## PR #85 — Dashboard numeric values at CSS geometry sink
 
-- **Confirmed rendering-integrity defect:** `frontend/features/dashboard.js` derives a bar's inline CSS width from aggregated voucher amounts and interpolates it into a `style` attribute. Bootstrap/persisted voucher data reaches aggregation; malformed numeric values could produce invalid CSS widths such as `NaN%`, `Infinity%`, or values exceeding `100%`.
-- Normalize non-finite group totals to zero for the bar presentation and clamp computed widths to `2–100%`. This bounds CSS geometry without altering source voucher records or claiming ledger validity.
-- Browser E2E tampers with the bootstrap response to include non-finite-like and hostile amount values; it checks widths are finite and within bounds, no markup is created from an amount string, and the payload handler does not execute.
-- This is a dashboard presentation/integrity guard, not a substitute for backend amount validation or a full XSS audit. SVG trend geometry and other dynamic template sinks remain under review.
+- **Confirmed rendering-integrity defect:** `frontend/features/dashboard.js` interpolated computed bar widths into CSS and aggregate amounts into SVG `y`/`height` attributes without a finite-number boundary. Malformed bootstrap/persisted values produced invalid SVG dimensions such as `NaN` during Browser E2E, as confirmed by browser console errors.
+- Normalize non-finite amounts out of trend aggregation, use `Map` for date buckets to avoid inherited-key collisions on malformed date values, normalize non-finite group totals to zero for bar presentation, and clamp computed CSS widths to `2–100%`. This bounds rendered geometry without altering source voucher records or claiming ledger validity.
+- Browser E2E tampers with bootstrap response values including `NaN`, `Infinity`, a negative value, a hostile amount string, and a hostile vendor label. It checks finite/bounded CSS widths, finite/non-negative SVG geometry, absence of injected nodes, and no payload execution.
+- This is a dashboard presentation/integrity guard, not a substitute for backend amount validation or a full XSS audit. The active template/sink inventory remains incomplete.
