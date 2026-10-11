@@ -26,16 +26,20 @@ export function createDashboard() {
   }
 
   function group(list, key) {
-    const grouped = {};
+    const grouped = new Map();
 
     list.forEach((voucher) => {
       const groupKey = key(voucher);
-      grouped[groupKey] ||= { k: groupKey, n: 0, s: 0 };
-      grouped[groupKey].n++;
-      grouped[groupKey].s += voucher.amount;
+      if (!grouped.has(groupKey)) {
+        grouped.set(groupKey, { k: groupKey, n: 0, s: 0 });
+      }
+
+      const item = grouped.get(groupKey);
+      item.n++;
+      item.s += voucher.amount;
     });
 
-    return Object.values(grouped).sort((a, b) => b.s - a.s);
+    return [...grouped.values()].sort((a, b) => b.s - a.s);
   }
 
   function bars(rows, limit = 8) {
