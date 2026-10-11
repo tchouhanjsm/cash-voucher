@@ -421,50 +421,58 @@ export function createPayments({ api, refresh }) {
     let uploaded = 0;
     let rejected = 0;
     let bannerError = '';
+    let stopFlush = false;
     const leaseOwner = uid();
 
     try {
       await offlineQueue.ready();
-      const records = await offlineQueue.claim(10, leaseOwner, ownerKey);
 
-      for (let index = 0; index < records.length; index++) {
-        const record = records[index];
-        const remainingIds = records.slice(index).map((item) => item.clientId);
+      while (!stopFlush) {
+        const records = await offlineQueue.claim(10, leaseOwner, ownerKey);
+        if (!records.length) break;
 
-        if (!S.token || queueOwnerKey() !== ownerKey) {
-          await offlineQueue.release(remainingIds, leaseOwner);
-          bannerError = 'The signed-in account changed. Remaining payments were kept pending.';
-          announceOutboxChange('changed');
-          break;
-        }
+        for (let index = 0; index < records.length; index++) {
+          const record = records[index];
+          const remainingIds = records.slice(index).map((item) => item.clientId);
 
-        try {
-          // Submit one row per request so one rejected row cannot poison its neighbours.
-          await api('createVouchers', { entries: [record.entry] });
-          await offlineQueue.ack([record.clientId], leaseOwner);
-          uploaded++;
-        } catch (error) {
-          if (isRecordRejection(error)) {
-            try {
-              await offlineQueue.markFailed(record.clientId, leaseOwner, error.message);
-              rejected++;
-              announceOutboxChange('changed');
-              continue;
-            } catch (storageError) {
-              await offlineQueue.release(remainingIds, leaseOwner);
-              bannerError = storageError.message || 'Could not save the rejected payment state.';
-              announceOutboxChange('changed');
-              break;
-            }
+          if (!S.token || queueOwnerKey() !== ownerKey) {
+            await offlineQueue.release(remainingIds, leaseOwner);
+            bannerError = 'The signed-in account changed. Remaining payments were kept pending.';
+            announceOutboxChange('changed');
+            stopFlush = true;
+            break;
           }
 
-          await offlineQueue.release(remainingIds, leaseOwner);
-          bannerError =
-            error.code === 'NET'
-              ? 'Connection to server was lost. Remaining payments are still queued.'
-              : error.message || 'Upload stopped; remaining payments are still queued.';
-          announceOutboxChange('changed');
-          break;
+          try {
+            // Submit one row per request so one rejected row cannot poison its neighbours.
+            await api('createVouchers', { entries: [record.entry] });
+            await offlineQueue.ack([record.clientId], leaseOwner);
+            uploaded++;
+          } catch (error) {
+            if (isRecordRejection(error)) {
+              try {
+                await offlineQueue.markFailed(record.clientId, leaseOwner, error.message);
+                rejected++;
+                announceOutboxChange('changed');
+                continue;
+              } catch (storageError) {
+                await offlineQueue.release(remainingIds, leaseOwner);
+                bannerError = storageError.message || 'Could not save the rejected payment state.';
+                announceOutboxChange('changed');
+                stopFlush = true;
+                break;
+              }
+            }
+
+            await offlineQueue.release(remainingIds, leaseOwner);
+            bannerError =
+              error.code === 'NET'
+                ? 'Connection to server was lost. Remaining payments are still queued.'
+                : error.message || 'Upload stopped; remaining payments are still queued.';
+            announceOutboxChange('changed');
+            stopFlush = true;
+            break;
+          }
         }
       }
 
@@ -477,15 +485,16 @@ export function createPayments({ api, refresh }) {
       }
       if (rejected) {
         toast(
-          rejected + ' payment' + (rejected === 1 ? '' : 's') +
+          rejected +
+            ' payment' +
+            (rejected === 1 ? '' : 's') +
             ' need review and will not retry automatically. ' +
             'Export the queue before discarding any item.',
           'err',
         );
       }
     } catch (error) {
-      bannerError =
-        error.code === 'NET' ? 'Connection to server was lost.' : error.message;
+      bannerError = error.code === 'NET' ? 'Connection to server was lost.' : error.message;
     } finally {
       flushing = false;
     }
