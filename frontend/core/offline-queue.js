@@ -397,7 +397,8 @@ export async function restore(exportRecords, ownerKey) {
 
     if (sourceOwner && sourceOwner !== ownerKey) {
       throw new Error(
-        'Recovery file is bound to another endpoint or user; restore it while signed in to the matching account.',
+        'Recovery file is bound to another endpoint or user; restore it while signed in ' +
+          'to the matching account.',
       );
     }
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
