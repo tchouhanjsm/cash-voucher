@@ -73,6 +73,28 @@ const arrayRequest = g.raw('[]');
 ok(arrayRequest.code === 'VALIDATION', 'array request rejected');
 
 ok(!g.props.OWNER_PIN, 'owner PIN property removed after setup');
+// Login lock contention: timeout must fail closed without counting an attempt or releasing an unacquired lock.
+const contentionAttempts = g.lockStats.attempts;
+const contentionWaits = g.lockStats.waits;
+const contentionReleases = g.lockStats.releases;
+g.lockStats.failNextWait = true;
+const busyLogin = g.call('login', { email: 'busy@test.com', pin: '000000' });
+ok(
+  !busyLogin.ok &&
+    busyLogin.code === 'BUSY' &&
+    /retry shortly/i.test(busyLogin.error),
+  'login lock timeout returns actionable BUSY feedback',
+);
+ok(
+  g.lockStats.attempts === contentionAttempts + 1 &&
+    g.lockStats.waits === contentionWaits &&
+    g.lockStats.releases === contentionReleases,
+  'timed-out lock acquisition is not counted as acquired or released',
+);
+ok(
+  !Object.prototype.hasOwnProperty.call(g.cache, 'f:busy@test.com'),
+  'login lock timeout does not increment a failed-login counter',
+);
 // login
 const loginLockWaits = g.lockStats.waits;
 const loginLockReleases = g.lockStats.releases;
@@ -147,6 +169,26 @@ ok(cp.ok, 'pin changed');
 ok(as(M0, 'bootstrap').code === 'SESSION', 'old token invalid after pin change');
 const M = cp.data.token;
 ok(as(M, 'bootstrap').ok, 'new token works');
+const managerUserId = as(T, 'listUsers').data.find((u) => u.email === 'm@test.com').id;
+const busyPinAttempts = g.lockStats.attempts;
+const busyPinWaits = g.lockStats.waits;
+const busyPinReleases = g.lockStats.releases;
+g.lockStats.failNextWait = true;
+const busyPinChange = as(M, 'changePin', { oldPin: '000000', newPin: '864209' });
+ok(
+  !busyPinChange.ok &&
+    busyPinChange.code === 'BUSY' &&
+    !Object.prototype.hasOwnProperty.call(g.cache, 'pf:' + managerUserId),
+  'PIN-change lock timeout does not record a failed current-PIN attempt',
+);
+ok(
+  g.lockStats.attempts === busyPinAttempts + 1 &&
+    g.lockStats.waits === busyPinWaits &&
+    g.lockStats.releases === busyPinReleases,
+  'PIN-change timeout does not release an unacquired lock',
+);
+const changePinWaits = g.lockStats.waits;
+const changePinReleases = g.lockStats.releases;
 const failedPinChanges = [];
 for (let i = 0; i < 5; i++) {
   failedPinChanges.push(as(M, 'changePin', { oldPin: '000000', newPin: '864209' }));
@@ -156,8 +198,20 @@ ok(
   'wrong current PIN attempts are counted before lockout',
 );
 ok(
+  g.lockStats.waits === changePinWaits + 5 &&
+    g.lockStats.releases === changePinReleases + 5,
+  'each PIN-change counter update runs under the shared script lock',
+);
+const changePinLockoutWaits = g.lockStats.waits;
+const changePinLockoutReleases = g.lockStats.releases;
+ok(
   as(M, 'changePin', { oldPin: '864209', newPin: '112244' }).code === 'LOCKED',
   'PIN change is locked after five incorrect current PIN attempts',
+);
+ok(
+  g.lockStats.waits === changePinLockoutWaits + 1 &&
+    g.lockStats.releases === changePinLockoutReleases + 1,
+  'locked PIN-change attempts release the acquired script lock',
 );
 const S0 = g.call('login', { email: 's@test.com', pin: '135790' }).data.token;
 const S = as(S0, 'changePin', { oldPin: '135790', newPin: '975310' }).data.token;
@@ -528,12 +582,19 @@ ok(
   g.call('login', { email: 'm@test.com', pin: '864209' }).code === 'LOCKED',
   'lockout after 5 fails',
 );
+const resetPinWaits = g.lockStats.waits;
+const resetPinReleases = g.lockStats.releases;
 ok(
   as(T, 'resetPin', {
-    id: as(T, 'listUsers').data.find((u) => u.email === 'm@test.com').id,
+    id: managerUserId,
     pin: '314159',
   }).ok,
   'owner reset pin succeeds',
+);
+ok(
+  g.lockStats.waits === resetPinWaits + 1 &&
+    g.lockStats.releases === resetPinReleases + 1,
+  'PIN reset and throttle clearing run under the shared script lock',
 );
 const resetLogin = g.call('login', { email: 'm@test.com', pin: '314159' });
 ok(resetLogin.ok, 'owner reset pin clears login lockout');
