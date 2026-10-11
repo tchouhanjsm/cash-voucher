@@ -202,6 +202,29 @@ with sync_playwright() as p:
         and not page.locator('[data-act=bkintegrity]').is_disabled(),
         'backup inspection failure is announced and the retry action is restored',
     )
+
+    status_fixture_ok = page.evaluate(
+        "() => fetch('/test-backup-failure', { method: 'POST' }).then((response) => response.ok)"
+    )
+    check(status_fixture_ok, 'backup failure alert fixture is available')
+    page.click('[data-v=dash]')
+    page.wait_for_function(
+        "document.querySelector('[data-v=dash]').getAttribute('aria-current') === 'page'"
+    )
+    page.click('[data-v=set]')
+    page.wait_for_function(
+        "document.querySelector('#backup-status').innerText.includes('Latest backup attempt failed')"
+    )
+    failed_backup_text = page.locator('#backup-status').inner_text()
+    check(
+        page.locator('#backup-status p[role=alert]').count() == 1
+        and 'Latest error: Drive permission denied' in failed_backup_text
+        and 'Last successful runtime: 1.25 s' in failed_backup_text
+        and 'Receipt copies in last successful backup: 12' in failed_backup_text
+        and 'Receipt payload in last successful backup: 7.00 MiB' in failed_backup_text
+        and 'Owner notification issue: Mail service unavailable' in failed_backup_text,
+        'backup failure is assertively announced with separate error, delivery, runtime and payload metrics',
+    )
     check(page.locator('#aud').count() == 0, 'audit events are no longer embedded in Settings')
     check(page.locator('[data-v=audit]').count() == 1, 'owner has a dedicated audit navigation item')
     page.click('[data-v=audit]')
