@@ -1,15 +1,15 @@
 # Engineering Handoff
 
-**Updated:** 10 October 2026  
+**Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `539d5d8afd101136f0f1a3922068fc9624d12890` (PR #77 merge)  
+**Verified `main` SHA:** `3ac0c387d52fc2631f26b48f6169a5b6c03a995d` (PR #78 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #78 — [Harden backend action and role allowlists](https://github.com/tchouhanjsm/cash-voucher/pull/78)**  
-Branch: `security/harden-backend-allowlists`  
-Base: `539d5d8afd101136f0f1a3922068fc9624d12890`
+**PR #79 — Disable vulnerable runtime Excel parser**  
+Branch: `security/disable-vulnerable-excel-import`  
+Base: `3ac0c387d52fc2631f26b48f6169a5b6c03a995d`
 
 Adopt three distinct sources of information:
 
@@ -59,6 +59,7 @@ These remain open regardless of green mock-backed CI:
 - **PR #75 — Bulk import completion feedback:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/75) at `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`; CI passed, Browser E2E passed 145 checks / 0 failures, and Full Flight Test passed 110 backend checks plus 145 browser checks.
 - **PR #76 — Consolidate engineering handoff documentation:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/76) at `b1f2a3234577301e4e9536dd424695976f1d8fca`; three exact-head workflows passed. No application behavior or deployment changed.
 - **PR #77 — Escape settings numeric input attributes:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/77) at `539d5d8afd101136f0f1a3922068fc9624d12890`; CI, Browser E2E and Full Flight Test passed at its exact tested head with 146 browser checks.
+- **PR #78 — Harden backend action and role allowlists:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/78) at `3ac0c387d52fc2631f26b48f6169a5b6c03a995d`; exact tested head passed CI (112 backend/unit checks), Browser E2E (146 checks) and Full Flight Test.
 
 For full acceptance criteria, diffs, review discussions and CI evidence, use those GitHub PR records. Do not copy their full histories into this handoff.
 
@@ -68,5 +69,5 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #77 is merged at the verified `main` SHA above. The current implementation phase adopts verified report findings by rejecting inherited object properties in backend action/role allowlists, with regression tests.
-6. After PR #78 merges, remediate the runtime-loaded `xlsx@0.18.5` parser exposure: temporarily disable `.xls/.xlsx` parsing with a clear CSV/TSV/paste fallback unless a vetted patched build is self-hosted and verified. Then prioritize outbox per-record failure isolation and shared-device user binding before cash-close. Keep parser and outbox work in separate focused PRs; close remains behind the existing owner/accountant decisions.
+5. PR #78 is merged at the verified `main` SHA above. PR #79 disables the runtime-loaded `xlsx@0.18.5` parser and adds Browser E2E coverage for rejected Excel files plus retained CSV/paste behavior.
+6. After PR #79 is merged, prioritize outbox per-record failure isolation and shared-device user binding before cash-close. Keep those risks in focused, regression-driven PRs; cash close remains behind the existing owner/accountant decisions.
