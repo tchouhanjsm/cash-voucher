@@ -132,9 +132,16 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Apply `esc()` at each of the three attribute sinks. This is an output-encoding fix, not a replacement for backend validation or a claim that every active template sink is safe.
 - Browser E2E tampers with the bootstrap response to place a quote-breaking SVG payload into all three fields, then asserts no image/SVG node is created and no payload handler runs. The test restores a normal bootstrap response before proceeding.
 
-## PR #85 — Dashboard numeric values at CSS geometry sink
+## PR #86 — Dashboard numeric values at CSS geometry sink
 
 - **Confirmed rendering-integrity defect:** `frontend/features/dashboard.js` interpolated computed bar widths into CSS and aggregate amounts into SVG `y`/`height` attributes without a finite-number boundary. Malformed bootstrap/persisted values produced invalid SVG dimensions such as `NaN` during Browser E2E, as confirmed by browser console errors.
 - Normalize non-finite amounts out of trend aggregation, use `Map` for date buckets to avoid inherited-key collisions on malformed date values, normalize non-finite group totals to zero for bar presentation, and clamp computed CSS widths to `2–100%`. This bounds rendered geometry without altering source voucher records or claiming ledger validity.
 - Browser E2E tampers with bootstrap response values including `NaN`, `Infinity`, a negative value, a hostile amount string, and a hostile vendor label. It checks finite/bounded CSS widths, finite/non-negative SVG geometry, absence of injected nodes, and no payload execution.
 - This is a dashboard presentation/integrity guard, not a substitute for backend amount validation or a full XSS audit. The active template/sink inventory remains incomplete.
+
+## PR #87 — Encode report summary count fields
+
+- **Confirmed rendering defect:** the active Recorded Movement Report renderer interpolated API-derived `summary.count`, `summary.activeCount`, and `summary.cancelledCount` directly into HTML text in the summary cards; `summary.count` was also inserted unescaped in the source-voucher metadata line. These are API response values and cannot be assumed safe merely because the normal backend contract returns numbers.
+- Apply `esc()` at each HTML text insertion. The backend contract, counting semantics, summary calculations and CSV export behavior are unchanged.
+- Browser E2E tampers with the `recordedMovementReport` response using hostile SVG/image markup in all three count fields and verifies they remain literal text, create no SVG/image nodes, and do not execute handlers.
+- This is a targeted API-output encoding regression, not a claim that every active rendering sink has been audited or that the application is fully XSS-certified.

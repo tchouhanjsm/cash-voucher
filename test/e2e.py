@@ -1560,6 +1560,56 @@ with sync_playwright() as p:
         'default active report lists active source vouchers and excludes cancelled records',
     )
 
+    # Report summary counts are API response fields and must remain inert at HTML text sinks.
+    report_count_payload = '<svg onload=window.__reportCountXss=true></svg>'
+    report_active_count_payload = '<img src=x onerror=window.__reportCountXss=true>'
+    report_cancelled_count_payload = '<svg/onload=window.__reportCountXss=true>'
+
+    def tamper_report_summary(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        if request_data.get('action') == 'recordedMovementReport':
+            summary = payload.get('data', {})
+            summary['count'] = report_count_payload
+            summary['activeCount'] = report_active_count_payload
+            summary['cancelledCount'] = report_cancelled_count_payload
+            payload['data'] = summary
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.evaluate('window.__reportCountXss = false')
+    page.route('**/api?*', tamper_report_summary)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ):
+        page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "payload => document.querySelector('#view')?.innerText.includes(payload)",
+        arg=report_count_payload,
+    )
+    report_text = page.locator('#view').inner_text()
+    page.wait_for_timeout(100)
+    check(
+        report_count_payload in report_text
+        and report_active_count_payload in report_text
+        and report_cancelled_count_payload in report_text
+        and page.locator('#view svg, #view img').count() == 0
+        and not page.evaluate('window.__reportCountXss === true'),
+        'hostile report summary count fields remain literal text without markup or execution',
+    )
+    page.unroute('**/api?*', tamper_report_summary)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ):
+        page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
+    )
+
     # Adversarially tamper with the date control's value getter so malformed
     # state reaches the renderer; user-facing date inputs normally constrain it.
     range_payload = '<svg onload=window.__xssFired=true></svg>'
