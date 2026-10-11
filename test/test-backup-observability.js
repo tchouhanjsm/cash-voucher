@@ -296,7 +296,11 @@ assert.throws(
   () => g.backupDataWithServices(lockTimeout.services),
   /Simulated lock contention timeout/,
 );
-assert.equal(lockTimeout.state.alerts.length, 1, 'lock-timeout failure alerts before normal status lock');
+assert.equal(
+  lockTimeout.state.alerts.length,
+  1,
+  'lock-timeout failure alerts before normal status lock',
+);
 assert.equal(lockTimeout.state.lockWaits, 1);
 assert.equal(lockTimeout.state.lockReleases, 0, 'a failed lock acquisition is not released');
 assert.equal(lockTimeout.state.snapshots.length, 0, 'no snapshot work starts without the lock');
