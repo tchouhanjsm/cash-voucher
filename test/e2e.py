@@ -1216,6 +1216,33 @@ with sync_playwright() as p:
     audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
     audit_page = audit_context.new_page()
     audit_page.add_init_script('window.__xssFired = false;')
+
+    legacy_update_text = 'amount,vendor <svg onload=window.__xssFired=true></svg>'
+
+    def inject_legacy_update_audit(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'auditLog':
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        if payload.get('ok') and isinstance(payload.get('data'), list):
+            payload['data'].append(
+                {
+                    'time': '2026-10-11T15:00:00',
+                    'user': 'owner@test.com',
+                    'action': 'UPDATE',
+                    'target': '#legacy',
+                    'details': legacy_update_text,
+                }
+            )
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    audit_page.route('**/api?*', inject_legacy_update_audit)
     audit_page.goto(URL)
     audit_page.fill('#lEmail', 'owner@test.com')
     audit_page.fill('#lPin', '579246')
@@ -1236,6 +1263,14 @@ with sync_playwright() as p:
         and audit_page.locator('#aud svg, #aud img').count() == 0
         and not audit_page.evaluate('window.__xssFired === true'),
         'owner audit log displays correction reason and field deltas as inert text',
+    )
+    legacy_row = audit_page.locator('#aud tr', has_text='#legacy')
+    check(
+        legacy_row.count() == 1
+        and legacy_update_text in legacy_row.inner_text()
+        and legacy_row.locator('svg, img').count() == 0
+        and not audit_page.evaluate('window.__xssFired === true'),
+        'legacy free-text update details remain compatible and render as inert text',
     )
     audit_context.close()
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
