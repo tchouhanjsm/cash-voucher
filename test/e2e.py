@@ -1290,10 +1290,27 @@ with sync_playwright() as p:
         ),
         'dashboard bars clamp computed widths to finite 0–100% values',
     )
+    trend_geometry = page.locator('svg.chart rect.b').evaluate_all(
+        "elements => elements.map(element => ({y: element.getAttribute('y'), height: element.getAttribute('height')}))"
+    )
+    check(
+        bool(trend_geometry)
+        and all(
+            value['y'] is not None
+            and value['height'] is not None
+            and all(
+                part.lower() != 'nan' and part.lower() not in ('infinity', '-infinity')
+                for part in (value['y'], value['height'])
+            )
+            and float(value['height']) >= 0
+            for value in trend_geometry
+        ),
+        'dashboard SVG trend bars keep finite non-negative vertical geometry',
+    )
     check(
         page.locator('.hb-l').filter(has_text='numeric-string').count() == 1
         and page.locator('.hb-l').filter(has_text=hostile_vendor).count() == 1
-        and page.locator('.hb-l svg, .hb-t svg, .hb-v svg').count() == 0
+        and page.locator('.hb-l svg, .hb-t svg, .hb-v svg, svg.chart svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
         'hostile vendor text remains inert while malformed numeric values are rendered',
     )
