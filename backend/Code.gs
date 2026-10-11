@@ -194,7 +194,7 @@ function backupData_() {
     logger: (message) => Logger.log(message),
     sendFailureAlert: (alert) => {
       const recipient = String(props_().getProperty('OWNER_EMAIL') || '').trim();
-      if (!/^\\S+@\\S+\\.\\S+$/.test(recipient)) {
+      if (!/^\S+@\S+\.\S+$/.test(recipient)) {
         throw new Error('OWNER_EMAIL is not configured; backup failure alert was not sent.');
       }
       MailApp.sendEmail(
@@ -202,9 +202,9 @@ function backupData_() {
         'Cash Voucher backup failed',
         'A Cash Voucher backup attempt failed at ' +
           alert.timestamp +
-          '.\\n\\nError: ' +
+          '.\n\nError: ' +
           alert.message +
-          '\\n\\nOpen Cash Voucher Settings to review backup status. Check Apps Script logs and Drive permissions. ' +
+          '\n\nOpen Cash Voucher Settings to review backup status. Check Apps Script logs and Drive permissions. ' +
           'A recorded status does not prove that a restore will succeed.',
       );
     },
