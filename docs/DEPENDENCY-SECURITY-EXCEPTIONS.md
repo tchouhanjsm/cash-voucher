@@ -28,7 +28,6 @@ This gate does not waive moderate/low findings; it prints them for review withou
 
 The current `package.json` defines only development dependencies; the app frontend is static JavaScript and the backend is Apps Script source. This reduces deployed application exposure to npm package code, but it does not remove the developer/CI toolchain risk. Do not treat `npm audit --omit=dev` alone as a substitute for auditing the development toolchain.
 
-
 ## Runtime-loaded browser scripts
 
 Runtime-loaded browser scripts are a separate supply-chain surface from npm `devDependencies`; the dependency audit above does not cover scripts appended to the document at runtime.
