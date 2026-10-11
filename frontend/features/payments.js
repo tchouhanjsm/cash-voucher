@@ -516,7 +516,8 @@ export function createPayments({ api, refresh }) {
         !confirm(
           'The offline queue contains ' +
             unbound.length +
-            ' older payment(s) with no recorded owner. Export includes them. Continue only if you are authorised to access these records.',
+            ' older payment(s) with no recorded owner. Export includes them. ' +
+              'Continue only if you are authorised to access these records.',
         )
       ) {
         return;
