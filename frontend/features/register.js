@@ -291,9 +291,18 @@ export function createRegister({ api, go }) {
     note.value = voucher.notes;
     body.appendChild(labeledControl('Note', note));
 
+    const reason = document.createElement('textarea');
+    reason.id = 'er';
+    reason.required = true;
+    reason.minLength = 3;
+    reason.maxLength = 200;
+    reason.rows = 3;
+    body.appendChild(labeledControl('Correction reason (required)', reason));
+
     dialog(`Edit #${vno(voucher)}`, body, async () => {
       const updated = await api('updateVoucher', {
         id,
+        reason: $('#er').value,
         fields: {
           date: $('#ed').value,
           vendor: $('#ev').value,
