@@ -12,6 +12,7 @@ const gasGlobals = {
   Session: 'readonly',
   ScriptApp: 'readonly',
   UrlFetchApp: 'readonly',
+  MailApp: 'readonly',
   MimeType: 'readonly',
   HtmlService: 'readonly',
   Logger: 'readonly',
