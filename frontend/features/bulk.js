@@ -13,8 +13,8 @@ export function createBulk({ api, refresh, go }) {
     $('#view').innerHTML =
       head('Bulk Upload') +
       `<div class="card"><h2>1. Get your data in</h2>
-    <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes</b>. Dates like 25/12/2026 or 2026-12-25. Works with CSV, Excel (.xlsx) or paste straight from a spreadsheet.</p>
-    <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn" style="margin:0">📁 Choose file<input type="file" id="bf" accept=".csv,.tsv,.txt,.xlsx,.xls" hidden></label></div>
+    <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes</b>. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
+    <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn" style="margin:0">📁 Choose file<input type="file" id="bf" accept=".csv,.tsv,.txt" hidden></label></div>
     <label style="margin-top:12px;max-width:280px">These rows are<select id="bt2"><option value="PAYMENT">Payments (cash out)</option><option value="RECEIPT">Cash received (cash in)</option></select></label>
     <label>…or paste rows here<textarea id="bt" rows="5" placeholder="25/12/2026&#9;Ram Traders&#9;1500&#9;Kitchen&#9;vegetables"></textarea></label>
     <button class="btn primary" data-act="parse">Check data</button></div><div id="bprev"></div>`;
@@ -234,39 +234,17 @@ export function createBulk({ api, refresh, go }) {
     if (duplicateCheckbox) duplicateCheckbox.checked = checked;
   }
 
-  function loadScript(source) {
-    return new Promise((resolve, reject) => {
-      const script = document.createElement('script');
-      script.src = source;
-      script.onload = resolve;
-      script.onerror = () =>
-        reject(
-          new Error('Could not load the Excel reader (are you online?). Save as CSV instead.'),
-        );
-      document.head.appendChild(script);
-    });
-  }
-
   async function parseInput() {
     const file = $('#bf').files[0];
     let inputRows;
 
     if (file && /\.xlsx?$/i.test(file.name)) {
-      if (!window.XLSX) {
-        await loadScript('https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js');
-      }
-
-      const workbook = window.XLSX.read(await file.arrayBuffer(), { type: 'array' });
-      inputRows = window.XLSX.utils
-        .sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {
-          header: 1,
-          raw: true,
-          defval: '',
-        })
-        .filter((row) => row.some((cell) => String(cell).trim() !== ''));
-    } else {
-      inputRows = parseDelim(file ? await file.text() : $('#bt').value);
+      throw new Error(
+        'Excel (.xls/.xlsx) import is temporarily disabled for security. Save the workbook as CSV/TSV or paste its rows instead.',
+      );
     }
+
+    inputRows = parseDelim(file ? await file.text() : $('#bt').value);
 
     if (!inputRows.length) {
       throw new Error('Nothing to read — choose a file or paste some rows.');
