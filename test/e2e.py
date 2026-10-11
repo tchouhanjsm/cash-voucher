@@ -798,15 +798,15 @@ with sync_playwright() as p:
         'name': 'cash-voucher-import.csv',
         'mimeType': 'text/csv',
         'buffer': (
-            'Date,Vendor,Amount,Category,Notes\\n'
-            f'{date_text},CSV File Vendor,33,Other,CSV file compatibility regression\\n'
+            'Date,Vendor,Amount,Category,Notes\n'
+            f'{date_text},CSV File Vendor,33,Other,CSV file compatibility regression\n'
         ).encode(),
     })
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
     check(
         'CSV File Vendor' in page.locator('#bprev').inner_text()
-        and '1 ready' in page.locator('#bprev').inner_text().replace('\\n', ' '),
+        and '1 ready' in page.locator('#bprev').inner_text().replace('\n', ' '),
         'CSV file upload still parses and previews a valid row',
     )
     page.locator('#bf').set_input_files([])
