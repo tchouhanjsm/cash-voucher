@@ -1211,7 +1211,6 @@ with sync_playwright() as p:
         and '177.77' in page.locator('#rbody tr', has_text='Ram Traders').inner_text(),
         'corrected amount appears in the register after saving',
     )
-    edit_trigger.evaluate("(element) => element.removeAttribute('data-focus-restore-probe')")
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
     xss_vendor_row.locator('[data-act=cancel]').click()
     page.wait_for_selector('#modal #cr')
