@@ -102,6 +102,92 @@ with sync_playwright() as p:
         'decorative navigation icon is hidden from assistive technology',
     )
 
+    dashboard_key_probe = page.evaluate(
+        """async () => {
+          const [{ S }, { createDashboard }, { today }] = await Promise.all([
+            import('/frontend/core/state.js'),
+            import('/frontend/features/dashboard.js'),
+            import('/frontend/core/utils.js'),
+          ]);
+          const originalVouchers = S.vouchers;
+          const keys = ['__proto__', 'constructor', 'toString', 'hasOwnProperty'];
+          const targets = [
+            Object.prototype,
+            Object,
+            Object.prototype.toString,
+            Object.prototype.hasOwnProperty,
+          ];
+          const descriptors = targets.map((target) => ({
+            target,
+            n: Object.getOwnPropertyDescriptor(target, 'n'),
+            s: Object.getOwnPropertyDescriptor(target, 's'),
+          }));
+          const signature = (descriptor) => JSON.stringify(descriptor || null);
+          const before = descriptors.map(({ target, n, s }) => ({
+            target,
+            n: signature(n),
+            s: signature(s),
+          }));
+          const dashboard = createDashboard();
+
+          try {
+            S.vouchers = originalVouchers.concat(
+              keys.map((key, index) => ({
+                id: 'dashboard-key-probe-' + index,
+                no: 9000 + index,
+                type: 'PAYMENT',
+                status: 'ACTIVE',
+                date: today(),
+                vendor: key,
+                category: key,
+                notes: '',
+                amount: 10000 + index,
+                createdBy: 'probe' + index + '@example.test',
+                createdAt: new Date().toISOString(),
+                receipts: [],
+              })),
+            );
+            dashboard.render();
+
+            const chartCards = [...document.querySelectorAll('#view .two > .card')];
+            const vendorLabels = [...(chartCards[0]?.querySelectorAll('.hb-l') || [])]
+              .map((node) => node.textContent);
+            const categoryLabels = [...(chartCards[1]?.querySelectorAll('.hb-l') || [])]
+              .map((node) => node.textContent);
+            const builtinsUnchanged = before.every(
+              ({ target, n, s }) =>
+                signature(Object.getOwnPropertyDescriptor(target, 'n')) === n &&
+                signature(Object.getOwnPropertyDescriptor(target, 's')) === s,
+            );
+
+            return {
+              keys,
+              vendorLabels,
+              categoryLabels,
+              builtinsUnchanged,
+            };
+          } finally {
+            S.vouchers = originalVouchers;
+            before.forEach(({ target, n, s }) => {
+              if (n === 'null') delete target.n;
+              else Object.defineProperty(target, 'n', JSON.parse(n));
+              if (s === 'null') delete target.s;
+              else Object.defineProperty(target, 's', JSON.parse(s));
+            });
+            dashboard.render();
+          }
+        }"""
+    )
+    check(
+        all(key in dashboard_key_probe['vendorLabels'] for key in dashboard_key_probe['keys'])
+        and all(key in dashboard_key_probe['categoryLabels'] for key in dashboard_key_probe['keys']),
+        'dashboard keeps prototype-like vendor and category keys visible in charts',
+    )
+    check(
+        dashboard_key_probe['builtinsUnchanged'],
+        'user-controlled chart keys cannot mutate JavaScript object/function prototypes',
+    )
+
     page.click('[data-v=users]')
     page.wait_for_selector('#uf')
     check(
