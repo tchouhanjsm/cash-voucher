@@ -8,7 +8,7 @@ function create() {
     propsStore = {},
     cacheStore = {},
     files = {},
-    lockStats = { waits: 0, releases: 0 };
+    lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false };
   const mkSheet = (name) => {
     const rows = [];
     const rng = (r, c, nr, nc) => ({
@@ -78,6 +78,11 @@ function create() {
     LockService: {
       getScriptLock: () => ({
         waitLock() {
+          lockStats.attempts++;
+          if (lockStats.failNextWait) {
+            lockStats.failNextWait = false;
+            throw new Error('Simulated lock contention timeout');
+          }
           lockStats.waits++;
         },
         releaseLock() {

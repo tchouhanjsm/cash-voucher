@@ -960,18 +960,13 @@ function route_(req) {
     return fn(user, req);
   }
 
-  const lock = LockService.getScriptLock();
-  lock.waitLock(25000);
-  try {
+  return withScriptLock_(function () {
     const user = auth_(req.token);
     if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
       throw err_('Please change your PIN first.', 'PIN_CHANGE');
     return fn(user, req);
-  } finally {
-    lock.releaseLock();
-  }
+  }, 'The service is busy. No changes were made. Please retry shortly.');
 }
-
 /* ============ helpers ============ */
 function err_(msg, code) {
   const e = new Error(msg);
@@ -1224,10 +1219,25 @@ function findUserByEmail_(email) {
     return String(u.Email).toLowerCase() === email;
   })[0];
 }
-function login_(req) {
+function withScriptLock_(work, busyMessage) {
   const lock = LockService.getScriptLock();
-  lock.waitLock(25000);
   try {
+    lock.waitLock(25000);
+  } catch {
+    throw err_(
+      busyMessage || 'The service is busy. No changes were made. Please retry shortly.',
+      'BUSY',
+    );
+  }
+
+  try {
+    return work();
+  } finally {
+    lock.releaseLock();
+  }
+}
+function login_(req) {
+  return withScriptLock_(function () {
     const email = String(req.email || '')
         .trim()
         .toLowerCase(),
@@ -1249,9 +1259,7 @@ function login_(req) {
     updateRow_('Users', u._row, { LastLogin: nowIso_() });
     audit_({ email: email }, 'LOGIN', '', '');
     return { token: token, user: pubUser_(u) };
-  } finally {
-    lock.releaseLock();
-  }
+  }, 'Authentication is busy. No login attempt was recorded. Please retry shortly.');
 }
 function auth_(token) {
   const raw = token && CacheService.getScriptCache().get('s:' + token);
@@ -1703,6 +1711,7 @@ function resetPin_(user, req) {
   return { ok: true };
 }
 function changePin_(user, req) {
+  // route_ authenticates this session after acquiring the shared ScriptLock.
   const u = user._u,
     oldPin = String(req.oldPin || ''),
     newPin = String(req.newPin || ''),
