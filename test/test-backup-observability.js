@@ -25,6 +25,7 @@ function makeSeededServices(receiptCount, options = {}) {
     lockReleases: 0,
     failManifest: Boolean(options.failManifest),
     failAlert: Boolean(options.failAlert),
+    failLockAcquire: Boolean(options.failLockAcquire),
   };
 
   const properties = {
@@ -154,6 +155,7 @@ function makeSeededServices(receiptCount, options = {}) {
       return {
         waitLock() {
           state.lockWaits += 1;
+          if (state.failLockAcquire) throw new Error('Simulated lock contention timeout');
         },
         releaseLock() {
           state.lockReleases += 1;
@@ -289,6 +291,26 @@ assert.equal(
   'failed notification can be retried on a later attempt',
 );
 
+const lockTimeout = makeSeededServices(2, { failLockAcquire: true });
+assert.throws(
+  () => g.backupDataWithServices(lockTimeout.services),
+  /Simulated lock contention timeout/,
+);
+assert.equal(lockTimeout.state.alerts.length, 1, 'lock-timeout failure alerts before normal status lock');
+assert.equal(lockTimeout.state.lockWaits, 1);
+assert.equal(lockTimeout.state.lockReleases, 0, 'a failed lock acquisition is not released');
+assert.equal(lockTimeout.state.snapshots.length, 0, 'no snapshot work starts without the lock');
+assert.equal(
+  lockTimeout.state.props.BACKUP_LAST_ATTEMPT,
+  undefined,
+  'a competing failed attempt does not overwrite another run backup attempt metadata',
+);
+assert.equal(
+  lockTimeout.state.props.BACKUP_ALERT_ACTIVE,
+  '1',
+  'independent alert state suppresses repeated notifications for the same failure streak',
+);
+
 console.log(
-  'Backup observability OK — seeded counts/bytes/runtime, non-blocking metrics, failure-streak alerts and delivery-error recovery.',
+  'Backup observability OK — seeded counts/bytes/runtime, non-blocking metrics, lock-timeout alerts, failure-streak alerts and delivery-error recovery.',
 );
