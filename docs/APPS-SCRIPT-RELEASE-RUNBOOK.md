@@ -97,8 +97,9 @@ After the intended deployment is updated:
 - In a controlled test window, create a clearly identified test voucher and cash receipt, verify numbering and source rows, then cancel/clean up only according to the owner's approved data-handling policy. Do not mutate real financial records merely to test deployment.
 - Verify receipt upload/read authorization and that production Sheet/Drive folders remain private.
 - Check backup status and Drive for a real completed snapshot, receipt copies and manifest.
-- Perform a restore drill into a separate recovery Sheet/folder before claiming recoverability. Do not overwrite the only production copy.
-- Record deployed version, deployment ID, UTC/local timestamp, checks performed and any failed/untested gates.
+- Review the new Apps Script MailApp permission before authorizing the intended project. Verify `OWNER_EMAIL` is the approved recipient, then confirm that a controlled failure in a non-production project sends one email and that subsequent failures do not spam the recipient; also verify a successful backup clears the failure incident state.
+- Perform a restore drill into a separate recovery Sheet/folder before claiming recoverability. Do not overwrite the only production copy. Do not deliberately break the production backup to test notification delivery.
+- Record deployed version, deployment ID, UTC/local timestamp, authorization scopes approved, checks performed and any failed/untested gates.
 
 ## Rollback
 
