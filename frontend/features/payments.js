@@ -501,6 +501,18 @@ export function createPayments({ api, refresh }) {
         return;
       }
       const allRecords = await offlineQueue.list();
+      const unbound = allRecords.filter((record) => !String(record.ownerKey || ''));
+      if (
+        unbound.length &&
+        !confirm(
+          'The offline queue contains ' +
+            unbound.length +
+            ' older payment(s) with no recorded owner. Export includes them. Continue only if you are authorised to access these records.',
+        )
+      ) {
+        return;
+      }
+
       const records = allRecords.filter(
         (record) => String(record.ownerKey || '') === ownerKey || !String(record.ownerKey || ''),
       );
