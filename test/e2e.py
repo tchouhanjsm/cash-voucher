@@ -1165,6 +1165,52 @@ with sync_playwright() as p:
         and not page.locator('#app').evaluate('(element) => element.inert'),
         'Escape closes dialog, restores opener focus, and re-enables the app',
     )
+
+    update_requests = []
+
+    def capture_voucher_update(request):
+        if request.method != 'POST':
+            return
+        try:
+            payload = json.loads(request.post_data or '{}')
+        except json.JSONDecodeError:
+            return
+        if payload.get('action') == 'updateVoucher':
+            update_requests.append(payload)
+
+    page.on('request', capture_voucher_update)
+    edit_trigger.click()
+    page.wait_for_selector('#modal #er')
+    reason_field = page.locator('#modal #er')
+    check(
+        reason_field.get_attribute('required') is not None
+        and reason_field.get_attribute('minlength') == '3'
+        and reason_field.get_attribute('maxlength') == '200',
+        'voucher correction dialog requires a bounded reason',
+    )
+    page.fill('#ea', '177.77')
+    page.click('#modal .primary')
+    check(
+        len(update_requests) == 0
+        and not reason_field.evaluate('(element) => element.checkValidity()')
+        and not page.locator('#modal').evaluate("(element) => element.classList.contains('hidden')"),
+        'voucher edit cannot be submitted without a correction reason',
+    )
+    page.fill('#er', 'Corrected after receipt review')
+    page.click('#modal .primary')
+    page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+    page.remove_listener('request', capture_voucher_update)
+    check(
+        len(update_requests) == 1
+        and update_requests[0].get('reason') == 'Corrected after receipt review'
+        and update_requests[0].get('fields', {}).get('amount') == 177.77,
+        'voucher edit sends its reason alongside the actual field changes',
+    )
+    check(
+        page.locator('#rbody tr', has_text='Ram Traders').locator('.voucher-amount').inner_text()
+        and '177.77' in page.locator('#rbody tr', has_text='Ram Traders').inner_text(),
+        'corrected amount appears in the register after saving',
+    )
     edit_trigger.evaluate("(element) => element.removeAttribute('data-focus-restore-probe')")
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
     xss_vendor_row.locator('[data-act=cancel]').click()
