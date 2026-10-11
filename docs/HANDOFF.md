@@ -2,16 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `280d3f9d08bac5ca771cf0c23b3cc99070441ac5` (PR #84 merge)  
+**Verified `main` SHA:** `ac1ea5977dcfc763dfae30e0c80d081affade998` (PR #86 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #85 — Dashboard numeric rendering integrity**  
-Branch: `security/dashboard-numeric-rendering`  
-Base: `280d3f9d08bac5ca771cf0c23b3cc99070441ac5`
+**PR #87 — Recorded-movement report summary output encoding**  
+Branch: `security/escape-report-summary-counts`  
+Base: `ac1ea5977dcfc763dfae30e0c80d081affade998`
 
-Scope: guard the active dashboard bar-width CSS sink against malformed persisted/bootstrap amount values by normalizing non-finite group totals for presentation and clamping widths to finite percentages. Add Browser E2E regression coverage. PR #84 is merged with exact-head CI, Browser E2E, and Full Flight Test success; its full record remains in GitHub.
+Scope: encode API-derived `count`, `activeCount`, and `cancelledCount` in report summary HTML and add a hostile-response Browser E2E regression. PR #86 is merged at this base; its exact tested head passed CI, Browser E2E (180 checks) and Full Flight Test.
 
 Adopt three distinct sources of information:
 
@@ -56,6 +56,8 @@ These remain open regardless of green mock-backed CI:
 
 ## Recent completed milestones
 
+- **PR #86 — Dashboard numeric rendering integrity:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/86) at `ac1ea5977dcfc763dfae30e0c80d081affade998`; exact tested head `482de368714e093ad3671ae20bac0290f656fcde` passed CI (129 backend checks), Browser E2E (180 checks) and Full Flight Test (129 backend + 180 browser checks). The change bounds CSS/SVG geometry under malformed bootstrap amounts; it does not validate source ledger data.
+
 - **PR #73 — Report date-range escaping:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/73); 141 browser checks passed.
 - **PR #74 — Save-confirmation voucher-number escaping:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/74); Full Flight, CI and Browser E2E passed, with 142 browser checks.
 - **PR #75 — Bulk import completion feedback:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/75) at `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`; CI passed, Browser E2E passed 145 checks / 0 failures, and Full Flight Test passed 110 backend checks plus 145 browser checks.
@@ -76,6 +78,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #83 is merged at verified `main` SHA `dd1a00a1dced79346bbdcb514eea1be7669bcac5`; its exact tested head passed CI, Browser E2E and Full Flight Test.
-6. PR #84 is merged. PR #85 is the next focused rendering-integrity phase; verify live PR/main state and exact-head workflow results before reporting outcomes.
+5. PR #86 is merged at verified `main` SHA `ac1ea5977dcfc763dfae30e0c80d081affade998`; exact tested head `482de368714e093ad3671ae20bac0290f656fcde` passed CI, Browser E2E (180 checks) and Full Flight Test.
+6. PR #87 is the current focused report-output encoding phase; verify its live head and exact-head CI, Browser E2E and Full Flight Test before handoff.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
