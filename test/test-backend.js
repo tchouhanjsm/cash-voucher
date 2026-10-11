@@ -486,7 +486,7 @@ const updateAuditRow = g.sheets.AuditLog.rows
 let updateAuditDetails = null;
 try {
   updateAuditDetails = JSON.parse(updateAuditRow[4]);
-} catch (error) {
+} catch {
   updateAuditDetails = null;
 }
 ok(
