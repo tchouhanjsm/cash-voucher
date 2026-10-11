@@ -80,9 +80,7 @@ const contentionReleases = g.lockStats.releases;
 g.lockStats.failNextWait = true;
 const busyLogin = g.call('login', { email: 'busy@test.com', pin: '000000' });
 ok(
-  !busyLogin.ok &&
-    busyLogin.code === 'BUSY' &&
-    /retry shortly/i.test(busyLogin.error),
+  !busyLogin.ok && busyLogin.code === 'BUSY' && /retry shortly/i.test(busyLogin.error),
   'login lock timeout returns actionable BUSY feedback',
 );
 ok(
@@ -198,8 +196,7 @@ ok(
   'wrong current PIN attempts are counted before lockout',
 );
 ok(
-  g.lockStats.waits === changePinWaits + 5 &&
-    g.lockStats.releases === changePinReleases + 5,
+  g.lockStats.waits === changePinWaits + 5 && g.lockStats.releases === changePinReleases + 5,
   'each PIN-change counter update runs under the shared script lock',
 );
 const changePinLockoutWaits = g.lockStats.waits;
@@ -592,8 +589,7 @@ ok(
   'owner reset pin succeeds',
 );
 ok(
-  g.lockStats.waits === resetPinWaits + 1 &&
-    g.lockStats.releases === resetPinReleases + 1,
+  g.lockStats.waits === resetPinWaits + 1 && g.lockStats.releases === resetPinReleases + 1,
   'PIN reset and throttle clearing run under the shared script lock',
 );
 const resetLogin = g.call('login', { email: 'm@test.com', pin: '314159' });
