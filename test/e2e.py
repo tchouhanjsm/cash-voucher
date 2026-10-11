@@ -766,6 +766,51 @@ with sync_playwright() as p:
     page.wait_for_selector('#bt')
     today = datetime.date.today()
     date_text = today.strftime('%d/%m/%Y')
+
+    file_accept = page.locator('#bf').get_attribute('accept') or ''
+    check(
+        '.csv' in file_accept and '.tsv' in file_accept and '.txt' in file_accept
+        and '.xls' not in file_accept and '.xlsx' not in file_accept,
+        'bulk file picker offers text-based formats but not Excel workbooks',
+    )
+
+    for excel_name in ('blocked.xlsx', 'blocked.xls'):
+        page.locator('#bf').set_input_files({
+            'name': excel_name,
+            'mimeType': 'application/octet-stream',
+            'buffer': b'not a real workbook',
+        })
+        page.click('[data-act=parse]')
+        page.wait_for_function(
+            "document.querySelector('#toast').textContent.includes('temporarily disabled for security')"
+        )
+        check(
+            'Save the workbook as CSV/TSV or paste its rows instead.' in page.locator('#toast').inner_text(),
+            f'{excel_name} is rejected with a clear secure fallback',
+        )
+        check(
+            page.locator('script[src*="xlsx"]').count() == 0,
+            f'{excel_name} does not load a runtime Excel parser',
+        )
+
+    # CSV file parsing remains functional without a third-party runtime parser.
+    page.locator('#bf').set_input_files({
+        'name': 'cash-voucher-import.csv',
+        'mimeType': 'text/csv',
+        'buffer': (
+            'Date,Vendor,Amount,Category,Notes\\n'
+            f'{date_text},CSV File Vendor,33,Other,CSV file compatibility regression\\n'
+        ).encode(),
+    })
+    page.click('[data-act=parse]')
+    page.wait_for_selector('#bprev table')
+    check(
+        'CSV File Vendor' in page.locator('#bprev').inner_text()
+        and '1 ready' in page.locator('#bprev').inner_text().replace('\\n', ' '),
+        'CSV file upload still parses and previews a valid row',
+    )
+    page.locator('#bf').set_input_files([])
+
     rows = (
         'Date\tVendor\tAmount\tCategory\tNotes\n'
         f'{date_text}\tRam Traders\t1250.50\tKitchen\tdup of staff entry\n'
