@@ -1237,19 +1237,21 @@ with sync_playwright() as p:
                 'receipts': [],
                 'cancelReason': '',
             }
+            hostile_vendor = '<svg onload=window.__xssFired=true></svg>'
             values = [
-                ('numeric-nan', 'NaN'),
-                ('numeric-infinity', 'Infinity'),
-                ('numeric-negative', -500),
-                ('numeric-string', '<svg onload=window.__xssFired=true></svg>'),
+                ('numeric-nan', 'NaN', 'numeric-nan'),
+                ('numeric-infinity', 'Infinity', 'numeric-infinity'),
+                ('numeric-negative', -500, 'numeric-negative'),
+                ('numeric-string', hostile_vendor, 'numeric-string'),
+                ('hostile-vendor', 910005, hostile_vendor),
             ]
-            for index, (suffix, amount) in enumerate(values):
+            for index, (suffix, amount, vendor) in enumerate(values):
                 entry = template.copy()
                 entry.update({
                     'id': suffix,
                     'no': 910001 + index,
                     'date': datetime.date.today().isoformat(),
-                    'vendor': suffix,
+                    'vendor': vendor,
                     'category': 'Rendering boundary',
                     'amount': amount,
                     'type': 'PAYMENT',
@@ -1290,9 +1292,10 @@ with sync_playwright() as p:
     )
     check(
         page.locator('.hb-l').filter(has_text='numeric-string').count() == 1
+        and page.locator('.hb-l').filter(has_text=hostile_vendor).count() == 1
         and page.locator('.hb-l svg, .hb-t svg, .hb-v svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'malformed amount string cannot inject markup into dashboard bars',
+        'hostile vendor text remains inert while malformed numeric values are rendered',
     )
     page.unroute('**/api?*', tamper_dashboard_numeric_values)
     page.reload(wait_until='domcontentloaded')
