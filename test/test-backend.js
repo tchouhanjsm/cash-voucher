@@ -474,12 +474,20 @@ ok(
 const correction = as(M, 'updateVoucher', {
   id: id1,
   reason: 'Corrected after comparing the paper receipt.',
-  fields: { amount: 175, vendor: 'Corrected supplier', notes: 'Verified against paper receipt' },
+  fields: {
+    date: '2026-10-01',
+    amount: 175,
+    vendor: 'Corrected supplier',
+    category: 'Kitchen',
+    notes: 'Verified against paper receipt',
+  },
 });
 ok(
   correction.ok &&
+    correction.data.date === '2026-10-01' &&
     correction.data.amount === 175 &&
     correction.data.vendor === 'Corrected supplier' &&
+    correction.data.category === 'Kitchen' &&
     correction.data.notes === 'Verified against paper receipt',
   'manager can apply a reasoned voucher correction',
 );
@@ -502,10 +510,14 @@ const auditedFields = new Map(
   (updateAuditDetails?.changes || []).map((change) => [change.field, change]),
 );
 ok(
-  auditedFields.get('amount')?.before === beforeReasonFailure.amount &&
+  auditedFields.get('date')?.before === beforeReasonFailure.date &&
+    auditedFields.get('date')?.after === '2026-10-01' &&
+    auditedFields.get('amount')?.before === beforeReasonFailure.amount &&
     auditedFields.get('amount')?.after === 175 &&
     auditedFields.get('vendor')?.before === beforeReasonFailure.vendor &&
     auditedFields.get('vendor')?.after === 'Corrected supplier' &&
+    auditedFields.get('category')?.before === beforeReasonFailure.category &&
+    auditedFields.get('category')?.after === 'Kitchen' &&
     auditedFields.get('notes')?.before === beforeReasonFailure.notes &&
     auditedFields.get('notes')?.after === 'Verified against paper receipt',
   'correction audit records before/after values for every changed field',
