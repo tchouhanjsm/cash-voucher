@@ -217,11 +217,22 @@ Improve the bulk-import completion panel so assistive technology receives a poli
 
 **Exit gate:** Full Flight Test, normal CI and Browser E2E pass on the exact same final PR head. No deployment or production mutation.
 
-## Product priorities after PR #75
+## Product priorities after the October 2026 deep-dive review
 
-1. **P0 — Operational assurance:** owner confirms the live Apps Script target/settings, verifies role and receipt permissions, observes a real scheduled backup and witnesses restore into a separate recovery destination. Code/CI does not replace these operations.
-2. **P1 — Rendering-security audit:** continue the source-by-source inventory with regression tests for confirmed unsafe sinks. Do not claim full XSS certification until the inventory has been reviewed.
-3. **P2 — UI/UX quality pass:** map staff, manager and owner tasks, then choose a free Figma community kit as a reference. Define reusable tokens and components and improve voucher entry, register filters, import review, report export, and loading/empty/error feedback incrementally.
-4. **P3 — Workflow additions:** design daily cash close and physical reconciliation only after owner/accountant decisions on opening float, counted cash, variance handling, cancelled vouchers and sign-off. Keep approvals and scheduled automation behind explicit decisions; do not infer accounting/tax semantics.
+Adopt the report's risk-first direction, but verify each finding against current source and tests before treating it as a defect. Performance projections are hypotheses until measured; keep product policy and accounting semantics behind owner/accountant decisions.
+
+1. **P0 — Operational assurance:** owner confirms the live Apps Script target/settings, verifies live role and receipt permissions, observes a real scheduled backup and witnesses restore into a separate recovery destination. Code/CI does not replace these operations.
+2. **P0 — Stabilise runtime integrity before expanding financial workflows:**
+   - Harden action and role allowlists; PR #78 adds own-property checks and regression coverage.
+   - Remediate the runtime-loaded Excel parser before accepting untrusted `.xls/.xlsx` files. The active code loads `xlsx@0.18.5` from jsDelivr; [GitHub Advisory GHSA-4r6h-8v6p-xvw6](https://github.com/advisories/GHSA-4r6h-8v6p-xvw6) identifies npm releases before 0.19.3 as affected by prototype pollution and states that a patched release is not available on npm. Preferred safe fallback: disable `.xls/.xlsx` parsing and retain CSV/TSV/paste until a vetted patched build can be self-hosted and verified.
+   - Next, fix offline outbox failure isolation so one invalid record cannot indefinitely block unrelated valid records. Bind queued entries to the creating user so a shared device cannot upload one person's work under another person's session. Test that a background flush does not overwrite an in-progress New Entry form.
+   - Review login lock contention without weakening serialized lockout-counter updates.
+   - Strengthen voucher correction history with field-level before/after values and an attributable reason; design this before using the audit trail as a cash-close control.
+   - Measure backup runtime and receipt-copy growth with seeded data, alert on backup failure, and complete an isolated restore drill. Do not assume a quota/execution failure threshold without evidence.
+3. **P1 — Continue the rendering-security audit** with regression tests for confirmed unsafe sinks. Do not claim full XSS certification until the active sink inventory has been reviewed.
+4. **P2 — Improve trust and staff speed:** label the current unverified dashboard amount **Book balance** until a physical close exists; make pending uploads and rejected entries understandable; then improve voucher entry, register filters, import review, report export, and loading/empty/error feedback incrementally.
+5. **P3 — Daily cash close and reconciliation:** follow `docs/DAILY-CASH-CLOSE-DESIGN.md` and resolve its open owner decisions first. Define cash-impact classification before calculating expected physical cash. Start with a single count total unless the owner confirms that denomination counting is operationally useful. Do not implement day-lock, approvals, GST/TDS fields or accountant workflows by inference.
+
+**Sequencing gate:** stabilisation and live operational assurance precede reliance on the ledger or expansion into approvals/accounting features. The deep-dive's proposed scale triggers must be tested with seeded workloads before they become architecture thresholds.
 
 **Production boundary:** live target/authorization, real backup and isolated restore remain unverified. No deployment or production mutation is authorized by this code phase.
