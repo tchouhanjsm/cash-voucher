@@ -1212,6 +1212,120 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
 
+    # Malformed bootstrap data must not produce invalid CSS geometry.
+    hostile_vendor = '<svg onload=window.__xssFired=true></svg>'
+
+    def tamper_dashboard_numeric_values(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {})
+        if request_data.get('action') == 'bootstrap':
+            vouchers = data.get('vouchers', [])
+            template = vouchers[0].copy() if vouchers else {
+                'id': '',
+                'no': 0,
+                'date': datetime.date.today().isoformat(),
+                'vendor': '',
+                'amount': 1,
+                'category': 'Other',
+                'notes': '',
+                'type': 'PAYMENT',
+                'status': 'ACTIVE',
+                'createdBy': 'owner@test.com',
+                'createdAt': '',
+                'updatedBy': '',
+                'updatedAt': '',
+                'receipts': [],
+                'cancelReason': '',
+            }
+            values = [
+                ('numeric-nan', 'NaN', 'numeric-nan'),
+                ('numeric-infinity', 'Infinity', 'numeric-infinity'),
+                ('numeric-negative', -500, 'numeric-negative'),
+                # A non-finite amount must stay in its own vendor group but never poison chart geometry.
+                ('numeric-string', hostile_vendor, 'numeric-string'),
+                # Large valid values make the hostile text row deterministic in the top-eight vendor chart.
+                ('hostile-vendor', 910005, hostile_vendor),
+            ]
+            for index, (suffix, amount, vendor) in enumerate(values):
+                entry = template.copy()
+                entry.update({
+                    'id': suffix,
+                    'no': 910001 + index,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': vendor,
+                    'category': 'Rendering boundary',
+                    'amount': amount,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'owner@test.com',
+                    'receipts': [],
+                })
+                vouchers.append(entry)
+            data['vouchers'] = vouchers
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_dashboard_numeric_values)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'bootstrap'
+    ):
+        page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.click('[data-v=dash]')
+    page.wait_for_selector('.hb-l')
+    bar_styles = page.locator('.hb-t i').evaluate_all(
+        "elements => elements.map(element => ({width: element.style.width, value: element.getAttribute('style')}))"
+    )
+    check(
+        bool(bar_styles)
+        and all(
+            value['width']
+            and value['width'].endswith('%')
+            and value['width'] != 'NaN%'
+            and value['width'] != 'Infinity%'
+            and value['width'] != '-Infinity%'
+            and 0 <= float(value['width'][:-1]) <= 100
+            for value in bar_styles
+        ),
+        'dashboard bars clamp computed widths to finite 0–100% values',
+    )
+    trend_geometry = page.locator('svg.chart rect.b').evaluate_all(
+        "elements => elements.map(element => ({y: element.getAttribute('y'), height: element.getAttribute('height')}))"
+    )
+    check(
+        bool(trend_geometry)
+        and all(
+            value['y'] is not None
+            and value['height'] is not None
+            and all(
+                part.lower() != 'nan' and part.lower() not in ('infinity', '-infinity')
+                for part in (value['y'], value['height'])
+            )
+            and float(value['height']) >= 0
+            for value in trend_geometry
+        ),
+        'dashboard SVG trend bars keep finite non-negative vertical geometry',
+    )
+    vendor_texts = page.locator('.hb-l').all_inner_texts()
+    hostile_vendor_visible = any(hostile_vendor in label for label in vendor_texts)
+    injected_svg_count = page.locator('.hb-l svg, .hb-t svg, .hb-v svg, svg.chart svg').count()
+    hostile_handler_fired = page.evaluate('window.__xssFired === true')
+    check(
+        hostile_vendor_visible,
+        'dashboard displays the hostile vendor payload as literal text',
+    )
+    check(
+        injected_svg_count == 0 and not hostile_handler_fired,
+        'hostile vendor text creates no SVG element and does not execute its handler',
+    )
+    page.unroute('**/api?*', tamper_dashboard_numeric_values)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+
     page.click('[data-v=reg]')
     page.wait_for_selector('[data-act=edit]')
     page.set_viewport_size({'width': 390, 'height': 844})

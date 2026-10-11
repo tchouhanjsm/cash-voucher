@@ -43,14 +43,18 @@ export function createDashboard() {
   }
 
   function bars(rows, limit = 8) {
-    const top = rows.slice(0, limit);
+    // Persisted/bootstrap data is untrusted; keep non-finite totals out of CSS geometry.
+    const top = rows.slice(0, limit).map((row) => ({
+      ...row,
+      s: Number.isFinite(Number(row.s)) ? Number(row.s) : 0,
+    }));
     const max = Math.max(1, ...top.map((row) => row.s));
 
     return (
       top
         .map(
           (row) =>
-            `<div class="hb"><div class="hb-l" title="${esc(row.k)}">${esc(row.k)}</div><div class="hb-t"><i style="width:${Math.max(2, (row.s / max) * 100)}%"></i></div><div class="hb-v">${money(row.s)}</div></div>`,
+            `<div class="hb"><div class="hb-l" title="${esc(row.k)}">${esc(row.k)}</div><div class="hb-t"><i style="width:${Math.min(100, Math.max(2, (row.s / max) * 100))}%"></i></div><div class="hb-v">${money(row.s)}</div></div>`,
         )
         .join('') || '<p class="muted">No data in this period.</p>'
     );
@@ -59,11 +63,13 @@ export function createDashboard() {
   function trendSvg(list, from, to) {
     const days = Math.round((new Date(to) - new Date(from)) / 864e5) + 1;
     const monthly = days > 62;
-    const amounts = {};
+    const amounts = new Map();
 
     list.forEach((voucher) => {
       const key = monthly ? voucher.date.slice(0, 7) : voucher.date;
-      amounts[key] = (amounts[key] || 0) + voucher.amount;
+      const amount = Number(voucher.amount);
+      if (!Number.isFinite(amount)) return;
+      amounts.set(key, (amounts.get(key) || 0) + amount);
     });
 
     const keys = [];
@@ -82,7 +88,7 @@ export function createDashboard() {
       }
     }
 
-    const values = keys.map((key) => amounts[key] || 0);
+    const values = keys.map((key) => amounts.get(key) || 0);
     const max = Math.max(1, ...values);
     const width = Math.max(280, Math.min(1100, innerWidth - (innerWidth > 800 ? 262 : 24) - 34));
     const height = 190;

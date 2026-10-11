@@ -131,3 +131,10 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - The settings renderer interpolated `nextVoucherNo`, `nextReceiptNo` and `openingBalance` directly into quoted HTML input `value` attributes. These fields are numeric under the normal backend contract, but a malformed response can still alter the HTML parser's attribute context.
 - Apply `esc()` at each of the three attribute sinks. This is an output-encoding fix, not a replacement for backend validation or a claim that every active template sink is safe.
 - Browser E2E tampers with the bootstrap response to place a quote-breaking SVG payload into all three fields, then asserts no image/SVG node is created and no payload handler runs. The test restores a normal bootstrap response before proceeding.
+
+## PR #85 — Dashboard numeric values at CSS geometry sink
+
+- **Confirmed rendering-integrity defect:** `frontend/features/dashboard.js` interpolated computed bar widths into CSS and aggregate amounts into SVG `y`/`height` attributes without a finite-number boundary. Malformed bootstrap/persisted values produced invalid SVG dimensions such as `NaN` during Browser E2E, as confirmed by browser console errors.
+- Normalize non-finite amounts out of trend aggregation, use `Map` for date buckets to avoid inherited-key collisions on malformed date values, normalize non-finite group totals to zero for bar presentation, and clamp computed CSS widths to `2–100%`. This bounds rendered geometry without altering source voucher records or claiming ledger validity.
+- Browser E2E tampers with bootstrap response values including `NaN`, `Infinity`, a negative value, a hostile amount string, and a hostile vendor label. It checks finite/bounded CSS widths, finite/non-negative SVG geometry, absence of injected nodes, and no payload execution.
+- This is a dashboard presentation/integrity guard, not a substitute for backend amount validation or a full XSS audit. The active template/sink inventory remains incomplete.
