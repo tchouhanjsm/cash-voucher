@@ -544,15 +544,17 @@ export async function markFailed(clientId, owner, reason) {
   });
 }
 
-export async function clear(ownerKey, includeUnbound = false) {
+export async function clear(ownerKey) {
+  if (!String(ownerKey || '').trim()) {
+    throw new Error('Sign in before clearing pending payments.');
+  }
+
   await tx_('readwrite', (store) => {
     const request = store.getAll();
 
     request.onsuccess = () => {
       request.result.forEach((record) => {
-        const ownerMatches = ownerKey && String(record.ownerKey || '') === ownerKey;
-        const unboundMatches = includeUnbound && !String(record.ownerKey || '');
-        if (ownerMatches || unboundMatches) store.delete(record.clientId);
+        if (String(record.ownerKey || '') === ownerKey) store.delete(record.clientId);
       });
     };
   });
