@@ -11,7 +11,7 @@
 Branch: `security/auth-lock-contention-serialization`  
 Base: `cb98b8ae9e329d34ebb9c068de38a78c3f6902ac`
 
-Scope: use one lock helper for login, PIN change and PIN reset transitions; return an explicit retryable `BUSY` response when the 25-second lock acquisition times out; keep the login/PIN-change counters, PIN changes and reset-counter clearing under the shared lock; and revalidate the session inside the lock before changing a PIN. Mock tests verify timeout fail-closed behavior and lock acquisition/release accounting. This does not measure real Apps Script contention or change the deployment.
+Scope: use one shared lock helper for login and the write router. Login acquires it directly; write actions acquire it once in `route_`, which authenticates inside the lock before calling PIN-change/reset handlers. Handlers must not acquire the ScriptLock again. Lock wait timeout returns retryable `BUSY`; failed-attempt counters, PIN changes and reset-counter clearing stay serialized. Mock tests verify timeout fail-closed behavior and acquisition/release accounting. This does not measure real Apps Script contention or change the deployment.
 
 Adopt three distinct sources of information:
 
