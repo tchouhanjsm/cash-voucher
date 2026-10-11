@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**PR #79 — Disable vulnerable runtime Excel parser**  
+**PR #79 — [Disable vulnerable runtime Excel parser](https://github.com/tchouhanjsm/cash-voucher/pull/79)**  
 Branch: `security/disable-vulnerable-excel-import`  
 Base: `3ac0c387d52fc2631f26b48f6169a5b6c03a995d`
 
