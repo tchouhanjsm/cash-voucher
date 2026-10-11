@@ -450,13 +450,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const header = ['Time', 'User', 'Action', 'Target', 'Details'];
     const csv = [
       header,
-      ...rows.map((row) => [
-        row.time,
-        row.user,
-        row.action,
-        row.target,
-        auditDetailsText(row),
-      ]),
+      ...rows.map((row) => [row.time, row.user, row.action, row.target, auditDetailsText(row)]),
     ]
       .map((record) => record.map(csvCell).join(','))
       .join('\r\n');
