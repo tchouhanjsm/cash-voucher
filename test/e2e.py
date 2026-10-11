@@ -899,6 +899,17 @@ with sync_playwright() as p:
         and 'Simulated validation failure' in failed_records[0]['failure'],
         'rejected outbox entry is retained with a reviewable failure state',
     )
+
+    check(
+        page.locator('.outbox-failures summary').inner_text() == 'Review rejected payments',
+        'banner exposes rejected-payment review details',
+    )
+    page.locator('.outbox-failures summary').click()
+    review_text = page.locator('.outbox-failures').inner_text()
+    check(
+        'Poison Vendor' in review_text and 'Simulated validation failure' in review_text,
+        'rejected-payment review displays the affected vendor and server reason as text',
+    )
     healthy_records = outbox_vendor_records('Healthy Neighbor Vendor')
     check(
         not healthy_records
