@@ -1212,6 +1212,92 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
 
+    # Malformed bootstrap data must not produce invalid CSS geometry.
+    def tamper_dashboard_numeric_values(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {})
+        if request_data.get('action') == 'bootstrap':
+            vouchers = data.get('vouchers', [])
+            template = vouchers[0].copy() if vouchers else {
+                'id': '',
+                'no': 0,
+                'date': datetime.date.today().isoformat(),
+                'vendor': '',
+                'amount': 1,
+                'category': 'Other',
+                'notes': '',
+                'type': 'PAYMENT',
+                'status': 'ACTIVE',
+                'createdBy': 'owner@test.com',
+                'createdAt': '',
+                'updatedBy': '',
+                'updatedAt': '',
+                'receipts': [],
+                'cancelReason': '',
+            }
+            values = [
+                ('numeric-nan', 'NaN'),
+                ('numeric-infinity', 'Infinity'),
+                ('numeric-negative', -500),
+                ('numeric-string', '<svg onload=window.__xssFired=true></svg>'),
+            ]
+            for index, (suffix, amount) in enumerate(values):
+                entry = template.copy()
+                entry.update({
+                    'id': suffix,
+                    'no': 910001 + index,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': suffix,
+                    'category': 'Rendering boundary',
+                    'amount': amount,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'owner@test.com',
+                    'receipts': [],
+                })
+                vouchers.append(entry)
+            data['vouchers'] = vouchers
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_dashboard_numeric_values)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'bootstrap'
+    ):
+        page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.click('[data-v=dash]')
+    page.wait_for_selector('.hb-l')
+    bar_styles = page.locator('.hb-t i').evaluate_all(
+        "elements => elements.map(element => ({width: element.style.width, value: element.getAttribute('style')}))"
+    )
+    check(
+        bool(bar_styles)
+        and all(
+            value['width']
+            and value['width'].endswith('%')
+            and value['width'] != 'NaN%'
+            and value['width'] != 'Infinity%'
+            and value['width'] != '-Infinity%'
+            and 0 <= float(value['width'][:-1]) <= 100
+            for value in bar_styles
+        ),
+        'dashboard bars clamp computed widths to finite 0–100% values',
+    )
+    check(
+        page.locator('.hb-l').filter(has_text='numeric-string').count() == 1
+        and page.locator('.hb-l svg, .hb-t svg, .hb-v svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'malformed amount string cannot inject markup into dashboard bars',
+    )
+    page.unroute('**/api?*', tamper_dashboard_numeric_values)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+
     page.click('[data-v=reg]')
     page.wait_for_selector('[data-act=edit]')
     page.set_viewport_size({'width': 390, 'height': 844})
