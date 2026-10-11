@@ -192,10 +192,10 @@ const benchmark = [];
 
 for (const receiptCount of [0, 10, 100, 500]) {
   const { services, state } = makeSeededServices(receiptCount);
-  const expectedBytes = Array.from(
-    { length: receiptCount },
-    (_, index) => 512 + index * 37,
-  ).reduce((total, bytes) => total + bytes, 0);
+  const expectedBytes = Array.from({ length: receiptCount }, (_, index) => 512 + index * 37).reduce(
+    (total, bytes) => total + bytes,
+    0,
+  );
   const started = performance.now();
   const result = g.backupDataWithServices(services);
   const harnessElapsedMs = Number((performance.now() - started).toFixed(3));
@@ -204,9 +204,17 @@ for (const receiptCount of [0, 10, 100, 500]) {
 
   assert.equal(result.receiptCount, receiptCount, 'copied receipt count matches seeded workload');
   assert.equal(result.receiptBytes, expectedBytes, 'measured receipt payload size matches seeds');
-  assert.equal(result.durationMs, 35 + receiptCount * 5, 'elapsed-time instrumentation matches injected work');
+  assert.equal(
+    result.durationMs,
+    35 + receiptCount * 5,
+    'elapsed-time instrumentation matches injected work',
+  );
   assert.equal(state.snapshots[0].receiptFolder.files.length, receiptCount);
-  assert.equal(manifest.contents.split('\n').length, receiptCount + 1, 'manifest maps every copied receipt');
+  assert.equal(
+    manifest.contents.split('\n').length,
+    receiptCount + 1,
+    'manifest maps every copied receipt',
+  );
   assert.equal(metrics.completedAt, state.props.BACKUP_LAST_SUCCESS);
   assert.equal(metrics.receiptCount, receiptCount);
   assert.equal(metrics.receiptBytes, expectedBytes);
@@ -230,7 +238,11 @@ console.log(
 const partialMetrics = makeSeededServices(4, { unmeasurableSizeIndex: 2 });
 const partialResult = g.backupDataWithServices(partialMetrics.services);
 assert.equal(partialResult.receiptCount, 4, 'missing size metadata must not fail a backup');
-assert.equal(partialResult.receiptBytes, null, 'partial byte totals are never presented as complete');
+assert.equal(
+  partialResult.receiptBytes,
+  null,
+  'partial byte totals are never presented as complete',
+);
 assert.equal(
   JSON.parse(partialMetrics.state.props.BACKUP_LAST_SUCCESS_METRICS).receiptBytesKnown,
   false,
@@ -251,7 +263,11 @@ assert.equal(incident.state.alerts.length, 1, 'consecutive failures alert only o
 
 incident.state.failManifest = false;
 g.backupDataWithServices(incident.services);
-assert.equal(incident.state.props.BACKUP_ALERT_ACTIVE, undefined, 'successful backup closes the alert incident');
+assert.equal(
+  incident.state.props.BACKUP_ALERT_ACTIVE,
+  undefined,
+  'successful backup closes the alert incident',
+);
 incident.state.failManifest = true;
 assert.throws(() => g.backupDataWithServices(incident.services), /manifest creation failed/);
 assert.equal(incident.state.alerts.length, 2, 'a later failure after recovery sends a new alert');
@@ -267,7 +283,11 @@ assert.match(
 );
 deliveryFailure.state.failAlert = false;
 assert.throws(() => g.backupDataWithServices(deliveryFailure.services), /manifest creation failed/);
-assert.equal(deliveryFailure.state.alerts.length, 1, 'failed notification can be retried on a later attempt');
+assert.equal(
+  deliveryFailure.state.alerts.length,
+  1,
+  'failed notification can be retried on a later attempt',
+);
 
 console.log(
   'Backup observability OK — seeded counts/bytes/runtime, non-blocking metrics, failure-streak alerts and delivery-error recovery.',
