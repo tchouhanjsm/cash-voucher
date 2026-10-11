@@ -1558,9 +1558,16 @@ function updateVoucher_(user, req) {
     throw err_('No changes were detected. The voucher was not updated.', 'VALIDATION');
   }
 
-  const reason = clean_(req.reason, 200);
+  if (typeof req.reason !== 'string') {
+    throw err_('Please give a correction reason of 3 to 200 characters.', 'VALIDATION');
+  }
+  const rawReason = req.reason.trim();
+  if (rawReason.length > 200) {
+    throw err_('Correction reason must be 200 characters or fewer.', 'VALIDATION');
+  }
+  const reason = clean_(rawReason, 200);
   if (reason.length < 3) {
-    throw err_('Please give a correction reason of at least 3 characters.', 'VALIDATION');
+    throw err_('Please give a correction reason of 3 to 200 characters.', 'VALIDATION');
   }
 
   patch.UpdatedBy = user.email;
