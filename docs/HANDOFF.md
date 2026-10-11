@@ -11,7 +11,7 @@
 Branch: `security/dashboard-prototype-key-aggregation`  
 Base: `dd1a00a1dced79346bbdcb514eea1be7669bcac5`
 
-Scope: replace the dashboard's plain-object grouping dictionary with a `Map`, so user-controlled vendor/category names such as `constructor`, `__proto__`, and `toString` aggregate as ordinary values rather than colliding with inherited object properties. Add Browser E2E regression coverage and keep the rendering/security audit scoped to confirmed source findings. PR #83 is merged; its live MailApp authorization, scheduled backup observation and isolated restore remain owner-authorized operational gates.
+Scope: replace the dashboard's plain-object grouping dictionary with a `Map`, so user-controlled vendor/category names such as `constructor`, `__proto__`, `toString`, and `hasOwnProperty` aggregate as ordinary values rather than colliding with inherited object properties. Add Browser E2E regression coverage for group visibility and unchanged built-in object/function properties. PR #83 is merged; its live MailApp authorization, scheduled backup observation and isolated restore remain owner-authorized operational gates.
 
 Adopt three distinct sources of information:
 
@@ -77,5 +77,5 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
 5. PR #83 is merged at verified `main` SHA `dd1a00a1dced79346bbdcb514eea1be7669bcac5`; its exact tested head passed CI, Browser E2E and Full Flight Test.
-6. PR #84 is the current code phase: use a `Map` for dashboard grouping and add regression tests for prototype-named vendor/category values that previously collided with inherited object properties.
+6. PR #84 is the current code phase: use `Map` for dashboard grouping and verify prototype-named vendor/category values remain visible without mutating built-in object/function properties.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
