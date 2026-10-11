@@ -1211,6 +1211,28 @@ with sync_playwright() as p:
         and '177.77' in page.locator('#rbody tr', has_text='Ram Traders').inner_text(),
         'corrected amount appears in the register after saving',
     )
+
+    audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
+    audit_page = audit_context.new_page()
+    audit_page.goto(URL)
+    audit_page.fill('#lEmail', 'owner@test.com')
+    audit_page.fill('#lPin', '579246')
+    audit_page.click('#lBtn')
+    audit_page.wait_for_selector('[data-v=audit]')
+    audit_page.click('[data-v=audit]')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud').innerText.includes('Corrected after receipt review')",
+        timeout=10000,
+    )
+    correction_audit_text = audit_page.locator('#aud').inner_text()
+    check(
+        'Reason: Corrected after receipt review' in correction_audit_text
+        and 'Amount:' in correction_audit_text
+        and '177.77' in correction_audit_text
+        and '→' in correction_audit_text,
+        'owner audit log renders correction reason and field before/after values readably',
+    )
+    audit_context.close()
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
     xss_vendor_row.locator('[data-act=cancel]').click()
     page.wait_for_selector('#modal #cr')
