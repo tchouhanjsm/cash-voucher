@@ -336,7 +336,11 @@ function recordBackupSuccessMetrics_(p, metrics, logger) {
   try {
     p.setProperty('BACKUP_LAST_SUCCESS_METRICS', JSON.stringify(metrics));
   } catch (error) {
-    const log = logger || function (message) { Logger.log(message); };
+    const log =
+      logger ||
+      function (message) {
+        Logger.log(message);
+      };
     log(
       'Could not record backup workload metrics: ' +
         String(error && error.message ? error.message : error),
@@ -344,7 +348,11 @@ function recordBackupSuccessMetrics_(p, metrics, logger) {
   }
 }
 function clearBackupFailureAlertState_(p, logger) {
-  const log = logger || function (message) { Logger.log(message); };
+  const log =
+    logger ||
+    function (message) {
+      Logger.log(message);
+    };
   ['BACKUP_ALERT_ACTIVE', 'BACKUP_LAST_ALERT_ERROR'].forEach(function (key) {
     try {
       p.deleteProperty(key);
@@ -357,7 +365,11 @@ function clearBackupFailureAlertState_(p, logger) {
   });
 }
 function notifyBackupFailure_(p, services, error) {
-  const log = services.logger || function (message) { Logger.log(message); };
+  const log =
+    services.logger ||
+    function (message) {
+      Logger.log(message);
+    };
   if (!p || typeof services.sendFailureAlert !== 'function') return;
 
   try {
@@ -1015,19 +1027,25 @@ function backupStatus_(user) {
     lastError: lastError.slice(0, 300),
     lastAlertError: lastAlertError,
     lastSuccessDurationMs:
-      metrics && typeof metrics.durationMs === 'number' && isFinite(metrics.durationMs) && metrics.durationMs >= 0
+      metrics &&
+      typeof metrics.durationMs === 'number' &&
+      isFinite(metrics.durationMs) &&
+      metrics.durationMs >= 0
         ? metrics.durationMs
         : null,
     lastSuccessReceiptCount:
-      metrics && typeof metrics.receiptCount === 'number' && isFinite(metrics.receiptCount) && metrics.receiptCount >= 0
+      metrics &&
+      typeof metrics.receiptCount === 'number' &&
+      isFinite(metrics.receiptCount) &&
+      metrics.receiptCount >= 0
         ? metrics.receiptCount
         : null,
     lastSuccessReceiptBytesKnown: Boolean(
       metrics &&
-        metrics.receiptBytesKnown === true &&
-        typeof metrics.receiptBytes === 'number' &&
-        isFinite(metrics.receiptBytes) &&
-        metrics.receiptBytes >= 0,
+      metrics.receiptBytesKnown === true &&
+      typeof metrics.receiptBytes === 'number' &&
+      isFinite(metrics.receiptBytes) &&
+      metrics.receiptBytes >= 0,
     ),
     lastSuccessReceiptBytes:
       metrics &&
