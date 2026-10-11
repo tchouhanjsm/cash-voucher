@@ -382,7 +382,10 @@ export function createPayments({ api, refresh }) {
         : '';
       if (unbound.length) {
         messages.push(
-          '⚠️ ' + unbound.length + ' older payment' + (unbound.length === 1 ? '' : 's') +
+          '⚠️ ' +
+            unbound.length +
+            ' older payment' +
+            (unbound.length === 1 ? '' : 's') +
             ' need account confirmation before upload',
         );
       }
