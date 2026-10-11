@@ -401,7 +401,10 @@ ok(
 );
 // RBAC
 const id1 = r.data.created[0].id;
-ok(!as(S, 'updateVoucher', { id: id1, reason: 'Not allowed', fields: { amount: 1 } }).ok, 'staff cannot edit');
+ok(
+  !as(S, 'updateVoucher', { id: id1, reason: 'Not allowed', fields: { amount: 1 } }).ok,
+  'staff cannot edit',
+);
 ok(!as(S, 'cancelVoucher', { id: id1, reason: 'test' }).ok, 'staff cannot cancel');
 ok(
   !as(S, 'listUsers').ok && !as(S, 'auditLog').ok && !as(M, 'listUsers').ok,
