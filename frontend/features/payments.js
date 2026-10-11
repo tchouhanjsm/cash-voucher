@@ -372,7 +372,9 @@ export function createPayments({ api, refresh }) {
       const failedReview = failedDetails
         ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
           failedDetails +
-          (failed.length > 5 ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>' : '') +
+          (failed.length > 5
+            ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>'
+            : '') +
           '</ul></details>'
         : '';
       if (unbound.length) {
