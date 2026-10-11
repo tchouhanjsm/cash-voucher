@@ -1196,13 +1196,14 @@ with sync_playwright() as p:
         and not page.locator('#modal').evaluate("(element) => element.classList.contains('hidden')"),
         'voucher edit cannot be submitted without a correction reason',
     )
-    page.fill('#er', 'Corrected after receipt review')
+    correction_reason = 'Corrected after receipt review <svg onload=window.__xssFired=true></svg>'
+    page.fill('#er', correction_reason)
     page.click('#modal .primary')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
     page.remove_listener('request', capture_voucher_update)
     check(
         len(update_requests) == 1
-        and update_requests[0].get('reason') == 'Corrected after receipt review'
+        and update_requests[0].get('reason') == correction_reason
         and update_requests[0].get('fields', {}).get('amount') == 177.77,
         'voucher edit sends its reason alongside the actual field changes',
     )
@@ -1214,6 +1215,7 @@ with sync_playwright() as p:
 
     audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
     audit_page = audit_context.new_page()
+    audit_page.add_init_script('window.__xssFired = false;')
     audit_page.goto(URL)
     audit_page.fill('#lEmail', 'owner@test.com')
     audit_page.fill('#lPin', '579246')
@@ -1227,10 +1229,13 @@ with sync_playwright() as p:
     correction_audit_text = audit_page.locator('#aud').inner_text()
     check(
         'Reason: Corrected after receipt review' in correction_audit_text
+        and '<svg onload=window.__xssFired=true></svg>' in correction_audit_text
         and 'Amount:' in correction_audit_text
         and '177.77' in correction_audit_text
-        and '→' in correction_audit_text,
-        'owner audit log renders correction reason and field before/after values readably',
+        and '→' in correction_audit_text
+        and audit_page.locator('#aud svg, #aud img').count() == 0
+        and not audit_page.evaluate('window.__xssFired === true'),
+        'owner audit log displays correction reason and field deltas as inert text',
     )
     audit_context.close()
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
