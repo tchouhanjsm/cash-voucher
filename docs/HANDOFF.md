@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**PR #78 — Harden backend action and role allowlists**  
+**PR #78 — [Harden backend action and role allowlists](https://github.com/tchouhanjsm/cash-voucher/pull/78)**  
 Branch: `security/harden-backend-allowlists`  
 Base: `539d5d8afd101136f0f1a3922068fc9624d12890`
 
