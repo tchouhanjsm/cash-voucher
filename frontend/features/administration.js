@@ -513,14 +513,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
         ['Retention', `${status.retentionDays} days`],
         ['Last attempt', formatBackupTimestamp(status.lastAttempt)],
         ['Last success', formatBackupTimestamp(status.lastSuccess)],
-        [
-          'Last successful runtime',
-          formatBackupDuration(status.lastSuccessDurationMs),
-        ],
+        ['Last successful runtime', formatBackupDuration(status.lastSuccessDurationMs)],
         [
           'Receipt copies in last successful backup',
-          status.lastSuccessReceiptCount === null ||
-          status.lastSuccessReceiptCount === undefined
+          status.lastSuccessReceiptCount === null || status.lastSuccessReceiptCount === undefined
             ? 'Not recorded'
             : String(status.lastSuccessReceiptCount),
         ],
