@@ -200,11 +200,10 @@ function backupData_() {
       MailApp.sendEmail(
         recipient,
         'Cash Voucher backup failed',
-        'A Cash Voucher backup attempt failed at ' +
+        'A Cash Voucher backup attempt could not complete at ' +
           alert.timestamp +
-          '.\n\nError: ' +
-          alert.message +
-          '\n\nOpen Cash Voucher Settings to review backup status. Check Apps Script logs and Drive permissions. ' +
+          '.\n\nOpen Cash Voucher Settings to review the last recorded failure and check Apps Script execution logs. ' +
+          'If the attempt could not acquire the backup lock, inspect any backup already in progress before retrying. ' +
           'A recorded status does not prove that a restore will succeed.',
       );
     },
