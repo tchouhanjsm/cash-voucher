@@ -41,6 +41,19 @@ with sync_playwright() as p:
     logs = []
     page.add_init_script(
         """window.__xssFired = false;
+        window.__createdObjectUrls = [];
+        window.__revokedObjectUrls = [];
+        const __createObjectURL = URL.createObjectURL.bind(URL);
+        URL.createObjectURL = (value) => {
+            const url = __createObjectURL(value);
+            window.__createdObjectUrls.push(url);
+            return url;
+        };
+        const __revokeObjectURL = URL.revokeObjectURL.bind(URL);
+        URL.revokeObjectURL = (url) => {
+            window.__revokedObjectUrls.push(String(url));
+            return __revokeObjectURL(url);
+        };
         window.__dashboardKeyBaseline = [
             Object.prototype,
             Object,
@@ -412,9 +425,11 @@ with sync_playwright() as p:
         image_file.write(png)
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_selector('.thumb')
+    receipt_preview_url = page.locator('.thumb').first.get_attribute('src')
     check(
-        page.locator('.thumb').first.get_attribute('src').startswith('blob:'),
-        'receipt preview source is assigned as a generated blob URL',
+        receipt_preview_url.startswith('blob:')
+        and page.evaluate("url => window.__createdObjectUrls.includes(url)", receipt_preview_url),
+        'receipt preview source is a tracked generated blob URL',
     )
     page.press('.ra', 'Enter')
     check(page.locator('.erow').count() == 2, 'enter adds row')
@@ -425,12 +440,32 @@ with sync_playwright() as p:
     )
     page.locator('.rv').nth(1).fill('Shiv Gas')
     page.locator('.ra').nth(1).fill('900')
-    page.locator('.erow').nth(1).locator('[data-act=delrow]').click()
+    second_row = page.locator('.erow').nth(1)
+    second_row.locator('.rf').set_input_files('/tmp/r.png')
+    page.wait_for_function("document.querySelectorAll('.erow .thumb').length === 2")
+    cleared_preview_url = second_row.locator('.thumb').get_attribute('src')
+    second_row.locator('[data-act=clrrec]').click()
+    page.wait_for_function(
+        "url => window.__revokedObjectUrls.includes(url)", arg=cleared_preview_url
+    )
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", cleared_preview_url)
+        and second_row.locator('.thumb').count() == 0,
+        'clearing a receipt removes its preview and revokes its object URL',
+    )
+    second_row.locator('.rf').set_input_files('/tmp/r.png')
+    page.wait_for_function("document.querySelectorAll('.erow .thumb').length === 2")
+    removed_preview_url = second_row.locator('.thumb').get_attribute('src')
+    second_row.locator('[data-act=delrow]').click()
+    page.wait_for_function(
+        "url => window.__revokedObjectUrls.includes(url)", arg=removed_preview_url
+    )
     check(
         page.locator('.erow').count() == 1
         and page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
-        and page.evaluate("document.activeElement === document.querySelector('.rv')"),
-        'removing a row restores focus and keeps the remaining row labelled',
+        and page.evaluate("document.activeElement === document.querySelector('.rv')")
+        and page.evaluate("url => window.__revokedObjectUrls.includes(url)", removed_preview_url),
+        'removing a receipt row restores focus and revokes its preview URL',
     )
     page.click('[data-act=addrow]')
     page.wait_for_function("document.querySelectorAll('.erow').length === 2")
@@ -462,6 +497,26 @@ with sync_playwright() as p:
         'server-returned voucher number remains inert text in save confirmation',
     )
     page.unroute('**/api?*', tamper_created_voucher_number)
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", receipt_preview_url),
+        'successful online save releases the receipt preview object URL',
+    )
+
+    # Leaving an unsaved entry must release previews even though no save occurs.
+    page.click('[data-act=newagain]')
+    page.wait_for_selector('#nf')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_selector('.thumb')
+    abandoned_preview_url = page.locator('.thumb').first.get_attribute('src')
+    page.click('[data-v=dash]')
+    page.wait_for_function(
+        "document.querySelector('[data-v=dash]')?.getAttribute('aria-current') === 'page'"
+    )
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", abandoned_preview_url)
+        and page.locator('#nf').count() == 0,
+        'navigating away from an unsaved entry revokes its receipt preview URL',
+    )
 
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody tr')

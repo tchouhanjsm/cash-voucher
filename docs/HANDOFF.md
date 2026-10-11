@@ -2,16 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `ac1ea5977dcfc763dfae30e0c80d081affade998` (PR #86 merge)  
+**Verified `main` SHA:** `68982f99a9b3ab795cb77a2ff1531d75aeefc91e` (PR #87 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #87 — Recorded-movement report summary output encoding**  
-Branch: `security/escape-report-summary-counts`  
-Base: `ac1ea5977dcfc763dfae30e0c80d081affade998`
+**PR #88 — Receipt preview resource-lifecycle cleanup**  
+Branch: `security/bulk-receipt-preview-lifecycle`  
+Base: `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`
 
-Scope: encode API-derived `count`, `activeCount`, and `cancelledCount` in report summary HTML and add a hostile-response Browser E2E regression. PR #86 is merged at this base; its exact tested head passed CI, Browser E2E (180 checks) and Full Flight Test.
+Scope: release generated receipt preview object URLs on clear, row removal, successful online/offline save, form replacement and SPA navigation; revoke URLs produced after an asynchronous compression finishes for a detached row. Add browser regression coverage for the principal cleanup paths. Keep this as a resource-lifecycle fix, not a claim of full XSS certification.
 
 Adopt three distinct sources of information:
 
@@ -56,6 +56,7 @@ These remain open regardless of green mock-backed CI:
 
 ## Recent completed milestones
 
+- **PR #87 — Escape API-derived report summary count fields:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/87) at `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`; exact tested head `863ee174675ea0311124b0e39c7510f1221e7a54` passed CI (129 backend checks), Browser E2E (181 checks), and Full Flight Test (129 backend + 181 browser checks). Report summary API values are encoded at their HTML text sinks; test coverage verifies hostile values remain literal text.
 - **PR #86 — Dashboard numeric rendering integrity:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/86) at `ac1ea5977dcfc763dfae30e0c80d081affade998`; exact tested head `482de368714e093ad3671ae20bac0290f656fcde` passed CI (129 backend checks), Browser E2E (180 checks) and Full Flight Test (129 backend + 180 browser checks). The change bounds CSS/SVG geometry under malformed bootstrap amounts; it does not validate source ledger data.
 
 - **PR #73 — Report date-range escaping:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/73); 141 browser checks passed.
@@ -78,6 +79,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #86 is merged at verified `main` SHA `ac1ea5977dcfc763dfae30e0c80d081affade998`; exact tested head `482de368714e093ad3671ae20bac0290f656fcde` passed CI, Browser E2E (180 checks) and Full Flight Test.
-6. PR #87 is the current focused report-output encoding phase; verify its live head and exact-head CI, Browser E2E and Full Flight Test before handoff.
+5. PR #87 merged at verified `main` SHA `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`; exact tested head `863ee174675ea0311124b0e39c7510f1221e7a54` passed CI, Browser E2E (181 checks) and Full Flight Test (129 backend + 181 browser checks).
+6. PR #88 is the current receipt-preview lifecycle batch; verify its live branch/head and exact-head CI, Browser E2E and Full Flight Test before handoff.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.

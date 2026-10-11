@@ -97,6 +97,29 @@ export function createPayments({ api, refresh }) {
     if (firstRow) $('.rv', firstRow).focus();
   }
 
+  function revokePreviewUrl(url) {
+    if (typeof url !== 'string' || !url.startsWith('blob:')) return;
+
+    try {
+      URL.revokeObjectURL(url);
+    } catch {
+      // Resource cleanup must not block payment entry or navigation.
+    }
+  }
+
+  function releaseReceiptPreviews(row) {
+    if (!row) return;
+
+    (Array.isArray(row._rec) ? row._rec : []).forEach((receipt) =>
+      revokePreviewUrl(receipt?.preview),
+    );
+    row._rec = [];
+  }
+
+  function disposeReceiptPreviews() {
+    $('#rows .erow').forEach(releaseReceiptPreviews);
+  }
+
   function removeRow(button) {
     const rows = $$('#rows .erow');
     if (rows.length <= 1) return;
@@ -104,6 +127,7 @@ export function createPayments({ api, refresh }) {
     const row = button.closest('.erow');
     const target = row?.previousElementSibling || row?.nextElementSibling;
     if (!row) return;
+    releaseReceiptPreviews(row);
     row.remove();
     labelRows();
     updateSaveLabel();
@@ -137,6 +161,7 @@ export function createPayments({ api, refresh }) {
   }
 
   function open(type = 'PAYMENT') {
+    disposeReceiptPreviews();
     NT = type;
     vNew();
   }
@@ -160,7 +185,8 @@ export function createPayments({ api, refresh }) {
 
   function clearReceipt(button) {
     const row = button.closest('.erow');
-    row._rec = [];
+    if (!row) return;
+    releaseReceiptPreviews(row);
     $('.rp', row).replaceChildren();
     updateSaveLabel();
   }
@@ -168,6 +194,7 @@ export function createPayments({ api, refresh }) {
   document.addEventListener('change', async (e) => {
     if (!e.target.classList.contains('rf')) return;
     const row = e.target.closest('.erow');
+    if (!row) return;
     const files = [...e.target.files];
     e.target.value = '';
 
@@ -177,11 +204,18 @@ export function createPayments({ api, refresh }) {
         break;
       }
       try {
-        row._rec.push(await compress(file));
+        const receipt = await compress(file);
+        if (!row.isConnected || !$('#rows')?.contains(row)) {
+          revokePreviewUrl(receipt.preview);
+          continue;
+        }
+        row._rec.push(receipt);
       } catch (error) {
-        fail(error);
+        if (row.isConnected && $('#rows')?.contains(row)) fail(error);
       }
     }
+
+    if (!row.isConnected || !$('#rows')?.contains(row)) return;
 
     const preview = $('.rp', row);
     preview.replaceChildren();
@@ -284,12 +318,14 @@ export function createPayments({ api, refresh }) {
         d.created.forEach((c) => {
           if (!S.vouchers.find((v) => v.id === c.id)) S.vouchers.push(c);
         });
+        disposeReceiptPreviews();
         $('#nf').classList.add('hidden');
         $('#nres').innerHTML =
           `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Saved ${d.created.length} ${entryNoun(d.created.length)}</h2>${d.created.map((c) => `<div style="margin:8px 0">#${esc(vno(c))} · ${esc(c.vendor)} · <b>${money(c.amount)}</b> <button class="btn sm" data-act="print" data-id="${esc(c.id)}">Print</button></div>`).join('')}<div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
       } catch (e) {
         if (e.code !== 'NET') return fail(e);
         if (!(await queue(entries))) return;
+        disposeReceiptPreviews();
         $('#nf').classList.add('hidden');
         $('#nres').innerHTML =
           `<div class="card ok-panel" role="status" aria-live="polite"><h2>📴 Saved on this device</h2><p>You're offline. These ${entries.length} ${entryNoun(entries.length)} will upload automatically when you're back online.</p><div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
@@ -794,5 +830,6 @@ export function createPayments({ api, refresh }) {
     exportOutbox,
     importOutbox,
     discardOutbox,
+    disposePreviews: disposeReceiptPreviews,
   };
 }

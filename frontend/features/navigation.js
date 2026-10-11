@@ -128,6 +128,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
   }
 
   function go(view) {
+    if (S.view === 'new') getPayments().disposePreviews();
     S.view = view;
     $$('#nav button').forEach((button) => {
       const active = button.dataset.v === view;
