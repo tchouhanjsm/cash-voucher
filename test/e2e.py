@@ -1308,16 +1308,21 @@ with sync_playwright() as p:
         ),
         'dashboard SVG trend bars keep finite non-negative vertical geometry',
     )
-    hostile_vendor_visible = any(
-        hostile_vendor in label
-        for label in page.locator('.hb-l').all_inner_texts()
+    vendor_texts = page.locator('.hb-l').all_inner_texts()
+    hostile_vendor_visible = any(hostile_vendor in label for label in vendor_texts)
+    injected_svg_count = page.locator('.hb-l svg, .hb-t svg, .hb-v svg, svg.chart svg').count()
+    hostile_handler_fired = page.evaluate('window.__xssFired === true')
+    check(
+        page.locator('.hb-l').filter(has_text='numeric-string').count() == 1,
+        'dashboard keeps the numeric-string vendor row visible',
     )
     check(
-        page.locator('.hb-l').filter(has_text='numeric-string').count() == 1
-        and hostile_vendor_visible
-        and page.locator('.hb-l svg, .hb-t svg, .hb-v svg, svg.chart svg').count() == 0
-        and not page.evaluate('window.__xssFired === true'),
-        'hostile vendor text remains inert while malformed numeric values are rendered',
+        hostile_vendor_visible,
+        'dashboard displays the hostile vendor payload as literal text',
+    )
+    check(
+        injected_svg_count == 0 and not hostile_handler_fired,
+        'hostile vendor text creates no SVG element and does not execute its handler',
     )
     page.unroute('**/api?*', tamper_dashboard_numeric_values)
     page.reload(wait_until='domcontentloaded')
