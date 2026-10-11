@@ -350,6 +350,26 @@ export function createPayments({ api, refresh }) {
             ' need review; automatic retry stopped',
         );
       }
+
+      const failedDetails = failed
+        .slice(0, 5)
+        .map((record) =>
+          '<li><b>' +
+          esc(record.entry?.vendor || 'Unnamed payment') +
+          '</b> — ₹' +
+          esc(String(record.entry?.amount ?? 'unknown')) +
+          ': ' +
+          esc(record.failure || 'Rejected by server') +
+          '</li>',
+        )
+        .join('');
+      const failedReview =
+        failedDetails
+          ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
+            failedDetails +
+            (failed.length > 5 ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>' : '') +
+            '</ul></details>'
+          : '';
       if (unbound.length) {
         messages.push(
           '⚠️ ' + unbound.length + ' older payment' + (unbound.length === 1 ? '' : 's') +
@@ -361,10 +381,11 @@ export function createPayments({ api, refresh }) {
       b.className = 'banner' + (errMsg || failed.length || unbound.length ? ' err' : '');
       b.innerHTML =
         '<span>' + messages.map((message) => esc(message)).join('<br>') + '</span>' +
+        failedReview +
         (pending.length ? '<button class="btn sm" data-act="flush">Retry now</button>' : '') +
         (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
         '<button class="btn sm" data-act="import-pending">Import</button>' +
-        (visible.length ? '<button class="btn sm danger" data-act="discard">Discard</button>' : '');
+        (owned.length ? '<button class="btn sm danger" data-act="discard">Discard my payments</button>' : '');
     } catch (error) {
       b.className = 'banner err';
       const message =
@@ -691,19 +712,22 @@ export function createPayments({ api, refresh }) {
         (record) => String(record.ownerKey || '') === ownerKey,
       ).length;
       const unboundCount = records.filter((record) => !String(record.ownerKey || '')).length;
-      if (!ownedCount && !unboundCount) {
-        toast('There are no pending payments for this account to discard.', 'ok');
+      if (!ownedCount) {
+        toast(
+          unboundCount
+            ? 'Older payments are not bound to an account and were preserved. Export or explicitly restore them to confirm ownership.'
+            : 'There are no pending payments for this account to discard.',
+          unboundCount ? 'err' : 'ok',
+        );
         return;
       }
 
-      let message = 'Discard ' + ownedCount + ' payment(s) bound to this account';
-      if (unboundCount) {
-        message += ' and ' + unboundCount + ' older payment(s) that are not bound to any account';
-      }
-      message += '? Items bound to other accounts will be kept. This cannot be undone.';
+      const message =
+        'Discard ' + ownedCount +
+        ' payment(s) bound to this account? Items belonging to other accounts and older unbound payments will be kept. This cannot be undone.';
 
       if (confirm(message)) {
-        await offlineQueue.clear(ownerKey, unboundCount > 0);
+        await offlineQueue.clear(ownerKey);
         announceOutboxChange('changed');
         await showBanner();
       }
