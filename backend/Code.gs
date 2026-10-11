@@ -1228,7 +1228,7 @@ function authLock_(work) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(25000);
-  } catch (error) {
+  } catch {
     throw err_(
       'Authentication is busy. No login or PIN change was processed. Please retry shortly.',
       'BUSY',
@@ -1748,7 +1748,11 @@ function changePin_(user, req) {
     });
     cache.remove('s:' + req.token);
     const token = Utilities.getUuid() + Utilities.getUuid();
-    cache.put('s:' + token, JSON.stringify({ email: currentUser.email, salt: salt }), CFG.SESSION_TTL);
+    cache.put(
+      's:' + token,
+      JSON.stringify({ email: currentUser.email, salt: salt }),
+      CFG.SESSION_TTL,
+    );
     audit_(currentUser, 'PIN_CHANGE', '', '');
     return { token: token };
   });
