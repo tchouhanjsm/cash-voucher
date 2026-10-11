@@ -18,6 +18,26 @@ export function createPayments({ api, refresh }) {
     } catch {}
   }
 
+  function queueOwnerKey() {
+    const email = String(S.me?.email || '')
+      .trim()
+      .toLowerCase();
+    const endpoint = String(S.url || '').trim();
+    if (!email || !endpoint) return '';
+
+    try {
+      const url = new URL(endpoint);
+      return url.origin + url.pathname.replace(/\/+$/, '') + '|' + email;
+    } catch {
+      return '';
+    }
+  }
+
+  function isRecordRejection(error) {
+    if (['VALIDATION', 'CONFLICT'].includes(String(error?.code || ''))) return true;
+    return error?.code === 'SERVER' && /^\[\d+\]\s/.test(String(error?.message || ''));
+  }
+
   outboxChannel?.addEventListener('message', (event) => {
     if (!['changed', 'queued'].includes(event.data?.type)) return;
 
@@ -286,7 +306,7 @@ export function createPayments({ api, refresh }) {
 
   async function queue(entries) {
     try {
-      await offlineQueue.enqueue(entries);
+      await offlineQueue.enqueue(entries, queueOwnerKey());
       await showBanner();
       announceOutboxChange('queued');
       return true;
@@ -305,66 +325,207 @@ export function createPayments({ api, refresh }) {
     const b = $('#banner');
 
     try {
-      const records = await offlineQueue.list();
-      const n = records.length;
+      const allRecords = await offlineQueue.list();
+      const ownerKey = queueOwnerKey();
+      if (!ownerKey) return b.classList.add('hidden');
+      const owned = allRecords.filter((record) => String(record.ownerKey || '') === ownerKey);
+      const unbound = allRecords.filter((record) => !String(record.ownerKey || ''));
+      const visible = owned.concat(unbound);
+      const pending = owned.filter((record) => ['pending', 'sending'].includes(record.status));
+      const failed = owned.filter((record) => record.status === 'failed');
 
-      if (!n) return b.classList.add('hidden');
+      if (!visible.length && !errMsg) return b.classList.add('hidden');
 
-      b.className = 'banner' + (errMsg ? ' err' : '');
-      b.innerHTML = `<span>📤 ${n} payment${n > 1 ? 's' : ''} waiting to upload${errMsg ? ' — ' + esc(errMsg) : ''}</span><button class="btn sm" data-act="flush">Retry now</button><button class="btn sm" data-act="export-pending">Export</button><button class="btn sm" data-act="import-pending">Import</button><button class="btn sm danger" data-act="discard">Discard</button>`;
+      const messages = [];
+      if (pending.length) {
+        messages.push(
+          '📤 ' +
+            pending.length +
+            ' payment' +
+            (pending.length === 1 ? '' : 's') +
+            ' waiting to upload',
+        );
+      }
+      if (failed.length) {
+        messages.push(
+          '⚠️ ' +
+            failed.length +
+            ' payment' +
+            (failed.length === 1 ? '' : 's') +
+            ' need review; automatic retry stopped',
+        );
+      }
+
+      const failedDetails = failed
+        .slice(0, 5)
+        .map(
+          (record) =>
+            '<li><b>' +
+            esc(record.entry?.vendor || 'Unnamed payment') +
+            '</b> — ₹' +
+            esc(String(record.entry?.amount ?? 'unknown')) +
+            ': ' +
+            esc(record.failure || 'Rejected by server') +
+            '</li>',
+        )
+        .join('');
+      const failedReview = failedDetails
+        ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
+          failedDetails +
+          (failed.length > 5
+            ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>'
+            : '') +
+          '</ul></details>'
+        : '';
+      if (unbound.length) {
+        messages.push(
+          '⚠️ ' +
+            unbound.length +
+            ' older payment' +
+            (unbound.length === 1 ? '' : 's') +
+            ' need account confirmation before upload',
+        );
+      }
+      if (errMsg) messages.push(errMsg);
+
+      b.className = 'banner' + (errMsg || failed.length || unbound.length ? ' err' : '');
+      b.innerHTML =
+        '<span>' +
+        messages.map((message) => esc(message)).join('<br>') +
+        '</span>' +
+        failedReview +
+        (pending.length ? '<button class="btn sm" data-act="flush">Retry now</button>' : '') +
+        (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
+        '<button class="btn sm" data-act="import-pending">Import</button>' +
+        (owned.length
+          ? '<button class="btn sm danger" data-act="discard">Discard my payments</button>'
+          : '');
     } catch (error) {
       b.className = 'banner err';
       const message =
         error.message ||
         'Offline storage is unavailable. Reconnect before saving unsynced payments.';
-      b.innerHTML = `<span>⚠️ ${esc(message)}</span>`;
+      b.innerHTML = '<span>⚠️ ' + esc(message) + '</span>';
       console.error('Offline queue unavailable:', error);
     }
   }
 
   async function flushOutbox() {
-    if (flushing || !S.token) return showBanner();
+    const ownerKey = queueOwnerKey();
+    if (flushing || !S.token || !ownerKey) return showBanner();
     flushing = true;
+
+    let uploaded = 0;
+    let rejected = 0;
+    let bannerError = '';
+    let stopFlush = false;
+    const leaseOwner = uid();
 
     try {
       await offlineQueue.ready();
-      const owner = uid();
-      const records = await offlineQueue.claim(10, owner);
 
-      if (!records.length) {
-        await showBanner();
-        return;
+      while (!stopFlush) {
+        const records = await offlineQueue.claim(10, leaseOwner, ownerKey);
+        if (!records.length) break;
+
+        for (let index = 0; index < records.length; index++) {
+          const record = records[index];
+          const remainingIds = records.slice(index).map((item) => item.clientId);
+
+          if (!S.token || queueOwnerKey() !== ownerKey) {
+            await offlineQueue.release(remainingIds, leaseOwner);
+            bannerError = 'The signed-in account changed. Remaining payments were kept pending.';
+            announceOutboxChange('changed');
+            stopFlush = true;
+            break;
+          }
+
+          try {
+            // Submit one row per request so one rejected row cannot poison its neighbours.
+            await api('createVouchers', { entries: [record.entry] });
+            await offlineQueue.ack([record.clientId], leaseOwner);
+            uploaded++;
+          } catch (error) {
+            if (isRecordRejection(error)) {
+              try {
+                await offlineQueue.markFailed(record.clientId, leaseOwner, error.message);
+                rejected++;
+                announceOutboxChange('changed');
+                continue;
+              } catch (storageError) {
+                await offlineQueue.release(remainingIds, leaseOwner);
+                bannerError = storageError.message || 'Could not save the rejected payment state.';
+                announceOutboxChange('changed');
+                stopFlush = true;
+                break;
+              }
+            }
+
+            await offlineQueue.release(remainingIds, leaseOwner);
+            bannerError =
+              error.code === 'NET'
+                ? 'Connection to server was lost. Remaining payments are still queued.'
+                : error.message || 'Upload stopped; remaining payments are still queued.';
+            announceOutboxChange('changed');
+            stopFlush = true;
+            break;
+          }
+        }
       }
 
-      const clientIds = records.map((record) => record.clientId);
-      const entries = records.map((record) => record.entry);
-
-      try {
-        await api('createVouchers', { entries });
-        await offlineQueue.ack(clientIds, owner);
+      if (uploaded) {
         announceOutboxChange('changed');
-      } catch (error) {
-        await offlineQueue.release(clientIds, owner);
-        announceOutboxChange('changed');
-        throw error;
+        if (S.token && queueOwnerKey() === ownerKey) {
+          toast(uploaded + ' offline payment' + (uploaded === 1 ? '' : 's') + ' uploaded.', 'ok');
+          await refresh(true);
+        }
       }
-
-      toast('Offline payments uploaded.', 'ok');
-      await showBanner();
-      await refresh(true);
+      if (rejected) {
+        toast(
+          rejected +
+            ' payment' +
+            (rejected === 1 ? '' : 's') +
+            ' need review and will not retry automatically. ' +
+            'Export the queue before discarding any item.',
+          'err',
+        );
+      }
     } catch (error) {
-      await showBanner(error.code === 'NET' ? 'Connection to server was lost.' : error.message);
+      bannerError = error.code === 'NET' ? 'Connection to server was lost.' : error.message;
     } finally {
       flushing = false;
     }
+
+    await showBanner(bannerError);
   }
 
   async function exportOutbox() {
     try {
-      const records = await offlineQueue.list();
+      const ownerKey = queueOwnerKey();
+      if (!ownerKey) {
+        toast('Sign in before exporting pending payments.', 'err');
+        return;
+      }
+      const allRecords = await offlineQueue.list();
+      const unbound = allRecords.filter((record) => !String(record.ownerKey || ''));
+      if (
+        unbound.length &&
+        !confirm(
+          'The offline queue contains ' +
+            unbound.length +
+            ' older payment(s) with no recorded owner. Export includes them. ' +
+            'Continue only if you are authorised to access these records.',
+        )
+      ) {
+        return;
+      }
+
+      const records = allRecords.filter(
+        (record) => String(record.ownerKey || '') === ownerKey || !String(record.ownerKey || ''),
+      );
 
       if (!records.length) {
-        toast('There are no pending payments to export.', 'ok');
+        toast('There are no pending payments for this account to export.', 'ok');
         return;
       }
 
@@ -374,8 +535,10 @@ export function createPayments({ api, refresh }) {
         exportedAt: new Date().toISOString(),
         records: records.map((record) => ({
           clientId: record.clientId,
+          ownerKey: String(record.ownerKey || ''),
           status: record.status,
           attempts: record.attempts,
+          failure: record.failure || '',
           queuedAt: new Date(record.createdAt).toISOString(),
           entry: record.entry,
         })),
@@ -428,6 +591,9 @@ export function createPayments({ api, refresh }) {
             throw new Error('This is not a supported Cash Vouchers recovery file.');
           }
 
+          const ownerKey = queueOwnerKey();
+          if (!ownerKey) throw new Error('Sign in before restoring pending payments.');
+
           if (!payload.records.length) {
             throw new Error('Recovery file contains no pending payments.');
           }
@@ -441,6 +607,14 @@ export function createPayments({ api, refresh }) {
           payload.records.forEach((record) => {
             const clientId = String(record?.clientId || '').trim();
             const entry = record?.entry;
+            const recordOwner = String(record?.ownerKey || '').trim();
+
+            if (recordOwner && recordOwner !== ownerKey) {
+              throw new Error(
+                'Recovery file is bound to another endpoint or user; restore it while signed in ' +
+                  'to the matching account.',
+              );
+            }
 
             if (
               !clientId ||
@@ -518,16 +692,33 @@ export function createPayments({ api, refresh }) {
             });
           });
 
-          const confirmed = confirm(
-            'Restore ' +
+          const unboundCount = payload.records.filter(
+            (record) => !String(record?.ownerKey || '').trim(),
+          ).length;
+          const accountName = String(S.me?.email || 'the signed-in account');
+          const confirmation = unboundCount
+            ? 'This recovery file contains ' +
+              unboundCount +
+              ' older payment(s) that are not bound to an account. Importing will bind them to ' +
+              accountName +
+              ' on this server. Continue only if you verified these records belong to ' +
+              'this account. Matching IDs are checked before import.'
+            : 'Restore ' +
               payload.records.length +
-              ' payment(s) to this device? Matching queued IDs will be skipped. ' +
-              'Restored payments remain pending until you retry synchronization.',
-          );
+              ' payment(s) for ' +
+              accountName +
+              ' to this device? Matching queued IDs will be skipped. Restored payments ' +
+              'remain pending until you retry synchronization.';
+          const confirmed = confirm(confirmation);
 
           if (!confirmed) return;
+          if (!S.token || queueOwnerKey() !== ownerKey) {
+            throw new Error(
+              'The signed-in account changed. Sign in and retry the recovery import.',
+            );
+          }
 
-          const result = await offlineQueue.restore(payload.records);
+          const result = await offlineQueue.restore(payload.records, ownerKey);
           await showBanner();
           announceOutboxChange('changed');
           toast(
@@ -548,20 +739,45 @@ export function createPayments({ api, refresh }) {
     input.click();
   }
 
-  function discardOutbox() {
+  async function discardOutbox() {
     if (flushing) {
       toast('Wait for the current upload to finish.', 'err');
       return;
     }
 
-    if (confirm('Discard all payments waiting to upload? This cannot be undone.')) {
-      offlineQueue
-        .clear()
-        .then(() => {
-          announceOutboxChange('changed');
-          return showBanner();
-        })
-        .catch(fail);
+    const ownerKey = queueOwnerKey();
+    if (!ownerKey) return toast('Sign in before discarding pending payments.', 'err');
+
+    try {
+      const records = await offlineQueue.list();
+      const ownedCount = records.filter(
+        (record) => String(record.ownerKey || '') === ownerKey,
+      ).length;
+      const unboundCount = records.filter((record) => !String(record.ownerKey || '')).length;
+      if (!ownedCount) {
+        toast(
+          unboundCount
+            ? 'Older payments are not bound to an account and were preserved. ' +
+                'Export or explicitly restore them to confirm ownership.'
+            : 'There are no pending payments for this account to discard.',
+          unboundCount ? 'err' : 'ok',
+        );
+        return;
+      }
+
+      const message =
+        'Discard ' +
+        ownedCount +
+        ' payment(s) bound to this account? Items belonging to other accounts and older ' +
+        'unbound payments will be kept. This cannot be undone.';
+
+      if (confirm(message)) {
+        await offlineQueue.clear(ownerKey);
+        announceOutboxChange('changed');
+        await showBanner();
+      }
+    } catch (error) {
+      fail(error);
     }
   }
 

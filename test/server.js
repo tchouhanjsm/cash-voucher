@@ -9,7 +9,8 @@ g.props.OWNER_PIN = '483921';
 g.setup();
 let droppedClientResponse = false,
   droppedClientResponses = 0,
-  countedCreateRequests = 0;
+  countedCreateRequests = 0,
+  rejectedClientRequests = 0;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -21,7 +22,9 @@ http
   .createServer((req, res) => {
     if (req.method === 'GET' && req.url.split('?')[0] === '/test-status') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ droppedClientResponses, countedCreateRequests }));
+      res.end(
+        JSON.stringify({ droppedClientResponses, countedCreateRequests, rejectedClientRequests }),
+      );
       return;
     }
 
@@ -33,10 +36,25 @@ http
         try {
           const requestUrl = new URL(req.url, 'http://127.0.0.1:8765');
           const o = JSON.parse(b);
-          j = JSON.stringify(g.call(o.action, o));
-
           const dropVendor = requestUrl.searchParams.get('drop_vendor');
           const countVendor = requestUrl.searchParams.get('count_vendor');
+          const failVendor = requestUrl.searchParams.get('fail_vendor');
+          const shouldFail =
+            o.action === 'createVouchers' &&
+            failVendor &&
+            Array.isArray(o.entries) &&
+            o.entries.some((entry) => String(entry.vendor || '') === failVendor);
+
+          if (shouldFail) {
+            rejectedClientRequests += 1;
+            j = JSON.stringify({
+              ok: false,
+              error: 'Simulated validation failure for outbox isolation.',
+              code: 'VALIDATION',
+            });
+          } else {
+            j = JSON.stringify(g.call(o.action, o));
+          }
           const shouldDrop =
             o.action === 'createVouchers' &&
             dropVendor &&

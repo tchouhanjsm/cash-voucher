@@ -8,7 +8,11 @@ import urllib.parse
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get('E2E_BASE', 'http://127.0.0.1:8765').rstrip('/')
-API = BASE + '/api?' + urllib.parse.urlencode({'drop_vendor': 'Offline Vendor', 'count_vendor': 'Multi-tab Vendor'})
+API = BASE + '/api?' + urllib.parse.urlencode({
+    'drop_vendor': 'Offline Vendor',
+    'count_vendor': 'Multi-tab Vendor',
+    'fail_vendor': 'Poison Vendor',
+})
 URL = BASE + '/?' + urllib.parse.urlencode({'api': API})
 errs = []
 ok = 0
@@ -741,6 +745,216 @@ with sync_playwright() as p:
     page.wait_for_timeout(400)
     check(page.locator('#rbody tr').count() == 4, 'multi-tab sync creates exactly one voucher')
     second_page.close()
+
+    # Exercise account binding: a queued payment must remain untouched by another account.
+    def outbox_vendor_records(vendor):
+        return page.evaluate(
+            """async (vendor) => {
+              const db = await new Promise((resolve, reject) => {
+                const request = indexedDB.open('cash-voucher', 1);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+              const records = await new Promise((resolve, reject) => {
+                const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+                request.onsuccess = () => resolve(request.result
+                  .filter((record) => record.entry.vendor === vendor)
+                  .map((record) => ({
+                    clientId: record.clientId,
+                    ownerKey: record.ownerKey || '',
+                    status: record.status,
+                    failure: record.failure || '',
+                  })));
+                request.onerror = () => reject(request.error);
+              });
+              db.close();
+              return records;
+            }""",
+            vendor,
+        )
+
+    def update_outbox_owner(vendor, owner_key):
+        return page.evaluate(
+            """async ({ vendor, ownerKey }) => {
+              const db = await new Promise((resolve, reject) => {
+                const request = indexedDB.open('cash-voucher', 1);
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+              let originalOwner = '';
+              await new Promise((resolve, reject) => {
+                const transaction = db.transaction('outbox', 'readwrite');
+                const store = transaction.objectStore('outbox');
+                const request = store.getAll();
+                request.onsuccess = () => {
+                  const record = request.result.find((item) => item.entry.vendor === vendor);
+                  if (!record) {
+                    transaction.abort();
+                    reject(new Error('Expected outbox record was not found.'));
+                    return;
+                  }
+                  originalOwner = record.ownerKey || '';
+                  record.ownerKey = ownerKey;
+                  store.put(record);
+                };
+                request.onerror = () => reject(request.error);
+                transaction.oncomplete = resolve;
+                transaction.onerror = () => reject(transaction.error);
+                transaction.onabort = () => reject(transaction.error || new Error('Outbox update aborted.'));
+              });
+              db.close();
+              return originalOwner;
+            }""",
+            {"vendor": vendor, "ownerKey": owner_key},
+        )
+
+    context.set_offline(True)
+    page.click('[data-v=new]')
+    page.fill('.rv', 'Account-bound Vendor')
+    page.fill('.ra', '81')
+    page.click('#nsave')
+    page.wait_for_selector('.ok-panel')
+    check('Saved on this device' in page.inner_text('#nres'), 'account-binding test payment is queued offline')
+
+    account_records = outbox_vendor_records('Account-bound Vendor')
+    check(
+        len(account_records) == 1
+        and account_records[0]['ownerKey'].endswith('|s@test.com')
+        and account_records[0]['status'] == 'pending',
+        'offline payment stores the creating account binding',
+    )
+    original_owner_key = account_records[0]['ownerKey']
+
+    # Legacy/unbound records are visible for recovery but are not eligible for generic discard.
+    update_outbox_owner('Account-bound Vendor', '')
+    page.evaluate(
+        """() => {
+          const channel = new BroadcastChannel('cash-voucher-outbox');
+          channel.postMessage({ type: 'changed' });
+          channel.close();
+        }"""
+    )
+    page.wait_for_function(
+        "document.querySelector('#banner').innerText.includes('need account confirmation')",
+        timeout=8000,
+    )
+    check(
+        page.locator('#banner [data-act=discard]').count() == 0,
+        'legacy unbound entries cannot be discarded through the signed-in account action',
+    )
+
+    update_outbox_owner(
+        'Account-bound Vendor',
+        original_owner_key.rsplit('|', 1)[0] + '|another-user@test.com',
+    )
+    context.set_offline(False)
+    page.wait_for_timeout(500)
+    foreign_records = outbox_vendor_records('Account-bound Vendor')
+    check(
+        page.locator('#banner').is_hidden()
+        and len(foreign_records) == 1
+        and foreign_records[0]['status'] == 'pending'
+        and foreign_records[0]['ownerKey'].endswith('|another-user@test.com'),
+        'another account neither sees nor uploads a foreign-bound outbox item',
+    )
+
+    # Restore the intended account binding and leave a draft open while the background sync runs.
+    context.set_offline(True)
+    update_outbox_owner('Account-bound Vendor', original_owner_key)
+    page.click('[data-v=new]')
+    page.fill('.rv', 'Draft preserved during sync')
+    page.fill('.ra', '15')
+    context.set_offline(False)
+    page.wait_for_function(
+        "document.querySelector('#banner').classList.contains('hidden')",
+        timeout=10000,
+    )
+    page.wait_for_function(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const records = await new Promise((resolve, reject) => {
+            const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          db.close();
+          return !records.some((record) => record.entry.vendor === 'Account-bound Vendor');
+        }""",
+        timeout=10000,
+    )
+    check(
+        page.locator('.rv').first.input_value() == 'Draft preserved during sync'
+        and page.locator('.ra').first.input_value() == '15',
+        'background outbox sync preserves the in-progress New Entry form',
+    )
+
+    # A malformed row is isolated; a valid neighbour still uploads from the same offline batch.
+    context.set_offline(True)
+    page.click('[data-v=new]')
+    page.fill('.rv', 'Poison Vendor')
+    page.fill('.ra', '99')
+    page.click('[data-act=addrow]')
+    page.locator('#rows .erow').nth(1).locator('.rv').fill('Healthy Neighbor Vendor')
+    page.locator('#rows .erow').nth(1).locator('.ra').fill('101')
+    page.click('#nsave')
+    page.wait_for_selector('.ok-panel')
+    check('Saved on this device' in page.inner_text('#nres'), 'mixed valid/invalid batch is safely queued offline')
+
+    # Keep another draft open while the queued records are processed.
+    page.click('[data-v=new]')
+    page.fill('.rv', 'Draft survives rejected neighbour')
+    page.fill('.ra', '12')
+    context.set_offline(False)
+    page.wait_for_function(
+        "document.querySelector('#banner').innerText.includes('need review')",
+        timeout=10000,
+    )
+    failed_records = outbox_vendor_records('Poison Vendor')
+    check(
+        len(failed_records) == 1
+        and failed_records[0]['status'] == 'failed'
+        and 'Simulated validation failure' in failed_records[0]['failure'],
+        'rejected outbox entry is retained with a reviewable failure state',
+    )
+
+    check(
+        page.locator('.outbox-failures summary').inner_text() == 'Review rejected payments',
+        'banner exposes rejected-payment review details',
+    )
+    page.locator('.outbox-failures summary').click()
+    review_text = page.locator('.outbox-failures').inner_text()
+    check(
+        'Poison Vendor' in review_text and 'Simulated validation failure' in review_text,
+        'rejected-payment review displays the affected vendor and server reason as text',
+    )
+    healthy_records = outbox_vendor_records('Healthy Neighbor Vendor')
+    check(
+        not healthy_records
+        and 'waiting to upload' not in page.locator('#banner').inner_text(),
+        'one rejected record does not block the valid neighbour or retry endlessly',
+    )
+    rejection_state = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+    check(
+        rejection_state.get('rejectedClientRequests') == 1,
+        'invalid queue entry is attempted once and excluded from automatic retries',
+    )
+    check(
+        page.locator('.rv').first.input_value() == 'Draft survives rejected neighbour'
+        and page.locator('.ra').first.input_value() == '12',
+        'form remains editable after partial outbox failure and successful neighbour upload',
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rbody')
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(400)
+    check(
+        page.locator('#rbody tr', has_text='Healthy Neighbor Vendor').count() == 1,
+        'valid payment uploads even when a neighboring queue record is rejected',
+    )
 
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')

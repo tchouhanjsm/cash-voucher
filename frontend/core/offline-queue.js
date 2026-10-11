@@ -56,15 +56,17 @@ function newClientId_() {
     : Date.now() + '-' + Math.random().toString(16).slice(2);
 }
 
-function normalizeEntry_(entry, index) {
+function normalizeEntry_(entry, index, ownerKey = '') {
   const clientId = String(entry?.clientId || '').trim() || newClientId_();
   const normalizedEntry = { ...entry, clientId };
 
   return {
     clientId,
     entry: normalizedEntry,
+    ownerKey: String(ownerKey || ''),
     status: 'pending',
     attempts: 0,
+    failure: '',
     leaseOwner: '',
     leaseUntil: 0,
     createdAt: Date.now() + index,
@@ -271,7 +273,7 @@ function sameEntry_(left, right) {
   return stableJson_(left) === stableJson_(right);
 }
 
-function addRecordsSafely_(incoming) {
+function addRecordsSafely_(incoming, allowLegacyBinding = false) {
   return readyPromise.then(
     (db) =>
       new Promise((resolve, reject) => {
@@ -309,6 +311,28 @@ function addRecordsSafely_(incoming) {
                 return;
               }
 
+              const previousOwner = String(previous.ownerKey || '');
+              const incomingOwner = String(record.ownerKey || '');
+
+              if (previousOwner !== incomingOwner) {
+                if (allowLegacyBinding && !previousOwner && incomingOwner) {
+                  previous.ownerKey = incomingOwner;
+                  previous.status = 'pending';
+                  previous.failure = '';
+                  previous.leaseOwner = '';
+                  previous.leaseUntil = 0;
+                  store.put(previous);
+                  skipped++;
+                  continue;
+                }
+
+                failure = new Error(
+                  'A payment ID already belongs to a different account. Nothing was imported.',
+                );
+                transaction.abort();
+                return;
+              }
+
               skipped++;
               continue;
             }
@@ -340,11 +364,14 @@ function assertUniqueIds_(records) {
   });
 }
 
-export async function enqueue(entries) {
+export async function enqueue(entries, ownerKey) {
   if (!Array.isArray(entries) || !entries.length) return { added: 0, skipped: 0 };
+  if (!String(ownerKey || '').trim()) {
+    throw new Error('Sign in to bind offline payments to your account before saving.');
+  }
 
   const records = entries.map((entry, index) => {
-    const record = normalizeEntry_(entry, index);
+    const record = normalizeEntry_(entry, index, ownerKey);
     record.clientId = validateClientId_(record.clientId);
     record.entry.clientId = record.clientId;
     return record;
@@ -354,15 +381,26 @@ export async function enqueue(entries) {
   return addRecordsSafely_(records);
 }
 
-export async function restore(exportRecords) {
+export async function restore(exportRecords, ownerKey) {
   if (!Array.isArray(exportRecords) || !exportRecords.length) {
     throw new Error('Recovery file contains no pending payments.');
   }
+  if (!String(ownerKey || '').trim()) {
+    throw new Error('Sign in before restoring pending payments.');
+  }
 
+  const hasUnboundRecords = exportRecords.some((item) => !String(item?.ownerKey || '').trim());
   const records = exportRecords.map((item, index) => {
     const clientId = validateClientId_(item?.clientId);
     const entry = item?.entry;
+    const sourceOwner = String(item?.ownerKey || '').trim();
 
+    if (sourceOwner && sourceOwner !== ownerKey) {
+      throw new Error(
+        'Recovery file is bound to another endpoint or user; restore it while signed in ' +
+          'to the matching account.',
+      );
+    }
     if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
       throw new Error('Recovery file contains a payment with invalid details.');
     }
@@ -374,8 +412,10 @@ export async function restore(exportRecords) {
     return {
       clientId,
       entry: { ...entry, clientId },
+      ownerKey,
       status: 'pending',
       attempts: 0,
+      failure: '',
       leaseOwner: '',
       leaseUntil: 0,
       createdAt: Date.now() + index,
@@ -383,7 +423,7 @@ export async function restore(exportRecords) {
   });
 
   assertUniqueIds_(records);
-  return addRecordsSafely_(records);
+  return addRecordsSafely_(records, hasUnboundRecords);
 }
 
 export async function list() {
@@ -404,8 +444,9 @@ export async function count() {
   });
 }
 
-export async function claim(limit, owner, leaseMs = 120000) {
+export async function claim(limit, owner, ownerKey, leaseMs = 120000) {
   const now = Date.now();
+  if (!String(ownerKey || '').trim()) return [];
 
   return tx_('readwrite', (store, setResult) => {
     const request = store.getAll();
@@ -414,8 +455,9 @@ export async function claim(limit, owner, leaseMs = 120000) {
       const available = request.result
         .filter(
           (record) =>
-            record.status === 'pending' ||
-            (record.status === 'sending' && Number(record.leaseUntil) <= now),
+            String(record.ownerKey || '') === ownerKey &&
+            (record.status === 'pending' ||
+              (record.status === 'sending' && Number(record.leaseUntil) <= now)),
         )
         .sort((a, b) => a.createdAt - b.createdAt)
         .slice(0, limit);
@@ -480,8 +522,42 @@ export async function release(clientIds, owner) {
   });
 }
 
-export async function clear() {
-  await tx_('readwrite', (store) => store.clear());
+export async function markFailed(clientId, owner, reason) {
+  await tx_('readwrite', (store) => {
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      request.result.forEach((record) => {
+        if (
+          record.clientId === clientId &&
+          record.status === 'sending' &&
+          record.leaseOwner === owner
+        ) {
+          record.status = 'failed';
+          record.failure = String(reason || 'The server rejected this payment.').slice(0, 240);
+          record.leaseOwner = '';
+          record.leaseUntil = 0;
+          store.put(record);
+        }
+      });
+    };
+  });
+}
+
+export async function clear(ownerKey) {
+  if (!String(ownerKey || '').trim()) {
+    throw new Error('Sign in before clearing pending payments.');
+  }
+
+  await tx_('readwrite', (store) => {
+    const request = store.getAll();
+
+    request.onsuccess = () => {
+      request.result.forEach((record) => {
+        if (String(record.ownerKey || '') === ownerKey) store.delete(record.clientId);
+      });
+    };
+  });
 }
 
 export const offlineQueue = {
@@ -493,5 +569,6 @@ export const offlineQueue = {
   claim,
   ack,
   release,
+  markFailed,
   clear,
 };
