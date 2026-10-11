@@ -960,18 +960,13 @@ function route_(req) {
     return fn(user, req);
   }
 
-  const lock = LockService.getScriptLock();
-  lock.waitLock(25000);
-  try {
+  return withScriptLock_(function () {
     const user = auth_(req.token);
     if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
       throw err_('Please change your PIN first.', 'PIN_CHANGE');
     return fn(user, req);
-  } finally {
-    lock.releaseLock();
-  }
+  }, 'The service is busy. No changes were made. Please retry shortly.');
 }
-
 /* ============ helpers ============ */
 function err_(msg, code) {
   const e = new Error(msg);
@@ -1224,13 +1219,13 @@ function findUserByEmail_(email) {
     return String(u.Email).toLowerCase() === email;
   })[0];
 }
-function authLock_(work) {
+function withScriptLock_(work, busyMessage) {
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(25000);
   } catch {
     throw err_(
-      'Authentication is busy. No login or PIN change was processed. Please retry shortly.',
+      busyMessage || 'The service is busy. No changes were made. Please retry shortly.',
       'BUSY',
     );
   }
@@ -1242,7 +1237,7 @@ function authLock_(work) {
   }
 }
 function login_(req) {
-  return authLock_(function () {
+  return withScriptLock_(function () {
     const email = String(req.email || '')
         .trim()
         .toLowerCase(),
@@ -1264,7 +1259,7 @@ function login_(req) {
     updateRow_('Users', u._row, { LastLogin: nowIso_() });
     audit_({ email: email }, 'LOGIN', '', '');
     return { token: token, user: pubUser_(u) };
-  });
+  }, 'Authentication is busy. No login attempt was recorded. Please retry shortly.');
 }
 function auth_(token) {
   const raw = token && CacheService.getScriptCache().get('s:' + token);
@@ -1696,66 +1691,55 @@ function saveUser_(user, req) {
   return { ok: true };
 }
 function resetPin_(user, req) {
-  return authLock_(function () {
-    const actor = auth_(req.token);
-    need_(actor, 'users');
-    const t = readAll_('Users').filter(function (u) {
-      return u.UserID === req.id;
-    })[0];
-    if (!t) throw err_('User not found.');
-    if (!pinOk_(String(req.pin || '')))
-      throw err_('Temporary PIN must be 6 digits and not too simple.');
-    const salt = Utilities.getUuid();
-    updateRow_('Users', t._row, {
-      Salt: salt,
-      PinHash: hashPin_(salt, String(req.pin)),
-      MustChangePin: true,
-    });
-    const cache = CacheService.getScriptCache();
-    cache.remove('f:' + String(t.Email).toLowerCase());
-    cache.remove('pf:' + String(t.UserID));
-    audit_(actor, 'PIN_RESET', t.Email, '');
-    return { ok: true };
+  need_(user, 'users');
+  const t = readAll_('Users').filter(function (u) {
+    return u.UserID === req.id;
+  })[0];
+  if (!t) throw err_('User not found.');
+  if (!pinOk_(String(req.pin || '')))
+    throw err_('Temporary PIN must be 6 digits and not too simple.');
+  const salt = Utilities.getUuid();
+  updateRow_('Users', t._row, {
+    Salt: salt,
+    PinHash: hashPin_(salt, String(req.pin)),
+    MustChangePin: true,
   });
+  const cache = CacheService.getScriptCache();
+  cache.remove('f:' + String(t.Email).toLowerCase());
+  cache.remove('pf:' + String(t.UserID));
+  audit_(user, 'PIN_RESET', t.Email, '');
+  return { ok: true };
 }
 function changePin_(user, req) {
-  return authLock_(function () {
-    // Revalidate after acquiring the same lock used by login/reset; a stale session
-    // must not rotate the PIN again after another request has already changed it.
-    const currentUser = auth_(req.token);
-    const u = currentUser._u,
-      oldPin = String(req.oldPin || ''),
-      newPin = String(req.newPin || ''),
-      cache = CacheService.getScriptCache(),
-      fk = 'pf:' + u.UserID;
-    const fails = Number(cache.get(fk) || 0);
-    if (fails >= CFG.MAX_FAILS)
-      throw err_('Too many PIN-change attempts. Try again in 15 minutes.', 'LOCKED');
-    if (!same_(hashPin_(u.Salt, oldPin), u.PinHash)) {
-      cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
-      audit_(currentUser, 'PIN_CHANGE_FAILED', '', '');
-      throw err_('Current PIN is wrong.');
-    }
-    cache.remove(fk);
-    if (!pinOk_(newPin))
-      throw err_('New PIN must be 6 digits and not too simple (e.g. 123456, 111111).');
-    if (newPin === oldPin) throw err_('New PIN must be different.');
-    const salt = Utilities.getUuid();
-    updateRow_('Users', u._row, {
-      Salt: salt,
-      PinHash: hashPin_(salt, newPin),
-      MustChangePin: false,
-    });
-    cache.remove('s:' + req.token);
-    const token = Utilities.getUuid() + Utilities.getUuid();
-    cache.put(
-      's:' + token,
-      JSON.stringify({ email: currentUser.email, salt: salt }),
-      CFG.SESSION_TTL,
-    );
-    audit_(currentUser, 'PIN_CHANGE', '', '');
-    return { token: token };
+  // route_ authenticates this session after acquiring the shared ScriptLock.
+  const u = user._u,
+    oldPin = String(req.oldPin || ''),
+    newPin = String(req.newPin || ''),
+    cache = CacheService.getScriptCache(),
+    fk = 'pf:' + u.UserID;
+  const fails = Number(cache.get(fk) || 0);
+  if (fails >= CFG.MAX_FAILS)
+    throw err_('Too many PIN-change attempts. Try again in 15 minutes.', 'LOCKED');
+  if (!same_(hashPin_(u.Salt, oldPin), u.PinHash)) {
+    cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
+    audit_(user, 'PIN_CHANGE_FAILED', '', '');
+    throw err_('Current PIN is wrong.');
+  }
+  cache.remove(fk);
+  if (!pinOk_(newPin))
+    throw err_('New PIN must be 6 digits and not too simple (e.g. 123456, 111111).');
+  if (newPin === oldPin) throw err_('New PIN must be different.');
+  const salt = Utilities.getUuid();
+  updateRow_('Users', u._row, {
+    Salt: salt,
+    PinHash: hashPin_(salt, newPin),
+    MustChangePin: false,
   });
+  cache.remove('s:' + req.token);
+  const token = Utilities.getUuid() + Utilities.getUuid();
+  cache.put('s:' + token, JSON.stringify({ email: user.email, salt: salt }), CFG.SESSION_TTL);
+  audit_(user, 'PIN_CHANGE', '', '');
+  return { token: token };
 }
 /* ============ settings / audit (owner) ============ */
 function saveSettings_(user, req) {
