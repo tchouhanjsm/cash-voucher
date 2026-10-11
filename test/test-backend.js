@@ -442,6 +442,15 @@ ok(
   !shortReasonEdit.ok && shortReasonEdit.code === 'VALIDATION',
   'voucher correction reason must contain at least three characters',
 );
+const longReasonEdit = as(M, 'updateVoucher', {
+  id: id1,
+  reason: 'r'.repeat(201),
+  fields: { amount: 175 },
+});
+ok(
+  !longReasonEdit.ok && longReasonEdit.code === 'VALIDATION',
+  'voucher correction reason exceeding 200 characters is rejected',
+);
 const unchangedEdit = as(M, 'updateVoucher', {
   id: id1,
   reason: 'Reviewed the voucher and confirmed the current values.',
