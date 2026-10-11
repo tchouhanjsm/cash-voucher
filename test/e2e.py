@@ -1169,9 +1169,12 @@ with sync_playwright() as p:
     vendor_labels = page.locator('.two .card').nth(0).locator('.hb-l').all_inner_texts()
     category_labels = page.locator('.two .card').nth(1).locator('.hb-l').all_inner_texts()
     check(
-        all(value in vendor_labels for value in prototype_group_values)
-        and all(value in category_labels for value in prototype_group_values),
-        'dashboard preserves constructor, __proto__ and toString as ordinary vendor/category groups',
+        all(value in vendor_labels for value in prototype_group_values),
+        'dashboard preserves constructor, __proto__ and toString vendor groups',
+    )
+    check(
+        all(value in category_labels for value in prototype_group_values),
+        'dashboard preserves constructor, __proto__ and toString category groups',
     )
     page.unroute('**/api?*', tamper_dashboard_groups)
     page.reload(wait_until='domcontentloaded')
