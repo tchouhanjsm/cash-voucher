@@ -495,6 +495,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
       const state = document.createElement('p');
       state.className = 'badge';
+      state.setAttribute('role', status.state === 'failed' ? 'alert' : 'status');
+      state.setAttribute('aria-live', status.state === 'failed' ? 'assertive' : 'polite');
       if (status.state === 'failed') state.classList.add('bad');
       else if (status.state !== 'success') state.classList.add('warn');
       state.textContent = labels[status.state] || 'Status unavailable';
@@ -511,9 +513,28 @@ export function createAdministration({ api, getNavigation, signOut }) {
         ['Retention', `${status.retentionDays} days`],
         ['Last attempt', formatBackupTimestamp(status.lastAttempt)],
         ['Last success', formatBackupTimestamp(status.lastSuccess)],
+        ['Last successful runtime', formatBackupDuration(status.lastSuccessDurationMs)],
+        [
+          'Receipt copies in last successful backup',
+          status.lastSuccessReceiptCount === null || status.lastSuccessReceiptCount === undefined
+            ? 'Not recorded'
+            : String(status.lastSuccessReceiptCount),
+        ],
+        [
+          'Receipt payload in last successful backup',
+          status.lastSuccessReceiptBytesKnown
+            ? formatBackupBytes(status.lastSuccessReceiptBytes)
+            : status.lastSuccessReceiptCount === null ||
+                status.lastSuccessReceiptCount === undefined
+              ? 'Not recorded'
+              : 'Size not measurable',
+        ],
       ];
 
       if (status.lastError) rows.push(['Latest error', status.lastError]);
+      if (status.lastAlertError) {
+        rows.push(['Owner notification issue', status.lastAlertError]);
+      }
 
       rows.forEach(([label, value]) => {
         const line = document.createElement('p');
@@ -649,6 +670,31 @@ export function createAdministration({ api, getNavigation, signOut }) {
           dateStyle: 'medium',
           timeStyle: 'short',
         });
+  }
+
+  function formatBackupDuration(value) {
+    if (value === null || value === undefined || value === '') return 'Not recorded';
+    const milliseconds = Number(value);
+    if (!Number.isFinite(milliseconds) || milliseconds < 0) return 'Not recorded';
+    return milliseconds >= 1000
+      ? (milliseconds / 1000).toFixed(2) + ' s'
+      : Math.round(milliseconds) + ' ms';
+  }
+
+  function formatBackupBytes(value) {
+    if (value === null || value === undefined || value === '') return 'Not recorded';
+    const bytes = Number(value);
+    if (!Number.isFinite(bytes) || bytes < 0) return 'Not recorded';
+    if (bytes < 1024) return Math.round(bytes) + ' B';
+
+    const units = ['KiB', 'MiB', 'GiB', 'TiB'];
+    let scaled = bytes;
+    let unit = units[0];
+    for (let index = 0; index < units.length && scaled >= 1024; index++) {
+      scaled /= 1024;
+      unit = units[index];
+    }
+    return scaled.toFixed(2) + ' ' + unit;
   }
 
   async function saveSettings() {

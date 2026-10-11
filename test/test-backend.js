@@ -233,13 +233,47 @@ ok(
 g.props.BACKUP_LAST_SUCCESS = '2026-10-09T10:01:00.000Z';
 backupStatus = as(T, 'backupStatus').data;
 ok(backupStatus.state === 'success', 'owner backup status reports recorded success');
-g.props.BACKUP_LAST_ERROR = 'Drive copy failed';
+g.props.BACKUP_LAST_SUCCESS_METRICS = JSON.stringify({
+  completedAt: g.props.BACKUP_LAST_SUCCESS,
+  durationMs: 1250,
+  receiptCount: 12,
+  receiptBytes: 7340032,
+  receiptBytesKnown: true,
+});
 backupStatus = as(T, 'backupStatus').data;
 ok(
-  backupStatus.state === 'failed' && backupStatus.lastError === 'Drive copy failed',
-  'owner backup status reports latest recorded failure',
+  backupStatus.lastSuccessDurationMs === 1250 &&
+    backupStatus.lastSuccessReceiptCount === 12 &&
+    backupStatus.lastSuccessReceiptBytesKnown &&
+    backupStatus.lastSuccessReceiptBytes === 7340032,
+  'owner backup status exposes metrics tied to the matching successful snapshot timestamp',
+);
+g.props.BACKUP_LAST_SUCCESS_METRICS = JSON.stringify({
+  completedAt: 'stale-metrics',
+  durationMs: 999999,
+  receiptCount: 999,
+  receiptBytes: 999999,
+  receiptBytesKnown: true,
+});
+backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.lastSuccessDurationMs === null &&
+    backupStatus.lastSuccessReceiptCount === null &&
+    !backupStatus.lastSuccessReceiptBytesKnown,
+  'owner backup status ignores stale metrics from an older success',
+);
+g.props.BACKUP_LAST_ERROR = 'Drive copy failed';
+g.props.BACKUP_LAST_ALERT_ERROR = 'Mail service unavailable';
+backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.state === 'failed' &&
+    backupStatus.lastError === 'Drive copy failed' &&
+    backupStatus.lastAlertError === 'Mail service unavailable',
+  'owner backup status separates backup failure from notification delivery failure',
 );
 delete g.props.BACKUP_LAST_ERROR;
+delete g.props.BACKUP_LAST_ALERT_ERROR;
+delete g.props.BACKUP_LAST_SUCCESS_METRICS;
 g.props.BACKUP_LAST_SUCCESS = 'not-a-timestamp';
 backupStatus = as(T, 'backupStatus').data;
 ok(

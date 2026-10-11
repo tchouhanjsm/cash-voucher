@@ -20,9 +20,12 @@ The current backend source:
 - uses the script lock to avoid overlapping application writes;
 - prunes backup folders older than the configured 90-day retention period;
 - records last-success/error metadata in Script Properties;
+- records elapsed duration, copied receipt count and total receipt bytes for the last successful backup when file sizes are available; metrics are accepted only when their completion timestamp matches the recorded last success;
+- sends a single owner email on the first failure in a continuous failure incident; subsequent failures do not repeat the alert until a successful run resets the incident state;
+- stores notification-delivery failures separately from the original backup error and allows a later failed attempt to retry notification;
 - trashes a snapshot if an error occurs before the Sheet copy, receipt copies and manifest are complete. A snapshot is preserved if only the subsequent retention-pruning step fails.
 
-**Operational status:** the owner-only Settings panel now displays the recorded backup configuration, retention period, last attempt, last success and latest recorded error. A recorded success is only metadata written by the script; it does not prove the live Drive snapshot is complete or restorable. A successful run on the live property account, backup-folder permissions, snapshot completeness and a restore drill remain unverified. Do not mark recovery-ready until those gates pass.
+**Operational status:** the owner-only Settings panel displays recorded backup configuration, retention, last attempt/success, last successful runtime, receipt count/bytes, latest backup error and any latest email-delivery error. The failed state is exposed as an assertive accessible alert. Email notifications use Apps Script MailApp and require owner authorization for the mail scope and recipient configuration. Recorded metrics and success state are observability only: they do not prove the live Drive snapshot is complete or restorable. The seeded benchmark is mock-only and must not be used as a cloud performance threshold. A successful run on the live property account, authorized alert delivery, backup-folder permissions, snapshot completeness and a restore drill remain unverified. Do not mark recovery-ready until those gates pass.
 
 ## Browser outbox safeguards
 

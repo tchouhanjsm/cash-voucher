@@ -197,7 +197,12 @@ assert.match(
 
 const success = makeServices();
 const result = g.backupDataWithServices(success.services);
-assert.deepEqual(JSON.parse(JSON.stringify(result)), { folderId: 'snapshot-1', receiptCount: 1 });
+assert.deepEqual(JSON.parse(JSON.stringify(result)), {
+  folderId: 'snapshot-1',
+  receiptCount: 1,
+  durationMs: 0,
+  receiptBytes: null,
+});
 assert.equal(success.state.snapshots[0].trashed, false);
 assert.equal(success.state.snapshots[0].files[0].name, 'receipt-manifest.csv');
 assert.equal(success.state.lockReleases, 1);

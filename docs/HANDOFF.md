@@ -2,16 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc` (PR #81 merge)  
+**Verified `main` SHA:** `4082503cf96bf08a2aa6408bde14fbd0bef14d2c` (PR #82 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #82 — Voucher correction history and required edit reasons**  
-Branch: `feature/voucher-correction-audit-history`  
-Base: `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc`
+**PR #83 — Backup workload telemetry and owner failure alerts**  
+Branch: `feature/backup-observability-and-alerts`  
+Base: `4082503cf96bf08a2aa6408bde14fbd0bef14d2c`
 
-Scope: require a 3–200 character reason for a changed voucher edit; capture the actual changed editable fields with before/after values and reason in structured audit details; render those details readably in the owner audit log. Reject edits without a reason, no-op edits and invalid changes. Keep the existing 5-column AuditLog sheet/API contract; this is application audit history, not a tamper-proof ledger or a completed cash-close control.
+Scope: record elapsed duration, copied receipt count and total receipt bytes for each successful backup; expose timestamp-matched metrics and assertive owner Settings failure feedback; send one owner email per continuous backup-failure incident and separately record alert-delivery errors; add a seeded mock workload benchmark. The real Apps Script Mail permission needs owner authorization before live use. No cloud performance threshold is inferred from mock timing, and a real isolated restore remains an owner-run operational gate.
 
 Adopt three distinct sources of information:
 
@@ -65,6 +65,7 @@ These remain open regardless of green mock-backed CI:
 - **PR #79 — Disable vulnerable runtime Excel parser:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/79) at `df6f3354c4ef30321941c0bf1d9b9b15a399a066`; exact tested head passed CI (112 backend/unit checks), Browser E2E (152 checks) and Full Flight Test. Excel workbook import remains intentionally disabled; CSV/TSV/TXT and paste remain available.
 - **PR #80 — Offline outbox failure isolation and account binding:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/80) at `cb98b8ae9e329d34ebb9c068de38a78c3f6902ac`; exact tested head `95c3252a2f58a5453ec5a9e55a88e6f67d69dcc7` passed CI (112 backend/unit checks), Browser E2E (165 checks) and Full Flight Test (112 backend + 165 browser checks).
 - **PR #81 — Serialize authentication lockout transitions and handle contention safely:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/81) at `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc`; exact tested head `46410471c025b3f2476807db39ee73f5cc1fcb6e` passed CI (120 backend/unit checks), Browser E2E (165 checks) and Full Flight Test (120 backend + 165 browser checks).
+- **PR #82 — Voucher correction history and required edit reasons:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/82) at `4082503cf96bf08a2aa6408bde14fbd0bef14d2c`; exact tested head `8b894512bc6903c824c8a69fd4a8bdadc70ad4d6` passed CI (127 backend checks), Browser E2E (171 checks) and Full Flight Test (127 backend + 171 browser checks). Existing AuditLog remains an operational audit, not a tamper-proof ledger.
 
 For full acceptance criteria, diffs, review discussions and CI evidence, use those GitHub PR records. Do not copy their full histories into this handoff.
 
@@ -74,6 +75,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #81 is merged at verified `main` SHA `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc`. Its exact tested head passed CI (120 backend/unit checks), Browser E2E (165 checks) and Full Flight Test.
-6. PR #82 is the current phase: require an attributable reason for every actual voucher correction, write changed-field before/after values into structured audit details, and make the owner audit log readable. Keep the existing sheet/API structure; do not describe the audit log as tamper-proof or ready as a cash-close control.
-7. Keep live Apps Script target/permissions, real scheduled backup and isolated restore, physical-device PWA tests and the controlled pilot as separate unverified operational gates. Daily cash close remains behind the existing owner/accountant decisions.
+5. PR #82 is merged at verified `main` SHA `4082503cf96bf08a2aa6408bde14fbd0bef14d2c`. Its exact tested head passed CI (127 backend checks), Browser E2E (171 checks) and Full Flight Test.
+6. PR #83 is the current phase: add successful-backup elapsed time, receipt count/bytes telemetry; owner email alerts for new failure streaks; independent tracking of alert delivery failures; and seeded benchmark regression coverage. No live deployment is implied.
+7. Real backup observation and restoration into a separate recovery Sheet/folder remain mandatory operational gates. The new MailApp permission must be authorized and live alert delivery verified by the owner before relying on email notifications. Preserve the owner's local untracked engineering protocol and do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization.
