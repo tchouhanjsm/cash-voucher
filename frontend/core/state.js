@@ -15,7 +15,8 @@ export const S = {
   },
 };
 
-const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+const isRecord = (value) =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
 const isIsoDate = (value) => {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
   const date = new Date(value + 'T00:00:00Z');
@@ -60,11 +61,7 @@ export function normalizeVoucherCollection(value) {
     }
 
     const row = { ...voucher };
-    if (
-      typeof row.no !== 'number' ||
-      !Number.isSafeInteger(row.no) ||
-      row.no < 1
-    ) {
+    if (typeof row.no !== 'number' || !Number.isSafeInteger(row.no) || row.no < 1) {
       malformedFieldCount++;
       if (typeof row.no !== 'string') row.no = '';
     }
