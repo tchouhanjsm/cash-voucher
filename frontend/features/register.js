@@ -225,7 +225,7 @@ export function createRegister({ api, go }) {
             : 'No vouchers are available to show. If you are offline, reconnect and refresh; otherwise use New Entry to record the first payment or receipt.';
       emptyState.appendChild(message);
 
-      if ((diagnostics.envelopeValid && voucherRows().length) || rangeInvalid) {
+      if ((dataAvailable && voucherRows().length) || rangeInvalid) {
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
         clearButton.className = 'btn';
