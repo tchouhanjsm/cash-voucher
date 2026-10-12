@@ -69,12 +69,6 @@ export function normalizeVoucherCollection(value) {
         malformedFieldCount++;
       }
     });
-    if (
-      !Array.isArray(row.receipts) ||
-      row.receipts.some((id) => typeof id !== 'string' || !id.trim())
-    ) {
-      malformedFieldCount++;
-    }
     rows.push(row);
   });
 
