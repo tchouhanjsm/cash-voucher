@@ -557,7 +557,7 @@ export async function discardFailed(clientId, ownerKey) {
 
     request.onsuccess = () => {
       const record = request.result;
-      if (!record || record.status !== 'failed' || String(record.ownerKey || '') !== ownerKey) {
+      if (!record || record.status !== 'failed' || record.ownerKey !== ownerKey) {
         setResult(false);
         return;
       }
