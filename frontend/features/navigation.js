@@ -29,6 +29,8 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       vouchers,
       voucherDiagnostics: {
         envelopeValid: voucherData.envelopeValid,
+        dataAvailable: voucherData.envelopeValid,
+        unavailableReason: voucherData.envelopeValid ? '' : 'invalid-response',
         malformedRecordCount: voucherData.malformedRecordCount,
         malformedFieldCount: voucherData.malformedFieldCount,
       },
@@ -79,7 +81,9 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
           names: cache.names || {},
           vouchers: [],
           voucherDiagnostics: {
-            envelopeValid: true,
+            envelopeValid: false,
+            dataAvailable: false,
+            unavailableReason: 'offline',
             malformedRecordCount: 0,
             malformedFieldCount: 0,
           },
