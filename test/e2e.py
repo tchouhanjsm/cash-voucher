@@ -467,6 +467,51 @@ with sync_playwright() as p:
         and page.evaluate("url => window.__revokedObjectUrls.includes(url)", removed_preview_url),
         'removing a receipt row restores focus and revokes its preview URL',
     )
+    # Clearing an existing receipt while a second compression is pending must not
+    # allow the late result to repopulate the cleared row.
+    page.evaluate(
+        """() => {
+            window.__nativeToBlob = HTMLCanvasElement.prototype.toBlob;
+            window.__pendingToBlob = null;
+            HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
+                window.__pendingToBlob = { canvas: this, callback, type, quality };
+            };
+        }"""
+    )
+    created_before_clear_race = page.evaluate('window.__createdObjectUrls.length')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_function('window.__pendingToBlob !== null')
+    page.locator('.erow').first.locator('[data-act=clrrec]').click()
+    page.evaluate(
+        """() => {
+            const pending = window.__pendingToBlob;
+            window.__pendingToBlob = null;
+            HTMLCanvasElement.prototype.toBlob = window.__nativeToBlob;
+            if (!pending) throw new Error('Expected the delayed canvas conversion.');
+            window.__nativeToBlob.call(
+                pending.canvas,
+                pending.callback,
+                pending.type,
+                pending.quality,
+            );
+        }"""
+    )
+    page.wait_for_function(
+        'count => window.__createdObjectUrls.length >= count',
+        arg=created_before_clear_race + 2,
+    )
+    cleared_late_preview_url = page.evaluate(
+        'window.__createdObjectUrls[window.__createdObjectUrls.length - 1]'
+    )
+    page.wait_for_function(
+        'url => window.__revokedObjectUrls.includes(url)', arg=cleared_late_preview_url
+    )
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", cleared_late_preview_url)
+        and page.locator('.erow').first.locator('.thumb').count() == 0,
+        'clearing during compression revokes the late preview and keeps the row cleared',
+    )
+
     page.click('[data-act=addrow]')
     page.wait_for_function("document.querySelectorAll('.erow').length === 2")
     page.locator('.rv').nth(1).fill('Shiv Gas')
