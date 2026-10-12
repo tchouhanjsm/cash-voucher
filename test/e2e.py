@@ -1202,14 +1202,34 @@ with sync_playwright() as p:
     )
 
     check(
-        page.locator('.outbox-failures summary').inner_text() == 'Review rejected payments',
-        'banner exposes rejected-payment review details',
+        page.locator('.outbox-failures summary').inner_text() == 'Review rejected entries',
+        'banner exposes rejected-entry review details',
     )
     page.locator('.outbox-failures summary').click()
     review_text = page.locator('.outbox-failures').inner_text()
     check(
-        'Poison Vendor' in review_text and 'Simulated validation failure' in review_text,
-        'rejected-payment review displays the affected vendor and server reason as text',
+        'Payment: Poison Vendor' in review_text
+        and 'Simulated validation failure' in review_text
+        and page.locator('[data-act=discard-failed]').count() == 1,
+        'rejected-entry review identifies transaction type, vendor, reason, and an explicit recovery action',
+    )
+    with page.expect_download() as rejected_export_info:
+        page.once('dialog', lambda dialog: dialog.accept())
+        page.click('[data-act=discard-failed]')
+    rejected_export = rejected_export_info.value
+    check(
+        rejected_export.suggested_filename.startswith('cash-vouchers-pending-')
+        and rejected_export.suggested_filename.endswith('.json')
+        and rejected_export.path() is not None,
+        'removing a rejected entry first exports the full recovery queue',
+    )
+    page.wait_for_function(
+        "document.querySelector('#toast').innerText.includes('Rejected entry removed from this device')",
+        timeout=8000,
+    )
+    check(
+        not outbox_vendor_records('Poison Vendor'),
+        'explicit rejected-entry removal deletes only the selected local failed record',
     )
     healthy_records = outbox_vendor_records('Healthy Neighbor Vendor')
     check(
@@ -1596,6 +1616,17 @@ with sync_playwright() as p:
         and 'No vouchers are available' not in page.locator('#view').inner_text(),
         'invalid bootstrap voucher envelope is distinct from a legitimate empty collection',
     )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rempty')
+    register_invalid_text = page.locator('#view').inner_text()
+    check(
+        'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
+        in register_invalid_text
+        and 'No vouchers are available to show' not in register_invalid_text
+        and 'Clear filters' not in register_invalid_text,
+        'register does not imply an invalid voucher response is a genuinely empty register',
+    )
+    page.click('[data-v=dash]')
     invalid_voucher_envelope = False
     page.unroute('**/api?*', tamper_dashboard_groups)
     page.reload(wait_until='domcontentloaded')
