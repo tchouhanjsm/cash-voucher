@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**PR #96 — Validate audit-log response envelopes and row fields** (awaiting review)  
+**PR #96 — [Validate audit-log response envelopes and row fields](https://github.com/tchouhanjsm/cash-voucher/pull/96)** (open, awaiting review)  
 Branch: `resilience/audit-log-envelope-validation`  
 Base: `5c229112ea500f544258d5bfb65fc2212be3c4a5`
 
@@ -91,6 +91,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #87 merged at verified `main` SHA `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`; exact tested head `863ee174675ea0311124b0e39c7510f1221e7a54` passed CI, Browser E2E (181 checks) and Full Flight Test (129 backend + 181 browser checks).
-6. PR #88 is the current receipt-preview lifecycle batch; verify its live branch/head and exact-head CI, Browser E2E and Full Flight Test before handoff.
+5. Use the verified SHA and current phase at the top of this handoff as the live state; older PR details belong in their GitHub records and the milestones below.
+6. Before choosing a new batch, confirm the current open PR and latest `main` SHA from GitHub, then review the roadmap and relevant domain audit. Do not start overlapping work while a focused PR awaits owner review/merge.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
