@@ -61,7 +61,11 @@ export function normalizeVoucherCollection(value) {
     }
 
     const row = { ...voucher };
-    if (typeof row.no !== 'number' || !Number.isSafeInteger(row.no) || row.no < 1) {
+    if (
+      typeof row.no !== 'number' ||
+      !Number.isSafeInteger(row.no) ||
+      row.no < 1
+    ) {
       malformedFieldCount++;
       if (typeof row.no !== 'string') row.no = '';
     }
