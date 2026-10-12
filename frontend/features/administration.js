@@ -10,6 +10,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
   let auditRows = [];
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
   let malformedAuditCount = 0;
+  let auditResponseInvalid = false;
 
   function getVendorRows() {
     const envelopeValid = Array.isArray(S.vendors);
@@ -357,6 +358,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
     auditFilters.from = '';
     auditFilters.to = '';
     auditRows = [];
+    malformedAuditCount = 0;
+    auditResponseInvalid = false;
 
     $('#view').innerHTML =
       head('Audit log') +
@@ -377,13 +380,17 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     api('auditLog')
       .then((rows) => {
-        const receivedRows = Array.isArray(rows) ? rows : [];
-        malformedAuditCount = receivedRows.filter(
-          (row) => row === null || typeof row !== 'object' || Array.isArray(row),
-        ).length;
-        auditRows = receivedRows.filter(
-          (row) => row !== null && typeof row === 'object' && !Array.isArray(row),
-        );
+        auditResponseInvalid = !Array.isArray(rows);
+        const receivedRows = auditResponseInvalid ? [] : rows;
+        const isValidAuditRow = (row) =>
+          row !== null &&
+          typeof row === 'object' &&
+          !Array.isArray(row) &&
+          ['time', 'user', 'action', 'target', 'details'].every(
+            (field) => typeof row[field] === 'string',
+          );
+        auditRows = receivedRows.filter(isValidAuditRow);
+        malformedAuditCount = receivedRows.length - auditRows.length;
         if (!$('#aud')) return;
         populateAuditOptions();
         renderAuditRows();
@@ -485,6 +492,19 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const rows = filteredAuditRows();
     body.replaceChildren();
 
+    if (auditResponseInvalid) {
+      const tr = document.createElement('tr');
+      const cell = document.createElement('td');
+      cell.colSpan = 5;
+      cell.className = 'error';
+      cell.textContent =
+        'Audit data is unavailable because the server response was invalid. Refresh and try again.';
+      tr.appendChild(cell);
+      body.appendChild(tr);
+      count.textContent = 'Audit events unavailable: invalid server response. Refresh and retry.';
+      return;
+    }
+
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       [
@@ -532,7 +552,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
   function exportAuditCsv() {
     const rows = filteredAuditRows();
     if (!rows.length) {
-      toast('No audit events match the current filters.', 'err');
+      toast(
+        auditResponseInvalid
+          ? 'Audit events are unavailable because the server response was invalid. Refresh and retry.'
+          : 'No audit events match the current filters.',
+        'err',
+      );
       return;
     }
     const header = ['Time', 'User', 'Action', 'Target', 'Details'];
