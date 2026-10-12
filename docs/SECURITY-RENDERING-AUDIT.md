@@ -263,7 +263,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E covers an invalid server envelope and the offline cached-session restart path, including unavailable copy, withheld totals/charts/rows/export, and the existing valid-response recovery path.
 - No accounting formula, backend/API schema, authorization, dependency, persistence, deployment, or production data changes. This narrows a data-availability ambiguity; it does not certify the complete stored-XSS sink inventory or replace live Sheet validation.
 
-
 ## PR #101 — Fail closed on malformed owner diagnostic responses
 
 - **Confirmed API-boundary resilience gap:** the Settings data-quality scan assumed the response contained numeric summary fields and an issues array of records with string fields; a malformed envelope or issue could throw during rendering. The backup-integrity scan likewise trusted the snapshot list, summary counts, nested row-count map and per-snapshot checks.
