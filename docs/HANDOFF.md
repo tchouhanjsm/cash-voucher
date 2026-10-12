@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `0ea7b6ada14b4b6937ea4498c8998316f8d6c359` (PR #94 merge)  
+**Verified `main` SHA:** `5c229112ea500f544258d5bfb65fc2212be3c4a5` (PR #95 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #95 — Guard Administration user rendering against malformed list responses** (pending review)  
-Branch: `resilience/admin-user-list-malformed-data`  
-Base: `0ea7b6ada14b4b6937ea4498c8998316f8d6c359`
+**PR #96 — [Validate audit-log response envelopes and row fields](https://github.com/tchouhanjsm/cash-voucher/pull/96)** (open, awaiting review)  
+Branch: `resilience/audit-log-envelope-validation`  
+Base: `5c229112ea500f544258d5bfb65fc2212be3c4a5`
 
-Scope: validate the owner Users view's `listUsers` envelope and record shapes before rendering or mutation lookup; visibly omit malformed rows, clearly report a non-array envelope, and prove valid-list recovery through Browser E2E. No backend/API schema, authorization, accounting, or deployment changes.
+Scope: require a valid `auditLog` array envelope and string-shaped event fields, visibly omit malformed records, distinguish invalid response from genuine empty history, and cover recovery in Browser E2E. No backend/API schema, authorization, accounting, or deployment changes.
 
-**Last completed:** PR #94 — [Administration vendor-list resilience](https://github.com/tchouhanjsm/cash-voucher/pull/94), merged at `0ea7b6ada14b4b6937ea4498c8998316f8d6c359`. Exact tested head `e8caba3fe4e0d664a4ef3db9f1f99ee2f6ed3941` passed CI, Browser E2E (211 checks), and Full Flight Test (129 backend + 211 browser checks).
+**Last completed:** PR #95 — [Administration user-list resilience](https://github.com/tchouhanjsm/cash-voucher/pull/95), merged at `5c229112ea500f544258d5bfb65fc2212be3c4a5`. Exact tested head `88734d663a11c1b33707d08e853f31932a92fc6c` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38207828181) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38207828090) (215 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38207828118) (129 backend + 215 browser checks).
 
-**Acceptance gate:** exact final PR #95 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
+**Acceptance gate:** exact final PR #96 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
 
 Adopt three distinct sources of information:
 
@@ -91,6 +91,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
 3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
 4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. PR #87 merged at verified `main` SHA `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`; exact tested head `863ee174675ea0311124b0e39c7510f1221e7a54` passed CI, Browser E2E (181 checks) and Full Flight Test (129 backend + 181 browser checks).
-6. PR #88 is the current receipt-preview lifecycle batch; verify its live branch/head and exact-head CI, Browser E2E and Full Flight Test before handoff.
+5. Use the verified SHA and current phase at the top of this handoff as the live state; older PR details belong in their GitHub records and the milestones below.
+6. Before choosing a new batch, confirm the current open PR and latest `main` SHA from GitHub, then review the roadmap and relevant domain audit. Do not start overlapping work while a focused PR awaits owner review/merge.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
