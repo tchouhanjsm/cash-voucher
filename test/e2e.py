@@ -1284,9 +1284,32 @@ with sync_playwright() as p:
         'cash receipt remains visibly device-local while offline',
     )
     context.set_offline(False)
+    if page.locator('#banner [data-act=flush]').is_visible():
+        page.click('#banner [data-act=flush]')
     page.wait_for_function(
-        "!document.querySelector('#banner').innerText.includes('waiting to upload')",
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const records = await new Promise((resolve, reject) => {
+            const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          db.close();
+          return !records.some((record) => record.entry?.vendor === 'Offline Receipt Label Test');
+        }""",
         timeout=10000,
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rbody')
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(300)
+    check(
+        page.locator('#rbody tr', has_text='Offline Receipt Label Test').count() == 1,
+        'queued offline cash receipt uploads successfully when connectivity returns',
     )
 
     page.click('[data-v=acct]')
