@@ -299,10 +299,20 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     api('auditLog')
       .then((rows) => {
-        auditRows = Array.isArray(rows) ? rows : [];
+        const receivedRows = Array.isArray(rows) ? rows : [];
+        const malformedCount = receivedRows.filter(
+          (row) => row === null || typeof row !== 'object' || Array.isArray(row),
+        ).length;
+        auditRows = receivedRows.filter(
+          (row) => row !== null && typeof row === 'object' && !Array.isArray(row),
+        );
         if (!$('#aud')) return;
         populateAuditOptions();
         renderAuditRows();
+        if (malformedCount) {
+          $('#aud-count').textContent +=
+            ` ${malformedCount} malformed audit event(s) omitted from this response.`;
+        }
       })
       .catch((error) => {
         const body = $('#aud');
