@@ -111,7 +111,7 @@ export function createRegister({ api, go }) {
             ? `<span class="muted" role="status">${malformedRecordCount} malformed voucher record(s) omitted from Dashboard and Register</span>`
             : '',
           malformedFieldCount
-            ? `<span class="muted" role="status">${malformedFieldCount} malformed voucher field(s) normalized for safe display</span>`
+            ? `<span class="muted" role="status">${malformedFieldCount} malformed voucher field(s) handled for safe display</span>`
             : '',
         ]
           .filter(Boolean)
