@@ -2250,9 +2250,10 @@ with sync_playwright() as p:
     )
     check(
         page.locator('#view svg').count() == 0
-        and range_payload in page.locator('#view').inner_text()
+        and range_payload not in page.locator('#view').inner_text()
+        and 'Choose a valid date range' in page.locator('#view').inner_text()
         and not page.evaluate('window.__xssFired === true'),
-        'malformed report date-range value remains inert text in rendered HTML',
+        'malformed report date-range value is rejected without reflecting hostile input',
     )
     # Restore a valid month-to-date filter before continuing the report workflow.
     page.locator('#movementFrom').fill(datetime.date.today().replace(day=1).isoformat())
