@@ -820,7 +820,7 @@ export function createPayments({ api, refresh }) {
         (record) =>
           record.clientId === clientId &&
           record.status === 'failed' &&
-          String(record.ownerKey || '') === ownerKey,
+          record.ownerKey === ownerKey,
       );
       if (!selected) {
         toast(
@@ -840,6 +840,11 @@ export function createPayments({ api, refresh }) {
             'The exported file is needed if you want to correct and restore it later.',
         )
       ) {
+        return;
+      }
+      if (!S.token || queueOwnerKey() !== ownerKey) {
+        toast('The signed-in account changed. Sign in again before removing this entry.', 'err');
+        await showBanner();
         return;
       }
 
