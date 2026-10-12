@@ -85,11 +85,22 @@ export function createRegister({ api, go }) {
     const sourceRows = Array.isArray(S.vouchers) ? S.vouchers : [];
     const diagnostics = S.voucherDiagnostics || {
       envelopeValid: true,
+      dataAvailable: true,
+      unavailableReason: '',
       malformedRecordCount: 0,
       malformedFieldCount: 0,
     };
-    const rangeInvalid = diagnostics.envelopeValid && Boolean(R.from && R.to && R.from > R.to);
-    const list = rangeInvalid || !diagnostics.envelopeValid ? [] : filtered();
+    const dataAvailable = diagnostics.dataAvailable !== false && diagnostics.envelopeValid !== false;
+    const unavailableMessage =
+      diagnostics.unavailableReason === 'offline'
+        ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
+        : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.';
+    const unavailableTotalsMessage =
+      diagnostics.unavailableReason === 'offline'
+        ? 'Totals unavailable while offline. Reconnect and refresh to load saved vouchers.'
+        : 'Totals unavailable because the voucher response was invalid. Refresh and retry.';
+    const rangeInvalid = dataAvailable && Boolean(R.from && R.to && R.from > R.to);
+    const list = rangeInvalid || !dataAvailable ? [] : filtered();
     const shown = list.slice(0, R.limit);
     const malformedRecordCount = Math.max(
       diagnostics.malformedRecordCount || 0,
@@ -105,8 +116,8 @@ export function createRegister({ api, go }) {
       (voucher) => finiteAmount(voucher.amount) === null,
     ).length;
 
-    const malformedRecordMessage = !diagnostics.envelopeValid
-      ? ' · <span class="muted" role="status">Voucher data is unavailable because the server response was invalid. Refresh and retry.</span>'
+    const malformedRecordMessage = !dataAvailable
+      ? ' · <span class="muted" role="status">' + esc(unavailableMessage) + '</span>'
       : [
           malformedRecordCount
             ? `<span class="muted" role="status">${malformedRecordCount} malformed voucher record(s) omitted from Dashboard and Register</span>`
@@ -119,13 +130,13 @@ export function createRegister({ api, go }) {
           .map((message) => ' · ' + message)
           .join('');
 
-    $('#rtot').innerHTML = !diagnostics.envelopeValid
-      ? '<span class="error" role="alert">Totals unavailable because the voucher response was invalid. Refresh and retry.</span>'
+    $('#rtot').innerHTML = !dataAvailable
+      ? `<span class="error" role="alert">${esc(unavailableTotalsMessage)}</span>`
       : rangeInvalid
         ? '<span class="error" role="alert">Totals unavailable: choose a start date on or before the end date.</span>'
         : `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
     const exportButton = $('#view [data-act="csv"]');
-    if (exportButton) exportButton.disabled = rangeInvalid || !diagnostics.envelopeValid;
+    if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
 
     $('#rbody').innerHTML = shown
       .map((voucher) => {
@@ -303,8 +314,11 @@ export function createRegister({ api, go }) {
   }
 
   function csvExport() {
-    if (S.voucherDiagnostics?.envelopeValid === false) {
-      toast('Voucher data is unavailable. Refresh before exporting the Register.', 'err');
+    if (
+      S.voucherDiagnostics?.dataAvailable === false ||
+      S.voucherDiagnostics?.envelopeValid === false
+    ) {
+      toast('Voucher data is unavailable. Reconnect and refresh before exporting the Register.', 'err');
       return;
     }
     if (R.from && R.to && R.from > R.to) {
