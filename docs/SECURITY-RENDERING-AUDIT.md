@@ -167,7 +167,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - This is resource cleanup, not receipt authorization or input-content validation. Backend receipt
   permissions and live Google deployment behavior remain separate verification gates.
 
-
 ## PR #89 — Finite monetary rendering and aggregate integrity
 
 - **Confirmed data-integrity gap:** dashboard summary totals, team/vendor/category aggregates and register paid/received totals still added API/bootstrap amounts directly, even though the dashboard trend/chart geometry already filtered non-finite values. A malformed amount could poison summary totals or produce `NaN`/`Infinity` in money labels.
