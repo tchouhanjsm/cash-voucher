@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**PR #92 — Harden shared vendor suggestion aggregation**  
+**PR #92 — Harden shared vendor suggestion aggregation** ([pull request](https://github.com/tchouhanjsm/cash-voucher/pull/92))  
 Branch: `security/harden-vendor-suggestion-aggregation`  
 Base: `a50b38e5dc9a60576a9f56953a512f2f4b498f7b`
 
