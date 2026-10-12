@@ -400,6 +400,7 @@ with sync_playwright() as p:
 
     # Malformed bootstrap values must not escape quoted numeric-input value attributes.
     settings_attribute_payload = '"><svg onload=window.__xssFired=true></svg><input value="'
+    settings_object_mode = False
 
     def tamper_bootstrap_settings(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -408,9 +409,16 @@ with sync_playwright() as p:
         settings = payload.get('data', {}).get('settings', {})
         if request_data.get('action') == 'bootstrap' and settings:
             settings['propertyName'] = 'Attribute Context Test'
-            settings['nextVoucherNo'] = settings_attribute_payload
-            settings['nextReceiptNo'] = settings_attribute_payload
-            settings['openingBalance'] = settings_attribute_payload
+            if settings_object_mode:
+                # JSON objects can shadow ordinary coercion methods with non-callable own fields.
+                invalid_scalar = {'toString': None, 'valueOf': None}
+                settings['nextVoucherNo'] = invalid_scalar
+                settings['nextReceiptNo'] = invalid_scalar
+                settings['openingBalance'] = invalid_scalar
+            else:
+                settings['nextVoucherNo'] = settings_attribute_payload
+                settings['nextReceiptNo'] = settings_attribute_payload
+                settings['openingBalance'] = settings_attribute_payload
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -435,6 +443,27 @@ with sync_playwright() as p:
         and page.locator('#sr').get_attribute('value') == settings_attribute_payload
         and page.locator('#so').get_attribute('value') == settings_attribute_payload,
         'malformed bootstrap settings remain literal attribute data, not active markup',
+    )
+
+    settings_object_mode = True
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'bootstrap'
+    ):
+        page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.wait_for_function(
+        "document.querySelector('#brand').textContent === 'Attribute Context Test'"
+    )
+    page.click('[data-v=set]')
+    page.wait_for_selector('#sq')
+    check(
+        page.locator('#sq').count() == 1
+        and page.locator('#sr').count() == 1
+        and page.locator('#so').count() == 1
+        and page.locator('#sf svg, #sf img').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'object-valued settings with non-callable coercion hooks cannot crash the active Settings renderer',
     )
     page.unroute('**/api?*', tamper_bootstrap_settings)
     page.reload(wait_until='domcontentloaded')
