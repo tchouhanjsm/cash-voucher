@@ -502,7 +502,8 @@ export function createPayments({ api, refresh }) {
 
   async function flushOutbox() {
     const ownerKey = queueOwnerKey();
-    if (flushing || S.offlineMode || !S.token || !ownerKey || !navigator.onLine) return showBanner();
+    if (flushing || S.offlineMode || !S.token || !ownerKey || !navigator.onLine)
+      return showBanner();
     flushing = true;
 
     let uploaded = 0;
