@@ -5,11 +5,8 @@ const source = fs.readFileSync(require.resolve('../frontend/core/recovery-valida
 
 async function run() {
   const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
-  const {
-    validateClientId,
-    validateOptionalClientId,
-    validateRecoveryRecords,
-  } = await import(moduleUrl);
+  const { validateClientId, validateOptionalClientId, validateRecoveryRecords } =
+    await import(moduleUrl);
   const ownerKey = 'https://example.test/app|staff@test.com';
   const maxDate = '2026-10-13';
   const validRecord = {

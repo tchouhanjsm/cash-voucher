@@ -68,8 +68,10 @@ function normalizeEntry_(entry, index, ownerKey = '') {
     throw new Error('Offline payment contains invalid details.');
   }
   const clientId =
-    validateOptionalClientId(entry.clientId, 'Offline payment contains an invalid payment ID.') ||
-    newClientId_();
+    validateOptionalClientId(
+      entry.clientId,
+      'Offline payment contains an invalid payment ID.',
+    ) || newClientId_();
   const normalizedEntry = { ...entry, clientId };
 
   return {
