@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `7366cee0a6feae4a55b06416f0aed649876e0165` (PR #97 merge)  
+**Verified `main` SHA:** `335b92d27632ee6df806efe2611a8b6f89265d7b` (PR #98 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #98 — [Bulk harden bootstrap voucher integrity across Dashboard and Register](https://github.com/tchouhanjsm/cash-voucher/pull/98)** (open, awaiting review)  
-Branch: `resilience/bootstrap-financial-view-integrity`  
-Base: `7366cee0a6feae4a55b06416f0aed649876e0165`
+**PR #99 — [Bulk improve daily-workflow reliability and recovery feedback](https://github.com/tchouhanjsm/cash-voucher/pull/99)**  
+Branch: `product/bulk-workflow-recovery-ux`  
+Base: `335b92d27632ee6df806efe2611a8b6f89265d7b`
 
-Scope: normalize bootstrap voucher records once at the shared state boundary; keep Dashboard/Register malformed record and field diagnostics consistent; distinguish an invalid voucher envelope from a real empty list; preserve malformed voucher-number visibility safely and invalid-amount exclusion/print fallback; and label the dashboard total as Book balance rather than implying a physical cash count. No backend/API schema, authorization, persistence, accounting formula, or deployment changes.
+Scope: consolidate the planned queue, entry, Register, bulk-import, report, and loading/empty/error UX improvements into one coordinated PR. This includes accurate payment/receipt queue summaries; export-first, per-entry removal for a rejected local record with account/status revalidation; an honest Register unavailable state for malformed bootstrap envelopes; accessible Register/import/report status feedback; and hiding stale report rows during replacement loads. Preserve account binding, per-row rejection isolation, import parser restrictions, CSV escaping, backend authorization, and accounting semantics. No production deployment or data mutation.
 
-**Last completed:** PR #97 — [Validate Recorded Movement Report row field types](https://github.com/tchouhanjsm/cash-voucher/pull/97), merged at `7366cee0a6feae4a55b06416f0aed649876e0165`. Exact tested head `8d9691b0ffa06da9765cfd508ce86684fb307ba7` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023373) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023374) (219 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023489) (129 backend + 219 browser checks).
+**Last completed:** PR #98 — [Bulk harden bootstrap voucher integrity across Dashboard and Register](https://github.com/tchouhanjsm/cash-voucher/pull/98), merged at `335b92d27632ee6df806efe2611a8b6f89265d7b`. Exact tested head `6eb7abe803c4584787601bc9723b82acb1828936` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38212591608) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38212591631) (223 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38212591610) (129 backend + 223 browser checks).
 
-**Acceptance gate:** exact final PR #98 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
+**Acceptance gate:** exact final PR #99 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
 
 Adopt three distinct sources of information:
 
