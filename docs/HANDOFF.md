@@ -11,7 +11,7 @@
 Branch: `resilience/bootstrap-financial-view-integrity`  
 Base: `7366cee0a6feae4a55b06416f0aed649876e0165`
 
-Scope: normalize bootstrap voucher records once at the shared state boundary; keep Dashboard/Register malformed record and field diagnostics consistent; distinguish a malformed voucher envelope from a real empty list; preserve invalid-amount exclusion/print fallback; and label the dashboard total as Book balance rather than implying a physical cash count. No backend/API schema, authorization, persistence, accounting formula, or deployment changes.
+Scope: normalize bootstrap voucher records once at the shared state boundary; keep Dashboard/Register malformed record and field diagnostics consistent; distinguish an invalid voucher envelope from a real empty list; preserve malformed voucher-number visibility safely and invalid-amount exclusion/print fallback; and label the dashboard total as Book balance rather than implying a physical cash count. No backend/API schema, authorization, persistence, accounting formula, or deployment changes.
 
 **Last completed:** PR #97 — [Validate Recorded Movement Report row field types](https://github.com/tchouhanjsm/cash-voucher/pull/97), merged at `7366cee0a6feae4a55b06416f0aed649876e0165`. Exact tested head `8d9691b0ffa06da9765cfd508ce86684fb307ba7` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023373) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023374) (219 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023489) (129 backend + 219 browser checks).
 
