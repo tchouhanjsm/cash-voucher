@@ -3,6 +3,7 @@
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
 **Verified `main` SHA:** `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043` (PR #101 merge)  
+**Verified `main` SHA:** `cf1ae45363d9ba7126be722388dcf7c75a45ffd3` (PR #100 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
@@ -16,6 +17,15 @@ Scope: fix the formatting failure, make shared HTML escaping and CSV cell output
 **Last completed:** PR #101 — [Harden owner diagnostics against malformed API responses](https://github.com/tchouhanjsm/cash-voucher/pull/101), merged at `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043`. Exact tested head `d9a70d9c18814931fe6915b422764b202a5687d7` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620604) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620660) (240 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620643) (129 backend + 240 browser checks).
 
 **Acceptance gate:** exact final PR #102 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
+**PR #101 — Fail closed on malformed owner diagnostic responses**  
+Branch: `product/admin-diagnostics-integrity`  
+Base: `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`
+
+Scope: validate the owner-only data-quality and backup-integrity report contracts before rendering. Reject malformed summary envelopes, filter and disclose malformed data-quality issue rows, withhold invalid backup snapshot reports, provide accessible failure/retry feedback, and prove recovery when valid responses return. Preserve backend authorization, backup/restore semantics, accounting behavior and production configuration. No deployment or production data mutation.
+
+**Last completed:** PR #100 — [Prevent zero-like totals when voucher data is unavailable](https://github.com/tchouhanjsm/cash-voucher/pull/100), merged at `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`. Exact tested head `ff409d641762d2a808c11509b7edfa37aa1e208e` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814467) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814429) (236 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814454) (129 backend + 236 browser checks).
+
+**Acceptance gate:** exact final PR #101 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
 
 Adopt three distinct sources of information:
 
