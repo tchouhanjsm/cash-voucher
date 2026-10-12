@@ -5,6 +5,7 @@ import { ls } from '../core/storage.js';
 import { scalarText } from '../core/utils.js';
 
 export function createNavigation({ api, getAuth, getPayments, renderers }) {
+  const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
   const NAV = [
     ['dash', '📊', 'Dashboard', () => true],
     ['new', '➕', 'New Entry', () => can('create')],
@@ -38,6 +39,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       vendors: data.vendors,
       names: data.names,
       loadedAt: Date.now(),
+      offlineMode: false,
     });
 
     ls.set('cv.name', scalarText(data.settings?.propertyName));
@@ -53,12 +55,13 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     );
   }
 
-  async function start(mustChange) {
+  async function start(mustChange, expectedEmail = '') {
     $('#login').classList.add('hidden');
 
     if (mustChange) {
       $('#app').classList.add('hidden');
-      return getAuth().forcePinChange();
+      getAuth().forcePinChange();
+      return false;
     }
 
     let offline = false;
@@ -66,21 +69,26 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     try {
       await load();
     } catch (error) {
-      if (error.code === 'PIN_CHANGE' || error.code === 'SESSION') return;
+      if (error.code === 'PIN_CHANGE' || error.code === 'SESSION') return false;
 
       let cache = null;
-
       try {
         cache = JSON.parse(ls.get('cv.cache') || 'null');
       } catch {}
 
-      if (error.code === 'NET' && cache && cache.me) {
+      const expected = typeof expectedEmail === 'string' ? expectedEmail.trim().toLowerCase() : '';
+      const cachedEmail =
+        typeof cache?.me?.email === 'string' ? cache.me.email.trim().toLowerCase() : '';
+      const identityMatches = !expected || (cachedEmail && cachedEmail === expected);
+
+      if (error.code === 'NET' && cache && cache.me && identityMatches) {
         Object.assign(S, {
           me: cache.me,
           settings: cache.settings,
           vendors: cache.vendors || [],
           names: cache.names || {},
           vouchers: [],
+          offlineMode: true,
           voucherDiagnostics: {
             envelopeValid: false,
             dataAvailable: false,
@@ -91,9 +99,13 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
         });
         offline = true;
       } else {
+        S.offlineMode = false;
         $('#login').classList.remove('hidden');
-        $('#lErr').textContent = error.message;
-        return;
+        $('#lErr').textContent =
+          error.code === 'NET' && expected && cache?.me && !identityMatches
+            ? 'The saved offline workspace belongs to a different account. Connect and sign in to continue.'
+            : error.message;
+        return false;
       }
     }
 
@@ -108,9 +120,33 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       document.createTextNode(scalarText(S.me?.role)),
     );
 
+    renderNav();
+    go(
+      offline
+        ? 'new'
+        : S.view && NAV.find((item) => item[0] === S.view && item[3]())
+          ? S.view
+          : 'dash',
+    );
+
+    await getPayments().showBanner();
+
+    if (offline) {
+      toast(
+        'Offline workspace — server vouchers are unavailable. New entries stay on this device. Reconnect and sign in online to synchronize.',
+      );
+    } else {
+      getPayments().flushOutbox();
+    }
+    return true;
+  }
+
+  function renderNav() {
     const nav = $('#nav');
     const navContent = document.createDocumentFragment();
-    NAV.filter((item) => item[3]()).forEach(([view, icon, label]) => {
+    NAV.filter(
+      (item) => (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3](),
+    ).forEach(([view, icon, label]) => {
       const button = document.createElement('button');
       button.type = 'button';
       button.dataset.v = view;
@@ -127,26 +163,11 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       navContent.appendChild(button);
     });
     nav.replaceChildren(navContent);
-
-    go(
-      offline
-        ? 'new'
-        : S.view && NAV.find((item) => item[0] === S.view && item[3]())
-          ? S.view
-          : 'dash',
-    );
-
-    // Identity may come from the local cache when the app starts offline.
-    await getPayments().showBanner();
-
-    if (offline) {
-      toast('Offline — you can still add payments; they upload when you are back online.');
-    } else {
-      getPayments().flushOutbox();
-    }
   }
-
   function go(view) {
+    if (S.offlineMode && (!OFFLINE_VIEWS.has(view) || (view === 'new' && !can('create')))) {
+      view = can('create') ? 'new' : 'reg';
+    }
     if (S.view === 'new') getPayments().disposePreviews();
     S.view = view;
     $$('#nav button').forEach((button) => {
@@ -176,6 +197,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
 
     try {
       await load();
+      renderNav();
       // Background outbox sync may refresh data while a staff member is drafting an entry.
       if (S.view !== 'new') go(S.view);
       if (!quiet) toast('Updated.', 'ok');
