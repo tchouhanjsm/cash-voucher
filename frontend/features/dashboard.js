@@ -67,8 +67,8 @@ export function createDashboard() {
 
     list.forEach((voucher) => {
       const key = monthly ? voucher.date.slice(0, 7) : voucher.date;
-      const amount = Number(voucher.amount);
-      if (!Number.isFinite(amount)) return;
+      const amount = finiteAmount(voucher.amount);
+      if (amount === null) return;
       amounts.set(key, (amounts.get(key) || 0) + amount);
     });
 
@@ -143,6 +143,26 @@ export function createDashboard() {
     const invalidAmountCount = [...payments, ...allReceipts].filter(
       (voucher) => finiteAmount(voucher.amount) === null,
     ).length;
+    const diagnostics = S.voucherDiagnostics || {
+      envelopeValid: true,
+      malformedRecordCount: 0,
+      malformedFieldCount: 0,
+    };
+    const dataWarnings = [];
+    if (!diagnostics.envelopeValid) {
+      dataWarnings.push(
+        'Voucher data is unavailable because the server response was invalid. Refresh and retry.',
+      );
+    } else if (diagnostics.malformedRecordCount) {
+      dataWarnings.push(
+        `${diagnostics.malformedRecordCount} malformed voucher record(s) omitted from Dashboard and Register.`,
+      );
+    }
+    if (diagnostics.malformedFieldCount) {
+      dataWarnings.push(
+        `${diagnostics.malformedFieldCount} malformed voucher field(s) handled for safe display.`,
+      );
+    }
 
     $('#view').innerHTML =
       head(can('viewAll') ? 'Dashboard' : 'My Dashboard', refreshBtn) +
@@ -166,8 +186,9 @@ export function createDashboard() {
     <div class="card stat"><span>Largest</span><b>${money(largest ? largest.amount : 0)}</b><small class="muted">${largest ? esc(largest.vendor) : '–'}</small></div>
     <div class="card stat"><span>Today</span><b>${money(sumAmounts(todayPayments))}</b><small class="muted">${todayPayments.length} vouchers</small></div>
     <div class="card stat"><span>Cash received</span><b style="color:var(--ok)">${money(received)}</b><small class="muted">${receipts.length} entries · net ${money(received - total)}</small></div>
-    ${can('viewAll') ? `<div class="card stat"><span>Cash in hand</span><b>${money(cashInHand)}</b><small class="muted">opening + received − paid</small></div>` : ''}
+    ${can('viewAll') ? `<div class="card stat"><span>Book balance</span><b>${money(cashInHand)}</b><small class="muted">opening balance + recorded receipts − recorded payments; not a physical cash count</small></div>` : ''}
   </div>
+  ${dataWarnings.length ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>` : ''}
   ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
   <div class="card"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(current, from, to)}</div>
   <div class="two"><div class="card"><h2>Top vendors</h2>${bars(group(current, (voucher) => voucher.vendor))}</div><div class="card"><h2>By category</h2>${bars(group(current, (voucher) => voucher.category || 'Other'))}</div></div>

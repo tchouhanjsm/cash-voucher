@@ -1,5 +1,5 @@
 import { $, $$ } from '../core/dom.js';
-import { S, can } from '../core/state.js';
+import { normalizeVoucherCollection, S, can } from '../core/state.js';
 import { fail, toast } from '../core/ui.js';
 import { ls } from '../core/storage.js';
 
@@ -19,18 +19,19 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
 
   async function load() {
     const data = await api('bootstrap');
-    const vouchers = Array.isArray(data.vouchers) ? data.vouchers : [];
-    const vendorNames = vouchers
-      .filter(
-        (voucher) => voucher !== null && typeof voucher === 'object' && !Array.isArray(voucher),
-      )
-      .map((voucher) => (typeof voucher.vendor === 'string' ? voucher.vendor : ''))
-      .filter(Boolean);
+    const voucherData = normalizeVoucherCollection(data?.vouchers);
+    const vouchers = voucherData.rows;
+    const vendorNames = vouchers.map((voucher) => voucher.vendor).filter(Boolean);
 
     Object.assign(S, {
       me: data.user,
       settings: data.settings,
       vouchers,
+      voucherDiagnostics: {
+        envelopeValid: voucherData.envelopeValid,
+        malformedRecordCount: voucherData.malformedRecordCount,
+        malformedFieldCount: voucherData.malformedFieldCount,
+      },
       vendors: data.vendors,
       names: data.names,
       loadedAt: Date.now(),
@@ -77,6 +78,11 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
           vendors: cache.vendors || [],
           names: cache.names || {},
           vouchers: [],
+          voucherDiagnostics: {
+            envelopeValid: true,
+            malformedRecordCount: 0,
+            malformedFieldCount: 0,
+          },
         });
         offline = true;
       } else {
