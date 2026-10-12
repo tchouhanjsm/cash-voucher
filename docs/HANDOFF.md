@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `39b862f11bc597131d677a98edb1118a4672345f` (PR #93 merge)  
+**Verified `main` SHA:** `0ea7b6ada14b4b6937ea4498c8998316f8d6c359` (PR #94 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #94 — Guard Administration vendor rendering against malformed bootstrap records** (pending review)  
-Branch: `resilience/admin-vendor-list-malformed-data`  
-Base: `39b862f11bc597131d677a98edb1118a4672345f`
+**PR #95 — Guard Administration user rendering against malformed list responses** (pending review)  
+Branch: `resilience/admin-user-list-malformed-data`  
+Base: `0ea7b6ada14b4b6937ea4498c8998316f8d6c359`
 
-Scope: validate the active owner/manager Vendors view's bootstrap envelope and record shapes before sorting, rendering, or opening an edit form. Omit invalid rows, disclose omissions, distinguish malformed responses from a truly empty vendor list, and test hostile/malformed rows through Browser E2E. No backend/API schema, authorization, accounting, or deployment changes.
+Scope: validate the owner Users view's `listUsers` envelope and record shapes before rendering or mutation lookup; visibly omit malformed rows, clearly report a non-array envelope, and prove valid-list recovery through Browser E2E. No backend/API schema, authorization, accounting, or deployment changes.
 
-**Last completed:** PR #93 — [audit-log malformed-response resilience](https://github.com/tchouhanjsm/cash-voucher/pull/93), merged at `39b862f11bc597131d677a98edb1118a4672345f`. Exact tested head `89387e3533f660c21361c52ece58fa902d9ea5c0` passed CI, Browser E2E (208 checks), and Full Flight Test (129 backend + 208 browser checks).
+**Last completed:** PR #94 — [Administration vendor-list resilience](https://github.com/tchouhanjsm/cash-voucher/pull/94), merged at `0ea7b6ada14b4b6937ea4498c8998316f8d6c359`. Exact tested head `e8caba3fe4e0d664a4ef3db9f1f99ee2f6ed3941` passed CI, Browser E2E (211 checks), and Full Flight Test (129 backend + 211 browser checks).
 
-**Acceptance gate:** the exact final PR #94 head must pass CI, Browser E2E and Full Flight Test. Owner reviews and merges; live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
+**Acceptance gate:** exact final PR #95 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
 
 Adopt three distinct sources of information:
 
