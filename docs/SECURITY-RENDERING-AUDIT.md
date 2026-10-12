@@ -262,3 +262,11 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Dashboard omits monetary KPIs and charts while unavailable; Register omits rows and totals and disables CSV export. The normal refresh control remains available. A valid empty array is still an available, genuine empty collection; a subsequent valid bootstrap response restores ordinary views.
 - Browser E2E covers an invalid server envelope and the offline cached-session restart path, including unavailable copy, withheld totals/charts/rows/export, and the existing valid-response recovery path.
 - No accounting formula, backend/API schema, authorization, dependency, persistence, deployment, or production data changes. This narrows a data-availability ambiguity; it does not certify the complete stored-XSS sink inventory or replace live Sheet validation.
+
+
+## PR #101 — Fail closed on malformed owner diagnostic responses
+
+- **Confirmed API-boundary resilience gap:** the Settings data-quality scan assumed the response contained numeric summary fields and an issues array of records with string fields; a malformed envelope or issue could throw during rendering. The backup-integrity scan likewise trusted the snapshot list, summary counts, nested row-count map and per-snapshot checks.
+- Validate the data-quality summary contract and each issue record before display. Omit malformed issue rows with a visible count; invalid summary envelopes fail closed with an accessible alert and a retryable scan. Keep the issue table DOM-only with textContent, including hostile but valid string values.
+- Validate backup-integrity summaries and every snapshot/check shape before rendering. If the report is malformed or summary counts do not reconcile with snapshot states, show a generic accessible error instead of partial or zero-like success data; keep inspection retryable and clear the error after a valid response.
+- Browser E2E should tamper with both active API responses, assert malformed records cannot create markup, and verify recovery on valid responses. These are client-side response-integrity guardrails; they do not prove that Drive backups are complete or restorable, and they do not close the wider dynamic-HTML sink inventory or certify the live deployment.
