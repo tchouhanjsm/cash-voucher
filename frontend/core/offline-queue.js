@@ -598,5 +598,6 @@ export const offlineQueue = {
   ack,
   release,
   markFailed,
+  discardFailed,
   clear,
 };
