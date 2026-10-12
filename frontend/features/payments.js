@@ -114,6 +114,7 @@ export function createPayments({ api, refresh }) {
       revokePreviewUrl(receipt?.preview),
     );
     row._rec = [];
+    row._receiptRevision = (row._receiptRevision || 0) + 1;
   }
 
   function disposeReceiptPreviews() {
@@ -175,6 +176,7 @@ export function createPayments({ api, refresh }) {
     d.innerHTML = rowHtml();
     const r = d.firstElementChild;
     r._rec = [];
+    r._receiptRevision = 0;
     $('#rows').appendChild(r);
     $('#nres').querySelector('.form-error')?.remove();
     labelRows();
@@ -204,8 +206,13 @@ export function createPayments({ api, refresh }) {
         break;
       }
       try {
+        const revision = row._receiptRevision;
         const receipt = await compress(file);
-        if (!row.isConnected || !$('#rows')?.contains(row)) {
+        if (
+          !row.isConnected ||
+          !$('#rows')?.contains(row) ||
+          row._receiptRevision !== revision
+        ) {
           revokePreviewUrl(receipt.preview);
           continue;
         }
