@@ -79,6 +79,10 @@ async function run() {
     (item) => (item.entry.receipts = [{ mime: hostile, data: 'AQID' }]),
     /invalid or oversized receipt/i,
   );
+  expectInvalid(
+    (item) => (item.entry.receipts = [{ mime: 'image/png', data: 'A'.repeat(2_200_001) }]),
+    /invalid or oversized receipt/i,
+  );
   expectInvalid((item) => (item.entry.category = hostile), /invalid category or note/i);
   expectInvalid(
     (item) => (item.ownerKey = 'https://other.test/app|other@test.com'),
