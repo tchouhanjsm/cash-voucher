@@ -901,6 +901,25 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
+    page.click('[data-v=dash]')
+    offline_dashboard_text = page.locator('#view').inner_text()
+    check(
+        'Voucher data is unavailable while offline.' in offline_dashboard_text
+        and page.locator('#view .stats').count() == 0
+        and page.locator('#view svg.chart, #view .hb').count() == 0
+        and not page.locator('[data-act=refresh]').is_disabled(),
+        'offline startup withholds unverified Dashboard totals and charts while preserving refresh recovery',
+    )
+    page.click('[data-v=reg]')
+    offline_register_text = page.locator('#view').inner_text()
+    check(
+        'Voucher data is unavailable while offline.' in offline_register_text
+        and 'Totals unavailable while offline.' in offline_register_text
+        and page.locator('#view #rbody tr').count() == 0
+        and page.locator('#rf [data-act=csv]').is_disabled(),
+        'offline Register does not present zero-like totals, empty records, or CSV export as valid data',
+    )
+    page.click('[data-v=new]')
 
     def import_recovery_file(file_path):
         selector = '#banner [data-act=import-pending]'
