@@ -1,4 +1,4 @@
-const escapeScalarText = (value) => {
+const scalarText = (value) => {
   if (typeof value === 'string') return value;
   if (
     typeof value === 'number' ||
@@ -11,7 +11,7 @@ const escapeScalarText = (value) => {
 };
 
 export const esc = (value) =>
-  escapeScalarText(value).replace(
+  scalarText(value).replace(
     /[&<>"']/g,
     (c) =>
       ({
@@ -95,7 +95,7 @@ export function download(name, text, type) {
 }
 
 export const csvCell = (value) =>
-  `"${String(value ?? '')
+  `"${scalarText(value)
     .replace(/"/g, '""')
     .replace(/^([=+@\t\r\n]|-)/, "'$1")}"`;
 
