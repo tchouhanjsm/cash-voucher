@@ -194,7 +194,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E tampers with bootstrap data and prints records containing `NaN`, `Infinity`, null, blank, boolean and negative amounts. It asserts prompt completion, safe fallback text, and absence of `undefined`, `NaN Rupees` or `Infinity`; the ordinary ₹1,250.50 case remains `One Thousand Two Hundred Fifty Rupees and Fifty Paise Only`.
 - These are presentation guards, not authorization, ledger repair or a replacement for the backend's positive/max-amount validation. Persisted vouchers and API/schema/CSV contracts are unchanged.
 
-
 ## PR #92 — Prototype-safe vendor suggestions
 
 - **Confirmed integrity/resilience defect:** `vendorNames()` grouped voucher vendors in a normal object. The special key `__proto__` interacts with the object's prototype setter instead of behaving like a regular vendor key, so a valid vendor suggestion can be lost. The same function assumed all voucher/vendor/cache entries were records with string names; malformed values could abort payment entry before a datalist was rendered.
