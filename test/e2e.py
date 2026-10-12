@@ -402,6 +402,7 @@ with sync_playwright() as p:
     # Malformed bootstrap values must not escape quoted numeric-input value attributes.
     settings_attribute_payload = '"><svg onload=window.__xssFired=true></svg><input value="'
     settings_object_mode = False
+    settings_identity_object_mode = False
 
     def tamper_bootstrap_settings(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -420,6 +421,12 @@ with sync_playwright() as p:
                 settings['nextVoucherNo'] = settings_attribute_payload
                 settings['nextReceiptNo'] = settings_attribute_payload
                 settings['openingBalance'] = settings_attribute_payload
+            if settings_identity_object_mode:
+                invalid_scalar = {'toString': None, 'valueOf': None}
+                settings['propertyName'] = invalid_scalar
+                user = payload.get('data', {}).get('user')
+                if isinstance(user, dict):
+                    user['name'] = invalid_scalar
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -469,6 +476,32 @@ with sync_playwright() as p:
         'object-valued settings with hostile coercion hooks render blank without crashing or injecting markup',
     )
 
+    settings_identity_object_mode = True
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'bootstrap'
+    ):
+        page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.wait_for_function("document.querySelector('#brand').textContent === 'Cash Vouchers'")
+    check(
+        page.locator('#brand').inner_text() == 'Cash Vouchers'
+        and page.title() == 'Vouchers'
+        and page.locator('#who').inner_text().strip() == 'owner'
+        and page.locator('#nav button').count() > 0
+        and not page.evaluate('window.__xssFired === true'),
+        'object-valued property and profile names stay inert and do not abort navigation bootstrap',
+    )
+    page.click('[data-v=set]')
+    page.wait_for_selector('#sn')
+    check(
+        page.locator('#sn').input_value() == ''
+        and page.locator('#sf img, #sf svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'Settings remains usable when bootstrap display fields are non-scalar',
+    )
+
+    settings_identity_object_mode = False
     page.unroute('**/api?*', tamper_bootstrap_settings)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')

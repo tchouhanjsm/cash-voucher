@@ -2,20 +2,21 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043` (PR #101 merge)  
+**Verified `main` SHA:** `2814c47066b9a52e10af3c278e4400867d777228` (PR #102 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #102 — Harden scalar output conversion at HTML and CSV boundaries**  
-Branch: `security/scalar-only-html-escaping`  
-Base: `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043`
+**PR #103 — Guard DOM text sinks against malformed bootstrap scalars**  
+Branch: `security/scalar-dom-text-boundaries`  
+Base: `2814c47066b9a52e10af3c278e4400867d777228`
 
-Scope: fix the formatting failure, make shared HTML escaping and CSV cell output accept only scalar values, and ensure untrusted object/array/symbol values cannot invoke coercion hooks. Preserve HTML entity encoding, CSV quoting and formula-prefix defenses. Extend unit and Browser E2E coverage for hostile coercion and malformed Settings values. No API/schema, permissions, accounting semantics, dependency, deployment or production-data changes.
+Scope: reuse the shared scalar-only conversion boundary at active navigation/profile DOM text sinks and the post-save property-brand update. Add unit and Browser E2E regressions proving object-valued property/profile names cannot trigger implicit object coercion or abort startup/navigation. Non-scalars render as blank fields or existing neutral branding fallbacks. No API/schema, permissions, accounting semantics, dependencies, deployment or production-data changes.
 
-**Last completed:** PR #101 — [Harden owner diagnostics against malformed API responses](https://github.com/tchouhanjsm/cash-voucher/pull/101), merged at `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043`. Exact tested head `d9a70d9c18814931fe6915b422764b202a5687d7` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620604) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620660) (240 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620643) (129 backend + 240 browser checks).
+**Last completed:** PR #102 — [Harden scalar conversion at HTML and CSV output boundaries](https://github.com/tchouhanjsm/cash-voucher/pull/102), merged at `2814c47066b9a52e10af3c278e4400867d777228`. Exact tested PR head `4a0699a606ffbbfa553a07af7b8a81c431dfd70b` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244579888) (129 backend checks, 19 contrast pairs), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244579860) (241 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244579877) (129 backend + 241 browser checks).
 
-**Acceptance gate:** exact final PR #102 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
+**Acceptance gate:** PR #103 must pass CI, Browser E2E and Full Flight Test on the same exact final head. Owner review and merge remain required. The full active rendering-sink inventory is still incomplete, and this targeted fix is not full XSS certification. Live Google authorization/delivery, scheduled backup contents, isolated restore, real-device/offline, accessibility and controlled-pilot checks remain separate gates.
+
 **PR #101 — Fail closed on malformed owner diagnostic responses**  
 Branch: `product/admin-diagnostics-integrity`  
 Base: `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`
@@ -105,18 +106,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 6. Before choosing a new batch, confirm the current open PR and latest `main` SHA from GitHub, then review the roadmap and relevant domain audit. Do not start overlapping work while a focused PR awaits owner review/merge.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
 
-## Current implementation status — PR #102
+## PR #102 merged — Scalar-only HTML and CSV output conversion
 
-**Root cause:** GitHub Actions' exact formatter diff showed that Prettier expected the CSV formula/control-prefix list and the single hostile-HTML assertion in test/test-csv-export.js to be compact one-line expressions. The previous edits had manually wrapped these constructs, causing the quality gate to fail. The fix now matches the repository's configured Prettier output; no assertion was weakened or removed.
-
-**Implementation:** frontend/core/utils.js uses one scalar-only conversion boundary for HTML escaping and CSV cells. Supported strings, numbers, booleans and bigints keep their text representation. Non-scalar arrays, objects and symbols produce empty output without reading coercion properties or invoking toString, valueOf, getters or Symbol.toPrimitive. HTML entity encoding, CSV quoting and formula/control-prefix neutralization remain covered by tests. Browser E2E supplies object-valued Settings fields and verifies the page remains usable without markup injection.
-
-**Latest verified implementation head before documentation refresh:** 797dd1f5548a8cd3aec8cfa89138b2f6930242d0.
-
-- [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244212330) passed: npm run check, Prettier, JSON/syntax checks, all 19 documented contrast pairs, 129 backend checks, HTML/CSV scalar-safety tests and the PR handoff-quality gate.
-- [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244212324) passed: 241 checks, 0 failures.
-- [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244212499) passed: 129 backend checks plus 241 browser checks.
-
-The handoff/roadmap documentation is being refreshed in this same PR after that verification. The new documentation commits change the PR head, so always verify fresh CI, Browser E2E and Full Flight Test runs on the live final head before review/merge.
-
-**Acceptance and release boundary:** PR #102 remains open for owner review and merge. No deployment, Apps Script authorization, production-data mutation or accounting/authorization/schema change is included. Live Google authorization and delivery, scheduled backup inspection, isolated restore, real-device/accessibility testing and the complete rendering-sink inventory remain open. This is targeted rendering hardening, not full XSS certification.
+PR #102 is merged at `2814c47066b9a52e10af3c278e4400867d777228`. Its exact PR head `4a0699a606ffbbfa553a07af7b8a81c431dfd70b` passed CI (129 backend checks), Browser E2E (241 checks, 0 failures), and Full Flight Test (129 backend + 241 browser checks). Shared HTML escaping and CSV cell output reject non-scalar arrays, objects and symbols without invoking attacker-controlled coercion; HTML entity encoding, CSV quoting and formula/control-prefix neutralization remain covered. This does not complete the active rendering-sink inventory or certify production deployment/backup restore.

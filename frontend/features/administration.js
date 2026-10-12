@@ -1,7 +1,7 @@
 import { $ } from '../core/dom.js';
 import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
-import { csvCell, download, esc } from '../core/utils.js';
+import { csvCell, download, esc, scalarText } from '../core/utils.js';
 import { closeModal, dialog, fail, head, toast } from '../core/ui.js';
 
 export function createAdministration({ api, getNavigation, signOut }) {
@@ -949,7 +949,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         receiptCategories: $('#sx').value.split('\n'),
       });
       await getNavigation().load();
-      $('#brand').textContent = S.settings.propertyName;
+      $('#brand').textContent = scalarText(S.settings?.propertyName) || 'Cash Vouchers';
       toast('Settings saved.', 'ok');
       settings();
     } catch (error) {

@@ -5,7 +5,7 @@ const source = fs.readFileSync(require.resolve('../frontend/core/utils.js'), 'ut
 
 async function run() {
   const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
-  const { csvCell, esc } = await import(moduleUrl);
+  const { csvCell, esc, scalarText } = await import(moduleUrl);
 
   for (const value of ['=SUM(1,1)', '+cmd', '-cmd', '@cmd', '\t=cmd', '\r=cmd', '\n=cmd']) {
     assert.match(
@@ -21,6 +21,29 @@ async function run() {
   assert.equal(esc(123), '123');
   assert.equal(esc(false), 'false');
   assert.equal(esc(12n), '12');
+  assert.equal(scalarText('plain'), 'plain');
+  assert.equal(scalarText(123), '123');
+  assert.equal(scalarText(false), 'false');
+  assert.equal(scalarText(12n), '12');
+  assert.equal(scalarText(null), '');
+  assert.equal(scalarText(Symbol('non-scalar')), '');
+  assert.equal(scalarText({ toString: null, valueOf: null }), '');
+  assert.equal(
+    scalarText({
+      get toString() {
+        throw new Error('must not run');
+      },
+    }),
+    '',
+  );
+  assert.equal(
+    scalarText({
+      [Symbol.toPrimitive]: () => {
+        throw new Error('must not run');
+      },
+    }),
+    '',
+  );
   assert.equal(esc(null), '');
   assert.equal(esc(Symbol('non-scalar')), '');
   assert.equal(esc(['untrusted object']), '');
