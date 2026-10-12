@@ -173,3 +173,11 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Add shared finite-amount and sum helpers. Monetary formatting displays an em dash for non-finite values; dashboard/register calculations exclude invalid amounts from aggregates, and visible status text discloses that active invalid amounts were excluded. Source vouchers are not modified, and this does not certify backend ledger correctness.
 - Browser E2E tampers with bootstrap amounts including `NaN`, `Infinity`, a hostile string and valid numeric values. It checks finite dashboard monetary text, the explicit exclusion notice, bounded chart geometry, and register totals with the same malformed records.
 - Report summary totals and payment-save confirmations also use the shared formatter, so non-finite values display as an em dash rather than `NaN`/`Infinity`. CSV/API contracts and persisted records are unchanged.
+
+
+## PR #90 — Guard malformed amounts in printed vouchers
+
+- **Confirmed denial-of-service / presentation defect:** `amountInWords()` called recursive `words()` directly with the raw bootstrap amount. An `Infinity` value can recurse without reaching a base case; `NaN`, negative values and malformed null-like values can produce incorrect text. The shared finite parser also previously coerced missing, blank and boolean values to zero.
+- Reject null/undefined, blank strings, booleans, nonnumeric strings and non-finite numbers from the shared finite-amount helper. The print formatter returns `Amount unavailable` for invalid, negative or unrepresentable paise totals, and rounds through integer paise before splitting rupees/paise.
+- Browser E2E tampers with bootstrap data and prints records containing `NaN`, `Infinity`, null, blank, boolean and negative amounts. It asserts prompt completion, safe fallback text, and absence of `undefined`, `NaN Rupees` or `Infinity`; the ordinary ₹1,250.50 case remains `One Thousand Two Hundred Fifty Rupees and Fifty Paise Only`.
+- These are presentation guards, not authorization, ledger repair or a replacement for the backend's positive/max-amount validation. Persisted vouchers and API/schema/CSV contracts are unchanged.
