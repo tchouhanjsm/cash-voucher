@@ -4,7 +4,8 @@ const fs = require('node:fs');
 const source = fs.readFileSync(require.resolve('../frontend/core/utils.js'), 'utf8');
 
 async function run() {
-  const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
+  const moduleUrl =
+    'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
   const { csvCell, esc } = await import(moduleUrl);
 
   for (const value of ['=SUM(1,1)', '+cmd', '-cmd', '@cmd', '\t=cmd', '\r=cmd', '\n=cmd']) {
@@ -30,7 +31,11 @@ async function run() {
   assert.equal(esc({ toString: null, valueOf: null }), '');
   assert.equal(esc({ toString: '<svg onload=alert(1)>', valueOf: null }), '');
   assert.equal(
-    esc({ [Symbol.toPrimitive]: () => { throw new Error('must not run'); } }),
+    esc({
+      [Symbol.toPrimitive]: () => {
+        throw new Error('must not run');
+      },
+    }),
     '',
   );
   assert.equal(
@@ -44,7 +49,11 @@ async function run() {
 
   assert.equal(csvCell({ toString: null, valueOf: null }), '""');
   assert.equal(
-    csvCell({ [Symbol.toPrimitive]: () => { throw new Error('must not run'); } }),
+    csvCell({
+      [Symbol.toPrimitive]: () => {
+        throw new Error('must not run');
+      },
+    }),
     '""',
   );
   assert.equal(csvCell(Symbol('non-scalar')), '""');
