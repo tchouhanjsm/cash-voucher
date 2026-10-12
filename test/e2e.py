@@ -1333,6 +1333,13 @@ with sync_playwright() as p:
                         'name': {'toString': None, 'valueOf': None},
                         'active': True,
                     },
+                    {
+                        'id': 'malformed-vendor-company',
+                        'name': 'Bad Metadata Vendor',
+                        'company': {'toString': None, 'valueOf': None},
+                        'mobile': '123',
+                        'active': True,
+                    },
                 ])
                 data['vendors'] = vendors
             route.fulfill(response=response, json=payload)
@@ -1410,6 +1417,19 @@ with sync_playwright() as p:
           else localStorage.setItem('cv.cache', previous);
         }""",
         cache_before_vendor_options,
+    )
+    page.click('[data-v=vend]')
+    page.wait_for_selector('#vf')
+    check(
+        '3 malformed vendor record(s) omitted from this response' in page.locator('#view').inner_text()
+        and page.locator('#view [data-act=vedit]').count() >= 1,
+        'vendor list discloses malformed bootstrap rows and preserves valid vendor records',
+    )
+    check(
+        page.locator('#view [data-id="malformed-vendor-option"], #view [data-id="malformed-vendor-company"]').count() == 0
+        and '[object Object]' not in page.locator('#view').inner_text()
+        and page.locator('#view img, #view svg').count() == 0,
+        'vendor list omits malformed names and contact metadata without rendering unsafe markup',
     )
     page.unroute('**/api?*', tamper_dashboard_groups)
     page.reload(wait_until='domcontentloaded')
