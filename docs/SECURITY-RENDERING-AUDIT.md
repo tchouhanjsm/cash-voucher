@@ -174,7 +174,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E tampers with bootstrap amounts including `NaN`, `Infinity`, a hostile string and valid numeric values. It checks finite dashboard monetary text, the explicit exclusion notice, bounded chart geometry, and register totals with the same malformed records.
 - Report summary totals and payment-save confirmations also use the shared formatter, so non-finite values display as an em dash rather than `NaN`/`Infinity`. CSV/API contracts and persisted records are unchanged.
 
-
 ## PR #90 — Guard malformed amounts in printed vouchers
 
 - **Confirmed denial-of-service / presentation defect:** `amountInWords()` called recursive `words()` directly with the raw bootstrap amount. An `Infinity` value can recurse without reaching a base case; `NaN`, negative values and malformed null-like values can produce incorrect text. The shared finite parser also previously coerced missing, blank and boolean values to zero.
