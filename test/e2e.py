@@ -1299,8 +1299,6 @@ with sync_playwright() as p:
         'cash receipt remains visibly device-local while offline',
     )
     context.set_offline(False)
-    if page.locator('#banner [data-act=flush]').is_visible():
-        page.click('#banner [data-act=flush]')
     page.wait_for_function(
         """async () => {
           const db = await new Promise((resolve, reject) => {
