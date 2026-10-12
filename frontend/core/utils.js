@@ -30,7 +30,18 @@ export const addDays = (dateString, days) => {
 export const dmy = (value) => (value ? value.split('-').reverse().join('/') : '');
 
 export const finiteAmount = (value) => {
-  const amount = Number(value || 0);
+  if (
+    value === null ||
+    value === undefined ||
+    typeof value === 'boolean' ||
+    (typeof value === 'string' && value.trim() === '')
+  ) {
+    return null;
+  }
+
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+
+  const amount = Number(value);
 
   return Number.isFinite(amount) ? amount : null;
 };
