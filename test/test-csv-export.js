@@ -7,15 +7,7 @@ async function run() {
   const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
   const { csvCell, esc } = await import(moduleUrl);
 
-  for (const value of [
-    '=SUM(1,1)',
-    '+cmd',
-    '-cmd',
-    '@cmd',
-    '\t=cmd',
-    '\r=cmd',
-    '\n=cmd',
-  ]) {
+  for (const value of ['=SUM(1,1)', '+cmd', '-cmd', '@cmd', '\t=cmd', '\r=cmd', '\n=cmd']) {
     assert.match(
       csvCell(value),
       /^"'/,
@@ -25,10 +17,7 @@ async function run() {
 
   assert.equal(csvCell('normal, "quoted"'), '"normal, ""quoted"""');
   assert.equal(csvCell('plain'), '"plain"');
-  assert.equal(
-    esc('<img src=x onerror=alert(1)>'),
-    '&lt;img src=x onerror=alert(1)&gt;',
-  );
+  assert.equal(esc('<img src=x onerror=alert(1)>'), '&lt;img src=x onerror=alert(1)&gt;');
   assert.equal(esc(123), '123');
   assert.equal(esc(false), 'false');
   assert.equal(esc(12n), '12');
