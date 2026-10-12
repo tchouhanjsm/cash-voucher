@@ -2,7 +2,6 @@ export const S = {
   url: '',
   token: '',
   me: null,
-  offlineMode: false,
   settings: {},
   vouchers: [],
   vendors: [],

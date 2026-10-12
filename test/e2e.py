@@ -553,6 +553,65 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
 
+    page.wait_for_function("!!localStorage.getItem('cv.offlineAuth')", timeout=12000)
+    stored_offline_credential = page.evaluate("localStorage.getItem('cv.offlineAuth')")
+    check(
+        stored_offline_credential is not None
+        and '579246' not in stored_offline_credential
+        and json.loads(stored_offline_credential).get('version') == 1,
+        'successful online sign-in stores only a versioned PIN verifier, never the raw PIN',
+    )
+    page.evaluate("localStorage.removeItem('cv.token')")
+    page.evaluate("navigator.serviceWorker.ready.then(() => true)")
+    context.set_offline(True)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#loginForm', timeout=10000)
+
+    page.fill('#lEmail', 'owner@test.com')
+    page.fill('#lPin', '000000')
+    page.click('#lBtn')
+    page.wait_for_selector('#lErr:not(:empty)', timeout=8000)
+    check(
+        'Connect and sign in to verify this account.' in page.locator('#lErr').inner_text()
+        and page.locator('#nav button').count() == 0,
+        'offline unlock rejects an incorrect PIN without opening the application',
+    )
+
+    page.fill('#lEmail', 'owner@test.com')
+    page.fill('#lPin', '579246')
+    page.click('#lBtn')
+    page.wait_for_selector('#nav button', timeout=10000)
+    page.wait_for_function(
+        "document.querySelector('#banner')?.innerText.includes('Offline workspace')",
+        timeout=10000,
+    )
+    check(
+        page.locator('#nav button').count() == 4
+        and page.locator('[data-v=new]').count() == 1
+        and page.locator('[data-v=reg]').count() == 1
+        and page.locator('[data-v=acct]').count() == 1
+        and page.locator('[data-v=users], [data-v=set], [data-v=audit], [data-v=vend], [data-v=reports], [data-v=bulk]').count() == 0
+        and page.evaluate("!localStorage.getItem('cv.token')"),
+        'correct offline PIN opens a local workspace, hides privileged routes and issues no server token',
+    )
+    check(
+        'server vouchers are unavailable' in page.locator('#banner').inner_text().lower()
+        and page.locator('#banner [data-act=reconnect-signin]').inner_text() == 'Sign in to sync',
+        'offline workspace states its limitations and offers a clear online sign-in path',
+    )
+
+    context.set_offline(False)
+    page.click('#banner [data-act=reconnect-signin]')
+    page.wait_for_selector('#loginForm', timeout=8000)
+    page.fill('#lEmail', 'owner@test.com')
+    page.fill('#lPin', '579246')
+    page.click('#lBtn')
+    page.wait_for_function("document.querySelectorAll('#nav button').length === 10", timeout=10000)
+    check(
+        'offline workspace' not in page.locator('#banner').inner_text().lower(),
+        'online sign-in restores the server-verified owner workspace',
+    )
+
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
     page.wait_for_selector('#loginForm')

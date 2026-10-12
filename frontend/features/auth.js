@@ -1,10 +1,5 @@
 import { $ } from '../core/dom.js';
 import { ls } from '../core/storage.js';
-import {
-  clearOfflineCredential,
-  saveOfflineCredential,
-  verifyOfflineCredential,
-} from '../core/offline-auth.js';
 
 export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
   let idleT;
@@ -35,66 +30,28 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       return;
     }
 
-    const email = $('#lEmail').value.trim();
-    const pin = $('#lPin').value.trim();
     S.token = '';
-    ls.del('cv.token');
-
-    const tryOfflineUnlock = async () => {
-      const verified = await verifyOfflineCredential({
-        email,
-        endpoint: S.url,
-        pin,
-        storage: ls,
-      });
-      if (!verified) return false;
-
-      const resumed = await start(false, email);
-      if (resumed) return true;
-
-      S.token = '';
-      ls.del('cv.token');
-      return false;
-    };
 
     await busy($('#lBtn'), async () => {
-      if (!navigator.onLine) {
-        if (await tryOfflineUnlock()) return;
-        err.textContent =
-          'Offline unlock is unavailable or the PIN does not match. Connect and sign in to verify this account.';
-        return;
-      }
-
       try {
-        const data = await api('login', { email, pin });
+        const data = await api('login', {
+          email: $('#lEmail').value.trim(),
+          pin: $('#lPin').value.trim(),
+        });
 
         S.token = data.token;
+
         ls.set('cv.token', data.token);
         ls.set('cv.url', S.url);
-        ls.set('cv.email', email);
+        ls.set('cv.email', $('#lEmail').value.trim());
 
-        if (data.user?.mustChangePin) clearOfflineCredential(ls);
-
-        const started = await start(data.user.mustChangePin, data.user.email || email);
-        const activeEmail = typeof S.me?.email === 'string' ? S.me.email.trim().toLowerCase() : '';
-        if (started && !data.user.mustChangePin && activeEmail === email.toLowerCase()) {
-          await saveOfflineCredential({ email, endpoint: S.url, pin, storage: ls });
-        } else if (!started && !data.user.mustChangePin) {
-          // A server token must never be paired with a cached identity from another account.
-          S.token = '';
-          ls.del('cv.token');
-        }
+        await start(data.user.mustChangePin);
       } catch (error) {
-        if (error.code === 'NET') {
-          if (await tryOfflineUnlock()) return;
-          err.textContent =
-            'No connection to the server. Offline unlock is available only for an account verified on this device within the last 7 days.';
-        } else {
-          err.textContent = error.message;
-        }
+        err.textContent = error.message;
       }
     });
   }
+
   function signOut(expired = false) {
     if (S.token && !expired) {
       api('logout').catch(() => {});
@@ -102,13 +59,8 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
 
     S.token = '';
     S.me = null;
-    S.offlineMode = false;
 
     ls.del('cv.token');
-    if (!expired) {
-      clearOfflineCredential(ls);
-      ls.del('cv.cache');
-    }
     closeModal();
 
     showLogin(expired ? 'Session expired. Please sign in again.' : '');
@@ -150,10 +102,9 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       'Choose a new PIN',
       body,
       async () => {
-        const newPin = $('#np').value;
         const data = await api('changePin', {
           oldPin: $('#op').value,
-          newPin,
+          newPin: $('#np').value,
         });
 
         S.token = data.token;
@@ -162,34 +113,12 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
         closeModal();
         toast('PIN changed.', 'ok');
 
-        const started = await start(false, ls.get('cv.email') || '');
-        const activeEmail = typeof S.me?.email === 'string' ? S.me.email.trim().toLowerCase() : '';
-        const expectedEmail = (ls.get('cv.email') || '').trim().toLowerCase();
-        if (started && activeEmail && (!expectedEmail || activeEmail === expectedEmail)) {
-          await saveOfflineCredential({
-            email: activeEmail,
-            endpoint: S.url,
-            pin: newPin,
-            storage: ls,
-          });
-        } else if (!started) {
-          S.token = '';
-          ls.del('cv.token');
-        }
+        await start();
       },
       'Change PIN',
     );
 
     $('[data-x]').onclick = () => signOut();
-  }
-
-  function signInOnline() {
-    S.token = '';
-    S.me = null;
-    S.offlineMode = false;
-    ls.del('cv.token');
-    closeModal();
-    showLogin('Sign in while connected to synchronize pending entries. Your local queue will be preserved.');
   }
 
   function handleApiError(error) {
@@ -222,7 +151,6 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     showLogin,
     signOut,
     forcePinChange,
-    signInOnline,
     handleApiError,
   };
 }

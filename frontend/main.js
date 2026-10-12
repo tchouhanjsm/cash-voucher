@@ -150,6 +150,8 @@ registerActions({
 
   'discard-failed': ({ id }) => payments.discardFailedOutbox(id),
 
+  'reconnect-signin': () => auth.signInOnline(),
+
   tpl: () => bulk.downloadTemplate(),
 
   parse: ({ element }) => busy(element, () => bulk.parseInput().catch(fail)),
