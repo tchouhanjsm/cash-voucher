@@ -129,7 +129,7 @@ export function createRegister({ api, go }) {
                 data-act="rec"
                 data-id="${esc(voucher.id)}"
                 aria-label="Receipts for ${esc(voucherNo(voucher))}"
-              >${receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
+              >${!receiptState.valid ? '📎 Check receipts' : receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
             : '',
           voucher.status === 'ACTIVE' && can('edit')
             ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>`
