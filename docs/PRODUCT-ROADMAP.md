@@ -263,7 +263,6 @@ The one PR must pass CI, Browser E2E, and Full Flight Test on the same final com
 
 **Verification:** Browser E2E tampers with the bootstrap voucher envelope and simulates offline restart with an existing identity cache; it asserts that no KPI/chart/row/export is shown, then confirms online recovery. This is a UI integrity control; it does not validate or repair authoritative Sheet data and does not close live authorization, backup/restore, accessibility, or device-pilot gates.
 
-
 ## Current implementation status — PR #101
 
 **PR #100 merged:** Dashboard and Register now distinguish unavailable voucher data from a genuine empty collection. Invalid bootstrap responses and offline startup without cached voucher rows withhold financial summaries, charts, Register rows/totals, and CSV export; valid data restores the normal views.
