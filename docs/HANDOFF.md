@@ -3,7 +3,6 @@
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
 **Verified `main` SHA:** `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043` (PR #101 merge)  
-**Verified `main` SHA:** `cf1ae45363d9ba7126be722388dcf7c75a45ffd3` (PR #100 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
@@ -108,8 +107,16 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 
 ## Current implementation status — PR #102
 
-**Initial failure diagnosed:** the CI quality gate failed because Prettier rejected `frontend/core/utils.js` and `test/test-csv-export.js`. Browser E2E passed on that earlier head, but Full Flight Test failed because the quality gate failed. Those earlier runs do not verify the updated source.
+**Root cause:** GitHub Actions' exact formatter diff showed that Prettier expected the CSV formula/control-prefix list and the single hostile-HTML assertion in test/test-csv-export.js to be compact one-line expressions. The previous edits had manually wrapped these constructs, causing the quality gate to fail. The fix now matches the repository's configured Prettier output; no assertion was weakened or removed.
 
-**Consolidated implementation:** one scalar-only conversion boundary serves HTML escaping and CSV cell output. Strings, numbers, booleans and bigints retain scalar conversion; arrays, objects, symbols and other non-scalars become empty output without reading coercion properties or invoking `toString`, `valueOf`, getters or `Symbol.toPrimitive`. HTML entity encoding, CSV quoting and formula/control-prefix neutralization remain required.
+**Implementation:** frontend/core/utils.js uses one scalar-only conversion boundary for HTML escaping and CSV cells. Supported strings, numbers, booleans and bigints keep their text representation. Non-scalar arrays, objects and symbols produce empty output without reading coercion properties or invoking toString, valueOf, getters or Symbol.toPrimitive. HTML entity encoding, CSV quoting and formula/control-prefix neutralization remain covered by tests. Browser E2E supplies object-valued Settings fields and verifies the page remains usable without markup injection.
 
-**Exit gate:** product/functionality review, independent security/recovery review, lint/format/backend tests, Browser E2E and Full Flight Test must pass on the exact same final PR head. Live deployment, role/receipt authorization, real backup/isolated restore, device/accessibility and complete rendering-audit gates remain open. Owner review and merge remain required.
+**Latest verified implementation head before documentation refresh:** 797dd1f5548a8cd3aec8cfa89138b2f6930242d0.
+
+- [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244212330) passed: npm run check, Prettier, JSON/syntax checks, all 19 documented contrast pairs, 129 backend checks, HTML/CSV scalar-safety tests and the PR handoff-quality gate.
+- [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244212324) passed: 241 checks, 0 failures.
+- [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244212499) passed: 129 backend checks plus 241 browser checks.
+
+The handoff/roadmap documentation is being refreshed in this same PR after that verification. The new documentation commits change the PR head, so always verify fresh CI, Browser E2E and Full Flight Test runs on the live final head before review/merge.
+
+**Acceptance and release boundary:** PR #102 remains open for owner review and merge. No deployment, Apps Script authorization, production-data mutation or accounting/authorization/schema change is included. Live Google authorization and delivery, scheduled backup inspection, isolated restore, real-device/accessibility testing and the complete rendering-sink inventory remain open. This is targeted rendering hardening, not full XSS certification.
