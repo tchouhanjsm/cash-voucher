@@ -120,7 +120,7 @@ export function createRegister({ api, go }) {
         const cancelledNote =
           voucher.status === 'ACTIVE'
             ? ''
-            : ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}`;
+            : ` · <span class="badge bad">CANCELLED</span> ${esc(scalarText(voucher.cancelReason))}`;
         const actions = [
           `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
           receiptAction
@@ -160,7 +160,7 @@ export function createRegister({ api, go }) {
               ${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}
             </span>
           </td>
-          <td class="nw cat">${esc(nm(voucher.createdBy))}</td>
+          <td class="nw cat">${esc(nm(scalarText(voucher.createdBy)))}</td>
           <td>
             <div
               class="voucher-actions"
@@ -288,7 +288,7 @@ export function createRegister({ api, go }) {
       ],
     ].concat(
       filtered().map((voucher) => [
-        vno(voucher),
+        voucherNo(voucher),
         isIn(voucher) ? 'Received' : 'Payment',
         dmy(voucher.date),
         scalarText(voucher.vendor),
@@ -310,7 +310,7 @@ export function createRegister({ api, go }) {
   }
 
   function edit(id) {
-    const voucher = S.vouchers.find((item) => item.id === id);
+    const voucher = voucherRows().find((item) => item.id === id);
 
     const body = document.createDocumentFragment();
 
@@ -331,7 +331,7 @@ export function createRegister({ api, go }) {
     const amount = document.createElement('input');
     amount.id = 'ea';
     amount.inputMode = 'decimal';
-    amount.value = String(voucher.amount);
+    amount.value = scalarText(voucher.amount);
     amount.required = true;
     body.appendChild(labeledControl('Amount (₹)', amount));
 
@@ -353,7 +353,7 @@ export function createRegister({ api, go }) {
     reason.rows = 3;
     body.appendChild(labeledControl('Correction reason (required)', reason));
 
-    dialog(`Edit #${vno(voucher)}`, body, async () => {
+    dialog(`Edit #${voucherNo(voucher)}`, body, async () => {
       const updated = await api('updateVoucher', {
         id,
         reason: $('#er').value,
@@ -374,7 +374,7 @@ export function createRegister({ api, go }) {
   }
 
   function cancel(id) {
-    const voucher = S.vouchers.find((item) => item.id === id);
+    const voucher = voucherRows().find((item) => item.id === id);
 
     const body = document.createDocumentFragment();
     const summary = document.createElement('p');
@@ -390,7 +390,7 @@ export function createRegister({ api, go }) {
     body.append(summary, labeledControl('Reason (required)', reason));
 
     dialog(
-      `Cancel #${vno(voucher)}?`,
+      `Cancel #${voucherNo(voucher)}?`,
       body,
       async () => {
         Object.assign(voucher, await api('cancelVoucher', { id, reason: $('#cr').value }));
@@ -436,7 +436,7 @@ export function createRegister({ api, go }) {
       body.appendChild(addLabel);
     }
 
-    const form = dialog(`Receipts · #${vno(voucher)}`, body);
+    const form = dialog(`Receipts · #${voucherNo(voucher)}`, body);
 
     const loadReceipt = async (fileId, item) => {
       item.replaceChildren();
