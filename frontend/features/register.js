@@ -82,15 +82,16 @@ export function createRegister({ api, go }) {
   }
 
   function renderRows() {
-    const rangeInvalid = Boolean(R.from && R.to && R.from > R.to);
-    const list = rangeInvalid ? [] : filtered();
-    const shown = list.slice(0, R.limit);
     const sourceRows = Array.isArray(S.vouchers) ? S.vouchers : [];
     const diagnostics = S.voucherDiagnostics || {
       envelopeValid: true,
       malformedRecordCount: 0,
       malformedFieldCount: 0,
     };
+    const rangeInvalid =
+      diagnostics.envelopeValid && Boolean(R.from && R.to && R.from > R.to);
+    const list = rangeInvalid || !diagnostics.envelopeValid ? [] : filtered();
+    const shown = list.slice(0, R.limit);
     const malformedRecordCount = Math.max(
       diagnostics.malformedRecordCount || 0,
       sourceRows.length - voucherRows().length,
@@ -119,11 +120,13 @@ export function createRegister({ api, go }) {
           .map((message) => ' · ' + message)
           .join('');
 
-    $('#rtot').innerHTML = rangeInvalid
-      ? '<span class="error" role="alert">Totals unavailable: choose a start date on or before the end date.</span>'
-      : `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
+    $('#rtot').innerHTML = !diagnostics.envelopeValid
+      ? '<span class="error" role="alert">Totals unavailable because the voucher response was invalid. Refresh and retry.</span>'
+      : rangeInvalid
+        ? '<span class="error" role="alert">Totals unavailable: choose a start date on or before the end date.</span>'
+        : `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
     const exportButton = $('#view [data-act="csv"]');
-    if (exportButton) exportButton.disabled = rangeInvalid;
+    if (exportButton) exportButton.disabled = rangeInvalid || !diagnostics.envelopeValid;
 
     $('#rbody').innerHTML = shown
       .map((voucher) => {
@@ -301,6 +304,10 @@ export function createRegister({ api, go }) {
   }
 
   function csvExport() {
+    if (S.voucherDiagnostics?.envelopeValid === false) {
+      toast('Voucher data is unavailable. Refresh before exporting the Register.', 'err');
+      return;
+    }
     if (R.from && R.to && R.from > R.to) {
       toast('Correct the register date range before exporting.', 'err');
       return;
