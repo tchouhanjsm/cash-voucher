@@ -372,26 +372,28 @@ export function createPayments({ api, refresh }) {
       const visible = owned.concat(unbound);
       const pending = owned.filter((record) => ['pending', 'sending'].includes(record.status));
       const failed = owned.filter((record) => record.status === 'failed');
+      const describeEntries = (records) => {
+        const payments = records.filter((record) => record.entry?.type === 'PAYMENT').length;
+        const receipts = records.filter((record) => record.entry?.type === 'RECEIPT').length;
+        const unknown = records.length - payments - receipts;
+        const parts = [];
+        if (payments) parts.push(payments + ' payment' + (payments === 1 ? '' : 's'));
+        if (receipts) parts.push(receipts + ' cash receipt' + (receipts === 1 ? '' : 's'));
+        if (unknown) parts.push(unknown + ' unclassified entr' + (unknown === 1 ? 'y' : 'ies'));
+        return parts.length === 1 ? parts[0] : records.length + ' queued entries (' + parts.join(', ') + ')';
+      };
 
       if (!visible.length && !errMsg) return b.classList.add('hidden');
 
       const messages = [];
       if (pending.length) {
         messages.push(
-          '📤 ' +
-            pending.length +
-            ' payment' +
-            (pending.length === 1 ? '' : 's') +
-            ' waiting to upload',
+          '📤 ' + describeEntries(pending) + ' waiting to upload',
         );
       }
       if (failed.length) {
         messages.push(
-          '⚠️ ' +
-            failed.length +
-            ' payment' +
-            (failed.length === 1 ? '' : 's') +
-            ' need review; automatic retry stopped',
+          '⚠️ ' + describeEntries(failed) + ' need review; automatic retry stopped',
         );
       }
 
@@ -400,16 +402,18 @@ export function createPayments({ api, refresh }) {
         .map(
           (record) =>
             '<li><b>' +
-            esc(record.entry?.vendor || 'Unnamed payment') +
+            esc((record.entry?.type === 'RECEIPT' ? 'Cash receipt: ' : 'Payment: ') + (record.entry?.vendor || 'Unnamed entry')) +
             '</b> — ₹' +
             esc(String(record.entry?.amount ?? 'unknown')) +
             ': ' +
             esc(record.failure || 'Rejected by server') +
-            '</li>',
+            ' <button class="btn sm danger" data-act="discard-failed" data-id="' +
+            esc(record.clientId) +
+            '">Export &amp; remove</button></li>',
         )
         .join('');
       const failedReview = failedDetails
-        ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
+        ? '<details class="outbox-failures"><summary>Review rejected entries</summary><p class="muted">Export a recovery copy before removing an entry. Removed entries are no longer stored on this device.</p><ul>' +
           failedDetails +
           (failed.length > 5
             ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>'
@@ -419,9 +423,7 @@ export function createPayments({ api, refresh }) {
       if (unbound.length) {
         messages.push(
           '⚠️ ' +
-            unbound.length +
-            ' older payment' +
-            (unbound.length === 1 ? '' : 's') +
+            unbound.length + ' older queued entr' + (unbound.length === 1 ? 'y' : 'ies') +
             ' need account confirmation before upload',
         );
       }
@@ -437,7 +439,7 @@ export function createPayments({ api, refresh }) {
         (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
         '<button class="btn sm" data-act="import-pending">Import</button>' +
         (owned.length
-          ? '<button class="btn sm danger" data-act="discard">Discard my payments</button>'
+          ? '<button class="btn sm danger" data-act="discard">Clear my queued entries</button>'
           : '');
     } catch (error) {
       b.className = 'banner err';
@@ -542,8 +544,8 @@ export function createPayments({ api, refresh }) {
     try {
       const ownerKey = queueOwnerKey();
       if (!ownerKey) {
-        toast('Sign in before exporting pending payments.', 'err');
-        return;
+        toast('Sign in before exporting pending entries.', 'err');
+        return false;
       }
       const allRecords = await offlineQueue.list();
       const unbound = allRecords.filter((record) => !String(record.ownerKey || ''));
@@ -556,7 +558,7 @@ export function createPayments({ api, refresh }) {
             'Continue only if you are authorised to access these records.',
         )
       ) {
-        return;
+        return false;
       }
 
       const records = allRecords.filter(
@@ -564,8 +566,8 @@ export function createPayments({ api, refresh }) {
       );
 
       if (!records.length) {
-        toast('There are no pending payments for this account to export.', 'ok');
-        return;
+        toast('There are no queued entries for this account to export.', 'ok');
+        return false;
       }
 
       const payload = {
@@ -594,9 +596,11 @@ export function createPayments({ api, refresh }) {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast('Pending payments exported. Keep the file secure.', 'ok');
+      toast('Offline entry recovery file exported. Keep it secure.', 'ok');
+      return true;
     } catch (error) {
       fail(error);
+      return false;
     }
   }
 
@@ -778,6 +782,56 @@ export function createPayments({ api, refresh }) {
     input.click();
   }
 
+  async function discardFailedOutbox(clientId) {
+    if (flushing) {
+      toast('Wait for the current upload to finish.', 'err');
+      return;
+    }
+
+    const ownerKey = queueOwnerKey();
+    if (!ownerKey) return toast('Sign in before removing a rejected entry.', 'err');
+
+    try {
+      const records = await offlineQueue.list();
+      const selected = records.find(
+        (record) =>
+          record.clientId === clientId &&
+          record.status === 'failed' &&
+          String(record.ownerKey || '') === ownerKey,
+      );
+      if (!selected) {
+        toast('That rejected entry is no longer available for this account. Refresh and retry.', 'err');
+        await showBanner();
+        return;
+      }
+
+      // Always export the current queue before permitting this destructive action.
+      const exported = await exportOutbox();
+      if (!exported) return;
+      if (
+        !confirm(
+          'A recovery file was downloaded. Remove only this rejected entry from this device? ' +
+            'The exported file is needed if you want to correct and restore it later.',
+        )
+      ) {
+        return;
+      }
+
+      const removed = await offlineQueue.discardFailed(clientId, ownerKey);
+      if (!removed) {
+        toast('The rejected entry changed before it could be removed. Nothing else was cleared.', 'err');
+        await showBanner();
+        return;
+      }
+
+      announceOutboxChange('changed');
+      await showBanner();
+      toast('Rejected entry removed from this device. Keep the recovery file until it is no longer needed.', 'ok');
+    } catch (error) {
+      fail(error);
+    }
+  }
+
   async function discardOutbox() {
     if (flushing) {
       toast('Wait for the current upload to finish.', 'err');
@@ -833,6 +887,7 @@ export function createPayments({ api, refresh }) {
     exportOutbox,
     importOutbox,
     discardOutbox,
+    discardFailedOutbox,
     disposePreviews: disposeReceiptPreviews,
   };
 }
