@@ -270,18 +270,18 @@ export function createReports({ api }) {
 
     try {
       const fields = [
-      'date',
-      'voucherNo',
-      'type',
-      'vendor',
-      'category',
-      'notes',
-      'amount',
-      'status',
-      'cancelReason',
-      'createdBy',
-      'id',
-    ];
+        'date',
+        'voucherNo',
+        'type',
+        'vendor',
+        'category',
+        'notes',
+        'amount',
+        'status',
+        'cancelReason',
+        'createdBy',
+        'id',
+      ];
       const rows = [fields, ...R.rows.map((item) => fields.map((field) => item[field] ?? ''))];
       download(
         `recorded-movement-${R.from}-to-${R.to}.csv`,
