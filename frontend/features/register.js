@@ -82,7 +82,8 @@ export function createRegister({ api, go }) {
   }
 
   function renderRows() {
-    const list = filtered();
+    const rangeInvalid = Boolean(R.from && R.to && R.from > R.to);
+    const list = rangeInvalid ? [] : filtered();
     const shown = list.slice(0, R.limit);
     const sourceRows = Array.isArray(S.vouchers) ? S.vouchers : [];
     const diagnostics = S.voucherDiagnostics || {
@@ -118,8 +119,11 @@ export function createRegister({ api, go }) {
           .map((message) => ' · ' + message)
           .join('');
 
-    $('#rtot').innerHTML =
-      `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
+    $('#rtot').innerHTML = rangeInvalid
+      ? '<span class="error" role="alert">Totals unavailable: choose a start date on or before the end date.</span>'
+      : `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
+    const exportButton = $('#view [data-act="csv"]');
+    if (exportButton) exportButton.disabled = rangeInvalid;
 
     $('#rbody').innerHTML = shown
       .map((voucher) => {
@@ -189,6 +193,8 @@ export function createRegister({ api, go }) {
 
     const emptyState = $('#rempty');
     emptyState.replaceChildren();
+    emptyState.setAttribute('role', rangeInvalid ? 'alert' : 'status');
+    emptyState.setAttribute('aria-live', rangeInvalid ? 'assertive' : 'polite');
 
     if (shown.length) {
       emptyState.classList.add('hidden');
@@ -196,14 +202,16 @@ export function createRegister({ api, go }) {
       emptyState.classList.remove('hidden');
       const message = document.createElement('span');
       message.className = 'empty-state-message';
-      message.textContent = !diagnostics.envelopeValid
-        ? 'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
-        : voucherRows().length
-          ? 'No vouchers match the current filters.'
-          : 'No vouchers are available to show. If you are offline, reconnect and refresh; otherwise use New Entry to record the first payment or receipt.';
+      message.textContent = rangeInvalid
+        ? 'The start date must be on or before the end date. Correct the range or clear filters.'
+        : !diagnostics.envelopeValid
+          ? 'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
+          : voucherRows().length
+            ? 'No vouchers match the current filters.'
+            : 'No vouchers are available to show. If you are offline, reconnect and refresh; otherwise use New Entry to record the first payment or receipt.';
       emptyState.appendChild(message);
 
-      if (diagnostics.envelopeValid && voucherRows().length) {
+      if ((diagnostics.envelopeValid && voucherRows().length) || rangeInvalid) {
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
         clearButton.className = 'btn';
@@ -293,6 +301,11 @@ export function createRegister({ api, go }) {
   }
 
   function csvExport() {
+    if (R.from && R.to && R.from > R.to) {
+      toast('Correct the register date range before exporting.', 'err');
+      return;
+    }
+
     const rows = [
       [
         'No',
