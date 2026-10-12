@@ -18,7 +18,10 @@ async function run() {
   assert.equal(csvCell('normal, "quoted"'), '"normal, ""quoted"""');
   assert.equal(csvCell('plain'), '"plain"');
 
-  assert.equal(esc('<img src=x onerror=alert(1)>'), '&lt;img src=x onerror=alert(1)&gt;');
+  assert.equal(
+    esc('<img src=x onerror=alert(1)>'),
+    '&lt;img src=x onerror=alert(1)&gt;',
+  );
   assert.equal(esc(123), '123');
   assert.equal(esc(false), 'false');
   assert.equal(esc(null), '');
