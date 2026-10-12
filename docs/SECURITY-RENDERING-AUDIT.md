@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Current review baseline:** `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043` (PR #101 merge)  
+**Current review baseline:** `2814c47066b9a52e10af3c278e4400867d777228` (PR #102 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -277,3 +277,11 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - The shared scalar conversion boundary allows strings and supported primitive values only. Objects, arrays and symbols return empty output before any property access or coercion, avoiding hostile `toString`, `valueOf`, getters or `Symbol.toPrimitive` hooks at both HTML escaping and CSV cell output.
 - Preserve context-appropriate HTML entity encoding, CSV double-quote escaping and formula/control-prefix neutralization. Unit coverage includes supported primitives, hostile strings, non-scalar values and throwing coercion hooks; Browser E2E verifies malformed object-valued Settings fields remain blank, keep the view functional and cannot inject markup.
 - This narrows the shared output-boundary risk; it does not validate authoritative source records, replace field-level API validation, complete the active `innerHTML` inventory, or certify production deployment/backup restore.
+
+
+## PR #103 — Guard DOM text sinks against malformed bootstrap scalars
+
+- **Confirmed resilience defect:** the active navigation bootstrap wrote `S.settings.propertyName` to `#brand.textContent` and `document.title`, and converted `S.me.name` / `S.me.role` with `String(...)`. Malformed JSON objects with non-callable own `toString` and `valueOf` fields can throw during implicit/explicit primitive conversion and abort startup. The Settings-save completion path repeated the direct brand assignment.
+- Reuse the exported scalar-only text conversion helper for the persisted display name, navigation brand/title, profile label text nodes, and post-save brand update. Preserve DOM-only text construction and the existing neutral brand/title fallback; render malformed fields blank rather than invoking coercion hooks.
+- Unit coverage checks strings and supported primitive types, non-scalars, a throwing getter and `Symbol.toPrimitive`; Browser E2E injects object-valued property/profile names and verifies navigation boots, fallback branding appears, Settings remains reachable, and no payload markup executes.
+- This is targeted DOMString resilience for non-HTML sinks. It does not complete the dynamic-HTML sink inventory or certify all application rendering, live authorization, backup/restore, real-device behavior or production readiness.

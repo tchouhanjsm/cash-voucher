@@ -2,6 +2,7 @@ import { $, $$ } from '../core/dom.js';
 import { normalizeVoucherCollection, S, can } from '../core/state.js';
 import { fail, toast } from '../core/ui.js';
 import { ls } from '../core/storage.js';
+import { scalarText } from '../core/utils.js';
 
 export function createNavigation({ api, getAuth, getPayments, renderers }) {
   const NAV = [
@@ -39,7 +40,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       loadedAt: Date.now(),
     });
 
-    ls.set('cv.name', data.settings.propertyName);
+    ls.set('cv.name', scalarText(data.settings?.propertyName));
     ls.set(
       'cv.cache',
       JSON.stringify({
@@ -97,13 +98,14 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     }
 
     $('#app').classList.remove('hidden');
-    $('#brand').textContent = S.settings.propertyName || 'Cash Vouchers';
-    document.title = S.settings.propertyName || 'Vouchers';
+    const propertyName = scalarText(S.settings?.propertyName);
+    $('#brand').textContent = propertyName || 'Cash Vouchers';
+    document.title = propertyName || 'Vouchers';
     const who = $('#who');
     who.replaceChildren(
-      document.createTextNode(String(S.me.name || '')),
+      document.createTextNode(scalarText(S.me?.name)),
       document.createElement('br'),
-      document.createTextNode(String(S.me.role || '')),
+      document.createTextNode(scalarText(S.me?.role)),
     );
 
     const nav = $('#nav');

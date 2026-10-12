@@ -1,4 +1,4 @@
-const scalarText = (value) => {
+export const scalarText = (value) => {
   if (typeof value === 'string') return value;
   if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
     return String(value);
