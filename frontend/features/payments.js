@@ -659,7 +659,11 @@ export function createPayments({ api, refresh }) {
           const ownerKey = queueOwnerKey();
           if (!ownerKey) throw new Error('Sign in before restoring pending payments.');
 
-          const validation = validateRecoveryRecords(payload.records, ownerKey, addDays(today(), 1));
+          const validation = validateRecoveryRecords(
+            payload.records,
+            ownerKey,
+            addDays(today(), 1),
+          );
           const unboundCount = validation.unboundCount;
           const accountName = scalarText(S.me?.email) || 'the signed-in account';
           const confirmation = unboundCount

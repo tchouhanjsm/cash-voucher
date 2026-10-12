@@ -120,7 +120,8 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
       throw new Error('Recovery file contains invalid category or note data.');
     }
 
-    const sourceReceipts = entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
+    const sourceReceipts =
+      entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
     if (!Array.isArray(sourceReceipts) || sourceReceipts.length > 3) {
       throw new Error('Recovery file contains an invalid receipt list.');
     }
