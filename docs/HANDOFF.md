@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `335b92d27632ee6df806efe2611a8b6f89265d7b` (PR #98 merge)  
+**Verified `main` SHA:** `0e4650ff65388b907cc623ad2eaece3ca923632e` (PR #99 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #99 — [Bulk improve daily-workflow reliability and recovery feedback](https://github.com/tchouhanjsm/cash-voucher/pull/99)**  
-Branch: `product/bulk-workflow-recovery-ux`  
-Base: `335b92d27632ee6df806efe2611a8b6f89265d7b`
+**PR #100 — Dashboard fail-closed behavior for unavailable voucher data**  
+Branch: `product/dashboard-data-unavailable-guardrails`  
+Base: `0e4650ff65388b907cc623ad2eaece3ca923632e`
 
-Scope: consolidate the workflow reliability backlog into one PR. This includes accurate payment/receipt queue summaries; export-first, per-entry removal for a rejected local record with account/status revalidation; correct unavailable-state feedback for malformed bootstrap envelopes, with totals and CSV export withheld while voucher data is unavailable; reversed-date-range guardrails that withhold Register totals and CSV export until corrected; accessible bulk-import review/progress and report loading states; accurate receipt-import labels; and removal of stale report rows during replacement loads. Preserve account binding, per-row rejection isolation, import parser restrictions, CSV escaping, backend authorization, and accounting semantics. No production deployment or data mutation.
+Scope: prevent invalid bootstrap voucher envelopes from rendering zero-like Dashboard financial KPIs or empty charts. Keep the unavailable message and refresh recovery path visible; prove the view returns to normal once valid data is loaded. Extend Browser E2E and update the rendering audit/roadmap. No backend/API schema, accounting formula, permissions, dependency, deployment, or production data changes.
 
-**Last completed:** PR #98 — [Bulk harden bootstrap voucher integrity across Dashboard and Register](https://github.com/tchouhanjsm/cash-voucher/pull/98), merged at `335b92d27632ee6df806efe2611a8b6f89265d7b`. Exact tested head `6eb7abe803c4584787601bc9723b82acb1828936` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38212591608) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38212591631) (223 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38212591610) (129 backend + 223 browser checks).
+**Last completed:** PR #99 — [Bulk improve daily-workflow reliability and recovery feedback](https://github.com/tchouhanjsm/cash-voucher/pull/99), merged at `0e4650ff65388b907cc623ad2eaece3ca923632e`. Exact tested head `e048b77fb22eab8f70875c0756f73a323f458dc6` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715642) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715686) (233 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715629) (129 backend + 233 browser checks).
 
-**Acceptance gate:** exact final PR #99 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
+**Acceptance gate:** exact final PR #100 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
 
 Adopt three distinct sources of information:
 
