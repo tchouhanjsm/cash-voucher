@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `cf1ae45363d9ba7126be722388dcf7c75a45ffd3` (PR #100 merge)  
+**Verified `main` SHA:** `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043` (PR #101 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #101 — Harden shared HTML escaping against malformed scalar/object values**  
+**PR #102 — Harden scalar output conversion at HTML and CSV boundaries**  
 Branch: `security/scalar-only-html-escaping`  
-Base: `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`
+Base: `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043`
 
-Scope: harden the shared `esc()` output primitive so JSON objects and arrays are never coerced through attacker-controlled `toString`/`valueOf` properties. Preserve escaping for strings and supported primitive values; malformed object-valued Settings fields render blank rather than crashing the active view. Add unit and Browser E2E regression coverage and update the rendering audit. No API schema, permissions, persisted data, dependency, deployment, or production changes.
+Scope: fix the formatting failure, make shared HTML escaping and CSV cell output accept only scalar values, and ensure untrusted object/array/symbol values cannot invoke coercion hooks. Preserve HTML entity encoding, CSV quoting and formula-prefix defenses. Extend unit and Browser E2E coverage for hostile coercion and malformed Settings values. No API/schema, permissions, accounting semantics, dependency, deployment or production-data changes.
 
-**Last completed:** PR #100 — [Prevent zero-like totals when voucher data is unavailable](https://github.com/tchouhanjsm/cash-voucher/pull/100), merged at `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`. Exact tested head `ff409d641762d2a808c11509b7edfa37aa1e208e` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814467) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814429) (236 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814454) (129 backend + 236 browser checks).
+**Last completed:** PR #101 — [Harden owner diagnostics against malformed API responses](https://github.com/tchouhanjsm/cash-voucher/pull/101), merged at `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043`. Exact tested head `d9a70d9c18814931fe6915b422764b202a5687d7` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620604) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620660) (240 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38231620643) (129 backend + 240 browser checks).
 
-**Acceptance gate:** exact final PR #101 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
+**Acceptance gate:** exact final PR #102 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
 
 Adopt three distinct sources of information:
 
@@ -95,3 +95,11 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 5. Use the verified SHA and current phase at the top of this handoff as the live state; older PR details belong in their GitHub records and the milestones below.
 6. Before choosing a new batch, confirm the current open PR and latest `main` SHA from GitHub, then review the roadmap and relevant domain audit. Do not start overlapping work while a focused PR awaits owner review/merge.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
+
+## Current implementation status — PR #102
+
+**Initial failure diagnosed:** the CI quality gate failed because Prettier rejected `frontend/core/utils.js` and `test/test-csv-export.js`. Browser E2E passed on that earlier head, but Full Flight Test failed because the quality gate failed. Those earlier runs do not verify the updated source.
+
+**Consolidated implementation:** one scalar-only conversion boundary serves HTML escaping and CSV cell output. Strings, numbers, booleans and bigints retain scalar conversion; arrays, objects, symbols and other non-scalars become empty output without reading coercion properties or invoking `toString`, `valueOf`, getters or `Symbol.toPrimitive`. HTML entity encoding, CSV quoting and formula/control-prefix neutralization remain required.
+
+**Exit gate:** product/functionality review, independent security/recovery review, lint/format/backend tests, Browser E2E and Full Flight Test must pass on the exact same final PR head. Live deployment, role/receipt authorization, real backup/isolated restore, device/accessibility and complete rendering-audit gates remain open. Owner review and merge remain required.
