@@ -523,7 +523,7 @@ with sync_playwright() as p:
     page.click('[data-v=set]')
     page.wait_for_selector('#sc')
     check(
-        page.locator('#sc').input_value() == 'Office\\nOther'
+        page.locator('#sc').input_value() == 'Office\nOther'
         and page.locator('#sx').input_value() == 'Other'
         and page.locator('#sf img, #sf svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
