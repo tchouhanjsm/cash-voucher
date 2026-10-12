@@ -11,7 +11,7 @@
 Branch: `product/dashboard-data-unavailable-guardrails`  
 Base: `0e4650ff65388b907cc623ad2eaece3ca923632e`
 
-Scope: prevent invalid bootstrap voucher envelopes from rendering zero-like Dashboard financial KPIs or empty charts. Keep the unavailable message and refresh recovery path visible; prove the view returns to normal once valid data is loaded. Extend Browser E2E and update the rendering audit/roadmap. No backend/API schema, accounting formula, permissions, dependency, deployment, or production data changes.
+Scope: prevent invalid bootstrap envelopes and offline startup with no cached voucher rows from rendering zero-like Dashboard/Register totals or empty charts as verified data. Distinguish offline-unavailable from invalid-server-response messaging; preserve the refresh recovery path and prove normal UI recovery when valid data returns. Extend Browser E2E and update the rendering audit/roadmap. No backend/API schema, accounting formula, permissions, dependency, deployment, or production data changes.
 
 **Last completed:** PR #99 — [Bulk improve daily-workflow reliability and recovery feedback](https://github.com/tchouhanjsm/cash-voucher/pull/99), merged at `0e4650ff65388b907cc623ad2eaece3ca923632e`. Exact tested head `e048b77fb22eab8f70875c0756f73a323f458dc6` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715642) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715686) (233 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715629) (129 backend + 233 browser checks).
 
@@ -33,6 +33,7 @@ Cash Voucher is a single-property cash-voucher PWA backed by Google Apps Script,
 - `frontend/core/` owns shared infrastructure; `frontend/features/` owns feature behavior; `backend/Code.gs` is the Apps Script API source.
 - Backend role enforcement is the security boundary; UI visibility does not authorize requests.
 - Browser-local outbox entries are not centrally backed up until synchronized.
+- Voucher records are deliberately not included in the offline identity/settings cache. During an offline bootstrap fallback, `dataAvailable` is false; Dashboard/Register must not infer genuine zero activity from an empty in-memory placeholder.
 - Dashboard cash-in-hand and movement reporting are recorded-voucher views, not proof of physical cash, accounting, tax, or general-ledger reconciliation.
 - Daily cash close remains design-only until owner/accountant decisions in `docs/DAILY-CASH-CLOSE-DESIGN.md` are approved.
 - Preserve the owner's local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; do not stage or overwrite it.
