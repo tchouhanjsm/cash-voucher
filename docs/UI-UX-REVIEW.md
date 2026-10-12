@@ -122,3 +122,10 @@ Automation must make state more understandable, not hide work or imply that a fi
 - **Audit export:** preserve the latest-200 disclosure until a paginated/full-history backend contract is separately designed; do not make the generic audit CSV look like a complete accounting ledger.
 
 PR #60 should test the real-world task journeys at staff, manager and owner level, including slow/offline network, stale session, permission denial, duplicate tap/retry, empty and filtered data, failed export, and small-screen use. Review keyboard/focus and assistive-technology behavior alongside visual hierarchy. Automated browser checks and screenshots are evidence, not substitutes for live Google service tests or observation with real users.
+
+
+## Offline unlock to outbox handoff — October 2026
+
+PR #106 introduced a device-local offline unlock; PR #107 closes the immediate entry-flow gap. In the offline workspace, New Entry should save directly to the device-local queue, include selected/compressed receipt images, and state plainly that the user must sign in online before the queue synchronizes. The UI must not imply that reconnecting alone proves authentication or completed upload. A pending count is confirmation of local queue state only—not proof of a server voucher or physical cash.
+
+Browser E2E checks the offline unlock → save → reconnect without authentication → online sign-in → queue drain journey, including no unauthenticated create request and receipt preservation. This remains mocked browser evidence; real-phone PWA behavior, Google authorization, backup/restore and assistive-technology review remain open.
