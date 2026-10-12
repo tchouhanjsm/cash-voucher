@@ -168,7 +168,10 @@ export function createReports({ api }) {
           ${renderRows()}
         </div>
       `;
-    } else if (!R.loading && !R.error) {
+    } else if (R.loading) {
+      results =
+        '<div class="card" role="status" aria-live="polite"><p class="muted">Loading report… Previous results are hidden until this request completes.</p></div>';
+    } else if (!R.error) {
       results =
         '<div class="card"><p class="muted">Run the report to see recorded voucher movements.</p></div>';
     }
@@ -188,6 +191,9 @@ export function createReports({ api }) {
     if (!can('viewAll')) return render();
 
     if (!R.from || !R.to || R.from > R.to) {
+      R.summary = null;
+      R.rows = [];
+      R.invalidRowCount = 0;
       R.error = 'Choose a valid date range (From must not be after To).';
       render();
       return;
@@ -195,6 +201,9 @@ export function createReports({ api }) {
 
     R.loading = true;
     R.error = '';
+    R.summary = null;
+    R.rows = [];
+    R.invalidRowCount = 0;
     render();
 
     try {
@@ -254,9 +263,13 @@ export function createReports({ api }) {
   }
 
   function exportCsv() {
-    if (!R.summary) return;
+    if (!R.summary) {
+      toast('Run a successful report before exporting.', 'err');
+      return;
+    }
 
-    const fields = [
+    try {
+      const fields = [
       'date',
       'voucherNo',
       'type',
@@ -269,13 +282,21 @@ export function createReports({ api }) {
       'createdBy',
       'id',
     ];
-    const rows = [fields, ...R.rows.map((item) => fields.map((field) => item[field] ?? ''))];
-    download(
-      `recorded-movement-${R.from}-to-${R.to}.csv`,
-      rows.map((row) => row.map(csvCell).join(',')).join('\r\n'),
-      'text/csv;charset=utf-8',
-    );
-    toast('Report CSV downloaded.', 'ok');
+      const rows = [fields, ...R.rows.map((item) => fields.map((field) => item[field] ?? ''))];
+      download(
+        `recorded-movement-${R.from}-to-${R.to}.csv`,
+        rows.map((row) => row.map(csvCell).join(',')).join('\r\n'),
+        'text/csv;charset=utf-8',
+      );
+      toast('Report CSV downloaded.', 'ok');
+    } catch (error) {
+      toast(
+        typeof error?.message === 'string' && error.message
+          ? 'Report CSV could not be downloaded: ' + error.message
+          : 'Report CSV could not be downloaded. Please retry.',
+        'err',
+      );
+    }
   }
 
   return { render, load, exportCsv };
