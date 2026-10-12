@@ -1703,8 +1703,10 @@ with sync_playwright() as p:
         'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
         in register_invalid_text
         and 'No vouchers are available to show' not in register_invalid_text
-        and 'Clear filters' not in register_invalid_text,
-        'register does not imply an invalid voucher response is a genuinely empty register',
+        and 'Clear filters' not in register_invalid_text
+        and 'Totals unavailable because the voucher response was invalid.' in register_invalid_text
+        and page.locator('#rf [data-act=csv]').is_disabled(),
+        'invalid Register envelope does not imply empty data, show zero-like totals, or permit CSV export',
     )
     page.click('[data-v=dash]')
     invalid_voucher_envelope = False
