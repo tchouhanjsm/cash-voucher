@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**PR #98 — Bulk bootstrap voucher integrity and balance semantics** (implementation branch; awaiting review)  
+**PR #98 — [Bulk harden bootstrap voucher integrity across Dashboard and Register](https://github.com/tchouhanjsm/cash-voucher/pull/98)** (open, awaiting review)  
 Branch: `resilience/bootstrap-financial-view-integrity`  
 Base: `7366cee0a6feae4a55b06416f0aed649876e0165`
 
