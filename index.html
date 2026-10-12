@@ -33,10 +33,15 @@
     </div>
 
     <section id="login" class="lock hidden" aria-labelledby="loginTitle">
-      <form id="loginForm" class="card lock-card" autocomplete="on">
+      <form id="loginForm" class="card lock-card" autocomplete="on" aria-describedby="loginHelp">
         <h1 id="loginTitle">Cash Vouchers</h1>
 
         <p class="muted">Sign in to continue</p>
+        <p id="loginHelp" class="muted">
+          Sign in online to verify your account. After a successful sign-in on this device, your PIN
+          can unlock a local-only workspace offline for up to 7 days. Offline access cannot sync or
+          verify your server session.
+        </p>
 
         <input
           id="lUrl"
