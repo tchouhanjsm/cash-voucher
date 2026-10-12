@@ -148,6 +148,8 @@ registerActions({
 
   discard: () => payments.discardOutbox(),
 
+  'discard-failed': ({ id }) => payments.discardFailedOutbox(id),
+
   tpl: () => bulk.downloadTemplate(),
 
   parse: ({ element }) => busy(element, () => bulk.parseInput().catch(fail)),
