@@ -150,7 +150,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E tampers with the `recordedMovementReport` response using hostile SVG/image markup in all three count fields and verifies they remain literal text, create no SVG/image nodes, and do not execute handlers.
 - This is a targeted API-output encoding regression, not a claim that every active rendering sink has been audited or that the application is fully XSS-certified.
 
-
 ## PR #88 — Release receipt preview object URLs
 
 - **Confirmed resource-lifecycle defect:** receipt previews created by `compress()` use
@@ -162,7 +161,7 @@ Before considering this batch ready for review, the CI quality gate and Browser 
   immediately revoked and is not added to the stale row. Cleanup errors do not block payment
   entry or navigation.
 - Browser E2E instruments object URL creation/revocation and covers clear, row removal, successful
-  online save, navigation away from an unsaved entry, and compression completing after navigation.
+  online save, navigation away from an unsaved entry, and compression completing after navigation and clearing during compression.
   Existing receipt data remains available to the save/outbox payload because preview URLs are
   presentation-only and are not submitted to the API.
 - This is resource cleanup, not receipt authorization or input-content validation. Backend receipt
