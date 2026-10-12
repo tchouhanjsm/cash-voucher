@@ -1,5 +1,13 @@
+const scalarText = (value) => {
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean' || typeof value === 'bigint') {
+    return String(value);
+  }
+  return '';
+};
+
 export const esc = (value) =>
-  String(value ?? '').replace(
+  scalarText(value).replace(
     /[&<>"']/g,
     (c) =>
       ({
@@ -83,7 +91,7 @@ export function download(name, text, type) {
 }
 
 export const csvCell = (value) =>
-  `"${String(value ?? '')
+  `"${scalarText(value)
     .replace(/"/g, '""')
     .replace(/^([=+@\t\r\n]|-)/, "'$1")}"`;
 

@@ -1,7 +1,8 @@
 # Frontend Rendering Security Audit
 
 **Status:** incremental; not a full security certification  
-**Baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
+**Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
+**Current review baseline:** `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043` (PR #101 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -269,3 +270,10 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Validate the data-quality summary contract and each issue record before display. Omit malformed issue rows with a visible count; invalid summary envelopes fail closed with an accessible alert and a retryable scan. Keep the issue table DOM-only with textContent, including hostile but valid string values.
 - Validate backup-integrity summaries and every snapshot/check shape before rendering. If the report is malformed or summary counts do not reconcile with snapshot states, show a generic accessible error instead of partial or zero-like success data; keep inspection retryable and clear the error after a valid response.
 - Browser E2E tampers with both active API responses, asserts malformed records cannot create markup, and verifies recovery on valid responses. These are client-side response-integrity guardrails; they do not prove that Drive backups are complete or restorable, and they do not close the wider dynamic-HTML sink inventory or certify the live deployment.
+
+## PR #102 — Scalar-only HTML and CSV output conversion
+
+- The initial CI failure was formatting-only: Prettier rejected `frontend/core/utils.js` and `test/test-csv-export.js`. The earlier Browser E2E success did not override the failed quality gate or Full Flight Test.
+- The shared scalar conversion boundary allows strings and supported primitive values only. Objects, arrays and symbols return empty output before any property access or coercion, avoiding hostile `toString`, `valueOf`, getters or `Symbol.toPrimitive` hooks at both HTML escaping and CSV cell output.
+- Preserve context-appropriate HTML entity encoding, CSV double-quote escaping and formula/control-prefix neutralization. Unit coverage includes supported primitives, hostile strings, non-scalar values and throwing coercion hooks; Browser E2E verifies malformed object-valued Settings fields remain blank, keep the view functional and cannot inject markup.
+- This narrows the shared output-boundary risk; it does not validate authoritative source records, replace field-level API validation, complete the active `innerHTML` inventory, or certify production deployment/backup restore.
