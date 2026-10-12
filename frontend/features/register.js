@@ -88,8 +88,7 @@ export function createRegister({ api, go }) {
       malformedRecordCount: 0,
       malformedFieldCount: 0,
     };
-    const rangeInvalid =
-      diagnostics.envelopeValid && Boolean(R.from && R.to && R.from > R.to);
+    const rangeInvalid = diagnostics.envelopeValid && Boolean(R.from && R.to && R.from > R.to);
     const list = rangeInvalid || !diagnostics.envelopeValid ? [] : filtered();
     const shown = list.slice(0, R.limit);
     const malformedRecordCount = Math.max(
