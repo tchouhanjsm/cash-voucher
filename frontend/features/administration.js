@@ -283,7 +283,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       report.issues.length > 500 ||
       report.issues.length > report.issueCount ||
       typeof report.truncated !== 'boolean' ||
-      report.truncated !== (report.issueCount > report.issues.length)
+      report.truncated !== report.issueCount > report.issues.length
     ) {
       throw new Error('Invalid data-quality report response.');
     }
