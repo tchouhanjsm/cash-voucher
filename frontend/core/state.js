@@ -10,6 +10,8 @@ export const S = {
   view: 'dash',
   voucherDiagnostics: {
     envelopeValid: true,
+    dataAvailable: true,
+    unavailableReason: '',
     malformedRecordCount: 0,
     malformedFieldCount: 0,
   },

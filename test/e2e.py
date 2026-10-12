@@ -901,6 +901,26 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
+    page.click('[data-v=dash]')
+    offline_dashboard_text = page.locator('#view').inner_text()
+    check(
+        'Voucher data is unavailable while offline.' in offline_dashboard_text
+        and page.locator('#view .stats').count() == 0
+        and page.locator('#view svg.chart, #view .hb').count() == 0
+        and not page.locator('[data-act=refresh]').is_disabled(),
+        'offline startup withholds unverified Dashboard totals and charts while preserving refresh recovery',
+    )
+    page.click('[data-v=reg]')
+    offline_register_text = page.locator('#view').inner_text()
+    check(
+        'Voucher data is unavailable while offline.' in offline_register_text
+        and 'Totals unavailable while offline.' in offline_register_text
+        and page.locator('#rempty .empty-state-message').inner_text().startswith('Voucher data is unavailable while offline.')
+        and page.locator('#view #rbody tr').count() == 0
+        and page.locator('#rf [data-act=csv]').is_disabled(),
+        'offline Register does not present zero-like totals, empty records, or CSV export as valid data',
+    )
+    page.click('[data-v=new]')
 
     def import_recovery_file(file_path):
         selector = '#banner [data-act=import-pending]'
@@ -1698,6 +1718,17 @@ with sync_playwright() as p:
         and 'No vouchers are available' not in page.locator('#view').inner_text(),
         'invalid bootstrap voucher envelope is distinct from a legitimate empty collection',
     )
+    dashboard_invalid_text = page.locator('#view').inner_text()
+    check(
+        'Dashboard totals unavailable' in dashboard_invalid_text
+        and page.locator('#view .stats').count() == 0
+        and page.locator('#view svg.chart, #view .hb').count() == 0
+        and all(
+            label not in dashboard_invalid_text
+            for label in ('Total paid', 'Cash received', 'Book balance', 'Spending trend', 'Top vendors', 'By category')
+        ),
+        'invalid bootstrap envelope withholds dashboard KPIs and charts instead of showing zero-like totals',
+    )
     page.click('[data-v=reg]')
     page.wait_for_selector('#rempty')
     register_invalid_text = page.locator('#view').inner_text()
@@ -1716,9 +1747,13 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     page.click('[data-v=dash]')
+    recovered_dashboard_text = page.locator('#view').inner_text()
     check(
-        'Voucher data is unavailable' not in page.locator('#view').inner_text(),
-        'dashboard recovers after a valid voucher collection returns',
+        'Voucher data is unavailable' not in recovered_dashboard_text
+        and page.locator('#view .stats').count() == 1
+        and page.locator('#view svg.chart').count() == 1
+        and page.locator('#view .hb').count() > 0,
+        'dashboard restores KPIs and charts after a valid voucher collection returns',
     )
 
     # Malformed bootstrap data must not produce invalid CSS geometry.
