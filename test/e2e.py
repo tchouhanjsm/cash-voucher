@@ -2719,22 +2719,31 @@ with sync_playwright() as p:
     )
     corrupt_context.close()
 
-    # Malformed audit response rows and fields must be omitted without breaking the owner audit view.
+    # Malformed audit and owner-diagnostic responses must fail closed and recover.
     audit_malformed_payload = '<svg onload=window.__xssFired=true></svg>'
     audit_response_mode = 'malformed'
+    diagnostic_response_modes = {
+        'dataQualityReport': 'valid',
+        'backupIntegrityReport': 'valid',
+    }
 
     def inject_malformed_audit_rows(route):
         try:
             request_data = json.loads(route.request.post_data or '{}')
         except json.JSONDecodeError:
             request_data = {}
-        if request_data.get('action') != 'auditLog':
+        action = request_data.get('action')
+        if action not in ('auditLog', 'dataQualityReport', 'backupIntegrityReport'):
             route.continue_()
             return
 
         response = route.fetch()
         payload = response.json()
-        if payload.get('ok'):
+        if not payload.get('ok'):
+            route.fulfill(response=response, body=json.dumps(payload))
+            return
+
+        if action == 'auditLog':
             if audit_response_mode == 'invalid-envelope':
                 payload['data'] = {'unexpected': 'not an audit list'}
             elif audit_response_mode == 'empty':
@@ -2760,6 +2769,41 @@ with sync_playwright() as p:
                     },
                     *payload['data'],
                 ]
+        elif action == 'dataQualityReport':
+            mode = diagnostic_response_modes[action]
+            if mode == 'invalid-envelope':
+                payload['data'] = {'issues': 'not-an-issue-list'}
+            elif mode == 'malformed-rows' and isinstance(payload.get('data'), dict):
+                report = payload['data']
+                report['issues'] = [
+                    None,
+                    {'severity': 'error'},
+                    {
+                        'severity': 'error',
+                        'code': 'TEST_HOSTILE_TEXT',
+                        'sourceRow': 2,
+                        'voucherId': 'test-voucher-id',
+                        'voucherNo': '201',
+                        'date': '2026-10-12',
+                        'type': 'PAYMENT',
+                        'field': 'Vendor',
+                        'message': audit_malformed_payload,
+                    },
+                ]
+                report['issueCount'] = 3
+                report['errors'] = 2
+                report['warnings'] = 1
+                report['truncated'] = False
+        elif action == 'backupIntegrityReport':
+            mode = diagnostic_response_modes[action]
+            if mode == 'invalid-envelope':
+                payload['data'] = {'snapshots': 'not-a-snapshot-list'}
+            elif mode == 'invalid-snapshot' and isinstance(payload.get('data'), dict):
+                report = payload['data']
+                report['snapshots'].append({'name': audit_malformed_payload, 'state': 'pass'})
+                report['inspected'] += 1
+                report['passCount'] += 1
+
         route.fulfill(response=response, body=json.dumps(payload))
 
     audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
@@ -2842,6 +2886,57 @@ with sync_playwright() as p:
         'unavailable' not in audit_page.locator('#aud-count').inner_text().lower()
         and 'malformed audit event(s) omitted' not in audit_page.locator('#aud-count').inner_text(),
         'audit view recovers when a valid response returns',
+    )
+
+    audit_page.click('[data-v=set]')
+    audit_page.wait_for_selector('[data-act=dqscan]')
+    diagnostic_response_modes['dataQualityReport'] = 'invalid-envelope'
+    audit_page.click('[data-act=dqscan]')
+    audit_page.wait_for_function(
+        "document.querySelector('#dq-results')?.getAttribute('role') === 'alert' && document.querySelector('#dq-results')?.innerText.includes('invalid response')",
+        timeout=10000,
+    )
+    check(
+        'Scanned undefined' not in audit_page.locator('#dq-results').inner_text()
+        and audit_page.locator('[data-act=dqscan]').is_enabled(),
+        'invalid data-quality response fails closed and leaves the scan retryable',
+    )
+
+    diagnostic_response_modes['dataQualityReport'] = 'malformed-rows'
+    audit_page.click('[data-act=dqscan]')
+    audit_page.wait_for_function(
+        "document.querySelector('#dq-results')?.innerText.includes('malformed data-quality issue(s) omitted')",
+        timeout=10000,
+    )
+    check(
+        '2 malformed data-quality issue(s) omitted' in audit_page.locator('#dq-results').inner_text()
+        and audit_malformed_payload in audit_page.locator('#dq-results').inner_text()
+        and audit_page.locator('#dq-results svg').count() == 0
+        and not audit_page.evaluate('window.__xssFired === true'),
+        'data-quality scan omits malformed issue rows and renders valid hostile text inertly',
+    )
+
+    diagnostic_response_modes['backupIntegrityReport'] = 'invalid-snapshot'
+    audit_page.click('[data-act=bkintegrity]')
+    audit_page.wait_for_function(
+        "document.querySelector('#backup-integrity-results')?.getAttribute('role') === 'alert' && document.querySelector('#backup-integrity-results')?.innerText.includes('invalid response')",
+        timeout=10000,
+    )
+    check(
+        'undefined · PASS' not in audit_page.locator('#backup-integrity-results').inner_text()
+        and audit_page.locator('[data-act=bkintegrity]').is_enabled(),
+        'malformed backup snapshot fails closed and leaves inspection retryable',
+    )
+
+    diagnostic_response_modes['backupIntegrityReport'] = 'valid'
+    audit_page.click('[data-act=bkintegrity]')
+    audit_page.wait_for_function(
+        "document.querySelector('#backup-integrity-results')?.getAttribute('role') === 'status' && document.querySelector('#backup-integrity-results')?.innerText.startsWith('Inspected ')",
+        timeout=10000,
+    )
+    check(
+        'invalid response' not in audit_page.locator('#backup-integrity-results').inner_text().lower(),
+        'backup integrity inspection recovers after a valid report returns',
     )
     audit_page.close()
 
