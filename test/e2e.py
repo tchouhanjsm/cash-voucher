@@ -305,13 +305,14 @@ with sync_playwright() as p:
     )
     page.click('[data-act=bkintegrity]')
     page.wait_for_function(
-        "document.querySelector('#backup-integrity-results').innerText.includes('Backup integrity inspection failed.')"
+        "document.querySelector('#backup-integrity-results').getAttribute('role') === 'alert' && document.querySelector('#backup-integrity-results').innerText.includes('Backup integrity inspection returned an invalid response or failed.')"
     )
     check(
-        page.locator('#backup-integrity-results').get_attribute('role') == 'status'
-        and 'Backup integrity inspection failed.' in page.locator('#backup-integrity-results').inner_text()
+        page.locator('#backup-integrity-results').get_attribute('role') == 'alert'
+        and 'Backup integrity inspection returned an invalid response or failed.'
+        in page.locator('#backup-integrity-results').inner_text()
         and not page.locator('[data-act=bkintegrity]').is_disabled(),
-        'backup inspection failure is announced and the retry action is restored',
+        'backup inspection failure is announced as an alert and the retry action is restored',
     )
 
     status_fixture_ok = page.evaluate(
