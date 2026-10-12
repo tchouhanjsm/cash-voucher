@@ -795,6 +795,17 @@ with sync_playwright() as p:
         and pending_export_path is not None,
         'pending export downloads JSON',
     )
+    with open(pending_export_path, encoding='utf-8') as export_file:
+        pending_export = json.load(export_file)
+    check(
+        any(
+            record.get('entry', {}).get('vendor') == 'Offline Vendor'
+            and record.get('entry', {}).get('receipts')
+            and record['entry']['receipts'][0].get('data')
+            for record in pending_export.get('records', [])
+        ),
+        'offline receipt payload retains base64 data after preview URL cleanup',
+    )
 
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
