@@ -48,6 +48,7 @@ The active application uses HTML template strings for several views. The review 
 ### Navigation — `frontend/features/navigation.js`
 
 - Display name and role are escaped. Navigation labels, icons, keys and action markup are static constants.
+- Bootstrap data is untrusted even before it reaches a renderer: the vendor-list cache projection ignores non-record voucher members and accepts only string vendor names, so one malformed entry cannot abort refresh before the register can disclose it.
 - Keep navigation metadata in the source-controlled allowlist.
 
 ### Payments and receipt handling — `frontend/features/payments.js`
