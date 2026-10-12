@@ -262,3 +262,12 @@ The one PR must pass CI, Browser E2E, and Full Flight Test on the same final com
 **Target behavior:** distinguish whether voucher data is available from whether an individual response envelope is valid. When no voucher data is available, Dashboard and Register withhold totals, rows, charts, and CSV export. Copy identifies whether the app is offline or the server response was invalid. The refresh path remains available, and valid bootstrap data restores normal views. A valid empty array remains distinct and can still render genuine empty-state results.
 
 **Verification:** Browser E2E tampers with the bootstrap voucher envelope and simulates offline restart with an existing identity cache; it asserts that no KPI/chart/row/export is shown, then confirms online recovery. This is a UI integrity control; it does not validate or repair authoritative Sheet data and does not close live authorization, backup/restore, accessibility, or device-pilot gates.
+
+
+## Current implementation status — PR #101
+
+**PR #100 merged:** Dashboard and Register now distinguish unavailable voucher data from a genuine empty collection. Invalid bootstrap responses and offline startup without cached voucher rows withhold financial summaries, charts, Register rows/totals, and CSV export; valid data restores the normal views.
+
+**Next consolidated batch — PR #101: owner diagnostic contract integrity.** Validate the owner-only data-quality report envelope, summary counts and issue row shapes before rendering. Malformed individual issue rows are omitted with visible disclosure; an invalid report envelope fails closed and remains retryable. Apply strict validation to backup-integrity summary counts, snapshot records, row counts and nested checks; do not present malformed snapshot metadata as a successful inspection. Add Browser E2E coverage for malformed responses, inert hostile text, accessible failure status and recovery to valid responses. Keep this client-side guardrail separate from the actual Drive backup/restore operational gate.
+
+**Release boundary remains unchanged:** mock-backed test success does not verify the live Apps Script deployment, role/receipt permissions, scheduled backup contents, isolated restore, real-device offline/PWA behavior, assistive technology, or the controlled hotel pilot. Daily cash close and accounting/tax schema changes remain blocked on explicit owner/accountant decisions.
