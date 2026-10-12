@@ -150,7 +150,9 @@ export function createDashboard() {
     };
     const dataWarnings = [];
     if (!diagnostics.envelopeValid) {
-      dataWarnings.push('Voucher data is unavailable because the server response was invalid. Refresh and retry.');
+      dataWarnings.push(
+        'Voucher data is unavailable because the server response was invalid. Refresh and retry.',
+      );
     } else if (diagnostics.malformedRecordCount) {
       dataWarnings.push(
         `${diagnostics.malformedRecordCount} malformed voucher record(s) omitted from Dashboard and Register.`,
