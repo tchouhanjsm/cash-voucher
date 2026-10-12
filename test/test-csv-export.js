@@ -8,7 +8,15 @@ async function run() {
     'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
   const { csvCell, esc } = await import(moduleUrl);
 
-  for (const value of ['=SUM(1,1)', '+cmd', '-cmd', '@cmd', '\t=cmd', '\r=cmd', '\n=cmd']) {
+  for (const value of [
+    '=SUM(1,1)',
+    '+cmd',
+    '-cmd',
+    '@cmd',
+    '\t=cmd',
+    '\r=cmd',
+    '\n=cmd',
+  ]) {
     assert.match(
       csvCell(value),
       /^"'/,
