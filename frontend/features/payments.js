@@ -384,7 +384,7 @@ export function createPayments({ api, refresh }) {
           : records.length + ' queued entries (' + parts.join(', ') + ')';
       };
 
-      if (!visible.length && !errMsg) return b.classList.add('hidden');
+      if (!visible.length && !errMsg && !S.offlineMode) return b.classList.add('hidden');
 
       const messages = [];
       if (pending.length) {
@@ -449,17 +449,28 @@ export function createPayments({ api, refresh }) {
             ' need account confirmation before upload',
         );
       }
+      if (S.offlineMode) {
+        messages.unshift(
+          'Offline workspace — server vouchers are unavailable. New entries stay on this device until you sign in online.',
+        );
+      }
       if (errMsg) messages.push(errMsg);
 
-      b.className = 'banner' + (errMsg || failed.length || unbound.length ? ' err' : '');
+      b.className =
+        'banner' + (S.offlineMode || errMsg || failed.length || unbound.length ? ' err' : '');
       b.innerHTML =
         '<span>' +
         messages.map((message) => esc(message)).join('<br>') +
         '</span>' +
         failedReview +
-        (pending.length ? '<button class="btn sm" data-act="flush">Retry now</button>' : '') +
+        (pending.length && S.token
+          ? '<button class="btn sm" data-act="flush">Retry now</button>'
+          : '') +
         (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
         '<button class="btn sm" data-act="import-pending">Import</button>' +
+        (S.offlineMode && !S.token
+          ? '<button class="btn sm" data-act="reconnect-signin">Sign in to sync</button>'
+          : '') +
         (owned.length
           ? '<button class="btn sm danger" data-act="discard">Clear my queued entries</button>'
           : '');
