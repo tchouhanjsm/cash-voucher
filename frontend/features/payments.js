@@ -198,6 +198,7 @@ export function createPayments({ api, refresh }) {
     const row = e.target.closest('.erow');
     if (!row) return;
     const files = [...e.target.files];
+    const revision = row._receiptRevision;
     e.target.value = '';
 
     for (const file of files) {
@@ -206,7 +207,6 @@ export function createPayments({ api, refresh }) {
         break;
       }
       try {
-        const revision = row._receiptRevision;
         const receipt = await compress(file);
         if (!row.isConnected || !$('#rows')?.contains(row) || row._receiptRevision !== revision) {
           revokePreviewUrl(receipt.preview);
