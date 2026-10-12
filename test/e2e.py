@@ -1371,6 +1371,15 @@ with sync_playwright() as p:
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
     check('1 ready' in page.inner_text('#bprev').replace('\n', ' '), 'receipt import row is ready')
+    check(
+        'Import 1 cash receipt' in page.locator('#bprev').inner_text(),
+        'receipt import action uses the correct singular label',
+    )
+    check(
+        page.locator('#bprog').get_attribute('role') == 'status'
+        and page.locator('#bprog').get_attribute('aria-live') == 'polite',
+        'bulk import progress has an accessible status announcement',
+    )
     page.click('[data-act=import]')
     page.wait_for_function("document.querySelector('#bprev .ok-panel')?.innerText.includes('Imported 1 cash receipts')")
     check(
