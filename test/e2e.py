@@ -1946,11 +1946,24 @@ with sync_playwright() as p:
                     'date': {'toString': None, 'valueOf': None},
                     'voucherNo': {'toString': None, 'valueOf': None},
                     'type': {'toString': None, 'valueOf': None},
-                    'vendor': {'toString': None, 'valueOf': None},
+                    'vendor': 'MALFORMED_REPORT_ROW_MARKER',
                     'category': {'toString': None, 'valueOf': None},
                     'notes': {'toString': None, 'valueOf': None},
                     'amount': {'toString': None, 'valueOf': None},
                     'status': {'toString': None, 'valueOf': None},
+                },
+                {
+                    'id': 'malformed-report-amount',
+                    'date': datetime.date.today().isoformat(),
+                    'voucherNo': '999',
+                    'type': 'PAYMENT',
+                    'vendor': 'MALFORMED_AMOUNT_ROW_MARKER',
+                    'category': 'General',
+                    'notes': '',
+                    'amount': '125.00',
+                    'status': 'ACTIVE',
+                    'cancelReason': '',
+                    'createdBy': 'owner@test.com',
                 },
             ])
             payload['data'] = summary
@@ -1965,12 +1978,15 @@ with sync_playwright() as p:
     ):
         page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
-        "document.querySelector('#view').innerText.includes('2 malformed report row(s) omitted')"
+        "document.querySelector('#view').innerText.includes('4 malformed report row(s) omitted')"
     )
+    report_text = page.locator('#view').inner_text()
     check(
-        '2 malformed report row(s) omitted' in page.locator('#view').inner_text()
+        '4 malformed report row(s) omitted' in report_text
+        and 'MALFORMED_REPORT_ROW_MARKER' not in report_text
+        and 'MALFORMED_AMOUNT_ROW_MARKER' not in report_text
         and page.locator('#view svg, #view img').count() == 0,
-        'report skips malformed non-row entries, sanitizes object-valued fields, and discloses omissions',
+        'report omits null, primitive, wrong-field-type and nonnumeric-amount rows with a visible count',
     )
     page.unroute('**/api?*', tamper_report_rows)
     with page.expect_response(

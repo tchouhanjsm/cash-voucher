@@ -75,7 +75,8 @@ The active application uses HTML template strings for several views. The review 
 ### Recorded movement report — `frontend/features/reports.js`
 
 - The report response must be an object with an `items` array. An invalid envelope clears stale result rows and shows a recoverable error with Retry rather than crashing the result renderer.
-- Non-record members of the `items` array are omitted and counted in a visible status message. Scalar fields are normalized before formatting, including date handling and CSV export; object-valued fields cannot trigger unsafe coercion at text sinks.
+- Each row must have string-shaped text fields, a supported `PAYMENT / RECEIPT` type, a supported `ACTIVE / CANCELLED` status, and a finite non-negative numeric amount before normalization/rendering/export. Rows with malformed members or field shapes are omitted and counted visibly instead of being normalized into apparently valid blank rows.
+- The renderer escapes fields at HTML text sinks; output escaping remains distinct from validating the report data contract.
 - These checks improve resilience at the client rendering boundary. They do not validate or repair the authoritative Sheet records.
 
 ### Printing — `frontend/features/printing.js`
@@ -232,3 +233,10 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Require the server response to be an array and validate the five string fields emitted by `auditLog_()` (`time`, `user`, `action`, `target`, `details`) before records reach filters or rendering. Omit malformed rows with a visible count; show an explicit unavailable state for an invalid response envelope and preserve the distinct valid-empty-list state. CSV export also reports when the source response is unavailable.
 - Browser E2E covers malformed members, an object-valued hostile field, a hostile but valid text record, invalid envelope, valid empty array, and recovery to a normal response. It verifies inert rendering and the visible state/counts.
 - No backend/API schema, authorization, persisted data, dependency, or deployment changes. The complete active-renderer audit and real deployment/backup/restore checks remain open.
+
+## PR #97 — Reject malformed report-row field types
+
+- **Confirmed report-integrity defect:** the report validated only that each item was an object. An object-valued field (or a string amount) was then normalized to an empty value while the row remained in the table, without increasing the malformed-row count. This could hide malformed source data behind a plausible report row and make the displayed rows/CSV disagree with what the API returned.
+- Validate the backend report projection before normalization: expected text fields must be strings, type and status must be from the backend's supported enums, and amount must be a finite non-negative number. Omit invalid rows and disclose the full malformed-row count while preserving valid rows; the backend/API contract and summary accounting are unchanged.
+- Browser E2E injects null and primitive members, object-valued row fields with a visible marker, and a string-valued amount row. It asserts all are counted and omitted, and the report recovers to unmodified results after the route interception is removed.
+- No backend/schema, permission, persisted data, dependency, or deployment changes. The complete active-renderer inventory and live Apps Script/backup/restore checks remain open.
