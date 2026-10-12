@@ -245,7 +245,7 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 
 - Queue failure details remain inserted through the existing escaped HTML path; the new client ID action attribute is escaped and resolved through the delegated action registry, not evaluated as markup or script.
 - Removing a rejected device-local entry is explicit and owner-bound. The complete recovery queue is exported before confirmation, and the IndexedDB operation rechecks both the `failed` status and matching account key before deleting only that one row. Other account bindings and non-failed queue entries are not eligible for this action.
-- Register now distinguishes an invalid bootstrap envelope from a real empty collection without offering the misleading first-entry empty-state guidance. Report state clears before a replacement request and exposes retry feedback; report rows continue through strict shape validation and escaped output.
+- Register now distinguishes an invalid bootstrap envelope from a real empty collection without offering the misleading first-entry empty-state guidance. A reversed Register date range presents a specific error, withholds totals, and disables CSV export until corrected. Report state clears before a replacement request and exposes retry feedback; report rows continue through strict shape validation and escaped output. The Register total itself is not a live region, avoiding repeated long announcements on every search keystroke.
 - This is a scoped review of changed sinks and recovery controls, not completion of the full dynamic-HTML sink inventory or a general security certification.
 
 ## PR #98 — Shared bootstrap voucher integrity across Dashboard and Register
