@@ -7,11 +7,11 @@
 
 ## Current phase
 
-**PR #88 — Receipt preview resource-lifecycle cleanup**  
+**PR #88 — Receipt preview lifecycle cleanup**  
 Branch: `security/bulk-receipt-preview-lifecycle`  
 Base: `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`
 
-Scope: release generated receipt preview object URLs on clear, row removal, successful online/offline save, form replacement and SPA navigation; revoke URLs produced after an asynchronous compression finishes for a detached row. Add browser regression coverage for the principal cleanup paths. Keep this as a resource-lifecycle fix, not a claim of full XSS certification.
+Scope: release receipt preview object URLs on clear, row removal, online/offline save, form replacement and navigation; handle compression completing after a row is detached or its receipt set is cleared. Browser E2E instruments object URLs and covers these lifecycle paths. PR #87 is merged at this base; its exact tested head passed CI, Browser E2E (181 checks) and Full Flight Test (129 backend + 181 browser checks).
 
 Adopt three distinct sources of information:
 
