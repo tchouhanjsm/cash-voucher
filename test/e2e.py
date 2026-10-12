@@ -1283,6 +1283,7 @@ with sync_playwright() as p:
 
     # Prototype-named user data must be ordinary aggregation keys, not Object properties.
     prototype_group_values = ['constructor', '__proto__', 'toString', 'hasOwnProperty']
+    invalid_vendor_envelope = False
 
     def tamper_dashboard_groups(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -1324,24 +1325,27 @@ with sync_playwright() as p:
                 })
                 vouchers.append(entry)
             data['vouchers'] = vouchers
-            vendors = data.get('vendors', [])
-            if isinstance(vendors, list):
-                vendors.extend([
-                    None,
-                    {
-                        'id': 'malformed-vendor-option',
-                        'name': {'toString': None, 'valueOf': None},
-                        'active': True,
-                    },
-                    {
-                        'id': 'malformed-vendor-company',
-                        'name': 'Bad Metadata Vendor',
-                        'company': {'toString': None, 'valueOf': None},
-                        'mobile': '123',
-                        'active': True,
-                    },
-                ])
-                data['vendors'] = vendors
+            if invalid_vendor_envelope:
+                data['vendors'] = {'unexpected': 'not a vendor list'}
+            else:
+                vendors = data.get('vendors', [])
+                if isinstance(vendors, list):
+                    vendors.extend([
+                        None,
+                        {
+                            'id': 'malformed-vendor-option',
+                            'name': {'toString': None, 'valueOf': None},
+                            'active': True,
+                        },
+                        {
+                            'id': 'malformed-vendor-company',
+                            'name': 'Bad Metadata Vendor',
+                            'company': {'toString': None, 'valueOf': None},
+                            'mobile': '123',
+                            'active': True,
+                        },
+                    ])
+                    data['vendors'] = vendors
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -1431,6 +1435,17 @@ with sync_playwright() as p:
         and page.locator('#view img, #view svg').count() == 0,
         'vendor list omits malformed names and contact metadata without rendering unsafe markup',
     )
+    invalid_vendor_envelope = True
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.click('[data-v=vend]')
+    page.wait_for_selector('#vf')
+    check(
+        'Vendor data is unavailable because the server response was invalid.' in page.locator('#view').inner_text()
+        and 'No vendors yet' not in page.locator('#view').inner_text(),
+        'non-array vendor response is disclosed instead of looking like a genuinely empty list',
+    )
+    invalid_vendor_envelope = False
     page.unroute('**/api?*', tamper_dashboard_groups)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
