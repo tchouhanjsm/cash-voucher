@@ -293,6 +293,7 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Standard unit tests cover normal, duplicate, whitespace-only, malformed-container and hostile-member cases. Browser E2E exercises the Settings textarea and payment/receipt option paths with a mixed hostile category list and an object-valued receipt-category container.
 - This is client display-option resilience. It does not loosen backend category validation, rewrite stored settings or vouchers, or complete the active HTML/DOM rendering-sink inventory.
 
+
 ## PR #105 — Strict offline recovery contract and legacy migration boundary
 
 - **Confirmed resilience gap:** the recovery importer used `String(...)` for client IDs, account bindings, date values and receipt MIME fields from a user-selected JSON file. A plain JSON object with own `toString: null` / `valueOf: null` fields could throw during validation. The same checks lived only in the UI; `offlineQueue.restore()` revalidated only a subset of payment fields before writing to IndexedDB. Legacy localStorage migration also coerced an existing client ID before checking that it was a string.

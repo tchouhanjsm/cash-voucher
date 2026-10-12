@@ -69,11 +69,7 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
     ids.add(clientId);
 
     const ownerValue = record.ownerKey;
-    if (
-      ownerValue !== undefined &&
-      ownerValue !== null &&
-      typeof ownerValue !== 'string'
-    ) {
+    if (ownerValue !== undefined && ownerValue !== null && typeof ownerValue !== 'string') {
       throw new Error('Recovery file contains an invalid account binding.');
     }
     const sourceOwner = typeof ownerValue === 'string' ? ownerValue.trim() : '';
@@ -124,8 +120,7 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
       throw new Error('Recovery file contains invalid category or note data.');
     }
 
-    const sourceReceipts =
-      entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
+    const sourceReceipts = entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
     if (!Array.isArray(sourceReceipts) || sourceReceipts.length > 3) {
       throw new Error('Recovery file contains an invalid receipt list.');
     }

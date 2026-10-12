@@ -325,10 +325,8 @@ function addRecordsSafely_(incoming, allowLegacyBinding = false) {
                 return;
               }
 
-              const previousOwner =
-                typeof previous.ownerKey === 'string' ? previous.ownerKey : '';
-              const incomingOwner =
-                typeof record.ownerKey === 'string' ? record.ownerKey : '';
+              const previousOwner = typeof previous.ownerKey === 'string' ? previous.ownerKey : '';
+              const incomingOwner = typeof record.ownerKey === 'string' ? record.ownerKey : '';
 
               if (previousOwner !== incomingOwner) {
                 if (allowLegacyBinding && !previousOwner && incomingOwner) {

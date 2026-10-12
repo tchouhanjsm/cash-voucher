@@ -3,16 +3,7 @@ import { catOpts, vendorList } from '../core/form-options.js';
 import { offlineQueue } from '../core/offline-queue.js';
 import { S, vno } from '../core/state.js';
 import { busy, fail, head, toast } from '../core/ui.js';
-import {
-  addDays,
-  compress,
-  esc,
-  money,
-  parseAmt,
-  scalarText,
-  today,
-  uid,
-} from '../core/utils.js';
+import { addDays, compress, esc, money, parseAmt, scalarText, today, uid } from '../core/utils.js';
 import { validateRecoveryRecords } from '../core/recovery-validation.js';
 
 export function createPayments({ api, refresh }) {
@@ -29,8 +20,7 @@ export function createPayments({ api, refresh }) {
   }
 
   function queueOwnerKey() {
-    const email =
-      typeof S.me?.email === 'string' ? S.me.email.trim().toLowerCase() : '';
+    const email = typeof S.me?.email === 'string' ? S.me.email.trim().toLowerCase() : '';
     const endpoint = typeof S.url === 'string' ? S.url.trim() : '';
     if (!email || !endpoint) return '';
 
@@ -669,11 +659,7 @@ export function createPayments({ api, refresh }) {
           const ownerKey = queueOwnerKey();
           if (!ownerKey) throw new Error('Sign in before restoring pending payments.');
 
-          const validation = validateRecoveryRecords(
-            payload.records,
-            ownerKey,
-            addDays(today(), 1),
-          );
+          const validation = validateRecoveryRecords(payload.records, ownerKey, addDays(today(), 1));
           const unboundCount = validation.unboundCount;
           const accountName = scalarText(S.me?.email) || 'the signed-in account';
           const confirmation = unboundCount
