@@ -11,7 +11,7 @@
 Branch: `resilience/register-report-malformed-data`  
 Base: `4ea8c478be7ce33d5b54b098bff3f0f523fc6d33`
 
-Scope: guard register filtering/rendering against malformed voucher records, null/non-string vendor and note values, and missing/non-array receipt metadata; validate the recorded-movement report envelope; sanitize report-row fields and explicitly disclose dropped non-record entries. Add browser E2E coverage for malformed rows, safe receipt recovery, invalid report response recovery and normal-path restoration. Preserve server authorization, API/Sheet schema and accounting semantics. No deployment or production data changes.
+Scope: guard bootstrap's local vendor-cache projection against malformed voucher entries/labels; harden register filtering/rendering against malformed voucher records, null/non-string vendor and note values, and missing/non-array receipt metadata; validate the recorded-movement report envelope; sanitize report-row fields and explicitly disclose dropped non-record entries. Add browser E2E coverage for malformed rows, safe receipt recovery, invalid report response recovery and normal-path restoration. Preserve server authorization, API/Sheet schema and accounting semantics. No deployment or production data changes.
 
 **Acceptance gate:** code and test review at the final diff; exact final PR head must pass CI, Browser E2E and Full Flight Test. The live PR page is authoritative for the current head and workflow status. Owner reviews and merges.
 
