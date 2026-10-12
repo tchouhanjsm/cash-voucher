@@ -166,3 +166,11 @@ Before considering this batch ready for review, the CI quality gate and Browser 
   presentation-only and are not submitted to the API.
 - This is resource cleanup, not receipt authorization or input-content validation. Backend receipt
   permissions and live Google deployment behavior remain separate verification gates.
+
+
+## PR #89 — Finite monetary rendering and aggregate integrity
+
+- **Confirmed data-integrity gap:** dashboard summary totals, team/vendor/category aggregates and register paid/received totals still added API/bootstrap amounts directly, even though the dashboard trend/chart geometry already filtered non-finite values. A malformed amount could poison summary totals or produce `NaN`/`Infinity` in money labels.
+- Add shared finite-amount and sum helpers. Monetary formatting displays an em dash for non-finite values; dashboard/register calculations exclude invalid amounts from aggregates, and visible status text discloses that active invalid amounts were excluded. Source vouchers are not modified, and this does not certify backend ledger correctness.
+- Browser E2E tampers with bootstrap amounts including `NaN`, `Infinity`, a hostile string and valid numeric values. It checks finite dashboard monetary text, the explicit exclusion notice, bounded chart geometry, and register totals with the same malformed records.
+- Report summary totals and payment-save confirmations also use the shared formatter, so non-finite values display as an em dash rather than `NaN`/`Infinity`. CSV/API contracts and persisted records are unchanged.
