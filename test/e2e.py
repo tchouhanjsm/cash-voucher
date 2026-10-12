@@ -601,6 +601,7 @@ with sync_playwright() as p:
     )
 
     offline_create_requests = []
+    offline_sync_actions = []
 
     def track_offline_create(request):
         if request.method != 'POST':
@@ -609,6 +610,8 @@ with sync_playwright() as p:
             action = json.loads(request.post_data or '{}').get('action')
         except (TypeError, ValueError):
             return
+        if action in ('login', 'bootstrap', 'createVouchers'):
+            offline_sync_actions.append(action)
         if action == 'createVouchers':
             offline_create_requests.append(request.url)
 
@@ -657,6 +660,7 @@ with sync_playwright() as p:
     )
     check(
         offline_create_requests == []
+        and offline_sync_actions == []
         and '1 payment waiting to upload' in page.locator('#banner').inner_text(),
         'offline-unlocked save makes no server create request and exposes pending queue status',
     )
@@ -681,13 +685,13 @@ with sync_playwright() as p:
     )
     check(
         len(offline_create_requests) == 0
+        and offline_sync_actions == []
         and len(still_queued) == 1
         and still_queued[0]['status'] == 'pending'
         and page.evaluate("!localStorage.getItem('cv.token')")
         and 'Offline workspace' in page.locator('#banner').inner_text(),
         'network recovery alone does not upload local-only entries before online authentication',
     )
-    page.remove_listener('request', track_offline_create)
     page.click('#banner [data-act=reconnect-signin]')
     page.wait_for_selector('#loginForm', timeout=8000)
     page.fill('#lEmail', 'owner@test.com')
@@ -723,6 +727,19 @@ with sync_playwright() as p:
         page.evaluate("!!localStorage.getItem('cv.token')"),
         'offline-unlocked queue entry synchronizes only after online authentication',
     )
+    required_sync_actions = ['login', 'bootstrap', 'createVouchers']
+    check(
+        all(action in offline_sync_actions for action in required_sync_actions)
+        and [
+            offline_sync_actions.index(action)
+            for action in required_sync_actions
+        ] == sorted(
+            offline_sync_actions.index(action)
+            for action in required_sync_actions
+        ),
+        'online login, server bootstrap and voucher upload occur in order before queue drain',
+    )
+    page.remove_listener('request', track_offline_create)
 
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
