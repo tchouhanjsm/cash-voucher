@@ -552,8 +552,6 @@ with sync_playwright() as p:
     )
 
     # Leaving an unsaved entry must release previews even though no save occurs.
-    page.click('[data-act=newagain]')
-    page.wait_for_selector('#nf')
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_selector('.thumb')
     abandoned_preview_url = page.locator('.thumb').first.get_attribute('src')
