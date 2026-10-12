@@ -204,8 +204,12 @@ export function createRegister({ api, go }) {
 
   function render() {
     const vouchers = voucherRows();
-    const vendors = [...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean))].sort();
-    const users = [...new Set(vouchers.map((voucher) => scalarText(voucher.createdBy)).filter(Boolean))];
+    const vendors = [
+      ...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean)),
+    ].sort();
+    const users = [
+      ...new Set(vouchers.map((voucher) => scalarText(voucher.createdBy)).filter(Boolean)),
+    ];
 
     $('#view').innerHTML =
       head('Payment Register', refreshBtn) +
@@ -290,7 +294,7 @@ export function createRegister({ api, go }) {
       filtered().map((voucher) => [
         voucherNo(voucher),
         isIn(voucher) ? 'Received' : 'Payment',
-        dmy(voucher.date),
+        dmy(scalarText(voucher.date)),
         scalarText(voucher.vendor),
         scalarText(voucher.category),
         scalarText(voucher.notes),
