@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Current review baseline:** `cf1ae45363d9ba7126be722388dcf7c75a45ffd3` (PR #100 merge)  
+**Current review baseline:** `8dd0c0b9d53e1e22f5449f214ddcabf5601b1043` (PR #101 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -264,10 +264,16 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E covers an invalid server envelope and the offline cached-session restart path, including unavailable copy, withheld totals/charts/rows/export, and the existing valid-response recovery path.
 - No accounting formula, backend/API schema, authorization, dependency, persistence, deployment, or production data changes. This narrows a data-availability ambiguity; it does not certify the complete stored-XSS sink inventory or replace live Sheet validation.
 
-## PR #101 — Scalar-only HTML escaping for malformed JSON values
+## PR #101 — Fail closed on malformed owner diagnostic responses
 
-- **Confirmed active sink failure:** `frontend/core/utils.js` implemented `esc(value)` by calling `String(value)` for every non-null input. HTML escaping itself could throw for an object deserialized from JSON with non-callable own `toString` and `valueOf` properties. The Settings renderer passes bootstrap-sourced numeric settings through this helper before inserting them into quoted `value` attributes; a malformed object could therefore break the view before the escaping boundary completed.
-- The shared escape helper now accepts primitive string, number, boolean, and bigint values and maps arrays, objects, and other non-scalar values to an empty string before replacing HTML metacharacters. It does not invoke attacker-controlled object coercion hooks. This is a rendering boundary, not validation of authoritative settings or a replacement for per-field schema validation.
-- Unit regression cases preserve normal escaping and CSV helper behavior while covering hostile text and objects with non-callable or text-valued coercion properties.
-- Browser E2E extends the active Settings HTML-attribute regression to send normal hostile strings and then JSON objects with non-callable coercion hooks. It asserts Settings remains available, numeric inputs remain present, and no injected image/SVG nodes or payload execution occur.
-- Scope remains limited to scalar output encoding and tests/docs. No API schema, authorization, settings persistence, dependency, deployment, or production data changes. The broader active sink inventory and live operational checks remain open; this is a targeted hardening, not full XSS certification.
+- **Confirmed API-boundary resilience gap:** the Settings data-quality scan assumed the response contained numeric summary fields and an issues array of records with string fields; a malformed envelope or issue could throw during rendering. The backup-integrity scan likewise trusted the snapshot list, summary counts, nested row-count map and per-snapshot checks.
+- Validate the data-quality summary contract and each issue record before display. Omit malformed issue rows with a visible count; invalid summary envelopes fail closed with an accessible alert and a retryable scan. Keep the issue table DOM-only with textContent, including hostile but valid string values.
+- Validate backup-integrity summaries and every snapshot/check shape before rendering. If the report is malformed or summary counts do not reconcile with snapshot states, show a generic accessible error instead of partial or zero-like success data; keep inspection retryable and clear the error after a valid response.
+- Browser E2E tampers with both active API responses, asserts malformed records cannot create markup, and verifies recovery on valid responses. These are client-side response-integrity guardrails; they do not prove that Drive backups are complete or restorable, and they do not close the wider dynamic-HTML sink inventory or certify the live deployment.
+
+## PR #102 — Scalar-only HTML and CSV output conversion
+
+- The initial CI failure was formatting-only: Prettier rejected `frontend/core/utils.js` and `test/test-csv-export.js`. The earlier Browser E2E success did not override the failed quality gate or Full Flight Test.
+- The shared scalar conversion boundary allows strings and supported primitive values only. Objects, arrays and symbols return empty output before any property access or coercion, avoiding hostile `toString`, `valueOf`, getters or `Symbol.toPrimitive` hooks at both HTML escaping and CSV cell output.
+- Preserve context-appropriate HTML entity encoding, CSV double-quote escaping and formula/control-prefix neutralization. Unit coverage includes supported primitives, hostile strings, non-scalar values and throwing coercion hooks; Browser E2E verifies malformed object-valued Settings fields remain blank, keep the view functional and cannot inject markup.
+- This narrows the shared output-boundary risk; it does not validate authoritative source records, replace field-level API validation, complete the active `innerHTML` inventory, or certify production deployment/backup restore.
