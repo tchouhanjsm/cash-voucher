@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `32b7dd23b857aa933b87613d2504e293824d7590` (PR #103 merge)  
-**Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
+**Verified `main` SHA:** `4c80fa5a94588a8e5f8fd56a830b58cd26548cc0` (PR #104 merge)  
+**Purpose:** single current-state handoff. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #104 — Harden category option lists against malformed Settings data**  
-Branch: `security/category-options-shape-hardening`  
-Base: `32b7dd23b857aa933b87613d2504e293824d7590`
+**PR #105 — Harden offline recovery validation and legacy migration**  
+Branch: `security/offline-recovery-validation`  
+Base: `4c80fa5a94588a8e5f8fd56a830b58cd26548cc0`
 
-Scope: normalize `settings.categories` and `settings.receiptCategories` at the shared state boundary. Only non-empty strings reach active form option builders; duplicates are removed while configured order is preserved. Non-array or all-invalid values fail safely to `Other`. Add unit and Browser E2E coverage for malformed nested values and preserve normal category behavior. No backend/API schema, authorization, accounting, deployment or production-data change.
+Scope: enforce a strict scalar-only schema for version-1 offline recovery records at both the user-selected file boundary and the IndexedDB restore boundary. Remove coercive conversion of IDs, account bindings and receipt MIME metadata; validate payment type/date/vendor/amount/category/notes/receipt fields; cap record and receipt payload sizes; whitelist fields passed to the queue; and fail closed on malformed legacy IDs or persisted queue account bindings without deleting recovery data. Add pure unit coverage and browser tests proving malformed files cannot mutate the queue, while valid duplicate/conflict/account-binding/idempotency flows stay intact. No backend/API schema, authorization, accounting formula, deployment or production-data change.
 
-**Last completed:** PR #103 — [Guard DOM text sinks against malformed bootstrap scalars](https://github.com/tchouhanjsm/cash-voucher/pull/103), merged at `32b7dd23b857aa933b87613d2504e293824d7590`. Exact tested PR head `711c09ef75a88f0268c141fd2c362f034123cd48` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38247353821) (129 backend checks, 19 contrast pairs and quality gates), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38247353711) (243 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38247353656) (129 backend + 243 browser checks).
+**Last completed:** PR #104 — [Harden category option lists against malformed settings](https://github.com/tchouhanjsm/cash-voucher/pull/104), merged at `4c80fa5a94588a8e5f8fd56a830b58cd26548cc0`. Exact tested PR head `a42f84d076b2f651a421870dd5325136864886e4` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38252295052) (129 backend checks, 19 contrast checks and quality gates), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38252294971) (246 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38252294972) (129 backend + 246 browser checks).
 
-**Acceptance gate:** PR #104 must pass CI, Browser E2E and Full Flight Test on the same exact final head. Owner review/merge remain required. The complete active rendering-sink inventory and all live Google authorization, backup/restore, real-device/offline, accessibility and controlled-pilot gates remain open.
+**Acceptance gate:** PR #105 must pass CI, Browser E2E and Full Flight Test on the same exact final head. Owner review/merge remain required. The full dynamic-rendering sink inventory, live Google authorization, scheduled backup observation and witnessed isolated restore, real-device/PWA/offline, assisted-technology validation and controlled-pilot gates remain open.
 
 **PR #101 — Fail closed on malformed owner diagnostic responses**  
 Branch: `product/admin-diagnostics-integrity`  

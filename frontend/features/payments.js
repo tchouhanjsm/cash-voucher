@@ -3,7 +3,17 @@ import { catOpts, vendorList } from '../core/form-options.js';
 import { offlineQueue } from '../core/offline-queue.js';
 import { S, vno } from '../core/state.js';
 import { busy, fail, head, toast } from '../core/ui.js';
-import { addDays, compress, esc, money, parseAmt, today, uid } from '../core/utils.js';
+import {
+  addDays,
+  compress,
+  esc,
+  money,
+  parseAmt,
+  scalarText,
+  today,
+  uid,
+} from '../core/utils.js';
+import { validateRecoveryRecords } from '../core/recovery-validation.js';
 
 export function createPayments({ api, refresh }) {
   let NT = 'PAYMENT';
@@ -19,10 +29,9 @@ export function createPayments({ api, refresh }) {
   }
 
   function queueOwnerKey() {
-    const email = String(S.me?.email || '')
-      .trim()
-      .toLowerCase();
-    const endpoint = String(S.url || '').trim();
+    const email =
+      typeof S.me?.email === 'string' ? S.me.email.trim().toLowerCase() : '';
+    const endpoint = typeof S.url === 'string' ? S.url.trim() : '';
     if (!email || !endpoint) return '';
 
     try {
@@ -660,108 +669,13 @@ export function createPayments({ api, refresh }) {
           const ownerKey = queueOwnerKey();
           if (!ownerKey) throw new Error('Sign in before restoring pending payments.');
 
-          if (!payload.records.length) {
-            throw new Error('Recovery file contains no pending payments.');
-          }
-
-          if (payload.records.length > 500) {
-            throw new Error('Recovery file exceeds the 500-payment limit.');
-          }
-
-          const ids = new Set();
-
-          payload.records.forEach((record) => {
-            const clientId = String(record?.clientId || '').trim();
-            const entry = record?.entry;
-            const recordOwner = String(record?.ownerKey || '').trim();
-
-            if (recordOwner && recordOwner !== ownerKey) {
-              throw new Error(
-                'Recovery file is bound to another endpoint or user; restore it while signed in ' +
-                  'to the matching account.',
-              );
-            }
-
-            if (
-              !clientId ||
-              clientId.length > 60 ||
-              [...clientId].some((character) => {
-                const code = character.charCodeAt(0);
-                return code <= 31 || code === 127;
-              })
-            ) {
-              throw new Error('Recovery file contains an invalid payment ID.');
-            }
-
-            if (ids.has(clientId)) {
-              throw new Error('Recovery file contains duplicate payment IDs.');
-            }
-            ids.add(clientId);
-
-            if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-              throw new Error('Recovery file contains a payment with invalid details.');
-            }
-
-            if (String(entry.clientId || '').trim() !== clientId) {
-              throw new Error('Recovery file payment IDs do not match their details.');
-            }
-
-            const dateText = String(entry.date || '');
-            const parsedDate = new Date(dateText + 'T00:00:00Z');
-            const dateShapeValid =
-              dateText.length === 10 &&
-              dateText[4] === '-' &&
-              dateText[7] === '-' &&
-              [...dateText.slice(0, 4), ...dateText.slice(5, 7), ...dateText.slice(8)].every(
-                (character) => character >= '0' && character <= '9',
-              );
-            if (
-              !dateShapeValid ||
-              dateText < '2000-01-01' ||
-              dateText > addDays(today(), 1) ||
-              Number.isNaN(parsedDate.getTime()) ||
-              parsedDate.toISOString().slice(0, 10) !== dateText
-            ) {
-              throw new Error('Recovery file contains an invalid payment date.');
-            }
-
-            if (
-              !['PAYMENT', 'RECEIPT'].includes(entry.type) ||
-              typeof entry.vendor !== 'string' ||
-              !entry.vendor.trim() ||
-              entry.vendor.length > 200
-            ) {
-              throw new Error('Recovery file contains an invalid payment type or vendor.');
-            }
-
-            const amount = Number(entry.amount);
-            if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) {
-              throw new Error('Recovery file contains an invalid payment amount.');
-            }
-
-            const receipts = entry.receipts === undefined ? [] : entry.receipts;
-            if (!Array.isArray(receipts) || receipts.length > 3) {
-              throw new Error('Recovery file contains an invalid receipt list.');
-            }
-
-            receipts.forEach((receipt) => {
-              if (
-                !receipt ||
-                !['image/jpeg', 'image/png', 'image/webp'].includes(String(receipt.mime || '')) ||
-                typeof receipt.data !== 'string' ||
-                receipt.data.length === 0 ||
-                receipt.data.length > 2200000 ||
-                !/^[A-Za-z0-9+/]+={0,2}$/.test(receipt.data)
-              ) {
-                throw new Error('Recovery file contains an invalid or oversized receipt.');
-              }
-            });
-          });
-
-          const unboundCount = payload.records.filter(
-            (record) => !String(record?.ownerKey || '').trim(),
-          ).length;
-          const accountName = String(S.me?.email || 'the signed-in account');
+          const validation = validateRecoveryRecords(
+            payload.records,
+            ownerKey,
+            addDays(today(), 1),
+          );
+          const unboundCount = validation.unboundCount;
+          const accountName = scalarText(S.me?.email) || 'the signed-in account';
           const confirmation = unboundCount
             ? 'This recovery file contains ' +
               unboundCount +
@@ -784,7 +698,7 @@ export function createPayments({ api, refresh }) {
             );
           }
 
-          const result = await offlineQueue.restore(payload.records, ownerKey);
+          const result = await offlineQueue.restore(validation.records, ownerKey);
           await showBanner();
           announceOutboxChange('changed');
           toast(
