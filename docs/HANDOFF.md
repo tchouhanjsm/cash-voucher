@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `5c229112ea500f544258d5bfb65fc2212be3c4a5` (PR #95 merge)  
+**Verified `main` SHA:** `f3b937c723336ced690cea1c3a50020de853f6f5` (PR #96 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #96 — [Validate audit-log response envelopes and row fields](https://github.com/tchouhanjsm/cash-voucher/pull/96)** (open, awaiting review)  
-Branch: `resilience/audit-log-envelope-validation`  
-Base: `5c229112ea500f544258d5bfb65fc2212be3c4a5`
+**PR #97 — Validate Recorded Movement Report row field types** (awaiting review)  
+Branch: `resilience/report-row-schema-validation`  
+Base: `f3b937c723336ced690cea1c3a50020de853f6f5`
 
-Scope: require a valid `auditLog` array envelope and string-shaped event fields, visibly omit malformed records, distinguish invalid response from genuine empty history, and cover recovery in Browser E2E. No backend/API schema, authorization, accounting, or deployment changes.
+Scope: validate report row text fields, supported type/status values, and finite non-negative numeric amounts before rows are normalized, shown, or exported; visibly count and omit invalid rows, with a browser regression for malformed fields and recovery. No backend/API schema, authorization, accounting, or deployment changes.
 
-**Last completed:** PR #95 — [Administration user-list resilience](https://github.com/tchouhanjsm/cash-voucher/pull/95), merged at `5c229112ea500f544258d5bfb65fc2212be3c4a5`. Exact tested head `88734d663a11c1b33707d08e853f31932a92fc6c` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38207828181) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38207828090) (215 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38207828118) (129 backend + 215 browser checks).
+**Last completed:** PR #96 — [Audit-log response validation](https://github.com/tchouhanjsm/cash-voucher/pull/96), merged at `f3b937c723336ced690cea1c3a50020de853f6f5`. Exact tested head `da83616c49320d09aebfd9a20e3d3916f116adec` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38209190408) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38209190410) (219 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38209190406) (129 backend + 219 browser checks).
 
-**Acceptance gate:** exact final PR #96 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
+**Acceptance gate:** exact final PR #97 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
 
 Adopt three distinct sources of information:
 
