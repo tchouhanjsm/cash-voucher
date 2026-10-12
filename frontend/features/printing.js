@@ -1,6 +1,6 @@
 import { $ } from '../core/dom.js';
 import { isIn, S, vno } from '../core/state.js';
-import { dmy, esc, money } from '../core/utils.js';
+import { dmy, esc, finiteAmount, money } from '../core/utils.js';
 
 const ONES = [
   '',
@@ -60,8 +60,15 @@ function words(number) {
 }
 
 export const amountInWords = (amount) => {
-  const rupees = Math.floor(amount);
-  const paise = Math.round((amount - rupees) * 100);
+  const value = finiteAmount(amount);
+  if (value === null || value < 0) return 'Amount unavailable';
+
+  // Convert to integer paise before splitting so rounding cannot produce 100 paise.
+  const totalPaise = Math.round(value * 100);
+  if (!Number.isSafeInteger(totalPaise)) return 'Amount unavailable';
+
+  const rupees = Math.floor(totalPaise / 100);
+  const paise = totalPaise % 100;
 
   return words(rupees) + ' Rupees' + (paise ? ' and ' + words(paise) + ' Paise' : '') + ' Only';
 };
