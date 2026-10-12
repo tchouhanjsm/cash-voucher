@@ -842,7 +842,18 @@ export function createPayments({ api, refresh }) {
     }
   }
 
-  window.addEventListener('online', () => flushOutbox());
+  window.addEventListener('online', async () => {
+    // An existing server session can be offline-fallback state; revalidate it before queue sync.
+    if (S.offlineMode) {
+      if (!S.token || !queueOwnerKey()) {
+        await showBanner();
+        return;
+      }
+      await refresh(true);
+      if (S.offlineMode || !S.token) return showBanner();
+    }
+    await flushOutbox();
+  });
 
   return {
     open,
