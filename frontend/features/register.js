@@ -218,8 +218,8 @@ export function createRegister({ api, go }) {
       message.className = 'empty-state-message';
       message.textContent = rangeInvalid
         ? 'The start date must be on or before the end date. Correct the range or clear filters.'
-        : !diagnostics.envelopeValid
-          ? 'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
+        : !dataAvailable
+          ? unavailableMessage
           : voucherRows().length
             ? 'No vouchers match the current filters.'
             : 'No vouchers are available to show. If you are offline, reconnect and refresh; otherwise use New Entry to record the first payment or receipt.';
