@@ -180,9 +180,10 @@ export function createDashboard() {
     )
     .join('')}</div>
   ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
-  ${!diagnostics.envelopeValid
-    ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">Voucher data is unavailable because the server response was invalid. Refresh and retry. No financial totals or charts are shown until valid voucher data is available.</p></div>`
-    : `
+  ${
+    !diagnostics.envelopeValid
+      ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">Voucher data is unavailable because the server response was invalid. Refresh and retry. No financial totals or charts are shown until valid voucher data is available.</p></div>`
+      : `
   <div class="stats">
     <div class="card stat"><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
     <div class="card stat"><span>Vouchers</span><b>${current.length}</b><small class="muted">avg ${money(validCurrent.length ? total / validCurrent.length : 0)}</small></div>
@@ -202,7 +203,8 @@ export function createDashboard() {
           10,
         )}</div>`
       : ''
-  }`}`;
+  }`
+  };
   }
 
   return {
