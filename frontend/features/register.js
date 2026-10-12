@@ -1,7 +1,18 @@
 import { $ } from '../core/dom.js';
 import { can, categories, isIn, nm, S, vno, bySeq } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
-import { compress, csvCell, dmy, download, esc, finiteAmount, money, parseAmt, sumAmounts, today } from '../core/utils.js';
+import {
+  compress,
+  csvCell,
+  dmy,
+  download,
+  esc,
+  finiteAmount,
+  money,
+  parseAmt,
+  sumAmounts,
+  today,
+} from '../core/utils.js';
 import { closeModal, dialog, fail, head, refreshBtn, toast } from '../core/ui.js';
 
 export function createRegister({ api, go }) {
@@ -53,7 +64,9 @@ export function createRegister({ api, go }) {
     const receivedItems = active.filter(isIn);
     const paid = sumAmounts(paidItems);
     const received = sumAmounts(receivedItems);
-    const invalidAmountCount = active.filter((voucher) => finiteAmount(voucher.amount) === null).length;
+    const invalidAmountCount = active.filter(
+      (voucher) => finiteAmount(voucher.amount) === null,
+    ).length;
 
     $('#rtot').innerHTML =
       `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}`;
