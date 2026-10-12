@@ -1,7 +1,8 @@
 # Frontend Rendering Security Audit
 
 **Status:** incremental; not a full security certification  
-**Baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
+**Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
+**Current review baseline:** `cf1ae45363d9ba7126be722388dcf7c75a45ffd3` (PR #100 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -262,3 +263,12 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Dashboard omits monetary KPIs and charts while unavailable; Register omits rows and totals and disables CSV export. The normal refresh control remains available. A valid empty array is still an available, genuine empty collection; a subsequent valid bootstrap response restores ordinary views.
 - Browser E2E covers an invalid server envelope and the offline cached-session restart path, including unavailable copy, withheld totals/charts/rows/export, and the existing valid-response recovery path.
 - No accounting formula, backend/API schema, authorization, dependency, persistence, deployment, or production data changes. This narrows a data-availability ambiguity; it does not certify the complete stored-XSS sink inventory or replace live Sheet validation.
+
+
+## PR #101 — Scalar-only HTML escaping for malformed JSON values
+
+- **Confirmed active sink failure:** `frontend/core/utils.js` implemented `esc(value)` by calling `String(value)` for every non-null input. HTML escaping itself could throw for an object deserialized from JSON with non-callable own `toString` and `valueOf` properties. The Settings renderer passes bootstrap-sourced numeric settings through this helper before inserting them into quoted `value` attributes; a malformed object could therefore break the view before the escaping boundary completed.
+- The shared escape helper now accepts primitive string, number, boolean, and bigint values and maps arrays, objects, and other non-scalar values to an empty string before replacing HTML metacharacters. It does not invoke attacker-controlled object coercion hooks. This is a rendering boundary, not validation of authoritative settings or a replacement for per-field schema validation.
+- Unit regression cases preserve normal escaping and CSV helper behavior while covering hostile text and objects with non-callable or text-valued coercion properties.
+- Browser E2E extends the active Settings HTML-attribute regression to send normal hostile strings and then JSON objects with non-callable coercion hooks. It asserts Settings remains available, numeric inputs remain present, and no injected image/SVG nodes or payload execution occur.
+- Scope remains limited to scalar output encoding and tests/docs. No API schema, authorization, settings persistence, dependency, deployment, or production data changes. The broader active sink inventory and live operational checks remain open; this is a targeted hardening, not full XSS certification.
