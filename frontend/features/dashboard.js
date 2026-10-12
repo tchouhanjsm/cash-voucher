@@ -150,7 +150,8 @@ export function createDashboard() {
       malformedRecordCount: 0,
       malformedFieldCount: 0,
     };
-    const dataAvailable = diagnostics.dataAvailable !== false && diagnostics.envelopeValid !== false;
+    const dataAvailable =
+      diagnostics.dataAvailable !== false && diagnostics.envelopeValid !== false;
     const unavailableMessage =
       diagnostics.unavailableReason === 'offline'
         ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
