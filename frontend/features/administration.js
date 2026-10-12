@@ -889,11 +889,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
       note.className = 'muted';
       note.textContent = report.note;
       results.appendChild(note);
-    } catch (error) {
+    } catch {
       results.setAttribute('role', 'alert');
       results.textContent =
         'Backup integrity inspection returned an invalid response or failed. Check Drive permissions and retry.';
-      fail(error);
     } finally {
       if (button?.isConnected) {
         button.disabled = false;
