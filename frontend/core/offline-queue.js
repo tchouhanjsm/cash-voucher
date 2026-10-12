@@ -544,6 +544,30 @@ export async function markFailed(clientId, owner, reason) {
   });
 }
 
+export async function discardFailed(clientId, ownerKey) {
+  if (!String(ownerKey || '').trim()) {
+    throw new Error('Sign in before removing a rejected entry.');
+  }
+  if (typeof clientId !== 'string' || !clientId.trim()) {
+    throw new Error('Select a valid rejected entry to remove.');
+  }
+
+  return tx_('readwrite', (store, setResult) => {
+    const request = store.get(clientId);
+
+    request.onsuccess = () => {
+      const record = request.result;
+      if (!record || record.status !== 'failed' || record.ownerKey !== ownerKey) {
+        setResult(false);
+        return;
+      }
+
+      store.delete(record.clientId);
+      setResult(true);
+    };
+  });
+}
+
 export async function clear(ownerKey) {
   if (!String(ownerKey || '').trim()) {
     throw new Error('Sign in before clearing pending payments.');
@@ -570,5 +594,6 @@ export const offlineQueue = {
   ack,
   release,
   markFailed,
+  discardFailed,
   clear,
 };

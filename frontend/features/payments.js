@@ -372,44 +372,69 @@ export function createPayments({ api, refresh }) {
       const visible = owned.concat(unbound);
       const pending = owned.filter((record) => ['pending', 'sending'].includes(record.status));
       const failed = owned.filter((record) => record.status === 'failed');
+      const describeEntries = (records) => {
+        const payments = records.filter((record) => record.entry?.type === 'PAYMENT').length;
+        const receipts = records.filter((record) => record.entry?.type === 'RECEIPT').length;
+        const unknown = records.length - payments - receipts;
+        const parts = [];
+        if (payments) parts.push(payments + ' payment' + (payments === 1 ? '' : 's'));
+        if (receipts) parts.push(receipts + ' cash receipt' + (receipts === 1 ? '' : 's'));
+        if (unknown) parts.push(unknown + ' unclassified entr' + (unknown === 1 ? 'y' : 'ies'));
+        return parts.length === 1
+          ? parts[0]
+          : records.length + ' queued entries (' + parts.join(', ') + ')';
+      };
 
       if (!visible.length && !errMsg) return b.classList.add('hidden');
 
       const messages = [];
       if (pending.length) {
-        messages.push(
-          '📤 ' +
-            pending.length +
-            ' payment' +
-            (pending.length === 1 ? '' : 's') +
-            ' waiting to upload',
-        );
+        messages.push('📤 ' + describeEntries(pending) + ' waiting to upload');
       }
       if (failed.length) {
-        messages.push(
-          '⚠️ ' +
-            failed.length +
-            ' payment' +
-            (failed.length === 1 ? '' : 's') +
-            ' need review; automatic retry stopped',
-        );
+        messages.push('⚠️ ' + describeEntries(failed) + ' need review; automatic retry stopped');
       }
 
+      const displayScalar = (value, fallback) =>
+        typeof value === 'string'
+          ? value
+          : typeof value === 'number' && Number.isFinite(value)
+            ? String(value)
+            : fallback;
       const failedDetails = failed
         .slice(0, 5)
-        .map(
-          (record) =>
+        .map((record) => {
+          const entry =
+            record.entry && typeof record.entry === 'object' && !Array.isArray(record.entry)
+              ? record.entry
+              : {};
+          const kind =
+            entry.type === 'RECEIPT'
+              ? 'Cash receipt: '
+              : entry.type === 'PAYMENT'
+                ? 'Payment: '
+                : 'Entry: ';
+          const clientId = typeof record.clientId === 'string' ? record.clientId : '';
+          const removeAction = clientId
+            ? ' <button class="btn sm danger" data-act="discard-failed" data-id="' +
+              esc(clientId) +
+              '">Export &amp; remove</button>'
+            : '';
+
+          return (
             '<li><b>' +
-            esc(record.entry?.vendor || 'Unnamed payment') +
+            esc(kind + displayScalar(entry.vendor, 'Unnamed entry')) +
             '</b> — ₹' +
-            esc(String(record.entry?.amount ?? 'unknown')) +
+            esc(displayScalar(entry.amount, 'unknown')) +
             ': ' +
-            esc(record.failure || 'Rejected by server') +
-            '</li>',
-        )
+            esc(displayScalar(record.failure, 'Rejected by server')) +
+            removeAction +
+            '</li>'
+          );
+        })
         .join('');
       const failedReview = failedDetails
-        ? '<details class="outbox-failures"><summary>Review rejected payments</summary><ul>' +
+        ? '<details class="outbox-failures"><summary>Review rejected entries</summary><p class="muted">Export a recovery copy before removing an entry. Removed entries are no longer stored on this device.</p><ul>' +
           failedDetails +
           (failed.length > 5
             ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>'
@@ -420,8 +445,8 @@ export function createPayments({ api, refresh }) {
         messages.push(
           '⚠️ ' +
             unbound.length +
-            ' older payment' +
-            (unbound.length === 1 ? '' : 's') +
+            ' older queued entr' +
+            (unbound.length === 1 ? 'y' : 'ies') +
             ' need account confirmation before upload',
         );
       }
@@ -437,7 +462,7 @@ export function createPayments({ api, refresh }) {
         (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
         '<button class="btn sm" data-act="import-pending">Import</button>' +
         (owned.length
-          ? '<button class="btn sm danger" data-act="discard">Discard my payments</button>'
+          ? '<button class="btn sm danger" data-act="discard">Clear my queued entries</button>'
           : '');
     } catch (error) {
       b.className = 'banner err';
@@ -542,8 +567,8 @@ export function createPayments({ api, refresh }) {
     try {
       const ownerKey = queueOwnerKey();
       if (!ownerKey) {
-        toast('Sign in before exporting pending payments.', 'err');
-        return;
+        toast('Sign in before exporting pending entries.', 'err');
+        return false;
       }
       const allRecords = await offlineQueue.list();
       const unbound = allRecords.filter((record) => !String(record.ownerKey || ''));
@@ -556,7 +581,7 @@ export function createPayments({ api, refresh }) {
             'Continue only if you are authorised to access these records.',
         )
       ) {
-        return;
+        return false;
       }
 
       const records = allRecords.filter(
@@ -564,8 +589,8 @@ export function createPayments({ api, refresh }) {
       );
 
       if (!records.length) {
-        toast('There are no pending payments for this account to export.', 'ok');
-        return;
+        toast('There are no queued entries for this account to export.', 'ok');
+        return false;
       }
 
       const payload = {
@@ -594,9 +619,11 @@ export function createPayments({ api, refresh }) {
       link.click();
       link.remove();
       URL.revokeObjectURL(url);
-      toast('Pending payments exported. Keep the file secure.', 'ok');
+      toast('Offline entry recovery file exported. Keep it secure.', 'ok');
+      return true;
     } catch (error) {
       fail(error);
+      return false;
     }
   }
 
@@ -778,6 +805,70 @@ export function createPayments({ api, refresh }) {
     input.click();
   }
 
+  async function discardFailedOutbox(clientId) {
+    if (flushing) {
+      toast('Wait for the current upload to finish.', 'err');
+      return;
+    }
+
+    const ownerKey = queueOwnerKey();
+    if (!ownerKey) return toast('Sign in before removing a rejected entry.', 'err');
+
+    try {
+      const records = await offlineQueue.list();
+      const selected = records.find(
+        (record) =>
+          record.clientId === clientId &&
+          record.status === 'failed' &&
+          record.ownerKey === ownerKey,
+      );
+      if (!selected) {
+        toast(
+          'That rejected entry is no longer available for this account. Refresh and retry.',
+          'err',
+        );
+        await showBanner();
+        return;
+      }
+
+      // Always export the current queue before permitting this destructive action.
+      const exported = await exportOutbox();
+      if (!exported) return;
+      if (
+        !confirm(
+          'A recovery file was downloaded. Remove only this rejected entry from this device? ' +
+            'The exported file is needed if you want to correct and restore it later.',
+        )
+      ) {
+        return;
+      }
+      if (!S.token || queueOwnerKey() !== ownerKey) {
+        toast('The signed-in account changed. Sign in again before removing this entry.', 'err');
+        await showBanner();
+        return;
+      }
+
+      const removed = await offlineQueue.discardFailed(clientId, ownerKey);
+      if (!removed) {
+        toast(
+          'The rejected entry changed before it could be removed. Nothing else was cleared.',
+          'err',
+        );
+        await showBanner();
+        return;
+      }
+
+      announceOutboxChange('changed');
+      await showBanner();
+      toast(
+        'Rejected entry removed from this device. Keep the recovery file until it is no longer needed.',
+        'ok',
+      );
+    } catch (error) {
+      fail(error);
+    }
+  }
+
   async function discardOutbox() {
     if (flushing) {
       toast('Wait for the current upload to finish.', 'err');
@@ -833,6 +924,7 @@ export function createPayments({ api, refresh }) {
     exportOutbox,
     importOutbox,
     discardOutbox,
+    discardFailedOutbox,
     disposePreviews: disposeReceiptPreviews,
   };
 }

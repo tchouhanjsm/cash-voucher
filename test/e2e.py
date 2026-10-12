@@ -724,6 +724,21 @@ with sync_playwright() as p:
         and page.locator('#rbody tr').count() == 2,
         'empty-state clear-filters action restores matching vouchers',
     )
+    page.fill('#rfrom', '2026-10-20')
+    page.fill('#rto', '2026-10-10')
+    check(
+        'The start date must be on or before the end date.' in page.locator('#rempty').inner_text()
+        and 'Totals unavailable' in page.locator('#rtot').inner_text()
+        and page.locator('#rf [data-act=csv]').is_disabled()
+        and page.locator('#rempty [data-act=rclear]').is_visible(),
+        'invalid register date range blocks misleading totals and CSV export with a recovery action',
+    )
+    page.click('#rempty [data-act=rclear]')
+    check(
+        page.locator('#rbody tr').count() == 2
+        and not page.locator('#rf [data-act=csv]').is_disabled(),
+        'clearing an invalid register range restores rows and export availability',
+    )
     check(
         xss_note in page.locator('#rbody').inner_text()
         and page.locator('#rbody img').count() == 0,
@@ -1202,14 +1217,45 @@ with sync_playwright() as p:
     )
 
     check(
-        page.locator('.outbox-failures summary').inner_text() == 'Review rejected payments',
-        'banner exposes rejected-payment review details',
+        page.locator('.outbox-failures summary').inner_text() == 'Review rejected entries',
+        'banner exposes rejected-entry review details',
     )
     page.locator('.outbox-failures summary').click()
     review_text = page.locator('.outbox-failures').inner_text()
     check(
-        'Poison Vendor' in review_text and 'Simulated validation failure' in review_text,
-        'rejected-payment review displays the affected vendor and server reason as text',
+        'Payment: Poison Vendor' in review_text
+        and 'Simulated validation failure' in review_text
+        and page.locator('[data-act=discard-failed]').count() == 1,
+        'rejected-entry review identifies transaction type, vendor, reason, and an explicit recovery action',
+    )
+    with page.expect_download() as cancelled_export_info:
+        page.once('dialog', lambda dialog: dialog.dismiss())
+        page.click('[data-act=discard-failed]')
+    cancelled_export = cancelled_export_info.value
+    cancelled_entry = outbox_vendor_records('Poison Vendor')
+    check(
+        cancelled_export.path() is not None
+        and len(cancelled_entry) == 1
+        and cancelled_entry[0]['status'] == 'failed',
+        'cancelling rejected-entry removal keeps the failed record after exporting it',
+    )
+    with page.expect_download() as rejected_export_info:
+        page.once('dialog', lambda dialog: dialog.accept())
+        page.click('[data-act=discard-failed]')
+    rejected_export = rejected_export_info.value
+    check(
+        rejected_export.suggested_filename.startswith('cash-vouchers-pending-')
+        and rejected_export.suggested_filename.endswith('.json')
+        and rejected_export.path() is not None,
+        'removing a rejected entry first exports the full recovery queue',
+    )
+    page.wait_for_function(
+        "document.querySelector('#toast').innerText.includes('Rejected entry removed from this device')",
+        timeout=8000,
+    )
+    check(
+        not outbox_vendor_records('Poison Vendor'),
+        'explicit rejected-entry removal deletes only the selected local failed record',
     )
     healthy_records = outbox_vendor_records('Healthy Neighbor Vendor')
     check(
@@ -1236,6 +1282,50 @@ with sync_playwright() as p:
         'valid payment uploads even when a neighboring queue record is rejected',
     )
 
+    # A queued cash receipt must be labeled accurately and sync when connectivity returns.
+    context.set_offline(True)
+    page.click('[data-v=new]')
+    page.click('[data-k=RECEIPT]')
+    page.fill('.rv', 'Offline Receipt Label Test')
+    page.fill('.ra', '21')
+    page.click('#nsave')
+    page.wait_for_selector('#nres .ok-panel')
+    page.wait_for_function(
+        "document.querySelector('#banner').innerText.includes('1 cash receipt waiting to upload')",
+        timeout=8000,
+    )
+    check(
+        'Saved on this device' in page.locator('#nres').inner_text(),
+        'cash receipt remains visibly device-local while offline',
+    )
+    context.set_offline(False)
+    page.wait_for_function(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const records = await new Promise((resolve, reject) => {
+            const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          db.close();
+          return !records.some((record) => record.entry?.vendor === 'Offline Receipt Label Test');
+        }""",
+        timeout=10000,
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rbody')
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(300)
+    offline_receipt_row = page.locator('#rbody tr', has_text='Offline Receipt Label Test')
+    check(
+        offline_receipt_row.count() == 1 and 'R-1' in offline_receipt_row.inner_text(),
+        'queued offline cash receipt syncs successfully and receives the next receipt number',
+    )
+
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
     page.wait_for_selector('#loginForm')
@@ -1254,7 +1344,10 @@ with sync_playwright() as p:
     page.fill('.ra', '5000')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
-    check('R-1' in page.inner_text('#nres'), 'cash received saved as R-1')
+    check(
+        'R-2' in page.inner_text('#nres'),
+        'next cash receipt receives the next sequential number after offline sync',
+    )
 
     page.click('[data-v=bulk]')
     page.wait_for_selector('#bt')
@@ -1351,6 +1444,15 @@ with sync_playwright() as p:
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
     check('1 ready' in page.inner_text('#bprev').replace('\n', ' '), 'receipt import row is ready')
+    check(
+        'Import 1 cash receipt' in page.locator('#bprev').inner_text(),
+        'receipt import action uses the correct singular label',
+    )
+    check(
+        page.locator('#bprog').get_attribute('role') == 'status'
+        and page.locator('#bprog').get_attribute('aria-live') == 'polite',
+        'bulk import progress has an accessible status announcement',
+    )
     page.click('[data-act=import]')
     page.wait_for_function("document.querySelector('#bprev .ok-panel')?.innerText.includes('Imported 1 cash receipts')")
     check(
@@ -1596,6 +1698,19 @@ with sync_playwright() as p:
         and 'No vouchers are available' not in page.locator('#view').inner_text(),
         'invalid bootstrap voucher envelope is distinct from a legitimate empty collection',
     )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rempty')
+    register_invalid_text = page.locator('#view').inner_text()
+    check(
+        'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
+        in register_invalid_text
+        and 'No vouchers are available to show' not in register_invalid_text
+        and 'Clear filters' not in register_invalid_text
+        and 'Totals unavailable because the voucher response was invalid.' in register_invalid_text
+        and page.locator('#rf [data-act=csv]').is_disabled(),
+        'invalid Register envelope does not imply empty data, show zero-like totals, or permit CSV export',
+    )
+    page.click('[data-v=dash]')
     invalid_voucher_envelope = False
     page.unroute('**/api?*', tamper_dashboard_groups)
     page.reload(wait_until='domcontentloaded')
@@ -2177,9 +2292,10 @@ with sync_playwright() as p:
     )
     check(
         page.locator('#view svg').count() == 0
-        and range_payload in page.locator('#view').inner_text()
+        and range_payload not in page.locator('#view').inner_text()
+        and 'Choose a valid date range' in page.locator('#view').inner_text()
         and not page.evaluate('window.__xssFired === true'),
-        'malformed report date-range value remains inert text in rendered HTML',
+        'malformed report date-range value is rejected without reflecting hostile input',
     )
     # Restore a valid month-to-date filter before continuing the report workflow.
     page.locator('#movementFrom').fill(datetime.date.today().replace(day=1).isoformat())
