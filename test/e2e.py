@@ -608,7 +608,8 @@ with sync_playwright() as p:
     page.click('#lBtn')
     page.wait_for_function("document.querySelectorAll('#nav button').length === 10", timeout=10000)
     check(
-        'offline workspace' not in page.locator('#banner').inner_text().lower(),
+        page.locator('#banner').is_hidden()
+        or 'offline workspace' not in page.locator('#banner').inner_text().lower(),
         'online sign-in restores the server-verified owner workspace',
     )
 

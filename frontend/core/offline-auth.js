@@ -76,7 +76,11 @@ async function deriveVerifier(pin, salt, email, endpoint, createdAt, expiresAt) 
 }
 
 function equalBytes(left, right) {
-  if (!(left instanceof Uint8Array) || !(right instanceof Uint8Array) || left.length !== right.length) {
+  if (
+    !(left instanceof Uint8Array) ||
+    !(right instanceof Uint8Array) ||
+    left.length !== right.length
+  ) {
     return false;
   }
 
@@ -87,13 +91,7 @@ function equalBytes(left, right) {
   return difference === 0;
 }
 
-export async function saveOfflineCredential({
-  email,
-  endpoint,
-  pin,
-  storage,
-  now = Date.now(),
-}) {
+export async function saveOfflineCredential({ email, endpoint, pin, storage, now = Date.now() }) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedEndpoint = normalizeEndpoint(endpoint);
   if (
@@ -139,13 +137,7 @@ export async function saveOfflineCredential({
   }
 }
 
-export async function verifyOfflineCredential({
-  email,
-  endpoint,
-  pin,
-  storage,
-  now = Date.now(),
-}) {
+export async function verifyOfflineCredential({ email, endpoint, pin, storage, now = Date.now() }) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedEndpoint = normalizeEndpoint(endpoint);
   if (

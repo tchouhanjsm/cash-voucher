@@ -189,7 +189,9 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     S.offlineMode = false;
     ls.del('cv.token');
     closeModal();
-    showLogin('Sign in while connected to synchronize pending entries. Your local queue will be preserved.');
+    showLogin(
+      'Sign in while connected to synchronize pending entries. Your local queue will be preserved.',
+    );
   }
 
   function handleApiError(error) {

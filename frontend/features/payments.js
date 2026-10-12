@@ -456,13 +456,16 @@ export function createPayments({ api, refresh }) {
       }
       if (errMsg) messages.push(errMsg);
 
-      b.className = 'banner' + (S.offlineMode || errMsg || failed.length || unbound.length ? ' err' : '');
+      b.className =
+        'banner' + (S.offlineMode || errMsg || failed.length || unbound.length ? ' err' : '');
       b.innerHTML =
         '<span>' +
         messages.map((message) => esc(message)).join('<br>') +
         '</span>' +
         failedReview +
-        (pending.length && S.token ? '<button class="btn sm" data-act="flush">Retry now</button>' : '') +
+        (pending.length && S.token
+          ? '<button class="btn sm" data-act="flush">Retry now</button>'
+          : '') +
         (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
         '<button class="btn sm" data-act="import-pending">Import</button>' +
         (S.offlineMode && !S.token

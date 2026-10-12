@@ -144,24 +144,24 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
   function renderNav() {
     const nav = $('#nav');
     const navContent = document.createDocumentFragment();
-    NAV.filter(
-      (item) => (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3](),
-    ).forEach(([view, icon, label]) => {
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.dataset.v = view;
+    NAV.filter((item) => (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3]()).forEach(
+      ([view, icon, label]) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.dataset.v = view;
 
-      const iconElement = document.createElement('span');
-      iconElement.className = 'ic';
-      iconElement.setAttribute('aria-hidden', 'true');
-      iconElement.textContent = icon;
+        const iconElement = document.createElement('span');
+        iconElement.className = 'ic';
+        iconElement.setAttribute('aria-hidden', 'true');
+        iconElement.textContent = icon;
 
-      const labelElement = document.createElement('span');
-      labelElement.textContent = label;
+        const labelElement = document.createElement('span');
+        labelElement.textContent = label;
 
-      button.append(iconElement, labelElement);
-      navContent.appendChild(button);
-    });
+        button.append(iconElement, labelElement);
+        navContent.appendChild(button);
+      },
+    );
     nav.replaceChildren(navContent);
   }
   function go(view) {
