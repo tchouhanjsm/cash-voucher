@@ -2081,6 +2081,10 @@ with sync_playwright() as p:
 print(f'e2e: {ok} checks passed, {len(errs)} failed')
 raise SystemExit(1 if errs else 0)    # Clearing an existing receipt while a second compression is pending must not
     # allow the late result to repopulate the cleared row.
+    page.click('[data-act=newagain]')
+    page.wait_for_selector('#nf')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_selector('.thumb')
     page.evaluate(
         """() => {
             window.__nativeToBlob = HTMLCanvasElement.prototype.toBlob;
