@@ -2386,7 +2386,8 @@ with sync_playwright() as p:
             ]
         route.fulfill(response=response, body=json.dumps(payload))
 
-    audit_page = context.new_page()
+    audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
+    audit_page = audit_context.new_page()
     audit_page.add_init_script('window.__xssFired = false;')
     audit_page.route('**/api?*', inject_malformed_audit_rows)
     audit_page.goto(URL)
