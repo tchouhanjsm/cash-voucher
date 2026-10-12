@@ -9,26 +9,38 @@ export const catOpts = (selected, type) =>
     )
     .join('');
 
-function vendorNames() {
-  const counts = {};
+const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
-  S.vouchers.forEach((voucher) => {
-    counts[voucher.vendor] = (counts[voucher.vendor] || 0) + 1;
+function vendorName(value) {
+  return typeof value === 'string' && value.trim() ? value : '';
+}
+
+function vendorNames() {
+  const counts = new Map();
+  const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
+
+  vouchers.forEach((voucher) => {
+    if (!isRecord(voucher)) return;
+    const name = vendorName(voucher.vendor);
+    if (!name) return;
+    counts.set(name, (counts.get(name) || 0) + 1);
   });
 
   let cache = {};
 
   try {
-    cache = JSON.parse(ls.get('cv.cache') || '{}');
+    const saved = JSON.parse(ls.get('cv.cache') || '{}');
+    cache = isRecord(saved) ? saved : {};
   } catch {}
 
-  return [
-    ...new Set([
-      ...Object.keys(counts).sort((a, b) => counts[b] - counts[a]),
-      ...S.vendors.filter((vendor) => vendor.active).map((vendor) => vendor.name),
-      ...(cache.vn || []),
-    ]),
-  ];
+  const activeVendors = (Array.isArray(S.vendors) ? S.vendors : [])
+    .filter((vendor) => isRecord(vendor) && vendor.active)
+    .map((vendor) => vendorName(vendor.name))
+    .filter(Boolean);
+  const cachedVendors = Array.isArray(cache.vn) ? cache.vn.map(vendorName).filter(Boolean) : [];
+  const frequentVendors = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
+
+  return [...new Set([...frequentVendors, ...activeVendors, ...cachedVendors])];
 }
 
 export const vendorList = () =>
