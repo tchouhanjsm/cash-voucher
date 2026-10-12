@@ -202,7 +202,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E verifies `constructor`, `__proto__`, `toString` and `hasOwnProperty` survive into the actual New Entry datalist after disabling cached-name fallback. The bootstrap fixture also includes a null vendor record and object-valued vendor name, which must be ignored without crashing or rendering active markup.
 - No persisted data, API/schema, authorization, or production setting changes. Other active template sinks and the complete stored-XSS audit remain open.
 
-
 ## PR #93 — Omit malformed audit-log API rows
 
 - **Confirmed resilience defect:** the active owner audit view accepted an array response but assumed each element was an object. A null row caused `populateAuditOptions()` to throw while reading `row.user`, preventing audit data from rendering.
