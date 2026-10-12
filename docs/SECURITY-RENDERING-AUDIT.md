@@ -255,7 +255,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Both Dashboard and Register announce the same malformed-record and normalized-field counts. An invalid voucher-list envelope has an explicit unavailable message, separate from a genuinely empty array, and browser coverage verifies recovery after a valid list returns. The dashboard's balance card is relabeled **Book balance** with an explicit statement that it is not a physical cash count.
 - No backend/API/schema, permission, persisted data, accounting formula, dependency, or deployment changes. This is client-side integrity and semantic labeling, not ledger reconciliation or proof of live Sheet correctness.
 
-
 ## PR #100 — Fail closed when Dashboard voucher data is unavailable
 
 - **Confirmed rendering/integrity gap:** Dashboard diagnostics already surfaced an invalid voucher-list envelope, but the same render still produced KPI cards and trend/vendor/category visualizations from empty arrays. That made missing/unavailable data visually resemble zero activity.
