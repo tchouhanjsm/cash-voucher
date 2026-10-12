@@ -1,17 +1,19 @@
 # Engineering Handoff
 
-**Updated:** 11 October 2026  
+**Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `f15cbde5b752755b4740b8f8c67db0d3e72073c2` (PR #89 merge)  
+**Verified `main` SHA:** `4ea8c478be7ce33d5b54b098bff3f0f523fc6d33` (PR #90 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #90 — Guard malformed amounts in printed vouchers**  
-Branch: `security/guard-amount-in-words`  
-Base: `f15cbde5b752755b4740b8f8c67db0d3e72073c2`
+**PR #91 — Register and report resilience for malformed API data** ([pull request](https://github.com/tchouhanjsm/cash-voucher/pull/91))  
+Branch: `resilience/register-report-malformed-data`  
+Base: `4ea8c478be7ce33d5b54b098bff3f0f523fc6d33`
 
-Scope: reject missing, blank, boolean, non-finite and nonnumeric values in the shared finite-amount parser; protect the printed amount-in-words formatter from recursion/error output on malformed API data; normalize to integer paise before words conversion. Browser E2E includes `NaN`, `Infinity`, `null`, blank, boolean and negative values, plus a normal rupees/paise case. PR #89 is merged; exact tested head `15b28b298fa54d11946d0e3e08e75cf5ac25ee40` passed CI, Browser E2E (189 checks) and Full Flight Test (129 backend + 189 browser checks).
+Scope: guard bootstrap's local vendor-cache projection against malformed voucher entries/labels; harden register filtering/rendering against malformed voucher records, null/non-string vendor and note values, and missing/non-array receipt metadata; validate the recorded-movement report envelope; sanitize report-row fields and explicitly disclose dropped non-record entries. Add browser E2E coverage for malformed rows, safe receipt recovery, invalid report response recovery and normal-path restoration. Preserve server authorization, API/Sheet schema and accounting semantics. No deployment or production data changes.
+
+**Acceptance gate:** code and test review at the final diff; exact final PR head must pass CI, Browser E2E and Full Flight Test. The live PR page is authoritative for the current head and workflow status. Owner reviews and merges.
 
 Adopt three distinct sources of information:
 
@@ -55,6 +57,8 @@ These remain open regardless of green mock-backed CI:
 6. The current lint warning for unused `backupData_` and the documented time-limited `@google/clasp → micromatch → braces` dependency-advisory exception remain visible. The documented review-by date is 9 November 2026.
 
 ## Recent completed milestones
+
+- **PR #90 — Guard malformed amounts in printed vouchers:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/90) at `4ea8c478be7ce33d5b54b098bff3f0f523fc6d33`; exact tested head `095b3aaeb43f001a89001cb9d45b0ad7445f075a` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516457), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516410) (195 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516419) (129 backend + 195 browser checks). Printed amount-in-words now returns a clear unavailable message for malformed or unrepresentable inputs.
 
 - **PR #89 — Finite monetary rendering and aggregate integrity:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/89) at `f15cbde5b752755b4740b8f8c67db0d3e72073c2`; exact tested head `15b28b298fa54d11946d0e3e08e75cf5ac25ee40` passed CI, Browser E2E (189 checks) and Full Flight Test (129 backend + 189 browser checks). Non-finite and malformed amounts are kept out of key dashboard/register totals and monetary labels.
 

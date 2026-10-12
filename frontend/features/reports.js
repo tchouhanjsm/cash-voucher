@@ -1,6 +1,6 @@
 import { $ } from '../core/dom.js';
 import { can } from '../core/state.js';
-import { csvCell, dmy, download, esc, money, today } from '../core/utils.js';
+import { csvCell, dmy, download, esc, finiteAmount, money, today } from '../core/utils.js';
 import { head, toast } from '../core/ui.js';
 
 export function createReports({ api }) {
@@ -11,9 +11,35 @@ export function createReports({ api }) {
     status: 'ACTIVE',
     rows: [],
     summary: null,
+    invalidRowCount: 0,
     error: '',
     loading: false,
   };
+
+  const scalarText = (value) =>
+    typeof value === 'string' ||
+    typeof value === 'boolean' ||
+    (typeof value === 'number' && Number.isFinite(value))
+      ? String(value)
+      : '';
+
+  function normalizeRow(item) {
+    const fields = [
+      'date',
+      'voucherNo',
+      'type',
+      'vendor',
+      'category',
+      'notes',
+      'status',
+      'cancelReason',
+      'createdBy',
+      'id',
+    ];
+    const row = Object.fromEntries(fields.map((field) => [field, scalarText(item[field])]));
+    row.amount = finiteAmount(item.amount) === null ? '' : item.amount;
+    return row;
+  }
 
   function renderRows() {
     if (!R.rows.length) {
@@ -24,16 +50,16 @@ export function createReports({ api }) {
       .map(
         (item) => `
         <tr>
-          <td class="nw">${esc(dmy(item.date))}</td>
-          <td class="nw">${esc(item.type === 'RECEIPT' ? 'R-' : '')}${esc(item.voucherNo)}</td>
-          <td>${esc(item.type)}</td>
-          <td>${esc(item.vendor)}</td>
+          <td class="nw">${esc(dmy(scalarText(item.date)))}</td>
+          <td class="nw">${esc(scalarText(item.type) === 'RECEIPT' ? 'R-' : '')}${esc(scalarText(item.voucherNo))}</td>
+          <td>${esc(scalarText(item.type))}</td>
+          <td>${esc(scalarText(item.vendor))}</td>
           <td>
-            ${esc(item.category)}
-            ${item.notes ? ' · ' + esc(item.notes) : ''}
-            ${item.cancelReason ? '<div class="muted">Cancellation: ' + esc(item.cancelReason) + '</div>' : ''}
+            ${esc(scalarText(item.category))}
+            ${scalarText(item.notes) ? ' · ' + esc(scalarText(item.notes)) : ''}
+            ${scalarText(item.cancelReason) ? '<div class="muted">Cancellation: ' + esc(scalarText(item.cancelReason)) + '</div>' : ''}
           </td>
-          <td>${esc(item.status)}</td>
+          <td>${esc(scalarText(item.status))}</td>
           <td class="r nw amt">${money(item.amount)}</td>
         </tr>
       `,
@@ -115,7 +141,7 @@ export function createReports({ api }) {
           <div class="card stat">
             <span>Selected payment total</span>
             <b>${money(summary.paymentTotal)}</b>
-            <small class="muted">${esc(summary.count)} rows · ${esc(summary.activeCount)} active · ${esc(summary.cancelledCount)} cancelled</small>
+            <small class="muted">${esc(scalarText(summary.count))} rows · ${esc(scalarText(summary.activeCount))} active · ${esc(scalarText(summary.cancelledCount))} cancelled</small>
           </div>
           <div class="card stat">
             <span>Selected receipt total</span>
@@ -136,8 +162,9 @@ export function createReports({ api }) {
         <div class="card">
           <h2>Source vouchers <span class="muted">${esc(dmy(R.from))} – ${esc(dmy(R.to))}</span></h2>
           <p class="muted">
-            Generated ${esc(summary.generatedAt)} · ${esc(summary.count)} rows · Type: ${esc(summary.type)} · Status: ${esc(summary.status)}
+            Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}
           </p>
+          ${R.invalidRowCount ? `<p class="muted" role="status">${R.invalidRowCount} malformed report row(s) omitted from this result. Run the report again to refresh.</p>` : ''}
           ${renderRows()}
         </div>
       `;
@@ -171,15 +198,35 @@ export function createReports({ api }) {
     render();
 
     try {
-      R.summary = await api('recordedMovementReport', {
+      const summary = await api('recordedMovementReport', {
         from: R.from,
         to: R.to,
         type: R.type,
         status: R.status,
       });
-      R.rows = R.summary.items || [];
+      if (
+        !summary ||
+        typeof summary !== 'object' ||
+        Array.isArray(summary) ||
+        !Array.isArray(summary.items)
+      ) {
+        throw new Error('The report returned an invalid response. Please retry.');
+      }
+
+      const validRows = summary.items.filter(
+        (item) => item !== null && typeof item === 'object' && !Array.isArray(item),
+      );
+      R.summary = summary;
+      R.rows = validRows.map(normalizeRow);
+      R.invalidRowCount = summary.items.length - validRows.length;
     } catch (error) {
-      R.error = error.message || 'The report could not be loaded.';
+      R.summary = null;
+      R.rows = [];
+      R.invalidRowCount = 0;
+      R.error =
+        typeof error?.message === 'string' && error.message
+          ? error.message
+          : 'The report could not be loaded.';
     } finally {
       R.loading = false;
       render();

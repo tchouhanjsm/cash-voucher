@@ -19,11 +19,18 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
 
   async function load() {
     const data = await api('bootstrap');
+    const vouchers = Array.isArray(data.vouchers) ? data.vouchers : [];
+    const vendorNames = vouchers
+      .filter(
+        (voucher) => voucher !== null && typeof voucher === 'object' && !Array.isArray(voucher),
+      )
+      .map((voucher) => (typeof voucher.vendor === 'string' ? voucher.vendor : ''))
+      .filter(Boolean);
 
     Object.assign(S, {
       me: data.user,
       settings: data.settings,
-      vouchers: data.vouchers,
+      vouchers,
       vendors: data.vendors,
       names: data.names,
       loadedAt: Date.now(),
@@ -37,7 +44,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
         names: data.names,
         settings: data.settings,
         vendors: data.vendors,
-        vn: [...new Set(data.vouchers.map((voucher) => voucher.vendor))].slice(0, 300),
+        vn: [...new Set(vendorNames)].slice(0, 300),
       }),
     );
   }

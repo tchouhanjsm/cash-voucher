@@ -1,5 +1,5 @@
 import { $ } from '../core/dom.js';
-import { can, categories, isIn, nm, S, vno, bySeq } from '../core/state.js';
+import { can, categories, isIn, nm, S, bySeq } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import {
   compress,
@@ -29,6 +29,29 @@ export function createRegister({ api, go }) {
   };
   const receiptCache = {};
 
+  const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const scalarText = (value) =>
+    typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value))
+      ? String(value)
+      : '';
+
+  function voucherRows() {
+    return Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
+  }
+
+  function voucherNo(voucher) {
+    return (isIn(voucher) ? 'R-' : '') + scalarText(voucher.no);
+  }
+
+  function receiptMetadata(voucher) {
+    const values = Array.isArray(voucher?.receipts) ? voucher.receipts : null;
+    const ids = values
+      ? values.filter((fileId) => typeof fileId === 'string' && fileId.trim())
+      : [];
+
+    return { ids, valid: Boolean(values) && ids.length === values.length };
+  }
+
   function labeledControl(text, control) {
     const label = document.createElement('label');
     label.append(document.createTextNode(text), control);
@@ -38,27 +61,35 @@ export function createRegister({ api, go }) {
   function filtered() {
     const query = R.q.toLowerCase();
 
-    return S.vouchers
-      .filter(
-        (voucher) =>
+    return voucherRows()
+      .filter((voucher) => {
+        const vendor = scalarText(voucher.vendor).toLowerCase();
+        const notes = scalarText(voucher.notes).toLowerCase();
+        const number = voucherNo(voucher).toLowerCase();
+
+        return (
           (R.st === 'ALL' || voucher.status === R.st) &&
           (!R.vendor || voucher.vendor === R.vendor) &&
           (!R.cat || voucher.category === R.cat) &&
           (!R.t || voucher.type === R.t) &&
           (!R.user || voucher.createdBy === R.user) &&
-          (!R.from || voucher.date >= R.from) &&
-          (!R.to || voucher.date <= R.to) &&
-          (!query ||
-            vno(voucher).toLowerCase().includes(query) ||
-            voucher.vendor.toLowerCase().includes(query) ||
-            voucher.notes.toLowerCase().includes(query)),
-      )
+          (!R.from || scalarText(voucher.date) >= R.from) &&
+          (!R.to || scalarText(voucher.date) <= R.to) &&
+          (!query || number.includes(query) || vendor.includes(query) || notes.includes(query))
+        );
+      })
       .sort(bySeq);
   }
 
   function renderRows() {
     const list = filtered();
     const shown = list.slice(0, R.limit);
+    const sourceRows = Array.isArray(S.vouchers) ? S.vouchers : [];
+    const malformedRecordCount = Array.isArray(S.vouchers)
+      ? sourceRows.length - voucherRows().length
+      : S.vouchers == null
+        ? 0
+        : 1;
     const active = list.filter((voucher) => voucher.status === 'ACTIVE');
     const paidItems = active.filter((voucher) => !isIn(voucher));
     const receivedItems = active.filter(isIn);
@@ -68,12 +99,20 @@ export function createRegister({ api, go }) {
       (voucher) => finiteAmount(voucher.amount) === null,
     ).length;
 
+    const malformedRecordMessage = malformedRecordCount
+      ? ` · <span class="muted" role="status">${malformedRecordCount} malformed voucher record(s) omitted from the register</span>`
+      : '';
+
     $('#rtot').innerHTML =
-      `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}`;
+      `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
 
     $('#rbody').innerHTML = shown
       .map((voucher) => {
-        const receiptCount = voucher.receipts.length;
+        const receiptState = receiptMetadata(voucher);
+        const receiptCount = receiptState.ids.length;
+        const receiptWarning = receiptState.valid
+          ? ''
+          : ' · <span class="muted" role="status">Receipt metadata unavailable</span>';
         const receiptAction =
           receiptCount ||
           (voucher.status === 'ACTIVE' && (can('receiptAny') || voucher.createdBy === S.me.email));
@@ -81,7 +120,7 @@ export function createRegister({ api, go }) {
         const cancelledNote =
           voucher.status === 'ACTIVE'
             ? ''
-            : ` · <span class="badge bad">CANCELLED</span> ${esc(voucher.cancelReason)}`;
+            : ` · <span class="badge bad">CANCELLED</span> ${esc(scalarText(voucher.cancelReason))}`;
         const actions = [
           `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
           receiptAction
@@ -89,8 +128,8 @@ export function createRegister({ api, go }) {
                 class="btn sm"
                 data-act="rec"
                 data-id="${esc(voucher.id)}"
-                aria-label="Receipts for ${esc(vno(voucher))}"
-              >${receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
+                aria-label="Receipts for ${esc(voucherNo(voucher))}"
+              >${!receiptState.valid ? '📎 Check receipts' : receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
             : '',
           voucher.status === 'ACTIVE' && can('edit')
             ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>`
@@ -103,14 +142,14 @@ export function createRegister({ api, go }) {
           .join('');
         return `<tr class="voucher-row ${voucher.status === 'ACTIVE' ? '' : 'cx'}">
           <td class="nw">
-            <b>${esc(vno(voucher))}</b>
+            <b>${esc(voucherNo(voucher))}</b>
             <div class="cat voucher-kind">${kind}</div>
           </td>
-          <td class="nw">${esc(dmy(voucher.date))}</td>
+          <td class="nw">${esc(dmy(scalarText(voucher.date)))}</td>
           <td>
-            <span class="voucher-vendor">${esc(voucher.vendor)}</span>
+            <span class="voucher-vendor">${esc(scalarText(voucher.vendor))}</span>
             <div class="cat">
-              ${esc(voucher.category)}${voucher.notes ? ' · ' + esc(voucher.notes) : ''}${cancelledNote}
+              ${esc(scalarText(voucher.category))}${scalarText(voucher.notes) ? ' · ' + esc(scalarText(voucher.notes)) : ''}${receiptWarning}${cancelledNote}
             </div>
           </td>
           <td
@@ -121,12 +160,12 @@ export function createRegister({ api, go }) {
               ${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}
             </span>
           </td>
-          <td class="nw cat">${esc(nm(voucher.createdBy))}</td>
+          <td class="nw cat">${esc(nm(scalarText(voucher.createdBy)))}</td>
           <td>
             <div
               class="voucher-actions"
               role="group"
-              aria-label="Actions for ${esc(vno(voucher))}"
+              aria-label="Actions for ${esc(voucherNo(voucher))}"
             >${actions}</div>
           </td>
         </tr>`;
@@ -142,12 +181,12 @@ export function createRegister({ api, go }) {
       emptyState.classList.remove('hidden');
       const message = document.createElement('span');
       message.className = 'empty-state-message';
-      message.textContent = S.vouchers.length
+      message.textContent = voucherRows().length
         ? 'No vouchers match the current filters.'
         : 'No vouchers are available to show. If you are offline, reconnect and refresh; otherwise use New Entry to record the first payment or receipt.';
       emptyState.appendChild(message);
 
-      if (S.vouchers.length) {
+      if (voucherRows().length) {
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
         clearButton.className = 'btn';
@@ -164,8 +203,13 @@ export function createRegister({ api, go }) {
   }
 
   function render() {
-    const vendors = [...new Set(S.vouchers.map((voucher) => voucher.vendor))].sort();
-    const users = [...new Set(S.vouchers.map((voucher) => voucher.createdBy))];
+    const vouchers = voucherRows();
+    const vendors = [
+      ...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean)),
+    ].sort();
+    const users = [
+      ...new Set(vouchers.map((voucher) => scalarText(voucher.createdBy)).filter(Boolean)),
+    ];
 
     $('#view').innerHTML =
       head('Payment Register', refreshBtn) +
@@ -248,17 +292,17 @@ export function createRegister({ api, go }) {
       ],
     ].concat(
       filtered().map((voucher) => [
-        vno(voucher),
+        voucherNo(voucher),
         isIn(voucher) ? 'Received' : 'Payment',
-        dmy(voucher.date),
-        voucher.vendor,
-        voucher.category,
-        voucher.notes,
+        dmy(scalarText(voucher.date)),
+        scalarText(voucher.vendor),
+        scalarText(voucher.category),
+        scalarText(voucher.notes),
         voucher.amount,
         voucher.status,
         nm(voucher.createdBy),
         voucher.createdAt,
-        voucher.receipts.length,
+        receiptMetadata(voucher).ids.length,
       ]),
     );
 
@@ -270,39 +314,39 @@ export function createRegister({ api, go }) {
   }
 
   function edit(id) {
-    const voucher = S.vouchers.find((item) => item.id === id);
+    const voucher = voucherRows().find((item) => item.id === id);
 
     const body = document.createDocumentFragment();
 
     const date = document.createElement('input');
     date.type = 'date';
     date.id = 'ed';
-    date.value = voucher.date;
+    date.value = scalarText(voucher.date);
     date.required = true;
     body.appendChild(labeledControl('Date', date));
 
     const vendor = document.createElement('input');
     vendor.id = 'ev';
     vendor.setAttribute('list', 'vlist');
-    vendor.value = voucher.vendor;
+    vendor.value = scalarText(voucher.vendor);
     vendor.required = true;
     body.append(labeledControl('Paid to', vendor), vendorListNode());
 
     const amount = document.createElement('input');
     amount.id = 'ea';
     amount.inputMode = 'decimal';
-    amount.value = String(voucher.amount);
+    amount.value = scalarText(voucher.amount);
     amount.required = true;
     body.appendChild(labeledControl('Amount (₹)', amount));
 
     const category = document.createElement('select');
     category.id = 'ec';
-    category.appendChild(catOptionsNode(voucher.category, voucher.type));
+    category.appendChild(catOptionsNode(scalarText(voucher.category), voucher.type));
     body.appendChild(labeledControl('Category', category));
 
     const note = document.createElement('input');
     note.id = 'en';
-    note.value = voucher.notes;
+    note.value = scalarText(voucher.notes);
     body.appendChild(labeledControl('Note', note));
 
     const reason = document.createElement('textarea');
@@ -313,7 +357,7 @@ export function createRegister({ api, go }) {
     reason.rows = 3;
     body.appendChild(labeledControl('Correction reason (required)', reason));
 
-    dialog(`Edit #${vno(voucher)}`, body, async () => {
+    dialog(`Edit #${voucherNo(voucher)}`, body, async () => {
       const updated = await api('updateVoucher', {
         id,
         reason: $('#er').value,
@@ -334,13 +378,13 @@ export function createRegister({ api, go }) {
   }
 
   function cancel(id) {
-    const voucher = S.vouchers.find((item) => item.id === id);
+    const voucher = voucherRows().find((item) => item.id === id);
 
     const body = document.createDocumentFragment();
     const summary = document.createElement('p');
     const amountSummary = document.createElement('b');
     amountSummary.textContent = money(voucher.amount);
-    summary.append(document.createTextNode(`${voucher.vendor} · `), amountSummary);
+    summary.append(document.createTextNode(`${scalarText(voucher.vendor)} · `), amountSummary);
 
     const reason = document.createElement('input');
     reason.id = 'cr';
@@ -350,7 +394,7 @@ export function createRegister({ api, go }) {
     body.append(summary, labeledControl('Reason (required)', reason));
 
     dialog(
-      `Cancel #${vno(voucher)}?`,
+      `Cancel #${voucherNo(voucher)}?`,
       body,
       async () => {
         Object.assign(voucher, await api('cancelVoucher', { id, reason: $('#cr').value }));
@@ -363,10 +407,17 @@ export function createRegister({ api, go }) {
   }
 
   async function receipts(id) {
-    const voucher = S.vouchers.find((item) => item.id === id);
+    const voucher = voucherRows().find((item) => item.id === id);
+    if (!voucher) {
+      fail(new Error('Voucher record is unavailable. Refresh the register and retry.'));
+      return;
+    }
+
+    const receiptState = receiptMetadata(voucher);
     const canAdd =
+      receiptState.valid &&
       voucher.status === 'ACTIVE' &&
-      voucher.receipts.length < 3 &&
+      receiptState.ids.length < 3 &&
       (can('receiptAny') || voucher.createdBy === S.me.email);
     const body = document.createDocumentFragment();
     const images = document.createElement('div');
@@ -389,7 +440,7 @@ export function createRegister({ api, go }) {
       body.appendChild(addLabel);
     }
 
-    const form = dialog(`Receipts · #${vno(voucher)}`, body);
+    const form = dialog(`Receipts · #${voucherNo(voucher)}`, body);
 
     const loadReceipt = async (fileId, item) => {
       item.replaceChildren();
@@ -440,7 +491,17 @@ export function createRegister({ api, go }) {
       const box = $('#rimgs', form);
       box.replaceChildren();
 
-      if (!voucher.receipts.length) {
+      if (!receiptState.valid) {
+        const message = document.createElement('p');
+        message.className = 'error receipt-error';
+        message.setAttribute('role', 'alert');
+        message.textContent =
+          'Receipt metadata is missing or malformed. Close this dialog, refresh the register, and retry before adding or opening receipts.';
+        box.appendChild(message);
+        return;
+      }
+
+      if (!receiptState.ids.length) {
         const empty = document.createElement('p');
         empty.className = 'muted';
         empty.textContent = 'No receipts yet.';
@@ -448,14 +509,14 @@ export function createRegister({ api, go }) {
         return;
       }
 
-      const items = voucher.receipts.map(() => {
+      const items = receiptState.ids.map(() => {
         const item = document.createElement('div');
         item.className = 'receipt-item';
         box.appendChild(item);
         return item;
       });
 
-      await Promise.all(voucher.receipts.map((fileId, index) => loadReceipt(fileId, items[index])));
+      await Promise.all(receiptState.ids.map((fileId, index) => loadReceipt(fileId, items[index])));
     };
 
     await draw();
