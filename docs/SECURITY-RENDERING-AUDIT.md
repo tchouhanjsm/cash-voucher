@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Current review baseline:** `2814c47066b9a52e10af3c278e4400867d777228` (PR #102 merge)  
+**Current review baseline:** `32b7dd23b857aa933b87613d2504e293824d7590` (PR #103 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -284,3 +284,10 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Reuse the exported scalar-only text conversion helper for the persisted display name, navigation brand/title, profile label text nodes, and post-save brand update. Preserve DOM-only text construction and the existing neutral brand/title fallback; render malformed fields blank rather than invoking coercion hooks.
 - Unit coverage checks strings and supported primitive types, non-scalars, a throwing getter and `Symbol.toPrimitive`; Browser E2E injects object-valued property/profile names and verifies navigation boots, fallback branding appears, Settings remains reachable, and no payload markup executes.
 - This is targeted DOMString resilience for non-HTML sinks. It does not complete the dynamic-HTML sink inventory or certify all application rendering, live authorization, backup/restore, real-device behavior or production readiness.
+
+## PR #104 — Harden category option lists against malformed Settings data
+
+- **Confirmed rendering/resilience defect:** shared state exposed `S.settings.categories` and `S.settings.receiptCategories` with only a truthy fallback. The active HTML-template option builder called `.map()`, and the modal/editor DOM-option builder called `.forEach()` before assigning each category to `option.value`. Malformed object/string containers can throw; object-valued members can throw during DOMString conversion.
+- Normalize both collections once at the shared state boundary. Only non-empty strings reach renderers; whitespace is trimmed, duplicate labels removed with first-seen order preserved, and non-array/all-invalid values yield the neutral `Other` option. Valid category configuration keeps its existing order and labels otherwise.
+- Standard unit tests cover normal, duplicate, whitespace-only, malformed-container and hostile-member cases. Browser E2E exercises the Settings textarea and payment/receipt option paths with a mixed hostile category list and an object-valued receipt-category container.
+- This is client display-option resilience. It does not loosen backend category validation, rewrite stored settings or vouchers, or complete the active HTML/DOM rendering-sink inventory.

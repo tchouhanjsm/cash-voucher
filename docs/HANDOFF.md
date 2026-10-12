@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `2814c47066b9a52e10af3c278e4400867d777228` (PR #102 merge)  
+**Verified `main` SHA:** `32b7dd23b857aa933b87613d2504e293824d7590` (PR #103 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #103 — Guard DOM text sinks against malformed bootstrap scalars**  
-Branch: `security/scalar-dom-text-boundaries`  
-Base: `2814c47066b9a52e10af3c278e4400867d777228`
+**PR #104 — Harden category option lists against malformed Settings data**  
+Branch: `security/category-options-shape-hardening`  
+Base: `32b7dd23b857aa933b87613d2504e293824d7590`
 
-Scope: reuse the shared scalar-only conversion boundary at active navigation/profile DOM text sinks and the post-save property-brand update. Add unit and Browser E2E regressions proving object-valued property/profile names cannot trigger implicit object coercion or abort startup/navigation. Non-scalars render as blank fields or existing neutral branding fallbacks. No API/schema, permissions, accounting semantics, dependencies, deployment or production-data changes.
+Scope: normalize `settings.categories` and `settings.receiptCategories` at the shared state boundary. Only non-empty strings reach active form option builders; duplicates are removed while configured order is preserved. Non-array or all-invalid values fail safely to `Other`. Add unit and Browser E2E coverage for malformed nested values and preserve normal category behavior. No backend/API schema, authorization, accounting, deployment or production-data change.
 
-**Last completed:** PR #102 — [Harden scalar conversion at HTML and CSV output boundaries](https://github.com/tchouhanjsm/cash-voucher/pull/102), merged at `2814c47066b9a52e10af3c278e4400867d777228`. Exact tested PR head `4a0699a606ffbbfa553a07af7b8a81c431dfd70b` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244579888) (129 backend checks, 19 contrast pairs), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244579860) (241 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38244579877) (129 backend + 241 browser checks).
+**Last completed:** PR #103 — [Guard DOM text sinks against malformed bootstrap scalars](https://github.com/tchouhanjsm/cash-voucher/pull/103), merged at `32b7dd23b857aa933b87613d2504e293824d7590`. Exact tested PR head `711c09ef75a88f0268c141fd2c362f034123cd48` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38247353821) (129 backend checks, 19 contrast pairs and quality gates), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38247353711) (243 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38247353656) (129 backend + 243 browser checks).
 
-**Acceptance gate:** PR #103 must pass CI, Browser E2E and Full Flight Test on the same exact final head. Owner review and merge remain required. The full active rendering-sink inventory is still incomplete, and this targeted fix is not full XSS certification. Live Google authorization/delivery, scheduled backup contents, isolated restore, real-device/offline, accessibility and controlled-pilot checks remain separate gates.
+**Acceptance gate:** PR #104 must pass CI, Browser E2E and Full Flight Test on the same exact final head. Owner review/merge remain required. The complete active rendering-sink inventory and all live Google authorization, backup/restore, real-device/offline, accessibility and controlled-pilot gates remain open.
 
 **PR #101 — Fail closed on malformed owner diagnostic responses**  
 Branch: `product/admin-diagnostics-integrity`  
@@ -106,6 +106,6 @@ For full acceptance criteria, diffs, review discussions and CI evidence, use tho
 6. Before choosing a new batch, confirm the current open PR and latest `main` SHA from GitHub, then review the roadmap and relevant domain audit. Do not start overlapping work while a focused PR awaits owner review/merge.
 7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
 
-## PR #102 merged — Scalar-only HTML and CSV output conversion
+## PR #103 merged — Guard DOM text sinks against malformed bootstrap scalars
 
-PR #102 is merged at `2814c47066b9a52e10af3c278e4400867d777228`. Its exact PR head `4a0699a606ffbbfa553a07af7b8a81c431dfd70b` passed CI (129 backend checks), Browser E2E (241 checks, 0 failures), and Full Flight Test (129 backend + 241 browser checks). Shared HTML escaping and CSV cell output reject non-scalar arrays, objects and symbols without invoking attacker-controlled coercion; HTML entity encoding, CSV quoting and formula/control-prefix neutralization remain covered. This does not complete the active rendering-sink inventory or certify production deployment/backup restore.
+PR #103 is merged at `32b7dd23b857aa933b87613d2504e293824d7590`. Its exact PR head `711c09ef75a88f0268c141fd2c362f034123cd48` passed CI, Browser E2E (243 checks, 0 failures) and Full Flight Test (129 backend + 243 browser checks). Navigation/profile display now uses shared scalar-only conversion for branding and identity text. This is targeted DOM text resilience; the complete rendering-sink inventory remains open.

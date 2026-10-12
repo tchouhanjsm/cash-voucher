@@ -403,6 +403,7 @@ with sync_playwright() as p:
     settings_attribute_payload = '"><svg onload=window.__xssFired=true></svg><input value="'
     settings_object_mode = False
     settings_identity_object_mode = False
+    settings_category_mode = False
 
     def tamper_bootstrap_settings(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -427,6 +428,14 @@ with sync_playwright() as p:
                 user = payload.get('data', {}).get('user')
                 if isinstance(user, dict):
                     user['name'] = invalid_scalar
+            if settings_category_mode:
+                invalid_scalar = {'toString': None, 'valueOf': None}
+                settings['propertyName'] = 'Category Shape Test'
+                settings['categories'] = ['Office', invalid_scalar, None, 42, ' Office ', 'Other', 'Office']
+                settings['receiptCategories'] = invalid_scalar
+                settings['nextVoucherNo'] = 201
+                settings['nextReceiptNo'] = 12
+                settings['openingBalance'] = 0
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -502,6 +511,44 @@ with sync_playwright() as p:
     )
 
     settings_identity_object_mode = False
+    settings_object_mode = False
+    settings_category_mode = True
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'bootstrap'
+    ):
+        page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.wait_for_function("document.querySelector('#brand').textContent === 'Category Shape Test'")
+    page.click('[data-v=set]')
+    page.wait_for_selector('#sc')
+    check(
+        page.locator('#sc').input_value() == 'Office\nOther'
+        and page.locator('#sx').input_value() == 'Other'
+        and page.locator('#sf img, #sf svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'malformed category setting arrays normalize to string-only lists in Settings',
+    )
+    page.click('[data-v=new]')
+    page.wait_for_selector('#rows .erow .rc')
+    check(
+        page.locator('#rows .erow .rc option').all_text_contents() == ['Office', 'Other']
+        and page.locator('#rows .erow .rc option').count() == 2
+        and page.locator('#rows .erow .rc option').evaluate_all(
+            "options => options.every(option => typeof option.value === 'string')"
+        )
+        and not page.evaluate('window.__xssFired === true'),
+        'payment category options render only valid string categories',
+    )
+    page.click('[data-act=ntype][data-k=RECEIPT]')
+    check(
+        page.locator('#rows .erow .rc option').all_text_contents() == ['Other']
+        and page.locator('#rows .erow .rc option').count() == 1
+        and not page.evaluate('window.__xssFired === true'),
+        'receipt category options fail safely to Other for malformed settings',
+    )
+
+    settings_category_mode = False
     page.unroute('**/api?*', tamper_bootstrap_settings)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')

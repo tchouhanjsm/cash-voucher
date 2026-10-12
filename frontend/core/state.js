@@ -102,6 +102,21 @@ export const recs = () =>
 export const bySeq = (a, b) =>
   String(b.createdAt).localeCompare(String(a.createdAt)) || b.no - a.no;
 
-export const rcats = () => S.settings.receiptCategories || ['Other'];
+const normalizeCategoryList = (value) => {
+  if (!Array.isArray(value)) return ['Other'];
 
-export const categories = () => S.settings.categories || ['Other'];
+  const normalized = [
+    ...new Set(
+      value
+        .filter((category) => typeof category === 'string')
+        .map((category) => category.trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  return normalized.length ? normalized : ['Other'];
+};
+
+export const rcats = () => normalizeCategoryList(S.settings?.receiptCategories);
+
+export const categories = () => normalizeCategoryList(S.settings?.categories);
