@@ -51,9 +51,6 @@ export function normalizeVoucherCollection(value) {
       !isRecord(voucher) ||
       typeof voucher.id !== 'string' ||
       !voucher.id.trim() ||
-      typeof voucher.no !== 'number' ||
-      !Number.isSafeInteger(voucher.no) ||
-      voucher.no < 1 ||
       !isIsoDate(voucher.date) ||
       !['PAYMENT', 'RECEIPT'].includes(voucher.type) ||
       !['ACTIVE', 'CANCELLED'].includes(voucher.status)
@@ -63,6 +60,14 @@ export function normalizeVoucherCollection(value) {
     }
 
     const row = { ...voucher };
+    if (
+      typeof row.no !== 'number' ||
+      !Number.isSafeInteger(row.no) ||
+      row.no < 1
+    ) {
+      malformedFieldCount++;
+      if (typeof row.no !== 'string') row.no = '';
+    }
     textFields.forEach((field) => {
       if (typeof row[field] !== 'string') {
         row[field] = '';
