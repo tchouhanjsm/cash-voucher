@@ -2018,6 +2018,7 @@ with sync_playwright() as p:
 
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody')
+    page.select_option('#rs', 'ALL')
 
     # The register must stay usable when API records have malformed vendor/note/receipt fields.
     def tamper_register_metadata(route):
@@ -2038,7 +2039,7 @@ with sync_playwright() as p:
                 'amount': 12.5,
                 'type': 'PAYMENT',
                 'status': 'ACTIVE',
-                'createdBy': 'owner@test.com',
+                'createdBy': 'm@test.com',
                 'createdAt': '2026-10-12T00:00:00.000Z',
                 'receipts': None,
             })
