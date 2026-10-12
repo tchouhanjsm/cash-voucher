@@ -1766,6 +1766,57 @@ with sync_playwright() as p:
         'default active report lists active source vouchers and excludes cancelled records',
     )
 
+    # Malformed row entries and object-valued fields must not crash the report renderer.
+    def tamper_report_rows(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        if request_data.get('action') == 'recordedMovementReport':
+            summary = payload.get('data', {})
+            summary['items'].extend([
+                None,
+                'not-a-report-row',
+                {
+                    'id': 'malformed-report-object',
+                    'date': {'toString': None, 'valueOf': None},
+                    'voucherNo': {'toString': None, 'valueOf': None},
+                    'type': {'toString': None, 'valueOf': None},
+                    'vendor': {'toString': None, 'valueOf': None},
+                    'category': {'toString': None, 'valueOf': None},
+                    'notes': {'toString': None, 'valueOf': None},
+                    'amount': {'toString': None, 'valueOf': None},
+                    'status': {'toString': None, 'valueOf': None},
+                },
+            ])
+            payload['data'] = summary
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_report_rows)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ):
+        page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('2 malformed report row(s) omitted')"
+    )
+    check(
+        '2 malformed report row(s) omitted' in page.locator('#view').inner_text()
+        and page.locator('#view svg, #view img').count() == 0,
+        'report skips malformed non-row entries, sanitizes object-valued fields, and discloses omissions',
+    )
+    page.unroute('**/api?*', tamper_report_rows)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ):
+        page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
+    )
+
     # Report summary counts are API response fields and must remain inert at HTML text sinks.
     report_count_payload = '<svg onload=window.__reportCountXss=true></svg>'
     report_active_count_payload = '<img src=x onerror=window.__reportCountXss=true>'
@@ -1814,6 +1865,46 @@ with sync_playwright() as p:
         page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
         "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
+    )
+
+    # A malformed report envelope is an explicit recoverable error, never a render crash.
+    def tamper_report_envelope(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        if request_data.get('action') == 'recordedMovementReport':
+            summary = payload.get('data', {})
+            summary['items'] = {'unexpected': 'object instead of array'}
+            payload['data'] = summary
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_report_envelope)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ):
+        page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_selector('.form-error[role=alert]')
+    check(
+        'invalid response' in page.locator('.form-error').inner_text().lower()
+        and page.locator('#view table tbody tr').count() == 0
+        and page.locator('.form-error [data-act=reportRun]').is_enabled(),
+        'invalid report envelope clears stale rows and offers an enabled retry',
+    )
+    page.unroute('**/api?*', tamper_report_envelope)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ):
+        page.locator('.form-error [data-act=reportRun]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Source vouchers')"
+    )
+    check(
+        'invalid response' not in page.locator('#view').inner_text().lower(),
+        'movement report recovers after a malformed response is removed',
     )
 
     # Adversarially tamper with the date control's value getter so malformed
@@ -1927,6 +2018,75 @@ with sync_playwright() as p:
 
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody')
+
+    # The register must stay usable when API records have malformed vendor/note/receipt fields.
+    def tamper_register_metadata(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {})
+        if request_data.get('action') == 'bootstrap':
+            vouchers = data.get('vouchers', [])
+            template = next((item.copy() for item in vouchers if isinstance(item, dict)), {})
+            template.update({
+                'id': 'malformed-register-fixture',
+                'no': 999991,
+                'date': datetime.date.today().isoformat(),
+                'vendor': None,
+                'category': 'Other',
+                'notes': {'toString': None, 'valueOf': None},
+                'amount': 12.5,
+                'type': 'PAYMENT',
+                'status': 'ACTIVE',
+                'createdBy': 'owner@test.com',
+                'createdAt': '2026-10-12T00:00:00.000Z',
+                'receipts': None,
+            })
+            vouchers.append(template)
+            vouchers.append(None)
+            data['vouchers'] = vouchers
+            payload['data'] = data
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_register_metadata)
+    page.locator('[data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelector('#rtot').innerText.includes('1 malformed voucher record(s) omitted')"
+    )
+    check(
+        page.locator('#rbody tr').count() == 3
+        and 'Receipt metadata unavailable' in page.locator('#rbody').inner_text(),
+        'register omits malformed voucher records and visibly flags missing receipt metadata',
+    )
+    page.fill('#rq', '999991')
+    check(
+        page.locator('#rbody tr').count() == 1
+        and 'malformed voucher record(s) omitted' in page.locator('#rtot').inner_text(),
+        'register search tolerates null vendor and object-valued notes',
+    )
+    page.fill('#rq', 'query with no match')
+    page.wait_for_function("!document.querySelector('#rempty').classList.contains('hidden')")
+    check(
+        page.locator('#rempty .empty-state-message').inner_text()
+        == 'No vouchers match the current filters.',
+        'malformed fields do not break the register empty state',
+    )
+    page.click('#rempty [data-act=rclear]')
+    page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
+    page.wait_for_selector('#rimgs .receipt-error[role=alert]')
+    check(
+        'Receipt metadata is missing or malformed' in page.locator('#rimgs').inner_text()
+        and page.locator('#radd').count() == 0,
+        'receipt dialog blocks add/open operations and explains how to recover from malformed metadata',
+    )
+    page.click('#modal [data-x]')
+    page.unroute('**/api?*', tamper_register_metadata)
+    page.locator('[data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelector('#rtot').innerText.includes('vouchers') && !document.querySelector('#rtot').innerText.includes('malformed voucher record(s) omitted')"
+    )
 
     with page.expect_download() as download_info:
         page.click('[data-act=csv]')
