@@ -208,11 +208,7 @@ export function createPayments({ api, refresh }) {
       try {
         const revision = row._receiptRevision;
         const receipt = await compress(file);
-        if (
-          !row.isConnected ||
-          !$('#rows')?.contains(row) ||
-          row._receiptRevision !== revision
-        ) {
+        if (!row.isConnected || !$('#rows')?.contains(row) || row._receiptRevision !== revision) {
           revokePreviewUrl(receipt.preview);
           continue;
         }
