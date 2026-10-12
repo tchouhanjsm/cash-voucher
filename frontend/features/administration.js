@@ -9,6 +9,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
   let users = [];
   let auditRows = [];
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
+  let malformedAuditCount = 0;
 
   function vendors() {
     $('#view').innerHTML =
@@ -300,7 +301,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     api('auditLog')
       .then((rows) => {
         const receivedRows = Array.isArray(rows) ? rows : [];
-        const malformedCount = receivedRows.filter(
+        malformedAuditCount = receivedRows.filter(
           (row) => row === null || typeof row !== 'object' || Array.isArray(row),
         ).length;
         auditRows = receivedRows.filter(
@@ -309,10 +310,6 @@ export function createAdministration({ api, getNavigation, signOut }) {
         if (!$('#aud')) return;
         populateAuditOptions();
         renderAuditRows();
-        if (malformedCount) {
-          $('#aud-count').textContent +=
-            ` ${malformedCount} malformed audit event(s) omitted from this response.`;
-        }
       })
       .catch((error) => {
         const body = $('#aud');
@@ -439,7 +436,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
       tr.appendChild(cell);
       body.appendChild(tr);
     }
-    count.textContent = `Showing ${rows.length} of ${auditRows.length} loaded events.`;
+    count.textContent = `Showing ${rows.length} of ${auditRows.length} loaded events.` +
+      (malformedAuditCount
+        ? ` ${malformedAuditCount} malformed audit event(s) omitted from this response.`
+        : '');
   }
 
   function clearAuditFilters() {
