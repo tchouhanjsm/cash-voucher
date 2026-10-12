@@ -160,7 +160,7 @@ export function createDashboard() {
     }
     if (diagnostics.malformedFieldCount) {
       dataWarnings.push(
-        `${diagnostics.malformedFieldCount} malformed voucher field(s) normalized for safe display.`,
+        `${diagnostics.malformedFieldCount} malformed voucher field(s) handled for safe display.`,
       );
     }
 
