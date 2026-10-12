@@ -724,6 +724,21 @@ with sync_playwright() as p:
         and page.locator('#rbody tr').count() == 2,
         'empty-state clear-filters action restores matching vouchers',
     )
+    page.fill('#rfrom', '2026-10-20')
+    page.fill('#rto', '2026-10-10')
+    check(
+        'The start date must be on or before the end date.' in page.locator('#rempty').inner_text()
+        and 'Totals unavailable' in page.locator('#rtot').inner_text()
+        and page.locator('#rf [data-act=csv]').is_disabled()
+        and page.locator('#rempty [data-act=rclear]').is_visible(),
+        'invalid register date range blocks misleading totals and CSV export with a recovery action',
+    )
+    page.click('#rempty [data-act=rclear]')
+    check(
+        page.locator('#rbody tr').count() == 2
+        and not page.locator('#rf [data-act=csv]').is_disabled(),
+        'clearing an invalid register range restores rows and export availability',
+    )
     check(
         xss_note in page.locator('#rbody').inner_text()
         and page.locator('#rbody img').count() == 0,
