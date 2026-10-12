@@ -1320,9 +1320,10 @@ with sync_playwright() as p:
     page.wait_for_selector('#rbody')
     page.click('[data-act=refresh]')
     page.wait_for_timeout(300)
+    offline_receipt_row = page.locator('#rbody tr', has_text='Offline Receipt Label Test')
     check(
-        page.locator('#rbody tr', has_text='Offline Receipt Label Test').count() == 1,
-        'queued offline cash receipt uploads successfully when connectivity returns',
+        offline_receipt_row.count() == 1 and 'R-1' in offline_receipt_row.inner_text(),
+        'queued offline cash receipt syncs successfully and receives the next receipt number',
     )
 
     page.click('[data-v=acct]')
@@ -1343,7 +1344,10 @@ with sync_playwright() as p:
     page.fill('.ra', '5000')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
-    check('R-1' in page.inner_text('#nres'), 'cash received saved as R-1')
+    check(
+        'R-2' in page.inner_text('#nres'),
+        'next cash receipt receives the next sequential number after offline sync',
+    )
 
     page.click('[data-v=bulk]')
     page.wait_for_selector('#bt')
