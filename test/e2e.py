@@ -41,6 +41,19 @@ with sync_playwright() as p:
     logs = []
     page.add_init_script(
         """window.__xssFired = false;
+        window.__createdObjectUrls = [];
+        window.__revokedObjectUrls = [];
+        const __createObjectURL = URL.createObjectURL.bind(URL);
+        URL.createObjectURL = (value) => {
+            const url = __createObjectURL(value);
+            window.__createdObjectUrls.push(url);
+            return url;
+        };
+        const __revokeObjectURL = URL.revokeObjectURL.bind(URL);
+        URL.revokeObjectURL = (url) => {
+            window.__revokedObjectUrls.push(String(url));
+            return __revokeObjectURL(url);
+        };
         window.__dashboardKeyBaseline = [
             Object.prototype,
             Object,
@@ -412,9 +425,11 @@ with sync_playwright() as p:
         image_file.write(png)
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_selector('.thumb')
+    receipt_preview_url = page.locator('.thumb').first.get_attribute('src')
     check(
-        page.locator('.thumb').first.get_attribute('src').startswith('blob:'),
-        'receipt preview source is assigned as a generated blob URL',
+        receipt_preview_url.startswith('blob:')
+        and page.evaluate("url => window.__createdObjectUrls.includes(url)", receipt_preview_url),
+        'receipt preview source is a tracked generated blob URL',
     )
     page.press('.ra', 'Enter')
     check(page.locator('.erow').count() == 2, 'enter adds row')
@@ -425,12 +440,32 @@ with sync_playwright() as p:
     )
     page.locator('.rv').nth(1).fill('Shiv Gas')
     page.locator('.ra').nth(1).fill('900')
-    page.locator('.erow').nth(1).locator('[data-act=delrow]').click()
+    second_row = page.locator('.erow').nth(1)
+    second_row.locator('.rf').set_input_files('/tmp/r.png')
+    page.wait_for_function("document.querySelectorAll('.erow .thumb').length === 2")
+    cleared_preview_url = second_row.locator('.thumb').get_attribute('src')
+    second_row.locator('[data-act=clrrec]').click()
+    page.wait_for_function(
+        "url => window.__revokedObjectUrls.includes(url)", arg=cleared_preview_url
+    )
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", cleared_preview_url)
+        and second_row.locator('.thumb').count() == 0,
+        'clearing a receipt removes its preview and revokes its object URL',
+    )
+    second_row.locator('.rf').set_input_files('/tmp/r.png')
+    page.wait_for_function("document.querySelectorAll('.erow .thumb').length === 2")
+    removed_preview_url = second_row.locator('.thumb').get_attribute('src')
+    second_row.locator('[data-act=delrow]').click()
+    page.wait_for_function(
+        "url => window.__revokedObjectUrls.includes(url)", arg=removed_preview_url
+    )
     check(
         page.locator('.erow').count() == 1
         and page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
-        and page.evaluate("document.activeElement === document.querySelector('.rv')"),
-        'removing a row restores focus and keeps the remaining row labelled',
+        and page.evaluate("document.activeElement === document.querySelector('.rv')")
+        and page.evaluate("url => window.__revokedObjectUrls.includes(url)", removed_preview_url),
+        'removing a receipt row restores focus and revokes its preview URL',
     )
     page.click('[data-act=addrow]')
     page.wait_for_function("document.querySelectorAll('.erow').length === 2")
@@ -462,6 +497,122 @@ with sync_playwright() as p:
         'server-returned voucher number remains inert text in save confirmation',
     )
     page.unroute('**/api?*', tamper_created_voucher_number)
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", receipt_preview_url),
+        'successful online save releases the receipt preview object URL',
+    )
+
+    # Clearing an existing receipt while a second compression is pending must not
+    # allow the late result to repopulate the cleared row.
+    page.click('[data-act=newagain]')
+    page.wait_for_selector('#nf')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_selector('.thumb')
+    page.evaluate(
+        """() => {
+            window.__nativeToBlob = HTMLCanvasElement.prototype.toBlob;
+            window.__pendingToBlob = null;
+            HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
+                window.__pendingToBlob = { canvas: this, callback, type, quality };
+            };
+        }"""
+    )
+    created_before_clear_race = page.evaluate('window.__createdObjectUrls.length')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_function('window.__pendingToBlob !== null')
+    page.locator('.erow').first.locator('[data-act=clrrec]').click()
+    page.evaluate(
+        """() => {
+            const pending = window.__pendingToBlob;
+            window.__pendingToBlob = null;
+            HTMLCanvasElement.prototype.toBlob = window.__nativeToBlob;
+            if (!pending) throw new Error('Expected the delayed canvas conversion.');
+            window.__nativeToBlob.call(
+                pending.canvas,
+                pending.callback,
+                pending.type,
+                pending.quality,
+            );
+        }"""
+    )
+    page.wait_for_function(
+        'count => window.__createdObjectUrls.length >= count',
+        arg=created_before_clear_race + 2,
+    )
+    cleared_late_preview_url = page.evaluate(
+        'window.__createdObjectUrls[window.__createdObjectUrls.length - 1]'
+    )
+    page.wait_for_function(
+        'url => window.__revokedObjectUrls.includes(url)', arg=cleared_late_preview_url
+    )
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", cleared_late_preview_url)
+        and page.locator('.erow').first.locator('.thumb').count() == 0,
+        'clearing during compression revokes the late preview and keeps the row cleared',
+    )
+
+    # Leaving an unsaved entry must release previews even though no save occurs.
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_selector('.thumb')
+    abandoned_preview_url = page.locator('.thumb').first.get_attribute('src')
+    page.click('[data-v=dash]')
+    page.wait_for_function(
+        "document.querySelector('[data-v=dash]')?.getAttribute('aria-current') === 'page'"
+    )
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", abandoned_preview_url)
+        and page.locator('#nf').count() == 0,
+        'navigating away from an unsaved entry revokes its receipt preview URL',
+    )
+
+    # Force image compression to finish after its row has been detached.
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.evaluate(
+        """() => {
+            window.__nativeToBlob = HTMLCanvasElement.prototype.toBlob;
+            window.__pendingToBlob = null;
+            HTMLCanvasElement.prototype.toBlob = function(callback, type, quality) {
+                window.__pendingToBlob = { canvas: this, callback, type, quality };
+            };
+        }"""
+    )
+    created_before = page.evaluate('window.__createdObjectUrls.length')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_function('window.__pendingToBlob !== null')
+    page.click('[data-v=dash]')
+    page.wait_for_function(
+        "document.querySelector('[data-v=dash]')?.getAttribute('aria-current') === 'page'"
+    )
+    page.evaluate(
+        """() => {
+            const pending = window.__pendingToBlob;
+            window.__pendingToBlob = null;
+            HTMLCanvasElement.prototype.toBlob = window.__nativeToBlob;
+            if (!pending) throw new Error('Expected the delayed canvas conversion.');
+            window.__nativeToBlob.call(
+                pending.canvas,
+                pending.callback,
+                pending.type,
+                pending.quality,
+            );
+        }"""
+    )
+    page.wait_for_function(
+        'count => window.__createdObjectUrls.length >= count',
+        arg=created_before + 2,
+    )
+    late_preview_url = page.evaluate(
+        'window.__createdObjectUrls[window.__createdObjectUrls.length - 1]'
+    )
+    page.wait_for_function(
+        'url => window.__revokedObjectUrls.includes(url)', arg=late_preview_url
+    )
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", late_preview_url)
+        and page.locator('#nf').count() == 0,
+        'compression finishing after navigation revokes its preview URL instead of retaining it',
+    )
 
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody tr')
@@ -622,9 +773,16 @@ with sync_playwright() as p:
     page.click('[data-v=new]')
     page.fill('.rv', 'Offline Vendor')
     page.fill('.ra', '75')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_selector('.thumb')
+    offline_receipt_preview_url = page.locator('.thumb').first.get_attribute('src')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'offline queued')
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", offline_receipt_preview_url),
+        'successful offline queueing releases the receipt preview URL',
+    )
     check(not page.locator('#banner').is_hidden(), 'banner shown')
 
     with page.expect_download() as download_info:
