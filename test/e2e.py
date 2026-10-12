@@ -915,6 +915,7 @@ with sync_playwright() as p:
     check(
         'Voucher data is unavailable while offline.' in offline_register_text
         and 'Totals unavailable while offline.' in offline_register_text
+        and page.locator('#rempty .empty-state-message').inner_text().startswith('Voucher data is unavailable while offline.')
         and page.locator('#view #rbody tr').count() == 0
         and page.locator('#rf [data-act=csv]').is_disabled(),
         'offline Register does not present zero-like totals, empty records, or CSV export as valid data',
