@@ -2741,8 +2741,39 @@ with sync_playwright() as p:
         response = route.fetch()
         payload = response.json()
         if not payload.get('ok'):
-            route.fulfill(response=response, body=json.dumps(payload))
-            return
+            if action == 'backupIntegrityReport':
+                payload = {
+                    'ok': True,
+                    'data': {
+                        'generatedAt': '2026-10-12T09:00:00.000Z',
+                        'inspected': 1,
+                        'limit': 10,
+                        'passCount': 1,
+                        'warningCount': 0,
+                        'failCount': 0,
+                        'snapshots': [
+                            {
+                                'name': 'backup-2026-10-12_090000',
+                                'createdAt': '2026-10-12T09:00:00.000Z',
+                                'state': 'pass',
+                                'checks': [
+                                    {
+                                        'code': 'SHEET_COPY',
+                                        'state': 'pass',
+                                        'detail': 'Spreadsheet copy is present.',
+                                    },
+                                ],
+                                'rowCounts': {'Vouchers': 3},
+                                'receiptCount': 0,
+                                'manifestCount': 0,
+                            },
+                        ],
+                        'note': 'Structural inspection only; restore testing remains required.',
+                    },
+                }
+            else:
+                route.fulfill(response=response, body=json.dumps(payload))
+                return
 
         if action == 'auditLog':
             if audit_response_mode == 'invalid-envelope':
