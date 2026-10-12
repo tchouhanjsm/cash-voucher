@@ -264,7 +264,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E covers an invalid server envelope and the offline cached-session restart path, including unavailable copy, withheld totals/charts/rows/export, and the existing valid-response recovery path.
 - No accounting formula, backend/API schema, authorization, dependency, persistence, deployment, or production data changes. This narrows a data-availability ambiguity; it does not certify the complete stored-XSS sink inventory or replace live Sheet validation.
 
-
 ## PR #101 — Scalar-only HTML escaping for malformed JSON values
 
 - **Confirmed active sink failure:** `frontend/core/utils.js` implemented `esc(value)` by calling `String(value)` for every non-null input. HTML escaping itself could throw for an object deserialized from JSON with non-callable own `toString` and `valueOf` properties. The Settings renderer passes bootstrap-sourced numeric settings through this helper before inserting them into quoted `value` attributes; a malformed object could therefore break the view before the escaping boundary completed.
