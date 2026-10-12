@@ -48,7 +48,9 @@ async function run() {
     '""',
   );
   assert.equal(csvCell(Symbol('non-scalar')), '""');
-  console.log('HTML/CSV output safety OK — scalar-only conversion, hostile object coercion, formula prefixes and quoting covered.');
+  console.log(
+    'HTML/CSV output safety OK — scalar-only conversion, hostile object coercion, formula prefixes and quoting covered.',
+  );
 }
 
 run().catch((error) => {
