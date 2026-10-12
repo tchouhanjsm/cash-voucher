@@ -1,6 +1,6 @@
 import { $ } from '../core/dom.js';
 import { can, nm, pays, recs, S } from '../core/state.js';
-import { addDays, dmy, esc, iso, money, today } from '../core/utils.js';
+import { addDays, dmy, esc, finiteAmount, iso, money, sumAmounts, today } from '../core/utils.js';
 import { head, refreshBtn } from '../core/ui.js';
 
 export function createDashboard() {
@@ -36,7 +36,7 @@ export function createDashboard() {
 
       const item = grouped.get(groupKey);
       item.n++;
-      item.s += voucher.amount;
+      item.s += finiteAmount(voucher.amount) ?? 0;
     });
 
     return [...grouped.values()].sort((a, b) => b.s - a.s);
@@ -126,20 +126,23 @@ export function createDashboard() {
     const previous = payments.filter(
       (voucher) => voucher.date >= addDays(from, -length) && voucher.date < from,
     );
-    const total = current.reduce((sum, voucher) => sum + voucher.amount, 0);
-    const previousTotal = previous.reduce((sum, voucher) => sum + voucher.amount, 0);
+    const validCurrent = current.filter((voucher) => finiteAmount(voucher.amount) !== null);
+    const total = sumAmounts(current);
+    const previousTotal = sumAmounts(previous);
     const delta = previousTotal ? ((total - previousTotal) / previousTotal) * 100 : null;
     const todayPayments = payments.filter((voucher) => voucher.date === today());
-    const largest = current.reduce(
-      (max, voucher) => (voucher.amount > (max ? max.amount : 0) ? voucher : max),
-      null,
-    );
+    const largest = current.reduce((max, voucher) => {
+      const amount = finiteAmount(voucher.amount);
+      return amount !== null && amount > (max ? finiteAmount(max.amount) : 0) ? voucher : max;
+    }, null);
     const receipts = recs().filter((voucher) => voucher.date >= from && voucher.date <= to);
-    const received = receipts.reduce((sum, voucher) => sum + voucher.amount, 0);
-    const cashInHand =
-      (S.settings.openingBalance || 0) +
-      recs().reduce((sum, voucher) => sum + voucher.amount, 0) -
-      payments.reduce((sum, voucher) => sum + voucher.amount, 0);
+    const received = sumAmounts(receipts);
+    const allReceipts = recs();
+    const openingBalance = finiteAmount(S.settings.openingBalance) ?? 0;
+    const cashInHand = openingBalance + sumAmounts(allReceipts) - sumAmounts(payments);
+    const invalidAmountCount = [...payments, ...allReceipts].filter(
+      (voucher) => finiteAmount(voucher.amount) === null,
+    ).length;
 
     $('#view').innerHTML =
       head(can('viewAll') ? 'Dashboard' : 'My Dashboard', refreshBtn) +
@@ -159,12 +162,13 @@ export function createDashboard() {
   ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
   <div class="stats">
     <div class="card stat"><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
-    <div class="card stat"><span>Vouchers</span><b>${current.length}</b><small class="muted">avg ${money(current.length ? total / current.length : 0)}</small></div>
+    <div class="card stat"><span>Vouchers</span><b>${current.length}</b><small class="muted">avg ${money(validCurrent.length ? total / validCurrent.length : 0)}</small></div>
     <div class="card stat"><span>Largest</span><b>${money(largest ? largest.amount : 0)}</b><small class="muted">${largest ? esc(largest.vendor) : '–'}</small></div>
-    <div class="card stat"><span>Today</span><b>${money(todayPayments.reduce((sum, voucher) => sum + voucher.amount, 0))}</b><small class="muted">${todayPayments.length} vouchers</small></div>
+    <div class="card stat"><span>Today</span><b>${money(sumAmounts(todayPayments))}</b><small class="muted">${todayPayments.length} vouchers</small></div>
     <div class="card stat"><span>Cash received</span><b style="color:var(--ok)">${money(received)}</b><small class="muted">${receipts.length} entries · net ${money(received - total)}</small></div>
     ${can('viewAll') ? `<div class="card stat"><span>Cash in hand</span><b>${money(cashInHand)}</b><small class="muted">opening + received − paid</small></div>` : ''}
   </div>
+  ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
   <div class="card"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(current, from, to)}</div>
   <div class="two"><div class="card"><h2>Top vendors</h2>${bars(group(current, (voucher) => voucher.vendor))}</div><div class="card"><h2>By category</h2>${bars(group(current, (voucher) => voucher.category || 'Other'))}</div></div>
   ${

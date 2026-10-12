@@ -2,16 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `68982f99a9b3ab795cb77a2ff1531d75aeefc91e` (PR #87 merge)  
+**Verified `main` SHA:** `8dc477863eadd4113928c88f074c3349bb2965d5` (PR #88 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #88 — Receipt preview lifecycle cleanup**  
-Branch: `security/bulk-receipt-preview-lifecycle`  
-Base: `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`
+**PR #89 — Finite monetary rendering and aggregate integrity**  
+Branch: `quality/finite-amount-rendering-batch`  
+Base: `8dc477863eadd4113928c88f074c3349bb2965d5`
 
-Scope: release receipt preview object URLs on clear, row removal, online/offline save, form replacement and navigation; handle compression completing after a row is detached or its receipt set is cleared. Browser E2E instruments object URLs and covers these lifecycle paths. PR #87 is merged at this base; its exact tested head passed CI, Browser E2E (181 checks) and Full Flight Test (129 backend + 181 browser checks).
+Scope: add a shared finite-amount boundary, prevent malformed API amounts from poisoning dashboard/register totals, display an em dash for non-finite monetary values, disclose invalid active amounts excluded from totals, and add hostile-bootstrap Browser E2E coverage. PR #88 is merged; its exact tested head `3f5b563abc9b1bb818a6f5bb5a4c89c5025f34b7` passed CI, Browser E2E (187 checks) and Full Flight Test (129 backend + 187 browser checks).
 
 Adopt three distinct sources of information:
 
@@ -55,6 +55,8 @@ These remain open regardless of green mock-backed CI:
 6. The current lint warning for unused `backupData_` and the documented time-limited `@google/clasp → micromatch → braces` dependency-advisory exception remain visible. The documented review-by date is 9 November 2026.
 
 ## Recent completed milestones
+
+- **PR #88 — Receipt preview lifecycle cleanup:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/88) at `8dc477863eadd4113928c88f074c3349bb2965d5`; exact tested head `3f5b563abc9b1bb818a6f5bb5a4c89c5025f34b7` passed CI, Browser E2E (187 checks) and Full Flight Test (129 backend + 187 browser checks). Preview URLs are revoked across clear/remove/save/navigation, including asynchronous compression races.
 
 - **PR #87 — Escape API-derived report summary count fields:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/87) at `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`; exact tested head `863ee174675ea0311124b0e39c7510f1221e7a54` passed CI (129 backend checks), Browser E2E (181 checks), and Full Flight Test (129 backend + 181 browser checks). Report summary API values are encoded at their HTML text sinks; test coverage verifies hostile values remain literal text.
 - **PR #86 — Dashboard numeric rendering integrity:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/86) at `ac1ea5977dcfc763dfae30e0c80d081affade998`; exact tested head `482de368714e093ad3671ae20bac0290f656fcde` passed CI (129 backend checks), Browser E2E (180 checks) and Full Flight Test (129 backend + 180 browser checks). The change bounds CSS/SVG geometry under malformed bootstrap amounts; it does not validate source ledger data.

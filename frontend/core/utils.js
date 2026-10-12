@@ -29,8 +29,18 @@ export const addDays = (dateString, days) => {
 
 export const dmy = (value) => (value ? value.split('-').reverse().join('/') : '');
 
-export const money = (value) => {
+export const finiteAmount = (value) => {
   const amount = Number(value || 0);
+
+  return Number.isFinite(amount) ? amount : null;
+};
+
+export const sumAmounts = (items) =>
+  items.reduce((total, item) => total + (finiteAmount(item.amount) ?? 0), 0);
+
+export const money = (value) => {
+  const amount = finiteAmount(value);
+  if (amount === null) return '—';
 
   return (
     '₹' +
