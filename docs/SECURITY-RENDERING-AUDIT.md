@@ -285,7 +285,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Unit coverage checks strings and supported primitive types, non-scalars, a throwing getter and `Symbol.toPrimitive`; Browser E2E injects object-valued property/profile names and verifies navigation boots, fallback branding appears, Settings remains reachable, and no payload markup executes.
 - This is targeted DOMString resilience for non-HTML sinks. It does not complete the dynamic-HTML sink inventory or certify all application rendering, live authorization, backup/restore, real-device behavior or production readiness.
 
-
 ## PR #104 — Harden category option lists against malformed Settings data
 
 - **Confirmed rendering/resilience defect:** shared state exposed `S.settings.categories` and `S.settings.receiptCategories` with only a truthy fallback. The active HTML-template option builder called `.map()`, and the modal/editor DOM-option builder called `.forEach()` before assigning each category to `option.value`. Malformed object/string containers can throw; object-valued members can throw during DOMString conversion.

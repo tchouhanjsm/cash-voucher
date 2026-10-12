@@ -36,7 +36,9 @@ async function run() {
   assert.deepEqual(categories(), ['Travel', 'Meals']);
   assert.deepEqual(rcats(), ['Refunds', 'Other']);
 
-  console.log('Category settings OK — scalar-only lists, stable order, deduplication and fallback covered.');
+  console.log(
+    'Category settings OK — scalar-only lists, stable order, deduplication and fallback covered.',
+  );
 }
 
 run().catch((error) => {
