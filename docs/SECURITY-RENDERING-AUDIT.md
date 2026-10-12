@@ -211,7 +211,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E tampers with the real `auditLog` API response to prepend null, string and numeric members plus a record containing hostile text. It verifies the audit view and filters remain usable, malformed entries are disclosed, and no injected markup or handler execution occurs.
 - No backend/API schema, authorization, persisted records, deployment or production mutation changes. The full active-renderer inventory remains incomplete.
 
-
 ## PR #94 — Guard Administration vendor rendering against malformed records
 
 - **Confirmed resilience/integrity defect:** the active owner/manager Vendors view sorted `S.vendors` using `a.name.localeCompare(b.name)` and rendered every item without validating the bootstrap envelope or row shape. A null member throws during sorting; an object-valued name lacks the expected string method and can also stop the view from rendering. The same unvalidated array was searched by the Edit action.
