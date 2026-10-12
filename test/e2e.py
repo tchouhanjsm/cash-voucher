@@ -1324,6 +1324,17 @@ with sync_playwright() as p:
                 })
                 vouchers.append(entry)
             data['vouchers'] = vouchers
+            vendors = data.get('vendors', [])
+            if isinstance(vendors, list):
+                vendors.extend([
+                    None,
+                    {
+                        'id': 'malformed-vendor-option',
+                        'name': {'toString': None, 'valueOf': None},
+                        'active': True,
+                    },
+                ])
+                data['vendors'] = vendors
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -1366,6 +1377,39 @@ with sync_playwright() as p:
     check(
         builtins_unchanged,
         'prototype-like dashboard labels do not mutate built-in object/function properties',
+    )
+
+    # The shared vendor datalist must retain prototype-named labels and ignore malformed cache/API values.
+    cache_before_vendor_options = page.evaluate(
+        """() => {
+          const previous = localStorage.getItem('cv.cache');
+          const cache = JSON.parse(previous || '{}');
+          cache.vn = [];
+          localStorage.setItem('cv.cache', JSON.stringify(cache));
+          return previous;
+        }"""
+    )
+    page.click('[data-v=new]')
+    page.wait_for_selector('#vlist', state='attached')
+    vendor_option_values = page.locator('#vlist option').evaluate_all(
+        'options => options.map(option => option.value)'
+    )
+    check(
+        all(value in vendor_option_values for value in prototype_group_values),
+        'vendor suggestions preserve constructor, __proto__, toString and hasOwnProperty names',
+    )
+    check(
+        page.locator('#view img, #view svg').count() == 0
+        and not page.evaluate('window.__xssFired === true')
+        and '[object Object]' not in vendor_option_values,
+        'malformed vendor API values are ignored without unsafe coercion or injected markup',
+    )
+    page.evaluate(
+        """previous => {
+          if (previous === null) localStorage.removeItem('cv.cache');
+          else localStorage.setItem('cv.cache', previous);
+        }""",
+        cache_before_vendor_options,
     )
     page.unroute('**/api?*', tamper_dashboard_groups)
     page.reload(wait_until='domcontentloaded')

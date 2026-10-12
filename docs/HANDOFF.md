@@ -2,18 +2,18 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `4ea8c478be7ce33d5b54b098bff3f0f523fc6d33` (PR #90 merge)  
+**Verified `main` SHA:** `a50b38e5dc9a60576a9f56953a512f2f4b498f7b` (PR #91 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #91 — Register and report resilience for malformed API data** ([pull request](https://github.com/tchouhanjsm/cash-voucher/pull/91))  
-Branch: `resilience/register-report-malformed-data`  
-Base: `4ea8c478be7ce33d5b54b098bff3f0f523fc6d33`
+**PR #92 — Harden shared vendor suggestion aggregation** ([pull request](https://github.com/tchouhanjsm/cash-voucher/pull/92))  
+Branch: `security/harden-vendor-suggestion-aggregation`  
+Base: `a50b38e5dc9a60576a9f56953a512f2f4b498f7b`
 
-Scope: guard bootstrap's local vendor-cache projection against malformed voucher entries/labels; harden register filtering/rendering against malformed voucher records, null/non-string vendor and note values, and missing/non-array receipt metadata; validate the recorded-movement report envelope; sanitize report-row fields and explicitly disclose dropped non-record entries. Add browser E2E coverage for malformed rows, safe receipt recovery, invalid report response recovery and normal-path restoration. Preserve server authorization, API/Sheet schema and accounting semantics. No deployment or production data changes.
+Scope: continue the incremental rendering-security/data-integrity audit in `frontend/core/form-options.js`. Replace prototype-sensitive plain-object vendor counting with a `Map`, tolerate malformed voucher/vendor/cache entries, and add Browser E2E proof that prototype-named vendors remain available in the actual New Entry datalist while non-record and object-valued vendor metadata is ignored. No API/schema, authorization, accounting semantics, or deployment changes.
 
-**Acceptance gate:** code and test review at the final diff; exact final PR head must pass CI, Browser E2E and Full Flight Test. The live PR page is authoritative for the current head and workflow status. Owner reviews and merges.
+**Acceptance gate:** the exact final PR head must pass CI, Browser E2E and Full Flight Test. Owner reviews and merges; live Google, backup/restore, and complete rendering-audit gates remain open.
 
 Adopt three distinct sources of information:
 
@@ -57,6 +57,8 @@ These remain open regardless of green mock-backed CI:
 6. The current lint warning for unused `backupData_` and the documented time-limited `@google/clasp → micromatch → braces` dependency-advisory exception remain visible. The documented review-by date is 9 November 2026.
 
 ## Recent completed milestones
+
+- **PR #91 — Register/report malformed-data resilience:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/91) at `a50b38e5dc9a60576a9f56953a512f2f4b498f7b`; exact tested head `5e3764f206d16e6b16c05160e0a63e910c45d12f` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38199469555), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38199469567) (202 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38199469560) (129 backend + 202 browser checks). Register/report/bootstrap vendor-cache paths now reject malformed records with visible recovery feedback.
 
 - **PR #90 — Guard malformed amounts in printed vouchers:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/90) at `4ea8c478be7ce33d5b54b098bff3f0f523fc6d33`; exact tested head `095b3aaeb43f001a89001cb9d45b0ad7445f075a` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516457), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516410) (195 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516419) (129 backend + 195 browser checks). Printed amount-in-words now returns a clear unavailable message for malformed or unrepresentable inputs.
 

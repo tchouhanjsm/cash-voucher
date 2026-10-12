@@ -31,7 +31,9 @@ The active application uses HTML template strings for several views. The review 
 ### Shared form options — `frontend/core/form-options.js`
 
 - Category labels and vendor names in datalist value attributes use `esc()`.
-- Cached browser data is treated as untrusted input and escaped when rendered.
+- Vendor frequency aggregation uses a `Map` instead of a normal object, avoiding prototype-name collisions for legitimate vendor values such as `__proto__`, `constructor`, and `toString`.
+- Voucher/vendor/cache collections are treated as untrusted shape-wise: only record rows and non-empty string vendor names enter the suggestion list. Invalid cache envelopes, non-array vendor lists, null rows and object-valued names are ignored rather than crashing form render or invoking unsafe object-to-string coercion.
+- Browser E2E exercises the actual New Entry datalist using prototype-named bootstrap vendors, disables the cached-name fallback to prove the aggregate path works, and injects a null vendor record plus an object-valued name. This is a focused integrity/resilience regression, not an exhaustive proof of all form sinks.
 
 ### Bulk import — `frontend/features/bulk.js`
 
@@ -191,3 +193,10 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Reject null/undefined, blank strings, booleans, nonnumeric strings and non-finite numbers from the shared finite-amount helper. The print formatter returns `Amount unavailable` for invalid, negative or unrepresentable paise totals, and rounds through integer paise before splitting rupees/paise.
 - Browser E2E tampers with bootstrap data and prints records containing `NaN`, `Infinity`, null, blank, boolean and negative amounts. It asserts prompt completion, safe fallback text, and absence of `undefined`, `NaN Rupees` or `Infinity`; the ordinary ₹1,250.50 case remains `One Thousand Two Hundred Fifty Rupees and Fifty Paise Only`.
 - These are presentation guards, not authorization, ledger repair or a replacement for the backend's positive/max-amount validation. Persisted vouchers and API/schema/CSV contracts are unchanged.
+
+## PR #92 — Prototype-safe vendor suggestions
+
+- **Confirmed integrity/resilience defect:** `vendorNames()` grouped voucher vendors in a normal object. The special key `__proto__` interacts with the object's prototype setter instead of behaving like a regular vendor key, so a valid vendor suggestion can be lost. The same function assumed all voucher/vendor/cache entries were records with string names; malformed values could abort payment entry before a datalist was rendered.
+- Replace the count object with a `Map`; validate row/collection shapes and accept only non-empty string vendor names from vouchers, active vendor records and cached suggestions. Keep HTML attribute escaping in the datalist template and DOM-property assignment in the DOM-node variant.
+- Browser E2E verifies `constructor`, `__proto__`, `toString` and `hasOwnProperty` survive into the actual New Entry datalist after disabling cached-name fallback. The bootstrap fixture also includes a null vendor record and object-valued vendor name, which must be ignored without crashing or rendering active markup.
+- No persisted data, API/schema, authorization, or production setting changes. Other active template sinks and the complete stored-XSS audit remain open.
