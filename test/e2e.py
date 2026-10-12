@@ -1035,14 +1035,18 @@ with sync_playwright() as p:
     )
     page.click('[data-v=new]')
 
-    def import_recovery_file(file_path):
+    def select_recovery_file(file_path, accept_dialog=False):
         selector = '#banner [data-act=import-pending]'
         if not page.locator(selector).is_visible():
             selector = '#view [data-act=import-pending]'
-        page.once('dialog', lambda dialog: dialog.accept())
+        if accept_dialog:
+            page.once('dialog', lambda dialog: dialog.accept())
         with page.expect_file_chooser() as chooser_info:
             page.locator(selector).click()
         chooser_info.value.set_files(file_path)
+
+    def import_recovery_file(file_path):
+        select_recovery_file(file_path, accept_dialog=True)
 
     import_recovery_file(pending_export_path)
     page.wait_for_function(
@@ -1067,6 +1071,62 @@ with sync_playwright() as p:
     check(
         '1 payment waiting to upload' in page.inner_text('#banner'),
         'conflicting recovery import preserves original queued payment',
+    )
+
+    def write_recovery_variant(filename, mutate):
+        variant = json.loads(json.dumps(recovery_payload))
+        mutate(variant)
+        path = '/tmp/' + filename
+        with open(path, 'w', encoding='utf-8') as recovery_file:
+            json.dump(variant, recovery_file)
+        return path
+
+    hostile_id_path = write_recovery_variant(
+        'cash-voucher-recovery-hostile-id.json',
+        lambda payload: payload['records'][0].update({
+            'clientId': {'toString': None, 'valueOf': None},
+        }),
+    )
+    select_recovery_file(hostile_id_path)
+    page.wait_for_function(
+        "document.querySelector('#toast').innerText.includes('invalid payment ID')",
+        timeout=8000,
+    )
+    check(
+        '1 payment waiting to upload' in page.inner_text('#banner'),
+        'hostile recovery IDs are rejected without coercion or queue mutation',
+    )
+
+    hostile_owner_path = write_recovery_variant(
+        'cash-voucher-recovery-hostile-owner.json',
+        lambda payload: payload['records'][0].update({
+            'ownerKey': {'toString': None, 'valueOf': None},
+        }),
+    )
+    select_recovery_file(hostile_owner_path)
+    page.wait_for_function(
+        "document.querySelector('#toast').innerText.includes('invalid account binding')",
+        timeout=8000,
+    )
+    check(
+        '1 payment waiting to upload' in page.inner_text('#banner'),
+        'hostile recovery account bindings are rejected without queue mutation',
+    )
+
+    hostile_receipt_path = write_recovery_variant(
+        'cash-voucher-recovery-hostile-receipt.json',
+        lambda payload: payload['records'][0]['entry'].update({
+            'receipts': [{'mime': {'toString': None, 'valueOf': None}, 'data': 'AQID'}],
+        }),
+    )
+    select_recovery_file(hostile_receipt_path)
+    page.wait_for_function(
+        "document.querySelector('#toast').innerText.includes('invalid or oversized receipt')",
+        timeout=8000,
+    )
+    check(
+        '1 payment waiting to upload' in page.inner_text('#banner'),
+        'hostile recovery receipt metadata is rejected without coercion or queue mutation',
     )
 
     stale_lease_count = page.evaluate(

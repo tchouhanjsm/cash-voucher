@@ -1,3 +1,10 @@
+import { addDays, today } from './utils.js';
+import {
+  validateClientId as validateRecoveryClientId,
+  validateOptionalClientId,
+  validateRecoveryRecords,
+} from './recovery-validation.js';
+
 const DB_NAME = 'cash-voucher';
 const DB_VERSION = 1;
 const STORE = 'outbox';
@@ -57,13 +64,18 @@ function newClientId_() {
 }
 
 function normalizeEntry_(entry, index, ownerKey = '') {
-  const clientId = String(entry?.clientId || '').trim() || newClientId_();
+  if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+    throw new Error('Offline payment contains invalid details.');
+  }
+  const clientId =
+    validateOptionalClientId(entry.clientId, 'Offline payment contains an invalid payment ID.') ||
+    newClientId_();
   const normalizedEntry = { ...entry, clientId };
 
   return {
     clientId,
     entry: normalizedEntry,
-    ownerKey: String(ownerKey || ''),
+    ownerKey: typeof ownerKey === 'string' ? ownerKey : '',
     status: 'pending',
     attempts: 0,
     failure: '',
@@ -146,7 +158,10 @@ async function migrateLegacy_(db) {
       );
     }
 
-    const existingId = String(entry.clientId || '').trim();
+    const existingId = validateOptionalClientId(
+      entry.clientId,
+      'Existing offline payments contain an invalid payment ID. Do not clear browser storage.',
+    );
     const clientId = existingId ? validateClientId_(existingId) : legacyClientId_(entry, index);
 
     return { ...entry, clientId };
@@ -239,20 +254,7 @@ export async function ready() {
 }
 
 function validateClientId_(value) {
-  const clientId = String(value || '').trim();
-
-  if (
-    !clientId ||
-    clientId.length > 60 ||
-    [...clientId].some((character) => {
-      const code = character.charCodeAt(0);
-      return code <= 31 || code === 127;
-    })
-  ) {
-    throw new Error('Offline payment contains an invalid payment ID.');
-  }
-
-  return clientId;
+  return validateRecoveryClientId(value, 'Offline payment contains an invalid payment ID.');
 }
 
 function stableJson_(value) {
@@ -311,8 +313,20 @@ function addRecordsSafely_(incoming, allowLegacyBinding = false) {
                 return;
               }
 
-              const previousOwner = String(previous.ownerKey || '');
-              const incomingOwner = String(record.ownerKey || '');
+              if (
+                previous.ownerKey !== undefined &&
+                previous.ownerKey !== null &&
+                typeof previous.ownerKey !== 'string'
+              ) {
+                failure = new Error(
+                  'An existing offline payment has an invalid account binding. Nothing was imported.',
+                );
+                transaction.abort();
+                return;
+              }
+
+              const previousOwner = typeof previous.ownerKey === 'string' ? previous.ownerKey : '';
+              const incomingOwner = typeof record.ownerKey === 'string' ? record.ownerKey : '';
 
               if (previousOwner !== incomingOwner) {
                 if (allowLegacyBinding && !previousOwner && incomingOwner) {
@@ -366,7 +380,7 @@ function assertUniqueIds_(records) {
 
 export async function enqueue(entries, ownerKey) {
   if (!Array.isArray(entries) || !entries.length) return { added: 0, skipped: 0 };
-  if (!String(ownerKey || '').trim()) {
+  if (typeof ownerKey !== 'string' || !ownerKey.trim()) {
     throw new Error('Sign in to bind offline payments to your account before saving.');
   }
 
@@ -382,48 +396,21 @@ export async function enqueue(entries, ownerKey) {
 }
 
 export async function restore(exportRecords, ownerKey) {
-  if (!Array.isArray(exportRecords) || !exportRecords.length) {
-    throw new Error('Recovery file contains no pending payments.');
-  }
-  if (!String(ownerKey || '').trim()) {
-    throw new Error('Sign in before restoring pending payments.');
-  }
-
-  const hasUnboundRecords = exportRecords.some((item) => !String(item?.ownerKey || '').trim());
-  const records = exportRecords.map((item, index) => {
-    const clientId = validateClientId_(item?.clientId);
-    const entry = item?.entry;
-    const sourceOwner = String(item?.ownerKey || '').trim();
-
-    if (sourceOwner && sourceOwner !== ownerKey) {
-      throw new Error(
-        'Recovery file is bound to another endpoint or user; restore it while signed in ' +
-          'to the matching account.',
-      );
-    }
-    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-      throw new Error('Recovery file contains a payment with invalid details.');
-    }
-
-    if (validateClientId_(entry.clientId) !== clientId) {
-      throw new Error('Recovery file payment IDs do not match their transaction details.');
-    }
-
-    return {
-      clientId,
-      entry: { ...entry, clientId },
-      ownerKey,
-      status: 'pending',
-      attempts: 0,
-      failure: '',
-      leaseOwner: '',
-      leaseUntil: 0,
-      createdAt: Date.now() + index,
-    };
-  });
+  const validation = validateRecoveryRecords(exportRecords, ownerKey, addDays(today(), 1));
+  const records = validation.records.map((item, index) => ({
+    clientId: item.clientId,
+    entry: item.entry,
+    ownerKey,
+    status: 'pending',
+    attempts: 0,
+    failure: '',
+    leaseOwner: '',
+    leaseUntil: 0,
+    createdAt: Date.now() + index,
+  }));
 
   assertUniqueIds_(records);
-  return addRecordsSafely_(records, hasUnboundRecords);
+  return addRecordsSafely_(records, validation.unboundCount > 0);
 }
 
 export async function list() {

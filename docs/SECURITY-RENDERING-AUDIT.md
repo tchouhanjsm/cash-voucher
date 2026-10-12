@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Current review baseline:** `32b7dd23b857aa933b87613d2504e293824d7590` (PR #103 merge)  
+**Current review baseline:** `4c80fa5a94588a8e5f8fd56a830b58cd26548cc0` (PR #104 merge)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -60,6 +60,7 @@ The active application uses HTML template strings for several views. The review 
 ### Payments and receipt handling — `frontend/features/payments.js`
 
 - Receipt previews use DOM APIs and assign generated `blob:` URLs through `img.src`; receipt API data URLs are checked against supported base64 raster-image patterns before assignment. Vendor/ID/error values interpolated in templates use `esc()`.
+- Version-1 offline recovery JSON is untrusted input, not a trusted export merely because the app generated it. The recovery boundary uses strict scalar types and allowlists for IDs, account binding, payment fields and receipt metadata; receipt data is size-bounded and only supported MIME values reach the queue. Storage-level restore repeats the validation independently. Legacy migration rejects malformed pre-existing ID types before conversion, preserving the legacy copy rather than silently deleting or coercing it.
 - PR #88 closes the preview-resource lifecycle gap: release generated preview object URLs on
   clear, row removal, successful online/offline save, form replacement, and navigation away. If
   asynchronous compression completes after its owning row leaves the active form, its generated
@@ -291,3 +292,12 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Normalize both collections once at the shared state boundary. Only non-empty strings reach renderers; whitespace is trimmed, duplicate labels removed with first-seen order preserved, and non-array/all-invalid values yield the neutral `Other` option. Valid category configuration keeps its existing order and labels otherwise.
 - Standard unit tests cover normal, duplicate, whitespace-only, malformed-container and hostile-member cases. Browser E2E exercises the Settings textarea and payment/receipt option paths with a mixed hostile category list and an object-valued receipt-category container.
 - This is client display-option resilience. It does not loosen backend category validation, rewrite stored settings or vouchers, or complete the active HTML/DOM rendering-sink inventory.
+
+## PR #105 — Strict offline recovery contract and legacy migration boundary
+
+- **Confirmed resilience gap:** the recovery importer used `String(...)` for client IDs, account bindings, date values and receipt MIME fields from a user-selected JSON file. A plain JSON object with own `toString: null` / `valueOf: null` fields could throw during validation. The same checks lived only in the UI; `offlineQueue.restore()` revalidated only a subset of payment fields before writing to IndexedDB. Legacy localStorage migration also coerced an existing client ID before checking that it was a string.
+- Centralize a pure, non-coercive validator and call it at both the file-import and storage-restore boundaries. Validate duplicate IDs, endpoint/account binding, actual ISO dates and supported date range, payment/receipt type, vendor, numeric finite positive amount, optional text fields, receipt MIME/base64 format and bounded payload sizes. Project imported rows and receipt objects onto explicit allowlisted fields before they are queued.
+- Use a strict optional-client-ID parser in legacy migration. Malformed pre-existing IDs/account bindings fail closed with recovery-preserving errors; no localStorage or IndexedDB data is silently removed as part of this phase.
+- Add the validator module to the service-worker app-shell precache list and increment the cache version. The release-integrity gate checks that every imported local module is present in the shell; the new validator must be available for a cold/offline app start.
+- Browser E2E mutates version-1 recovery files to contain hostile ID, owner and receipt-MIME objects. Each case must show a useful rejection, leave the original queue unchanged, and avoid coercion-based exceptions. Standard unit tests cover valid legacy/unbound defaults, schema failures, duplicate IDs, size limits and allowlisting; existing duplicate, conflict, stale-lease, cross-account and lost-response checks remain in the same browser suite.
+- This is local recovery-data validation, not a guarantee that a queued entry will be accepted or authorized by the backend. No server/schema/permission/accounting/deployment behavior changes. The full HTML/DOM sink inventory and live backup/restore gates remain open.
