@@ -145,14 +145,19 @@ export function createDashboard() {
     ).length;
     const diagnostics = S.voucherDiagnostics || {
       envelopeValid: true,
+      dataAvailable: true,
+      unavailableReason: '',
       malformedRecordCount: 0,
       malformedFieldCount: 0,
     };
+    const dataAvailable = diagnostics.dataAvailable !== false && diagnostics.envelopeValid !== false;
+    const unavailableMessage =
+      diagnostics.unavailableReason === 'offline'
+        ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
+        : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.';
     const dataWarnings = [];
-    if (!diagnostics.envelopeValid) {
-      dataWarnings.push(
-        'Voucher data is unavailable because the server response was invalid. Refresh and retry.',
-      );
+    if (!dataAvailable) {
+      dataWarnings.push(unavailableMessage);
     } else if (diagnostics.malformedRecordCount) {
       dataWarnings.push(
         `${diagnostics.malformedRecordCount} malformed voucher record(s) omitted from Dashboard and Register.`,
@@ -181,8 +186,8 @@ export function createDashboard() {
     .join('')}</div>
   ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
   ${
-    !diagnostics.envelopeValid
-      ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">Voucher data is unavailable because the server response was invalid. Refresh and retry. No financial totals or charts are shown until valid voucher data is available.</p></div>`
+    !dataAvailable
+      ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">${esc(unavailableMessage)} No financial totals or charts are shown until valid voucher data is available.</p></div>`
       : `
   <div class="stats">
     <div class="card stat"><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
