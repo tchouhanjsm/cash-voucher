@@ -61,8 +61,16 @@ The active application uses HTML template strings for several views. The review 
 
 ### Register — `frontend/features/register.js`
 
-- Vendor/category/note/user/cancellation text and voucher IDs in attributes use `esc()`; formatted voucher date output now receives HTML escaping.
+- Vendor/category/note/user/cancellation text and voucher IDs in attributes use `esc()`; formatted voucher date output receives HTML escaping.
+- Register search now treats vendor and note fields as untrusted scalars instead of calling `.toLowerCase()` on assumed strings. Non-record entries in the bootstrap voucher list are omitted and disclosed in a status message rather than crashing filtering/rendering.
+- Receipt metadata must be an array of non-empty string file IDs before the register opens or adds receipt images. Missing or malformed metadata is visibly flagged; the receipt dialog blocks operations and directs the user to refresh. Valid receipt rows still use the existing data-URL validation and DOM-only image construction.
 - Voucher formatting still relies on the backend for semantic date validation; output escaping protects the HTML context if persisted data is malformed.
+
+### Recorded movement report — `frontend/features/reports.js`
+
+- The report response must be an object with an `items` array. An invalid envelope clears stale result rows and shows a recoverable error with Retry rather than crashing the result renderer.
+- Non-record members of the `items` array are omitted and counted in a visible status message. Scalar fields are normalized before formatting, including date handling and CSV export; object-valued fields cannot trigger unsafe coercion at text sinks.
+- These checks improve resilience at the client rendering boundary. They do not validate or repair the authoritative Sheet records.
 
 ### Printing — `frontend/features/printing.js`
 
@@ -83,6 +91,8 @@ Existing Browser E2E regression coverage in `test/e2e.py` includes:
 - **Owner audit log:** vendor details remain text when displayed from audit records.
 - **Bulk preview:** imported vendor content remains text.
 - **Existing register check:** malicious voucher note remains text with no injected image.
+- **Malformed register bootstrap:** null/non-string vendor and note fields, missing receipt metadata, and a non-record voucher are exercised together; search, empty-state recovery, receipt warnings and row omission must remain usable.
+- **Malformed report response:** null/string row members and object-valued fields are covered; an invalid `items` envelope must show an error, clear stale rows, and recover when a later retry receives a valid response.
 - **Modal edit/cancel:** hostile persisted vendor text remains in the input/text context and creates no `img`/`svg` nodes.
 - **Existing receipt preview check:** preview source is a generated blob URL.
 - **Settings numeric inputs:** a hostile bootstrap response attempts to break out of each `value` attribute; the settings form must contain no injected image/SVG nodes and the payload handler must not execute.
@@ -94,7 +104,7 @@ The E2E suite runs against the repository's local mock Apps Script service. It d
 
 - No claim that every dynamic HTML sink has been exhaustively or formally proven safe.
 - No full taint analysis, external penetration test, DOM-XSS fuzzing campaign, or real Google-account test was performed.
-- Other active `innerHTML` template renderers remain in the architecture and still require a complete sink-by-sink review; this PR narrows only the shared modal contract and its current callers.
+- Other active `innerHTML` template renderers remain in the architecture and still require a complete sink-by-sink review. Recent batches address specific sinks and malformed-data paths; they are not a full migration or formal proof of rendering safety.
 - The reported dependency audit findings (three high-severity advisories during dependency installation) are a separate dependency-maintenance task. This PR does not change dependency versions.
 - No production data, API schema, Apps Script deployment, branch protection, or cash-close behavior is changed.
 
