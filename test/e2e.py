@@ -763,6 +763,7 @@ with sync_playwright() as p:
     print_text = page.locator('#printArea').inner_text()
     check(
         'Rupees' in print_text
+        and 'One Thousand Two Hundred Fifty Rupees and Fifty Paise Only' in print_text
         and xss_note in print_text
         and page.locator('#printArea img, #printArea svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
