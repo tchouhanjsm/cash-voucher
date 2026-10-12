@@ -380,21 +380,19 @@ export function createPayments({ api, refresh }) {
         if (payments) parts.push(payments + ' payment' + (payments === 1 ? '' : 's'));
         if (receipts) parts.push(receipts + ' cash receipt' + (receipts === 1 ? '' : 's'));
         if (unknown) parts.push(unknown + ' unclassified entr' + (unknown === 1 ? 'y' : 'ies'));
-        return parts.length === 1 ? parts[0] : records.length + ' queued entries (' + parts.join(', ') + ')';
+        return parts.length === 1
+          ? parts[0]
+          : records.length + ' queued entries (' + parts.join(', ') + ')';
       };
 
       if (!visible.length && !errMsg) return b.classList.add('hidden');
 
       const messages = [];
       if (pending.length) {
-        messages.push(
-          '📤 ' + describeEntries(pending) + ' waiting to upload',
-        );
+        messages.push('📤 ' + describeEntries(pending) + ' waiting to upload');
       }
       if (failed.length) {
-        messages.push(
-          '⚠️ ' + describeEntries(failed) + ' need review; automatic retry stopped',
-        );
+        messages.push('⚠️ ' + describeEntries(failed) + ' need review; automatic retry stopped');
       }
 
       const failedDetails = failed
@@ -402,7 +400,10 @@ export function createPayments({ api, refresh }) {
         .map(
           (record) =>
             '<li><b>' +
-            esc((record.entry?.type === 'RECEIPT' ? 'Cash receipt: ' : 'Payment: ') + (record.entry?.vendor || 'Unnamed entry')) +
+            esc(
+              (record.entry?.type === 'RECEIPT' ? 'Cash receipt: ' : 'Payment: ') +
+                (record.entry?.vendor || 'Unnamed entry'),
+            ) +
             '</b> — ₹' +
             esc(String(record.entry?.amount ?? 'unknown')) +
             ': ' +
@@ -423,7 +424,9 @@ export function createPayments({ api, refresh }) {
       if (unbound.length) {
         messages.push(
           '⚠️ ' +
-            unbound.length + ' older queued entr' + (unbound.length === 1 ? 'y' : 'ies') +
+            unbound.length +
+            ' older queued entr' +
+            (unbound.length === 1 ? 'y' : 'ies') +
             ' need account confirmation before upload',
         );
       }
@@ -800,7 +803,10 @@ export function createPayments({ api, refresh }) {
           String(record.ownerKey || '') === ownerKey,
       );
       if (!selected) {
-        toast('That rejected entry is no longer available for this account. Refresh and retry.', 'err');
+        toast(
+          'That rejected entry is no longer available for this account. Refresh and retry.',
+          'err',
+        );
         await showBanner();
         return;
       }
@@ -819,14 +825,20 @@ export function createPayments({ api, refresh }) {
 
       const removed = await offlineQueue.discardFailed(clientId, ownerKey);
       if (!removed) {
-        toast('The rejected entry changed before it could be removed. Nothing else was cleared.', 'err');
+        toast(
+          'The rejected entry changed before it could be removed. Nothing else was cleared.',
+          'err',
+        );
         await showBanner();
         return;
       }
 
       announceOutboxChange('changed');
       await showBanner();
-      toast('Rejected entry removed from this device. Keep the recovery file until it is no longer needed.', 'ok');
+      toast(
+        'Rejected entry removed from this device. Keep the recovery file until it is no longer needed.',
+        'ok',
+      );
     } catch (error) {
       fail(error);
     }
