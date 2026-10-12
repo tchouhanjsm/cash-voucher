@@ -85,11 +85,16 @@ export function createRegister({ api, go }) {
     const list = filtered();
     const shown = list.slice(0, R.limit);
     const sourceRows = Array.isArray(S.vouchers) ? S.vouchers : [];
-    const malformedRecordCount = Array.isArray(S.vouchers)
-      ? sourceRows.length - voucherRows().length
-      : S.vouchers == null
-        ? 0
-        : 1;
+    const diagnostics = S.voucherDiagnostics || {
+      envelopeValid: true,
+      malformedRecordCount: 0,
+      malformedFieldCount: 0,
+    };
+    const malformedRecordCount = Math.max(
+      diagnostics.malformedRecordCount || 0,
+      sourceRows.length - voucherRows().length,
+    );
+    const malformedFieldCount = diagnostics.malformedFieldCount || 0;
     const active = list.filter((voucher) => voucher.status === 'ACTIVE');
     const paidItems = active.filter((voucher) => !isIn(voucher));
     const receivedItems = active.filter(isIn);
@@ -99,9 +104,19 @@ export function createRegister({ api, go }) {
       (voucher) => finiteAmount(voucher.amount) === null,
     ).length;
 
-    const malformedRecordMessage = malformedRecordCount
-      ? ` · <span class="muted" role="status">${malformedRecordCount} malformed voucher record(s) omitted from the register</span>`
-      : '';
+    const malformedRecordMessage = !diagnostics.envelopeValid
+      ? ' · <span class="muted" role="status">Voucher data is unavailable because the server response was invalid. Refresh and retry.</span>'
+      : [
+          malformedRecordCount
+            ? `<span class="muted" role="status">${malformedRecordCount} malformed voucher record(s) omitted from Dashboard and Register</span>`
+            : '',
+          malformedFieldCount
+            ? `<span class="muted" role="status">${malformedFieldCount} malformed voucher field(s) normalized for safe display</span>`
+            : '',
+        ]
+          .filter(Boolean)
+          .map((message) => ' · ' + message)
+          .join('');
 
     $('#rtot').innerHTML =
       `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
