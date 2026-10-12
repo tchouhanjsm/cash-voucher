@@ -7,7 +7,7 @@
 
 ## Current phase
 
-**PR #97 — Validate Recorded Movement Report row field types** (awaiting review)  
+**PR #97 — [Validate Recorded Movement Report row field types](https://github.com/tchouhanjsm/cash-voucher/pull/97)** (open, awaiting review)  
 Branch: `resilience/report-row-schema-validation`  
 Base: `f3b937c723336ced690cea1c3a50020de853f6f5`
 
