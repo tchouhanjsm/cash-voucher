@@ -32,6 +32,8 @@ This is a single-property cash-voucher PWA today. The attached memo's hosted fin
 
 `docs/SECURITY-RENDERING-AUDIT.md` records the incremental rendering audit and targeted regressions. The complete dynamic-HTML sink review remains open.
 
+**PR #92 — Shared vendor-suggestion integrity:** the existing `vendorNames()` used a plain object for user-controlled vendor labels, so the special `__proto__` key could be lost. The next increment switches to `Map` and hardens API/cache collection shapes at the shared datalist boundary. Browser coverage verifies the actual New Entry suggestions and malformed vendor metadata. This is a scoped data-integrity/rendering resilience improvement, not a full XSS certification.
+
 **PR #91 — Register/report malformed-data resilience:** target the concrete client failure modes where malformed bootstrap rows or non-string vendor/note fields can break register search, bootstrap's local vendor-cache projection can abort refresh, receipt metadata can break receipt access, or an invalid report `items` envelope can crash rendering. The implementation keeps these as client-boundary safeguards with visible recovery feedback; mock-backed tests do not prove live API/Sheet data integrity or close the complete sink audit. No schema, authorization, cash-close or deployment change is approved by this work.
 
 The repository is public. This review did not perform a general Git object/secret scan and cannot certify that all past commits are clean. The cited old paths returned no path-history records in this repository. A history purge could disrupt consumers and requires a deliberate owner-approved migration; no force push or history rewrite is part of Phase 22.
