@@ -771,9 +771,16 @@ with sync_playwright() as p:
     page.click('[data-v=new]')
     page.fill('.rv', 'Offline Vendor')
     page.fill('.ra', '75')
+    page.set_input_files('.rf', '/tmp/r.png')
+    page.wait_for_selector('.thumb')
+    offline_receipt_preview_url = page.locator('.thumb').first.get_attribute('src')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'offline queued')
+    check(
+        page.evaluate("url => window.__revokedObjectUrls.includes(url)", offline_receipt_preview_url),
+        'successful offline queueing releases the receipt preview URL',
+    )
     check(not page.locator('#banner').is_hidden(), 'banner shown')
 
     with page.expect_download() as download_info:
