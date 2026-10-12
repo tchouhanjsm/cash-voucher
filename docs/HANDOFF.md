@@ -2,18 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `827585cf939805d7cf5ccd4696d9495bc3ba4fba` (PR #92 merge)  
-**Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
+**Verified `main` SHA:** `39b862f11bc597131d677a98edb1118a4672345f` (PR #93 merge)  
+**Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #93 — Guard malformed audit-log responses** (pending review)  
-Branch: `resilience/audit-log-malformed-data`  
-Base: `827585cf939805d7cf5ccd4696d9495bc3ba4fba`
+**PR #94 — Guard Administration vendor rendering against malformed bootstrap records** (pending review)  
+Branch: `resilience/admin-vendor-list-malformed-data`  
+Base: `39b862f11bc597131d677a98edb1118a4672345f`
 
-Scope: filter non-record members from the active owner audit-log API response before option population and rendering; disclose omitted records and prove the audit view/filter controls still work with malformed response data. Valid audit values remain rendered as text. No backend/schema, authorization, accounting, or deployment change.
+Scope: validate the active owner/manager Vendors view's bootstrap envelope and record shapes before sorting, rendering, or opening an edit form. Omit invalid rows, disclose omissions, distinguish malformed responses from a truly empty vendor list, and test hostile/malformed rows through Browser E2E. No backend/API schema, authorization, accounting, or deployment changes.
 
-**Acceptance gate:** exact final PR head must pass CI, Browser E2E and Full Flight Test. Owner reviews and merges; live Google authorization, backup/restore, and the full rendering audit remain open.
+**Last completed:** PR #93 — [audit-log malformed-response resilience](https://github.com/tchouhanjsm/cash-voucher/pull/93), merged at `39b862f11bc597131d677a98edb1118a4672345f`. Exact tested head `89387e3533f660c21361c52ece58fa902d9ea5c0` passed CI, Browser E2E (208 checks), and Full Flight Test (129 backend + 208 browser checks).
+
+**Acceptance gate:** the exact final PR #94 head must pass CI, Browser E2E and Full Flight Test. Owner reviews and merges; live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
 
 Adopt three distinct sources of information:
 

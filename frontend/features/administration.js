@@ -11,23 +11,63 @@ export function createAdministration({ api, getNavigation, signOut }) {
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
   let malformedAuditCount = 0;
 
+  function getVendorRows() {
+    const envelopeValid = Array.isArray(S.vendors);
+    const receivedRows = envelopeValid ? S.vendors : [];
+    const isValidVendor = (vendor) =>
+      vendor !== null &&
+      typeof vendor === 'object' &&
+      !Array.isArray(vendor) &&
+      typeof vendor.id === 'string' &&
+      vendor.id.trim() !== '' &&
+      typeof vendor.name === 'string' &&
+      vendor.name.trim() !== '' &&
+      (vendor.company === undefined ||
+        vendor.company === null ||
+        typeof vendor.company === 'string') &&
+      (vendor.mobile === undefined ||
+        vendor.mobile === null ||
+        typeof vendor.mobile === 'string') &&
+      typeof vendor.active === 'boolean';
+    const rows = receivedRows.filter(isValidVendor).map((vendor) => ({
+      ...vendor,
+      company: typeof vendor.company === 'string' ? vendor.company : '',
+      mobile: typeof vendor.mobile === 'string' ? vendor.mobile : '',
+    }));
+
+    return {
+      rows,
+      malformedCount: receivedRows.length - rows.length,
+      envelopeValid,
+    };
+  }
+
   function vendors() {
-    $('#view').innerHTML =
-      head('Vendors') +
-      `<form id="vf" class="card filters" autocomplete="off"><input type="hidden" id="vid"><input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required><input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)"><input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel"><button class="btn primary">Save vendor</button><button type="button" class="btn" data-act="vclr">Clear</button></form>
-  <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Company</th><th>Mobile</th><th>Status</th><th></th></tr></thead><tbody>${
-    S.vendors
+    const vendorData = getVendorRows();
+    const status = !vendorData.envelopeValid
+      ? '<p class="muted" role="status" aria-live="polite">Vendor data is unavailable because the server response was invalid. Refresh and try again.</p>'
+      : vendorData.malformedCount
+        ? `<p class="muted" role="status" aria-live="polite">${vendorData.malformedCount} malformed vendor record(s) omitted from this response. Refresh and retry.</p>`
+        : '';
+    const emptyState =
+      !vendorData.envelopeValid || vendorData.malformedCount
+        ? '<tr><td colspan="5" class="muted">No valid vendor records could be displayed. Refresh and retry.</td></tr>'
+        : '<tr><td colspan="5" class="muted">No vendors yet — vendors you pay are also remembered automatically.</td></tr>';
+    const rows = vendorData.rows
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(
         (vendor) =>
           `<tr><td>${esc(vendor.name)}</td><td>${esc(vendor.company)}</td><td>${esc(vendor.mobile)}</td><td><span class="badge ${vendor.active ? '' : 'bad'}">${vendor.active ? 'ACTIVE' : 'INACTIVE'}</span></td><td class="r nw"><button class="btn sm" data-act="vedit" data-id="${esc(vendor.id)}">Edit</button> <button class="btn sm" data-act="vtog" data-id="${esc(vendor.id)}">${vendor.active ? 'Deactivate' : 'Activate'}</button></td></tr>`,
       )
-      .join('') ||
-    '<tr><td colspan="5" class="muted">No vendors yet — vendors you pay are also remembered automatically.</td></tr>'
-  }</tbody></table></div></div>`;
-  }
+      .join('');
 
+    $('#view').innerHTML =
+      head('Vendors') +
+      status +
+      `<form id="vf" class="card filters" autocomplete="off"><input type="hidden" id="vid"><input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required><input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)"><input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel"><button class="btn primary">Save vendor</button><button type="button" class="btn" data-act="vclr">Clear</button></form>
+  <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Company</th><th>Mobile</th><th>Status</th><th></th></tr></thead><tbody>${rows || emptyState}</tbody></table></div></div>`;
+  }
   async function saveVendor() {
     try {
       await api('saveVendor', {
@@ -45,7 +85,11 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   function editVendor(id) {
-    const vendor = S.vendors.find((item) => item.id === id);
+    const vendor = getVendorRows().rows.find((item) => item.id === id);
+    if (!vendor) {
+      toast('This vendor record is unavailable. Refresh the list and try again.', 'err');
+      return;
+    }
     $('#vid').value = id;
     $('#vn').value = vendor.name;
     $('#vc').value = vendor.company;

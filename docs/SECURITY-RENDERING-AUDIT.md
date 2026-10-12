@@ -27,6 +27,7 @@ The active application uses HTML template strings for several views. The review 
 
 - Vendor fields, user identity fields, settings text fields, IDs in attributes, and audit-log values use `esc()`; role options are sourced from an in-code allowlist.
 - The audit-log response is an active API boundary: only object records are passed to filtering, option population, and rendering. Null and primitive entries are omitted and disclosed in the visible status line; valid row fields remain text-only via `textContent`.
+- The active Vendors view treats the bootstrap vendor list as untrusted: it validates record/id/name/contact/status shapes before sorting or rendering, omits malformed rows with a visible count, and distinguishes an invalid response envelope from a genuinely empty vendor list. The Edit action resolves against the same validated records.
 - Verify future fields at the insertion site, including both element text and attribute values.
 
 ### Shared form options — `frontend/core/form-options.js`
@@ -92,6 +93,7 @@ Existing Browser E2E regression coverage in `test/e2e.py` includes:
 
 - **User list:** malicious user name is rendered as text.
 - **Vendor list:** malicious vendor name and company are rendered as text.
+- **Vendor administration list:** Browser E2E injects null, object-valued name and object-valued company records into bootstrap data; the active view must remain usable, disclose omitted rows, retain valid vendors, and create no injected markup.
 - **Owner audit log:** vendor details remain text when displayed from audit records.
 - **Bulk preview:** imported vendor content remains text.
 - **Existing register check:** malicious voucher note remains text with no injected image.
@@ -208,3 +210,10 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Filter response entries to non-null, non-array objects before population/filtering/rendering, and append a visible count of omitted malformed entries. Valid hostile text remains rendered through DOM `textContent`; this is a malformed-response resilience guard, not a new XSS claim.
 - Browser E2E tampers with the real `auditLog` API response to prepend null, string and numeric members plus a record containing hostile text. It verifies the audit view and filters remain usable, malformed entries are disclosed, and no injected markup or handler execution occurs.
 - No backend/API schema, authorization, persisted records, deployment or production mutation changes. The full active-renderer inventory remains incomplete.
+
+## PR #94 — Guard Administration vendor rendering against malformed records
+
+- **Confirmed resilience/integrity defect:** the active owner/manager Vendors view sorted `S.vendors` using `a.name.localeCompare(b.name)` and rendered every item without validating the bootstrap envelope or row shape. A null member throws during sorting; an object-valued name lacks the expected string method and can also stop the view from rendering. The same unvalidated array was searched by the Edit action.
+- Validate the vendor envelope and row fields before sorting or rendering. Only records with a non-empty string ID/name, boolean active flag, and scalar optional contact fields are accepted. Normalize absent/null company/mobile fields to empty strings, visibly disclose omitted malformed rows, and avoid presenting malformed responses as a legitimate empty list. Resolve Edit using the validated collection.
+- Browser E2E extends the active bootstrap-tampering scenario with null, object-valued name, and object-valued company records. It verifies valid vendor rows remain actionable, the exact omitted count is announced, invalid rows do not appear, and no markup is created from object-valued metadata.
+- All visible vendor fields and IDs remain escaped at their HTML insertion sites. No backend/API contract, permissions, persisted data, or deployment changes. The wider dynamic-renderer inventory remains incomplete.
