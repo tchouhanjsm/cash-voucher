@@ -255,7 +255,6 @@ The scope is a single reviewable delivery across related daily-operator workflow
 
 The one PR must pass CI, Browser E2E, and Full Flight Test on the same final commit. Its mock-backed checks do not close live authorization, real backup/restore, real-device/offline, or assistive-technology validation.
 
-
 ## Dashboard unavailable-state guardrail — PR #100
 
 **Confirmed gap:** the shared state records an invalid voucher response envelope and the Dashboard announces the error, but the renderer still builds the KPI cards and trend/vendor/category charts from empty collections. The resulting zero-like values are not trustworthy observations.
