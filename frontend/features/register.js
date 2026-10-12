@@ -196,12 +196,14 @@ export function createRegister({ api, go }) {
       emptyState.classList.remove('hidden');
       const message = document.createElement('span');
       message.className = 'empty-state-message';
-      message.textContent = voucherRows().length
-        ? 'No vouchers match the current filters.'
-        : 'No vouchers are available to show. If you are offline, reconnect and refresh; otherwise use New Entry to record the first payment or receipt.';
+      message.textContent = !diagnostics.envelopeValid
+        ? 'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
+        : voucherRows().length
+          ? 'No vouchers match the current filters.'
+          : 'No vouchers are available to show. If you are offline, reconnect and refresh; otherwise use New Entry to record the first payment or receipt.';
       emptyState.appendChild(message);
 
-      if (voucherRows().length) {
+      if (diagnostics.envelopeValid && voucherRows().length) {
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
         clearButton.className = 'btn';
@@ -250,7 +252,7 @@ export function createRegister({ api, go }) {
       )
       .join('')}</select>
     <button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div>
-    <div class="card"><div id="rtot" style="margin-bottom:8px"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
+    <div class="card"><div id="rtot" style="margin-bottom:8px" role="status" aria-live="polite"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
 
     renderRows();
   }
