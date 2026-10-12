@@ -1437,7 +1437,7 @@ with sync_playwright() as p:
                     'vendor': {'toString': None, 'valueOf': None},
                     'category': {'toString': None, 'valueOf': None},
                     'notes': {'toString': None, 'valueOf': None},
-                    'amount': 30,
+                    'amount': {'toString': None, 'valueOf': None},
                     'type': 'PAYMENT',
                     'status': 'ACTIVE',
                     'createdBy': {'toString': None, 'valueOf': None},
@@ -1495,15 +1495,16 @@ with sync_playwright() as p:
     )
     check(
         '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#view').inner_text()
-        and '9 malformed voucher field(s) normalized for safe display' in page.locator('#view').inner_text()
-        and '[object Object]' not in page.locator('#view').inner_text(),
-        'dashboard announces shared malformed voucher diagnostics and keeps field coercion inert',
+        and '8 malformed voucher field(s) normalized for safe display' in page.locator('#view').inner_text()
+        and '[object Object]' not in page.locator('#view').inner_text()
+        and '1 recorded voucher amount(s) are invalid and excluded from totals.' in page.locator('#view').inner_text(),
+        'dashboard announces shared malformed voucher diagnostics, excludes malformed amounts, and keeps coercion inert',
     )
     page.click('[data-v=reg]')
     page.wait_for_selector('#rtot')
     check(
         '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#rtot').inner_text()
-        and '9 malformed voucher field(s) normalized for safe display' in page.locator('#rtot').inner_text()
+        and '8 malformed voucher field(s) normalized for safe display' in page.locator('#rtot').inner_text()
         and '[object Object]' not in page.locator('#view').inner_text(),
         'register surfaces the same bootstrap diagnostics and keeps malformed metadata safe',
     )
