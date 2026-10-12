@@ -173,6 +173,92 @@ with sync_playwright() as p:
         'user name is rendered as text, not executable HTML',
     )
 
+    # Malformed owner user-list responses must not crash the active Users view.
+    invalid_user_envelope = False
+
+    def inject_malformed_user_rows(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'listUsers':
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        if payload.get('ok'):
+            if invalid_user_envelope:
+                payload['data'] = {'unexpected': 'not a user list'}
+            elif isinstance(payload.get('data'), list):
+                payload['data'].extend([
+                    None,
+                    'unexpected user row',
+                    {
+                        'id': 'malformed-user-name',
+                        'name': {'toString': None, 'valueOf': None},
+                        'email': 'bad-name@test.com',
+                        'role': 'staff',
+                        'active': True,
+                    },
+                    {
+                        'id': 'malformed-user-email',
+                        'name': 'Malformed Email',
+                        'email': {'toString': None, 'valueOf': None},
+                        'role': 'staff',
+                        'active': True,
+                    },
+                    {
+                        'id': 'malformed-user-role',
+                        'name': 'Malformed Role',
+                        'email': 'bad-role@test.com',
+                        'role': {'name': 'owner'},
+                        'active': True,
+                    },
+                ])
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    page.route('**/api?*', inject_malformed_user_rows)
+    page.click('[data-v=dash]')
+    page.click('[data-v=users]')
+    page.wait_for_function(
+        "document.querySelector('#view [role=status]')?.innerText.includes('malformed user record(s) omitted')"
+    )
+    check(
+        '5 malformed user record(s) omitted from this response' in page.locator('#view').inner_text()
+        and page.locator('#view tbody tr').count() == 4
+        and page.locator('#view [data-act=utog]').count() == 4,
+        'owner Users view omits malformed rows while keeping valid user records actionable',
+    )
+    check(
+        page.locator('#view img, #view svg').count() == 0
+        and '[object Object]' not in page.locator('#view').inner_text()
+        and not page.evaluate('window.__xssFired === true'),
+        'malformed user names, emails and roles are not coerced or rendered as active markup',
+    )
+    invalid_user_envelope = True
+    page.click('[data-v=dash]')
+    page.click('[data-v=users]')
+    page.wait_for_function(
+        "document.querySelector('#view [role=status]')?.innerText.includes('User data is unavailable because the server response was invalid')"
+    )
+    check(
+        'No users yet' not in page.locator('#view').inner_text()
+        and page.locator('#uf').count() == 1
+        and page.locator('#view tbody tr').count() == 1,
+        'non-array user response is disclosed instead of being treated as an empty list',
+    )
+    invalid_user_envelope = False
+    page.unroute('**/api?*', inject_malformed_user_rows)
+    page.click('[data-v=dash]')
+    page.click('[data-v=users]')
+    page.wait_for_selector('#uf')
+    check(
+        page.locator('#view tbody tr').count() == 4
+        and page.locator('#view [role=status]').count() == 0,
+        'owner Users view recovers after a valid list response returns',
+    )
+
     xss_vendor = '<svg onload=window.__xssFired=true></svg>'
     xss_company = '<img src=x onerror=window.__xssFired=true>'
     page.click('[data-v=vend]')
