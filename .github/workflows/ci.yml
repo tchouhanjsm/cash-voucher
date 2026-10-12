@@ -34,11 +34,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: TEMP inspect Prettier output (remove before merge)
-        run: |
-          npx prettier test/test-csv-export.js > /tmp/test-csv-export.prettier.js
-          diff -u test/test-csv-export.js /tmp/test-csv-export.prettier.js || true
-
       - name: Run quality gate
         run: npm run check
 
