@@ -213,9 +213,29 @@ export function createReports({ api }) {
         throw new Error('The report returned an invalid response. Please retry.');
       }
 
-      const validRows = summary.items.filter(
-        (item) => item !== null && typeof item === 'object' && !Array.isArray(item),
-      );
+      const reportTextFields = [
+        'date',
+        'voucherNo',
+        'type',
+        'vendor',
+        'category',
+        'notes',
+        'status',
+        'cancelReason',
+        'createdBy',
+        'id',
+      ];
+      const isValidReportRow = (item) =>
+        item !== null &&
+        typeof item === 'object' &&
+        !Array.isArray(item) &&
+        reportTextFields.every((field) => typeof item[field] === 'string') &&
+        (item.type === 'PAYMENT' || item.type === 'RECEIPT') &&
+        (item.status === 'ACTIVE' || item.status === 'CANCELLED') &&
+        typeof item.amount === 'number' &&
+        Number.isFinite(item.amount) &&
+        item.amount >= 0;
+      const validRows = summary.items.filter(isValidReportRow);
       R.summary = summary;
       R.rows = validRows.map(normalizeRow);
       R.invalidRowCount = summary.items.length - validRows.length;
