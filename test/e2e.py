@@ -2361,6 +2361,67 @@ with sync_playwright() as p:
     )
     corrupt_context.close()
 
+    # Malformed audit response rows must be omitted without breaking the owner audit view.
+    audit_malformed_payload = '<svg onload=window.__xssFired=true></svg>'
+
+    def inject_malformed_audit_rows(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'auditLog':
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        if payload.get('ok') and isinstance(payload.get('data'), list):
+            payload['data'] = [
+                None,
+                'unexpected audit row',
+                42,
+                {'time': '2026-10-12T09:00:00', 'user': audit_malformed_payload,
+                 'action': 'UPDATE', 'target': 'voucher', 'details': audit_malformed_payload},
+                *payload['data'],
+            ]
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
+    audit_page = audit_context.new_page()
+    audit_page.add_init_script('window.__xssFired = false;')
+    audit_page.route('**/api?*', inject_malformed_audit_rows)
+    audit_page.goto(URL)
+    audit_page.fill('#lEmail', 'owner@test.com')
+    audit_page.fill('#lPin', '579246')
+    audit_page.click('#lBtn')
+    audit_page.wait_for_selector('[data-v=audit]')
+    audit_page.click('[data-v=audit]')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-count')?.innerText.includes('malformed audit event(s) omitted')",
+        timeout=10000,
+    )
+    check(
+        audit_page.locator('#aud img, #aud svg').count() == 0
+        and audit_malformed_payload in audit_page.locator('#aud').inner_text()
+        and not audit_page.evaluate('window.__xssFired === true'),
+        'malformed audit response rows are omitted while hostile fields stay inert text',
+    )
+    check(
+        '3 malformed audit event(s) omitted' in audit_page.locator('#aud-count').inner_text(),
+        'audit status discloses how many malformed response rows were omitted',
+    )
+    check(
+        audit_page.locator('#aud-user option').count() >= 1
+        and audit_page.locator('#aud-action option').count() >= 1,
+        'audit filters remain usable after malformed rows are discarded',
+    )
+    audit_page.fill('#aud-q', 'voucher')
+    check(
+        '3 malformed audit event(s) omitted from this response' in audit_page.locator('#aud-count').inner_text(),
+        'malformed-row disclosure persists after audit filters rerender the count status',
+    )
+    audit_page.close()
+
     # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
     page.set_viewport_size({'width': 390, 'height': 800})
     page.click('[data-v=new]')

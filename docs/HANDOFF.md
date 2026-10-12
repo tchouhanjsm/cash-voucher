@@ -2,18 +2,18 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `a50b38e5dc9a60576a9f56953a512f2f4b498f7b` (PR #91 merge)  
+**Verified `main` SHA:** `827585cf939805d7cf5ccd4696d9495bc3ba4fba` (PR #92 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #92 — Harden shared vendor suggestion aggregation** ([pull request](https://github.com/tchouhanjsm/cash-voucher/pull/92))  
-Branch: `security/harden-vendor-suggestion-aggregation`  
-Base: `a50b38e5dc9a60576a9f56953a512f2f4b498f7b`
+**PR #93 — Guard malformed audit-log responses** (pending review)  
+Branch: `resilience/audit-log-malformed-data`  
+Base: `827585cf939805d7cf5ccd4696d9495bc3ba4fba`
 
-Scope: continue the incremental rendering-security/data-integrity audit in `frontend/core/form-options.js`. Replace prototype-sensitive plain-object vendor counting with a `Map`, tolerate malformed voucher/vendor/cache entries, and add Browser E2E proof that prototype-named vendors remain available in the actual New Entry datalist while non-record and object-valued vendor metadata is ignored. No API/schema, authorization, accounting semantics, or deployment changes.
+Scope: filter non-record members from the active owner audit-log API response before option population and rendering; disclose omitted records and prove the audit view/filter controls still work with malformed response data. Valid audit values remain rendered as text. No backend/schema, authorization, accounting, or deployment change.
 
-**Acceptance gate:** the exact final PR head must pass CI, Browser E2E and Full Flight Test. Owner reviews and merges; live Google, backup/restore, and complete rendering-audit gates remain open.
+**Acceptance gate:** exact final PR head must pass CI, Browser E2E and Full Flight Test. Owner reviews and merges; live Google authorization, backup/restore, and the full rendering audit remain open.
 
 Adopt three distinct sources of information:
 

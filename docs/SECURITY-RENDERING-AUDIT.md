@@ -26,6 +26,7 @@ The active application uses HTML template strings for several views. The review 
 ### Administration and audit — `frontend/features/administration.js`
 
 - Vendor fields, user identity fields, settings text fields, IDs in attributes, and audit-log values use `esc()`; role options are sourced from an in-code allowlist.
+- The audit-log response is an active API boundary: only object records are passed to filtering, option population, and rendering. Null and primitive entries are omitted and disclosed in the visible status line; valid row fields remain text-only via `textContent`.
 - Verify future fields at the insertion site, including both element text and attribute values.
 
 ### Shared form options — `frontend/core/form-options.js`
@@ -200,3 +201,10 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Replace the count object with a `Map`; validate row/collection shapes and accept only non-empty string vendor names from vouchers, active vendor records and cached suggestions. Keep HTML attribute escaping in the datalist template and DOM-property assignment in the DOM-node variant.
 - Browser E2E verifies `constructor`, `__proto__`, `toString` and `hasOwnProperty` survive into the actual New Entry datalist after disabling cached-name fallback. The bootstrap fixture also includes a null vendor record and object-valued vendor name, which must be ignored without crashing or rendering active markup.
 - No persisted data, API/schema, authorization, or production setting changes. Other active template sinks and the complete stored-XSS audit remain open.
+
+## PR #93 — Omit malformed audit-log API rows
+
+- **Confirmed resilience defect:** the active owner audit view accepted an array response but assumed each element was an object. A null row caused `populateAuditOptions()` to throw while reading `row.user`, preventing audit data from rendering.
+- Filter response entries to non-null, non-array objects before population/filtering/rendering, and append a visible count of omitted malformed entries. Valid hostile text remains rendered through DOM `textContent`; this is a malformed-response resilience guard, not a new XSS claim.
+- Browser E2E tampers with the real `auditLog` API response to prepend null, string and numeric members plus a record containing hostile text. It verifies the audit view and filters remain usable, malformed entries are disclosed, and no injected markup or handler execution occurs.
+- No backend/API schema, authorization, persisted records, deployment or production mutation changes. The full active-renderer inventory remains incomplete.
