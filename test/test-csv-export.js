@@ -5,7 +5,7 @@ const source = fs.readFileSync(require.resolve('../frontend/core/utils.js'), 'ut
 
 async function run() {
   const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
-  const { csvCell } = await import(moduleUrl);
+  const { csvCell, esc } = await import(moduleUrl);
 
   for (const value of ['=SUM(1,1)', '+cmd', '-cmd', '@cmd', '\t=cmd', '\r=cmd', '\n=cmd']) {
     assert.match(
@@ -17,7 +17,17 @@ async function run() {
 
   assert.equal(csvCell('normal, "quoted"'), '"normal, ""quoted"""');
   assert.equal(csvCell('plain'), '"plain"');
-  console.log('CSV export safety OK — formula/control prefixes and quoting covered.');
+
+  assert.equal(esc('<img src=x onerror=alert(1)>'), '&lt;img src=x onerror=alert(1)&gt;');
+  assert.equal(esc(123), '123');
+  assert.equal(esc(false), 'false');
+  assert.equal(esc(null), '');
+  assert.equal(esc(['untrusted object']), '');
+  assert.doesNotThrow(() => esc({ toString: null, valueOf: null }));
+  assert.equal(esc({ toString: null, valueOf: null }), '');
+  assert.doesNotThrow(() => esc({ toString: '<svg onload=alert(1)>', valueOf: null }));
+  assert.equal(esc({ toString: '<svg onload=alert(1)>', valueOf: null }), '');
+  console.log('Output escaping and CSV export safety OK — scalar-only encoding, hostile object coercion, formula prefixes and quoting covered.');
 }
 
 run().catch((error) => {
