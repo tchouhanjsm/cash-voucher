@@ -1213,6 +1213,17 @@ with sync_playwright() as p:
         and page.locator('[data-act=discard-failed]').count() == 1,
         'rejected-entry review identifies transaction type, vendor, reason, and an explicit recovery action',
     )
+    with page.expect_download() as cancelled_export_info:
+        page.once('dialog', lambda dialog: dialog.dismiss())
+        page.click('[data-act=discard-failed]')
+    cancelled_export = cancelled_export_info.value
+    cancelled_entry = outbox_vendor_records('Poison Vendor')
+    check(
+        cancelled_export.path() is not None
+        and len(cancelled_entry) == 1
+        and cancelled_entry[0]['status'] == 'failed',
+        'cancelling rejected-entry removal keeps the failed record after exporting it',
+    )
     with page.expect_download() as rejected_export_info:
         page.once('dialog', lambda dialog: dialog.accept())
         page.click('[data-act=discard-failed]')
@@ -1254,6 +1265,28 @@ with sync_playwright() as p:
     check(
         page.locator('#rbody tr', has_text='Healthy Neighbor Vendor').count() == 1,
         'valid payment uploads even when a neighboring queue record is rejected',
+    )
+
+    # A queued cash receipt must be labeled accurately and sync when connectivity returns.
+    context.set_offline(True)
+    page.click('[data-v=new]')
+    page.click('[data-k=RECEIPT]')
+    page.fill('.rv', 'Offline Receipt Label Test')
+    page.fill('.ra', '21')
+    page.click('#nsave')
+    page.wait_for_selector('#nres .ok-panel')
+    page.wait_for_function(
+        "document.querySelector('#banner').innerText.includes('1 cash receipt waiting to upload')",
+        timeout=8000,
+    )
+    check(
+        'Saved on this device' in page.locator('#nres').inner_text(),
+        'cash receipt remains visibly device-local while offline',
+    )
+    context.set_offline(False)
+    page.wait_for_function(
+        "!document.querySelector('#banner').innerText.includes('waiting to upload')",
+        timeout=10000,
     )
 
     page.click('[data-v=acct]')
