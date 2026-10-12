@@ -211,6 +211,15 @@ export function createBulk({ api, refresh, go }) {
     const ready = rows.filter((row) => !row.errs.length && !row.skip);
     const bad = rows.filter((row) => row.errs.length);
     const duplicates = rows.filter((row) => row.dup);
+    const singular = ready.length === 1;
+    const importNoun =
+      type === 'RECEIPT'
+        ? singular
+          ? 'cash receipt'
+          : 'cash receipts'
+        : singular
+          ? 'payment'
+          : 'payments';
 
     $('#bprev').innerHTML =
       `<div class="card"><h2>2. Review</h2><p role="status" aria-live="polite"><b>${ready.length}</b> ready · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label style="display:inline;margin-left:8px"><input type="checkbox" id="bdup" style="width:auto;min-height:0"> import duplicates too</label>' : ''}</p>
@@ -221,7 +230,7 @@ export function createBulk({ api, refresh, go }) {
           `<tr><td>${row.n}</td><td class="nw">${row.date ? esc(dmy(row.date)) : '–'}</td><td>${esc(row.vendor)}</td><td class="r nw">${row.amount > 0 ? money(row.amount) : '–'}</td><td>${esc(row.category)}</td><td class="nw">${row.errs.length ? `<span class="badge bad">${esc(row.errs.join(', '))}</span>` : row.dup ? '<span class="badge warn">duplicate?</span>' : row.warns.length ? `<span class="badge warn">${esc(row.warns[0])}</span>` : '<span class="badge">OK</span>'}</td></tr>`,
       )
       .join('')}</tbody></table></div>
-    ${rows.length > 300 ? `<p class="muted">Showing first 300 of ${rows.length} rows.</p>` : ''}<div class="actions"><button class="btn primary" data-act="import" ${ready.length ? '' : 'disabled'}>Import ${ready.length} ${type === 'RECEIPT' ? (ready.length === 1 ? 'cash receipt' : 'cash receipts') : (ready.length === 1 ? 'payment' : 'payments')}</button></div><p id="bprog" class="muted" role="status" aria-live="polite"></p></div>`;
+    ${rows.length > 300 ? `<p class="muted">Showing first 300 of ${rows.length} rows.</p>` : ''}<div class="actions"><button class="btn primary" data-act="import" ${ready.length ? '' : 'disabled'}>Import ${ready.length} ${importNoun}</button></div><p id="bprog" class="muted" role="status" aria-live="polite"></p></div>`;
   }
 
   function toggleDuplicates(checked) {
