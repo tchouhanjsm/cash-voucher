@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `f3b937c723336ced690cea1c3a50020de853f6f5` (PR #96 merge)  
+**Verified `main` SHA:** `7366cee0a6feae4a55b06416f0aed649876e0165` (PR #97 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #97 — [Validate Recorded Movement Report row field types](https://github.com/tchouhanjsm/cash-voucher/pull/97)** (open, awaiting review)  
-Branch: `resilience/report-row-schema-validation`  
-Base: `f3b937c723336ced690cea1c3a50020de853f6f5`
+**PR #98 — Bulk bootstrap voucher integrity and balance semantics** (implementation branch; awaiting review)  
+Branch: `resilience/bootstrap-financial-view-integrity`  
+Base: `7366cee0a6feae4a55b06416f0aed649876e0165`
 
-Scope: validate report row text fields, supported type/status values, and finite non-negative numeric amounts before rows are normalized, shown, or exported; visibly count and omit invalid rows, with a browser regression for malformed fields and recovery. No backend/API schema, authorization, accounting, or deployment changes.
+Scope: normalize bootstrap voucher records once at the shared state boundary; keep Dashboard/Register malformed record and field diagnostics consistent; distinguish a malformed voucher envelope from a real empty list; preserve invalid-amount exclusion/print fallback; and label the dashboard total as Book balance rather than implying a physical cash count. No backend/API schema, authorization, persistence, accounting formula, or deployment changes.
 
-**Last completed:** PR #96 — [Audit-log response validation](https://github.com/tchouhanjsm/cash-voucher/pull/96), merged at `f3b937c723336ced690cea1c3a50020de853f6f5`. Exact tested head `da83616c49320d09aebfd9a20e3d3916f116adec` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38209190408) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38209190410) (219 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38209190406) (129 backend + 219 browser checks).
+**Last completed:** PR #97 — [Validate Recorded Movement Report row field types](https://github.com/tchouhanjsm/cash-voucher/pull/97), merged at `7366cee0a6feae4a55b06416f0aed649876e0165`. Exact tested head `8d9691b0ffa06da9765cfd508ce86684fb307ba7` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023373) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023374) (219 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38210023489) (129 backend + 219 browser checks).
 
-**Acceptance gate:** exact final PR #97 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
+**Acceptance gate:** exact final PR #98 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the full rendering audit remain open.
 
 Adopt three distinct sources of information:
 
