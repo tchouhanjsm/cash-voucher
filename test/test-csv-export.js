@@ -13,9 +13,9 @@ async function run() {
     '+cmd',
     '-cmd',
     '@cmd',
-    '\\t=cmd',
-    '\\r=cmd',
-    '\\n=cmd',
+    '\t=cmd',
+    '\r=cmd',
+    '\n=cmd',
   ]) {
     assert.match(
       csvCell(value),
