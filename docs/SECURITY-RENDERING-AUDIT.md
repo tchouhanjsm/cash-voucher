@@ -219,7 +219,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E extends the active bootstrap-tampering scenario with null, object-valued name, and object-valued company records. It verifies valid vendor rows remain actionable, the exact omitted count is announced, invalid rows do not appear, and no markup is created from object-valued metadata.
 - All visible vendor fields and IDs remain escaped at their HTML insertion sites. No backend/API contract, permissions, persisted data, or deployment changes. The wider dynamic-renderer inventory remains incomplete.
 
-
 ## PR #95 — Guard Administration user list against malformed API data
 
 - **Confirmed resilience/integrity defect:** the active owner Users view assigned the `listUsers` response directly to its local collection and called `.map()` while interpolating row fields. A non-array envelope failed at rendering; a null row or object-valued identity field failed during rendering, and the same unvalidated collection was used for role/activation lookup.
