@@ -169,24 +169,7 @@ export function createDashboard() {
       );
     }
 
-    $('#view').innerHTML =
-      head(can('viewAll') ? 'Dashboard' : 'My Dashboard', refreshBtn) +
-      `
-  <div class="seg">${[
-    ['7d', 'Last 7 days'],
-    ['30d', 'Last 30 days'],
-    ['mtd', 'This month'],
-    ['lm', 'Last month'],
-    ['cus', 'Custom'],
-  ]
-    .map(
-      ([key, label]) =>
-        `<button data-act="range" data-k="${key}" class="${D.r === key ? 'on' : ''}">${label}</button>`,
-    )
-    .join('')}</div>
-  ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
-  ${
-    !dataAvailable
+    const financialPanels = !dataAvailable
       ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">${esc(unavailableMessage)} No financial totals or charts are shown until valid voucher data is available.</p></div>`
       : `
   <div class="stats">
@@ -208,8 +191,25 @@ export function createDashboard() {
           10,
         )}</div>`
       : ''
-  }`
   }`;
+
+    $('#view').innerHTML =
+      head(can('viewAll') ? 'Dashboard' : 'My Dashboard', refreshBtn) +
+      `
+  <div class="seg">${[
+    ['7d', 'Last 7 days'],
+    ['30d', 'Last 30 days'],
+    ['mtd', 'This month'],
+    ['lm', 'Last month'],
+    ['cus', 'Custom'],
+  ]
+    .map(
+      ([key, label]) =>
+        `<button data-act="range" data-k="${key}" class="${D.r === key ? 'on' : ''}">${label}</button>`,
+    )
+    .join('')}</div>
+  ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
+  ${financialPanels}`;
   }
 
   return {
