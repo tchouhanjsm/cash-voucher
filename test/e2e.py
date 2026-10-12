@@ -1364,12 +1364,18 @@ with sync_playwright() as p:
     page.wait_for_selector('svg.chart')
     page.click('[data-k=mtd]')
     page.wait_for_selector('.stats')
-    check('cash in hand' in page.inner_text('.stats').lower(), 'dashboard shows cash in hand')
+    check(
+        'book balance' in page.inner_text('.stats').lower()
+        and 'cash in hand' not in page.inner_text('.stats').lower()
+        and 'not a physical cash count' in page.inner_text('.stats').lower(),
+        'dashboard clearly labels recorded net movement as book balance, not physical cash',
+    )
     check(page.locator('.hb').count() >= 3, 'dashboard bars')
 
     # Prototype-named user data must be ordinary aggregation keys, not Object properties.
     prototype_group_values = ['constructor', '__proto__', 'toString', 'hasOwnProperty']
     invalid_vendor_envelope = False
+    invalid_voucher_envelope = False
 
     def tamper_dashboard_groups(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -1410,7 +1416,39 @@ with sync_playwright() as p:
                     'receipts': [],
                 })
                 vouchers.append(entry)
-            data['vouchers'] = vouchers
+            vouchers.extend([
+                None,
+                'not-a-voucher-record',
+                {
+                    **template,
+                    'id': {'unexpected': 'object id'},
+                    'no': 900010,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': 'BAD_CORE_ROW',
+                    'amount': 30,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                },
+                {
+                    **template,
+                    'id': 'malformed-voucher-metadata',
+                    'no': 900011,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': {'toString': None, 'valueOf': None},
+                    'category': {'toString': None, 'valueOf': None},
+                    'notes': {'toString': None, 'valueOf': None},
+                    'amount': 30,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': {'toString': None, 'valueOf': None},
+                    'createdAt': {'toString': None, 'valueOf': None},
+                    'updatedBy': {'toString': None, 'valueOf': None},
+                    'updatedAt': {'toString': None, 'valueOf': None},
+                    'receipts': None,
+                    'cancelReason': {'toString': None, 'valueOf': None},
+                },
+            ])
+            data['vouchers'] = {'unexpected': 'not a voucher list'} if invalid_voucher_envelope else vouchers
             if invalid_vendor_envelope:
                 data['vendors'] = {'unexpected': 'not a vendor list'}
             else:
@@ -1455,6 +1493,21 @@ with sync_playwright() as p:
         all(value in category_labels for value in prototype_group_values),
         'dashboard preserves prototype-named category groups',
     )
+    check(
+        '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#view').inner_text()
+        and '9 malformed voucher field(s) normalized for safe display' in page.locator('#view').inner_text()
+        and '[object Object]' not in page.locator('#view').inner_text(),
+        'dashboard announces shared malformed voucher diagnostics and keeps field coercion inert',
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rtot')
+    check(
+        '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#rtot').inner_text()
+        and '9 malformed voucher field(s) normalized for safe display' in page.locator('#rtot').inner_text()
+        and '[object Object]' not in page.locator('#view').inner_text(),
+        'register surfaces the same bootstrap diagnostics and keeps malformed metadata safe',
+    )
+    page.click('[data-v=dash]')
     builtins_unchanged = page.evaluate(
         """() => {
           const baseline = window.__dashboardKeyBaseline || [];
@@ -1532,9 +1585,25 @@ with sync_playwright() as p:
         'non-array vendor response is disclosed instead of looking like a genuinely empty list',
     )
     invalid_vendor_envelope = False
+    invalid_voucher_envelope = True
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    page.click('[data-v=dash]')
+    check(
+        'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
+        in page.locator('#view').inner_text()
+        and 'No vouchers are available' not in page.locator('#view').inner_text(),
+        'invalid bootstrap voucher envelope is distinct from a legitimate empty collection',
+    )
+    invalid_voucher_envelope = False
     page.unroute('**/api?*', tamper_dashboard_groups)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
+    page.click('[data-v=dash]')
+    check(
+        'Voucher data is unavailable' not in page.locator('#view').inner_text(),
+        'dashboard recovers after a valid voucher collection returns',
+    )
 
     # Malformed bootstrap data must not produce invalid CSS geometry.
     hostile_vendor = '<svg onload=window.__xssFired=true></svg>'
