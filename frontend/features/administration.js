@@ -436,7 +436,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
       tr.appendChild(cell);
       body.appendChild(tr);
     }
-    count.textContent = `Showing ${rows.length} of ${auditRows.length} loaded events.` +
+    count.textContent =
+      `Showing ${rows.length} of ${auditRows.length} loaded events.` +
       (malformedAuditCount
         ? ` ${malformedAuditCount} malformed audit event(s) omitted from this response.`
         : '');
