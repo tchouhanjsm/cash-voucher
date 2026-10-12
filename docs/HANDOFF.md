@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `0e4650ff65388b907cc623ad2eaece3ca923632e` (PR #99 merge)  
+**Verified `main` SHA:** `cf1ae45363d9ba7126be722388dcf7c75a45ffd3` (PR #100 merge)  
 **Purpose:** this is the one live handoff for the next engineering/chat session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #100 — Dashboard fail-closed behavior for unavailable voucher data**  
-Branch: `product/dashboard-data-unavailable-guardrails`  
-Base: `0e4650ff65388b907cc623ad2eaece3ca923632e`
+**PR #101 — Harden shared HTML escaping against malformed scalar/object values**  
+Branch: `security/scalar-only-html-escaping`  
+Base: `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`
 
-Scope: prevent invalid bootstrap envelopes and offline startup with no cached voucher rows from rendering zero-like Dashboard/Register totals or empty charts as verified data. Distinguish offline-unavailable from invalid-server-response messaging; preserve the refresh recovery path and prove normal UI recovery when valid data returns. Extend Browser E2E and update the rendering audit/roadmap. No backend/API schema, accounting formula, permissions, dependency, deployment, or production data changes.
+Scope: harden the shared `esc()` output primitive so JSON objects and arrays are never coerced through attacker-controlled `toString`/`valueOf` properties. Preserve escaping for strings and supported primitive values; malformed object-valued Settings fields render blank rather than crashing the active view. Add unit and Browser E2E regression coverage and update the rendering audit. No API schema, permissions, persisted data, dependency, deployment, or production changes.
 
-**Last completed:** PR #99 — [Bulk improve daily-workflow reliability and recovery feedback](https://github.com/tchouhanjsm/cash-voucher/pull/99), merged at `0e4650ff65388b907cc623ad2eaece3ca923632e`. Exact tested head `e048b77fb22eab8f70875c0756f73a323f458dc6` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715642) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715686) (233 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38219715629) (129 backend + 233 browser checks).
+**Last completed:** PR #100 — [Prevent zero-like totals when voucher data is unavailable](https://github.com/tchouhanjsm/cash-voucher/pull/100), merged at `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`. Exact tested head `ff409d641762d2a808c11509b7edfa37aa1e208e` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814467) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814429) (236 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814454) (129 backend + 236 browser checks).
 
-**Acceptance gate:** exact final PR #100 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
+**Acceptance gate:** exact final PR #101 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
 
 Adopt three distinct sources of information:
 
