@@ -67,8 +67,8 @@ export function createDashboard() {
 
     list.forEach((voucher) => {
       const key = monthly ? voucher.date.slice(0, 7) : voucher.date;
-      const amount = Number(voucher.amount);
-      if (!Number.isFinite(amount)) return;
+      const amount = finiteAmount(voucher.amount);
+      if (amount === null) return;
       amounts.set(key, (amounts.get(key) || 0) + amount);
     });
 
