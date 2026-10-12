@@ -2,16 +2,16 @@
 
 **Updated:** 11 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `8dc477863eadd4113928c88f074c3349bb2965d5` (PR #88 merge)  
+**Verified `main` SHA:** `f15cbde5b752755b4740b8f8c67db0d3e72073c2` (PR #89 merge)  
 **Purpose:** this is the one live handoff for the next ChatGPT engineering session. Verify live GitHub refs before relying on any SHA or PR state recorded here.
 
 ## Current phase
 
-**PR #89 — Finite monetary rendering and aggregate integrity**  
-Branch: `quality/finite-amount-rendering-batch`  
-Base: `8dc477863eadd4113928c88f074c3349bb2965d5`
+**PR #90 — Guard malformed amounts in printed vouchers**  
+Branch: `security/guard-amount-in-words`  
+Base: `f15cbde5b752755b4740b8f8c67db0d3e72073c2`
 
-Scope: add a shared finite-amount boundary, prevent malformed API amounts from poisoning dashboard/register totals, display an em dash for non-finite monetary values, disclose invalid active amounts excluded from totals, and add hostile-bootstrap Browser E2E coverage. PR #88 is merged; its exact tested head `3f5b563abc9b1bb818a6f5bb5a4c89c5025f34b7` passed CI, Browser E2E (187 checks) and Full Flight Test (129 backend + 187 browser checks).
+Scope: reject missing, blank, boolean, non-finite and nonnumeric values in the shared finite-amount parser; protect the printed amount-in-words formatter from recursion/error output on malformed API data; normalize to integer paise before words conversion. Browser E2E includes `NaN`, `Infinity`, `null`, blank, boolean and negative values, plus a normal rupees/paise case. PR #89 is merged; exact tested head `15b28b298fa54d11946d0e3e08e75cf5ac25ee40` passed CI, Browser E2E (189 checks) and Full Flight Test (129 backend + 189 browser checks).
 
 Adopt three distinct sources of information:
 
@@ -55,6 +55,8 @@ These remain open regardless of green mock-backed CI:
 6. The current lint warning for unused `backupData_` and the documented time-limited `@google/clasp → micromatch → braces` dependency-advisory exception remain visible. The documented review-by date is 9 November 2026.
 
 ## Recent completed milestones
+
+- **PR #89 — Finite monetary rendering and aggregate integrity:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/89) at `f15cbde5b752755b4740b8f8c67db0d3e72073c2`; exact tested head `15b28b298fa54d11946d0e3e08e75cf5ac25ee40` passed CI, Browser E2E (189 checks) and Full Flight Test (129 backend + 189 browser checks). Non-finite and malformed amounts are kept out of key dashboard/register totals and monetary labels.
 
 - **PR #88 — Receipt preview lifecycle cleanup:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/88) at `8dc477863eadd4113928c88f074c3349bb2965d5`; exact tested head `3f5b563abc9b1bb818a6f5bb5a4c89c5025f34b7` passed CI, Browser E2E (187 checks) and Full Flight Test (129 backend + 187 browser checks). Preview URLs are revoked across clear/remove/save/navigation, including asynchronous compression races.
 
