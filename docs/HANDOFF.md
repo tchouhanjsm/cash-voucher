@@ -2,20 +2,20 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `4c80fa5a94588a8e5f8fd56a830b58cd26548cc0` (PR #104 merge)  
-**Purpose:** single current-state handoff. Verify live GitHub refs before relying on any SHA or PR state recorded here.
+**Verified `main` SHA:** `1fb58fb2c01a67c9dbcb3094298713610e3c7e45` (PR #105 merge)  
+**Purpose:** current state and next action only. Verify live GitHub refs and workflow runs before relying on recorded SHAs.
 
 ## Current phase
 
-**PR #105 — Harden offline recovery validation and legacy migration**  
-Branch: `security/offline-recovery-validation`  
-Base: `4c80fa5a94588a8e5f8fd56a830b58cd26548cc0`
+**PR #106 — Support secure, device-local offline unlock**  
+Branch: `fix/offline-login-unlock`  
+Base: `1fb58fb2c01a67c9dbcb3094298713610e3c7e45`
 
-Scope: enforce a strict scalar-only schema for version-1 offline recovery records at both the user-selected file boundary and the IndexedDB restore boundary. Remove coercive conversion of IDs, account bindings and receipt MIME metadata; validate payment type/date/vendor/amount/category/notes/receipt fields; cap record and receipt payload sizes; whitelist fields passed to the queue; and fail closed on malformed legacy IDs or persisted queue account bindings without deleting recovery data. Add pure unit coverage and browser tests proving malformed files cannot mutate the queue, while valid duplicate/conflict/account-binding/idempotency flows stay intact. Version and update the service-worker app-shell cache so the new validator module is available to offline clients. No backend/API schema, authorization, accounting formula, production deployment or production-data change.
+Observed defect: submitting credentials from the login screen while offline always called the server login endpoint and displayed a connection error. The existing offline startup path only resumed an already stored session. Implement a separate local-only unlock for an account and endpoint verified online on this device within the prior seven days. Store no raw PIN; derive a salted PBKDF2-HMAC-SHA256 verifier (600,000 iterations), bind it to the normalized account, endpoint and validity window, and remove it on explicit sign-out. Do not issue or cache a server session token during offline unlock. Restrict offline navigation to Dashboard/New Entry/Register/Account; server vouchers and privileged online routes remain unavailable until online bootstrap succeeds. Keep the local queue intact and provide a clear online sign-in path for synchronization. Add unit and browser coverage, and version/precache the helper in the service-worker shell.
 
-**Last completed:** PR #104 — [Harden category option lists against malformed settings](https://github.com/tchouhanjsm/cash-voucher/pull/104), merged at `4c80fa5a94588a8e5f8fd56a830b58cd26548cc0`. Exact tested PR head `a42f84d076b2f651a421870dd5325136864886e4` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38252295052) (129 backend checks, 19 contrast checks and quality gates), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38252294971) (246 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38252294972) (129 backend + 246 browser checks).
+**Last completed:** PR #105 — [Harden offline recovery validation and migration](https://github.com/tchouhanjsm/cash-voucher/pull/105), merged at `1fb58fb2c01a67c9dbcb3094298713610e3c7e45`. Exact tested head `76b24ab404e8841026e7117cdea2547df753353b` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38261398312), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38261398331) (249 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38261398323) (129 backend + 249 browser checks).
 
-**Acceptance gate:** PR #105 must pass CI, Browser E2E and Full Flight Test on the same exact final head. Owner review/merge remain required. The full dynamic-rendering sink inventory, live Google authorization, scheduled backup observation and witnessed isolated restore, real-device/PWA/offline, assisted-technology validation and controlled-pilot gates remain open.
+**Acceptance gate:** PR #106 must pass CI, Browser E2E and Full Flight Test on the same exact final head. The owner retains review/merge authority. Online authentication is still required to synchronize queued vouchers. The full rendering-security audit, live Google authorization, scheduled backup observation and witnessed isolated restore, real-device/PWA/offline, accessibility and controlled-pilot gates remain open.
 
 **PR #101 — Fail closed on malformed owner diagnostic responses**  
 Branch: `product/admin-diagnostics-integrity`  
