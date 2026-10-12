@@ -1733,6 +1733,9 @@ with sync_playwright() as p:
 
     audit_page.route('**/api?*', inject_legacy_update_audit)
     audit_page.goto(URL)
+    audit_page.fill('#lEmail', 'owner@test.com')
+    audit_page.fill('#lPin', '579246')
+    audit_page.click('#lBtn')
     audit_page.wait_for_selector('[data-v=audit]')
     audit_page.click('[data-v=audit]')
     audit_page.wait_for_function(
@@ -2410,6 +2413,11 @@ with sync_playwright() as p:
         audit_page.locator('#aud-user option').count() >= 1
         and audit_page.locator('#aud-action option').count() >= 1,
         'audit filters remain usable after malformed rows are discarded',
+    )
+    audit_page.fill('#aud-q', 'voucher')
+    check(
+        '3 malformed audit event(s) omitted from this response' in audit_page.locator('#aud-count').inner_text(),
+        'malformed-row disclosure persists after audit filters rerender the count status',
     )
     audit_page.close()
 
