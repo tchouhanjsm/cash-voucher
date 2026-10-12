@@ -2482,8 +2482,9 @@ with sync_playwright() as p:
     )
     corrupt_context.close()
 
-    # Malformed audit response rows must be omitted without breaking the owner audit view.
+    # Malformed audit response rows and fields must be omitted without breaking the owner audit view.
     audit_malformed_payload = '<svg onload=window.__xssFired=true></svg>'
+    audit_response_mode = 'malformed'
 
     def inject_malformed_audit_rows(route):
         try:
@@ -2496,15 +2497,32 @@ with sync_playwright() as p:
 
         response = route.fetch()
         payload = response.json()
-        if payload.get('ok') and isinstance(payload.get('data'), list):
-            payload['data'] = [
-                None,
-                'unexpected audit row',
-                42,
-                {'time': '2026-10-12T09:00:00', 'user': audit_malformed_payload,
-                 'action': 'UPDATE', 'target': 'voucher', 'details': audit_malformed_payload},
-                *payload['data'],
-            ]
+        if payload.get('ok'):
+            if audit_response_mode == 'invalid-envelope':
+                payload['data'] = {'unexpected': 'not an audit list'}
+            elif audit_response_mode == 'empty':
+                payload['data'] = []
+            elif audit_response_mode == 'malformed' and isinstance(payload.get('data'), list):
+                payload['data'] = [
+                    None,
+                    'unexpected audit row',
+                    42,
+                    {
+                        'time': '2026-10-12T09:00:00',
+                        'user': {'toString': None, 'valueOf': None},
+                        'action': 'UPDATE',
+                        'target': 'voucher',
+                        'details': 'malformed user field',
+                    },
+                    {
+                        'time': '2026-10-12T09:00:00',
+                        'user': audit_malformed_payload,
+                        'action': 'UPDATE',
+                        'target': 'voucher',
+                        'details': audit_malformed_payload,
+                    },
+                    *payload['data'],
+                ]
         route.fulfill(response=response, body=json.dumps(payload))
 
     audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
@@ -2524,12 +2542,13 @@ with sync_playwright() as p:
     check(
         audit_page.locator('#aud img, #aud svg').count() == 0
         and audit_malformed_payload in audit_page.locator('#aud').inner_text()
+        and 'malformed user field' not in audit_page.locator('#aud').inner_text()
         and not audit_page.evaluate('window.__xssFired === true'),
-        'malformed audit response rows are omitted while hostile fields stay inert text',
+        'malformed audit records are omitted and hostile string fields stay inert text',
     )
     check(
-        '3 malformed audit event(s) omitted' in audit_page.locator('#aud-count').inner_text(),
-        'audit status discloses how many malformed response rows were omitted',
+        '4 malformed audit event(s) omitted' in audit_page.locator('#aud-count').inner_text(),
+        'audit status discloses rows with malformed members and field types',
     )
     check(
         audit_page.locator('#aud-user option').count() >= 1
@@ -2538,8 +2557,54 @@ with sync_playwright() as p:
     )
     audit_page.fill('#aud-q', 'voucher')
     check(
-        '3 malformed audit event(s) omitted from this response' in audit_page.locator('#aud-count').inner_text(),
+        '4 malformed audit event(s) omitted from this response' in audit_page.locator('#aud-count').inner_text(),
         'malformed-row disclosure persists after audit filters rerender the count status',
+    )
+
+    audit_response_mode = 'invalid-envelope'
+    audit_page.click('[data-v=dash]')
+    audit_page.click('[data-v=audit]')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-count')?.innerText.includes('invalid server response')",
+        timeout=10000,
+    )
+    check(
+        'Audit data is unavailable because the server response was invalid.'
+        in audit_page.locator('#aud').inner_text()
+        and 'No audit events are available' not in audit_page.locator('#aud').inner_text(),
+        'invalid audit envelope is not misreported as an empty audit history',
+    )
+    audit_page.click('[data-act=audcsv]')
+    check(
+        'invalid' in audit_page.locator('#toast').inner_text().lower()
+        or 'invalid' in audit_page.locator('[role=alert]').last.inner_text().lower(),
+        'CSV export gives unavailable feedback for an invalid audit response',
+    )
+
+    audit_response_mode = 'empty'
+    audit_page.click('[data-v=dash]')
+    audit_page.click('[data-v=audit]')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-count')?.innerText.includes('Showing 0 of 0 loaded events.')",
+        timeout=10000,
+    )
+    check(
+        'No audit events are available in the latest 200 records.'
+        in audit_page.locator('#aud').inner_text(),
+        'a valid empty audit list remains distinct from an invalid response',
+    )
+
+    audit_response_mode = 'valid'
+    audit_page.click('[data-v=dash]')
+    audit_page.click('[data-v=audit]')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-count')?.innerText.startsWith('Showing ')",
+        timeout=10000,
+    )
+    check(
+        'unavailable' not in audit_page.locator('#aud-count').inner_text().lower()
+        and 'malformed audit event(s) omitted' not in audit_page.locator('#aud-count').inner_text(),
+        'audit view recovers when a valid response returns',
     )
     audit_page.close()
 
