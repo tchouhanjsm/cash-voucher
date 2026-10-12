@@ -1435,6 +1435,16 @@ with sync_playwright() as p:
     page.wait_for_selector('#nav button')
     page.click('[data-v=dash]')
     page.wait_for_selector('.hb-l')
+    dashboard_amount_text = page.locator('.stats').inner_text()
+    check(
+        'NaN' not in dashboard_amount_text
+        and 'Infinity' not in dashboard_amount_text
+        and any(
+            'invalid and excluded from totals' in message
+            for message in page.locator('#view [role=status]').all_inner_texts()
+        ),
+        'dashboard excludes malformed amounts from financial figures and explains the exclusion',
+    )
     bar_styles = page.locator('.hb-t i').evaluate_all(
         "elements => elements.map(element => ({width: element.style.width, value: element.getAttribute('style')}))"
     )
@@ -1480,6 +1490,17 @@ with sync_playwright() as p:
         injected_svg_count == 0 and not hostile_handler_fired,
         'hostile vendor text creates no SVG element and does not execute its handler',
     )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rtot')
+    register_amount_text = page.locator('#rtot').inner_text()
+    check(
+        'NaN' not in register_amount_text
+        and 'Infinity' not in register_amount_text
+        and 'invalid amount(s) excluded from totals' in register_amount_text,
+        'register totals exclude malformed active amounts and disclose the exclusion',
+    )
+    page.click('[data-v=dash]')
+    page.wait_for_selector('.hb-l')
     page.unroute('**/api?*', tamper_dashboard_numeric_values)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
