@@ -34,11 +34,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: Diagnose rendering audit formatting
-        run: |
-          npx prettier docs/SECURITY-RENDERING-AUDIT.md > /tmp/SECURITY-RENDERING-AUDIT.md
-          diff -u docs/SECURITY-RENDERING-AUDIT.md /tmp/SECURITY-RENDERING-AUDIT.md || true
-
       - name: Run quality gate
         run: npm run check
 

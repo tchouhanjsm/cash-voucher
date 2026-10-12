@@ -278,7 +278,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Preserve context-appropriate HTML entity encoding, CSV double-quote escaping and formula/control-prefix neutralization. Unit coverage includes supported primitives, hostile strings, non-scalar values and throwing coercion hooks; Browser E2E verifies malformed object-valued Settings fields remain blank, keep the view functional and cannot inject markup.
 - This narrows the shared output-boundary risk; it does not validate authoritative source records, replace field-level API validation, complete the active `innerHTML` inventory, or certify production deployment/backup restore.
 
-
 ## PR #103 — Guard DOM text sinks against malformed bootstrap scalars
 
 - **Confirmed resilience defect:** the active navigation bootstrap wrote `S.settings.propertyName` to `#brand.textContent` and `document.title`, and converted `S.me.name` / `S.me.role` with `String(...)`. Malformed JSON objects with non-callable own `toString` and `valueOf` fields can throw during implicit/explicit primitive conversion and abort startup. The Settings-save completion path repeated the direct brand assignment.
