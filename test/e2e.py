@@ -2056,7 +2056,7 @@ with sync_playwright() as p:
         "document.querySelector('#rtot').innerText.includes('1 malformed voucher record(s) omitted')"
     )
     check(
-        page.locator('#rbody tr').count() == 3
+        page.locator('[data-id=malformed-register-fixture][data-act=rec]').count() == 1
         and 'Receipt metadata unavailable' in page.locator('#rbody').inner_text(),
         'register omits malformed voucher records and visibly flags missing receipt metadata',
     )
