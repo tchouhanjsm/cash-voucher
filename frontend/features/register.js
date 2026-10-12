@@ -318,7 +318,10 @@ export function createRegister({ api, go }) {
       S.voucherDiagnostics?.dataAvailable === false ||
       S.voucherDiagnostics?.envelopeValid === false
     ) {
-      toast('Voucher data is unavailable. Reconnect and refresh before exporting the Register.', 'err');
+      toast(
+        'Voucher data is unavailable. Reconnect and refresh before exporting the Register.',
+        'err',
+      );
       return;
     }
     if (R.from && R.to && R.from > R.to) {
