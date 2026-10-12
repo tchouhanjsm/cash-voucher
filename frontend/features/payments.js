@@ -395,23 +395,43 @@ export function createPayments({ api, refresh }) {
         messages.push('⚠️ ' + describeEntries(failed) + ' need review; automatic retry stopped');
       }
 
+      const displayScalar = (value, fallback) =>
+        typeof value === 'string'
+          ? value
+          : typeof value === 'number' && Number.isFinite(value)
+            ? String(value)
+            : fallback;
       const failedDetails = failed
         .slice(0, 5)
-        .map(
-          (record) =>
+        .map((record) => {
+          const entry =
+            record.entry && typeof record.entry === 'object' && !Array.isArray(record.entry)
+              ? record.entry
+              : {};
+          const kind =
+            entry.type === 'RECEIPT'
+              ? 'Cash receipt: '
+              : entry.type === 'PAYMENT'
+                ? 'Payment: '
+                : 'Entry: ';
+          const clientId = typeof record.clientId === 'string' ? record.clientId : '';
+          const removeAction = clientId
+            ? ' <button class="btn sm danger" data-act="discard-failed" data-id="' +
+              esc(clientId) +
+              '">Export &amp; remove</button>'
+            : '';
+
+          return (
             '<li><b>' +
-            esc(
-              (record.entry?.type === 'RECEIPT' ? 'Cash receipt: ' : 'Payment: ') +
-                (record.entry?.vendor || 'Unnamed entry'),
-            ) +
+            esc(kind + displayScalar(entry.vendor, 'Unnamed entry')) +
             '</b> — ₹' +
-            esc(String(record.entry?.amount ?? 'unknown')) +
+            esc(displayScalar(entry.amount, 'unknown')) +
             ': ' +
-            esc(record.failure || 'Rejected by server') +
-            ' <button class="btn sm danger" data-act="discard-failed" data-id="' +
-            esc(record.clientId) +
-            '">Export &amp; remove</button></li>',
-        )
+            esc(displayScalar(record.failure, 'Rejected by server')) +
+            removeAction +
+            '</li>'
+          );
+        })
         .join('');
       const failedReview = failedDetails
         ? '<details class="outbox-failures"><summary>Review rejected entries</summary><p class="muted">Export a recovery copy before removing an entry. Removed entries are no longer stored on this device.</p><ul>' +
