@@ -118,7 +118,7 @@ export function createPayments({ api, refresh }) {
   }
 
   function disposeReceiptPreviews() {
-    $('#rows .erow').forEach(releaseReceiptPreviews);
+    $$('#rows .erow').forEach(releaseReceiptPreviews);
   }
 
   function removeRow(button) {
