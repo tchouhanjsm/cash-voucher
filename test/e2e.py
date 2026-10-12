@@ -1400,6 +1400,9 @@ with sync_playwright() as p:
             values = [
                 ('numeric-nan', 'NaN', 'numeric-nan'),
                 ('numeric-infinity', 'Infinity', 'numeric-infinity'),
+                ('numeric-null', None, 'numeric-null'),
+                ('numeric-empty', '', 'numeric-empty'),
+                ('numeric-boolean', True, 'numeric-boolean'),
                 ('numeric-negative', -500, 'numeric-negative'),
                 # A non-finite amount must stay in its own vendor group but never poison chart geometry.
                 ('numeric-string', hostile_vendor, 'numeric-string'),
@@ -1499,6 +1502,29 @@ with sync_playwright() as p:
         and 'invalid amount(s) excluded from totals' in register_amount_text,
         'register totals exclude malformed active amounts and disclose the exclusion',
     )
+    # Malformed API amounts must not hang or corrupt printed amount-in-words output.
+    page.evaluate('window.print = () => {}')
+    for suffix in [
+        'numeric-nan',
+        'numeric-infinity',
+        'numeric-null',
+        'numeric-empty',
+        'numeric-boolean',
+        'numeric-negative',
+    ]:
+        row = page.locator('#rbody tr', has_text=suffix).first
+        row.locator('[data-act=print]').click()
+        page.wait_for_function(
+            "document.querySelector('#printArea .pv-words')?.textContent.includes('Amount unavailable')"
+        )
+        printed = page.locator('#printArea').inner_text()
+        check(
+            'Amount unavailable' in printed
+            and 'undefined' not in printed.lower()
+            and 'NaN Rupees' not in printed
+            and 'Infinity' not in printed,
+            f'{suffix} is handled safely by voucher amount-in-words printing',
+        )
     page.click('[data-v=dash]')
     page.wait_for_selector('.hb-l')
     page.unroute('**/api?*', tamper_dashboard_numeric_values)
