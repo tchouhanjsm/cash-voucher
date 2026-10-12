@@ -69,11 +69,7 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
     ids.add(clientId);
 
     const ownerValue = record.ownerKey;
-    if (
-      ownerValue !== undefined &&
-      ownerValue !== null &&
-      typeof ownerValue !== 'string'
-    ) {
+    if (ownerValue !== undefined && ownerValue !== null && typeof ownerValue !== 'string') {
       throw new Error('Recovery file contains an invalid account binding.');
     }
     const sourceOwner = typeof ownerValue === 'string' ? ownerValue.trim() : '';

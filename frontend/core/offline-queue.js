@@ -68,10 +68,8 @@ function normalizeEntry_(entry, index, ownerKey = '') {
     throw new Error('Offline payment contains invalid details.');
   }
   const clientId =
-    validateOptionalClientId(
-      entry.clientId,
-      'Offline payment contains an invalid payment ID.',
-    ) || newClientId_();
+    validateOptionalClientId(entry.clientId, 'Offline payment contains an invalid payment ID.') ||
+    newClientId_();
   const normalizedEntry = { ...entry, clientId };
 
   return {
@@ -327,10 +325,8 @@ function addRecordsSafely_(incoming, allowLegacyBinding = false) {
                 return;
               }
 
-              const previousOwner =
-                typeof previous.ownerKey === 'string' ? previous.ownerKey : '';
-              const incomingOwner =
-                typeof record.ownerKey === 'string' ? record.ownerKey : '';
+              const previousOwner = typeof previous.ownerKey === 'string' ? previous.ownerKey : '';
+              const incomingOwner = typeof record.ownerKey === 'string' ? record.ownerKey : '';
 
               if (previousOwner !== incomingOwner) {
                 if (allowLegacyBinding && !previousOwner && incomingOwner) {

@@ -10,7 +10,7 @@
     "test": "node test/test-backend.js && node test/test-backup-failure.js && node test/test-backup-observability.js && node test/test-backup-integrity.js && node test/test-csv-export.js && node test/test-state-categories.js && node test/test-recovery-validation.js && node test/test-dependency-audit.js && node test/test-pr-quality.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --write docs/PRODUCT-ROADMAP.md docs/SECURITY-RENDERING-AUDIT.md frontend/core/offline-queue.js frontend/core/recovery-validation.js frontend/features/payments.js test/test-recovery-validation.js && git diff -- docs/PRODUCT-ROADMAP.md docs/SECURITY-RENDERING-AUDIT.md frontend/core/offline-queue.js frontend/core/recovery-validation.js frontend/features/payments.js test/test-recovery-validation.js",
+    "format:check": "prettier --check .",
     "validate:json": "node scripts/validate-json.js",
     "check:syntax": "node scripts/check-js.js",
     "inspect:frontend": "node scripts/inspect-frontend.js",
