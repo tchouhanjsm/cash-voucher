@@ -261,6 +261,112 @@ export function createAdministration({ api, getNavigation, signOut }) {
     await renderBackupStatus();
   }
 
+  function isDiagnosticRecord(value) {
+    return value !== null && typeof value === 'object' && !Array.isArray(value);
+  }
+
+  function isDiagnosticCount(value) {
+    return Number.isSafeInteger(value) && value >= 0;
+  }
+
+  function validateDataQualityReport(report) {
+    if (
+      !isDiagnosticRecord(report) ||
+      typeof report.generatedAt !== 'string' ||
+      !report.generatedAt.trim() ||
+      !isDiagnosticCount(report.scanned) ||
+      !isDiagnosticCount(report.issueCount) ||
+      !isDiagnosticCount(report.errors) ||
+      !isDiagnosticCount(report.warnings) ||
+      report.errors + report.warnings !== report.issueCount ||
+      !Array.isArray(report.issues) ||
+      report.issues.length > 500 ||
+      report.issues.length > report.issueCount ||
+      typeof report.truncated !== 'boolean' ||
+      report.truncated !== (report.issueCount > report.issues.length)
+    ) {
+      throw new Error('Invalid data-quality report response.');
+    }
+
+    const issues = report.issues.filter(
+      (issue) =>
+        isDiagnosticRecord(issue) &&
+        (issue.severity === 'error' || issue.severity === 'warning') &&
+        typeof issue.code === 'string' &&
+        Number.isSafeInteger(issue.sourceRow) &&
+        issue.sourceRow >= 2 &&
+        ['voucherId', 'voucherNo', 'date', 'type', 'field', 'message'].every(
+          (field) => typeof issue[field] === 'string',
+        ),
+    );
+
+    return {
+      ...report,
+      issues,
+      malformedIssueCount: report.issues.length - issues.length,
+    };
+  }
+
+  function validateBackupIntegrityReport(report) {
+    if (
+      !isDiagnosticRecord(report) ||
+      typeof report.generatedAt !== 'string' ||
+      !report.generatedAt.trim() ||
+      !isDiagnosticCount(report.inspected) ||
+      !isDiagnosticCount(report.limit) ||
+      report.limit > 10 ||
+      !isDiagnosticCount(report.passCount) ||
+      !isDiagnosticCount(report.warningCount) ||
+      !isDiagnosticCount(report.failCount) ||
+      !Array.isArray(report.snapshots) ||
+      typeof report.note !== 'string' ||
+      report.inspected !== report.snapshots.length
+    ) {
+      throw new Error('Invalid backup-integrity report response.');
+    }
+
+    const validSnapshot = (snapshot) =>
+      isDiagnosticRecord(snapshot) &&
+      typeof snapshot.name === 'string' &&
+      typeof snapshot.createdAt === 'string' &&
+      ['pass', 'warning', 'fail'].includes(snapshot.state) &&
+      isDiagnosticRecord(snapshot.rowCounts) &&
+      Object.values(snapshot.rowCounts).every(isDiagnosticCount) &&
+      isDiagnosticCount(snapshot.receiptCount) &&
+      isDiagnosticCount(snapshot.manifestCount) &&
+      Array.isArray(snapshot.checks) &&
+      snapshot.checks.every(
+        (check) =>
+          isDiagnosticRecord(check) &&
+          typeof check.code === 'string' &&
+          ['pass', 'warning', 'fail'].includes(check.state) &&
+          typeof check.detail === 'string',
+      );
+
+    if (!report.snapshots.every(validSnapshot)) {
+      throw new Error('Invalid backup-integrity snapshot response.');
+    }
+
+    const counts = report.snapshots.reduce(
+      (summary, snapshot) => {
+        summary[snapshot.state]++;
+        return summary;
+      },
+      { pass: 0, warning: 0, fail: 0 },
+    );
+
+    if (
+      report.passCount !== counts.pass ||
+      report.warningCount !== counts.warning ||
+      report.failCount !== counts.fail ||
+      report.passCount + report.warningCount + report.failCount !== report.inspected
+    ) {
+      throw new Error('Inconsistent backup-integrity summary.');
+    }
+
+    return report;
+  }
+
   async function dataQualityScan() {
     const results = $('#dq-results');
     const button = $('[data-act="dqscan"]');
@@ -270,10 +376,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
     }
+    results.setAttribute('role', 'status');
     results.textContent = 'Scanning voucher records…';
 
     try {
-      const report = await api('dataQualityReport');
+      const report = validateDataQualityReport(await api('dataQualityReport'));
+      results.setAttribute('role', 'status');
       results.replaceChildren();
 
       const summary = document.createElement('p');
@@ -286,11 +394,26 @@ export function createAdministration({ api, getNavigation, signOut }) {
         'This scan checks record completeness and structural consistency. It does not determine tax compliance, cash impact, or accounting correctness.';
       results.appendChild(note);
 
-      if (!report.issues.length) {
+      if (report.malformedIssueCount) {
+        const malformed = document.createElement('p');
+        malformed.className = 'muted';
+        malformed.textContent =
+          report.malformedIssueCount +
+          ' malformed data-quality issue(s) omitted from this response.';
+        results.appendChild(malformed);
+      }
+
+      if (!report.issues.length && report.issueCount === 0) {
         const empty = document.createElement('p');
         empty.className = 'badge';
         empty.textContent = 'No structural exceptions found.';
         results.appendChild(empty);
+      } else if (!report.issues.length) {
+        const unavailable = document.createElement('p');
+        unavailable.className = 'error';
+        unavailable.textContent =
+          'Exception details could not be displayed. Refresh the scan to retrieve valid rows.';
+        results.appendChild(unavailable);
       } else {
         const wrapper = document.createElement('div');
         wrapper.className = 'table-wrap';
@@ -341,7 +464,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
         results.appendChild(limited);
       }
     } catch (error) {
-      results.textContent = 'The data-quality scan failed. Check the connection and retry.';
+      results.setAttribute('role', 'alert');
+      results.textContent =
+        'The data-quality scan returned an invalid response or failed. Check the connection and retry.';
       fail(error);
     } finally {
       if (button?.isConnected) {
@@ -697,10 +822,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
     }
+    results.setAttribute('role', 'status');
     results.textContent = 'Inspecting the 10 most recent backup snapshots…';
 
     try {
-      const report = await api('backupIntegrityReport');
+      const report = validateBackupIntegrityReport(await api('backupIntegrityReport'));
+      results.setAttribute('role', 'status');
       results.replaceChildren();
 
       const summary = document.createElement('p');
@@ -763,11 +890,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
       note.textContent = report.note;
       results.appendChild(note);
     } catch (error) {
+      results.setAttribute('role', 'alert');
       results.textContent =
-        'Backup integrity inspection failed. Check Drive permissions and retry. ' +
-        (error && error.message ? error.message : '');
+        'Backup integrity inspection returned an invalid response or failed. Check Drive permissions and retry.';
+      fail(error);
     } finally {
-      if (button) {
+      if (button?.isConnected) {
         button.disabled = false;
         button.removeAttribute('aria-busy');
       }
