@@ -1390,7 +1390,7 @@ with sync_playwright() as p:
         }"""
     )
     page.click('[data-v=new]')
-    page.wait_for_selector('#vlist')
+    page.wait_for_selector('#vlist', state='attached')
     vendor_option_values = page.locator('#vlist option').evaluate_all(
         'options => options.map(option => option.value)'
     )
