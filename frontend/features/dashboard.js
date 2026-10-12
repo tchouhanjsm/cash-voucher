@@ -209,7 +209,7 @@ export function createDashboard() {
         )}</div>`
       : ''
   }`
-  };
+  }`;
   }
 
   return {
