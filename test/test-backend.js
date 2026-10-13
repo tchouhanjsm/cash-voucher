@@ -18,6 +18,11 @@ const nextPaymentNumber = () => {
   );
   return Math.max(300, highest + 100);
 };
+const nextReceiptNumber = () =>
+  g.sheets.Vouchers.rows.slice(1).reduce(
+    (max, row) => (row[15] === 'RECEIPT' ? Math.max(max, Number(row[1]) || 0) : max),
+    0,
+  ) + 1;
 
 // Approval migration adds R:U only, preserves prior cells, and stops on occupied columns.
 const approvalMigrationMock = create();
@@ -1150,6 +1155,7 @@ ok(
     propertyAddress: 'Addr',
     categories: ['A', 'B'],
     nextVoucherNo: nextPaymentNumber(),
+    nextReceiptNo: nextReceiptNumber(),
   }).ok,
   'owner settings',
 );
@@ -1291,6 +1297,7 @@ ok(
 );
 g.sheets.AuditLog.rows.splice(auditRowsBeforeFixture);
 // cash received
+const receiptNumberStart = Number(as(T, 'bootstrap').data.settings.nextReceiptNo);
 const rc = as(T, 'createVouchers', {
   entries: [
     {
@@ -1306,26 +1313,29 @@ const rc = as(T, 'createVouchers', {
 ok(
   rc.ok &&
     rc.data.created[0].type === 'RECEIPT' &&
-    rc.data.created[0].no === 1 &&
-    rc.data.created[1].no === 2,
-  'receipts numbered 1,2 in their own series',
+    rc.data.created[0].no === receiptNumberStart &&
+    rc.data.created[1].no === receiptNumberStart + 1,
+  'receipts use their independent increasing number series',
 );
 ok(rc.data.created[1].category === 'Other', 'unknown receipt category falls back to Other');
 const bs = as(T, 'bootstrap').data;
-ok(bs.settings.nextReceiptNo === 3, 'next receipt no advances');
+ok(
+  bs.settings.nextReceiptNo === receiptNumberStart + 2,
+  'next receipt no advances',
+);
 ok(
   as(T, 'saveSettings', {
     propertyName: 'Hotel X',
     categories: ['A', 'B'],
     nextVoucherNo: nextPaymentNumber(),
-    nextReceiptNo: 3,
+    nextReceiptNo: nextReceiptNumber(),
     openingBalance: 2500,
   }).ok && as(T, 'bootstrap').data.settings.openingBalance === 2500,
   'opening balance saved',
 );
 ok(
   as(T, 'createVouchers', { entries: [{ date: today, vendor: 'Pay', amount: 1 }] }).data.created[0]
-    .no >= 300 && as(T, 'bootstrap').data.vouchers.filter((v) => v.type === 'RECEIPT').length === 2,
+    .no >= 300 && as(T, 'bootstrap').data.vouchers.filter((v) => v.type === 'RECEIPT').length === 3,
   'payment series unaffected by receipts',
 );
 ok(
