@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   quality:
@@ -30,26 +30,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      # Temporary one-off formatting aid for PR #111 only; remove before final review.
-      - name: Format Daily Cash Close PR branch once
-        if: github.event_name == 'pull_request' && github.event.pull_request.number == 111 && github.event.pull_request.head.repo.full_name == github.repository
-        env:
-          GH_HEAD_REF: ${{ github.head_ref }}
-        run: |
-          git fetch origin "refs/heads/${GH_HEAD_REF}:refs/remotes/origin/${GH_HEAD_REF}"
-          git checkout -B "${GH_HEAD_REF}" "origin/${GH_HEAD_REF}"
-          npm run fix:format
-          npm run fix:lint
-          git add -u
-          if git diff --cached --quiet; then
-            echo "No formatter changes."
-            exit 0
-          fi
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git commit -m "style: format Daily Cash Close implementation"
-          git push origin "HEAD:refs/heads/${GH_HEAD_REF}"
 
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
