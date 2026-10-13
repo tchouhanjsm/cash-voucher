@@ -15,7 +15,6 @@ The existing vendor master already has a generated stable `VendorID`. The batch 
 
 The first accounting product/version, import mapping, accountant-approved sample, entity/tax registration, source-evidence requirements and tax calculations remain open. Do not describe the generic CSV as Tally/Zoho-compatible, a general ledger, a GST/TDS report, a statutory book or a reconciliation certificate. PR #114 has not merged, migrated a live Sheet or deployed any source.
 
-
 Reviewing this product as a finance record keeper changes the definition of “done”: a voucher form is only the capture layer. An accountant needs a traceable evidence chain from source document → recorded transaction → approval/correction history → period report → reconciled export → accountant import/review.
 
 The current app has a useful operational base: payment and receipt vouchers, separate numbering series, date/vendor/category/amount/notes, active/cancelled status, creator/update metadata, receipt image references, client IDs, user/role controls, an audit log, register/dashboard surfaces, CSV/print paths, offline queue/recovery and backup mechanisms. These fields are not yet a complete general ledger or tax subledger.
@@ -31,7 +30,7 @@ The current `Vouchers` sheet schema is:
 | `VoucherID`              | Internal voucher identity                                      | Preserve as immutable source key in every export.                                                                                    |
 | `VoucherNo`              | Human-readable number; payment and receipt series are separate | Export together with voucher type and internal ID; never rely on number alone.                                                       |
 | `Date`                   | Voucher/business date                                          | Need explicit business-date semantics, timezone and period inclusion rules.                                                          |
-| `Vendor`                 | Free-text counterparty / description                           | Still free text. New vouchers also store `VendorID` when the name exactly matches one unique saved vendor; historical rows are not backfilled. Unmatched/ambiguous names remain unresolved. |
+| `Vendor`                 | Free-text counterparty / description                           | Too ambiguous for tax reporting; distinguish supplier/customer/employee/owner/bank and link to a stable party record.                |
 | `Amount`                 | Single amount                                                  | No explicit gross/net/tax-inclusive definition or debit/credit sign convention.                                                      |
 | `Category`               | Operational category                                           | Not an approved chart of accounts and must not be mapped automatically to tax treatment.                                             |
 | `Notes`                  | Free text                                                      | Helpful context but not a substitute for invoice fields or a structured business purpose.                                            |
