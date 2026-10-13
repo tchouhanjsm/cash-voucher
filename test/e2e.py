@@ -331,31 +331,61 @@ with sync_playwright() as p:
         and 'excluded from approved totals' in manager_page.locator('#rtot').inner_text(),
         'Register totals exclude the pending INR 10,000 payment',
     )
+    manager_errors = []
+    manager_page.on('console', lambda message: manager_errors.append(message.text) if message.type == 'error' else None)
+    manager_page.on('pageerror', lambda error: manager_errors.append('PAGEERR ' + str(error)))
     manager_page.click('#rbody [data-act=approve]')
-    manager_page.wait_for_selector('#modal .mcard .primary')
-    manager_page.locator('#modal .mcard .primary').click()
-    manager_page.wait_for_function(
-        "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
-    )
-    check(
-        'PENDING APPROVAL' not in manager_page.locator('#rbody').inner_text()
-        and 'APPROVED' in manager_page.locator('#rbody').inner_text(),
-        'manager approval updates status and removes pending treatment',
-    )
-    check(
-        '10,000' in manager_page.locator('#rtot').inner_text()
-        and 'excluded from approved totals' not in manager_page.locator('#rtot').inner_text(),
-        'approved INR 10,000 payment becomes eligible for Register totals',
-    )
-    page.click('[data-act=refresh]')
-    page.wait_for_function(
-        "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
-    )
-    check(
-        'APPROVED' in page.locator('#rbody').inner_text()
-        and page.locator('#rbody [data-act=approve]').count() == 0,
-        'approval persists across users and the creator view refresh',
-    )
+    try:
+        manager_page.wait_for_function(
+            "document.querySelector('#modal .mcard .primary') || "
+            "(!document.querySelector('#toast')?.classList.contains('hidden'))",
+            timeout=5000,
+        )
+    except Exception:
+        pass
+    approval_modal_ready = manager_page.locator('#modal .mcard .primary').count() == 1
+    if approval_modal_ready:
+        manager_page.locator('#modal .mcard .primary').click()
+        manager_page.wait_for_function(
+            "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
+        )
+        check(
+            'PENDING APPROVAL' not in manager_page.locator('#rbody').inner_text()
+            and 'APPROVED' in manager_page.locator('#rbody').inner_text(),
+            'manager approval updates status and removes pending treatment',
+        )
+        check(
+            '10,000' in manager_page.locator('#rtot').inner_text()
+            and 'excluded from approved totals' not in manager_page.locator('#rtot').inner_text(),
+            'approved INR 10,000 payment becomes eligible for Register totals',
+        )
+        page.click('[data-act=refresh]')
+        page.wait_for_function(
+            "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
+        )
+        check(
+            'APPROVED' in page.locator('#rbody').inner_text()
+            and page.locator('#rbody [data-act=approve]').count() == 0,
+            'approval persists across users and the creator view refresh',
+        )
+    else:
+        toast_text = manager_page.locator('#toast').inner_text()
+        print(
+            'APPROVAL DIALOG DIAGNOSTIC:',
+            json.dumps({
+                'toast': toast_text,
+                'modalClass': manager_page.locator('#modal').get_attribute('class'),
+                'modalText': manager_page.locator('#modal').inner_text(),
+                'errors': manager_errors[-10:],
+                'managerEmail': manager_page.evaluate(
+                    "JSON.parse(localStorage.getItem('cv.cache') || '{}').me?.email || ''"
+                ),
+            }),
+        )
+        check(
+            False,
+            'manager approval click must open a confirmation dialog; toast=' + toast_text,
+        )
     manager_context.close()
 
     # Slice 4: generic read-only accountant report/export with stable VendorID.
