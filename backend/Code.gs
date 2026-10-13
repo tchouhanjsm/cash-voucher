@@ -727,7 +727,10 @@ function recordedMovementReport_(user, req) {
   });
   const eligiblePayments = function (list) {
     return list.filter(function (item) {
-      return item.type !== 'PAYMENT' || ['NOT_REQUIRED', 'APPROVED'].indexOf(item.approvalStatus) >= 0;
+      return (
+        item.type !== 'PAYMENT' ||
+        ['NOT_REQUIRED', 'APPROVED'].indexOf(item.approvalStatus) >= 0
+      );
     });
   };
   const sum = function (list, wantedType) {
@@ -750,7 +753,11 @@ function recordedMovementReport_(user, req) {
     activeCount: active.length,
     cancelledCount: items.length - active.length,
     pendingApprovalCount: items.filter(function (item) {
-      return item.status === 'ACTIVE' && item.type === 'PAYMENT' && item.approvalStatus === 'PENDING';
+      return (
+        item.status === 'ACTIVE' &&
+        item.type === 'PAYMENT' &&
+        item.approvalStatus === 'PENDING'
+      );
     }).length,
     approvalExceptionCount: items.filter(function (item) {
       return (
@@ -2879,12 +2886,20 @@ function approveVoucher_(user, req) {
   const id = typeof req.id === 'string' ? req.id.trim() : '';
   if (!id) throw err_('Voucher ID is required.', 'VALIDATION');
   const voucher = findVoucher_(id);
-  if (voucher.Status !== 'ACTIVE') throw err_('Only active payment vouchers can be approved.', 'APPROVAL_STATE');
+  if (voucher.Status !== 'ACTIVE') {
+    throw err_('Only active payment vouchers can be approved.', 'APPROVAL_STATE');
+  }
   if (!isEligibleApprovalPayment_(voucher)) {
-    throw err_('Only a valid high-value PAYMENT voucher can be approved or rejected.', 'APPROVAL_STATE');
+    throw err_(
+      'Only a valid high-value PAYMENT voucher can be approved or rejected.',
+      'APPROVAL_STATE',
+    );
   }
   if (approvalStatus_(voucher) !== 'PENDING') {
-    throw err_('This payment is not awaiting approval. Refresh the Register and review its current state.', 'APPROVAL_STATE');
+    throw err_(
+      'This payment is not awaiting approval. Refresh the Register and review its current state.',
+      'APPROVAL_STATE',
+    );
   }
   if (String(voucher.CreatedBy || '').toLowerCase() === String(user.email || '').toLowerCase()) {
     throw err_('You cannot approve a payment voucher you created.', 'FORBIDDEN');
@@ -2923,12 +2938,20 @@ function rejectVoucher_(user, req) {
   const id = typeof req.id === 'string' ? req.id.trim() : '';
   if (!id) throw err_('Voucher ID is required.', 'VALIDATION');
   const voucher = findVoucher_(id);
-  if (voucher.Status !== 'ACTIVE') throw err_('Only active payment vouchers can be rejected.', 'APPROVAL_STATE');
+  if (voucher.Status !== 'ACTIVE') {
+    throw err_('Only active payment vouchers can be rejected.', 'APPROVAL_STATE');
+  }
   if (!isEligibleApprovalPayment_(voucher)) {
-    throw err_('Only a valid high-value PAYMENT voucher can be approved or rejected.', 'APPROVAL_STATE');
+    throw err_(
+      'Only a valid high-value PAYMENT voucher can be approved or rejected.',
+      'APPROVAL_STATE',
+    );
   }
   if (approvalStatus_(voucher) !== 'PENDING') {
-    throw err_('This payment is not awaiting approval. Refresh the Register and review its current state.', 'APPROVAL_STATE');
+    throw err_(
+      'This payment is not awaiting approval. Refresh the Register and review its current state.',
+      'APPROVAL_STATE',
+    );
   }
   const reason = clean_(req.reason, 200);
   if (reason.length < 3) {
