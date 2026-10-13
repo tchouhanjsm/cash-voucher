@@ -129,7 +129,7 @@ with sync_playwright() as p:
     page.fill('#np', '579246')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
-    check(page.locator('#nav button').count() == 10, 'owner sees 10 nav items including reports and audit log')
+    check(page.locator('#nav button').count() == 11, 'owner sees 11 nav items including Cash Close')
     check(
         page.locator('[data-v=dash]').get_attribute('aria-current') == 'page',
         'current navigation view is announced to assistive technology',
@@ -138,6 +138,41 @@ with sync_playwright() as p:
         page.locator('[data-v=dash] .ic').get_attribute('aria-hidden') == 'true',
         'decorative navigation icon is hidden from assistive technology',
     )
+
+    # Daily Cash Close journey: manual opening, immutable report, correction note and carry-forward.
+    page.click('[data-v=cashClose]')
+    page.wait_for_selector('#cc-date')
+    page.fill('#cc-date', '2020-01-01')
+    page.click('[data-act=closePreview]')
+    page.wait_for_selector('#cc-opening')
+    page.fill('#cc-opening', '80')
+    page.fill('#cc-opening-reason', 'Opening cash counted before the first test day')
+    page.click('[data-act=closePreview]')
+    page.wait_for_selector('#cc-counted')
+    page.fill('#cc-counted', '100')
+    page.fill('#cc-variance-reason', 'Initial count differs from expected cash')
+    page.click('[data-act=closeCreate]')
+    page.wait_for_selector('#cc-closed-report')
+    check(
+        '₹80' in page.locator('#cc-closed-report').inner_text()
+        and '₹100' in page.locator('#cc-closed-report').inner_text()
+        and '₹20' in page.locator('#cc-closed-report').inner_text(),
+        'cash close report shows opening, physical count and variance',
+    )
+    check('owner@test.com' in page.locator('#cc-closed-report').inner_text(), 'close report records the accountable operator')
+    page.fill('#cc-corr-details', 'E2E correction note recorded after close')
+    page.fill('#cc-corr-reason', 'Follow-up is documented without reopening close')
+    page.click('[data-act=closeCorrection]')
+    page.wait_for_function("document.querySelector('#cc-closed-report')?.innerText.includes('CLOSED')")
+    check('E2E correction note recorded' in page.locator('.cc-corrections').inner_text(), 'correction note is displayed separately')
+    page.fill('#cc-date', '2020-01-02')
+    page.click('[data-act=closePreview]')
+    page.wait_for_selector('#cc-counted')
+    check(page.locator('#cc-opening').count() == 0 and '₹100' in page.locator('#cc-results').inner_text(), 'next day carries forward the accepted physical count')
+    page.fill('#cc-counted', '100')
+    page.click('[data-act=closeCreate]')
+    page.wait_for_selector('#cc-closed-report')
+    check('Previous accepted close' in page.locator('#cc-closed-report').inner_text(), 'report discloses carry-forward opening source')
 
     page.click('[data-v=users]')
     page.wait_for_selector('#uf')
@@ -834,7 +869,7 @@ with sync_playwright() as p:
     page.fill('#lEmail', 'owner@test.com')
     page.fill('#lPin', '579246')
     page.click('#lBtn')
-    page.wait_for_function("document.querySelectorAll('#nav button').length === 10", timeout=10000)
+    page.wait_for_function("document.querySelectorAll('#nav button').length === 11", timeout=10000)
     page.wait_for_function(
         """async () => {
           const db = await new Promise((resolve, reject) => {
@@ -1863,7 +1898,7 @@ with sync_playwright() as p:
     page.fill('#np', '864209')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
-    check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including reports')
+    check(page.locator('#nav button').count() == 8, 'manager sees 8 nav items including Reports and Cash Close')
 
     page.click('[data-v=new]')
     page.click('[data-k=RECEIPT]')

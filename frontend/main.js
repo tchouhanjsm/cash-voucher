@@ -9,6 +9,7 @@ import { createAuth } from './features/auth.js';
 import { createPayments } from './features/payments.js';
 import { createDashboard } from './features/dashboard.js';
 import { createReports } from './features/reports.js';
+import { createCashClose } from './features/cash-close.js';
 import { createRegister } from './features/register.js';
 import { createBulk } from './features/bulk.js';
 import { createAdministration } from './features/administration.js';
@@ -35,6 +36,7 @@ async function api(action, payload = {}) {
 
 const dashboard = createDashboard();
 const reports = createReports({ api });
+const cashClose = createCashClose({ api });
 
 const authStart = (...args) => navigation.start(...args);
 const paymentRefresh = (...args) => navigation.refresh(...args);
@@ -79,6 +81,7 @@ navigation = createNavigation({
   renderers: {
     dash: dashboard.render,
     reports: reports.render,
+    cashClose: cashClose.render,
     new: () => payments.open('PAYMENT'),
     reg: register.render,
     bulk: bulk.render,
@@ -188,6 +191,18 @@ registerActions({
   reportRun: () => reports.load(),
 
   reportCsv: () => reports.exportCsv(),
+
+  closePreview: () => cashClose.preview(),
+
+  closeCreate: ({ element }) => cashClose.create(element),
+
+  closeCsv: () => cashClose.exportCsv(),
+
+  closePrint: () => cashClose.print(),
+
+  closeCorrection: ({ element }) => cashClose.recordCorrection(element),
+
+  closeSelect: ({ key }) => cashClose.selectClose(key),
 
   install: () => administration.install(),
 

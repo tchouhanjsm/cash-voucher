@@ -280,3 +280,12 @@ PR #107 merged at `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592`. Exact tested head 
 **Exit gate:** CI, Browser E2E and Full Flight Test pass on the exact same final PR head. Browser coverage verifies the status/detail fields and that tampered local HTML remains inert. No API/Sheet schema, accounting rules, auth policy, deployment or production data changes.
 
 **Independent P0 gates remain open:** verify the intended Apps Script project and live role/receipt boundaries; observe the scheduled backup and inspect actual Drive copies/manifests; witness a restore to a separate destination and validate counts/numbering; complete real-device PWA/offline and assistive-technology checks; conduct the controlled hotel pilot. Mock CI does not close these gates. The full dynamic-rendering sink audit remains incremental.
+
+
+## Daily Cash Close MVP — owner-approved implementation batch (13 October 2026)
+
+PR #110 approved mandatory voucher-level CashImpact; this phase adds the first physical cash close. The owner approved one property / MAIN drawer / calendar day in Asia/Kolkata; exact previous-day count carry-forward; explicit manual opening amount plus reason when starting or resolving a date gap; counted-minus-expected variance with mandatory reason when non-zero; and owner/manager-only finalization enforced on the backend.
+
+The close is rejected if any active date-scoped voucher is unclassified or has an invalid amount. It records the original totals and included voucher snapshot, actor, time zone, timestamp and request ID together. The same request can be retried without duplicating a close; concurrent/date duplicates cannot overwrite the record. Voucher creation, edits and cancellation affecting a closed date are blocked. A correction note is a separately attributed append-only record and does not alter the original close or voucher data.
+
+The release requires reviewed source plus two guarded one-time schema operations (migrateCashImpactField() if needed, then migrateDailyCashCloseSchema()) in the verified Apps Script project after backup. No migration, Clasp upload, deployment or production data operation is performed by the feature PR. Live concurrency, backup/restore, device/PWA and hotel-pilot gates remain open. The next slice after owner review and merge is the agreed “Cash in hand” → “Book balance” label change, followed by the go-live gates in Founder Mode.

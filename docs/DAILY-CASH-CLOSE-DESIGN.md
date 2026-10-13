@@ -223,3 +223,27 @@ Before implementation, choose a policy for active historical vouchers without a 
 - Existing device-local queue items without `cashImpact` remain recoverable: they are not auto-classified or discarded, and synchronization marks them failed until the owner/operator exports and deliberately re-enters them with classification.
 
 The cash-impact field is now an owner-approved code slice. This PR does not upload Apps Script source, run the migration, deploy a Web App version, or modify production data.
+
+
+## 13. Owner-approved MVP policy and implementation boundary — 13 October 2026
+
+The owner approved these defaults for the implementation phase. This section supersedes the earlier undecided options above for this MVP:
+
+- **Period / uniqueness:** one property, one physical drawer (MAIN), one calendar day in Asia/Kolkata. A business date can be closed once.
+- **Opening cash:** carry forward the previous calendar day's accepted physical count. If that exact prior-day close does not exist (first day or a gap), require a manually entered opening amount and a reason. The global Settings opening balance is never used as a daily opening amount.
+- **Calculation:** opening physical cash + all active CASH_IN vouchers − all active CASH_OUT vouchers. NO_CASH is included in the traceable snapshot but contributes zero to drawer movement. Cancelled vouchers are excluded. Category names and voucher type are never used to infer impact.
+- **Finalization gate:** block close when any active in-period voucher is UNCLASSIFIED or has an invalid amount. A non-zero variance requires a reason. Store the included voucher IDs and compact voucher snapshot with totals, actor, property timezone and timestamp in the dedicated close row.
+- **Offline:** preview/finalization use central Sheet data and require an online server request. The close UI must not claim a central close succeeded while offline or while the response is uncertain. Retry uses the same request ID. Existing device-local entries are never discarded or silently classified.
+- **Authority:** only existing owners and managers may preview/finalize close or record correction notes; backend authorization is authoritative.
+- **Closed period / corrections:** one immutable close per date. API voucher creation, edits, date changes and cancellations that affect a closed date are rejected. A separate correction note requires a type, details, reason and actor, optionally linked to a voucher in the saved snapshot. A note does not change voucher data, reopen a close or revise reported totals. Any financial restatement/adjustment workflow remains a separately reviewed future decision.
+- **Durability:** a dedicated CashCloses row stores the original totals and included-voucher snapshot together; a separate append-only CashCloseCorrections row preserves correction attribution. All close writes use the existing ScriptLock wrapper and a request ID. Reuse of the same ID and same payload returns the original close; a conflicting payload is rejected.
+
+### Schema / release procedure
+
+The implementation adds two dedicated tabs; no existing voucher or setting columns are rearranged. After reviewing and backing up the intended Apps Script project, upload the reviewed source only when the owner authorizes it. Run migrateCashImpactField() first if column Q (CashImpact) is not present, then run migrateDailyCashCloseSchema() once from the Apps Script editor. The close migration verifies the expected Vouchers header and refuses to overwrite unknown tabs/headers. Verify both new header rows and the unchanged voucher row count before publishing any Web App version. Do not run setup() as a shortcut. Migrations and deployment are not performed by this PR.
+
+### MVP limitations / acceptance gates
+
+- Corrections are attributed notes, not numeric adjustments. The original close is never silently rewritten.
+- The saved snapshot is the basis of the printed/exported report; a CSV contains the summary, all included voucher IDs/amounts and correction notes.
+- CI, Browser E2E and Full Flight Test must pass on the exact same final PR head. Live Apps Script/Sheets concurrency, real backups/restore, device queue behavior and the controlled hotel pilot remain independent release gates.

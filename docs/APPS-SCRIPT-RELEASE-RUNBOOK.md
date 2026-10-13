@@ -154,3 +154,17 @@ PR #67 adds browser coverage for owner Settings data-quality results and backup-
 - `npx clasp status` lists only `backend/appsscript.json` and `backend/Code.gs`. `npx clasp versions` reports four numbered versions; version 4 is named `Cash Voucher reviewed backend release`. The configured `config.js` Web App URL matches the version-4 deployment ID, and a separate `@HEAD` deployment exists.
 - These checks establish deployment ID alignment, not that current `main` is deployed. Owner confirmation in the Apps Script editor of the intended project, deployment, Sheet binding and Script Properties remains outstanding. Do not run `clasp push`, `clasp deploy`, or `setup()` until the owner confirms the target and explicitly authorizes release.
 - npm still reports three high-severity dependency findings; do not use `npm audit fix --force`. Live role/receipt authorization, a real scheduled backup, and a witnessed restore into a separate recovery Sheet/folder remain unverified.
+
+
+## Daily Cash Close schema migration — reviewed release only
+
+PR #110 introduced the additive Vouchers CashImpact column. The Daily Cash Close feature additionally needs CashCloses and CashCloseCorrections tabs. Before publishing a version containing Daily Cash Close:
+
+1. Verify the intended Apps Script project, SS_ID, bound Sheet and a current backup. Inspect the existing Vouchers row count and A:P headers; ensure the next column is available.
+2. Upload the reviewed backend source only after explicit owner authorization. A Git merge is not an upload or deployment.
+3. If Vouchers Q1 is not CashImpact, run migrateCashImpactField() once and verify A:P and voucher row count are unchanged and all historical CashImpact cells remain blank.
+4. Run migrateDailyCashCloseSchema() once. It requires the current CashImpact header, adds only the two dedicated tabs, validates any pre-existing same-named tabs, and stops rather than overwriting unexpected data.
+5. Verify the exact headers of both new tabs and confirm existing Vouchers and Settings rows/values are unchanged. Do not run setup() to force the migration.
+6. Publish the reviewed backend version to the verified existing Web App deployment only after the owner separately authorizes deployment. Then complete live role, close/duplicate, voucher lock, backup/restore and real-device checks before relying on the feature.
+
+Do not run either migration or deploy from the feature PR. Preserve every existing row and all historical unclassified vouchers.
