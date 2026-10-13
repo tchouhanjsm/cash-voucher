@@ -348,6 +348,20 @@ with sync_playwright() as p:
     )
     manager_page.wait_for_timeout(150)
     manager_page.evaluate("""() => {
+        const button = document.querySelector('#rbody [data-act=approve]');
+        const rect = button?.getBoundingClientRect();
+        const hit = rect
+            ? document.elementFromPoint(rect.left + Math.min(20, rect.width / 2), rect.top + rect.height / 2)
+            : null;
+        window.__approvalPreClick = {
+            rect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
+            hit: hit?.outerHTML || null,
+            hitTag: hit?.tagName || null,
+            appClass: document.querySelector('#app')?.className || '',
+            modalClass: document.querySelector('#modal')?.className || '',
+            toastClass: document.querySelector('#toast')?.className || '',
+            viewport: { width: window.innerWidth, height: window.innerHeight }
+        };
         window.__approvalClickLog = [];
         window.__approvalDirectClick = false;
         const approveButton = document.querySelector('#rbody [data-act=approve]');
@@ -415,6 +429,7 @@ with sync_playwright() as p:
                 ),
                 'appInert': manager_page.locator('#app').evaluate('(element) => element.inert'),
                 'approveButton': manager_page.locator('#rbody [data-act=approve]').evaluate('(element) => element.outerHTML') if manager_page.locator('#rbody [data-act=approve]').count() else None,
+                'preClick': manager_page.evaluate('window.__approvalPreClick || null'),
                 'directClick': manager_page.evaluate('window.__approvalDirectClick || false'),
                 'clickLog': manager_page.evaluate('window.__approvalClickLog || []'),
                 'registerNavActive': manager_page.locator('[data-v=reg]').get_attribute('aria-current'),
@@ -432,7 +447,25 @@ with sync_playwright() as p:
     page.locator('[data-v=vend]').scroll_into_view_if_needed()
     page.locator('[data-v=vend]').click()
     page.wait_for_selector('#vf')
-    page.locator('#vn').wait_for(state='visible')
+    try:
+        page.locator('#vn').wait_for(state='visible', timeout=5000)
+    except Exception:
+        print(
+            'OWNER VENDOR FORM DIAGNOSTIC:',
+            json.dumps({
+                'appClass': page.locator('#app').get_attribute('class'),
+                'loginClass': page.locator('#login').get_attribute('class'),
+                'modalClass': page.locator('#modal').get_attribute('class'),
+                'viewText': page.locator('#view').inner_text()[:500],
+                'vendorFormCount': page.locator('#vf').count(),
+                'vendorInputCount': page.locator('#vn').count(),
+                'vendorInputVisible': page.locator('#vn').is_visible() if page.locator('#vn').count() else False,
+                'toast': page.locator('#toast').inner_text(),
+                'toastClass': page.locator('#toast').get_attribute('class'),
+            }),
+        )
+        check(False, 'owner Vendor form became visible after navigation')
+        raise AssertionError('Owner Vendor form is not visible; see diagnostic above.')
     page.fill('#vn', 'Accountant E2E Vendor')
     page.fill('#vc', 'Export Test')
     page.fill('#vm', '')
