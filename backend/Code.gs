@@ -1908,13 +1908,6 @@ function approvalStatus_(voucher) {
   if (raw === undefined || raw === null || raw === '') return 'NOT_REQUIRED';
   return PAYMENT_APPROVAL_STATUSES.indexOf(raw) >= 0 ? raw : 'REVIEW_REQUIRED';
 }
-function financiallyIncludedPayment_(voucher) {
-  return (
-    voucher &&
-    voucher.Type === 'PAYMENT' &&
-    ['NOT_REQUIRED', 'APPROVED'].indexOf(approvalStatus_(voucher)) >= 0
-  );
-}
 function cashImpact_(value, prefix) {
   if (typeof value !== 'string' || CASH_IMPACT_CHOICES.indexOf(value) < 0) {
     throw err_((prefix || '') + 'cash impact must be CASH_IN, CASH_OUT, or NO_CASH.', 'VALIDATION');
