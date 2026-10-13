@@ -86,9 +86,9 @@ Keep the existing security and durability baseline accurate. Verify live deploym
 
 Continue as a design-only gate in `docs/DAILY-CASH-CLOSE-DESIGN.md`.
 
-The current voucher schema has no explicit settlement method or physical-cash-impact field. The proposed `CASH_IN`, `CASH_OUT`, `NO_CASH`, and `UNCLASSIFIED` vocabulary is not yet an approved schema or policy.
+The owner approved a voucher-level `CashImpact` field policy on 13 October 2026: new vouchers require an explicit `CASH_IN`, `CASH_OUT`, or `NO_CASH` choice; `UNCLASSIFIED` is reserved for historical or unresolved records. Category values are non-binding suggestions only. New-voucher creators may classify; saved changes remain restricted to owner/manager edit permissions and require old/new audit values, actor, timestamp, and a reason. Historical records are not backfilled and will block a future final close while unresolved.
 
-Do not implement this workflow until the owner resolves the decisions recorded in the design document, including period boundaries, opening cash, historical vouchers, pending offline entries, permissions, variance handling, and post-close corrections.
+This does not approve daily-close calculations or a reconciliation claim. The close workflow remains design-only until the other decisions in `docs/DAILY-CASH-CLOSE-DESIGN.md` are resolved, including period boundaries, opening cash, pending offline entries, close authority, variance handling, and post-close corrections.
 
 ### P2 — Evidence and exception workflow
 

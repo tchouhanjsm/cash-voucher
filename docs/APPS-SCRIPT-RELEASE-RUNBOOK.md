@@ -67,6 +67,20 @@ npx clasp status
 
 Review the push output. Expected source scope is the backend project (including `Code.gs` and `appsscript.json`), not the frontend repository root. Stop if Clasp proposes unexpected files or a different target.
 
+## Cash-impact field migration — only for the approved cash-impact release
+
+The new voucher schema appends `CashImpact` as column Q. Do not use `setup()` for this migration: it is not a safe substitute for an additive, data-preserving schema change.
+
+After the reviewed backend source has been uploaded to the verified Apps Script project (Gate B), but before publishing a Web App version:
+
+1. Confirm a current backup exists and the intended `SS_ID` / bound Sheet is verified.
+2. Inspect the `Vouchers` header row: the existing A:P headers must match the prior schema exactly, and Q must be empty. Do not proceed if the sheet differs or Q already contains unrelated data.
+3. In the Apps Script editor, run `migrateCashImpactField()` once. It validates the prior header, writes only `CashImpact` to Q1, formats Q as text, and leaves every historical Q cell blank. It never infers values from type or category.
+4. Verify Q1 is `CashImpact`, existing A:P headers and voucher row count are unchanged, and historical rows are still blank in Q. The app must represent those rows as `UNCLASSIFIED`; do not label them as reconciled.
+5. If the function stops on a schema/column mismatch, stop the release and investigate. Do not run `setup()` or overwrite column Q to force the migration.
+
+This is a future release procedure only. A code merge does not execute it, and this PR does not upload source, run the migration, or deploy.
+
 ## Gate C — publish a version while preserving the intended URL
 
 In the Apps Script editor, inspect the project and existing deployments. Create a new version and update the existing Web App deployment that corresponds to the current `config.js` URL. Preserve its deployment ID/URL unless the owner explicitly approves a URL change.
