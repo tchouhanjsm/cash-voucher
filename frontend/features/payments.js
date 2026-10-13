@@ -475,7 +475,7 @@ export function createPayments({ api, refresh }) {
               ? money(entry.amount)
               : 'Amount unavailable';
           const date =
-            typeof entry.date === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(entry.date)
+            typeof entry.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(entry.date)
               ? entry.date
               : 'Date unavailable';
           const receiptCount = Array.isArray(entry.receipts) ? entry.receipts.length : 0;
