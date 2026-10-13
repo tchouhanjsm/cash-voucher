@@ -886,51 +886,217 @@ ok(
   'manager cannot inspect backup contents',
 );
 // Daily Cash Close MVP regression suite.
-ok(as(A, 'cashClosePreview', { date: '2020-01-01' }).code === 'FORBIDDEN', 'staff cannot preview daily cash close');
+ok(
+  as(A, 'cashClosePreview', { date: '2020-01-01' }).code === 'FORBIDDEN',
+  'staff cannot preview daily cash close',
+);
 ok(as(M, 'cashClosePreview', { date: '2020-01-01' }).ok, 'manager can preview daily cash close');
 const initialPreview = as(T, 'cashClosePreview', { date: '2020-01-01' });
-ok(initialPreview.ok && initialPreview.data.requiresManualOpening, 'first close requires explicit opening');
-const missingOpeningReason = as(T, 'createCashClose', { date: '2020-01-01', openingCash: '80', countedCash: '100', varianceReason: 'Count differs', requestId: 'cc-missing-open-reason' });
-ok(!missingOpeningReason.ok && missingOpeningReason.code === 'VALIDATION', 'manual opening needs a reason');
-const missingVarianceReason = as(T, 'createCashClose', { date: '2020-01-01', openingCash: '80', openingReason: 'Initial opening count', countedCash: '100', requestId: 'cc-missing-variance-reason' });
-ok(!missingVarianceReason.ok && missingVarianceReason.code === 'VALIDATION', 'non-zero variance needs a reason');
-const firstInput = { date: '2020-01-01', openingCash: '80', openingReason: 'Initial opening cash count', countedCash: '100', varianceReason: 'Initial count differs from expected', requestId: 'cc-2020-01-01-1' };
+ok(
+  initialPreview.ok && initialPreview.data.requiresManualOpening,
+  'first close requires explicit opening',
+);
+const missingOpeningReason = as(T, 'createCashClose', {
+  date: '2020-01-01',
+  openingCash: '80',
+  countedCash: '100',
+  varianceReason: 'Count differs',
+  requestId: 'cc-missing-open-reason',
+});
+ok(
+  !missingOpeningReason.ok && missingOpeningReason.code === 'VALIDATION',
+  'manual opening needs a reason',
+);
+const missingVarianceReason = as(T, 'createCashClose', {
+  date: '2020-01-01',
+  openingCash: '80',
+  openingReason: 'Initial opening count',
+  countedCash: '100',
+  requestId: 'cc-missing-variance-reason',
+});
+ok(
+  !missingVarianceReason.ok && missingVarianceReason.code === 'VALIDATION',
+  'non-zero variance needs a reason',
+);
+const firstInput = {
+  date: '2020-01-01',
+  openingCash: '80',
+  openingReason: 'Initial opening cash count',
+  countedCash: '100',
+  varianceReason: 'Initial count differs from expected',
+  requestId: 'cc-2020-01-01-1',
+};
 const firstClose = as(T, 'createCashClose', firstInput);
-ok(firstClose.ok && firstClose.data.expectedCash === 80 && firstClose.data.variance === 20, 'first close calculates manual opening and variance');
+ok(
+  firstClose.ok && firstClose.data.expectedCash === 80 && firstClose.data.variance === 20,
+  'first close calculates manual opening and variance',
+);
 const retryClose = as(T, 'createCashClose', firstInput);
-ok(retryClose.ok && retryClose.data.id === firstClose.data.id, 'retry with same ID returns same close');
-ok(!as(T, 'createCashClose', { ...firstInput, requestId: 'cc-2020-01-01-2' }).ok, 'duplicate date close cannot overwrite');
+ok(
+  retryClose.ok && retryClose.data.id === firstClose.data.id,
+  'retry with same ID returns same close',
+);
+ok(
+  !as(T, 'createCashClose', { ...firstInput, requestId: 'cc-2020-01-01-2' }).ok,
+  'duplicate date close cannot overwrite',
+);
 const dayTwoPreview = as(T, 'cashClosePreview', { date: '2020-01-02' });
-ok(dayTwoPreview.ok && dayTwoPreview.data.openingCash === 100 && dayTwoPreview.data.openingSource === 'PREVIOUS_CLOSE', 'previous counted cash carries forward');
-const dayTwo = as(T, 'createCashClose', { date: '2020-01-02', countedCash: '100', requestId: 'cc-day-two' });
-ok(dayTwo.ok && dayTwo.data.variance === 0, 'zero-variance carried-forward close saves without variance reason');
-const cashCloseReceipt = as(T, 'createVouchers', { entries: [{ type: 'RECEIPT', date: '2020-01-03', vendor: 'Close receipt', amount: 50, category: 'Other', cashImpact: 'CASH_IN' }] });
+ok(
+  dayTwoPreview.ok &&
+    dayTwoPreview.data.openingCash === 100 &&
+    dayTwoPreview.data.openingSource === 'PREVIOUS_CLOSE',
+  'previous counted cash carries forward',
+);
+const dayTwo = as(T, 'createCashClose', {
+  date: '2020-01-02',
+  countedCash: '100',
+  requestId: 'cc-day-two',
+});
+ok(
+  dayTwo.ok && dayTwo.data.variance === 0,
+  'zero-variance carried-forward close saves without variance reason',
+);
+const cashCloseReceipt = as(T, 'createVouchers', {
+  entries: [
+    {
+      type: 'RECEIPT',
+      date: '2020-01-03',
+      vendor: 'Close receipt',
+      amount: 50,
+      category: 'Other',
+      cashImpact: 'CASH_IN',
+    },
+  ],
+});
 ok(cashCloseReceipt.ok, 'receipt allowed on open date');
-const cashClosePay = as(T, 'createVouchers', { entries: [{ type: 'PAYMENT', date: '2020-01-03', vendor: 'Close payment', amount: 12.5, category: 'Other', cashImpact: 'CASH_OUT' }] });
+const cashClosePay = as(T, 'createVouchers', {
+  entries: [
+    {
+      type: 'PAYMENT',
+      date: '2020-01-03',
+      vendor: 'Close payment',
+      amount: 12.5,
+      category: 'Other',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+});
 ok(cashClosePay.ok, 'payment allowed on open date');
-const cashCloseNonCash = as(T, 'createVouchers', { entries: [{ type: 'RECEIPT', date: '2020-01-03', vendor: 'Close noncash', amount: 30, category: 'Other', cashImpact: 'NO_CASH' }] });
+const cashCloseNonCash = as(T, 'createVouchers', {
+  entries: [
+    {
+      type: 'RECEIPT',
+      date: '2020-01-03',
+      vendor: 'Close noncash',
+      amount: 30,
+      category: 'Other',
+      cashImpact: 'NO_CASH',
+    },
+  ],
+});
 ok(cashCloseNonCash.ok, 'no-cash voucher allowed');
-const unclassifiedRowIndex = g.sheets.Vouchers.rows.findIndex((row) => row[0] === cashClosePay.data.created[0].id);
+const unclassifiedRowIndex = g.sheets.Vouchers.rows.findIndex(
+  (row) => row[0] === cashClosePay.data.created[0].id,
+);
 g.sheets.Vouchers.rows[unclassifiedRowIndex][16] = '';
 const blockedPreview = as(T, 'cashClosePreview', { date: '2020-01-03' });
-ok(blockedPreview.ok && blockedPreview.data.unclassified.length === 1, 'active legacy UNCLASSIFIED voucher appears as blocker');
-const blockedClose = as(T, 'createCashClose', { date: '2020-01-03', countedCash: '137.50', requestId: 'cc-unclassified-block' });
-ok(!blockedClose.ok && blockedClose.code === 'CASH_CLOSE_UNCLASSIFIED', 'finalization blocks active UNCLASSIFIED vouchers');
+ok(
+  blockedPreview.ok && blockedPreview.data.unclassified.length === 1,
+  'active legacy UNCLASSIFIED voucher appears as blocker',
+);
+const blockedClose = as(T, 'createCashClose', {
+  date: '2020-01-03',
+  countedCash: '137.50',
+  requestId: 'cc-unclassified-block',
+});
+ok(
+  !blockedClose.ok && blockedClose.code === 'CASH_CLOSE_UNCLASSIFIED',
+  'finalization blocks active UNCLASSIFIED vouchers',
+);
 g.sheets.Vouchers.rows[unclassifiedRowIndex][16] = 'CASH_OUT';
 const readyPreview = as(T, 'cashClosePreview', { date: '2020-01-03' });
-ok(readyPreview.ok && readyPreview.data.cashInTotal === 50 && readyPreview.data.cashOutTotal === 12.5 && readyPreview.data.noCashCount === 1 && readyPreview.data.expectedCash === 137.5, 'explicit cash impact determines expected drawer cash');
-const dayThree = as(T, 'createCashClose', { date: '2020-01-03', countedCash: '137.50', requestId: 'cc-day-three' });
-ok(dayThree.ok && dayThree.data.includedVoucherCount === 3, 'saved close includes voucher snapshot');
-ok(as(T, 'updateVoucher', { id: cashCloseReceipt.data.created[0].id, fields: { vendor: 'Modified' }, reason: 'Test a closed period edit' }).code === 'CASH_PERIOD_CLOSED', 'voucher edit in closed date rejected');
-ok(as(T, 'cancelVoucher', { id: cashCloseReceipt.data.created[0].id, reason: 'Test closed period cancel' }).code === 'CASH_PERIOD_CLOSED', 'voucher cancellation in closed date rejected');
-ok(as(T, 'addReceipt', { id: cashCloseReceipt.data.created[0].id, receipt: { mime: 'image/png', data: 'AA==' } }).code === 'CASH_PERIOD_CLOSED', 'receipt attachments cannot mutate a closed voucher');
-ok(!as(T, 'createVouchers', { entries: [{ type: 'RECEIPT', date: '2020-01-03', vendor: 'Late voucher', amount: 1, category: 'Other', cashImpact: 'CASH_IN' }] }).ok, 'new voucher for a closed date rejected');
-const invalidCorrection = as(T, 'recordCashCloseCorrection', { closeId: dayThree.data.id, type: 'VOUCHER', voucherId: 'outside-snapshot', details: 'Bad link', reason: 'Must be from saved close' });
-ok(!invalidCorrection.ok && invalidCorrection.code === 'VALIDATION', 'correction linked voucher must belong to snapshot');
-const recordedCloseCorrection = as(T, 'recordCashCloseCorrection', { closeId: dayThree.data.id, type: 'CASH_COUNT', details: 'Physical count checked again', reason: 'Owner documented follow-up' });
-ok(recordedCloseCorrection.ok && recordedCloseCorrection.data.createdBy === 'owner@test.com', 'correction note has actor attribution');
+ok(
+  readyPreview.ok &&
+    readyPreview.data.cashInTotal === 50 &&
+    readyPreview.data.cashOutTotal === 12.5 &&
+    readyPreview.data.noCashCount === 1 &&
+    readyPreview.data.expectedCash === 137.5,
+  'explicit cash impact determines expected drawer cash',
+);
+const dayThree = as(T, 'createCashClose', {
+  date: '2020-01-03',
+  countedCash: '137.50',
+  requestId: 'cc-day-three',
+});
+ok(
+  dayThree.ok && dayThree.data.includedVoucherCount === 3,
+  'saved close includes voucher snapshot',
+);
+ok(
+  as(T, 'updateVoucher', {
+    id: cashCloseReceipt.data.created[0].id,
+    fields: { vendor: 'Modified' },
+    reason: 'Test a closed period edit',
+  }).code === 'CASH_PERIOD_CLOSED',
+  'voucher edit in closed date rejected',
+);
+ok(
+  as(T, 'cancelVoucher', {
+    id: cashCloseReceipt.data.created[0].id,
+    reason: 'Test closed period cancel',
+  }).code === 'CASH_PERIOD_CLOSED',
+  'voucher cancellation in closed date rejected',
+);
+ok(
+  as(T, 'addReceipt', {
+    id: cashCloseReceipt.data.created[0].id,
+    receipt: { mime: 'image/png', data: 'AA==' },
+  }).code === 'CASH_PERIOD_CLOSED',
+  'receipt attachments cannot mutate a closed voucher',
+);
+ok(
+  !as(T, 'createVouchers', {
+    entries: [
+      {
+        type: 'RECEIPT',
+        date: '2020-01-03',
+        vendor: 'Late voucher',
+        amount: 1,
+        category: 'Other',
+        cashImpact: 'CASH_IN',
+      },
+    ],
+  }).ok,
+  'new voucher for a closed date rejected',
+);
+const invalidCorrection = as(T, 'recordCashCloseCorrection', {
+  closeId: dayThree.data.id,
+  type: 'VOUCHER',
+  voucherId: 'outside-snapshot',
+  details: 'Bad link',
+  reason: 'Must be from saved close',
+});
+ok(
+  !invalidCorrection.ok && invalidCorrection.code === 'VALIDATION',
+  'correction linked voucher must belong to snapshot',
+);
+const recordedCloseCorrection = as(T, 'recordCashCloseCorrection', {
+  closeId: dayThree.data.id,
+  type: 'CASH_COUNT',
+  details: 'Physical count checked again',
+  reason: 'Owner documented follow-up',
+});
+ok(
+  recordedCloseCorrection.ok && recordedCloseCorrection.data.createdBy === 'owner@test.com',
+  'correction note has actor attribution',
+);
 const afterCorrection = as(T, 'cashClosePreview', { date: '2020-01-03' });
-ok(afterCorrection.ok && afterCorrection.data.close.variance === dayThree.data.variance && afterCorrection.data.close.corrections.length === 1, 'correction does not rewrite close total');
+ok(
+  afterCorrection.ok &&
+    afterCorrection.data.close.variance === dayThree.data.variance &&
+    afterCorrection.data.close.corrections.length === 1,
+  'correction does not rewrite close total',
+);
 const futureClose = as(T, 'cashClosePreview', { date: '2999-01-01' });
 ok(!futureClose.ok && futureClose.code === 'VALIDATION', 'future close date rejected');
 

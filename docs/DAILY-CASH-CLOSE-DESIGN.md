@@ -224,7 +224,6 @@ Before implementation, choose a policy for active historical vouchers without a 
 
 The cash-impact field is now an owner-approved code slice. This PR does not upload Apps Script source, run the migration, deploy a Web App version, or modify production data.
 
-
 ## 13. Owner-approved MVP policy and implementation boundary — 13 October 2026
 
 The owner approved these defaults for the implementation phase. This section supersedes the earlier undecided options above for this MVP:
@@ -247,7 +246,6 @@ The implementation adds two dedicated tabs; no existing voucher or setting colum
 - Corrections are attributed notes, not numeric adjustments. The original close is never silently rewritten.
 - The saved snapshot is the basis of the printed/exported report; a CSV contains the summary, all included voucher IDs/amounts and correction notes.
 - CI, Browser E2E and Full Flight Test must pass on the exact same final PR head. Live Apps Script/Sheets concurrency, real backups/restore, device queue behavior and the controlled hotel pilot remain independent release gates.
-
 
 ## Current-browser outbox gate
 

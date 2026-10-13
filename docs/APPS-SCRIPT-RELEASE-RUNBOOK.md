@@ -155,7 +155,6 @@ PR #67 adds browser coverage for owner Settings data-quality results and backup-
 - These checks establish deployment ID alignment, not that current `main` is deployed. Owner confirmation in the Apps Script editor of the intended project, deployment, Sheet binding and Script Properties remains outstanding. Do not run `clasp push`, `clasp deploy`, or `setup()` until the owner confirms the target and explicitly authorizes release.
 - npm still reports three high-severity dependency findings; do not use `npm audit fix --force`. Live role/receipt authorization, a real scheduled backup, and a witnessed restore into a separate recovery Sheet/folder remain unverified.
 
-
 ## Daily Cash Close schema migration — reviewed release only
 
 PR #110 introduced the additive Vouchers CashImpact column. The Daily Cash Close feature additionally needs CashCloses and CashCloseCorrections tabs. Before publishing a version containing Daily Cash Close:
@@ -168,6 +167,5 @@ PR #110 introduced the additive Vouchers CashImpact column. The Daily Cash Close
 6. Publish the reviewed backend version to the verified existing Web App deployment only after the owner separately authorizes deployment. Then complete live role, close/duplicate, voucher lock, backup/restore and real-device checks before relying on the feature.
 
 Do not run either migration or deploy from the feature PR. Preserve every existing row and all historical unclassified vouchers.
-
 
 The client-side queue gate can inspect only the browser used for closing. Before trusting a daily close, confirm pending/rejected/offline recovery entries are reviewed and synchronized on every operating device. A successful close response is a central Sheet record, but it cannot prove that a different offline device has no unsynchronized entries.

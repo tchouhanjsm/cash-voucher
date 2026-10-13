@@ -281,7 +281,6 @@ PR #107 merged at `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592`. Exact tested head 
 
 **Independent P0 gates remain open:** verify the intended Apps Script project and live role/receipt boundaries; observe the scheduled backup and inspect actual Drive copies/manifests; witness a restore to a separate destination and validate counts/numbering; complete real-device PWA/offline and assistive-technology checks; conduct the controlled hotel pilot. Mock CI does not close these gates. The full dynamic-rendering sink audit remains incremental.
 
-
 ## Daily Cash Close MVP — owner-approved implementation batch (13 October 2026)
 
 PR #110 approved mandatory voucher-level CashImpact; this phase adds the first physical cash close. The owner approved one property / MAIN drawer / calendar day in Asia/Kolkata; exact previous-day count carry-forward; explicit manual opening amount plus reason when starting or resolving a date gap; counted-minus-expected variance with mandatory reason when non-zero; and owner/manager-only finalization enforced on the backend.
