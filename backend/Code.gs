@@ -691,18 +691,7 @@ function recordedMovementReport_(user, req) {
     throw err_('Choose a valid voucher status.', 'VALIDATION');
   }
 
-  const vendorIdByName = {};
-  const ambiguousVendorNames = {};
-  readAll_('Vendors').forEach(function (vendor) {
-    const key = String(vendor.Name || '').trim().toLowerCase();
-    if (!key) return;
-    if (Object.prototype.hasOwnProperty.call(vendorIdByName, key)) {
-      vendorIdByName[key] = '';
-      ambiguousVendorNames[key] = true;
-    } else {
-      vendorIdByName[key] = String(vendor.VendorID || '');
-    }
-  });
+  const vendorLookup = vendorIdLookup_();
   const items = readAll_('Vouchers')
     .filter(function (voucher) {
       const date = isoDate_(voucher.Date);
@@ -726,9 +715,7 @@ function recordedMovementReport_(user, req) {
         voucherNo: String(voucher.VoucherNo || ''),
         date: isoDate_(voucher.Date),
         vendor: String(voucher.Vendor || ''),
-        vendorId:
-          String(voucher.VendorID || '') ||
-          vendorIdByName[String(voucher.Vendor || '').trim().toLowerCase()] || '',
+        vendorId: String(voucher.VendorID || '') || vendorIdForName_(voucher.Vendor, vendorLookup),
         category: String(voucher.Category || ''),
         notes: String(voucher.Notes || ''),
         type: String(voucher.Type || ''),
@@ -783,7 +770,7 @@ function recordedMovementReport_(user, req) {
     unmatchedVendorCount: items.filter(function (item) {
       return !item.vendorId;
     }).length,
-    ambiguousVendorCount: Object.keys(ambiguousVendorNames).length,
+    ambiguousVendorCount: Object.keys(vendorLookup.ambiguous).length,
     approvalExceptionCount: items.filter(function (item) {
       return (
         item.status === 'ACTIVE' &&
