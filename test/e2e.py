@@ -3328,6 +3328,10 @@ with sync_playwright() as p:
 
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody')
+    # The Register keeps filter state across navigation. Reset all previous workflow
+    # filters before seeding this isolated malformed-record fixture, then include every
+    # status so the fixture's active row and older cancelled rows are both inspectable.
+    page.locator('#rf [data-act=rclear]').evaluate('(element) => element.click()')
     page.select_option('#rs', 'ALL')
 
     # The register must stay usable when API records have malformed vendor/note/receipt fields.
