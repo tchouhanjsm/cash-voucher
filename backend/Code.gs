@@ -149,6 +149,7 @@ const PERMS = {
     receiptAny: 1,
     cashClose: 1,
     approvePayments: 1,
+    reports: 1,
   },
   owner: {
     create: 1,
@@ -163,6 +164,10 @@ const PERMS = {
     audit: 1,
     cashClose: 1,
     approvePayments: 1,
+    reports: 1,
+  },
+  accountant: {
+    reports: 1,
   },
 };
 
@@ -667,7 +672,7 @@ function dataQualityReport_(user) {
 }
 
 function recordedMovementReport_(user, req) {
-  need_(user, 'viewAll');
+  need_(user, 'reports');
   const from = String(req.from || '').trim();
   const to = String(req.to || '').trim();
 
@@ -685,6 +690,18 @@ function recordedMovementReport_(user, req) {
     throw err_('Choose a valid voucher status.', 'VALIDATION');
   }
 
+  const vendorIdByName = {};
+  const ambiguousVendorNames = {};
+  readAll_('Vendors').forEach(function (vendor) {
+    const key = String(vendor.Name || '').trim().toLowerCase();
+    if (!key) return;
+    if (Object.prototype.hasOwnProperty.call(vendorIdByName, key)) {
+      vendorIdByName[key] = '';
+      ambiguousVendorNames[key] = true;
+    } else {
+      vendorIdByName[key] = String(vendor.VendorID || '');
+    }
+  });
   const items = readAll_('Vouchers')
     .filter(function (voucher) {
       const date = isoDate_(voucher.Date);
@@ -708,6 +725,7 @@ function recordedMovementReport_(user, req) {
         voucherNo: String(voucher.VoucherNo || ''),
         date: isoDate_(voucher.Date),
         vendor: String(voucher.Vendor || ''),
+        vendorId: vendorIdByName[String(voucher.Vendor || '').trim().toLowerCase()] || '',
         category: String(voucher.Category || ''),
         notes: String(voucher.Notes || ''),
         type: String(voucher.Type || ''),
@@ -759,6 +777,10 @@ function recordedMovementReport_(user, req) {
         item.approvalStatus === 'PENDING'
       );
     }).length,
+    unmatchedVendorCount: items.filter(function (item) {
+      return !item.vendorId;
+    }).length,
+    ambiguousVendorCount: Object.keys(ambiguousVendorNames).length,
     approvalExceptionCount: items.filter(function (item) {
       return (
         item.status === 'ACTIVE' &&
@@ -1833,11 +1855,14 @@ function vOut_(o) {
 }
 function bootstrap_(user) {
   const all = can_(user, 'viewAll');
-  const vouchers = readAll_('Vouchers')
-    .filter(function (o) {
-      return all || String(o.CreatedBy).toLowerCase() === user.email;
-    })
-    .map(vOut_);
+  const canViewRegister = all || can_(user, 'viewOwn');
+  const vouchers = canViewRegister
+    ? readAll_('Vouchers')
+        .filter(function (o) {
+          return all || String(o.CreatedBy).toLowerCase() === user.email;
+        })
+        .map(vOut_)
+    : [];
   const st = settings_();
   const vendors = readAll_('Vendors').map(function (v) {
     return {
@@ -1872,7 +1897,7 @@ function bootstrap_(user) {
       openingBalance: all ? Number(st.openingBalance || 0) : 0,
     },
     vouchers: vouchers,
-    vendors: vendors,
+    vendors: user.role === 'accountant' ? [] : vendors,
     names: names,
   };
 }
