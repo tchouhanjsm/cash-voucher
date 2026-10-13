@@ -379,7 +379,9 @@ export function createPayments({ api, refresh }) {
         d.created.forEach((c) => {
           if (!S.vouchers.find((v) => v.id === c.id)) S.vouchers.push(c);
         });
-        const pendingApprovalCount = d.created.filter((voucher) => voucher.approvalStatus === 'PENDING').length;
+        const pendingApprovalCount = d.created.filter(
+          (voucher) => voucher.approvalStatus === 'PENDING',
+        ).length;
         disposeReceiptPreviews();
         $('#nf').classList.add('hidden');
         $('#nres').innerHTML =
