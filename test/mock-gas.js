@@ -153,7 +153,7 @@ function create() {
   vm.createContext(ctx);
   vm.runInContext(
     fs.readFileSync(path.join(__dirname, '../backend/Code.gs'), 'utf8') +
-      '\n;this.__api={setup,doPost,PERMS,migrateVoucherApprovalFields,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
+      '\n;this.__api={setup,doPost,PERMS,migrateVoucherApprovalFields,migrateVoucherVendorIdField,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
     ctx,
   );
   return {
@@ -164,6 +164,7 @@ function create() {
     sheets,
     setup: () => ctx.__api.setup(),
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
+    migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),
     call: (action, payload = {}) =>
       JSON.parse(
         ctx.__api
