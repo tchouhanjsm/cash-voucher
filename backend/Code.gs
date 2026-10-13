@@ -2504,7 +2504,9 @@ function createVouchers_(user, req) {
       {
         field: 'receiptCount',
         before: null,
-        after: String(voucher.Receipts || '').split(',').filter(Boolean).length,
+        after: String(voucher.Receipts || '')
+          .split(',')
+          .filter(Boolean).length,
       },
     ];
     return {
@@ -3048,11 +3050,7 @@ function auditLog_(user, req) {
       throw err_('Invalid audit page cursor.', 'VALIDATION');
     }
     beforeRow = Number(rawCursor);
-    if (
-      !Number.isSafeInteger(beforeRow) ||
-      beforeRow < 2 ||
-      beforeRow > lastRow + 1
-    ) {
+    if (!Number.isSafeInteger(beforeRow) || beforeRow < 2 || beforeRow > lastRow + 1) {
       throw err_('Invalid audit page cursor.', 'VALIDATION');
     }
   }

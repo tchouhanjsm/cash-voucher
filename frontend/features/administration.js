@@ -783,7 +783,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     }
     count.textContent =
       `Showing ${rows.length} of ${auditRows.length} loaded events; ` +
-        `${auditTotalCount} total recorded.` +
+      `${auditTotalCount} total recorded.` +
       (malformedAuditCount
         ? ` ${malformedAuditCount} malformed audit event(s) omitted from loaded pages.`
         : '');

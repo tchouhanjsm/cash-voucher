@@ -668,9 +668,7 @@ ok(
     cancelAuditDetails.reason === 'Duplicate entry' &&
     cancelAuditDetails.changes.some(
       (change) =>
-        change.field === 'status' &&
-        change.before === 'ACTIVE' &&
-        change.after === 'CANCELLED',
+        change.field === 'status' && change.before === 'ACTIVE' && change.after === 'CANCELLED',
     ),
   'cancellation audit records reason and old/new status',
 );
@@ -721,8 +719,9 @@ const vendorCreateDetails = vendorCreateAudit ? JSON.parse(vendorCreateAudit[4])
 ok(
   vendorCreateDetails?.eventType === 'VENDOR_CREATED' &&
     vendorCreateDetails.changes.some(
-    (change) => change.field === 'name' && change.before === null && change.after === 'Ram Traders',
-  ),
+      (change) =>
+        change.field === 'name' && change.before === null && change.after === 'Ram Traders',
+    ),
   'vendor creation audit records structured initial values',
 );
 ok(
@@ -771,15 +770,15 @@ ok(
   }).ok,
   'owner settings',
 );
-const settingsAuditRow = [...g.sheets.AuditLog.rows]
-  .reverse()
-  .find((row) => row[2] === 'SETTINGS');
+const settingsAuditRow = [...g.sheets.AuditLog.rows].reverse().find((row) => row[2] === 'SETTINGS');
 const settingsAuditDetails = settingsAuditRow ? JSON.parse(settingsAuditRow[4]) : null;
 ok(
   settingsAuditDetails?.eventType === 'PROPERTY_SETTINGS_UPDATED' &&
     settingsAuditDetails.changes.some(
       (change) =>
-        change.field === 'propertyName' && change.before === 'My Property' && change.after === 'Hotel X',
+        change.field === 'propertyName' &&
+        change.before === 'My Property' &&
+        change.after === 'Hotel X',
     ),
   'settings audit records prior and saved property values',
 );
