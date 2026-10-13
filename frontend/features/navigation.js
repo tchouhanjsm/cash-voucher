@@ -7,10 +7,10 @@ import { scalarText } from '../core/utils.js';
 export function createNavigation({ api, getAuth, getPayments, renderers }) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
   const NAV = [
-    ['dash', '📊', 'Dashboard', () => true],
+    ['dash', '📊', 'Dashboard', () => can('viewAll') || can('viewOwn')],
     ['new', '➕', 'New Entry', () => can('create')],
-    ['reg', '📒', 'Register', () => true],
-    ['reports', '📈', 'Reports', () => can('viewAll')],
+    ['reg', '📒', 'Register', () => can('viewAll') || can('viewOwn')],
+    ['reports', '📈', 'Reports', () => can('reports')],
     ['cashClose', '💵', 'Cash Close', () => can('cashClose')],
     ['bulk', '📥', 'Bulk Upload', () => can('bulk')],
     ['vend', '🏪', 'Vendors', () => can('vendors')],
@@ -127,7 +127,9 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
         ? 'new'
         : S.view && NAV.find((item) => item[0] === S.view && item[3]())
           ? S.view
-          : 'dash',
+          : can('reports') && !can('viewAll') && !can('viewOwn')
+            ? 'reports'
+            : 'dash',
     );
 
     await getPayments().showBanner();
@@ -166,6 +168,10 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     nav.replaceChildren(navContent);
   }
   function go(view) {
+    const requestedView = NAV.find((item) => item[0] === view);
+    if (!requestedView || !requestedView[3]()) {
+      view = can('reports') ? 'reports' : can('create') ? 'new' : 'dash';
+    }
     if (S.offlineMode && (!OFFLINE_VIEWS.has(view) || (view === 'new' && !can('create')))) {
       view = can('create') ? 'new' : 'reg';
     }
