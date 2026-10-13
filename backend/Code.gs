@@ -736,8 +736,7 @@ function recordedMovementReport_(user, req) {
   const eligiblePayments = function (list) {
     return list.filter(function (item) {
       return (
-        item.type !== 'PAYMENT' ||
-        ['NOT_REQUIRED', 'APPROVED'].indexOf(item.approvalStatus) >= 0
+        item.type !== 'PAYMENT' || ['NOT_REQUIRED', 'APPROVED'].indexOf(item.approvalStatus) >= 0
       );
     });
   };
@@ -762,9 +761,7 @@ function recordedMovementReport_(user, req) {
     cancelledCount: items.length - active.length,
     pendingApprovalCount: items.filter(function (item) {
       return (
-        item.status === 'ACTIVE' &&
-        item.type === 'PAYMENT' &&
-        item.approvalStatus === 'PENDING'
+        item.status === 'ACTIVE' && item.type === 'PAYMENT' && item.approvalStatus === 'PENDING'
       );
     }).length,
     unmatchedVendorCount: items.filter(function (item) {
@@ -1427,9 +1424,7 @@ function migrateVoucherApprovalFields() {
   const priorHeaders = expected.slice(0, 17);
   const approvalHeaders = expected.slice(17, 21);
   const actualPriorHeaders = sheet.getRange(1, 1, 1, priorHeaders.length).getValues()[0];
-  const actualApprovalHeaders = sheet
-    .getRange(1, 18, 1, approvalHeaders.length)
-    .getValues()[0];
+  const actualApprovalHeaders = sheet.getRange(1, 18, 1, approvalHeaders.length).getValues()[0];
   if (
     priorHeaders.every(function (header, index) {
       return actualPriorHeaders[index] === header;
@@ -1990,7 +1985,9 @@ function vendorIdLookup_() {
   const byName = Object.create(null);
   const ambiguous = Object.create(null);
   readAll_('Vendors').forEach(function (vendor) {
-    const key = String(vendor.Name || '').trim().toLowerCase();
+    const key = String(vendor.Name || '')
+      .trim()
+      .toLowerCase();
     if (!key || ambiguous[key]) return;
     if (Object.prototype.hasOwnProperty.call(byName, key)) {
       delete byName[key];
@@ -2002,7 +1999,9 @@ function vendorIdLookup_() {
   return { byName: byName, ambiguous: ambiguous };
 }
 function vendorIdForName_(name, lookup) {
-  const key = String(name || '').trim().toLowerCase();
+  const key = String(name || '')
+    .trim()
+    .toLowerCase();
   const index = lookup || vendorIdLookup_();
   if (!key || index.ambiguous[key]) return '';
   return String(index.byName[key] || '');
@@ -2104,10 +2103,7 @@ function cashCloseCalculatePeriod_(date) {
     })
     .forEach(function (voucher) {
       const approvalStatus = approvalStatus_(voucher);
-      if (
-        voucher.Type === 'PAYMENT' &&
-        ['NOT_REQUIRED', 'APPROVED'].indexOf(approvalStatus) < 0
-      ) {
+      if (voucher.Type === 'PAYMENT' && ['NOT_REQUIRED', 'APPROVED'].indexOf(approvalStatus) < 0) {
         pendingApprovals.push({
           id: String(voucher.VoucherID || ''),
           no: 'P-' + String(voucher.VoucherNo || ''),
@@ -2844,12 +2840,7 @@ function updateVoucher_(user, req) {
     const vendor = clean_(f.vendor, 200);
     if (!vendor) throw err_('Vendor is required.', 'VALIDATION');
     recordChange('vendor', 'Vendor', String(o.Vendor || ''), vendor);
-    recordChange(
-      'vendorId',
-      'VendorID',
-      String(o.VendorID || ''),
-      vendorIdForName_(vendor),
-    );
+    recordChange('vendorId', 'VendorID', String(o.VendorID || ''), vendorIdForName_(vendor));
   }
   if (f.amount !== undefined) {
     const amount = Math.round(Number(f.amount) * 100) / 100;
@@ -2906,9 +2897,8 @@ function updateVoucher_(user, req) {
     o.Type === 'PAYMENT' &&
     priorAmount < CFG.PAYMENT_APPROVAL_THRESHOLD &&
     nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD;
-  const approvalManaged = ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].indexOf(
-    priorApprovalStatus,
-  ) >= 0;
+  const approvalManaged =
+    ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].indexOf(priorApprovalStatus) >= 0;
   // Existing blank/NOT_REQUIRED approval fields are not retroactively backfilled.
   // Re-review only vouchers already in the approval workflow or edits that cross the threshold.
   if (approvalManaged || crossedApprovalThreshold) {
