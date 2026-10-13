@@ -84,7 +84,7 @@ export function normalizeVoucherCollection(value) {
     'updatedAt',
     'cancelReason',
   ];
-  const optionalApprovalTextFields = ['approvedBy', 'approvedAt', 'approvalReason'];
+  const optionalVoucherTextFields = ['vendorId', 'approvedBy', 'approvedAt', 'approvalReason'];
 
   value.forEach((voucher) => {
     if (
@@ -126,7 +126,7 @@ export function normalizeVoucherCollection(value) {
     ) {
       malformedFieldCount++;
     }
-    optionalApprovalTextFields.forEach((field) => {
+    optionalVoucherTextFields.forEach((field) => {
       if (typeof row[field] !== 'string') row[field] = '';
     });
     rows.push(row);
