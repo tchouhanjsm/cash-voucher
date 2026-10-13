@@ -726,7 +726,9 @@ function recordedMovementReport_(user, req) {
         voucherNo: String(voucher.VoucherNo || ''),
         date: isoDate_(voucher.Date),
         vendor: String(voucher.Vendor || ''),
-        vendorId: vendorIdByName[String(voucher.Vendor || '').trim().toLowerCase()] || '',
+        vendorId:
+          String(voucher.VendorID || '') ||
+          vendorIdByName[String(voucher.Vendor || '').trim().toLowerCase()] || '',
         category: String(voucher.Category || ''),
         notes: String(voucher.Notes || ''),
         type: String(voucher.Type || ''),
@@ -1884,6 +1886,7 @@ function vOut_(o) {
     no: Number(o.VoucherNo),
     date: isoDate_(o.Date),
     vendor: String(o.Vendor),
+    vendorId: String(o.VendorID || ''),
     amount: Number(o.Amount),
     category: String(o.Category || ''),
     notes: String(o.Notes || ''),
@@ -1995,6 +1998,27 @@ function approvalStatus_(voucher) {
   const raw = voucher && voucher.ApprovalStatus;
   if (raw === undefined || raw === null || raw === '') return 'NOT_REQUIRED';
   return PAYMENT_APPROVAL_STATUSES.indexOf(raw) >= 0 ? raw : 'REVIEW_REQUIRED';
+}
+function vendorIdLookup_() {
+  const byName = Object.create(null);
+  const ambiguous = Object.create(null);
+  readAll_('Vendors').forEach(function (vendor) {
+    const key = String(vendor.Name || '').trim().toLowerCase();
+    if (!key || ambiguous[key]) return;
+    if (Object.prototype.hasOwnProperty.call(byName, key)) {
+      delete byName[key];
+      ambiguous[key] = true;
+    } else {
+      byName[key] = String(vendor.VendorID || '');
+    }
+  });
+  return { byName: byName, ambiguous: ambiguous };
+}
+function vendorIdForName_(name, lookup) {
+  const key = String(name || '').trim().toLowerCase();
+  const index = lookup || vendorIdLookup_();
+  if (!key || index.ambiguous[key]) return '';
+  return String(index.byName[key] || '');
 }
 function isEligibleApprovalPayment_(voucher) {
   if (!voucher || voucher.Type !== 'PAYMENT') return false;
@@ -2641,6 +2665,7 @@ function createVouchers_(user, req) {
   const catsP = categories_(),
     catsR = receiptCategories_(),
     existing = readAll_('Vouchers'),
+    vendorLookup = vendorIdLookup_(),
     closedDates = readAll_('CashCloses').map(function (close) {
       return String(close.BusinessDate || '');
     }),
@@ -2666,6 +2691,7 @@ function createVouchers_(user, req) {
       type: type,
       date: date,
       vendor: vendor,
+      vendorId: vendorIdForName_(vendor, vendorLookup),
       amount: amount,
       category: cats.indexOf(en.category) >= 0 ? en.category : 'Other',
       cashImpact: cashImpact_(en.cashImpact, row),
@@ -2708,6 +2734,7 @@ function createVouchers_(user, req) {
         VoucherNo: no,
         Date: c.date,
         Vendor: c.vendor,
+        VendorID: c.vendorId,
         Amount: c.amount,
         Category: c.category,
         Notes: c.notes,
@@ -2745,6 +2772,7 @@ function createVouchers_(user, req) {
     const changes = [
       { field: 'date', before: null, after: voucher.Date },
       { field: 'vendor', before: null, after: String(voucher.Vendor || '') },
+      { field: 'vendorId', before: null, after: String(voucher.VendorID || '') },
       { field: 'amount', before: null, after: Number(voucher.Amount) },
       { field: 'category', before: null, after: String(voucher.Category || '') },
       { field: 'notes', before: null, after: String(voucher.Notes || '') },
@@ -2827,6 +2855,12 @@ function updateVoucher_(user, req) {
     const vendor = clean_(f.vendor, 200);
     if (!vendor) throw err_('Vendor is required.', 'VALIDATION');
     recordChange('vendor', 'Vendor', String(o.Vendor || ''), vendor);
+    recordChange(
+      'vendorId',
+      'VendorID',
+      String(o.VendorID || ''),
+      vendorIdForName_(vendor),
+    );
   }
   if (f.amount !== undefined) {
     const amount = Math.round(Number(f.amount) * 100) / 100;
