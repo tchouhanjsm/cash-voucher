@@ -1,12 +1,20 @@
 # Accountant Recordkeeping, Tax Preparation and Reporting Blueprint
 
 **Phase:** PR #61 — accountant / finance-officer review  
-**Status:** requirements and data audit for owner/accountant review; not a tax opinion or approved accounting policy  
+**Status:** source-voucher requirements audit; active PR #114 adds a generic read-only accountant report/CSV and stable VendorID links. The destination-specific accounting and tax policy remains unapproved.  
 **Repository baseline:** `main` at `d4742a34d57bc973d0fda849b65ae6d35259bf22` (PR #60 merge)  
 **Product scope:** one-property cash-voucher PWA; Google Apps Script, Sheets and Drive  
 **Currency/timezone:** currently INR is implied by the operating context, and backend business dates use `Asia/Kolkata`; confirm currency and tax registrations with the owner before adding tax or accounting rules.
 
 ## 1. Executive assessment
+## Current source status — PR #114 (not yet merged)
+
+The in-progress feature batch adds an `accountant` role with server-authorized **read-only** access to the Recorded Movement Report and a generic CSV download. It removes that role's access to voucher entry/Register, vendor-contact listing, cash close, user administration, settings and audit log. The report includes the source voucher identifiers and an optional stable `VendorID`; CSV values remain raw source values and the export is **not** certified for any accounting package.
+
+The existing vendor master already has a generated stable `VendorID`. The batch displays that ID and appends a Vouchers column V. New vouchers store the ID only when the submitted counterparty exactly matches one unique saved vendor name (case-insensitive). Historical VendorID cells remain blank; report generation can resolve a legacy row only by a unique exact-name fallback. It does not perform fuzzy matching or backfill source data, and it surfaces unmatched/ambiguous names.
+
+The first accounting product/version, import mapping, accountant-approved sample, entity/tax registration, source-evidence requirements and tax calculations remain open. Do not describe the generic CSV as Tally/Zoho-compatible, a general ledger, a GST/TDS report, a statutory book or a reconciliation certificate. PR #114 has not merged, migrated a live Sheet or deployed any source.
+
 
 Reviewing this product as a finance record keeper changes the definition of “done”: a voucher form is only the capture layer. An accountant needs a traceable evidence chain from source document → recorded transaction → approval/correction history → period report → reconciled export → accountant import/review.
 
@@ -23,7 +31,7 @@ The current `Vouchers` sheet schema is:
 | `VoucherID`              | Internal voucher identity                                      | Preserve as immutable source key in every export.                                                                                    |
 | `VoucherNo`              | Human-readable number; payment and receipt series are separate | Export together with voucher type and internal ID; never rely on number alone.                                                       |
 | `Date`                   | Voucher/business date                                          | Need explicit business-date semantics, timezone and period inclusion rules.                                                          |
-| `Vendor`                 | Free-text counterparty / description                           | Too ambiguous for tax reporting; distinguish supplier/customer/employee/owner/bank and link to a stable party record.                |
+| `Vendor`                 | Free-text counterparty / description                           | Still free text. New vouchers also store `VendorID` when the name exactly matches one unique saved vendor; historical rows are not backfilled. Unmatched/ambiguous names remain unresolved. |
 | `Amount`                 | Single amount                                                  | No explicit gross/net/tax-inclusive definition or debit/credit sign convention.                                                      |
 | `Category`               | Operational category                                           | Not an approved chart of accounts and must not be mapped automatically to tax treatment.                                             |
 | `Notes`                  | Free text                                                      | Helpful context but not a substitute for invoice fields or a structured business purpose.                                            |
@@ -174,13 +182,19 @@ Generic export and destination-specific import are different products. First des
 
 ## 7. Recommended staged implementation plan
 
-### Stage A — requirements and source data audit (this PR)
+### Stage A — requirements and source data audit (PR #61)
 
-- Record current fields and their accounting meaning/limitations.
-- Define report catalog, charts, workflow, tax-data candidates and export acceptance contract.
-- Make no runtime/schema/tax-calculation changes.
+- Source-field inventory, report catalog, workflow candidates, tax-data boundaries and export acceptance contract are documented above.
+- The requirements-only review did not alter runtime/schema/tax calculations.
 
-### Stage B — integrity and recovery (next engineering phase after this review)
+### Current implementation increment — generic report access and stable VendorID (active PR #114)
+
+- Add least-privilege accountant role with report permission enforced in the backend.
+- Export generic recorded movements with current approval state and VendorID, preserving CSV formula-injection protection and amount/date source semantics.
+- Append VendorID to the Vouchers schema through a guarded migration. Keep historical links blank; do not infer identities by fuzzy matching.
+- Do not add a destination import template, GST/TDS calculations or ledger semantics until owner/accountant decisions are recorded.
+
+### Stage B — integrity and recovery (still an independent operational gate)
 
 - Harden and test offline sync/idempotency, including commit-then-lost-response, repeated client ID, changed-content collision, cross-tab retry and stale lease recovery.
 - Make server-confirmed vs local-only states unambiguous; do not let accountant exports silently include local-only records.
@@ -212,7 +226,7 @@ Generic export and destination-specific import are different products. First des
 3. Does the accountant want a simple source-voucher export first, or is a tax-coded import genuinely required?
 4. Which source documents are mandatory by transaction type, and who reviews exceptions?
 5. Which settlement methods/accounts are actually used, and what evidence proves settlement?
-6. Should accountants receive an app account (read-only, requiring owner-approved permissions) or receive a controlled export file?
+6. The owner has selected a report-only accountant app account in PR #114, alongside a generic CSV. Confirm the receiving accountant's account onboarding, private file-delivery and data-retention process before production use.
 7. Which reports are needed daily, monthly, and at tax-period close?
 8. What reconciliation tolerances and correction/period-lock policies are approved by the owner/accountant?
 
@@ -226,5 +240,6 @@ This document is an engineering and recordkeeping requirements review, not legal
 - Reports distinguish operational cash-voucher movement from accounting profit, cash-in-hand and tax liability.
 - Every aggregate has source drill-through, date-range rules, record counts, totals and exception disclosure.
 - Tax fields and calculations remain proposed until CA/owner validation.
-- Destination-specific export remains blocked until the receiving accountant approves target/version, mapping and anonymized fixture.
-- No runtime/API/schema/dependency/scheduled-trigger/deployment/production-data change is included.
+- The generic read-only report and source-voucher CSV in PR #114 remain destination-neutral; destination-specific export stays blocked until the receiving accountant approves target/version, mapping and an anonymized fixture.
+- VendorID is additive, generated/linked only for unique exact matches, and never backfilled for historical rows by migration.
+- This requirements document itself makes no runtime/schema change. PR #114 intentionally contains backend/API/UI/schema migration and test changes, but no production migration, Clasp push, deployment, tax calculation or production-data mutation.
