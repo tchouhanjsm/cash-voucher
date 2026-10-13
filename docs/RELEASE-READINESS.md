@@ -2,6 +2,47 @@
 
 **Status: not verified as production-ready.** This document tracks operational release gates, not the latest source SHA or routine PR history. Verify the current `main` commit and current deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified.
 
+## Current go-live gates — 13 October 2026
+
+PR #111 is merged to source at `6092152c64adff084abfda5407056dac9401b5e9`. Its Daily Cash Close source is **not proof of live deployment**; after a verified backup and owner-authorized release, the guarded schema steps remain `migrateCashImpactField()` if needed, then `migrateDailyCashCloseSchema()`. Verify both new tabs and unchanged voucher row counts before publishing.
+
+The Dashboard already displays **Book balance**. It is a recorded-voucher projection (global Settings opening balance + active receipts − active payments), not a physical drawer count, bank balance, or general ledger. Daily Cash Close is a separate, immutable physical-cash reconciliation.
+
+| Gate | Current status | Evidence needed to close it |
+| --- | --- | --- |
+| Browser CSP baseline | Added in this source batch; static release check and Browser E2E cover it | Deploy the frontend, inspect the served policy and verify no required request is blocked |
+| Header-level framing protection | Not verified | If the hosting platform supports response headers, set a CSP header with `frame-ancestors 'none'`; the HTML meta policy cannot enforce that directive |
+| Live Apps Script project/version | Not verified | Owner confirms intended project, Sheet binding, Script Properties and existing deployment ID matching `config.js` |
+| Authorization and receipt access | Not verified live | Owner/manager/staff smoke tests against the actual deployed endpoint |
+| Real scheduled backup and isolated restore | Not verified | Inspect a completed Drive snapshot and witness restore into a separate recovery Sheet/folder; validate rows and voucher numbering |
+| PWA, offline recovery and accessibility on devices | Not verified | Test actual operating phones/tablets, queued/rejected entries, receipt photos, service-worker update, keyboard and assistive technology |
+| 14-day hotel pilot | Not started | Start only after release, restore and device gates pass; maintain daily evidence below |
+
+The meta CSP allowlist intentionally covers same-origin PWA assets, data/blob receipt previews and the Apps Script ContentService origins. Script execution is restricted to same-origin external files; inline event handlers, object plugins, `unsafe-eval`, and child frames are disallowed. Inline styles remain allowed because the current dashboard renders variable chart-bar widths through style attributes. This is **not a complete host-header security configuration**: a meta policy cannot enforce `frame-ancestors`, and CI cannot verify the policy actually served by production.
+
+## 14-day controlled pilot — NOT STARTED
+
+Do not begin the pilot until the owner confirms the release target, required migrations are verified, an isolated restore has succeeded, and the app has been tested on the operating devices. Record no-activity days explicitly. Check local outbox/recovery queues on every operating device; a single browser's empty queue is not a system-wide guarantee.
+
+| Day | Date | Operator | Server vouchers checked | All device queues checked | Book balance compared with physical count / close | Variance or incident | Fallback used | Manager/owner sign-off |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| 1 |  |  |  |  |  |  |  |  |
+| 2 |  |  |  |  |  |  |  |  |
+| 3 |  |  |  |  |  |  |  |  |
+| 4 |  |  |  |  |  |  |  |  |
+| 5 |  |  |  |  |  |  |  |  |
+| 6 |  |  |  |  |  |  |  |  |
+| 7 |  |  |  |  |  |  |  |  |
+| 8 |  |  |  |  |  |  |  |  |
+| 9 |  |  |  |  |  |  |  |  |
+| 10 |  |  |  |  |  |  |  |  |
+| 11 |  |  |  |  |  |  |  |  |
+| 12 |  |  |  |  |  |  |  |  |
+| 13 |  |  |  |  |  |  |  |  |
+| 14 |  |  |  |  |  |  |  |  |
+
+**Pause criteria:** authorization failure, missing/duplicated voucher, unresolved active `UNCLASSIFIED` voucher, missing receipt, unexplained cash variance, failed backup, or unrecoverable offline entry. Preserve evidence and queued data; switch to the previously approved fallback process and get owner approval before resuming. At day 14, record unresolved incidents and obtain an explicit go/no-go decision. No pilot is claimed by this source PR.
+
 ## Evidence-based baseline
 
 | Area                                                        | Current status        | Evidence / limitation                                                                                    |
