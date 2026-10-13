@@ -10,6 +10,15 @@ The frontend `config.js` already contains a Web App `/exec` URL. Do not replace 
 
 The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. The local Clasp configuration/authentication must remain local and must not be committed.
 
+## Frontend CSP release gate
+
+The active frontend shell contains a meta Content Security Policy. `npm run check` validates the production-source allowlist and rejects a missing/duplicate policy, broad script sources, inline executable shell code, or inline event-handler attributes. The mock E2E server adds `'unsafe-eval'` only to its served test copy so Playwright's string-based wait predicates work; the static source gate explicitly rejects that source in production HTML. Browser E2E exercises the remaining policy while testing the user workflows, but is not proof that a production host serves the same policy.
+
+- Review the deployed HTML policy before trusting a frontend release. Same-origin assets and the Apps Script ContentService endpoints must remain the only API/script origins; receipt previews rely on `data:`/`blob:` image sources.
+- The current dashboard requires inline style attributes for variable chart widths. Script execution remains restricted to same-origin external files; do not add `unsafe-eval`, `data:` script sources, third-party script origins, or inline event handlers.
+- A CSP meta tag **cannot enforce `frame-ancestors`** and is not a substitute for a host response header. If the static host supports headers, set a CSP response header including `frame-ancestors 'none'` and verify it in browser DevTools/Network. Do not claim framing protection or a verified production CSP based solely on repository source/CI.
+- After deployment, check the actual served page and console for CSP violations. Validate that the Apps Script request, service worker, and receipt preview still work. This source change does not alter hosting settings or deploy any file.
+
 ## Required distinction
 
 1. **Git merge:** reviewed source is in `main`.

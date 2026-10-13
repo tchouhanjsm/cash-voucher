@@ -64,6 +64,60 @@ function indexModuleEntrypoints() {
   ].map((match) => normalize(match[1]));
 }
 
+function verifyContentSecurityPolicy() {
+  const source = read('index.html');
+  const metaTags = [];
+
+  for (const match of source.matchAll(/<meta\b[^>]*>/gi)) {
+    const tag = match[0];
+    if (/\bhttp-equiv\s*=\s*["']content-security-policy["']/i.test(tag)) {
+      metaTags.push(tag);
+    }
+  }
+
+  if (metaTags.length !== 1) {
+    return ['CSP meta tag count: ' + metaTags.length + '.'];
+  }
+
+  const contentMatch = metaTags[0].match(/\bcontent\s*=\s*"([^"]*)"/i);
+  const expected = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "script-src 'self'",
+    "script-src-attr 'none'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://script.google.com https://script.googleusercontent.com",
+    "manifest-src 'self'",
+    "worker-src 'self'",
+    "form-action 'self'",
+    "frame-src 'none'",
+  ].join('; ');
+
+  if (!contentMatch || contentMatch[1] !== expected) {
+    return ['CSP does not match the approved directive allowlist.'];
+  }
+
+  const inlineScripts = [];
+  for (const match of source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)) {
+    const attributes = match[1];
+    const body = match[2];
+    if (!/\bsrc\s*=/.test(attributes) && body.trim()) {
+      inlineScripts.push(match);
+    }
+  }
+
+  if (inlineScripts.length) {
+    return ['Inline executable scripts are not allowed in the app shell.'];
+  }
+  if (/\s+on[a-z]+\s*=/i.test(source)) {
+    return ['Inline event handlers are not allowed in the app shell.'];
+  }
+
+  return [];
+}
 function serviceWorkerShell() {
   const source = read('sw.js');
   const match = source.match(/const\s+[^;]*\bF\s*=\s*\[((?:.|\n)*?)\];/s);
@@ -104,13 +158,15 @@ const missingShellFiles = [...shell].filter((file) => file !== '.' && !exists(fi
 const duplicates = serviceWorkerShell().filter((file, index, all) => all.indexOf(file) !== index);
 const retiredAppReference =
   shell.has('app.js') || /<script\b[^>]*src=["']app\.js["']/i.test(read('index.html'));
+const cspFailures = verifyContentSecurityPolicy();
 
 if (
   missingModules.length ||
   missingShell.length ||
   missingShellFiles.length ||
   duplicates.length ||
-  retiredAppReference
+  retiredAppReference ||
+  cspFailures.length
 ) {
   console.error('Frontend release integrity FAILED.');
 
@@ -120,10 +176,11 @@ if (
   if (duplicates.length)
     console.error('Duplicate service-worker shell entries:', [...new Set(duplicates)]);
   if (retiredAppReference) console.error('Retired app.js is still referenced by the active shell.');
+  if (cspFailures.length) {
+    console.error('Content Security Policy verification FAILED:', cspFailures);
+  }
 
   process.exit(1);
 }
 
-console.log(
-  `Frontend release integrity OK — ${graph.files.length} local modules + shell assets verified.`,
-);
+console.log(`Frontend assets and CSP verified — ${graph.files.length} modules.`);

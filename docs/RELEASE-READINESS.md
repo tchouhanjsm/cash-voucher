@@ -2,6 +2,43 @@
 
 **Status: not verified as production-ready.** This document tracks operational release gates, not the latest source SHA or routine PR history. Verify the current `main` commit and current deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified.
 
+## Current go-live gates — 13 October 2026
+
+PR #111 is merged to source at `6092152c64adff084abfda5407056dac9401b5e9`. Its Daily Cash Close source is **not proof of live deployment**; after a verified backup and owner-authorized release, the guarded schema steps remain `migrateCashImpactField()` if needed, then `migrateDailyCashCloseSchema()`. Verify both new tabs and unchanged voucher row counts before publishing.
+
+The Dashboard already displays **Book balance**. It is a recorded-voucher projection (global Settings opening balance + active receipts − active payments), not a physical drawer count, bank balance, or general ledger. Daily Cash Close is a separate, immutable physical-cash reconciliation.
+
+- **Browser CSP baseline — added in this source batch:** the static release check validates the production-source policy. The mock E2E server adds a test-only `'unsafe-eval'` exception for Playwright polling, so its run is functional regression evidence, not proof of the exact production CSP.
+- **Header-level framing protection — not verified:** if the host supports response headers, set a CSP response header with `frame-ancestors 'none'`; the HTML meta policy cannot enforce that directive.
+- **Live Apps Script project/version — not verified:** the owner must confirm the intended project, Sheet binding, Script Properties and deployment ID matching `config.js`.
+- **Authorization and receipt access — not verified live:** perform owner/manager/staff smoke tests against the actual deployed endpoint.
+- **Real scheduled backup and isolated restore — not verified:** inspect a completed Drive snapshot and witness restore into a separate recovery Sheet/folder; validate row counts and voucher numbering.
+- **PWA, offline recovery and accessibility — not verified on devices:** test actual operating phones/tablets, queued/rejected entries, receipt photos, service-worker update, keyboard and assistive technology.
+- **14-day hotel pilot — not started:** start only after release, restore and device gates pass; maintain daily evidence below.
+
+The meta CSP allowlist intentionally covers same-origin PWA assets, data/blob receipt previews and the Apps Script ContentService origins. Script execution is restricted to same-origin external files; inline event handlers, object plugins, `unsafe-eval`, and child frames are disallowed. Inline styles remain allowed because the current dashboard renders variable chart-bar widths through style attributes. This is **not a complete host-header security configuration**: a meta policy cannot enforce `frame-ancestors`, and CI cannot verify the policy actually served by production.
+
+## 14-day controlled pilot — NOT STARTED
+
+Do not begin the pilot until the owner confirms the release target, required migrations are verified, an isolated restore has succeeded, and the app has been tested on the operating devices. Record no-activity days explicitly. Check local outbox/recovery queues on every operating device; a single browser's empty queue is not a system-wide guarantee.
+
+- [ ] **Day 1:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 2:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 3:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 4:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 5:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 6:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 7:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 8:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 9:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 10:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 11:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 12:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 13:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 14:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+
+**Pause criteria:** authorization failure, missing/duplicated voucher, unresolved active `UNCLASSIFIED` voucher, missing receipt, unexplained cash variance, failed backup, or unrecoverable offline entry. Preserve evidence and queued data; switch to the previously approved fallback process and get owner approval before resuming. At day 14, record unresolved incidents and obtain an explicit go/no-go decision. No pilot is claimed by this source PR.
+
 ## Evidence-based baseline
 
 | Area                                                        | Current status        | Evidence / limitation                                                                                    |

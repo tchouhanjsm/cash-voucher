@@ -77,10 +77,28 @@ with sync_playwright() as p:
             s: Object.getOwnPropertyDescriptor(target, 's'),
         }));"""
     )
-    page.on('console', lambda message: logs.append(message.text) if message.type == 'error' else None)
+    csp_violations = []
+
+    def capture_console(message):
+        if message.type != 'error':
+            return
+        logs.append(message.text)
+        if 'content security policy' in message.text.lower():
+            csp_violations.append(message.text)
+
+    page.on('console', capture_console)
     page.on('pageerror', lambda error: logs.append('PAGEERR ' + str(error)))
 
     page.goto(URL)
+    csp = page.locator('meta[http-equiv="Content-Security-Policy"]')
+    csp_content = csp.get_attribute('content') if csp.count() == 1 else ''
+    check(
+        csp.count() == 1
+        and "script-src 'self'" in csp_content
+        and "script-src-attr 'none'" in csp_content
+        and "'unsafe-eval'" in csp_content,
+        'mock E2E server adds eval-only exception for Playwright; source CSP remains strict',
+    )
     check(
         page.locator('#lUrl').count() == 0 or page.locator('#lUrl').is_hidden(),
         'local E2E API override is active',
@@ -3575,6 +3593,10 @@ with sync_playwright() as p:
     page.wait_for_selector('#nf')
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'new cash receipt action preserves the selected mode')
 
+    check(
+        not csp_violations,
+        'CSP does not block required assets, scripts, or API requests during browser workflows',
+    )
     browser.close()
 
 print(f'e2e: {ok} checks passed, {len(errs)} failed')
