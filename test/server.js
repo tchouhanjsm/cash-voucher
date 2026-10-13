@@ -121,9 +121,7 @@ http
         );
         if (testPolicy === html) {
           res.writeHead(500, { 'Content-Type': 'text/plain' });
-          return res.end(
-            'Test-only CSP override could not locate the expected script-src directive.',
-          );
+          return res.end('CSP test override failed.');
         }
         // Playwright's string-based wait_for_function uses eval; this exception exists only
         // in the mock E2E server. scripts/verify-frontend-release.js rejects it in source.

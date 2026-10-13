@@ -72,9 +72,7 @@ function verifyContentSecurityPolicy() {
   const failures = [];
 
   if (metaTags.length !== 1) {
-    return [
-      'Expected exactly one Content-Security-Policy meta tag; found ' + metaTags.length + '.',
-    ];
+    return ['CSP meta tag count: ' + metaTags.length + '.'];
   }
 
   const contentMatch = metaTags[0].match(/\bcontent\s*=\s*"([^"]*)"/i);
@@ -211,6 +209,4 @@ if (
   process.exit(1);
 }
 
-console.log(
-  `Frontend release integrity OK — ${graph.files.length} modules and shell/CSP verified.`,
-);
+console.log(`Frontend release integrity OK — ${graph.files.length} modules and CSP verified.`);
