@@ -264,6 +264,78 @@ with sync_playwright() as p:
         page.wait_for_timeout(300)
     check(page.locator('tbody tr').count() == 3, '3 users listed')
 
+    # Owner cannot self-approve a new high-value payment; a manager can review it.
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.locator('#rows .rv').first.fill('Approval E2E vendor')
+    page.locator('#rows .ra').first.fill('10000')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_function(
+        "document.querySelector('#nres')?.innerText.includes('pending owner/manager approval')"
+    )
+    check(
+        'excluded from approved totals and Daily Cash Close' in page.locator('#nres').inner_text(),
+        'new payment at INR 10,000 clearly explains the approval requirement and financial treatment',
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rq')
+    page.fill('#rq', 'Approval E2E vendor')
+    page.wait_for_function(
+        "document.querySelector('#rbody')?.innerText.includes('PENDING APPROVAL')"
+    )
+    check(
+        page.locator('#rbody [data-act=approve]').count() == 0
+        and page.locator('#rbody [data-act=reject]').count() == 0,
+        'voucher creator cannot self-approve or self-reject from the Register',
+    )
+
+    manager_context = browser.new_context(
+        viewport={'width': 390, 'height': 800},
+        accept_downloads=True,
+    )
+    manager_page = manager_context.new_page()
+    manager_page.goto(URL)
+    manager_page.fill('#lEmail', 'm@test.com')
+    manager_page.fill('#lPin', '246810')
+    manager_page.click('#lBtn')
+    manager_page.wait_for_selector('#op')
+    manager_page.fill('#op', '246810')
+    manager_page.fill('#np', '864209')
+    manager_page.click('.mcard .primary')
+    manager_page.wait_for_selector('#nav button')
+    manager_page.click('[data-v=reg]')
+    manager_page.wait_for_selector('#rq')
+    manager_page.fill('#rq', 'Approval E2E vendor')
+    manager_page.wait_for_function(
+        "document.querySelector('#rbody')?.innerText.includes('PENDING APPROVAL')"
+    )
+    check(
+        manager_page.locator('#rbody [data-act=approve]').count() == 1
+        and manager_page.locator('#rbody [data-act=reject]').count() == 1,
+        'another manager can review a pending high-value payment',
+    )
+    manager_page.click('#rbody [data-act=approve]')
+    manager_page.get_by_role('button', name='Approve payment', exact=True).click()
+    manager_page.wait_for_function(
+        "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
+    )
+    check(
+        'PENDING APPROVAL' not in manager_page.locator('#rbody').inner_text()
+        and 'APPROVED' in manager_page.locator('#rbody').inner_text(),
+        'manager approval updates status and removes pending treatment',
+    )
+    page.click('[data-act=refresh]')
+    page.wait_for_function(
+        "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
+    )
+    check(
+        'APPROVED' in page.locator('#rbody').inner_text()
+        and page.locator('#rbody [data-act=approve]').count() == 0,
+        'approval persists across users and the creator view refresh',
+    )
+    manager_context.close()
+
     xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
     page.fill('#ue', 'stored-xss@test.com')
