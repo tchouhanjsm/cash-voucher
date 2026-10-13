@@ -326,15 +326,24 @@ with sync_playwright() as p:
         and manager_page.locator('#rbody [data-act=reject]').count() == 1,
         'another manager can review a pending high-value payment',
     )
-    # Allow the initial session/outbox sync to settle before clicking a row action.
-    manager_page.wait_for_timeout(500)
+    # Bring the tab to the foreground before measuring the row action. Returning to a
+    # visible page can trigger navigation.refresh(), which replaces the register row.
+    manager_page.bring_to_front()
+    manager_page.wait_for_function("document.visibilityState === 'visible'")
+    manager_page.wait_for_timeout(1200)
     manager_page.wait_for_function(
         """() => {
             const button = document.querySelector('#rbody [data-act=approve]');
-            return Boolean(button && button.isConnected &&
-                button.closest('tr')?.innerText.includes('PENDING APPROVAL'));
+            const refresh = document.querySelector('#view [data-act=refresh]');
+            return Boolean(
+                button &&
+                button.isConnected &&
+                button.closest('tr')?.innerText.includes('PENDING APPROVAL') &&
+                !refresh?.hasAttribute('aria-busy')
+            );
         }"""
     )
+    manager_page.wait_for_timeout(250)
     check(
         '10,000' not in manager_page.locator('#rtot').inner_text()
         and 'excluded from approved totals' in manager_page.locator('#rtot').inner_text(),
@@ -399,7 +408,7 @@ with sync_playwright() as p:
             }, capture);
         }
     }""")
-    manager_page.locator('#rbody [data-act=approve]').click(position={"x": 20, "y": 20})
+    manager_page.locator('#rbody [data-act=approve]').click()
     try:
         manager_page.wait_for_selector('#modal:not(.hidden) .mcard .primary', timeout=10000)
     except Exception:
