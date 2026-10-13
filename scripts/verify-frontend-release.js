@@ -64,6 +64,92 @@ function indexModuleEntrypoints() {
   ].map((match) => normalize(match[1]));
 }
 
+function verifyContentSecurityPolicy() {
+  const source = read('index.html');
+  const metaTags = [...source.matchAll(/<meta\b[^>]*>/gi)]
+    .map((match) => match[0])
+    .filter((tag) =>
+      /\bhttp-equiv\s*=\s*["']content-security-policy["']/i.test(tag),
+    );
+  const failures = [];
+
+  if (metaTags.length !== 1) {
+    return [
+      'Expected exactly one Content-Security-Policy meta tag; found ' + metaTags.length + '.',
+    ];
+  }
+
+  const contentMatch = metaTags[0].match(/\bcontent\s*=\s*"([^"]*)"/i);
+  if (!contentMatch) {
+    return ['Content-Security-Policy must have a double-quoted content attribute.'];
+  }
+
+  const directives = new Map();
+  contentMatch[1]
+    .split(';')
+    .map((directive) => directive.trim())
+    .filter(Boolean)
+    .forEach((directive) => {
+      const [name, ...sources] = directive.split(/\s+/);
+      const key = name.toLowerCase();
+      if (directives.has(key)) {
+        failures.push('Duplicate CSP directive: ' + key + '.');
+      } else {
+        directives.set(key, sources);
+      }
+    });
+
+  const required = new Map([
+    ['default-src', ["'self'"]],
+    ['base-uri', ["'self'"]],
+    ['object-src', ["'none'"]],
+    ['script-src', ["'self'"]],
+    ['script-src-attr', ["'none'"]],
+    ['style-src', ["'self'", "'unsafe-inline'"]],
+    ['img-src', ["'self'", 'data:', 'blob:']],
+    ['font-src', ["'self'", 'data:']],
+    [
+      'connect-src',
+      ["'self'", 'https://script.google.com', 'https://script.googleusercontent.com'],
+    ],
+    ['manifest-src', ["'self'"]],
+    ['worker-src', ["'self'"]],
+    ['form-action', ["'self'"]],
+    ['frame-src', ["'none'"]],
+  ]);
+
+  for (const [name, allowedSources] of required) {
+    const actual = directives.get(name);
+    if (
+      !actual ||
+      actual.length !== allowedSources.length ||
+      allowedSources.some((source) => !actual.includes(source))
+    ) {
+      failures.push(
+        'CSP directive "' + name + '" must contain exactly: ' + allowedSources.join(' ') + '.',
+      );
+    }
+  }
+
+  for (const [name, sources] of directives) {
+    if (sources.includes('*')) failures.push('CSP directive "' + name + '" must not allow "*".');
+    if (sources.includes("'unsafe-eval'")) {
+      failures.push('CSP directive "' + name + '" must not allow unsafe-eval.');
+    }
+  }
+
+  const inlineScripts = [...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
+    .filter((match) => !/\bsrc\s*=/i.test(match[1]) && match[2].trim());
+  if (inlineScripts.length) {
+    failures.push('The active HTML shell must not include executable inline script blocks.');
+  }
+  if (/\s+on[a-z]+\s*=/i.test(source)) {
+    failures.push('The active HTML shell must not use inline event-handler attributes.');
+  }
+
+  return failures;
+}
+
 function serviceWorkerShell() {
   const source = read('sw.js');
   const match = source.match(/const\s+[^;]*\bF\s*=\s*\[((?:.|\n)*?)\];/s);
@@ -104,13 +190,15 @@ const missingShellFiles = [...shell].filter((file) => file !== '.' && !exists(fi
 const duplicates = serviceWorkerShell().filter((file, index, all) => all.indexOf(file) !== index);
 const retiredAppReference =
   shell.has('app.js') || /<script\b[^>]*src=["']app\.js["']/i.test(read('index.html'));
+const cspFailures = verifyContentSecurityPolicy();
 
 if (
   missingModules.length ||
   missingShell.length ||
   missingShellFiles.length ||
   duplicates.length ||
-  retiredAppReference
+  retiredAppReference ||
+  cspFailures.length
 ) {
   console.error('Frontend release integrity FAILED.');
 
@@ -120,10 +208,13 @@ if (
   if (duplicates.length)
     console.error('Duplicate service-worker shell entries:', [...new Set(duplicates)]);
   if (retiredAppReference) console.error('Retired app.js is still referenced by the active shell.');
+  if (cspFailures.length) {
+    console.error('Content Security Policy verification FAILED:', cspFailures);
+  }
 
   process.exit(1);
 }
 
 console.log(
-  `Frontend release integrity OK — ${graph.files.length} local modules + shell assets verified.`,
+  `Frontend release integrity OK — ${graph.files.length} local modules + shell assets and CSP verified.`,
 );
