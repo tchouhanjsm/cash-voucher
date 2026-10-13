@@ -3,7 +3,7 @@
 **Phase:** 23 design record; the MVP implementation is merged in PR #111.  
 **Status:** close rules and the one-drawer/day MVP are implemented in source; live deployment, schema migration, real backup/restore and hotel-pilot evidence remain unverified. The payment-approval policy below was approved on 13 October 2026 and is being implemented in a separate feature PR.  
 **Historical source baseline:** `main` at `f0377937b260d9e873360ae3f726258e0ae8c272`  
-**Scope:** preserve the original design reasoning and owner-approved rules for the single-property Apps Script/Sheets product. Editing this record does not run migrations or release code.
+**Scope:** preserve the original design reasoning and owner-approved rules for the single-property Apps Script/Sheets product. Editing this record does not run migrations or release code.  
 
 ## 1. Problem and evidence
 
