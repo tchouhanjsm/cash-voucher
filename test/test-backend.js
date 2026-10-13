@@ -1921,4 +1921,63 @@ ok(
   'unknown/free-text counterparty exports a blank VendorID and is surfaced as an exception',
 );
 
+const duplicateVendorName = 'Duplicate Identity Vendor';
+const duplicateVendorSave = as(T, 'saveVendor', {
+  name: duplicateVendorName,
+  company: 'Duplicate Test',
+  mobile: '',
+});
+g.sheets.Vendors.rows.push([
+  'duplicate-identity-vendor-id-2',
+  duplicateVendorName,
+  'Duplicate Test',
+  '',
+  true,
+  'owner@test.com',
+  new Date().toISOString(),
+]);
+const reportBeforeDuplicateVoucher = as(accountantToken, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ALL',
+});
+ok(
+  duplicateVendorSave.ok &&
+    reportBeforeDuplicateVoucher.ok &&
+    reportBeforeDuplicateVoucher.data.ambiguousVendorCount === 0,
+  'ambiguous vendor master names with no selected source voucher are not counted in the report',
+);
+const ambiguousVendorVoucher = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'accountant-ambiguous-vendor',
+      date: today,
+      vendor: duplicateVendorName,
+      amount: 42,
+      category: 'Other',
+      type: 'PAYMENT',
+    },
+  ],
+});
+const ambiguousVendorReport = as(accountantToken, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ALL',
+});
+const ambiguousVendorReportRow = ambiguousVendorReport.data.items.find(
+  (item) => item.id === ambiguousVendorVoucher.data.created[0].id,
+);
+ok(
+  ambiguousVendorVoucher.ok &&
+    ambiguousVendorReport.ok &&
+    ambiguousVendorReportRow &&
+    ambiguousVendorReportRow.vendorId === '' &&
+    ambiguousVendorReport.data.ambiguousVendorCount === 1 &&
+    ambiguousVendorReport.data.unmatchedVendorCount ===
+      reportBeforeDuplicateVoucher.data.unmatchedVendorCount,
+  'report counts selected ambiguous party rows separately from genuinely unmatched counterparties',
+);
+
 console.log('backend OK — ' + n + ' checks passed');
