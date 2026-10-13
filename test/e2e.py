@@ -334,6 +334,23 @@ with sync_playwright() as p:
     manager_errors = []
     manager_page.on('console', lambda message: manager_errors.append(message.text) if message.type == 'error' else None)
     manager_page.on('pageerror', lambda error: manager_errors.append('PAGEERR ' + str(error)))
+    manager_page.evaluate("""() => {
+        window.__approvalClickLog = [];
+        for (const capture of [true, false]) {
+            document.addEventListener('click', (event) => {
+                const element = event.target.closest?.('[data-act]');
+                if (element?.dataset.act === 'approve') {
+                    window.__approvalClickLog.push({
+                        phase: capture ? 'capture' : 'bubble',
+                        connected: element.isConnected,
+                        inert: Boolean(element.closest('[inert]')),
+                        id: element.dataset.id,
+                        defaultPrevented: event.defaultPrevented
+                    });
+                }
+            }, capture);
+        }
+    }""")
     manager_page.click('#rbody [data-act=approve]')
     try:
         manager_page.wait_for_selector('#modal:not(.hidden) .mcard .primary', timeout=10000)
@@ -378,6 +395,11 @@ with sync_playwright() as p:
                 'managerEmail': manager_page.evaluate(
                     "JSON.parse(localStorage.getItem('cv.cache') || '{}').me?.email || ''"
                 ),
+                'appInert': manager_page.locator('#app').evaluate('(element) => element.inert'),
+                'approveButton': manager_page.locator('#rbody [data-act=approve]').get_attribute('outerHTML'),
+                'clickLog': manager_page.evaluate('window.__approvalClickLog || []'),
+                'registerNavActive': manager_page.locator('[data-v=reg]').get_attribute('aria-current'),
+                'viewTextStart': manager_page.locator('#view').inner_text()[:500],
             }),
         )
         check(
