@@ -255,6 +255,7 @@ with sync_playwright() as p:
     for name, email, role, pin in [
         ('Mona', 'm@test.com', 'manager', '246810'),
         ('Sam', 's@test.com', 'staff', '135790'),
+        ('Nina Accountant', 'accountant@test.com', 'accountant', '753951'),
     ]:
         page.fill('#un', name)
         page.fill('#ue', email)
@@ -262,7 +263,7 @@ with sync_playwright() as p:
         page.fill('#up', pin)
         page.click('#uf .primary')
         page.wait_for_timeout(300)
-    check(page.locator('tbody tr').count() == 3, '3 users listed')
+    check(page.locator('tbody tr').count() == 4, 'owner can list staff, manager and accountant users')
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
     page.click('[data-v=new]')
@@ -356,6 +357,85 @@ with sync_playwright() as p:
         'approval persists across users and the creator view refresh',
     )
     manager_context.close()
+
+    # Slice 4: generic read-only accountant report/export with stable VendorID.
+    page.click('[data-v=vend]')
+    page.wait_for_selector('#vf')
+    page.fill('#vn', 'Accountant E2E Vendor')
+    page.fill('#vc', 'Export Test')
+    page.fill('#vm', '')
+    page.click('#vf .primary')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('Accountant E2E Vendor')"
+    )
+    vendor_row = page.locator('#view tbody tr').filter(has_text='Accountant E2E Vendor')
+    stable_vendor_id = vendor_row.locator('code').inner_text()
+    check(
+        len(stable_vendor_id) >= 30 and vendor_row.count() == 1,
+        'Vendor management exposes a stable, non-empty VendorID',
+    )
+
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.locator('#rows .rv').first.fill('Accountant E2E Vendor')
+    page.locator('#rows .ra').first.fill('125')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1')")
+    check(
+        'Accountant E2E Vendor' in page.locator('#nres').inner_text(),
+        'voucher can be created against an existing vendor without a destination-specific mapping',
+    )
+
+    accountant_context = browser.new_context(
+        viewport={'width': 390, 'height': 800},
+        accept_downloads=True,
+    )
+    accountant_page = accountant_context.new_page()
+    accountant_page.goto(URL)
+    accountant_page.fill('#lEmail', 'accountant@test.com')
+    accountant_page.fill('#lPin', '753951')
+    accountant_page.click('#lBtn')
+    accountant_page.wait_for_selector('#op')
+    accountant_page.fill('#op', '753951')
+    accountant_page.fill('#np', '357951')
+    accountant_page.locator('.mcard .primary').click()
+    accountant_page.wait_for_selector('[data-v=reports][aria-current=page]')
+    check(
+        accountant_page.locator('[data-v=reports]').count() == 1
+        and accountant_page.locator('[data-v=reg]').count() == 0
+        and accountant_page.locator('[data-v=new]').count() == 0
+        and accountant_page.locator('[data-v=vend]').count() == 0
+        and accountant_page.locator('[data-v=cashClose]').count() == 0
+        and accountant_page.locator('[data-v=users]').count() == 0,
+        'accountant sees Reports only, without voucher entry, Register, Vendors, close or user administration',
+    )
+    accountant_page.wait_for_selector('#movementFilters')
+    accountant_page.locator('#movementFilters button[type=submit]').click()
+    accountant_page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('Source vouchers')"
+    )
+    exported_row = accountant_page.locator('#view tbody tr').filter(
+        has_text='Accountant E2E Vendor'
+    )
+    exported_vendor_id = exported_row.locator('td code').inner_text()
+    check(
+        exported_row.count() == 1
+        and exported_vendor_id == stable_vendor_id
+        and 'Vendor ID' in accountant_page.locator('#view thead').inner_text(),
+        'accountant report resolves the voucher to the stable VendorID',
+    )
+    with accountant_page.expect_download() as download_info:
+        accountant_page.locator('[data-act=reportCsv]').click()
+    report_download = download_info.value
+    exported_csv = open(report_download.path(), encoding='utf-8').read()
+    check(
+        'vendorId' in exported_csv
+        and stable_vendor_id in exported_csv
+        and 'tax' not in report_download.suggested_filename.lower(),
+        'generic accountant CSV includes vendor identity without claiming tax/accounting-system compatibility',
+    )
+    accountant_context.close()
 
     xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
