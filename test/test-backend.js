@@ -12,17 +12,16 @@ g.setup();
 g.setup(); // idempotent
 ok(!!g.props.BACKUP_FOLDER_ID, 'backup folder configured');
 const nextPaymentNumber = () => {
-  const highest = g.sheets.Vouchers.rows.slice(1).reduce(
-    (max, row) => (row[15] === 'PAYMENT' ? Math.max(max, Number(row[1]) || 0) : max),
-    0,
-  );
+  const highest = g.sheets.Vouchers.rows
+    .slice(1)
+    .reduce((max, row) => (row[15] === 'PAYMENT' ? Math.max(max, Number(row[1]) || 0) : max), 0);
   return Math.max(300, highest + 100);
 };
 const nextReceiptNumber = () =>
-  g.sheets.Vouchers.rows.slice(1).reduce(
-    (max, row) => (row[15] === 'RECEIPT' ? Math.max(max, Number(row[1]) || 0) : max),
-    0,
-  ) + 1;
+  g.sheets.Vouchers.rows
+    .slice(1)
+    .reduce((max, row) => (row[15] === 'RECEIPT' ? Math.max(max, Number(row[1]) || 0) : max), 0) +
+  1;
 
 // Approval migration adds R:U only, preserves prior cells, and stops on occupied columns.
 const approvalMigrationMock = create();
@@ -1319,10 +1318,7 @@ ok(
 );
 ok(rc.data.created[1].category === 'Other', 'unknown receipt category falls back to Other');
 const bs = as(T, 'bootstrap').data;
-ok(
-  bs.settings.nextReceiptNo === receiptNumberStart + 2,
-  'next receipt no advances',
-);
+ok(bs.settings.nextReceiptNo === receiptNumberStart + 2, 'next receipt no advances');
 ok(
   as(T, 'saveSettings', {
     propertyName: 'Hotel X',
