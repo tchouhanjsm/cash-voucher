@@ -75,7 +75,10 @@ async function run() {
   expectInvalid((item) => (item.clientId = hostile), /invalid payment ID/i);
   expectInvalid((item) => (item.ownerKey = hostile), /invalid account binding/i);
   expectInvalid((item) => (item.entry.clientId = hostile), /invalid payment ID/i);
-  expectInvalid((item) => (item.entry.cashImpact = 'TRANSFER'), /invalid cash-impact classification/i);
+  expectInvalid(
+    (item) => (item.entry.cashImpact = 'TRANSFER'),
+    /invalid cash-impact classification/i,
+  );
   expectInvalid((item) => (item.entry.amount = true), /invalid payment amount/i);
   expectInvalid((item) => (item.entry.date = '2026-02-30'), /invalid payment date/i);
   expectInvalid(

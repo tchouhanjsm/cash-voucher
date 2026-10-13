@@ -300,14 +300,20 @@ const missingCashImpact = g.call('createVouchers', {
   token: T,
   entries: [{ date: today, vendor: 'Missing Impact Vendor', amount: 17 }],
 });
-ok(!missingCashImpact.ok && missingCashImpact.code === 'VALIDATION', 'server rejects creation without cash impact');
+ok(
+  !missingCashImpact.ok && missingCashImpact.code === 'VALIDATION',
+  'server rejects creation without cash impact',
+);
 const invalidCashImpacts = ['UNCLASSIFIED', 'BANK_TRANSFER', '<img>'].map((cashImpact) =>
   g.call('createVouchers', {
     token: T,
     entries: [{ date: today, vendor: 'Invalid Impact Vendor', amount: 17, cashImpact }],
   }),
 );
-ok(invalidCashImpacts.every((result) => !result.ok && result.code === 'VALIDATION'), 'server rejects unknown and UNCLASSIFIED values for new vouchers');
+ok(
+  invalidCashImpacts.every((result) => !result.ok && result.code === 'VALIDATION'),
+  'server rejects unknown and UNCLASSIFIED values for new vouchers',
+);
 r = as(S, 'createVouchers', {
   entries: [
     {
@@ -492,12 +498,22 @@ const impactEdit = as(M, 'updateVoucher', {
   reason: 'Paid by bank transfer',
   fields: { cashImpact: 'NO_CASH' },
 });
-ok(impactEdit.ok && impactEdit.data.cashImpact === 'NO_CASH', 'manager can correct cash impact with a reason');
-const latestImpactAudit = [...g.sheets.AuditLog.rows].reverse().find((row) => row[2] === 'UPDATE' && row[3] === '#201');
+ok(
+  impactEdit.ok && impactEdit.data.cashImpact === 'NO_CASH',
+  'manager can correct cash impact with a reason',
+);
+const latestImpactAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'UPDATE' && row[3] === '#201');
 const impactAuditDetails = latestImpactAudit ? JSON.parse(latestImpactAudit[4]) : null;
 ok(
   impactAuditDetails?.reason === 'Paid by bank transfer' &&
-    impactAuditDetails.changes.some((change) => change.field === 'cashImpact' && change.before === 'CASH_OUT' && change.after === 'NO_CASH'),
+    impactAuditDetails.changes.some(
+      (change) =>
+        change.field === 'cashImpact' &&
+        change.before === 'CASH_OUT' &&
+        change.after === 'NO_CASH',
+    ),
   'cash-impact edit records old/new values and correction reason',
 );
 const beforeReasonFailure = as(M, 'bootstrap').data.vouchers.find((voucher) => voucher.id === id1);

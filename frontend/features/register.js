@@ -1,5 +1,15 @@
 import { $ } from '../core/dom.js';
-import { CASH_IMPACT_CHOICES, can, categories, isIn, nm, normalizeCashImpact, S, suggestCashImpact, bySeq } from '../core/state.js';
+import {
+  CASH_IMPACT_CHOICES,
+  can,
+  categories,
+  isIn,
+  nm,
+  normalizeCashImpact,
+  S,
+  suggestCashImpact,
+  bySeq,
+} from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import {
   compress,
@@ -425,7 +435,10 @@ export function createRegister({ api, go }) {
     const cashImpactHint = document.createElement('p');
     cashImpactHint.className = 'muted';
     const updateCashImpactHint = () => {
-      cashImpactHint.textContent = 'Category suggestion only: ' + suggestCashImpact(voucher.type, category.value) + '. Verify physical notes/coins movement; UPI, card, or bank transfer uses NO_CASH.';
+      cashImpactHint.textContent =
+        'Category suggestion only: ' +
+        suggestCashImpact(voucher.type, category.value) +
+        '. Verify physical notes/coins movement; UPI, card, or bank transfer uses NO_CASH.';
     };
     category.addEventListener('change', updateCashImpactHint);
     updateCashImpactHint();

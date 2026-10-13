@@ -53,7 +53,9 @@ export function createPayments({ api, refresh }) {
       CASH_OUT: 'CASH_OUT — physical cash leaves the drawer',
       NO_CASH: 'NO_CASH — no physical drawer movement',
     };
-    const placeholder = selected ? '' : `<option value='' selected disabled>Choose cash impact…</option>`;
+    const placeholder = selected
+      ? ''
+      : `<option value='' selected disabled>Choose cash impact…</option>`;
     return placeholder + CASH_IMPACT_CHOICES.map(
       (value) => `<option value='${value}'${value === selected ? ' selected' : ''}>${labels[value]}</option>`,
     ).join('');
@@ -628,7 +630,9 @@ export function createPayments({ api, refresh }) {
           try {
             if (!CASH_IMPACT_CHOICES.includes(record.entry?.cashImpact)) {
               throw Object.assign(
-                new Error('This queued entry predates cash-impact classification. Export it and re-enter it with a cash-impact value; the queued record has been kept for recovery.'),
+                new Error(
+                  'This queued entry predates cash-impact classification. Export it and re-enter it with a cash-impact value; the queued record has been kept for recovery.',
+                ),
                 { code: 'VALIDATION' },
               );
             }
