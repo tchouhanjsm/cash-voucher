@@ -331,7 +331,8 @@ with sync_playwright() as p:
         'Register totals exclude the pending INR 10,000 payment',
     )
     manager_page.click('#rbody [data-act=approve]')
-    manager_page.get_by_role('button', name='Approve payment', exact=True).click()
+    manager_page.wait_for_selector('#modal .mcard .primary')
+    manager_page.locator('#modal .mcard .primary').click()
     manager_page.wait_for_function(
         "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
     )
