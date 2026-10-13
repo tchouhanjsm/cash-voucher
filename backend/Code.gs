@@ -2764,30 +2764,43 @@ function updateVoucher_(user, req) {
   }
 
   const priorApprovalStatus = approvalStatus_(o);
-  const nextApprovalStatus =
-    o.Type === 'PAYMENT' && Number(patch.Amount === undefined ? o.Amount : patch.Amount) >= CFG.PAYMENT_APPROVAL_THRESHOLD
-      ? 'PENDING'
-      : 'NOT_REQUIRED';
-  if (priorApprovalStatus !== nextApprovalStatus) {
-    changes.push({
-      field: 'approvalStatus',
-      before: priorApprovalStatus,
-      after: nextApprovalStatus,
-    });
+  const priorAmount = Number(o.Amount);
+  const nextAmount = Number(patch.Amount === undefined ? o.Amount : patch.Amount);
+  const crossedApprovalThreshold =
+    o.Type === 'PAYMENT' &&
+    priorAmount < CFG.PAYMENT_APPROVAL_THRESHOLD &&
+    nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD;
+  const approvalManaged = ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].indexOf(
+    priorApprovalStatus,
+  ) >= 0;
+  // Existing blank/NOT_REQUIRED approval fields are not retroactively backfilled.
+  // Re-review only vouchers already in the approval workflow or edits that cross the threshold.
+  if (approvalManaged || crossedApprovalThreshold) {
+    const nextApprovalStatus =
+      o.Type === 'PAYMENT' && nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD
+        ? 'PENDING'
+        : 'NOT_REQUIRED';
+    if (priorApprovalStatus !== nextApprovalStatus) {
+      changes.push({
+        field: 'approvalStatus',
+        before: priorApprovalStatus,
+        after: nextApprovalStatus,
+      });
+    }
+    if (String(o.ApprovedBy || '')) {
+      changes.push({ field: 'approvedBy', before: String(o.ApprovedBy), after: '' });
+    }
+    if (String(o.ApprovedAt || '')) {
+      changes.push({ field: 'approvedAt', before: tsStr_(o.ApprovedAt), after: '' });
+    }
+    if (String(o.ApprovalReason || '')) {
+      changes.push({ field: 'approvalReason', before: String(o.ApprovalReason), after: '' });
+    }
+    patch.ApprovalStatus = nextApprovalStatus;
+    patch.ApprovedBy = '';
+    patch.ApprovedAt = '';
+    patch.ApprovalReason = '';
   }
-  if (String(o.ApprovedBy || '')) {
-    changes.push({ field: 'approvedBy', before: String(o.ApprovedBy), after: '' });
-  }
-  if (String(o.ApprovedAt || '')) {
-    changes.push({ field: 'approvedAt', before: tsStr_(o.ApprovedAt), after: '' });
-  }
-  if (String(o.ApprovalReason || '')) {
-    changes.push({ field: 'approvalReason', before: String(o.ApprovalReason), after: '' });
-  }
-  patch.ApprovalStatus = nextApprovalStatus;
-  patch.ApprovedBy = '';
-  patch.ApprovedAt = '';
-  patch.ApprovalReason = '';
 
   patch.UpdatedBy = user.email;
   patch.UpdatedAt = nowIso_();
