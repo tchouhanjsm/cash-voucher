@@ -1,7 +1,7 @@
 # Daily Cash Close and Physical Reconciliation — Design and Owner Policy Record
 
 **Phase:** 23 design record; the MVP implementation is merged in PR #111.  
-**Status:** close rules and the one-drawer/day MVP are implemented in source; live deployment, schema migration, real backup/restore and hotel-pilot evidence remain unverified. The payment-approval policy below was approved on 13 October 2026 and is being implemented in a separate feature PR.  
+**Status:** close rules and the one-drawer/day MVP are implemented in source; live deployment, schema migration, real backup/restore and hotel-pilot evidence remain unverified. The payment-approval policy, report-only accountant role and VendorID export are grouped in active PR #114.  
 **Historical source baseline:** `main` at `f0377937b260d9e873360ae3f726258e0ae8c272`  
 **Scope:** preserve the original design reasoning and owner-approved rules for the single-property Apps Script/Sheets product. Editing this record does not run migrations or release code.  
 
@@ -239,7 +239,7 @@ The owner approved these defaults for the implementation phase. This section sup
 
 ### Schema / release procedure
 
-The implementation adds two dedicated tabs; PR #113 adds no schema, and the approved payment-approval workflow appends fields R:U after CashImpact Q. No existing voucher or setting columns are rearranged. After reviewing and backing up the intended Apps Script project, upload the reviewed source only when the owner authorizes it. Run `migrateCashImpactField()` first if column Q (CashImpact) is not present, then `migrateVoucherApprovalFields()` to append the approval headers only after validating A:Q and confirming R:U has no existing headers or data, then run `migrateDailyCashCloseSchema()` once from the Apps Script editor. The migrations stop on unexpected schemas rather than overwriting data. Verify the exact headers, unchanged voucher row count, and blank historical CashImpact and approval cells before publishing any Web App version. Do not run `setup()` as a shortcut. Migrations and deployment are not performed by the feature PR.
+The implementation adds two dedicated tabs; PR #111 added Daily Cash Close, and the current PR #114 appends payment-approval fields R:U after CashImpact Q plus VendorID V. No existing voucher or setting columns are rearranged. After reviewing and backing up the intended Apps Script project, upload the reviewed source only when the owner authorizes it. Run `migrateCashImpactField()` first if column Q is missing, then `migrateVoucherApprovalFields()` after validating A:Q and empty R:U, then `migrateVoucherVendorIdField()` after validating A:U and empty V, then `migrateDailyCashCloseSchema()` once from the Apps Script editor. The migrations stop on unexpected schemas rather than overwriting data. Verify exact headers, unchanged row count and blank historical CashImpact, approval and VendorID cells before publishing any Web App version. Do not run `setup()` as a shortcut. Migrations and deployment are not performed by the feature PR.
 
 ### MVP limitations / acceptance gates
 
