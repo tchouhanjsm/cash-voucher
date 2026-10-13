@@ -75,7 +75,7 @@ See `docs/DATA-DURABILITY.md`.
 
 ## Product direction
 
-The app is currently a single-property cash-voucher tool, not a hosted multi-tenant fintech platform. The next owner-value priorities are a controlled daily cash close/reconciliation workflow, better exception/approval controls, accountant-friendly exports, and a measured accessibility/UI review. Do not start a multi-property, digital-payout, or AI/network build before users, controls, regulatory requirements, and economics are validated.
+The app is currently a single-property cash-voucher tool, not a hosted multi-tenant fintech platform. The Daily Cash Close MVP and structured audit history exist in source, but live deployment and restore readiness remain operational gates. The current feature batch implements the owner-approved approval workflow for new PAYMENT vouchers at or above ₹10,000: independent owner/manager review, no self-approval, rejected/pending exception handling, and exclusion from approved totals and final cash close until resolved. Accountant-friendly exports and a measured accessibility/UI review remain future priorities. Do not start a multi-property, digital-payout, or AI/network build before users, controls, regulatory requirements, and economics are validated.
 
 - Product gap register: `docs/PRODUCT-ROADMAP.md`
 - UI/UX source review and next design criteria: `docs/UI-UX-REVIEW.md`
