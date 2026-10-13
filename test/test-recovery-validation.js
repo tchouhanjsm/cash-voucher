@@ -22,6 +22,7 @@ async function run() {
       vendor: 'Offline Vendor',
       amount: 75,
       category: 'Other',
+      cashImpact: 'CASH_OUT',
       notes: '',
       receipts: [{ mime: 'image/png', data: 'AQID', ignored: 'not forwarded' }],
       ignored: 'not forwarded',
@@ -40,6 +41,7 @@ async function run() {
       vendor: 'Offline Vendor',
       amount: 75,
       category: 'Other',
+      cashImpact: 'CASH_OUT',
       notes: '',
       receipts: [{ mime: 'image/png', data: 'AQID' }],
     },
@@ -48,12 +50,14 @@ async function run() {
   const unbound = structuredClone(validRecord);
   delete unbound.ownerKey;
   delete unbound.entry.category;
+  delete unbound.entry.cashImpact;
   delete unbound.entry.notes;
   const legacy = validateRecoveryRecords([unbound], ownerKey, maxDate);
   assert.equal(legacy.unboundCount, 1);
   assert.equal(legacy.records[0].ownerKey, '');
   assert.equal(legacy.records[0].entry.category, 'Other');
   assert.equal(legacy.records[0].entry.notes, '');
+  assert.equal(legacy.records[0].entry.cashImpact, 'UNCLASSIFIED');
 
   const hostile = { toString: null, valueOf: null };
   assert.throws(() => validateClientId(hostile), /invalid payment ID/i);
@@ -71,6 +75,7 @@ async function run() {
   expectInvalid((item) => (item.clientId = hostile), /invalid payment ID/i);
   expectInvalid((item) => (item.ownerKey = hostile), /invalid account binding/i);
   expectInvalid((item) => (item.entry.clientId = hostile), /invalid payment ID/i);
+  expectInvalid((item) => (item.entry.cashImpact = 'TRANSFER'), /invalid cash-impact classification/i);
   expectInvalid((item) => (item.entry.amount = true), /invalid payment amount/i);
   expectInvalid((item) => (item.entry.date = '2026-02-30'), /invalid payment date/i);
   expectInvalid(

@@ -240,7 +240,7 @@ export function createBulk({ api, refresh, go }) {
           `<tr><td>${row.n}</td><td class="nw">${row.date ? esc(dmy(row.date)) : '–'}</td><td>${esc(row.vendor)}</td><td class="r nw">${row.amount > 0 ? money(row.amount) : '–'}</td><td>${esc(row.category)}</td><td class="nw"><select class="bci" data-row-index="${row.n - 1}" aria-label="Cash impact row ${row.n}"><option value=""${row.cashImpactSuggested ? ' selected' : ''} disabled>Choose…</option>${CASH_IMPACT_CHOICES.map((value) => `<option value="${value}"${!row.cashImpactSuggested && row.cashImpact === value ? ' selected' : ''}>${value}</option>`).join('')}</select><div class="muted">${row.cashImpactSuggested ? 'Suggestion: ' + esc(row.cashImpact) : 'Selected'}</div></td><td class="nw">${row.errs.length ? `<span class="badge bad">${esc(row.errs.join(', '))}</span>` : row.cashImpactSuggested ? '<span class="badge warn">choose cash impact</span>' : row.dup ? '<span class="badge warn">duplicate?</span>' : row.warns.length ? `<span class="badge warn">${esc(row.warns[0])}</span>` : '<span class="badge">OK</span>'}</td></tr>`,
       )
       .join('')}</tbody></table></div>
-    ${rows.length > 300 ? `<p class="muted">Showing first 300 of ${rows.length} rows.</p>` : ''}<div class="actions"><button class="btn primary" data-act="import" ${ready.length ? '' : 'disabled'}>Import ${ready.length} ${importNoun}</button></div><p id="bprog" class="muted" role="status" aria-live="polite"></p></div>`;
+    ${rows.length > 300 ? `<p class="muted">Showing first 300 of ${rows.length} rows.</p>` : ''}<div class="actions"><button class="btn primary" data-act="import" ${ready.length && !needImpact.length ? '' : 'disabled'}>Import ${ready.length} ${importNoun}</button></div><p id="bprog" class="muted" role="status" aria-live="polite"></p></div>`;
   }
 
   function toggleDuplicates(checked) {
@@ -280,6 +280,11 @@ export function createBulk({ api, refresh, go }) {
 
   async function runImport(button) {
     const ready = rows.filter((row) => !row.errs.length && !row.skip);
+    const unclassified = rows.some((row) => !row.errs.length && !row.skip && !CASH_IMPACT_CHOICES.includes(row.cashImpact));
+    if (unclassified) {
+      $('#bprog').textContent = 'Choose a cash impact for every valid row before importing.';
+      return;
+    }
     if (!ready.length) return;
 
     let done = 0;

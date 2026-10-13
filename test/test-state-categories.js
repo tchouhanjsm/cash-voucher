@@ -5,7 +5,7 @@ const source = fs.readFileSync(require.resolve('../frontend/core/state.js'), 'ut
 
 async function run() {
   const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
-  const { S, categories, rcats } = await import(moduleUrl);
+  const { S, categories, rcats, CASH_IMPACT_CHOICES, normalizeCashImpact, normalizeVoucherCollection, suggestCashImpact } = await import(moduleUrl);
   const hostile = { toString: null, valueOf: null };
 
   S.settings = {
@@ -36,9 +36,23 @@ async function run() {
   assert.deepEqual(categories(), ['Travel', 'Meals']);
   assert.deepEqual(rcats(), ['Refunds', 'Other']);
 
-  console.log(
-    'Category settings OK — scalar-only lists, stable order, deduplication and fallback covered.',
-  );
+  assert.deepEqual(CASH_IMPACT_CHOICES, ['CASH_IN', 'CASH_OUT', 'NO_CASH']);
+  assert.equal(suggestCashImpact('PAYMENT', 'Bank Charges'), 'NO_CASH');
+  assert.equal(suggestCashImpact('PAYMENT', 'Vendor Payment'), 'CASH_OUT');
+  assert.equal(suggestCashImpact('RECEIPT', 'Bank Withdrawal'), 'CASH_IN');
+  assert.equal(normalizeCashImpact('TRANSFER'), 'UNCLASSIFIED');
+
+  const baseVoucher = {
+    id: 'legacy-1', no: 201, date: '2026-10-13', type: 'PAYMENT', status: 'ACTIVE',
+    vendor: 'Legacy vendor', category: 'Other', notes: '', createdBy: 'staff@test.com',
+    createdAt: '', updatedBy: '', updatedAt: '', cancelReason: '',
+  };
+  const legacy = normalizeVoucherCollection([baseVoucher, { ...baseVoucher, id: 'bad-impact', cashImpact: '<img>' }]);
+  assert.equal(legacy.rows[0].cashImpact, 'UNCLASSIFIED');
+  assert.equal(legacy.rows[1].cashImpact, 'UNCLASSIFIED');
+  assert.equal(legacy.malformedFieldCount, 1);
+
+  console.log('Cash impact OK — suggestions, controlled vocabulary, and legacy normalization covered.');
 }
 
 run().catch((error) => {
