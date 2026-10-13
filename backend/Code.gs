@@ -2082,7 +2082,15 @@ function cashCloseCalculatePeriod_(date) {
       else if (impact === 'CASH_OUT') cashOutPaise += amountPaise;
       else if (impact === 'NO_CASH') noCashCount++;
     });
-  return { items, unclassified, invalidVouchers, pendingApprovals, cashInPaise, cashOutPaise, noCashCount };
+  return {
+    items,
+    unclassified,
+    invalidVouchers,
+    pendingApprovals,
+    cashInPaise,
+    cashOutPaise,
+    noCashCount,
+  };
 }
 function cashCloseCorrectionOut_(row) {
   return {
