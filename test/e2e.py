@@ -1514,11 +1514,19 @@ with sync_playwright() as p:
     )
     page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
     page.wait_for_function("document.querySelector('#rq')?.value === ''")
+    clear_filter_state = {
+        'query': page.locator('#rq').input_value(),
+        'rowCount': page.locator('#rbody tr').count(),
+        'rowText': page.locator('#rbody').inner_text(),
+        'emptyClass': page.locator('#rempty').get_attribute('class'),
+        'emptyVisible': page.locator('#rempty').is_visible(),
+        'view': page.evaluate("document.querySelector('#nav button[aria-current=page]')?.dataset.v || ''"),
+    }
     check(
-        page.locator('#rq').input_value() == ''
-        and page.locator('#rbody tr').count() >= 2
-        and not page.locator('#rempty').is_visible(),
-        'empty-state clear-filters action restores matching vouchers',
+        clear_filter_state['query'] == ''
+        and clear_filter_state['rowCount'] >= 2
+        and not clear_filter_state['emptyVisible'],
+        'empty-state clear-filters action restores matching vouchers: ' + json.dumps(clear_filter_state),
     )
     page.fill('#rfrom', '2026-10-20')
     page.fill('#rto', '2026-10-10')
@@ -3378,6 +3386,7 @@ with sync_playwright() as p:
     )
     page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
     page.wait_for_function("document.querySelector('#rq')?.value === ''")
+    page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('malformed-register-fixture') || document.querySelector('#rbody')?.innerText.includes('999991')")
     page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
     page.wait_for_selector('#rimgs .receipt-error[role=alert]')
     check(
