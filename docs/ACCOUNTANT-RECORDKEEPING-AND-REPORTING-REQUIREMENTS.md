@@ -7,6 +7,11 @@
 **Currency/timezone:** currently INR is implied by the operating context, and backend business dates use `Asia/Kolkata`; confirm currency and tax registrations with the owner before adding tax or accounting rules.
 
 ## 1. Executive assessment
+
+Reviewing this product as a finance record keeper changes the definition of “done”: a voucher form is only the capture layer. An accountant needs a traceable evidence chain from source document → recorded transaction → approval/correction history → period report → reconciled export → accountant import/review.
+
+The current app has a useful operational base: payment and receipt vouchers, separate numbering series, date/vendor/category/amount/notes, active/cancelled status, creator/update metadata, receipt image references, client IDs, user/role controls, an audit log, register/dashboard surfaces, CSV/print paths, offline queue/recovery and backup mechanisms. These fields are not yet a complete general ledger or tax subledger.
+
 ## Current source status — PR #114 (not yet merged)
 
 The in-progress feature batch adds an `accountant` role with server-authorized **read-only** access to the Recorded Movement Report and a generic CSV download. It removes that role's access to voucher entry/Register, vendor-contact listing, cash close, user administration, settings and audit log. The report includes the source voucher identifiers and an optional stable `VendorID`; CSV values remain raw source values and the export is **not** certified for any accounting package.
@@ -15,9 +20,6 @@ The existing vendor master already has a generated stable `VendorID`. The batch 
 
 The first accounting product/version, import mapping, accountant-approved sample, entity/tax registration, source-evidence requirements and tax calculations remain open. Do not describe the generic CSV as Tally/Zoho-compatible, a general ledger, a GST/TDS report, a statutory book or a reconciliation certificate. PR #114 has not merged, migrated a live Sheet or deployed any source.
 
-Reviewing this product as a finance record keeper changes the definition of “done”: a voucher form is only the capture layer. An accountant needs a traceable evidence chain from source document → recorded transaction → approval/correction history → period report → reconciled export → accountant import/review.
-
-The current app has a useful operational base: payment and receipt vouchers, separate numbering series, date/vendor/category/amount/notes, active/cancelled status, creator/update metadata, receipt image references, client IDs, user/role controls, an audit log, register/dashboard surfaces, CSV/print paths, offline queue/recovery and backup mechanisms. These fields are not yet a complete general ledger or tax subledger.
 
 **Do not treat the current voucher register or Audit CSV as a statutory book, a GST return, a TDS statement, a profit-and-loss account, or a complete accounting ledger.** The product lacks several fields and accounting controls needed to make those claims. This phase defines the gaps and sequence; it does not invent tax classifications, alter production records, or add tax calculations.
 
