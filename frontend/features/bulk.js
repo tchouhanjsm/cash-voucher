@@ -1,5 +1,12 @@
 import { $ } from '../core/dom.js';
-import { CASH_IMPACT_CHOICES, categories, isIn, rcats, S, suggestCashImpact } from '../core/state.js';
+import {
+  CASH_IMPACT_CHOICES,
+  categories,
+  isIn,
+  rcats,
+  S,
+  suggestCashImpact,
+} from '../core/state.js';
 import { addDays, dmy, download, esc, money, pad, parseAmt, today, uid } from '../core/utils.js';
 import { busy, fail, head } from '../core/ui.js';
 
@@ -218,7 +225,9 @@ export function createBulk({ api, refresh, go }) {
 
   function drawPreview() {
     const ready = rows.filter((row) => !row.errs.length && !row.skip && !row.cashImpactSuggested);
-    const needImpact = rows.filter((row) => !row.errs.length && !row.skip && row.cashImpactSuggested);
+    const needImpact = rows.filter(
+      (row) => !row.errs.length && !row.skip && row.cashImpactSuggested,
+    );
     const bad = rows.filter((row) => row.errs.length);
     const duplicates = rows.filter((row) => row.dup);
     const singular = ready.length === 1;
@@ -280,7 +289,9 @@ export function createBulk({ api, refresh, go }) {
 
   async function runImport(button) {
     const ready = rows.filter((row) => !row.errs.length && !row.skip);
-    const unclassified = rows.some((row) => !row.errs.length && !row.skip && !CASH_IMPACT_CHOICES.includes(row.cashImpact));
+    const unclassified = rows.some(
+      (row) => !row.errs.length && !row.skip && !CASH_IMPACT_CHOICES.includes(row.cashImpact),
+    );
     if (unclassified) {
       $('#bprog').textContent = 'Choose a cash impact for every valid row before importing.';
       return;
@@ -353,7 +364,8 @@ export function createBulk({ api, refresh, go }) {
   function downloadTemplate() {
     download(
       'voucher-template.csv',
-      'Date,Vendor,Amount,Category,Notes,CashImpact\r\n25/12/2026,Ram Traders,1500,Kitchen,Vegetables,CASH_OUT\r\n',
+      'Date,Vendor,Amount,Category,Notes,CashImpact\r\n' +
+        '25/12/2026,Ram Traders,1500,Kitchen,Vegetables,CASH_OUT\r\n',
       'text/csv',
     );
   }

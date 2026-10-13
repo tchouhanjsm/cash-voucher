@@ -8,12 +8,14 @@ These contracts describe the modules wired by the current `frontend/main.js`. Up
 | -------------------------------- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | `frontend/core/api.js`           | `createApi({ getUrl, getToken })`                                                                  | JSON POST transport, timeout and normalized API errors           |
 | `frontend/core/dom.js`           | `$`, `$$`                                                                                          | DOM querying                                                     |
-| `frontend/core/state.js`         | `S`, `can`, `nm`, `isIn`, `vno`, `pays`, `recs`, `bySeq`, `rcats`, `categories`, `CASH_IMPACT_CHOICES`, `CASH_IMPACT_VALUES`, `normalizeCashImpact`, `suggestCashImpact`                    | Shared state and derived voucher/permission helpers              |
+| `frontend/core/state.js`         | `S`, `can`, `nm`, `isIn`, `vno`, `pays`, `recs`, `bySeq`, `rcats`, `categories`                    | Shared state and derived voucher/permission helpers              |
 | `frontend/core/storage.js`       | `ls`                                                                                               | Browser localStorage wrapper                                     |
 | `frontend/core/ui.js`            | `toast`, `fail`, `busy`, `closeModal`, `dialog`, `head`, `refreshBtn`                              | Common UI feedback, modal and page-header helpers                |
 | `frontend/core/actions.js`       | `registerActions`, `installActionDelegation`                                                       | Cross-feature click action registry/delegation                   |
 | `frontend/core/offline-queue.js` | `ready`, `enqueue`, `restore`, `list`, `count`, `claim`, `ack`, `release`, `clear`, `offlineQueue` | IndexedDB queue, migrations, leases and safe recovery operations |
 | `frontend/core/utils.js`         | Pure formatting/validation/date/escaping/compression helpers                                       | Shared pure utilities                                            |
+
+The shared state module additionally exports `CASH_IMPACT_CHOICES`, `CASH_IMPACT_VALUES`, `normalizeCashImpact`, and `suggestCashImpact`.
 
 ## Feature factories
 

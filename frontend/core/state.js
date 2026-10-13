@@ -26,7 +26,8 @@ export function normalizeCashImpact(value) {
 }
 
 export function suggestCashImpact(type, category) {
-  if (type !== 'RECEIPT' && String(category || '').trim().toLowerCase() === 'bank charges') {
+  const normalizedCategory = String(category || '').trim().toLowerCase();
+  if (type !== 'RECEIPT' && normalizedCategory === 'bank charges') {
     return 'NO_CASH';
   }
   return type === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT';

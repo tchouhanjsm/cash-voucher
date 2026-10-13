@@ -1242,7 +1242,10 @@ function validateSheetSchema_(s, name) {
   for (let i = 0; i < expected.length; i++) {
     if (actual[i] !== expected[i]) {
       if (name === 'Vouchers' && i === expected.length - 1 && actual[i] === '') {
-        throw err_('The Vouchers sheet is missing CashImpact. Run migrateCashImpactField() once in the Apps Script editor before using this version.', 'SCHEMA_MIGRATION');
+        throw err_(
+          'The Vouchers sheet is missing CashImpact. Run migrateCashImpactField() once in the Apps Script editor before using this version.',
+          'SCHEMA_MIGRATION',
+        );
       }
       throw err_('Sheet "' + name + '" has an invalid header. Run setup() to repair it.', 'SCHEMA');
     }
@@ -1823,7 +1826,10 @@ function updateVoucher_(user, req) {
     );
   }
   if (CASH_IMPACT_CHOICES.indexOf(o.CashImpact) < 0 && f.cashImpact === undefined) {
-    throw err_('This historical voucher has no cash-impact classification. Choose one before saving.', 'VALIDATION');
+    throw err_(
+      'This historical voucher has no cash-impact classification. Choose one before saving.',
+      'VALIDATION',
+    );
   }
 
   if (!changes.length) {
