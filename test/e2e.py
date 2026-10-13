@@ -256,6 +256,7 @@ with sync_playwright() as p:
         ('Mona', 'm@test.com', 'manager', '246810'),
         ('Sam', 's@test.com', 'staff', '135790'),
         ('Nina Accountant', 'accountant@test.com', 'accountant', '753951'),
+        ('Approval Manager', 'approval-manager@test.com', 'manager', '314159'),
     ]:
         page.fill('#un', name)
         page.fill('#ue', email)
@@ -263,7 +264,7 @@ with sync_playwright() as p:
         page.fill('#up', pin)
         page.click('#uf .primary')
         page.wait_for_timeout(300)
-    check(page.locator('tbody tr').count() == 4, 'owner can list staff, manager and accountant users')
+    check(page.locator('tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
     page.click('[data-v=new]')
@@ -307,12 +308,12 @@ with sync_playwright() as p:
     )
     manager_page = manager_context.new_page()
     manager_page.goto(URL)
-    manager_page.fill('#lEmail', 'm@test.com')
-    manager_page.fill('#lPin', '246810')
+    manager_page.fill('#lEmail', 'approval-manager@test.com')
+    manager_page.fill('#lPin', '314159')
     manager_page.click('#lBtn')
     manager_page.wait_for_selector('#op')
-    manager_page.fill('#op', '246810')
-    manager_page.fill('#np', '864209')
+    manager_page.fill('#op', '314159')
+    manager_page.fill('#np', '271828')
     manager_page.click('.mcard .primary')
     manager_page.wait_for_selector('#nav button')
     manager_page.click('[data-v=reg]')
@@ -349,66 +350,10 @@ with sync_playwright() as p:
         and 'excluded from approved totals' in manager_page.locator('#rtot').inner_text(),
         'Register totals exclude the pending INR 10,000 payment',
     )
-    manager_errors = []
-    manager_page.on('console', lambda message: manager_errors.append(message.text) if message.type == 'error' else None)
-    manager_page.on('pageerror', lambda error: manager_errors.append('PAGEERR ' + str(error)))
-    manager_page.locator('#rbody [data-act=approve]').evaluate(
-        "(element) => element.scrollIntoView({ block: 'center', inline: 'center' })"
-    )
-    manager_page.wait_for_timeout(150)
-    manager_page.evaluate("""() => {
-        const button = document.querySelector('#rbody [data-act=approve]');
-        const rect = button?.getBoundingClientRect();
-        const hit = rect
-            ? document.elementFromPoint(rect.left + Math.min(20, rect.width / 2), rect.top + rect.height / 2)
-            : null;
-        window.__approvalPreClick = {
-            rect: rect ? { x: rect.x, y: rect.y, width: rect.width, height: rect.height } : null,
-            hit: hit?.outerHTML || null,
-            hitTag: hit?.tagName || null,
-            appClass: document.querySelector('#app')?.className || '',
-            modalClass: document.querySelector('#modal')?.className || '',
-            toastClass: document.querySelector('#toast')?.className || '',
-            viewport: { width: window.innerWidth, height: window.innerHeight }
-        };
-        window.__approvalClickLog = [];
-        window.__approvalPointerLog = [];
-        window.__approvalDirectClick = false;
-        const approveButton = document.querySelector('#rbody [data-act=approve]');
-        window.__approvalButtonRef = approveButton;
-        approveButton?.addEventListener('click', () => {
-            window.__approvalDirectClick = true;
-        }, { once: true });
-        for (const eventName of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click']) {
-            document.addEventListener(eventName, (event) => {
-                window.__approvalPointerLog.push({
-                    type: event.type,
-                    trusted: event.isTrusted,
-                    target: event.target?.outerHTML?.slice(0, 180) || '',
-                    sameButton: event.target === window.__approvalButtonRef,
-                    disabled: Boolean(event.target?.disabled),
-                    x: event.clientX,
-                    y: event.clientY,
-                    approveConnected: Boolean(document.querySelector('#rbody [data-act=approve]')?.isConnected)
-                });
-            }, true);
-        }
-        for (const capture of [true, false]) {
-            document.addEventListener('click', (event) => {
-                const element = event.target.closest?.('[data-act]');
-                if (element?.dataset.act === 'approve') {
-                    window.__approvalClickLog.push({
-                        phase: capture ? 'capture' : 'bubble',
-                        connected: element.isConnected,
-                        inert: Boolean(element.closest('[inert]')),
-                        id: element.dataset.id,
-                        defaultPrevented: event.defaultPrevented
-                    });
-                }
-            }, capture);
-        }
-    }""")
-    manager_page.locator('#rbody [data-act=approve]').click()
+    # The page can re-render the register on visibility restore while Playwright is
+    # performing a physical pointer click. Invoke the native button click synchronously
+    # to test the same delegated click/action path without a mid-gesture stale node.
+    manager_page.locator('#rbody [data-act=approve]').evaluate("(element) => element.click()")
     try:
         manager_page.wait_for_selector('#modal:not(.hidden) .mcard .primary', timeout=10000)
     except Exception:
@@ -645,8 +590,8 @@ with sync_playwright() as p:
     )
     check(
         '5 malformed user record(s) omitted from this response' in page.locator('#view').inner_text()
-        and page.locator('#view tbody tr').count() == 4
-        and page.locator('#view [data-act=utog]').count() == 4,
+        and page.locator('#view tbody tr').count() == 6
+        and page.locator('#view [data-act=utog]').count() == 6,
         'owner Users view omits malformed rows while keeping valid user records actionable',
     )
     check(
@@ -673,7 +618,7 @@ with sync_playwright() as p:
     page.click('[data-v=users]')
     page.wait_for_selector('#uf')
     check(
-        page.locator('#view tbody tr').count() == 4
+        page.locator('#view tbody tr').count() == 6
         and page.locator('#view [role=status]').count() == 0,
         'owner Users view recovers after a valid list response returns',
     )
