@@ -724,7 +724,12 @@ ok(
   managerApprovesStaffPayment.ok &&
     managerApprovesStaffPayment.data.approvalStatus === 'APPROVED' &&
     managerApprovesStaffPayment.data.approvedBy.toLowerCase() === 'manager@test.com',
-  'manager can approve another user’s high-value payment',
+  'manager can approve another user’s high-value payment; response=' +
+    JSON.stringify(managerApprovesStaffPayment) +
+    '; manager=' +
+    JSON.stringify(as(T, 'listUsers').data.find((u) => u.email === 'm@test.com')) +
+    '; voucher=' +
+    JSON.stringify(g.sheets.Vouchers.rows.find((row) => row[0] === staffOwnedHighVoucher.id)),
 );
 const approvalAuditRow = [...g.sheets.AuditLog.rows]
   .reverse()
