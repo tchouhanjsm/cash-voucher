@@ -3386,6 +3386,9 @@ with sync_playwright() as p:
     )
     page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
     page.wait_for_function("document.querySelector('#rq')?.value === ''")
+    # This malformed-record test needs both active and cancelled fixture rows to remain
+    # inspectable after the default Active-only recovery action.
+    page.select_option('#rs', 'ALL')
     try:
         page.wait_for_function(
             "document.querySelector('#rbody')?.innerText.includes('999991')",
