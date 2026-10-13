@@ -1,7 +1,7 @@
 # Product Requirements Baseline
 
 **Status:** Proposed baseline for owner review  
-**Updated:** 10 October 2026  
+**Updated:** 13 October 2026  
 **Product today:** Single-property cash-voucher PWA using a static frontend, Google Apps Script API, Google Sheets, and Google Drive.
 
 ## 1. Purpose and decision boundary
@@ -187,5 +187,5 @@ For daily cash close, the detailed decisions remain in `docs/DAILY-CASH-CLOSE-DE
 - Near-term requirements are separated from hosted fintech and multi-property strategy.
 - Each proposed requirement has a clear user outcome and testable direction.
 - Numeric targets from the supplied memo are not treated as commitments without a defined measurement method.
-- The roadmap and handoff link to this document and preserve the cash-close implementation gate.
+- The roadmap and handoff link to this document and distinguish merged source features from independent live cash-close/deployment and recovery gates.
 - This documentation-only phase changes no application code, API, schema, dependencies, production data, or deployment settings.
