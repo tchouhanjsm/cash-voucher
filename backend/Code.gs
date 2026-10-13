@@ -1579,6 +1579,48 @@ function audit_(user, action, target, details, detailsMaxLength) {
     console.error(e);
   }
 }
+function auditEventDetails_(eventType, entityType, entityId, reason, changes, summary) {
+  return JSON.stringify({
+    version: 1,
+    eventId: Utilities.getUuid(),
+    eventType: String(eventType || ''),
+    entityType: String(entityType || ''),
+    entityId: String(entityId || ''),
+    reason: String(reason || ''),
+    summary: String(summary || ''),
+    changes: Array.isArray(changes) ? changes : [],
+  });
+}
+function auditEvent_(user, action, target, eventType, entityType, entityId, reason, changes, summary) {
+  audit_(
+    user,
+    action,
+    target,
+    auditEventDetails_(eventType, entityType, entityId, reason, changes, summary),
+    5000,
+  );
+}
+function auditEventRows_(events) {
+  if (!Array.isArray(events) || !events.length) return;
+  const timestamp = nowIso_();
+  try {
+    appendRows_(
+      'AuditLog',
+      events.map(function (event) {
+        return {
+          Time: event.time || timestamp,
+          User: event.user,
+          Action: event.action,
+          Target: event.target || '',
+          Details: clean_(event.details, 5000),
+        };
+      }),
+    );
+  } catch (e) {
+    // Audit persistence is best-effort; it must not make a completed voucher write appear to fail.
+    console.error('Audit event batch append failed:', e);
+  }
+}
 function can_(user, perm) {
   if (!user || !Object.prototype.hasOwnProperty.call(PERMS, user.role)) return false;
   const permissions = PERMS[user.role];
@@ -2235,16 +2277,26 @@ function createCashClose_(user, req) {
   };
   // The close row is the commit point: original totals and inclusion snapshot are stored together.
   appendRows_('CashCloses', [close]);
-  audit_(
+  auditEvent_(
     user,
     'CASH_CLOSE',
     date,
-    'Expected=' +
-      close.ExpectedCash +
-      '; counted=' +
-      close.CountedCash +
-      '; variance=' +
-      close.Variance,
+    'DAILY_CASH_CLOSE_FINALIZED',
+    'cashClose',
+    close.CloseID,
+    varianceReason || openingReason,
+    [
+      { field: 'businessDate', before: null, after: date },
+      { field: 'openingCash', before: null, after: close.OpeningCash },
+      { field: 'openingSource', before: null, after: close.OpeningSource },
+      { field: 'cashInTotal', before: null, after: close.CashInTotal },
+      { field: 'cashOutTotal', before: null, after: close.CashOutTotal },
+      { field: 'expectedCash', before: null, after: close.ExpectedCash },
+      { field: 'countedCash', before: null, after: close.CountedCash },
+      { field: 'variance', before: null, after: close.Variance },
+      { field: 'includedVoucherCount', before: null, after: close.IncludedVoucherCount },
+    ],
+    'Daily cash close finalized',
   );
   return cashCloseOut_(close);
 }
@@ -2294,7 +2346,21 @@ function recordCashCloseCorrection_(user, req) {
     CreatedAt: nowIso_(),
   };
   appendRows_('CashCloseCorrections', [record]);
-  audit_(user, 'CASH_CLOSE_CORRECTION', String(close.BusinessDate), type + ': ' + reason);
+  auditEvent_(
+    user,
+    'CASH_CLOSE_CORRECTION',
+    String(close.BusinessDate),
+    'CASH_CLOSE_CORRECTION_RECORDED',
+    'cashClose',
+    String(close.CloseID),
+    reason,
+    [
+      { field: 'correctionType', before: null, after: type },
+      { field: 'details', before: null, after: details },
+      { field: 'voucherId', before: null, after: voucherId || '' },
+    ],
+    'Attributed correction note recorded; close totals unchanged',
+  );
   return cashCloseCorrectionOut_(record);
 }
 
@@ -2414,12 +2480,56 @@ function createVouchers_(user, req) {
     trashFiles_(createdFileIds);
     throw e;
   }
-  audit_(
-    user,
-    req.bulk ? 'BULK_CREATE' : 'CREATE',
-    newObjs.length ? '#' + newObjs[0].VoucherNo : '',
-    newObjs.length + ' voucher(s)' + (skipped ? ', ' + skipped + ' duplicate skipped' : ''),
-  );
+  const bulkBatchId = req.bulk ? Utilities.getUuid() : '';
+  const auditEvents = newObjs.map(function (voucher) {
+    const changes = [
+      { field: 'date', before: null, after: voucher.Date },
+      { field: 'vendor', before: null, after: String(voucher.Vendor || '') },
+      { field: 'amount', before: null, after: Number(voucher.Amount) },
+      { field: 'category', before: null, after: String(voucher.Category || '') },
+      { field: 'notes', before: null, after: String(voucher.Notes || '') },
+      { field: 'type', before: null, after: String(voucher.Type || 'PAYMENT') },
+      { field: 'status', before: null, after: String(voucher.Status || 'ACTIVE') },
+      { field: 'cashImpact', before: null, after: String(voucher.CashImpact || 'UNCLASSIFIED') },
+      {
+        field: 'receiptCount',
+        before: null,
+        after: String(voucher.Receipts || '').split(',').filter(Boolean).length,
+      },
+    ];
+    return {
+      User: user.email,
+      Action: req.bulk ? 'BULK_CREATE' : 'CREATE',
+      Target: '#' + voucher.VoucherNo,
+      Details: auditEventDetails_(
+        req.bulk ? 'VOUCHER_BULK_CREATED' : 'VOUCHER_CREATED',
+        'voucher',
+        voucher.VoucherID,
+        '',
+        changes,
+        req.bulk ? 'Created by bulk import; batch ' + bulkBatchId : 'Voucher created',
+      ),
+    };
+  });
+  if (req.bulk) {
+    auditEvents.push({
+      User: user.email,
+      Action: 'BULK_IMPORT',
+      Target: '',
+      Details: auditEventDetails_(
+        'BULK_IMPORT_COMPLETED',
+        'bulkImport',
+        bulkBatchId,
+        '',
+        [
+          { field: 'createdCount', before: 0, after: newObjs.length },
+          { field: 'skippedCount', before: 0, after: skipped },
+        ],
+        'Bulk import completed',
+      ),
+    });
+  }
+  auditEventRows_(auditEvents);
   return { created: created, skipped: skipped };
 }
 function findVoucher_(id) {
@@ -2507,9 +2617,17 @@ function updateVoucher_(user, req) {
   patch.UpdatedAt = nowIso_();
   updateRow_('Vouchers', o._row, patch);
 
-  const details = JSON.stringify({ version: 1, reason: reason, changes: changes });
-  // Field-level correction details need more room than the legacy 300-character audit summary.
-  audit_(user, 'UPDATE', '#' + o.VoucherNo, details, 5000);
+  auditEvent_(
+    user,
+    'UPDATE',
+    '#' + o.VoucherNo,
+    'VOUCHER_UPDATED',
+    'voucher',
+    o.VoucherID,
+    reason,
+    changes,
+    'Voucher fields updated',
+  );
 
   return vOut_(Object.assign({}, o, patch));
 }
@@ -2527,7 +2645,20 @@ function cancelVoucher_(user, req) {
     UpdatedAt: nowIso_(),
   };
   updateRow_('Vouchers', o._row, patch);
-  audit_(user, 'CANCEL', '#' + o.VoucherNo, reason);
+  auditEvent_(
+    user,
+    'CANCEL',
+    '#' + o.VoucherNo,
+    'VOUCHER_CANCELLED',
+    'voucher',
+    o.VoucherID,
+    reason,
+    [
+      { field: 'status', before: String(o.Status || 'ACTIVE'), after: 'CANCELLED' },
+      { field: 'cancelReason', before: String(o.CancelReason || ''), after: reason },
+    ],
+    'Voucher cancelled',
+  );
   return vOut_(Object.assign({}, o, patch));
 }
 function canSee_(user, o) {
@@ -2557,7 +2688,17 @@ function addReceipt_(user, req) {
     trashFiles_([fileId]);
     throw e;
   }
-  audit_(user, 'RECEIPT_ADD', '#' + o.VoucherNo, '');
+  auditEvent_(
+    user,
+    'RECEIPT_ADD',
+    '#' + o.VoucherNo,
+    'VOUCHER_RECEIPT_ATTACHED',
+    'voucher',
+    o.VoucherID,
+    '',
+    [{ field: 'receiptCount', before: have.length - 1, after: have.length }],
+    'Receipt image attached',
+  );
   return vOut_(Object.assign({}, o, { Receipts: have.join(',') }));
 }
 function getReceipt_(user, req) {
@@ -2759,20 +2900,48 @@ function saveSettings_(user, req) {
   audit_(user, 'SETTINGS', '', '');
   return { ok: true };
 }
-function auditLog_(user) {
+function auditLog_(user, req) {
   need_(user, 'audit');
-  const s = sheet_('AuditLog'),
-    last = s.getLastRow();
-  if (last < 2) return [];
-  const n = Math.min(200, last - 1),
-    v = s.getRange(last - n + 1, 1, n, 5).getValues();
-  return v.reverse().map(function (r) {
+  const sheet = sheet_('AuditLog');
+  const lastRow = sheet.getLastRow();
+  const totalCount = Math.max(0, lastRow - 1);
+  if (lastRow < 2) return { rows: [], nextBeforeRow: null, totalCount: 0 };
+
+  let beforeRow = lastRow + 1;
+  if (req && req.beforeRow !== undefined && req.beforeRow !== null && req.beforeRow !== '') {
+    const rawCursor = String(req.beforeRow);
+    if (!/^\d+$/.test(rawCursor)) {
+      throw err_('Invalid audit page cursor.', 'VALIDATION');
+    }
+    beforeRow = Number(rawCursor);
+    if (
+      !Number.isSafeInteger(beforeRow) ||
+      beforeRow < 2 ||
+      beforeRow > lastRow + 1
+    ) {
+      throw err_('Invalid audit page cursor.', 'VALIDATION');
+    }
+  }
+
+  const endRow = Math.min(lastRow, beforeRow - 1);
+  if (endRow < 2) {
+    return { rows: [], nextBeforeRow: null, totalCount: totalCount };
+  }
+  const startRow = Math.max(2, endRow - 199);
+  const rowCount = endRow - startRow + 1;
+  const values = sheet.getRange(startRow, 1, rowCount, 5).getValues();
+  const rows = values.reverse().map(function (row) {
     return {
-      time: tsStr_(r[0]),
-      user: String(r[1]),
-      action: String(r[2]),
-      target: String(r[3]),
-      details: String(r[4]),
+      time: tsStr_(row[0]),
+      user: String(row[1]),
+      action: String(row[2]),
+      target: String(row[3]),
+      details: String(row[4]),
     };
   });
+  return {
+    rows: rows,
+    nextBeforeRow: startRow > 2 ? startRow : null,
+    totalCount: totalCount,
+  };
 }
