@@ -886,12 +886,37 @@ ok(
   'audit cursor returns newest 200 rows and a continuation cursor',
 );
 const olderAuditPage = as(T, 'auditLog', { beforeRow: firstAuditPage.data.nextBeforeRow });
+if (
+  !olderAuditPage.ok ||
+  !olderAuditPage.data ||
+  !Array.isArray(olderAuditPage.data.rows) ||
+  !olderAuditPage.data.rows.some((row) => row.target === '#4') ||
+  olderAuditPage.data.rows.some((row) => row.target === '#204')
+) {
+  console.log(
+    'AUDIT_PAGE_DEBUG',
+    JSON.stringify({
+      cursor: firstAuditPage.data.nextBeforeRow,
+      error: olderAuditPage.error,
+      code: olderAuditPage.code,
+      length: olderAuditPage.data?.rows?.length,
+      first: olderAuditPage.data?.rows?.slice(0, 8).map((row) => row.target),
+      last: olderAuditPage.data?.rows?.slice(-8).map((row) => row.target),
+    }),
+  );
+}
+ok(olderAuditPage.ok, 'older audit cursor request succeeds');
 ok(
-  olderAuditPage.ok &&
-    olderAuditPage.data.rows.length > 0 &&
-    olderAuditPage.data.rows.some((row) => row.target === '#4') &&
-    !olderAuditPage.data.rows.some((row) => row.target === '#204'),
-  'older audit cursor returns preceding rows without repeating the newest page',
+  olderAuditPage.data.rows.length > 0,
+  'older audit cursor returns a nonempty preceding page',
+);
+ok(
+  olderAuditPage.data.rows.some((row) => row.target === '#4'),
+  'older audit cursor returns the boundary row immediately before the newest page',
+);
+ok(
+  !olderAuditPage.data.rows.some((row) => row.target === '#204'),
+  'older audit cursor does not repeat rows from the newest page',
 );
 ok(
   as(T, 'auditLog', { beforeRow: 'not-a-cursor' }).code === 'VALIDATION' &&
