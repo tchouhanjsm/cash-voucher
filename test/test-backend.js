@@ -786,7 +786,10 @@ ok(
   closeBlockedPayment.ok && closeBlockedVoucher.approvalStatus === 'PENDING',
   'high-value payment on a close date starts pending approval',
 );
-const missingRejectionReason = as(T, 'rejectVoucher', { id: closeBlockedVoucher.id, reason: 'no' });
+const missingRejectionReason = as(T, 'rejectVoucher', {
+  id: closeBlockedVoucher.id,
+  reason: 'no',
+});
 ok(
   !missingRejectionReason.ok && missingRejectionReason.code === 'VALIDATION',
   'payment rejection requires an attributable reason',
