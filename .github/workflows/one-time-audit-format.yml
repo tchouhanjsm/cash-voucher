@@ -1,0 +1,43 @@
+name: Temporary audit batch formatter
+
+on:
+  push:
+    branches:
+      - feature/audit-event-traceability
+    paths:
+      - .github/workflows/one-time-audit-format.yml
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format audit batch with pinned Prettier
+        run: npx prettier --write backend/Code.gs frontend/features/administration.js test/test-backend.js docs/AUDIT-EVENT-LOG.md docs/PRODUCT-ROADMAP.md
+      - name: Verify format
+        run: npx prettier --check backend/Code.gs frontend/features/administration.js test/test-backend.js docs/AUDIT-EVENT-LOG.md docs/PRODUCT-ROADMAP.md
+      - name: Commit formatted files to PR branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet; then
+            echo "No formatting changes required."
+            exit 0
+          fi
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config core.hooksPath /dev/null
+          git add backend/Code.gs frontend/features/administration.js test/test-backend.js docs/AUDIT-EVENT-LOG.md docs/PRODUCT-ROADMAP.md
+          git commit -m "style: format audit traceability batch"
+          git push origin "HEAD:${GITHUB_REF_NAME}"
