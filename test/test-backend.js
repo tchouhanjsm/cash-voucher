@@ -252,15 +252,34 @@ ok(as(M0, 'bootstrap').code === 'SESSION', 'old token invalid after pin change')
 const M = cp.data.token;
 ok(as(M, 'bootstrap').ok, 'new token works');
 const managerUserId = as(T, 'listUsers').data.find((u) => u.email === 'm@test.com').id;
+
+// Use a dedicated disposable account for PIN lockout tests so those intentionally
+// failed attempts cannot invalidate the manager session used by later approval tests.
+ok(
+  as(T, 'saveUser', {
+    name: 'Lockout Test User',
+    email: 'lockout@test.com',
+    role: 'staff',
+    pin: '314159',
+  }).ok,
+  'dedicated account created for PIN lockout tests',
+);
+const lockoutLogin = g.call('login', { email: 'lockout@test.com', pin: '314159' });
+const lockoutPinChange = as(lockoutLogin.data.token, 'changePin', {
+  oldPin: '314159',
+  newPin: '625814',
+});
+const L = lockoutPinChange.data.token;
+const lockoutUserId = as(T, 'listUsers').data.find((u) => u.email === 'lockout@test.com').id;
 const busyPinAttempts = g.lockStats.attempts;
 const busyPinWaits = g.lockStats.waits;
 const busyPinReleases = g.lockStats.releases;
 g.lockStats.failNextWait = true;
-const busyPinChange = as(M, 'changePin', { oldPin: '000000', newPin: '864209' });
+const busyPinChange = as(L, 'changePin', { oldPin: '000000', newPin: '625814' });
 ok(
   !busyPinChange.ok &&
     busyPinChange.code === 'BUSY' &&
-    !Object.prototype.hasOwnProperty.call(g.cache, 'pf:' + managerUserId),
+    !Object.prototype.hasOwnProperty.call(g.cache, 'pf:' + lockoutUserId),
   'PIN-change lock timeout does not record a failed current-PIN attempt',
 );
 ok(
@@ -273,7 +292,7 @@ const changePinWaits = g.lockStats.waits;
 const changePinReleases = g.lockStats.releases;
 const failedPinChanges = [];
 for (let i = 0; i < 5; i++) {
-  failedPinChanges.push(as(M, 'changePin', { oldPin: '000000', newPin: '864209' }));
+  failedPinChanges.push(as(L, 'changePin', { oldPin: '000000', newPin: '625814' }));
 }
 ok(
   failedPinChanges.every((result) => !result.ok && result.code !== 'LOCKED'),
@@ -286,7 +305,7 @@ ok(
 const changePinLockoutWaits = g.lockStats.waits;
 const changePinLockoutReleases = g.lockStats.releases;
 ok(
-  as(M, 'changePin', { oldPin: '864209', newPin: '112244' }).code === 'LOCKED',
+  as(L, 'changePin', { oldPin: '625814', newPin: '112244' }).code === 'LOCKED',
   'PIN change is locked after five incorrect current PIN attempts',
 );
 ok(
