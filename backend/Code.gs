@@ -1608,11 +1608,11 @@ function auditEventRows_(events) {
       'AuditLog',
       events.map(function (event) {
         return {
-          Time: event.time || timestamp,
-          User: event.user,
-          Action: event.action,
-          Target: event.target || '',
-          Details: clean_(event.details, 5000),
+          Time: event.Time || event.time || timestamp,
+          User: event.User || event.user || '',
+          Action: event.Action || event.action || '',
+          Target: event.Target || event.target || '',
+          Details: clean_(event.Details || event.details || '', 5000),
         };
       }),
     );
