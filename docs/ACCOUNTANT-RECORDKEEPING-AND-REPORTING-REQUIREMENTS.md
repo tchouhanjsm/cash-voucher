@@ -20,7 +20,6 @@ The existing vendor master already has a generated stable `VendorID`. The batch 
 
 The first accounting product/version, import mapping, accountant-approved sample, entity/tax registration, source-evidence requirements and tax calculations remain open. Do not describe the generic CSV as Tally/Zoho-compatible, a general ledger, a GST/TDS report, a statutory book or a reconciliation certificate. PR #114 has not merged, migrated a live Sheet or deployed any source.
 
-
 **Do not treat the current voucher register or Audit CSV as a statutory book, a GST return, a TDS statement, a profit-and-loss account, or a complete accounting ledger.** The product lacks several fields and accounting controls needed to make those claims. This phase defines the gaps and sequence; it does not invent tax classifications, alter production records, or add tax calculations.
 
 ## 2. Current source record inventory
