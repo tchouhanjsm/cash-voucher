@@ -1770,8 +1770,8 @@ ok(
     as(accountantToken, 'createVouchers', {
       entries: [{ date: today, vendor: 'Accountant must not write', amount: 1 }],
     }).code === 'FORBIDDEN' &&
-    as(accountantToken, 'saveVendor', { name: 'Accountant must not create a vendor' })
-      .code === 'FORBIDDEN',
+    as(accountantToken, 'saveVendor', { name: 'Accountant must not create a vendor' }).code ===
+      'FORBIDDEN',
   'accountant cannot finalize cash close, create vouchers, or change vendor master data',
 );
 const accountantVendorSave = as(T, 'saveVendor', {
@@ -1800,8 +1800,7 @@ const linkedVendorVoucher = as(T, 'createVouchers', {
   ],
 });
 ok(
-  linkedVendorVoucher.ok &&
-    linkedVendorVoucher.data.created[0].vendorId === accountantVendorId,
+  linkedVendorVoucher.ok && linkedVendorVoucher.data.created[0].vendorId === accountantVendorId,
   'new voucher stores the unique known VendorID',
 );
 const accountantReportWithVendor = as(accountantToken, 'recordedMovementReport', {
