@@ -458,8 +458,8 @@ with sync_playwright() as p:
         'audit-log details are rendered as text, not executable HTML',
     )
     check(
-        'latest 200' in page.locator('#audit-scope').inner_text().lower()
-        and 'not the full audit history' in page.locator('#audit-scope').inner_text(),
+        'pages of 200' in page.locator('#audit-scope').inner_text().lower()
+        and 'loaded pages only' in page.locator('#audit-scope').inner_text(),
         'audit page explains server limit and filtered export scope',
     )
     page.fill('#aud-q', xss_vendor)
@@ -2666,8 +2666,26 @@ with sync_playwright() as p:
 
         response = route.fetch()
         payload = response.json()
-        if payload.get('ok') and isinstance(payload.get('data'), list):
-            payload['data'].append(
+        if request_data.get('beforeRow') is not None:
+            payload['data'] = {
+                'rows': [
+                    {
+                        'time': '2026-10-10T09:00:00',
+                        'user': 'owner@test.com',
+                        'action': 'AUDIT_PAGE_FIXTURE',
+                        'target': '#older',
+                        'details': 'older audit row fixture',
+                    }
+                ],
+                'nextBeforeRow': None,
+                'totalCount': 201,
+            }
+        elif (
+            payload.get('ok')
+            and isinstance(payload.get('data'), dict)
+            and isinstance(payload['data'].get('rows'), list)
+        ):
+            payload['data']['rows'].append(
                 {
                     'time': '2026-10-11T15:00:00',
                     'user': 'owner@test.com',
@@ -2676,6 +2694,8 @@ with sync_playwright() as p:
                     'details': legacy_update_text,
                 }
             )
+            payload['data']['nextBeforeRow'] = 2
+            payload['data']['totalCount'] = max(201, payload['data'].get('totalCount', 0))
         route.fulfill(response=response, body=json.dumps(payload))
 
     audit_page.route('**/api?*', inject_legacy_update_audit)
@@ -2707,6 +2727,20 @@ with sync_playwright() as p:
         and legacy_row.locator('svg, img').count() == 0
         and not audit_page.evaluate('window.__xssFired === true'),
         'legacy free-text update details remain compatible and render as inert text',
+    )
+    check(
+        not audit_page.locator('#aud-more').is_hidden(),
+        'owner audit log exposes Load older when a continuation cursor exists',
+    )
+    audit_page.click('#aud-more')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud').innerText.includes('older audit row fixture')",
+        timeout=10000,
+    )
+    check(
+        audit_page.locator('#aud tr', has_text='#older').count() == 1
+        and audit_page.locator('#aud-more').is_hidden(),
+        'Load older appends a preceding page and hides itself at the end of history',
     )
     audit_context.close()
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
@@ -3382,11 +3416,15 @@ with sync_playwright() as p:
 
         if action == 'auditLog':
             if audit_response_mode == 'invalid-envelope':
-                payload['data'] = {'unexpected': 'not an audit list'}
+                payload['data'] = {'unexpected': 'not an audit page'}
             elif audit_response_mode == 'empty':
-                payload['data'] = []
-            elif audit_response_mode == 'malformed' and isinstance(payload.get('data'), list):
-                payload['data'] = [
+                payload['data'] = {'rows': [], 'nextBeforeRow': None, 'totalCount': 0}
+            elif (
+                audit_response_mode == 'malformed'
+                and isinstance(payload.get('data'), dict)
+                and isinstance(payload['data'].get('rows'), list)
+            ):
+                payload['data']['rows'] = [
                     None,
                     'unexpected audit row',
                     42,
@@ -3404,7 +3442,7 @@ with sync_playwright() as p:
                         'target': 'voucher',
                         'details': audit_malformed_payload,
                     },
-                    *payload['data'],
+                    *payload['data']['rows'],
                 ]
         elif action == 'dataQualityReport':
             mode = diagnostic_response_modes[action]
@@ -3503,11 +3541,11 @@ with sync_playwright() as p:
     audit_page.click('[data-v=dash]')
     audit_page.click('[data-v=audit]')
     audit_page.wait_for_function(
-        "document.querySelector('#aud-count')?.innerText.includes('Showing 0 of 0 loaded events.')",
+        "document.querySelector('#aud-count')?.innerText.includes('Showing 0 of 0 loaded events;')",
         timeout=10000,
     )
     check(
-        'No audit events are available in the latest 200 records.'
+        'No audit events are available in the loaded pages.'
         in audit_page.locator('#aud').inner_text(),
         'a valid empty audit list remains distinct from an invalid response',
     )
