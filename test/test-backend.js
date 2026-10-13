@@ -510,9 +510,7 @@ ok(
   impactAuditDetails?.reason === 'Paid by bank transfer' &&
     impactAuditDetails.changes.some(
       (change) =>
-        change.field === 'cashImpact' &&
-        change.before === 'CASH_OUT' &&
-        change.after === 'NO_CASH',
+        change.field === 'cashImpact' && change.before === 'CASH_OUT' && change.after === 'NO_CASH',
     ),
   'cash-impact edit records old/new values and correction reason',
 );

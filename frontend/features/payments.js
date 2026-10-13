@@ -56,9 +56,13 @@ export function createPayments({ api, refresh }) {
     const placeholder = selected
       ? ''
       : `<option value='' selected disabled>Choose cash impact…</option>`;
-    return placeholder + CASH_IMPACT_CHOICES.map(
-      (value) => `<option value='${value}'${value === selected ? ' selected' : ''}>${labels[value]}</option>`,
-    ).join('');
+    return (
+      placeholder +
+      CASH_IMPACT_CHOICES.map(
+        (value) =>
+          `<option value='${value}'${value === selected ? ' selected' : ''}>${labels[value]}</option>`,
+      ).join('')
+    );
   }
 
   function rowHtml() {

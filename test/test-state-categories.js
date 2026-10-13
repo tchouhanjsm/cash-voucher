@@ -51,9 +51,19 @@ async function run() {
   assert.equal(normalizeCashImpact('TRANSFER'), 'UNCLASSIFIED');
 
   const baseVoucher = {
-    id: 'legacy-1', no: 201, date: '2026-10-13', type: 'PAYMENT', status: 'ACTIVE',
-    vendor: 'Legacy vendor', category: 'Other', notes: '', createdBy: 'staff@test.com',
-    createdAt: '', updatedBy: '', updatedAt: '', cancelReason: '',
+    id: 'legacy-1',
+    no: 201,
+    date: '2026-10-13',
+    type: 'PAYMENT',
+    status: 'ACTIVE',
+    vendor: 'Legacy vendor',
+    category: 'Other',
+    notes: '',
+    createdBy: 'staff@test.com',
+    createdAt: '',
+    updatedBy: '',
+    updatedAt: '',
+    cancelReason: '',
   };
   const legacy = normalizeVoucherCollection([
     baseVoucher,
@@ -63,7 +73,9 @@ async function run() {
   assert.equal(legacy.rows[1].cashImpact, 'UNCLASSIFIED');
   assert.equal(legacy.malformedFieldCount, 1);
 
-  console.log('Cash impact OK — suggestions, controlled vocabulary, and legacy normalization covered.');
+  console.log(
+    'Cash impact OK — suggestions, controlled vocabulary, and legacy normalization covered.',
+  );
 }
 
 run().catch((error) => {
