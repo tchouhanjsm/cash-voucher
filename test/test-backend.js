@@ -531,6 +531,276 @@ ok(
 ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff still sees only own after bulk');
 ok(as(M, 'bootstrap').data.vouchers.length === 53, 'manager sees all');
 
+// Owner-approved high-value payment approval policy: inclusive INR 10,000 threshold.
+const approvalDate = '2020-02-01';
+const approvalReportBefore = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(approvalReportBefore.ok, 'baseline active-payment total available before approval tests');
+const approvalTotalBefore = approvalReportBefore.data.activePaymentTotal;
+const belowApprovalThreshold = as(M, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-below-threshold',
+      date: today,
+      vendor: 'Below Approval Threshold',
+      amount: 9999.99,
+      type: 'PAYMENT',
+    },
+  ],
+});
+ok(
+  belowApprovalThreshold.ok &&
+    belowApprovalThreshold.data.created[0].approvalStatus === 'NOT_REQUIRED',
+  'payment below INR 10,000 does not require approval',
+);
+const managerOwnedHighPayment = as(M, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-manager-owned',
+      date: today,
+      vendor: 'Manager Own High Value',
+      amount: 10000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const managerOwnedHighVoucher = managerOwnedHighPayment.data.created[0];
+ok(
+  managerOwnedHighPayment.ok && managerOwnedHighVoucher.approvalStatus === 'PENDING',
+  'payment at exactly INR 10,000 is pending approval',
+);
+const staffOwnedHighPayment = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-manager-review',
+      date: today,
+      vendor: 'Staff High Value',
+      amount: 12500,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const staffOwnedHighVoucher = staffOwnedHighPayment.data.created[0];
+ok(
+  staffOwnedHighPayment.ok && staffOwnedHighVoucher.approvalStatus === 'PENDING',
+  'high-value payment from staff is pending approval',
+);
+ok(
+  as(M, 'approveVoucher', { id: managerOwnedHighVoucher.id }).code === 'FORBIDDEN',
+  'creator cannot approve their own high-value payment',
+);
+ok(
+  as(S, 'approveVoucher', { id: staffOwnedHighVoucher.id }).code === 'FORBIDDEN',
+  'staff cannot approve high-value payments',
+);
+const pendingApprovalReport = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  pendingApprovalReport.ok &&
+    pendingApprovalReport.data.pendingApprovalCount === 2 &&
+    Math.round((pendingApprovalReport.data.activePaymentTotal - approvalTotalBefore) * 100) ===
+      999999,
+  'pending payments remain visible but are excluded from active-payment totals',
+);
+const approvedManagerPayment = as(T, 'approveVoucher', { id: managerOwnedHighVoucher.id });
+ok(
+  approvedManagerPayment.ok &&
+    approvedManagerPayment.data.approvalStatus === 'APPROVED' &&
+    approvedManagerPayment.data.approvedBy.toLowerCase() === 'owner@test.com' &&
+    approvedManagerPayment.data.approvedAt,
+  'owner can approve a manager-created payment and approval metadata is saved',
+);
+const managerApprovesStaffPayment = as(M, 'approveVoucher', { id: staffOwnedHighVoucher.id });
+ok(
+  managerApprovesStaffPayment.ok &&
+    managerApprovesStaffPayment.data.approvalStatus === 'APPROVED' &&
+    managerApprovesStaffPayment.data.approvedBy.toLowerCase() === 'manager@test.com',
+  'manager can approve another user’s high-value payment',
+);
+const approvalAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'PAYMENT_APPROVE' && row[3] === '#' + managerOwnedHighVoucher.no);
+const approvalAuditDetails = approvalAuditRow ? JSON.parse(approvalAuditRow[4]) : null;
+ok(
+  approvalAuditDetails?.eventType === 'PAYMENT_VOUCHER_APPROVED' &&
+    approvalAuditDetails.reason === '' &&
+    approvalAuditDetails.changes.some(
+      (change) =>
+        change.field === 'approvalStatus' &&
+        change.before === 'PENDING' &&
+        change.after === 'APPROVED',
+    ) &&
+    approvalAuditDetails.changes.some(
+      (change) => change.field === 'approvedBy' && change.after.toLowerCase() === 'owner@test.com',
+    ),
+  'payment approval is auditable with status change, actor and timestamp metadata',
+);
+const approvedPaymentReport = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  approvedPaymentReport.ok &&
+    approvedPaymentReport.data.pendingApprovalCount === 0 &&
+    Math.round((approvedPaymentReport.data.activePaymentTotal - approvalTotalBefore) * 100) ===
+      3249999,
+  'approved payments re-enter active-payment totals',
+);
+const paymentEditResetsApproval = as(M, 'updateVoucher', {
+  id: managerOwnedHighVoucher.id,
+  reason: 'Updated description after review',
+  fields: { notes: 'Reviewed payment details' },
+});
+ok(
+  paymentEditResetsApproval.ok &&
+    paymentEditResetsApproval.data.approvalStatus === 'PENDING' &&
+    paymentEditResetsApproval.data.approvedBy === '' &&
+    paymentEditResetsApproval.data.approvedAt === '',
+  'editing an approved payment sends it back for independent approval',
+);
+const afterApprovalResetReport = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  afterApprovalResetReport.ok &&
+    Math.round((afterApprovalResetReport.data.activePaymentTotal - approvalTotalBefore) * 100) ===
+      2249999,
+  'a re-review payment is removed from totals until approved again',
+);
+const highValueReceipt = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-receipt-not-required',
+      date: today,
+      vendor: 'High Value Receipt',
+      amount: 15000,
+      type: 'RECEIPT',
+    },
+  ],
+});
+ok(
+  highValueReceipt.ok && highValueReceipt.data.created[0].approvalStatus === 'NOT_REQUIRED',
+  'high-value cash receipts are outside the PAYMENT-only approval policy',
+);
+const closeBlockedPayment = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-close-blocker',
+      date: approvalDate,
+      vendor: 'Rejected Payment Blocks Close',
+      amount: 10000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const closeBlockedVoucher = closeBlockedPayment.data.created[0];
+ok(
+  closeBlockedPayment.ok && closeBlockedVoucher.approvalStatus === 'PENDING',
+  'high-value payment on a close date starts pending approval',
+);
+const missingRejectionReason = as(T, 'rejectVoucher', { id: closeBlockedVoucher.id, reason: 'no' });
+ok(
+  !missingRejectionReason.ok && missingRejectionReason.code === 'VALIDATION',
+  'payment rejection requires an attributable reason',
+);
+const rejectedApproval = as(T, 'rejectVoucher', {
+  id: closeBlockedVoucher.id,
+  reason: 'Supplier details not verified',
+});
+ok(
+  rejectedApproval.ok &&
+    rejectedApproval.data.approvalStatus === 'REJECTED' &&
+    rejectedApproval.data.approvalReason === 'Supplier details not verified',
+  'rejection preserves its reason and leaves the voucher available for review',
+);
+const closeApprovalPreview = as(M, 'cashClosePreview', {
+  date: approvalDate,
+  openingCash: '0',
+  openingReason: 'Test opening cash',
+});
+ok(
+  closeApprovalPreview.ok &&
+    closeApprovalPreview.data.pendingApprovals.some(
+      (item) => item.id === closeBlockedVoucher.id && item.approvalStatus === 'REJECTED',
+    ) &&
+    !closeApprovalPreview.data.readyToClose,
+  'rejected active payments are visible as blockers in cash-close preview',
+);
+const closeApprovalBlocked = as(M, 'createCashClose', {
+  date: approvalDate,
+  openingCash: '0',
+  openingReason: 'Test opening cash',
+  countedCash: '0',
+  requestId: 'approval-close-must-block',
+});
+ok(
+  !closeApprovalBlocked.ok && closeApprovalBlocked.code === 'CASH_CLOSE_APPROVAL_PENDING',
+  'backend refuses final cash close while a high-value payment is not approved',
+);
+ok(
+  as(T, 'cancelVoucher', {
+    id: closeBlockedVoucher.id,
+    reason: 'Rejected payment removed from close period',
+  }).ok,
+  'owner can cancel a rejected payment before retrying close',
+);
+// A blank status from an older voucher remains NOT_REQUIRED; no historical backfill on edit.
+const historicalHighPayment = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-historical-blank',
+      date: today,
+      vendor: 'Legacy High Payment',
+      amount: 16000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const historicalRow = g.sheets.Vouchers.rows.find(
+  (row) => row[0] === historicalHighPayment.data.created[0].id,
+);
+historicalRow[17] = '';
+historicalRow[18] = '';
+historicalRow[19] = '';
+historicalRow[20] = '';
+const historicalBootstrap = as(T, 'bootstrap').data.vouchers.find(
+  (voucher) => voucher.id === historicalHighPayment.data.created[0].id,
+);
+ok(
+  historicalBootstrap.approvalStatus === 'NOT_REQUIRED',
+  'blank historical approval field does not trigger retroactive approval',
+);
+const historicalEdit = as(M, 'updateVoucher', {
+  id: historicalBootstrap.id,
+  reason: 'Legacy note cleanup without reclassifying history',
+  fields: { notes: 'Historical voucher note updated' },
+});
+ok(
+  historicalEdit.ok && historicalEdit.data.approvalStatus === 'NOT_REQUIRED',
+  'editing a historical high-value voucher does not silently backfill approval state',
+);
+const historicalApprovalRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'UPDATE' && row[3] === '#' + historicalBootstrap.no);
+const historicalApprovalDetails = historicalApprovalRow ? JSON.parse(historicalApprovalRow[4]) : null;
+ok(
+  !historicalApprovalDetails?.changes.some((change) => change.field === 'approvalStatus'),
+  'legacy edit audit does not invent an approval-state transition',
+);
+
 const staffImpactEdit = as(S, 'updateVoucher', {
   id: id1,
   reason: 'Digital payment',
