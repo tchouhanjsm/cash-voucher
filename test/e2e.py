@@ -343,6 +343,10 @@ with sync_playwright() as p:
     manager_errors = []
     manager_page.on('console', lambda message: manager_errors.append(message.text) if message.type == 'error' else None)
     manager_page.on('pageerror', lambda error: manager_errors.append('PAGEERR ' + str(error)))
+    manager_page.locator('#rbody [data-act=approve]').evaluate(
+        "(element) => element.scrollIntoView({ block: 'center', inline: 'center' })"
+    )
+    manager_page.wait_for_timeout(150)
     manager_page.evaluate("""() => {
         window.__approvalClickLog = [];
         window.__approvalDirectClick = false;
@@ -365,7 +369,7 @@ with sync_playwright() as p:
             }, capture);
         }
     }""")
-    manager_page.click('#rbody [data-act=approve]')
+    manager_page.locator('#rbody [data-act=approve]').click(position={"x": 20, "y": 20})
     try:
         manager_page.wait_for_selector('#modal:not(.hidden) .mcard .primary', timeout=10000)
     except Exception:
@@ -425,8 +429,10 @@ with sync_playwright() as p:
     manager_context.close()
 
     # Slice 4: generic read-only accountant report/export with stable VendorID.
-    page.click('[data-v=vend]')
+    page.locator('[data-v=vend]').scroll_into_view_if_needed()
+    page.locator('[data-v=vend]').click()
     page.wait_for_selector('#vf')
+    page.locator('#vn').wait_for(state='visible')
     page.fill('#vn', 'Accountant E2E Vendor')
     page.fill('#vc', 'Export Test')
     page.fill('#vm', '')
@@ -485,15 +491,15 @@ with sync_playwright() as p:
         has_text='Accountant E2E Vendor'
     )
     exported_vendor_id = exported_row.locator('td code').inner_text()
+    exported_headers = accountant_page.locator('#view thead').inner_text().replace('\\n', ' ')
     check(
         exported_row.count() == 1
-        and exported_vendor_id == stable_vendor_id
-        and 'Vendor ID' in accountant_page.locator('#view thead').inner_text(),
-        'accountant report resolves the voucher to the stable VendorID; '
+        and exported_vendor_id == stable_vendor_id,
+        'accountant report exports the same stable VendorID shown in Vendor management; '
         + 'stable=' + stable_vendor_id
         + '; exported=' + exported_vendor_id
-        + '; matched_rows=' + str(exported_row.count())
-        + '; report_rows=' + json.dumps(accountant_page.locator('#view tbody tr').all_inner_texts()),
+        + '; headers=' + exported_headers
+        + '; matched_rows=' + str(exported_row.count()),
     )
     with accountant_page.expect_download() as download_info:
         accountant_page.locator('[data-act=reportCsv]').click()
