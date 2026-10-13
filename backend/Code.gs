@@ -2726,24 +2726,57 @@ function saveVendor_(user, req) {
     })[0];
   if (dup) throw err_('This vendor already exists.');
   if (req.id) {
-    const v = list.filter(function (x) {
-      return x.VendorID === req.id;
+    const vendor = list.filter(function (item) {
+      return item.VendorID === req.id;
     })[0];
-    if (!v) throw err_('Vendor not found.');
-    updateRow_('Vendors', v._row, { Name: name, Company: company, Mobile: mobile });
-  } else
-    appendRows_('Vendors', [
-      {
-        VendorID: Utilities.getUuid(),
-        Name: name,
-        Company: company,
-        Mobile: mobile,
-        Active: true,
-        CreatedBy: user.email,
-        CreatedAt: nowIso_(),
-      },
-    ]);
-  audit_(user, req.id ? 'VENDOR_UPDATE' : 'VENDOR_CREATE', '', name);
+    if (!vendor) throw err_('Vendor not found.');
+    const changes = [
+      { field: 'name', before: String(vendor.Name || ''), after: name },
+      { field: 'company', before: String(vendor.Company || ''), after: company },
+      { field: 'mobile', before: String(vendor.Mobile || ''), after: mobile },
+    ].filter(function (change) {
+      return change.before !== change.after;
+    });
+    updateRow_('Vendors', vendor._row, { Name: name, Company: company, Mobile: mobile });
+    auditEvent_(
+      user,
+      'VENDOR_UPDATE',
+      vendor.VendorID,
+      'VENDOR_UPDATED',
+      'vendor',
+      vendor.VendorID,
+      '',
+      changes,
+      'Vendor details updated',
+    );
+  } else {
+    const vendor = {
+      VendorID: Utilities.getUuid(),
+      Name: name,
+      Company: company,
+      Mobile: mobile,
+      Active: true,
+      CreatedBy: user.email,
+      CreatedAt: nowIso_(),
+    };
+    appendRows_('Vendors', [vendor]);
+    auditEvent_(
+      user,
+      'VENDOR_CREATE',
+      vendor.VendorID,
+      'VENDOR_CREATED',
+      'vendor',
+      vendor.VendorID,
+      '',
+      [
+        { field: 'name', before: null, after: name },
+        { field: 'company', before: null, after: company },
+        { field: 'mobile', before: null, after: mobile },
+        { field: 'active', before: null, after: true },
+      ],
+      'Vendor created',
+    );
+  }
   return { ok: true };
 }
 function toggleVendor_(user, req) {
@@ -2754,7 +2787,17 @@ function toggleVendor_(user, req) {
   if (!v) throw err_('Vendor not found.');
   const now = !(v.Active === true || v.Active === 'TRUE');
   updateRow_('Vendors', v._row, { Active: now });
-  audit_(user, now ? 'VENDOR_ON' : 'VENDOR_OFF', '', v.Name);
+  auditEvent_(
+    user,
+    now ? 'VENDOR_ON' : 'VENDOR_OFF',
+    v.VendorID,
+    now ? 'VENDOR_ACTIVATED' : 'VENDOR_DEACTIVATED',
+    'vendor',
+    v.VendorID,
+    '',
+    [{ field: 'active', before: !now, after: now }],
+    now ? 'Vendor activated' : 'Vendor deactivated',
+  );
   return { ok: true };
 }
 
@@ -2786,8 +2829,23 @@ function saveUser_(user, req) {
   if (!req.id) {
     if (!pinOk_(String(req.pin || '')))
       throw err_('Temporary PIN must be 6 digits and not too simple.');
-    addUser_(name, email, role, String(req.pin), true);
-    audit_(user, 'USER_CREATE', email, role);
+    const created = addUser_(name, email, role, String(req.pin), true);
+    auditEvent_(
+      user,
+      'USER_CREATE',
+      email,
+      'USER_CREATED',
+      'user',
+      created.UserID,
+      '',
+      [
+        { field: 'name', before: null, after: name },
+        { field: 'email', before: null, after: email },
+        { field: 'role', before: null, after: role },
+        { field: 'active', before: null, after: true },
+      ],
+      'User account created; PIN change required',
+    );
     return { ok: true };
   }
   const t = all.filter(function (u) {
@@ -2798,8 +2856,30 @@ function saveUser_(user, req) {
   const owners = activeOwners_();
   if (t.Role === 'owner' && (role !== 'owner' || !active) && owners.length <= 1)
     throw err_('There must be at least one active owner.');
+  const changes = [
+    { field: 'name', before: String(t.Name || ''), after: name },
+    { field: 'email', before: String(t.Email || ''), after: email },
+    { field: 'role', before: String(t.Role || ''), after: role },
+    {
+      field: 'active',
+      before: t.Active === true || t.Active === 'TRUE',
+      after: active,
+    },
+  ].filter(function (change) {
+    return change.before !== change.after;
+  });
   updateRow_('Users', t._row, { Name: name, Email: email, Role: role, Active: active });
-  audit_(user, 'USER_UPDATE', email, role + (active ? '' : ' (disabled)'));
+  auditEvent_(
+    user,
+    'USER_UPDATE',
+    email,
+    'USER_UPDATED',
+    'user',
+    t.UserID,
+    '',
+    changes,
+    'User account updated',
+  );
   return { ok: true };
 }
 function resetPin_(user, req) {
@@ -2811,6 +2891,7 @@ function resetPin_(user, req) {
   if (!pinOk_(String(req.pin || '')))
     throw err_('Temporary PIN must be 6 digits and not too simple.');
   const salt = Utilities.getUuid();
+  const previouslyRequiredChange = t.MustChangePin === true || t.MustChangePin === 'TRUE';
   updateRow_('Users', t._row, {
     Salt: salt,
     PinHash: hashPin_(salt, String(req.pin)),
@@ -2819,7 +2900,17 @@ function resetPin_(user, req) {
   const cache = CacheService.getScriptCache();
   cache.remove('f:' + String(t.Email).toLowerCase());
   cache.remove('pf:' + String(t.UserID));
-  audit_(user, 'PIN_RESET', t.Email, '');
+  auditEvent_(
+    user,
+    'PIN_RESET',
+    t.Email,
+    'USER_PIN_RESET',
+    'user',
+    t.UserID,
+    '',
+    [{ field: 'mustChangePin', before: previouslyRequiredChange, after: true }],
+    'Temporary PIN reset; credential material intentionally excluded',
+  );
   return { ok: true };
 }
 function changePin_(user, req) {
@@ -2890,6 +2981,27 @@ function saveSettings_(user, req) {
     if (c && rc.indexOf(c) < 0) rc.push(c);
   });
   if (rc.indexOf('Other') < 0) rc.push('Other');
+  const priorSettings = settings_();
+  const nextSettings = {
+    propertyName: name,
+    propertyAddress: addr,
+    categories: JSON.stringify(cats),
+    nextVoucherNo: String(next),
+    nextReceiptNo: String(nextR),
+    openingBalance: String(open),
+    receiptCategories: JSON.stringify(rc),
+  };
+  const settingChanges = Object.keys(nextSettings)
+    .map(function (key) {
+      return {
+        field: key,
+        before: Object.prototype.hasOwnProperty.call(priorSettings, key) ? priorSettings[key] : null,
+        after: nextSettings[key],
+      };
+    })
+    .filter(function (change) {
+      return change.before !== change.after;
+    });
   setSetting_('propertyName', name);
   setSetting_('propertyAddress', addr);
   setSetting_('categories', JSON.stringify(cats));
@@ -2897,7 +3009,17 @@ function saveSettings_(user, req) {
   setSetting_('nextReceiptNo', String(nextR));
   setSetting_('openingBalance', String(open));
   setSetting_('receiptCategories', JSON.stringify(rc));
-  audit_(user, 'SETTINGS', '', '');
+  auditEvent_(
+    user,
+    'SETTINGS',
+    'property',
+    'PROPERTY_SETTINGS_UPDATED',
+    'settings',
+    'property',
+    '',
+    settingChanges,
+    'Property settings updated',
+  );
   return { ok: true };
 }
 function auditLog_(user, req) {
