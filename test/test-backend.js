@@ -1812,6 +1812,47 @@ ok(
     linkedVendorReportRow.vendorId === accountantVendorId,
   'accountant report exports the stable VendorID for the matched voucher',
 );
+// Legacy report fallback must use prototype-safe lookup keys for user-controlled names.
+const prototypeVendorSave = as(T, 'saveVendor', {
+  name: '__proto__',
+  company: 'Prototype Safety',
+  mobile: '',
+});
+const prototypeVendorRow = g.sheets.Vendors.rows.find((row) => row[1] === '__proto__');
+const prototypeVendorId = prototypeVendorRow && prototypeVendorRow[0];
+const prototypeVendorVoucher = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'accountant-prototype-vendor-fallback',
+      date: today,
+      vendor: '__proto__',
+      amount: 75,
+      category: 'Other',
+      type: 'PAYMENT',
+    },
+  ],
+});
+const prototypeVoucherRow = g.sheets.Vouchers.rows.find(
+  (row) => row[0] === prototypeVendorVoucher.data.created[0].id,
+);
+prototypeVoucherRow[21] = '';
+const prototypeVendorReport = as(accountantToken, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ALL',
+});
+const prototypeVendorReportRow = prototypeVendorReport.data.items.find(
+  (item) => item.id === prototypeVendorVoucher.data.created[0].id,
+);
+ok(
+  prototypeVendorSave.ok &&
+    prototypeVendorVoucher.ok &&
+    prototypeVendorReport.ok &&
+    prototypeVendorReportRow &&
+    prototypeVendorReportRow.vendorId === prototypeVendorId,
+  'legacy VendorID fallback safely resolves prototype-sensitive exact vendor names',
+);
 const unmatchedVendorVoucher = as(T, 'createVouchers', {
   entries: [
     {
