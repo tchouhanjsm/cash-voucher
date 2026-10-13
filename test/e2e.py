@@ -326,6 +326,15 @@ with sync_playwright() as p:
         and manager_page.locator('#rbody [data-act=reject]').count() == 1,
         'another manager can review a pending high-value payment',
     )
+    # Allow the initial session/outbox sync to settle before clicking a row action.
+    manager_page.wait_for_timeout(500)
+    manager_page.wait_for_function(
+        """() => {
+            const button = document.querySelector('#rbody [data-act=approve]');
+            return Boolean(button && button.isConnected &&
+                button.closest('tr')?.innerText.includes('PENDING APPROVAL'));
+        }"""
+    )
     check(
         '10,000' not in manager_page.locator('#rtot').inner_text()
         and 'excluded from approved totals' in manager_page.locator('#rtot').inner_text(),
@@ -336,6 +345,11 @@ with sync_playwright() as p:
     manager_page.on('pageerror', lambda error: manager_errors.append('PAGEERR ' + str(error)))
     manager_page.evaluate("""() => {
         window.__approvalClickLog = [];
+        window.__approvalDirectClick = false;
+        const approveButton = document.querySelector('#rbody [data-act=approve]');
+        approveButton?.addEventListener('click', () => {
+            window.__approvalDirectClick = true;
+        }, { once: true });
         for (const capture of [true, false]) {
             document.addEventListener('click', (event) => {
                 const element = event.target.closest?.('[data-act]');
@@ -396,9 +410,11 @@ with sync_playwright() as p:
                     "JSON.parse(localStorage.getItem('cv.cache') || '{}').me?.email || ''"
                 ),
                 'appInert': manager_page.locator('#app').evaluate('(element) => element.inert'),
-                'approveButton': manager_page.locator('#rbody [data-act=approve]').get_attribute('outerHTML'),
+                'approveButton': manager_page.locator('#rbody [data-act=approve]').evaluate('(element) => element.outerHTML') if manager_page.locator('#rbody [data-act=approve]').count() else None,
+                'directClick': manager_page.evaluate('window.__approvalDirectClick || false'),
                 'clickLog': manager_page.evaluate('window.__approvalClickLog || []'),
                 'registerNavActive': manager_page.locator('[data-v=reg]').get_attribute('aria-current'),
+                'registerRows': manager_page.locator('#rbody').inner_text(),
                 'viewTextStart': manager_page.locator('#view').inner_text()[:500],
             }),
         )
@@ -473,7 +489,11 @@ with sync_playwright() as p:
         exported_row.count() == 1
         and exported_vendor_id == stable_vendor_id
         and 'Vendor ID' in accountant_page.locator('#view thead').inner_text(),
-        'accountant report resolves the voucher to the stable VendorID',
+        'accountant report resolves the voucher to the stable VendorID; '
+        + 'stable=' + stable_vendor_id
+        + '; exported=' + exported_vendor_id
+        + '; matched_rows=' + str(exported_row.count())
+        + '; report_rows=' + json.dumps(accountant_page.locator('#view tbody tr').all_inner_texts()),
     )
     with accountant_page.expect_download() as download_info:
         accountant_page.locator('[data-act=reportCsv]').click()
