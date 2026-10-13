@@ -20,9 +20,23 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     ['acct', '👤', 'Account', () => true],
   ];
 
+  // A visibility restore, manual refresh, and background outbox sync can request
+  // bootstrap concurrently. Share same-session work and ignore stale-session responses
+  // so a late request cannot overwrite the current user's data or diagnostics.
+  let activeBootstrapLoad = null;
+
   async function load() {
-    const data = await api('bootstrap');
-    const voucherData = normalizeVoucherCollection(data?.vouchers);
+    const requestToken = S.token;
+    if (activeBootstrapLoad && activeBootstrapLoad.token === requestToken) {
+      return activeBootstrapLoad.promise;
+    }
+
+    const request = { token: requestToken, promise: null };
+    request.promise = (async () => {
+      const data = await api('bootstrap');
+      if (S.token !== requestToken) return false;
+
+      const voucherData = normalizeVoucherCollection(data?.vouchers);
     const vouchers = voucherData.rows;
     const vendorNames = vouchers.map((voucher) => voucher.vendor).filter(Boolean);
 
@@ -44,16 +58,25 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     });
 
     ls.set('cv.name', scalarText(data.settings?.propertyName));
-    ls.set(
-      'cv.cache',
-      JSON.stringify({
-        me: data.user,
-        names: data.names,
-        settings: data.settings,
-        vendors: data.vendors,
-        vn: [...new Set(vendorNames)].slice(0, 300),
-      }),
-    );
+      ls.set(
+        'cv.cache',
+        JSON.stringify({
+          me: data.user,
+          names: data.names,
+          settings: data.settings,
+          vendors: data.vendors,
+          vn: [...new Set(vendorNames)].slice(0, 300),
+        }),
+      );
+      return true;
+    })();
+
+    activeBootstrapLoad = request;
+    try {
+      return await request.promise;
+    } finally {
+      if (activeBootstrapLoad === request) activeBootstrapLoad = null;
+    }
   }
 
   async function start(mustChange, expectedEmail = '') {
@@ -68,7 +91,8 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     let offline = false;
 
     try {
-      await load();
+      const loaded = await load();
+      if (!loaded) return false;
     } catch (error) {
       if (error.code === 'PIN_CHANGE' || error.code === 'SESSION') return false;
 
@@ -203,7 +227,8 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     }
 
     try {
-      await load();
+      const loaded = await load();
+      if (!loaded) return;
       renderNav();
       // Background outbox sync may refresh data while a staff member is drafting an entry.
       if (S.view !== 'new') go(S.view);
