@@ -178,7 +178,9 @@ export function createBulk({ api, refresh, go }) {
       const vendor = String(row.vendor ?? '').trim();
       const amount = parseAmt(row.amount);
       const categoryInput = String(row.cat ?? '').trim();
-      const impactInput = String(row.cashImpact ?? '').trim().toUpperCase();
+      const impactInput = String(row.cashImpact ?? '')
+        .trim()
+        .toUpperCase();
       const errors = [];
       const warnings = [];
 

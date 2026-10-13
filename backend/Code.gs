@@ -1272,11 +1272,21 @@ function migrateCashImpactField() {
   if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
   const expected = CFG.H.Vouchers;
   const headers = sheet.getRange(1, 1, 1, expected.length).getValues()[0];
-  if (expected.every(function (header, index) { return headers[index] === header; })) {
+  if (
+    expected.every(function (header, index) {
+      return headers[index] === header;
+    })
+  ) {
     return 'CashImpact column already exists; no changes were made.';
   }
-  if (!expected.slice(0, -1).every(function (header, index) { return headers[index] === header; })) {
-    throw new Error('Existing Vouchers headers do not match the supported prior schema; no changes were made.');
+  if (
+    !expected.slice(0, -1).every(function (header, index) {
+      return headers[index] === header;
+    })
+  ) {
+    throw new Error(
+      'Existing Vouchers headers do not match the supported prior schema; no changes were made.',
+    );
   }
   const extraHeader = headers[expected.length - 1];
   if (extraHeader !== '' && extraHeader !== null) {
