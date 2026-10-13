@@ -3140,6 +3140,7 @@ with sync_playwright() as p:
             summary['count'] = report_count_payload
             summary['activeCount'] = report_active_count_payload
             summary['cancelledCount'] = report_cancelled_count_payload
+            summary['ambiguousVendorCount'] = 2
             payload['data'] = summary
             route.fulfill(response=response, json=payload)
         else:
@@ -3162,6 +3163,7 @@ with sync_playwright() as p:
         report_count_payload in report_text
         and report_active_count_payload in report_text
         and report_cancelled_count_payload in report_text
+        and '2 report row(s) have ambiguous vendor names' in report_text
         and page.locator('#view svg, #view img').count() == 0
         and not page.evaluate('window.__reportCountXss === true'),
         'hostile report summary count fields remain literal text without markup or execution',
