@@ -66,82 +66,46 @@ function indexModuleEntrypoints() {
 
 function verifyContentSecurityPolicy() {
   const source = read('index.html');
-  const metaTags = [...source.matchAll(/<meta\b[^>]*>/gi)]
+  const metaTags = [...source.matchAll(/<meta\\b[^>]*>/gi)]
     .map((match) => match[0])
-    .filter((tag) => /\bhttp-equiv\s*=\s*["']content-security-policy["']/i.test(tag));
-  const failures = [];
+    .filter((tag) => /\\bhttp-equiv\\s*=\\s*["']content-security-policy["']/i.test(tag));
 
   if (metaTags.length !== 1) {
     return ['CSP meta tag count: ' + metaTags.length + '.'];
   }
 
-  const contentMatch = metaTags[0].match(/\bcontent\s*=\s*"([^"]*)"/i);
-  if (!contentMatch) {
-    return ['Content-Security-Policy must have a double-quoted content attribute.'];
+  const contentMatch = metaTags[0].match(/\\bcontent\\s*=\\s*"([^"]*)"/i);
+  const expected = [
+    "default-src 'self'",
+    "base-uri 'self'",
+    "object-src 'none'",
+    "script-src 'self'",
+    "script-src-attr 'none'",
+    "style-src 'self' 'unsafe-inline'",
+    "img-src 'self' data: blob:",
+    "font-src 'self' data:",
+    "connect-src 'self' https://script.google.com https://script.googleusercontent.com",
+    "manifest-src 'self'",
+    "worker-src 'self'",
+    "form-action 'self'",
+    "frame-src 'none'",
+  ].join('; ');
+
+  if (!contentMatch || contentMatch[1] !== expected) {
+    return ['CSP does not match the approved directive allowlist.'];
   }
 
-  const directives = new Map();
-  contentMatch[1]
-    .split(';')
-    .map((directive) => directive.trim())
-    .filter(Boolean)
-    .forEach((directive) => {
-      const [name, ...sources] = directive.split(/\s+/);
-      const key = name.toLowerCase();
-      if (directives.has(key)) {
-        failures.push('Duplicate CSP directive: ' + key + '.');
-      } else {
-        directives.set(key, sources);
-      }
-    });
+  const inlineScripts = [...source.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)]
+    .filter((match) => !/\\bsrc\\s*=/.test(match[1]) && match[2].trim());
 
-  const required = new Map([
-    ['default-src', ["'self'"]],
-    ['base-uri', ["'self'"]],
-    ['object-src', ["'none'"]],
-    ['script-src', ["'self'"]],
-    ['script-src-attr', ["'none'"]],
-    ['style-src', ["'self'", "'unsafe-inline'"]],
-    ['img-src', ["'self'", 'data:', 'blob:']],
-    ['font-src', ["'self'", 'data:']],
-    [
-      'connect-src',
-      ["'self'", 'https://script.google.com', 'https://script.googleusercontent.com'],
-    ],
-    ['manifest-src', ["'self'"]],
-    ['worker-src', ["'self'"]],
-    ['form-action', ["'self'"]],
-    ['frame-src', ["'none'"]],
-  ]);
-
-  for (const [name, allowedSources] of required) {
-    const actual = directives.get(name);
-    if (
-      !actual ||
-      actual.length !== allowedSources.length ||
-      allowedSources.some((source) => !actual.includes(source))
-    ) {
-      failures.push('Invalid or missing CSP directive: ' + name + '.');
-    }
-  }
-
-  for (const [name, sources] of directives) {
-    if (sources.includes('*')) failures.push('CSP wildcard source is not allowed: ' + name + '.');
-    if (sources.includes("'unsafe-eval'")) {
-      failures.push('CSP unsafe-eval source is not allowed: ' + name + '.');
-    }
-  }
-
-  const inlineScripts = [...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
-    .filter((match) => !/\bsrc\s*=/i.test(match[1]) && match[2].trim());
   if (inlineScripts.length) {
-    failures.push('The active HTML shell must not include executable inline script blocks.');
+    return ['Inline executable scripts are not allowed in the app shell.'];
   }
-  if (/\s+on[a-z]+\s*=/i.test(source)) {
-    failures.push('The active HTML shell must not use inline event-handler attributes.');
+  if (/\\s+on[a-z]+\\s*=/i.test(source)) {
+    return ['Inline event handlers are not allowed in the app shell.'];
   }
 
-  return failures;
+  return [];
 }
 
 function serviceWorkerShell() {
