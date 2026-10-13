@@ -2003,13 +2003,13 @@ function cashClosePreview_(user, req) {
   };
   const selected = byDate(date),
     previous = byDate(cashClosePreviousDate_(date));
-  const laterClose = closes
-    .filter(function (row) {
-      return String(row.BusinessDate || '') > date;
-    })
-    .sort(function (a, b) {
-      return String(a.BusinessDate || '').localeCompare(String(b.BusinessDate || ''));
-    })[0] || null;
+  const laterDates = closes.filter(function (row) {
+    return String(row.BusinessDate || '') > date;
+  });
+  laterDates.sort(function (a, b) {
+    return String(a.BusinessDate || '').localeCompare(String(b.BusinessDate || ''));
+  });
+  const laterClose = laterDates[0] || null;
   const recentCloses = closes
     .slice()
     .sort(function (a, b) {
@@ -2139,16 +2139,16 @@ function createCashClose_(user, req) {
       'This business date is already closed. The original close cannot be overwritten.',
       'CASH_CLOSE_EXISTS',
     );
-  const laterClose = closes
-    .filter(function (row) {
-      return (
-        String(row.DrawerKey || CASH_CLOSE_DRAWER) === CASH_CLOSE_DRAWER &&
-        String(row.BusinessDate || '') > date
-      );
-    })
-    .sort(function (a, b) {
-      return String(a.BusinessDate || '').localeCompare(String(b.BusinessDate || ''));
-    })[0];
+  const laterDates = closes.filter(function (row) {
+    return (
+      String(row.DrawerKey || CASH_CLOSE_DRAWER) === CASH_CLOSE_DRAWER &&
+      String(row.BusinessDate || '') > date
+    );
+  });
+  laterDates.sort(function (a, b) {
+    return String(a.BusinessDate || '').localeCompare(String(b.BusinessDate || ''));
+  });
+  const laterClose = laterDates[0];
   if (laterClose)
     throw err_(
       'Cannot close ' +
