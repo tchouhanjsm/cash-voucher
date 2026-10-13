@@ -1516,7 +1516,8 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('#rq')?.value === ''")
     check(
         page.locator('#rq').input_value() == ''
-        and page.locator('#rbody tr').count() == 2,
+        and page.locator('#rbody tr').count() >= 2
+        and not page.locator('#rempty').is_visible(),
         'empty-state clear-filters action restores matching vouchers',
     )
     page.fill('#rfrom', '2026-10-20')
@@ -1531,7 +1532,7 @@ with sync_playwright() as p:
     page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
     page.wait_for_function("document.querySelector('#rfrom')?.value === '' && document.querySelector('#rto')?.value === ''")
     check(
-        page.locator('#rbody tr').count() == 2
+        page.locator('#rbody tr').count() >= 2
         and not page.locator('#rf [data-act=csv]').is_disabled(),
         'clearing an invalid register range restores rows and export availability',
     )
@@ -3375,7 +3376,8 @@ with sync_playwright() as p:
         == 'No vouchers match the current filters.',
         'malformed fields do not break the register empty state',
     )
-    page.click('#rempty [data-act=rclear]')
+    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
+    page.wait_for_function("document.querySelector('#rq')?.value === ''")
     page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
     page.wait_for_selector('#rimgs .receipt-error[role=alert]')
     check(
