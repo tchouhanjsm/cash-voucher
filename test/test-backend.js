@@ -906,10 +906,7 @@ if (
   );
 }
 ok(olderAuditPage.ok, 'older audit cursor request succeeds');
-ok(
-  olderAuditPage.data.rows.length > 0,
-  'older audit cursor returns a nonempty preceding page',
-);
+ok(olderAuditPage.data.rows.length > 0, 'older audit cursor returns a nonempty preceding page');
 ok(
   olderAuditPage.data.rows.some((row) => row.target === '#4'),
   'older audit cursor returns the boundary row immediately before the newest page',
