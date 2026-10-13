@@ -847,7 +847,9 @@ ok(
 const historicalApprovalRow = [...g.sheets.AuditLog.rows]
   .reverse()
   .find((row) => row[2] === 'UPDATE' && row[3] === '#' + historicalBootstrap.no);
-const historicalApprovalDetails = historicalApprovalRow ? JSON.parse(historicalApprovalRow[4]) : null;
+const historicalApprovalDetails = historicalApprovalRow
+  ? JSON.parse(historicalApprovalRow[4])
+  : null;
 ok(
   !historicalApprovalDetails?.changes.some((change) => change.field === 'approvalStatus'),
   'legacy edit audit does not invent an approval-state transition',
