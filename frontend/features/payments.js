@@ -315,6 +315,24 @@ export function createPayments({ api, refresh }) {
     }
 
     await busy(btn, async () => {
+      const saveOnDevice = async (message) => {
+        if (!(await queue(entries))) return false;
+        disposeReceiptPreviews();
+        $('#nf').classList.add('hidden');
+        $('#nres').innerHTML =
+          `<div class="card ok-panel" role="status" aria-live="polite"><h2>📴 Saved on this device</h2><p>${esc(message)}</p><div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
+        return true;
+      };
+
+      if (S.offlineMode || !S.token || !navigator.onLine) {
+        const message =
+          S.offlineMode || !S.token
+            ? 'Sign in online to synchronize these entries. They will stay on this device until then.'
+            : 'Your connection is unavailable. These entries will upload automatically when it returns.';
+        await saveOnDevice(message);
+        return;
+      }
+
       try {
         const d = await api('createVouchers', { entries });
         d.created.forEach((c) => {
@@ -326,11 +344,9 @@ export function createPayments({ api, refresh }) {
           `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Saved ${d.created.length} ${entryNoun(d.created.length)}</h2>${d.created.map((c) => `<div style="margin:8px 0">#${esc(vno(c))} · ${esc(c.vendor)} · <b>${money(c.amount)}</b> <button class="btn sm" data-act="print" data-id="${esc(c.id)}">Print</button></div>`).join('')}<div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
       } catch (e) {
         if (e.code !== 'NET') return fail(e);
-        if (!(await queue(entries))) return;
-        disposeReceiptPreviews();
-        $('#nf').classList.add('hidden');
-        $('#nres').innerHTML =
-          `<div class="card ok-panel" role="status" aria-live="polite"><h2>📴 Saved on this device</h2><p>You're offline. These ${entries.length} ${entryNoun(entries.length)} will upload automatically when you're back online.</p><div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
+        await saveOnDevice(
+          'Your connection was interrupted. These entries will upload automatically when it returns.',
+        );
       }
     });
   }
@@ -486,7 +502,8 @@ export function createPayments({ api, refresh }) {
 
   async function flushOutbox() {
     const ownerKey = queueOwnerKey();
-    if (flushing || !S.token || !ownerKey) return showBanner();
+    if (flushing || S.offlineMode || !S.token || !ownerKey || !navigator.onLine)
+      return showBanner();
     flushing = true;
 
     let uploaded = 0;
@@ -826,7 +843,18 @@ export function createPayments({ api, refresh }) {
     }
   }
 
-  window.addEventListener('online', () => flushOutbox());
+  window.addEventListener('online', async () => {
+    // An existing server session can be offline-fallback state; revalidate it before queue sync.
+    if (S.offlineMode) {
+      if (!S.token || !queueOwnerKey()) {
+        await showBanner();
+        return;
+      }
+      await refresh(true);
+      if (S.offlineMode || !S.token) return showBanner();
+    }
+    await flushOutbox();
+  });
 
   return {
     open,

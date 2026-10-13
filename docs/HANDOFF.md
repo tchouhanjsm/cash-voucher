@@ -2,110 +2,49 @@
 
 **Updated:** 12 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `1fb58fb2c01a67c9dbcb3094298713610e3c7e45` (PR #105 merge)  
-**Purpose:** current state and next action only. Verify live GitHub refs and workflow runs before relying on recorded SHAs.
+**Verified `main` SHA:** `e980f634242fdd549411f5c6067d0b267a3c5f22` (PR #106 merge)  
+**Purpose:** current state, active work, release boundaries and next action. Recheck live GitHub refs and exact-head workflows each session.
 
-## Current phase
+## Current phase — PR #107: Complete offline-unlock to outbox workflow
 
-**PR #106 — Support secure, device-local offline unlock**  
-Branch: `fix/offline-login-unlock`  
-Base: `1fb58fb2c01a67c9dbcb3094298713610e3c7e45`
+**Branch:** `fix/offline-unlock-outbox-flow`  
+**Base:** `e980f634242fdd549411f5c6067d0b267a3c5f22`
 
-Observed defect: submitting credentials from the login screen while offline always called the server login endpoint and displayed a connection error. The existing offline startup path only resumed an already stored session. Implement a separate local-only unlock for an account and endpoint verified online on this device within the prior seven days. Store no raw PIN; derive a salted PBKDF2-HMAC-SHA256 verifier (600,000 iterations), bind it to the normalized account, endpoint and validity window, and remove it on explicit sign-out. Do not issue or cache a server session token during offline unlock. Restrict offline navigation to Dashboard/New Entry/Register/Account; server vouchers and privileged online routes remain unavailable until online bootstrap succeeds. Keep the local queue intact and provide a clear online sign-in path for synchronization. Add unit and browser coverage, and version/precache the helper in the service-worker shell.
+PR #106 added device-local unlock after a recent successful online sign-in. This exposed an end-to-end workflow edge: when no server token exists, New Entry must put the voucher directly in the account-bound IndexedDB outbox rather than attempt a create request and depend on a network error. The queued entry must clearly tell the user that online sign-in is required before synchronization. Outbox flush must not run while the app is in offline workspace mode or the browser reports itself offline.
 
-**Last completed:** PR #105 — [Harden offline recovery validation and migration](https://github.com/tchouhanjsm/cash-voucher/pull/105), merged at `1fb58fb2c01a67c9dbcb3094298713610e3c7e45`. Exact tested head `76b24ab404e8841026e7117cdea2547df753353b` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38261398312), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38261398331) (249 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38261398323) (129 backend + 249 browser checks).
+**Acceptance gate:** the exact final PR head passes CI, Browser E2E and Full Flight Test. Browser coverage must prove: local save with no server create request; voucher and receipt survive in the account-bound queue; turning connectivity back on does not sync without server authentication; successful online sign-in restores the verified workspace and drains the queue. Keep the PR open for owner review; no merge, deployment or production mutation.
 
-**Acceptance gate:** PR #106 must pass CI, Browser E2E and Full Flight Test on the same exact final head. The owner retains review/merge authority. Online authentication is still required to synchronize queued vouchers. The full rendering-security audit, live Google authorization, scheduled backup observation and witnessed isolated restore, real-device/PWA/offline, accessibility and controlled-pilot gates remain open.
+## Last completed — PR #106
 
-**PR #101 — Fail closed on malformed owner diagnostic responses**  
-Branch: `product/admin-diagnostics-integrity`  
-Base: `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`
+[PR #106: Support device-local offline unlock](https://github.com/tchouhanjsm/cash-voucher/pull/106) merged at `e980f634242fdd549411f5c6067d0b267a3c5f22`. Its exact tested PR head `98324ec3084c252f458f6334cb1805d675e2dd1e` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38287916562), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38287916549) (254 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38287916551) (129 backend + 254 browser checks).
 
-Scope: validate the owner-only data-quality and backup-integrity report contracts before rendering. Reject malformed summary envelopes, filter and disclose malformed data-quality issue rows, withhold invalid backup snapshot reports, provide accessible failure/retry feedback, and prove recovery when valid responses return. Preserve backend authorization, backup/restore semantics, accounting behavior and production configuration. No deployment or production data mutation.
+## Product and architecture boundaries
 
-**Last completed:** PR #100 — [Prevent zero-like totals when voucher data is unavailable](https://github.com/tchouhanjsm/cash-voucher/pull/100), merged at `cf1ae45363d9ba7126be722388dcf7c75a45ffd3`. Exact tested head `ff409d641762d2a808c11509b7edfa37aa1e208e` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814467) (129 backend checks), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814429) (236 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38228814454) (129 backend + 236 browser checks).
-
-**Acceptance gate:** exact final PR #101 head must pass CI, Browser E2E, and Full Flight Test. Owner review and merge remain required. Live Google authorization, scheduled backup/isolated restore, real-device/accessibility checks, and the complete rendering audit remain open.
-
-Adopt three distinct sources of information:
-
-- This file is the current state, blockers and next actions.
-- Each GitHub PR description is the permanent record of that change, acceptance criteria, exact-head verification and review decisions.
-- Domain documents change only when their substance changes.
-
-From PR #76 onward, do not create `docs/pr-handoffs/PR-<number>.md` files. Existing per-PR handoff files remain historical artifacts. `docs/PR-HANDOFFS.md` is frozen through PR #75. Do not create a separate post-merge PR just to update handoff metadata.
-
-## Product and architecture
-
-Cash Voucher is a single-property cash-voucher PWA backed by Google Apps Script, Google Sheets and Drive.
-
-- `index.html` loads `frontend/main.js`; the root `app.js` is legacy and is not the active entry point.
+- Cash Voucher is a single-property PWA backed by Google Apps Script, Google Sheets and Drive.
+- `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact, not the active entry point.
 - `frontend/core/` owns shared infrastructure; `frontend/features/` owns feature behavior; `backend/Code.gs` is the Apps Script API source.
-- Backend role enforcement is the security boundary; UI visibility does not authorize requests.
-- Browser-local outbox entries are not centrally backed up until synchronized.
-- Voucher records are deliberately not included in the offline identity/settings cache. During an offline bootstrap fallback, `dataAvailable` is false; Dashboard/Register must not infer genuine zero activity from an empty in-memory placeholder.
-- Dashboard cash-in-hand and movement reporting are recorded-voucher views, not proof of physical cash, accounting, tax, or general-ledger reconciliation.
-- Daily cash close remains design-only until owner/accountant decisions in `docs/DAILY-CASH-CLOSE-DESIGN.md` are approved.
+- Backend role checks remain authoritative. Hiding a route is not an authorization control.
+- Device-local offline unlock is not server authentication. Do not create a token locally or sync queued items until an online server session/bootstrap succeeds.
+- Offline queue entries are browser-local and are not centrally backed up until synchronized.
+- Dashboard balances and movement reports reflect recorded vouchers; they are not proof of physical cash, a general ledger, tax position or reconciliation.
+- Daily cash close remains design-only until the owner/accountant resolves the choices in `docs/DAILY-CASH-CLOSE-DESIGN.md`.
 - Preserve the owner's local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; do not stage or overwrite it.
 
-## Durable engineering rules
+## Engineering and PR rules
 
-- One coherent, focused PR at a time; avoid stacked/overlapping PRs. No arbitrary commit-count ceiling.
-- Verify live PR/main refs, exact head SHA, changed files, and final workflow results. Never infer a merge or test result from prior chat.
-- Run the two-pass functional/product and security/recovery review in `docs/DEVELOPMENT-WORKFLOW.md`.
-- The PR description must have the required outcome, acceptance criteria, verification evidence, security/failure review, release boundary, and residual-risk sections.
-- The PR's exact final head must pass CI, Browser E2E and Full Flight Test. Do not report earlier-SHA checks as current evidence.
-- The owner reviews and merges. Never merge, force-push, delete branches, run Apps Script `setup()`, use `clasp push`, deploy, or mutate production data without explicit authorization.
-- A merged Apps Script source change is not a deployed Web App; live access, backup and restore require operational evidence.
+- One coherent, focused feature PR at a time; batch related product behavior, regression coverage and relevant domain docs together.
+- Verify live `main`, active PR/base/head SHAs, changed-file list and final workflow results. Do not infer state from prior chat.
+- Apply the two-pass product/functional and security/failure/recovery review in `docs/DEVELOPMENT-WORKFLOW.md`.
+- PR body must include Outcome, Acceptance criteria, Verification evidence, Security and failure review, Release boundary, and Residual risks / not verified.
+- CI, Browser E2E and Full Flight Test must pass on the same exact final PR head.
+- Owner retains review and merge authority. No force-push, branch deletion, `setup()`, `clasp push`, deployment or production-data mutation without explicit authorization.
+- Do not create a new `docs/pr-handoffs/PR-<number>.md`; GitHub PR metadata is the permanent change record. Keep this file as current state only.
 
-## Open production and quality gates
+## Open release/operational gates
 
-These remain open regardless of green mock-backed CI:
-
-1. Owner verifies the intended Apps Script project, active deployment/execution settings, Sheet binding, and Script Properties in the Apps Script editor.
+1. Owner verifies the intended Apps Script project, active Web App deployment/execution settings, Sheet binding and Script Properties.
 2. Verify real owner/manager/staff authorization, including receipt access and staff restrictions, against the live deployment.
-3. Observe a scheduled backup in Drive, inspect copied Sheet/receipt/manifest contents, and witness a restore into a separate recovery Sheet/folder; validate counts and voucher numbering.
-4. Complete physical-device PWA install/update/offline checks, assistive-technology testing, and a controlled hotel pilot.
-5. Continue the incremental stored-XSS/rendering sink audit. It is not a full security certification.
-6. The current lint warning for unused `backupData_` and the documented time-limited `@google/clasp → micromatch → braces` dependency-advisory exception remain visible. The documented review-by date is 9 November 2026.
-
-## Recent completed milestones
-
-- **PR #91 — Register/report malformed-data resilience:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/91) at `a50b38e5dc9a60576a9f56953a512f2f4b498f7b`; exact tested head `5e3764f206d16e6b16c05160e0a63e910c45d12f` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38199469555), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38199469567) (202 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38199469560) (129 backend + 202 browser checks). Register/report/bootstrap vendor-cache paths now reject malformed records with visible recovery feedback.
-
-- **PR #90 — Guard malformed amounts in printed vouchers:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/90) at `4ea8c478be7ce33d5b54b098bff3f0f523fc6d33`; exact tested head `095b3aaeb43f001a89001cb9d45b0ad7445f075a` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516457), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516410) (195 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38197516419) (129 backend + 195 browser checks). Printed amount-in-words now returns a clear unavailable message for malformed or unrepresentable inputs.
-
-- **PR #89 — Finite monetary rendering and aggregate integrity:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/89) at `f15cbde5b752755b4740b8f8c67db0d3e72073c2`; exact tested head `15b28b298fa54d11946d0e3e08e75cf5ac25ee40` passed CI, Browser E2E (189 checks) and Full Flight Test (129 backend + 189 browser checks). Non-finite and malformed amounts are kept out of key dashboard/register totals and monetary labels.
-
-- **PR #88 — Receipt preview lifecycle cleanup:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/88) at `8dc477863eadd4113928c88f074c3349bb2965d5`; exact tested head `3f5b563abc9b1bb818a6f5bb5a4c89c5025f34b7` passed CI, Browser E2E (187 checks) and Full Flight Test (129 backend + 187 browser checks). Preview URLs are revoked across clear/remove/save/navigation, including asynchronous compression races.
-
-- **PR #87 — Escape API-derived report summary count fields:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/87) at `68982f99a9b3ab795cb77a2ff1531d75aeefc91e`; exact tested head `863ee174675ea0311124b0e39c7510f1221e7a54` passed CI (129 backend checks), Browser E2E (181 checks), and Full Flight Test (129 backend + 181 browser checks). Report summary API values are encoded at their HTML text sinks; test coverage verifies hostile values remain literal text.
-- **PR #86 — Dashboard numeric rendering integrity:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/86) at `ac1ea5977dcfc763dfae30e0c80d081affade998`; exact tested head `482de368714e093ad3671ae20bac0290f656fcde` passed CI (129 backend checks), Browser E2E (180 checks) and Full Flight Test (129 backend + 180 browser checks). The change bounds CSS/SVG geometry under malformed bootstrap amounts; it does not validate source ledger data.
-
-- **PR #73 — Report date-range escaping:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/73); 141 browser checks passed.
-- **PR #74 — Save-confirmation voucher-number escaping:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/74); Full Flight, CI and Browser E2E passed, with 142 browser checks.
-- **PR #75 — Bulk import completion feedback:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/75) at `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`; CI passed, Browser E2E passed 145 checks / 0 failures, and Full Flight Test passed 110 backend checks plus 145 browser checks.
-- **PR #76 — Consolidate engineering handoff documentation:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/76) at `b1f2a3234577301e4e9536dd424695976f1d8fca`; three exact-head workflows passed. No application behavior or deployment changed.
-- **PR #77 — Escape settings numeric input attributes:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/77) at `539d5d8afd101136f0f1a3922068fc9624d12890`; CI, Browser E2E and Full Flight Test passed at its exact tested head with 146 browser checks.
-- **PR #78 — Harden backend action and role allowlists:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/78) at `3ac0c387d52fc2631f26b48f6169a5b6c03a995d`; exact tested head passed CI (112 backend/unit checks), Browser E2E (146 checks) and Full Flight Test.
-- **PR #79 — Disable vulnerable runtime Excel parser:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/79) at `df6f3354c4ef30321941c0bf1d9b9b15a399a066`; exact tested head passed CI (112 backend/unit checks), Browser E2E (152 checks) and Full Flight Test. Excel workbook import remains intentionally disabled; CSV/TSV/TXT and paste remain available.
-- **PR #80 — Offline outbox failure isolation and account binding:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/80) at `cb98b8ae9e329d34ebb9c068de38a78c3f6902ac`; exact tested head `95c3252a2f58a5453ec5a9e55a88e6f67d69dcc7` passed CI (112 backend/unit checks), Browser E2E (165 checks) and Full Flight Test (112 backend + 165 browser checks).
-- **PR #81 — Serialize authentication lockout transitions and handle contention safely:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/81) at `7fc05bb27e4ec6bfca6bc56e35cd31965cea5bcc`; exact tested head `46410471c025b3f2476807db39ee73f5cc1fcb6e` passed CI (120 backend/unit checks), Browser E2E (165 checks) and Full Flight Test (120 backend + 165 browser checks).
-- **PR #82 — Voucher correction history and required edit reasons:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/82) at `4082503cf96bf08a2aa6408bde14fbd0bef14d2c`; exact tested head `8b894512bc6903c824c8a69fd4a8bdadc70ad4d6` passed CI (127 backend checks), Browser E2E (171 checks) and Full Flight Test (127 backend + 171 browser checks). Existing AuditLog remains an operational audit, not a tamper-proof ledger.
-- **PR #83 — Backup workload observability and failure alerts:** [merged](https://github.com/tchouhanjsm/cash-voucher/pull/83) at `dd1a00a1dced79346bbdcb514eea1be7669bcac5`; exact tested head `60b60f25fe7fe0d0d07922930e6215f98a6a7cbc` passed CI, Browser E2E and Full Flight Test. Live MailApp authorization, real scheduled backup observation and isolated restore remain unverified.
-
-For full acceptance criteria, diffs, review discussions and CI evidence, use those GitHub PR records. Do not copy their full histories into this handoff.
-
-## Resume procedure for a new ChatGPT thread
-
-1. Read this file first.
-2. Verify the live `main` SHA, the current open PR(s), branch and PR head. Live GitHub state wins if this file is stale.
-3. Read `docs/DEVELOPMENT-WORKFLOW.md` and follow its source-of-truth, two-pass review and exact-head verification gates.
-4. Read `docs/PRODUCT-ROADMAP.md` to choose the next product/engineering priority. Read `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, or a requirements/design document only when needed for the chosen scope.
-5. Use the verified SHA and current phase at the top of this handoff as the live state; older PR details belong in their GitHub records and the milestones below.
-6. Before choosing a new batch, confirm the current open PR and latest `main` SHA from GitHub, then review the roadmap and relevant domain audit. Do not start overlapping work while a focused PR awaits owner review/merge.
-7. Live MailApp authorization, real scheduled backup observation and a witnessed restore into a separate recovery Sheet/folder remain owner-authorized operational gates. Do not run `setup()`, `clasp push`, deploy or mutate production without explicit authorization. Preserve the owner's local untracked engineering protocol.
-
-## PR #103 merged — Guard DOM text sinks against malformed bootstrap scalars
-
-PR #103 is merged at `32b7dd23b857aa933b87613d2504e293824d7590`. Its exact PR head `711c09ef75a88f0268c141fd2c362f034123cd48` passed CI, Browser E2E (243 checks, 0 failures) and Full Flight Test (129 backend + 243 browser checks). Navigation/profile display now uses shared scalar-only conversion for branding and identity text. This is targeted DOM text resilience; the complete rendering-sink inventory remains open.
+3. Observe a real scheduled Drive backup; inspect copied workbook, receipts and manifest; witness a restore to a separate recovery Sheet/folder and validate row counts and voucher numbering.
+4. Complete physical-device PWA install/update/offline checks, assistive-technology review and a controlled hotel pilot.
+5. Continue the incremental dynamic-HTML/DOM rendering audit. It is not a full XSS certification.
+6. Track the existing time-limited `@google/clasp → micromatch → braces` dependency-advisory exception through its 9 November 2026 review date and the documented unused `backupData_` lint warning.

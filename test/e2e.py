@@ -600,18 +600,146 @@ with sync_playwright() as p:
         'offline workspace states its limitations and offers a clear online sign-in path',
     )
 
+    offline_create_requests = []
+    offline_sync_actions = []
+
+    def track_offline_create(request):
+        if request.method != 'POST':
+            return
+        try:
+            action = json.loads(request.post_data or '{}').get('action')
+        except (TypeError, ValueError):
+            return
+        if action in ('login', 'bootstrap', 'createVouchers'):
+            offline_sync_actions.append(action)
+        if action == 'createVouchers':
+            offline_create_requests.append(request.url)
+
+    page.on('request', track_offline_create)
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.fill('.rv', 'Offline Unlock Vendor')
+    page.fill('.ra', '42')
+    with open('/tmp/offline-unlock.png', 'wb') as image_file:
+        image_file.write(png)
+    page.set_input_files('.rf', '/tmp/offline-unlock.png')
+    page.wait_for_selector('.thumb')
+    page.click('#nsave')
+    page.wait_for_selector('#nres .ok-panel', timeout=10000)
+    check(
+        'Saved on this device' in page.locator('#nres').inner_text()
+        and 'Sign in online to synchronize' in page.locator('#nres').inner_text()
+        and page.evaluate("!localStorage.getItem('cv.token')"),
+        'offline-unlocked entry saves locally and explicitly requires online sign-in to sync',
+    )
+    offline_records = page.evaluate(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const records = await new Promise((resolve, reject) => {
+            const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          db.close();
+          return records.filter(record => record.entry?.vendor === 'Offline Unlock Vendor');
+        }"""
+    )
+    check(
+        len(offline_records) == 1
+        and offline_records[0]['status'] == 'pending'
+        and offline_records[0]['ownerKey'].endswith('|owner@test.com')
+        and offline_records[0]['entry']['amount'] == 42
+        and len(offline_records[0]['entry']['receipts']) == 1
+        and offline_records[0]['entry']['receipts'][0]['mime'] == 'image/jpeg'
+        and bool(offline_records[0]['entry']['receipts'][0]['data']),
+        'offline-unlocked payment and compressed receipt are preserved in the account-bound outbox',
+    )
+    check(
+        offline_create_requests == []
+        and offline_sync_actions == []
+        and '1 payment waiting to upload' in page.locator('#banner').inner_text(),
+        'offline-unlocked save makes no server create request and exposes pending queue status',
+    )
+
     context.set_offline(False)
+    page.wait_for_timeout(350)
+    still_queued = page.evaluate(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const records = await new Promise((resolve, reject) => {
+            const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          db.close();
+          return records.filter(record => record.entry?.vendor === 'Offline Unlock Vendor');
+        }"""
+    )
+    check(
+        len(offline_create_requests) == 0
+        and offline_sync_actions == []
+        and len(still_queued) == 1
+        and still_queued[0]['status'] == 'pending'
+        and page.evaluate("!localStorage.getItem('cv.token')")
+        and 'Offline workspace' in page.locator('#banner').inner_text(),
+        'network recovery alone does not upload local-only entries before online authentication',
+    )
     page.click('#banner [data-act=reconnect-signin]')
     page.wait_for_selector('#loginForm', timeout=8000)
     page.fill('#lEmail', 'owner@test.com')
     page.fill('#lPin', '579246')
     page.click('#lBtn')
     page.wait_for_function("document.querySelectorAll('#nav button').length === 10", timeout=10000)
+    page.wait_for_function(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          const records = await new Promise((resolve, reject) => {
+            const request = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          db.close();
+          return !records.some(record => record.entry?.vendor === 'Offline Unlock Vendor');
+        }""",
+        timeout=15000,
+    )
     check(
-        page.locator('#banner').is_hidden()
-        or 'offline workspace' not in page.locator('#banner').inner_text().lower(),
+        page.evaluate("!!localStorage.getItem('cv.token')")
+        and (
+            page.locator('#banner').is_hidden()
+            or 'offline workspace' not in page.locator('#banner').inner_text().lower()
+        ),
         'online sign-in restores the server-verified owner workspace',
     )
+    check(
+        page.evaluate("!!localStorage.getItem('cv.token')"),
+        'offline-unlocked queue entry synchronizes only after online authentication',
+    )
+    required_sync_actions = ['login', 'bootstrap', 'createVouchers']
+    check(
+        all(action in offline_sync_actions for action in required_sync_actions)
+        and [
+            offline_sync_actions.index(action)
+            for action in required_sync_actions
+        ] == sorted(
+            offline_sync_actions.index(action)
+            for action in required_sync_actions
+        ),
+        'online login, server bootstrap and voucher upload occur in order before queue drain',
+    )
+    page.remove_listener('request', track_offline_create)
 
     page.click('[data-v=acct]')
     page.click('[data-act=signout]')
