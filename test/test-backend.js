@@ -890,7 +890,10 @@ ok(
   as(A, 'cashClosePreview', { date: '2020-01-01' }).code === 'FORBIDDEN',
   'staff cannot preview daily cash close',
 );
-ok(as(resetChange.data.token, 'cashClosePreview', { date: '2020-01-01' }).ok, 'manager can preview daily cash close');
+ok(
+  as(resetChange.data.token, 'cashClosePreview', { date: '2020-01-01' }).ok,
+  'manager can preview daily cash close',
+);
 const initialPreview = as(T, 'cashClosePreview', { date: '2020-01-01' });
 ok(
   initialPreview.ok && initialPreview.data.requiresManualOpening,
