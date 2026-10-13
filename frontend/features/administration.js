@@ -55,14 +55,14 @@ export function createAdministration({ api, getNavigation, signOut }) {
         : '';
     const emptyState =
       !vendorData.envelopeValid || vendorData.malformedCount
-        ? '<tr><td colspan="5" class="muted">No valid vendor records could be displayed. Refresh and retry.</td></tr>'
-        : '<tr><td colspan="5" class="muted">No vendors yet — vendors you pay are also remembered automatically.</td></tr>';
+        ? '<tr><td colspan="6" class="muted">No valid vendor records could be displayed. Refresh and retry.</td></tr>'
+        : '<tr><td colspan="6" class="muted">No vendors yet — vendors you pay are also remembered automatically.</td></tr>';
     const rows = vendorData.rows
       .slice()
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(
         (vendor) =>
-          `<tr><td>${esc(vendor.name)}</td><td>${esc(vendor.company)}</td><td>${esc(vendor.mobile)}</td><td><span class="badge ${vendor.active ? '' : 'bad'}">${vendor.active ? 'ACTIVE' : 'INACTIVE'}</span></td><td class="r nw"><button class="btn sm" data-act="vedit" data-id="${esc(vendor.id)}">Edit</button> <button class="btn sm" data-act="vtog" data-id="${esc(vendor.id)}">${vendor.active ? 'Deactivate' : 'Activate'}</button></td></tr>`,
+          `<tr><td>${esc(vendor.name)}</td><td><code>${esc(vendor.id)}</code></td><td>${esc(vendor.company)}</td><td>${esc(vendor.mobile)}</td><td><span class="badge ${vendor.active ? '' : 'bad'}">${vendor.active ? 'ACTIVE' : 'INACTIVE'}</span></td><td class="r nw"><button class="btn sm" data-act="vedit" data-id="${esc(vendor.id)}">Edit</button> <button class="btn sm" data-act="vtog" data-id="${esc(vendor.id)}">${vendor.active ? 'Deactivate' : 'Activate'}</button></td></tr>`,
       )
       .join('');
 
@@ -70,7 +70,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       head('Vendors') +
       status +
       `<form id="vf" class="card filters" autocomplete="off"><input type="hidden" id="vid"><input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required><input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)"><input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel"><button class="btn primary">Save vendor</button><button type="button" class="btn" data-act="vclr">Clear</button></form>
-  <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Company</th><th>Mobile</th><th>Status</th><th></th></tr></thead><tbody>${rows || emptyState}</tbody></table></div></div>`;
+  <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Stable Vendor ID</th><th>Company</th><th>Mobile</th><th>Status</th><th></th></tr></thead><tbody>${rows || emptyState}</tbody></table></div></div>`;
   }
   async function saveVendor() {
     try {
@@ -121,7 +121,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       return fail(error);
     }
 
-    const roles = ['staff', 'manager', 'owner'];
+    const roles = ['staff', 'manager', 'accountant', 'owner'];
     const envelopeValid = Array.isArray(response);
     const receivedUsers = envelopeValid ? response : [];
     users = receivedUsers.filter(
@@ -161,7 +161,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       head('Users') +
       status +
       `<div class="card"><h2>Add user</h2><form id="uf" class="filters" autocomplete="off"><input id="un" aria-label="User name" autocomplete="name" placeholder="Name" required><input id="ue" aria-label="Email address" autocomplete="email" type="email" placeholder="Email" required><select id="ur" aria-label="New user role">${roles.map((role) => `<option>${role}</option>`).join('')}</select><input id="up" aria-label="Temporary six-digit PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit PIN" required><button class="btn primary">Add</button></form>
-     <p class="muted"><b>Staff</b>: add payments + receipts, see own entries · <b>Manager</b>: also view all, edit, cancel, bulk upload, vendors · <b>Owner</b>: also users, settings, audit log.</p></div>
+     <p class="muted"><b>Staff</b>: create and view own entries · <b>Manager</b>: view, edit, cancel, bulk upload, vendors, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p></div>
    <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>${rows || emptyState}</tbody></table></div></div>`;
   }
   async function saveUser() {
