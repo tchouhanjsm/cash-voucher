@@ -7,10 +7,10 @@ import { scalarText } from '../core/utils.js';
 export function createNavigation({ api, getAuth, getPayments, renderers }) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
   const NAV = [
-    ['dash', '📊', 'Dashboard', () => true],
+    ['dash', '📊', 'Dashboard', () => can('viewAll') || can('viewOwn')],
     ['new', '➕', 'New Entry', () => can('create')],
-    ['reg', '📒', 'Register', () => true],
-    ['reports', '📈', 'Reports', () => can('viewAll')],
+    ['reg', '📒', 'Register', () => can('viewAll') || can('viewOwn')],
+    ['reports', '📈', 'Reports', () => can('reports')],
     ['cashClose', '💵', 'Cash Close', () => can('cashClose')],
     ['bulk', '📥', 'Bulk Upload', () => can('bulk')],
     ['vend', '🏪', 'Vendors', () => can('vendors')],
@@ -20,40 +20,63 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     ['acct', '👤', 'Account', () => true],
   ];
 
+  // A visibility restore, manual refresh, and background outbox sync can request
+  // bootstrap concurrently. Share same-session work and ignore stale-session responses
+  // so a late request cannot overwrite the current user's data or diagnostics.
+  let activeBootstrapLoad = null;
+
   async function load() {
-    const data = await api('bootstrap');
-    const voucherData = normalizeVoucherCollection(data?.vouchers);
-    const vouchers = voucherData.rows;
-    const vendorNames = vouchers.map((voucher) => voucher.vendor).filter(Boolean);
+    const requestToken = S.token;
+    if (activeBootstrapLoad && activeBootstrapLoad.token === requestToken) {
+      return activeBootstrapLoad.promise;
+    }
 
-    Object.assign(S, {
-      me: data.user,
-      settings: data.settings,
-      vouchers,
-      voucherDiagnostics: {
-        envelopeValid: voucherData.envelopeValid,
-        dataAvailable: voucherData.envelopeValid,
-        unavailableReason: voucherData.envelopeValid ? '' : 'invalid-response',
-        malformedRecordCount: voucherData.malformedRecordCount,
-        malformedFieldCount: voucherData.malformedFieldCount,
-      },
-      vendors: data.vendors,
-      names: data.names,
-      loadedAt: Date.now(),
-      offlineMode: false,
-    });
+    const request = { token: requestToken, promise: null };
+    request.promise = (async () => {
+      const data = await api('bootstrap');
+      if (S.token !== requestToken) return false;
 
-    ls.set('cv.name', scalarText(data.settings?.propertyName));
-    ls.set(
-      'cv.cache',
-      JSON.stringify({
+      const voucherData = normalizeVoucherCollection(data?.vouchers);
+      const vouchers = voucherData.rows;
+      const vendorNames = vouchers.map((voucher) => voucher.vendor).filter(Boolean);
+
+      Object.assign(S, {
         me: data.user,
-        names: data.names,
         settings: data.settings,
+        vouchers,
+        voucherDiagnostics: {
+          envelopeValid: voucherData.envelopeValid,
+          dataAvailable: voucherData.envelopeValid,
+          unavailableReason: voucherData.envelopeValid ? '' : 'invalid-response',
+          malformedRecordCount: voucherData.malformedRecordCount,
+          malformedFieldCount: voucherData.malformedFieldCount,
+        },
         vendors: data.vendors,
-        vn: [...new Set(vendorNames)].slice(0, 300),
-      }),
-    );
+        names: data.names,
+        loadedAt: Date.now(),
+        offlineMode: false,
+      });
+
+      ls.set('cv.name', scalarText(data.settings?.propertyName));
+      ls.set(
+        'cv.cache',
+        JSON.stringify({
+          me: data.user,
+          names: data.names,
+          settings: data.settings,
+          vendors: data.vendors,
+          vn: [...new Set(vendorNames)].slice(0, 300),
+        }),
+      );
+      return true;
+    })();
+
+    activeBootstrapLoad = request;
+    try {
+      return await request.promise;
+    } finally {
+      if (activeBootstrapLoad === request) activeBootstrapLoad = null;
+    }
   }
 
   async function start(mustChange, expectedEmail = '') {
@@ -68,7 +91,8 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     let offline = false;
 
     try {
-      await load();
+      const loaded = await load();
+      if (!loaded) return false;
     } catch (error) {
       if (error.code === 'PIN_CHANGE' || error.code === 'SESSION') return false;
 
@@ -127,7 +151,9 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
         ? 'new'
         : S.view && NAV.find((item) => item[0] === S.view && item[3]())
           ? S.view
-          : 'dash',
+          : can('reports') && !can('viewAll') && !can('viewOwn')
+            ? 'reports'
+            : 'dash',
     );
 
     await getPayments().showBanner();
@@ -166,6 +192,10 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     nav.replaceChildren(navContent);
   }
   function go(view) {
+    const requestedView = NAV.find((item) => item[0] === view);
+    if (!requestedView || !requestedView[3]()) {
+      view = can('reports') ? 'reports' : can('create') ? 'new' : 'dash';
+    }
     if (S.offlineMode && (!OFFLINE_VIEWS.has(view) || (view === 'new' && !can('create')))) {
       view = can('create') ? 'new' : 'reg';
     }
@@ -197,7 +227,8 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     }
 
     try {
-      await load();
+      const loaded = await load();
+      if (!loaded) return;
       renderNav();
       // Background outbox sync may refresh data while a staff member is drafting an entry.
       if (S.view !== 'new') go(S.view);

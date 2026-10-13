@@ -252,12 +252,34 @@ export function createCashClose({ api }) {
           '</td></tr>',
       )
       .join('');
+    const pendingApprovalRows = Array.isArray(snapshot.pendingApprovals)
+      ? snapshot.pendingApprovals
+      : [];
+    const approvalIssues = pendingApprovalRows
+      .map(
+        (item) =>
+          '<tr><td>' +
+          esc(item.no) +
+          '</td><td>' +
+          esc(item.vendor) +
+          '</td><td>' +
+          esc(item.amount === null || item.amount === undefined ? '—' : money(item.amount)) +
+          '</td><td class="cc-id">' +
+          esc(item.id) +
+          '</td><td>' +
+          esc(item.approvalStatus || 'REVIEW_REQUIRED') +
+          ': ' +
+          esc(item.reason || 'Payment approval must be resolved.') +
+          '</td></tr>',
+      )
+      .join('');
     const issues =
-      unresolved || bad
-        ? '<section class="cc-blockers"><h3>Resolve before final close</h3><p>Every active voucher must have an explicit cash impact and valid amount. Close is disabled until these records are corrected.</p><div class="table-wrap"><table><thead><tr><th>Voucher</th><th>Counterparty</th><th>Amount</th><th>Voucher ID</th><th>Issue</th></tr></thead><tbody>' +
+      unresolved || bad || approvalIssues
+        ? '<section class="cc-blockers"><h3>Resolve before final close</h3><p>Every included active voucher needs a valid amount and explicit cash impact. Active high-value payments must also be approved before close; unapproved or rejected payments are excluded from the expected-cash total but block finalization.</p><div class="table-wrap"><table><thead><tr><th>Voucher</th><th>Counterparty</th><th>Amount</th><th>Voucher ID</th><th>Issue</th></tr></thead><tbody>' +
           unresolved +
           bad +
-          '</tbody></table></div><p class="muted">Open Register, edit the unresolved voucher with a correction reason, then refresh this preview. Historical values are never guessed.</p></section>'
+          approvalIssues +
+          '</tbody></table></div><p class="muted">Open Register to classify historical vouchers, correct invalid records, or approve/cancel unresolved payments, then refresh this preview. Historical values are never guessed.</p></section>'
         : '';
     const expectedValue =
       snapshot.expectedCash === null
@@ -284,7 +306,13 @@ export function createCashClose({ api }) {
           (queueCount === 1 ? 'y is' : 'ies are') +
           ' still stored on this browser. Sync or review/export each entry from its matching account before closing. Do not delete entries just to close the day. Other phones/devices must be checked separately; the server cannot inspect their local queues.</p></section>'
         : '<p class="cc-note">This browser’s offline queue is empty. Confirm other operating devices are also synchronized before finalizing.</p>';
-    const canClose = snapshot.readyToClose && !unresolved && !bad && queueKnown && queueCount === 0;
+    const canClose =
+      snapshot.readyToClose &&
+      !unresolved &&
+      !bad &&
+      !approvalIssues &&
+      queueKnown &&
+      queueCount === 0;
     $('#cc-results').innerHTML =
       '<section class="card cc-preview"><div class="cc-report-heading"><div><h2>Preview · ' +
       esc(date) +

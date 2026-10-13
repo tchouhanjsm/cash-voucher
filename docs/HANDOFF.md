@@ -2,51 +2,48 @@
 
 **Updated:** 13 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592` (PR #107 merge)  
-**Purpose:** current state, active work, release boundaries and next action. Recheck live GitHub refs and exact-head workflows each session.
+**Verified PR base / `main` SHA:** `34589cbf708dbcba4a5e731b34e77c56e9a63cba` (PR #113 merge)  
+**Active branch:** `feature/payment-approval-workflow`  
+**Purpose:** current state, active batch, durable constraints and independent release gates. Recheck live GitHub refs and workflow results each session.
 
-**Working rules:** read `docs/FOUNDER-MODE.md` first. New AI chat? Use `docs/NEW-CHAT-PROMPT.md`.
+**Working rules:** read `docs/FOUNDER-MODE.md` first. Use `docs/NEW-CHAT-PROMPT.md` for a new engineering session.
 
-## Current phase — PR #108: Inspect device-local queued entries
+## Current batch — PR #114: approval plus read-only accountant export
 
-**Branch:** `feature/offline-queue-review`  
-**Base:** `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592`
+**Owner payment-approval policy confirmed 13 October 2026:** new `PAYMENT` vouchers `>= ₹10,000` require approval by an existing owner/manager other than the creator. Rejections require a reason; unresolved approval states are excluded from approved payment totals and block final cash close. Historical blank approval values remain `NOT_REQUIRED`, with no approval backfill.
 
-The banner currently shows only an aggregate pending count while rejected entries receive individual review rows. This batch makes pending/sending records inspectable without making them removable or treating them as server-confirmed. Show account/endpoint-owned entries only, at most five in the banner disclosure, with type, safe vendor text, amount, date, queue status and receipt count. Export remains the recovery path for full details; rejected-entry removal continues to require export-first confirmation.
+The same PR also implements the next Founder Mode slice: least-privilege read-only accountant report/CSV access and stable VendorIDs. New vouchers link to a saved VendorID only on a unique exact name match; old rows are not backfilled. Reports export generic source-voucher movement, not destination-certified accounting/tax output. Vendor master IDs are visible, unresolved rows are disclosed, and owner/accountant confirmation of the target accounting system remains open.
 
-**Acceptance gate:** the exact final PR head passes CI, Browser E2E and Full Flight Test. Verify current-account scoping, receipt-count rendering, long-list disclosure, escaping of tampered IndexedDB text, and no change to upload/authentication gates. Owner review/merge remains required; no deployment or production mutation.
+Active PR: [#114 — Require independent approval for payments ≥ ₹10,000](https://github.com/tchouhanjsm/cash-voucher/pull/114) on `feature/payment-approval-workflow`. It batches approval enforcement, review UI, approval-aware totals/cash close, accountant access/export, VendorID persistence/migration, regression tests and release/domain docs. Owner review and merge remain required; do not deploy or run migrations from the PR.
 
-## Last completed — PR #107
+## Last completed — PR #113
 
-[PR #107: Complete offline unlock to voucher sync workflow](https://github.com/tchouhanjsm/cash-voucher/pull/107) merged at `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592`. Exact tested head `639fb982e00e3139a9d969128bf960c2c32007e4` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38291708608), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38291708626) (**260 checks**), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38291708773) (**129 backend + 260 browser checks**). The local-only offline unlock can save to the account-bound queue without a server create request; sync waits for online authentication and successful bootstrap.
+[PR #113: Add structured audit events and paginated audit history](https://github.com/tchouhanjsm/cash-voucher/pull/113) merged at `34589cbf708dbcba4a5e731b34e77c56e9a63cba`. Exact tested PR head `612c4d029c766dca0d57b2a68b3b1f7d4204c334` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38397780126), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38397780101) (**276 checks, 0 failures**), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38397780332) on the same head. Audit writes remain best-effort and are not a transactionally coupled or tamper-evident ledger.
 
-## Product and architecture boundaries
+## Architecture and durable boundaries
 
-- Cash Voucher is a single-property PWA backed by Google Apps Script, Google Sheets and Drive.
+- Single-property PWA backed by Google Apps Script, Google Sheets and Drive.
 - `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact, not the active entry point.
-- `frontend/core/` owns shared infrastructure; `frontend/features/` owns feature behavior; `backend/Code.gs` is the Apps Script API source.
-- Backend role checks remain authoritative. Hiding a route is not an authorization control.
-- Device-local offline unlock is not server authentication. Do not create a token locally or sync queued items until an online server session/bootstrap succeeds.
-- Offline queue entries are browser-local and are not centrally backed up until synchronized.
-- Dashboard balances and movement reports reflect recorded vouchers; they are not proof of physical cash, a general ledger, tax position or reconciliation.
-- Daily cash close remains design-only until the owner/accountant resolves the choices in `docs/DAILY-CASH-CLOSE-DESIGN.md`.
+- `frontend/core/` owns shared infrastructure; `frontend/features/` owns feature behavior; `backend/Code.gs` is the Apps Script API.
+- Backend role checks, validation, financial totals and writes are authoritative. Hiding UI controls is not authorization.
+- Device-local offline queue entries are not centrally backed up until synchronized. Preserve legacy/recovery data; never auto-classify historical CashImpact.
+- Daily Cash Close exists in source (PR #111) and is immutable per business date, but this does not prove production deployment or live reconciliation.
 - Preserve the owner's local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; do not stage or overwrite it.
 
-## Engineering and PR rules
-
-- One coherent, focused feature PR at a time; batch related product behavior, regression coverage and relevant domain docs together.
-- Verify live `main`, active PR/base/head SHAs, changed-file list and final workflow results. Do not infer state from prior chat.
-- Apply the two-pass product/functional and security/failure/recovery review in `docs/DEVELOPMENT-WORKFLOW.md`.
-- PR body must include Outcome, Acceptance criteria, Verification evidence, Security and failure review, Release boundary, and Residual risks / not verified.
-- CI, Browser E2E and Full Flight Test must pass on the same exact final PR head.
-- Owner retains review and merge authority. No force-push, branch deletion, `setup()`, `clasp push`, deployment or production-data mutation without explicit authorization.
-- Do not create a new `docs/pr-handoffs/PR-<number>.md`; GitHub PR metadata is the permanent change record. Keep this file as current state only.
-
-## Open release/operational gates
+## Independent release / operational gates still open
 
 1. Owner verifies the intended Apps Script project, active Web App deployment/execution settings, Sheet binding and Script Properties.
-2. Verify real owner/manager/staff authorization, including receipt access and staff restrictions, against the live deployment.
-3. Observe a real scheduled Drive backup; inspect copied workbook, receipts and manifest; witness a restore to a separate recovery Sheet/folder and validate row counts and voucher numbering.
-4. Complete physical-device PWA install/update/offline checks, assistive-technology review and a controlled hotel pilot.
-5. Continue the incremental dynamic-HTML/DOM rendering audit. It is not a full XSS certification.
-6. Track the existing time-limited `@google/clasp → micromatch → braces` dependency-advisory exception through its 9 November 2026 review date and the documented unused `backupData_` lint warning.
+2. After explicit release authorization and a verified backup, perform guarded migrations in runbook order: CashImpact Q if needed, approval fields R:U, VendorID V, then cash-close tabs. Do not run them from this PR.
+3. Verify live owner/manager/staff permissions, including receipt access and payment-approval behavior, against the intended deployment.
+4. Observe a real scheduled Drive backup; inspect workbook, receipt copies and manifest; witness restore to a separate recovery Sheet/folder and validate row counts and voucher numbering.
+5. Complete physical-device PWA install/update/offline checks, assistive-technology review and a controlled hotel pilot.
+6. Continue the dynamic HTML/DOM sink audit; it is not full XSS certification.
+7. Track the existing time-limited `@google/clasp → micromatch → braces` dependency-advisory exception through its 9 November 2026 review date and the documented unused `backupData_` lint warning.
+
+## Engineering and release rules
+
+- One coherent product outcome per PR; batch related UI, backend, tests and domain documentation.
+- CI, Browser E2E and Full Flight Test must pass on the exact same final PR head before claiming ready.
+- Do not claim local checks were run when no local checkout/environment was available.
+- Owner retains review and merge authority. No merge, `clasp push`, schema migration, `setup()`, Web App deployment or production-data operation without explicit authorization.
+- Do not create `docs/pr-handoffs/PR-<number>.md`; GitHub PR metadata is the per-change record. Keep this file as the current-state handoff.

@@ -54,7 +54,7 @@ The repository is public. This review did not perform a general Git object/secre
 - No tamper-evident ledger: edits/cancellations are represented in ordinary Sheets records plus audit events, not a hash-chained immutable ledger.
 - No verified live backup restore or real-device/PWA upgrade drill. The owner-only status panel exposes recorded backup metadata, but live Drive access and restoreability remain unverified.
 - Browser-local queue is not central backup until synchronized.
-- No owner-approved daily cash close or physical denomination reconciliation.
+- Daily Cash Close source workflow exists, but live deployment, real backup/restore, cross-device outbox checks, and a controlled hotel pilot are not verified. Physical denomination breakdown is not implemented.
 - No real latency/load benchmark, formal contrast audit, assisted-technology test, external pen test or full dynamic-HTML sink audit.
 - No multi-property tenant separation, digital movement of funds, GST/TDS compliance rules or accountant-specific exports.
 
@@ -66,31 +66,29 @@ The repository is public. This review did not perform a general Git object/secre
 
 Exit gate: exact PR CI and browser workflow pass; code-review findings are accurately labeled; no production deploy. This phase must be reviewed and merged by the owner before the next phase starts.
 
-### P1 — Daily cash close and physical reconciliation (Phases 23–24 design gates)
+### P1 — Daily cash close and physical reconciliation
 
-**Status:** design-only; no close workflow is implemented. Phase 23 documented the close workflow and open business decisions. Phase 24 refines cash-versus-bank semantics and documents why existing voucher type/category values cannot reliably establish physical-cash movement. See `docs/DAILY-CASH-CLOSE-DESIGN.md`.
+**Status:** implementation merged in PRs #110 and #111; operational release gates remain open. PR #110 added the explicit voucher-level `CashImpact` field and preserved historical blanks as `UNCLASSIFIED`. PR #111 added the one-property / MAIN drawer / Asia-Kolkata calendar-day close, carry-forward/manual opening rules, immutable close snapshots, correction notes, chronological finalization, and closed-period mutation guards.
 
-Current source has a global `Settings.openingBalance`, active/cancelled voucher statuses, separate PAYMENT/RECEIPT types, editable active vouchers, and best-effort audit events. The Vouchers schema has no settlement method or physical-cash-impact field. Receipt categories include `Bank Withdrawal`, `Owner Deposit`, `Guest Advance`, and `Refund Received`; payment categories include `Bank Charges` and `Guest Refund`. These labels do not prove physical cash entering or leaving the drawer. Dashboard “cash in hand” is global opening balance + active receipts − active payments, not daily physical-cash reconciliation.
+Expected physical cash uses explicit `CASH_IN` and `CASH_OUT` values only; `NO_CASH` has no drawer movement. Active unclassified/invalid vouchers block closing. Pending or rejected high-value payments must also be resolved before final close. This code status does not prove a live deployment or real-world reconciliation.
 
-The refined proposal uses an explicit per-voucher cash-impact concept: `CASH_IN`, `CASH_OUT`, `NO_CASH`, or `UNCLASSIFIED`. This is not an existing field or approved schema. Category names must not be used as silent classification heuristics; the same category can be cash or non-cash depending on settlement. Existing vouchers have no classification and need an owner-approved resolution policy.
-
-Candidate expected physical cash = opening physical cash + classified CASH_IN amounts − classified CASH_OUT amounts. NO_CASH vouchers have no drawer effect but may affect bank balances or other financial reporting. Recommendation: block final close while active in-period vouchers remain UNCLASSIFIED, unless the owner explicitly approves a visibly provisional exception policy.
-
-**Exit gate:** owner accepts the cash-impact vocabulary, historical-data policy, category semantics, and close-period/correction rules before product-code or schema changes. Phase 24 changes documentation only; no product code, API, Sheet schema, deployment, or production data is changed.
+**Operational exit gates remain:** verify the intended Apps Script project and permissions, take a verified backup, run the reviewed additive migrations in order only when explicitly authorized, inspect real Sheet/Drive state, witness restore to a separate destination, verify local queues on every operating device, and complete the controlled hotel pilot. Do not run `setup()` as a migration shortcut.
 
 ### P2 — Approval and exception controls
 
-- **Owner decision remains open:** whether approvals are needed for high-value entries, cancellations or post-close corrections, and the threshold/scope. The audit-traceability slice does not implement an approval threshold.
-- Reviewable rule-based flags for duplicate same-vendor/amount/date, a new vendor's unusually large first payment, off-hours entries and split payments near the approval threshold.
-- Every flag explains why it appeared and links to the underlying record. Start with deterministic rules before models.
-- Make decisions and overrides auditable and avoid noisy rules until real operational data exists.
+**Owner-approved policy (13 October 2026):** new `PAYMENT` vouchers at or above **₹10,000** require approval. Receipts are outside this rule. Only existing owner/manager roles may approve, and the creator cannot approve their own voucher. Rejection requires a reason and is audited. No configurable threshold or new role is introduced.
+
+Pending, rejected, or malformed approval-state payments stay visible but are excluded from approved payment totals. They block a final cash close until they are approved or cancelled/resolved; they must not be silently omitted from a purported reconciliation. Editing a voucher already governed by approval sends it back for independent review. Blank approval fields on historical records mean `NOT_REQUIRED`; the migration adds fields without backfilling old vouchers.
+
+The current feature batch implements backend authorization, approval/rejection audit events, Register actions and filters, Dashboard/Reports disclosures and total treatment, cash-close blockers, additive schema migration guidance, and end-to-end regression coverage in one PR. It remains unmerged until owner review.
+
+Other rule-based exception flags—duplicates, unusual first payments, off-hours entries and possible split payments—remain candidates for separate validation. Each must explain why it fired, link to source records, and have a review/override owner before implementation. Do not add speculative fraud scores.
 
 ### P3 — Finance and accountant workflow
 
-- Confirm the actual first accounting destination before designing exports (e.g., Tally/Zoho-compatible CSV requirements).
-- Decide which GSTIN, tax amount, HSN/SAC and TDS fields are genuinely needed; define validation and tax/accountant ownership before adding fields.
-- Consider a read-only accountant role with export/report access and no transaction edits.
-- Upgrade reports from voucher CSV to a reconciliation export that ties every total back to source vouchers.
+**Slice 4 implementation is included in active PR #114; owner review and exact-head checks remain open.** It adds a least-privilege `accountant` role with server-authorized read-only access to the generic Recorded Movement Report and CSV. It also surfaces the existing stable VendorID, stores it on new vouchers when a unique case-insensitive exact vendor-name match exists, and includes it in report CSV. Historical rows are not backfilled; blank IDs are linked only by an exact unambiguous vendor-master name match and the report discloses unresolved rows.
+
+This is an operational source-voucher export, **not** a destination-certified Tally/Zoho import, general ledger, tax report, or reconciliation certificate. The actual accounting product/version, import mapping, required tax fields, and accountant-approved sample remain unresolved. Do not add GSTIN/GST, HSN/SAC or TDS behavior until the owner and qualified accountant define those requirements.
 
 ### P4 — Product UI/UX quality pass
 
@@ -287,4 +285,4 @@ PR #110 approved mandatory voucher-level CashImpact; this phase adds the first p
 
 The close is rejected if any active date-scoped voucher is unclassified or has an invalid amount. It records the original totals and included voucher snapshot, actor, time zone, timestamp and request ID together. The same request can be retried without duplicating a close; concurrent/date duplicates cannot overwrite the record. Voucher creation, edits and cancellation affecting a closed date are blocked. A correction note is a separately attributed append-only record and does not alter the original close or voucher data.
 
-The release requires reviewed source plus two guarded one-time schema operations (migrateCashImpactField() if needed, then migrateDailyCashCloseSchema()) in the verified Apps Script project after backup. No migration, Clasp upload, deployment or production data operation is performed by the feature PR. Live concurrency, backup/restore, device/PWA and hotel-pilot gates remain open. PR #111 merged at `6092152c64adff084abfda5407056dac9401b5e9`. The Dashboard already displays “Book balance”; do not create a duplicate label-only PR. Next is Slice 2 — go-live readiness: CSP and automated regression checks, followed by owner-controlled live deployment verification, isolated restore, real-device PWA/accessibility checks and a 14-day pilot. CI is not live evidence; no operational gate is considered complete without recorded owner-authorized evidence.
+The release requires reviewed source plus guarded one-time schema operations in the verified Apps Script project after backup. No migration, Clasp upload, deployment or production-data operation is performed by a feature PR. Live concurrency, backup/restore, device/PWA and hotel-pilot gates remain open. PR #111 merged at `6092152c64adff084abfda5407056dac9401b5e9`; PR #112 added CSP and source/browser release-integrity checks; PR #113 added structured audit events and paginated audit history. The Dashboard already displays “Book balance”; do not create a duplicate label-only PR. The next implementation batch is the owner-approved high-value payment approval workflow: threshold INR 10,000 inclusive, new PAYMENT vouchers only, owner/manager approval with no self-approval, and exclusion from approved totals/cash close until resolved. Operational go-live gates remain independent and require explicit owner-authorized evidence. CI is not live evidence.

@@ -132,6 +132,10 @@ registerActions({
 
   cancel: ({ id }) => register.cancel(id),
 
+  approve: ({ id }) => register.approve(id),
+
+  reject: ({ id }) => register.reject(id),
+
   rec: ({ id }) => register.receipts(id),
 
   more: () => {

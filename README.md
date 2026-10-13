@@ -75,7 +75,7 @@ See `docs/DATA-DURABILITY.md`.
 
 ## Product direction
 
-The app is currently a single-property cash-voucher tool, not a hosted multi-tenant fintech platform. The next owner-value priorities are a controlled daily cash close/reconciliation workflow, better exception/approval controls, accountant-friendly exports, and a measured accessibility/UI review. Do not start a multi-property, digital-payout, or AI/network build before users, controls, regulatory requirements, and economics are validated.
+The app is currently a single-property cash-voucher tool, not a hosted multi-tenant fintech platform. The Daily Cash Close MVP and structured audit history exist in source, but live deployment and restore readiness remain operational gates. Active PR #114 batches the owner-approved high-value PAYMENT approval workflow (₹10,000 inclusive, independent owner/manager review, no self-approval) with the next report-only accountant slice: generic recorded-movement CSV and stable VendorID links. Pending/rejected payments stay out of approved totals and block final cash close until resolved. The export is not destination-certified or tax-ready; target-specific mappings remain open. Do not start multi-property, digital-payout, or AI/network work before users, controls, regulatory requirements, and economics are validated.
 
 - Product gap register: `docs/PRODUCT-ROADMAP.md`
 - UI/UX source review and next design criteria: `docs/UI-UX-REVIEW.md`

@@ -11,6 +11,92 @@ g.props.OWNER_PIN = '483921';
 g.setup();
 g.setup(); // idempotent
 ok(!!g.props.BACKUP_FOLDER_ID, 'backup folder configured');
+const nextPaymentNumber = () => {
+  const highest = g.sheets.Vouchers.rows
+    .slice(1)
+    .reduce((max, row) => (row[15] === 'PAYMENT' ? Math.max(max, Number(row[1]) || 0) : max), 0);
+  return Math.max(300, highest + 100);
+};
+const nextReceiptNumber = () =>
+  g.sheets.Vouchers.rows
+    .slice(1)
+    .reduce((max, row) => (row[15] === 'RECEIPT' ? Math.max(max, Number(row[1]) || 0) : max), 0) +
+  1;
+
+// Approval migration adds R:U only, preserves prior cells, and stops on occupied columns.
+const approvalMigrationMock = create();
+approvalMigrationMock.props.OWNER_EMAIL = 'Owner@Test.com';
+approvalMigrationMock.props.OWNER_PIN = '483921';
+approvalMigrationMock.setup();
+const approvalMigrationSheet = approvalMigrationMock.sheets.Vouchers;
+approvalMigrationSheet.rows[0] = approvalMigrationSheet.rows[0].slice(0, 17);
+approvalMigrationSheet.rows.push([
+  'legacy-approval-migration-id',
+  88,
+  '2026-10-01',
+  'Legacy high payment',
+  15000,
+  'Other',
+  '',
+  'ACTIVE',
+  'legacy@test.com',
+  '2026-10-01T00:00:00Z',
+  '',
+  '',
+  '',
+  '',
+  'legacy-approval-migration-client',
+  'PAYMENT',
+  'CASH_OUT',
+]);
+const approvalMigrationResult = approvalMigrationMock.migrateVoucherApprovalFields();
+ok(
+  approvalMigrationResult.includes('Added ApprovalStatus') &&
+    approvalMigrationSheet.rows[0].slice(17, 21).join(',') ===
+      'ApprovalStatus,ApprovedBy,ApprovedAt,ApprovalReason',
+  'approval migration appends the four approved headers in R:U',
+);
+ok(
+  approvalMigrationSheet.rows.length === 2 &&
+    approvalMigrationSheet.rows[1].slice(0, 17)[0] === 'legacy-approval-migration-id' &&
+    approvalMigrationSheet.rows[1].slice(17, 21).every((value) => value === ''),
+  'approval migration preserves historical voucher values and leaves new fields blank',
+);
+const vendorIdMigrationResult = approvalMigrationMock.migrateVoucherVendorIdField();
+ok(
+  vendorIdMigrationResult.includes('Added VendorID') &&
+    approvalMigrationSheet.rows[0][21] === 'VendorID',
+  'VendorID migration appends column V after the reviewed approval fields',
+);
+ok(
+  approvalMigrationSheet.rows[1][0] === 'legacy-approval-migration-id' &&
+    (approvalMigrationSheet.rows[1][21] || '') === '',
+  'VendorID migration preserves legacy vouchers and does not backfill their vendor IDs',
+);
+const approvalMigrationConflict = create();
+approvalMigrationConflict.props.OWNER_EMAIL = 'Owner@Test.com';
+approvalMigrationConflict.props.OWNER_PIN = '483921';
+approvalMigrationConflict.setup();
+approvalMigrationConflict.sheets.Vouchers.rows[0] =
+  approvalMigrationConflict.sheets.Vouchers.rows[0].slice(0, 17);
+approvalMigrationConflict.sheets.Vouchers.rows[0][18] = 'Unrelated data';
+assert.throws(
+  () => approvalMigrationConflict.migrateVoucherApprovalFields(),
+  /R:U already contain a header or data/,
+);
+ok(true, 'approval migration refuses to overwrite occupied columns');
+const vendorIdMigrationConflict = create();
+vendorIdMigrationConflict.props.OWNER_EMAIL = 'Owner@Test.com';
+vendorIdMigrationConflict.props.OWNER_PIN = '483921';
+vendorIdMigrationConflict.setup();
+vendorIdMigrationConflict.sheets.Vouchers.rows[0] =
+  vendorIdMigrationConflict.sheets.Vouchers.rows[0].slice(0, 21);
+vendorIdMigrationConflict.sheets.Vouchers.rows[0][21] = 'Unrelated data';
+assert.throws(
+  () => vendorIdMigrationConflict.migrateVoucherVendorIdField(),
+  /column V already contains a header or data/,
+);
+ok(true, 'VendorID migration refuses to overwrite occupied column V');
 
 const retentionDayMs = 24 * 60 * 60 * 1000;
 function retentionFolder(name, ageDays) {
@@ -177,15 +263,34 @@ ok(as(M0, 'bootstrap').code === 'SESSION', 'old token invalid after pin change')
 const M = cp.data.token;
 ok(as(M, 'bootstrap').ok, 'new token works');
 const managerUserId = as(T, 'listUsers').data.find((u) => u.email === 'm@test.com').id;
+
+// Use a dedicated disposable account for PIN lockout tests so those intentionally
+// failed attempts cannot invalidate the manager session used by later approval tests.
+ok(
+  as(T, 'saveUser', {
+    name: 'Lockout Test User',
+    email: 'lockout@test.com',
+    role: 'staff',
+    pin: '314159',
+  }).ok,
+  'dedicated account created for PIN lockout tests',
+);
+const lockoutLogin = g.call('login', { email: 'lockout@test.com', pin: '314159' });
+const lockoutPinChange = as(lockoutLogin.data.token, 'changePin', {
+  oldPin: '314159',
+  newPin: '625814',
+});
+const L = lockoutPinChange.data.token;
+const lockoutUserId = as(T, 'listUsers').data.find((u) => u.email === 'lockout@test.com').id;
 const busyPinAttempts = g.lockStats.attempts;
 const busyPinWaits = g.lockStats.waits;
 const busyPinReleases = g.lockStats.releases;
 g.lockStats.failNextWait = true;
-const busyPinChange = as(M, 'changePin', { oldPin: '000000', newPin: '864209' });
+const busyPinChange = as(L, 'changePin', { oldPin: '000000', newPin: '625814' });
 ok(
   !busyPinChange.ok &&
     busyPinChange.code === 'BUSY' &&
-    !Object.prototype.hasOwnProperty.call(g.cache, 'pf:' + managerUserId),
+    !Object.prototype.hasOwnProperty.call(g.cache, 'pf:' + lockoutUserId),
   'PIN-change lock timeout does not record a failed current-PIN attempt',
 );
 ok(
@@ -198,7 +303,7 @@ const changePinWaits = g.lockStats.waits;
 const changePinReleases = g.lockStats.releases;
 const failedPinChanges = [];
 for (let i = 0; i < 5; i++) {
-  failedPinChanges.push(as(M, 'changePin', { oldPin: '000000', newPin: '864209' }));
+  failedPinChanges.push(as(L, 'changePin', { oldPin: '000000', newPin: '625814' }));
 }
 ok(
   failedPinChanges.every((result) => !result.ok && result.code !== 'LOCKED'),
@@ -211,7 +316,7 @@ ok(
 const changePinLockoutWaits = g.lockStats.waits;
 const changePinLockoutReleases = g.lockStats.releases;
 ok(
-  as(M, 'changePin', { oldPin: '864209', newPin: '112244' }).code === 'LOCKED',
+  as(L, 'changePin', { oldPin: '625814', newPin: '112244' }).code === 'LOCKED',
   'PIN change is locked after five incorrect current PIN attempts',
 );
 ok(
@@ -531,6 +636,288 @@ ok(
 ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff still sees only own after bulk');
 ok(as(M, 'bootstrap').data.vouchers.length === 53, 'manager sees all');
 
+// Owner-approved high-value payment approval policy: inclusive INR 10,000 threshold.
+const approvalDate = '2020-02-01';
+const approvalReportBefore = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(approvalReportBefore.ok, 'baseline active-payment total available before approval tests');
+const approvalTotalBefore = approvalReportBefore.data.activePaymentTotal;
+const belowApprovalThreshold = as(M, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-below-threshold',
+      date: today,
+      vendor: 'Below Approval Threshold',
+      amount: 9999.99,
+      type: 'PAYMENT',
+    },
+  ],
+});
+ok(
+  belowApprovalThreshold.ok &&
+    belowApprovalThreshold.data.created[0].approvalStatus === 'NOT_REQUIRED',
+  'payment below INR 10,000 does not require approval',
+);
+const managerOwnedHighPayment = as(M, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-manager-owned',
+      date: today,
+      vendor: 'Manager Own High Value',
+      amount: 10000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const managerOwnedHighVoucher = managerOwnedHighPayment.data.created[0];
+ok(
+  managerOwnedHighPayment.ok && managerOwnedHighVoucher.approvalStatus === 'PENDING',
+  'payment at exactly INR 10,000 is pending approval',
+);
+const staffOwnedHighPayment = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-manager-review',
+      date: today,
+      vendor: 'Staff High Value',
+      amount: 12500,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const staffOwnedHighVoucher = staffOwnedHighPayment.data.created[0];
+ok(
+  staffOwnedHighPayment.ok && staffOwnedHighVoucher.approvalStatus === 'PENDING',
+  'high-value payment from staff is pending approval',
+);
+ok(
+  as(M, 'approveVoucher', { id: managerOwnedHighVoucher.id }).code === 'FORBIDDEN',
+  'creator cannot approve their own high-value payment',
+);
+ok(
+  as(M, 'rejectVoucher', {
+    id: managerOwnedHighVoucher.id,
+    reason: 'Creator attempted rejection',
+  }).code === 'FORBIDDEN',
+  'creator cannot reject their own high-value payment',
+);
+ok(
+  as(S, 'approveVoucher', { id: staffOwnedHighVoucher.id }).code === 'FORBIDDEN',
+  'staff cannot approve high-value payments',
+);
+const pendingApprovalReport = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  pendingApprovalReport.ok &&
+    pendingApprovalReport.data.pendingApprovalCount === 2 &&
+    Math.round((pendingApprovalReport.data.activePaymentTotal - approvalTotalBefore) * 100) ===
+      999999,
+  'pending payments remain visible but are excluded from active-payment totals',
+);
+const approvedManagerPayment = as(T, 'approveVoucher', { id: managerOwnedHighVoucher.id });
+ok(
+  approvedManagerPayment.ok &&
+    approvedManagerPayment.data.approvalStatus === 'APPROVED' &&
+    approvedManagerPayment.data.approvedBy.toLowerCase() === 'owner@test.com' &&
+    approvedManagerPayment.data.approvedAt,
+  'owner can approve a manager-created payment and approval metadata is saved',
+);
+const managerApprovesStaffPayment = as(M, 'approveVoucher', { id: staffOwnedHighVoucher.id });
+ok(
+  managerApprovesStaffPayment.ok &&
+    managerApprovesStaffPayment.data.approvalStatus === 'APPROVED' &&
+    managerApprovesStaffPayment.data.approvedBy.toLowerCase() === 'm@test.com',
+  'manager can approve another user’s high-value payment',
+);
+const approvalAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'PAYMENT_APPROVE' && row[3] === '#' + managerOwnedHighVoucher.no);
+const approvalAuditDetails = approvalAuditRow ? JSON.parse(approvalAuditRow[4]) : null;
+ok(
+  approvalAuditDetails?.eventType === 'PAYMENT_VOUCHER_APPROVED' &&
+    approvalAuditDetails.reason === '' &&
+    approvalAuditDetails.changes.some(
+      (change) =>
+        change.field === 'approvalStatus' &&
+        change.before === 'PENDING' &&
+        change.after === 'APPROVED',
+    ) &&
+    approvalAuditDetails.changes.some(
+      (change) => change.field === 'approvedBy' && change.after.toLowerCase() === 'owner@test.com',
+    ),
+  'payment approval is auditable with status change, actor and timestamp metadata',
+);
+const approvedPaymentReport = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  approvedPaymentReport.ok &&
+    approvedPaymentReport.data.pendingApprovalCount === 0 &&
+    Math.round((approvedPaymentReport.data.activePaymentTotal - approvalTotalBefore) * 100) ===
+      3249999,
+  'approved payments re-enter active-payment totals',
+);
+const paymentEditResetsApproval = as(M, 'updateVoucher', {
+  id: managerOwnedHighVoucher.id,
+  reason: 'Updated description after review',
+  fields: { notes: 'Reviewed payment details' },
+});
+ok(
+  paymentEditResetsApproval.ok &&
+    paymentEditResetsApproval.data.approvalStatus === 'PENDING' &&
+    paymentEditResetsApproval.data.approvedBy === '' &&
+    paymentEditResetsApproval.data.approvedAt === '',
+  'editing an approved payment sends it back for independent approval',
+);
+const afterApprovalResetReport = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  afterApprovalResetReport.ok &&
+    Math.round((afterApprovalResetReport.data.activePaymentTotal - approvalTotalBefore) * 100) ===
+      2249999,
+  'a re-review payment is removed from totals until approved again',
+);
+const highValueReceipt = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-receipt-not-required',
+      date: today,
+      vendor: 'High Value Receipt',
+      amount: 15000,
+      type: 'RECEIPT',
+    },
+  ],
+});
+ok(
+  highValueReceipt.ok && highValueReceipt.data.created[0].approvalStatus === 'NOT_REQUIRED',
+  'high-value cash receipts are outside the PAYMENT-only approval policy',
+);
+const closeBlockedPayment = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-close-blocker',
+      date: approvalDate,
+      vendor: 'Rejected Payment Blocks Close',
+      amount: 10000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const closeBlockedVoucher = closeBlockedPayment.data.created[0];
+ok(
+  closeBlockedPayment.ok && closeBlockedVoucher.approvalStatus === 'PENDING',
+  'high-value payment on a close date starts pending approval',
+);
+const missingRejectionReason = as(T, 'rejectVoucher', {
+  id: closeBlockedVoucher.id,
+  reason: 'no',
+});
+ok(
+  !missingRejectionReason.ok && missingRejectionReason.code === 'VALIDATION',
+  'payment rejection requires an attributable reason',
+);
+const rejectedApproval = as(T, 'rejectVoucher', {
+  id: closeBlockedVoucher.id,
+  reason: 'Supplier details not verified',
+});
+ok(
+  rejectedApproval.ok &&
+    rejectedApproval.data.approvalStatus === 'REJECTED' &&
+    rejectedApproval.data.approvalReason === 'Supplier details not verified',
+  'rejection preserves its reason and leaves the voucher available for review',
+);
+const closeApprovalPreview = as(M, 'cashClosePreview', {
+  date: approvalDate,
+  openingCash: '0',
+  openingReason: 'Test opening cash',
+});
+ok(
+  closeApprovalPreview.ok &&
+    closeApprovalPreview.data.pendingApprovals.some(
+      (item) => item.id === closeBlockedVoucher.id && item.approvalStatus === 'REJECTED',
+    ) &&
+    !closeApprovalPreview.data.readyToClose,
+  'rejected active payments are visible as blockers in cash-close preview',
+);
+const closeApprovalBlocked = as(M, 'createCashClose', {
+  date: approvalDate,
+  openingCash: '0',
+  openingReason: 'Test opening cash',
+  countedCash: '0',
+  requestId: 'approval-close-must-block',
+});
+ok(
+  !closeApprovalBlocked.ok && closeApprovalBlocked.code === 'CASH_CLOSE_APPROVAL_PENDING',
+  'backend refuses final cash close while a high-value payment is not approved',
+);
+ok(
+  as(T, 'cancelVoucher', {
+    id: closeBlockedVoucher.id,
+    reason: 'Rejected payment removed from close period',
+  }).ok,
+  'owner can cancel a rejected payment before retrying close',
+);
+// A blank status from an older voucher remains NOT_REQUIRED; no historical backfill on edit.
+const historicalHighPayment = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'approval-historical-blank',
+      date: today,
+      vendor: 'Legacy High Payment',
+      amount: 16000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const historicalRow = g.sheets.Vouchers.rows.find(
+  (row) => row[0] === historicalHighPayment.data.created[0].id,
+);
+historicalRow[17] = '';
+historicalRow[18] = '';
+historicalRow[19] = '';
+historicalRow[20] = '';
+const historicalBootstrap = as(T, 'bootstrap').data.vouchers.find(
+  (voucher) => voucher.id === historicalHighPayment.data.created[0].id,
+);
+ok(
+  historicalBootstrap.approvalStatus === 'NOT_REQUIRED',
+  'blank historical approval field does not trigger retroactive approval',
+);
+const historicalEdit = as(M, 'updateVoucher', {
+  id: historicalBootstrap.id,
+  reason: 'Legacy note cleanup without reclassifying history',
+  fields: { notes: 'Historical voucher note updated' },
+});
+ok(
+  historicalEdit.ok && historicalEdit.data.approvalStatus === 'NOT_REQUIRED',
+  'editing a historical high-value voucher does not silently backfill approval state',
+);
+const historicalApprovalRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'UPDATE' && row[3] === '#' + historicalBootstrap.no);
+const historicalApprovalDetails = historicalApprovalRow
+  ? JSON.parse(historicalApprovalRow[4])
+  : null;
+ok(
+  !historicalApprovalDetails?.changes.some((change) => change.field === 'approvalStatus'),
+  'legacy edit audit does not invent an approval-state transition',
+);
+
 const staffImpactEdit = as(S, 'updateVoucher', {
   id: id1,
   reason: 'Digital payment',
@@ -766,7 +1153,8 @@ ok(
     propertyName: 'Hotel X',
     propertyAddress: 'Addr',
     categories: ['A', 'B'],
-    nextVoucherNo: 300,
+    nextVoucherNo: nextPaymentNumber(),
+    nextReceiptNo: nextReceiptNumber(),
   }).ok,
   'owner settings',
 );
@@ -908,6 +1296,7 @@ ok(
 );
 g.sheets.AuditLog.rows.splice(auditRowsBeforeFixture);
 // cash received
+const receiptNumberStart = Number(as(T, 'bootstrap').data.settings.nextReceiptNo);
 const rc = as(T, 'createVouchers', {
   entries: [
     {
@@ -923,26 +1312,26 @@ const rc = as(T, 'createVouchers', {
 ok(
   rc.ok &&
     rc.data.created[0].type === 'RECEIPT' &&
-    rc.data.created[0].no === 1 &&
-    rc.data.created[1].no === 2,
-  'receipts numbered 1,2 in their own series',
+    rc.data.created[0].no === receiptNumberStart &&
+    rc.data.created[1].no === receiptNumberStart + 1,
+  'receipts use their independent increasing number series',
 );
 ok(rc.data.created[1].category === 'Other', 'unknown receipt category falls back to Other');
 const bs = as(T, 'bootstrap').data;
-ok(bs.settings.nextReceiptNo === 3, 'next receipt no advances');
+ok(bs.settings.nextReceiptNo === receiptNumberStart + 2, 'next receipt no advances');
 ok(
   as(T, 'saveSettings', {
     propertyName: 'Hotel X',
     categories: ['A', 'B'],
-    nextVoucherNo: 400,
-    nextReceiptNo: 3,
+    nextVoucherNo: nextPaymentNumber(),
+    nextReceiptNo: nextReceiptNumber(),
     openingBalance: 2500,
   }).ok && as(T, 'bootstrap').data.settings.openingBalance === 2500,
   'opening balance saved',
 );
 ok(
   as(T, 'createVouchers', { entries: [{ date: today, vendor: 'Pay', amount: 1 }] }).data.created[0]
-    .no >= 300 && as(T, 'bootstrap').data.vouchers.filter((v) => v.type === 'RECEIPT').length === 2,
+    .no >= 300 && as(T, 'bootstrap').data.vouchers.filter((v) => v.type === 'RECEIPT').length === 3,
   'payment series unaffected by receipts',
 );
 ok(
@@ -1365,5 +1754,171 @@ ok(
 );
 const futureClose = as(T, 'cashClosePreview', { date: '2999-01-01' });
 ok(!futureClose.ok && futureClose.code === 'VALIDATION', 'future close date rejected');
+
+// Slice 4: report-only accountant access and stable VendorID export.
+const savedAccountant = as(T, 'saveUser', {
+  name: 'Nina Accountant',
+  email: 'accountant@test.com',
+  role: 'accountant',
+  pin: '864209',
+});
+ok(savedAccountant.ok, 'owner can create an accountant role');
+const accountantLogin = g.call('login', {
+  email: 'accountant@test.com',
+  pin: '864209',
+});
+ok(
+  accountantLogin.ok && accountantLogin.data.user.mustChangePin,
+  'new accountant account requires a PIN change at first login',
+);
+const accountantPinChange = as(accountantLogin.data.token, 'changePin', {
+  oldPin: '864209',
+  newPin: '975318',
+});
+const accountantToken = accountantPinChange.data.token;
+const accountantBootstrap = as(accountantToken, 'bootstrap').data;
+ok(
+  accountantPinChange.ok &&
+    accountantBootstrap.vouchers.length === 0 &&
+    accountantBootstrap.vendors.length === 0 &&
+    accountantBootstrap.user.perms.reports === 1 &&
+    !accountantBootstrap.user.perms.viewAll &&
+    !accountantBootstrap.user.perms.create &&
+    !accountantBootstrap.user.perms.edit &&
+    !accountantBootstrap.user.perms.cashClose,
+  'accountant bootstrap exposes read-only report permission without voucher register, vendor contacts or write/close rights',
+);
+ok(
+  as(accountantToken, 'recordedMovementReport', {
+    from: today,
+    to: today,
+    type: 'ALL',
+    status: 'ALL',
+  }).ok,
+  'accountant can access the server-authorized recorded movement report',
+);
+ok(
+  as(accountantToken, 'cashClosePreview', { date: today }).code === 'FORBIDDEN' &&
+    as(accountantToken, 'createVouchers', {
+      entries: [{ date: today, vendor: 'Accountant must not write', amount: 1 }],
+    }).code === 'FORBIDDEN' &&
+    as(accountantToken, 'saveVendor', { name: 'Accountant must not create a vendor' }).code ===
+      'FORBIDDEN',
+  'accountant cannot finalize cash close, create vouchers, or change vendor master data',
+);
+const accountantVendorSave = as(T, 'saveVendor', {
+  name: 'Accountant Export Vendor',
+  company: 'Export Test',
+  mobile: '',
+});
+const accountantVendorRow = g.sheets.Vendors.rows.find(
+  (row) => row[1] === 'Accountant Export Vendor',
+);
+const accountantVendorId = accountantVendorRow && accountantVendorRow[0];
+ok(
+  accountantVendorSave.ok && typeof accountantVendorId === 'string' && accountantVendorId,
+  'vendor master assigns a stable VendorID',
+);
+const linkedVendorVoucher = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'accountant-vendor-id-export',
+      date: today,
+      vendor: 'Accountant Export Vendor',
+      amount: 325,
+      category: 'Other',
+      type: 'PAYMENT',
+    },
+  ],
+});
+ok(
+  linkedVendorVoucher.ok && linkedVendorVoucher.data.created[0].vendorId === accountantVendorId,
+  'new voucher stores the unique known VendorID',
+);
+const accountantReportWithVendor = as(accountantToken, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ALL',
+});
+const linkedVendorReportRow = accountantReportWithVendor.data.items.find(
+  (item) => item.id === linkedVendorVoucher.data.created[0].id,
+);
+ok(
+  accountantReportWithVendor.ok &&
+    linkedVendorReportRow &&
+    linkedVendorReportRow.vendorId === accountantVendorId,
+  'accountant report exports the stable VendorID for the matched voucher',
+);
+// Legacy report fallback must use prototype-safe lookup keys for user-controlled names.
+const prototypeVendorSave = as(T, 'saveVendor', {
+  name: '__proto__',
+  company: 'Prototype Safety',
+  mobile: '',
+});
+const prototypeVendorRow = g.sheets.Vendors.rows.find((row) => row[1] === '__proto__');
+const prototypeVendorId = prototypeVendorRow && prototypeVendorRow[0];
+const prototypeVendorVoucher = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'accountant-prototype-vendor-fallback',
+      date: today,
+      vendor: '__proto__',
+      amount: 75,
+      category: 'Other',
+      type: 'PAYMENT',
+    },
+  ],
+});
+const prototypeVoucherRow = g.sheets.Vouchers.rows.find(
+  (row) => row[0] === prototypeVendorVoucher.data.created[0].id,
+);
+prototypeVoucherRow[21] = '';
+const prototypeVendorReport = as(accountantToken, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ALL',
+});
+const prototypeVendorReportRow = prototypeVendorReport.data.items.find(
+  (item) => item.id === prototypeVendorVoucher.data.created[0].id,
+);
+ok(
+  prototypeVendorSave.ok &&
+    prototypeVendorVoucher.ok &&
+    prototypeVendorReport.ok &&
+    prototypeVendorReportRow &&
+    prototypeVendorReportRow.vendorId === prototypeVendorId,
+  'legacy VendorID fallback safely resolves prototype-sensitive exact vendor names',
+);
+const unmatchedVendorVoucher = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'accountant-vendor-id-unmatched',
+      date: today,
+      vendor: 'Unregistered Counterparty',
+      amount: 125,
+      category: 'Other',
+      type: 'PAYMENT',
+    },
+  ],
+});
+const unmatchedVendorReport = as(accountantToken, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ALL',
+});
+const unmatchedVendorRow = unmatchedVendorReport.data.items.find(
+  (item) => item.id === unmatchedVendorVoucher.data.created[0].id,
+);
+ok(
+  unmatchedVendorVoucher.ok &&
+    unmatchedVendorReport.ok &&
+    unmatchedVendorRow &&
+    unmatchedVendorRow.vendorId === '' &&
+    unmatchedVendorReport.data.unmatchedVendorCount >= 1,
+  'unknown/free-text counterparty exports a blank VendorID and is surfaced as an exception',
+);
 
 console.log('backend OK — ' + n + ' checks passed');

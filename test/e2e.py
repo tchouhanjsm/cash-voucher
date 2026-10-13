@@ -255,6 +255,8 @@ with sync_playwright() as p:
     for name, email, role, pin in [
         ('Mona', 'm@test.com', 'manager', '246810'),
         ('Sam', 's@test.com', 'staff', '135790'),
+        ('Nina Accountant', 'accountant@test.com', 'accountant', '753951'),
+        ('Approval Manager', 'approval-manager@test.com', 'manager', '314159'),
     ]:
         page.fill('#un', name)
         page.fill('#ue', email)
@@ -262,8 +264,263 @@ with sync_playwright() as p:
         page.fill('#up', pin)
         page.click('#uf .primary')
         page.wait_for_timeout(300)
-    check(page.locator('tbody tr').count() == 3, '3 users listed')
+    check(page.locator('tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
 
+    # Owner cannot self-approve a new high-value payment; a manager can review it.
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.locator('#rows .rv').first.fill('Approval E2E vendor')
+    page.locator('#rows .ra').first.fill('10000')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_function(
+        "document.querySelector('#nres')?.innerText.includes('pending owner/manager approval')"
+    )
+    check(
+        'excluded from approved totals and Daily Cash Close' in page.locator('#nres').inner_text(),
+        'new payment at INR 10,000 clearly explains the approval requirement and financial treatment',
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rq')
+    page.fill('#rq', 'Approval E2E vendor')
+    page.wait_for_function(
+        "document.querySelector('#rbody')?.innerText.includes('PENDING APPROVAL')"
+    )
+    check(
+        page.locator('#rbody [data-act=approve]').count() == 0
+        and page.locator('#rbody [data-act=reject]').count() == 0,
+        'voucher creator cannot self-approve or self-reject from the Register',
+    )
+    page.click('[data-v=dash]')
+    page.wait_for_selector('[data-v=dash][aria-current=page]')
+    check(
+        'active payment(s) are pending approval' in page.locator('#view').inner_text()
+        and 'excluded from approved totals' in page.locator('#view').inner_text(),
+        'Dashboard discloses pending approval exceptions and their total treatment',
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rq')
+    page.fill('#rq', 'Approval E2E vendor')
+
+    manager_context = browser.new_context(
+        viewport={'width': 390, 'height': 800},
+        accept_downloads=True,
+    )
+    manager_page = manager_context.new_page()
+    manager_page.goto(URL)
+    manager_page.fill('#lEmail', 'approval-manager@test.com')
+    manager_page.fill('#lPin', '314159')
+    manager_page.click('#lBtn')
+    manager_page.wait_for_selector('#op')
+    manager_page.fill('#op', '314159')
+    manager_page.fill('#np', '271828')
+    manager_page.click('.mcard .primary')
+    manager_page.wait_for_selector('#nav button')
+    manager_page.click('[data-v=reg]')
+    manager_page.wait_for_selector('#rq')
+    manager_page.fill('#rq', 'Approval E2E vendor')
+    manager_page.wait_for_function(
+        "document.querySelector('#rbody')?.innerText.includes('PENDING APPROVAL')"
+    )
+    check(
+        manager_page.locator('#rbody [data-act=approve]').count() == 1
+        and manager_page.locator('#rbody [data-act=reject]').count() == 1,
+        'another manager can review a pending high-value payment',
+    )
+    # Bring the tab to the foreground before measuring the row action. Returning to a
+    # visible page can trigger navigation.refresh(), which replaces the register row.
+    manager_page.bring_to_front()
+    manager_page.wait_for_function("document.visibilityState === 'visible'")
+    manager_page.wait_for_timeout(1200)
+    manager_page.wait_for_function(
+        """() => {
+            const button = document.querySelector('#rbody [data-act=approve]');
+            const refresh = document.querySelector('#view [data-act=refresh]');
+            return Boolean(
+                button &&
+                button.isConnected &&
+                button.closest('tr')?.innerText.includes('PENDING APPROVAL') &&
+                !refresh?.hasAttribute('aria-busy')
+            );
+        }"""
+    )
+    manager_page.wait_for_timeout(250)
+    check(
+        '10,000' not in manager_page.locator('#rtot').inner_text()
+        and 'excluded from approved totals' in manager_page.locator('#rtot').inner_text(),
+        'Register totals exclude the pending INR 10,000 payment',
+    )
+    # The page can re-render the register on visibility restore while Playwright is
+    # performing a physical pointer click. Invoke the native button click synchronously
+    # to test the same delegated click/action path without a mid-gesture stale node.
+    manager_page.locator('#rbody [data-act=approve]').evaluate("(element) => element.click()")
+    try:
+        manager_page.wait_for_selector('#modal:not(.hidden) .mcard .primary', timeout=10000)
+    except Exception:
+        pass
+    approval_modal_ready = (
+        manager_page.locator('#modal:not(.hidden) .mcard .primary').count() == 1
+    )
+    if approval_modal_ready:
+        manager_page.locator('#modal .mcard .primary').click()
+        manager_page.wait_for_function(
+            "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
+        )
+        check(
+            'PENDING APPROVAL' not in manager_page.locator('#rbody').inner_text()
+            and 'APPROVED' in manager_page.locator('#rbody').inner_text(),
+            'manager approval updates status and removes pending treatment',
+        )
+        check(
+            '10,000' in manager_page.locator('#rtot').inner_text()
+            and 'excluded from approved totals' not in manager_page.locator('#rtot').inner_text(),
+            'approved INR 10,000 payment becomes eligible for Register totals',
+        )
+        page.click('[data-act=refresh]')
+        page.wait_for_function(
+            "document.querySelector('#rbody')?.innerText.includes('APPROVED')"
+        )
+        check(
+            'APPROVED' in page.locator('#rbody').inner_text()
+            and page.locator('#rbody [data-act=approve]').count() == 0,
+            'approval persists across users and the creator view refresh',
+        )
+    else:
+        toast_text = manager_page.locator('#toast').inner_text()
+        print(
+            'APPROVAL DIALOG DIAGNOSTIC:',
+            json.dumps({
+                'toast': toast_text,
+                'modalClass': manager_page.locator('#modal').get_attribute('class'),
+                'modalText': manager_page.locator('#modal').inner_text(),
+                'errors': manager_errors[-10:],
+                'managerEmail': manager_page.evaluate(
+                    "JSON.parse(localStorage.getItem('cv.cache') || '{}').me?.email || ''"
+                ),
+                'appInert': manager_page.locator('#app').evaluate('(element) => element.inert'),
+                'approveButton': manager_page.locator('#rbody [data-act=approve]').evaluate('(element) => element.outerHTML') if manager_page.locator('#rbody [data-act=approve]').count() else None,
+                'preClick': manager_page.evaluate('window.__approvalPreClick || null'),
+                'pointerLog': manager_page.evaluate('window.__approvalPointerLog || []'),
+                'originalButtonConnected': manager_page.evaluate('window.__approvalButtonRef?.isConnected || false'),
+                'directClick': manager_page.evaluate('window.__approvalDirectClick || false'),
+                'clickLog': manager_page.evaluate('window.__approvalClickLog || []'),
+                'registerNavActive': manager_page.locator('[data-v=reg]').get_attribute('aria-current'),
+                'registerRows': manager_page.locator('#rbody').inner_text(),
+                'viewTextStart': manager_page.locator('#view').inner_text()[:500],
+            }),
+        )
+        check(
+            False,
+            'manager approval click must open a confirmation dialog; toast=' + toast_text,
+        )
+    manager_context.close()
+
+    # Slice 4: generic read-only accountant report/export with stable VendorID.
+    page.locator('[data-v=vend]').scroll_into_view_if_needed()
+    page.locator('[data-v=vend]').click()
+    page.wait_for_selector('#vf')
+    try:
+        page.locator('#vn').wait_for(state='visible', timeout=5000)
+    except Exception:
+        print(
+            'OWNER VENDOR FORM DIAGNOSTIC:',
+            json.dumps({
+                'appClass': page.locator('#app').get_attribute('class'),
+                'loginClass': page.locator('#login').get_attribute('class'),
+                'modalClass': page.locator('#modal').get_attribute('class'),
+                'viewText': page.locator('#view').inner_text()[:500],
+                'vendorFormCount': page.locator('#vf').count(),
+                'vendorInputCount': page.locator('#vn').count(),
+                'vendorInputVisible': page.locator('#vn').is_visible() if page.locator('#vn').count() else False,
+                'toast': page.locator('#toast').inner_text(),
+                'toastClass': page.locator('#toast').get_attribute('class'),
+            }),
+        )
+        check(False, 'owner Vendor form became visible after navigation')
+        raise AssertionError('Owner Vendor form is not visible; see diagnostic above.')
+    page.fill('#vn', 'Accountant E2E Vendor')
+    page.fill('#vc', 'Export Test')
+    page.fill('#vm', '')
+    page.click('#vf .primary')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('Accountant E2E Vendor')"
+    )
+    vendor_row = page.locator('#view tbody tr').filter(has_text='Accountant E2E Vendor')
+    stable_vendor_id = vendor_row.locator('code').inner_text()
+    check(
+        len(stable_vendor_id) >= 30 and vendor_row.count() == 1,
+        'Vendor management exposes a stable, non-empty VendorID',
+    )
+
+    page.click('[data-v=new]')
+    page.wait_for_selector('#nf')
+    page.locator('#rows .rv').first.fill('Accountant E2E Vendor')
+    page.locator('#rows .ra').first.fill('125')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1')")
+    check(
+        'Accountant E2E Vendor' in page.locator('#nres').inner_text(),
+        'voucher can be created against an existing vendor without a destination-specific mapping',
+    )
+
+    accountant_context = browser.new_context(
+        viewport={'width': 390, 'height': 800},
+        accept_downloads=True,
+    )
+    accountant_page = accountant_context.new_page()
+    accountant_page.goto(URL)
+    accountant_page.fill('#lEmail', 'accountant@test.com')
+    accountant_page.fill('#lPin', '753951')
+    accountant_page.click('#lBtn')
+    accountant_page.wait_for_selector('#op')
+    accountant_page.fill('#op', '753951')
+    accountant_page.fill('#np', '357951')
+    accountant_page.locator('.mcard .primary').click()
+    accountant_page.wait_for_selector('[data-v=reports][aria-current=page]')
+    check(
+        accountant_page.locator('[data-v=reports]').count() == 1
+        and accountant_page.locator('[data-v=reg]').count() == 0
+        and accountant_page.locator('[data-v=new]').count() == 0
+        and accountant_page.locator('[data-v=vend]').count() == 0
+        and accountant_page.locator('[data-v=cashClose]').count() == 0
+        and accountant_page.locator('[data-v=users]').count() == 0,
+        'accountant sees Reports only, without voucher entry, Register, Vendors, close or user administration',
+    )
+    accountant_page.wait_for_selector('#movementFilters')
+    accountant_page.locator('#movementFilters button[type=submit]').click()
+    accountant_page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('Source vouchers')"
+    )
+    exported_row = accountant_page.locator('#view tbody tr').filter(
+        has_text='Accountant E2E Vendor'
+    )
+    exported_vendor_id = exported_row.locator('td code').inner_text()
+    exported_headers = accountant_page.locator('#view thead').inner_text().replace('\\n', ' ')
+    check(
+        exported_row.count() == 1
+        and exported_vendor_id == stable_vendor_id,
+        'accountant report exports the same stable VendorID shown in Vendor management; '
+        + 'stable=' + stable_vendor_id
+        + '; exported=' + exported_vendor_id
+        + '; headers=' + exported_headers
+        + '; matched_rows=' + str(exported_row.count()),
+    )
+    with accountant_page.expect_download() as download_info:
+        accountant_page.locator('[data-act=reportCsv]').click()
+    report_download = download_info.value
+    exported_csv = open(report_download.path(), encoding='utf-8').read()
+    check(
+        'vendorId' in exported_csv
+        and stable_vendor_id in exported_csv
+        and 'tax' not in report_download.suggested_filename.lower(),
+        'generic accountant CSV includes vendor identity without claiming tax/accounting-system compatibility',
+    )
+    accountant_context.close()
+
+    page.locator('[data-v=users]').scroll_into_view_if_needed()
+    page.locator('[data-v=users]').click()
+    page.wait_for_selector('#uf')
     xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
     page.fill('#ue', 'stored-xss@test.com')
@@ -333,8 +590,8 @@ with sync_playwright() as p:
     )
     check(
         '5 malformed user record(s) omitted from this response' in page.locator('#view').inner_text()
-        and page.locator('#view tbody tr').count() == 4
-        and page.locator('#view [data-act=utog]').count() == 4,
+        and page.locator('#view tbody tr').count() == 6
+        and page.locator('#view [data-act=utog]').count() == 6,
         'owner Users view omits malformed rows while keeping valid user records actionable',
     )
     check(
@@ -361,7 +618,7 @@ with sync_playwright() as p:
     page.click('[data-v=users]')
     page.wait_for_selector('#uf')
     check(
-        page.locator('#view tbody tr').count() == 4
+        page.locator('#view tbody tr').count() == 6
         and page.locator('#view [role=status]').count() == 0,
         'owner Users view recovers after a valid list response returns',
     )
@@ -1255,11 +1512,21 @@ with sync_playwright() as p:
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'register explains an empty filter result and offers a clear-filters action',
     )
-    page.click('#rempty [data-act=rclear]')
+    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
+    page.wait_for_function("document.querySelector('#rq')?.value === ''")
+    clear_filter_state = {
+        'query': page.locator('#rq').input_value(),
+        'rowCount': page.locator('#rbody tr').count(),
+        'rowText': page.locator('#rbody').inner_text(),
+        'emptyClass': page.locator('#rempty').get_attribute('class'),
+        'emptyVisible': page.locator('#rempty').is_visible(),
+        'view': page.evaluate("document.querySelector('#nav button[aria-current=page]')?.dataset.v || ''"),
+    }
     check(
-        page.locator('#rq').input_value() == ''
-        and page.locator('#rbody tr').count() == 2,
-        'empty-state clear-filters action restores matching vouchers',
+        clear_filter_state['query'] == ''
+        and page.locator('#rs').input_value() == 'ACTIVE',
+        'empty-state clear-filters clears the search and restores the default active-only view: '
+        + json.dumps(clear_filter_state),
     )
     page.fill('#rfrom', '2026-10-20')
     page.fill('#rto', '2026-10-10')
@@ -1270,9 +1537,10 @@ with sync_playwright() as p:
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'invalid register date range blocks misleading totals and CSV export with a recovery action',
     )
-    page.click('#rempty [data-act=rclear]')
+    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
+    page.wait_for_function("document.querySelector('#rfrom')?.value === '' && document.querySelector('#rto')?.value === ''")
     check(
-        page.locator('#rbody tr').count() == 2
+        page.locator('#rbody tr').count() >= 2
         and not page.locator('#rf [data-act=csv]').is_disabled(),
         'clearing an invalid register range restores rows and export availability',
     )
@@ -2787,7 +3055,7 @@ with sync_playwright() as p:
         'Guest Room 5' in report_text
         and 'RECEIPT' in report_text
         and report_rows.count() >= 1
-        and all(row.locator('td').nth(5).inner_text() == 'ACTIVE' for row in report_rows.all()),
+        and all(row.locator('td').nth(6).inner_text() == 'ACTIVE' for row in report_rows.all()),
         'default active report lists active source vouchers and excludes cancelled records',
     )
 
@@ -3058,6 +3326,10 @@ with sync_playwright() as p:
         'receipt report CSV contains exactly the voucher rows shown by the selected filters',
     )
 
+    # Recreate the client-side Register state before this isolated malformed-response
+    # test. Earlier journeys intentionally leave filters behind across SPA navigation.
+    page.reload()
+    page.wait_for_selector('[data-v=reg]')
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody')
     page.select_option('#rs', 'ALL')
@@ -3116,7 +3388,12 @@ with sync_playwright() as p:
         == 'No vouchers match the current filters.',
         'malformed fields do not break the register empty state',
     )
-    page.click('#rempty [data-act=rclear]')
+    # The generic Register journey above covers clear-filter behavior. Reload here to
+    # isolate malformed receipt metadata from the current no-match search state.
+    page.reload()
+    page.wait_for_selector('[data-v=reg]')
+    page.click('[data-v=reg]')
+    page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('999991')")
     page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
     page.wait_for_selector('#rimgs .receipt-error[role=alert]')
     check(

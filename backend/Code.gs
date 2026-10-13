@@ -16,6 +16,7 @@ const CFG = {
   BACKUP_RETENTION_DAYS: 90,
   BACKUP_HOUR: 2, // 8 MB JSON request envelope
   MAX_AMOUNT: 10000000,
+  PAYMENT_APPROVAL_THRESHOLD: 10000,
   DEFAULT_RCATS: [
     'Room Revenue',
     'Restaurant',
@@ -27,7 +28,7 @@ const CFG = {
   ],
   TEXT_COLS: {
     Users: ['A:D', 'F:G', 'I:J'],
-    Vouchers: ['A:A', 'C:D', 'F:Q'],
+    Vouchers: ['A:A', 'C:D', 'F:V'],
     Vendors: ['A:D', 'F:G'],
     Settings: ['A:B'],
     AuditLog: ['A:E'],
@@ -92,6 +93,11 @@ const CFG = {
       'ClientID',
       'Type',
       'CashImpact',
+      'ApprovalStatus',
+      'ApprovedBy',
+      'ApprovedAt',
+      'ApprovalReason',
+      'VendorID',
     ],
     Vendors: ['VendorID', 'Name', 'Company', 'Mobile', 'Active', 'CreatedBy', 'CreatedAt'],
     Settings: ['Key', 'Value'],
@@ -143,6 +149,8 @@ const PERMS = {
     vendors: 1,
     receiptAny: 1,
     cashClose: 1,
+    approvePayments: 1,
+    reports: 1,
   },
   owner: {
     create: 1,
@@ -156,6 +164,11 @@ const PERMS = {
     settings: 1,
     audit: 1,
     cashClose: 1,
+    approvePayments: 1,
+    reports: 1,
+  },
+  accountant: {
+    reports: 1,
   },
 };
 
@@ -660,7 +673,7 @@ function dataQualityReport_(user) {
 }
 
 function recordedMovementReport_(user, req) {
-  need_(user, 'viewAll');
+  need_(user, 'reports');
   const from = String(req.from || '').trim();
   const to = String(req.to || '').trim();
 
@@ -678,6 +691,7 @@ function recordedMovementReport_(user, req) {
     throw err_('Choose a valid voucher status.', 'VALIDATION');
   }
 
+  const vendorLookup = vendorIdLookup_();
   const items = readAll_('Vouchers')
     .filter(function (voucher) {
       const date = isoDate_(voucher.Date);
@@ -701,6 +715,7 @@ function recordedMovementReport_(user, req) {
         voucherNo: String(voucher.VoucherNo || ''),
         date: isoDate_(voucher.Date),
         vendor: String(voucher.Vendor || ''),
+        vendorId: String(voucher.VendorID || '') || vendorIdForName_(voucher.Vendor, vendorLookup),
         category: String(voucher.Category || ''),
         notes: String(voucher.Notes || ''),
         type: String(voucher.Type || ''),
@@ -708,14 +723,25 @@ function recordedMovementReport_(user, req) {
         amount: Number(voucher.Amount) || 0,
         createdBy: String(voucher.CreatedBy || ''),
         cancelReason: String(voucher.CancelReason || ''),
+        approvalStatus: approvalStatus_(voucher),
+        approvedBy: String(voucher.ApprovedBy || ''),
+        approvedAt: tsStr_(voucher.ApprovedAt),
+        approvalReason: String(voucher.ApprovalReason || ''),
       };
     });
 
   const active = items.filter(function (item) {
     return item.status === 'ACTIVE';
   });
+  const eligiblePayments = function (list) {
+    return list.filter(function (item) {
+      return (
+        item.type !== 'PAYMENT' || ['NOT_REQUIRED', 'APPROVED'].indexOf(item.approvalStatus) >= 0
+      );
+    });
+  };
   const sum = function (list, wantedType) {
-    return list
+    return eligiblePayments(list)
       .filter(function (item) {
         return !wantedType || item.type === wantedType;
       })
@@ -733,6 +759,22 @@ function recordedMovementReport_(user, req) {
     count: items.length,
     activeCount: active.length,
     cancelledCount: items.length - active.length,
+    pendingApprovalCount: items.filter(function (item) {
+      return (
+        item.status === 'ACTIVE' && item.type === 'PAYMENT' && item.approvalStatus === 'PENDING'
+      );
+    }).length,
+    unmatchedVendorCount: items.filter(function (item) {
+      return !item.vendorId;
+    }).length,
+    ambiguousVendorCount: Object.keys(vendorLookup.ambiguous).length,
+    approvalExceptionCount: items.filter(function (item) {
+      return (
+        item.status === 'ACTIVE' &&
+        item.type === 'PAYMENT' &&
+        ['NOT_REQUIRED', 'APPROVED'].indexOf(item.approvalStatus) < 0
+      );
+    }).length,
     paymentTotal: sum(items, 'PAYMENT'),
     receiptTotal: sum(items, 'RECEIPT'),
     activePaymentTotal: sum(active, 'PAYMENT'),
@@ -1171,6 +1213,8 @@ const ACTIONS = {
   createVouchers: createVouchers_,
   updateVoucher: updateVoucher_,
   cancelVoucher: cancelVoucher_,
+  approveVoucher: approveVoucher_,
+  rejectVoucher: rejectVoucher_,
   addReceipt: addReceipt_,
   getReceipt: getReceipt_,
   saveVendor: saveVendor_,
@@ -1194,6 +1238,8 @@ const WRITES = {
   createVouchers: 1,
   updateVoucher: 1,
   cancelVoucher: 1,
+  approveVoucher: 1,
+  rejectVoucher: 1,
   addReceipt: 1,
   saveVendor: 1,
   toggleVendor: 1,
@@ -1298,9 +1344,21 @@ function validateSheetSchema_(s, name) {
   const actual = s.getRange(1, 1, 1, expected.length).getValues()[0];
   for (let i = 0; i < expected.length; i++) {
     if (actual[i] !== expected[i]) {
-      if (name === 'Vouchers' && i === expected.length - 1 && actual[i] === '') {
+      if (name === 'Vouchers' && i === 16 && (actual[i] === '' || actual[i] === null)) {
         throw err_(
           'The Vouchers sheet is missing CashImpact. Run migrateCashImpactField() once in the Apps Script editor before using this version.',
+          'SCHEMA_MIGRATION',
+        );
+      }
+      if (name === 'Vouchers' && i >= 17 && i <= 20 && (actual[i] === '' || actual[i] === null)) {
+        throw err_(
+          'The Vouchers sheet is missing payment approval fields. After a verified backup, run migrateVoucherApprovalFields() once in the Apps Script editor before using this version.',
+          'SCHEMA_MIGRATION',
+        );
+      }
+      if (name === 'Vouchers' && i === 21 && (actual[i] === '' || actual[i] === null)) {
+        throw err_(
+          'The Vouchers sheet is missing stable vendor IDs. After a verified backup, run migrateVoucherVendorIdField() once in the Apps Script editor before using this version.',
           'SCHEMA_MIGRATION',
         );
       }
@@ -1327,7 +1385,7 @@ function migrateCashImpactField() {
   const spreadsheet = SpreadsheetApp.openById(id);
   const sheet = spreadsheet.getSheetByName('Vouchers');
   if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
-  const expected = CFG.H.Vouchers;
+  const expected = CFG.H.Vouchers.slice(0, 17);
   const headers = sheet.getRange(1, 1, 1, expected.length).getValues()[0];
   if (
     expected.every(function (header, index) {
@@ -1352,6 +1410,95 @@ function migrateCashImpactField() {
   sheet.getRange(1, expected.length, 1, 1).setValues([['CashImpact']]);
   sheet.getRange('Q:Q').setNumberFormat('@');
   return 'Added CashImpact header. Historical rows remain blank and are treated as UNCLASSIFIED.';
+}
+/** Add the approval fields after CashImpact. Run manually once after a verified backup; never backfill historical vouchers. */
+// eslint-disable-next-line no-unused-vars
+function migrateVoucherApprovalFields() {
+  const id = props_().getProperty('SS_ID');
+  if (!id) throw new Error('Missing SS_ID Script Property; no changes were made.');
+  const spreadsheet = SpreadsheetApp.openById(id);
+  const sheet = spreadsheet.getSheetByName('Vouchers');
+  if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
+
+  const expected = CFG.H.Vouchers;
+  const priorHeaders = expected.slice(0, 17);
+  const approvalHeaders = expected.slice(17, 21);
+  const actualPriorHeaders = sheet.getRange(1, 1, 1, priorHeaders.length).getValues()[0];
+  const actualApprovalHeaders = sheet.getRange(1, 18, 1, approvalHeaders.length).getValues()[0];
+  if (
+    priorHeaders.every(function (header, index) {
+      return actualPriorHeaders[index] === header;
+    }) &&
+    approvalHeaders.every(function (header, index) {
+      return actualApprovalHeaders[index] === header;
+    })
+  ) {
+    return 'Payment approval fields already exist; no changes were made.';
+  }
+
+  if (
+    !priorHeaders.every(function (header, index) {
+      return actualPriorHeaders[index] === header;
+    })
+  ) {
+    throw new Error(
+      'Vouchers must have the reviewed A:Q schema including CashImpact before approval migration; no changes were made.',
+    );
+  }
+
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  const trailing = sheet.getRange(1, 18, lastRow, approvalHeaders.length).getValues();
+  const occupied = trailing.some(function (row) {
+    return row.some(function (value) {
+      return value !== '' && value !== null;
+    });
+  });
+  if (occupied) {
+    throw new Error(
+      'One or more approval columns R:U already contain a header or data; no changes were made.',
+    );
+  }
+
+  sheet.getRange(1, 18, 1, approvalHeaders.length).setValues([approvalHeaders]);
+  sheet.getRange('R:U').setNumberFormat('@');
+  return 'Added ApprovalStatus, ApprovedBy, ApprovedAt and ApprovalReason in R:U. Historical approval cells remain blank; no historical voucher was backfilled.';
+}
+/** Add the stable VendorID link after payment approval fields; never backfill historical rows. */
+// eslint-disable-next-line no-unused-vars
+function migrateVoucherVendorIdField() {
+  const id = props_().getProperty('SS_ID');
+  if (!id) throw new Error('Missing SS_ID Script Property; no changes were made.');
+  const spreadsheet = SpreadsheetApp.openById(id);
+  const sheet = spreadsheet.getSheetByName('Vouchers');
+  if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
+
+  const priorHeaders = CFG.H.Vouchers.slice(0, 21);
+  const actualPriorHeaders = sheet.getRange(1, 1, 1, priorHeaders.length).getValues()[0];
+  if (
+    !priorHeaders.every(function (header, index) {
+      return actualPriorHeaders[index] === header;
+    })
+  ) {
+    throw new Error(
+      'Vouchers must have the reviewed A:U schema including payment approval fields before VendorID migration; no changes were made.',
+    );
+  }
+
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  const trailing = sheet.getRange(1, 22, lastRow, 1).getValues();
+  const occupied = trailing.some(function (row) {
+    return row[0] !== '' && row[0] !== null;
+  });
+  if (occupied) {
+    if (trailing[0][0] === 'VendorID') {
+      return 'VendorID column already exists; no changes were made.';
+    }
+    throw new Error('Vouchers column V already contains a header or data; no changes were made.');
+  }
+
+  sheet.getRange(1, 22, 1, 1).setValues([['VendorID']]);
+  sheet.getRange('V:V').setNumberFormat('@');
+  return 'Added VendorID in V. Historical vouchers remain unlinked; no historical voucher was backfilled.';
 }
 /** Add dedicated close/correction tabs without rewriting existing voucher rows. Run manually once before deploying this feature. */
 // eslint-disable-next-line no-unused-vars
@@ -1721,6 +1868,7 @@ function vOut_(o) {
     no: Number(o.VoucherNo),
     date: isoDate_(o.Date),
     vendor: String(o.Vendor),
+    vendorId: String(o.VendorID || ''),
     amount: Number(o.Amount),
     category: String(o.Category || ''),
     notes: String(o.Notes || ''),
@@ -1733,15 +1881,22 @@ function vOut_(o) {
     receipts: o.Receipts ? String(o.Receipts).split(',').filter(Boolean) : [],
     cancelReason: String(o.CancelReason || ''),
     cashImpact: CASH_IMPACT_CHOICES.indexOf(o.CashImpact) >= 0 ? o.CashImpact : 'UNCLASSIFIED',
+    approvalStatus: approvalStatus_(o),
+    approvedBy: String(o.ApprovedBy || ''),
+    approvedAt: tsStr_(o.ApprovedAt),
+    approvalReason: String(o.ApprovalReason || ''),
   };
 }
 function bootstrap_(user) {
   const all = can_(user, 'viewAll');
-  const vouchers = readAll_('Vouchers')
-    .filter(function (o) {
-      return all || String(o.CreatedBy).toLowerCase() === user.email;
-    })
-    .map(vOut_);
+  const canViewRegister = all || can_(user, 'viewOwn');
+  const vouchers = canViewRegister
+    ? readAll_('Vouchers')
+        .filter(function (o) {
+          return all || String(o.CreatedBy).toLowerCase() === user.email;
+        })
+        .map(vOut_)
+    : [];
   const st = settings_();
   const vendors = readAll_('Vendors').map(function (v) {
     return {
@@ -1776,7 +1931,7 @@ function bootstrap_(user) {
       openingBalance: all ? Number(st.openingBalance || 0) : 0,
     },
     vouchers: vouchers,
-    vendors: vendors,
+    vendors: user.role === 'accountant' ? [] : vendors,
     names: names,
   };
 }
@@ -1820,6 +1975,56 @@ function nextNumber_(configured, existing, isReceipt, fallback) {
 }
 
 const CASH_IMPACT_CHOICES = ['CASH_IN', 'CASH_OUT', 'NO_CASH'];
+const PAYMENT_APPROVAL_STATUSES = ['NOT_REQUIRED', 'PENDING', 'APPROVED', 'REJECTED'];
+function approvalStatus_(voucher) {
+  const raw = voucher && voucher.ApprovalStatus;
+  if (raw === undefined || raw === null || raw === '') return 'NOT_REQUIRED';
+  return PAYMENT_APPROVAL_STATUSES.indexOf(raw) >= 0 ? raw : 'REVIEW_REQUIRED';
+}
+function vendorIdLookup_() {
+  const byName = Object.create(null);
+  const ambiguous = Object.create(null);
+  readAll_('Vendors').forEach(function (vendor) {
+    const key = String(vendor.Name || '')
+      .trim()
+      .toLowerCase();
+    if (!key || ambiguous[key]) return;
+    if (Object.prototype.hasOwnProperty.call(byName, key)) {
+      delete byName[key];
+      ambiguous[key] = true;
+    } else {
+      byName[key] = String(vendor.VendorID || '');
+    }
+  });
+  return { byName: byName, ambiguous: ambiguous };
+}
+function vendorIdForName_(name, lookup) {
+  const key = String(name || '')
+    .trim()
+    .toLowerCase();
+  const index = lookup || vendorIdLookup_();
+  if (!key || index.ambiguous[key]) return '';
+  return String(index.byName[key] || '');
+}
+function isEligibleApprovalPayment_(voucher) {
+  if (!voucher || voucher.Type !== 'PAYMENT') return false;
+  const rawAmount = voucher.Amount;
+  if (
+    rawAmount === '' ||
+    rawAmount === null ||
+    rawAmount === undefined ||
+    typeof rawAmount === 'boolean'
+  ) {
+    return false;
+  }
+  const amount = Number(rawAmount);
+  return (
+    isFinite(amount) &&
+    amount >= CFG.PAYMENT_APPROVAL_THRESHOLD &&
+    amount <= CFG.MAX_AMOUNT &&
+    Number.isSafeInteger(Math.round(amount * 100))
+  );
+}
 function cashImpact_(value, prefix) {
   if (typeof value !== 'string' || CASH_IMPACT_CHOICES.indexOf(value) < 0) {
     throw err_((prefix || '') + 'cash impact must be CASH_IN, CASH_OUT, or NO_CASH.', 'VALIDATION');
@@ -1884,7 +2089,8 @@ function cashCloseDateError_() {
 function cashCloseCalculatePeriod_(date) {
   const items = [],
     unclassified = [],
-    invalidVouchers = [];
+    invalidVouchers = [],
+    pendingApprovals = [];
   let cashInPaise = 0,
     cashOutPaise = 0,
     noCashCount = 0;
@@ -1896,6 +2102,24 @@ function cashCloseCalculatePeriod_(date) {
       return Number(a.VoucherNo) - Number(b.VoucherNo);
     })
     .forEach(function (voucher) {
+      const approvalStatus = approvalStatus_(voucher);
+      if (voucher.Type === 'PAYMENT' && ['NOT_REQUIRED', 'APPROVED'].indexOf(approvalStatus) < 0) {
+        pendingApprovals.push({
+          id: String(voucher.VoucherID || ''),
+          no: 'P-' + String(voucher.VoucherNo || ''),
+          date: isoDate_(voucher.Date),
+          vendor: String(voucher.Vendor || ''),
+          amount: Number(voucher.Amount) || null,
+          approvalStatus: approvalStatus,
+          reason:
+            approvalStatus === 'PENDING'
+              ? 'Payment approval is required.'
+              : approvalStatus === 'REJECTED'
+                ? 'Payment was rejected; cancel or correct it before closing.'
+                : 'Approval state is invalid and needs review.',
+        });
+        return;
+      }
       const impact =
         CASH_IMPACT_CHOICES.indexOf(voucher.CashImpact) >= 0 ? voucher.CashImpact : 'UNCLASSIFIED';
       const rawAmount = voucher.Amount,
@@ -1941,7 +2165,15 @@ function cashCloseCalculatePeriod_(date) {
       else if (impact === 'CASH_OUT') cashOutPaise += amountPaise;
       else if (impact === 'NO_CASH') noCashCount++;
     });
-  return { items, unclassified, invalidVouchers, cashInPaise, cashOutPaise, noCashCount };
+  return {
+    items,
+    unclassified,
+    invalidVouchers,
+    pendingApprovals,
+    cashInPaise,
+    cashOutPaise,
+    noCashCount,
+  };
 }
 function cashCloseCorrectionOut_(row) {
   return {
@@ -2097,7 +2329,10 @@ function cashClosePreview_(user, req) {
   }
   const expectedPaise =
     openingPaise === null ? null : openingPaise + period.cashInPaise - period.cashOutPaise;
-  const blocked = period.unclassified.length > 0 || period.invalidVouchers.length > 0;
+  const blocked =
+    period.pendingApprovals.length > 0 ||
+    period.unclassified.length > 0 ||
+    period.invalidVouchers.length > 0;
   const expectedValid =
     expectedPaise !== null && expectedPaise >= 0 && Number.isSafeInteger(expectedPaise);
   return {
@@ -2115,8 +2350,9 @@ function cashClosePreview_(user, req) {
     cashInTotal: period.cashInPaise / 100,
     cashOutTotal: period.cashOutPaise / 100,
     noCashCount: period.noCashCount,
-    activeVoucherCount: period.items.length,
+    activeVoucherCount: period.items.length + period.pendingApprovals.length,
     includedVouchers: period.items,
+    pendingApprovals: period.pendingApprovals,
     unclassified: period.unclassified,
     invalidVouchers: period.invalidVouchers,
     expectedCash: expectedValid && !blocked && openingReady ? expectedPaise / 100 : null,
@@ -2211,6 +2447,22 @@ function createCashClose_(user, req) {
       'CASH_CLOSE_OUT_OF_ORDER',
     );
   const period = cashCloseCalculatePeriod_(date);
+  if (period.pendingApprovals.length) {
+    const ids = period.pendingApprovals
+      .slice(0, 8)
+      .map(function (row) {
+        return row.no;
+      })
+      .join(', ');
+    throw err_(
+      'Cannot close this date: ' +
+        period.pendingApprovals.length +
+        ' active payment voucher(s) are not approved' +
+        (ids ? ' (' + ids + ')' : '') +
+        '. Approve or cancel them first; no close was saved.',
+      'CASH_CLOSE_APPROVAL_PENDING',
+    );
+  }
   if (period.unclassified.length) {
     const ids = period.unclassified
       .slice(0, 8)
@@ -2398,6 +2650,7 @@ function createVouchers_(user, req) {
   const catsP = categories_(),
     catsR = receiptCategories_(),
     existing = readAll_('Vouchers'),
+    vendorLookup = vendorIdLookup_(),
     closedDates = readAll_('CashCloses').map(function (close) {
       return String(close.BusinessDate || '');
     }),
@@ -2423,6 +2676,7 @@ function createVouchers_(user, req) {
       type: type,
       date: date,
       vendor: vendor,
+      vendorId: vendorIdForName_(vendor, vendorLookup),
       amount: amount,
       category: cats.indexOf(en.category) >= 0 ? en.category : 'Other',
       cashImpact: cashImpact_(en.cashImpact, row),
@@ -2465,6 +2719,7 @@ function createVouchers_(user, req) {
         VoucherNo: no,
         Date: c.date,
         Vendor: c.vendor,
+        VendorID: c.vendorId,
         Amount: c.amount,
         Category: c.category,
         Notes: c.notes,
@@ -2478,6 +2733,13 @@ function createVouchers_(user, req) {
         ClientID: c.clientId,
         Type: c.type,
         CashImpact: c.cashImpact,
+        ApprovalStatus:
+          c.type === 'PAYMENT' && c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD
+            ? 'PENDING'
+            : 'NOT_REQUIRED',
+        ApprovedBy: '',
+        ApprovedAt: '',
+        ApprovalReason: '',
       };
       if (c.clientId) byClient[c.clientId] = o;
       newObjs.push(o);
@@ -2495,11 +2757,13 @@ function createVouchers_(user, req) {
     const changes = [
       { field: 'date', before: null, after: voucher.Date },
       { field: 'vendor', before: null, after: String(voucher.Vendor || '') },
+      { field: 'vendorId', before: null, after: String(voucher.VendorID || '') },
       { field: 'amount', before: null, after: Number(voucher.Amount) },
       { field: 'category', before: null, after: String(voucher.Category || '') },
       { field: 'notes', before: null, after: String(voucher.Notes || '') },
       { field: 'type', before: null, after: String(voucher.Type || 'PAYMENT') },
       { field: 'status', before: null, after: String(voucher.Status || 'ACTIVE') },
+      { field: 'approvalStatus', before: null, after: approvalStatus_(voucher) },
       { field: 'cashImpact', before: null, after: String(voucher.CashImpact || 'UNCLASSIFIED') },
       {
         field: 'receiptCount',
@@ -2576,6 +2840,7 @@ function updateVoucher_(user, req) {
     const vendor = clean_(f.vendor, 200);
     if (!vendor) throw err_('Vendor is required.', 'VALIDATION');
     recordChange('vendor', 'Vendor', String(o.Vendor || ''), vendor);
+    recordChange('vendorId', 'VendorID', String(o.VendorID || ''), vendorIdForName_(vendor));
   }
   if (f.amount !== undefined) {
     const amount = Math.round(Number(f.amount) * 100) / 100;
@@ -2623,6 +2888,44 @@ function updateVoucher_(user, req) {
   const reason = clean_(rawReason, 200);
   if (reason.length < 3) {
     throw err_('Please give a correction reason of 3 to 200 characters.', 'VALIDATION');
+  }
+
+  const priorApprovalStatus = approvalStatus_(o);
+  const priorAmount = Number(o.Amount);
+  const nextAmount = Number(patch.Amount === undefined ? o.Amount : patch.Amount);
+  const crossedApprovalThreshold =
+    o.Type === 'PAYMENT' &&
+    priorAmount < CFG.PAYMENT_APPROVAL_THRESHOLD &&
+    nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD;
+  const approvalManaged =
+    ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].indexOf(priorApprovalStatus) >= 0;
+  // Existing blank/NOT_REQUIRED approval fields are not retroactively backfilled.
+  // Re-review only vouchers already in the approval workflow or edits that cross the threshold.
+  if (approvalManaged || crossedApprovalThreshold) {
+    const nextApprovalStatus =
+      o.Type === 'PAYMENT' && nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD
+        ? 'PENDING'
+        : 'NOT_REQUIRED';
+    if (priorApprovalStatus !== nextApprovalStatus) {
+      changes.push({
+        field: 'approvalStatus',
+        before: priorApprovalStatus,
+        after: nextApprovalStatus,
+      });
+    }
+    if (String(o.ApprovedBy || '')) {
+      changes.push({ field: 'approvedBy', before: String(o.ApprovedBy), after: '' });
+    }
+    if (String(o.ApprovedAt || '')) {
+      changes.push({ field: 'approvedAt', before: tsStr_(o.ApprovedAt), after: '' });
+    }
+    if (String(o.ApprovalReason || '')) {
+      changes.push({ field: 'approvalReason', before: String(o.ApprovalReason), after: '' });
+    }
+    patch.ApprovalStatus = nextApprovalStatus;
+    patch.ApprovedBy = '';
+    patch.ApprovedAt = '';
+    patch.ApprovalReason = '';
   }
 
   patch.UpdatedBy = user.email;
@@ -2673,6 +2976,113 @@ function cancelVoucher_(user, req) {
   );
   return vOut_(Object.assign({}, o, patch));
 }
+function approveVoucher_(user, req) {
+  need_(user, 'approvePayments');
+  const id = typeof req.id === 'string' ? req.id.trim() : '';
+  if (!id) throw err_('Voucher ID is required.', 'VALIDATION');
+  const voucher = findVoucher_(id);
+  if (voucher.Status !== 'ACTIVE') {
+    throw err_('Only active payment vouchers can be approved.', 'APPROVAL_STATE');
+  }
+  if (!isEligibleApprovalPayment_(voucher)) {
+    throw err_(
+      'Only a valid high-value PAYMENT voucher can be approved or rejected.',
+      'APPROVAL_STATE',
+    );
+  }
+  if (approvalStatus_(voucher) !== 'PENDING') {
+    throw err_(
+      'This payment is not awaiting approval. Refresh the Register and review its current state.',
+      'APPROVAL_STATE',
+    );
+  }
+  if (String(voucher.CreatedBy || '').toLowerCase() === String(user.email || '').toLowerCase()) {
+    throw err_('You cannot approve a payment voucher you created.', 'FORBIDDEN');
+  }
+
+  const timestamp = nowIso_();
+  const patch = {
+    ApprovalStatus: 'APPROVED',
+    ApprovedBy: user.email,
+    ApprovedAt: timestamp,
+    ApprovalReason: '',
+    UpdatedBy: user.email,
+    UpdatedAt: timestamp,
+  };
+  updateRow_('Vouchers', voucher._row, patch);
+  auditEvent_(
+    user,
+    'PAYMENT_APPROVE',
+    '#' + voucher.VoucherNo,
+    'PAYMENT_VOUCHER_APPROVED',
+    'voucher',
+    voucher.VoucherID,
+    '',
+    [
+      { field: 'approvalStatus', before: 'PENDING', after: 'APPROVED' },
+      { field: 'approvedBy', before: '', after: user.email },
+      { field: 'approvedAt', before: '', after: timestamp },
+    ],
+    'High-value payment approved',
+  );
+  return vOut_(Object.assign({}, voucher, patch));
+}
+
+function rejectVoucher_(user, req) {
+  need_(user, 'approvePayments');
+  const id = typeof req.id === 'string' ? req.id.trim() : '';
+  if (!id) throw err_('Voucher ID is required.', 'VALIDATION');
+  const voucher = findVoucher_(id);
+  if (voucher.Status !== 'ACTIVE') {
+    throw err_('Only active payment vouchers can be rejected.', 'APPROVAL_STATE');
+  }
+  if (!isEligibleApprovalPayment_(voucher)) {
+    throw err_(
+      'Only a valid high-value PAYMENT voucher can be approved or rejected.',
+      'APPROVAL_STATE',
+    );
+  }
+  if (approvalStatus_(voucher) !== 'PENDING') {
+    throw err_(
+      'This payment is not awaiting approval. Refresh the Register and review its current state.',
+      'APPROVAL_STATE',
+    );
+  }
+  if (String(voucher.CreatedBy || '').toLowerCase() === String(user.email || '').toLowerCase()) {
+    throw err_('You cannot reject a payment voucher you created.', 'FORBIDDEN');
+  }
+  const reason = clean_(req.reason, 200);
+  if (reason.length < 3) {
+    throw err_('Please give a rejection reason of 3 to 200 characters.', 'VALIDATION');
+  }
+
+  const timestamp = nowIso_();
+  const patch = {
+    ApprovalStatus: 'REJECTED',
+    ApprovedBy: '',
+    ApprovedAt: '',
+    ApprovalReason: reason,
+    UpdatedBy: user.email,
+    UpdatedAt: timestamp,
+  };
+  updateRow_('Vouchers', voucher._row, patch);
+  auditEvent_(
+    user,
+    'PAYMENT_REJECT',
+    '#' + voucher.VoucherNo,
+    'PAYMENT_VOUCHER_REJECTED',
+    'voucher',
+    voucher.VoucherID,
+    reason,
+    [
+      { field: 'approvalStatus', before: 'PENDING', after: 'REJECTED' },
+      { field: 'approvalReason', before: '', after: reason },
+    ],
+    'High-value payment rejected',
+  );
+  return vOut_(Object.assign({}, voucher, patch));
+}
+
 function canSee_(user, o) {
   return can_(user, 'viewAll') || String(o.CreatedBy).toLowerCase() === user.email;
 }
