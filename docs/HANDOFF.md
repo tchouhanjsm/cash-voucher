@@ -19,7 +19,7 @@
 - Existing blank approval values mean `NOT_REQUIRED`; historical records are not backfilled. New approval metadata is additive in columns R:U after the existing CashImpact column Q.
 - A material edit to an approval-managed voucher returns it to pending approval. A legacy blank status is not retroactively changed merely because it is edited.
 
-The active feature branch is implementing backend enforcement, the Register review workflow, Dashboard/Reports visibility and totals, the Daily Cash Close blocker, Browser E2E/backend regressions, and release/design documentation in one PR. Verify the live PR and exact workflow head after opening; owner review and merge remain required.
+Active PR: [#114 — Require independent approval for payments ≥ ₹10,000](https://github.com/tchouhanjsm/cash-voucher/pull/114) on `feature/payment-approval-workflow`. It batches backend enforcement, Register review, Dashboard/Reports visibility and totals, Daily Cash Close blockers, backend/Browser E2E regression coverage, and release/design documentation. The live PR page is authoritative for the current head; owner review and merge remain required.
 
 ## Last completed — PR #113
 
