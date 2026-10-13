@@ -12,6 +12,58 @@ g.setup();
 g.setup(); // idempotent
 ok(!!g.props.BACKUP_FOLDER_ID, 'backup folder configured');
 
+// Approval migration adds R:U only, preserves prior cells, and stops on occupied columns.
+const approvalMigrationMock = create();
+approvalMigrationMock.props.OWNER_EMAIL = 'Owner@Test.com';
+approvalMigrationMock.props.OWNER_PIN = '483921';
+approvalMigrationMock.setup();
+const approvalMigrationSheet = approvalMigrationMock.sheets.Vouchers;
+approvalMigrationSheet.rows[0] = approvalMigrationSheet.rows[0].slice(0, 17);
+approvalMigrationSheet.rows.push([
+  'legacy-approval-migration-id',
+  88,
+  '2026-10-01',
+  'Legacy high payment',
+  15000,
+  'Other',
+  '',
+  'ACTIVE',
+  'legacy@test.com',
+  '2026-10-01T00:00:00Z',
+  '',
+  '',
+  '',
+  '',
+  'legacy-approval-migration-client',
+  'PAYMENT',
+  'CASH_OUT',
+]);
+const approvalMigrationResult = approvalMigrationMock.migrateVoucherApprovalFields();
+ok(
+  approvalMigrationResult.includes('Added ApprovalStatus') &&
+    approvalMigrationSheet.rows[0].slice(17, 21).join(',') ===
+      'ApprovalStatus,ApprovedBy,ApprovedAt,ApprovalReason',
+  'approval migration appends the four approved headers in R:U',
+);
+ok(
+  approvalMigrationSheet.rows.length === 2 &&
+    approvalMigrationSheet.rows[1].slice(0, 17)[0] === 'legacy-approval-migration-id' &&
+    approvalMigrationSheet.rows[1].slice(17, 21).every((value) => value === ''),
+  'approval migration preserves historical voucher values and leaves new fields blank',
+);
+const approvalMigrationConflict = create();
+approvalMigrationConflict.props.OWNER_EMAIL = 'Owner@Test.com';
+approvalMigrationConflict.props.OWNER_PIN = '483921';
+approvalMigrationConflict.setup();
+approvalMigrationConflict.sheets.Vouchers.rows[0] =
+  approvalMigrationConflict.sheets.Vouchers.rows[0].slice(0, 17);
+approvalMigrationConflict.sheets.Vouchers.rows[0][18] = 'Unrelated data';
+assert.throws(
+  () => approvalMigrationConflict.migrateVoucherApprovalFields(),
+  /R:U already contain a header or data/,
+);
+ok(true, 'approval migration refuses to overwrite occupied columns');
+
 const retentionDayMs = 24 * 60 * 60 * 1000;
 function retentionFolder(name, ageDays) {
   return {
