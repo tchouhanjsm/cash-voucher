@@ -664,7 +664,112 @@ with sync_playwright() as p:
         and '1 payment waiting to upload' in page.locator('#banner').inner_text(),
         'offline-unlocked save makes no server create request and exposes pending queue status',
     )
+    queued_review = page.locator('.outbox-pending')
+    queued_review.locator('summary').click()
+    check(
+        queued_review.locator('summary').inner_text() == 'Review queued entries'
+        and 'Offline Unlock Vendor' in queued_review.inner_text()
+        and 'Waiting to upload' in queued_review.inner_text()
+        and '₹' in queued_review.inner_text()
+        and offline_records[0]['entry']['date'] in queued_review.inner_text()
+        and '1 receipt image' in queued_review.inner_text(),
+        'queue review shows an owned pending voucher, amount, date, status and receipt count',
+    )
 
+    # Simulate locally modified IndexedDB text to prove the new queue renderer escapes it.
+    hostile_queued_vendor = '<img src=x onerror=window.__xssFired=true>'
+
+    def unlock_offline_owner():
+        page.wait_for_selector('#loginForm', timeout=10000)
+        page.fill('#lEmail', 'owner@test.com')
+        page.fill('#lPin', '579246')
+        page.click('#lBtn')
+
+    page.evaluate(
+        """async (hostileVendor) => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          await new Promise((resolve, reject) => {
+            const transaction = db.transaction('outbox', 'readwrite');
+            const store = transaction.objectStore('outbox');
+            const request = store.getAll();
+            request.onsuccess = () => {
+              const target = request.result.find(
+                record => record.entry?.vendor === 'Offline Unlock Vendor'
+              );
+              if (!target) {
+                transaction.abort();
+                reject(new Error('Offline queue fixture disappeared.'));
+                return;
+              }
+              target.entry.vendor = hostileVendor;
+              store.put(target);
+            };
+            request.onerror = () => reject(request.error);
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error);
+            transaction.onabort = () => reject(transaction.error || new Error('Queue fixture mutation aborted.'));
+          });
+          db.close();
+        }""",
+        hostile_queued_vendor,
+    )
+    page.reload(wait_until='domcontentloaded')
+    unlock_offline_owner()
+    page.wait_for_selector('.outbox-pending', timeout=10000)
+    page.locator('.outbox-pending summary').click()
+    queued_review_text = page.locator('.outbox-pending').inner_text()
+    check(
+        hostile_queued_vendor in queued_review_text
+        and page.locator('.outbox-pending img, .outbox-pending svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'tampered local queue vendor content remains inert text in the review list',
+    )
+    page.evaluate(
+        """async () => {
+          const db = await new Promise((resolve, reject) => {
+            const request = indexedDB.open('cash-voucher', 1);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          await new Promise((resolve, reject) => {
+            const transaction = db.transaction('outbox', 'readwrite');
+            const store = transaction.objectStore('outbox');
+            const request = store.getAll();
+            request.onsuccess = () => {
+              const target = request.result.find(
+                record => record.entry?.vendor === '<img src=x onerror=window.__xssFired=true>'
+              );
+              if (!target) {
+                transaction.abort();
+                reject(new Error('Tampered queue fixture could not be recovered.'));
+                return;
+              }
+              target.entry.vendor = 'Offline Unlock Vendor';
+              store.put(target);
+            };
+            request.onerror = () => reject(request.error);
+            transaction.oncomplete = resolve;
+            transaction.onerror = () => reject(transaction.error);
+            transaction.onabort = () => reject(transaction.error || new Error('Queue fixture restore aborted.'));
+          });
+          db.close();
+        }"""
+    )
+    page.reload(wait_until='domcontentloaded')
+    unlock_offline_owner()
+    page.wait_for_selector('.outbox-pending', timeout=10000)
+    page.locator('.outbox-pending summary').click()
+    check(
+        'Offline Unlock Vendor' in page.locator('.outbox-pending').inner_text(),
+        'queue review resumes after the hostile local fixture is restored',
+    )
+
+    # Exclude the offline-startup bootstrap attempts from the subsequent reconnect window.
+    offline_sync_actions.clear()
     context.set_offline(False)
     page.wait_for_timeout(350)
     still_queued = page.evaluate(

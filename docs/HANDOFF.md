@@ -1,22 +1,22 @@
 # Engineering Handoff
 
-**Updated:** 12 October 2026  
+**Updated:** 13 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `e980f634242fdd549411f5c6067d0b267a3c5f22` (PR #106 merge)  
+**Verified `main` SHA:** `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592` (PR #107 merge)  
 **Purpose:** current state, active work, release boundaries and next action. Recheck live GitHub refs and exact-head workflows each session.
 
-## Current phase — PR #107: Complete offline-unlock to outbox workflow
+## Current phase — PR #108: Inspect device-local queued entries
 
-**Branch:** `fix/offline-unlock-outbox-flow`  
-**Base:** `e980f634242fdd549411f5c6067d0b267a3c5f22`
+**Branch:** `feature/offline-queue-review`  
+**Base:** `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592`
 
-PR #106 added device-local unlock after a recent successful online sign-in. This exposed an end-to-end workflow edge: when no server token exists, New Entry must put the voucher directly in the account-bound IndexedDB outbox rather than attempt a create request and depend on a network error. The queued entry must clearly tell the user that online sign-in is required before synchronization. Outbox flush must not run while the app is in offline workspace mode or the browser reports itself offline.
+The banner currently shows only an aggregate pending count while rejected entries receive individual review rows. This batch makes pending/sending records inspectable without making them removable or treating them as server-confirmed. Show account/endpoint-owned entries only, at most five in the banner disclosure, with type, safe vendor text, amount, date, queue status and receipt count. Export remains the recovery path for full details; rejected-entry removal continues to require export-first confirmation.
 
-**Acceptance gate:** the exact final PR head passes CI, Browser E2E and Full Flight Test. Browser coverage must prove: local save with no server create request; voucher and receipt survive in the account-bound queue; turning connectivity back on does not sync without server authentication; successful online sign-in restores the verified workspace and drains the queue. Keep the PR open for owner review; no merge, deployment or production mutation.
+**Acceptance gate:** the exact final PR head passes CI, Browser E2E and Full Flight Test. Verify current-account scoping, receipt-count rendering, long-list disclosure, escaping of tampered IndexedDB text, and no change to upload/authentication gates. Owner review/merge remains required; no deployment or production mutation.
 
-## Last completed — PR #106
+## Last completed — PR #107
 
-[PR #106: Support device-local offline unlock](https://github.com/tchouhanjsm/cash-voucher/pull/106) merged at `e980f634242fdd549411f5c6067d0b267a3c5f22`. Its exact tested PR head `98324ec3084c252f458f6334cb1805d675e2dd1e` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38287916562), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38287916549) (254 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38287916551) (129 backend + 254 browser checks).
+[PR #107: Complete offline unlock to voucher sync workflow](https://github.com/tchouhanjsm/cash-voucher/pull/107) merged at `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592`. Exact tested head `639fb982e00e3139a9d969128bf960c2c32007e4` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38291708608), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38291708626) (**260 checks**), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38291708773) (**129 backend + 260 browser checks**). The local-only offline unlock can save to the account-bound queue without a server create request; sync waits for online authentication and successful bootstrap.
 
 ## Product and architecture boundaries
 
