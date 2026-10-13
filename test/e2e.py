@@ -366,6 +366,7 @@ with sync_playwright() as p:
         window.__approvalPointerLog = [];
         window.__approvalDirectClick = false;
         const approveButton = document.querySelector('#rbody [data-act=approve]');
+        window.__approvalButtonRef = approveButton;
         approveButton?.addEventListener('click', () => {
             window.__approvalDirectClick = true;
         }, { once: true });
@@ -375,6 +376,8 @@ with sync_playwright() as p:
                     type: event.type,
                     trusted: event.isTrusted,
                     target: event.target?.outerHTML?.slice(0, 180) || '',
+                    sameButton: event.target === window.__approvalButtonRef,
+                    disabled: Boolean(event.target?.disabled),
                     x: event.clientX,
                     y: event.clientY,
                     approveConnected: Boolean(document.querySelector('#rbody [data-act=approve]')?.isConnected)
@@ -444,6 +447,7 @@ with sync_playwright() as p:
                 'approveButton': manager_page.locator('#rbody [data-act=approve]').evaluate('(element) => element.outerHTML') if manager_page.locator('#rbody [data-act=approve]').count() else None,
                 'preClick': manager_page.evaluate('window.__approvalPreClick || null'),
                 'pointerLog': manager_page.evaluate('window.__approvalPointerLog || []'),
+                'originalButtonConnected': manager_page.evaluate('window.__approvalButtonRef?.isConnected || false'),
                 'directClick': manager_page.evaluate('window.__approvalDirectClick || false'),
                 'clickLog': manager_page.evaluate('window.__approvalClickLog || []'),
                 'registerNavActive': manager_page.locator('[data-v=reg]').get_attribute('aria-current'),
@@ -560,6 +564,9 @@ with sync_playwright() as p:
     )
     accountant_context.close()
 
+    page.locator('[data-v=users]').scroll_into_view_if_needed()
+    page.locator('[data-v=users]').click()
+    page.wait_for_selector('#uf')
     xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
     page.fill('#ue', 'stored-xss@test.com')
