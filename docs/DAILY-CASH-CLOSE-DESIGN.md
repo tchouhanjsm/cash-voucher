@@ -251,7 +251,6 @@ The implementation adds two dedicated tabs; PR #113 adds no schema, and the appr
 
 The close screen inspects this browser's IndexedDB outbox (including unbound/recovery entries) before showing finalization as available and checks again immediately before submit. If queue storage cannot be read, the finalization button stays blocked. This is intentionally fail-closed. It does not prove that other phones, browsers or devices have synchronized; the operator must verify those separately. The backend cannot inspect client-local queues, so no UI can make a server-wide empty-queue guarantee from this check alone.
 
-
 ## Payment approval policy — owner-approved 13 October 2026
 
 This section records the approved payment rule and the report-only accountant/vendor-identity slice being implemented in PR #114. It does not claim the PR is merged or deployed.
