@@ -11,6 +11,13 @@ g.props.OWNER_PIN = '483921';
 g.setup();
 g.setup(); // idempotent
 ok(!!g.props.BACKUP_FOLDER_ID, 'backup folder configured');
+const nextPaymentNumber = () => {
+  const highest = g.sheets.Vouchers.rows.slice(1).reduce(
+    (max, row) => (row[15] === 'PAYMENT' ? Math.max(max, Number(row[1]) || 0) : max),
+    0,
+  );
+  return Math.max(300, highest + 100);
+};
 
 // Approval migration adds R:U only, preserves prior cells, and stops on occupied columns.
 const approvalMigrationMock = create();
@@ -1142,7 +1149,7 @@ ok(
     propertyName: 'Hotel X',
     propertyAddress: 'Addr',
     categories: ['A', 'B'],
-    nextVoucherNo: 300,
+    nextVoucherNo: nextPaymentNumber(),
   }).ok,
   'owner settings',
 );
@@ -1310,7 +1317,7 @@ ok(
   as(T, 'saveSettings', {
     propertyName: 'Hotel X',
     categories: ['A', 'B'],
-    nextVoucherNo: 400,
+    nextVoucherNo: nextPaymentNumber(),
     nextReceiptNo: 3,
     openingBalance: 2500,
   }).ok && as(T, 'bootstrap').data.settings.openingBalance === 2500,
