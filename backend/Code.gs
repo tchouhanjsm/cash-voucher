@@ -3060,6 +3060,9 @@ function rejectVoucher_(user, req) {
       'APPROVAL_STATE',
     );
   }
+  if (String(voucher.CreatedBy || '').toLowerCase() === String(user.email || '').toLowerCase()) {
+    throw err_('You cannot reject a payment voucher you created.', 'FORBIDDEN');
+  }
   const reason = clean_(req.reason, 200);
   if (reason.length < 3) {
     throw err_('Please give a rejection reason of 3 to 200 characters.', 'VALIDATION');
