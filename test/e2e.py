@@ -3388,10 +3388,8 @@ with sync_playwright() as p:
         == 'No vouchers match the current filters.',
         'malformed fields do not break the register empty state',
     )
-    page.locator('#rempty [data-act=rclear]').click()
-    page.wait_for_function("document.querySelector('#rq')?.value === ''")
-    # Recreate the Register's transient filters after the clear-action assertion so
-    # this malformed-receipt check cannot inherit the preceding search interaction.
+    # The generic Register journey above covers clear-filter behavior. Reload here to
+    # isolate malformed receipt metadata from the current no-match search state.
     page.reload()
     page.wait_for_selector('[data-v=reg]')
     page.click('[data-v=reg]')
