@@ -3331,6 +3331,13 @@ with sync_playwright() as p:
     page.select_option('#rs', 'ALL')
 
     # The register must stay usable when API records have malformed vendor/note/receipt fields.
+    register_fixture_responses = {
+        'bootstrapCalls': 0,
+        'voucherCounts': [],
+        'fixturePresent': [],
+        'payloadOk': [],
+    }
+
     def tamper_register_metadata(route):
         request_data = json.loads(route.request.post_data or '{}')
         response = route.fetch()
@@ -3357,6 +3364,15 @@ with sync_playwright() as p:
             vouchers.append(None)
             data['vouchers'] = vouchers
             payload['data'] = data
+            register_fixture_responses['bootstrapCalls'] += 1
+            register_fixture_responses['voucherCounts'].append(len(vouchers))
+            register_fixture_responses['fixturePresent'].append(
+                any(
+                    isinstance(item, dict) and item.get('id') == 'malformed-register-fixture'
+                    for item in vouchers
+                )
+            )
+            register_fixture_responses['payloadOk'].append(payload.get('ok'))
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -3408,6 +3424,7 @@ with sync_playwright() as p:
                 'appClass': page.locator('#app').get_attribute('class'),
                 'loginClass': page.locator('#login').get_attribute('class'),
                 'toast': page.locator('#toast').inner_text(),
+                'fixtureResponses': register_fixture_responses,
             }),
         )
         raise
