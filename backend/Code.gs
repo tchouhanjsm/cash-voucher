@@ -28,7 +28,7 @@ const CFG = {
   ],
   TEXT_COLS: {
     Users: ['A:D', 'F:G', 'I:J'],
-    Vouchers: ['A:A', 'C:D', 'F:U'],
+    Vouchers: ['A:A', 'C:D', 'F:V'],
     Vendors: ['A:D', 'F:G'],
     Settings: ['A:B'],
     AuditLog: ['A:E'],
@@ -97,6 +97,7 @@ const CFG = {
       'ApprovedBy',
       'ApprovedAt',
       'ApprovalReason',
+      'VendorID',
     ],
     Vendors: ['VendorID', 'Name', 'Company', 'Mobile', 'Active', 'CreatedBy', 'CreatedAt'],
     Settings: ['Key', 'Value'],
@@ -1363,9 +1364,15 @@ function validateSheetSchema_(s, name) {
           'SCHEMA_MIGRATION',
         );
       }
-      if (name === 'Vouchers' && i >= 17 && (actual[i] === '' || actual[i] === null)) {
+      if (name === 'Vouchers' && i >= 17 && i <= 20 && (actual[i] === '' || actual[i] === null)) {
         throw err_(
           'The Vouchers sheet is missing payment approval fields. After a verified backup, run migrateVoucherApprovalFields() once in the Apps Script editor before using this version.',
+          'SCHEMA_MIGRATION',
+        );
+      }
+      if (name === 'Vouchers' && i === 21 && (actual[i] === '' || actual[i] === null)) {
+        throw err_(
+          'The Vouchers sheet is missing stable vendor IDs. After a verified backup, run migrateVoucherVendorIdField() once in the Apps Script editor before using this version.',
           'SCHEMA_MIGRATION',
         );
       }
@@ -1428,17 +1435,23 @@ function migrateVoucherApprovalFields() {
   if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
 
   const expected = CFG.H.Vouchers;
-  const headers = sheet.getRange(1, 1, 1, expected.length).getValues()[0];
+  const priorHeaders = expected.slice(0, 17);
+  const approvalHeaders = expected.slice(17, 21);
+  const actualPriorHeaders = sheet.getRange(1, 1, 1, priorHeaders.length).getValues()[0];
+  const actualApprovalHeaders = sheet
+    .getRange(1, 18, 1, approvalHeaders.length)
+    .getValues()[0];
   if (
-    expected.every(function (header, index) {
-      return headers[index] === header;
+    priorHeaders.every(function (header, index) {
+      return actualPriorHeaders[index] === header;
+    }) &&
+    approvalHeaders.every(function (header, index) {
+      return actualApprovalHeaders[index] === header;
     })
   ) {
     return 'Payment approval fields already exist; no changes were made.';
   }
 
-  const priorHeaders = expected.slice(0, 17);
-  const actualPriorHeaders = sheet.getRange(1, 1, 1, priorHeaders.length).getValues()[0];
   if (
     !priorHeaders.every(function (header, index) {
       return actualPriorHeaders[index] === header;
@@ -1449,7 +1462,6 @@ function migrateVoucherApprovalFields() {
     );
   }
 
-  const approvalHeaders = expected.slice(17);
   const lastRow = Math.max(sheet.getLastRow(), 1);
   const trailing = sheet.getRange(1, 18, lastRow, approvalHeaders.length).getValues();
   const occupied = trailing.some(function (row) {
@@ -1465,7 +1477,44 @@ function migrateVoucherApprovalFields() {
 
   sheet.getRange(1, 18, 1, approvalHeaders.length).setValues([approvalHeaders]);
   sheet.getRange('R:U').setNumberFormat('@');
-  return 'Added ApprovalStatus, ApprovedBy, ApprovedAt and ApprovalReason in R:U. Historical approval cells remain blank and are treated as NOT_REQUIRED; no historical voucher was backfilled.';
+  return 'Added ApprovalStatus, ApprovedBy, ApprovedAt and ApprovalReason in R:U. Historical approval cells remain blank; no historical voucher was backfilled.';
+}
+/** Add the stable VendorID link after payment approval fields; never backfill historical rows. */
+// eslint-disable-next-line no-unused-vars
+function migrateVoucherVendorIdField() {
+  const id = props_().getProperty('SS_ID');
+  if (!id) throw new Error('Missing SS_ID Script Property; no changes were made.');
+  const spreadsheet = SpreadsheetApp.openById(id);
+  const sheet = spreadsheet.getSheetByName('Vouchers');
+  if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
+
+  const priorHeaders = CFG.H.Vouchers.slice(0, 21);
+  const actualPriorHeaders = sheet.getRange(1, 1, 1, priorHeaders.length).getValues()[0];
+  if (
+    !priorHeaders.every(function (header, index) {
+      return actualPriorHeaders[index] === header;
+    })
+  ) {
+    throw new Error(
+      'Vouchers must have the reviewed A:U schema including payment approval fields before VendorID migration; no changes were made.',
+    );
+  }
+
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  const trailing = sheet.getRange(1, 22, lastRow, 1).getValues();
+  const occupied = trailing.some(function (row) {
+    return row[0] !== '' && row[0] !== null;
+  });
+  if (occupied) {
+    if (trailing[0][0] === 'VendorID') {
+      return 'VendorID column already exists; no changes were made.';
+    }
+    throw new Error('Vouchers column V already contains a header or data; no changes were made.');
+  }
+
+  sheet.getRange(1, 22, 1, 1).setValues([['VendorID']]);
+  sheet.getRange('V:V').setNumberFormat('@');
+  return 'Added VendorID in V. Historical vouchers remain unlinked; no historical voucher was backfilled.';
 }
 /** Add dedicated close/correction tabs without rewriting existing voucher rows. Run manually once before deploying this feature. */
 // eslint-disable-next-line no-unused-vars
