@@ -81,7 +81,8 @@ export function createRegister({ api, go }) {
 
         return (
           (R.st === 'ALL' || voucher.status === R.st) &&
-          (R.approval === 'ALL' || normalizeApprovalStatus(voucher.approvalStatus) === R.approval) &&
+          (R.approval === 'ALL' ||
+            normalizeApprovalStatus(voucher.approvalStatus) === R.approval) &&
           (!R.vendor || voucher.vendor === R.vendor) &&
           (!R.cat || voucher.category === R.cat) &&
           (!R.t || voucher.type === R.t) &&
