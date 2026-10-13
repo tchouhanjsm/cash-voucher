@@ -101,7 +101,9 @@ Do not create automated fraud flags until duplicate rules, false-positive handli
 
 ### P3 — Accountant and reporting workflow
 
-Validate which accounting tool the first users actually use. Specify export columns, tax-field ownership, reconciliation rules, and read-only access before adding GST/TDS fields or a new role.
+Active implementation batch PR #114 adds a report-only `accountant` role with server-authorized access to generic Recorded Movement Report CSV, not voucher editing, cash close, user administration or vendor-contact management. Stable `VendorID` values are exposed and included in exports; new vouchers store the ID when a unique saved vendor name is matched exactly. Historical links are not backfilled, and unmatched/ambiguous counterparty names remain unresolved and visible.
+
+The export deliberately remains destination-neutral. The first accounting software/version, import route, accountant-approved sample/mapping and tax-specific fields are open owner/accountant decisions. No Tally/Zoho compatibility, GST/TDS calculation, general-ledger claim or statutory readiness is implied.
 
 ### P4 — UX and operational support
 
