@@ -128,3 +128,9 @@ PR #60 should test the real-world task journeys at staff, manager and owner leve
 PR #106 introduced device-local unlock; PR #107 completes its route from New Entry to the account-bound outbox. In the local-only workspace, a voucher and its compressed receipt images save directly on the device, with explicit notice that the user must sign in online before synchronization. Restoring connectivity alone does not authenticate the local workspace. A pending count confirms only local queue state, not a server voucher or physical cash.
 
 For a prior server session that fell back to a cached workspace, reconnect attempts a fresh bootstrap before queue synchronization. The queue remains blocked if the token is absent or the server-verified workspace cannot be restored. Browser E2E checks the local unlock → save → reconnect without authentication → online login → bootstrap → queue drain sequence, including no pre-authentication create request, receipt preservation, and request ordering. These are mock-backed browser results; real-phone PWA behavior, Google authorization, backup/restore and assistive-technology review remain open.
+
+## Device-local queue review — October 2026
+
+The offline banner now exposes an expandable per-entry list for up to five pending/sending items belonging to the active account and API endpoint. Each row identifies payment versus cash receipt, vendor, amount, date, upload state and receipt-image count. The remainder count points staff to the full recovery export. The disclosure intentionally provides inspection, not a one-click delete or a claim of server persistence; rejected entries still use the separate export-before-remove flow.
+
+Browser E2E covers the fields and tampered local vendor markup. Real-device touch/scroll behavior and assistive-technology announcements remain unverified.

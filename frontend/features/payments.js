@@ -456,6 +456,59 @@ export function createPayments({ api, refresh }) {
             : '') +
           '</ul></details>'
         : '';
+      const pendingDetails = pending
+        .slice(0, 5)
+        .map((record) => {
+          const entry =
+            record.entry && typeof record.entry === 'object' && !Array.isArray(record.entry)
+              ? record.entry
+              : {};
+          const kind =
+            entry.type === 'RECEIPT'
+              ? 'Cash receipt'
+              : entry.type === 'PAYMENT'
+                ? 'Payment'
+                : 'Entry';
+          const vendor = displayScalar(entry.vendor, 'Unnamed entry').slice(0, 120);
+          const amount =
+            typeof entry.amount === 'number' && Number.isFinite(entry.amount)
+              ? money(entry.amount)
+              : 'Amount unavailable';
+          const date =
+            typeof entry.date === 'string' && /^\\d{4}-\\d{2}-\\d{2}$/.test(entry.date)
+              ? entry.date
+              : 'Date unavailable';
+          const receiptCount = Array.isArray(entry.receipts) ? entry.receipts.length : 0;
+          const status = record.status === 'sending' ? 'Upload in progress' : 'Waiting to upload';
+          const receiptLabel =
+            receiptCount === 1
+              ? ' · 1 receipt image'
+              : receiptCount > 1
+                ? ' · ' + Math.min(receiptCount, 99) + (receiptCount > 99 ? '+' : '') + ' receipt images'
+                : '';
+
+          return (
+            '<li><b>' +
+            esc(kind + ': ' + vendor) +
+            '</b> — ' +
+            esc(amount) +
+            ' · ' +
+            esc(date) +
+            ' · ' +
+            status +
+            esc(receiptLabel) +
+            '</li>'
+          );
+        })
+        .join('');
+      const pendingReview = pendingDetails
+        ? '<details class="outbox-pending"><summary>Review queued entries</summary><p class="muted">These entries are stored on this device and are not confirmed on the server yet. Do not re-enter them just because they have not uploaded.</p><ul>' +
+          pendingDetails +
+          (pending.length > 5
+            ? '<li>+' + (pending.length - 5) + ' more; export the queue to inspect all queued entries.</li>'
+            : '') +
+          '</ul></details>'
+        : '';
       if (unbound.length) {
         messages.push(
           '⚠️ ' +
@@ -478,6 +531,7 @@ export function createPayments({ api, refresh }) {
         '<span>' +
         messages.map((message) => esc(message)).join('<br>') +
         '</span>' +
+        pendingReview +
         failedReview +
         (pending.length && S.token
           ? '<button class="btn sm" data-act="flush">Retry now</button>'
