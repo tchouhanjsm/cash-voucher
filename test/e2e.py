@@ -289,6 +289,16 @@ with sync_playwright() as p:
         and page.locator('#rbody [data-act=reject]').count() == 0,
         'voucher creator cannot self-approve or self-reject from the Register',
     )
+    page.click('[data-v=dash]')
+    page.wait_for_selector('[data-v=dash][aria-current=page]')
+    check(
+        'active payment(s) are pending approval' in page.locator('#view').inner_text()
+        and 'excluded from approved totals' in page.locator('#view').inner_text(),
+        'Dashboard discloses pending approval exceptions and their total treatment',
+    )
+    page.click('[data-v=reg]')
+    page.wait_for_selector('#rq')
+    page.fill('#rq', 'Approval E2E vendor')
 
     manager_context = browser.new_context(
         viewport={'width': 390, 'height': 800},
@@ -315,6 +325,11 @@ with sync_playwright() as p:
         and manager_page.locator('#rbody [data-act=reject]').count() == 1,
         'another manager can review a pending high-value payment',
     )
+    check(
+        '10,000' not in manager_page.locator('#rtot').inner_text()
+        and 'excluded from approved totals' in manager_page.locator('#rtot').inner_text(),
+        'Register totals exclude the pending INR 10,000 payment',
+    )
     manager_page.click('#rbody [data-act=approve]')
     manager_page.get_by_role('button', name='Approve payment', exact=True).click()
     manager_page.wait_for_function(
@@ -324,6 +339,11 @@ with sync_playwright() as p:
         'PENDING APPROVAL' not in manager_page.locator('#rbody').inner_text()
         and 'APPROVED' in manager_page.locator('#rbody').inner_text(),
         'manager approval updates status and removes pending treatment',
+    )
+    check(
+        '10,000' in manager_page.locator('#rtot').inner_text()
+        and 'excluded from approved totals' not in manager_page.locator('#rtot').inner_text(),
+        'approved INR 10,000 payment becomes eligible for Register totals',
     )
     page.click('[data-act=refresh]')
     page.wait_for_function(
