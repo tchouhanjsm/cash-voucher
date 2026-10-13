@@ -752,6 +752,13 @@ function recordedMovementReport_(user, req) {
     pendingApprovalCount: items.filter(function (item) {
       return item.status === 'ACTIVE' && item.type === 'PAYMENT' && item.approvalStatus === 'PENDING';
     }).length,
+    approvalExceptionCount: items.filter(function (item) {
+      return (
+        item.status === 'ACTIVE' &&
+        item.type === 'PAYMENT' &&
+        ['NOT_REQUIRED', 'APPROVED'].indexOf(item.approvalStatus) < 0
+      );
+    }).length,
     paymentTotal: sum(items, 'PAYMENT'),
     receiptTotal: sum(items, 'RECEIPT'),
     activePaymentTotal: sum(active, 'PAYMENT'),
