@@ -3427,6 +3427,7 @@ with sync_playwright() as p:
                 'filteredRowCount': page.locator('#rbody').get_attribute('data-filtered-row-count'),
                 'registerView': page.locator('#rbody').get_attribute('data-view'),
                 'filtersReset': page.locator('#rbody').get_attribute('data-filters-reset'),
+                'filterState': page.locator('#rbody').get_attribute('data-filter-state'),
                 'emptyText': page.locator('#rempty').inner_text(),
                 'emptyClass': page.locator('#rempty').get_attribute('class'),
                 'totals': page.locator('#rtot').inner_text(),
