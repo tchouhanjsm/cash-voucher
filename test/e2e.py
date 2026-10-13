@@ -548,6 +548,14 @@ with sync_playwright() as p:
         and 'CASH_OUT' in page.locator('#rows .erow .ci-suggestion').inner_text(),
         'new payment requires explicit classification while showing a non-binding suggestion',
     )
+    page.locator('#rows .erow .rv').fill('Cash Impact Test Vendor')
+    page.locator('#rows .erow .ra').fill('10')
+    page.locator('#nsave').click()
+    check(
+        page.locator('#rows .erow .row-error').inner_text()
+        == 'Choose a cash-impact classification before saving.',
+        'saving without cash-impact selection is blocked with an actionable error',
+    )
     page.select_option('#rows .erow .rci', 'NO_CASH')
     page.select_option('#rows .erow .rc', 'Office')
     check(
