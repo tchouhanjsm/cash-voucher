@@ -3326,12 +3326,12 @@ with sync_playwright() as p:
         'receipt report CSV contains exactly the voucher rows shown by the selected filters',
     )
 
+    # Recreate the client-side Register state before this isolated malformed-response
+    # test. Earlier journeys intentionally leave filters behind across SPA navigation.
+    page.reload()
+    page.wait_for_selector('[data-v=reg]')
     page.click('[data-v=reg]')
     page.wait_for_selector('#rbody')
-    # The Register keeps filter state across navigation. Reset all previous workflow
-    # filters before seeding this isolated malformed-record fixture, then include every
-    # status so the fixture's active row and older cancelled rows are both inspectable.
-    page.locator('#rf [data-act=rclear]').evaluate('(element) => element.click()')
     page.select_option('#rs', 'ALL')
 
     # The register must stay usable when API records have malformed vendor/note/receipt fields.
