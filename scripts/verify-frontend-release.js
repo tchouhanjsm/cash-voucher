@@ -68,9 +68,7 @@ function verifyContentSecurityPolicy() {
   const source = read('index.html');
   const metaTags = [...source.matchAll(/<meta\b[^>]*>/gi)]
     .map((match) => match[0])
-    .filter((tag) =>
-      /\bhttp-equiv\s*=\s*["']content-security-policy["']/i.test(tag),
-    );
+    .filter((tag) => /\bhttp-equiv\s*=\s*["']content-security-policy["']/i.test(tag));
   const failures = [];
 
   if (metaTags.length !== 1) {
@@ -125,16 +123,14 @@ function verifyContentSecurityPolicy() {
       actual.length !== allowedSources.length ||
       allowedSources.some((source) => !actual.includes(source))
     ) {
-      failures.push(
-        'CSP directive "' + name + '" must contain exactly: ' + allowedSources.join(' ') + '.',
-      );
+      failures.push('Invalid or missing CSP directive: ' + name + '.');
     }
   }
 
   for (const [name, sources] of directives) {
-    if (sources.includes('*')) failures.push('CSP directive "' + name + '" must not allow "*".');
+    if (sources.includes('*')) failures.push('CSP wildcard source is not allowed: ' + name + '.');
     if (sources.includes("'unsafe-eval'")) {
-      failures.push('CSP directive "' + name + '" must not allow unsafe-eval.');
+      failures.push('CSP unsafe-eval source is not allowed: ' + name + '.');
     }
   }
 
