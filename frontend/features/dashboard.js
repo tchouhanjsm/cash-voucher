@@ -1,5 +1,5 @@
 import { $ } from '../core/dom.js';
-import { can, nm, pays, recs, S } from '../core/state.js';
+import { can, nm, normalizeApprovalStatus, pays, recs, S } from '../core/state.js';
 import { addDays, dmy, esc, finiteAmount, iso, money, sumAmounts, today } from '../core/utils.js';
 import { head, refreshBtn } from '../core/ui.js';
 
@@ -156,6 +156,15 @@ export function createDashboard() {
       diagnostics.unavailableReason === 'offline'
         ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
         : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.';
+    const approvalExceptions = (Array.isArray(S.vouchers) ? S.vouchers : []).filter(
+      (voucher) =>
+        voucher &&
+        typeof voucher === 'object' &&
+        !Array.isArray(voucher) &&
+        voucher.type === 'PAYMENT' &&
+        voucher.status === 'ACTIVE' &&
+        !['NOT_REQUIRED', 'APPROVED'].includes(normalizeApprovalStatus(voucher.approvalStatus)),
+    );
     const dataWarnings = [];
     if (!dataAvailable) {
       dataWarnings.push(unavailableMessage);
@@ -167,6 +176,11 @@ export function createDashboard() {
     if (diagnostics.malformedFieldCount) {
       dataWarnings.push(
         `${diagnostics.malformedFieldCount} malformed voucher field(s) handled for safe display.`,
+      );
+    }
+    if (dataAvailable && approvalExceptions.length) {
+      dataWarnings.push(
+        `${approvalExceptions.length} active payment(s) are pending approval, rejected, or require review. They are excluded from approved totals and block Daily Cash Close until approved or cancelled.`,
       );
     }
 
