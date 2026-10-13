@@ -209,4 +209,4 @@ if (
   process.exit(1);
 }
 
-console.log(`Frontend release integrity OK — ${graph.files.length} modules and CSP verified.`);
+console.log(`Frontend assets and CSP verified — ${graph.files.length} modules.`);

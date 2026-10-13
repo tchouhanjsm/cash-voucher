@@ -115,10 +115,7 @@ http
       let responseBody = d;
       if (path.basename(f) === 'index.html') {
         const html = d.toString('utf8');
-        const testPolicy = html.replace(
-          "script-src 'self';",
-          "script-src 'self' 'unsafe-eval';",
-        );
+        const testPolicy = html.replace("script-src 'self';", "script-src 'self' 'unsafe-eval';");
         if (testPolicy === html) {
           res.writeHead(500, { 'Content-Type': 'text/plain' });
           return res.end('CSP test override failed.');
