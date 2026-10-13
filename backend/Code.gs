@@ -1466,9 +1466,7 @@ function migrateVoucherApprovalFields() {
 
   sheet.getRange(1, 18, 1, approvalHeaders.length).setValues([approvalHeaders]);
   sheet.getRange('R:U').setNumberFormat('@');
-  return (
-    'Added ApprovalStatus, ApprovedBy, ApprovedAt and ApprovalReason in R:U. Historical approval cells remain blank; no historical voucher was backfilled.'
-  );
+  return 'Added ApprovalStatus, ApprovedBy, ApprovedAt and ApprovalReason in R:U. Historical approval cells remain blank; no historical voucher was backfilled.';
 }
 /** Add the stable VendorID link after payment approval fields; never backfill historical rows. */
 // eslint-disable-next-line no-unused-vars
@@ -1505,9 +1503,7 @@ function migrateVoucherVendorIdField() {
 
   sheet.getRange(1, 22, 1, 1).setValues([['VendorID']]);
   sheet.getRange('V:V').setNumberFormat('@');
-  return (
-    'Added VendorID in V. Historical vouchers remain unlinked; no historical voucher was backfilled.'
-  );
+  return 'Added VendorID in V. Historical vouchers remain unlinked; no historical voucher was backfilled.';
 }
 /** Add dedicated close/correction tabs without rewriting existing voucher rows. Run manually once before deploying this feature. */
 // eslint-disable-next-line no-unused-vars
@@ -2019,7 +2015,9 @@ function isEligibleApprovalPayment_(voucher) {
     rawAmount === null ||
     rawAmount === undefined ||
     typeof rawAmount === 'boolean'
-  ) return false;
+  ) {
+    return false;
+  }
   const amount = Number(rawAmount);
   return (
     isFinite(amount) &&
