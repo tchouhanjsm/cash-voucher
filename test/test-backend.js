@@ -702,6 +702,47 @@ ok(
     !as(M, 'saveVendor', { name: 'ram traders' }).ok,
   'vendor unique',
 );
+const ramVendor = as(M, 'bootstrap').data.vendors.find((vendor) => vendor.name === 'Ram Traders');
+const vendorCreateAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'VENDOR_CREATE' && row[3] === ramVendor.id);
+const vendorCreateDetails = vendorCreateAudit ? JSON.parse(vendorCreateAudit[4]) : null;
+ok(
+  vendorCreateDetails?.eventType === 'VENDOR_CREATED' &&
+    vendorCreateDetails.changes.some((change) => change.field === 'name' && change.before === null && change.after === 'Ram Traders'),
+  'vendor creation audit records structured initial values',
+);
+ok(
+  as(M, 'saveVendor', {
+    id: ramVendor.id,
+    name: 'Ram Traders',
+    company: 'Fort Supplies',
+    mobile: '9999999999',
+  }).ok,
+  'vendor details can be updated',
+);
+const vendorUpdateAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'VENDOR_UPDATE' && row[3] === ramVendor.id);
+const vendorUpdateDetails = vendorUpdateAudit ? JSON.parse(vendorUpdateAudit[4]) : null;
+ok(
+  vendorUpdateDetails?.changes.some(
+    (change) => change.field === 'company' && change.before === '' && change.after === 'Fort Supplies',
+  ),
+  'vendor update audit records old/new company values',
+);
+ok(as(M, 'toggleVendor', { id: ramVendor.id }).ok, 'vendor can be deactivated');
+const vendorToggleAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'VENDOR_OFF' && row[3] === ramVendor.id);
+const vendorToggleDetails = vendorToggleAudit ? JSON.parse(vendorToggleAudit[4]) : null;
+ok(
+  vendorToggleDetails?.changes.some(
+    (change) => change.field === 'active' && change.before === true && change.after === false,
+  ),
+  'vendor activation audit records old/new status',
+);
+ok(as(M, 'toggleVendor', { id: ramVendor.id }).ok, 'vendor can be reactivated');
 ok(!as(M, 'saveSettings', {}).ok, 'manager cannot change settings');
 ok(
   !as(T, 'saveSettings', { propertyName: 'P', categories: ['A'], nextVoucherNo: 100 }).ok,
@@ -715,6 +756,17 @@ ok(
     nextVoucherNo: 300,
   }).ok,
   'owner settings',
+);
+const settingsAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'SETTINGS');
+const settingsAuditDetails = settingsAuditRow ? JSON.parse(settingsAuditRow[4]) : null;
+ok(
+  settingsAuditDetails?.eventType === 'PROPERTY_SETTINGS_UPDATED' &&
+    settingsAuditDetails.changes.some(
+      (change) => change.field === 'propertyName' && change.before === 'My Property' && change.after === 'Hotel X',
+    ),
+  'settings audit records prior and saved property values',
 );
 ok(as(T, 'bootstrap').data.settings.categories.includes('Other'), 'Other auto-added');
 // strict numeric validation
@@ -757,6 +809,23 @@ ok(
   !as(T, 'saveUser', { id: me.id, name: 'Owner', email: 'owner@test.com', role: 'manager' }).ok,
   'cannot demote last owner',
 );
+const newAuditUser = as(T, 'saveUser', {
+  name: 'Audit Agent',
+  email: 'audit-agent@test.com',
+  role: 'staff',
+  pin: '258369',
+});
+ok(newAuditUser.ok, 'owner can create a user with a temporary PIN');
+const userCreateAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'USER_CREATE' && row[3] === 'audit-agent@test.com');
+const userCreateDetails = userCreateAudit ? JSON.parse(userCreateAudit[4]) : null;
+ok(
+  userCreateDetails?.eventType === 'USER_CREATED' &&
+    userCreateDetails.changes.some((change) => change.field === 'role' && change.before === null && change.after === 'staff') &&
+    !userCreateAudit[4].includes('258369'),
+  'user creation audit records role without exposing temporary PIN',
+);
 // disable user kills session
 const sm = as(T, 'listUsers').data.find((u) => u.email === 's@test.com');
 ok(
@@ -764,6 +833,16 @@ ok(
   'disable staff',
 );
 ok(as(S, 'bootstrap').code === 'SESSION', 'disabled user session dead');
+const userUpdateAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'USER_UPDATE' && row[3] === sm.email);
+const userUpdateDetails = userUpdateAudit ? JSON.parse(userUpdateAudit[4]) : null;
+ok(
+  userUpdateDetails?.changes.some(
+    (change) => change.field === 'active' && change.before === true && change.after === false,
+  ),
+  'user status audit records old/new active state',
+);
 const auditPage = as(T, 'auditLog');
 ok(
   auditPage.ok &&
@@ -871,6 +950,18 @@ ok(
     pin: '314159',
   }).ok,
   'owner reset pin succeeds',
+);
+const pinResetAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'PIN_RESET' && row[3] === 'm@test.com');
+const pinResetDetails = pinResetAudit ? JSON.parse(pinResetAudit[4]) : null;
+ok(
+  pinResetDetails?.eventType === 'USER_PIN_RESET' &&
+    pinResetDetails.changes.some(
+      (change) => change.field === 'mustChangePin' && change.before === false && change.after === true,
+    ) &&
+    !pinResetAudit[4].includes('314159'),
+  'PIN reset audit records account state without logging credential material',
 );
 ok(
   g.lockStats.waits === resetPinWaits + 1 && g.lockStats.releases === resetPinReleases + 1,
