@@ -1713,4 +1713,130 @@ ok(
 const futureClose = as(T, 'cashClosePreview', { date: '2999-01-01' });
 ok(!futureClose.ok && futureClose.code === 'VALIDATION', 'future close date rejected');
 
+// Slice 4: report-only accountant access and stable VendorID export.
+const savedAccountant = as(T, 'saveUser', {
+  name: 'Nina Accountant',
+  email: 'accountant@test.com',
+  role: 'accountant',
+  pin: '864209',
+});
+ok(savedAccountant.ok, 'owner can create an accountant role');
+const accountantLogin = g.call('login', {
+  email: 'accountant@test.com',
+  pin: '864209',
+});
+ok(
+  accountantLogin.ok && accountantLogin.data.user.mustChangePin,
+  'new accountant account requires a PIN change at first login',
+);
+const accountantPinChange = as(accountantLogin.data.token, 'changePin', {
+  oldPin: '864209',
+  newPin: '975318',
+});
+const accountantToken = accountantPinChange.data.token;
+const accountantBootstrap = as(accountantToken, 'bootstrap').data;
+ok(
+  accountantPinChange.ok &&
+    accountantBootstrap.vouchers.length === 0 &&
+    accountantBootstrap.vendors.length === 0 &&
+    accountantBootstrap.user.perms.reports === 1 &&
+    !accountantBootstrap.user.perms.viewAll &&
+    !accountantBootstrap.user.perms.create &&
+    !accountantBootstrap.user.perms.edit &&
+    !accountantBootstrap.user.perms.cashClose,
+  'accountant bootstrap exposes read-only report permission without voucher register, vendor contacts or write/close rights',
+);
+ok(
+  as(accountantToken, 'recordedMovementReport', {
+    from: today,
+    to: today,
+    type: 'ALL',
+    status: 'ALL',
+  }).ok,
+  'accountant can access the server-authorized recorded movement report',
+);
+ok(
+  as(accountantToken, 'cashClosePreview', { date: today }).code === 'FORBIDDEN' &&
+    as(accountantToken, 'createVouchers', {
+      entries: [{ date: today, vendor: 'Accountant must not write', amount: 1 }],
+    }).code === 'FORBIDDEN' &&
+    as(accountantToken, 'saveVendor', { name: 'Accountant must not create a vendor' })
+      .code === 'FORBIDDEN',
+  'accountant cannot finalize cash close, create vouchers, or change vendor master data',
+);
+const accountantVendorSave = as(T, 'saveVendor', {
+  name: 'Accountant Export Vendor',
+  company: 'Export Test',
+  mobile: '',
+});
+const accountantVendorRow = g.sheets.Vendors.rows.find(
+  (row) => row[1] === 'Accountant Export Vendor',
+);
+const accountantVendorId = accountantVendorRow && accountantVendorRow[0];
+ok(
+  accountantVendorSave.ok && typeof accountantVendorId === 'string' && accountantVendorId,
+  'vendor master assigns a stable VendorID',
+);
+const linkedVendorVoucher = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'accountant-vendor-id-export',
+      date: today,
+      vendor: 'Accountant Export Vendor',
+      amount: 325,
+      category: 'Other',
+      type: 'PAYMENT',
+    },
+  ],
+});
+ok(
+  linkedVendorVoucher.ok &&
+    linkedVendorVoucher.data.created[0].vendorId === accountantVendorId,
+  'new voucher stores the unique known VendorID',
+);
+const accountantReportWithVendor = as(accountantToken, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ALL',
+});
+const linkedVendorReportRow = accountantReportWithVendor.data.items.find(
+  (item) => item.id === linkedVendorVoucher.data.created[0].id,
+);
+ok(
+  accountantReportWithVendor.ok &&
+    linkedVendorReportRow &&
+    linkedVendorReportRow.vendorId === accountantVendorId,
+  'accountant report exports the stable VendorID for the matched voucher',
+);
+const unmatchedVendorVoucher = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'accountant-vendor-id-unmatched',
+      date: today,
+      vendor: 'Unregistered Counterparty',
+      amount: 125,
+      category: 'Other',
+      type: 'PAYMENT',
+    },
+  ],
+});
+const unmatchedVendorReport = as(accountantToken, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ALL',
+});
+const unmatchedVendorRow = unmatchedVendorReport.data.items.find(
+  (item) => item.id === unmatchedVendorVoucher.data.created[0].id,
+);
+ok(
+  unmatchedVendorVoucher.ok &&
+    unmatchedVendorReport.ok &&
+    unmatchedVendorRow &&
+    unmatchedVendorRow.vendorId === '' &&
+    unmatchedVendorReport.data.unmatchedVendorCount >= 1,
+  'unknown/free-text counterparty exports a blank VendorID and is surfaced as an exception',
+);
+
 console.log('backend OK — ' + n + ' checks passed');
