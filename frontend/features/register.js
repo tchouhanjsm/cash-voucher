@@ -743,12 +743,17 @@ export function createRegister({ api, go }) {
     note.textContent =
       'Approval makes this payment eligible for approved totals and daily cash close. The creator cannot approve their own voucher.';
     body.appendChild(note);
-    dialog(`Approve payment ${voucherNo(voucher)}?`, body, async () => {
-      Object.assign(voucher, await api('approveVoucher', { id }));
-      closeModal();
-      toast('Payment approved.', 'ok');
-      go(S.view);
-    }, 'Approve payment');
+    dialog(
+      `Approve payment ${voucherNo(voucher)}?`,
+      body,
+      async () => {
+        Object.assign(voucher, await api('approveVoucher', { id }));
+        closeModal();
+        toast('Payment approved.', 'ok');
+        go(S.view);
+      },
+      'Approve payment',
+    );
   }
 
   function reject(id) {
@@ -783,18 +788,23 @@ export function createRegister({ api, go }) {
     reason.maxLength = 200;
     reason.rows = 3;
     body.appendChild(labeledControl('Rejection reason (required)', reason));
-    dialog(`Reject payment ${voucherNo(voucher)}?`, body, async () => {
-      Object.assign(
-        voucher,
-        await api('rejectVoucher', { id, reason: $('#apr-reason').value }),
-      );
-      closeModal();
-      toast(
-        'Payment rejected. It remains visible and blocks cash close until cancelled or otherwise resolved.',
-        'ok',
-      );
-      go(S.view);
-    }, 'Reject payment');
+    dialog(
+      `Reject payment ${voucherNo(voucher)}?`,
+      body,
+      async () => {
+        Object.assign(
+          voucher,
+          await api('rejectVoucher', { id, reason: $('#apr-reason').value }),
+        );
+        closeModal();
+        toast(
+          'Payment rejected. It remains visible and blocks cash close until cancelled or otherwise resolved.',
+          'ok',
+        );
+        go(S.view);
+      },
+      'Reject payment',
+    );
   }
 
   function bind() {
