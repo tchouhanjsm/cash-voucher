@@ -678,6 +678,13 @@ with sync_playwright() as p:
 
     # Simulate locally modified IndexedDB text to prove the new queue renderer escapes it.
     hostile_queued_vendor = '<img src=x onerror=window.__xssFired=true>'
+
+    def unlock_offline_owner():
+        page.wait_for_selector('#loginForm', timeout=10000)
+        page.fill('#lEmail', 'owner@test.com')
+        page.fill('#lPin', '579246')
+        page.click('#lBtn')
+
     page.evaluate(
         """async (hostileVendor) => {
           const db = await new Promise((resolve, reject) => {
@@ -711,6 +718,7 @@ with sync_playwright() as p:
         hostile_queued_vendor,
     )
     page.reload(wait_until='domcontentloaded')
+    unlock_offline_owner()
     page.wait_for_selector('.outbox-pending', timeout=10000)
     page.locator('.outbox-pending summary').click()
     queued_review_text = page.locator('.outbox-pending').inner_text()
@@ -752,6 +760,7 @@ with sync_playwright() as p:
         }"""
     )
     page.reload(wait_until='domcontentloaded')
+    unlock_offline_owner()
     page.wait_for_selector('.outbox-pending', timeout=10000)
     page.locator('.outbox-pending summary').click()
     check(
