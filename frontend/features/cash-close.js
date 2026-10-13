@@ -252,9 +252,11 @@ export function createCashClose({ api }) {
           '</td></tr>',
       )
       .join('');
-    const approvalIssues = (
-      Array.isArray(snapshot.pendingApprovals) ? snapshot.pendingApprovals : []
-    ).map(
+    const pendingApprovalRows = Array.isArray(snapshot.pendingApprovals)
+      ? snapshot.pendingApprovals
+      : [];
+    const approvalIssues = pendingApprovalRows
+      .map(
         (item) =>
           '<tr><td>' +
           esc(item.no) +
