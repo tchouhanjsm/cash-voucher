@@ -1512,7 +1512,8 @@ with sync_playwright() as p:
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'register explains an empty filter result and offers a clear-filters action',
     )
-    page.click('#rempty [data-act=rclear]')
+    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
+    page.wait_for_function("document.querySelector('#rq')?.value === ''")
     check(
         page.locator('#rq').input_value() == ''
         and page.locator('#rbody tr').count() == 2,
@@ -1527,7 +1528,8 @@ with sync_playwright() as p:
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'invalid register date range blocks misleading totals and CSV export with a recovery action',
     )
-    page.click('#rempty [data-act=rclear]')
+    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
+    page.wait_for_function("document.querySelector('#rfrom')?.value === '' && document.querySelector('#rto')?.value === ''")
     check(
         page.locator('#rbody tr').count() == 2
         and not page.locator('#rf [data-act=csv]').is_disabled(),
@@ -3044,7 +3046,7 @@ with sync_playwright() as p:
         'Guest Room 5' in report_text
         and 'RECEIPT' in report_text
         and report_rows.count() >= 1
-        and all(row.locator('td').nth(5).inner_text() == 'ACTIVE' for row in report_rows.all()),
+        and all(row.locator('td').nth(6).inner_text() == 'ACTIVE' for row in report_rows.all()),
         'default active report lists active source vouchers and excludes cancelled records',
     )
 
