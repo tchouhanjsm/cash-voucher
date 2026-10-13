@@ -506,7 +506,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
           <button class="btn primary" type="button" data-act="audcsv">Export filtered CSV</button>
         </div>
         <p id="aud-count" class="muted" role="status" aria-live="polite">Loading audit events…</p>
-        <button id="aud-more" class="btn hidden" type="button" data-act="audmore" hidden>Load older events</button>
+        <button id="aud-more" class="btn hidden" type="button" data-act="audmore">Load older events</button>
         <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="aud"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
       </section>`;
 
