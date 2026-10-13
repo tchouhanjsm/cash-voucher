@@ -170,7 +170,7 @@ export function createReports({ api }) {
           </div>
         </div>
         <div class="card">
-          ${Number(summary.pendingApprovalCount) > 0 ? `<p class="muted" role="status">${esc(scalarText(summary.pendingApprovalCount))} active payment(s) require approval. They remain visible below but are excluded from payment totals and block daily cash close until approved or cancelled.</p>` : ''}
+          ${Number(summary.approvalExceptionCount) > 0 ? `<p class="muted" role="status">${esc(scalarText(summary.approvalExceptionCount))} active payment(s) have unresolved approval states. They remain visible below but are excluded from approved payment totals and block daily cash close until approved or cancelled.</p>` : ''}
           <h2>Source vouchers <span class="muted">${esc(dmy(R.from))} – ${esc(dmy(R.to))}</span></h2>
           <p class="muted">
             Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}
