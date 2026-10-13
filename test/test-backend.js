@@ -1035,6 +1035,31 @@ ok(
   dayThree.ok && dayThree.data.includedVoucherCount === 3,
   'saved close includes voucher snapshot',
 );
+const dayFive = as(T, 'createCashClose', {
+  date: '2020-01-05',
+  openingCash: '137.50',
+  openingReason: 'Gap day opening confirmed',
+  countedCash: '137.50',
+  requestId: 'cc-day-five',
+});
+ok(dayFive.ok, 'a later date can be closed with an explicit opening after a gap');
+const earlierPreview = as(T, 'cashClosePreview', { date: '2020-01-04' });
+ok(
+  earlierPreview.ok &&
+    earlierPreview.data.blockedByLaterClose &&
+    earlierPreview.data.laterCloseDate === '2020-01-05' &&
+    !earlierPreview.data.readyToClose,
+  'preview blocks an earlier date after a later close exists',
+);
+const outOfOrderClose = as(T, 'createCashClose', {
+  date: '2020-01-04',
+  countedCash: '137.50',
+  requestId: 'cc-out-of-order',
+});
+ok(
+  !outOfOrderClose.ok && outOfOrderClose.code === 'CASH_CLOSE_OUT_OF_ORDER',
+  'server rejects out-of-order close finalization',
+);
 ok(
   as(T, 'updateVoucher', {
     id: cashCloseReceipt.data.created[0].id,

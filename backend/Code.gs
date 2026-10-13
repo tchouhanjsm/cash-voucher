@@ -2003,6 +2003,13 @@ function cashClosePreview_(user, req) {
   };
   const selected = byDate(date),
     previous = byDate(cashClosePreviousDate_(date));
+  const laterClose = closes
+    .filter(function (row) {
+      return String(row.BusinessDate || '') > date;
+    })
+    .sort(function (a, b) {
+      return String(a.BusinessDate || '').localeCompare(String(b.BusinessDate || ''));
+    })[0] || null;
   const recentCloses = closes
     .slice()
     .sort(function (a, b) {
@@ -2045,6 +2052,8 @@ function cashClosePreview_(user, req) {
     date,
     today: todayIso_(0),
     closed: false,
+    blockedByLaterClose: !!laterClose,
+    laterCloseDate: laterClose ? String(laterClose.BusinessDate || '') : '',
     requiresManualOpening: !previous,
     previousClose: previous ? cashCloseOut_(previous) : null,
     openingCash: openingPaise === null ? null : openingPaise / 100,
@@ -2059,7 +2068,7 @@ function cashClosePreview_(user, req) {
     unclassified: period.unclassified,
     invalidVouchers: period.invalidVouchers,
     expectedCash: expectedValid && !blocked && openingReady ? expectedPaise / 100 : null,
-    readyToClose: expectedValid && !blocked && openingReady,
+    readyToClose: expectedValid && !blocked && openingReady && !laterClose,
     expectedInvalid: expectedPaise !== null && expectedPaise < 0,
     recentCloses,
     timeZone: CFG.TZ,
@@ -2129,6 +2138,25 @@ function createCashClose_(user, req) {
     throw err_(
       'This business date is already closed. The original close cannot be overwritten.',
       'CASH_CLOSE_EXISTS',
+    );
+  const laterClose = closes
+    .filter(function (row) {
+      return (
+        String(row.DrawerKey || CASH_CLOSE_DRAWER) === CASH_CLOSE_DRAWER &&
+        String(row.BusinessDate || '') > date
+      );
+    })
+    .sort(function (a, b) {
+      return String(a.BusinessDate || '').localeCompare(String(b.BusinessDate || ''));
+    })[0];
+  if (laterClose)
+    throw err_(
+      'Cannot close ' +
+        date +
+        ' because the later business date ' +
+        String(laterClose.BusinessDate || '') +
+        ' is already closed. Finalize dates in chronological order; no close was saved.',
+      'CASH_CLOSE_OUT_OF_ORDER',
     );
   const period = cashCloseCalculatePeriod_(date);
   if (period.unclassified.length) {

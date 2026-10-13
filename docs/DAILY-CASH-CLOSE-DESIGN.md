@@ -228,7 +228,7 @@ The cash-impact field is now an owner-approved code slice. This PR does not uplo
 
 The owner approved these defaults for the implementation phase. This section supersedes the earlier undecided options above for this MVP:
 
-- **Period / uniqueness:** one property, one physical drawer (MAIN), one calendar day in Asia/Kolkata. A business date can be closed once.
+- **Period / uniqueness:** one property, one physical drawer (MAIN), one calendar day in Asia/Kolkata. A business date can be closed once. Dates must be finalized chronologically; a later finalized date blocks closing a missing earlier date so the carry-forward chain cannot be retroactively contradicted.
 - **Opening cash:** carry forward the previous calendar day's accepted physical count. If that exact prior-day close does not exist (first day or a gap), require a manually entered opening amount and a reason. The global Settings opening balance is never used as a daily opening amount.
 - **Calculation:** opening physical cash + all active CASH_IN vouchers − all active CASH_OUT vouchers. NO_CASH is included in the traceable snapshot but contributes zero to drawer movement. Cancelled vouchers are excluded. Category names and voucher type are never used to infer impact.
 - **Finalization gate:** block close when any active in-period voucher is UNCLASSIFIED or has an invalid amount. A non-zero variance requires a reason. Store the included voucher IDs and compact voucher snapshot with totals, actor, property timezone and timestamp in the dedicated close row.

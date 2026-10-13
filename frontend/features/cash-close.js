@@ -266,6 +266,11 @@ export function createCashClose({ api }) {
     const cannotReason = snapshot.expectedInvalid
       ? '<p class="cc-error" role="alert">Expected physical cash is negative. Review the opening amount and cash-impact classifications.</p>'
       : '';
+    const orderIssue = snapshot.blockedByLaterClose
+      ? '<section class="cc-blockers" role="alert"><h3>Close dates out of order</h3><p>A later business date (' +
+        esc(snapshot.laterCloseDate) +
+        ') is already closed. To preserve opening-cash history, an earlier date cannot be finalized. The saved close remains unchanged.</p></section>'
+      : '';
     const queueKnown = snapshot.localQueueKnown === true;
     const queueCount = Number.isSafeInteger(snapshot.localQueueCount)
       ? snapshot.localQueueCount
@@ -286,6 +291,7 @@ export function createCashClose({ api }) {
       '</h2><p class="muted">Calculated from centrally synchronized ACTIVE vouchers. Cancelled vouchers are excluded.</p></div><span class="badge">PREVIEW ONLY</span></div>' +
       openingMarkup +
       cannotReason +
+      orderIssue +
       queueIssue +
       '<div class="cc-metrics">' +
       metric('Active vouchers', String(snapshot.activeVoucherCount || 0)) +
