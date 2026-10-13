@@ -29,6 +29,7 @@ export function createReports({ api }) {
       'voucherNo',
       'type',
       'vendor',
+      'vendorId',
       'category',
       'notes',
       'status',
@@ -58,6 +59,7 @@ export function createReports({ api }) {
           <td class="nw">${esc(scalarText(item.type) === 'RECEIPT' ? 'R-' : '')}${esc(scalarText(item.voucherNo))}</td>
           <td>${esc(scalarText(item.type))}</td>
           <td>${esc(scalarText(item.vendor))}</td>
+          <td class="nw"><code>${esc(scalarText(item.vendorId)) || '—'}</code></td>
           <td>
             ${esc(scalarText(item.category))}
             ${scalarText(item.notes) ? ' · ' + esc(scalarText(item.notes)) : ''}
@@ -84,6 +86,7 @@ export function createReports({ api }) {
               <th>Voucher</th>
               <th>Type</th>
               <th>Counterparty</th>
+              <th>Vendor ID</th>
               <th>Category / notes</th>
               <th>Status</th>
               <th>Approval</th>
@@ -97,10 +100,10 @@ export function createReports({ api }) {
   }
 
   function render() {
-    if (!can('viewAll')) {
+    if (!can('reports')) {
       $('#view').innerHTML =
         head('Recorded Movement Report') +
-        '<div class="card"><p>Reports are available to managers and owners only.</p></div>';
+        '<div class="card"><p>Reports are unavailable for this account.</p></div>';
       return;
     }
 
@@ -171,6 +174,7 @@ export function createReports({ api }) {
         </div>
         <div class="card">
           ${Number(summary.approvalExceptionCount) > 0 ? `<p class="muted" role="status">${esc(scalarText(summary.approvalExceptionCount))} active payment(s) have unresolved approval states. They remain visible below but are excluded from approved payment totals and block daily cash close until approved or cancelled.</p>` : ''}
+          ${Number(summary.unmatchedVendorCount) > 0 ? `<p class="muted" role="status">${esc(scalarText(summary.unmatchedVendorCount))} report row(s) have no unique saved Vendor ID. IDs are linked only when the counterparty exactly matches one unambiguous saved vendor name; unmatched historical/free-text names remain blank.</p>` : ''}
           <h2>Source vouchers <span class="muted">${esc(dmy(R.from))} – ${esc(dmy(R.to))}</span></h2>
           <p class="muted">
             Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}
@@ -199,7 +203,7 @@ export function createReports({ api }) {
   }
 
   async function load() {
-    if (!can('viewAll')) return render();
+    if (!can('reports')) return render();
 
     if (!R.from || !R.to || R.from > R.to) {
       R.summary = null;
@@ -238,6 +242,7 @@ export function createReports({ api }) {
         'voucherNo',
         'type',
         'vendor',
+        'vendorId',
         'category',
         'notes',
         'status',
@@ -289,6 +294,7 @@ export function createReports({ api }) {
         'voucherNo',
         'type',
         'vendor',
+        'vendorId',
         'category',
         'notes',
         'amount',
