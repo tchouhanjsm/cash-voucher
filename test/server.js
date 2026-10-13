@@ -112,8 +112,23 @@ http
         res.writeHead(404);
         return res.end('nf');
       }
+      let responseBody = d;
+      if (path.basename(f) === 'index.html') {
+        const html = d.toString('utf8');
+        const testPolicy = html.replace(
+          "script-src 'self';",
+          "script-src 'self' 'unsafe-eval';",
+        );
+        if (testPolicy === html) {
+          res.writeHead(500, { 'Content-Type': 'text/plain' });
+          return res.end('Test-only CSP override could not locate the expected script-src directive.');
+        }
+        // Playwright's string-based wait_for_function uses eval; this exception exists only
+        // in the mock E2E server. scripts/verify-frontend-release.js rejects it in source.
+        responseBody = Buffer.from(testPolicy);
+      }
       res.writeHead(200, { 'Content-Type': types[path.extname(f)] || 'application/octet-stream' });
-      res.end(d);
+      res.end(responseBody);
     });
   })
   .listen(8765, () => console.log('up'));

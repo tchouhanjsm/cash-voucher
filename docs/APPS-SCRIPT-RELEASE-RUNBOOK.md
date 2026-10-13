@@ -12,7 +12,7 @@ The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. 
 
 ## Frontend CSP release gate
 
-The active frontend shell contains a meta Content Security Policy. `npm run check` validates the allowlist and rejects a missing/duplicate policy, broad script sources, inline executable shell code, or inline event-handler attributes. Browser E2E additionally checks that the policy is present and that the tested workflows generate no CSP violation.
+The active frontend shell contains a meta Content Security Policy. `npm run check` validates the production-source allowlist and rejects a missing/duplicate policy, broad script sources, inline executable shell code, or inline event-handler attributes. The mock E2E server adds `'unsafe-eval'` only to its served test copy so Playwright's string-based wait predicates work; the static source gate explicitly rejects that source in production HTML. Browser E2E exercises the remaining policy while testing the user workflows, but is not proof that a production host serves the same policy.
 
 - Review the deployed HTML policy before trusting a frontend release. Same-origin assets and the Apps Script ContentService endpoints must remain the only API/script origins; receipt previews rely on `data:`/`blob:` image sources.
 - The current dashboard requires inline style attributes for variable chart widths. Script execution remains restricted to same-origin external files; do not add `unsafe-eval`, `data:` script sources, third-party script origins, or inline event handlers.

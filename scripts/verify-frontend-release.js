@@ -210,5 +210,5 @@ if (
 }
 
 console.log(
-  `Frontend release integrity OK — ${graph.files.length} local modules + shell assets and CSP verified.`,
+  `Frontend release integrity OK — ${graph.files.length} modules and shell/CSP verified.`,
 );

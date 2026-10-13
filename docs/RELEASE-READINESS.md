@@ -8,7 +8,7 @@ PR #111 is merged to source at `6092152c64adff084abfda5407056dac9401b5e9`. Its D
 
 The Dashboard already displays **Book balance**. It is a recorded-voucher projection (global Settings opening balance + active receipts − active payments), not a physical drawer count, bank balance, or general ledger. Daily Cash Close is a separate, immutable physical-cash reconciliation.
 
-- **Browser CSP baseline — added in this source batch:** the static release check and Browser E2E cover source behavior. The deployed host still needs verification.
+- **Browser CSP baseline — added in this source batch:** the static release check validates the production-source policy. The mock E2E server adds a test-only `'unsafe-eval'` exception for Playwright polling, so its run is functional regression evidence, not proof of the exact production CSP.
 - **Header-level framing protection — not verified:** if the host supports response headers, set a CSP response header with `frame-ancestors 'none'`; the HTML meta policy cannot enforce that directive.
 - **Live Apps Script project/version — not verified:** the owner must confirm the intended project, Sheet binding, Script Properties and deployment ID matching `config.js`.
 - **Authorization and receipt access — not verified live:** perform owner/manager/staff smoke tests against the actual deployed endpoint.

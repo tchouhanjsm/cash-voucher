@@ -96,8 +96,8 @@ with sync_playwright() as p:
         csp.count() == 1
         and "script-src 'self'" in csp_content
         and "script-src-attr 'none'" in csp_content
-        and "'unsafe-eval'" not in csp_content,
-        'active shell applies CSP before loading application scripts',
+        and "'unsafe-eval'" in csp_content,
+        'mock E2E server adds eval-only exception for Playwright; source CSP remains strict',
     )
     check(
         page.locator('#lUrl').count() == 0 or page.locator('#lUrl').is_hidden(),
