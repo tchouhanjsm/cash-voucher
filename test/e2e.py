@@ -336,14 +336,12 @@ with sync_playwright() as p:
     manager_page.on('pageerror', lambda error: manager_errors.append('PAGEERR ' + str(error)))
     manager_page.click('#rbody [data-act=approve]')
     try:
-        manager_page.wait_for_function(
-            "document.querySelector('#modal .mcard .primary') || "
-            "(!document.querySelector('#toast')?.classList.contains('hidden'))",
-            timeout=5000,
-        )
+        manager_page.wait_for_selector('#modal:not(.hidden) .mcard .primary', timeout=10000)
     except Exception:
         pass
-    approval_modal_ready = manager_page.locator('#modal .mcard .primary').count() == 1
+    approval_modal_ready = (
+        manager_page.locator('#modal:not(.hidden) .mcard .primary').count() == 1
+    )
     if approval_modal_ready:
         manager_page.locator('#modal .mcard .primary').click()
         manager_page.wait_for_function(
