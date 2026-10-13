@@ -37,8 +37,8 @@ jobs:
         env:
           GH_HEAD_REF: ${{ github.head_ref }}
         run: |
-          git fetch origin "refs/heads/\${GH_HEAD_REF}:refs/remotes/origin/\${GH_HEAD_REF}"
-          git checkout -B "\${GH_HEAD_REF}" "origin/\${GH_HEAD_REF}"
+          git fetch origin "refs/heads/${GH_HEAD_REF}:refs/remotes/origin/${GH_HEAD_REF}"
+          git checkout -B "${GH_HEAD_REF}" "origin/${GH_HEAD_REF}"
           npm run fix:format
           npm run fix:lint
           git add -u
@@ -49,7 +49,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git commit -m "style: format Daily Cash Close implementation"
-          git push origin "HEAD:refs/heads/\${GH_HEAD_REF}"
+          git push origin "HEAD:refs/heads/${GH_HEAD_REF}"
 
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
