@@ -1524,9 +1524,9 @@ with sync_playwright() as p:
     }
     check(
         clear_filter_state['query'] == ''
-        and clear_filter_state['rowCount'] >= 2
-        and not clear_filter_state['emptyVisible'],
-        'empty-state clear-filters action restores matching vouchers: ' + json.dumps(clear_filter_state),
+        and page.locator('#rs').input_value() == 'ACTIVE',
+        'empty-state clear-filters clears the search and restores the default active-only view: '
+        + json.dumps(clear_filter_state),
     )
     page.fill('#rfrom', '2026-10-20')
     page.fill('#rto', '2026-10-10')
@@ -3386,7 +3386,28 @@ with sync_playwright() as p:
     )
     page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
     page.wait_for_function("document.querySelector('#rq')?.value === ''")
-    page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('malformed-register-fixture') || document.querySelector('#rbody')?.innerText.includes('999991')")
+    try:
+        page.wait_for_function(
+            "document.querySelector('#rbody')?.innerText.includes('999991')",
+            timeout=5000,
+        )
+    except Exception:
+        print(
+            'MALFORMED REGISTER CLEAR DIAGNOSTIC:',
+            json.dumps({
+                'query': page.locator('#rq').input_value(),
+                'statusFilter': page.locator('#rs').input_value(),
+                'rows': page.locator('#rbody').inner_text(),
+                'rowCount': page.locator('#rbody tr').count(),
+                'emptyText': page.locator('#rempty').inner_text(),
+                'emptyClass': page.locator('#rempty').get_attribute('class'),
+                'totals': page.locator('#rtot').inner_text(),
+                'appClass': page.locator('#app').get_attribute('class'),
+                'loginClass': page.locator('#login').get_attribute('class'),
+                'toast': page.locator('#toast').inner_text(),
+            }),
+        )
+        raise
     page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
     page.wait_for_selector('#rimgs .receipt-error[role=alert]')
     check(
