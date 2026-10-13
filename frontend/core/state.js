@@ -20,6 +20,25 @@ export const S = {
 
 export const CASH_IMPACT_CHOICES = ['CASH_IN', 'CASH_OUT', 'NO_CASH'];
 export const CASH_IMPACT_VALUES = [...CASH_IMPACT_CHOICES, 'UNCLASSIFIED'];
+export const APPROVAL_STATUS_VALUES = [
+  'NOT_REQUIRED',
+  'PENDING',
+  'APPROVED',
+  'REJECTED',
+  'REVIEW_REQUIRED',
+];
+
+export function normalizeApprovalStatus(value) {
+  if (value === undefined || value === null || value === '') return 'NOT_REQUIRED';
+  return APPROVAL_STATUS_VALUES.includes(value) ? value : 'REVIEW_REQUIRED';
+}
+
+export function isPaymentApprovedForTotals(voucher) {
+  return (
+    voucher?.type !== 'PAYMENT' ||
+    ['NOT_REQUIRED', 'APPROVED'].includes(normalizeApprovalStatus(voucher?.approvalStatus))
+  );
+}
 
 export function normalizeCashImpact(value) {
   return CASH_IMPACT_VALUES.includes(value) ? value : 'UNCLASSIFIED';
@@ -65,6 +84,7 @@ export function normalizeVoucherCollection(value) {
     'updatedAt',
     'cancelReason',
   ];
+  const optionalApprovalTextFields = ['approvedBy', 'approvedAt', 'approvalReason'];
 
   value.forEach((voucher) => {
     if (
@@ -96,6 +116,19 @@ export function normalizeVoucherCollection(value) {
       row.cashImpact = 'UNCLASSIFIED';
       malformedFieldCount++;
     }
+    const originalApprovalStatus = row.approvalStatus;
+    row.approvalStatus = normalizeApprovalStatus(originalApprovalStatus);
+    if (
+      originalApprovalStatus !== undefined &&
+      originalApprovalStatus !== null &&
+      originalApprovalStatus !== '' &&
+      row.approvalStatus === 'REVIEW_REQUIRED'
+    ) {
+      malformedFieldCount++;
+    }
+    optionalApprovalTextFields.forEach((field) => {
+      if (typeof row[field] !== 'string') row[field] = '';
+    });
     rows.push(row);
   });
 
@@ -118,7 +151,12 @@ export const vno = (voucher) => (isIn(voucher) ? 'R-' : '') + (voucher?.no ?? ''
 const voucherRecords = () => (Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : []);
 
 export const pays = () =>
-  voucherRecords().filter((voucher) => voucher.status === 'ACTIVE' && !isIn(voucher));
+  voucherRecords().filter(
+    (voucher) =>
+      voucher.status === 'ACTIVE' &&
+      !isIn(voucher) &&
+      isPaymentApprovedForTotals(voucher),
+  );
 
 export const recs = () =>
   voucherRecords().filter((voucher) => voucher.status === 'ACTIVE' && isIn(voucher));
