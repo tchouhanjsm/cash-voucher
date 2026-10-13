@@ -95,7 +95,7 @@ This does not approve daily-close calculations or a reconciliation claim. The cl
 Potential next product requirements, subject to validation:
 
 - Make unresolved operational issues discoverable without forcing the owner to inspect every voucher.
-- Improve audit-log discoverability only after confirming required filters, retention, export, and access controls.
+- Audit-log discoverability and traceability include structured transaction-lifecycle events, field-level old/new changes and reasons where applicable, plus cursor-based older-page loading. Filters/CSV cover loaded pages only. Confirm retention, tamper-evidence and durable audit-write requirements before claiming a complete financial audit trail.
 - Define approval thresholds and correction permissions from actual operating practice.
 - Keep each exception explainable and linked to source records.
 

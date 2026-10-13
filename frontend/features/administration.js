@@ -11,6 +11,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
   let malformedAuditCount = 0;
   let auditResponseInvalid = false;
+  let auditNextBeforeRow = null;
+  let auditTotalCount = 0;
+  let auditLoadingOlder = false;
 
   function getVendorRows() {
     const envelopeValid = Array.isArray(S.vendors);
@@ -485,11 +488,14 @@ export function createAdministration({ api, getNavigation, signOut }) {
     auditRows = [];
     malformedAuditCount = 0;
     auditResponseInvalid = false;
+    auditNextBeforeRow = null;
+    auditTotalCount = 0;
+    auditLoadingOlder = false;
 
     $('#view').innerHTML =
       head('Audit log') +
       `<section class="card" aria-describedby="audit-scope">
-        <p id="audit-scope" class="muted">Showing the latest 200 events returned by the server. Filters and CSV export apply only to these loaded events, not the full audit history.</p>
+        <p id="audit-scope" class="muted">Audit events load newest-first in pages of 200. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
         <div class="filters audit-filters">
           <label>Search<input id="aud-q" type="search" aria-label="Search audit events" placeholder="Search details, target or user"></label>
           <label>User<select id="aud-user" aria-label="Filter audit events by user"><option value="">All users</option></select></label>
@@ -500,25 +506,21 @@ export function createAdministration({ api, getNavigation, signOut }) {
           <button class="btn primary" type="button" data-act="audcsv">Export filtered CSV</button>
         </div>
         <p id="aud-count" class="muted" role="status" aria-live="polite">Loading audit events…</p>
+        <button id="aud-more" class="btn hidden" type="button" data-act="audmore">Load older events</button>
         <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="aud"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
       </section>`;
 
     api('auditLog')
-      .then((rows) => {
-        auditResponseInvalid = !Array.isArray(rows);
-        const receivedRows = auditResponseInvalid ? [] : rows;
-        const isValidAuditRow = (row) =>
-          row !== null &&
-          typeof row === 'object' &&
-          !Array.isArray(row) &&
-          ['time', 'user', 'action', 'target', 'details'].every(
-            (field) => typeof row[field] === 'string',
-          );
-        auditRows = receivedRows.filter(isValidAuditRow);
-        malformedAuditCount = receivedRows.length - auditRows.length;
-        if (!$('#aud')) return;
-        populateAuditOptions();
-        renderAuditRows();
+      .then((page) => {
+        if (!setAuditPage(page, false)) {
+          auditResponseInvalid = true;
+          auditRows = [];
+          malformedAuditCount = 0;
+          auditNextBeforeRow = null;
+          auditTotalCount = 0;
+          populateAuditOptions();
+          renderAuditRows();
+        }
       })
       .catch((error) => {
         const body = $('#aud');
@@ -534,6 +536,74 @@ export function createAdministration({ api, getNavigation, signOut }) {
         $('#aud-count').textContent = 'Audit events unavailable.';
         fail(error);
       });
+  }
+
+  function setAuditPage(page, append) {
+    const validPage =
+      page !== null &&
+      typeof page === 'object' &&
+      !Array.isArray(page) &&
+      Array.isArray(page.rows) &&
+      Number.isSafeInteger(page.totalCount) &&
+      page.totalCount >= 0 &&
+      (page.nextBeforeRow === null ||
+        (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2));
+    if (!validPage) return false;
+
+    const isValidAuditRow = (row) =>
+      row !== null &&
+      typeof row === 'object' &&
+      !Array.isArray(row) &&
+      ['time', 'user', 'action', 'target', 'details'].every(
+        (field) => typeof row[field] === 'string',
+      );
+    const validRows = page.rows.filter(isValidAuditRow);
+    const invalidRows = page.rows.length - validRows.length;
+    auditRows = append ? auditRows.concat(validRows) : validRows;
+    malformedAuditCount = append ? malformedAuditCount + invalidRows : invalidRows;
+    auditResponseInvalid = false;
+    auditNextBeforeRow = page.nextBeforeRow;
+    auditTotalCount = page.totalCount;
+    populateAuditOptions();
+    renderAuditRows();
+    const more = $('#aud-more');
+    if (more) {
+      more.hidden = !auditNextBeforeRow;
+      more.classList.toggle('hidden', !auditNextBeforeRow);
+      more.disabled = false;
+      more.textContent = 'Load older events';
+    }
+    return true;
+  }
+
+  async function loadOlderAuditEvents() {
+    if (!auditNextBeforeRow || auditLoadingOlder) return;
+    auditLoadingOlder = true;
+    const button = $('#aud-more');
+    if (button) {
+      button.disabled = true;
+      button.textContent = 'Loading older events…';
+    }
+    try {
+      const page = await api('auditLog', { beforeRow: auditNextBeforeRow });
+      if (!setAuditPage(page, true)) {
+        toast(
+          'Older audit events returned an invalid response. Loaded events were kept; retry later.',
+          'err',
+        );
+      }
+    } catch (error) {
+      fail(error);
+    } finally {
+      auditLoadingOlder = false;
+      const currentButton = $('#aud-more');
+      if (currentButton) {
+        currentButton.disabled = false;
+        currentButton.textContent = 'Load older events';
+        currentButton.hidden = !auditNextBeforeRow;
+        currentButton.classList.toggle('hidden', !auditNextBeforeRow);
+      }
+    }
   }
 
   function populateAuditOptions() {
@@ -575,11 +645,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
   function auditDetailsText(row) {
     const details = String(row.details ?? '');
-    if (row.action !== 'UPDATE') return details;
-
     try {
       const parsed = JSON.parse(details);
-      if (parsed.version !== 1 || !Array.isArray(parsed.changes) || !parsed.reason) return details;
+      if (parsed.version !== 1 || !Array.isArray(parsed.changes)) return details;
 
       const labels = {
         date: 'Date',
@@ -587,25 +655,80 @@ export function createAdministration({ api, getNavigation, signOut }) {
         amount: 'Amount',
         category: 'Category',
         notes: 'Notes',
+        name: 'Name',
+        company: 'Company',
+        mobile: 'Mobile',
+        email: 'Email',
+        role: 'Role',
+        active: 'Active',
+        mustChangePin: 'PIN change required',
+        propertyName: 'Property name',
+        propertyAddress: 'Property address',
+        categories: 'Payment categories',
+        receiptCategories: 'Receipt categories',
+        nextVoucherNo: 'Next voucher number',
+        nextReceiptNo: 'Next receipt number',
+        openingBalance: 'Configured opening balance',
+        type: 'Voucher type',
+        status: 'Status',
+        cancelReason: 'Cancellation reason',
+        cashImpact: 'Cash impact',
+        receiptCount: 'Receipt count',
+        businessDate: 'Business date',
+        openingCash: 'Opening cash',
+        openingSource: 'Opening source',
+        cashInTotal: 'Cash in total',
+        cashOutTotal: 'Cash out total',
+        expectedCash: 'Expected cash',
+        countedCash: 'Counted cash',
+        variance: 'Variance',
+        includedVoucherCount: 'Included voucher count',
+        correctionType: 'Correction type',
+        details: 'Details',
+        voucherId: 'Voucher ID',
+        createdCount: 'Created count',
+        skippedCount: 'Skipped count',
+        firstVoucherNo: 'First voucher number',
+        lastVoucherNo: 'Last voucher number',
       };
       const valueText = (value) =>
         typeof value === 'string'
           ? JSON.stringify(value)
           : value === null || value === undefined
             ? '—'
-            : String(value);
+            : JSON.stringify(value);
       const changes = parsed.changes
+        .filter(
+          (change) => change && typeof change === 'object' && typeof change.field === 'string',
+        )
         .map((change) => {
           const label = Object.prototype.hasOwnProperty.call(labels, change.field)
             ? labels[change.field]
-            : String(change.field || 'Field');
+            : change.field;
           return label + ': ' + valueText(change.before) + ' → ' + valueText(change.after);
         })
         .join('; ');
-
-      return 'Reason: ' + String(parsed.reason) + ' | Changes: ' + changes;
+      const context = [];
+      if (parsed.eventType) context.push('Event: ' + String(parsed.eventType));
+      if (parsed.entityType || parsed.entityId) {
+        context.push(
+          'Record: ' +
+            [parsed.entityType, parsed.entityId]
+              .filter((value) => typeof value === 'string' && value)
+              .join(' '),
+        );
+      }
+      if (parsed.eventId) context.push('Event ID: ' + String(parsed.eventId));
+      if (typeof parsed.reason === 'string' && parsed.reason.trim()) {
+        context.push('Reason: ' + parsed.reason);
+      }
+      if (typeof parsed.summary === 'string' && parsed.summary) {
+        context.push('Summary: ' + parsed.summary);
+      }
+      if (changes) context.push('Changes: ' + changes);
+      return context.length ? context.join(' | ') : details;
     } catch {
-      // Legacy audit rows are plain text. Preserve them instead of rejecting the row.
+      // Legacy free-text audit rows remain readable and are rendered as inert text.
       return details;
     }
   }
@@ -654,14 +777,15 @@ export function createAdministration({ api, getNavigation, signOut }) {
       cell.className = 'muted';
       cell.textContent = auditRows.length
         ? 'No audit events match these filters.'
-        : 'No audit events are available in the latest 200 records.';
+        : 'No audit events are available in the loaded pages.';
       tr.appendChild(cell);
       body.appendChild(tr);
     }
     count.textContent =
-      `Showing ${rows.length} of ${auditRows.length} loaded events.` +
+      `Showing ${rows.length} of ${auditRows.length} loaded events; ` +
+      `${auditTotalCount} total recorded.` +
       (malformedAuditCount
-        ? ` ${malformedAuditCount} malformed audit event(s) omitted from this response.`
+        ? ` ${malformedAuditCount} malformed audit event(s) omitted from loaded pages.`
         : '');
   }
 
@@ -697,7 +821,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       csv,
       'text/csv;charset=utf-8',
     );
-    toast(`Exported ${rows.length} audit events from the loaded latest-200 window.`, 'ok');
+    toast(`Exported ${rows.length} audit events from the loaded pages.`, 'ok');
   }
 
   function handleAuditFilters(event) {
@@ -1021,6 +1145,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     audit: auditView,
     clearAuditFilters,
     exportAuditCsv,
+    loadOlderAuditEvents,
     dataQualityScan,
     backupIntegrityScan,
     account,
