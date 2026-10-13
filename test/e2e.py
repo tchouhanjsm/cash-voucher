@@ -768,6 +768,8 @@ with sync_playwright() as p:
         'queue review resumes after the hostile local fixture is restored',
     )
 
+    # Exclude the offline-startup bootstrap attempts from the subsequent reconnect window.
+    offline_sync_actions.clear()
     context.set_offline(False)
     page.wait_for_timeout(350)
     still_queued = page.evaluate(
