@@ -86,10 +86,9 @@ Other rule-based exception flags—duplicates, unusual first payments, off-hours
 
 ### P3 — Finance and accountant workflow
 
-- Confirm the actual first accounting destination before designing exports (e.g., Tally/Zoho-compatible CSV requirements).
-- Decide which GSTIN, tax amount, HSN/SAC and TDS fields are genuinely needed; define validation and tax/accountant ownership before adding fields.
-- Consider a read-only accountant role with export/report access and no transaction edits.
-- Upgrade reports from voucher CSV to a reconciliation export that ties every total back to source vouchers.
+**Slice 4 implementation is included in active PR #114; owner review and exact-head checks remain open.** It adds a least-privilege `accountant` role with server-authorized read-only access to the generic Recorded Movement Report and CSV. It also surfaces the existing stable VendorID, stores it on new vouchers when a unique case-insensitive exact vendor-name match exists, and includes it in report CSV. Historical rows are not backfilled; blank IDs are linked only by an exact unambiguous vendor-master name match and the report discloses unresolved rows.
+
+This is an operational source-voucher export, **not** a destination-certified Tally/Zoho import, general ledger, tax report, or reconciliation certificate. The actual accounting product/version, import mapping, required tax fields, and accountant-approved sample remain unresolved. Do not add GSTIN/GST, HSN/SAC or TDS behavior until the owner and qualified accountant define those requirements.
 
 ### P4 — Product UI/UX quality pass
 
