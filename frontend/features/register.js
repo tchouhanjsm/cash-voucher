@@ -162,36 +162,7 @@ export function createRegister({ api, go }) {
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
 
-    const registerBody = $('#rbody');
-    registerBody.dataset.sourceRowCount = String(sourceRows.length);
-    registerBody.dataset.validRowCount = String(voucherRows().length);
-    registerBody.dataset.filteredRowCount = String(list.length);
-    registerBody.dataset.view = String(S.view);
-    registerBody.dataset.filtersReset = String(
-      !R.q &&
-        !R.vendor &&
-        !R.cat &&
-        !R.user &&
-        !R.t &&
-        !R.from &&
-        !R.to &&
-        R.approval === 'ALL' &&
-        R.limit === 100,
-    );
-    registerBody.dataset.filterState = JSON.stringify({
-      q: R.q,
-      vendor: R.vendor,
-      category: R.cat,
-      user: R.user,
-      type: R.t,
-      from: R.from,
-      to: R.to,
-      status: R.st,
-      approval: R.approval,
-      limit: R.limit,
-    });
-
-    registerBody.innerHTML = shown
+    $('#rbody').innerHTML = shown
       .map((voucher) => {
         const receiptState = receiptMetadata(voucher);
         const receiptCount = receiptState.ids.length;
