@@ -3335,13 +3335,6 @@ with sync_playwright() as p:
     page.select_option('#rs', 'ALL')
 
     # The register must stay usable when API records have malformed vendor/note/receipt fields.
-    register_fixture_responses = {
-        'bootstrapCalls': 0,
-        'voucherCounts': [],
-        'fixturePresent': [],
-        'payloadOk': [],
-    }
-
     def tamper_register_metadata(route):
         request_data = json.loads(route.request.post_data or '{}')
         response = route.fetch()
@@ -3368,15 +3361,6 @@ with sync_playwright() as p:
             vouchers.append(None)
             data['vouchers'] = vouchers
             payload['data'] = data
-            register_fixture_responses['bootstrapCalls'] += 1
-            register_fixture_responses['voucherCounts'].append(len(vouchers))
-            register_fixture_responses['fixturePresent'].append(
-                any(
-                    isinstance(item, dict) and item.get('id') == 'malformed-register-fixture'
-                    for item in vouchers
-                )
-            )
-            register_fixture_responses['payloadOk'].append(payload.get('ok'))
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -3404,40 +3388,14 @@ with sync_playwright() as p:
         == 'No vouchers match the current filters.',
         'malformed fields do not break the register empty state',
     )
-    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
+    page.locator('#rempty [data-act=rclear]').click()
     page.wait_for_function("document.querySelector('#rq')?.value === ''")
-    # This malformed-record test needs both active and cancelled fixture rows to remain
-    # inspectable after the default Active-only recovery action.
-    page.select_option('#rs', 'ALL')
-    try:
-        page.wait_for_function(
-            "document.querySelector('#rbody')?.innerText.includes('999991')",
-            timeout=5000,
-        )
-    except Exception:
-        print(
-            'MALFORMED REGISTER CLEAR DIAGNOSTIC:',
-            json.dumps({
-                'query': page.locator('#rq').input_value(),
-                'statusFilter': page.locator('#rs').input_value(),
-                'rows': page.locator('#rbody').inner_text(),
-                'rowCount': page.locator('#rbody tr').count(),
-                'sourceRowCount': page.locator('#rbody').get_attribute('data-source-row-count'),
-                'validRowCount': page.locator('#rbody').get_attribute('data-valid-row-count'),
-                'filteredRowCount': page.locator('#rbody').get_attribute('data-filtered-row-count'),
-                'registerView': page.locator('#rbody').get_attribute('data-view'),
-                'filtersReset': page.locator('#rbody').get_attribute('data-filters-reset'),
-                'filterState': page.locator('#rbody').get_attribute('data-filter-state'),
-                'emptyText': page.locator('#rempty').inner_text(),
-                'emptyClass': page.locator('#rempty').get_attribute('class'),
-                'totals': page.locator('#rtot').inner_text(),
-                'appClass': page.locator('#app').get_attribute('class'),
-                'loginClass': page.locator('#login').get_attribute('class'),
-                'toast': page.locator('#toast').inner_text(),
-                'fixtureResponses': register_fixture_responses,
-            }),
-        )
-        raise
+    # Recreate the Register's transient filters after the clear-action assertion so
+    # this malformed-receipt check cannot inherit the preceding search interaction.
+    page.reload()
+    page.wait_for_selector('[data-v=reg]')
+    page.click('[data-v=reg]')
+    page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('999991')")
     page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
     page.wait_for_selector('#rimgs .receipt-error[role=alert]')
     check(
