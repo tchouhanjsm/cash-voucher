@@ -161,7 +161,9 @@ Therefore:
 - `NO_CASH`: a transaction occurs without physical drawer movement; it has no drawer effect.
 - `UNCLASSIFIED`: physical-cash impact is not established; resolve it or apply an explicitly owner-approved exception policy before final close.
 
-This is a proposed data concept, not an existing field or approved schema. Whether it belongs on a voucher or in a separately governed movement record must be reviewed before implementation.
+**Owner-approved Slice 1 policy (13 October 2026):** `CashImpact` is stored on each voucher. New vouchers must carry `CASH_IN`, `CASH_OUT`, or `NO_CASH`; `UNCLASSIFIED` is reserved for legacy records and unresolved historical data. All authorized voucher creators may classify a new voucher. Only existing owner/manager edit permissions may change a saved classification; edits must include the existing required correction reason and the audit event records old/new values, actor, timestamp, and reason. Category-derived values are editable suggestions only and never authoritative. No historical backfill is performed.
+
+Before deploying the new backend version, the owner must intentionally upload the reviewed source and run `migrateCashImpactField()` once in the intended Apps Script project. It adds only the `CashImpact` header at the next column and leaves historical cells blank. The function is manual and was not run during this code change.
 
 Candidate calculation:
 
@@ -194,16 +196,21 @@ Before implementation, choose a policy for active historical vouchers without a 
 
 **Recommendation:** do not backfill from category labels. Block a final close while active in-period vouchers remain `UNCLASSIFIED`; provide a deliberate resolution path. If an exception is needed, it must remain visibly provisional. This recommendation is not owner-approved policy.
 
-### Decisions required before any product-code PR
+### Decisions approved for the cash-impact field
 
-- Approve or revise the four-state vocabulary.
-- Decide whether users classify impact during voucher creation/edit, during close review, or both.
-- Decide whether classification is mandatory for new vouchers or enforced at close.
-- Decide historical-voucher treatment and whether a one-time backfill is needed.
-- Decide which roles can set or change classification and whether changes require a reason and audit record.
-- Define `NO_CASH` as “no physical drawer movement” only; bank/accounting reporting is a separate concern.
-- Decide whether category defaults are suggestions only or enforced rules. They must never override explicit transaction-level classification.
-- Decide whether unresolved vouchers or pending offline vouchers block final close or permit an explicitly provisional close.
+- Classification is mandatory at voucher creation. Only `CASH_IN`, `CASH_OUT`, or `NO_CASH` may be submitted for a new voucher; `UNCLASSIFIED` is not a valid new-voucher value.
+- All authorized voucher creators can classify new entries. Saved classifications can be changed only by existing owner/manager roles, with the existing required correction reason and old/new audit values.
+- Category defaults are editable suggestions only. Voucher type and category names never determine actual physical-cash movement.
+- Existing vouchers are not backfilled. Missing values remain `UNCLASSIFIED`; a future final close must block while active in-period vouchers remain unclassified.
+- `NO_CASH` means no physical drawer movement; it does not mean no financial or bank-account impact.
+
+### Still unresolved for the daily-close implementation
+
+- Business period and opening-cash source, including gaps and missing prior closes.
+- Drawer/shift uniqueness and treatment of backdated vouchers and post-close edits/cancellations.
+- Whether pending offline entries block close or allow an explicitly provisional close.
+- Close-record durability, idempotency, and failure policy if its required audit/close write fails.
+- Which existing roles may finalize a close, variance-reason policy, and report contents.
 
 ### Future implementation acceptance criteria
 
@@ -211,6 +218,8 @@ Before implementation, choose a policy for active historical vouchers without a 
 - UI copy explains that `NO_CASH` means no drawer movement, not “no financial impact”.
 - Every active voucher in the period is classified or appears in an unresolved list.
 - Tests cover cash and non-cash settlement within the same category, bank withdrawal into cash, cash deposit into bank, cancellations, edits/backdating, concurrent/retried closes, and voucher-to-total traceability.
-- Schema, migration, rollback, and backup/restore behavior for existing rows are documented before adding fields or records.
+- Schema migration is additive: append the `CashImpact` header without reordering existing columns, and leave historical cells blank; no category-based backfill is permitted.
+- Before deploying the reviewed backend version, capture the usual backup/schema evidence and run `migrateCashImpactField()` once in the intended Apps Script project. Verify the new header, unchanged row count and unchanged existing columns. Rollback must retain the added column and any classified values; do not remove saved data.
+- Existing device-local queue items without `cashImpact` remain recoverable: they are not auto-classified or discarded, and synchronization marks them failed until the owner/operator exports and deliberately re-enters them with classification.
 
-This Phase 24 refinement is documentation-only: no product code, API, Sheet schema, or production data changes.
+The cash-impact field is now an owner-approved code slice. This PR does not upload Apps Script source, run the migration, deploy a Web App version, or modify production data.
