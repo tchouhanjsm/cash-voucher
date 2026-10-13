@@ -665,11 +665,13 @@ with sync_playwright() as p:
         'offline-unlocked save makes no server create request and exposes pending queue status',
     )
     queued_review = page.locator('.outbox-pending')
+    queued_review.locator('summary').click()
     check(
         queued_review.locator('summary').inner_text() == 'Review queued entries'
         and 'Offline Unlock Vendor' in queued_review.inner_text()
         and 'Waiting to upload' in queued_review.inner_text()
         and '₹' in queued_review.inner_text()
+        and offline_records[0]['entry']['date'] in queued_review.inner_text()
         and '1 receipt image' in queued_review.inner_text(),
         'queue review shows an owned pending voucher, amount, date, status and receipt count',
     )
@@ -710,6 +712,7 @@ with sync_playwright() as p:
     )
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('.outbox-pending', timeout=10000)
+    page.locator('.outbox-pending summary').click()
     queued_review_text = page.locator('.outbox-pending').inner_text()
     check(
         hostile_queued_vendor in queued_review_text
@@ -749,9 +752,11 @@ with sync_playwright() as p:
         }"""
     )
     page.reload(wait_until='domcontentloaded')
-    page.wait_for_function(
-        "document.querySelector('.outbox-pending')?.innerText.includes('Offline Unlock Vendor')",
-        timeout=10000,
+    page.wait_for_selector('.outbox-pending', timeout=10000)
+    page.locator('.outbox-pending summary').click()
+    check(
+        'Offline Unlock Vendor' in page.locator('.outbox-pending').inner_text(),
+        'queue review resumes after the hostile local fixture is restored',
     )
 
     context.set_offline(False)
