@@ -792,10 +792,7 @@ export function createRegister({ api, go }) {
       `Reject payment ${voucherNo(voucher)}?`,
       body,
       async () => {
-        Object.assign(
-          voucher,
-          await api('rejectVoucher', { id, reason: $('#apr-reason').value }),
-        );
+        Object.assign(voucher, await api('rejectVoucher', { id, reason: $('#apr-reason').value }));
         closeModal();
         toast(
           'Payment rejected. It remains visible and blocks cash close until cancelled or otherwise resolved.',
