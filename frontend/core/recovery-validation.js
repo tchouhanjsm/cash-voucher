@@ -120,6 +120,14 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
       throw new Error('Recovery file contains invalid category or note data.');
     }
 
+    const cashImpact =
+      entry.cashImpact === undefined || entry.cashImpact === null || entry.cashImpact === ''
+        ? 'UNCLASSIFIED'
+        : entry.cashImpact;
+    if (!['CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'].includes(cashImpact)) {
+      throw new Error('Recovery file contains an invalid cash-impact classification.');
+    }
+
     const sourceReceipts =
       entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
     if (!Array.isArray(sourceReceipts) || sourceReceipts.length > 3) {
@@ -157,6 +165,7 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
         vendor: entry.vendor.trim(),
         amount: entry.amount,
         category,
+        cashImpact,
         notes,
         receipts,
       },

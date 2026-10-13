@@ -27,7 +27,7 @@ const CFG = {
   ],
   TEXT_COLS: {
     Users: ['A:D', 'F:G', 'I:J'],
-    Vouchers: ['A:A', 'C:D', 'F:P'],
+    Vouchers: ['A:A', 'C:D', 'F:Q'],
     Vendors: ['A:D', 'F:G'],
     Settings: ['A:B'],
     AuditLog: ['A:E'],
@@ -89,6 +89,7 @@ const CFG = {
       'CancelReason',
       'ClientID',
       'Type',
+      'CashImpact',
     ],
     Vendors: ['VendorID', 'Name', 'Company', 'Mobile', 'Active', 'CreatedBy', 'CreatedAt'],
     Settings: ['Key', 'Value'],
@@ -1239,8 +1240,12 @@ function validateSheetSchema_(s, name) {
   if (!expected) throw err_('Unknown sheet schema.', 'SERVER');
   const actual = s.getRange(1, 1, 1, expected.length).getValues()[0];
   for (let i = 0; i < expected.length; i++) {
-    if (actual[i] !== expected[i])
+    if (actual[i] !== expected[i]) {
+      if (name === 'Vouchers' && i === expected.length - 1 && actual[i] === '') {
+        throw err_('The Vouchers sheet is missing CashImpact. Run migrateCashImpactField() once in the Apps Script editor before using this version.', 'SCHEMA_MIGRATION');
+      }
       throw err_('Sheet "' + name + '" has an invalid header. Run setup() to repair it.', 'SCHEMA');
+    }
   }
 }
 function ensureSheet_(name) {
@@ -1253,6 +1258,30 @@ function ensureSheet_(name) {
     s.getRange(a).setNumberFormat('@');
   });
   return s;
+}
+/** One-time additive migration. Run manually in Apps Script editor before deploying this version. */
+// eslint-disable-next-line no-unused-vars
+function migrateCashImpactField() {
+  const id = props_().getProperty('SS_ID');
+  if (!id) throw new Error('Missing SS_ID Script Property; no changes were made.');
+  const spreadsheet = SpreadsheetApp.openById(id);
+  const sheet = spreadsheet.getSheetByName('Vouchers');
+  if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
+  const expected = CFG.H.Vouchers;
+  const headers = sheet.getRange(1, 1, 1, expected.length).getValues()[0];
+  if (expected.every(function (header, index) { return headers[index] === header; })) {
+    return 'CashImpact column already exists; no changes were made.';
+  }
+  if (!expected.slice(0, -1).every(function (header, index) { return headers[index] === header; })) {
+    throw new Error('Existing Vouchers headers do not match the supported prior schema; no changes were made.');
+  }
+  const extraHeader = headers[expected.length - 1];
+  if (extraHeader !== '' && extraHeader !== null) {
+    throw new Error('The next Vouchers column is already occupied; no changes were made.');
+  }
+  sheet.getRange(1, expected.length, 1, 1).setValues([['CashImpact']]);
+  sheet.getRange('Q:Q').setNumberFormat('@');
+  return 'Added CashImpact header. Historical rows remain blank and are treated as UNCLASSIFIED.';
 }
 function readAll_(name) {
   const v = sheet_(name).getDataRange().getValues(),
@@ -1523,6 +1552,7 @@ function vOut_(o) {
     updatedAt: tsStr_(o.UpdatedAt),
     receipts: o.Receipts ? String(o.Receipts).split(',').filter(Boolean) : [],
     cancelReason: String(o.CancelReason || ''),
+    cashImpact: CASH_IMPACT_CHOICES.indexOf(o.CashImpact) >= 0 ? o.CashImpact : 'UNCLASSIFIED',
   };
 }
 function bootstrap_(user) {
@@ -1609,6 +1639,13 @@ function nextNumber_(configured, existing, isReceipt, fallback) {
   return Math.max(current, max + 1);
 }
 
+const CASH_IMPACT_CHOICES = ['CASH_IN', 'CASH_OUT', 'NO_CASH'];
+function cashImpact_(value, prefix) {
+  if (typeof value !== 'string' || CASH_IMPACT_CHOICES.indexOf(value) < 0) {
+    throw err_((prefix || '') + 'cash impact must be CASH_IN, CASH_OUT, or NO_CASH.', 'VALIDATION');
+  }
+  return value;
+}
 function sameClientVoucherPayload_(voucher, entry) {
   return (
     isoDate_(voucher.Date) === entry.date &&
@@ -1616,7 +1653,8 @@ function sameClientVoucherPayload_(voucher, entry) {
     Number(voucher.Amount) === Number(entry.amount) &&
     String(voucher.Category || '') === entry.category &&
     String(voucher.Notes || '') === entry.notes &&
-    (voucher.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT') === entry.type
+    (voucher.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT') === entry.type &&
+    String(voucher.CashImpact || 'UNCLASSIFIED') === entry.cashImpact
   );
 }
 
@@ -1655,6 +1693,7 @@ function createVouchers_(user, req) {
       vendor: vendor,
       amount: amount,
       category: cats.indexOf(en.category) >= 0 ? en.category : 'Other',
+      cashImpact: cashImpact_(en.cashImpact, row),
       notes: clean_(en.notes, 500),
       clientId: clientId_(en.clientId),
       receipts: rec,
@@ -1706,6 +1745,7 @@ function createVouchers_(user, req) {
         CancelReason: '',
         ClientID: c.clientId,
         Type: c.type,
+        CashImpact: c.cashImpact,
       };
       if (c.clientId) byClient[c.clientId] = o;
       newObjs.push(o);
@@ -1773,6 +1813,17 @@ function updateVoucher_(user, req) {
   }
   if (f.notes !== undefined) {
     recordChange('notes', 'Notes', String(o.Notes || ''), clean_(f.notes, 500));
+  }
+  if (f.cashImpact !== undefined) {
+    recordChange(
+      'cashImpact',
+      'CashImpact',
+      String(o.CashImpact || 'UNCLASSIFIED'),
+      cashImpact_(f.cashImpact, ''),
+    );
+  }
+  if (CASH_IMPACT_CHOICES.indexOf(o.CashImpact) < 0 && f.cashImpact === undefined) {
+    throw err_('This historical voucher has no cash-impact classification. Choose one before saving.', 'VALIDATION');
   }
 
   if (!changes.length) {
