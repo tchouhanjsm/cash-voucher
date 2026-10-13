@@ -153,9 +153,7 @@ const voucherRecords = () => (Array.isArray(S.vouchers) ? S.vouchers.filter(isRe
 export const pays = () =>
   voucherRecords().filter(
     (voucher) =>
-      voucher.status === 'ACTIVE' &&
-      !isIn(voucher) &&
-      isPaymentApprovedForTotals(voucher),
+      voucher.status === 'ACTIVE' && !isIn(voucher) && isPaymentApprovedForTotals(voucher),
   );
 
 export const recs = () =>
