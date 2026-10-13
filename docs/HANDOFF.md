@@ -5,6 +5,8 @@
 **Verified `main` SHA:** `db1c3cfee6b3f3e1fb127d61c4ea58a8bf7fa592` (PR #107 merge)  
 **Purpose:** current state, active work, release boundaries and next action. Recheck live GitHub refs and exact-head workflows each session.
 
+**Working rules:** read `docs/FOUNDER-MODE.md` first. New AI chat? Use `docs/NEW-CHAT-PROMPT.md`.
+
 ## Current phase — PR #108: Inspect device-local queued entries
 
 **Branch:** `feature/offline-queue-review`  

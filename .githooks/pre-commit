@@ -1,0 +1,6 @@
+#!/bin/sh
+# Format staged files with the repo's Prettier so CI never fails on formatting.
+files=$(git diff --cached --name-only --diff-filter=ACM | grep -E '\.(js|mjs|json|md|html|css|yml|yaml)$')
+[ -z "$files" ] && exit 0
+echo "$files" | xargs npx --no-install prettier --write --ignore-unknown >/dev/null || exit 1
+echo "$files" | xargs git add
