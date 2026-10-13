@@ -363,11 +363,24 @@ with sync_playwright() as p:
             viewport: { width: window.innerWidth, height: window.innerHeight }
         };
         window.__approvalClickLog = [];
+        window.__approvalPointerLog = [];
         window.__approvalDirectClick = false;
         const approveButton = document.querySelector('#rbody [data-act=approve]');
         approveButton?.addEventListener('click', () => {
             window.__approvalDirectClick = true;
         }, { once: true });
+        for (const eventName of ['pointerdown', 'pointerup', 'mousedown', 'mouseup', 'click']) {
+            document.addEventListener(eventName, (event) => {
+                window.__approvalPointerLog.push({
+                    type: event.type,
+                    trusted: event.isTrusted,
+                    target: event.target?.outerHTML?.slice(0, 180) || '',
+                    x: event.clientX,
+                    y: event.clientY,
+                    approveConnected: Boolean(document.querySelector('#rbody [data-act=approve]')?.isConnected)
+                });
+            }, true);
+        }
         for (const capture of [true, false]) {
             document.addEventListener('click', (event) => {
                 const element = event.target.closest?.('[data-act]');
@@ -430,6 +443,7 @@ with sync_playwright() as p:
                 'appInert': manager_page.locator('#app').evaluate('(element) => element.inert'),
                 'approveButton': manager_page.locator('#rbody [data-act=approve]').evaluate('(element) => element.outerHTML') if manager_page.locator('#rbody [data-act=approve]').count() else None,
                 'preClick': manager_page.evaluate('window.__approvalPreClick || null'),
+                'pointerLog': manager_page.evaluate('window.__approvalPointerLog || []'),
                 'directClick': manager_page.evaluate('window.__approvalDirectClick || false'),
                 'clickLog': manager_page.evaluate('window.__approvalClickLog || []'),
                 'registerNavActive': manager_page.locator('[data-v=reg]').get_attribute('aria-current'),
