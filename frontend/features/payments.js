@@ -484,7 +484,10 @@ export function createPayments({ api, refresh }) {
             receiptCount === 1
               ? ' · 1 receipt image'
               : receiptCount > 1
-                ? ' · ' + Math.min(receiptCount, 99) + (receiptCount > 99 ? '+' : '') + ' receipt images'
+                ? ' · ' +
+                  Math.min(receiptCount, 99) +
+                  (receiptCount > 99 ? '+' : '') +
+                  ' receipt images'
                 : '';
 
           return (
@@ -505,7 +508,9 @@ export function createPayments({ api, refresh }) {
         ? '<details class="outbox-pending"><summary>Review queued entries</summary><p class="muted">These entries are stored on this device and are not confirmed on the server yet. Do not re-enter them just because they have not uploaded.</p><ul>' +
           pendingDetails +
           (pending.length > 5
-            ? '<li>+' + (pending.length - 5) + ' more; export the queue to inspect all queued entries.</li>'
+            ? '<li>+' +
+              (pending.length - 5) +
+              ' more; export the queue to inspect all queued entries.</li>'
             : '') +
           '</ul></details>'
         : '';
