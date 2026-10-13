@@ -1033,3 +1033,148 @@ button {
   margin: 6px 0;
   overflow-wrap: anywhere;
 }
+
+/* Daily Cash Close: compact monetary summary, traceable reports, and phone-safe controls. */
+.cc-controls,
+.cc-report,
+.cc-preview,
+.cc-history,
+.cc-corrections-card {
+  margin-top: 12px;
+}
+.cc-controls label,
+.cc-opening label,
+.cc-count label,
+.cc-correction-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+.cc-controls input,
+.cc-opening input,
+.cc-count input,
+.cc-correction-form input,
+.cc-correction-form select,
+.cc-correction-form textarea {
+  width: 100%;
+  min-width: 0;
+}
+.cc-report-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.cc-report-heading h2 {
+  margin-bottom: 4px;
+}
+.cc-report-heading .chips {
+  margin-top: 0;
+}
+.cc-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 16px 0;
+}
+.cc-metric {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--card);
+}
+.cc-metric span,
+.cc-meta dt {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+}
+.cc-metric strong {
+  display: block;
+  font-size: 18px;
+  overflow-wrap: anywhere;
+  font-variant-numeric: tabular-nums;
+}
+.cc-meta {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 16px;
+  margin: 16px 0;
+}
+.cc-meta div {
+  min-width: 0;
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+}
+.cc-meta dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.cc-id {
+  font-size: 12px;
+  overflow-wrap: anywhere;
+  white-space: normal;
+}
+.cc-opening,
+.cc-count {
+  border-top: 1px solid var(--line);
+  margin-top: 16px;
+  padding-top: 12px;
+}
+.cc-blockers {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  margin: 14px 0;
+}
+.cc-blockers p {
+  margin-top: 6px;
+}
+.cc-error {
+  color: var(--bad);
+  font-weight: 600;
+}
+.cc-note {
+  padding: 10px 0;
+}
+.cc-correction-form {
+  margin: 12px 0 18px;
+  align-items: stretch;
+}
+.cc-correction-form label {
+  flex: 1 1 240px;
+}
+.cc-correction-form .btn {
+  align-self: end;
+  min-height: 44px;
+}
+.cc-corrections {
+  padding-left: 20px;
+}
+.cc-corrections li {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  overflow-wrap: anywhere;
+}
+.cc-corrections p {
+  margin: 6px 0;
+}
+@media (max-width: 650px) {
+  .cc-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .cc-meta {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .cc-report-heading .chips,
+  .cc-report-heading .btn {
+    width: 100%;
+  }
+  .cc-correction-form > * {
+    flex-basis: 100%;
+  }
+}
