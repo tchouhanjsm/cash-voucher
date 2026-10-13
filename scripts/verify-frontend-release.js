@@ -72,7 +72,9 @@ function verifyContentSecurityPolicy() {
   const failures = [];
 
   if (metaTags.length !== 1) {
-    return ['Expected exactly one Content-Security-Policy meta tag; found ' + metaTags.length + '.'];
+    return [
+      'Expected exactly one Content-Security-Policy meta tag; found ' + metaTags.length + '.',
+    ];
   }
 
   const contentMatch = metaTags[0].match(/\bcontent\s*=\s*"([^"]*)"/i);
