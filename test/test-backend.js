@@ -669,6 +669,13 @@ ok(
   'creator cannot approve their own high-value payment',
 );
 ok(
+  as(M, 'rejectVoucher', {
+    id: managerOwnedHighVoucher.id,
+    reason: 'Creator attempted rejection',
+  }).code === 'FORBIDDEN',
+  'creator cannot reject their own high-value payment',
+);
+ok(
   as(S, 'approveVoucher', { id: staffOwnedHighVoucher.id }).code === 'FORBIDDEN',
   'staff cannot approve high-value payments',
 );
