@@ -105,7 +105,16 @@ ok(
 );
 let r = g.call('login', { email: 'OWNER@test.com', pin: '483921' });
 ok(r.ok && r.data.user.role === 'owner', 'owner login');
-const as = (t, a, p) => g.call(a, { token: t, ...p });
+const as = (t, a, p = {}) => {
+  const payload = { ...p };
+  if (a === 'createVouchers' && Array.isArray(payload.entries)) {
+    payload.entries = payload.entries.map((entry) => ({
+      cashImpact: entry?.type === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT',
+      ...entry,
+    }));
+  }
+  return g.call(a, { token: t, ...payload });
+};
 ok(as(r.data.token, 'bootstrap').code === 'PIN_CHANGE', 'owner must change setup PIN');
 let T = as(r.data.token, 'changePin', { oldPin: '483921', newPin: '579246' }).data.token;
 const unknownAction = as(T, 'doesNotExist');
@@ -287,6 +296,24 @@ delete g.props.BACKUP_LAST_ERROR;
 // create vouchers
 const today = new Date().toISOString().slice(0, 10);
 const tiny = Buffer.from('fakejpeg').toString('base64');
+const missingCashImpact = g.call('createVouchers', {
+  token: T,
+  entries: [{ date: today, vendor: 'Missing Impact Vendor', amount: 17 }],
+});
+ok(
+  !missingCashImpact.ok && missingCashImpact.code === 'VALIDATION',
+  'server rejects creation without cash impact',
+);
+const invalidCashImpacts = ['UNCLASSIFIED', 'BANK_TRANSFER', '<img>'].map((cashImpact) =>
+  g.call('createVouchers', {
+    token: T,
+    entries: [{ date: today, vendor: 'Invalid Impact Vendor', amount: 17, cashImpact }],
+  }),
+);
+ok(
+  invalidCashImpacts.every((result) => !result.ok && result.code === 'VALIDATION'),
+  'server rejects unknown and UNCLASSIFIED values for new vouchers',
+);
 r = as(S, 'createVouchers', {
   entries: [
     {
@@ -313,6 +340,7 @@ ok(
   'amount rounded to 2dp',
 );
 ok(r.data.created[0].receipts.length === 1, 'receipt stored');
+ok(r.data.created[0].cashImpact === 'CASH_OUT', 'cash impact persists and is returned to clients');
 const filesAfterFirstCreate = Object.keys(g.files).length;
 const dup = as(S, 'createVouchers', {
   entries: [
@@ -337,6 +365,7 @@ const changedPayloads = [
   { amount: 999 },
   { category: 'Kitchen' },
   { notes: 'changed notes' },
+  { cashImpact: 'NO_CASH' },
   { type: 'RECEIPT' },
 ];
 const changedPayloadResults = changedPayloads.map((override) =>
@@ -357,7 +386,7 @@ const changedPayloadResults = changedPayloads.map((override) =>
 );
 ok(
   changedPayloadResults.every((result) => !result.ok && result.code === 'CONFLICT'),
-  'same-user client ID rejects changed date, counterparty, amount, category, notes and type',
+  'same-user client ID rejects changed date, counterparty, amount, category, notes, type and cash impact',
 );
 ok(
   Object.keys(g.files).length === filesAfterFirstCreate,
@@ -458,6 +487,33 @@ ok(mv.ok && mv.data.created.length === 50 && mv.data.created[49].no === 253, 'ma
 ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff still sees only own after bulk');
 ok(as(M, 'bootstrap').data.vouchers.length === 53, 'manager sees all');
 
+const staffImpactEdit = as(S, 'updateVoucher', {
+  id: id1,
+  reason: 'Digital payment',
+  fields: { cashImpact: 'NO_CASH' },
+});
+ok(!staffImpactEdit.ok, 'staff cannot edit a saved cash-impact classification');
+const impactEdit = as(M, 'updateVoucher', {
+  id: id1,
+  reason: 'Paid by bank transfer',
+  fields: { cashImpact: 'NO_CASH' },
+});
+ok(
+  impactEdit.ok && impactEdit.data.cashImpact === 'NO_CASH',
+  'manager can correct cash impact with a reason',
+);
+const latestImpactAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'UPDATE' && row[3] === '#201');
+const impactAuditDetails = latestImpactAudit ? JSON.parse(latestImpactAudit[4]) : null;
+ok(
+  impactAuditDetails?.reason === 'Paid by bank transfer' &&
+    impactAuditDetails.changes.some(
+      (change) =>
+        change.field === 'cashImpact' && change.before === 'CASH_OUT' && change.after === 'NO_CASH',
+    ),
+  'cash-impact edit records old/new values and correction reason',
+);
 const beforeReasonFailure = as(M, 'bootstrap').data.vouchers.find((voucher) => voucher.id === id1);
 const auditUpdatesBefore = g.sheets.AuditLog.rows.filter(
   (row) => row[2] === 'UPDATE' && row[3] === '#201',

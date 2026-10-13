@@ -38,6 +38,18 @@ with sync_playwright() as p:
         accept_downloads=True,
     )
     page = context.new_page()
+
+    def choose_cash_impact_for_current_rows():
+        impact = 'CASH_IN' if page.locator('.seg button.on[data-k="RECEIPT"]').count() else 'CASH_OUT'
+        for control in page.locator('#rows .rci').all():
+            control.select_option(impact)
+
+    def choose_bulk_cash_impact_for_current_rows():
+        impact = 'CASH_IN' if page.locator('#bt2').input_value() == 'RECEIPT' else 'CASH_OUT'
+        count = page.locator('#bprev .bci').count()
+        for index in range(count):
+            page.locator('#bprev .bci').nth(index).select_option(impact)
+
     logs = []
     page.add_init_script(
         """window.__xssFired = false;
@@ -532,6 +544,25 @@ with sync_playwright() as p:
     page.click('[data-v=new]')
     page.wait_for_selector('#rows .erow .rc')
     check(
+        page.locator('#rows .erow .rci').input_value() == ''
+        and 'CASH_OUT' in page.locator('#rows .erow .ci-suggestion').inner_text(),
+        'new payment requires explicit classification while showing a non-binding suggestion',
+    )
+    page.locator('#rows .erow .rv').fill('Cash Impact Test Vendor')
+    page.locator('#rows .erow .ra').fill('10')
+    page.locator('#nsave').click()
+    check(
+        page.locator('#rows .erow .row-error').inner_text()
+        == 'Choose a cash-impact classification before saving.',
+        'saving without cash-impact selection is blocked with an actionable error',
+    )
+    page.select_option('#rows .erow .rci', 'NO_CASH')
+    page.select_option('#rows .erow .rc', 'Office')
+    check(
+        page.locator('#rows .erow .rci').input_value() == 'NO_CASH',
+        'category changes do not overwrite explicit cash-impact choice',
+    )
+    check(
         page.locator('#rows .erow .rc option').all_text_contents() == ['Office', 'Other']
         and page.locator('#rows .erow .rc option').count() == 2
         and page.locator('#rows .erow .rc option').evaluate_all(
@@ -624,6 +655,7 @@ with sync_playwright() as p:
         image_file.write(png)
     page.set_input_files('.rf', '/tmp/offline-unlock.png')
     page.wait_for_selector('.thumb')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel', timeout=10000)
     check(
@@ -884,9 +916,11 @@ with sync_playwright() as p:
     check(
         page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
         and page.locator('.ra').first.get_attribute('aria-label') == 'Amount in rupees, row 1'
-        and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1',
+        and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1'
+        and page.locator('.rci').first.get_attribute('aria-label') == 'Cash impact, row 1',
         'payment row fields have explicit accessible names',
     )
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('#nres .form-error')
     check(
@@ -895,6 +929,7 @@ with sync_playwright() as p:
         'empty form submission is announced and focuses the first row',
     )
     page.fill('.rv', 'Ram Traders')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.row-error')
     check(
@@ -979,6 +1014,7 @@ with sync_playwright() as p:
             route.fulfill(response=response)
 
     page.route('**/api?*', tamper_created_voucher_number)
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved 2 payments' in page.inner_text('#nres'), 'saved 2 payments')
@@ -1284,6 +1320,7 @@ with sync_playwright() as p:
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_selector('.thumb')
     offline_receipt_preview_url = page.locator('.thumb').first.get_attribute('src')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'offline queued')
@@ -1496,6 +1533,7 @@ with sync_playwright() as p:
     page.click('[data-v=new]')
     page.fill('.rv', 'Multi-tab Vendor')
     page.fill('.ra', '525')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'multi-tab payment queued locally')
@@ -1593,6 +1631,7 @@ with sync_playwright() as p:
     page.click('[data-v=new]')
     page.fill('.rv', 'Account-bound Vendor')
     page.fill('.ra', '81')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'account-binding test payment is queued offline')
@@ -1681,6 +1720,7 @@ with sync_playwright() as p:
     page.click('[data-act=addrow]')
     page.locator('#rows .erow').nth(1).locator('.rv').fill('Healthy Neighbor Vendor')
     page.locator('#rows .erow').nth(1).locator('.ra').fill('101')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'mixed valid/invalid batch is safely queued offline')
@@ -1774,6 +1814,7 @@ with sync_playwright() as p:
     page.click('[data-k=RECEIPT]')
     page.fill('.rv', 'Offline Receipt Label Test')
     page.fill('.ra', '21')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel')
     page.wait_for_function(
@@ -1828,6 +1869,7 @@ with sync_playwright() as p:
     page.click('[data-k=RECEIPT]')
     page.fill('.rv', 'Guest Room 5')
     page.fill('.ra', '5000')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check(
@@ -1877,6 +1919,7 @@ with sync_playwright() as p:
     })
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
+    choose_bulk_cash_impact_for_current_rows()
     check(
         'CSV File Vendor' in page.locator('#bprev').inner_text()
         and '1 ready' in page.locator('#bprev').inner_text().replace('\n', ' '),
@@ -1895,6 +1938,7 @@ with sync_playwright() as p:
     page.fill('#bt', rows)
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
+    choose_bulk_cash_impact_for_current_rows()
     preview_text = page.inner_text('#bprev')
     check(
         '2 ready' in preview_text or '2\nready' in preview_text or '2 ready' in preview_text.replace('\n', ' '),
@@ -1929,7 +1973,8 @@ with sync_playwright() as p:
     page.select_option('#bt2', 'RECEIPT')
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
-    check('1 ready' in page.inner_text('#bprev').replace('\n', ' '), 'receipt import row is ready')
+    choose_bulk_cash_impact_for_current_rows()
+    check('1 ready' in page.inner_text('#bprev').replace('\n', ' '), 'receipt import row is ready after explicit classification')
     check(
         'Import 1 cash receipt' in page.locator('#bprev').inner_text(),
         'receipt import action uses the correct singular label',
@@ -3445,6 +3490,7 @@ with sync_playwright() as p:
     page.fill('.erow .rv', 'Mobile cash receipt workflow')
     page.fill('.erow .ra', '25')
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash receipt form has matching save action')
+    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1 cash receipt')")
     check('Saved 1 cash receipt' in page.locator('#nres').inner_text(), 'saved confirmation uses cash-receipt terminology')

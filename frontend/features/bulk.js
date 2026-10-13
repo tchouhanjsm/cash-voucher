@@ -1,5 +1,12 @@
 import { $ } from '../core/dom.js';
-import { categories, isIn, rcats, S } from '../core/state.js';
+import {
+  CASH_IMPACT_CHOICES,
+  categories,
+  isIn,
+  rcats,
+  S,
+  suggestCashImpact,
+} from '../core/state.js';
 import { addDays, dmy, download, esc, money, pad, parseAmt, today, uid } from '../core/utils.js';
 import { busy, fail, head } from '../core/ui.js';
 
@@ -13,7 +20,7 @@ export function createBulk({ api, refresh, go }) {
     $('#view').innerHTML =
       head('Bulk Upload') +
       `<div class="card"><h2>1. Get your data in</h2>
-    <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes</b>. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
+    <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes, CashImpact</b>. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
     <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn" style="margin:0">📁 Choose file<input type="file" id="bf" accept=".csv,.tsv,.txt" hidden></label></div>
     <label style="margin-top:12px;max-width:280px">These rows are<select id="bt2"><option value="PAYMENT">Payments (cash out)</option><option value="RECEIPT">Cash received (cash in)</option></select></label>
     <label>…or paste rows here<textarea id="bt" rows="5" placeholder="25/12/2026&#9;Ram Traders&#9;1500&#9;Kitchen&#9;vegetables"></textarea></label>
@@ -138,11 +145,12 @@ export function createBulk({ api, refresh, go }) {
       amount: find(/amount|amt|rs|inr/),
       cat: find(/categor|head|type/),
       notes: find(/note|remark|desc|narration|particular/),
+      cashImpact: find(/cashimpact|drawerimpact|cashmovement/),
     };
     let body = input.slice(1);
 
     if (indexes.date < 0 || indexes.vendor < 0 || indexes.amount < 0) {
-      indexes = { date: 0, vendor: 1, amount: 2, cat: 3, notes: 4 };
+      indexes = { date: 0, vendor: 1, amount: 2, cat: 3, notes: 4, cashImpact: 5 };
       body = input;
     }
 
@@ -152,6 +160,7 @@ export function createBulk({ api, refresh, go }) {
       amount: row[indexes.amount],
       cat: indexes.cat >= 0 ? row[indexes.cat] : '',
       notes: indexes.notes >= 0 ? row[indexes.notes] : '',
+      cashImpact: indexes.cashImpact >= 0 ? row[indexes.cashImpact] : '',
     }));
   }
 
@@ -169,6 +178,9 @@ export function createBulk({ api, refresh, go }) {
       const vendor = String(row.vendor ?? '').trim();
       const amount = parseAmt(row.amount);
       const categoryInput = String(row.cat ?? '').trim();
+      const impactInput = String(row.cashImpact ?? '')
+        .trim()
+        .toUpperCase();
       const errors = [];
       const warnings = [];
 
@@ -185,6 +197,10 @@ export function createBulk({ api, refresh, go }) {
 
       category ||= 'Other';
 
+      if (impactInput && !CASH_IMPACT_CHOICES.includes(impactInput)) errors.push('bad cash impact');
+      const cashImpactSuggested = !impactInput;
+      const cashImpact = cashImpactSuggested ? suggestCashImpact(type, category) : impactInput;
+
       const key = `${date}|${vendor.toLowerCase()}|${amount}`;
       const duplicate = !errors.length && seen.has(key);
 
@@ -196,6 +212,8 @@ export function createBulk({ api, refresh, go }) {
         vendor,
         amount,
         category,
+        cashImpact,
+        cashImpactSuggested,
         notes: String(row.notes ?? '').trim(),
         errs: errors,
         warns: warnings,
@@ -208,7 +226,10 @@ export function createBulk({ api, refresh, go }) {
   }
 
   function drawPreview() {
-    const ready = rows.filter((row) => !row.errs.length && !row.skip);
+    const ready = rows.filter((row) => !row.errs.length && !row.skip && !row.cashImpactSuggested);
+    const needImpact = rows.filter(
+      (row) => !row.errs.length && !row.skip && row.cashImpactSuggested,
+    );
     const bad = rows.filter((row) => row.errs.length);
     const duplicates = rows.filter((row) => row.dup);
     const singular = ready.length === 1;
@@ -222,15 +243,15 @@ export function createBulk({ api, refresh, go }) {
           : 'payments';
 
     $('#bprev').innerHTML =
-      `<div class="card"><h2>2. Review</h2><p role="status" aria-live="polite"><b>${ready.length}</b> ready · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label style="display:inline;margin-left:8px"><input type="checkbox" id="bdup" style="width:auto;min-height:0"> import duplicates too</label>' : ''}</p>
-    <div class="table-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>#</th><th>Date</th><th>Vendor</th><th class="r">Amount</th><th>Category</th><th>Status</th></tr></thead><tbody>${rows
+      `<div class="card"><h2>2. Review</h2><p role="status" aria-live="polite"><b>${ready.length}</b> ready · <b>${needImpact.length}</b> need cash-impact selection · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label style="display:inline;margin-left:8px"><input type="checkbox" id="bdup" style="width:auto;min-height:0"> import duplicates too</label>' : ''}</p>
+    <div class="table-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>#</th><th>Date</th><th>Vendor</th><th class="r">Amount</th><th>Category</th><th>Cash impact (required)</th><th>Status</th></tr></thead><tbody>${rows
       .slice(0, 300)
       .map(
         (row) =>
-          `<tr><td>${row.n}</td><td class="nw">${row.date ? esc(dmy(row.date)) : '–'}</td><td>${esc(row.vendor)}</td><td class="r nw">${row.amount > 0 ? money(row.amount) : '–'}</td><td>${esc(row.category)}</td><td class="nw">${row.errs.length ? `<span class="badge bad">${esc(row.errs.join(', '))}</span>` : row.dup ? '<span class="badge warn">duplicate?</span>' : row.warns.length ? `<span class="badge warn">${esc(row.warns[0])}</span>` : '<span class="badge">OK</span>'}</td></tr>`,
+          `<tr><td>${row.n}</td><td class="nw">${row.date ? esc(dmy(row.date)) : '–'}</td><td>${esc(row.vendor)}</td><td class="r nw">${row.amount > 0 ? money(row.amount) : '–'}</td><td>${esc(row.category)}</td><td class="nw"><select class="bci" data-row-index="${row.n - 1}" aria-label="Cash impact row ${row.n}"><option value=""${row.cashImpactSuggested ? ' selected' : ''} disabled>Choose…</option>${CASH_IMPACT_CHOICES.map((value) => `<option value="${value}"${!row.cashImpactSuggested && row.cashImpact === value ? ' selected' : ''}>${value}</option>`).join('')}</select><div class="muted">${row.cashImpactSuggested ? 'Suggestion: ' + esc(row.cashImpact) : 'Selected'}</div></td><td class="nw">${row.errs.length ? `<span class="badge bad">${esc(row.errs.join(', '))}</span>` : row.cashImpactSuggested ? '<span class="badge warn">choose cash impact</span>' : row.dup ? '<span class="badge warn">duplicate?</span>' : row.warns.length ? `<span class="badge warn">${esc(row.warns[0])}</span>` : '<span class="badge">OK</span>'}</td></tr>`,
       )
       .join('')}</tbody></table></div>
-    ${rows.length > 300 ? `<p class="muted">Showing first 300 of ${rows.length} rows.</p>` : ''}<div class="actions"><button class="btn primary" data-act="import" ${ready.length ? '' : 'disabled'}>Import ${ready.length} ${importNoun}</button></div><p id="bprog" class="muted" role="status" aria-live="polite"></p></div>`;
+    ${rows.length > 300 ? `<p class="muted">Showing first 300 of ${rows.length} rows.</p>` : ''}<div class="actions"><button class="btn primary" data-act="import" ${ready.length && !needImpact.length ? '' : 'disabled'}>Import ${ready.length} ${importNoun}</button></div><p id="bprog" class="muted" role="status" aria-live="polite"></p></div>`;
   }
 
   function toggleDuplicates(checked) {
@@ -270,6 +291,13 @@ export function createBulk({ api, refresh, go }) {
 
   async function runImport(button) {
     const ready = rows.filter((row) => !row.errs.length && !row.skip);
+    const unclassified = rows.some(
+      (row) => !row.errs.length && !row.skip && !CASH_IMPACT_CHOICES.includes(row.cashImpact),
+    );
+    if (unclassified) {
+      $('#bprog').textContent = 'Choose a cash impact for every valid row before importing.';
+      return;
+    }
     if (!ready.length) return;
 
     let done = 0;
@@ -285,6 +313,7 @@ export function createBulk({ api, refresh, go }) {
             vendor: row.vendor,
             amount: row.amount,
             category: row.category,
+            cashImpact: row.cashImpact,
             notes: row.notes,
           }));
           const data = await api('createVouchers', {
@@ -318,6 +347,16 @@ export function createBulk({ api, refresh, go }) {
 
   function bind() {
     $('#view').addEventListener('change', (event) => {
+      if (event.target.matches('.bci')) {
+        const index = Number(event.target.dataset.rowIndex);
+        const row = rows[index];
+        if (row) {
+          row.cashImpact = event.target.value;
+          row.cashImpactSuggested = !CASH_IMPACT_CHOICES.includes(row.cashImpact);
+          drawPreview();
+        }
+        return;
+      }
       if (event.target.id === 'bdup') {
         toggleDuplicates(event.target.checked);
       }
@@ -327,7 +366,8 @@ export function createBulk({ api, refresh, go }) {
   function downloadTemplate() {
     download(
       'voucher-template.csv',
-      'Date,Vendor,Amount,Category,Notes\r\n25/12/2026,Ram Traders,1500,Kitchen,Vegetables\r\n',
+      'Date,Vendor,Amount,Category,Notes,CashImpact\r\n' +
+        '25/12/2026,Ram Traders,1500,Kitchen,Vegetables,CASH_OUT\r\n',
       'text/csv',
     );
   }

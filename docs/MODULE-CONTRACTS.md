@@ -15,6 +15,8 @@ These contracts describe the modules wired by the current `frontend/main.js`. Up
 | `frontend/core/offline-queue.js` | `ready`, `enqueue`, `restore`, `list`, `count`, `claim`, `ack`, `release`, `clear`, `offlineQueue` | IndexedDB queue, migrations, leases and safe recovery operations |
 | `frontend/core/utils.js`         | Pure formatting/validation/date/escaping/compression helpers                                       | Shared pure utilities                                            |
 
+The shared state module additionally exports `CASH_IMPACT_CHOICES`, `CASH_IMPACT_VALUES`, `normalizeCashImpact`, and `suggestCashImpact`.
+
 ## Feature factories
 
 ### Authentication

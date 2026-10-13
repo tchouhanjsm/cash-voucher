@@ -18,6 +18,23 @@ export const S = {
   },
 };
 
+export const CASH_IMPACT_CHOICES = ['CASH_IN', 'CASH_OUT', 'NO_CASH'];
+export const CASH_IMPACT_VALUES = [...CASH_IMPACT_CHOICES, 'UNCLASSIFIED'];
+
+export function normalizeCashImpact(value) {
+  return CASH_IMPACT_VALUES.includes(value) ? value : 'UNCLASSIFIED';
+}
+
+export function suggestCashImpact(type, category) {
+  const normalizedCategory = String(category || '')
+    .trim()
+    .toLowerCase();
+  if (type !== 'RECEIPT' && normalizedCategory === 'bank charges') {
+    return 'NO_CASH';
+  }
+  return type === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT';
+}
+
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 const isIsoDate = (value) => {
   if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
@@ -73,6 +90,12 @@ export function normalizeVoucherCollection(value) {
         malformedFieldCount++;
       }
     });
+    if (row.cashImpact === undefined || row.cashImpact === '') {
+      row.cashImpact = 'UNCLASSIFIED';
+    } else if (!CASH_IMPACT_VALUES.includes(row.cashImpact)) {
+      row.cashImpact = 'UNCLASSIFIED';
+      malformedFieldCount++;
+    }
     rows.push(row);
   });
 

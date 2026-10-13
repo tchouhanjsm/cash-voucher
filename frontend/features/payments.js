@@ -1,7 +1,7 @@
 import { $, $$ } from '../core/dom.js';
 import { catOpts, vendorList } from '../core/form-options.js';
 import { offlineQueue } from '../core/offline-queue.js';
-import { S, vno } from '../core/state.js';
+import { CASH_IMPACT_CHOICES, S, suggestCashImpact, vno } from '../core/state.js';
 import { busy, fail, head, toast } from '../core/ui.js';
 import { addDays, compress, esc, money, parseAmt, scalarText, today, uid } from '../core/utils.js';
 import { validateRecoveryRecords } from '../core/recovery-validation.js';
@@ -47,10 +47,31 @@ export function createPayments({ api, refresh }) {
     }
   });
 
+  function cashImpactOptions(selected) {
+    const labels = {
+      CASH_IN: 'CASH_IN — physical cash enters the drawer',
+      CASH_OUT: 'CASH_OUT — physical cash leaves the drawer',
+      NO_CASH: 'NO_CASH — no physical drawer movement',
+    };
+    const placeholder = selected
+      ? ''
+      : `<option value='' selected disabled>Choose cash impact…</option>`;
+    return (
+      placeholder +
+      CASH_IMPACT_CHOICES.map(
+        (value) =>
+          `<option value='${value}'${value === selected ? ' selected' : ''}>${labels[value]}</option>`,
+      ).join('')
+    );
+  }
+
   function rowHtml() {
-    return `<div class="erow"><div class="top"><input class="rv" list="vlist" placeholder="${NT === 'RECEIPT' ? 'Received from' : 'Paid to (vendor)'}" autocapitalize="words"><input class="ra" inputmode="decimal" placeholder="Amount ₹"><button type="button" class="x" data-act="delrow" title="Remove">✕</button></div>
-  <div class="bot"><select class="rc">${catOpts('Other', NT)}</select><input class="rn" placeholder="Note (optional)"></div>
-  <div class="chips"><label class="btn sm" style="margin:0">📷 Receipt<input type="file" class="rf" accept="image/*" multiple hidden></label><span class="rp"></span></div></div>`;
+    const suggested = suggestCashImpact(NT, 'Other');
+    return `<div class='erow'><div class='top'><input class='rv' list='vlist' placeholder='${NT === 'RECEIPT' ? 'Received from' : 'Paid to (vendor)'}' autocapitalize='words'><input class='ra' inputmode='decimal' placeholder='Amount ₹'><button type='button' class='x' data-act='delrow' title='Remove'>✕</button></div>
+  <div class='bot'><select class='rc'>${catOpts('Other', NT)}</select><input class='rn' placeholder='Note (optional)'></div>
+  <label class='cash-impact-control'>Cash impact (required)<select class='rci'>${cashImpactOptions('')}</select></label>
+  <p class='muted ci-hint'>Suggested only: <span class='ci-suggestion'>${suggested}</span>. Verify physical notes/coins movement; UPI, card, or bank transfer uses NO_CASH.</p>
+  <div class='chips'><label class='btn sm' style='margin:0'>📷 Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>`;
   }
 
   function labelRows() {
@@ -61,6 +82,7 @@ export function createPayments({ api, refresh }) {
       $('.rv', row).setAttribute('aria-label', `${direction}, row ${number}`);
       $('.ra', row).setAttribute('aria-label', `Amount in rupees, row ${number}`);
       $('.rc', row).setAttribute('aria-label', `Category, row ${number}`);
+      $('.rci', row).setAttribute('aria-label', `Cash impact, row ${number}`);
       $('.rn', row).setAttribute('aria-label', `Note, row ${number}`);
       $('.rf', row).setAttribute('aria-label', `Receipt images, row ${number}`);
       $('[data-act="delrow"]', row).setAttribute('aria-label', `Remove row ${number}`);
@@ -70,7 +92,7 @@ export function createPayments({ api, refresh }) {
   function clearRowError(row) {
     $('.row-error', row)?.remove();
 
-    ['.rv', '.ra'].forEach((selector) => {
+    ['.rv', '.ra', '.rci'].forEach((selector) => {
       const field = $(selector, row);
       field.removeAttribute('aria-invalid');
       field.removeAttribute('aria-describedby');
@@ -242,6 +264,18 @@ export function createPayments({ api, refresh }) {
     }
   });
 
+  document.addEventListener('change', (event) => {
+    const row = event.target.closest('.erow');
+    if (!row) return;
+    if (event.target.matches('.rci')) {
+      row.dataset.cashImpactChosen = 'true';
+      clearRowError(row);
+      return;
+    }
+    if (event.target.matches('.rc')) {
+      $('.ci-suggestion', row).textContent = suggestCashImpact(NT, event.target.value);
+    }
+  });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.classList.contains('ra')) {
       e.preventDefault();
@@ -288,6 +322,12 @@ export function createPayments({ api, refresh }) {
         return;
       }
 
+      const cashImpact = $('.rci', r).value;
+      if (!CASH_IMPACT_CHOICES.includes(cashImpact)) {
+        showRowError(r, $('.rci', r), 'Choose a cash-impact classification before saving.');
+        return;
+      }
+
       entries.push({
         clientId: r._cid || (r._cid = uid()),
         date,
@@ -295,6 +335,7 @@ export function createPayments({ api, refresh }) {
         vendor,
         amount,
         category: $('.rc', r).value,
+        cashImpact,
         notes: $('.rn', r).value.trim(),
         receipts: r._rec.map((x) => ({ mime: x.mime, data: x.data })),
       });
@@ -591,6 +632,14 @@ export function createPayments({ api, refresh }) {
           }
 
           try {
+            if (!CASH_IMPACT_CHOICES.includes(record.entry?.cashImpact)) {
+              throw Object.assign(
+                new Error(
+                  'This queued entry predates cash-impact classification. Export it and re-enter it with a cash-impact value; the queued record has been kept for recovery.',
+                ),
+                { code: 'VALIDATION' },
+              );
+            }
             // Submit one row per request so one rejected row cannot poison its neighbours.
             await api('createVouchers', { entries: [record.entry] });
             await offlineQueue.ack([record.clientId], leaseOwner);
