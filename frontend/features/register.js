@@ -6,6 +6,7 @@ import {
   isIn,
   nm,
   normalizeCashImpact,
+  normalizeApprovalStatus,
   S,
   suggestCashImpact,
   bySeq,
@@ -35,6 +36,7 @@ export function createRegister({ api, go }) {
     from: '',
     to: '',
     st: 'ACTIVE',
+    approval: 'ALL',
     limit: 100,
   };
   const receiptCache = {};
@@ -79,6 +81,7 @@ export function createRegister({ api, go }) {
 
         return (
           (R.st === 'ALL' || voucher.status === R.st) &&
+          (R.approval === 'ALL' || normalizeApprovalStatus(voucher.approvalStatus) === R.approval) &&
           (!R.vendor || voucher.vendor === R.vendor) &&
           (!R.cat || voucher.category === R.cat) &&
           (!R.t || voucher.type === R.t) &&
@@ -119,8 +122,17 @@ export function createRegister({ api, go }) {
     );
     const malformedFieldCount = diagnostics.malformedFieldCount || 0;
     const active = list.filter((voucher) => voucher.status === 'ACTIVE');
-    const paidItems = active.filter((voucher) => !isIn(voucher));
+    const paidItems = active.filter(
+      (voucher) =>
+        !isIn(voucher) &&
+        ['NOT_REQUIRED', 'APPROVED'].includes(normalizeApprovalStatus(voucher.approvalStatus)),
+    );
     const receivedItems = active.filter(isIn);
+    const approvalExceptionCount = active.filter(
+      (voucher) =>
+        !isIn(voucher) &&
+        !['NOT_REQUIRED', 'APPROVED'].includes(normalizeApprovalStatus(voucher.approvalStatus)),
+    ).length;
     const paid = sumAmounts(paidItems);
     const received = sumAmounts(receivedItems);
     const invalidAmountCount = active.filter(
@@ -145,7 +157,7 @@ export function createRegister({ api, go }) {
       ? `<span class="error" role="alert">${esc(unavailableTotalsMessage)}</span>`
       : rangeInvalid
         ? '<span class="error" role="alert">Totals unavailable: choose a start date on or before the end date.</span>'
-        : `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
+        : `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${approvalExceptionCount ? ` · <span class="muted" role="status">${approvalExceptionCount} active payment(s) awaiting approval or requiring review are excluded from approved totals and cash close</span>` : ''}${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
 
@@ -160,6 +172,25 @@ export function createRegister({ api, go }) {
           receiptCount ||
           (voucher.status === 'ACTIVE' && (can('receiptAny') || voucher.createdBy === S.me.email));
         const kind = isIn(voucher) ? 'Receipt' : 'Payment';
+        const approvalStatus = isIn(voucher)
+          ? 'NOT_REQUIRED'
+          : normalizeApprovalStatus(voucher.approvalStatus);
+        const approvalNote =
+          approvalStatus === 'PENDING'
+            ? ' · <span class="badge warn">PENDING APPROVAL</span>'
+            : approvalStatus === 'APPROVED'
+              ? ` · <span class="badge">APPROVED</span>${scalarText(voucher.approvedBy) ? ' · ' + esc(scalarText(voucher.approvedBy)) : ''}`
+              : approvalStatus === 'REJECTED'
+                ? ` · <span class="badge bad">REJECTED</span>${scalarText(voucher.approvalReason) ? ' · ' + esc(scalarText(voucher.approvalReason)) : ''}`
+                : approvalStatus === 'REVIEW_REQUIRED'
+                  ? ' · <span class="badge bad">APPROVAL REVIEW REQUIRED</span>'
+                  : '';
+        const canReviewApproval =
+          can('approvePayments') &&
+          !isIn(voucher) &&
+          voucher.status === 'ACTIVE' &&
+          approvalStatus === 'PENDING' &&
+          scalarText(voucher.createdBy).toLowerCase() !== scalarText(S.me?.email).toLowerCase();
         const cancelledNote =
           voucher.status === 'ACTIVE'
             ? ''
@@ -180,6 +211,9 @@ export function createRegister({ api, go }) {
           voucher.status === 'ACTIVE' && can('cancel')
             ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(voucher.id)}">Cancel</button>`
             : '',
+          canReviewApproval
+            ? `<button class="btn sm primary" data-act="approve" data-id="${esc(voucher.id)}">Approve</button><button class="btn sm danger" data-act="reject" data-id="${esc(voucher.id)}">Reject</button>`
+            : '',
         ]
           .filter(Boolean)
           .join('');
@@ -193,7 +227,7 @@ export function createRegister({ api, go }) {
             <span class="voucher-vendor">${esc(scalarText(voucher.vendor))}</span>
             <div class="cat">
               ${esc(scalarText(voucher.category))}${scalarText(voucher.notes) ? ' · ' + esc(scalarText(voucher.notes)) : ''}${receiptWarning}${cancelledNote}
-              <div class="cat">Cash impact: ${esc(normalizeCashImpact(voucher.cashImpact))}</div>
+              <div class="cat">Cash impact: ${esc(normalizeCashImpact(voucher.cashImpact))}${approvalNote}</div>
             </div>
           </td>
           <td
@@ -284,6 +318,19 @@ export function createRegister({ api, go }) {
           `<option value="${key}"${R.st === key ? ' selected' : ''}>${label}</option>`,
       )
       .join('')}</select>
+    <select id="rapproval" aria-label="Filter by approval status">${[
+      ['ALL', 'All approval states'],
+      ['PENDING', 'Pending approval'],
+      ['APPROVED', 'Approved'],
+      ['REJECTED', 'Rejected'],
+      ['NOT_REQUIRED', 'Not required'],
+      ['REVIEW_REQUIRED', 'Needs review'],
+    ]
+      .map(
+        ([key, label]) =>
+          `<option value="${key}"${R.approval === key ? ' selected' : ''}>${label}</option>`,
+      )
+      .join('')}</select>
     <button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div>
     <div class="card"><div id="rtot" style="margin-bottom:8px"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
 
@@ -300,6 +347,7 @@ export function createRegister({ api, go }) {
       rto: 'to',
       rs: 'st',
       rt: 't',
+      rapproval: 'approval',
     };
     const key = mapping[event.target.id];
 
@@ -320,6 +368,7 @@ export function createRegister({ api, go }) {
       from: '',
       to: '',
       st: 'ACTIVE',
+      approval: 'ALL',
       limit: 100,
     });
     render();
@@ -352,6 +401,10 @@ export function createRegister({ api, go }) {
         'Notes',
         'Amount',
         'Status',
+        'ApprovalStatus',
+        'ApprovedBy',
+        'ApprovedAt',
+        'ApprovalReason',
         'CreatedBy',
         'CreatedAt',
         'Receipts',
@@ -367,6 +420,10 @@ export function createRegister({ api, go }) {
         scalarText(voucher.notes),
         voucher.amount,
         voucher.status,
+        normalizeApprovalStatus(voucher.approvalStatus),
+        scalarText(voucher.approvedBy),
+        scalarText(voucher.approvedAt),
+        scalarText(voucher.approvalReason),
         nm(voucher.createdBy),
         voucher.createdAt,
         receiptMetadata(voucher).ids.length,
@@ -650,8 +707,73 @@ export function createRegister({ api, go }) {
     }
   }
 
+  function approve(id) {
+    const voucher = voucherRows().find((item) => item.id === id);
+    if (!voucher || !can('approvePayments')) {
+      fail(new Error('This payment is unavailable or you cannot approve payments. Refresh and retry.'));
+      return;
+    }
+    if (
+      isIn(voucher) ||
+      voucher.status !== 'ACTIVE' ||
+      normalizeApprovalStatus(voucher.approvalStatus) !== 'PENDING' ||
+      scalarText(voucher.createdBy).toLowerCase() === scalarText(S.me?.email).toLowerCase()
+    ) {
+      fail(new Error('This payment is not eligible for your approval. Refresh the Register and review its current state.'));
+      return;
+    }
+    const body = document.createDocumentFragment();
+    const summary = document.createElement('p');
+    const amount = document.createElement('b');
+    amount.textContent = money(voucher.amount);
+    summary.append(document.createTextNode(`${voucherNo(voucher)} · ${scalarText(voucher.vendor)} · `), amount);
+    body.appendChild(summary);
+    const note = document.createElement('p');
+    note.className = 'muted';
+    note.textContent = 'Approval makes this payment eligible for approved totals and daily cash close. The creator cannot approve their own voucher.';
+    body.appendChild(note);
+    dialog(`Approve payment ${voucherNo(voucher)}?`, body, async () => {
+      Object.assign(voucher, await api('approveVoucher', { id }));
+      closeModal();
+      toast('Payment approved.', 'ok');
+      go(S.view);
+    }, 'Approve payment');
+  }
+
+  function reject(id) {
+    const voucher = voucherRows().find((item) => item.id === id);
+    if (!voucher || !can('approvePayments')) {
+      fail(new Error('This payment is unavailable or you cannot reject payments. Refresh and retry.'));
+      return;
+    }
+    if (isIn(voucher) || voucher.status !== 'ACTIVE' || normalizeApprovalStatus(voucher.approvalStatus) !== 'PENDING') {
+      fail(new Error('This payment is not awaiting approval. Refresh the Register and retry.'));
+      return;
+    }
+    const body = document.createDocumentFragment();
+    const summary = document.createElement('p');
+    const amount = document.createElement('b');
+    amount.textContent = money(voucher.amount);
+    summary.append(document.createTextNode(`${voucherNo(voucher)} · ${scalarText(voucher.vendor)} · `), amount);
+    body.appendChild(summary);
+    const reason = document.createElement('textarea');
+    reason.id = 'apr-reason';
+    reason.required = true;
+    reason.minLength = 3;
+    reason.maxLength = 200;
+    reason.rows = 3;
+    body.appendChild(labeledControl('Rejection reason (required)', reason));
+    dialog(`Reject payment ${voucherNo(voucher)}?`, body, async () => {
+      Object.assign(voucher, await api('rejectVoucher', { id, reason: $('#apr-reason').value }));
+      closeModal();
+      toast('Payment rejected. It remains visible and blocks cash close until cancelled or otherwise resolved.', 'ok');
+      go(S.view);
+    }, 'Reject payment');
+  }
+
   function bind() {
     $('#view').addEventListener('input', updateFilter);
+    $('#view').addEventListener('change', updateFilter);
   }
 
   return {
@@ -662,6 +784,8 @@ export function createRegister({ api, go }) {
     csvExport,
     edit,
     cancel,
+    approve,
+    reject,
     receipts,
     state: R,
   };
