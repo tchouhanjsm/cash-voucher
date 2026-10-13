@@ -1783,8 +1783,24 @@ function cashCloseCorrectionOut_(row) {
 }
 function cashCloseOut_(row) {
   let vouchers = [], ids = [];
-  try { const value = JSON.parse(String(row.IncludedVouchers || '[]')); if (Array.isArray(value)) vouchers = value.filter(function (item) { return item && typeof item === 'object' && typeof item.id === 'string'; }); } catch {}
-  try { const value = JSON.parse(String(row.IncludedVoucherIds || '[]')); if (Array.isArray(value)) ids = value.filter(function (id) { return typeof id === 'string'; }); } catch {}
+  try {
+    const raw = String(row.IncludedVouchers || '');
+    if (!raw) throw new Error('Missing voucher snapshot');
+    const value = JSON.parse(raw);
+    if (!Array.isArray(value)) throw new Error('Invalid voucher snapshot');
+    vouchers = value.filter(function (item) { return item && typeof item === 'object' && typeof item.id === 'string'; });
+  } catch (error) {
+    throw err_('Saved cash-close voucher snapshot is invalid. Stop and inspect the close record.', 'CASH_CLOSE_DATA');
+  }
+  try {
+    const raw = String(row.IncludedVoucherIds || '');
+    if (!raw) throw new Error('Missing voucher ID snapshot');
+    const value = JSON.parse(raw);
+    if (!Array.isArray(value)) throw new Error('Invalid voucher ID snapshot');
+    ids = value.filter(function (id) { return typeof id === 'string'; });
+  } catch (error) {
+    throw err_('Saved cash-close voucher IDs are invalid. Stop and inspect the close record.', 'CASH_CLOSE_DATA');
+  }
   return {
     id: String(row.CloseID || ''), date: String(row.BusinessDate || ''),
     drawerKey: String(row.DrawerKey || CASH_CLOSE_DRAWER), openingCash: Number(row.OpeningCash),
@@ -1820,10 +1836,10 @@ function cashClosePreview_(user, req) {
     .slice(0, 10).map(function (row) { return cashCloseWithCorrections_(row, corrections); });
   if (selected) return { date, today: todayIso_(0), closed: true, close: cashCloseWithCorrections_(selected, corrections), recentCloses, timeZone: CFG.TZ };
   const period = cashCloseCalculatePeriod_(date);
-  let openingPaise = null, openingSource = '', openingReason = '', openingCloseId = '', openingReady = false;
+  let openingPaise = null, openingSource = '', openingReason = '', openingReady = false;
   if (previous) {
     openingPaise = cashCloseAmountNumber_(previous.CountedCash, 'prior counted cash');
-    openingSource = 'PREVIOUS_CLOSE'; openingCloseId = String(previous.CloseID || ''); openingReady = true;
+    openingSource = 'PREVIOUS_CLOSE'; openingReady = true;
   } else if (req.openingCash !== undefined && req.openingCash !== '') {
     openingPaise = cashCloseAmountPaise_(req.openingCash, 'opening cash');
     openingSource = 'MANUAL'; openingReason = clean_(req.openingReason, 200); openingReady = openingReason.length >= 3;
@@ -1907,9 +1923,16 @@ function recordCashCloseCorrection_(user, req) {
   const type = String(req.type || 'OTHER');
   if (CASH_CLOSE_CORRECTION_TYPES.indexOf(type) < 0) throw err_('Choose a valid correction type.', 'VALIDATION');
   const voucherId = clean_(req.voucherId, 100);
-  let includedIds = [];
-  try { includedIds = JSON.parse(String(close.IncludedVoucherIds || '[]')); } catch {}
-  if (voucherId && (!Array.isArray(includedIds) || includedIds.indexOf(voucherId) < 0)) throw err_('The linked voucher is not part of this close snapshot. Review the voucher ID.', 'VALIDATION');
+  let includedIds;
+  try {
+    const raw = String(close.IncludedVoucherIds || '');
+    if (!raw) throw new Error('Missing voucher IDs');
+    includedIds = JSON.parse(raw);
+    if (!Array.isArray(includedIds)) throw new Error('Invalid voucher IDs');
+  } catch (error) {
+    throw err_('Saved cash-close voucher IDs are invalid. Stop and inspect the close record.', 'CASH_CLOSE_DATA');
+  }
+  if (voucherId && includedIds.indexOf(voucherId) < 0) throw err_('The linked voucher is not part of this close snapshot. Review the voucher ID.', 'VALIDATION');
   const details = clean_(req.details, 1000), reason = clean_(req.reason, 200);
   if (details.length < 3) throw err_('Describe the correction in at least 3 characters.', 'VALIDATION');
   if (reason.length < 3) throw err_('Give a correction reason in at least 3 characters.', 'VALIDATION');

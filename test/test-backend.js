@@ -927,8 +927,8 @@ ok(as(T, 'addReceipt', { id: cashCloseReceipt.data.created[0].id, receipt: { mim
 ok(!as(T, 'createVouchers', { entries: [{ type: 'RECEIPT', date: '2020-01-03', vendor: 'Late voucher', amount: 1, category: 'Other', cashImpact: 'CASH_IN' }] }).ok, 'new voucher for a closed date rejected');
 const invalidCorrection = as(T, 'recordCashCloseCorrection', { closeId: dayThree.data.id, type: 'VOUCHER', voucherId: 'outside-snapshot', details: 'Bad link', reason: 'Must be from saved close' });
 ok(!invalidCorrection.ok && invalidCorrection.code === 'VALIDATION', 'correction linked voucher must belong to snapshot');
-const correction = as(T, 'recordCashCloseCorrection', { closeId: dayThree.data.id, type: 'CASH_COUNT', details: 'Physical count checked again', reason: 'Owner documented follow-up' });
-ok(correction.ok && correction.data.createdBy === 'owner@test.com', 'correction note has actor attribution');
+const recordedCloseCorrection = as(T, 'recordCashCloseCorrection', { closeId: dayThree.data.id, type: 'CASH_COUNT', details: 'Physical count checked again', reason: 'Owner documented follow-up' });
+ok(recordedCloseCorrection.ok && recordedCloseCorrection.data.createdBy === 'owner@test.com', 'correction note has actor attribution');
 const afterCorrection = as(T, 'cashClosePreview', { date: '2020-01-03' });
 ok(afterCorrection.ok && afterCorrection.data.close.variance === dayThree.data.variance && afterCorrection.data.close.corrections.length === 1, 'correction does not rewrite close total');
 const futureClose = as(T, 'cashClosePreview', { date: '2999-01-01' });
