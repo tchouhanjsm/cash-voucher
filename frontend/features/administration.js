@@ -586,7 +586,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
     try {
       const page = await api('auditLog', { beforeRow: auditNextBeforeRow });
       if (!setAuditPage(page, true)) {
-        toast('Older audit events returned an invalid response. Loaded events were kept; retry later.', 'err');
+        toast(
+          'Older audit events returned an invalid response. Loaded events were kept; retry later.',
+          'err',
+        );
       }
     } catch (error) {
       fail(error);
@@ -693,7 +696,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
             ? '—'
             : JSON.stringify(value);
       const changes = parsed.changes
-        .filter((change) => change && typeof change === 'object' && typeof change.field === 'string')
+        .filter(
+          (change) => change && typeof change === 'object' && typeof change.field === 'string',
+        )
         .map((change) => {
           const label = Object.prototype.hasOwnProperty.call(labels, change.field)
             ? labels[change.field]
@@ -706,7 +711,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
       if (parsed.entityType || parsed.entityId) {
         context.push(
           'Record: ' +
-            [parsed.entityType, parsed.entityId].filter((value) => typeof value === 'string' && value).join(' '),
+            [parsed.entityType, parsed.entityId]
+              .filter((value) => typeof value === 'string' && value)
+              .join(' '),
         );
       }
       if (parsed.eventId) context.push('Event ID: ' + String(parsed.eventId));
@@ -773,7 +780,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
       body.appendChild(tr);
     }
     count.textContent =
-      `Showing ${rows.length} of ${auditRows.length} loaded events; ${auditTotalCount} total recorded.` +
+      `Showing ${rows.length} of ${auditRows.length} loaded events; ` +
+        `${auditTotalCount} total recorded.` +
       (malformedAuditCount
         ? ` ${malformedAuditCount} malformed audit event(s) omitted from loaded pages.`
         : '');

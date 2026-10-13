@@ -350,7 +350,10 @@ ok(
     initialCreateDetails.eventId &&
     initialCreateDetails.entityId === r.data.created[0].id &&
     initialCreateDetails.changes.some(
-      (change) => change.field === 'amount' && change.before === null && change.after === r.data.created[0].amount,
+      (change) =>
+        change.field === 'amount' &&
+        change.before === null &&
+        change.after === r.data.created[0].amount,
     ),
   'voucher creation audit records an event ID and null-to-value amount delta',
 );
@@ -499,12 +502,17 @@ const mv = as(M, 'createVouchers', {
 ok(mv.ok && mv.data.created.length === 50 && mv.data.created[49].no === 253, 'manager bulk 50');
 const bulkAuditRows = g.sheets.AuditLog.rows.filter((row) => row[2] === 'BULK_CREATE');
 const bulkSummaryRows = g.sheets.AuditLog.rows.filter((row) => row[2] === 'BULK_IMPORT');
-ok(bulkAuditRows.length === 50, 'bulk create writes an individual audit event for each created voucher');
+ok(
+  bulkAuditRows.length === 50,
+  'bulk create writes an individual audit event for each created voucher',
+);
 const bulkSummary = bulkSummaryRows.slice(-1)[0];
 const bulkSummaryDetails = bulkSummary ? JSON.parse(bulkSummary[4]) : null;
 ok(
   bulkSummaryDetails?.eventType === 'BULK_IMPORT_COMPLETED' &&
-    bulkSummaryDetails.changes.some((change) => change.field === 'createdCount' && change.after === 50),
+    bulkSummaryDetails.changes.some(
+      (change) => change.field === 'createdCount' && change.after === 50,
+    ),
   'bulk import summary records created count in structured details',
 );
 ok(
@@ -659,7 +667,10 @@ ok(
   cancelAuditDetails?.eventType === 'VOUCHER_CANCELLED' &&
     cancelAuditDetails.reason === 'Duplicate entry' &&
     cancelAuditDetails.changes.some(
-      (change) => change.field === 'status' && change.before === 'ACTIVE' && change.after === 'CANCELLED',
+      (change) =>
+        change.field === 'status' &&
+        change.before === 'ACTIVE' &&
+        change.after === 'CANCELLED',
     ),
   'cancellation audit records reason and old/new status',
 );
@@ -709,7 +720,9 @@ const vendorCreateAudit = [...g.sheets.AuditLog.rows]
 const vendorCreateDetails = vendorCreateAudit ? JSON.parse(vendorCreateAudit[4]) : null;
 ok(
   vendorCreateDetails?.eventType === 'VENDOR_CREATED' &&
-    vendorCreateDetails.changes.some((change) => change.field === 'name' && change.before === null && change.after === 'Ram Traders'),
+    vendorCreateDetails.changes.some(
+    (change) => change.field === 'name' && change.before === null && change.after === 'Ram Traders',
+  ),
   'vendor creation audit records structured initial values',
 );
 ok(
@@ -727,7 +740,8 @@ const vendorUpdateAudit = [...g.sheets.AuditLog.rows]
 const vendorUpdateDetails = vendorUpdateAudit ? JSON.parse(vendorUpdateAudit[4]) : null;
 ok(
   vendorUpdateDetails?.changes.some(
-    (change) => change.field === 'company' && change.before === '' && change.after === 'Fort Supplies',
+    (change) =>
+      change.field === 'company' && change.before === '' && change.after === 'Fort Supplies',
   ),
   'vendor update audit records old/new company values',
 );
@@ -764,7 +778,8 @@ const settingsAuditDetails = settingsAuditRow ? JSON.parse(settingsAuditRow[4]) 
 ok(
   settingsAuditDetails?.eventType === 'PROPERTY_SETTINGS_UPDATED' &&
     settingsAuditDetails.changes.some(
-      (change) => change.field === 'propertyName' && change.before === 'My Property' && change.after === 'Hotel X',
+      (change) =>
+        change.field === 'propertyName' && change.before === 'My Property' && change.after === 'Hotel X',
     ),
   'settings audit records prior and saved property values',
 );
@@ -822,7 +837,9 @@ const userCreateAudit = [...g.sheets.AuditLog.rows]
 const userCreateDetails = userCreateAudit ? JSON.parse(userCreateAudit[4]) : null;
 ok(
   userCreateDetails?.eventType === 'USER_CREATED' &&
-    userCreateDetails.changes.some((change) => change.field === 'role' && change.before === null && change.after === 'staff') &&
+    userCreateDetails.changes.some(
+      (change) => change.field === 'role' && change.before === null && change.after === 'staff',
+    ) &&
     !userCreateAudit[4].includes('258369'),
   'user creation audit records role without exposing temporary PIN',
 );
@@ -958,7 +975,8 @@ const pinResetDetails = pinResetAudit ? JSON.parse(pinResetAudit[4]) : null;
 ok(
   pinResetDetails?.eventType === 'USER_PIN_RESET' &&
     pinResetDetails.changes.some(
-      (change) => change.field === 'mustChangePin' && change.before === false && change.after === true,
+      (change) =>
+        change.field === 'mustChangePin' && change.before === false && change.after === true,
     ) &&
     !pinResetAudit[4].includes('314159'),
   'PIN reset audit records account state without logging credential material',
@@ -1229,7 +1247,8 @@ const cashCloseAuditDetails = cashCloseAuditRow ? JSON.parse(cashCloseAuditRow[4
 ok(
   cashCloseAuditDetails?.eventType === 'DAILY_CASH_CLOSE_FINALIZED' &&
     cashCloseAuditDetails.changes.some(
-      (change) => change.field === 'expectedCash' && change.before === null && change.after === 137.5,
+      (change) =>
+        change.field === 'expectedCash' && change.before === null && change.after === 137.5,
     ),
   'daily close audit records expected cash and a structured event identity',
 );
@@ -1319,7 +1338,9 @@ ok(
 const closeCorrectionAuditRow = [...g.sheets.AuditLog.rows]
   .reverse()
   .find((row) => row[2] === 'CASH_CLOSE_CORRECTION');
-const closeCorrectionAuditDetails = closeCorrectionAuditRow ? JSON.parse(closeCorrectionAuditRow[4]) : null;
+const closeCorrectionAuditDetails = closeCorrectionAuditRow
+  ? JSON.parse(closeCorrectionAuditRow[4])
+  : null;
 ok(
   closeCorrectionAuditDetails?.eventType === 'CASH_CLOSE_CORRECTION_RECORDED' &&
     closeCorrectionAuditDetails.reason === 'Owner documented follow-up' &&

@@ -18,7 +18,11 @@ New structured `Details` entries use JSON version 1:
   "reason": "operator-entered reason, when required",
   "summary": "human-readable event summary",
   "changes": [
-    { "field": "amount", "before": 120, "after": 175 }
+    {
+      "field": "amount",
+      "before": 120,
+      "after": 175
+    }
   ]
 }
 ```

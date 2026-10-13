@@ -1591,7 +1591,17 @@ function auditEventDetails_(eventType, entityType, entityId, reason, changes, su
     changes: Array.isArray(changes) ? changes : [],
   });
 }
-function auditEvent_(user, action, target, eventType, entityType, entityId, reason, changes, summary) {
+function auditEvent_(
+  user,
+  action,
+  target,
+  eventType,
+  entityType,
+  entityId,
+  reason,
+  changes,
+  summary,
+) {
   audit_(
     user,
     action,
@@ -2995,7 +3005,9 @@ function saveSettings_(user, req) {
     .map(function (key) {
       return {
         field: key,
-        before: Object.prototype.hasOwnProperty.call(priorSettings, key) ? priorSettings[key] : null,
+        before: Object.prototype.hasOwnProperty.call(priorSettings, key)
+          ? priorSettings[key]
+          : null,
         after: nextSettings[key],
       };
     })
