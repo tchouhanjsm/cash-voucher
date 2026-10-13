@@ -923,6 +923,7 @@ const dayThree = as(T, 'createCashClose', { date: '2020-01-03', countedCash: '13
 ok(dayThree.ok && dayThree.data.includedVoucherCount === 3, 'saved close includes voucher snapshot');
 ok(as(T, 'updateVoucher', { id: cashCloseReceipt.data.created[0].id, fields: { vendor: 'Modified' }, reason: 'Test a closed period edit' }).code === 'CASH_PERIOD_CLOSED', 'voucher edit in closed date rejected');
 ok(as(T, 'cancelVoucher', { id: cashCloseReceipt.data.created[0].id, reason: 'Test closed period cancel' }).code === 'CASH_PERIOD_CLOSED', 'voucher cancellation in closed date rejected');
+ok(as(T, 'addReceipt', { id: cashCloseReceipt.data.created[0].id, receipt: { mime: 'image/png', data: 'AA==' } }).code === 'CASH_PERIOD_CLOSED', 'receipt attachments cannot mutate a closed voucher');
 ok(!as(T, 'createVouchers', { entries: [{ type: 'RECEIPT', date: '2020-01-03', vendor: 'Late voucher', amount: 1, category: 'Other', cashImpact: 'CASH_IN' }] }).ok, 'new voucher for a closed date rejected');
 const invalidCorrection = as(T, 'recordCashCloseCorrection', { closeId: dayThree.data.id, type: 'VOUCHER', voucherId: 'outside-snapshot', details: 'Bad link', reason: 'Must be from saved close' });
 ok(!invalidCorrection.ok && invalidCorrection.code === 'VALIDATION', 'correction linked voucher must belong to snapshot');

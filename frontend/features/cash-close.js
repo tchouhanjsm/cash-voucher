@@ -1,5 +1,6 @@
 import { $ } from '../core/dom.js';
 import { can } from '../core/state.js';
+import { offlineQueue } from '../core/offline-queue.js';
 import { csvCell, download, esc, money, today, uid } from '../core/utils.js';
 import { busy, fail, head, toast } from '../core/ui.js';
 
@@ -137,11 +138,18 @@ export function createCashClose({ api }) {
         unresolved + bad + '</tbody></table></div><p class="muted">Open Register, edit the unresolved voucher with a correction reason, then refresh this preview. Historical values are never guessed.</p></section>' : '';
     const expectedValue = snapshot.expectedCash === null ? 'Unavailable until opening and voucher issues are resolved' : money(snapshot.expectedCash);
     const cannotReason = snapshot.expectedInvalid ? '<p class="cc-error" role="alert">Expected physical cash is negative. Review the opening amount and cash-impact classifications.</p>' : '';
-    const canClose = snapshot.readyToClose && !unresolved && !bad;
+    const queueKnown = snapshot.localQueueKnown === true;
+    const queueCount = Number.isSafeInteger(snapshot.localQueueCount) ? snapshot.localQueueCount : null;
+    const queueIssue = !queueKnown
+      ? '<section class="cc-blockers" role="alert"><h3>Offline queue could not be verified</h3><p>Daily Cash Close is disabled until this browser’s offline/recovery queue can be inspected. Do not clear browser storage to bypass this check.</p></section>'
+      : queueCount > 0
+        ? '<section class="cc-blockers" role="alert"><h3>Resolve this browser’s offline queue</h3><p>' + esc(queueCount) + ' offline/recovery entr' + (queueCount === 1 ? 'y is' : 'ies are') + ' still stored on this browser. Sync or review/export each entry from its matching account before closing. Do not delete entries just to close the day. Other phones/devices must be checked separately; the server cannot inspect their local queues.</p></section>'
+        : '<p class="cc-note">This browser’s offline queue is empty. Confirm other operating devices are also synchronized before finalizing.</p>';
+    const canClose = snapshot.readyToClose && !unresolved && !bad && queueKnown && queueCount === 0;
     $('#cc-results').innerHTML =
       '<section class="card cc-preview"><div class="cc-report-heading"><div><h2>Preview · ' + esc(date) +
       '</h2><p class="muted">Calculated from centrally synchronized ACTIVE vouchers. Cancelled vouchers are excluded.</p></div><span class="badge">PREVIEW ONLY</span></div>' +
-      openingMarkup + cannotReason + '<div class="cc-metrics">' +
+      openingMarkup + cannotReason + queueIssue + '<div class="cc-metrics">' +
       metric('Active vouchers', String(snapshot.activeVoucherCount || 0)) + metric('Cash in', money(snapshot.cashInTotal)) +
       metric('Cash out', money(snapshot.cashOutTotal)) + metric('NO_CASH vouchers', String(snapshot.noCashCount || 0)) +
       metric('Expected physical cash', expectedValue) + '</div>' + issues +
@@ -168,7 +176,13 @@ export function createCashClose({ api }) {
     if (opening !== undefined && opening !== '') payload.openingCash = opening;
     if (reason !== undefined) payload.openingReason = reason;
     try {
-      data = await api('cashClosePreview', payload);
+      const serverPreview = await api('cashClosePreview', payload);
+      try {
+        const localRecords = await offlineQueue.list();
+        data = { ...serverPreview, localQueueKnown: true, localQueueCount: localRecords.length };
+      } catch {
+        data = { ...serverPreview, localQueueKnown: false, localQueueCount: null };
+      }
       previewReport(data);
     } catch (error) {
       if (results) {
@@ -190,6 +204,21 @@ export function createCashClose({ api }) {
     }
     if (data.closed) {
       toast('This date is already closed; the saved report remains unchanged.', 'err');
+      return;
+    }
+    let queueRecords;
+    try {
+      queueRecords = await offlineQueue.list();
+    } catch {
+      data = { ...data, localQueueKnown: false, localQueueCount: null };
+      previewReport(data);
+      toast('Could not verify this browser’s offline queue. Daily Cash Close is blocked.', 'err');
+      return;
+    }
+    if (queueRecords.length) {
+      data = { ...data, localQueueKnown: true, localQueueCount: queueRecords.length };
+      previewReport(data);
+      toast('Sync or review this browser’s offline queue before closing the day.', 'err');
       return;
     }
     const countedCash = $('#cc-counted')?.value ?? '';

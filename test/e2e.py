@@ -174,6 +174,48 @@ with sync_playwright() as p:
     page.wait_for_selector('#cc-closed-report')
     check('Previous accepted close' in page.locator('#cc-closed-report').inner_text(), 'report discloses carry-forward opening source')
 
+    # A locally stored record must block finalization; test record is deleted without submitting it.
+    page.evaluate("""() => new Promise((resolve, reject) => {
+      const request = indexedDB.open('cash-voucher', 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('outbox', 'readwrite');
+        tx.objectStore('outbox').put({
+          clientId: 'cash-close-e2e-pending',
+          entry: { type: 'PAYMENT', vendor: 'E2E local-only test', amount: 1, date: '2020-01-03', cashImpact: 'CASH_OUT' },
+          ownerKey: '',
+          status: 'pending',
+          attempts: 0,
+          failure: '',
+          leaseOwner: '',
+          leaseUntil: 0,
+          createdAt: Date.now()
+        });
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => reject(tx.error);
+      };
+    })""")
+    page.fill('#cc-date', '2020-01-03')
+    page.click('[data-act=closePreview]')
+    page.wait_for_selector('#cc-create')
+    check(
+        page.locator('#cc-create').is_disabled()
+        and 'offline/recovery entr' in page.locator('#cc-results').inner_text().lower(),
+        'a local offline entry blocks the cash close',
+    )
+    page.evaluate("""() => new Promise((resolve, reject) => {
+      const request = indexedDB.open('cash-voucher', 1);
+      request.onerror = () => reject(request.error);
+      request.onsuccess = () => {
+        const db = request.result;
+        const tx = db.transaction('outbox', 'readwrite');
+        tx.objectStore('outbox').delete('cash-close-e2e-pending');
+        tx.oncomplete = () => { db.close(); resolve(); };
+        tx.onerror = () => reject(tx.error);
+      };
+    })""")
+
     page.click('[data-v=users]')
     page.wait_for_selector('#uf')
     check(

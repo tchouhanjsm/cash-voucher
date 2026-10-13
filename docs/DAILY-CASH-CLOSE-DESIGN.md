@@ -247,3 +247,8 @@ The implementation adds two dedicated tabs; no existing voucher or setting colum
 - Corrections are attributed notes, not numeric adjustments. The original close is never silently rewritten.
 - The saved snapshot is the basis of the printed/exported report; a CSV contains the summary, all included voucher IDs/amounts and correction notes.
 - CI, Browser E2E and Full Flight Test must pass on the exact same final PR head. Live Apps Script/Sheets concurrency, real backups/restore, device queue behavior and the controlled hotel pilot remain independent release gates.
+
+
+## Current-browser outbox gate
+
+The close screen inspects this browser's IndexedDB outbox (including unbound/recovery entries) before showing finalization as available and checks again immediately before submit. If queue storage cannot be read, the finalization button stays blocked. This is intentionally fail-closed. It does not prove that other phones, browsers or devices have synchronized; the operator must verify those separately. The backend cannot inspect client-local queues, so no UI can make a server-wide empty-queue guarantee from this check alone.

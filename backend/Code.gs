@@ -2164,6 +2164,7 @@ function addReceipt_(user, req) {
   ))
     need_(user, 'receiptAny');
   if (o.Status !== 'ACTIVE') throw err_('Cannot add receipts to a cancelled voucher.');
+  if (cashDateClosed_(isoDate_(o.Date))) throw cashCloseDateError_();
   const have = o.Receipts ? String(o.Receipts).split(',').filter(Boolean) : [];
   if (have.length >= CFG.MAX_RECEIPTS)
     throw err_('Maximum ' + CFG.MAX_RECEIPTS + ' receipts per voucher.');

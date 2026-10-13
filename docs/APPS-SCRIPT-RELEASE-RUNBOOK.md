@@ -168,3 +168,6 @@ PR #110 introduced the additive Vouchers CashImpact column. The Daily Cash Close
 6. Publish the reviewed backend version to the verified existing Web App deployment only after the owner separately authorizes deployment. Then complete live role, close/duplicate, voucher lock, backup/restore and real-device checks before relying on the feature.
 
 Do not run either migration or deploy from the feature PR. Preserve every existing row and all historical unclassified vouchers.
+
+
+The client-side queue gate can inspect only the browser used for closing. Before trusting a daily close, confirm pending/rejected/offline recovery entries are reviewed and synchronized on every operating device. A successful close response is a central Sheet record, but it cannot prove that a different offline device has no unsynchronized entries.
