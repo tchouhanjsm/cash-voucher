@@ -1,9 +1,9 @@
-# Daily Cash Close and Physical Reconciliation — Design Proposal
+# Daily Cash Close and Physical Reconciliation — Design and Owner Policy Record
 
-**Phase:** 23 (design gate only)  
-**Status:** proposed; requires owner review before implementation  
-**Source baseline:** `main` at `f0377937b260d9e873360ae3f726258e0ae8c272`  
-**Scope:** single-property cash-voucher PWA backed by Apps Script and Sheets. No code, API, schema, deployment or production data changes in this phase.
+**Phase:** 23 design record; the MVP implementation is merged in PR #111.  
+**Status:** close rules and the one-drawer/day MVP are implemented in source; live deployment, schema migration, real backup/restore and hotel-pilot evidence remain unverified. The payment-approval policy below was approved on 13 October 2026 and is being implemented in a separate feature PR.  
+**Historical source baseline:** `main` at `f0377937b260d9e873360ae3f726258e0ae8c272`  
+**Scope:** preserve the original design reasoning and owner-approved rules for the single-property Apps Script/Sheets product. Editing this record does not run migrations or release code.
 
 ## 1. Problem and evidence
 
@@ -239,7 +239,7 @@ The owner approved these defaults for the implementation phase. This section sup
 
 ### Schema / release procedure
 
-The implementation adds two dedicated tabs; no existing voucher or setting columns are rearranged. After reviewing and backing up the intended Apps Script project, upload the reviewed source only when the owner authorizes it. Run migrateCashImpactField() first if column Q (CashImpact) is not present, then run migrateDailyCashCloseSchema() once from the Apps Script editor. The close migration verifies the expected Vouchers header and refuses to overwrite unknown tabs/headers. Verify both new header rows and the unchanged voucher row count before publishing any Web App version. Do not run setup() as a shortcut. Migrations and deployment are not performed by this PR.
+The implementation adds two dedicated tabs; PR #113 adds no schema, and the approved payment-approval workflow appends fields R:U after CashImpact Q. No existing voucher or setting columns are rearranged. After reviewing and backing up the intended Apps Script project, upload the reviewed source only when the owner authorizes it. Run `migrateCashImpactField()` first if column Q (CashImpact) is not present, then `migrateVoucherApprovalFields()` to append the approval headers only after validating A:Q and confirming R:U has no existing headers or data, then run `migrateDailyCashCloseSchema()` once from the Apps Script editor. The migrations stop on unexpected schemas rather than overwriting data. Verify the exact headers, unchanged voucher row count, and blank historical CashImpact and approval cells before publishing any Web App version. Do not run `setup()` as a shortcut. Migrations and deployment are not performed by the feature PR.
 
 ### MVP limitations / acceptance gates
 
@@ -250,3 +250,16 @@ The implementation adds two dedicated tabs; no existing voucher or setting colum
 ## Current-browser outbox gate
 
 The close screen inspects this browser's IndexedDB outbox (including unbound/recovery entries) before showing finalization as available and checks again immediately before submit. If queue storage cannot be read, the finalization button stays blocked. This is intentionally fail-closed. It does not prove that other phones, browsers or devices have synchronized; the operator must verify those separately. The backend cannot inspect client-local queues, so no UI can make a server-wide empty-queue guarantee from this check alone.
+
+
+## Payment approval policy — owner-approved 13 October 2026
+
+This section records the approved cross-feature rule; it does not claim the implementation PR is merged or deployed.
+
+- **Scope and threshold:** only new `PAYMENT` vouchers with amount greater than or equal to **₹10,000** require approval. The threshold is inclusive and fixed for this release; it is not an owner-configurable setting. `RECEIPT` vouchers are outside the rule.
+- **Authority:** existing owner and manager roles can approve or reject a pending payment. A voucher creator cannot approve their own voucher; the backend is the authority for this rule. Rejecting requires an attributable reason. No new role is introduced.
+- **State and history:** new qualifying payments start `PENDING`; successful review records status, approver, timestamp and reason when rejected in the existing audit log. `APPROVED` becomes eligible for approved payment totals and cash-close inclusion. An approval-managed voucher edit sends the payment back to `PENDING` when its amount remains at or above the threshold. Crossing the threshold through a correction also requires approval.
+- **Financial treatment:** pending, rejected or malformed approval states stay visible but are excluded from approved payment totals. They block a final cash close rather than silently disappearing from expected cash. A rejected active voucher must be cancelled or otherwise resolved before final close; cancellation remains audited. The existing cash-impact value remains separate from approval status and is never inferred from it.
+- **Historical compatibility:** the additive schema appends `ApprovalStatus`, `ApprovedBy`, `ApprovedAt`, and `ApprovalReason` in R:U after `CashImpact` in Q. Migration adds headers only and never backfills or guesses old approval states. Blank historical approval values read as `NOT_REQUIRED`; legacy records are not reclassified simply because their amount is over the threshold.
+- **Release boundary:** after an explicitly authorized, backed-up release, run `migrateCashImpactField()` if Q is missing, then `migrateVoucherApprovalFields()`, then `migrateDailyCashCloseSchema()`. Verify headers, existing row count/data, and blank historical values. No migration, Clasp push, Web App deployment or production data change is included in the feature PR.
+
