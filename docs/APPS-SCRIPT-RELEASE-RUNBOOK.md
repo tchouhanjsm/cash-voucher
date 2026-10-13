@@ -164,17 +164,18 @@ PR #67 adds browser coverage for owner Settings data-quality results and backup-
 - These checks establish deployment ID alignment, not that current `main` is deployed. Owner confirmation in the Apps Script editor of the intended project, deployment, Sheet binding and Script Properties remains outstanding. Do not run `clasp push`, `clasp deploy`, or `setup()` until the owner confirms the target and explicitly authorizes release.
 - npm still reports three high-severity dependency findings; do not use `npm audit fix --force`. Live role/receipt authorization, a real scheduled backup, and a witnessed restore into a separate recovery Sheet/folder remain unverified.
 
-## Daily Cash Close schema migration — reviewed release only
+## Cash-impact, payment-approval and Daily Cash Close schema migrations — reviewed release only
 
-PR #110 introduced the additive Vouchers CashImpact column. The Daily Cash Close feature additionally needs CashCloses and CashCloseCorrections tabs. Before publishing a version containing Daily Cash Close:
+PR #110 introduced the additive Vouchers CashImpact column Q; PR #111 added the CashCloses and CashCloseCorrections tabs. The owner-approved payment-approval workflow adds four columns after CashImpact. Before publishing a version containing these features:
 
-1. Verify the intended Apps Script project, SS_ID, bound Sheet and a current backup. Inspect the existing Vouchers row count and A:P headers; ensure the next column is available.
-2. Upload the reviewed backend source only after explicit owner authorization. A Git merge is not an upload or deployment.
-3. If Vouchers Q1 is not CashImpact, run migrateCashImpactField() once and verify A:P and voucher row count are unchanged and all historical CashImpact cells remain blank.
-4. Run migrateDailyCashCloseSchema() once. It requires the current CashImpact header, adds only the two dedicated tabs, validates any pre-existing same-named tabs, and stops rather than overwriting unexpected data.
-5. Verify the exact headers of both new tabs and confirm existing Vouchers and Settings rows/values are unchanged. Do not run setup() to force the migration.
-6. Publish the reviewed backend version to the verified existing Web App deployment only after the owner separately authorizes deployment. Then complete live role, close/duplicate, voucher lock, backup/restore and real-device checks before relying on the feature.
+1. Verify the intended Apps Script project, `SS_ID`, bound Sheet and a current backup. Confirm the existing Vouchers A:P headers and row count, CashImpact column Q, and that columns R:U are blank and available.
+2. Upload reviewed backend source only after explicit owner authorization. A Git merge is not an upload or deployment.
+3. If Vouchers Q1 is not `CashImpact`, run `migrateCashImpactField()` once and verify A:P and row count are unchanged and historical CashImpact cells remain blank.
+4. Run `migrateVoucherApprovalFields()` once after CashImpact exists. It verifies the reviewed A:Q header schema and refuses to write if any header/data exists in R:U. It appends only `ApprovalStatus`, `ApprovedBy`, `ApprovedAt`, and `ApprovalReason`; it does not populate historical rows. Blank approval values on historical vouchers are read as `NOT_REQUIRED`.
+5. Run `migrateDailyCashCloseSchema()` once. It requires the current CashImpact header, adds only the two dedicated tabs, validates any pre-existing same-named tabs, and stops rather than overwriting unexpected data.
+6. Verify exact Vouchers Q:U headers, both cash-close tab headers, unchanged historical row count and existing values, plus blank historical CashImpact and approval cells. Do not run `setup()` to force any migration.
+7. Publish the reviewed backend version to the verified existing Web App deployment only after the owner separately authorizes deployment. Then complete live role/receipt/approval permissions, close/duplicate and closed-voucher guards, backup/restore and real-device checks before relying on the features.
 
-Do not run either migration or deploy from the feature PR. Preserve every existing row and all historical unclassified vouchers.
+Do not run migrations or deploy from the feature PR. Preserve every existing row and all historical unclassified vouchers. Do not classify legacy high-value payments retroactively or infer approval from amount during migration.
 
 The client-side queue gate can inspect only the browser used for closing. Before trusting a daily close, confirm pending/rejected/offline recovery entries are reviewed and synchronized on every operating device. A successful close response is a central Sheet record, but it cannot prove that a different offline device has no unsynchronized entries.
