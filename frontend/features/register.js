@@ -711,7 +711,9 @@ export function createRegister({ api, go }) {
   function approve(id) {
     const voucher = voucherRows().find((item) => item.id === id);
     if (!voucher || !can('approvePayments')) {
-      fail(new Error('This payment is unavailable or you cannot approve payments. Refresh and retry.'));
+      fail(
+        new Error('This payment is unavailable or you cannot approve payments. Refresh and retry.'),
+      );
       return;
     }
     if (
@@ -720,18 +722,26 @@ export function createRegister({ api, go }) {
       normalizeApprovalStatus(voucher.approvalStatus) !== 'PENDING' ||
       scalarText(voucher.createdBy).toLowerCase() === scalarText(S.me?.email).toLowerCase()
     ) {
-      fail(new Error('This payment is not eligible for your approval. Refresh the Register and review its current state.'));
+      fail(
+        new Error(
+          'This payment is not eligible for your approval. Refresh the Register and review its current state.',
+        ),
+      );
       return;
     }
     const body = document.createDocumentFragment();
     const summary = document.createElement('p');
     const amount = document.createElement('b');
     amount.textContent = money(voucher.amount);
-    summary.append(document.createTextNode(`${voucherNo(voucher)} · ${scalarText(voucher.vendor)} · `), amount);
+    summary.append(
+      document.createTextNode(`${voucherNo(voucher)} · ${scalarText(voucher.vendor)} · `),
+      amount,
+    );
     body.appendChild(summary);
     const note = document.createElement('p');
     note.className = 'muted';
-    note.textContent = 'Approval makes this payment eligible for approved totals and daily cash close. The creator cannot approve their own voucher.';
+    note.textContent =
+      'Approval makes this payment eligible for approved totals and daily cash close. The creator cannot approve their own voucher.';
     body.appendChild(note);
     dialog(`Approve payment ${voucherNo(voucher)}?`, body, async () => {
       Object.assign(voucher, await api('approveVoucher', { id }));
@@ -744,10 +754,16 @@ export function createRegister({ api, go }) {
   function reject(id) {
     const voucher = voucherRows().find((item) => item.id === id);
     if (!voucher || !can('approvePayments')) {
-      fail(new Error('This payment is unavailable or you cannot reject payments. Refresh and retry.'));
+      fail(
+        new Error('This payment is unavailable or you cannot reject payments. Refresh and retry.'),
+      );
       return;
     }
-    if (isIn(voucher) || voucher.status !== 'ACTIVE' || normalizeApprovalStatus(voucher.approvalStatus) !== 'PENDING') {
+    if (
+      isIn(voucher) ||
+      voucher.status !== 'ACTIVE' ||
+      normalizeApprovalStatus(voucher.approvalStatus) !== 'PENDING'
+    ) {
       fail(new Error('This payment is not awaiting approval. Refresh the Register and retry.'));
       return;
     }
@@ -755,7 +771,10 @@ export function createRegister({ api, go }) {
     const summary = document.createElement('p');
     const amount = document.createElement('b');
     amount.textContent = money(voucher.amount);
-    summary.append(document.createTextNode(`${voucherNo(voucher)} · ${scalarText(voucher.vendor)} · `), amount);
+    summary.append(
+      document.createTextNode(`${voucherNo(voucher)} · ${scalarText(voucher.vendor)} · `),
+      amount,
+    );
     body.appendChild(summary);
     const reason = document.createElement('textarea');
     reason.id = 'apr-reason';
@@ -765,9 +784,15 @@ export function createRegister({ api, go }) {
     reason.rows = 3;
     body.appendChild(labeledControl('Rejection reason (required)', reason));
     dialog(`Reject payment ${voucherNo(voucher)}?`, body, async () => {
-      Object.assign(voucher, await api('rejectVoucher', { id, reason: $('#apr-reason').value }));
+      Object.assign(
+        voucher,
+        await api('rejectVoucher', { id, reason: $('#apr-reason').value }),
+      );
       closeModal();
-      toast('Payment rejected. It remains visible and blocks cash close until cancelled or otherwise resolved.', 'ok');
+      toast(
+        'Payment rejected. It remains visible and blocks cash close until cancelled or otherwise resolved.',
+        'ok',
+      );
       go(S.view);
     }, 'Reject payment');
   }
