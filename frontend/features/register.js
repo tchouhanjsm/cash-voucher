@@ -1,5 +1,5 @@
 import { $ } from '../core/dom.js';
-import { can, categories, isIn, nm, S, bySeq } from '../core/state.js';
+import { CASH_IMPACT_CHOICES, can, categories, isIn, nm, normalizeCashImpact, S, suggestCashImpact, bySeq } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import {
   compress,
@@ -183,6 +183,7 @@ export function createRegister({ api, go }) {
             <span class="voucher-vendor">${esc(scalarText(voucher.vendor))}</span>
             <div class="cat">
               ${esc(scalarText(voucher.category))}${scalarText(voucher.notes) ? ' · ' + esc(scalarText(voucher.notes)) : ''}${receiptWarning}${cancelledNote}
+              <div class="cat">Cash impact: ${esc(normalizeCashImpact(voucher.cashImpact))}</div>
             </div>
           </td>
           <td
@@ -337,6 +338,7 @@ export function createRegister({ api, go }) {
         'Date',
         'Vendor',
         'Category',
+        'CashImpact',
         'Notes',
         'Amount',
         'Status',
@@ -351,6 +353,7 @@ export function createRegister({ api, go }) {
         dmy(scalarText(voucher.date)),
         scalarText(voucher.vendor),
         scalarText(voucher.category),
+        normalizeCashImpact(voucher.cashImpact),
         scalarText(voucher.notes),
         voucher.amount,
         voucher.status,
@@ -398,6 +401,36 @@ export function createRegister({ api, go }) {
     category.appendChild(catOptionsNode(scalarText(voucher.category), voucher.type));
     body.appendChild(labeledControl('Category', category));
 
+    const cashImpact = document.createElement('select');
+    cashImpact.id = 'eci';
+    cashImpact.required = true;
+    const selectedImpact = normalizeCashImpact(voucher.cashImpact);
+    if (!CASH_IMPACT_CHOICES.includes(selectedImpact)) {
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = 'Choose cash impact…';
+      placeholder.selected = true;
+      placeholder.disabled = true;
+      cashImpact.appendChild(placeholder);
+    }
+    CASH_IMPACT_CHOICES.forEach((value) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      cashImpact.appendChild(option);
+    });
+    if (CASH_IMPACT_CHOICES.includes(selectedImpact)) cashImpact.value = selectedImpact;
+    body.appendChild(labeledControl('Cash impact (required)', cashImpact));
+
+    const cashImpactHint = document.createElement('p');
+    cashImpactHint.className = 'muted';
+    const updateCashImpactHint = () => {
+      cashImpactHint.textContent = 'Category suggestion only: ' + suggestCashImpact(voucher.type, category.value) + '. Verify physical notes/coins movement; UPI, card, or bank transfer uses NO_CASH.';
+    };
+    category.addEventListener('change', updateCashImpactHint);
+    updateCashImpactHint();
+    body.appendChild(cashImpactHint);
+
     const note = document.createElement('input');
     note.id = 'en';
     note.value = scalarText(voucher.notes);
@@ -420,6 +453,7 @@ export function createRegister({ api, go }) {
           vendor: $('#ev').value,
           amount: parseAmt($('#ea').value),
           category: $('#ec').value,
+          cashImpact: $('#eci').value,
           notes: $('#en').value,
         },
       });
