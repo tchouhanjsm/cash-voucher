@@ -341,6 +341,19 @@ ok(
 );
 ok(r.data.created[0].receipts.length === 1, 'receipt stored');
 ok(r.data.created[0].cashImpact === 'CASH_OUT', 'cash impact persists and is returned to clients');
+const initialCreateAudit = g.sheets.AuditLog.rows.find(
+  (row) => row[2] === 'CREATE' && row[3] === '#201',
+);
+const initialCreateDetails = initialCreateAudit ? JSON.parse(initialCreateAudit[4]) : null;
+ok(
+  initialCreateDetails?.eventType === 'VOUCHER_CREATED' &&
+    initialCreateDetails.eventId &&
+    initialCreateDetails.entityId === r.data.created[0].id &&
+    initialCreateDetails.changes.some(
+      (change) => change.field === 'amount' && change.before === null && change.after === r.data.created[0].amount,
+    ),
+  'voucher creation audit records an event ID and null-to-value amount delta',
+);
 const filesAfterFirstCreate = Object.keys(g.files).length;
 const dup = as(S, 'createVouchers', {
   entries: [
@@ -484,6 +497,29 @@ const mv = as(M, 'createVouchers', {
   })),
 });
 ok(mv.ok && mv.data.created.length === 50 && mv.data.created[49].no === 253, 'manager bulk 50');
+const bulkAuditRows = g.sheets.AuditLog.rows.filter((row) => row[2] === 'BULK_CREATE');
+const bulkSummaryRows = g.sheets.AuditLog.rows.filter((row) => row[2] === 'BULK_IMPORT');
+ok(bulkAuditRows.length === 50, 'bulk create writes an individual audit event for each created voucher');
+const bulkSummary = bulkSummaryRows.slice(-1)[0];
+const bulkSummaryDetails = bulkSummary ? JSON.parse(bulkSummary[4]) : null;
+ok(
+  bulkSummaryDetails?.eventType === 'BULK_IMPORT_COMPLETED' &&
+    bulkSummaryDetails.changes.some((change) => change.field === 'createdCount' && change.after === 50),
+  'bulk import summary records created count in structured details',
+);
+ok(
+  bulkAuditRows.every((row) => {
+    const details = JSON.parse(row[4]);
+    return (
+      details.version === 1 &&
+      details.eventId &&
+      details.entityType === 'voucher' &&
+      details.entityId &&
+      details.changes.some((change) => change.field === 'amount' && change.before === null)
+    );
+  }),
+  'bulk-created vouchers have event IDs and null-to-value field deltas',
+);
 ok(as(S, 'bootstrap').data.vouchers.length === 3, 'staff still sees only own after bulk');
 ok(as(M, 'bootstrap').data.vouchers.length === 53, 'manager sees all');
 
@@ -613,17 +649,38 @@ ok(
   'correction audit records before/after values for every changed field',
 );
 ok(!as(M, 'cancelVoucher', { id: id1, reason: '' }).ok, 'cancel needs reason');
+const cancelledVoucher = as(M, 'cancelVoucher', { id: id1, reason: 'Duplicate entry' });
+ok(cancelledVoucher.data.status === 'CANCELLED', 'manager cancel');
+const cancelAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'CANCEL' && row[3] === '#201');
+const cancelAuditDetails = cancelAuditRow ? JSON.parse(cancelAuditRow[4]) : null;
 ok(
-  as(M, 'cancelVoucher', { id: id1, reason: 'Duplicate entry' }).data.status === 'CANCELLED',
-  'manager cancel',
+  cancelAuditDetails?.eventType === 'VOUCHER_CANCELLED' &&
+    cancelAuditDetails.reason === 'Duplicate entry' &&
+    cancelAuditDetails.changes.some(
+      (change) => change.field === 'status' && change.before === 'ACTIVE' && change.after === 'CANCELLED',
+    ),
+  'cancellation audit records reason and old/new status',
 );
 ok(!as(M, 'updateVoucher', { id: id1, fields: { amount: 2 } }).ok, 'cancelled not editable');
 // receipts
 const id2 = r.data.created[1].id;
+const receiptAdded = as(S, 'addReceipt', {
+  id: id2,
+  receipt: { mime: 'image/png', data: tiny },
+});
+ok(receiptAdded.data.receipts.length === 1, 'staff adds receipt to own');
+const receiptAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'RECEIPT_ADD' && row[3] === '#202');
+const receiptAuditDetails = receiptAuditRow ? JSON.parse(receiptAuditRow[4]) : null;
 ok(
-  as(S, 'addReceipt', { id: id2, receipt: { mime: 'image/png', data: tiny } }).data.receipts
-    .length === 1,
-  'staff adds receipt to own',
+  receiptAuditDetails?.eventType === 'VOUCHER_RECEIPT_ATTACHED' &&
+    receiptAuditDetails.changes.some(
+      (change) => change.field === 'receiptCount' && change.before === 0 && change.after === 1,
+    ),
+  'receipt audit records the old/new attachment count',
 );
 ok(
   !as(S, 'addReceipt', { id: mv.data.created[0].id, receipt: { mime: 'image/png', data: tiny } })
@@ -707,7 +764,46 @@ ok(
   'disable staff',
 );
 ok(as(S, 'bootstrap').code === 'SESSION', 'disabled user session dead');
-ok(as(T, 'auditLog').data.length > 10, 'audit log written');
+const auditPage = as(T, 'auditLog');
+ok(
+  auditPage.ok &&
+    Array.isArray(auditPage.data.rows) &&
+    auditPage.data.rows.length <= 200 &&
+    auditPage.data.totalCount > 10,
+  'audit log returns a bounded page and total record count',
+);
+const auditRowsBeforeFixture = g.sheets.AuditLog.rows.length;
+for (let i = 0; i < 205; i++) {
+  g.sheets.AuditLog.rows.push([
+    '2026-10-13T10:00:00',
+    'owner@test.com',
+    'AUDIT_PAGE_FIXTURE',
+    '#' + i,
+    'fixture row ' + i,
+  ]);
+}
+const firstAuditPage = as(T, 'auditLog');
+ok(
+  firstAuditPage.ok &&
+    firstAuditPage.data.rows.length === 200 &&
+    firstAuditPage.data.nextBeforeRow !== null &&
+    firstAuditPage.data.rows[0].target === '#204',
+  'audit cursor returns newest 200 rows and a continuation cursor',
+);
+const olderAuditPage = as(T, 'auditLog', { beforeRow: firstAuditPage.data.nextBeforeRow });
+ok(
+  olderAuditPage.ok &&
+    olderAuditPage.data.rows.length > 0 &&
+    olderAuditPage.data.rows.some((row) => row.target === '#4') &&
+    !olderAuditPage.data.rows.some((row) => row.target === '#204'),
+  'older audit cursor returns preceding rows without repeating the newest page',
+);
+ok(
+  as(T, 'auditLog', { beforeRow: 'not-a-cursor' }).code === 'VALIDATION' &&
+    as(T, 'auditLog', { beforeRow: firstAuditPage.data.totalCount + 100 }).code === 'VALIDATION',
+  'audit API rejects malformed and out-of-range cursors',
+);
+g.sheets.AuditLog.rows.splice(auditRowsBeforeFixture);
 // cash received
 const rc = as(T, 'createVouchers', {
   entries: [
@@ -1035,6 +1131,17 @@ ok(
   dayThree.ok && dayThree.data.includedVoucherCount === 3,
   'saved close includes voucher snapshot',
 );
+const cashCloseAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'CASH_CLOSE' && row[3] === '2020-01-03');
+const cashCloseAuditDetails = cashCloseAuditRow ? JSON.parse(cashCloseAuditRow[4]) : null;
+ok(
+  cashCloseAuditDetails?.eventType === 'DAILY_CASH_CLOSE_FINALIZED' &&
+    cashCloseAuditDetails.changes.some(
+      (change) => change.field === 'expectedCash' && change.before === null && change.after === 137.5,
+    ),
+  'daily close audit records expected cash and a structured event identity',
+);
 const dayFive = as(T, 'createCashClose', {
   date: '2020-01-05',
   openingCash: '137.50',
@@ -1117,6 +1224,18 @@ const recordedCloseCorrection = as(T, 'recordCashCloseCorrection', {
 ok(
   recordedCloseCorrection.ok && recordedCloseCorrection.data.createdBy === 'owner@test.com',
   'correction note has actor attribution',
+);
+const closeCorrectionAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'CASH_CLOSE_CORRECTION');
+const closeCorrectionAuditDetails = closeCorrectionAuditRow ? JSON.parse(closeCorrectionAuditRow[4]) : null;
+ok(
+  closeCorrectionAuditDetails?.eventType === 'CASH_CLOSE_CORRECTION_RECORDED' &&
+    closeCorrectionAuditDetails.reason === 'Owner documented follow-up' &&
+    closeCorrectionAuditDetails.changes.some(
+      (change) => change.field === 'details' && change.after === 'Physical count checked again',
+    ),
+  'close correction audit preserves reason and structured note details',
 );
 const afterCorrection = as(T, 'cashClosePreview', { date: '2020-01-03' });
 ok(
