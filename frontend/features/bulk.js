@@ -302,6 +302,7 @@ export function createBulk({ api, refresh, go }) {
 
     let done = 0;
     let skipped = 0;
+    const pendingApprovalIds = new Set();
 
     await busy(button, async () => {
       try {
@@ -325,6 +326,9 @@ export function createBulk({ api, refresh, go }) {
           skipped += data.skipped;
 
           data.created.forEach((created) => {
+            if (created.approvalStatus === 'PENDING' && typeof created.id === 'string') {
+              pendingApprovalIds.add(created.id);
+            }
             if (!S.vouchers.find((voucher) => voucher.id === created.id)) {
               S.vouchers.push(created);
             }
@@ -335,7 +339,7 @@ export function createBulk({ api, refresh, go }) {
         }
 
         $('#bprev').innerHTML =
-          `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Imported ${done} ${type === 'RECEIPT' ? 'cash receipts' : 'payments'}</h2>${skipped ? `<p class="muted">${skipped} already existed and were skipped.</p>` : ''}<div class="actions"><button class="btn primary" data-act="goreg">Open register</button><button class="btn" data-act="bulkagain">Import more</button></div></div>`;
+          `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Imported ${done} ${type === 'RECEIPT' ? 'cash receipts' : 'payments'}</h2>${pendingApprovalIds.size ? `<p role="status">${pendingApprovalIds.size} payment(s) need owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.</p>` : ''}${skipped ? `<p class="muted">${skipped} already existed and were skipped.</p>` : ''}<div class="actions"><button class="btn primary" data-act="goreg">Open register</button><button class="btn" data-act="bulkagain">Import more</button></div></div>`;
       } catch (error) {
         fail(error);
         $('#bprog').textContent =
