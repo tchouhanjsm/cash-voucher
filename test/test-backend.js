@@ -51,6 +51,17 @@ ok(
     approvalMigrationSheet.rows[1].slice(17, 21).every((value) => value === ''),
   'approval migration preserves historical voucher values and leaves new fields blank',
 );
+const vendorIdMigrationResult = approvalMigrationMock.migrateVoucherVendorIdField();
+ok(
+  vendorIdMigrationResult.includes('Added VendorID') &&
+    approvalMigrationSheet.rows[0][21] === 'VendorID',
+  'VendorID migration appends column V after the reviewed approval fields',
+);
+ok(
+  approvalMigrationSheet.rows[1][0] === 'legacy-approval-migration-id' &&
+    (approvalMigrationSheet.rows[1][21] || '') === '',
+  'VendorID migration preserves legacy vouchers and does not backfill their vendor IDs',
+);
 const approvalMigrationConflict = create();
 approvalMigrationConflict.props.OWNER_EMAIL = 'Owner@Test.com';
 approvalMigrationConflict.props.OWNER_PIN = '483921';
@@ -63,6 +74,18 @@ assert.throws(
   /R:U already contain a header or data/,
 );
 ok(true, 'approval migration refuses to overwrite occupied columns');
+const vendorIdMigrationConflict = create();
+vendorIdMigrationConflict.props.OWNER_EMAIL = 'Owner@Test.com';
+vendorIdMigrationConflict.props.OWNER_PIN = '483921';
+vendorIdMigrationConflict.setup();
+vendorIdMigrationConflict.sheets.Vouchers.rows[0] =
+  vendorIdMigrationConflict.sheets.Vouchers.rows[0].slice(0, 21);
+vendorIdMigrationConflict.sheets.Vouchers.rows[0][21] = 'Unrelated data';
+assert.throws(
+  () => vendorIdMigrationConflict.migrateVoucherVendorIdField(),
+  /column V already contains a header or data/,
+);
+ok(true, 'VendorID migration refuses to overwrite occupied column V');
 
 const retentionDayMs = 24 * 60 * 60 * 1000;
 function retentionFolder(name, ageDays) {
