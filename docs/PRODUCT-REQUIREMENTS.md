@@ -84,11 +84,9 @@ Keep the existing security and durability baseline accurate. Verify live deploym
 
 ### P1 — Daily cash close and physical reconciliation
 
-Continue as a design-only gate in `docs/DAILY-CASH-CLOSE-DESIGN.md`.
+The cash-impact policy and Daily Cash Close MVP are implemented in source and merged in PRs #110 and #111. The approved policy uses an explicit voucher-level `CashImpact` value: new vouchers require `CASH_IN`, `CASH_OUT`, or `NO_CASH`; `UNCLASSIFIED` is reserved for historical or unresolved records. Category values are editable suggestions only. Historical values are not backfilled, and unresolved active vouchers block final close.
 
-The owner approved a voucher-level `CashImpact` field policy on 13 October 2026: new vouchers require an explicit `CASH_IN`, `CASH_OUT`, or `NO_CASH` choice; `UNCLASSIFIED` is reserved for historical or unresolved records. Category values are non-binding suggestions only. New-voucher creators may classify; saved changes remain restricted to owner/manager edit permissions and require old/new audit values, actor, timestamp, and a reason. Historical records are not backfilled and will block a future final close while unresolved.
-
-This does not approve daily-close calculations or a reconciliation claim. The close workflow remains design-only until the other decisions in `docs/DAILY-CASH-CLOSE-DESIGN.md` are resolved, including period boundaries, opening cash, pending offline entries, close authority, variance handling, and post-close corrections.
+The MVP defines one property / MAIN drawer / calendar day in Asia/Kolkata, previous-day counted-cash carry-forward, a reasoned manual opening where a prior-day close is missing, traceable immutable snapshots, chronological finalization and attributed correction notes. These source features do not prove a live deployment, a verified backup/restore, or a real-world reconciliation. See `docs/DAILY-CASH-CLOSE-DESIGN.md` for the policy record and `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md` for the separately authorized migrations and release gates.
 
 ### P2 — Evidence and exception workflow
 
@@ -96,7 +94,7 @@ Potential next product requirements, subject to validation:
 
 - Make unresolved operational issues discoverable without forcing the owner to inspect every voucher.
 - Audit-log discoverability and traceability include structured transaction-lifecycle events, field-level old/new changes and reasons where applicable, plus cursor-based older-page loading. Filters/CSV cover loaded pages only. Confirm retention, tamper-evidence and durable audit-write requirements before claiming a complete financial audit trail.
-- Define approval thresholds and correction permissions from actual operating practice.
+- **Approval policy approved 13 October 2026:** new PAYMENT vouchers at or above INR 10,000 require approval by an existing owner/manager other than the creator. Pending/rejected or malformed approval states are excluded from approved payment totals and block final cash close until resolved. Rejection requires a reason; historical blank approval values are not backfilled. The coherent implementation batch is active on `feature/payment-approval-workflow` and is not yet merged.
 - Keep each exception explainable and linked to source records.
 
 Do not create automated fraud flags until duplicate rules, false-positive handling, override attribution, and review ownership are specified.
