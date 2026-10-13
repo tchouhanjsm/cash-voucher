@@ -66,15 +66,20 @@ function indexModuleEntrypoints() {
 
 function verifyContentSecurityPolicy() {
   const source = read('index.html');
-  const metaTags = [...source.matchAll(/<meta\b[^>]*>/gi)]
-    .map((match) => match[0])
-    .filter((tag) => /\bhttp-equiv\s*=\s*["']content-security-policy["']/i.test(tag));
+  const metaTags = [];
+
+  for (const match of source.matchAll(/<meta\\b[^>]*>/gi)) {
+    const tag = match[0];
+    if (/\\bhttp-equiv\\s*=\\s*["']content-security-policy["']/i.test(tag)) {
+      metaTags.push(tag);
+    }
+  }
 
   if (metaTags.length !== 1) {
     return ['CSP meta tag count: ' + metaTags.length + '.'];
   }
 
-  const contentMatch = metaTags[0].match(/\bcontent\s*=\s*"([^"]*)"/i);
+  const contentMatch = metaTags[0].match(/\\bcontent\\s*=\\s*"([^"]*)"/i);
   const expected = [
     "default-src 'self'",
     "base-uri 'self'",
@@ -95,19 +100,24 @@ function verifyContentSecurityPolicy() {
     return ['CSP does not match the approved directive allowlist.'];
   }
 
-  const inlineScripts = [...source.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script\s*>/gi)]
-    .filter((match) => !/\bsrc\s*=/.test(match[1]) && match[2].trim());
+  const inlineScripts = [];
+  for (const match of source.matchAll(/<script\\b([^>]*)>([\\s\\S]*?)<\\/script\\s*>/gi)) {
+    const attributes = match[1];
+    const body = match[2];
+    if (!/\\bsrc\\s*=/.test(attributes) && body.trim()) {
+      inlineScripts.push(match);
+    }
+  }
 
   if (inlineScripts.length) {
     return ['Inline executable scripts are not allowed in the app shell.'];
   }
-  if (/\s+on[a-z]+\s*=/i.test(source)) {
+  if (/\\s+on[a-z]+\\s*=/i.test(source)) {
     return ['Inline event handlers are not allowed in the app shell.'];
   }
 
   return [];
 }
-
 function serviceWorkerShell() {
   const source = read('sw.js');
   const match = source.match(/const\s+[^;]*\bF\s*=\s*\[((?:.|\n)*?)\];/s);
