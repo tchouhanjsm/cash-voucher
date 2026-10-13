@@ -3513,7 +3513,7 @@ with sync_playwright() as p:
     )
     audit_page.fill('#aud-q', 'voucher')
     check(
-        '4 malformed audit event(s) omitted from this response' in audit_page.locator('#aud-count').inner_text(),
+        '4 malformed audit event(s) omitted from loaded pages.' in audit_page.locator('#aud-count').inner_text(),
         'malformed-row disclosure persists after audit filters rerender the count status',
     )
 
