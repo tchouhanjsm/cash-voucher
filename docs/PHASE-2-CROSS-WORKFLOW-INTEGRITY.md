@@ -10,18 +10,19 @@ A single high-value payment must retain consistent identity and financial treatm
 
 ## Integration path now covered
 
-| Step | Actor | Required invariant |
-| --- | --- | --- |
-| Create a ₹10,000 PAYMENT | Manager | New high-value payment is PENDING; stable voucher ID and client ID persist. |
-| Read movement report | Owner | Voucher is visible as pending, but excluded from active payment totals. |
-| Approve payment | Owner (not creator) | Status and approval actor persist; audit event records the decision. |
-| Read movement report | Accountant | Approved voucher appears exactly once in the report total; pending count is zero. |
-| Preview cash close | Manager | Approved payment contributes to CASH_OUT; no approval blocker remains. |
-| Finalize cash close | Manager | Expected cash is correct, variance is zero in the fixture, and snapshot count is exact. |
-| Read saved close and audit | Owner | Snapshot retains voucher ID, number, amount and cash impact; approval and close events are attributable. |
+1. **Create a ₹10,000 PAYMENT — manager.** The new high-value payment must be PENDING and retain a stable voucher ID and client ID.
 
-The executable regression is in `test/test-backend.js` and runs through the standard `npm test` / `npm run test:flight` paths.
+2. **Read movement report — owner.** The voucher is visible as pending but excluded from active payment totals.
 
+3. **Approve payment — owner (not creator).** Status and approval actor persist; the audit event records the decision.
+
+4. **Read movement report — accountant.** The approved voucher appears exactly once in the report total; pending count is zero.
+
+5. **Preview cash close — manager.** The approved payment contributes to CASH_OUT; no approval blocker remains.
+
+6. **Finalize cash close — manager.** Expected cash is correct, fixture variance is zero, and the snapshot count is exact.
+
+7. **Read saved close and audit — owner.** The snapshot retains voucher ID, number, amount and cash impact; approval and close events are attributable.
 ## Existing policies preserved
 
 - New PAYMENT vouchers at or above ₹10,000 require an independent owner/manager approval.
