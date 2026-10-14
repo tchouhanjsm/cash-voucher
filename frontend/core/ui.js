@@ -245,4 +245,4 @@ export function emptyState({ title, description, action = '' }) {
 
 export const refreshBtn = '<button class="btn sm" type="button" data-act="refresh">↻ Refresh</button>';
 
-export { $, $ };
+export { $, $$ };
