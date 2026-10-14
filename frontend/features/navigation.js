@@ -363,7 +363,10 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       const last = focusable[focusable.length - 1];
       if (!first || !last) {
         event.preventDefault();
-      } else if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
+      } else if (
+        event.shiftKey &&
+        (document.activeElement === first || document.activeElement === panel)
+      ) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
