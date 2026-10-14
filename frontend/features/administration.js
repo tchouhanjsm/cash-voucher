@@ -1228,6 +1228,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     loadOlderAuditEvents,
     dataQualityScan,
     backupIntegrityScan,
+    retryBackupStatus: renderBackupStatus,
     account,
     handleSubmit,
     editVendor,
