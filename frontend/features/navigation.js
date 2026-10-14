@@ -274,6 +274,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     $('#mobileMoreBtn').setAttribute('aria-expanded', 'true');
     $('#navMorePanel').focus();
   }
+
   function go(view) {
     const requestedView = NAV.find((item) => item[0] === view);
     if (!requestedView || !requestedView[3]()) {
