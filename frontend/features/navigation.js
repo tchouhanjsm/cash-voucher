@@ -379,7 +379,10 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       ) {
         event.preventDefault();
         last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
+      } else if (
+        !event.shiftKey &&
+        (document.activeElement === last || document.activeElement === panel)
+      ) {
         event.preventDefault();
         first.focus();
       }
