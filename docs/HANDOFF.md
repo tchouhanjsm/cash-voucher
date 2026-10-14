@@ -26,7 +26,7 @@ Active PR: [#114 — Require independent approval for payments ≥ ₹10,000](ht
 
 - Single-property PWA backed by Google Apps Script, Google Sheets and Drive.
 - `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact, not the active entry point.
-- `frontend/core/` owns shared infrastructure; `frontend/features/` owns feature behavior; `backend/Code.gs` is the Apps Script API.
+- `frontend/core/` owns shared infrastructure; `frontend/features/` owns feature behavior; `backend/*.gs` is the Apps Script API.
 - Backend role checks, validation, financial totals and writes are authoritative. Hiding UI controls is not authorization.
 - Device-local offline queue entries are not centrally backed up until synchronized. Preserve legacy/recovery data; never auto-classify historical CashImpact.
 - Daily Cash Close exists in source (PR #111) and is immutable per business date, but this does not prove production deployment or live reconciliation.

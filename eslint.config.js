@@ -1,5 +1,23 @@
 const eslint = require('@eslint/js');
 const globals = require('globals');
+const fs = require('fs');
+const path = require('path');
+
+// Apps Script shares one global scope across backend/*.gs, so every top-level
+// declaration in one file is a legitimate global in the others.
+function backendGlobals() {
+  const dir = path.join(__dirname, 'backend');
+  const found = {};
+  for (const name of fs.readdirSync(dir).filter((file) => file.endsWith('.gs'))) {
+    const source = fs.readFileSync(path.join(dir, name), 'utf8');
+    for (const match of source.matchAll(
+      /^(?:async function|function|const|let|var) +([A-Za-z0-9_$]+)/gm,
+    )) {
+      found[match[1]] = 'writable';
+    }
+  }
+  return found;
+}
 
 const gasGlobals = {
   SpreadsheetApp: 'readonly',
@@ -125,13 +143,18 @@ module.exports = [
     languageOptions: {
       ecmaVersion: 'latest',
       sourceType: 'script',
-      globals: gasGlobals,
+      globals: { ...gasGlobals, ...backendGlobals() },
     },
     rules: {
       'no-console': 'off',
+      // Apps Script combines numbered .gs files into one global scope. The
+      // custom layout checker owns duplicate declaration detection; ESLint
+      // must not treat the configured cross-file globals as local redeclarations.
+      'no-redeclare': 'off',
       'no-unused-vars': [
         'warn',
         {
+          vars: 'local',
           args: 'after-used',
           argsIgnorePattern: '^_',
         },

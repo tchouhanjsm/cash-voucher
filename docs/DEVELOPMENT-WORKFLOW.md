@@ -36,7 +36,7 @@ Prefer a complete, coherent batch over one PR per small subtask. A batch can con
 - `frontend/main.js` is the composition root; it assembles shared core modules and feature controllers.
 - `frontend/core/` owns infrastructure and cross-cutting primitives.
 - `frontend/features/` owns feature behavior and feature-specific event listeners.
-- `backend/Code.gs` is the Apps Script API source; `backend/appsscript.json` is the deployment manifest.
+- `backend/*.gs` is the Apps Script API source; `backend/appsscript.json` is the deployment manifest.
 - Root `app.js` is retained as a legacy artifact but is not loaded by `index.html`.
 - `test/test-backend.js` uses the in-memory Google services mock. `test/e2e.py` runs browser journeys against `test/server.js`, not the production Web App.
 

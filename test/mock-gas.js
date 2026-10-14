@@ -1,8 +1,19 @@
-// Minimal in-memory mock of the Apps Script services used by backend/Code.gs
+// Minimal in-memory mock of the Apps Script services used by backend/*.gs
 const fs = require('fs'),
   vm = require('vm'),
   crypto = require('crypto'),
   path = require('path');
+
+// Apps Script loads every .gs file into one global scope, in file-name order.
+function backendSource() {
+  const dir = path.join(__dirname, '../backend');
+  return fs
+    .readdirSync(dir)
+    .filter((name) => name.endsWith('.gs'))
+    .sort()
+    .map((name) => fs.readFileSync(path.join(dir, name), 'utf8'))
+    .join('\n');
+}
 function create() {
   const sheets = {},
     propsStore = {},
@@ -152,7 +163,7 @@ function create() {
   };
   vm.createContext(ctx);
   vm.runInContext(
-    fs.readFileSync(path.join(__dirname, '../backend/Code.gs'), 'utf8') +
+    backendSource() +
       '\n;this.__api={setup,doPost,PERMS,migrateVoucherApprovalFields,migrateVoucherVendorIdField,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
     ctx,
   );

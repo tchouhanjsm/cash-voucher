@@ -157,10 +157,10 @@ PR #67 adds browser coverage for owner Settings data-quality results and backup-
 ## Post-PR #67 / local release gate update — 10 October 2026
 
 - Verified Git baseline: `628f691fe9e4353cc6b701bd57c95c3e169aa495` (`main`, PR #67 merge).
-- Owner-provided local checks on Node `v20.20.2` passed: `npm run check`, including 110 backend checks, backup orchestration/integrity, CSV export safety, dependency-audit tests and PR quality gate. ESLint reports one existing warning: `backupData_` is defined but unused in `backend/Code.gs`.
+- Owner-provided local checks on Node `v20.20.2` passed: `npm run check`, including 110 backend checks, backup orchestration/integrity, CSV export safety, dependency-audit tests and PR quality gate. ESLint reports one existing warning: `backupData_` is defined but unused in `backend/*.gs`.
 - Owner-provided Browser E2E passed: **128 checks, 0 failures**, using an isolated Python virtual environment with Playwright `1.52.0` and Chromium installed.
 - `git diff --check` reported no issues. The only reported untracked file is `docs/AI-ENGINEERING-PROTOCOL.md`; keep it local and uncommitted.
-- `npx clasp status` lists only `backend/appsscript.json` and `backend/Code.gs`. `npx clasp versions` reports four numbered versions; version 4 is named `Cash Voucher reviewed backend release`. The configured `config.js` Web App URL matches the version-4 deployment ID, and a separate `@HEAD` deployment exists.
+- `npx clasp status` lists only `backend/appsscript.json` and `backend/*.gs`. `npx clasp versions` reports four numbered versions; version 4 is named `Cash Voucher reviewed backend release`. The configured `config.js` Web App URL matches the version-4 deployment ID, and a separate `@HEAD` deployment exists.
 - These checks establish deployment ID alignment, not that current `main` is deployed. Owner confirmation in the Apps Script editor of the intended project, deployment, Sheet binding and Script Properties remains outstanding. Do not run `clasp push`, `clasp deploy`, or `setup()` until the owner confirms the target and explicitly authorizes release.
 - npm still reports three high-severity dependency findings; do not use `npm audit fix --force`. Live role/receipt authorization, a real scheduled backup, and a witnessed restore into a separate recovery Sheet/folder remain unverified.
 

@@ -22,20 +22,20 @@ The meta CSP allowlist intentionally covers same-origin PWA assets, data/blob re
 
 Do not begin the pilot until the owner confirms the release target, required migrations are verified, an isolated restore has succeeded, and the app has been tested on the operating devices. Record no-activity days explicitly. Check local outbox/recovery queues on every operating device; a single browser's empty queue is not a system-wide guarantee.
 
-- [ ] **Day 1:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 2:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 3:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 4:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 5:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 6:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 7:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 8:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 9:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 10:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 11:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 12:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 13:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
-- [ ] **Day 14:** Date ___; operator ___; server voucher check ___; all-device queue check ___; Book balance / physical count / close ___; variance or incident ___; fallback ___; owner/manager sign-off ___.
+- [ ] **Day 1:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 2:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 3:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 4:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 5:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 6:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 7:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 8:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 9:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 10:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 11:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 12:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 13:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
+- [ ] **Day 14:** Date `___`; operator `___`; server voucher check `___`; all-device queue check `___`; Book balance / physical count / close `___`; variance or incident `___`; fallback `___`; owner/manager sign-off `___`.
 
 **Pause criteria:** authorization failure, missing/duplicated voucher, unresolved active `UNCLASSIFIED` voucher, missing receipt, unexplained cash variance, failed backup, or unrecoverable offline entry. Preserve evidence and queued data; switch to the previously approved fallback process and get owner approval before resuming. At day 14, record unresolved incidents and obtain an explicit go/no-go decision. No pilot is claimed by this source PR.
 
@@ -43,7 +43,7 @@ Do not begin the pilot until the owner confirms the release target, required mig
 
 | Area                                                        | Current status        | Evidence / limitation                                                                                    |
 | ----------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
-| Backend validation, schema checks and number reconciliation | Implemented           | Current `backend/Code.gs` and mock backend suite; not a live Google-account test                         |
+| Backend validation, schema checks and number reconciliation | Implemented           | Current `backend/*.gs` and mock backend suite; not a live Google-account test                            |
 | PIN hash and session protection                             | Implemented           | HMAC-SHA256 with per-user salt + script property pepper; salt rotation invalidates old session tokens    |
 | Login/PIN-change attempt throttling                         | Implemented in source | PR #32 is merged and post-merge CI passed; not deployed to Apps Script                                   |
 | Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                        |
@@ -112,7 +112,7 @@ PR #67 adds browser assertions for the data-quality report's user-facing scope d
 ## PR #67 merged — updated local evidence (10 October 2026)
 
 - Node `v20.20.2` satisfies the repository's declared Node 20–22 range.
-- Owner-provided `npm run check` passed, including 110 backend checks and the backup, integrity, CSV, dependency-audit and PR-quality suites. One existing ESLint warning remains for unused `backupData_` in `backend/Code.gs`.
+- Owner-provided `npm run check` passed, including 110 backend checks and the backup, integrity, CSV, dependency-audit and PR-quality suites. One existing ESLint warning remains for unused `backupData_` in `backend/*.gs`.
 - Owner-provided Browser E2E passed **128 checks, 0 failures** with Playwright `1.52.0` and Chromium.
 - `git diff --check` passed. Preserve the untracked `docs/AI-ENGINEERING-PROTOCOL.md`; do not commit it.
 - Clasp reports four numbered versions. The configured URL matches version 4's deployment ID; a separate `@HEAD` deployment exists. This is not evidence that the latest `main` source is deployed.
