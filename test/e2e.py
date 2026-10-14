@@ -1601,6 +1601,8 @@ with sync_playwright() as p:
         created = payload.get('data', {}).get('created', [])
         if request_data.get('action') == 'createVouchers' and created:
             created[0]['no'] = success_number_payload
+            # createVouchers responses are pushed into the client cache before a later bootstrap normalization.
+            created[0]['date'] = {'toString': None, 'valueOf': None}
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -1615,6 +1617,20 @@ with sync_playwright() as p:
         and success_number_payload in page.locator('#nres').inner_text()
         and not page.evaluate('window.__xssFired === true'),
         'server-returned voucher number remains inert text in save confirmation',
+    )
+    page.evaluate('window.print = () => {}')
+    page_errors_before_print = sum(message.startswith('PAGEERR ') for message in logs)
+    page.locator('#nres [data-act=print]').first.click()
+    page.wait_for_function(
+        "document.querySelector('#printArea .pv-meta')?.innerText.includes('Date unavailable')"
+    )
+    check(
+        'Date unavailable' in page.locator('#printArea .pv-meta').inner_text()
+        and success_number_payload in page.locator('#printArea').inner_text()
+        and page.locator('#printArea img, #printArea svg').count() == 0
+        and not page.evaluate('window.__xssFired === true')
+        and sum(message.startswith('PAGEERR ') for message in logs) == page_errors_before_print,
+        'malformed API date uses a safe print fallback without crashing or activating hostile voucher text',
     )
     page.unroute('**/api?*', tamper_created_voucher_number)
     check(
