@@ -5,16 +5,10 @@
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": [
-    "standalone",
-    "minimal-ui"
-  ],
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#1f3a4d",
   "theme_color": "#1f3a4d",
-  "categories": [
-    "business",
-    "finance"
-  ],
+  "categories": ["business", "finance"],
   "icons": [
     {
       "src": "icons/icon-192.png",
