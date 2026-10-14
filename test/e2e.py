@@ -362,6 +362,61 @@ with sync_playwright() as p:
         'cash-close snapshot and correction text render literally without creating executable markup',
     )
     page.unroute('**/api?*', inject_cash_close_markup)
+
+    # Malformed cash-close preview shapes must fail closed and clear stale writable state.
+    preview_shape_case = {'mode': 'null-unclassified-row'}
+
+    def tamper_cash_close_preview_shape(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'cashClosePreview' or request_data.get('date') != '2020-01-03':
+            route.continue_()
+            return
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {})
+        if preview_shape_case['mode'] == 'null-unclassified-row':
+            data['unclassified'] = [None]
+        elif preview_shape_case['mode'] == 'coercion-hostile-count':
+            data['activeVoucherCount'] = {'toString': None, 'valueOf': None}
+        elif preview_shape_case['mode'] == 'null-history-row':
+            data['recentCloses'] = [None]
+        payload['data'] = data
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    page.route('**/api?*', tamper_cash_close_preview_shape)
+    for mode, label in (
+        ('null-unclassified-row', 'null unclassified row'),
+        ('coercion-hostile-count', 'coercion-hostile voucher count'),
+        ('null-history-row', 'null recent-close row'),
+    ):
+        preview_shape_case['mode'] = mode
+        page.fill('#cc-date', '2020-01-03')
+        with page.expect_response(
+            lambda response: '/api?' in response.url
+            and json.loads(response.request.post_data or '{}').get('action') == 'cashClosePreview'
+        ):
+            page.click('[data-act=closePreview]')
+        page.wait_for_selector('#cc-results .cc-error[role=alert]')
+        check(
+            'invalid cash-close preview' in page.locator('#cc-results').inner_text().lower()
+            and page.locator('#cc-create').count() == 0
+            and page.locator('#cc-closed-report').count() == 0,
+            label + ' fails closed without a stale or writable preview',
+        )
+    page.unroute('**/api?*', tamper_cash_close_preview_shape)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'cashClosePreview'
+    ):
+        page.click('[data-act=closePreview]')
+    page.wait_for_selector('#cc-counted')
+    check(
+        page.locator('#cc-create').count() == 1
+        and 'invalid cash-close preview' not in page.locator('#cc-results').inner_text().lower(),
+        'cash-close preview recovers after malformed response is removed',
+    )
+    page.fill('#cc-date', '2020-01-02')
+    page.unroute('**/api?*', inject_cash_close_markup)
     page.fill('#cc-date', '2020-01-02')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-counted')
