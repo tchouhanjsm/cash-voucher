@@ -1868,6 +1868,67 @@ ok(
     afterCorrection.data.close.corrections.length === 1,
   'correction does not rewrite close total',
 );
+// A saved financial snapshot is immutable evidence: malformed rows or mismatched membership must fail closed.
+const closeSheet = g.sheets.CashCloses;
+const closeHeaders = closeSheet.rows[0];
+const closeColumn = (name) => closeHeaders.indexOf(name);
+const dayThreeRow = closeSheet.rows.find(
+  (row) => row[closeColumn('CloseID')] === dayThree.data.id,
+);
+ok(!!dayThreeRow, 'saved cash-close row is available for integrity regressions');
+const originalCloseFields = {
+  IncludedVouchers: dayThreeRow[closeColumn('IncludedVouchers')],
+  IncludedVoucherIds: dayThreeRow[closeColumn('IncludedVoucherIds')],
+  IncludedVoucherCount: dayThreeRow[closeColumn('IncludedVoucherCount')],
+};
+const savedVoucherSnapshot = JSON.parse(originalCloseFields.IncludedVouchers);
+const savedVoucherIds = JSON.parse(originalCloseFields.IncludedVoucherIds);
+function assertCorruptCashClose(changes, message) {
+  const originals = {};
+  Object.keys(changes).forEach((field) => {
+    originals[field] = dayThreeRow[closeColumn(field)];
+    dayThreeRow[closeColumn(field)] = changes[field];
+  });
+  let result;
+  try {
+    result = as(T, 'cashClosePreview', { date: '2020-01-03' });
+  } finally {
+    Object.keys(originals).forEach((field) => {
+      dayThreeRow[closeColumn(field)] = originals[field];
+    });
+  }
+  ok(!result.ok && result.code === 'CASH_CLOSE_DATA', message);
+}
+const incompleteSnapshot = [...savedVoucherSnapshot, { id: 'incomplete-snapshot-row' }];
+assertCorruptCashClose(
+  {
+    IncludedVouchers: JSON.stringify(incompleteSnapshot),
+    IncludedVoucherIds: JSON.stringify([...savedVoucherIds, 'incomplete-snapshot-row']),
+    IncludedVoucherCount: savedVoucherSnapshot.length + 1,
+  },
+  'saved close rejects an incomplete voucher row instead of silently filtering it',
+);
+assertCorruptCashClose(
+  { IncludedVoucherIds: JSON.stringify([...savedVoucherIds.slice(0, -1), null]) },
+  'saved close rejects non-string voucher IDs instead of silently filtering them',
+);
+assertCorruptCashClose(
+  { IncludedVoucherIds: JSON.stringify(savedVoucherIds.map((id, index) => index === 0 ? 'mismatched-id' : id)) },
+  'saved close rejects voucher-ID lists that do not match snapshot order and identity',
+);
+assertCorruptCashClose(
+  { IncludedVoucherCount: savedVoucherSnapshot.length + 1 },
+  'saved close rejects a stored voucher count that differs from its snapshot',
+);
+const duplicateSnapshot = [...savedVoucherSnapshot];
+duplicateSnapshot[1] = { ...duplicateSnapshot[0] };
+assertCorruptCashClose(
+  {
+    IncludedVouchers: JSON.stringify(duplicateSnapshot),
+    IncludedVoucherIds: JSON.stringify(duplicateSnapshot.map((item) => item.id)),
+  },
+  'saved close rejects duplicate voucher IDs in an otherwise shape-valid snapshot',
+);
 const futureClose = as(T, 'cashClosePreview', { date: '2999-01-01' });
 ok(!futureClose.ok && futureClose.code === 'VALIDATION', 'future close date rejected');
 
