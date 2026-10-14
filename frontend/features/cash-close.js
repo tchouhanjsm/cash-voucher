@@ -532,7 +532,9 @@ export function createCashClose({ api }) {
     try {
       const serverPreview = await api('cashClosePreview', payload);
       if (!isCashClosePreview(serverPreview, date)) {
-        throw new Error('The server returned an invalid cash-close preview. Refresh and review before saving.');
+        throw new Error(
+          'The server returned an invalid cash-close preview. Refresh and review before saving.',
+        );
       }
       try {
         const localRecords = await offlineQueue.list();
