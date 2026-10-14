@@ -40,6 +40,7 @@ PR #129 merged. Audit appends remain best-effort; Script Properties stores a deg
 Existing source already contains stable client IDs, server idempotency, IndexedDB owner binding, status/lease claims, retry/release, failed-record export, recovery validation and BroadcastChannel announcements. Trace these mechanisms end to end before changing code.
 
 Acceptance:
+
 1. Simulated successful server persistence followed by a lost response; retry with same client ID yields one voucher.
 2. Lost acknowledgement/interrupted upload keeps the record recoverable; retry remains idempotent.
 3. A second tab cannot acknowledge work owned by another lease; an expired lease can be reclaimed safely.
