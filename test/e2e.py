@@ -3845,7 +3845,7 @@ with sync_playwright() as p:
     }
 
     def inject_malformed_audit_rows(route):
-        nonlocal audit_failure_once, backup_status_failure_once
+        global audit_failure_once, backup_status_failure_once
         try:
             request_data = json.loads(route.request.post_data or '{}')
         except json.JSONDecodeError:
