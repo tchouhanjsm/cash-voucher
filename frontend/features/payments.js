@@ -603,6 +603,27 @@ export function createPayments({ api, refresh }) {
     }
   }
 
+  async function supportQueueSummary() {
+    const ownerKey = queueOwnerKey();
+    if (!ownerKey) return { available: false };
+
+    try {
+      const records = await offlineQueue.list();
+      const owned = records.filter(
+        (record) => record && typeof record === 'object' && record.ownerKey === ownerKey,
+      );
+      return {
+        available: true,
+        pending: owned.filter((record) => record.status === 'pending').length,
+        sending: owned.filter((record) => record.status === 'sending').length,
+        failed: owned.filter((record) => record.status === 'failed').length,
+      };
+    } catch {
+      // Diagnostics should report the summary as unavailable, never include raw storage errors.
+      return { available: false };
+    }
+  }
+
   async function flushOutbox() {
     const ownerKey = queueOwnerKey();
     if (flushing || S.offlineMode || !S.token || !ownerKey || !navigator.onLine)
@@ -974,6 +995,7 @@ export function createPayments({ api, refresh }) {
     clearReceipt,
     removeRow,
     showBanner,
+    supportQueueSummary,
     flushOutbox,
     exportOutbox,
     importOutbox,
