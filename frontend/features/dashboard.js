@@ -209,7 +209,14 @@ export function createDashboard() {
   }`;
 
     $('#view').innerHTML =
-      head(can('viewAll') ? 'Dashboard' : 'My Dashboard', refreshBtn) +
+      head(
+        can('viewAll') ? 'Dashboard' : 'My Dashboard',
+        `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
+        {
+          section: 'Work',
+          description: 'Review recorded payment and receipt activity for the selected period.',
+        },
+      ) +
       `
   <div class="seg">${[
     ['7d', 'Last 7 days'],
