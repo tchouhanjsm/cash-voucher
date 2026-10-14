@@ -5,6 +5,20 @@
 
 This is a single-property cash-voucher PWA today. The attached memo's hosted fintech/multi-property concept is a strategic scenario, not an agreed requirement. The product-level scope, user outcomes, candidate measures, and owner decisions are consolidated in [Product Requirements Baseline](PRODUCT-REQUIREMENTS.md).
 
+## Current founder plan — Phase 1 audit (14 October 2026)
+
+Live baseline: `main` at `255d78ccb6a21b204d432221489114ccf514d333`; PR #126 merged; no open PRs were returned by the live GitHub search. The source-based audit and evidence classification are in [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md), with actionable work packages in [Backlog](BACKLOG.md).
+
+**Current priorities are outcome-based, not PR-number-based:**
+
+1. Cross-workflow integrity: trace role-based entry → approval → register → reports → close → audit, and fix root causes across modules in one coherent PR.
+2. Operational release proof: verify live deployment/permissions and witness backup/isolated restore only after explicit owner authorization.
+3. Product UX completion: validate major screens as one system on actual operating devices.
+4. Security/data-integrity closure: complete the active sink and API authorization reviews.
+5. Measured performance and repository hygiene: secret/history scan, dependency-exception review and seeded workload baselines.
+
+Historical PR notes below are retained as history, not a reliable live status feed. Verify current PR state, branch and exact SHA before acting. No source merge implies production deployment.
+
 ## 1. Code-review findings reconciled against current v2
 
 | Finding from the supplied review                                                           | Current evidence                                                                                                                                                                                                                                   | Disposition                                                                                                                                                                                                                                                                                                        |
@@ -86,7 +100,7 @@ Other rule-based exception flags—duplicates, unusual first payments, off-hours
 
 ### P3 — Finance and accountant workflow
 
-**Slice 4 implementation is included in active PR #114; owner review and exact-head checks remain open.** It adds a least-privilege `accountant` role with server-authorized read-only access to the generic Recorded Movement Report and CSV. It also surfaces the existing stable VendorID, stores it on new vouchers when a unique case-insensitive exact vendor-name match exists, and includes it in report CSV. Historical rows are not backfilled; blank IDs are linked only by an exact unambiguous vendor-master name match and the report discloses unresolved rows. The next contained slice in the same PR scopes ambiguous-versus-unmatched VendorID exception counts to the selected report rows and makes duplicate-name ambiguity explicit in the accountant UI; it does not add fuzzy matching, backfill, tax rules or destination-specific accounting semantics.
+**Historical status note:** PR #114 was previously described as active. The live open-PR search on 14 October 2026 returned no open PRs; verify its final state from GitHub PR history before treating this slice as pending. It adds a least-privilege `accountant` role with server-authorized read-only access to the generic Recorded Movement Report and CSV. It also surfaces the existing stable VendorID, stores it on new vouchers when a unique case-insensitive exact vendor-name match exists, and includes it in report CSV. Historical rows are not backfilled; blank IDs are linked only by an exact unambiguous vendor-master name match and the report discloses unresolved rows. The next contained slice in the same PR scopes ambiguous-versus-unmatched VendorID exception counts to the selected report rows and makes duplicate-name ambiguity explicit in the accountant UI; it does not add fuzzy matching, backfill, tax rules or destination-specific accounting semantics.
 
 This is an operational source-voucher export, **not** a destination-certified Tally/Zoho import, general ledger, tax report, or reconciliation certificate. The actual accounting product/version, import mapping, required tax fields, and accountant-approved sample remain unresolved. Do not add GSTIN/GST, HSN/SAC or TDS behavior until the owner and qualified accountant define those requirements.
 
@@ -308,10 +322,14 @@ PR #124 merged at `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`. Its tested head `f
 
 PR #125 merged at `6dd53d3b927f184ceda8fb14916367c63199ae2d`. Exact tested head `4e79f8bf1cc8a2c4672aebf7cc87215debb35314` passed CI, Browser E2E (320 checks) and Full Flight Test (251 backend, 38 contrast and 320 browser checks). Malformed exception counters are rejected with a retryable error instead of crashing the report or silently hiding a warning.
 
-## Current engineering sprint — Daily Cash Close preview response contract (14 October 2026)
+## Completed engineering batch — PR #126 Daily Cash Close preview response contract (14 October 2026)
 
 **Finding:** the active `frontend/features/cash-close.js` renderer consumed `cashClosePreview` data without validating the response envelope or nested arrays. Null issue/history rows can throw inside renderers, object-valued count fields can throw during string conversion, and the refresh error handler kept previous `data` assigned.
 
 **Outcome:** validate open/closed response variants, dates, flags, finite amounts, safe counts, issue-row fields, close snapshots, ID/count alignment and correction/history records before rendering. Clear prior preview state when refresh begins. Invalid data shows a retryable error and prevents Save until a valid preview returns. Browser E2E covers null issue rows, an object-valued count and a null recent-history row, plus normal-response recovery.
 
 **Boundaries:** frontend response integrity only; no server calculation, accounting rule, backend/API contract, schema, saved data, authorization or deployment changes. Independent live release and device/accessibility gates remain open.
+
+## Phase 1 audit correction — 14 October 2026
+
+The live audit supersedes stale “current sprint” and “active PR” wording where it conflicts with current GitHub state. PR #126 is merged. Its tested PR head passed CI, Browser E2E (325 checks) and Full Flight Test; post-merge CI passed on main SHA `255d78ccb6a21b204d432221489114ccf514d333`. These results do not close live deployment, backup/restore, device, accessibility or pilot gates. See [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md).

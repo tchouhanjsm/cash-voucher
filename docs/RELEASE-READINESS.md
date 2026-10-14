@@ -1,10 +1,12 @@
 # Release Readiness
 
+**Reviewed:** 14 October 2026. **Source baseline:** `255d78ccb6a21b204d432221489114ccf514d333` (PR #126 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for current evidence classification and ranked work packages.
+
 **Status: not verified as production-ready.** This document tracks operational release gates, not the latest source SHA or routine PR history. Verify the current `main` commit and current deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified.
 
-## Current go-live gates — 13 October 2026
+## Current go-live gates — reviewed 14 October 2026
 
-PR #111 is merged to source at `6092152c64adff084abfda5407056dac9401b5e9`. Its Daily Cash Close source is **not proof of live deployment**; after a verified backup and owner-authorized release, the guarded schema steps remain `migrateCashImpactField()` if needed, then `migrateDailyCashCloseSchema()`. Verify both new tabs and unchanged voucher row counts before publishing.
+PR #111 is merged to source at `6092152c64adff084abfda5407056dac9401b5e9`; PR #126 is also merged on current main. Daily Cash Close source is **not proof of live deployment**; after a verified backup and owner-authorized release, the guarded schema steps remain `migrateCashImpactField()` if needed, then `migrateDailyCashCloseSchema()`. Verify both new tabs and unchanged voucher row counts before publishing.
 
 The Dashboard already displays **Book balance**. It is a recorded-voucher projection (global Settings opening balance + active receipts − active payments), not a physical drawer count, bank balance, or general ledger. Daily Cash Close is a separate, immutable physical-cash reconciliation.
 

@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `6dd53d3b927f184ceda8fb14916367c63199ae2d` (main after PR #125; next batch validates Daily Cash Close preview responses)
+**Latest merged review baseline:** `255d78ccb6a21b204d432221489114ccf514d333` (main after PR #126; Phase 1 continues the full sink-by-sink audit)
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -339,3 +339,7 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 - **Boundary fix:** validate the open and closed response variants, required fields, dates, booleans, finite money/count values, issue rows, saved-close snapshot IDs/count and correction/history rows before assigning the response to the view. Reset prior preview state at refresh start; malformed responses render a retryable error and provide no Save control.
 - **Regression:** Browser E2E removes the required unclassified list, injects a null issue row, supplies a JSON object with non-callable `toString`/`valueOf`, and injects a null recent-history row. Each response must fail closed without a stale closed report or Save action, then recover when the normal response is restored.
 - This is targeted response-integrity and rendering resilience, not full XSS certification or proof of live deployment, backup restore, all HTML sinks or accessibility conformance.
+
+## Phase 1 review status — 14 October 2026
+
+PR #126 adds targeted Daily Cash Close preview response validation; see the section above for its exact scope. The complete active HTML/DOM sink inventory, live authorization, secret/history scan, real backup/restore and device validation remain open. See `docs/PHASE-1-REPOSITORY-AUDIT.md`; do not treat this incremental audit as a security certification.

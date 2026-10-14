@@ -2,17 +2,26 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `6dd53d3b927f184ceda8fb14916367c63199ae2d` (PR #125 merge)  
-**Current batch:** Daily Cash Close preview response-contract validation, branch `security/cash-close-preview-contract-2026-10-14`  
+**Verified `main` SHA:** `255d78ccb6a21b204d432221489114ccf514d333` (PR #126 merge)  
+**Current phase:** Phase 1 — repository and operational-readiness audit; branch `phase-1/repository-audit-2026-10-14`  
+**Audit:** [`docs/PHASE-1-REPOSITORY-AUDIT.md`](PHASE-1-REPOSITORY-AUDIT.md)  
 **Rule:** GitHub PR metadata and exact-head workflow results are authoritative. No merge or production deployment without owner authorization.
 
-## Current phase — Daily Cash Close preview response contract
+## Previous completed batch — Daily Cash Close preview response contract
 
 PR #125 merged at `6dd53d3b927f184ceda8fb14916367c63199ae2d`; tested head `4e79f8bf1cc8a2c4672aebf7cc87215debb35314` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38550514761), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38550514690) (320 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38550514643) (251 backend, 38 contrast, 320 browser checks).
 
 This batch validates `cashClosePreview` response shapes and nested records before assigning view state. Malformed issue/history rows and coercion-hostile count fields must fail closed with a retryable error; a failed refresh must clear prior preview data so no stale Save action is available. This is a client boundary change, not a cash calculation or backend/API contract change.
 
 CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. Live Apps Script authorization/deployment, scheduled backup, isolated restore, physical-device/offline and assistive-technology checks remain separate release gates.
+
+## Most recently completed — PR #126: Daily Cash Close preview response validation
+
+PR #126 merged at `255d78ccb6a21b204d432221489114ccf514d333`. PR-head CI, Browser E2E (325 checks) and Full Flight Test passed on tested head `6c58dd1ec9913e7bffd2611caf9c11af4b6846cd`. The post-merge main CI run also passed on the exact main SHA. This does not prove production deployment or live operational readiness.
+
+## Phase 1 audit findings
+
+No PRs are currently open. Source-based audit findings and the prioritized work packages are recorded in `docs/PHASE-1-REPOSITORY-AUDIT.md`; the actionable backlog is in `docs/BACKLOG.md`. Priority is cross-workflow integrity, operational proof, UX completion, security closure and measured performance—not another isolated tweak.
 
 ## Most recently completed — PR #125: Recorded Movement Report summary-count guard
 
