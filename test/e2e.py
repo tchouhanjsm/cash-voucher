@@ -54,6 +54,7 @@ with sync_playwright() as p:
     browser = p.chromium.launch()
     context = browser.new_context(
         viewport={'width': 390, 'height': 800},
+        color_scheme='light',
         accept_downloads=True,
     )
     page = context.new_page()
