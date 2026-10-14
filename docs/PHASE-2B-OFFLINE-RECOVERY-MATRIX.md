@@ -1,8 +1,8 @@
 # Phase 2B — Offline Save and Recovery Matrix
 
-**Base:** `main` at `86c8e2bae740e5e5f09dabd18e6b0d035d700bf6` (PR #130 merge)
-**Working branch:** `phase-2b/online-ambiguous-save-recovery-2026-10-14`
-**Status:** In implementation; this PR closes the direct online-save ambiguity gap, not the entire recovery phase.
+**Base:** `main` at `86c8e2bae740e5e5f09dabd18e6b0d035d700bf6` (PR #130 merge)  
+**Working branch:** `phase-2b/online-ambiguous-save-recovery-2026-10-14`  
+**Status:** In implementation; this PR closes the direct online-save ambiguity gap, not the entire recovery phase.  
 **Release boundary:** Mock backend and browser tests unless separately authorized live verification is documented.
 
 ## Business outcome
@@ -17,27 +17,57 @@ The uncovered direct-entry seam was different: when an online `createVouchers` r
 
 ## Current runtime slice — direct online save ambiguity
 
-Acceptance criteria:
+### Lost response after server persistence
 
-1. A test server commits a voucher and then drops the direct online response. The same entry is durably queued and retried using the original client ID.
-2. A test server commits a voucher and returns malformed JSON. The frontend treats the result as ambiguous, queues the unchanged entry, and safely retries the same client ID.
-3. A successful retry removes the queued record only after the server responds, shows an explicit saved-and-synchronized result, and produces exactly one Register row.
-4. If online retry cannot confirm all entries, the app keeps them in the account-bound queue and states that the result is pending or needs review. It must tell the operator not to enter the uncertain item again.
-5. Known validation/conflict errors are not converted into ambiguous-success recovery; permanent rejections retain the existing review/export flow.
-6. CI, Browser E2E and Full Flight Test pass on the same exact final PR head SHA.
+A test server commits a voucher and then drops the direct online response. The same entry must be durably queued and retried using the original client ID.
+
+Required evidence: browser E2E, server request counters, exactly one Register row, and no remaining outbox record after confirmation.
+
+### Malformed response after server persistence
+
+A test server commits a voucher and returns malformed JSON. The frontend must treat the result as ambiguous, queue the unchanged entry, and safely retry the same client ID.
+
+Required evidence: browser E2E, response-fault counter, exactly one Register row, and no remaining outbox record after confirmation.
+
+### Operator-visible outcome
+
+A successful retry removes the queued record only after the server responds, shows an explicit saved-and-synchronized result, and produces exactly one Register row. If the retry cannot confirm every entry, the app keeps the account-bound queue and states that the result is pending or needs review. It must tell the operator not to enter an uncertain item again.
+
+Known validation/conflict errors must retain the existing rejection/review workflow. They must not be silently reclassified as ambiguous-success recovery.
+
+CI, Browser E2E and Full Flight Test must pass on the same exact final PR head SHA.
 
 ## Remaining recovery matrix
 
-| Scenario | Required behavior | Evidence still needed |
-|---|---|---|
-| Acknowledgement/storage transaction fails after server success | Preserve the queue item; retry is idempotent and lease recovery does not duplicate the voucher | Dedicated acknowledgement fault injection and queue-state assertions |
-| Lease owner disappears | Expired sending lease is reclaimable without data loss | Existing stale-lease E2E plus acknowledgement-failure recovery |
-| Session expires mid-upload | Do not mark as permanent rejection; preserve item for sign-in/retry | Explicit session-expiry fault injection |
-| Account or endpoint changes | No record uploads under another account binding; other-account records remain untouched | Existing account-binding E2E plus endpoint-switch regression |
-| Validation/conflict rejection | Entry becomes review-required, stops auto-retry, and can be exported before removal | Existing poison-entry and healthy-neighbor E2E |
-| Transient server/network error | Release unprocessed entries to pending; expose recovery state | Fault-injected multi-entry partial failure |
-| Historical missing CashImpact | Preserve for export/re-entry; never infer a value | Existing regression; no data mutation |
-| Retried financial outcome | Voucher identity, approval, CashImpact, report and close treatment remain consistent | Existing cross-workflow test plus recovered-entry assertion |
+### Acknowledgement/storage transaction failure
+
+Preserve the queue item after server success. A later idempotent retry and lease recovery must not duplicate the voucher.
+
+Required evidence: dedicated acknowledgement fault injection and queue-state assertions.
+
+### Stale session during synchronization
+
+Do not mark the item as a permanent rejection. Preserve it for sign-in/retry.
+
+Required evidence: explicit session-expiry fault injection.
+
+### Account or endpoint changes
+
+No record uploads under another account binding; other-account records remain untouched.
+
+Required evidence: existing account-binding E2E plus endpoint-switch regression.
+
+### Permanent and transient failures
+
+Validation/conflict rejection must become review-required, stop automatic retry and retain the export-before-removal flow. Transient server/network errors must release unprocessed entries to pending and expose recovery state.
+
+Required evidence: existing poison-entry/healthy-neighbor E2E plus a fault-injected multi-entry partial failure.
+
+### Historical CashImpact and financial outcome
+
+Historical entries missing CashImpact remain available for export/re-entry; never infer a value. Retried vouchers preserve identity, approval, CashImpact, report and close treatment.
+
+Required evidence: existing regressions and the cross-workflow test tied to the recovered voucher.
 
 ## Non-goals
 
