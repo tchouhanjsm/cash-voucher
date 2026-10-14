@@ -16,6 +16,8 @@ The same PR also implements the next Founder Mode slice: least-privilege read-on
 
 Active PR: [#114 — Require independent approval for payments ≥ ₹10,000](https://github.com/tchouhanjsm/cash-voucher/pull/114) on `feature/payment-approval-workflow`. It batches approval enforcement, review UI, approval-aware totals/cash close, accountant access/export, VendorID persistence/migration, regression tests and release/domain docs. Owner review and merge remain required; do not deploy or run migrations from the PR.
 
+**Next development slice included in the same PR:** accountant report identity exceptions are now scoped to selected source rows. A duplicate vendor name is counted as ambiguous only when a selected row actually uses it; genuinely unmatched names remain a separate count, and the UI explicitly tells the accountant to reconcile ambiguous names manually. No fuzzy matching, historical backfill or tax mapping is introduced.
+
 ## Last completed — PR #113
 
 [PR #113: Add structured audit events and paginated audit history](https://github.com/tchouhanjsm/cash-voucher/pull/113) merged at `34589cbf708dbcba4a5e731b34e77c56e9a63cba`. Exact tested PR head `612c4d029c766dca0d57b2a68b3b1f7d4204c334` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38397780126), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38397780101) (**276 checks, 0 failures**), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38397780332) on the same head. Audit writes remain best-effort and are not a transactionally coupled or tamper-evident ledger.

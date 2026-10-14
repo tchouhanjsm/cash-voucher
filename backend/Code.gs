@@ -750,6 +750,22 @@ function recordedMovementReport_(user, req) {
       }, 0);
   };
 
+  const isAmbiguousVendorRow = function (item) {
+    const key = String(item.vendor || '')
+      .trim()
+      .toLowerCase();
+    return (
+      !item.vendorId &&
+      key !== '' &&
+      Object.prototype.hasOwnProperty.call(vendorLookup.ambiguous, key)
+    );
+  };
+  const unresolvedVendorRows = items.filter(function (item) {
+    return !item.vendorId;
+  });
+  const ambiguousVendorCount = unresolvedVendorRows.filter(isAmbiguousVendorRow).length;
+  const unmatchedVendorCount = unresolvedVendorRows.length - ambiguousVendorCount;
+
   return {
     generatedAt: nowIso_(),
     from: from,
@@ -764,10 +780,8 @@ function recordedMovementReport_(user, req) {
         item.status === 'ACTIVE' && item.type === 'PAYMENT' && item.approvalStatus === 'PENDING'
       );
     }).length,
-    unmatchedVendorCount: items.filter(function (item) {
-      return !item.vendorId;
-    }).length,
-    ambiguousVendorCount: Object.keys(vendorLookup.ambiguous).length,
+    unmatchedVendorCount: unmatchedVendorCount,
+    ambiguousVendorCount: ambiguousVendorCount,
     approvalExceptionCount: items.filter(function (item) {
       return (
         item.status === 'ACTIVE' &&
