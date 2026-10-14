@@ -374,7 +374,9 @@ with sync_playwright() as p:
         response = route.fetch()
         payload = response.json()
         data = payload.get('data', {})
-        if preview_shape_case['mode'] == 'null-unclassified-row':
+        if preview_shape_case['mode'] == 'missing-unclassified-list':
+            data.pop('unclassified', None)
+        elif preview_shape_case['mode'] == 'null-unclassified-row':
             data['unclassified'] = [None]
         elif preview_shape_case['mode'] == 'coercion-hostile-count':
             data['activeVoucherCount'] = {'toString': None, 'valueOf': None}
@@ -385,6 +387,7 @@ with sync_playwright() as p:
 
     page.route('**/api?*', tamper_cash_close_preview_shape)
     for mode, label in (
+        ('missing-unclassified-list', 'missing unclassified list'),
         ('null-unclassified-row', 'null unclassified row'),
         ('coercion-hostile-count', 'coercion-hostile voucher count'),
         ('null-history-row', 'null recent-close row'),
