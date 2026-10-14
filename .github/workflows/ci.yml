@@ -31,16 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Temporary format diagnostics
-        run: |
-          files="docs/UI-SHELL-AND-DESIGN-SYSTEM.md index.html manifest.webmanifest scripts/check-contrast.js style.css"
-          npx prettier --write $files
-          for file in $files; do
-            printf 'FORMAT_BASE64:%s:' "$file"
-            base64 -w0 "$file"
-            printf '\n'
-          done
-
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
