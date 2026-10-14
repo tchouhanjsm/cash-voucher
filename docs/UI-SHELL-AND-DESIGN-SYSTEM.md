@@ -6,7 +6,7 @@ Status: phase 1 shipped; phase 2 mobile navigation is in this PR. Phases 3 and 4
 
 No Figma file is imported. The app is vanilla JS with no build step, so the layout follows the patterns used by free admin kits (Tabler, shadcn/ui dashboard blocks, Untitled UI free) and is written as CSS tokens plus small modules. To apply a specific Figma kit later, copy its colors, radius, spacing and type scale into the `:root` tokens in `style.css`; the markup does not change.
 
-## Phase 1 (this change): app shell
+## Phase 1 — app shell (PR #117)
 
 - Top bar: logo, property name, connection pill (Online or Offline), user menu with avatar initials, name and role.
 - User menu: My profile, Change PIN, Sign out. Keyboard: Esc closes and returns focus.
