@@ -10,6 +10,7 @@ This is a single-property cash-voucher PWA today. The attached memo's hosted fin
 Live baseline: `main` at `255d78ccb6a21b204d432221489114ccf514d333`; PR #126 merged; no open PRs were returned by the live GitHub search. The source-based audit and evidence classification are in [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md), with actionable work packages in [Backlog](BACKLOG.md).
 
 **Current priorities are outcome-based, not PR-number-based:**
+
 1. Cross-workflow integrity: trace role-based entry → approval → register → reports → close → audit, and fix root causes across modules in one coherent PR.
 2. Operational release proof: verify live deployment/permissions and witness backup/isolated restore only after explicit owner authorization.
 3. Product UX completion: validate major screens as one system on actual operating devices.
@@ -93,13 +94,13 @@ Expected physical cash uses explicit `CASH_IN` and `CASH_OUT` values only; `NO_C
 
 Pending, rejected, or malformed approval-state payments stay visible but are excluded from approved payment totals. They block a final cash close until they are approved or cancelled/resolved; they must not be silently omitted from a purported reconciliation. Editing a voucher already governed by approval sends it back for independent review. Blank approval fields on historical records mean `NOT_REQUIRED`; the migration adds fields without backfilling old vouchers.
 
-The approved policy and implementation history are documented here; current merge/branch status must be checked against live GitHub before further changes. The live open-PR search on 14 October 2026 returned no open PRs.
+The current feature batch implements backend authorization, approval/rejection audit events, Register actions and filters, Dashboard/Reports disclosures and total treatment, cash-close blockers, additive schema migration guidance, and end-to-end regression coverage in one PR. It remains unmerged until owner review.
 
 Other rule-based exception flags—duplicates, unusual first payments, off-hours entries and possible split payments—remain candidates for separate validation. Each must explain why it fired, link to source records, and have a review/override owner before implementation. Do not add speculative fraud scores.
 
 ### P3 — Finance and accountant workflow
 
-**Historical status note:** PR #114 was previously described as active. The live open-PR search on 14 October 2026 returned no open PRs; verify its merged/closed state from GitHub PR history before treating this slice as pending. It adds a least-privilege `accountant` role with server-authorized read-only access to the generic Recorded Movement Report and CSV. It also surfaces the existing stable VendorID, stores it on new vouchers when a unique case-insensitive exact vendor-name match exists, and includes it in report CSV. Historical rows are not backfilled; blank IDs are linked only by an exact unambiguous vendor-master name match and the report discloses unresolved rows. The next contained slice in the same PR scopes ambiguous-versus-unmatched VendorID exception counts to the selected report rows and makes duplicate-name ambiguity explicit in the accountant UI; it does not add fuzzy matching, backfill, tax rules or destination-specific accounting semantics.
+**Historical status note:** PR #114 was previously described as active. The live open-PR search on 14 October 2026 returned no open PRs; verify its final state from GitHub PR history before treating this slice as pending. It adds a least-privilege `accountant` role with server-authorized read-only access to the generic Recorded Movement Report and CSV. It also surfaces the existing stable VendorID, stores it on new vouchers when a unique case-insensitive exact vendor-name match exists, and includes it in report CSV. Historical rows are not backfilled; blank IDs are linked only by an exact unambiguous vendor-master name match and the report discloses unresolved rows. The next contained slice in the same PR scopes ambiguous-versus-unmatched VendorID exception counts to the selected report rows and makes duplicate-name ambiguity explicit in the accountant UI; it does not add fuzzy matching, backfill, tax rules or destination-specific accounting semantics.
 
 This is an operational source-voucher export, **not** a destination-certified Tally/Zoho import, general ledger, tax report, or reconciliation certificate. The actual accounting product/version, import mapping, required tax fields, and accountant-approved sample remain unresolved. Do not add GSTIN/GST, HSN/SAC or TDS behavior until the owner and qualified accountant define those requirements.
 
