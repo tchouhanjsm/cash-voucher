@@ -4382,6 +4382,38 @@ with sync_playwright() as p:
     # Online creation can commit even if its response is lost or malformed. The same client ID
     # must be queued and retried automatically, then confirmed without a second voucher.
     def verify_online_ambiguous_save(vendor, kind):
+        lost_response_fault = {'aborted_after_server_commit': False}
+
+        def drop_browser_response_after_server_commit(route):
+            try:
+                request_data = json.loads(route.request.post_data or '{}')
+            except json.JSONDecodeError:
+                request_data = {}
+            matches_vendor = any(
+                isinstance(entry, dict) and entry.get('vendor') == vendor
+                for entry in request_data.get('entries', [])
+            ) if isinstance(request_data.get('entries'), list) else False
+            if (
+                kind == 'lost-response'
+                and not lost_response_fault['aborted_after_server_commit']
+                and request_data.get('action') == 'createVouchers'
+                and matches_vendor
+            ):
+                # Let the server commit and return success, then abort only the browser's
+                # original response. This avoids Chromium transparently replaying a dropped
+                # TCP response and bypassing the application's NET recovery path.
+                response = route.fetch()
+                if response.ok:
+                    lost_response_fault['aborted_after_server_commit'] = True
+                    route.abort('failed')
+                    return
+                route.fulfill(response=response)
+                return
+            route.continue_()
+
+        if kind == 'lost-response':
+            page.route('**/api?*', drop_browser_response_after_server_commit)
+
         go_view(page, 'new')
         page.wait_for_selector('#nf')
         page.locator('.seg button[data-k="PAYMENT"]').click()
@@ -4456,14 +4488,15 @@ with sync_playwright() as p:
             f'{kind} online save response recovers with an explicit same-ID confirmation',
         )
 
-        status = diagnostics['server']
         if kind == 'lost-response':
+            page.unroute('**/api?*', drop_browser_response_after_server_commit)
             check(
-                status.get('droppedOnlineResponses') == 1
-                and status.get('onlineDropCreateRequests', 0) >= 2,
-                'committed online save with a dropped response is retried through the outbox',
+                lost_response_fault['aborted_after_server_commit']
+                and diagnostics['server'].get('onlineDropCreateRequests', 0) >= 2,
+                'committed online save whose browser response was aborted is retried through the outbox',
             )
         else:
+            status = diagnostics['server']
             check(
                 status.get('malformedOnlineResponses') == 1
                 and status.get('onlineMalformedCreateRequests', 0) >= 2,
