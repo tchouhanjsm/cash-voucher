@@ -115,12 +115,14 @@ with sync_playwright() as p:
         'theme initializes from the configured system light preference',
     )
     page.emulate_media(color_scheme='dark')
+    page.wait_for_function("document.documentElement.dataset.theme === 'dark'")
     check(
         page.locator('html').get_attribute('data-theme') == 'dark'
         and page.evaluate("localStorage.getItem('cv.theme')") is None,
         'unsaved theme follows the operating-system dark preference without persisting it',
     )
     page.emulate_media(color_scheme='light')
+    page.wait_for_function("document.documentElement.dataset.theme === 'light'")
     check(
         page.locator('html').get_attribute('data-theme') == 'light',
         'unsaved theme returns to light when the system preference changes',
