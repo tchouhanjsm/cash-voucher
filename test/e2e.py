@@ -294,9 +294,10 @@ with sync_playwright() as p:
         'temporary user PIN is masked and constrained to six digits',
     )
     check(
-        page.locator('[data-v=users]').get_attribute('aria-current') == 'page'
+        page.locator('#nav [data-v=users]').get_attribute('aria-current') == 'page'
+        and page.locator('#navMoreItems [data-v=users]').get_attribute('aria-current') == 'page'
         and page.locator('[data-v=dash]').get_attribute('aria-current') is None,
-        'navigation current-page state follows the selected view',
+        'active route state stays synchronized across primary and More navigation',
     )
     for name, email, role, pin in [
         ('Mona', 'm@test.com', 'manager', '246810'),
