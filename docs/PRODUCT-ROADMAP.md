@@ -5,9 +5,9 @@
 
 This is a single-property cash-voucher PWA today. The attached memo's hosted fintech/multi-property concept is a strategic scenario, not an agreed requirement. The product-level scope, user outcomes, candidate measures, and owner decisions are consolidated in [Product Requirements Baseline](PRODUCT-REQUIREMENTS.md).
 
-## Current founder plan — Phase 1 audit (14 October 2026)
+## Founder plan — Phase 1 audit completed; Phase 2 active (14 October 2026)
 
-Live baseline: `main` at `255d78ccb6a21b204d432221489114ccf514d333`; PR #126 merged; no open PRs were returned by the live GitHub search. The source-based audit and evidence classification are in [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md), with actionable work packages in [Backlog](BACKLOG.md).
+Phase 1 audit merged in PR #127; live `main` baseline at the start of Phase 2 is `ff5a8ebde96698f15edb976c4fcd745d50085d10`. Phase 2 branch `phase-2/cross-workflow-integrity-2026-10-14` adds an integrated regression from high-value payment entry through approval, report totals, cash-close snapshot and audit. See [Phase 2 acceptance](PHASE-2-CROSS-WORKFLOW-INTEGRITY.md). The source-based audit and evidence classification are in [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md), with actionable work packages in [Backlog](BACKLOG.md).
 
 **Current priorities are outcome-based, not PR-number-based:**
 
@@ -17,7 +17,7 @@ Live baseline: `main` at `255d78ccb6a21b204d432221489114ccf514d333`; PR #126 mer
 4. Security/data-integrity closure: complete the active sink and API authorization reviews.
 5. Measured performance and repository hygiene: secret/history scan, dependency-exception review and seeded workload baselines.
 
-Historical PR notes below are retained as history, not a reliable live status feed. Verify current PR state, branch and exact SHA before acting. No source merge implies production deployment.
+Historical PR notes below are retained as history, not a reliable live status feed. Verify current PR state, branch and exact SHA before acting. No source merge implies production deployment. Phase 2 does not alter live data, accounting rules or deployment configuration.
 
 ## 1. Code-review findings reconciled against current v2
 

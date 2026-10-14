@@ -2,9 +2,10 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `255d78ccb6a21b204d432221489114ccf514d333` (PR #126 merge)  
-**Current phase:** Phase 1 — repository and operational-readiness audit; branch `phase-1/repository-audit-2026-10-14`  
-**Audit:** [`docs/PHASE-1-REPOSITORY-AUDIT.md`](PHASE-1-REPOSITORY-AUDIT.md)  
+**Verified `main` SHA:** `ff5a8ebde96698f15edb976c4fcd745d50085d10` (PR #127 merge)  
+**Current phase:** Phase 2 — cross-workflow integrity; branch `phase-2/cross-workflow-integrity-2026-10-14`  
+**Phase 1 audit:** [`docs/PHASE-1-REPOSITORY-AUDIT.md`](PHASE-1-REPOSITORY-AUDIT.md)  
+**Phase 2 acceptance:** [`docs/PHASE-2-CROSS-WORKFLOW-INTEGRITY.md`](PHASE-2-CROSS-WORKFLOW-INTEGRITY.md)  
 **Rule:** GitHub PR metadata and exact-head workflow results are authoritative. No merge or production deployment without owner authorization.
 
 ## Previous completed batch — Daily Cash Close preview response contract
@@ -19,9 +20,13 @@ CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. 
 
 PR #126 merged at `255d78ccb6a21b204d432221489114ccf514d333`. PR-head CI, Browser E2E (325 checks) and Full Flight Test passed on tested head `6c58dd1ec9913e7bffd2611caf9c11af4b6846cd`. The post-merge main CI run also passed on the exact main SHA. This does not prove production deployment or live operational readiness.
 
-## Phase 1 audit findings
+## Current implementation — Phase 2 cross-workflow integrity
 
-No PRs are currently open. Source-based audit findings and the prioritized work packages are recorded in `docs/PHASE-1-REPOSITORY-AUDIT.md`; the actionable backlog is in `docs/BACKLOG.md`. Priority is cross-workflow integrity, operational proof, UX completion, security closure and measured performance—not another isolated tweak.
+PR #127 merged at `ff5a8ebde96698f15edb976c4fcd745d50085d10`. Phase 2 adds a regression journey proving one high-value payment remains consistent across creation, independent approval, accountant reporting, cash-close arithmetic/snapshot and audit. Scope and acceptance are in `docs/PHASE-2-CROSS-WORKFLOW-INTEGRITY.md`. CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. No production deployment or data changes without explicit owner authorization.
+
+## Remaining roadmap
+
+After cross-workflow integrity: operational release proof (owner-authorized deployment/role inspection and witnessed backup/isolated restore), grouped UX completion across all screens, security/data-integrity closure, then evidence-led performance and repository hygiene. See `docs/PHASE-1-REPOSITORY-AUDIT.md` and `docs/BACKLOG.md`.
 
 ## Most recently completed — PR #125: Recorded Movement Report summary-count guard
 

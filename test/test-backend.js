@@ -2159,4 +2159,117 @@ ok(
   'report counts selected ambiguous party rows separately from genuinely unmatched counterparties',
 );
 
+// Phase 2 integration: one high-value payment must remain consistent from entry
+// through independent approval, report totals, final cash-close snapshot and audit.
+const workflowDate = '2020-02-04';
+// PIN reset rotates session salt; use the freshly authenticated manager token, not the pre-reset token.
+const workflowManagerToken = resetChange.data.token;
+const workflowEntry = as(workflowManagerToken, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'phase-2-cross-workflow-payment',
+      date: workflowDate,
+      vendor: 'Cross Workflow Integrity Vendor',
+      amount: 10000,
+      category: 'Other',
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+});
+const workflowVoucher = workflowEntry.ok ? workflowEntry.data.created[0] : null;
+ok(
+  workflowEntry.ok && workflowVoucher?.approvalStatus === 'PENDING',
+  'cross-workflow payment starts pending independent approval at the inclusive threshold',
+);
+const workflowPendingReport = as(T, 'recordedMovementReport', {
+  from: workflowDate,
+  to: workflowDate,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  workflowPendingReport.ok &&
+    workflowPendingReport.data.items.some(
+      (item) => item.id === workflowVoucher?.id && item.approvalStatus === 'PENDING',
+    ) &&
+    workflowPendingReport.data.activePaymentTotal === 0,
+  'pending payment is visible in its report but excluded from approved active-payment totals',
+);
+const workflowApproval = as(T, 'approveVoucher', { id: workflowVoucher?.id });
+ok(
+  workflowApproval.ok &&
+    workflowApproval.data.approvalStatus === 'APPROVED' &&
+    workflowApproval.data.approvedBy.toLowerCase() === 'owner@test.com',
+  'independent owner approval persists for the same cross-workflow payment',
+);
+const workflowApprovedReport = as(accountantToken, 'recordedMovementReport', {
+  from: workflowDate,
+  to: workflowDate,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  workflowApprovedReport.ok &&
+    workflowApprovedReport.data.items.some(
+      (item) => item.id === workflowVoucher?.id && item.approvalStatus === 'APPROVED',
+    ) &&
+    workflowApprovedReport.data.activePaymentTotal === 10000 &&
+    workflowApprovedReport.data.pendingApprovalCount === 0,
+  'accountant report includes the approved payment exactly once in active payment totals',
+);
+const workflowPreview = as(workflowManagerToken, 'cashClosePreview', {
+  date: workflowDate,
+  openingCash: '10000',
+  openingReason: 'Integration test opening cash',
+});
+ok(
+  workflowPreview.ok &&
+    workflowPreview.data.pendingApprovals.length === 0 &&
+    workflowPreview.data.cashOutTotal === 10000 &&
+    workflowPreview.data.expectedCash === 0 &&
+    workflowPreview.data.readyToClose,
+  'approved payment flows into cash-close expected cash with no unresolved approval blocker',
+);
+const workflowClose = as(workflowManagerToken, 'createCashClose', {
+  date: workflowDate,
+  openingCash: '10000',
+  openingReason: 'Integration test opening cash',
+  countedCash: '0',
+  requestId: 'phase-2-cross-workflow-close',
+});
+ok(
+  workflowClose.ok &&
+    workflowClose.data.expectedCash === 0 &&
+    workflowClose.data.variance === 0 &&
+    workflowClose.data.includedVoucherCount === 1,
+  'cash close finalizes with a zero variance and snapshots the cross-workflow payment',
+);
+const workflowSavedClose = as(T, 'cashClosePreview', { date: workflowDate });
+ok(
+  workflowSavedClose.ok &&
+    workflowSavedClose.data.closed &&
+    workflowSavedClose.data.close.includedVouchers.some(
+      (item) =>
+        item.id === workflowVoucher.id &&
+        item.no === 'P-' + workflowVoucher.no &&
+        item.amount === 10000 &&
+        item.cashImpact === 'CASH_OUT',
+    ),
+  'saved immutable close snapshot retains the exact approved voucher identity and cash impact',
+);
+const workflowApprovalAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'PAYMENT_APPROVE' && row[3] === '#' + workflowVoucher.no);
+const workflowCloseAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'CASH_CLOSE' && row[3] === workflowDate);
+ok(
+  !!workflowApprovalAudit &&
+    !!workflowCloseAudit &&
+    JSON.parse(workflowApprovalAudit[4]).entityId === workflowVoucher.id &&
+    JSON.parse(workflowCloseAudit[4]).eventType === 'DAILY_CASH_CLOSE_FINALIZED',
+  'approval and cash-close audit events remain linked to the same end-to-end financial journey',
+);
+
 console.log('backend OK — ' + n + ' checks passed');
