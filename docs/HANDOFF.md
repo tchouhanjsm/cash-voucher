@@ -2,19 +2,17 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `3ef265aa17c9687435881ab69c8219800f990b04` (PR #118 merge)  
-**Current batch:** [PR #119 — Replace mobile nav overflow with shortcuts and More sheet](https://github.com/tchouhanjsm/cash-voucher/pull/119), branch `feature/mobile-bottom-nav-more-sheet`  
+**Verified `main` SHA:** `7d83115686d18e52643d43db05f7f552e29f3174` (PR #119 merge)  
+**Current batch:** UI shell Phase 3 — shared page components, branch `feature/ui-shell-phase-3-shared-components`  
 **Rule:** the GitHub PR page is authoritative for current head SHA and checks; this handoff commit itself changes the branch head.
 
-## Current phase — UI shell Phase 2
+## Current phase — UI shell Phase 3
 
-PR #117 shipped the desktop/mobile app shell: property identity, online/offline indicator, user menu, grouped desktop sidebar, profile page and sign-out entry points.
-Physical-phone and assistive-technology validation remains open.
+PR #117 shipped the app shell and PR #119 shipped mobile shortcuts plus the role-aware More sheet. Physical-phone and assistive-technology validation remains open.
 
-PR #119 replaces horizontally scrolling mobile navigation with four role-permitted shortcuts (Dashboard, New Entry, Register, Reports) plus a More sheet for remaining permitted routes.
-It uses the existing role checks and offline allowlist, supports an empty state when the signed-in role has no additional pages, and provides Escape/outside-click closing and focus management.
-The service-worker cache version is bumped for installed PWA updates. Phase 3 (page headers/breadcrumbs and shared table/form/empty-state components) remains a separate coherent UI outcome.
-
+This batch standardizes page headers with semantic breadcrumbs and section descriptions, adds create-permitted primary actions to Dashboard/Register, and introduces shared form-panel, accessible table-view and empty-state components.
+It adopts those components in vendor/user administration and the recorded movement report while preserving existing route permissions, form IDs, delegated action names, data validation, and financial behavior.
+The service-worker cache revision is bumped so installed PWAs can request the updated UI assets.
 ## Most recently completed — UAT-048, PR #118
 
 [PR #118](https://github.com/tchouhanjsm/cash-voucher/pull/118) merged at `3ef265aa17c9687435881ab69c8219800f990b04`.
