@@ -94,14 +94,14 @@ Potential next product requirements, subject to validation:
 
 - Make unresolved operational issues discoverable without forcing the owner to inspect every voucher.
 - Audit-log discoverability and traceability include structured transaction-lifecycle events, field-level old/new changes and reasons where applicable, plus cursor-based older-page loading. Filters/CSV cover loaded pages only. Confirm retention, tamper-evidence and durable audit-write requirements before claiming a complete financial audit trail.
-- **Approval policy approved 13 October 2026:** new PAYMENT vouchers at or above INR 10,000 require approval by an existing owner/manager other than the creator. Pending/rejected or malformed approval states are excluded from approved payment totals and block final cash close until resolved. Rejection requires a reason; historical blank approval values are not backfilled. The coherent implementation batch is active on `feature/payment-approval-workflow` and is not yet merged.
+- **Approval policy approved 13 October 2026:** new PAYMENT vouchers at or above INR 10,000 require approval by an existing owner/manager other than the creator. Pending/rejected or malformed approval states are excluded from approved payment totals and block final cash close until resolved. Rejection requires a reason; historical blank approval values are not backfilled. The policy and implementation are documented in the repository history. The live open-PR search on 14 October 2026 returned no open PRs; verify the relevant PR's final state and merge SHA before treating any implementation as pending.
 - Keep each exception explainable and linked to source records.
 
 Do not create automated fraud flags until duplicate rules, false-positive handling, override attribution, and review ownership are specified.
 
 ### P3 — Accountant and reporting workflow
 
-Active implementation batch PR #114 adds a report-only `accountant` role with server-authorized access to generic Recorded Movement Report CSV, not voucher editing, cash close, user administration or vendor-contact management. Stable `VendorID` values are exposed and included in exports; new vouchers store the ID when a unique saved vendor name is matched exactly. Historical links are not backfilled, and unmatched/ambiguous counterparty names remain unresolved and visible.
+The previously documented PR #114 implementation adds a report-only `accountant` role with server-authorized access to generic Recorded Movement Report CSV, not voucher editing, cash close, user administration or vendor-contact management. Stable `VendorID` values are exposed and included in exports; new vouchers store the ID when a unique saved vendor name is matched exactly. Historical links are not backfilled, and unmatched/ambiguous counterparty names remain unresolved and visible.
 
 The export deliberately remains destination-neutral. The first accounting software/version, import route, accountant-approved sample/mapping and tax-specific fields are open owner/accountant decisions. No Tally/Zoho compatibility, GST/TDS calculation, general-ledger claim or statutory readiness is implied.
 
@@ -191,3 +191,8 @@ For daily cash close, the detailed decisions remain in `docs/DAILY-CASH-CLOSE-DE
 - Numeric targets from the supplied memo are not treated as commitments without a defined measurement method.
 - The roadmap and handoff link to this document and distinguish merged source features from independent live cash-close/deployment and recovery gates.
 - This documentation-only phase changes no application code, API, schema, dependencies, production data, or deployment settings.
+
+
+## Phase 1 status reconciliation — 14 October 2026
+
+Current live source baseline is `255d78ccb6a21b204d432221489114ccf514d333` (PR #126 merge). The repository audit is recorded in `docs/PHASE-1-REPOSITORY-AUDIT.md`. Historical references to active PRs are not authoritative; use current GitHub PR metadata. Product policy in this document remains subject to the owner-approved decisions already recorded above.
