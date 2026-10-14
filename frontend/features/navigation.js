@@ -33,6 +33,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     set: 'Manage',
     audit: 'Manage',
   };
+  const MOBILE_SHORTCUTS = new Set(['dash', 'new', 'reg', 'reports']);
   const shell = createShell({ go: (view) => go(view) });
 
   // A visibility restore, manual refresh, and background outbox sync can request
@@ -178,39 +179,97 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     return true;
   }
 
+  function createNavButton(view, icon, label, more = false) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.v = view;
+    if (more) button.className = 'nav-more-item';
+    else if (!MOBILE_SHORTCUTS.has(view)) button.className = 'mobile-overflow-item';
+
+    const iconElement = document.createElement('span');
+    iconElement.className = 'ic';
+    iconElement.setAttribute('aria-hidden', 'true');
+    iconElement.textContent = icon;
+
+    const labelElement = document.createElement('span');
+    labelElement.textContent = label;
+    button.append(iconElement, labelElement);
+    return button;
+  }
+
+  function syncNavActiveState() {
+    $('#nav button[data-v], #navMoreItems button[data-v]').forEach((button) => {
+      const active = button.dataset.v === S.view;
+      button.classList.toggle('on', active);
+      if (active) button.setAttribute('aria-current', 'page');
+      else button.removeAttribute('aria-current');
+    });
+
+    const moreButton = $('#mobileMoreBtn');
+    const moreActive = Boolean(S.view) && !MOBILE_SHORTCUTS.has(S.view);
+    moreButton.classList.toggle('on', moreActive);
+    if (moreActive) moreButton.setAttribute('aria-current', 'page');
+    else moreButton.removeAttribute('aria-current');
+  }
+
   function renderNav() {
-    const nav = $('#nav');
+    const available = NAV.filter(
+      (item) =>
+        item[0] !== 'acct' &&
+        (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) &&
+        item[3](),
+    );
     const navContent = document.createDocumentFragment();
     let lastGroup = '';
-    NAV.filter((item) => (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3]()).forEach(
-      ([view, icon, label]) => {
-        // Profile and Sign out live in the top bar user menu, not the sidebar.
-        if (view === 'acct') return;
-        const group = NAV_GROUPS[view] || '';
-        if (group && group !== lastGroup) {
-          const heading = document.createElement('p');
-          heading.className = 'nav-label';
-          heading.textContent = group;
-          navContent.appendChild(heading);
-          lastGroup = group;
-        }
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.dataset.v = view;
 
-        const iconElement = document.createElement('span');
-        iconElement.className = 'ic';
-        iconElement.setAttribute('aria-hidden', 'true');
-        iconElement.textContent = icon;
+    available.forEach(([view, icon, label]) => {
+      const group = NAV_GROUPS[view] || '';
+      if (group && group !== lastGroup) {
+        const heading = document.createElement('p');
+        heading.className = 'nav-label';
+        heading.textContent = group;
+        navContent.appendChild(heading);
+        lastGroup = group;
+      }
+      navContent.appendChild(createNavButton(view, icon, label));
+    });
+    $('#nav').replaceChildren(navContent);
 
-        const labelElement = document.createElement('span');
-        labelElement.textContent = label;
+    const overflowItems = available.filter(([view]) => !MOBILE_SHORTCUTS.has(view));
+    const moreContent = document.createDocumentFragment();
+    lastGroup = '';
+    overflowItems.forEach(([view, icon, label]) => {
+      const group = NAV_GROUPS[view] || '';
+      if (group && group !== lastGroup) {
+        const heading = document.createElement('p');
+        heading.className = 'nav-more-label';
+        heading.textContent = group;
+        moreContent.appendChild(heading);
+        lastGroup = group;
+      }
+      moreContent.appendChild(createNavButton(view, icon, label, true));
+    });
+    $('#navMoreItems').replaceChildren(moreContent);
+    $('#navMoreEmpty').hidden = overflowItems.length > 0;
+    syncNavActiveState();
+  }
 
-        button.append(iconElement, labelElement);
-        navContent.appendChild(button);
-      },
-    );
-    nav.replaceChildren(navContent);
+  function moreIsOpen() {
+    return !$('#navMore').classList.contains('hidden');
+  }
+
+  function closeMore(restoreFocus = false) {
+    $('#navMore').classList.add('hidden');
+    $('#navMore').setAttribute('aria-hidden', 'true');
+    $('#mobileMoreBtn').setAttribute('aria-expanded', 'false');
+    if (restoreFocus) $('#mobileMoreBtn').focus();
+  }
+
+  function openMore() {
+    $('#navMore').classList.remove('hidden');
+    $('#navMore').setAttribute('aria-hidden', 'false');
+    $('#mobileMoreBtn').setAttribute('aria-expanded', 'true');
+    $('#navMorePanel').focus();
   }
   function go(view) {
     const requestedView = NAV.find((item) => item[0] === view);
@@ -222,13 +281,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     }
     if (S.view === 'new') getPayments().disposePreviews();
     S.view = view;
-    $$('#nav button').forEach((button) => {
-      const active = button.dataset.v === view;
-      button.classList.toggle('on', active);
-
-      if (active) button.setAttribute('aria-current', 'page');
-      else button.removeAttribute('aria-current');
-    });
+    syncNavActiveState();
 
     const render = renderers[view];
     if (!render) return;
@@ -270,6 +323,54 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     $('#nav').addEventListener('click', (event) => {
       const button = event.target.closest('[data-v]');
       if (button) go(button.dataset.v);
+    });
+
+    $('#mobileMoreBtn').addEventListener('click', () => {
+      if (moreIsOpen()) closeMore(true);
+      else openMore();
+    });
+
+    $('#navMore').addEventListener('click', (event) => {
+      if (event.target.closest('[data-nav-more-close]')) {
+        closeMore(true);
+        return;
+      }
+      const button = event.target.closest('#navMoreItems button[data-v]');
+      if (!button) return;
+      const view = button.dataset.v;
+      closeMore();
+      go(view);
+      $('#main-content').focus();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (!moreIsOpen()) return;
+      if (event.key === 'Escape') {
+        closeMore(true);
+        return;
+      }
+      if (event.key !== 'Tab') return;
+
+      const panel = $('#navMorePanel');
+      const focusable = Array.from(
+        panel.querySelectorAll(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) {
+        event.preventDefault();
+      } else if (
+        event.shiftKey &&
+        (document.activeElement === first || document.activeElement === panel)
+      ) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     });
 
     document.addEventListener('visibilitychange', () => {
