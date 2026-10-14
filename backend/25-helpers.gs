@@ -242,6 +242,35 @@ function pubUser_(u) {
     mustChangePin: u.MustChangePin === true || u.MustChangePin === 'TRUE',
   };
 }
+function recordAuditWriteFailure_(kind, error) {
+  try {
+    const properties = props_();
+    const rawCount = Number(properties.getProperty('AUDIT_WRITE_FAILURE_COUNT') || 0);
+    const count = Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0;
+    properties.setProperty('AUDIT_WRITE_STATUS', 'DEGRADED');
+    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_AT', nowIso_());
+    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_KIND', String(kind || 'UNKNOWN'));
+    properties.setProperty('AUDIT_WRITE_FAILURE_COUNT', String(count + 1));
+  } catch (markerError) {
+    console.error('Could not persist audit-write failure marker:', markerError);
+  }
+  console.error('Audit persistence failed (' + String(kind || 'UNKNOWN') + '):', error);
+}
+
+function auditWriteHealth_() {
+  const properties = props_();
+  const rawCount = Number(properties.getProperty('AUDIT_WRITE_FAILURE_COUNT') || 0);
+  return {
+    status:
+      properties.getProperty('AUDIT_WRITE_STATUS') === 'DEGRADED'
+        ? 'DEGRADED'
+        : 'NO_KNOWN_FAILURE',
+    failureCount: Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0,
+    lastFailureAt: properties.getProperty('AUDIT_WRITE_LAST_FAILURE_AT') || '',
+    lastFailureKind: properties.getProperty('AUDIT_WRITE_LAST_FAILURE_KIND') || '',
+  };
+}
+
 function audit_(user, action, target, details, detailsMaxLength) {
   try {
     appendRows_('AuditLog', [
@@ -254,7 +283,7 @@ function audit_(user, action, target, details, detailsMaxLength) {
       },
     ]);
   } catch (e) {
-    console.error(e);
+    recordAuditWriteFailure_('SINGLE_EVENT', e);
   }
 }
 function auditEventDetails_(eventType, entityType, entityId, reason, changes, summary) {
@@ -305,8 +334,9 @@ function auditEventRows_(events) {
       }),
     );
   } catch (e) {
-    // Audit persistence is best-effort; it must not make a completed voucher write appear to fail.
-    console.error('Audit event batch append failed:', e);
+    // Audit persistence remains best-effort so a completed financial write is not misreported.
+    // Record the gap durably so an owner can see it and reconcile the affected period.
+    recordAuditWriteFailure_('EVENT_BATCH', e);
   }
 }
 function can_(user, perm) {
