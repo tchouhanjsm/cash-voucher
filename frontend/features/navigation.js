@@ -183,8 +183,11 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.v = view;
-    if (more) button.className = 'nav-more-item';
-    else if (!MOBILE_SHORTCUTS.has(view)) button.className = 'mobile-overflow-item';
+    if (more) {
+      button.className = 'nav-more-item';
+    } else if (!MOBILE_SHORTCUTS.has(view)) {
+      button.className = 'mobile-overflow-item';
+    }
 
     const iconElement = document.createElement('span');
     iconElement.className = 'ic';
