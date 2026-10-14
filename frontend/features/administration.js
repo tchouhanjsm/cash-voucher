@@ -14,6 +14,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
   let auditNextBeforeRow = null;
   let auditTotalCount = 0;
   let auditLoadingOlder = false;
+  let backupStatusLoading = false;
 
   function getVendorRows() {
     const envelopeValid = Array.isArray(S.vendors);
@@ -913,7 +914,16 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
   async function renderBackupStatus() {
     const card = $('#backup-status');
-    if (!card) return;
+    if (!card || backupStatusLoading) return;
+
+    backupStatusLoading = true;
+    card.setAttribute('aria-busy', 'true');
+    const retryButton = card.querySelector('[data-act="backup-retry"]');
+    if (retryButton) {
+      retryButton.disabled = true;
+      retryButton.setAttribute('aria-busy', 'true');
+      retryButton.textContent = 'Checking backup status…';
+    }
 
     try {
       const status = await api('backupStatus');
@@ -1015,6 +1025,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
       retry.dataset.act = 'backup-retry';
       retry.textContent = 'Retry backup status';
       card.replaceChildren(title, message, retry);
+    } finally {
+      backupStatusLoading = false;
+      if (card.isConnected) card.setAttribute('aria-busy', 'false');
     }
   }
 
