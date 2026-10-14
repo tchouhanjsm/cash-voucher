@@ -13,6 +13,7 @@ PR #117 shipped the app shell and PR #119 shipped mobile shortcuts plus the role
 This batch standardizes page headers with semantic breadcrumbs and section descriptions, adds create-permitted primary actions to Dashboard/Register, and introduces shared form-panel, accessible table-view and empty-state components.
 It adopts those components in vendor/user administration and the recorded movement report while preserving existing route permissions, form IDs, delegated action names, data validation, and financial behavior.
 The service-worker cache revision is bumped so installed PWAs can request the updated UI assets.
+
 ## Most recently completed — UAT-048, PR #118
 
 [PR #118](https://github.com/tchouhanjsm/cash-voucher/pull/118) merged at `3ef265aa17c9687435881ab69c8219800f990b04`.
