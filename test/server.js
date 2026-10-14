@@ -42,6 +42,9 @@ http
           acknowledgementCreateRequests,
           staleSessionCreateRequests,
           sessionExpiryResponses,
+          staleSessionVoucherCount: g.sheets.Vouchers.rows
+            .slice(1)
+            .filter((row) => String(row[3] || '') === 'Stale Session Vendor').length,
         }),
       );
       return;
