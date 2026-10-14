@@ -658,6 +658,48 @@ with sync_playwright() as p:
         'user name is rendered as text, not executable HTML',
     )
 
+    # A transient listUsers failure must replace "Loading" with a useful, retryable state.
+    go_view(page, 'dash')
+    user_list_failure_once = {'value': True}
+
+    def fail_initial_user_list(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'listUsers' or not user_list_failure_once['value']:
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        if payload.get('ok'):
+            user_list_failure_once['value'] = False
+            payload['ok'] = False
+            payload['error'] = 'Simulated transient user-list failure'
+            payload['code'] = 'SERVER'
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    page.route('**/api?*', fail_initial_user_list)
+    go_view(page, 'users')
+    page.wait_for_selector('#users-load-error', timeout=10000)
+    check(
+        'The user list could not be loaded' in page.locator('#users-load-error').inner_text()
+        and page.locator('#users-load-error [data-act=usersRetry]').is_visible()
+        and page.locator('#view').inner_text().count('Loading users…') == 0
+        and 'No users yet' not in page.locator('#view').inner_text(),
+        'Users request failure is explicit and offers an in-context retry instead of an endless loading state',
+    )
+    page.click('#users-load-error [data-act=usersRetry]')
+    page.wait_for_selector('#uf', timeout=10000)
+    check(
+        page.locator('#users-load-error').count() == 0
+        and page.locator('#view tbody tr').count() > 0
+        and user_list_failure_once['value'] is False,
+        'retrying the Users request recovers the list without reloading the app',
+    )
+    page.unroute('**/api?*', fail_initial_user_list)
+
     # Malformed owner user-list responses must not crash the active Users view.
     invalid_user_envelope = False
 
@@ -730,8 +772,9 @@ with sync_playwright() as p:
     check(
         'No users yet' not in page.locator('#view').inner_text()
         and page.locator('#uf').count() == 1
-        and page.locator('#view tbody tr').count() == 1,
-        'non-array user response is disclosed instead of being treated as an empty list',
+        and page.locator('#view tbody tr').count() == 1
+        and page.locator('#view .page-header-actions [data-act=refresh]').is_visible(),
+        'non-array user response is disclosed instead of being treated as an empty list and can be refreshed',
     )
     invalid_user_envelope = False
     page.unroute('**/api?*', inject_malformed_user_rows)
@@ -2719,8 +2762,9 @@ with sync_playwright() as p:
     page.wait_for_selector('#vf')
     check(
         'Vendor data is unavailable because the server response was invalid.' in page.locator('#view').inner_text()
-        and 'No vendors yet' not in page.locator('#view').inner_text(),
-        'non-array vendor response is disclosed instead of looking like a genuinely empty list',
+        and 'No vendors yet' not in page.locator('#view').inner_text()
+        and page.locator('#view .page-header-actions [data-act=refresh]').is_visible(),
+        'non-array vendor response is disclosed instead of an empty list and can be refreshed',
     )
     invalid_vendor_envelope = False
     invalid_voucher_envelope = True
@@ -3793,23 +3837,36 @@ with sync_playwright() as p:
     # Malformed audit and owner-diagnostic responses must fail closed and recover.
     audit_malformed_payload = '<svg onload=window.__xssFired=true></svg>'
     audit_response_mode = 'malformed'
+    audit_failure_once = True
+    backup_status_failure_once = False
     diagnostic_response_modes = {
         'dataQualityReport': 'valid',
         'backupIntegrityReport': 'valid',
     }
 
     def inject_malformed_audit_rows(route):
+        global audit_failure_once, backup_status_failure_once
         try:
             request_data = json.loads(route.request.post_data or '{}')
         except json.JSONDecodeError:
             request_data = {}
         action = request_data.get('action')
-        if action not in ('auditLog', 'dataQualityReport', 'backupIntegrityReport'):
+        if action not in ('auditLog', 'dataQualityReport', 'backupIntegrityReport', 'backupStatus'):
             route.continue_()
             return
 
         response = route.fetch()
         payload = response.json()
+        if action == 'auditLog' and audit_failure_once:
+            audit_failure_once = False
+            payload = {'ok': False, 'error': 'Simulated transient audit failure', 'code': 'SERVER'}
+            route.fulfill(response=response, body=json.dumps(payload))
+            return
+        if action == 'backupStatus' and backup_status_failure_once:
+            backup_status_failure_once = False
+            payload = {'ok': False, 'error': 'Simulated transient backup status failure', 'code': 'SERVER'}
+            route.fulfill(response=response, body=json.dumps(payload))
+            return
         if not payload.get('ok'):
             if action == 'backupIntegrityReport':
                 payload = {
@@ -3922,6 +3979,14 @@ with sync_playwright() as p:
     audit_page.click('#lBtn')
     audit_page.wait_for_selector('[data-v=audit]')
     go_view(audit_page, 'audit')
+    audit_page.wait_for_selector('#aud [data-act=audretry]', timeout=10000)
+    check(
+        'Audit events unavailable.' in audit_page.locator('#aud-count').inner_text()
+        and 'No audit events are available' not in audit_page.locator('#aud').inner_text()
+        and audit_page.locator('#aud [data-act=audretry]').is_visible(),
+        'audit load failure stays distinct from an empty history and offers a direct retry',
+    )
+    audit_page.click('#aud [data-act=audretry]')
     audit_page.wait_for_function(
         "document.querySelector('#aud-count')?.innerText.includes('malformed audit event(s) omitted')",
         timeout=10000,
@@ -3994,8 +4059,33 @@ with sync_playwright() as p:
         'audit view recovers when a valid response returns',
     )
 
+    backup_status_failure_once = True
     go_view(audit_page, 'set')
     audit_page.wait_for_selector('[data-act=dqscan]')
+    audit_page.wait_for_selector('#backup-status [data-act="backup-retry"]', timeout=10000)
+    check(
+        'Backup status could not be loaded' in audit_page.locator('#backup-status').inner_text()
+        and audit_page.locator('#backup-status [data-act="backup-retry"]').is_visible(),
+        'backup status failure exposes a local retry without implying a successful backup',
+    )
+    audit_page.click('#backup-status [data-act="backup-retry"]')
+    audit_page.wait_for_function(
+        """() => {
+            const card = document.querySelector('#backup-status');
+            return Boolean(
+                card &&
+                card.querySelector('.badge') &&
+                !card.querySelector('[data-act="backup-retry"]') &&
+                !card.innerText.includes('Backup status could not be loaded')
+            );
+        }""",
+        timeout=10000,
+    )
+    check(
+        audit_page.locator('#backup-status [data-act="backup-retry"]').count() == 0
+        and 'Backup status could not be loaded' not in audit_page.locator('#backup-status').inner_text(),
+        'backup status refresh succeeds in place without resetting the Settings form',
+    )
     diagnostic_response_modes['dataQualityReport'] = 'invalid-envelope'
     audit_page.click('[data-act=dqscan]')
     audit_page.wait_for_function(

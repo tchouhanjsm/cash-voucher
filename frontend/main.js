@@ -181,6 +181,12 @@ registerActions({
 
   upin: ({ id }) => administration.resetPin(id),
 
+  usersRetry: () => administration.users(),
+
+  audretry: () => administration.audit(),
+
+  'backup-retry': () => administration.retryBackupStatus(),
+
   utog: ({ id }) => administration.toggleUser(id),
 
   urole: ({ id, element }) => administration.updateRole(id, element.value),

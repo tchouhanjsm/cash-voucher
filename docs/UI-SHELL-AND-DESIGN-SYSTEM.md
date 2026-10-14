@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: phases 1–3 shipped; phases 4–6 are grouped into the current design-system batch.
+Status: phases 1–6 shipped; phases 7–8 are grouped into the current admin-state recovery batch.
 
 ## Approach
 
@@ -32,11 +32,13 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 
 ## Roadmap
 
-| Phase | Outcome                                                                                                                                           |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 4     | Establish the warm-neutral and navy/gold token palette, system-aware dark mode, persistent explicit theme choice, and light/dark contrast checks. |
-| 5     | Make A5 voucher printing independent of screen theme, with application chrome hidden and print layout/break behavior guarded by Browser E2E.      |
-| 6     | Align PWA launch metadata, browser theme color, Apple icon metadata, standard/maskable manifest icons, and the service-worker cache revision.     |
+| Phase | Outcome                                                                                                                                                       |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4     | Establish the warm-neutral and navy/gold token palette, system-aware dark mode, persistent explicit theme choice, and light/dark contrast checks.             |
+| 5     | Make A5 voucher printing independent of screen theme, with application chrome hidden and print layout/break behavior guarded by Browser E2E.                  |
+| 6     | Align PWA launch metadata, browser theme color, Apple icon metadata, standard/maskable manifest icons, and the service-worker cache revision.                 |
+| 7     | Keep owner admin list views from confusing transient request failures, invalid response envelopes, malformed rows and genuinely empty lists.                  |
+| 8     | Add directly actionable retry paths for Users, Audit log and Backup status without forcing unrelated form resets or implying success before a retry succeeds. |
 
 ## Phase 4 — palette and theme behavior
 
@@ -56,6 +58,21 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 - Keep the existing 192px, 512px and maskable PNG app icons; declare their sizes/types/purposes consistently in the manifest, link the 192px icon for browser and Apple touch usage, and add install metadata.
 - Keep the manifest splash background aligned with the existing navy brand/boot surface; dynamic system theme applies after the app launches.
 - Advance the app-shell cache and precache the new theme controller so installed PWAs request the revised launch metadata and theme code.
+
+## Phase 7 — admin read states
+
+- Users must not remain on an indefinite loading message if `listUsers` fails. Show a plain-language alert that separates the failed read from a valid empty user list.
+- Vendors and Users keep invalid response envelopes/malformed records distinct from real empty collections, with a reachable Refresh action.
+- Audit loading failures must not look like an empty history; keep the failure visible and give the owner a contextual retry.
+- Backup status failure is an unknown state, never a green/success state. Make its own read retryable without rerendering Settings or discarding unsaved property edits.
+
+## Phase 8 — local recovery actions and regression checks
+
+- Users retry calls `listUsers` again without reloading the app.
+- Audit retry repeats the audit read and leaves the failure row only until a response is received.
+- Backup retry refreshes only the status panel in place; a subsequent server response is rendered normally.
+- Browser E2E injects transient failures and verifies that each retry affordance recovers the screen. This is mock-backed regression evidence, not live Apps Script availability evidence.
+- Existing server-side role checks and malformed-envelope/row handling remain the security boundaries; the retry controls do not expand permissions.
 
 ## Rules
 

@@ -134,3 +134,14 @@ For a prior server session that fell back to a cached workspace, reconnect attem
 The offline banner now exposes an expandable per-entry list for up to five pending/sending items belonging to the active account and API endpoint. Each row identifies payment versus cash receipt, vendor, amount, date, upload state and receipt-image count. The remainder count points staff to the full recovery export. The disclosure intentionally provides inspection, not a one-click delete or a claim of server persistence; rejected entries still use the separate export-before-remove flow.
 
 Browser E2E covers the fields and tampered local vendor markup. Real-device touch/scroll behavior and assistive-technology announcements remain unverified.
+
+## Admin read-state and recovery affordances — 14 October 2026
+
+The current UI shell batches explicit loading/error/empty states for administration and owner diagnostics:
+
+- Users loading now has a polite live status. A failed `listUsers` request replaces the loading state with a plain-language alert and a direct retry action; it is never presented as a valid empty user list.
+- Vendor and user views expose Refresh alongside their existing invalid-envelope and malformed-record disclosures, keeping invalid data distinct from a real empty collection.
+- Audit-load failure keeps the table's error state visible and exposes a contextual retry action rather than leaving an inaccessible error toast as the only feedback.
+- Backup-status failure is treated as unknown, announced as an alert, and includes an in-place retry that does not reload Settings or discard unsaved property fields.
+
+Browser E2E injects transient Users, Audit and Backup status failures and verifies retry/recovery paths. These mock-backed checks establish UI behavior only; they do not prove live Apps Script service availability, role authorization, actual backup contents or restore success. Screen-reader, physical-device and owner usability review remain separate release gates.

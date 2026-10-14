@@ -2,7 +2,16 @@ import { $ } from '../core/dom.js';
 import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
 import { csvCell, download, esc, initials, scalarText } from '../core/utils.js';
-import { closeModal, dialog, fail, formPanel, head, tableView, toast } from '../core/ui.js';
+import {
+  closeModal,
+  dialog,
+  fail,
+  formPanel,
+  head,
+  refreshBtn,
+  tableView,
+  toast,
+} from '../core/ui.js';
 
 export function createAdministration({ api, getNavigation, signOut }) {
   let deferredInstall;
@@ -14,6 +23,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
   let auditNextBeforeRow = null;
   let auditTotalCount = 0;
   let auditLoadingOlder = false;
+  let backupStatusLoading = false;
 
   function getVendorRows() {
     const envelopeValid = Array.isArray(S.vendors);
@@ -80,7 +90,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     });
 
     $('#view').innerHTML =
-      head('Vendors') +
+      head('Vendors', refreshBtn) +
       status +
       formPanel({
         id: 'vf',
@@ -138,13 +148,23 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   async function usersView() {
-    $('#view').innerHTML = head('Users') + '<p class="muted">Loading…</p>';
+    $('#view').innerHTML =
+      head('Users', refreshBtn) +
+      '<p class="muted" role="status" aria-live="polite">Loading users…</p>';
 
     let response;
     try {
       response = await api('listUsers');
     } catch (error) {
-      return fail(error);
+      console.warn('Users list could not be loaded:', error);
+      $('#view').innerHTML =
+        head('Users', refreshBtn) +
+        '<section id="users-load-error" class="card form-error" role="alert" aria-live="assertive">' +
+        '<h2>Users unavailable</h2>' +
+        '<p>The user list could not be loaded. Check your connection and retry. The failure is not treated as an empty user list.</p>' +
+        '<button class="btn primary" type="button" data-act="usersRetry">Retry loading users</button>' +
+        '</section>';
+      return;
     }
 
     const roles = ['staff', 'manager', 'accountant', 'owner'];
@@ -206,7 +226,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     ].join('');
 
     $('#view').innerHTML =
-      head('Users') +
+      head('Users', refreshBtn) +
       status +
       formPanel({
         id: 'uf',
@@ -585,11 +605,18 @@ export function createAdministration({ api, getNavigation, signOut }) {
         const cell = document.createElement('td');
         cell.colSpan = 5;
         cell.className = 'error';
-        cell.textContent = 'Audit events could not be loaded. Check your connection and retry.';
+        const message = document.createElement('p');
+        message.textContent = 'Audit events could not be loaded. Check your connection and retry.';
+        const retry = document.createElement('button');
+        retry.type = 'button';
+        retry.className = 'btn sm';
+        retry.dataset.act = 'audretry';
+        retry.textContent = 'Retry loading audit events';
+        cell.append(message, retry);
         row.appendChild(cell);
         body.appendChild(row);
         $('#aud-count').textContent = 'Audit events unavailable.';
-        fail(error);
+        console.warn('Audit events could not be loaded:', error);
       });
   }
 
@@ -896,7 +923,16 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
   async function renderBackupStatus() {
     const card = $('#backup-status');
-    if (!card) return;
+    if (!card || backupStatusLoading) return;
+
+    backupStatusLoading = true;
+    card.setAttribute('aria-busy', 'true');
+    const retryButton = card.querySelector('[data-act="backup-retry"]');
+    if (retryButton) {
+      retryButton.disabled = true;
+      retryButton.setAttribute('aria-busy', 'true');
+      retryButton.textContent = 'Checking backup status…';
+    }
 
     try {
       const status = await api('backupStatus');
@@ -982,14 +1018,25 @@ export function createAdministration({ api, getNavigation, signOut }) {
         'Structural inspection checks snapshot files, sheet headers and receipt manifests; it does not prove restoreability.';
 
       card.replaceChildren(title, state, details, note, integrityButton, integrityResults);
-    } catch {
+    } catch (error) {
+      console.warn('Backup status could not be loaded:', error);
       const title = document.createElement('h2');
       title.textContent = '🛡️ Backup & recovery';
       const message = document.createElement('p');
       message.className = 'error';
+      message.setAttribute('role', 'alert');
+      message.setAttribute('aria-live', 'assertive');
       message.textContent =
-        'Backup status could not be loaded. Check the connection and refresh Settings.';
-      card.replaceChildren(title, message);
+        'Backup status could not be loaded. Check the connection and retry this status check.';
+      const retry = document.createElement('button');
+      retry.type = 'button';
+      retry.className = 'btn';
+      retry.dataset.act = 'backup-retry';
+      retry.textContent = 'Retry backup status';
+      card.replaceChildren(title, message, retry);
+    } finally {
+      backupStatusLoading = false;
+      if (card.isConnected) card.setAttribute('aria-busy', 'false');
     }
   }
 
@@ -1203,6 +1250,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     loadOlderAuditEvents,
     dataQualityScan,
     backupIntegrityScan,
+    retryBackupStatus: renderBackupStatus,
     account,
     handleSubmit,
     editVendor,
