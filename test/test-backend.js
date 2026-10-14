@@ -1868,6 +1868,7 @@ ok(
     afterCorrection.data.close.corrections.length === 1,
   'correction does not rewrite close total',
 );
+
 // Malformed saved close data must fail closed without being filtered.
 const closeSheet = g.sheets.CashCloses;
 const closeHeaders = closeSheet.rows[0];
@@ -1933,6 +1934,7 @@ assertCorruptCashClose(
   },
   'saved close rejects duplicate voucher IDs in an otherwise shape-valid snapshot',
 );
+
 const futureClose = as(T, 'cashClosePreview', { date: '2999-01-01' });
 ok(!futureClose.ok && futureClose.code === 'VALIDATION', 'future close date rejected');
 
