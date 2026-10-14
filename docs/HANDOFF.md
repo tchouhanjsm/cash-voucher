@@ -2,19 +2,23 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `3885bf4d26e140a764ba23423e795ac76dee326e` (PR #120 merge)  
-**Current batch:** UI shell phases 4–6 — theme, print and PWA launch consistency, branch `feature/ui-shell-phases-4-6-design-system`  
+**Verified `main` SHA:** `6320be4293b9f3f91005a25b7207dd686cbaf7c9` (PR #121 merge)  
+**Current batch:** UI shell phases 7–8 — administration and diagnostic loading/error/retry states, branch `feature/admin-state-recovery-phases-7-8`  
 **Rule:** the GitHub PR page is authoritative for current head SHA and checks; this handoff commit itself changes the branch head.
 
-## Current phase — UI shell phases 4–6
+## Current phase — UI shell phases 7–8
 
-PR #120 merged Phase 3 at `3885bf4d26e140a764ba23423e795ac76dee326e`, including semantic page headers, shared form/table/empty-state helpers and role-aware primary actions.
+PR #121 merged at `6320be4293b9f3f91005a25b7207dd686cbaf7c9`. Phases 4–6 delivered the warm-neutral/navy/gold token palette, system-aware dark mode with a persistent explicit choice, selected contrast checks for both themes, theme-independent A5 voucher print styling, and PWA launch metadata/cache alignment.
 
-The current batch combines the next design-system outcomes in one review: tokenized warm-neutral/navy/gold palette and system-aware dark mode with an explicit persisted override; contrast regression checks across both palettes; A5 voucher print styling that remains white/black regardless of screen mode; and PWA launch metadata, icon declarations and app-shell cache consistency.
+The current batch addresses two connected admin UX phases: (7) distinguish Users/Vendors/Audit/Backup-status loading, error, invalid-response and empty states; (8) provide direct, accessible retry paths for transient failures. User-list retries call `listUsers` again without reloading the app; audit retry reopens the audit read; backup status retries in place without resetting Settings fields. No finance rules, backend contracts, roles or schema are changed.
 
-No API, financial calculation, role policy, Sheet schema, Apps Script project settings or deployment behavior is changed. Physical-phone, assistive-technology and real-printer validation remain operational/manual checks.
+The current branch starts from verified main SHA `6320be4293b9f3f91005a25b7207dd686cbaf7c9`. All code changes must pass CI, Browser E2E and Full Flight Test on the same exact final head. Physical-device, assistive-technology, live Apps Script/Sheets, backup/restore and controlled pilot checks remain independent operational gates.
 
-## Most recently completed — UAT-048, PR #118
+## Most recently completed — PR #121: themed UI shell, print and PWA polish
+
+PR #121 merged at `6320be4293b9f3f91005a25b7207dd686cbaf7c9`. Its tested PR head `f1b7942995becb81abf83651582680a415531582` passed CI, Browser E2E (308 checks, zero failures), and Full Flight Test (245 backend checks, 38 documented contrast-pair checks across both palettes, and 308 browser checks).
+
+## Owner-approved edit policy — UAT-048, PR #118
 
 [PR #118](https://github.com/tchouhanjsm/cash-voucher/pull/118) merged at `3ef265aa17c9687435881ab69c8219800f990b04`.
 Its tested head `bda1aacbc98c93a707df972f5b2ab00055745ba4` passed CI, Browser E2E and Full Flight Test.
