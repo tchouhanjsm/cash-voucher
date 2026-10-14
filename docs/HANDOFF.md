@@ -2,21 +2,21 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `a4be8a50e2b9cf3e356057beed537e74a9401a26` (PR #122 merge)  
-**Current batch:** Daily Cash Close saved-snapshot integrity and hostile-rendering regression coverage, branch `security/cash-close-snapshot-integrity-2026-10-14`  
+**Verified `main` SHA:** `7e604c603e12942db26a9fc49a1d46bcaa2376ea` (PR #123 merge)  
+**Current batch:** Printed-voucher date-shape resilience and rendering regression coverage, branch `security/printed-voucher-date-shape-2026-10-14`  
 **Rule:** the GitHub PR page is authoritative for current head SHA and checks; this handoff commit itself changes the branch head.
 
-## Current phase — Daily Cash Close saved-snapshot integrity
+## Current phase — printed-voucher date-shape resilience
 
-PR #122 is merged at `a4be8a50e2b9cf3e356057beed537e74a9401a26`. It completed UI shell phases 7–8: admin views distinguish loading, failed, invalid and empty states; Users, Audit and Backup status have direct retry paths; Backup retry preserves unsaved Settings values. Its reviewed head `4fe0085c3fcebcfe04667dade6c46ebf8ef0afbb` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38532473913), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38532473998) (313 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38532473975) (245 backend checks, 38 documented contrast-pair checks across both themes, and 313 browser checks).
+PR #123 merged at `7e604c603e12942db26a9fc49a1d46bcaa2376ea`. It hardened the saved Daily Cash Close response boundary: malformed voucher snapshots, inconsistent IDs and count mismatches now fail closed with `CASH_CLOSE_DATA`. Its tested PR head `c2cd661b7da34788d1f99317f7439945ce965ad3` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38538622739), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38538622731) (314 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38538622741) (251 backend checks, 38 contrast-pair checks, and 314 browser checks).
 
-The current batch hardens the persisted Daily Cash Close response boundary. A saved close must return every included voucher record, a one-to-one ordered ID list, and the matching count. Malformed entries, duplicate/mismatched IDs, invalid amounts or cash-impact values, and count inconsistencies must raise `CASH_CLOSE_DATA`; they must not be silently filtered or presented as a complete immutable close. Browser E2E also checks that hostile API text in the Cash Close report/correction surfaces remains inert.
+The current batch addresses a remaining output-path resilience gap in `frontend/features/printing.js`. The New Entry success path stores the `createVouchers` response object in the frontend cache before a subsequent bootstrap normalization; a malformed non-string `date` can therefore reach the print renderer, where `dmy(value)` assumes a string and can throw. Print formatting must validate a strict ISO calendar date before calling the formatter and display a clear `Date unavailable` fallback for malformed dates. Regression coverage verifies both this fallback and preservation of the ordinary valid date format while retaining the hostile voucher-number print regression.
 
-The current branch starts from verified main SHA `a4be8a50e2b9cf3e356057beed537e74a9401a26`. All code changes must pass CI, Browser E2E and Full Flight Test on the same exact final head. This source/test batch makes no schema, financial-policy or deployment change. Live Apps Script/Sheets, authorization, backup/restore, physical-device PWA, assistive-technology and controlled-pilot checks remain independent operational gates.
+The current branch starts from verified main SHA `7e604c603e12942db26a9fc49a1d46bcaa2376ea`. CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. This is a client display/resilience change only: no backend/API contract, stored record, financial policy, schema or deployment changes. The active rendering audit remains incremental, and production authorization, backup/restore, physical-device PWA and assistive-technology checks remain separate operational gates.
 
-## Most recently completed — PR #122: admin read-state and recovery
+## Most recently completed — PR #123: Daily Cash Close snapshot integrity
 
-PR #122 is merged at `a4be8a50e2b9cf3e356057beed537e74a9401a26`; its tested head is `4fe0085c3fcebcfe04667dade6c46ebf8ef0afbb`. The exact-head CI, Browser E2E and Full Flight Test links and results are recorded above. Merge status does not establish production deployment or live service/recovery behavior.
+PR #123 merged at `7e604c603e12942db26a9fc49a1d46bcaa2376ea`; its tested head was `c2cd661b7da34788d1f99317f7439945ce965ad3`. All three exact-head workflow results are linked above. The change does not automatically repair any pre-existing inconsistent close and does not establish production deployment.
 
 ## Owner-approved edit policy — UAT-048, PR #118
 

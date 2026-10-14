@@ -73,6 +73,19 @@ export const amountInWords = (amount) => {
   return words(rupees) + ' Rupees' + (paise ? ' and ' + words(paise) + ' Paise' : '') + ' Only';
 };
 
+function printDateLabel(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return 'Date unavailable';
+  }
+
+  const parsed = new Date(value + 'T00:00:00Z');
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) {
+    return 'Date unavailable';
+  }
+
+  return dmy(value);
+}
+
 export function printVoucher(id) {
   const voucher = S.vouchers.find((item) => item.id === id);
 
@@ -80,7 +93,7 @@ export function printVoucher(id) {
 
   $('#printArea').innerHTML =
     `<div class="pv"><div class="pv-head"><div class="pv-hotel">${esc(S.settings.propertyName)}</div><div class="pv-addr">${esc(S.settings.propertyAddress)}</div><div class="pv-title">${isIn(voucher) ? 'CASH RECEIPT VOUCHER' : 'CASH PAYMENT VOUCHER'}</div></div>
-  <div class="pv-meta"><div>Voucher No: <b>${esc(vno(voucher))}</b></div><div>Date: <b>${esc(dmy(voucher.date))}</b></div></div>
+  <div class="pv-meta"><div>Voucher No: <b>${esc(vno(voucher))}</b></div><div>Date: <b>${esc(printDateLabel(voucher.date))}</b></div></div>
   <div class="pv-row"><div class="l">${isIn(voucher) ? 'Received From' : 'Paid To'}</div><div class="v">${esc(voucher.vendor)}</div></div>
   ${voucher.category ? `<div class="pv-row"><div class="l">Category</div><div class="v">${esc(voucher.category)}${voucher.notes ? ' — ' + esc(voucher.notes) : ''}</div></div>` : ''}
   <div class="pv-row"><div class="l">Cash impact</div><div class="v">${esc(voucher.cashImpact || 'UNCLASSIFIED')}</div></div>
