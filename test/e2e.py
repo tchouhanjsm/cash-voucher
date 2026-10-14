@@ -658,6 +658,48 @@ with sync_playwright() as p:
         'user name is rendered as text, not executable HTML',
     )
 
+    # A transient listUsers failure must replace "Loading" with a useful, retryable state.
+    go_view(page, 'dash')
+    user_list_failure_once = {'value': True}
+
+    def fail_initial_user_list(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'listUsers' or not user_list_failure_once['value']:
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        if payload.get('ok'):
+            user_list_failure_once['value'] = False
+            payload['ok'] = False
+            payload['error'] = 'Simulated transient user-list failure'
+            payload['code'] = 'SERVER'
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    page.route('**/api?*', fail_initial_user_list)
+    go_view(page, 'users')
+    page.wait_for_selector('#users-load-error', timeout=10000)
+    check(
+        'The user list could not be loaded' in page.locator('#users-load-error').inner_text()
+        and page.locator('#users-load-error [data-act=usersRetry]').is_visible()
+        and page.locator('#view').inner_text().count('Loading users…') == 0
+        and 'No users yet' not in page.locator('#view').inner_text(),
+        'Users request failure is explicit and offers an in-context retry instead of an endless loading state',
+    )
+    page.click('#users-load-error [data-act=usersRetry]')
+    page.wait_for_selector('#uf', timeout=10000)
+    check(
+        page.locator('#users-load-error').count() == 0
+        and page.locator('#view tbody tr').count() > 0
+        and user_list_failure_once['value'] is False,
+        'retrying the Users request recovers the list without reloading the app',
+    )
+    page.unroute('**/api?*', fail_initial_user_list)
+
     # Malformed owner user-list responses must not crash the active Users view.
     invalid_user_envelope = False
 
