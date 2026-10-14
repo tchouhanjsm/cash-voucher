@@ -4389,17 +4389,74 @@ with sync_playwright() as p:
         page.fill('.ra', '137')
         choose_cash_impact_for_current_rows()
         page.click('#nsave')
-        page.wait_for_function(
-            "document.querySelector('#nres .ok-panel h2')?.innerText.includes('Saved and synchronized')",
-            timeout=15000,
+        try:
+            page.wait_for_function(
+                "Boolean(document.querySelector('#nres .ok-panel h2'))",
+                timeout=5000,
+            )
+        except Exception:
+            pass
+
+        title = (
+            page.locator('#nres .ok-panel h2').inner_text()
+            if page.locator('#nres .ok-panel h2').count()
+            else ''
         )
+        message = (
+            page.locator('#nres .ok-panel p').inner_text()
+            if page.locator('#nres .ok-panel p').count()
+            else ''
+        )
+        diagnostics = page.evaluate(
+            """async (vendor) => {
+              const response = await fetch('/test-status');
+              const server = await response.json();
+              const request = indexedDB.open('cash-voucher', 1);
+              const db = await new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+              const records = await new Promise((resolve, reject) => {
+                const read = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+                read.onsuccess = () => resolve(read.result.filter((record) => record.entry?.vendor === vendor).map((record) => ({
+                  clientId: record.clientId,
+                  ownerKey: record.ownerKey || '',
+                  status: record.status,
+                  failure: record.failure || '',
+                })));
+                read.onerror = () => reject(read.error);
+              });
+              db.close();
+              return {
+                server,
+                url: location.href,
+                heading: document.querySelector('#view .page-header h1')?.innerText || '',
+                title: document.querySelector('#nres .ok-panel h2')?.innerText || '',
+                result: document.querySelector('#nres')?.innerText || '',
+                banner: document.querySelector('#banner')?.innerText || '',
+                activeNavigation: document.querySelector('#nav [aria-current="page"]')?.dataset.v || '',
+                records,
+              };
+            }""",
+            vendor,
+        )
+        if not title.includes('Saved and synchronized'):
+            print(
+                'AMBIGUOUS ONLINE SAVE DIAGNOSTIC:',
+                json.dumps(diagnostics, sort_keys=True),
+            )
+            check(
+                False,
+                f'{kind} online save did not confirm same-ID recovery; title={title!r}, message={message!r}',
+            )
+            return
+
         check(
-            'same transaction ID' in page.locator('#nres .ok-panel p').inner_text()
-            and 'No duplicate voucher was created' in page.locator('#nres .ok-panel p').inner_text(),
+            'same transaction ID' in message and 'No duplicate voucher was created' in message,
             f'{kind} online save response recovers with an explicit same-ID confirmation',
         )
 
-        status = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+        status = diagnostics['server']
         if kind == 'lost-response':
             check(
                 status.get('droppedOnlineResponses') == 1
