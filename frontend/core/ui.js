@@ -190,7 +190,14 @@ export const head = (title, extra = '', options = {}) => {
 
 // HTML slots below are trusted app-authored markup. User/API-derived values
 // must be escaped by feature renderers before they are supplied.
-export function formPanel({ id, title, description = '', fields, footer = '', className = 'filters' }) {
+export function formPanel({
+  id,
+  title,
+  description = '',
+  fields,
+  footer = '',
+  className = 'filters',
+}) {
   if (typeof id !== 'string' || !id || typeof fields !== 'string') {
     throw new TypeError('Form panel requires an id and trusted field markup.');
   }
@@ -218,7 +225,8 @@ export function tableView({ label, columns, rows = '', emptyMessage = 'No record
       return `<th scope="col"${classes ? ` class="${classes}"` : ''}>${esc(column.label)}</th>`;
     })
     .join('');
-  const body = rows || `<tr><td colspan="${columns.length}" class="muted">${esc(emptyMessage)}</td></tr>`;
+  const body =
+    rows || `<tr><td colspan="${columns.length}" class="muted">${esc(emptyMessage)}</td></tr>`;
 
   return `
     <div class="table-wrap" role="region" aria-label="${esc(label)}" tabindex="0">
@@ -243,6 +251,7 @@ export function emptyState({ title, description, action = '' }) {
   `;
 }
 
-export const refreshBtn = '<button class="btn sm" type="button" data-act="refresh">↻ Refresh</button>';
+export const refreshBtn =
+  '<button class="btn sm" type="button" data-act="refresh">↻ Refresh</button>';
 
 export { $, $$ };
