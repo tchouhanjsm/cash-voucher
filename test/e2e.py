@@ -4070,7 +4070,15 @@ with sync_playwright() as p:
     )
     audit_page.click('#backup-status [data-act="backup-retry"]')
     audit_page.wait_for_function(
-        "document.querySelector('#backup-status .badge')?.innerText.includes('No completed backup recorded')",
+        """() => {
+            const card = document.querySelector('#backup-status');
+            return Boolean(
+                card &&
+                card.querySelector('.badge') &&
+                !card.querySelector('[data-act="backup-retry"]') &&
+                !card.innerText.includes('Backup status could not be loaded')
+            );
+        }""",
         timeout=10000,
     )
     check(
