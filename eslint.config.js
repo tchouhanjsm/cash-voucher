@@ -147,6 +147,10 @@ module.exports = [
     },
     rules: {
       'no-console': 'off',
+      // Apps Script combines numbered .gs files into one global scope. The
+      // custom layout checker owns duplicate declaration detection; ESLint
+      // must not treat the configured cross-file globals as local redeclarations.
+      'no-redeclare': 'off',
       'no-unused-vars': [
         'warn',
         {
