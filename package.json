@@ -1,7 +1,7 @@
 {
   "name": "cash-voucher-v2",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Cash voucher web application with Google Apps Script backend.",
   "engines": {
     "node": ">=20 <23"
@@ -15,7 +15,7 @@
     "check:syntax": "node scripts/check-js.js",
     "check:backend": "node scripts/check-backend-layout.js",
     "inspect:frontend": "node scripts/inspect-frontend.js",
-    "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm run check:backend && npm run check:contrast && npm run check:frontend && npm test",
+    "check": "npm run lint && npm run format:check && npm run validate:json && npm run check:syntax && npm run check:backend && npm run check:version && npm run check:contrast && npm run check:frontend && npm test",
     "prepare": "git config core.hooksPath .githooks || true",
     "fix:format": "prettier --write .",
     "fix:lint": "eslint . --fix",
@@ -31,7 +31,8 @@
     "test:e2e": "bash test/run-e2e.sh",
     "audit:deps": "node scripts/dependency-audit.js",
     "check:contrast": "node scripts/check-contrast.js",
-    "test:flight": "npm run audit:deps && npm run check && npm run test:e2e"
+    "test:flight": "npm run audit:deps && npm run check && npm run test:e2e",
+    "check:version": "node scripts/check-app-version.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
