@@ -4523,8 +4523,10 @@ with sync_playwright() as p:
         and session_after_expiry[0]['status'] == 'pending',
         'session expiry during sync preserves the same queue item and does not mark it failed',
     )
-    page.fill('#lEmail', 'owner@test.com')
-    page.fill('#lPin', '579246')
+    # Reauthenticate the same account that owns the pending entry. The main page is
+    # intentionally signed in as staff (s@test.com) at this point in the broader E2E suite.
+    page.fill('#lEmail', 's@test.com')
+    page.fill('#lPin', '975310')
     page.click('#lBtn')
     page.wait_for_selector('#nav button', timeout=10000)
     page.evaluate("window.dispatchEvent(new Event('online'))")
