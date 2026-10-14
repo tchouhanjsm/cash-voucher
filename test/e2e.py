@@ -4534,21 +4534,38 @@ with sync_playwright() as p:
         if not outbox_vendor_records(stale_session_vendor):
             break
         page.wait_for_timeout(200)
+    session_queue_after_retry = outbox_vendor_records(stale_session_vendor)
     session_final_status = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
     page.click('[data-act=refresh]')
     page.wait_for_timeout(400)
     page.fill('#rq', stale_session_vendor)
-    page.wait_for_function(
-        f"Array.from(document.querySelectorAll('#rbody tr')).filter((row) => row.innerText.includes({json.dumps(stale_session_vendor)})).length === 1",
-        timeout=10000,
-    )
+    try:
+        page.wait_for_function(
+            f"Array.from(document.querySelectorAll('#rbody tr')).filter((row) => row.innerText.includes({json.dumps(stale_session_vendor)})).length === 1",
+            timeout=10000,
+        )
+        visible_stale_rows = page.locator('#rbody tr', has_text=stale_session_vendor).count()
+    except Exception:
+        visible_stale_rows = page.locator('#rbody tr', has_text=stale_session_vendor).count()
+        print(
+            'STALE_SESSION_RECOVERY_DIAGNOSTIC:',
+            json.dumps({
+                'signedInName': page.locator('#userName').inner_text() if page.locator('#userName').count() else '',
+                'status': session_final_status,
+                'queue': session_queue_after_retry,
+                'visibleRows': page.locator('#rbody tr').all_inner_texts(),
+                'searchValue': page.locator('#rq').input_value() if page.locator('#rq').count() else '',
+            }),
+        )
+        check(False, 'same-account reauthentication should synchronize and display the stale-session voucher')
     check(
         session_final_status.get('sessionExpiryResponses') == 1
         and session_final_status.get('staleSessionCreateRequests') == 2
-        and not outbox_vendor_records(stale_session_vendor)
-        and page.locator('#rbody tr', has_text=stale_session_vendor).count() == 1,
+        and session_final_status.get('staleSessionVoucherCount') == 1
+        and not session_queue_after_retry
+        and visible_stale_rows == 1,
         'reauthenticated same-ID retry clears the queue and creates exactly one voucher',
     )
 
