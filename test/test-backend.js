@@ -2275,7 +2275,7 @@ ok(
 // Audit-write observability: a failed audit append must not make a completed voucher
 // appear unsaved, but the owner must be able to see the unresolved audit gap.
 g.failNextAuditWrite();
-const auditFailureVoucher = as(M, 'createVouchers', {
+const auditFailureVoucher = as(workflowManagerToken, 'createVouchers', {
   entries: [
     {
       clientId: 'audit-write-observability-regression',
