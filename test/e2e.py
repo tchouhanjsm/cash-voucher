@@ -1602,7 +1602,7 @@ with sync_playwright() as p:
         if request_data.get('action') == 'createVouchers' and created:
             created[0]['no'] = success_number_payload
             # createVouchers responses are pushed into the client cache before a later bootstrap normalization.
-            created[0]['date'] = {'toString': None, 'valueOf': None}
+            created[0]['date'] = {'split': None}
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
