@@ -27,6 +27,25 @@ def check(condition, message):
         ok += 1
 
 
+def go_view(page, view):
+    """Navigate through the visible mobile shortcut or the accessible More sheet."""
+    shortcut = page.locator(f'#nav [data-v="{view}"]')
+    if shortcut.count() == 1 and shortcut.is_visible():
+        shortcut.click()
+        return
+
+    more_button = page.locator('#mobileMoreBtn')
+    if not more_button.is_visible():
+        raise AssertionError(f'Navigation item {view!r} is not visible and More is unavailable.')
+
+    more_button.click()
+    overflow_item = page.locator(f'#navMoreItems [data-v="{view}"]')
+    if overflow_item.count() != 1:
+        page.keyboard.press('Escape')
+        raise AssertionError(f'Navigation item {view!r} is not available in More.')
+    overflow_item.click()
+
+
 png = base64.b64decode(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='
 )
@@ -156,9 +175,36 @@ with sync_playwright() as p:
         page.locator('[data-v=dash] .ic').get_attribute('aria-hidden') == 'true',
         'decorative navigation icon is hidden from assistive technology',
     )
+    check(
+        page.locator('#nav button:visible').count() == 4
+        and all(
+            page.locator(f'#nav [data-v={view}]').is_visible()
+            for view in ['dash', 'new', 'reg', 'reports']
+        ),
+        'mobile bottom bar shows four high-value shortcuts without horizontal scrolling',
+    )
+    check(
+        page.locator('#mobileMoreBtn').is_visible()
+        and page.locator('#mobileMoreBtn').get_attribute('aria-expanded') == 'false',
+        'mobile More control is available and initially collapsed',
+    )
+    page.click('#mobileMoreBtn')
+    page.wait_for_selector('#navMore:not(.hidden)')
+    check(
+        page.locator('#navMore').get_attribute('aria-hidden') == 'false'
+        and page.locator('#navMore [role=dialog]').get_attribute('aria-modal') == 'true'
+        and page.locator('#navMoreItems [data-v=cashClose]').count() == 1,
+        'More sheet exposes role-authorized overflow routes in an accessible dialog',
+    )
+    page.keyboard.press('Escape')
+    check(
+        page.locator('#navMore').is_hidden()
+        and page.evaluate("document.activeElement?.id === 'mobileMoreBtn'"),
+        'Escape closes More and returns keyboard focus to its trigger',
+    )
 
     # Daily Cash Close journey: manual opening, immutable report, correction note and carry-forward.
-    page.click('[data-v=cashClose]')
+    go_view(page, 'cashClose')
     page.wait_for_selector('#cc-date')
     page.fill('#cc-date', '2020-01-01')
     page.click('[data-act=closePreview]')
@@ -234,7 +280,7 @@ with sync_playwright() as p:
       };
     })""")
 
-    page.click('[data-v=users]')
+    go_view(page, 'users')
     page.wait_for_selector('#uf')
     check(
         page.locator('#un').get_attribute('aria-label') == 'User name'
@@ -267,7 +313,7 @@ with sync_playwright() as p:
     check(page.locator('tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.locator('#rows .rv').first.fill('Approval E2E vendor')
     page.locator('#rows .ra').first.fill('10000')
@@ -280,7 +326,7 @@ with sync_playwright() as p:
         'excluded from approved totals and Daily Cash Close' in page.locator('#nres').inner_text(),
         'new payment at INR 10,000 clearly explains the approval requirement and financial treatment',
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rq')
     page.fill('#rq', 'Approval E2E vendor')
     page.wait_for_function(
@@ -291,14 +337,14 @@ with sync_playwright() as p:
         and page.locator('#rbody [data-act=reject]').count() == 0,
         'voucher creator cannot self-approve or self-reject from the Register',
     )
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_selector('[data-v=dash][aria-current=page]')
     check(
         'active payment(s) are pending approval' in page.locator('#view').inner_text()
         and 'excluded from approved totals' in page.locator('#view').inner_text(),
         'Dashboard discloses pending approval exceptions and their total treatment',
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rq')
     page.fill('#rq', 'Approval E2E vendor')
 
@@ -316,7 +362,7 @@ with sync_playwright() as p:
     manager_page.fill('#np', '271828')
     manager_page.click('.mcard .primary')
     manager_page.wait_for_selector('#nav button')
-    manager_page.click('[data-v=reg]')
+    go_view(manager_page, 'reg')
     manager_page.wait_for_selector('#rq')
     manager_page.fill('#rq', 'Approval E2E vendor')
     manager_page.wait_for_function(
@@ -416,8 +462,7 @@ with sync_playwright() as p:
     manager_context.close()
 
     # Slice 4: generic read-only accountant report/export with stable VendorID.
-    page.locator('[data-v=vend]').scroll_into_view_if_needed()
-    page.locator('[data-v=vend]').click()
+    go_view(page, 'vend')
     page.wait_for_selector('#vf')
     try:
         page.locator('#vn').wait_for(state='visible', timeout=5000)
@@ -452,7 +497,7 @@ with sync_playwright() as p:
         'Vendor management exposes a stable, non-empty VendorID',
     )
 
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.locator('#rows .rv').first.fill('Accountant E2E Vendor')
     page.locator('#rows .ra').first.fill('125')
@@ -517,9 +562,7 @@ with sync_playwright() as p:
         'generic accountant CSV includes vendor identity without claiming tax/accounting-system compatibility',
     )
     accountant_context.close()
-
-    page.locator('[data-v=users]').scroll_into_view_if_needed()
-    page.locator('[data-v=users]').click()
+    go_view(page, 'users')
     page.wait_for_selector('#uf')
     xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
@@ -583,8 +626,8 @@ with sync_playwright() as p:
         route.fulfill(response=response, body=json.dumps(payload))
 
     page.route('**/api?*', inject_malformed_user_rows)
-    page.click('[data-v=dash]')
-    page.click('[data-v=users]')
+    go_view(page, 'dash')
+    go_view(page, 'users')
     page.wait_for_function(
         "document.querySelector('#view [role=status]')?.innerText.includes('malformed user record(s) omitted')"
     )
@@ -601,8 +644,8 @@ with sync_playwright() as p:
         'malformed user names, emails and roles are not coerced or rendered as active markup',
     )
     invalid_user_envelope = True
-    page.click('[data-v=dash]')
-    page.click('[data-v=users]')
+    go_view(page, 'dash')
+    go_view(page, 'users')
     page.wait_for_function(
         "document.querySelector('#view [role=status]')?.innerText.includes('User data is unavailable because the server response was invalid')"
     )
@@ -614,8 +657,8 @@ with sync_playwright() as p:
     )
     invalid_user_envelope = False
     page.unroute('**/api?*', inject_malformed_user_rows)
-    page.click('[data-v=dash]')
-    page.click('[data-v=users]')
+    go_view(page, 'dash')
+    go_view(page, 'users')
     page.wait_for_selector('#uf')
     check(
         page.locator('#view tbody tr').count() == 6
@@ -625,7 +668,7 @@ with sync_playwright() as p:
 
     xss_vendor = '<svg onload=window.__xssFired=true></svg>'
     xss_company = '<img src=x onerror=window.__xssFired=true>'
-    page.click('[data-v=vend]')
+    go_view(page, 'vend')
     page.wait_for_selector('#vf')
     check(
         page.locator('#vn').get_attribute('aria-label') == 'Vendor name'
@@ -648,7 +691,7 @@ with sync_playwright() as p:
         'vendor name and company are rendered as text, not executable HTML',
     )
 
-    page.click('[data-v=set]')
+    go_view(page, 'set')
     page.wait_for_function(
         "document.querySelector('#backup-status').innerText.includes('No completed backup recorded')"
     )
@@ -683,11 +726,11 @@ with sync_playwright() as p:
         "() => fetch('/test-backup-failure', { method: 'POST' }).then((response) => response.ok)"
     )
     check(status_fixture_ok, 'backup failure alert fixture is available')
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_function(
         "document.querySelector('[data-v=dash]').getAttribute('aria-current') === 'page'"
     )
-    page.click('[data-v=set]')
+    go_view(page, 'set')
     page.wait_for_function(
         "document.querySelector('#backup-status').innerText.includes('Latest backup attempt failed')"
     )
@@ -703,7 +746,7 @@ with sync_playwright() as p:
     )
     check(page.locator('#aud').count() == 0, 'audit events are no longer embedded in Settings')
     check(page.locator('[data-v=audit]').count() == 1, 'owner has a dedicated audit navigation item')
-    page.click('[data-v=audit]')
+    go_view(page, 'audit')
     page.wait_for_selector('#aud tr')
     page.wait_for_function(
         "document.querySelector('#aud').innerText.includes('<svg onload=window.__xssFired=true></svg>')"
@@ -742,7 +785,7 @@ with sync_playwright() as p:
         and page.locator('#aud-q').input_value() == '',
         'clear audit filters restores the loaded event list',
     )
-    page.click('[data-v=set]')
+    go_view(page, 'set')
     page.wait_for_selector('#sn')
     page.fill('#sn', xss_payload)
     page.fill('#sa', xss_company)
@@ -814,7 +857,7 @@ with sync_playwright() as p:
     page.wait_for_function(
         "document.querySelector('#brand').textContent === 'Attribute Context Test'"
     )
-    page.click('[data-v=set]')
+    go_view(page, 'set')
     page.wait_for_selector('#sq')
     page.wait_for_timeout(250)
     check(
@@ -835,7 +878,7 @@ with sync_playwright() as p:
     page.wait_for_function(
         "document.querySelector('#brand').textContent === 'Attribute Context Test'"
     )
-    page.click('[data-v=set]')
+    go_view(page, 'set')
     page.wait_for_selector('#sq')
     check(
         page.locator('#sq').count() == 1
@@ -865,7 +908,7 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'object-valued property and profile names stay inert and do not abort navigation bootstrap',
     )
-    page.click('[data-v=set]')
+    go_view(page, 'set')
     page.wait_for_selector('#sn')
     check(
         page.locator('#sn').input_value() == ''
@@ -884,7 +927,7 @@ with sync_playwright() as p:
         page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     page.wait_for_function("document.querySelector('#brand').textContent === 'Category Shape Test'")
-    page.click('[data-v=set]')
+    go_view(page, 'set')
     page.wait_for_selector('#sc')
     check(
         page.locator('#sc').input_value() == 'Office\nOther'
@@ -893,7 +936,7 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'malformed category setting arrays normalize to string-only lists in Settings',
     )
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#rows .erow .rc')
     check(
         page.locator('#rows .erow .rci').input_value() == ''
@@ -999,7 +1042,7 @@ with sync_playwright() as p:
             offline_create_requests.append(request.url)
 
     page.on('request', track_offline_create)
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.fill('.rv', 'Offline Unlock Vendor')
     page.fill('.ra', '42')
@@ -1264,8 +1307,16 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 3, 'staff sees 3 nav items (dash,new,reg); Account is in the user menu')
+    page.click('#mobileMoreBtn')
+    page.wait_for_selector('#navMore:not(.hidden)')
+    check(
+        page.locator('#navMoreEmpty').is_visible()
+        and page.locator('#navMoreItems button').count() == 0,
+        'More sheet does not expose privileged pages to a staff account',
+    )
+    page.keyboard.press('Escape')
 
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#nf')
     check(
         page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
@@ -1437,7 +1488,7 @@ with sync_playwright() as p:
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_selector('.thumb')
     abandoned_preview_url = page.locator('.thumb').first.get_attribute('src')
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_function(
         "document.querySelector('[data-v=dash]')?.getAttribute('aria-current') === 'page'"
     )
@@ -1448,7 +1499,7 @@ with sync_playwright() as p:
     )
 
     # Force image compression to finish after its row has been detached.
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.evaluate(
         """() => {
@@ -1462,7 +1513,7 @@ with sync_playwright() as p:
     created_before = page.evaluate('window.__createdObjectUrls.length')
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_function('window.__pendingToBlob !== null')
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_function(
         "document.querySelector('[data-v=dash]')?.getAttribute('aria-current') === 'page'"
     )
@@ -1496,7 +1547,7 @@ with sync_playwright() as p:
         'compression finishing after navigation revokes its preview URL instead of retaining it',
     )
 
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rbody tr')
     check(
         page.locator('#rq').get_attribute('aria-label') == 'Search vouchers by number, vendor or note'
@@ -1679,7 +1730,7 @@ with sync_playwright() as p:
     )
 
     context.set_offline(True)
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.fill('.rv', 'Offline Vendor')
     page.fill('.ra', '75')
     page.set_input_files('.rf', '/tmp/r.png')
@@ -1709,7 +1760,7 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'offline queue survives page restart')
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     offline_dashboard_text = page.locator('#view').inner_text()
     check(
         'Voucher data is unavailable while offline.' in offline_dashboard_text
@@ -1718,7 +1769,7 @@ with sync_playwright() as p:
         and not page.locator('[data-act=refresh]').is_disabled(),
         'offline startup withholds unverified Dashboard totals and charts while preserving refresh recovery',
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     offline_register_text = page.locator('#view').inner_text()
     check(
         'Voucher data is unavailable while offline.' in offline_register_text
@@ -1728,8 +1779,7 @@ with sync_playwright() as p:
         and page.locator('#rf [data-act=csv]').is_disabled(),
         'offline Register does not present zero-like totals, empty records, or CSV export as valid data',
     )
-    page.click('[data-v=new]')
-
+    go_view(page, 'new')
     def select_recovery_file(file_path, accept_dialog=False):
         selector = '#banner [data-act=import-pending]'
         if not page.locator(selector).is_visible():
@@ -1865,13 +1915,13 @@ with sync_playwright() as p:
         "() => fetch('/test-status').then((response) => response.json())"
     )
     check(drop_state.get('droppedClientResponses') == 1, 'server accepted then dropped one response')
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_timeout(500)
     page.click('[data-act=refresh]')
     page.wait_for_timeout(500)
     check(page.locator('#rbody tr').count() == 3, 'lost-response retry is idempotent')
 
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     import_recovery_file(pending_export_path)
     page.wait_for_selector('#banner:not(.hidden)', timeout=8000)
     check('1 payment waiting to upload' in page.inner_text('#banner'), 'synced recovery export can be restored')
@@ -1880,7 +1930,7 @@ with sync_playwright() as p:
         "document.querySelector('#banner').classList.contains('hidden')",
         timeout=8000,
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_timeout(500)
     page.click('[data-act=refresh]')
     page.wait_for_timeout(500)
@@ -1895,7 +1945,7 @@ with sync_playwright() as p:
     check(second_page.locator('#nav button').count() == 3, 'second tab shares the staff session')
 
     context.set_offline(True)
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.fill('.rv', 'Multi-tab Vendor')
     page.fill('.ra', '525')
     choose_cash_impact_for_current_rows()
@@ -1923,7 +1973,7 @@ with sync_playwright() as p:
         multi_tab_state.get('countedCreateRequests') == 1,
         'two tabs submit one create request for the same queued transaction',
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_timeout(400)
     page.click('[data-act=refresh]')
     page.wait_for_timeout(400)
@@ -1993,7 +2043,7 @@ with sync_playwright() as p:
         )
 
     context.set_offline(True)
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.fill('.rv', 'Account-bound Vendor')
     page.fill('.ra', '81')
     choose_cash_impact_for_current_rows()
@@ -2046,7 +2096,7 @@ with sync_playwright() as p:
     # Restore the intended account binding and leave a draft open while the background sync runs.
     context.set_offline(True)
     update_outbox_owner('Account-bound Vendor', original_owner_key)
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.fill('.rv', 'Draft preserved during sync')
     page.fill('.ra', '15')
     context.set_offline(False)
@@ -2079,7 +2129,7 @@ with sync_playwright() as p:
 
     # A malformed row is isolated; a valid neighbour still uploads from the same offline batch.
     context.set_offline(True)
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.fill('.rv', 'Poison Vendor')
     page.fill('.ra', '99')
     page.click('[data-act=addrow]')
@@ -2091,7 +2141,7 @@ with sync_playwright() as p:
     check('Saved on this device' in page.inner_text('#nres'), 'mixed valid/invalid batch is safely queued offline')
 
     # Keep another draft open while the queued records are processed.
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.fill('.rv', 'Draft survives rejected neighbour')
     page.fill('.ra', '12')
     context.set_offline(False)
@@ -2164,7 +2214,7 @@ with sync_playwright() as p:
         and page.locator('.ra').first.input_value() == '12',
         'form remains editable after partial outbox failure and successful neighbour upload',
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rbody')
     page.click('[data-act=refresh]')
     page.wait_for_timeout(400)
@@ -2175,7 +2225,7 @@ with sync_playwright() as p:
 
     # A queued cash receipt must be labeled accurately and sync when connectivity returns.
     context.set_offline(True)
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.click('[data-k=RECEIPT]')
     page.fill('.rv', 'Offline Receipt Label Test')
     page.fill('.ra', '21')
@@ -2208,7 +2258,7 @@ with sync_playwright() as p:
         }""",
         timeout=10000,
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rbody')
     page.click('[data-act=refresh]')
     page.wait_for_timeout(300)
@@ -2231,7 +2281,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
 
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.click('[data-k=RECEIPT]')
     page.fill('.rv', 'Guest Room 5')
     page.fill('.ra', '5000')
@@ -2243,7 +2293,7 @@ with sync_playwright() as p:
         'next cash receipt receives the next sequential number after offline sync',
     )
 
-    page.click('[data-v=bulk]')
+    go_view(page, 'bulk')
     page.wait_for_selector('#bt')
     today = datetime.date.today()
     date_text = today.strftime('%d/%m/%Y')
@@ -2329,7 +2379,7 @@ with sync_playwright() as p:
     )
 
     # Import one receipt to ensure completion wording reflects the selected operation type.
-    page.click('[data-v=bulk]')
+    go_view(page, 'bulk')
     page.wait_for_selector('#bt')
     page.fill(
         '#bt',
@@ -2359,7 +2409,7 @@ with sync_playwright() as p:
         'receipt import completion is accurate and announced',
     )
 
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_selector('svg.chart')
     page.click('[data-k=mtd]')
     page.wait_for_selector('.stats')
@@ -2480,7 +2530,7 @@ with sync_playwright() as p:
     ):
         page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_selector('.hb-l')
     vendor_labels = page.locator('.two .card').nth(0).locator('.hb-l').all_inner_texts()
     category_labels = page.locator('.two .card').nth(1).locator('.hb-l').all_inner_texts()
@@ -2499,7 +2549,7 @@ with sync_playwright() as p:
         and '1 recorded voucher amount(s) are invalid and excluded from totals.' in page.locator('#view').inner_text(),
         'dashboard announces shared malformed voucher diagnostics, excludes malformed amounts, and keeps coercion inert',
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rtot')
     check(
         '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#rtot').inner_text()
@@ -2507,7 +2557,7 @@ with sync_playwright() as p:
         and '[object Object]' not in page.locator('#view').inner_text(),
         'register surfaces the same bootstrap diagnostics and keeps malformed metadata safe',
     )
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     builtins_unchanged = page.evaluate(
         """() => {
           const baseline = window.__dashboardKeyBaseline || [];
@@ -2539,7 +2589,7 @@ with sync_playwright() as p:
           return previous;
         }"""
     )
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#vlist', state='attached')
     vendor_option_values = page.locator('#vlist option').evaluate_all(
         'options => options.map(option => option.value)'
@@ -2561,7 +2611,7 @@ with sync_playwright() as p:
         }""",
         cache_before_vendor_options,
     )
-    page.click('[data-v=vend]')
+    go_view(page, 'vend')
     page.wait_for_selector('#vf')
     check(
         '3 malformed vendor record(s) omitted from this response' in page.locator('#view').inner_text()
@@ -2577,7 +2627,7 @@ with sync_playwright() as p:
     invalid_vendor_envelope = True
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
-    page.click('[data-v=vend]')
+    go_view(page, 'vend')
     page.wait_for_selector('#vf')
     check(
         'Vendor data is unavailable because the server response was invalid.' in page.locator('#view').inner_text()
@@ -2588,7 +2638,7 @@ with sync_playwright() as p:
     invalid_voucher_envelope = True
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     check(
         'Voucher data is unavailable because the server response was invalid. Refresh and retry.'
         in page.locator('#view').inner_text()
@@ -2606,7 +2656,7 @@ with sync_playwright() as p:
         ),
         'invalid bootstrap envelope withholds dashboard KPIs and charts instead of showing zero-like totals',
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rempty')
     register_invalid_text = page.locator('#view').inner_text()
     check(
@@ -2618,12 +2668,12 @@ with sync_playwright() as p:
         and page.locator('#rf [data-act=csv]').is_disabled(),
         'invalid Register envelope does not imply empty data, show zero-like totals, or permit CSV export',
     )
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     invalid_voucher_envelope = False
     page.unroute('**/api?*', tamper_dashboard_groups)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     recovered_dashboard_text = page.locator('#view').inner_text()
     check(
         'Voucher data is unavailable' not in recovered_dashboard_text
@@ -2699,7 +2749,7 @@ with sync_playwright() as p:
     ):
         page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_selector('.hb-l')
     dashboard_amount_text = page.locator('.stats').inner_text()
     check(
@@ -2756,7 +2806,7 @@ with sync_playwright() as p:
         injected_svg_count == 0 and not hostile_handler_fired,
         'hostile vendor text creates no SVG element and does not execute its handler',
     )
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rtot')
     register_amount_text = page.locator('#rtot').inner_text()
     check(
@@ -2788,13 +2838,13 @@ with sync_playwright() as p:
             and 'Infinity' not in printed,
             f'{suffix} is handled safely by voucher amount-in-words printing',
         )
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_selector('.hb-l')
     page.unroute('**/api?*', tamper_dashboard_numeric_values)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
 
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('[data-act=edit]')
     page.set_viewport_size({'width': 390, 'height': 844})
     manager_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
@@ -2975,7 +3025,7 @@ with sync_playwright() as p:
     audit_page.fill('#lPin', '579246')
     audit_page.click('#lBtn')
     audit_page.wait_for_selector('[data-v=audit]')
-    audit_page.click('[data-v=audit]')
+    go_view(audit_page, 'audit')
     audit_page.wait_for_function(
         "document.querySelector('#aud').innerText.includes('Corrected after receipt review')",
         timeout=10000,
@@ -3034,7 +3084,7 @@ with sync_playwright() as p:
     check(page.locator('#rbody tr.cx').count() == 1, 'cancelled voucher visible under filter')
 
     # Exercise the recorded movement report through the actual browser/API mock.
-    page.click('[data-v=reports]')
+    go_view(page, 'reports')
     page.wait_for_selector('#movementFilters')
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
@@ -3335,7 +3385,7 @@ with sync_playwright() as p:
     # test. Earlier journeys intentionally leave filters behind across SPA navigation.
     page.reload()
     page.wait_for_selector('[data-v=reg]')
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rbody')
     page.select_option('#rs', 'ALL')
 
@@ -3397,7 +3447,7 @@ with sync_playwright() as p:
     # isolate malformed receipt metadata from the current no-match search state.
     page.reload()
     page.wait_for_selector('[data-v=reg]')
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('999991')")
     page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
     page.wait_for_selector('#rimgs .receipt-error[role=alert]')
@@ -3420,7 +3470,7 @@ with sync_playwright() as p:
     check(page.locator('[data-v=users]').count() == 0, 'manager has no Users nav')
 
     page.set_viewport_size({'width': 1280, 'height': 800})
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_selector('.two')
     page.screenshot(path='/tmp/desktop.png')
 
@@ -3450,7 +3500,7 @@ with sync_playwright() as p:
             )
             check(nav_height >= 44, f'{width}px mobile navigation targets are at least 44px tall')
 
-    page.click('[data-v=reg]')
+    go_view(page, 'reg')
     page.wait_for_selector('#rbody')
     for width in viewport_widths:
         page.set_viewport_size({'width': width, 'height': 800})
@@ -3460,7 +3510,7 @@ with sync_playwright() as p:
         check(not page_overflow, f'{width}px register has no page-level horizontal overflow')
 
     # Exercise the payment-entry workflow at the narrow reflow width used for 400% zoom.
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.set_viewport_size({'width': 320, 'height': 800})
     check(
@@ -3530,7 +3580,7 @@ with sync_playwright() as p:
     page.emulate_media(reduced_motion='no-preference')
 
     page.set_viewport_size({'width': 1280, 'height': 800})
-    page.click('[data-v=dash]')
+    go_view(page, 'dash')
     page.wait_for_selector('.two')
     amount_style = page.locator('.stats b').first.evaluate(
         '(element) => getComputedStyle(element).fontVariantNumeric'
@@ -3772,7 +3822,7 @@ with sync_playwright() as p:
     audit_page.fill('#lPin', '579246')
     audit_page.click('#lBtn')
     audit_page.wait_for_selector('[data-v=audit]')
-    audit_page.click('[data-v=audit]')
+    go_view(audit_page, 'audit')
     audit_page.wait_for_function(
         "document.querySelector('#aud-count')?.innerText.includes('malformed audit event(s) omitted')",
         timeout=10000,
@@ -3800,8 +3850,8 @@ with sync_playwright() as p:
     )
 
     audit_response_mode = 'invalid-envelope'
-    audit_page.click('[data-v=dash]')
-    audit_page.click('[data-v=audit]')
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
     audit_page.wait_for_function(
         "document.querySelector('#aud-count')?.innerText.includes('invalid server response')",
         timeout=10000,
@@ -3820,8 +3870,8 @@ with sync_playwright() as p:
     )
 
     audit_response_mode = 'empty'
-    audit_page.click('[data-v=dash]')
-    audit_page.click('[data-v=audit]')
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
     audit_page.wait_for_function(
         "document.querySelector('#aud-count')?.innerText.includes('Showing 0 of 0 loaded events;')",
         timeout=10000,
@@ -3833,8 +3883,8 @@ with sync_playwright() as p:
     )
 
     audit_response_mode = 'valid'
-    audit_page.click('[data-v=dash]')
-    audit_page.click('[data-v=audit]')
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
     audit_page.wait_for_function(
         "document.querySelector('#aud-count')?.innerText.startsWith('Showing ')",
         timeout=10000,
@@ -3845,7 +3895,7 @@ with sync_playwright() as p:
         'audit view recovers when a valid response returns',
     )
 
-    audit_page.click('[data-v=set]')
+    go_view(audit_page, 'set')
     audit_page.wait_for_selector('[data-act=dqscan]')
     diagnostic_response_modes['dataQualityReport'] = 'invalid-envelope'
     audit_page.click('[data-act=dqscan]')
@@ -3899,7 +3949,7 @@ with sync_playwright() as p:
 
     # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
     page.set_viewport_size({'width': 390, 'height': 800})
-    page.click('[data-v=new]')
+    go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.click('[data-k=RECEIPT]')
     page.fill('.erow .rv', 'Mobile cash receipt workflow')
