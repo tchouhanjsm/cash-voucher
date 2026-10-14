@@ -339,4 +339,3 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 - **Boundary fix:** validate the open and closed response variants, required fields, dates, booleans, finite money/count values, issue rows, saved-close snapshot IDs/count and correction/history rows before assigning the response to the view. Reset prior preview state at refresh start; malformed responses render a retryable error and provide no Save control.
 - **Regression:** Browser E2E injects a null issue row, a JSON object with non-callable `toString`/`valueOf`, and a null recent-history row. Each response must fail closed without a stale closed report or Save action, then recover when the normal response is restored.
 - This is targeted response-integrity and rendering resilience, not full XSS certification or proof of live deployment, backup restore, all HTML sinks or accessibility conformance.
-
