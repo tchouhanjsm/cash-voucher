@@ -21,6 +21,7 @@ The service-worker cache version is bumped for installed PWA updates. Phase 3 (p
 Its tested head `bda1aacbc98c93a707df972f5b2ab00055745ba4` passed CI, Browser E2E and Full Flight Test.
 
 Owner-approved UAT-048 edit policy:
+
 - Amount, vendor/vendor identity, date and CashImpact changes invalidate an approval-managed payment's approval.
 - If the corrected amount remains at or above INR 10,000, the payment returns to `PENDING`; if below the threshold, it becomes `NOT_REQUIRED`.
 - Category and notes corrections retain approval status and metadata.
