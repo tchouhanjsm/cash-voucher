@@ -4469,6 +4469,8 @@ with sync_playwright() as p:
     )
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(400)
     page.fill('#rq', acknowledgement_vendor)
     page.wait_for_function(
         f"Array.from(document.querySelectorAll('#rbody tr')).filter((row) => row.innerText.includes({json.dumps(acknowledgement_vendor)})).length === 1",
