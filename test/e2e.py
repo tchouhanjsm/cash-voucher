@@ -746,7 +746,7 @@ with sync_playwright() as p:
         'backup failure is assertively announced with separate error, delivery, runtime and payload metrics',
     )
     check(page.locator('#aud').count() == 0, 'audit events are no longer embedded in Settings')
-    check(page.locator('[data-v=audit]').count() == 1, 'owner has a dedicated audit navigation item')
+    check(page.locator('#navMoreItems [data-v=audit]').count() == 1, 'owner has a dedicated audit navigation item in More')
     go_view(page, 'audit')
     page.wait_for_selector('#aud tr')
     page.wait_for_function(
