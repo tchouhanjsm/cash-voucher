@@ -340,7 +340,6 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 - **Regression:** Browser E2E removes the required unclassified list, injects a null issue row, supplies a JSON object with non-callable `toString`/`valueOf`, and injects a null recent-history row. Each response must fail closed without a stale closed report or Save action, then recover when the normal response is restored.
 - This is targeted response-integrity and rendering resilience, not full XSS certification or proof of live deployment, backup restore, all HTML sinks or accessibility conformance.
 
-
 ## Phase 1 review status — 14 October 2026
 
 PR #126 adds targeted Daily Cash Close preview response validation; see the section above for its exact scope. The complete active HTML/DOM sink inventory, live authorization, secret/history scan, real backup/restore and device validation remain open. See `docs/PHASE-1-REPOSITORY-AUDIT.md`; do not treat this incremental audit as a security certification.
