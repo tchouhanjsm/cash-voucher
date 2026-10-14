@@ -161,7 +161,7 @@ function cashCloseOut_(row) {
       throw new Error('Missing voucher snapshot');
     }
     vouchers = JSON.parse(row.IncludedVouchers);
-  } catch (error) {
+  } catch {
     throw err_(
       'Saved cash-close voucher snapshot is invalid. Stop and inspect the close record.',
       'CASH_CLOSE_DATA',
@@ -213,7 +213,7 @@ function cashCloseOut_(row) {
       throw new Error('Missing voucher ID snapshot');
     }
     ids = JSON.parse(row.IncludedVoucherIds);
-  } catch (error) {
+  } catch {
     throw err_(
       'Saved cash-close voucher IDs are invalid. Stop and inspect the close record.',
       'CASH_CLOSE_DATA',
