@@ -326,7 +326,6 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 - **Browser regression:** the mocked `createVouchers` response supplies an object-valued date and a hostile voucher number. The test verifies the print output completes, uses the unavailable-date fallback, leaves the hostile voucher number as inert text and creates no image/SVG elements or page error. A second voucher with a normal date verifies the ordinary display format is preserved.
 - This is an output-path resilience guard, not acceptance/repair of malformed server records and not a complete rendering-security certification. Backend validation is still authoritative; the dynamic HTML/DOM audit, live Google authorization, backup/restore and deployed-source checks remain outstanding.
 
-
 ## Recorded Movement Report summary-count coercion guard — 14 October 2026
 
 - **Confirmed malformed-response crash path:** the report validates the summary object and `items` array, then validates individual rows. However, three optional-notice conditions still converted API-derived summary counts with `Number(value)`. A JSON object with own `toString: null` and `valueOf: null` members can throw during numeric coercion while the renderer is rebuilding the view.
