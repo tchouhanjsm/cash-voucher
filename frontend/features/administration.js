@@ -94,7 +94,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
           '<button type="button" class="btn" data-act="vclr">Clear</button>',
         ].join(''),
       }) +
-      '<div class="card">' + vendorTable + '</div>';
+      '<div class="card">' +
+      vendorTable +
+      '</div>';
   }
   async function saveVendor() {
     try {
@@ -213,7 +215,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
         footer:
           '<p class="muted"><b>Staff</b>: create and view own entries · <b>Manager</b>: view, edit, cancel, bulk upload, vendors, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
       }) +
-      '<div class="card">' + userTable + '</div>';
+      '<div class="card">' +
+      userTable +
+      '</div>';
   }
   async function saveUser() {
     try {
