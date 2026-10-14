@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `7e604c603e12942db26a9fc49a1d46bcaa2376ea` (main after PR #123; current branch reviews printed-voucher date shape)  
+**Latest merged review baseline:** `eb23c2dd5b7620de9c09329c0088f4fbff36f89d` (main after PR #124; current branch reviews report summary-count coercion)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -325,3 +325,11 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 - **Boundary fix:** a dedicated print-date formatter accepts only a real ISO `YYYY-MM-DD` calendar date before using `dmy`. Malformed/missing date values display the constant `Date unavailable` rather than crashing printing or echoing malformed data.
 - **Browser regression:** the mocked `createVouchers` response supplies an object-valued date and a hostile voucher number. The test verifies the print output completes, uses the unavailable-date fallback, leaves the hostile voucher number as inert text and creates no image/SVG elements or page error. A second voucher with a normal date verifies the ordinary display format is preserved.
 - This is an output-path resilience guard, not acceptance/repair of malformed server records and not a complete rendering-security certification. Backend validation is still authoritative; the dynamic HTML/DOM audit, live Google authorization, backup/restore and deployed-source checks remain outstanding.
+
+
+## Recorded Movement Report summary-count coercion guard — 14 October 2026
+
+- **Confirmed malformed-response crash path:** the report validates the summary object and `items` array, then validates individual rows. However, three optional-notice conditions still converted API-derived summary counts with `Number(value)`. A JSON object with own `toString: null` and `valueOf: null` members can throw during numeric coercion while the renderer is rebuilding the view.
+- **Boundary fix:** optional approval-exception, unmatched-vendor and ambiguous-vendor notices now require a primitive finite positive numeric count. The code does not coerce objects or arrays; malformed counts suppress only the associated notice and do not affect source totals or otherwise-valid rows.
+- **Browser regression:** the mocked Recorded Movement Report API returns the coercion-trap object for all three fields. E2E verifies the report's accessible table remains rendered without SVG/image markup and that the normal response can be loaded again. Existing hostile scalar-string output tests remain in place.
+- This guard addresses a narrowly scoped renderer crash, not general response integrity or full XSS certification. The broader active sink inventory, live authorization, scheduled backup and isolated restore remain open.

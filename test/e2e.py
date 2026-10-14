@@ -3467,6 +3467,51 @@ with sync_playwright() as p:
         "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
     )
 
+    # Non-scalar summary counts must not be coerced via object toString/valueOf hooks.
+    def tamper_report_summary_coercion(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        if request_data.get('action') == 'recordedMovementReport':
+            summary = payload.get('data', {})
+            for field in (
+                'approvalExceptionCount',
+                'unmatchedVendorCount',
+                'ambiguousVendorCount',
+            ):
+                summary[field] = {'toString': None, 'valueOf': None}
+            payload['data'] = summary
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', tamper_report_summary_coercion)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ):
+        page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view table caption')?.textContent === 'Recorded voucher movements'"
+    )
+    report_text = page.locator('#view').inner_text()
+    check(
+        'Source vouchers' in report_text
+        and 'invalid response' not in report_text.lower()
+        and page.locator('#view table caption').count() == 1
+        and page.locator('#view svg, #view img').count() == 0,
+        'object-valued report summary counts cannot crash rendering or inject markup',
+    )
+    page.unroute('**/api?*', tamper_report_summary_coercion)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ):
+        page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
+    )
+
     # A malformed report envelope is an explicit recoverable error, never a render crash.
     def tamper_report_envelope(route):
         request_data = json.loads(route.request.post_data or '{}')

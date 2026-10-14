@@ -300,16 +300,20 @@ PR #122 completed UI shell phases 7–8. Users, Vendors, Audit log and Backup st
 
 **Non-goals:** no historic record rewrite/repair, schema migration, financial calculation change, accounting semantics, approval-policy change, Apps Script deployment or production-data operation. Pre-existing malformed close records require separately authorized owner inspection/recovery.
 
-## Current engineering phase — printed-voucher date-shape resilience (14 October 2026)
+## Completed phase — PR #124: printed-voucher date-shape resilience (14 October 2026)
 
-**Finding from source review:** the New Entry success path stores the `createVouchers` API response in `S.vouchers` before a subsequent bootstrap normalization. A malformed non-string `date` can therefore reach `printVoucher`, where direct use of `dmy(voucher.date)` can throw because the formatter calls string methods.
+PR #124 merged at `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`. Its tested head `f241fe2d449a16fcf33a5734e75f190a22158172` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540541081), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540540922) (316 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540540948). The print renderer now displays a constant `Date unavailable` fallback for malformed date shapes while preserving valid DD/MM/YYYY output. There is no API/schema or production-data change.
 
-**Target behavior:** validate the print date as a real `YYYY-MM-DD` calendar date before formatting. Render a fixed `Date unavailable` fallback when the API response does not meet the contract; keep valid date formatting unchanged. Test the malformed response in Browser E2E by mutating the created voucher's returned date to an object, then verify printing completes, the hostile voucher number remains inert and the valid second voucher prints normally.
+## Current engineering sprint — Recorded Movement Report summary-count coercion guard (14 October 2026)
 
-**Non-goals:** no record repair, API/schema change, change to voucher acceptance, financial rule, accounting policy or deployment. The frontend print fallback is defensive rendering, not authoritative date validation. Continue the rendering audit surface by surface; do not claim complete XSS certification.
+**Finding:** the report response boundary validates the `items` array and each displayed row, but its three optional summary-notice conditions used `Number(summary.approvalExceptionCount)`, `Number(summary.unmatchedVendorCount)`, and `Number(summary.ambiguousVendorCount)` without a primitive-type guard. An object-valued JSON field with non-callable `toString`/`valueOf` members can throw during rendering and interrupt the report despite otherwise valid rows.
+
+**Outcome:** require each optional notice count to be a finite positive number before displaying the notice. Malformed summary objects are ignored for those optional notices; valid totals, rows and existing hostile-string escaping remain unchanged. Browser E2E tampers each count field with a coercion-hostile object, asserts the report table still renders without injected markup, then retries with a normal response.
+
+**Boundaries:** frontend-only resilience; no accounting semantics, backend contract, stored data, schema, dependencies, authorization, deployment, migration or production mutation. The active HTML/DOM sink audit remains incremental and is not an XSS certification.
 
 **Next priorities after this batch:**
 
-1. Continue the sink-by-sink rendering audit against active frontend modules, prioritizing concrete value-to-output gaps and targeted regression coverage.
-2. Complete the separate owner-led release/recovery gates: confirm intended Apps Script deployment and permissions, inspect actual Sheet structure after an authorized backup, observe scheduled backup artifacts and witness isolated restore.
-3. Complete physical-device PWA/offline, assistive-technology and role-based usability review before the controlled hotel pilot. Source/CI evidence alone does not close these operational gates.
+1. Continue the active frontend sink audit, verifying each concrete value-to-output gap and regression before labelling it a defect.
+2. Keep the owner-led release/recovery gates open until the intended Apps Script deployment/permissions are verified, backup artifacts are observed and isolated restore is witnessed.
+3. Complete physical-device PWA/offline, assistive-technology and role-based usability checks before the controlled hotel pilot. Source CI alone does not close these gates.

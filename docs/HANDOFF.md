@@ -2,21 +2,21 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `7e604c603e12942db26a9fc49a1d46bcaa2376ea` (PR #123 merge)  
-**Current batch:** Printed-voucher date-shape resilience and rendering regression coverage, branch `security/printed-voucher-date-shape-2026-10-14`  
+**Verified `main` SHA:** `eb23c2dd5b7620de9c09329c0088f4fbff36f89d` (PR #124 merge)  
+**Current batch:** Recorded Movement Report summary-count coercion guard and adversarial regression coverage, branch `security/report-summary-count-coercion-2026-10-14`  
 **Rule:** the GitHub PR page is authoritative for current head SHA and checks; this handoff commit itself changes the branch head.
 
-## Current phase — printed-voucher date-shape resilience
+## Current phase — Recorded Movement Report summary-count coercion guard
 
-PR #123 merged at `7e604c603e12942db26a9fc49a1d46bcaa2376ea`. It hardened the saved Daily Cash Close response boundary: malformed voucher snapshots, inconsistent IDs and count mismatches now fail closed with `CASH_CLOSE_DATA`. Its tested PR head `c2cd661b7da34788d1f99317f7439945ce965ad3` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38538622739), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38538622731) (314 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38538622741) (251 backend checks, 38 contrast-pair checks, and 314 browser checks).
+PR #124 merged at `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`; its tested head `f241fe2d449a16fcf33a5734e75f190a22158172` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540541081), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540540922) (316 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540540948) (251 backend, 38 contrast, and 316 browser checks).
 
-The current batch addresses a remaining output-path resilience gap in `frontend/features/printing.js`. The New Entry success path stores the `createVouchers` response object in the frontend cache before a subsequent bootstrap normalization; a malformed non-string `date` can therefore reach the print renderer, where `dmy(value)` assumes a string and can throw. Print formatting must validate a strict ISO calendar date before calling the formatter and display a clear `Date unavailable` fallback for malformed dates. Regression coverage verifies both this fallback and preservation of the ordinary valid date format while retaining the hostile voucher-number print regression.
+The next active sink-audit increment hardens `frontend/features/reports.js`: three summary-notice conditions currently call `Number(summary.<field>)` before verifying the API field is a primitive. A malformed JSON object with non-callable `toString`/ `valueOf` members can throw while the report renderer is rebuilding its view. The new guard accepts only finite positive numeric counts for optional exception notices, without touching the source totals or valid report rows. Browser E2E exercises coercion-hostile objects in all three fields, verifies the report table still renders, and then confirms normal-response recovery.
 
-The current branch starts from verified main SHA `7e604c603e12942db26a9fc49a1d46bcaa2376ea`. CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. This is a client display/resilience change only: no backend/API contract, stored record, financial policy, schema or deployment changes. The active rendering audit remains incremental, and production authorization, backup/restore, physical-device PWA and assistive-technology checks remain separate operational gates.
+The branch starts at verified main SHA `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`. CI, Browser E2E and Full Flight Test must pass on the same exact final head. No backend/API contract, financial rule, stored record, schema, dependency, deployment or production-data change is in scope; this is a defensive frontend summary-rendering guard. Live authorization, backup/restore, physical-device PWA and assistive-technology checks remain separate release gates.
 
-## Most recently completed — PR #123: Daily Cash Close snapshot integrity
+## Most recently completed — PR #124: printed-voucher date-shape resilience
 
-PR #123 merged at `7e604c603e12942db26a9fc49a1d46bcaa2376ea`; its tested head was `c2cd661b7da34788d1f99317f7439945ce965ad3`. All three exact-head workflow results are linked above. The change does not automatically repair any pre-existing inconsistent close and does not establish production deployment.
+PR #124 merged at `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`; tested head `f241fe2d449a16fcf33a5734e75f190a22158172` passed the exact-head CI, Browser E2E (316 checks) and Full Flight Test. The print renderer now validates actual ISO calendar dates and uses a fixed `Date unavailable` fallback for malformed API-derived dates. This is a display guard, not data repair or proof of production deployment.
 
 ## Owner-approved edit policy — UAT-048, PR #118
 
