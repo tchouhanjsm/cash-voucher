@@ -330,7 +330,6 @@ PR #125 merged at `6dd53d3b927f184ceda8fb14916367c63199ae2d`. Exact tested head 
 
 **Boundaries:** frontend response integrity only; no server calculation, accounting rule, backend/API contract, schema, saved data, authorization or deployment changes. Independent live release and device/accessibility gates remain open.
 
-
 ## Phase 1 audit correction — 14 October 2026
 
 The live audit supersedes stale “current sprint” and “active PR” wording where it conflicts with current GitHub state. PR #126 is merged. Its tested PR head passed CI, Browser E2E (325 checks) and Full Flight Test; post-merge CI passed on main SHA `255d78ccb6a21b204d432221489114ccf514d333`. These results do not close live deployment, backup/restore, device, accessibility or pilot gates. See [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md).
