@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: phase 1 shipped (app shell). Phases 2 to 4 are the UI roadmap.
+Status: phase 1 shipped; phase 2 mobile navigation is in this PR. Phases 3 and 4 remain on the UI roadmap.
 
 ## Approach
 
@@ -15,11 +15,17 @@ No Figma file is imported. The app is vanilla JS with no build step, so the layo
 - Logo: `icons/logo.svg`, original mark, used in the sidebar, the top bar and the service-worker cache.
 - Module: `frontend/features/shell.js`. Tokens: `--radius`, `--shadow-1`, `--shadow-2`, `--topbar-h`.
 
+## Phase 2 — mobile navigation
+
+- Replace the horizontally scrolling mobile navigation with four shortcuts: Dashboard, New Entry, Register and Reports, where permitted by role.
+- Put remaining role-authorized routes in a bottom More sheet. The list follows the current navigation permissions and online/offline route allowlist; the sheet never grants a route the user cannot already open.
+- The sheet has an accessible dialog name, outside-click and Escape closing, focus containment, and focus return to the More trigger. Staff/accountant users with no additional routes receive a clear empty state rather than hidden privileged links.
+- Bump the service-worker cache revision so installed PWAs can receive the updated shell.
+
 ## Roadmap
 
 | Phase | Outcome                                                                                          |
 | ----- | ------------------------------------------------------------------------------------------------ |
-| 2     | Mobile: bottom bar with 4 shortcuts and a More sheet instead of a scrolling 10-item bar.         |
 | 3     | Page headers with breadcrumbs and primary action; one table, form and empty-state component set. |
 | 4     | Dark mode and print-safe tokens; swap tokens to the chosen kit palette; PWA splash and icons.    |
 
