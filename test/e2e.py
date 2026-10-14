@@ -4440,7 +4440,7 @@ with sync_playwright() as p:
             }""",
             vendor,
         )
-        if not title.includes('Saved and synchronized'):
+        if 'Saved and synchronized' not in title:
             print(
                 'AMBIGUOUS ONLINE SAVE DIAGNOSTIC:',
                 json.dumps(diagnostics, sort_keys=True),
