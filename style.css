@@ -1487,6 +1487,8 @@ button {
 }
 
 .nav-more-panel {
+  position: relative;
+  z-index: 1;
   width: min(100%, 520px);
   max-height: min(78dvh, 660px);
   overflow-y: auto;
