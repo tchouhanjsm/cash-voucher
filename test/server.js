@@ -14,7 +14,11 @@ let droppedClientResponse = false,
   onlineDropCreateRequests = 0,
   sentMalformedOnlineResponse = false,
   malformedOnlineResponses = 0,
-  onlineMalformedCreateRequests = 0;
+  onlineMalformedCreateRequests = 0,
+  acknowledgementCreateRequests = 0,
+  staleSessionCreateRequests = 0,
+  sessionExpiryResponses = 0,
+  sentStaleSessionResponse = false;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -35,6 +39,9 @@ http
           onlineDropCreateRequests,
           malformedOnlineResponses,
           onlineMalformedCreateRequests,
+          acknowledgementCreateRequests,
+          staleSessionCreateRequests,
+          sessionExpiryResponses,
         }),
       );
       return;
@@ -71,6 +78,8 @@ http
           const failVendor = requestUrl.searchParams.get('fail_vendor');
           const directDropVendor = requestUrl.searchParams.get('direct_drop_vendor');
           const directMalformedVendor = requestUrl.searchParams.get('direct_malformed_vendor');
+          const acknowledgementVendor = requestUrl.searchParams.get('ack_vendor');
+          const staleSessionVendor = requestUrl.searchParams.get('session_vendor');
           const isDirectDropRequest =
             o.action === 'createVouchers' &&
             directDropVendor &&
@@ -81,15 +90,38 @@ http
             directMalformedVendor &&
             Array.isArray(o.entries) &&
             o.entries.some((entry) => String(entry.vendor || '') === directMalformedVendor);
+          const isAcknowledgementRequest =
+            o.action === 'createVouchers' &&
+            acknowledgementVendor &&
+            Array.isArray(o.entries) &&
+            o.entries.some((entry) => String(entry.vendor || '') === acknowledgementVendor);
+          const isStaleSessionRequest =
+            o.action === 'createVouchers' &&
+            staleSessionVendor &&
+            Array.isArray(o.entries) &&
+            o.entries.some((entry) => String(entry.vendor || '') === staleSessionVendor);
+          const expireStaleSession = isStaleSessionRequest && !sentStaleSessionResponse;
           if (isDirectDropRequest) onlineDropCreateRequests += 1;
           if (isDirectMalformedRequest) onlineMalformedCreateRequests += 1;
+          if (isAcknowledgementRequest) acknowledgementCreateRequests += 1;
+          if (isStaleSessionRequest) staleSessionCreateRequests += 1;
           const shouldFail =
             o.action === 'createVouchers' &&
             failVendor &&
             Array.isArray(o.entries) &&
             o.entries.some((entry) => String(entry.vendor || '') === failVendor);
 
-          if (shouldFail) {
+          if (expireStaleSession) {
+            // Fail before the mock backend executes the voucher write; the next signed-in retry
+            // must preserve the queued client ID and succeed without a local permanent rejection.
+            sentStaleSessionResponse = true;
+            sessionExpiryResponses += 1;
+            j = JSON.stringify({
+              ok: false,
+              error: 'Session expired. Please sign in again.',
+              code: 'SESSION',
+            });
+          } else if (shouldFail) {
             rejectedClientRequests += 1;
             j = JSON.stringify({
               ok: false,
