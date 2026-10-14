@@ -548,6 +548,10 @@ with sync_playwright() as p:
         and accountant_page.locator('[data-v=users]').count() == 0,
         'accountant sees Reports only, without voucher entry, Register, Vendors, close or user administration',
     )
+    check(
+        accountant_page.locator('#view .page-header-actions [data-act=ntype]').count() == 0,
+        'read-only accountant experience does not expose a create-primary action',
+    )
     accountant_page.wait_for_selector('#movementFilters')
     accountant_page.locator('#movementFilters button[type=submit]').click()
     accountant_page.wait_for_function(
