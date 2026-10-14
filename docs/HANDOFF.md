@@ -8,13 +8,13 @@
 
 ## Current phase — UI shell Phase 2
 
-PR #117 shipped the desktop/mobile app shell: property identity, online/offline indicator, user menu, grouped desktop sidebar, profile page and sign-out entry points. Physical-phone and assistive-technology validation remains open.
+PR #117 shipped the desktop/mobile app shell: property identity, online/offline indicator, user menu, grouped desktop sidebar, profile page and sign-out entry points.\nPhysical-phone and assistive-technology validation remains open.
 
-PR #119 replaces horizontally scrolling mobile navigation with four role-permitted shortcuts (Dashboard, New Entry, Register, Reports) plus a More sheet for remaining permitted routes. It uses the existing role checks and offline allowlist, supports an empty state when the signed-in role has no additional pages, and provides Escape/outside-click closing and focus management. The service-worker cache version is bumped for installed PWA updates. Phase 3 (page headers/breadcrumbs and shared table/form/empty-state components) remains a separate coherent UI outcome.
+PR #119 replaces horizontally scrolling mobile navigation with four role-permitted shortcuts (Dashboard, New Entry, Register, Reports) plus a More sheet for remaining permitted routes.\nIt uses the existing role checks and offline allowlist, supports an empty state when the signed-in role has no additional pages, and provides Escape/outside-click closing and focus management.\nThe service-worker cache version is bumped for installed PWA updates. Phase 3 (page headers/breadcrumbs and shared table/form/empty-state components) remains a separate coherent UI outcome.
 
 ## Most recently completed — UAT-048, PR #118
 
-[PR #118](https://github.com/tchouhanjsm/cash-voucher/pull/118) merged at `3ef265aa17c9687435881ab69c8219800f990b04`. Its tested head `bda1aacbc98c93a707df972f5b2ab00055745ba4` passed CI, Browser E2E and Full Flight Test.
+[PR #118](https://github.com/tchouhanjsm/cash-voucher/pull/118) merged at `3ef265aa17c9687435881ab69c8219800f990b04`.\nIts tested head `bda1aacbc98c93a707df972f5b2ab00055745ba4` passed CI, Browser E2E and Full Flight Test.
 
 Owner-approved UAT-048 edit policy:
 - Amount, vendor/vendor identity, date and CashImpact changes invalidate an approval-managed payment's approval.
@@ -23,7 +23,7 @@ Owner-approved UAT-048 edit policy:
 - Every accepted correction requires the existing reason and records old/new field values. A material re-review event preserves the former approval attribution in audit history before current approval fields are cleared.
 - Historical blank approval states are not retroactively backfilled.
 
-The existing payment threshold remains inclusive INR 10,000 for new PAYMENT vouchers only; existing owner/manager roles approve, creators cannot self-approve, rejections require a reason, and unresolved approval states are excluded from approved totals and block final cash close.
+The existing payment threshold remains inclusive INR 10,000 for new PAYMENT vouchers only; existing owner/manager roles approve, creators cannot self-approve, and rejections require a reason.\nUnresolved approval states are excluded from approved totals and block final cash close.
 
 ## Architecture and durable boundaries
 
