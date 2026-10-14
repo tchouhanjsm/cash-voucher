@@ -2162,7 +2162,9 @@ ok(
 // Phase 2 integration: one high-value payment must remain consistent from entry
 // through independent approval, report totals, final cash-close snapshot and audit.
 const workflowDate = '2020-02-04';
-const workflowEntry = as(M, 'createVouchers', {
+// PIN reset rotates session salt; use the freshly authenticated manager token, not the pre-reset token.
+const workflowManagerToken = resetChange.data.token;
+const workflowEntry = as(workflowManagerToken, 'createVouchers', {
   entries: [
     {
       clientId: 'phase-2-cross-workflow-payment',
@@ -2216,7 +2218,7 @@ ok(
     workflowApprovedReport.data.pendingApprovalCount === 0,
   'accountant report includes the approved payment exactly once in active payment totals',
 );
-const workflowPreview = as(M, 'cashClosePreview', {
+const workflowPreview = as(workflowManagerToken, 'cashClosePreview', {
   date: workflowDate,
   openingCash: '10000',
   openingReason: 'Integration test opening cash',
@@ -2229,7 +2231,7 @@ ok(
     workflowPreview.data.readyToClose,
   'approved payment flows into cash-close expected cash with no unresolved approval blocker',
 );
-const workflowClose = as(M, 'createCashClose', {
+const workflowClose = as(workflowManagerToken, 'createCashClose', {
   date: workflowDate,
   openingCash: '10000',
   openingReason: 'Integration test opening cash',
