@@ -23,6 +23,12 @@ export function createReports({ api }) {
       ? String(value)
       : '';
 
+  const isValidSummaryCount = (value) =>
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+
+  const hasPositiveCount = (value) =>
+    typeof value === 'number' && Number.isFinite(value) && value > 0;
+
   function normalizeRow(item) {
     const fields = [
       'date',
@@ -165,9 +171,9 @@ export function createReports({ api }) {
           </div>
         </div>
         <div class="card">
-          ${Number(summary.approvalExceptionCount) > 0 ? `<p class="muted" role="status">${esc(scalarText(summary.approvalExceptionCount))} active payment(s) have unresolved approval states. They remain visible below but are excluded from approved payment totals and block daily cash close until approved or cancelled.</p>` : ''}
-          ${Number(summary.unmatchedVendorCount) > 0 ? `<p class="muted" role="status">${esc(scalarText(summary.unmatchedVendorCount))} report row(s) have no unique saved Vendor ID. IDs are linked only when the counterparty exactly matches one unambiguous saved vendor name; unmatched historical/free-text names remain blank.</p>` : ''}
-          ${Number(summary.ambiguousVendorCount) > 0 ? `<p class="muted" role="status">${esc(scalarText(summary.ambiguousVendorCount))} report row(s) have ambiguous vendor names because the saved vendor master contains duplicates. No VendorID is inferred for these rows; reconcile them manually before relying on party-level summaries.</p>` : ''}
+          ${hasPositiveCount(summary.approvalExceptionCount) ? `<p class="muted" role="status">${esc(scalarText(summary.approvalExceptionCount))} active payment(s) have unresolved approval states. They remain visible below but are excluded from approved payment totals and block daily cash close until approved or cancelled.</p>` : ''}
+          ${hasPositiveCount(summary.unmatchedVendorCount) ? `<p class="muted" role="status">${esc(scalarText(summary.unmatchedVendorCount))} report row(s) have no unique saved Vendor ID. IDs are linked only when the counterparty exactly matches one unambiguous saved vendor name; unmatched historical/free-text names remain blank.</p>` : ''}
+          ${hasPositiveCount(summary.ambiguousVendorCount) ? `<p class="muted" role="status">${esc(scalarText(summary.ambiguousVendorCount))} report row(s) have ambiguous vendor names because the saved vendor master contains duplicates. No VendorID is inferred for these rows; reconcile them manually before relying on party-level summaries.</p>` : ''}
           <h2>Source vouchers <span class="muted">${esc(dmy(R.from))} – ${esc(dmy(R.to))}</span></h2>
           <p class="muted">
             Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}
@@ -239,6 +245,15 @@ export function createReports({ api }) {
         !Array.isArray(summary.items)
       ) {
         throw new Error('The report returned an invalid response. Please retry.');
+      }
+
+      const summaryCountFields = [
+        'approvalExceptionCount',
+        'unmatchedVendorCount',
+        'ambiguousVendorCount',
+      ];
+      if (!summaryCountFields.every((field) => isValidSummaryCount(summary[field]))) {
+        throw new Error('The report returned invalid summary counts. Please retry.');
       }
 
       const reportTextFields = [
