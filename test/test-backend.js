@@ -868,7 +868,7 @@ function assertMaterialEditResetsApproval(fields, field, expected, reason, reapp
   );
   return result;
 }
-const paymentAmountEditResetsApproval = assertMaterialEditResetsApproval(
+assertMaterialEditResetsApproval(
   { amount: 11000 },
   'amount',
   11000,
@@ -887,21 +887,21 @@ ok(
       2249999,
   'a materially corrected payment is removed from totals until approved again',
 );
-const vendorEditResetsApproval = assertMaterialEditResetsApproval(
+assertMaterialEditResetsApproval(
   { vendor: 'Manager Own High Value Corrected' },
   'vendor',
   'Manager Own High Value Corrected',
   'Corrected payment vendor identity',
   true,
 );
-const cashImpactEditResetsApproval = assertMaterialEditResetsApproval(
+assertMaterialEditResetsApproval(
   { cashImpact: 'NO_CASH' },
   'cashImpact',
   'NO_CASH',
   'Corrected cash movement classification',
   true,
 );
-const dateEditResetsApproval = assertMaterialEditResetsApproval(
+assertMaterialEditResetsApproval(
   { date: '2020-02-02' },
   'date',
   '2020-02-02',
