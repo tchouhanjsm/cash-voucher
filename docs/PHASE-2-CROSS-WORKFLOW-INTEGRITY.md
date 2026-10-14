@@ -23,6 +23,7 @@ A single high-value payment must retain consistent identity and financial treatm
 6. **Finalize cash close — manager.** Expected cash is correct, fixture variance is zero, and the snapshot count is exact.
 
 7. **Read saved close and audit — owner.** The snapshot retains voucher ID, number, amount and cash impact; approval and close events are attributable.
+
 ## Existing policies preserved
 
 - New PAYMENT vouchers at or above ₹10,000 require an independent owner/manager approval.
