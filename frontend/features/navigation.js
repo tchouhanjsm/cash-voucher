@@ -225,9 +225,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
   function renderNav() {
     const available = NAV.filter(
       (item) =>
-        item[0] !== 'acct' &&
-        (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) &&
-        item[3](),
+        item[0] !== 'acct' && (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3](),
     );
     const navContent = document.createDocumentFragment();
     let lastGroup = '';
