@@ -2,7 +2,7 @@
 
 One line per item: `date | priority | area | outcome / finding | evidence / dependency`.
 
-2026-10-14 | P0 | Phase 2B remainder | Add a storage-acknowledgement failure test after server commit and explicit stale-session synchronization recovery; verify lease recovery keeps same ClientID and does not duplicate vouchers | `docs/PHASE-2B-OFFLINE-RECOVERY-MATRIX.md`
+2026-10-14 | P0 | Phase 2B closure batch | Harden post-commit IndexedDB acknowledgement failure feedback; fault-inject ack transaction abort and SESSION during sync; prove same-ID recovery and no duplicate voucher on exact-head CI/E2E/Flight | `docs/PHASE-2B-OFFLINE-RECOVERY-MATRIX.md`
 2026-10-14 | P0 | Operational release proof | Verify intended Apps Script deployment/execution identity, Sheet binding, live roles and receipt authorization; witness scheduled backup and isolated restore only after owner authorization | `docs/RELEASE-READINESS.md`, `docs/DATA-DURABILITY.md`
 2026-10-14 | P1 | Audit trust | Investigate audit marker persistence failure and define owner-approved reconciliation before any clear/reset | PR #129; no tamper-evidence claim
 2026-10-14 | P1 | UX/adoption | Observe staff/manager/owner tasks on real devices; test keyboard/focus/zoom/screen reader; bundle related cross-screen fixes | `docs/UI-UX-REVIEW.md`
