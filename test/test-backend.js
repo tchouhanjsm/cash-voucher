@@ -1868,7 +1868,7 @@ ok(
     afterCorrection.data.close.corrections.length === 1,
   'correction does not rewrite close total',
 );
-// A saved financial snapshot is immutable evidence: malformed rows or mismatched membership must fail closed.
+// Malformed saved close data must fail closed without being filtered.
 const closeSheet = g.sheets.CashCloses;
 const closeHeaders = closeSheet.rows[0];
 const closeColumn = (name) => closeHeaders.indexOf(name);
@@ -1909,12 +1909,13 @@ assertCorruptCashClose(
   'saved close rejects an incomplete voucher row instead of silently filtering it',
 );
 assertCorruptCashClose(
-  { IncludedVoucherIds: JSON.stringify([...savedVoucherIds.slice(0, -1), null]) },
+  {
+    IncludedVoucherIds: JSON.stringify([...savedVoucherIds.slice(0, -1), null]),
+  },
   'saved close rejects non-string voucher IDs instead of silently filtering them',
 );
-const mismatchedVoucherIds = savedVoucherIds.map((id, index) =>
-  index === 0 ? 'mismatched-id' : id,
-);
+const mismatchedVoucherIds = savedVoucherIds.slice();
+mismatchedVoucherIds[0] = 'mismatched-id';
 assertCorruptCashClose(
   { IncludedVoucherIds: JSON.stringify(mismatchedVoucherIds) },
   'saved close rejects voucher-ID lists that do not match snapshot order and identity',
