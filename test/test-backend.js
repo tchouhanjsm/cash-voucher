@@ -1910,9 +1910,7 @@ assertCorruptCashClose(
   'saved close rejects an incomplete voucher row instead of silently filtering it',
 );
 assertCorruptCashClose(
-  {
-    IncludedVoucherIds: JSON.stringify([...savedVoucherIds.slice(0, -1), null]),
-  },
+  { IncludedVoucherIds: JSON.stringify([...savedVoucherIds.slice(0, -1), null]) },
   'saved close rejects non-string voucher IDs instead of silently filtering them',
 );
 const mismatchedVoucherIds = savedVoucherIds.slice();
