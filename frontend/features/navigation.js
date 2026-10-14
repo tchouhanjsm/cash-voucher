@@ -206,7 +206,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     });
 
     const moreButton = $('#mobileMoreBtn');
-    const moreActive = Boolean(S.view) && !MOBILE_SHORTCUTS.has(S.view);
+    const moreActive = Boolean(S.view) && S.view !== 'acct' && !MOBILE_SHORTCUTS.has(S.view);
     moreButton.classList.toggle('on', moreActive);
     if (moreActive) moreButton.setAttribute('aria-current', 'page');
     else moreButton.removeAttribute('aria-current');
