@@ -2,17 +2,17 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `7d83115686d18e52643d43db05f7f552e29f3174` (PR #119 merge)  
-**Current batch:** UI shell Phase 3 — shared page components, branch `feature/ui-shell-phase-3-shared-components`  
+**Verified `main` SHA:** `3885bf4d26e140a764ba23423e795ac76dee326e` (PR #120 merge)  
+**Current batch:** UI shell phases 4–6 — theme, print and PWA launch consistency, branch `feature/ui-shell-phases-4-6-design-system`  
 **Rule:** the GitHub PR page is authoritative for current head SHA and checks; this handoff commit itself changes the branch head.
 
-## Current phase — UI shell Phase 3
+## Current phase — UI shell phases 4–6
 
-PR #117 shipped the app shell and PR #119 shipped mobile shortcuts plus the role-aware More sheet. Physical-phone and assistive-technology validation remains open.
+PR #120 merged Phase 3 at `3885bf4d26e140a764ba23423e795ac76dee326e`, including semantic page headers, shared form/table/empty-state helpers and role-aware primary actions.
 
-This batch standardizes page headers with semantic breadcrumbs and section descriptions, adds create-permitted primary actions to Dashboard/Register, and introduces shared form-panel, accessible table-view and empty-state components.
-It adopts those components in vendor/user administration and the recorded movement report while preserving existing route permissions, form IDs, delegated action names, data validation, and financial behavior.
-The service-worker cache revision is bumped so installed PWAs can request the updated UI assets.
+The current batch combines the next design-system outcomes in one review: tokenized warm-neutral/navy/gold palette and system-aware dark mode with an explicit persisted override; contrast regression checks across both palettes; A5 voucher print styling that remains white/black regardless of screen mode; and PWA launch metadata, icon declarations and app-shell cache consistency.
+
+No API, financial calculation, role policy, Sheet schema, Apps Script project settings or deployment behavior is changed. Physical-phone, assistive-technology and real-printer validation remain operational/manual checks.
 
 ## Most recently completed — UAT-048, PR #118
 

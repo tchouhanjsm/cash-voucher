@@ -1,16 +1,77 @@
 :root {
-  --bg: #f3f5f7;
-  --card: #fff;
+  color-scheme: light;
+  --bg: #f7f5f0;
+  --card: #ffffff;
   --ink: #1c2630;
   --muted: #596978;
-  --line: #e1e6eb;
+  --line: #dfded8;
   --brand: #1f3a4d;
+  --chart-bar: #1f3a4d;
+  --brand-hover: #2a4d66;
   --accent: #946515;
   --focus: #725018;
   --nav-active: #755016;
   --bad: #b3261e;
   --ok: #1b7a43;
   --warn: #895b00;
+  --control-bg: #ffffff;
+  --control-border: #c9d1d9;
+  --surface-hover: #f0f3f6;
+  --surface-muted: #eef1f4;
+  --surface-subtle: #fbfcfd;
+  --surface-danger: #fdeceb;
+  --border-danger: #e5b5b1;
+  --surface-success: #e3f3ea;
+  --border-success: #b5dcc3;
+  --surface-warning: #fff4d6;
+  --border-warning: #e6c866;
+  --warning-ink: #5c4400;
+  --nav-muted: #d6e0e8;
+  --nav-secondary: #b9c8d4;
+  --nav-divider: #ffffff30;
+  --nav-surface-hover: #ffffff14;
+  --focus-on-brand: #f3d17c;
+  --toast-surface: #1c2630;
+  --status-ink: #ffffff;
+  --modal-backdrop: #0008;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #111820;
+  --card: #1c2731;
+  --ink: #f2f5f7;
+  --muted: #c0cbd4;
+  --line: #3a4753;
+  --brand: #192f3c;
+  --chart-bar: #e8ba58;
+  --brand-hover: #254558;
+  --accent: #e8ba58;
+  --focus: #f3ca70;
+  --nav-active: #664b16;
+  --bad: #ff9e97;
+  --ok: #70dfa2;
+  --warn: #f5ce76;
+  --control-bg: #222f39;
+  --control-border: #566571;
+  --surface-hover: #2a3742;
+  --surface-muted: #28343e;
+  --surface-subtle: #212d37;
+  --surface-danger: #452728;
+  --border-danger: #8b4c4b;
+  --surface-success: #1f3b2c;
+  --border-success: #3d6a50;
+  --surface-warning: #43361d;
+  --border-warning: #7a602c;
+  --warning-ink: #ffe4a5;
+  --nav-muted: #d6e0e8;
+  --nav-secondary: #c0cbd4;
+  --nav-divider: #ffffff30;
+  --nav-surface-hover: #ffffff14;
+  --focus-on-brand: #f3d17c;
+  --toast-surface: #0c1218;
+  --status-ink: #111820;
+  --modal-backdrop: #000b;
 }
 * {
   box-sizing: border-box;
@@ -68,9 +129,9 @@ h3 {
 }
 .form-error {
   padding: 10px 12px;
-  border: 1px solid #e5b5b1;
+  border: 1px solid var(--border-danger);
   border-radius: 8px;
-  background: #fdeceb;
+  background: var(--surface-danger);
 }
 .r {
   text-align: right;
@@ -87,9 +148,9 @@ select,
 textarea {
   font: inherit;
   padding: 10px;
-  border: 1px solid #c9d1d9;
+  border: 1px solid var(--control-border);
   border-radius: 8px;
-  background: #fff;
+  background: var(--control-bg);
   width: 100%;
   color: var(--ink);
   min-height: 42px;
@@ -116,15 +177,15 @@ label > textarea {
   font-weight: 600;
   padding: 10px 16px;
   border-radius: 8px;
-  border: 1px solid #c9d1d9;
-  background: #fff;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
   color: var(--ink);
   cursor: pointer;
   display: inline-block;
   min-height: 42px;
 }
 .btn:hover {
-  background: #f0f3f6;
+  background: var(--surface-hover);
 }
 .btn:disabled {
   opacity: 0.55;
@@ -136,7 +197,7 @@ label > textarea {
   color: #fff;
 }
 .btn.primary:hover {
-  background: #2a4d66;
+  background: var(--brand-hover);
 }
 .btn.sm {
   padding: 5px 10px;
@@ -145,7 +206,7 @@ label > textarea {
 }
 .btn.danger {
   color: var(--bad);
-  border-color: #e5b5b1;
+  border-color: var(--border-danger);
 }
 .actions {
   display: flex;
@@ -318,9 +379,9 @@ nav .ic {
   display: none;
 }
 .banner {
-  background: #fff4d6;
-  border: 1px solid #e6c866;
-  color: #5c4400;
+  background: var(--surface-warning);
+  border: 1px solid var(--border-warning);
+  color: var(--warning-ink);
   padding: 10px 14px;
   border-radius: 10px;
   margin-bottom: 14px;
@@ -330,8 +391,8 @@ nav .ic {
   align-items: center;
 }
 .banner.err {
-  background: #fdeceb;
-  border-color: #e5b5b1;
+  background: var(--surface-danger);
+  border-color: var(--border-danger);
   color: var(--bad);
 }
 .stats {
@@ -381,8 +442,8 @@ td.amt,
   margin-bottom: 12px;
 }
 .seg button {
-  border: 1px solid #c9d1d9;
-  background: #fff;
+  border: 1px solid var(--control-border);
+  background: var(--control-bg);
   border-radius: 99px;
   padding: 6px 14px;
   font: inherit;
@@ -413,7 +474,7 @@ td.amt,
   white-space: nowrap;
 }
 .hb-t {
-  background: #eef1f4;
+  background: var(--surface-muted);
   border-radius: 5px;
   height: 14px;
   overflow: hidden;
@@ -421,7 +482,7 @@ td.amt,
 .hb-t i {
   display: block;
   height: 100%;
-  background: var(--brand);
+  background: var(--chart-bar);
   border-radius: 5px;
 }
 .hb-v {
@@ -437,7 +498,7 @@ td.amt,
   fill: var(--muted);
 }
 .chart rect.b {
-  fill: var(--brand);
+  fill: var(--chart-bar);
 }
 .chart rect.b:hover {
   fill: var(--accent);
@@ -542,16 +603,16 @@ tr.cx .amt {
   font-weight: 700;
   padding: 2px 8px;
   border-radius: 99px;
-  background: #e3f3ea;
+  background: var(--surface-success);
   color: var(--ok);
   white-space: nowrap;
 }
 .badge.bad {
-  background: #fbe4e2;
+  background: var(--surface-danger);
   color: var(--bad);
 }
 .badge.warn {
-  background: #fff1cf;
+  background: var(--surface-warning);
   color: var(--warn);
 }
 .cat {
@@ -563,7 +624,7 @@ tr.cx .amt {
   border-radius: 10px;
   padding: 10px;
   margin-bottom: 10px;
-  background: #fbfcfd;
+  background: var(--surface-subtle);
 }
 .erow .top {
   display: grid;
@@ -577,8 +638,8 @@ tr.cx .amt {
   margin-top: 8px;
 }
 .erow .x {
-  border: 1px solid #e5b5b1;
-  background: #fff;
+  border: 1px solid var(--border-danger);
+  background: var(--control-bg);
   color: var(--bad);
   border-radius: 8px;
   cursor: pointer;
@@ -603,7 +664,7 @@ tr.cx .amt {
   max-height: 60vh;
   object-fit: contain;
   border-radius: 8px;
-  background: #eef1f4;
+  background: var(--surface-muted);
   margin-bottom: 10px;
 }
 .receipt-item {
@@ -618,7 +679,7 @@ tr.cx .amt {
 .modal {
   position: fixed;
   inset: 0;
-  background: #0008;
+  background: var(--modal-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -642,7 +703,7 @@ tr.cx .amt {
   padding: 11px 18px;
   border-radius: 99px;
   color: #fff;
-  background: #1c2630;
+  background: var(--toast-surface);
   box-shadow: 0 4px 16px #0004;
   max-width: 92vw;
   text-align: center;
@@ -653,12 +714,16 @@ tr.cx .amt {
 .toast.ok {
   background: var(--ok);
 }
+.toast.err,
+.toast.ok {
+  color: var(--status-ink);
+}
 #printArea {
   display: none;
 }
 .ok-panel {
-  border-color: #b5dcc3;
-  background: #f1faf4;
+  border-color: var(--border-success);
+  background: var(--surface-success);
 }
 @media (max-width: 800px) {
   .app {
@@ -744,7 +809,7 @@ tr.cx .amt {
     color: #fff;
   }
   .mobile-more-btn:focus-visible {
-    outline-color: #f3d17c;
+    outline-color: var(--focus-on-brand);
     outline-offset: -3px;
   }
   .main {
@@ -914,7 +979,7 @@ tr.cx .amt {
 }
 @media print {
   body {
-    background: #fff;
+    background: var(--control-bg);
   }
   #app,
   #login,
@@ -1083,7 +1148,7 @@ button {
 }
 
 .side nav button:focus-visible {
-  outline-color: #f3d17c;
+  outline-color: var(--focus-on-brand);
   outline-offset: -3px;
 }
 
@@ -1373,7 +1438,7 @@ button {
   font-size: 11px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: #b4c5d3;
+  color: var(--nav-secondary);
 }
 .side-out {
   display: flex;
@@ -1407,7 +1472,7 @@ button {
   font-size: 12px;
   font-weight: 600;
   color: var(--warn);
-  background: #fdf3dc;
+  background: var(--surface-warning);
 }
 .net-pill::before {
   content: '';
@@ -1418,7 +1483,7 @@ button {
 }
 .net-pill.on {
   color: var(--ok);
-  background: #e6f4ec;
+  background: var(--surface-success);
 }
 .usermenu {
   position: relative;
@@ -1695,5 +1760,55 @@ button {
     position: absolute;
     inset: 0;
     background: rgb(0 0 0 / 48%);
+  }
+}
+
+/* Keep the voucher printout independent from screen theme and application chrome. */
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #111111 !important;
+    margin: 0 !important;
+  }
+
+  #boot,
+  .skip-link,
+  #app,
+  #login,
+  #modal,
+  #toast {
+    display: none !important;
+  }
+
+  #printArea {
+    display: block !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #111111 !important;
+  }
+
+  #printArea .pv {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+    background: #ffffff !important;
+    color: #111111 !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  #printArea .pv-head,
+  #printArea .pv-meta,
+  #printArea .pv-row,
+  #printArea .pv-words,
+  #printArea .pv-sign {
+    break-inside: avoid;
+    page-break-inside: avoid;
   }
 }

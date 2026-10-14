@@ -9,6 +9,7 @@
       content="Cash Payment Vouchers — secure voucher and payment management."
     />
     <meta name="theme-color" content="#1f3a4d" />
+    <meta name="color-scheme" content="light dark" />
 
     <meta
       http-equiv="Content-Security-Policy"
@@ -17,10 +18,11 @@
 
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Cash Vouchers" />
 
     <link rel="manifest" href="manifest.webmanifest" />
-    <link rel="apple-touch-icon" href="icons/icon-192.png" />
-    <link rel="icon" href="icons/icon-192.png" />
+    <link rel="apple-touch-icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
 
     <title>Cash Payment Vouchers</title>
 
@@ -130,6 +132,14 @@
             </div>
             <button type="button" data-go="acct">👤 My profile</button>
             <button type="button" data-go="acct" data-focus="po">🔑 Change PIN</button>
+            <button
+              type="button"
+              id="themeToggle"
+              aria-label="Switch to dark theme"
+              aria-pressed="false"
+            >
+              🌙 Use dark theme
+            </button>
             <button type="button" class="danger-item" data-act="signout">⎋ Sign out</button>
           </div>
         </div>
