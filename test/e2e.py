@@ -12,6 +12,8 @@ API = BASE + '/api?' + urllib.parse.urlencode({
     'drop_vendor': 'Offline Vendor',
     'count_vendor': 'Multi-tab Vendor',
     'fail_vendor': 'Poison Vendor',
+    'direct_drop_vendor': 'Direct Lost Response Vendor',
+    'direct_malformed_vendor': 'Direct Malformed Response Vendor',
 })
 URL = BASE + '/?' + urllib.parse.urlencode({'api': API})
 errs = []
@@ -4377,8 +4379,61 @@ with sync_playwright() as p:
     )
     audit_page.close()
 
-    # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
+    # Online creation can commit even if its response is lost or malformed. The same client ID
+    # must be queued and retried automatically, then confirmed without a second voucher.
+    def verify_online_ambiguous_save(vendor, kind):
+        go_view(page, 'new')
+        page.wait_for_selector('#nf')
+        page.locator('.seg button[data-k="PAYMENT"]').click()
+        page.fill('.rv', vendor)
+        page.fill('.ra', '137')
+        choose_cash_impact_for_current_rows()
+        page.click('#nsave')
+        page.wait_for_function(
+            "document.querySelector('#nres .ok-panel h2')?.innerText.includes('Saved and synchronized')",
+            timeout=15000,
+        )
+        check(
+            'same transaction ID' in page.locator('#nres .ok-panel p').inner_text()
+            and 'No duplicate voucher was created' in page.locator('#nres .ok-panel p').inner_text(),
+            f'{kind} online save response recovers with an explicit same-ID confirmation',
+        )
+
+        status = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+        if kind == 'lost-response':
+            check(
+                status.get('droppedOnlineResponses') == 1
+                and status.get('onlineDropCreateRequests', 0) >= 2,
+                'committed online save with a dropped response is retried through the outbox',
+            )
+        else:
+            check(
+                status.get('malformedOnlineResponses') == 1
+                and status.get('onlineMalformedCreateRequests', 0) >= 2,
+                'committed online save with malformed JSON is retried through the outbox',
+            )
+
+        check(
+            not outbox_vendor_records(vendor),
+            f'{kind} online save leaves no local outbox record after server confirmation',
+        )
+        go_view(page, 'reg')
+        page.wait_for_selector('#rq')
+        page.fill('#rq', vendor)
+        page.wait_for_function(
+            f"Array.from(document.querySelectorAll('#rbody tr')).filter((row) => row.innerText.includes({json.dumps(vendor)})).length === 1",
+            timeout=10000,
+        )
+        check(
+            page.locator('#rbody tr', has_text=vendor).count() == 1,
+            f'{kind} ambiguous online save appears exactly once in Register',
+        )
+
     page.set_viewport_size({'width': 390, 'height': 800})
+    verify_online_ambiguous_save('Direct Lost Response Vendor', 'lost-response')
+    verify_online_ambiguous_save('Direct Malformed Response Vendor', 'malformed-response')
+
+    # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
     go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.click('[data-k=RECEIPT]')
