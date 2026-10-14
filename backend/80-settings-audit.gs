@@ -83,7 +83,8 @@ function auditLog_(user, req) {
   const sheet = sheet_('AuditLog');
   const lastRow = sheet.getLastRow();
   const totalCount = Math.max(0, lastRow - 1);
-  if (lastRow < 2) return { rows: [], nextBeforeRow: null, totalCount: 0 };
+  if (lastRow < 2)
+    return { rows: [], nextBeforeRow: null, totalCount: 0, auditHealth: auditWriteHealth_() };
 
   let beforeRow = lastRow + 1;
   if (req && req.beforeRow !== undefined && req.beforeRow !== null && req.beforeRow !== '') {
@@ -117,5 +118,6 @@ function auditLog_(user, req) {
     rows: rows,
     nextBeforeRow: startRow > 2 ? startRow : null,
     totalCount: totalCount,
+    auditHealth: auditWriteHealth_(),
   };
 }
