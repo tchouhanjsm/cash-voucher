@@ -1,7 +1,7 @@
 import { $ } from '../core/dom.js';
 import { can } from '../core/state.js';
 import { csvCell, dmy, download, esc, finiteAmount, money, today } from '../core/utils.js';
-import { head, toast } from '../core/ui.js';
+import { emptyState, head, tableView, toast } from '../core/ui.js';
 
 export function createReports({ api }) {
   const R = {
@@ -47,10 +47,6 @@ export function createReports({ api }) {
   }
 
   function renderRows() {
-    if (!R.rows.length) {
-      return '<p class="muted">No vouchers match these filters.</p>';
-    }
-
     const rows = R.rows
       .map(
         (item) => `
@@ -77,26 +73,22 @@ export function createReports({ api }) {
       )
       .join('');
 
-    return `
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Voucher</th>
-              <th>Type</th>
-              <th>Counterparty</th>
-              <th>Vendor ID</th>
-              <th>Category / notes</th>
-              <th>Status</th>
-              <th>Approval</th>
-              <th class="r">Amount</th>
-            </tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>
-    `;
+    return tableView({
+      label: 'Recorded voucher movements',
+      columns: [
+        { label: 'Date', nowrap: true },
+        { label: 'Voucher', nowrap: true },
+        { label: 'Type' },
+        { label: 'Counterparty' },
+        { label: 'Vendor ID', nowrap: true },
+        { label: 'Category / notes' },
+        { label: 'Status' },
+        { label: 'Approval' },
+        { label: 'Amount', align: 'right', nowrap: true },
+      ],
+      rows,
+      emptyMessage: 'No vouchers match these filters.',
+    });
   }
 
   function render() {
@@ -188,11 +180,22 @@ export function createReports({ api }) {
       results =
         '<div class="card" role="status" aria-live="polite"><p class="muted">Loading report… Previous results are hidden until this request completes.</p></div>';
     } else if (!R.error) {
-      results =
-        '<div class="card"><p class="muted">Run the report to see recorded voucher movements.</p></div>';
+      results = emptyState({
+        title: 'No report generated yet',
+        description: 'Run the report to see recorded voucher movements.',
+        action:
+          '<button type="button" class="btn primary" data-act="reportRun">Run report</button>',
+      });
     }
 
-    $('#view').innerHTML = head('Recorded Movement Report') + filters + error + results;
+    $('#view').innerHTML =
+      head('Recorded Movement Report', '', {
+        section: 'Money',
+        description: 'Filter server-recorded payments and receipts for a selected date range.',
+      }) +
+      filters +
+      error +
+      results;
     $('#movementFilters')?.addEventListener('submit', (event) => {
       event.preventDefault();
       R.from = $('#movementFrom').value;

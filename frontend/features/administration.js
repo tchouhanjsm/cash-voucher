@@ -2,7 +2,7 @@ import { $ } from '../core/dom.js';
 import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
 import { csvCell, download, esc, initials, scalarText } from '../core/utils.js';
-import { closeModal, dialog, fail, head, toast } from '../core/ui.js';
+import { closeModal, dialog, fail, formPanel, head, tableView, toast } from '../core/ui.js';
 
 export function createAdministration({ api, getNavigation, signOut }) {
   let deferredInstall;
@@ -66,11 +66,37 @@ export function createAdministration({ api, getNavigation, signOut }) {
       )
       .join('');
 
+    const vendorTable = tableView({
+      label: 'Saved vendors',
+      columns: [
+        { label: 'Name', nowrap: true },
+        { label: 'Stable Vendor ID', nowrap: true },
+        { label: 'Company' },
+        { label: 'Mobile', nowrap: true },
+        { label: 'Status' },
+        { label: 'Actions', align: 'right', nowrap: true },
+      ],
+      rows: rows || emptyState,
+    });
+
     $('#view').innerHTML =
       head('Vendors') +
       status +
-      `<form id="vf" class="card filters" autocomplete="off"><input type="hidden" id="vid"><input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required><input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)"><input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel"><button class="btn primary">Save vendor</button><button type="button" class="btn" data-act="vclr">Clear</button></form>
-  <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Stable Vendor ID</th><th>Company</th><th>Mobile</th><th>Status</th><th></th></tr></thead><tbody>${rows || emptyState}</tbody></table></div></div>`;
+      formPanel({
+        id: 'vf',
+        title: 'Vendor details',
+        fields: [
+          '<input type="hidden" id="vid">',
+          '<input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required>',
+          '<input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)">',
+          '<input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel">',
+          '<button class="btn primary">Save vendor</button>',
+          '<button type="button" class="btn" data-act="vclr">Clear</button>',
+        ].join(''),
+      }) +
+      '<div class="card">' +
+      vendorTable +
+      '</div>';
   }
   async function saveVendor() {
     try {
@@ -144,7 +170,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       : malformedCount
         ? `<p class="muted" role="status" aria-live="polite">${malformedCount} malformed user record(s) omitted from this response. Refresh and retry.</p>`
         : '';
-    const emptyState =
+    const emptyRow =
       !envelopeValid || malformedCount
         ? '<tr><td colspan="5" class="muted">No valid user records could be displayed. Refresh and retry.</td></tr>'
         : '<tr><td colspan="5" class="muted">No users yet.</td></tr>';
@@ -157,12 +183,41 @@ export function createAdministration({ api, getNavigation, signOut }) {
       )
       .join('');
 
+    const userTable = tableView({
+      label: 'Saved users',
+      columns: [
+        { label: 'Name', nowrap: true },
+        { label: 'Email', nowrap: true },
+        { label: 'Role' },
+        { label: 'Status' },
+        { label: 'Actions', align: 'right', nowrap: true },
+      ],
+      rows: rows || emptyRow,
+      emptyMessage: 'No users yet.',
+    });
+    const userFormFields = [
+      '<input id="un" aria-label="User name" autocomplete="name" placeholder="Name" required>',
+      '<input id="ue" aria-label="Email address" autocomplete="email" type="email" placeholder="Email" required>',
+      '<select id="ur" aria-label="New user role">',
+      roles.map((role) => '<option>' + esc(role) + '</option>').join(''),
+      '</select>',
+      '<input id="up" aria-label="Temporary six-digit PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit PIN" required>',
+      '<button class="btn primary">Add</button>',
+    ].join('');
+
     $('#view').innerHTML =
       head('Users') +
       status +
-      `<div class="card"><h2>Add user</h2><form id="uf" class="filters" autocomplete="off"><input id="un" aria-label="User name" autocomplete="name" placeholder="Name" required><input id="ue" aria-label="Email address" autocomplete="email" type="email" placeholder="Email" required><select id="ur" aria-label="New user role">${roles.map((role) => `<option>${role}</option>`).join('')}</select><input id="up" aria-label="Temporary six-digit PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit PIN" required><button class="btn primary">Add</button></form>
-     <p class="muted"><b>Staff</b>: create and view own entries · <b>Manager</b>: view, edit, cancel, bulk upload, vendors, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p></div>
-   <div class="card"><div class="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>${rows || emptyState}</tbody></table></div></div>`;
+      formPanel({
+        id: 'uf',
+        title: 'Add user',
+        fields: userFormFields,
+        footer:
+          '<p class="muted"><b>Staff</b>: create and view own entries · <b>Manager</b>: view, edit, cancel, bulk upload, vendors, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
+      }) +
+      '<div class="card">' +
+      userTable +
+      '</div>';
   }
   async function saveUser() {
     try {

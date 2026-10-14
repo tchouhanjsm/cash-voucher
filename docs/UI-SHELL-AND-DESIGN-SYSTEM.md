@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: phase 1 shipped; phase 2 mobile navigation is in this PR. Phases 3 and 4 remain on the UI roadmap.
+Status: phases 1–2 shipped; phase 3 shared page components are in this PR. Phase 4 remains on the UI roadmap.
 
 ## Approach
 
@@ -22,12 +22,19 @@ No Figma file is imported. The app is vanilla JS with no build step, so the layo
 - The sheet has an accessible dialog name, outside-click and Escape closing, focus containment, and focus return to the More trigger. Staff/accountant users with no additional routes receive a clear empty state rather than hidden privileged links.
 - Bump the service-worker cache revision so installed PWAs can receive the updated shell.
 
+## Phase 3 — shared page components
+
+- Page headers render semantic breadcrumbs, one H1, an optional description, and a right-aligned action slot. Dashboard and Register show a create-permitted “New entry” primary action; unauthorized roles do not receive that control.
+- Shared `formPanel` wraps a semantic form with a heading/description and optional supporting content. Vendor and user administration adopt the same panel without changing form IDs or delegated actions.
+- Shared `tableView` renders escaped column labels, scoped headers, a caption, an accessible horizontally scrollable region, and a visible empty row. Reports, vendors and users use this implementation; API/user-derived row cells remain escaped by their feature renderers.
+- Shared `emptyState` presents a clear initial report state with a reachable Run report action.
+- E2E assertions cover breadcrumbs, role-aware primary actions, shared forms/tables and the report initial empty state. Service-worker cache advances with the shell CSS/UI changes.
+
 ## Roadmap
 
-| Phase | Outcome                                                                                          |
-| ----- | ------------------------------------------------------------------------------------------------ |
-| 3     | Page headers with breadcrumbs and primary action; one table, form and empty-state component set. |
-| 4     | Dark mode and print-safe tokens; swap tokens to the chosen kit palette; PWA splash and icons.    |
+| Phase | Outcome                                                                                       |
+| ----- | --------------------------------------------------------------------------------------------- |
+| 4     | Dark mode and print-safe tokens; swap tokens to the chosen kit palette; PWA splash and icons. |
 
 ## Rules
 

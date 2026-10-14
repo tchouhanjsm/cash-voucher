@@ -168,6 +168,15 @@ with sync_playwright() as p:
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 10, 'owner sees 10 nav items including Cash Close; Account moved to the user menu')
     check(
+        page.locator('#view .breadcrumbs [aria-current="page"]').inner_text() == 'Dashboard'
+        and page.locator('#view .page-header h1').inner_text() == 'Dashboard',
+        'page heading has semantic breadcrumbs and one consistent page-header component',
+    )
+    check(
+        page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
+        'Dashboard exposes the create-permitted primary action in its page header',
+    )
+    check(
         page.locator('[data-v=dash]').get_attribute('aria-current') == 'page',
         'current navigation view is announced to assistive technology',
     )
@@ -292,6 +301,12 @@ with sync_playwright() as p:
         page.locator('#up').get_attribute('type') == 'password'
         and page.locator('#up').get_attribute('pattern') == '[0-9]{6}',
         'temporary user PIN is masked and constrained to six digits',
+    )
+    check(
+        page.locator('#uf').evaluate("(form) => form.parentElement.classList.contains('form-panel')")
+        and page.locator('#view .table-wrap[role=region]').count() == 1
+        and page.locator('#view table caption').inner_text() == 'Saved users',
+        'user administration uses the shared form panel and accessible table shell',
     )
     check(
         page.locator('#nav [data-v=users]').get_attribute('aria-current') == 'page'
@@ -532,6 +547,10 @@ with sync_playwright() as p:
         and accountant_page.locator('[data-v=cashClose]').count() == 0
         and accountant_page.locator('[data-v=users]').count() == 0,
         'accountant sees Reports only, without voucher entry, Register, Vendors, close or user administration',
+    )
+    check(
+        accountant_page.locator('#view .page-header-actions [data-act=ntype]').count() == 0,
+        'read-only accountant experience does not expose a create-primary action',
     )
     accountant_page.wait_for_selector('#movementFilters')
     accountant_page.locator('#movementFilters button[type=submit]').click()
@@ -3087,6 +3106,12 @@ with sync_playwright() as p:
     # Exercise the recorded movement report through the actual browser/API mock.
     go_view(page, 'reports')
     page.wait_for_selector('#movementFilters')
+    check(
+        page.locator('#view .breadcrumbs [aria-current="page"]').inner_text()
+        == 'Recorded Movement Report'
+        and page.locator('#view .empty-state-card h2').inner_text() == 'No report generated yet',
+        'report page exposes breadcrumbs and a reusable initial empty state',
+    )
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
         "document.querySelector('#view').innerText.includes('Source vouchers')"
@@ -3099,6 +3124,11 @@ with sync_playwright() as p:
     check(
         'does not establish physical cash' in report_text,
         'movement report discloses that it is not a physical-cash reconciliation',
+    )
+    check(
+        page.locator('#view table caption').inner_text() == 'Recorded voucher movements'
+        and page.locator('#view .table-wrap[role=region]').count() == 1,
+        'movement report uses the accessible shared table component',
     )
     check(
         'SELECTED PAYMENT TOTAL' in report_text.upper() and 'SELECTED RECEIPT TOTAL' in report_text.upper(),
