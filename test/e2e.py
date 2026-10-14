@@ -14,6 +14,8 @@ API = BASE + '/api?' + urllib.parse.urlencode({
     'fail_vendor': 'Poison Vendor',
     'direct_drop_vendor': 'Direct Lost Response Vendor',
     'direct_malformed_vendor': 'Direct Malformed Response Vendor',
+    'ack_vendor': 'Acknowledgement Failure Vendor',
+    'session_vendor': 'Stale Session Vendor',
 })
 URL = BASE + '/?' + urllib.parse.urlencode({'api': API})
 errs = []
@@ -4378,6 +4380,171 @@ with sync_playwright() as p:
         'backup integrity inspection recovers after a valid report returns',
     )
     audit_page.close()
+
+    # A server-confirmed queue upload must not be reported as an ordinary failure when its
+    # IndexedDB acknowledgement transaction aborts. The unchanged client ID must recover safely.
+    acknowledgement_vendor = 'Acknowledgement Failure Vendor'
+    context.set_offline(True)
+    go_view(page, 'new')
+    page.fill('.rv', acknowledgement_vendor)
+    page.fill('.ra', '151')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_selector('#nres .ok-panel')
+    ack_before = outbox_vendor_records(acknowledgement_vendor)
+    check(
+        len(ack_before) == 1 and ack_before[0]['status'] == 'pending',
+        'acknowledgement-failure scenario begins with one pending offline entry',
+    )
+    ack_client_id = ack_before[0]['clientId'] if ack_before else ''
+
+    page.evaluate(
+        """() => {
+          window.__failOutboxAckOnce = false;
+          const nativeTransaction = IDBDatabase.prototype.transaction;
+          IDBDatabase.prototype.transaction = function(storeNames, mode, options) {
+            const transaction = nativeTransaction.call(this, storeNames, mode, options);
+            const names = typeof storeNames === 'string' ? [storeNames] : Array.from(storeNames || []);
+            if (window.__failOutboxAckOnce && mode === 'readwrite' && names.includes('outbox')) {
+              window.__failOutboxAckOnce = false;
+              queueMicrotask(() => {
+                try { transaction.abort(); } catch {}
+              });
+            }
+            return transaction;
+          };
+        }"""
+    )
+    acknowledgement_fault = {'injected': False}
+
+    def fail_ack_after_server_commit(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        entries = request_data.get('entries')
+        matches = (
+            request_data.get('action') == 'createVouchers'
+            and isinstance(entries, list)
+            and any(
+                isinstance(entry, dict) and entry.get('vendor') == acknowledgement_vendor
+                for entry in entries
+            )
+        )
+        if not acknowledgement_fault['injected'] and matches:
+            response = route.fetch()
+            if response.ok:
+                # Arm only after the mock server has committed the voucher; the next outbox
+                # write is the browser's acknowledgement transaction, not its claim transaction.
+                page.evaluate('window.__failOutboxAckOnce = true')
+                acknowledgement_fault['injected'] = True
+            route.fulfill(response=response)
+            return
+        route.continue_()
+
+    page.route('**/api?*', fail_ack_after_server_commit)
+    context.set_offline(False)
+    try:
+        page.wait_for_function(
+            "() => document.querySelector('#banner')?.innerText.includes('could not confirm local cleanup')",
+            timeout=10000,
+        )
+    except Exception:
+        check(False, 'acknowledgement transaction fault surfaces an explicit recovery message')
+    finally:
+        page.unroute('**/api?*', fail_ack_after_server_commit)
+
+    ack_after_failure = outbox_vendor_records(acknowledgement_vendor)
+    check(
+        acknowledgement_fault['injected']
+        and len(ack_after_failure) == 1
+        and ack_after_failure[0]['clientId'] == ack_client_id
+        and ack_after_failure[0]['status'] == 'pending',
+        'post-commit IndexedDB acknowledgement failure keeps the same client ID pending',
+    )
+    ack_first_status = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+    check(
+        ack_first_status.get('acknowledgementCreateRequests') == 1,
+        'acknowledgement fault is injected after exactly one server submission',
+    )
+    go_view(page, 'reg')
+    page.wait_for_selector('#rq')
+    page.fill('#rq', acknowledgement_vendor)
+    page.wait_for_function(
+        f"Array.from(document.querySelectorAll('#rbody tr')).filter((row) => row.innerText.includes({json.dumps(acknowledgement_vendor)})).length === 1",
+        timeout=10000,
+    )
+    check(
+        page.locator('#rbody tr', has_text=acknowledgement_vendor).count() == 1,
+        'server-committed voucher remains present exactly once before acknowledgement retry',
+    )
+    page.evaluate("window.dispatchEvent(new Event('online'))")
+    for _ in range(50):
+        if not outbox_vendor_records(acknowledgement_vendor):
+            break
+        page.wait_for_timeout(200)
+    ack_after_retry = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+    check(
+        not outbox_vendor_records(acknowledgement_vendor)
+        and ack_after_retry.get('acknowledgementCreateRequests') == 2
+        and page.locator('#rbody tr', has_text=acknowledgement_vendor).count() == 1,
+        'same-ID acknowledgement retry clears the queue without creating a duplicate voucher',
+    )
+
+    # A SESSION response during background sync must trigger sign-in, not a permanent rejection.
+    # Keep the queued item bound to its original account and submit it safely after reauthentication.
+    stale_session_vendor = 'Stale Session Vendor'
+    context.set_offline(True)
+    go_view(page, 'new')
+    page.fill('.rv', stale_session_vendor)
+    page.fill('.ra', '173')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_selector('#nres .ok-panel')
+    session_before = outbox_vendor_records(stale_session_vendor)
+    session_client_id = session_before[0]['clientId'] if session_before else ''
+    check(
+        len(session_before) == 1
+        and session_before[0]['status'] == 'pending'
+        and bool(session_client_id),
+        'stale-session scenario starts with one account-bound pending entry',
+    )
+    context.set_offline(False)
+    page.wait_for_function(
+        "() => !document.querySelector('#login')?.classList.contains('hidden') && document.querySelector('#lErr')?.innerText.includes('Session expired')",
+        timeout=10000,
+    )
+    session_after_expiry = outbox_vendor_records(stale_session_vendor)
+    check(
+        len(session_after_expiry) == 1
+        and session_after_expiry[0]['clientId'] == session_client_id
+        and session_after_expiry[0]['status'] == 'pending',
+        'session expiry during sync preserves the same queue item and does not mark it failed',
+    )
+    page.fill('#lEmail', 'owner@test.com')
+    page.fill('#lPin', '579246')
+    page.click('#lBtn')
+    page.wait_for_selector('#nav button', timeout=10000)
+    page.evaluate("window.dispatchEvent(new Event('online'))")
+    for _ in range(50):
+        if not outbox_vendor_records(stale_session_vendor):
+            break
+        page.wait_for_timeout(200)
+    session_final_status = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+    go_view(page, 'reg')
+    page.wait_for_selector('#rq')
+    page.fill('#rq', stale_session_vendor)
+    page.wait_for_function(
+        f"Array.from(document.querySelectorAll('#rbody tr')).filter((row) => row.innerText.includes({json.dumps(stale_session_vendor)})).length === 1",
+        timeout=10000,
+    )
+    check(
+        session_final_status.get('sessionExpiryResponses') == 1
+        and session_final_status.get('staleSessionCreateRequests') == 2
+        and not outbox_vendor_records(stale_session_vendor)
+        and page.locator('#rbody tr', has_text=stale_session_vendor).count() == 1,
+        'reauthenticated same-ID retry clears the queue and creates exactly one voucher',
+    )
 
     # Online creation can commit even if its response is lost or malformed. The same client ID
     # must be queued and retried automatically, then confirmed without a second voucher.
