@@ -304,16 +304,14 @@ PR #122 completed UI shell phases 7–8. Users, Vendors, Audit log and Backup st
 
 PR #124 merged at `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`. Its tested head `f241fe2d449a16fcf33a5734e75f190a22158172` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540541081), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540540922) (316 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540540948). The print renderer now displays a constant `Date unavailable` fallback for malformed date shapes while preserving valid DD/MM/YYYY output. There is no API/schema or production-data change.
 
-## Current engineering sprint — Recorded Movement Report summary-count coercion guard (14 October 2026)
+## Completed phase — PR #125: Recorded Movement Report summary counts (14 October 2026)
 
-**Finding:** the report response boundary validates the `items` array and each displayed row, but its three optional summary-notice conditions used `Number(summary.approvalExceptionCount)`, `Number(summary.unmatchedVendorCount)`, and `Number(summary.ambiguousVendorCount)` without a primitive-type guard. An object-valued JSON field with non-callable `toString`/`valueOf` members can throw during rendering and interrupt the report despite otherwise valid rows.
+PR #125 merged at `6dd53d3b927f184ceda8fb14916367c63199ae2d`. Exact tested head `4e79f8bf1cc8a2c4672aebf7cc87215debb35314` passed CI, Browser E2E (320 checks) and Full Flight Test (251 backend, 38 contrast and 320 browser checks). Malformed exception counters are rejected with a retryable error instead of crashing the report or silently hiding a warning.
 
-**Outcome:** the report response boundary now requires approval-exception, unmatched-vendor and ambiguous-vendor counts to be non-negative safe integers. Malformed summary metadata fails closed with an accessible retryable error and hides the report's totals/rows rather than silently suppressing an exception notice. Render-time checks also avoid implicit object conversion. Browser E2E tampers all three fields with coercion-hostile objects, verifies fail-closed behavior without injected markup, then retries successfully after restoring the normal response.
+## Current engineering sprint — Daily Cash Close preview response contract (14 October 2026)
 
-**Boundaries:** frontend-only resilience; no accounting semantics, backend contract, stored data, schema, dependencies, authorization, deployment, migration or production mutation. The active HTML/DOM sink audit remains incremental and is not an XSS certification.
+**Finding:** the active `frontend/features/cash-close.js` renderer consumed `cashClosePreview` data without validating the response envelope or nested arrays. Null issue/history rows can throw inside renderers, object-valued count fields can throw during string conversion, and the refresh error handler kept previous `data` assigned.
 
-**Next priorities after this batch:**
+**Outcome:** validate open/closed response variants, dates, flags, finite amounts, safe counts, issue-row fields, close snapshots, ID/count alignment and correction/history records before rendering. Clear prior preview state when refresh begins. Invalid data shows a retryable error and prevents Save until a valid preview returns. Browser E2E covers null issue rows, an object-valued count and a null recent-history row, plus normal-response recovery.
 
-1. Continue the active frontend sink audit, verifying each concrete value-to-output gap and regression before labelling it a defect.
-2. Keep the owner-led release/recovery gates open until the intended Apps Script deployment/permissions are verified, backup artifacts are observed and isolated restore is witnessed.
-3. Complete physical-device PWA/offline, assistive-technology and role-based usability checks before the controlled hotel pilot. Source CI alone does not close these gates.
+**Boundaries:** frontend response integrity only; no server calculation, accounting rule, backend/API contract, schema, saved data, authorization or deployment changes. Independent live release and device/accessibility gates remain open.
