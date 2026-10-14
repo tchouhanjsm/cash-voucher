@@ -319,7 +319,6 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 - **Rendering review:** dynamic report, correction, history and print text is inserted through `esc(...)` or the shared finite money formatter plus HTML escaping. Browser E2E injects hostile vendor/correction strings in a successful mock API response and asserts they remain literal text without creating active SVG/image elements or firing the payload.
 - This is a targeted response-integrity and rendering regression, not exhaustive taint analysis, a penetration test or XSS certification. The remaining active `innerHTML` inventory, live Google authorization, backup/restore and deployed-source checks remain outstanding.
 
-
 ## Printed-voucher date-shape resilience — 14 October 2026
 
 - **Confirmed resilience gap:** the New Entry success path adds returned `createVouchers` response objects directly to `S.vouchers`. This response does not necessarily pass through the bootstrap voucher normalizer before the user clicks Print. The active print renderer called `dmy(voucher.date)` directly; `dmy` uses string methods and could throw when a malformed successful API response contains an object-valued date.
