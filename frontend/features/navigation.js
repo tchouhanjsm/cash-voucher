@@ -365,10 +365,8 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
 
       const panel = $('#navMorePanel');
       const focusable = [
-        ...panel.querySelectorAll(
-          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
-        ),
-      ].filter((element) => element.offsetParent !== null);
+        ...panel.querySelectorAll('button, a[href], input, select, textarea'),
+      ].filter((element) => !element.disabled && element.offsetParent !== null);
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       if (!first || !last) {
