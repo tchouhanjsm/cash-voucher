@@ -2,21 +2,21 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `eb23c2dd5b7620de9c09329c0088f4fbff36f89d` (PR #124 merge)  
-**Current batch:** Recorded Movement Report summary-count coercion guard and adversarial regression coverage, branch `security/report-summary-count-coercion-2026-10-14`  
-**Rule:** the GitHub PR page is authoritative for current head SHA and checks; this handoff commit itself changes the branch head.
+**Verified `main` SHA:** `6dd53d3b927f184ceda8fb14916367c63199ae2d` (PR #125 merge)  
+**Current batch:** Daily Cash Close preview response-contract validation, branch `security/cash-close-preview-contract-2026-10-14`  
+**Rule:** GitHub PR metadata and exact-head workflow results are authoritative. No merge or production deployment without owner authorization.
 
-## Current phase — Recorded Movement Report summary-count coercion guard
+## Current phase — Daily Cash Close preview response contract
 
-PR #124 merged at `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`; its tested head `f241fe2d449a16fcf33a5734e75f190a22158172` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540541081), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540540922) (316 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38540540948) (251 backend, 38 contrast, and 316 browser checks).
+PR #125 merged at `6dd53d3b927f184ceda8fb14916367c63199ae2d`; tested head `4e79f8bf1cc8a2c4672aebf7cc87215debb35314` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38550514761), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38550514690) (320 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38550514643) (251 backend, 38 contrast, 320 browser checks).
 
-The next active sink-audit increment hardens `frontend/features/reports.js`: three summary-notice conditions previously called `Number(summary.<field>)` before verifying that the API field was primitive. A malformed JSON object with non-callable `toString`/`valueOf` members can throw while the report renderer rebuilds its view. The response boundary now requires these exception counts to be non-negative safe integers; malformed metadata fails closed with a retryable error and hides the report totals/rows until a valid response returns. Render-time guards also avoid coercion. Browser E2E injects coercion-hostile objects into all three fields and verifies fail-closed behavior plus normal-response recovery.
+This batch validates `cashClosePreview` response shapes and nested records before assigning view state. Malformed issue/history rows and coercion-hostile count fields must fail closed with a retryable error; a failed refresh must clear prior preview data so no stale Save action is available. This is a client boundary change, not a cash calculation or backend/API contract change.
 
-The branch starts at verified main SHA `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`. CI, Browser E2E and Full Flight Test must pass on the same exact final head. No backend/API contract, financial rule, stored record, schema, dependency, deployment or production-data change is in scope; this is a defensive frontend summary-rendering guard. Live authorization, backup/restore, physical-device PWA and assistive-technology checks remain separate release gates.
+CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. Live Apps Script authorization/deployment, scheduled backup, isolated restore, physical-device/offline and assistive-technology checks remain separate release gates.
 
-## Most recently completed — PR #124: printed-voucher date-shape resilience
+## Most recently completed — PR #125: Recorded Movement Report summary-count guard
 
-PR #124 merged at `eb23c2dd5b7620de9c09329c0088f4fbff36f89d`; tested head `f241fe2d449a16fcf33a5734e75f190a22158172` passed the exact-head CI, Browser E2E (316 checks) and Full Flight Test. The print renderer now validates actual ISO calendar dates and uses a fixed `Date unavailable` fallback for malformed API-derived dates. This is a display guard, not data repair or proof of production deployment.
+PR #125 merged at `6dd53d3b927f184ceda8fb14916367c63199ae2d`; exact tested head `4e79f8bf1cc8a2c4672aebf7cc87215debb35314` passed CI, Browser E2E and Full Flight Test. The report now rejects malformed exception counters instead of coercing them or silently hiding exception notices.
 
 ## Owner-approved edit policy — UAT-048, PR #118
 
