@@ -156,7 +156,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     try {
       response = await api('listUsers');
     } catch (error) {
-      console.error('Users list could not be loaded:', error);
+      console.warn('Users list could not be loaded:', error);
       $('#view').innerHTML =
         head('Users', refreshBtn) +
         '<section id="users-load-error" class="card form-error" role="alert" aria-live="assertive">' +
@@ -616,7 +616,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         row.appendChild(cell);
         body.appendChild(row);
         $('#aud-count').textContent = 'Audit events unavailable.';
-        console.error('Audit events could not be loaded:', error);
+        console.warn('Audit events could not be loaded:', error);
       });
   }
 
@@ -1019,7 +1019,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
       card.replaceChildren(title, state, details, note, integrityButton, integrityResults);
     } catch (error) {
-      console.error('Backup status could not be loaded:', error);
+      console.warn('Backup status could not be loaded:', error);
       const title = document.createElement('h2');
       title.textContent = '🛡️ Backup & recovery';
       const message = document.createElement('p');
