@@ -279,7 +279,7 @@ const darkChecks = [
   },
   {
     name: 'dark chart bar against its track',
-    foreground: 'var(--brand)',
+    foreground: 'var(--accent)',
     background: 'var(--surface-muted)',
     minimum: 3,
   },
