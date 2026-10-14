@@ -296,6 +296,72 @@ with sync_playwright() as p:
     page.click('[data-act=closeCorrection]')
     page.wait_for_function("document.querySelector('#cc-closed-report')?.innerText.includes('CLOSED')")
     check('E2E correction note recorded' in page.locator('.cc-corrections').inner_text(), 'correction note is displayed separately')
+    # Cash-close snapshots and correction notes are API output, so the renderer must keep hostile text inert.
+    cash_close_vendor_payload = '<svg onload=window.__xssFired=true></svg>'
+    cash_close_note_payload = '<img src=x onerror=window.__xssFired=true>'
+    page.evaluate('window.__xssFired = false')
+
+    def inject_cash_close_markup(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if (
+            request_data.get('action') != 'cashClosePreview'
+            or request_data.get('date') != '2020-01-01'
+        ):
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        close = payload.get('data', {}).get('close') if payload.get('ok') else None
+        if not isinstance(close, dict):
+            route.fulfill(response=response)
+            return
+
+        item = {
+            'id': 'cash-close-xss-voucher',
+            'no': 'P-XSS',
+            'date': '2020-01-01',
+            'vendor': cash_close_vendor_payload,
+            'amount': 1,
+            'cashImpact': 'CASH_OUT',
+        }
+        close['includedVouchers'] = [item]
+        close['includedVoucherIds'] = [item['id']]
+        close['includedVoucherCount'] = 1
+        if not isinstance(close.get('corrections'), list) or not close['corrections']:
+            close['corrections'] = [
+                {
+                    'id': 'cash-close-xss-correction',
+                    'closeId': close.get('id', ''),
+                    'date': '2020-01-01',
+                    'voucherId': item['id'],
+                    'type': 'CASH_COUNT',
+                    'details': cash_close_note_payload,
+                    'reason': 'E2E rendering regression',
+                    'createdBy': 'owner@test.com',
+                    'createdAt': '2026-10-14T00:00:00.000Z',
+                }
+            ]
+        else:
+            close['corrections'][0]['details'] = cash_close_note_payload
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    page.route('**/api?*', inject_cash_close_markup)
+    page.click('[data-act=closePreview]')
+    page.wait_for_function(
+        "document.querySelector('#cc-closed-report')?.innerText.includes('cash-close-xss-voucher')"
+    )
+    check(
+        cash_close_vendor_payload in page.locator('#cc-closed-report').inner_text()
+        and cash_close_note_payload in page.locator('.cc-corrections').inner_text()
+        and page.locator('#cc-results img, #cc-results svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'cash-close snapshot and correction text render literally without creating executable markup',
+    )
+    page.unroute('**/api?*', inject_cash_close_markup)
     page.fill('#cc-date', '2020-01-02')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-counted')
