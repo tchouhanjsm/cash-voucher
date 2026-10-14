@@ -6,6 +6,7 @@
   --muted: #596978;
   --line: #dfded8;
   --brand: #1f3a4d;
+  --chart-bar: #1f3a4d;
   --brand-hover: #2a4d66;
   --accent: #946515;
   --focus: #725018;
@@ -43,6 +44,7 @@
   --muted: #c0cbd4;
   --line: #3a4753;
   --brand: #192f3c;
+  --chart-bar: #e8ba58;
   --brand-hover: #254558;
   --accent: #e8ba58;
   --focus: #f3ca70;
@@ -480,7 +482,7 @@ td.amt,
 .hb-t i {
   display: block;
   height: 100%;
-  background: var(--brand);
+  background: var(--chart-bar);
   border-radius: 5px;
 }
 .hb-v {
@@ -496,7 +498,7 @@ td.amt,
   fill: var(--muted);
 }
 .chart rect.b {
-  fill: var(--brand);
+  fill: var(--chart-bar);
 }
 .chart rect.b:hover {
   fill: var(--accent);
