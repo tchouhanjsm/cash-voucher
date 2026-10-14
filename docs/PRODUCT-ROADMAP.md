@@ -301,6 +301,7 @@ PR #122 completed UI shell phases 7–8. Users, Vendors, Audit log and Backup st
 **Non-goals:** no historic record rewrite/repair, schema migration, financial calculation change, new accounting semantics, approval-policy change, Apps Script deployment or production data operation. A previously malformed saved close must be inspected and recovered by the owner through an explicitly authorized procedure; this code does not auto-correct it.
 
 **Next priorities after this batch:**
+
 1. Continue the sink-by-sink rendering audit against the active frontend modules and test each remaining concrete output-context gap; do not label the product XSS-certified.
 2. Complete the separate owner-led release/recovery gates: confirm the intended Apps Script deployment and permissions, verify actual Sheet structure after an authorized backup, observe scheduled backup artifacts and witness isolated restore.
 3. Complete physical-device PWA/offline, assistive-technology and role-based usability review before the controlled hotel pilot. Source/CI evidence alone does not close these operational gates.
