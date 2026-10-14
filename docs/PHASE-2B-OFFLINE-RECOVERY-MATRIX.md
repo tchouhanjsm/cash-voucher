@@ -1,8 +1,8 @@
 # Phase 2B — Offline Save and Recovery Matrix
 
-**Base:** `main` at `86c8e2bae740e5e5f09dabd18e6b0d035d700bf6` (PR #130 merge)  
-**Working branch:** `phase-2b/online-ambiguous-save-recovery-2026-10-14`  
-**Status:** In implementation; this PR closes the direct online-save ambiguity gap, not the entire recovery phase.  
+**Base:** `main` at `69f861f86d08a19da8fe1223b3bc6c4840478895` (PR #131 merge)  
+**Working branch:** `phase-2b/recovery-matrix-closure-2026-10-14`  
+**Status:** Recovery-matrix closure in implementation; exact-head CI evidence is pending.  
 **Release boundary:** Mock backend and browser tests unless separately authorized live verification is documented.
 
 ## Business outcome
@@ -37,25 +37,25 @@ Known validation/conflict errors must retain the existing rejection/review workf
 
 CI, Browser E2E and Full Flight Test must pass on the same exact final PR head SHA.
 
-## Remaining recovery matrix
-
 ### Acknowledgement/storage transaction failure
 
-Preserve the queue item after server success. A later idempotent retry and lease recovery must not duplicate the voucher.
+The mock E2E arms a one-shot IndexedDB transaction abort only after the server successfully returns the committed voucher. The application must state that server acceptance is known but local cleanup is unconfirmed, preserve the original client ID, and stop the current flush rather than claiming success. Retrying must use the same client ID and produce exactly one Register row.
 
-Required evidence: dedicated acknowledgement fault injection and queue-state assertions.
+Required evidence: IndexedDB transaction abort, queue record/client-ID/status after failure, request count, one Register row before retry, and an empty queue/one Register row after retry.
 
 ### Stale session during synchronization
 
-Do not mark the item as a permanent rejection. Preserve it for sign-in/retry.
+The mock server returns `SESSION` once for a selected queued entry before executing the write. The app must sign out, retain the pending record and its owner binding, and allow the same record to synchronize after reauthentication. A session error must never become a permanent validation rejection.
 
-Required evidence: explicit session-expiry fault injection.
+Required evidence: exact same client ID before/after sign-out, pending status, a single injected session expiry, successful retry after reauthentication and exactly one Register row.
+
+## Additional recovery matrix
 
 ### Account or endpoint changes
 
 No record uploads under another account binding; other-account records remain untouched.
 
-Required evidence: existing account-binding E2E plus endpoint-switch regression.
+Required evidence: existing account-binding E2E. Endpoint-switch behavior remains a separate follow-up if it is not proven by current owner-key isolation tests.
 
 ### Permanent and transient failures
 
