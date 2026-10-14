@@ -32,8 +32,8 @@ No Figma file is imported. The app is vanilla JS with no build step, so the layo
 
 ## Roadmap
 
-| Phase | Outcome |
-| ----- | ------- |
+| Phase | Outcome                                                                                       |
+| ----- | --------------------------------------------------------------------------------------------- |
 | 4     | Dark mode and print-safe tokens; swap tokens to the chosen kit palette; PWA splash and icons. |
 
 ## Rules
