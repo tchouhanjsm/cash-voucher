@@ -192,7 +192,6 @@ For daily cash close, the detailed decisions remain in `docs/DAILY-CASH-CLOSE-DE
 - The roadmap and handoff link to this document and distinguish merged source features from independent live cash-close/deployment and recovery gates.
 - This documentation-only phase changes no application code, API, schema, dependencies, production data, or deployment settings.
 
-
 ## Phase 1 status reconciliation — 14 October 2026
 
 Current live source baseline is `255d78ccb6a21b204d432221489114ccf514d333` (PR #126 merge). The repository audit is recorded in `docs/PHASE-1-REPOSITORY-AUDIT.md`. Historical references to active PRs are not authoritative; use current GitHub PR metadata. Product policy in this document remains subject to the owner-approved decisions already recorded above.
