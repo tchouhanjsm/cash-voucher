@@ -27,8 +27,7 @@ export function createCashClose({ api }) {
     );
   }
 
-  const isRecord = (value) =>
-    value !== null && typeof value === 'object' && !Array.isArray(value);
+  const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
   const isText = (value) => typeof value === 'string';
   const isCount = (value) => Number.isSafeInteger(value) && value >= 0;
   const isAmount = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0;
@@ -66,11 +65,7 @@ export function createCashClose({ api }) {
       'createdBy',
       'createdAt',
     ];
-    return (
-      isRecord(item) &&
-      textFields.every((field) => isText(item[field])) &&
-      isDate(item.date)
-    );
+    return isRecord(item) && textFields.every((field) => isText(item[field])) && isDate(item.date);
   }
 
   function isCloseRecord(close, requireCorrections = false) {
