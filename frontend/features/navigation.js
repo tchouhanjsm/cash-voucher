@@ -205,15 +205,21 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       const active = button.dataset.v === S.view;
       button.classList.toggle('on', active);
 
-      if (active) button.setAttribute('aria-current', 'page');
-      else button.removeAttribute('aria-current');
+      if (active) {
+        button.setAttribute('aria-current', 'page');
+      } else {
+        button.removeAttribute('aria-current');
+      }
     });
 
     const moreButton = $('#mobileMoreBtn');
     const moreActive = Boolean(S.view) && S.view !== 'acct' && !MOBILE_SHORTCUTS.has(S.view);
     moreButton.classList.toggle('on', moreActive);
-    if (moreActive) moreButton.setAttribute('aria-current', 'page');
-    else moreButton.removeAttribute('aria-current');
+    if (moreActive) {
+      moreButton.setAttribute('aria-current', 'page');
+    } else {
+      moreButton.removeAttribute('aria-current');
+    }
   }
 
   function renderNav() {
@@ -329,8 +335,11 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     });
 
     $('#mobileMoreBtn').addEventListener('click', () => {
-      if (moreIsOpen()) closeMore(true);
-      else openMore();
+      if (moreIsOpen()) {
+        closeMore(true);
+      } else {
+        openMore();
+      }
     });
 
     $('#navMore').addEventListener('click', (event) => {
