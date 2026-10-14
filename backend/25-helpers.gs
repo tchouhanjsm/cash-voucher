@@ -260,11 +260,12 @@ function recordAuditWriteFailure_(kind, error) {
 function auditWriteHealth_() {
   const properties = props_();
   const rawCount = Number(properties.getProperty('AUDIT_WRITE_FAILURE_COUNT') || 0);
+  const status =
+    properties.getProperty('AUDIT_WRITE_STATUS') === 'DEGRADED'
+      ? 'DEGRADED'
+      : 'NO_KNOWN_FAILURE';
   return {
-    status:
-      properties.getProperty('AUDIT_WRITE_STATUS') === 'DEGRADED'
-        ? 'DEGRADED'
-        : 'NO_KNOWN_FAILURE',
+    status: status,
     failureCount: Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0,
     lastFailureAt: properties.getProperty('AUDIT_WRITE_LAST_FAILURE_AT') || '',
     lastFailureKind: properties.getProperty('AUDIT_WRITE_LAST_FAILURE_KIND') || '',
