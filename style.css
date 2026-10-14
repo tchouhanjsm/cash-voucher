@@ -264,6 +264,59 @@ nav .ic {
 .head h1 {
   margin: 0;
 }
+.breadcrumbs {
+  margin: 0 0 6px;
+}
+.breadcrumbs ol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  color: var(--muted);
+  font-size: 12px;
+}
+.breadcrumbs li + li::before {
+  content: '›';
+  color: var(--muted);
+}
+.breadcrumbs [aria-current='page'] {
+  color: var(--ink);
+  font-weight: 600;
+}
+.page-header {
+  align-items: flex-start;
+}
+.page-header-copy {
+  min-width: 0;
+}
+.page-description {
+  color: var(--muted);
+  font-size: 13px;
+  margin: 6px 0 0;
+  max-width: 70ch;
+}
+.page-header-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.form-panel > h2 {
+  margin: 0 0 10px;
+}
+.form-panel > .muted {
+  margin: 0 0 12px;
+}
+.form-panel > form {
+  width: 100%;
+}
+.form-panel > form > input[type='hidden'] {
+  display: none;
+}
 .banner {
   background: #fff4d6;
   border: 1px solid #e6c866;
@@ -404,6 +457,36 @@ td.amt,
 }
 .table-wrap {
   overflow-x: auto;
+}
+.table-wrap[role='region']:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.empty-state-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 20px;
+  margin-bottom: 14px;
+  background: var(--card);
+  border: 1px dashed var(--line);
+  border-radius: 12px;
+}
+.empty-state-card h2 {
+  margin: 0 0 6px;
+}
+.empty-state-card p {
+  margin: 0;
+}
+.empty-state-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.empty-state-actions .btn {
+  min-height: 44px;
 }
 
 .empty-state {
@@ -1476,6 +1559,24 @@ button {
 @media print {
   .topbar {
     display: none !important;
+  }
+}
+
+@media (max-width: 600px) {
+  .page-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .page-header-actions {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .page-header-actions .btn {
+    flex: 1 1 auto;
   }
 }
 
