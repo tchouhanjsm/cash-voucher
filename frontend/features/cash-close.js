@@ -27,6 +27,177 @@ export function createCashClose({ api }) {
     );
   }
 
+  const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+  const isText = (value) => typeof value === 'string';
+  const isCount = (value) => Number.isSafeInteger(value) && value >= 0;
+  const isAmount = (value) => typeof value === 'number' && Number.isFinite(value) && value >= 0;
+  const isDate = (value) => {
+    if (!isText(value) || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+    const parsed = new Date(value + 'T00:00:00Z');
+    return Number.isFinite(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+  };
+
+  function isCloseVoucher(item, date) {
+    return (
+      isRecord(item) &&
+      isText(item.id) &&
+      item.id.trim() !== '' &&
+      isText(item.no) &&
+      item.no.trim() !== '' &&
+      item.date === date &&
+      isDate(item.date) &&
+      isText(item.vendor) &&
+      typeof item.amount === 'number' &&
+      Number.isFinite(item.amount) &&
+      item.amount > 0 &&
+      ['CASH_IN', 'CASH_OUT', 'NO_CASH'].includes(item.cashImpact)
+    );
+  }
+
+  function isCorrection(item) {
+    const textFields = [
+      'id',
+      'closeId',
+      'voucherId',
+      'type',
+      'details',
+      'reason',
+      'createdBy',
+      'createdAt',
+    ];
+    return isRecord(item) && textFields.every((field) => isText(item[field])) && isDate(item.date);
+  }
+
+  function isCloseRecord(close, requireCorrections = false) {
+    const textFields = [
+      'drawerKey',
+      'openingSource',
+      'openingCloseId',
+      'openingReason',
+      'varianceReason',
+      'createdBy',
+      'createdAt',
+      'timeZone',
+    ];
+    const amountFields = [
+      'openingCash',
+      'cashInTotal',
+      'cashOutTotal',
+      'expectedCash',
+      'countedCash',
+    ];
+
+    if (
+      !isRecord(close) ||
+      !isText(close.id) ||
+      close.id.trim() === '' ||
+      !isDate(close.date) ||
+      !textFields.every((field) => isText(close[field])) ||
+      !amountFields.every((field) => isAmount(close[field])) ||
+      typeof close.variance !== 'number' ||
+      !Number.isFinite(close.variance) ||
+      !Array.isArray(close.includedVouchers) ||
+      !Array.isArray(close.includedVoucherIds) ||
+      !isCount(close.includedVoucherCount) ||
+      close.includedVoucherCount !== close.includedVouchers.length ||
+      close.includedVoucherIds.length !== close.includedVouchers.length ||
+      !close.includedVouchers.every((item) => isCloseVoucher(item, close.date)) ||
+      !close.includedVoucherIds.every(
+        (id, index) =>
+          isText(id) &&
+          id.trim() !== '' &&
+          id === close.includedVouchers[index].id &&
+          close.includedVoucherIds.indexOf(id) === index,
+      ) ||
+      (requireCorrections && !Array.isArray(close.corrections)) ||
+      (close.corrections !== undefined &&
+        (!Array.isArray(close.corrections) || !close.corrections.every(isCorrection)))
+    ) {
+      return false;
+    }
+
+    return true;
+  }
+
+  function isPreviewVoucher(item) {
+    return (
+      isRecord(item) &&
+      isText(item.id) &&
+      isText(item.no) &&
+      isDate(item.date) &&
+      isText(item.vendor) &&
+      (isAmount(item.amount) || item.amount === null) &&
+      ['CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'].includes(item.cashImpact)
+    );
+  }
+
+  function isIssueRow(item, kind) {
+    if (
+      !isRecord(item) ||
+      !['id', 'no', 'vendor', 'reason'].every((field) => isText(item[field]))
+    ) {
+      return false;
+    }
+
+    if (kind === 'invalid') return isText(item.amount);
+
+    if (kind === 'unclassified') {
+      return isDate(item.date) && (isAmount(item.amount) || item.amount === null);
+    }
+
+    return (
+      isDate(item.date) &&
+      (isAmount(item.amount) || item.amount === null) &&
+      isText(item.approvalStatus)
+    );
+  }
+
+  function isCashClosePreview(value, requestedDate) {
+    if (
+      !isRecord(value) ||
+      value.date !== requestedDate ||
+      !isDate(value.date) ||
+      !isDate(value.today) ||
+      value.date > value.today ||
+      typeof value.closed !== 'boolean' ||
+      !isText(value.timeZone) ||
+      !Array.isArray(value.recentCloses) ||
+      !value.recentCloses.every((close) => isCloseRecord(close, true))
+    ) {
+      return false;
+    }
+
+    if (value.closed) {
+      return isCloseRecord(value.close, true) && value.close.date === value.date;
+    }
+
+    return (
+      typeof value.blockedByLaterClose === 'boolean' &&
+      isText(value.laterCloseDate) &&
+      typeof value.requiresManualOpening === 'boolean' &&
+      (value.previousClose === null || isCloseRecord(value.previousClose)) &&
+      (value.openingCash === null || isAmount(value.openingCash)) &&
+      isText(value.openingSource) &&
+      isText(value.openingReason) &&
+      typeof value.openingReady === 'boolean' &&
+      isAmount(value.cashInTotal) &&
+      isAmount(value.cashOutTotal) &&
+      isCount(value.noCashCount) &&
+      isCount(value.activeVoucherCount) &&
+      Array.isArray(value.includedVouchers) &&
+      value.includedVouchers.every(isPreviewVoucher) &&
+      Array.isArray(value.pendingApprovals) &&
+      value.pendingApprovals.every((item) => isIssueRow(item, 'approval')) &&
+      Array.isArray(value.unclassified) &&
+      value.unclassified.every((item) => isIssueRow(item, 'unclassified')) &&
+      Array.isArray(value.invalidVouchers) &&
+      value.invalidVouchers.every((item) => isIssueRow(item, 'invalid')) &&
+      (value.expectedCash === null || isAmount(value.expectedCash)) &&
+      typeof value.readyToClose === 'boolean' &&
+      typeof value.expectedInvalid === 'boolean'
+    );
+  }
+
   function render() {
     if (!can('cashClose')) {
       $('#view').innerHTML =
@@ -345,6 +516,7 @@ export function createCashClose({ api }) {
     const opening = sameOpenDate ? $('#cc-opening')?.value : undefined;
     const reason = sameOpenDate ? $('#cc-opening-reason')?.value : undefined;
     const results = $('#cc-results');
+    data = null;
     if (results) {
       results.setAttribute('aria-busy', 'true');
       results.innerHTML = '<p class="muted">Refreshing server cash-close preview…</p>';
@@ -354,6 +526,11 @@ export function createCashClose({ api }) {
     if (reason !== undefined) payload.openingReason = reason;
     try {
       const serverPreview = await api('cashClosePreview', payload);
+      if (!isCashClosePreview(serverPreview, date)) {
+        throw new Error(
+          'The server returned an invalid cash-close preview. Refresh and review before saving.',
+        );
+      }
       try {
         const localRecords = await offlineQueue.list();
         data = { ...serverPreview, localQueueKnown: true, localQueueCount: localRecords.length };
