@@ -109,6 +109,36 @@ with sync_playwright() as p:
     page.on('pageerror', lambda error: logs.append('PAGEERR ' + str(error)))
 
     page.goto(URL)
+    check(
+        page.locator('html').get_attribute('data-theme') == 'light',
+        'theme initializes from the configured system light preference',
+    )
+    page.emulate_media(color_scheme='dark')
+    check(
+        page.locator('html').get_attribute('data-theme') == 'dark'
+        and page.evaluate("localStorage.getItem('cv.theme')") is None,
+        'unsaved theme follows the operating-system dark preference without persisting it',
+    )
+    page.emulate_media(color_scheme='light')
+    check(
+        page.locator('html').get_attribute('data-theme') == 'light',
+        'unsaved theme returns to light when the system preference changes',
+    )
+    manifest_data = page.evaluate(
+        """async () => {
+            const response = await fetch('manifest.webmanifest');
+            return response.ok ? response.json() : null;
+        }"""
+    )
+    check(
+        manifest_data is not None
+        and manifest_data.get('display') == 'standalone'
+        and any(icon.get('sizes') == '192x192' for icon in manifest_data.get('icons', []))
+        and any(icon.get('sizes') == '512x512' for icon in manifest_data.get('icons', []))
+        and any(icon.get('purpose') == 'maskable' for icon in manifest_data.get('icons', []))
+        and page.locator('link[rel="apple-touch-icon"]').get_attribute('sizes') == '192x192',
+        'PWA launch manifest and standard, Apple and maskable app icons are wired',
+    )
     csp = page.locator('meta[http-equiv="Content-Security-Policy"]')
     csp_content = csp.get_attribute('content') if csp.count() == 1 else ''
     check(
@@ -167,6 +197,31 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 10, 'owner sees 10 nav items including Cash Close; Account moved to the user menu')
+    page.click('#userBtn')
+    check(
+        page.locator('#themeToggle').is_visible()
+        and 'Use dark theme' in page.locator('#themeToggle').inner_text(),
+        'account menu exposes a labelled theme toggle',
+    )
+    page.click('#themeToggle')
+    check(
+        page.locator('html').get_attribute('data-theme') == 'dark'
+        and page.evaluate("localStorage.getItem('cv.theme')") == 'dark'
+        and page.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(17, 24, 32)'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#111820'
+        and page.locator('#themeToggle').get_attribute('aria-pressed') == 'true',
+        'dark theme updates design tokens, browser chrome color, accessible state and persisted preference',
+    )
+    page.click('#userBtn')
+    page.click('#themeToggle')
+    check(
+        page.locator('html').get_attribute('data-theme') == 'light'
+        and page.evaluate("localStorage.getItem('cv.theme')") == 'light'
+        and page.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(247, 245, 240)'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#1f3a4d'
+        and page.locator('#themeToggle').get_attribute('aria-pressed') == 'false',
+        'light theme can be restored and the explicit choice is retained',
+    )
     check(
         page.locator('#view .breadcrumbs [aria-current="page"]').inner_text() == 'Dashboard'
         and page.locator('#view .page-header h1').inner_text() == 'Dashboard',
@@ -1748,6 +1803,16 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'stored voucher note remains text in printable output',
     )
+    page.emulate_media(media='print')
+    check(
+        page.locator('#app').evaluate("element => getComputedStyle(element).display") == 'none'
+        and page.locator('#printArea').evaluate("element => getComputedStyle(element).display") != 'none'
+        and page.locator('#printArea .pv').evaluate("element => getComputedStyle(element).color") == 'rgb(17, 17, 17)'
+        and page.locator('#printArea .pv').evaluate("element => getComputedStyle(element).backgroundColor") == 'rgb(255, 255, 255)'
+        and page.locator('#printArea .pv').evaluate("element => getComputedStyle(element).breakInside") == 'avoid',
+        'voucher print stylesheet hides application chrome and forces legible theme-independent paper output',
+    )
+    page.emulate_media(media='screen')
 
     context.set_offline(True)
     go_view(page, 'new')
