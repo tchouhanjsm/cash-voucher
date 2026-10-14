@@ -399,12 +399,10 @@ function canSee_(user, o) {
 }
 function addReceipt_(user, req) {
   const o = findVoucher_(req.id);
-  if (
-    !(
-      can_(user, 'receiptAny') ||
-      (can_(user, 'viewOwn') && String(o.CreatedBy).toLowerCase() === user.email)
-    )
-  )
+  if (!(
+    can_(user, 'receiptAny') ||
+    (can_(user, 'viewOwn') && String(o.CreatedBy).toLowerCase() === user.email)
+  ))
     need_(user, 'receiptAny');
   if (o.Status !== 'ACTIVE') throw err_('Cannot add receipts to a cancelled voucher.');
   if (cashDateClosed_(isoDate_(o.Date))) throw cashCloseDateError_();
