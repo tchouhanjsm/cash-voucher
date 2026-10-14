@@ -356,11 +356,11 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       if (event.key !== 'Tab') return;
 
       const panel = $('#navMorePanel');
-      const focusable = Array.from(
-        panel.querySelectorAll(
+      const focusable = [
+        ...panel.querySelectorAll(
           'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])',
         ),
-      ).filter((element) => element.offsetParent !== null);
+      ].filter((element) => element.offsetParent !== null);
       const first = focusable[0];
       const last = focusable[focusable.length - 1];
       if (!first || !last) {
