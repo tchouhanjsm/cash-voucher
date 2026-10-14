@@ -32,11 +32,11 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 
 ## Roadmap
 
-| Phase | Outcome |
-| ----- | ------- |
-| 4 | Establish the warm-neutral and navy/gold token palette, system-aware dark mode, persistent explicit theme choice, and light/dark contrast checks. |
-| 5 | Make A5 voucher printing independent of screen theme, with application chrome hidden and print layout/break behavior guarded by Browser E2E. |
-| 6 | Align PWA launch metadata, browser theme color, Apple icon metadata, standard/maskable manifest icons, and the service-worker cache revision. |
+| Phase | Outcome                                                                                                                                           |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 4     | Establish the warm-neutral and navy/gold token palette, system-aware dark mode, persistent explicit theme choice, and light/dark contrast checks. |
+| 5     | Make A5 voucher printing independent of screen theme, with application chrome hidden and print layout/break behavior guarded by Browser E2E.      |
+| 6     | Align PWA launch metadata, browser theme color, Apple icon metadata, standard/maskable manifest icons, and the service-worker cache revision.     |
 
 ## Phase 4 — palette and theme behavior
 
