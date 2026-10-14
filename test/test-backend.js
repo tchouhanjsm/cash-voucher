@@ -1873,9 +1873,7 @@ ok(
 const closeSheet = g.sheets.CashCloses;
 const closeHeaders = closeSheet.rows[0];
 const closeColumn = (name) => closeHeaders.indexOf(name);
-const dayThreeRow = closeSheet.rows.find(
-  (row) => row[closeColumn('CloseID')] === dayThree.data.id,
-);
+const dayThreeRow = closeSheet.rows.find((row) => row[closeColumn('CloseID')] === dayThree.data.id);
 ok(!!dayThreeRow, 'saved cash-close row is available for integrity regressions');
 const originalCloseFields = {
   IncludedVouchers: dayThreeRow[closeColumn('IncludedVouchers')],
