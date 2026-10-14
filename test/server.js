@@ -16,6 +16,7 @@ const types = {
   '.js': 'text/javascript',
   '.css': 'text/css',
   '.png': 'image/png',
+  '.svg': 'image/svg+xml',
   '.webmanifest': 'application/manifest+json',
 };
 http

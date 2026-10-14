@@ -147,7 +147,7 @@ with sync_playwright() as p:
     page.fill('#np', '579246')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
-    check(page.locator('#nav button').count() == 11, 'owner sees 11 nav items including Cash Close')
+    check(page.locator('#nav button').count() == 10, 'owner sees 10 nav items including Cash Close; Account moved to the user menu')
     check(
         page.locator('[data-v=dash]').get_attribute('aria-current') == 'page',
         'current navigation view is announced to assistive technology',
@@ -860,7 +860,7 @@ with sync_playwright() as p:
     check(
         page.locator('#brand').inner_text() == 'Cash Vouchers'
         and page.title() == 'Vouchers'
-        and page.locator('#who').inner_text().strip() == 'owner'
+        and page.locator('#userRole').inner_text().strip() == 'owner'
         and page.locator('#nav button').count() > 0
         and not page.evaluate('window.__xssFired === true'),
         'object-valued property and profile names stay inert and do not abort navigation bootstrap',
@@ -969,10 +969,10 @@ with sync_playwright() as p:
         timeout=10000,
     )
     check(
-        page.locator('#nav button').count() == 4
+        page.locator('#nav button').count() == 3
         and page.locator('[data-v=new]').count() == 1
         and page.locator('[data-v=reg]').count() == 1
-        and page.locator('[data-v=acct]').count() == 1
+        and page.locator('#userBtn').count() == 1
         and page.locator('[data-v=users], [data-v=set], [data-v=audit], [data-v=vend], [data-v=reports], [data-v=bulk]').count() == 0
         and page.evaluate("!localStorage.getItem('cv.token')"),
         'correct offline PIN opens a local workspace, hides privileged routes and issues no server token',
@@ -1186,7 +1186,7 @@ with sync_playwright() as p:
     page.fill('#lEmail', 'owner@test.com')
     page.fill('#lPin', '579246')
     page.click('#lBtn')
-    page.wait_for_function("document.querySelectorAll('#nav button').length === 11", timeout=10000)
+    page.wait_for_function("document.querySelectorAll('#nav button').length === 10", timeout=10000)
     page.wait_for_function(
         """async () => {
           const db = await new Promise((resolve, reject) => {
@@ -1230,8 +1230,9 @@ with sync_playwright() as p:
     )
     page.remove_listener('request', track_offline_create)
 
-    page.click('[data-v=acct]')
-    page.click('[data-act=signout]')
+    page.click('#userBtn')
+    page.locator('#userPop [data-go=acct]').first.click()
+    page.click('#view [data-act=signout]')
     page.wait_for_selector('#loginForm')
 
     def login(email, pin):
@@ -1246,13 +1247,14 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(
-        xss_payload in page.locator('#who').inner_text()
-        and page.locator('#who img, #who svg').count() == 0
+        xss_payload in page.locator('#userName').inner_text()
+        and page.locator('#userName img, #userName svg, #popName img, #popName svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
         'stored user name is inert text in the signed-in account label',
     )
-    page.click('[data-v=acct]')
-    page.click('[data-act=signout]')
+    page.click('#userBtn')
+    page.locator('#userPop [data-go=acct]').first.click()
+    page.click('#view [data-act=signout]')
     page.wait_for_selector('#loginForm')
 
     login('s@test.com', '135790')
@@ -1261,7 +1263,7 @@ with sync_playwright() as p:
     page.fill('#np', '975310')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
-    check(page.locator('#nav button').count() == 4, 'staff sees 4 nav items (dash,new,reg,acct)')
+    check(page.locator('#nav button').count() == 3, 'staff sees 3 nav items (dash,new,reg); Account is in the user menu')
 
     page.click('[data-v=new]')
     page.wait_for_selector('#nf')
@@ -1890,7 +1892,7 @@ with sync_playwright() as p:
     second_page = context.new_page()
     second_page.goto(URL)
     second_page.wait_for_selector('#nav button')
-    check(second_page.locator('#nav button').count() == 4, 'second tab shares the staff session')
+    check(second_page.locator('#nav button').count() == 3, 'second tab shares the staff session')
 
     context.set_offline(True)
     page.click('[data-v=new]')
@@ -2216,8 +2218,9 @@ with sync_playwright() as p:
         'queued offline cash receipt syncs successfully and receives the next receipt number',
     )
 
-    page.click('[data-v=acct]')
-    page.click('[data-act=signout]')
+    page.click('#userBtn')
+    page.locator('#userPop [data-go=acct]').first.click()
+    page.click('#view [data-act=signout]')
     page.wait_for_selector('#loginForm')
 
     login('m@test.com', '246810')
@@ -2226,7 +2229,7 @@ with sync_playwright() as p:
     page.fill('#np', '864209')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
-    check(page.locator('#nav button').count() == 8, 'manager sees 8 nav items including Reports and Cash Close')
+    check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
 
     page.click('[data-v=new]')
     page.click('[data-k=RECEIPT]')

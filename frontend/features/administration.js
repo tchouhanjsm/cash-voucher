@@ -1,7 +1,7 @@
 import { $ } from '../core/dom.js';
 import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
-import { csvCell, download, esc, scalarText } from '../core/utils.js';
+import { csvCell, download, esc, initials, scalarText } from '../core/utils.js';
 import { closeModal, dialog, fail, head, toast } from '../core/ui.js';
 
 export function createAdministration({ api, getNavigation, signOut }) {
@@ -1084,8 +1084,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
   function account() {
     $('#view').innerHTML =
       head('My Account') +
-      `<div class="card"><h2>${esc(S.me.name)}</h2><p>${esc(S.me.email)} · <span class="badge">${esc(S.me.role)}</span></p><div class="actions">${deferredInstall ? '<button class="btn" data-act="install">📲 Install app</button>' : ''}<button class="btn danger" data-act="signout">Sign out</button></div>
-    <p class="muted">Tip: on iPhone use Share → Add to Home Screen. On Android/Chrome use the menu → Install app.</p></div>
+      `<div class="card profile"><span class="avatar lg" aria-hidden="true">${esc(initials(S.me.name || S.me.email))}</span><div class="profile-main"><h2>${esc(S.me.name)}</h2><p>${esc(S.me.email)}</p><p><span class="badge">${esc(S.me.role)}</span> <span class="muted">${esc(scalarText(S.settings?.propertyName))}</span></p></div><div class="actions">${deferredInstall ? '<button class="btn" data-act="install">📲 Install app</button>' : ''}<button class="btn danger" data-act="signout">Sign out</button></div></div>
+    <p class="muted">Tip: on iPhone use Share → Add to Home Screen. On Android/Chrome use the menu → Install app.</p>
     <form id="pf" class="card" autocomplete="off"><h2>Change PIN</h2><div class="filters"><input id="po" aria-label="Current PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="current-password" placeholder="Current PIN" required><input id="pn" aria-label="New PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="New PIN" required><button class="btn primary">Change PIN</button></div></form>`;
   }
 

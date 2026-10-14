@@ -3,6 +3,7 @@ import { normalizeVoucherCollection, S, can } from '../core/state.js';
 import { fail, toast } from '../core/ui.js';
 import { ls } from '../core/storage.js';
 import { scalarText } from '../core/utils.js';
+import { createShell } from './shell.js';
 
 export function createNavigation({ api, getAuth, getPayments, renderers }) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
@@ -19,6 +20,20 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     ['audit', '🧾', 'Audit log', () => can('audit')],
     ['acct', '👤', 'Account', () => true],
   ];
+
+  const NAV_GROUPS = {
+    dash: 'Work',
+    new: 'Work',
+    reg: 'Work',
+    reports: 'Money',
+    cashClose: 'Money',
+    bulk: 'Manage',
+    vend: 'Manage',
+    users: 'Manage',
+    set: 'Manage',
+    audit: 'Manage',
+  };
+  const shell = createShell({ go: (view) => go(view) });
 
   // A visibility restore, manual refresh, and background outbox sync can request
   // bootstrap concurrently. Share same-session work and ignore stale-session responses
@@ -138,12 +153,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     const propertyName = scalarText(S.settings?.propertyName);
     $('#brand').textContent = propertyName || 'Cash Vouchers';
     document.title = propertyName || 'Vouchers';
-    const who = $('#who');
-    who.replaceChildren(
-      document.createTextNode(scalarText(S.me?.name)),
-      document.createElement('br'),
-      document.createTextNode(scalarText(S.me?.role)),
-    );
+    shell.render();
 
     renderNav();
     go(
@@ -171,8 +181,19 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
   function renderNav() {
     const nav = $('#nav');
     const navContent = document.createDocumentFragment();
+    let lastGroup = '';
     NAV.filter((item) => (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3]()).forEach(
       ([view, icon, label]) => {
+        // Profile and Sign out live in the top bar user menu, not the sidebar.
+        if (view === 'acct') return;
+        const group = NAV_GROUPS[view] || '';
+        if (group && group !== lastGroup) {
+          const heading = document.createElement('p');
+          heading.className = 'nav-label';
+          heading.textContent = group;
+          navContent.appendChild(heading);
+          lastGroup = group;
+        }
         const button = document.createElement('button');
         button.type = 'button';
         button.dataset.v = view;
@@ -245,6 +266,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
   }
 
   function bind() {
+    shell.bind();
     $('#nav').addEventListener('click', (event) => {
       const button = event.target.closest('[data-v]');
       if (button) go(button.dataset.v);

@@ -78,12 +78,50 @@
 
     <div id="app" class="app hidden">
       <aside class="side" aria-label="Application navigation">
-        <div class="brand" id="brand">Cash Vouchers</div>
+        <div class="brand">
+          <img class="logo" src="icons/logo.svg" alt="" width="32" height="32" />
+          <span id="brand" data-brand>Cash Vouchers</span>
+        </div>
 
         <nav id="nav" aria-label="Primary"></nav>
 
-        <div class="who" id="who"></div>
+        <button type="button" class="side-out" data-act="signout">
+          <span class="ic" aria-hidden="true">⎋</span><span>Sign out</span>
+        </button>
       </aside>
+
+      <header class="topbar">
+        <div class="topbar-brand">
+          <img class="logo" src="icons/logo.svg" alt="" width="28" height="28" />
+          <span id="brandTop">Cash Vouchers</span>
+        </div>
+
+        <span class="net-pill on" id="netPill" role="status">Online</span>
+
+        <div class="usermenu">
+          <button
+            type="button"
+            class="user-btn"
+            id="userBtn"
+            aria-haspopup="true"
+            aria-expanded="false"
+            aria-controls="userPop"
+          >
+            <span class="avatar" id="avatar" aria-hidden="true"></span>
+            <span class="user-meta"><b id="userName"></b><small id="userRole"></small></span>
+            <span class="caret" aria-hidden="true">▾</span>
+          </button>
+          <div id="userPop" class="user-pop hidden">
+            <div class="user-pop-head">
+              <b id="popName"></b>
+              <span class="muted" id="popEmail"></span>
+            </div>
+            <button type="button" data-go="acct">👤 My profile</button>
+            <button type="button" data-go="acct" data-focus="po">🔑 Change PIN</button>
+            <button type="button" class="danger-item" data-act="signout">⎋ Sign out</button>
+          </div>
+        </div>
+      </header>
 
       <main id="main-content" class="main" tabindex="-1">
         <div id="banner" class="banner hidden" role="status" aria-live="polite"></div>

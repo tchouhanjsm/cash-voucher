@@ -6,6 +6,16 @@ export const scalarText = (value) => {
   return '';
 };
 
+export function initials(value) {
+  const words = scalarText(value).trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return '?';
+  const letters =
+    words.length === 1
+      ? Array.from(words[0]).slice(0, 2)
+      : [words[0][0], words[words.length - 1][0]];
+  return letters.join('').toUpperCase();
+}
+
 export const esc = (value) =>
   scalarText(value).replace(
     /[&<>"']/g,
