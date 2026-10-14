@@ -2,7 +2,16 @@ import { $ } from '../core/dom.js';
 import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
 import { csvCell, download, esc, initials, scalarText } from '../core/utils.js';
-import { closeModal, dialog, fail, formPanel, head, refreshBtn, tableView, toast } from '../core/ui.js';
+import {
+  closeModal,
+  dialog,
+  fail,
+  formPanel,
+  head,
+  refreshBtn,
+  tableView,
+  toast,
+} from '../core/ui.js';
 
 export function createAdministration({ api, getNavigation, signOut }) {
   let deferredInstall;
