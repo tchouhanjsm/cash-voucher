@@ -10,7 +10,13 @@ g.setup();
 let droppedClientResponse = false,
   droppedClientResponses = 0,
   countedCreateRequests = 0,
-  rejectedClientRequests = 0;
+  rejectedClientRequests = 0,
+  droppedOnlineResponse = false,
+  droppedOnlineResponses = 0,
+  onlineDropCreateRequests = 0,
+  sentMalformedOnlineResponse = false,
+  malformedOnlineResponses = 0,
+  onlineMalformedCreateRequests = 0;
 const types = {
   '.html': 'text/html',
   '.js': 'text/javascript',
@@ -24,7 +30,15 @@ http
     if (req.method === 'GET' && req.url.split('?')[0] === '/test-status') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(
-        JSON.stringify({ droppedClientResponses, countedCreateRequests, rejectedClientRequests }),
+        JSON.stringify({
+          droppedClientResponses,
+          countedCreateRequests,
+          rejectedClientRequests,
+          droppedOnlineResponses,
+          onlineDropCreateRequests,
+          malformedOnlineResponses,
+          onlineMalformedCreateRequests,
+        }),
       );
       return;
     }
@@ -58,6 +72,20 @@ http
           const dropVendor = requestUrl.searchParams.get('drop_vendor');
           const countVendor = requestUrl.searchParams.get('count_vendor');
           const failVendor = requestUrl.searchParams.get('fail_vendor');
+          const directDropVendor = requestUrl.searchParams.get('direct_drop_vendor');
+          const directMalformedVendor = requestUrl.searchParams.get('direct_malformed_vendor');
+          const isDirectDropRequest =
+            o.action === 'createVouchers' &&
+            directDropVendor &&
+            Array.isArray(o.entries) &&
+            o.entries.some((entry) => String(entry.vendor || '') === directDropVendor);
+          const isDirectMalformedRequest =
+            o.action === 'createVouchers' &&
+            directMalformedVendor &&
+            Array.isArray(o.entries) &&
+            o.entries.some((entry) => String(entry.vendor || '') === directMalformedVendor);
+          if (isDirectDropRequest) onlineDropCreateRequests += 1;
+          if (isDirectMalformedRequest) onlineMalformedCreateRequests += 1;
           const shouldFail =
             o.action === 'createVouchers' &&
             failVendor &&
@@ -93,6 +121,23 @@ http
             droppedClientResponse = true;
             droppedClientResponses += 1;
             req.socket.destroy();
+            return;
+          }
+
+          // Simulate an online form save whose server write committed but whose response was lost.
+          if (isDirectDropRequest && !droppedOnlineResponse) {
+            droppedOnlineResponse = true;
+            droppedOnlineResponses += 1;
+            req.socket.destroy();
+            return;
+          }
+
+          // Simulate a committed write followed by an unreadable response body.
+          if (isDirectMalformedRequest && !sentMalformedOnlineResponse) {
+            sentMalformedOnlineResponse = true;
+            malformedOnlineResponses += 1;
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end('{"ok":');
             return;
           }
         } catch {
