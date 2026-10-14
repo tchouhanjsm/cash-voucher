@@ -1912,8 +1912,11 @@ assertCorruptCashClose(
   { IncludedVoucherIds: JSON.stringify([...savedVoucherIds.slice(0, -1), null]) },
   'saved close rejects non-string voucher IDs instead of silently filtering them',
 );
+const mismatchedVoucherIds = savedVoucherIds.map((id, index) =>
+  index === 0 ? 'mismatched-id' : id,
+);
 assertCorruptCashClose(
-  { IncludedVoucherIds: JSON.stringify(savedVoucherIds.map((id, index) => index === 0 ? 'mismatched-id' : id)) },
+  { IncludedVoucherIds: JSON.stringify(mismatchedVoucherIds) },
   'saved close rejects voucher-ID lists that do not match snapshot order and identity',
 );
 assertCorruptCashClose(
