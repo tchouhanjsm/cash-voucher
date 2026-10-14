@@ -85,8 +85,14 @@ export function createAdministration({ api, getNavigation, signOut }) {
       formPanel({
         id: 'vf',
         title: 'Vendor details',
-        fields:
-          '<input type="hidden" id="vid"><input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required><input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)"><input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel"><button class="btn primary">Save vendor</button><button type="button" class="btn" data-act="vclr">Clear</button>',
+        fields: [
+          '<input type="hidden" id="vid">',
+          '<input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required>',
+          '<input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)">',
+          '<input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel">',
+          '<button class="btn primary">Save vendor</button>',
+          '<button type="button" class="btn" data-act="vclr">Clear</button>',
+        ].join(''),
       }) +
       '<div class="card">' + vendorTable + '</div>';
   }
@@ -187,10 +193,15 @@ export function createAdministration({ api, getNavigation, signOut }) {
       rows: rows || emptyRow,
       emptyMessage: 'No users yet.',
     });
-    const userFormFields =
-      '<input id="un" aria-label="User name" autocomplete="name" placeholder="Name" required><input id="ue" aria-label="Email address" autocomplete="email" type="email" placeholder="Email" required><select id="ur" aria-label="New user role">' +
-      roles.map((role) => '<option>' + esc(role) + '</option>').join('') +
-      '</select><input id="up" aria-label="Temporary six-digit PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit PIN" required><button class="btn primary">Add</button>';
+    const userFormFields = [
+      '<input id="un" aria-label="User name" autocomplete="name" placeholder="Name" required>',
+      '<input id="ue" aria-label="Email address" autocomplete="email" type="email" placeholder="Email" required>',
+      '<select id="ur" aria-label="New user role">',
+      roles.map((role) => '<option>' + esc(role) + '</option>').join(''),
+      '</select>',
+      '<input id="up" aria-label="Temporary six-digit PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit PIN" required>',
+      '<button class="btn primary">Add</button>',
+    ].join('');
 
     $('#view').innerHTML =
       head('Users') +
