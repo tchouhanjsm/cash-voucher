@@ -1,6 +1,7 @@
 import { $ } from '../core/dom.js';
 import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
+import { APP_VERSION } from '../core/app-info.js';
 import { csvCell, download, esc, initials, scalarText } from '../core/utils.js';
 import { closeModal, dialog, fail, formPanel, head, tableView, toast } from '../core/ui.js';
 
@@ -1141,6 +1142,17 @@ export function createAdministration({ api, getNavigation, signOut }) {
       head('My Account') +
       `<div class="card profile"><span class="avatar lg" aria-hidden="true">${esc(initials(S.me.name || S.me.email))}</span><div class="profile-main"><h2>${esc(S.me.name)}</h2><p>${esc(S.me.email)}</p><p><span class="badge">${esc(S.me.role)}</span> <span class="muted">${esc(scalarText(S.settings?.propertyName))}</span></p></div><div class="actions">${deferredInstall ? '<button class="btn" data-act="install">📲 Install app</button>' : ''}<button class="btn danger" data-act="signout">Sign out</button></div></div>
     <p class="muted">Tip: on iPhone use Share → Add to Home Screen. On Android/Chrome use the menu → Install app.</p>
+    <section class="card support-card" aria-labelledby="supportTitle">
+      <h2 id="supportTitle">Help and report a problem</h2>
+      <p><strong>Cash Vouchers v${esc(APP_VERSION)}</strong></p>
+      <p class="muted">This is the declared frontend source version. It does not verify which Apps Script deployment is active.</p>
+      <p>If something is not working, copy or download a support summary and share it with your designated support person along with a short description of the problem. Never share your PIN.</p>
+      <p class="muted">The report is created in this browser and is not sent automatically. It includes basic app state and aggregate queue counts only; it excludes identity, server URL, credentials, voucher details, notes and receipt images. Review it before sharing.</p>
+      <div class="actions">
+        <button type="button" class="btn" data-act="support-copy">Copy support summary</button>
+        <button type="button" class="btn primary" data-act="support-download">Download support report</button>
+      </div>
+    </section>
     <form id="pf" class="card" autocomplete="off"><h2>Change PIN</h2><div class="filters"><input id="po" aria-label="Current PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="current-password" placeholder="Current PIN" required><input id="pn" aria-label="New PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="New PIN" required><button class="btn primary">Change PIN</button></div></form>`;
   }
 
