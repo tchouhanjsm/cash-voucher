@@ -317,13 +317,18 @@ function updateVoucher_(user, req) {
     nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD;
   const approvalManaged =
     ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].indexOf(priorApprovalStatus) >= 0;
+  const materialApprovalChange = changes.some(function (change) {
+    return ['amount', 'vendor', 'vendorId', 'date', 'cashImpact'].indexOf(change.field) >= 0;
+  });
   // Existing blank/NOT_REQUIRED approval fields are not retroactively backfilled.
-  // Re-review only vouchers already in the approval workflow or edits that cross the threshold.
-  if (approvalManaged || crossedApprovalThreshold) {
+  // UAT-048: only material edits invalidate an existing approval; category/notes corrections
+  // preserve the current workflow state. Crossing into the threshold starts approval.
+  const shouldReevaluateApproval =
+    o.Type === 'PAYMENT' &&
+    ((approvalManaged && materialApprovalChange) || crossedApprovalThreshold);
+  if (shouldReevaluateApproval) {
     const nextApprovalStatus =
-      o.Type === 'PAYMENT' && nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD
-        ? 'PENDING'
-        : 'NOT_REQUIRED';
+      nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD ? 'PENDING' : 'NOT_REQUIRED';
     if (priorApprovalStatus !== nextApprovalStatus) {
       changes.push({
         field: 'approvalStatus',
