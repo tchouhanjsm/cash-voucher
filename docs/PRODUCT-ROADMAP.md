@@ -292,16 +292,24 @@ The release requires reviewed source plus guarded one-time schema operations in 
 
 PR #122 completed UI shell phases 7–8. Users, Vendors, Audit log and Backup status now distinguish request failure/invalid data from a genuine empty state; Users, Audit and Backup status provide direct recovery paths. The Backup status retry does not reset unsaved Settings fields. CI, Browser E2E (313 checks) and Full Flight Test (245 backend checks, 38 selected contrast-pair checks across both themes, 313 browser checks) passed on tested head `4fe0085c3fcebcfe04667dade6c46ebf8ef0afbb`. These are mock-backed/source checks, not live Apps Script availability or production release evidence.
 
-## Current engineering phase — Daily Cash Close snapshot integrity (14 October 2026)
+## Completed phase — PR #123: Daily Cash Close snapshot integrity (14 October 2026)
 
-**Finding from source review:** `cashCloseOut_` previously filtered malformed members from the saved `IncludedVouchers` snapshot and filtered non-string values from `IncludedVoucherIds`. Its response could therefore omit saved voucher details without rejecting the inconsistent immutable record.
+**Finding:** `cashCloseOut_` previously filtered malformed members from the saved `IncludedVouchers` snapshot and filtered non-string values from `IncludedVoucherIds`, which could make displayed voucher detail incomplete while preserving the original close totals.
 
-**Outcome:** validate the full persisted snapshot contract before returning it. Every included voucher must have the expected field types, match the close business date, have a valid finite positive amount and supported cash-impact value; the parallel ID list must be complete, unique, ordered and match the snapshot; and `IncludedVoucherCount` must equal both lengths. Any inconsistency returns `CASH_CLOSE_DATA` and leaves the saved row untouched. Regression coverage targets malformed rows, invalid IDs, mismatched identity/order, duplicate IDs and count drift. Browser E2E covers hostile text in the Cash Close report and correction history.
+**Outcome:** validate every snapshot member, the one-to-one ordered/unique voucher ID list, and the stored included-voucher count before returning the saved close. Inconsistent snapshots fail closed with `CASH_CLOSE_DATA`; the stored record is not silently filtered or rewritten. Backend regressions cover malformed rows, invalid or mismatched IDs, duplicate IDs and count drift. Browser E2E covers hostile text in the Cash Close report and correction history. PR #123 merged at `7e604c603e12942db26a9fc49a1d46bcaa2376ea`; tested head `c2cd661b7da34788d1f99317f7439945ce965ad3` passed CI, Browser E2E (314 checks) and Full Flight Test (251 backend checks, 38 contrast-pair checks and 314 browser checks).
 
-**Non-goals:** no historic record rewrite/repair, schema migration, financial calculation change, new accounting semantics, approval-policy change, Apps Script deployment or production data operation. A previously malformed saved close must be inspected and recovered by the owner through an explicitly authorized procedure; this code does not auto-correct it.
+**Non-goals:** no historic record rewrite/repair, schema migration, financial calculation change, accounting semantics, approval-policy change, Apps Script deployment or production-data operation. Pre-existing malformed close records require separately authorized owner inspection/recovery.
+
+## Current engineering phase — printed-voucher date-shape resilience (14 October 2026)
+
+**Finding from source review:** the New Entry success path stores the `createVouchers` API response in `S.vouchers` before a subsequent bootstrap normalization. A malformed non-string `date` can therefore reach `printVoucher`, where direct use of `dmy(voucher.date)` can throw because the formatter calls string methods.
+
+**Target behavior:** validate the print date as a real `YYYY-MM-DD` calendar date before formatting. Render a fixed `Date unavailable` fallback when the API response does not meet the contract; keep valid date formatting unchanged. Test the malformed response in Browser E2E by mutating the created voucher's returned date to an object, then verify printing completes, the hostile voucher number remains inert and the valid second voucher prints normally.
+
+**Non-goals:** no record repair, API/schema change, change to voucher acceptance, financial rule, accounting policy or deployment. The frontend print fallback is defensive rendering, not authoritative date validation. Continue the rendering audit surface by surface; do not claim complete XSS certification.
 
 **Next priorities after this batch:**
 
-1. Continue the sink-by-sink rendering audit against the active frontend modules and test each remaining concrete output-context gap; do not label the product XSS-certified.
-2. Complete the separate owner-led release/recovery gates: confirm the intended Apps Script deployment and permissions, verify actual Sheet structure after an authorized backup, observe scheduled backup artifacts and witness isolated restore.
+1. Continue the sink-by-sink rendering audit against active frontend modules, prioritizing concrete value-to-output gaps and targeted regression coverage.
+2. Complete the separate owner-led release/recovery gates: confirm intended Apps Script deployment and permissions, inspect actual Sheet structure after an authorized backup, observe scheduled backup artifacts and witness isolated restore.
 3. Complete physical-device PWA/offline, assistive-technology and role-based usability review before the controlled hotel pilot. Source/CI evidence alone does not close these operational gates.
