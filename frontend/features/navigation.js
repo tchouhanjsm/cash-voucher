@@ -218,9 +218,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
   function renderNav() {
     const available = NAV.filter(
       (item) =>
-        item[0] !== 'acct' &&
-        (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) &&
-        item[3](),
+        item[0] !== 'acct' && (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3](),
     );
     const navContent = document.createDocumentFragment();
     let lastGroup = '';
@@ -365,10 +363,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       const last = focusable[focusable.length - 1];
       if (!first || !last) {
         event.preventDefault();
-      } else if (
-        event.shiftKey &&
-        (document.activeElement === first || document.activeElement === panel)
-      ) {
+      } else if (event.shiftKey && (document.activeElement === first || document.activeElement === panel)) {
         event.preventDefault();
         last.focus();
       } else if (!event.shiftKey && document.activeElement === last) {
