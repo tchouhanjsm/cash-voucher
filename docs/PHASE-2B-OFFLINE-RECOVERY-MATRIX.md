@@ -1,8 +1,8 @@
 # Phase 2B — Offline Save and Recovery Matrix
 
-**Base:** `main` at `2651d7870795f582eb7b12794a8946b1488f2acc` (PR #129 merge)  
-**Working branch:** `phase-2b/offline-recovery-matrix-2026-10-14`  
-**Status:** acceptance definition; implementation evidence is pending  
+**Base:** `main` at `2651d7870795f582eb7b12794a8946b1488f2acc` (PR #129 merge)
+**Working branch:** `phase-2b/offline-recovery-matrix-2026-10-14`
+**Status:** acceptance definition; implementation evidence is pending
 **Release boundary:** local/mock backend and browser tests unless separately authorized live verification is documented.
 
 ## Business outcome
@@ -16,7 +16,7 @@ Stable client IDs and backend idempotency; IndexedDB pending/sending/failed stat
 ## Acceptance matrix
 
 | Scenario | Expected behavior | Required evidence |
-| --- | --- | --- |
+|---|---|---|
 | Server persists, then response is lost | Retry with same client ID returns same voucher; exactly one voucher exists | Mock fault injection, backend idempotency assertion, Browser E2E |
 | Double submission / same item claimed in two tabs | Only the valid lease owner can acknowledge; no duplicate voucher | Queue transaction tests and browser multi-context scenario |
 | Acknowledgement fails after server success | Entry remains recoverable; later idempotent retry removes it only after confirmed success | Storage fault injection, voucher count and visible UI state |
