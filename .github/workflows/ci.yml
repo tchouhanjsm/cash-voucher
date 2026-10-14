@@ -31,10 +31,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Temporary Prettier diff diagnostics
-        run: |
-          npx prettier --write backend/Code.gs docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md docs/DAILY-CASH-CLOSE-DESIGN.md frontend/core/state.js frontend/features/register.js test/test-backend.js
-          git --no-pager diff --unified=2 -- backend/Code.gs docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md docs/DAILY-CASH-CLOSE-DESIGN.md frontend/core/state.js frontend/features/register.js test/test-backend.js
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 

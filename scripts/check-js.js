@@ -22,7 +22,11 @@ const files = [
   'app.js',
   'config.js',
   'sw.js',
-  'backend/Code.gs',
+  ...fs
+    .readdirSync('backend')
+    .filter((name) => name.endsWith('.gs'))
+    .sort()
+    .map((name) => `backend/${name}`),
   ...walk(path.resolve('frontend')).map((file) => path.relative(process.cwd(), file)),
 ];
 
