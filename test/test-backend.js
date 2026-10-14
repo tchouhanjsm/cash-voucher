@@ -768,17 +768,94 @@ ok(
       3249999,
   'approved payments re-enter active-payment totals',
 );
-const paymentEditResetsApproval = as(M, 'updateVoucher', {
+// UAT-048: non-material corrections must retain the existing approval and its metadata.
+const paymentNotesEditPreservesApproval = as(M, 'updateVoucher', {
   id: managerOwnedHighVoucher.id,
   reason: 'Updated description after review',
   fields: { notes: 'Reviewed payment details' },
 });
 ok(
-  paymentEditResetsApproval.ok &&
-    paymentEditResetsApproval.data.approvalStatus === 'PENDING' &&
-    paymentEditResetsApproval.data.approvedBy === '' &&
-    paymentEditResetsApproval.data.approvedAt === '',
-  'editing an approved payment sends it back for independent approval',
+  paymentNotesEditPreservesApproval.ok &&
+    paymentNotesEditPreservesApproval.data.approvalStatus === 'APPROVED' &&
+    paymentNotesEditPreservesApproval.data.approvedBy.toLowerCase() === 'owner@test.com' &&
+    paymentNotesEditPreservesApproval.data.approvedAt === approvedManagerPayment.data.approvedAt,
+  'editing only payment notes preserves independent approval and metadata',
+);
+const notesEditAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'UPDATE' && row[3] === '#' + managerOwnedHighVoucher.no);
+const notesEditAudit = notesEditAuditRow ? JSON.parse(notesEditAuditRow[4]) : null;
+ok(
+  notesEditAudit?.reason === 'Updated description after review' &&
+    notesEditAudit.changes.some(
+      (change) =>
+        change.field === 'notes' &&
+        change.before === '' &&
+        change.after === 'Reviewed payment details',
+    ) &&
+    !notesEditAudit.changes.some((change) => change.field === 'approvalStatus'),
+  'non-material note edit retains reason and field-level audit without approval invalidation',
+);
+const paymentCategoryEditPreservesApproval = as(M, 'updateVoucher', {
+  id: managerOwnedHighVoucher.id,
+  reason: 'Corrected expense category',
+  fields: { category: 'Maintenance' },
+});
+ok(
+  paymentCategoryEditPreservesApproval.ok &&
+    paymentCategoryEditPreservesApproval.data.category === 'Maintenance' &&
+    paymentCategoryEditPreservesApproval.data.approvalStatus === 'APPROVED' &&
+    paymentCategoryEditPreservesApproval.data.approvedBy.toLowerCase() === 'owner@test.com',
+  'editing only category preserves independent approval and metadata',
+);
+const approvedAfterNonMaterialReport = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'PAYMENT',
+  status: 'ACTIVE',
+});
+ok(
+  approvedAfterNonMaterialReport.ok &&
+    approvedAfterNonMaterialReport.data.pendingApprovalCount === 0 &&
+    Math.round(
+      (approvedAfterNonMaterialReport.data.activePaymentTotal - approvalTotalBefore) * 100,
+    ) === 3249999,
+  'approved payment remains in totals after category and notes corrections',
+);
+
+// Material edits invalidate the approval, clear current approval fields, and attribute the
+// old/new state plus the mandatory correction reason in the audit history.
+const paymentAmountEditResetsApproval = as(M, 'updateVoucher', {
+  id: managerOwnedHighVoucher.id,
+  reason: 'Corrected payment amount after review',
+  fields: { amount: 11000 },
+});
+ok(
+  paymentAmountEditResetsApproval.ok &&
+    paymentAmountEditResetsApproval.data.approvalStatus === 'PENDING' &&
+    paymentAmountEditResetsApproval.data.approvedBy === '' &&
+    paymentAmountEditResetsApproval.data.approvedAt === '',
+  'amount edit returns an approved high-value payment to pending approval',
+);
+const amountEditAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'UPDATE' && row[3] === '#' + managerOwnedHighVoucher.no);
+const amountEditAudit = amountEditAuditRow ? JSON.parse(amountEditAuditRow[4]) : null;
+ok(
+  amountEditAudit?.reason === 'Corrected payment amount after review' &&
+    amountEditAudit.changes.some(
+      (change) =>
+        change.field === 'approvalStatus' &&
+        change.before === 'APPROVED' &&
+        change.after === 'PENDING',
+    ) &&
+    amountEditAudit.changes.some(
+      (change) =>
+        change.field === 'approvedBy' &&
+        change.before.toLowerCase() === 'owner@test.com' &&
+        change.after === '',
+    ),
+  'material-edit audit preserves prior approval attribution and correction reason',
 );
 const afterApprovalResetReport = as(T, 'recordedMovementReport', {
   from: today,
@@ -790,7 +867,80 @@ ok(
   afterApprovalResetReport.ok &&
     Math.round((afterApprovalResetReport.data.activePaymentTotal - approvalTotalBefore) * 100) ===
       2249999,
-  'a re-review payment is removed from totals until approved again',
+  'a materially corrected payment is removed from totals until approved again',
+);
+
+const reapprovedBeforeVendorEdit = as(T, 'approveVoucher', { id: managerOwnedHighVoucher.id });
+ok(
+  reapprovedBeforeVendorEdit.ok &&
+    reapprovedBeforeVendorEdit.data.approvalStatus === 'APPROVED',
+  'material-edit regression: voucher can be independently reapproved before vendor correction',
+);
+const vendorEditResetsApproval = as(M, 'updateVoucher', {
+  id: managerOwnedHighVoucher.id,
+  reason: 'Corrected payment vendor identity',
+  fields: { vendor: 'Manager Own High Value Corrected' },
+});
+ok(
+  vendorEditResetsApproval.ok &&
+    vendorEditResetsApproval.data.approvalStatus === 'PENDING' &&
+    vendorEditResetsApproval.data.approvedBy === '',
+  'vendor edit returns an approved payment to pending approval',
+);
+const reapprovedBeforeCashImpactEdit = as(T, 'approveVoucher', { id: managerOwnedHighVoucher.id });
+ok(
+  reapprovedBeforeCashImpactEdit.ok &&
+    reapprovedBeforeCashImpactEdit.data.approvalStatus === 'APPROVED',
+  'material-edit regression: voucher can be independently reapproved before cash-impact correction',
+);
+const cashImpactEditResetsApproval = as(M, 'updateVoucher', {
+  id: managerOwnedHighVoucher.id,
+  reason: 'Corrected cash movement classification',
+  fields: { cashImpact: 'NO_CASH' },
+});
+ok(
+  cashImpactEditResetsApproval.ok &&
+    cashImpactEditResetsApproval.data.approvalStatus === 'PENDING' &&
+    cashImpactEditResetsApproval.data.approvedBy === '',
+  'CashImpact edit returns an approved payment to pending approval',
+);
+const reapprovedBeforeDateEdit = as(T, 'approveVoucher', { id: managerOwnedHighVoucher.id });
+ok(
+  reapprovedBeforeDateEdit.ok &&
+    reapprovedBeforeDateEdit.data.approvalStatus === 'APPROVED',
+  'material-edit regression: voucher can be independently reapproved before date correction',
+);
+const dateEditResetsApproval = as(M, 'updateVoucher', {
+  id: managerOwnedHighVoucher.id,
+  reason: 'Corrected voucher business date',
+  fields: { date: '2020-02-02' },
+});
+ok(
+  dateEditResetsApproval.ok &&
+    dateEditResetsApproval.data.date === '2020-02-02' &&
+    dateEditResetsApproval.data.approvalStatus === 'PENDING' &&
+    dateEditResetsApproval.data.approvedBy === '',
+  'date edit returns an approved payment to pending approval',
+);
+const dateEditAuditRow = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[2] === 'UPDATE' && row[3] === '#' + managerOwnedHighVoucher.no);
+const dateEditAudit = dateEditAuditRow ? JSON.parse(dateEditAuditRow[4]) : null;
+ok(
+  dateEditAudit?.reason === 'Corrected voucher business date' &&
+    dateEditAudit.changes.some(
+      (change) =>
+        change.field === 'date' &&
+        change.before === today &&
+        change.after === '2020-02-02',
+    ) &&
+    dateEditAudit.changes.some(
+      (change) =>
+        change.field === 'approvalStatus' &&
+        change.before === 'APPROVED' &&
+        change.after === 'PENDING',
+    ),
+  'date reapproval transition is recorded with before/after values and correction reason',
 );
 const highValueReceipt = as(T, 'createVouchers', {
   entries: [
