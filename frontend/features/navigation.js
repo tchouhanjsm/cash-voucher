@@ -204,6 +204,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     $$('#nav button[data-v], #navMoreItems button[data-v]').forEach((button) => {
       const active = button.dataset.v === S.view;
       button.classList.toggle('on', active);
+
       if (active) button.setAttribute('aria-current', 'page');
       else button.removeAttribute('aria-current');
     });
