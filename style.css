@@ -1578,6 +1578,10 @@ button {
 }
 
 @media (max-width: 800px) {
+  .mobile-more-btn {
+    display: flex;
+  }
+
   .nav-more:not(.hidden) {
     position: fixed;
     inset: 0;
