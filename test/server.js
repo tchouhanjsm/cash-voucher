@@ -11,8 +11,6 @@ let droppedClientResponse = false,
   droppedClientResponses = 0,
   countedCreateRequests = 0,
   rejectedClientRequests = 0,
-  droppedOnlineResponse = false,
-  droppedOnlineResponses = 0,
   onlineDropCreateRequests = 0,
   sentMalformedOnlineResponse = false,
   malformedOnlineResponses = 0,
@@ -34,7 +32,6 @@ http
           droppedClientResponses,
           countedCreateRequests,
           rejectedClientRequests,
-          droppedOnlineResponses,
           onlineDropCreateRequests,
           malformedOnlineResponses,
           onlineMalformedCreateRequests,
@@ -120,14 +117,6 @@ http
           if (shouldDrop && !droppedClientResponse) {
             droppedClientResponse = true;
             droppedClientResponses += 1;
-            req.socket.destroy();
-            return;
-          }
-
-          // Simulate an online form save whose server write committed but whose response was lost.
-          if (isDirectDropRequest && !droppedOnlineResponse) {
-            droppedOnlineResponse = true;
-            droppedOnlineResponses += 1;
             req.socket.destroy();
             return;
           }
