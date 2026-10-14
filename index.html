@@ -128,6 +128,39 @@
 
         <div id="view"></div>
       </main>
+
+      <button
+        type="button"
+        class="mobile-more-btn"
+        id="mobileMoreBtn"
+        aria-haspopup="dialog"
+        aria-expanded="false"
+        aria-controls="navMore"
+      >
+        <span aria-hidden="true">⋯</span>
+        <span>More</span>
+      </button>
+
+      <div id="navMore" class="nav-more hidden" aria-hidden="true">
+        <div class="nav-more-backdrop" data-nav-more-close aria-hidden="true"></div>
+        <section
+          id="navMorePanel"
+          class="nav-more-panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="navMoreTitle"
+          tabindex="-1"
+        >
+          <header class="nav-more-heading">
+            <h2 id="navMoreTitle">More pages</h2>
+            <button type="button" class="nav-more-close" data-nav-more-close>Close</button>
+          </header>
+          <nav id="navMoreItems" aria-label="More pages"></nav>
+          <p id="navMoreEmpty" class="nav-more-empty muted" hidden>
+            No additional pages are available for this account. My profile and sign out are in the account menu.
+          </p>
+        </section>
+      </div>
     </div>
 
     <div id="modal" class="modal hidden" role="dialog" aria-modal="true" aria-hidden="true"></div>
