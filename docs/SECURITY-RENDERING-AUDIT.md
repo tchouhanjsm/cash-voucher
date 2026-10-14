@@ -310,7 +310,6 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - Browser E2E checks expected status fields and injects hostile markup into a persisted local queue vendor field, then verifies literal text/no injected elements and restores the fixture before continuing sync tests.
 - This closes only the new queue-review sink and a specific operator-visibility gap. It does not prove local storage is tamper-proof, guarantee that a pending row reached the server, complete the overall dynamic-rendering audit, or close live backup/restore and deployment checks.
 
-
 ## Daily Cash Close saved snapshot and rendering boundary — 14 October 2026
 
 The active Cash Close renderer in `frontend/features/cash-close.js` was added after the earlier surface inventory and must remain part of the active sink audit. This batch traced saved-close fields through `backend/54-cash-close.gs`, the API response, close-report/correction/history templates and print rendering.
