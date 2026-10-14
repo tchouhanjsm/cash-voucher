@@ -66,7 +66,11 @@ export function createCashClose({ api }) {
       'createdBy',
       'createdAt',
     ];
-    return isRecord(item) && textFields.every((field) => isText(item[field])) && isDate(item.date);
+    return (
+      isRecord(item) &&
+      textFields.every((field) => isText(item[field])) &&
+      isDate(item.date)
+    );
   }
 
   function isCloseRecord(close, requireCorrections = false) {
@@ -80,7 +84,13 @@ export function createCashClose({ api }) {
       'createdAt',
       'timeZone',
     ];
-    const amountFields = ['openingCash', 'cashInTotal', 'cashOutTotal', 'expectedCash', 'countedCash'];
+    const amountFields = [
+      'openingCash',
+      'cashInTotal',
+      'cashOutTotal',
+      'expectedCash',
+      'countedCash',
+    ];
 
     if (
       !isRecord(close) ||
