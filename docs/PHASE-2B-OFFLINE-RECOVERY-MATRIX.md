@@ -16,7 +16,7 @@ Stable client IDs and backend idempotency; IndexedDB pending/sending/failed stat
 ## Acceptance matrix
 
 | Scenario | Expected behavior | Required evidence |
-|---|---|---|
+|:--|:--|:--|
 | Server persists, then response is lost | Retry with same client ID returns same voucher; exactly one voucher exists | Mock fault injection, backend idempotency assertion, Browser E2E |
 | Double submission / same item claimed in two tabs | Only the valid lease owner can acknowledge; no duplicate voucher | Queue transaction tests and browser multi-context scenario |
 | Acknowledgement fails after server success | Entry remains recoverable; later idempotent retry removes it only after confirmed success | Storage fault injection, voucher count and visible UI state |
@@ -30,7 +30,7 @@ Stable client IDs and backend idempotency; IndexedDB pending/sending/failed stat
 
 ## Non-goals
 
-No accounting/tax rules, approval policy, role, schema, new dependency, production deployment, live data mutation or automatic audit-gap repair. Replace the queue architecture only if evidence identifies a specific defect.
+No accounting/tax rules, approval policy, role, schema, new dependency, production deployment, live data mutation or automatic audit-gap repair. Replace the queue architecture only if tests identify a specific defect.
 
 ## Role ownership
 
