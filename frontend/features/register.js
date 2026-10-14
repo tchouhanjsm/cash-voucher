@@ -297,7 +297,14 @@ export function createRegister({ api, go }) {
     ];
 
     $('#view').innerHTML =
-      head('Payment Register', refreshBtn) +
+      head(
+        'Payment Register',
+        `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
+        {
+          section: 'Work',
+          description: 'Find and review recorded vouchers using the filters below.',
+        },
+      ) +
       `<div class="card filters" id="rf">
     <input id="rq" aria-label="Search vouchers by number, vendor or note" placeholder="Search no / vendor / note" value="${esc(R.q)}">
     <select id="rv" aria-label="Filter by vendor"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select>
