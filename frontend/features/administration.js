@@ -130,6 +130,51 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   async function usersView() {
+    $('#view').innerHTML = head('Users') + '<p class="muted">Loading…</p>';
+
+    let response;
+    try {
+      response = await api('listUsers');
+    } catch (error) {
+      return fail(error);
+    }
+
+    const roles = ['staff', 'manager', 'accountant', 'owner'];
+    const envelopeValid = Array.isArray(response);
+    const receivedUsers = envelopeValid ? response : [];
+    users = receivedUsers.filter(
+      (user) =>
+        user !== null &&
+        typeof user === 'object' &&
+        !Array.isArray(user) &&
+        typeof user.id === 'string' &&
+        user.id.trim() !== '' &&
+        typeof user.name === 'string' &&
+        user.name.trim() !== '' &&
+        typeof user.email === 'string' &&
+        user.email.trim() !== '' &&
+        roles.includes(user.role) &&
+        typeof user.active === 'boolean',
+    );
+    const malformedCount = receivedUsers.length - users.length;
+    const status = !envelopeValid
+      ? '<p class="muted" role="status" aria-live="polite">User data is unavailable because the server response was invalid. Refresh and try again.</p>'
+      : malformedCount
+        ? `<p class="muted" role="status" aria-live="polite">${malformedCount} malformed user record(s) omitted from this response. Refresh and retry.</p>`
+        : '';
+    const emptyRow =
+      !envelopeValid || malformedCount
+        ? '<tr><td colspan="5" class="muted">No valid user records could be displayed. Refresh and retry.</td></tr>'
+        : '<tr><td colspan="5" class="muted">No users yet.</td></tr>';
+
+    const rows = users
+      .map(
+        (user) =>
+          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" style="min-height:34px;padding:4px">${roles.map((role) => `<option${role === user.role ? ' selected' : ''}>${role}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
+     <td class="r nw"><button class="btn sm" data-act="upin" data-id="${esc(user.id)}">Reset PIN</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
+      )
+      .join('');
+
     const userTable = tableView({
       label: 'Saved users',
       columns: [
@@ -139,7 +184,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
         { label: 'Status' },
         { label: 'Actions', align: 'right', nowrap: true },
       ],
-      rows: rows || emptyState,
+      rows: rows || emptyRow,
+      emptyMessage: 'No users yet.',
     });
     const userFormFields =
       '<input id="un" aria-label="User name" autocomplete="name" placeholder="Name" required><input id="ue" aria-label="Email address" autocomplete="email" type="email" placeholder="Email" required><select id="ur" aria-label="New user role">' +
