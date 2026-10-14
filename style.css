@@ -1761,7 +1761,6 @@ button {
   }
 }
 
-
 /* Keep the voucher printout independent from screen theme and application chrome. */
 @media print {
   html,
