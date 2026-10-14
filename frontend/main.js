@@ -3,6 +3,7 @@ import { $ } from './core/dom.js';
 import { registerActions, installActionDelegation } from './core/actions.js';
 import { S } from './core/state.js';
 import { ls } from './core/storage.js';
+import { initTheme } from './core/theme.js';
 import { busy, closeModal, dialog, fail, toast } from './core/ui.js';
 
 import { createAuth } from './features/auth.js';
@@ -245,4 +246,5 @@ function init() {
   $('#boot').classList.add('hidden');
 }
 
+initTheme();
 init();
