@@ -261,9 +261,7 @@ function auditWriteHealth_() {
   const properties = props_();
   const rawCount = Number(properties.getProperty('AUDIT_WRITE_FAILURE_COUNT') || 0);
   const status =
-    properties.getProperty('AUDIT_WRITE_STATUS') === 'DEGRADED'
-      ? 'DEGRADED'
-      : 'NO_KNOWN_FAILURE';
+    properties.getProperty('AUDIT_WRITE_STATUS') === 'DEGRADED' ? 'DEGRADED' : 'NO_KNOWN_FAILURE';
   return {
     status: status,
     failureCount: Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0,
