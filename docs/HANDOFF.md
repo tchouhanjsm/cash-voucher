@@ -2,9 +2,9 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `86c8e2bae740e5e5f09dabd18e6b0d035d700bf6` (PR #130 merge)  
-**Current phase:** Phase 2B — online ambiguous-save recovery  
-**Working branch:** `phase-2b/online-ambiguous-save-recovery-2026-10-14`  
+**Verified `main` SHA:** `69f861f86d08a19da8fe1223b3bc6c4840478895` (PR #131 merge)  
+**Current phase:** Phase 2B — recovery matrix closure  
+**Working branch:** `phase-2b/recovery-matrix-closure-2026-10-14`  
 **Phase 1 audit:** [`docs/PHASE-1-REPOSITORY-AUDIT.md`](PHASE-1-REPOSITORY-AUDIT.md)  
 **Phase 2 acceptance:** [`docs/PHASE-2-CROSS-WORKFLOW-INTEGRITY.md`](PHASE-2-CROSS-WORKFLOW-INTEGRITY.md)  
 **Phase 2B acceptance:** [`docs/PHASE-2B-OFFLINE-RECOVERY-MATRIX.md`](PHASE-2B-OFFLINE-RECOVERY-MATRIX.md)  
@@ -12,9 +12,9 @@
 
 ## Verified repository state
 
-- PR #130 merged at `86c8e2bae740e5e5f09dabd18e6b0d035d700bf6`; `main` was verified at that SHA before this implementation branch was created.
-- PR #130's CI, Browser E2E and Full Flight Test passed on tested head `668fc0fd42d87b93aba19eba6c58c2c03a65ea88`: [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38594396851), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38594396860), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38594396877).
-- Post-merge CI passed on exact main SHA `86c8e2bae740e5e5f09dabd18e6b0d035d700bf6`: [CI run](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38596490075).
+- PR #131 merged at `69f861f86d08a19da8fe1223b3bc6c4840478895`; the repository's latest commit search confirmed this merge commit before the current branch was created.
+- PR #131's CI, Browser E2E and Full Flight Test passed on exact tested head `b3628975603fdb691913aa604806fcdc5bee77e6`: [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38600105246), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38600105325), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38600105342).
+- These mock-backed checks do not prove live Apps Script deployment, production data integrity, scheduled backup/restore, real-device behavior or accessibility.
 - These checks do not prove live Apps Script deployment, production data integrity, scheduled backup/restore, real-device behavior or accessibility.
 - `BRAIN.md`, `docs/SECURITY-REVIEW.md` and `docs/QA-STRATEGY.md` are not present at those paths. Current relevant documents include `docs/SECURITY-RENDERING-AUDIT.md`, `docs/DATA-DURABILITY.md`, `docs/UI-UX-REVIEW.md` and `docs/RELEASE-READINESS.md`.
 
@@ -34,17 +34,17 @@ PR #129 merged. Audit appends remain best-effort; the Script Properties degraded
 
 ### Phase 2B — current runtime batch
 
-**Outcome:** when an online voucher request commits on the server but the browser receives a lost connection or malformed response, preserve the original client IDs locally and retry them through the outbox. Never encourage the operator to enter the voucher a second time.
+**Outcome:** never prompt staff to duplicate a payment or receipt when a server response is ambiguous; keep the original client ID/account binding and make pending-versus-confirmed state explicit.
 
-Source-based gap found: the outbox regression already covers a dropped response during queue synchronization, multiple tabs, expired leases, account binding and permanent validation rejection. The direct online-entry catch handled `NET` by queueing but did not immediately retry when the browser still appeared online; malformed JSON (`BAD`) was shown as a generic error instead of being preserved as an ambiguous result.
+PR #131 closed direct online-save ambiguity for lost and malformed responses after server persistence. This branch closes the remaining highest-risk automated gaps: an IndexedDB acknowledgement abort after server confirmation, and a `SESSION` response while an outbox sync is in flight. The new fault tests assert queue preservation, session reauthentication, same-ID retry and exactly one Register row.
 
-This batch addresses the direct-entry/network-response seam and adds E2E fault injection for both a lost response and a malformed response after server persistence. The final PR must record same-head CI, Browser E2E and Full Flight Test results; the tests do not prove live Apps Script behavior.
+The PR remains in progress until CI quality, Browser E2E and Full Flight Test pass on the same final head SHA. These tests exercise the Apps Script mock, not the live deployment.
 
-### Remaining Phase 2B risks after this slice
+### Remaining work after the automated recovery batch
 
-- An IndexedDB acknowledgement transaction that fails after the server commits, followed by lease-based recovery.
-- Explicit stale-session recovery while synchronization is in flight.
-- The remaining storage-failure and interrupted-recovery matrix; do not claim the full phase complete just because the new direct-save scenarios pass.
+- Phase 1 security and performance evidence: finish the current active DOM-sink/API-authorization review and seeded performance baselines; do not claim full XSS certification or production performance thresholds.
+- Phase 3 audit observability: audit writes remain best-effort; marker persistence failure and evidence-backed reconciliation are still open.
+- Operational release gates: live deployment identity/roles, scheduled backup and isolated restore, physical-device PWA recovery and manual accessibility remain owner-authorized verification steps.
 
 ## Operational release gates — not verified
 
