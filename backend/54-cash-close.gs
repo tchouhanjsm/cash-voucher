@@ -186,7 +186,7 @@ function cashCloseOut_(row) {
       typeof item.no === 'string' &&
       item.no.trim() !== '' &&
       typeof item.date === 'string' &&
-      /^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) &&
+      /^\d{4}-\d{2}-\d{2}$/.test(item.date) &&
       validDate_(item.date) &&
       item.date === closeDate &&
       typeof item.vendor === 'string' &&
