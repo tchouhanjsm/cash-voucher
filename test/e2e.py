@@ -4535,6 +4535,8 @@ with sync_playwright() as p:
     session_final_status = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
+    page.click('[data-act=refresh]')
+    page.wait_for_timeout(400)
     page.fill('#rq', stale_session_vendor)
     page.wait_for_function(
         f"Array.from(document.querySelectorAll('#rbody tr')).filter((row) => row.innerText.includes({json.dumps(stale_session_vendor)})).length === 1",
