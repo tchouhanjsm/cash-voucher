@@ -95,10 +95,13 @@ Latest live repository facts:
 - **Finding:** Existing docs say no general Git object/secret scan was performed; public history has not been certified clean.
 - **Classification:** Not verified
 - **Disposition:** Run a non-destructive repository/history secret scan; rotate any real exposed credential if found. Do not rewrite history without owner approval.
+
 ## Prioritized work packages
 
 ### P1-A — Cross-workflow integrity and debugging
+
 **Outcome:** every key user action behaves consistently from entry through server persistence, register, approval, reporting, cash close and audit.
+
 - Build a role/action/state matrix for owner, manager and staff.
 - Trace success, validation error, timeout/ambiguous response, duplicate retry, offline queue, stale session and permission denial.
 - Fix root causes across related frontend/backend modules in one PR; add end-to-end regressions for each defect.
@@ -106,7 +109,9 @@ Latest live repository facts:
 - **Acceptance:** no financial total hides unresolved records; each failure state offers a safe recovery path; CI, Browser E2E and Full Flight Test pass on the same exact final PR head.
 
 ### P1-B — Operational release proof
+
 **Outcome:** prove the actual deployed system and recovery path are the expected ones.
+
 - Owner confirms target Apps Script project, deployment/version, execution identity, Sheet binding and Script Properties.
 - After explicit authorization and a verified backup, review and run only necessary migrations in documented order.
 - Verify owner/manager/staff authorization and receipt access against the intended live endpoint.
@@ -114,21 +119,27 @@ Latest live repository facts:
 - **Acceptance:** signed evidence checklist; no production action performed by this audit PR.
 
 ### P1-C — UX completion
+
 **Outcome:** a coherent and learnable product across the full screen set.
+
 - Inspect Dashboard, New Entry, Register, Bulk Import, Reports, Cash Close, Users, Vendors, Settings, Audit and Backup Status at phone/tablet/desktop widths.
 - Fix cross-screen consistency in one grouped PR, not isolated CSS changes.
 - Run real role-based tasks, keyboard/focus/zoom checks and screen-reader review.
 - **Acceptance:** task observations, issue list, automated evidence and manual residual-risk notes.
 
 ### P1-D — Security and data-integrity closure
+
 **Outcome:** documented coverage of all high-risk inputs and actions.
+
 - Finish dynamic HTML/DOM sink inventory and adversarial input coverage.
 - Review server-side authorization for every API action and write path.
 - Check offline account binding, idempotency, import/export, audit integrity and backup boundaries.
 - **Acceptance:** each finding is fixed, verified, or explicitly accepted; no unsupported claim of full certification.
 
 ### P1-E — Evidence-led performance and repository hygiene
+
 **Outcome:** avoid speculative architecture changes and stale engineering state.
+
 - Reconcile status claims across README, roadmap, handoff, product requirements and release readiness.
 - Scan current files and Git history for exposed credentials without rewriting history.
 - Establish repeatable seeded workload measurements before optimizing Apps Script scans.
