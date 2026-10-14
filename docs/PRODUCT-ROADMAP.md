@@ -1,23 +1,39 @@
 # Product Gap Register and Roadmap
 
 **As of:** 14 October 2026  
-**Purpose:** reconcile the attached code-review memo with the actual current v2 repository and prioritize improvements by the value and risk to a property owner.
+**Current verified main SHA:** `2651d7870795f582eb7b12794a8946b1488f2acc` (PR #129 merge)
 
-This is a single-property cash-voucher PWA today. The attached memo's hosted fintech/multi-property concept is a strategic scenario, not an agreed requirement. The product-level scope, user outcomes, candidate measures, and owner decisions are consolidated in [Product Requirements Baseline](PRODUCT-REQUIREMENTS.md).
+## Founder plan — outcome-based work, not PR-count optimization
 
-## Founder plan — Phase 1 audit completed; Phase 2 active (14 October 2026)
+The repository is a single-property cash-voucher PWA. Prioritize integrity of money movement, operator recovery, and release proof before speculative features.
 
-Phase 1 audit merged in PR #127; live `main` baseline at the start of Phase 2 is `ff5a8ebde96698f15edb976c4fcd745d50085d10`. Phase 2 branch `phase-2/cross-workflow-integrity-2026-10-14` adds an integrated regression from high-value payment entry through approval, report totals, cash-close snapshot and audit. See [Phase 2 acceptance](PHASE-2-CROSS-WORKFLOW-INTEGRITY.md). The source-based audit and evidence classification are in [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md), with actionable work packages in [Backlog](BACKLOG.md).
+### Current phase status
 
-**Current priorities are outcome-based, not PR-number-based:**
+- **Phase 1 — source-based audit:** `docs/PHASE-1-REPOSITORY-AUDIT.md` records the audit and prioritized backlog, but its baseline predates PRs #127–#129. Use its findings, not old SHA/check metadata, as current truth.
+- **Phase 2 — normal-path cross-workflow integrity:** PR #128 merged. A mock-backed journey covers entry, independent approval, reports, cash-close calculation/snapshot, and linked audit events. Failure-path coverage remains incomplete.
+- **Phase 3 — audit-write observability:** PR #129 merged. A degraded status is surfaced if an audit append fails and its Script Properties marker succeeds. This remains best-effort: it is not tamper-evident storage, event reconstruction, or evidence of deployment.
+- **Next batch — Phase 2B: offline save and recovery matrix.** Verify ambiguous create responses, same-client-ID retries, parallel-tab leases, lost acknowledgements, stale session/account switching, partial queue failure, and operator feedback in one coherent implementation PR.
+- **Release gate — not verified:** live Apps Script identity/permissions, scheduled backup, isolated restore, physical-device recovery, and manual accessibility review remain owner-authorized operational work.
 
-1. Cross-workflow integrity: trace role-based entry → approval → register → reports → close → audit, and fix root causes across modules in one coherent PR.
-2. Operational release proof: verify live deployment/permissions and witness backup/isolated restore only after explicit owner authorization.
-3. Product UX completion: validate major screens as one system on actual operating devices.
-4. Security/data-integrity closure: complete the active sink and API authorization reviews.
-5. Measured performance and repository hygiene: secret/history scan, dependency-exception review and seeded workload baselines.
+## Prioritized work packages
 
-Historical PR notes below are retained as history, not a reliable live status feed. Verify current PR state, branch and exact SHA before acting. No source merge implies production deployment. Phase 2 does not alter live data, accounting rules or deployment configuration.
+1. Phase 2B — fault-injected recovery across API, IndexedDB outbox, backend idempotency, and operator-facing states.
+2. Operational release proof — owner-authorized deployment/role verification, scheduled backup, and isolated restore.
+3. Grouped UX completion — review major flows on actual devices and bundle cross-screen improvements.
+4. Security/data integrity — complete DOM sink and API authorization reviews; run a non-destructive secret-history scan.
+5. Evidence-led reliability/performance — seeded Sheet-size, bootstrap/report latency, and concurrency baselines.
+6. Repository hygiene — reconcile stale status claims and review dependency exceptions by their documented dates.
+
+## Invariants and boundaries
+
+- New PAYMENT vouchers at or above INR 10,000 require independent owner/manager approval; no self-approval.
+- Material edits to amount, vendor/identity, date, or CashImpact trigger reapproval under UAT-048. Category/notes corrections retain approval but require a reason and audit history.
+- Historical blank CashImpact/approval values are not silently backfilled; unresolved states cannot enter approved totals or pass final cash close.
+- Preserve immutable close snapshots, idempotent client IDs, account-bound offline queue entries, closed-period controls, and audit attribution.
+- No deployment, migration, production-data change, history rewrite, or merge without explicit authorization.
+- Passing CI is necessary, not sufficient, for production readiness.
+
+The detailed historical review register follows. Its PR notes are retained as history, not a live status feed.
 
 ## 1. Code-review findings reconciled against current v2
 
