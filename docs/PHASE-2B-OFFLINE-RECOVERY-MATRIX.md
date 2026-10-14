@@ -1,65 +1,83 @@
 # Phase 2B — Offline Save and Recovery Matrix
 
-**Base:** `main` at `2651d7870795f582eb7b12794a8946b1488f2acc` (PR #129 merge)
-**Working branch:** `phase-2b/offline-recovery-matrix-2026-10-14`
-**Status:** Acceptance definition; implementation evidence is pending
-**Release boundary:** Local/mock backend and browser tests unless separately authorized live verification is documented.
+**Base:** `main` at `86c8e2bae740e5e5f09dabd18e6b0d035d700bf6` (PR #130 merge)  
+**Working branch:** `phase-2b/online-ambiguous-save-recovery-2026-10-14`  
+**Status:** In implementation; this PR closes the direct online-save ambiguity gap, not the entire recovery phase.  
+**Release boundary:** Mock backend and browser tests unless separately authorized live verification is documented.
 
 ## Business outcome
 
-An operator must not be prompted to duplicate a payment or receipt because a network/server response is ambiguous. Queue entries must remain bound to the correct account and recoverable through retries, parallel tabs, lease expiry, stale sessions, and partial failures.
+An operator must not be prompted to duplicate a payment or receipt because a network/server response is ambiguous. Queue entries must remain bound to the correct account and recoverable through retries, parallel tabs, lease expiry, stale sessions and partial failures.
 
-## Existing source mechanisms to validate
+## Source assessment
 
-Stable client IDs and backend idempotency; IndexedDB pending/sending/failed states; owner binding; claim leases; retry/release; export of rejected entries; recovery validation; cross-tab announcements. Their existence is not proof that all failure sequences compose correctly.
+The existing system already has stable client IDs, backend idempotency, an IndexedDB outbox with pending/sending/failed states, owner binding, claim leases, retry/release, recovery export/import, BroadcastChannel announcements, and browser tests for outbox response loss, multi-tab sync, expired leases, account binding and permanent validation rejection.
 
-## Acceptance criteria
+The uncovered direct-entry seam was different: when an online `createVouchers` request received `NET`, it saved the original entry to the outbox but did not immediately retry while the browser still reported online. An unreadable response (`BAD`) was treated as a generic error rather than an ambiguous result. This made user-visible recovery inconsistent between direct save and background synchronization.
 
-### Ambiguous response and idempotent retry
+## Current runtime slice — direct online save ambiguity
 
-Simulate successful server persistence followed by a lost response. Retrying with the same client ID must return the same voucher and leave exactly one voucher.
+### Lost response after server persistence
 
-Required evidence: mock fault injection, backend idempotency assertion, and Browser E2E.
+A test server commits a voucher and then drops the direct online response. The same entry must be durably queued and retried using the original client ID.
 
-### Concurrent tabs and leases
+Required evidence: browser E2E, server request counters, exactly one Register row, and no remaining outbox record after confirmation.
 
-A second tab must not acknowledge work owned by another lease. After a tab disappears, an expired sending lease must be reclaimable without losing the entry.
+### Malformed response after server persistence
 
-Required evidence: queue transaction tests and a browser multi-context scenario.
+A test server commits a voucher and returns malformed JSON. The frontend must treat the result as ambiguous, queue the unchanged entry, and safely retry the same client ID.
 
-### Acknowledgement failure after server success
+Required evidence: browser E2E, response-fault counter, exactly one Register row, and no remaining outbox record after confirmation.
 
-If local acknowledgement fails after server persistence, keep the entry recoverable. A later idempotent retry may remove it only after confirmed success.
+### Operator-visible outcome
 
-Required evidence: storage fault injection, voucher count assertion, and visible UI state.
+A successful retry removes the queued record only after the server responds, shows an explicit saved-and-synchronized result, and produces exactly one Register row. If the retry cannot confirm every entry, the app keeps the account-bound queue and states that the result is pending or needs review. It must tell the operator not to enter an uncertain item again.
 
-### Session expiry and account changes
+Known validation/conflict errors must retain the existing rejection/review workflow. They must not be silently reclassified as ambiguous-success recovery.
 
-Session expiry must not be classified as a permanent voucher rejection. An account or endpoint change must not allow a record to upload under a different account binding, and records belonging to another account must remain untouched.
+CI, Browser E2E and Full Flight Test must pass on the same exact final PR head SHA.
 
-Required evidence: API error-contract review, queue isolation tests, and browser session-expiry/multi-context scenarios.
+## Remaining recovery matrix
 
-### Permanent versus transient failures
+### Acknowledgement/storage transaction failure
 
-Validation/conflict rejection must become review-required and stop automatic retries, with export before removal. Transient network/server failures must release unprocessed records to pending and show actionable recovery feedback.
+Preserve the queue item after server success. A later idempotent retry and lease recovery must not duplicate the voucher.
 
-Required evidence: permanent-rejection tests and an injected transient failure after one successful upload.
+Required evidence: dedicated acknowledgement fault injection and queue-state assertions.
 
-### Financial invariants after recovery
+### Stale session during synchronization
 
-Historical entries missing CashImpact must remain available for export/re-entry; never infer a value. A retried voucher must preserve identity, approval status, CashImpact, report inclusion, and cash-close treatment.
+Do not mark the item as a permanent rejection. Preserve it for sign-in/retry.
 
-Required evidence: regression test plus the existing cross-workflow integration test.
+Required evidence: explicit session-expiry fault injection.
+
+### Account or endpoint changes
+
+No record uploads under another account binding; other-account records remain untouched.
+
+Required evidence: existing account-binding E2E plus endpoint-switch regression.
+
+### Permanent and transient failures
+
+Validation/conflict rejection must become review-required, stop automatic retry and retain the export-before-removal flow. Transient server/network errors must release unprocessed entries to pending and expose recovery state.
+
+Required evidence: existing poison-entry/healthy-neighbor E2E plus a fault-injected multi-entry partial failure.
+
+### Historical CashImpact and financial outcome
+
+Historical entries missing CashImpact remain available for export/re-entry; never infer a value. Retried vouchers preserve identity, approval, CashImpact, report and close treatment.
+
+Required evidence: existing regressions and the cross-workflow test tied to the recovered voucher.
 
 ## Non-goals
 
-No accounting/tax rules, approval policy, roles, schema, new dependencies, production deployment, live data mutation, or automatic audit-gap repair. Replace the queue architecture only if tests identify a specific defect.
+No accounting/tax rules, approval policy, roles, schema, new dependencies, production deployment, live data mutation, automatic audit-gap repair or release authorization. Do not replace the queue architecture without evidence that a specific defect requires it.
 
-## Role ownership
+## Review ownership
 
 - Product Owner: operator outcome and terminology.
-- Principal Engineer: idempotency and lease tracing.
-- CI/CD Engineer: same-head checks.
-- Security Reviewer: account binding, session transitions, error classification, and recovery import.
+- Principal Engineer: client-ID idempotency, direct-save/outbox composition and lease behavior.
+- CI/CD Engineer: exact-head checks.
+- Security Reviewer: account binding, session transitions, error classification and recovery import.
 - QA Lead: fault injection and regression matrix.
 - UI/UX Lead: saved-on-device versus synchronized/retry/review clarity.

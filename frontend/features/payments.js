@@ -387,10 +387,41 @@ export function createPayments({ api, refresh }) {
         $('#nres').innerHTML =
           `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Saved ${d.created.length} ${entryNoun(d.created.length)}</h2>${pendingApprovalCount ? `<p role="status">${pendingApprovalCount} payment(s) are pending owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.</p>` : ''}${d.created.map((c) => `<div style="margin:8px 0">#${esc(vno(c))} · ${esc(c.vendor)} · <b>${money(c.amount)}</b> <button class="btn sm" data-act="print" data-id="${esc(c.id)}">Print</button></div>`).join('')}<div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
       } catch (e) {
-        if (e.code !== 'NET') return fail(e);
-        await saveOnDevice(
-          'Your connection was interrupted. These entries will upload automatically when it returns.',
+        // A lost connection or non-JSON response can happen after the server committed the voucher.
+        // Preserve each original client ID locally, then retry those same IDs once through the outbox.
+        if (!['NET', 'BAD'].includes(String(e?.code || ''))) return fail(e);
+        const queued = await saveOnDevice(
+          'The server response did not confirm whether this entry was saved. It is stored on this device under the same transaction ID. Do not enter it again while we confirm the result.',
         );
+        if (!queued || !navigator.onLine || !S.token || S.offlineMode) return;
+
+        await flushOutbox();
+        try {
+          const clientIds = new Set(entries.map((entry) => entry.clientId));
+          const records = await offlineQueue.list();
+          const remaining = records.filter((record) => clientIds.has(record.clientId));
+          const panel = $('#nres .ok-panel');
+          if (!panel) return;
+          const title = $('h2', panel);
+          const message = $('p', panel);
+          if (!title || !message) return;
+
+          if (!remaining.length) {
+            title.textContent = '✔ Saved and synchronized';
+            message.textContent =
+              'The server confirmed the entry on retry using the same transaction ID. No duplicate voucher was created.';
+          } else if (remaining.some((record) => record.status === 'failed')) {
+            title.textContent = '⚠ Saved on this device — review required';
+            message.textContent =
+              'One or more entries need review. Check the recovery banner and export before removing any rejected entry. Do not re-enter an uncertain entry.';
+          } else {
+            title.textContent = '⚠ Saved on this device — confirmation pending';
+            message.textContent =
+              'The server has not confirmed every entry yet. They remain queued under the same transaction IDs. Do not re-enter them; use Sync now when the connection or session is ready.';
+          }
+        } catch {
+          // Keep the conservative confirmation-pending message if queue state cannot be read.
+        }
       }
     });
   }

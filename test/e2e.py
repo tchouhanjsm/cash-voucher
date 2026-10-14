@@ -12,6 +12,8 @@ API = BASE + '/api?' + urllib.parse.urlencode({
     'drop_vendor': 'Offline Vendor',
     'count_vendor': 'Multi-tab Vendor',
     'fail_vendor': 'Poison Vendor',
+    'direct_drop_vendor': 'Direct Lost Response Vendor',
+    'direct_malformed_vendor': 'Direct Malformed Response Vendor',
 })
 URL = BASE + '/?' + urllib.parse.urlencode({'api': API})
 errs = []
@@ -4377,8 +4379,153 @@ with sync_playwright() as p:
     )
     audit_page.close()
 
-    # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
+    # Online creation can commit even if its response is lost or malformed. The same client ID
+    # must be queued and retried automatically, then confirmed without a second voucher.
+    def verify_online_ambiguous_save(vendor, kind):
+        lost_response_fault = {'aborted_after_server_commit': False}
+
+        def drop_browser_response_after_server_commit(route):
+            try:
+                request_data = json.loads(route.request.post_data or '{}')
+            except json.JSONDecodeError:
+                request_data = {}
+            matches_vendor = any(
+                isinstance(entry, dict) and entry.get('vendor') == vendor
+                for entry in request_data.get('entries', [])
+            ) if isinstance(request_data.get('entries'), list) else False
+            if (
+                kind == 'lost-response'
+                and not lost_response_fault['aborted_after_server_commit']
+                and request_data.get('action') == 'createVouchers'
+                and matches_vendor
+            ):
+                # Let the server commit and return success, then abort only the browser's
+                # original response. This avoids Chromium transparently replaying a dropped
+                # TCP response and bypassing the application's NET recovery path.
+                response = route.fetch()
+                if response.ok:
+                    lost_response_fault['aborted_after_server_commit'] = True
+                    route.abort('failed')
+                    return
+                route.fulfill(response=response)
+                return
+            route.continue_()
+
+        if kind == 'lost-response':
+            page.route('**/api?*', drop_browser_response_after_server_commit)
+
+        go_view(page, 'new')
+        page.wait_for_selector('#nf')
+        page.locator('.seg button[data-k="PAYMENT"]').click()
+        page.fill('.rv', vendor)
+        page.fill('.ra', '137')
+        choose_cash_impact_for_current_rows()
+        page.click('#nsave')
+        try:
+            page.wait_for_function(
+                "Boolean(document.querySelector('#nres .ok-panel h2'))",
+                timeout=5000,
+            )
+        except Exception:
+            pass
+        finally:
+            if kind == 'lost-response':
+                page.unroute('**/api?*', drop_browser_response_after_server_commit)
+
+        title = (
+            page.locator('#nres .ok-panel h2').inner_text()
+            if page.locator('#nres .ok-panel h2').count()
+            else ''
+        )
+        message = (
+            page.locator('#nres .ok-panel p').inner_text()
+            if page.locator('#nres .ok-panel p').count()
+            else ''
+        )
+        diagnostics = page.evaluate(
+            """async (vendor) => {
+              const response = await fetch('/test-status');
+              const server = await response.json();
+              const request = indexedDB.open('cash-voucher', 1);
+              const db = await new Promise((resolve, reject) => {
+                request.onsuccess = () => resolve(request.result);
+                request.onerror = () => reject(request.error);
+              });
+              const records = await new Promise((resolve, reject) => {
+                const read = db.transaction('outbox', 'readonly').objectStore('outbox').getAll();
+                read.onsuccess = () => resolve(read.result.filter((record) => record.entry?.vendor === vendor).map((record) => ({
+                  clientId: record.clientId,
+                  ownerKey: record.ownerKey || '',
+                  status: record.status,
+                  failure: record.failure || '',
+                })));
+                read.onerror = () => reject(read.error);
+              });
+              db.close();
+              return {
+                server,
+                url: location.href,
+                heading: document.querySelector('#view .page-header h1')?.innerText || '',
+                title: document.querySelector('#nres .ok-panel h2')?.innerText || '',
+                result: document.querySelector('#nres')?.innerText || '',
+                banner: document.querySelector('#banner')?.innerText || '',
+                activeNavigation: document.querySelector('#nav [aria-current="page"]')?.dataset.v || '',
+                records,
+              };
+            }""",
+            vendor,
+        )
+        if 'Saved and synchronized' not in title:
+            print(
+                'AMBIGUOUS ONLINE SAVE DIAGNOSTIC:',
+                json.dumps(diagnostics, sort_keys=True),
+            )
+            check(
+                False,
+                f'{kind} online save did not confirm same-ID recovery; title={title!r}, message={message!r}',
+            )
+            return
+
+        check(
+            'same transaction ID' in message and 'No duplicate voucher was created' in message,
+            f'{kind} online save response recovers with an explicit same-ID confirmation',
+        )
+
+        if kind == 'lost-response':
+            check(
+                lost_response_fault['aborted_after_server_commit']
+                and diagnostics['server'].get('onlineDropCreateRequests', 0) >= 2,
+                'committed online save whose browser response was aborted is retried through the outbox',
+            )
+        else:
+            status = diagnostics['server']
+            check(
+                status.get('malformedOnlineResponses') == 1
+                and status.get('onlineMalformedCreateRequests', 0) >= 2,
+                'committed online save with malformed JSON is retried through the outbox',
+            )
+
+        check(
+            not outbox_vendor_records(vendor),
+            f'{kind} online save leaves no local outbox record after server confirmation',
+        )
+        go_view(page, 'reg')
+        page.wait_for_selector('#rq')
+        page.fill('#rq', vendor)
+        page.wait_for_function(
+            f"Array.from(document.querySelectorAll('#rbody tr')).filter((row) => row.innerText.includes({json.dumps(vendor)})).length === 1",
+            timeout=10000,
+        )
+        check(
+            page.locator('#rbody tr', has_text=vendor).count() == 1,
+            f'{kind} ambiguous online save appears exactly once in Register',
+        )
+
     page.set_viewport_size({'width': 390, 'height': 800})
+    verify_online_ambiguous_save('Direct Lost Response Vendor', 'lost-response')
+    verify_online_ambiguous_save('Direct Malformed Response Vendor', 'malformed-response')
+
+    # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
     go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.click('[data-k=RECEIPT]')
