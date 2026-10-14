@@ -1609,6 +1609,8 @@ with sync_playwright() as p:
 
     page.route('**/api?*', tamper_created_voucher_number)
     choose_cash_impact_for_current_rows()
+    normal_voucher_date = page.locator('#nd').input_value()
+    normal_voucher_date_display = '/'.join(reversed(normal_voucher_date.split('-')))
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved 2 payments' in page.inner_text('#nres'), 'saved 2 payments')
@@ -1631,6 +1633,15 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true')
         and sum(message.startswith('PAGEERR ') for message in logs) == page_errors_before_print,
         'malformed API date uses a safe print fallback without crashing or activating hostile voucher text',
+    )
+    page.locator('#nres [data-act=print]').nth(1).click()
+    page.wait_for_function(
+        "document.querySelector('#printArea .pv-meta')?.innerText.includes('Date:')"
+    )
+    check(
+        normal_voucher_date_display in page.locator('#printArea .pv-meta').inner_text()
+        and 'Date unavailable' not in page.locator('#printArea .pv-meta').inner_text(),
+        'valid server-returned voucher date keeps the normal printed date format',
     )
     page.unroute('**/api?*', tamper_created_voucher_number)
     check(
