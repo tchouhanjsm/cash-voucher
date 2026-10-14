@@ -23,6 +23,9 @@ export function createReports({ api }) {
       ? String(value)
       : '';
 
+  const isValidSummaryCount = (value) =>
+    typeof value === 'number' && Number.isSafeInteger(value) && value >= 0;
+
   const hasPositiveCount = (value) =>
     typeof value === 'number' && Number.isFinite(value) && value > 0;
 
@@ -242,6 +245,15 @@ export function createReports({ api }) {
         !Array.isArray(summary.items)
       ) {
         throw new Error('The report returned an invalid response. Please retry.');
+      }
+
+      const summaryCountFields = [
+        'approvalExceptionCount',
+        'unmatchedVendorCount',
+        'ambiguousVendorCount',
+      ];
+      if (!summaryCountFields.every((field) => isValidSummaryCount(summary[field]))) {
+        throw new Error('The report returned invalid summary counts. Please retry.');
       }
 
       const reportTextFields = [

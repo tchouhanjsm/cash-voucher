@@ -3491,23 +3491,21 @@ with sync_playwright() as p:
         and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
     ):
         page.locator('#movementFilters button[type=submit]').click()
-    page.wait_for_function(
-        "document.querySelector('#view table caption')?.textContent === 'Recorded voucher movements'"
-    )
+    page.wait_for_selector('.form-error[role=alert]')
     report_text = page.locator('#view').inner_text()
     check(
-        'Source vouchers' in report_text
-        and 'invalid response' not in report_text.lower()
-        and page.locator('#view table caption').count() == 1
+        'invalid summary counts' in report_text.lower()
+        and page.locator('#view table tbody tr').count() == 0
+        and page.locator('#view .form-error [data-act=reportRun]').is_enabled()
         and page.locator('#view svg, #view img').count() == 0,
-        'object-valued report summary counts cannot crash rendering or inject markup',
+        'coercion-hostile report summary counts fail closed with retry and no markup',
     )
     page.unroute('**/api?*', tamper_report_summary_coercion)
     with page.expect_response(
         lambda response: '/api?' in response.url
         and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
     ):
-        page.locator('#movementFilters button[type=submit]').click()
+        page.locator('#view .form-error [data-act=reportRun]').click()
     page.wait_for_function(
         "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
     )
