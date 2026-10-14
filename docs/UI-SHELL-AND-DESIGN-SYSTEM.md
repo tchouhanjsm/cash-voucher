@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: phases 1–6 shipped; phases 7–8 are grouped into the current admin-state recovery batch.
+Status: phases 1–8 shipped on main. Physical-device and assistive-technology validation remain release gates.
 
 ## Approach
 

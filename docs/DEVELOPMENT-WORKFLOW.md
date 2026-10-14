@@ -115,4 +115,4 @@ Only the backend folder belongs in clasp. Before a backend upload, inspect the w
 
 ## Product decision boundary
 
-Daily cash close remains design-only until the owner resolves the decisions in `docs/DAILY-CASH-CLOSE-DESIGN.md`. Improving delivery speed does not authorize a schema change, historical backfill, new settlement semantics, product scope expansion, PR merge or production deployment.
+The Daily Cash Close MVP is implemented in source under the owner-approved policy recorded in `docs/DAILY-CASH-CLOSE-DESIGN.md`; this is not evidence that the intended Apps Script version is deployed or that live reconciliation and restore have passed. Preserve the approved one-property / MAIN drawer / Asia-Kolkata day model, immutable close snapshot and append-only correction notes. Improving delivery speed does not authorize a schema migration, historical backfill, new settlement/accounting semantics, product scope expansion, PR merge or production deployment.

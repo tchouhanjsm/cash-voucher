@@ -2,21 +2,21 @@
 
 **Updated:** 14 October 2026  
 **Repository:** `tchouhanjsm/cash-voucher`  
-**Verified `main` SHA:** `6320be4293b9f3f91005a25b7207dd686cbaf7c9` (PR #121 merge)  
-**Current batch:** UI shell phases 7–8 — administration and diagnostic loading/error/retry states, branch `feature/admin-state-recovery-phases-7-8`  
+**Verified `main` SHA:** `a4be8a50e2b9cf3e356057beed537e74a9401a26` (PR #122 merge)  
+**Current batch:** Daily Cash Close saved-snapshot integrity and hostile-rendering regression coverage, branch `security/cash-close-snapshot-integrity-2026-10-14`  
 **Rule:** the GitHub PR page is authoritative for current head SHA and checks; this handoff commit itself changes the branch head.
 
-## Current phase — UI shell phases 7–8
+## Current phase — Daily Cash Close saved-snapshot integrity
 
-PR #121 merged at `6320be4293b9f3f91005a25b7207dd686cbaf7c9`. Phases 4–6 delivered the warm-neutral/navy/gold token palette, system-aware dark mode with a persistent explicit choice, selected contrast checks for both themes, theme-independent A5 voucher print styling, and PWA launch metadata/cache alignment.
+PR #122 is merged at `a4be8a50e2b9cf3e356057beed537e74a9401a26`. It completed UI shell phases 7–8: admin views distinguish loading, failed, invalid and empty states; Users, Audit and Backup status have direct retry paths; Backup retry preserves unsaved Settings values. Its reviewed head `4fe0085c3fcebcfe04667dade6c46ebf8ef0afbb` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38532473913), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38532473998) (313 checks), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38532473975) (245 backend checks, 38 documented contrast-pair checks across both themes, and 313 browser checks).
 
-The current batch addresses two connected admin UX phases: (7) distinguish Users/Vendors/Audit/Backup-status loading, error, invalid-response and empty states; (8) provide direct, accessible retry paths for transient failures. User-list retries call `listUsers` again without reloading the app; audit retry reopens the audit read; backup status retries in place without resetting Settings fields. No finance rules, backend contracts, roles or schema are changed.
+The current batch hardens the persisted Daily Cash Close response boundary. A saved close must return every included voucher record, a one-to-one ordered ID list, and the matching count. Malformed entries, duplicate/mismatched IDs, invalid amounts or cash-impact values, and count inconsistencies must raise `CASH_CLOSE_DATA`; they must not be silently filtered or presented as a complete immutable close. Browser E2E also checks that hostile API text in the Cash Close report/correction surfaces remains inert.
 
-The current branch starts from verified main SHA `6320be4293b9f3f91005a25b7207dd686cbaf7c9`. All code changes must pass CI, Browser E2E and Full Flight Test on the same exact final head. Physical-device, assistive-technology, live Apps Script/Sheets, backup/restore and controlled pilot checks remain independent operational gates.
+The current branch starts from verified main SHA `a4be8a50e2b9cf3e356057beed537e74a9401a26`. All code changes must pass CI, Browser E2E and Full Flight Test on the same exact final head. This source/test batch makes no schema, financial-policy or deployment change. Live Apps Script/Sheets, authorization, backup/restore, physical-device PWA, assistive-technology and controlled-pilot checks remain independent operational gates.
 
-## Most recently completed — PR #121: themed UI shell, print and PWA polish
+## Most recently completed — PR #122: admin read-state and recovery
 
-PR #121 merged at `6320be4293b9f3f91005a25b7207dd686cbaf7c9`. Its tested PR head `f1b7942995becb81abf83651582680a415531582` passed CI, Browser E2E (308 checks, zero failures), and Full Flight Test (245 backend checks, 38 documented contrast-pair checks across both palettes, and 308 browser checks).
+PR #122 is merged at `a4be8a50e2b9cf3e356057beed537e74a9401a26`; its tested head is `4fe0085c3fcebcfe04667dade6c46ebf8ef0afbb`. The exact-head CI, Browser E2E and Full Flight Test links and results are recorded above. Merge status does not establish production deployment or live service/recovery behavior.
 
 ## Owner-approved edit policy — UAT-048, PR #118
 

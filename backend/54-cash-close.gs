@@ -155,39 +155,102 @@ function cashCloseCorrectionOut_(row) {
   };
 }
 function cashCloseOut_(row) {
-  let vouchers = [],
-    ids = [];
+  let vouchers, ids;
   try {
-    const raw = String(row.IncludedVouchers || '');
-    if (!raw) throw new Error('Missing voucher snapshot');
-    const value = JSON.parse(raw);
-    if (!Array.isArray(value)) throw new Error('Invalid voucher snapshot');
-    vouchers = value.filter(function (item) {
-      return item && typeof item === 'object' && typeof item.id === 'string';
-    });
-  } catch (error) {
+    if (typeof row.IncludedVouchers !== 'string' || !row.IncludedVouchers.trim()) {
+      throw new Error('Missing voucher snapshot');
+    }
+    vouchers = JSON.parse(row.IncludedVouchers);
+  } catch {
     throw err_(
       'Saved cash-close voucher snapshot is invalid. Stop and inspect the close record.',
       'CASH_CLOSE_DATA',
     );
   }
+  if (!Array.isArray(vouchers)) {
+    throw err_(
+      'Saved cash-close voucher snapshot is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+
+  const closeDate = typeof row.BusinessDate === 'string' ? row.BusinessDate : '';
+  const snapshotIds = [];
+  const validSnapshotVoucher = function (item) {
+    return (
+      item !== null &&
+      typeof item === 'object' &&
+      !Array.isArray(item) &&
+      typeof item.id === 'string' &&
+      item.id.trim() !== '' &&
+      typeof item.no === 'string' &&
+      item.no.trim() !== '' &&
+      typeof item.date === 'string' &&
+      /^\d{4}-\d{2}-\d{2}$/.test(item.date) &&
+      validDate_(item.date) &&
+      item.date === closeDate &&
+      typeof item.vendor === 'string' &&
+      typeof item.amount === 'number' &&
+      isFinite(item.amount) &&
+      item.amount > 0 &&
+      item.amount <= CFG.MAX_AMOUNT &&
+      Number.isSafeInteger(Math.round(item.amount * 100)) &&
+      CASH_IMPACT_CHOICES.indexOf(item.cashImpact) >= 0
+    );
+  };
+  if (!vouchers.every(validSnapshotVoucher)) {
+    throw err_(
+      'Saved cash-close voucher snapshot is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+  vouchers.forEach(function (voucher) {
+    snapshotIds.push(voucher.id);
+  });
+
   try {
-    const raw = String(row.IncludedVoucherIds || '');
-    if (!raw) throw new Error('Missing voucher ID snapshot');
-    const value = JSON.parse(raw);
-    if (!Array.isArray(value)) throw new Error('Invalid voucher ID snapshot');
-    ids = value.filter(function (id) {
-      return typeof id === 'string';
-    });
-  } catch (error) {
+    if (typeof row.IncludedVoucherIds !== 'string' || !row.IncludedVoucherIds.trim()) {
+      throw new Error('Missing voucher ID snapshot');
+    }
+    ids = JSON.parse(row.IncludedVoucherIds);
+  } catch {
     throw err_(
       'Saved cash-close voucher IDs are invalid. Stop and inspect the close record.',
       'CASH_CLOSE_DATA',
     );
   }
+  if (
+    !Array.isArray(ids) ||
+    ids.some(function (id, index) {
+      return typeof id !== 'string' || id.trim() === '' || id !== snapshotIds[index];
+    }) ||
+    ids.length !== vouchers.length ||
+    ids.some(function (id, index) {
+      return ids.indexOf(id) !== index;
+    })
+  ) {
+    throw err_(
+      'Saved cash-close voucher IDs do not match the voucher snapshot. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+
+  const includedVoucherCount = row.IncludedVoucherCount;
+  if (
+    typeof includedVoucherCount !== 'number' ||
+    !Number.isSafeInteger(includedVoucherCount) ||
+    includedVoucherCount < 0 ||
+    includedVoucherCount !== vouchers.length
+  ) {
+    throw err_(
+      'Saved cash-close voucher count does not match the voucher snapshot. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+
   return {
     id: String(row.CloseID || ''),
-    date: String(row.BusinessDate || ''),
+    date: closeDate,
     drawerKey: String(row.DrawerKey || CASH_CLOSE_DRAWER),
     openingCash: Number(row.OpeningCash),
     openingSource: String(row.OpeningSource || ''),
@@ -199,7 +262,7 @@ function cashCloseOut_(row) {
     countedCash: Number(row.CountedCash),
     variance: Number(row.Variance),
     varianceReason: String(row.VarianceReason || ''),
-    includedVoucherCount: Number(row.IncludedVoucherCount) || ids.length || vouchers.length,
+    includedVoucherCount: includedVoucherCount,
     includedVoucherIds: ids,
     includedVouchers: vouchers,
     createdBy: String(row.CreatedBy || ''),

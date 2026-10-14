@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Current review baseline:** `4c80fa5a94588a8e5f8fd56a830b58cd26548cc0` (PR #104 merge)  
+**Latest incremental review baseline:** `a4be8a50e2b9cf3e356057beed537e74a9401a26` (main after PR #122; Cash Close response/rendering boundary added in this batch)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -309,3 +309,12 @@ Before considering this batch ready for review, the CI quality gate and Browser 
 - The view is scoped to the normalized endpoint/account owner key. Unbound legacy records retain their separate account-confirmation warning and foreign-account records remain hidden. Pending records are never removed through this disclosure; existing rejected-entry removal still requires recovery export and explicit confirmation.
 - Browser E2E checks expected status fields and injects hostile markup into a persisted local queue vendor field, then verifies literal text/no injected elements and restores the fixture before continuing sync tests.
 - This closes only the new queue-review sink and a specific operator-visibility gap. It does not prove local storage is tamper-proof, guarantee that a pending row reached the server, complete the overall dynamic-rendering audit, or close live backup/restore and deployment checks.
+
+## Daily Cash Close saved snapshot and rendering boundary — 14 October 2026
+
+The active Cash Close renderer in `frontend/features/cash-close.js` was added after the earlier surface inventory and must remain part of the active sink audit. This batch traced saved-close fields through `backend/54-cash-close.gs`, the API response, close-report/correction/history templates and print rendering.
+
+- **Confirmed financial-integrity defect:** `cashCloseOut_` silently filtered malformed `IncludedVouchers` members and non-string `IncludedVoucherIds` entries. That could make displayed/exported detail incomplete while the stored totals and original close row remained unchanged.
+- **Boundary fix:** validate the full voucher snapshot contract; validate the parallel ID list for type, count, identity, ordering and duplicates; and require `IncludedVoucherCount` to match the snapshot. Fail closed with `CASH_CLOSE_DATA`; do not drop, coerce, backfill or rewrite stored history. Valid zero-voucher closes remain supported.
+- **Rendering review:** dynamic report, correction, history and print text is inserted through `esc(...)` or the shared finite money formatter plus HTML escaping. Browser E2E injects hostile vendor/correction strings in a successful mock API response and asserts they remain literal text without creating active SVG/image elements or firing the payload.
+- This is a targeted response-integrity and rendering regression, not exhaustive taint analysis, a penetration test or XSS certification. The remaining active `innerHTML` inventory, live Google authorization, backup/restore and deployed-source checks remain outstanding.
