@@ -1,7 +1,7 @@
 # Product Gap Register and Roadmap
 
 **As of:** 14 October 2026  
-**Current verified main SHA:** `86c8e2bae740e5e5f09dabd18e6b0d035d700bf6` (PR #130 merge)
+**Current verified main SHA:** `69f861f86d08a19da8fe1223b3bc6c4840478895` (PR #131 merge)
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -12,8 +12,8 @@ The repository is a single-property cash-voucher PWA. Prioritize integrity of mo
 - **Phase 1 — source-based audit:** `docs/PHASE-1-REPOSITORY-AUDIT.md` records the findings and backlog, but its baseline predates PRs #127–#130. Use findings, not old SHA/check metadata, as current truth.
 - **Phase 2 — normal-path cross-workflow integrity:** PR #128 merged. A mock-backed journey covers entry, independent approval, reporting, cash-close calculation/snapshot and linked audit events. Failure-path coverage remains incomplete.
 - **Phase 3 — audit-write observability:** PR #129 merged. The degraded status surfaces only if the audit append fails and the Script Properties marker succeeds. This is best-effort, not tamper-evident storage, event reconstruction or evidence of deployment.
-- **Phase 2B — active runtime outcome:** close the gap between direct online voucher creation and background outbox recovery. If a server write commits but the direct response is lost or unreadable, keep the original client ID and retry safely rather than leaving an ambiguous result in the form.
-- **Next Phase 2B follow-up:** fault-inject acknowledgement/storage failure after server success and stale-session synchronization. Preserve same-ID idempotency and account binding across lease recovery.
+- **Phase 2B — current recovery-matrix closure batch:** PR #131 closed direct online lost/malformed-response recovery. The current batch adds deterministic tests for IndexedDB acknowledgement abort after server confirmation and SESSION expiry during sync, including same-ID recovery and exactly-one-voucher assertions. Completion depends on same-head CI, Browser E2E and Full Flight Test.
+- **Cross-phase work still open:** Phase 1 security/API authorization and seeded performance evidence; Phase 3 audit-marker persistence failure/reconciliation; live Apps Script authorization/deployment/backup-restore; physical-device PWA and manual accessibility review. These remain explicit gaps until evidence exists.
 - **Release gate — not verified:** live Apps Script identity/permissions, scheduled backup, isolated restore, physical-device recovery and manual accessibility review remain owner-authorized operational work.
 
 ## Prioritized work packages
