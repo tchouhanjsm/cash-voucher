@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `eb23c2dd5b7620de9c09329c0088f4fbff36f89d` (main after PR #124; current branch reviews report summary-count coercion)  
+**Latest merged review baseline:** `6dd53d3b927f184ceda8fb14916367c63199ae2d` (main after PR #125; next batch validates Daily Cash Close preview responses)
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -332,3 +332,11 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 - **Boundary fix:** the report boundary requires approval-exception, unmatched-vendor and ambiguous-vendor counts to be non-negative safe integers before accepting the summary. Malformed counts fail closed with a retryable error and suppress stale report totals/rows instead of silently hiding the affected notice. Render-time predicates also avoid implicit object conversion.
 - **Browser regression:** the mocked Recorded Movement Report API returns the coercion-trap object for all three fields. E2E verifies the report enters the accessible error/retry state, does not retain report rows or inject SVG/image markup, and reloads successfully after the normal response is restored. Existing hostile scalar-string output tests remain in place.
 - This guard addresses a narrowly scoped renderer crash, not general response integrity or full XSS certification. The broader active sink inventory, live authorization, scheduled backup and isolated restore remain open.
+
+## Daily Cash Close preview response-contract validation — 14 October 2026
+
+- **Confirmed client-boundary gap:** the `cashClosePreview` response was passed to the active renderer without validating the envelope or nested arrays. Null entries in unclassified/invalid/pending issue lists or recent close history could throw in row renderers. Object-valued summary counts could also throw during string conversion. The refresh error path retained the previous `data` object.
+- **Boundary fix:** validate the open and closed response variants, required fields, dates, booleans, finite money/count values, issue rows, saved-close snapshot IDs/count and correction/history rows before assigning the response to the view. Reset prior preview state at refresh start; malformed responses render a retryable error and provide no Save control.
+- **Regression:** Browser E2E injects a null issue row, a JSON object with non-callable `toString`/`valueOf`, and a null recent-history row. Each response must fail closed without a stale closed report or Save action, then recover when the normal response is restored.
+- This is targeted response-integrity and rendering resilience, not full XSS certification or proof of live deployment, backup restore, all HTML sinks or accessibility conformance.
+
