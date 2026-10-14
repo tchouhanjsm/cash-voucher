@@ -1,6 +1,6 @@
 # Product Gap Register and Roadmap
 
-**As of:** 13 October 2026  
+**As of:** 14 October 2026  
 **Purpose:** reconcile the attached code-review memo with the actual current v2 repository and prioritize improvements by the value and risk to a property owner.
 
 This is a single-property cash-voucher PWA today. The attached memo's hosted fintech/multi-property concept is a strategic scenario, not an agreed requirement. The product-level scope, user outcomes, candidate measures, and owner decisions are consolidated in [Product Requirements Baseline](PRODUCT-REQUIREMENTS.md).
@@ -287,3 +287,21 @@ PR #110 approved mandatory voucher-level CashImpact; this phase adds the first p
 The close is rejected if any active date-scoped voucher is unclassified or has an invalid amount. It records the original totals and included voucher snapshot, actor, time zone, timestamp and request ID together. The same request can be retried without duplicating a close; concurrent/date duplicates cannot overwrite the record. Voucher creation, edits and cancellation affecting a closed date are blocked. A correction note is a separately attributed append-only record and does not alter the original close or voucher data.
 
 The release requires reviewed source plus guarded one-time schema operations in the verified Apps Script project after backup. No migration, Clasp upload, deployment or production-data operation is performed by a feature PR. Live concurrency, backup/restore, device/PWA and hotel-pilot gates remain open. PR #111 merged at `6092152c64adff084abfda5407056dac9401b5e9`; PR #112 added CSP and source/browser release-integrity checks; PR #113 added structured audit events and paginated audit history. The Dashboard already displays “Book balance”; do not create a duplicate label-only PR. The next implementation batch is the owner-approved high-value payment approval workflow: threshold INR 10,000 inclusive, new PAYMENT vouchers only, owner/manager approval with no self-approval, and exclusion from approved totals/cash close until resolved. Operational go-live gates remain independent and require explicit owner-authorized evidence. CI is not live evidence.
+
+
+## Completed phase — PR #122: administration state and retry reliability (14 October 2026)
+
+PR #122 completed UI shell phases 7–8. Users, Vendors, Audit log and Backup status now distinguish request failure/invalid data from a genuine empty state; Users, Audit and Backup status provide direct recovery paths. The Backup status retry does not reset unsaved Settings fields. CI, Browser E2E (313 checks) and Full Flight Test (245 backend checks, 38 selected contrast-pair checks across both themes, 313 browser checks) passed on tested head `4fe0085c3fcebcfe04667dade6c46ebf8ef0afbb`. These are mock-backed/source checks, not live Apps Script availability or production release evidence.
+
+## Current engineering phase — Daily Cash Close snapshot integrity (14 October 2026)
+
+**Finding from source review:** `cashCloseOut_` previously filtered malformed members from the saved `IncludedVouchers` snapshot and filtered non-string values from `IncludedVoucherIds`. Its response could therefore omit saved voucher details without rejecting the inconsistent immutable record.
+
+**Outcome:** validate the full persisted snapshot contract before returning it. Every included voucher must have the expected field types, match the close business date, have a valid finite positive amount and supported cash-impact value; the parallel ID list must be complete, unique, ordered and match the snapshot; and `IncludedVoucherCount` must equal both lengths. Any inconsistency returns `CASH_CLOSE_DATA` and leaves the saved row untouched. Regression coverage targets malformed rows, invalid IDs, mismatched identity/order, duplicate IDs and count drift. Browser E2E covers hostile text in the Cash Close report and correction history.
+
+**Non-goals:** no historic record rewrite/repair, schema migration, financial calculation change, new accounting semantics, approval-policy change, Apps Script deployment or production data operation. A previously malformed saved close must be inspected and recovered by the owner through an explicitly authorized procedure; this code does not auto-correct it.
+
+**Next priorities after this batch:**
+1. Continue the sink-by-sink rendering audit against the active frontend modules and test each remaining concrete output-context gap; do not label the product XSS-certified.
+2. Complete the separate owner-led release/recovery gates: confirm the intended Apps Script deployment and permissions, verify actual Sheet structure after an authorized backup, observe scheduled backup artifacts and witness isolated restore.
+3. Complete physical-device PWA/offline, assistive-technology and role-based usability review before the controlled hotel pilot. Source/CI evidence alone does not close these operational gates.
