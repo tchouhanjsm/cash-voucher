@@ -2272,4 +2272,43 @@ ok(
   'approval and cash-close audit events remain linked to the same end-to-end financial journey',
 );
 
+// Audit-write observability: a failed audit append must not make a completed voucher
+// appear unsaved, but the owner must be able to see the unresolved audit gap.
+g.failNextAuditWrite();
+const auditFailureVoucher = as(workflowManagerToken, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'audit-write-observability-regression',
+      date: today,
+      vendor: 'Audit Failure Injection Vendor',
+      amount: 145,
+      category: 'Other',
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+});
+ok(
+  auditFailureVoucher.ok &&
+    auditFailureVoucher.data.created.length === 1 &&
+    g.sheets.Vouchers.rows.some((row) => row[14] === 'audit-write-observability-regression'),
+  'voucher creation remains successful when best-effort audit persistence fails after the financial write',
+);
+const auditFailureHealth = as(T, 'auditLog');
+ok(
+  auditFailureHealth.ok &&
+    auditFailureHealth.data.auditHealth?.status === 'DEGRADED' &&
+    auditFailureHealth.data.auditHealth.failureCount === 1 &&
+    auditFailureHealth.data.auditHealth.lastFailureAt &&
+    auditFailureHealth.data.auditHealth.lastFailureKind === 'EVENT_BATCH',
+  'owner audit view exposes a durable degraded state and timestamp after an audit batch failure',
+);
+const auditFailureRetry = as(T, 'auditLog');
+ok(
+  auditFailureRetry.ok &&
+    auditFailureRetry.data.auditHealth.status === 'DEGRADED' &&
+    auditFailureRetry.data.auditHealth.failureCount === 1,
+  'a later successful audit read does not silently clear an unresolved audit gap',
+);
+
 console.log('backend OK — ' + n + ' checks passed');

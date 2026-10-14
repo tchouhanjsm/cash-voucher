@@ -19,6 +19,7 @@ function create() {
     propsStore = {},
     cacheStore = {},
     files = {},
+    faults = { failNextAuditWrite: false },
     lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false };
   const mkSheet = (name) => {
     const rows = [];
@@ -27,12 +28,17 @@ function create() {
         Array.from({ length: nr }, (_, i) =>
           Array.from({ length: nc }, (_, j) => (rows[r - 1 + i] || [])[c - 1 + j] ?? ''),
         ),
-      setValues: (v) =>
+      setValues: (v) => {
+        if (name === 'AuditLog' && faults.failNextAuditWrite) {
+          faults.failNextAuditWrite = false;
+          throw new Error('Simulated audit log write failure');
+        }
         v.forEach((row, i) =>
           row.forEach((val, j) => {
             (rows[r - 1 + i] ||= [])[c - 1 + j] = val;
           }),
-        ),
+        );
+      },
       setNumberFormat() {
         return this;
       },
@@ -173,6 +179,9 @@ function create() {
     cache: cacheStore,
     lockStats,
     sheets,
+    failNextAuditWrite: () => {
+      faults.failNextAuditWrite = true;
+    },
     setup: () => ctx.__api.setup(),
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),

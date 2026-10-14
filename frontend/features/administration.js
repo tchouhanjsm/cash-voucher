@@ -22,6 +22,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
   let auditResponseInvalid = false;
   let auditNextBeforeRow = null;
   let auditTotalCount = 0;
+  let auditHealth = null;
   let auditLoadingOlder = false;
   let backupStatusLoading = false;
 
@@ -565,12 +566,14 @@ export function createAdministration({ api, getNavigation, signOut }) {
     auditResponseInvalid = false;
     auditNextBeforeRow = null;
     auditTotalCount = 0;
+    auditHealth = null;
     auditLoadingOlder = false;
 
     $('#view').innerHTML =
       head('Audit log') +
       `<section class="card" aria-describedby="audit-scope">
         <p id="audit-scope" class="muted">Audit events load newest-first in pages of 200. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
+        <div id="aud-health" aria-live="polite"><p class="muted">Loading audit-write health…</p></div>
         <div class="filters audit-filters">
           <label>Search<input id="aud-q" type="search" aria-label="Search audit events" placeholder="Search details, target or user"></label>
           <label>User<select id="aud-user" aria-label="Filter audit events by user"><option value="">All users</option></select></label>
@@ -630,7 +633,20 @@ export function createAdministration({ api, getNavigation, signOut }) {
       page.totalCount >= 0 &&
       (page.nextBeforeRow === null ||
         (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2));
-    if (!validPage) return false;
+    const health = page && typeof page === 'object' ? page.auditHealth : undefined;
+    const validHealth =
+      health === undefined ||
+      (health !== null &&
+        typeof health === 'object' &&
+        !Array.isArray(health) &&
+        ['NO_KNOWN_FAILURE', 'DEGRADED'].includes(health.status) &&
+        Number.isSafeInteger(health.failureCount) &&
+        health.failureCount >= 0 &&
+        typeof health.lastFailureAt === 'string' &&
+        typeof health.lastFailureKind === 'string');
+    if (!validPage || !validHealth) return false;
+    if (health !== undefined) auditHealth = health;
+    else if (!append) auditHealth = null;
 
     const isValidAuditRow = (row) =>
       row !== null &&
@@ -815,9 +831,48 @@ export function createAdministration({ api, getNavigation, signOut }) {
     }
   }
 
+  function renderAuditHealth() {
+    const panel = $('#aud-health');
+    if (!panel) return;
+    panel.replaceChildren();
+    const message = document.createElement('p');
+    if (!auditHealth) {
+      message.className = 'muted';
+      message.textContent =
+        'Audit-write monitoring is unavailable from this deployed backend. Updating the approved Apps Script source is required to enable it; historical log completeness is not verified.';
+      panel.appendChild(message);
+      return;
+    }
+
+    if (auditHealth.status === 'DEGRADED') {
+      panel.className = 'audit-health degraded';
+      message.className = 'error form-error';
+      message.setAttribute('role', 'alert');
+      message.setAttribute('aria-live', 'assertive');
+      const when = auditHealth.lastFailureAt || 'time unavailable';
+      const kind = auditHealth.lastFailureKind
+        ? ' (' + auditHealth.lastFailureKind.toLowerCase().replace(/_/g, ' ') + ')'
+        : '';
+      message.textContent =
+        'Audit logging is degraded: ' +
+        auditHealth.failureCount +
+        ' write failure(s) recorded. Last failure: ' +
+        when +
+        kind +
+        '. One or more actions may be missing from the log. Reconcile the affected records before relying on audit history; this warning does not repair missing events.';
+    } else {
+      panel.className = 'audit-health';
+      message.className = 'muted';
+      message.textContent =
+        'No audit-write failures have been recorded since monitoring was introduced. Historical audit completeness is not verified.';
+    }
+    panel.appendChild(message);
+  }
+
   function renderAuditRows() {
     const body = $('#aud');
     const count = $('#aud-count');
+    renderAuditHealth();
     if (!body || !count) return;
     const rows = filteredAuditRows();
     body.replaceChildren();
