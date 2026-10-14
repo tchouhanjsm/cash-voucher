@@ -25,7 +25,7 @@ Stable client IDs and backend idempotency; IndexedDB pending/sending/failed stat
 | Account or endpoint changes | No record uploads under a different account binding; other-account records remain untouched | Queue isolation test and browser multi-context scenario |
 | Validation/conflict rejection | Entry becomes review-required and is not auto-retried; export before removal | Permanent-rejection plus transient-vs-permanent classification tests |
 | Transient network/server error | Release unprocessed records to pending and show actionable recovery state | Injected transient failure after one successful upload |
-| Historical missing CashImpact | Preserve for export/re-entry; never infer a value | Regression test only; no data mutation |
+| Historical missing CashImpact | Preserve record for export/re-entry; never infer a value | Regression test only; no data mutation |
 | Retried financial outcome | Voucher identity, approval, CashImpact, report and close treatment remain consistent | Cross-workflow integration test |
 
 ## Non-goals
