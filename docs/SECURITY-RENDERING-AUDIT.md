@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest incremental review baseline:** `a4be8a50e2b9cf3e356057beed537e74a9401a26` (main after PR #122; Cash Close response/rendering boundary added in this batch)  
+**Latest merged review baseline:** `7e604c603e12942db26a9fc49a1d46bcaa2376ea` (main after PR #123; current branch reviews printed-voucher date shape)  
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -318,3 +318,11 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 - **Boundary fix:** validate the full voucher snapshot contract; validate the parallel ID list for type, count, identity, ordering and duplicates; and require `IncludedVoucherCount` to match the snapshot. Fail closed with `CASH_CLOSE_DATA`; do not drop, coerce, backfill or rewrite stored history. Valid zero-voucher closes remain supported.
 - **Rendering review:** dynamic report, correction, history and print text is inserted through `esc(...)` or the shared finite money formatter plus HTML escaping. Browser E2E injects hostile vendor/correction strings in a successful mock API response and asserts they remain literal text without creating active SVG/image elements or firing the payload.
 - This is a targeted response-integrity and rendering regression, not exhaustive taint analysis, a penetration test or XSS certification. The remaining active `innerHTML` inventory, live Google authorization, backup/restore and deployed-source checks remain outstanding.
+
+
+## Printed-voucher date-shape resilience — 14 October 2026
+
+- **Confirmed resilience gap:** the New Entry success path adds returned `createVouchers` response objects directly to `S.vouchers`. This response does not necessarily pass through the bootstrap voucher normalizer before the user clicks Print. The active print renderer called `dmy(voucher.date)` directly; `dmy` uses string methods and could throw when a malformed successful API response contains an object-valued date.
+- **Boundary fix:** a dedicated print-date formatter accepts only a real ISO `YYYY-MM-DD` calendar date before using `dmy`. Malformed/missing date values display the constant `Date unavailable` rather than crashing printing or echoing malformed data.
+- **Browser regression:** the mocked `createVouchers` response supplies an object-valued date and a hostile voucher number. The test verifies the print output completes, uses the unavailable-date fallback, leaves the hostile voucher number as inert text and creates no image/SVG elements or page error. A second voucher with a normal date verifies the ordinary display format is preserved.
+- This is an output-path resilience guard, not acceptance/repair of malformed server records and not a complete rendering-security certification. Backend validation is still authoritative; the dynamic HTML/DOM audit, live Google authorization, backup/restore and deployed-source checks remain outstanding.
