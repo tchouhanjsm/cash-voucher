@@ -1,5 +1,5 @@
 // App-shell cache only. API calls (POST) are never cached.
-const C = 'cv2-v10',
+const C = 'cv2-v11',
   F = [
     './',
     'index.html',
@@ -28,6 +28,8 @@ const C = 'cv2-v10',
     'frontend/features/printing.js',
     'frontend/features/register.js',
     'frontend/features/reports.js',
+    'frontend/features/shell.js',
+    'icons/logo.svg',
     'icons/icon-192.png',
     'icons/icon-512.png',
     'icons/maskable-512.png',
