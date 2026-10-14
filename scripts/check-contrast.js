@@ -144,7 +144,7 @@ const checks = [
   },
   {
     name: 'chart bar against chart track',
-    foreground: 'var(--brand)',
+    foreground: 'var(--chart-bar)',
     background: 'var(--surface-muted)',
     minimum: 3,
   },
@@ -278,7 +278,7 @@ const darkChecks = [
   },
   {
     name: 'dark chart bar against its track',
-    foreground: 'var(--accent)',
+    foreground: 'var(--chart-bar)',
     background: 'var(--surface-muted)',
     minimum: 3,
   },
