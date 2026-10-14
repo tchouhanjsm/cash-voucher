@@ -4428,6 +4428,9 @@ with sync_playwright() as p:
             )
         except Exception:
             pass
+        finally:
+            if kind == 'lost-response':
+                page.unroute('**/api?*', drop_browser_response_after_server_commit)
 
         title = (
             page.locator('#nres .ok-panel h2').inner_text()
@@ -4489,7 +4492,6 @@ with sync_playwright() as p:
         )
 
         if kind == 'lost-response':
-            page.unroute('**/api?*', drop_browser_response_after_server_commit)
             check(
                 lost_response_fault['aborted_after_server_commit']
                 and diagnostics['server'].get('onlineDropCreateRequests', 0) >= 2,
