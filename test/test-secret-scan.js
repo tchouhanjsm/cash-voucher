@@ -12,9 +12,10 @@ const syntheticSecrets = [
   'sk_live_' + 'a'.repeat(24),
 ];
 
+const newline = String.fromCharCode(10);
 const syntheticPrivateKeyBlock =
-  '-----BEGIN ' + 'PRIVATE KEY' + '-----\\n' +
-  'A'.repeat(64) + '\\n-----END ' + 'PRIVATE KEY' + '-----';
+  '-----BEGIN ' + 'PRIVATE KEY' + '-----' + newline +
+  'A'.repeat(64) + newline + '-----END ' + 'PRIVATE KEY' + '-----';
 assert.deepEqual(
   findSecretKinds(syntheticPrivateKeyBlock),
   ['Private key block'],

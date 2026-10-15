@@ -2361,6 +2361,6 @@ assert(
     unavailableMarkerHealth.data.auditHealth.failureCount === 0,
   'owner audit status makes the simultaneous marker-store failure limitation explicit in regression evidence',
 );
-n += 4;
+n += 5;
 
 console.log('backend OK — ' + n + ' checks passed');
