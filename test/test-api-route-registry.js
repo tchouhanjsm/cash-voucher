@@ -12,11 +12,7 @@ const actions = g.registeredActions();
 const writes = g.writeActions();
 
 assert.ok(actions.length > 0, 'backend route registry must not be empty');
-assert.equal(
-  new Set(actions).size,
-  actions.length,
-  'API action names must be unique',
-);
+assert.equal(new Set(actions).size, actions.length, 'API action names must be unique');
 assert.ok(writes.length > 0, 'write classification must not be empty');
 assert.ok(
   writes.every((action) => actions.includes(action)),
@@ -68,10 +64,7 @@ for (const readAction of [
   'backupIntegrityReport',
 ]) {
   assert.ok(actions.includes(readAction), readAction + ' must remain explicitly registered');
-  assert.ok(
-    !writes.includes(readAction),
-    readAction + ' must not be classified as a write',
-  );
+  assert.ok(!writes.includes(readAction), readAction + ' must not be classified as a write');
 }
 
 console.log(

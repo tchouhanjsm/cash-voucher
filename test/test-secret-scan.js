@@ -13,11 +13,9 @@ const syntheticSecrets = [
 ];
 
 const newline = String.fromCharCode(10);
-const syntheticPrivateKeyBlock = [
-  ['-----BEGIN ', 'PRIVATE KEY', '-----'].join(''),
-  'A'.repeat(64),
-  ['-----END ', 'PRIVATE KEY', '-----'].join(''),
-].join(newline);
+const header = '-----BEGIN ' + 'PRIVATE KEY' + '-----';
+const footer = '-----END ' + 'PRIVATE KEY' + '-----';
+const syntheticPrivateKeyBlock = [header, 'A'.repeat(64), footer].join(newline);
 assert.deepEqual(
   findSecretKinds(syntheticPrivateKeyBlock),
   ['Private key block'],
