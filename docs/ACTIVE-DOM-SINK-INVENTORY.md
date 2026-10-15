@@ -47,7 +47,6 @@ No active frontend module may introduce the following without an explicit securi
 - Existing Browser E2E tests exercise hostile text for specific admin, audit, bulk, register, dashboard, receipt and cash-close surfaces. They do not cover every possible persisted field, API response or browser engine.
 - The complete semantic source-to-sink review, live-host headers/CSP, live authorization and adversarial manual review remain release gates.
 
-
 ## Phase 11 Batch 2 — payment and bulk result states
 
 The payment entry flow no longer builds its local/offline confirmation or server-save confirmation through HTML strings. Explicit DOM construction preserves the polite status panel, heading, explanatory message, conditional independent-approval notice, voucher number/vendor/amount summaries, Print actions and New entry action. The existing ambiguous-save recovery still finds the local panel's heading and message and can update them after the same-ID retry.
