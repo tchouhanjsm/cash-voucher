@@ -1,6 +1,8 @@
 import { $, $$ } from '../core/dom.js';
 import { normalizeVoucherCollection, S, can } from '../core/state.js';
 import { fail, toast } from '../core/ui.js';
+
+const NAV_ICON_NAMES = new Set(['home', 'plus', 'book', 'chart', 'wallet', 'upload', 'store', 'users', 'settings', 'receipt', 'user']);
 import { ls } from '../core/storage.js';
 import { scalarText } from '../core/utils.js';
 import { createShell } from './shell.js';
@@ -8,17 +10,17 @@ import { createShell } from './shell.js';
 export function createNavigation({ api, getAuth, getPayments, renderers }) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
   const NAV = [
-    ['dash', '📊', 'Dashboard', () => can('viewAll') || can('viewOwn')],
-    ['new', '➕', 'New Entry', () => can('create')],
-    ['reg', '📒', 'Register', () => can('viewAll') || can('viewOwn')],
-    ['reports', '📈', 'Reports', () => can('reports')],
-    ['cashClose', '💵', 'Cash Close', () => can('cashClose')],
-    ['bulk', '📥', 'Bulk Upload', () => can('bulk')],
-    ['vend', '🏪', 'Vendors', () => can('vendors')],
-    ['users', '👥', 'Users', () => can('users')],
-    ['set', '⚙️', 'Settings', () => can('settings')],
-    ['audit', '🧾', 'Audit log', () => can('audit')],
-    ['acct', '👤', 'Account', () => true],
+    ['dash', 'home', 'Dashboard', () => can('viewAll') || can('viewOwn')],
+    ['new', 'plus', 'New Entry', () => can('create')],
+    ['reg', 'book', 'Register', () => can('viewAll') || can('viewOwn')],
+    ['reports', 'chart', 'Reports', () => can('reports')],
+    ['cashClose', 'wallet', 'Cash Close', () => can('cashClose')],
+    ['bulk', 'upload', 'Bulk Upload', () => can('bulk')],
+    ['vend', 'store', 'Vendors', () => can('vendors')],
+    ['users', 'users', 'Users', () => can('users')],
+    ['set', 'settings', 'Settings', () => can('settings')],
+    ['audit', 'receipt', 'Audit log', () => can('audit')],
+    ['acct', 'user', 'Account', () => true],
   ];
 
   const NAV_GROUPS = {
@@ -192,7 +194,14 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     const iconElement = document.createElement('span');
     iconElement.className = 'ic';
     iconElement.setAttribute('aria-hidden', 'true');
-    iconElement.textContent = icon;
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('class', 'i');
+    svg.setAttribute('focusable', 'false');
+    const iconName = NAV_ICON_NAMES.has(icon) ? icon : 'user';
+    const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
+    use.setAttribute('href', `#i-${iconName}`);
+    svg.appendChild(use);
+    iconElement.appendChild(svg);
 
     const labelElement = document.createElement('span');
     labelElement.textContent = label;
