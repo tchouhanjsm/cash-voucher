@@ -184,20 +184,6 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   return form;
 }
 
-const PAGE_SECTIONS = {
-  Dashboard: 'Work',
-  'My Dashboard': 'Work',
-  'Payment Register': 'Work',
-  'Recorded Movement Report': 'Money',
-  'Daily Cash Close': 'Money',
-  'Bulk Upload': 'Manage',
-  Vendors: 'Manage',
-  Users: 'Manage',
-  Settings: 'Manage',
-  'Audit log': 'Manage',
-  'My profile': 'Account',
-};
-
 const ICON_NAMES = new Set([
   'home', 'plus', 'book', 'chart', 'wallet', 'upload', 'store', 'users',
   'settings', 'receipt', 'user', 'alert', 'check', 'clock', 'cloud-off',
