@@ -55,7 +55,6 @@ The bulk-import completion panel now uses DOM construction. It preserves importe
 
 The merged-main baseline is 25 sites; this candidate has 22 across eight modules. The two JSON baselines are updated only for these three reviewed assignments. The remaining sites still require contextual review; counts and fingerprints are not XSS certification.
 
-
 ## Phase 11 Batch 3 — access-denied pages and Register totals
 
 The Reports and Daily Cash Close permission-denied states now use a shared `pageNotice()` helper that creates the heading, action container, panel and paragraph via DOM APIs. The helper assigns title/message with `textContent`; the Reports card and Cash Close muted `role=status` message are preserved. Browser E2E directly exercises these otherwise defense-in-depth renderer branches and sends hostile SVG/image strings through the helper to verify inert output.
