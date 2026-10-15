@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `797cb6b08187c6cb77dfb7b198c7dd5840e67c29` (PR #145 merge; Phase 11 Batches 1–3 integrated)  
+Last verified main baseline: `f2afdb08bece0a7f529a64a84164685269805641` (PR #146 merge; Phase 11 Batches 1–4 integrated, one browser regression under follow-up)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current review branch: `phase-11/batch-4-account-outbox-dom-2026-10-15`
+Current review branch: `phase-11/batch-4-pin-submit-regression-2026-10-15`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -21,7 +21,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 11 Batch 1 — PR #143 merged at `db3c2cfd08ddbd1a80d37bdc67557b719446caaf`. It replaces the Users view's two fixed loading/error `innerHTML` templates with DOM construction and `textContent`; Browser E2E injects hostile API error text and verifies inert rendering plus retry recovery. The merged-main sink count is 25 across eight modules. PR #143's CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `d3bc6b5381d9dbd98ebddfedce81e32a5c49abca`.
 - Phase 11 Batch 2 — PR #144 merged at `8bd1f423700a5a392d0f672bd287e88603755d82`. It replaces the local/offline and server payment-save confirmation templates and bulk-import completion template with DOM APIs; hostile server-returned number/vendor markup stays inert and confirmation/retry actions are preserved. Merged inventory: 22 sites across eight modules. CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `e7f199a5d109f49034f349aab0dc63d040b32a1f`.
 - Phase 11 Batch 3 — PR #145 merged at `797cb6b08187c6cb77dfb7b198c7dd5840e67c29`. It retires the Reports/Cash Close permission-denied templates and Register totals/status template. CI/quality, Browser E2E (356 checks) and Full Flight Test (281 backend checks plus 356 browser checks) passed on exact tested head `b044edf5e36f41cc327ef57a89f0665c40acf79e`.
-- Phase 11 Batch 4 — current branch `phase-11/batch-4-account-outbox-dom-2026-10-15` / PR #146 replaces My Account profile/PIN and offline outbox banner/review templates with DOM APIs; adversarial tests cover hostile profile/property strings and locally tampered queue payee values. Candidate inventory: 17 sites across eight modules. Exact-head CI, Browser E2E and Full Flight Test required before merge.
+- Phase 11 Batch 4 — PR #146 merged at `f2afdb08bece0a7f529a64a84164685269805641`, replacing My Account profile/PIN and offline outbox banner/review templates with DOM APIs; hostile profile/property strings and locally tampered queue payee values are covered. Inventory: 17 assignments across eight modules. CI passed, but Browser E2E and Full Flight Test on exact tested PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` each had one failed assertion concerning the Change PIN submit control.
+- Phase 11 Batch 4 follow-up — current branch `phase-11/batch-4-pin-submit-regression-2026-10-15` / PR #147 explicitly sets the Change PIN button to `type="submit"`. It changes no sink count, API, financial logic or data. Exact-head CI, Browser E2E and Full Flight Test must all pass before closing the regression.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
