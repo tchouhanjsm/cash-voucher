@@ -3,6 +3,7 @@
 One line per item: date | priority | area | outcome / finding | evidence / dependency.
 
 2026-10-15 | P1 | UI branch integration + dashboard trust | Integrate UI refresh on current main, replace broad all-clear claim, constrain icon/action inputs and retest service-worker/CSP/offline behavior | Phase 10; PR #140 used a feature base and has no recorded GitHub checks
+2026-10-15 | P1 | UI branch integration + dashboard trust | Integrate UI refresh on current main, replace broad all-clear claim, constrain icon/action inputs and retest service-worker/CSP/offline behavior | Phase 10; PR #140 used a feature base and has no recorded GitHub checks
 2026-10-15 | P0 | Operational release proof | Verify Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup and isolated restore only with owner authorization | docs/RELEASE-READINESS.md; not verified
 2026-10-15 | P1 | Contextual rendering security | Review remaining 27 active HTML sinks by output context; replace reusable/text-only HTML construction where behavior is preserved and risk materially decreases | docs/ACTIVE-DOM-SINK-INVENTORY.md, docs/SECURITY-RENDERING-AUDIT.md
 2026-10-15 | P1 | Physical-device quality | Test PWA install/update/offline recovery, zoom, focus, keyboard and screen readers on representative devices | docs/UI-UX-REVIEW.md; owner-operated devices
