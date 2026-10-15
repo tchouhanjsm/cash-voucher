@@ -1,24 +1,24 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `8bd1f423700a5a392d0f672bd287e88603755d82` (main after PR #144; active source baseline 22 assignments).  
-**Phase 11 Batch 3 candidate count:** 19 assignments across eight frontend modules after retiring two access-denied page templates and the Register totals/status template. CI is the executable gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `797cb6b08187c6cb77dfb7b198c7dd5840e67c29` (main after PR #145; active source baseline 19 assignments).  
+**Phase 11 Batch 4 candidate count:** 17 assignments across eight frontend modules after retiring the My Account page template and offline outbox banner template. CI is the executable gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
 
-Merged main after PR #144 has 22 `innerHTML =` assignment sites across eight JavaScript modules. The Phase 11 Batch 3 candidate removes the Reports and Daily Cash Close access-denied page assignments and the Register totals/status assignment, leaving 19 active sites. Each future change requires review of data flow and a focused hostile-data regression before count/fingerprint baselines are updated.
+Merged main after PR #145 has 19 `innerHTML =` assignment sites across eight JavaScript modules. The Phase 11 Batch 4 candidate removes the My Account profile/PIN page assignment and offline outbox banner/review-list assignment, leaving 17 active sites. Each future change requires review of data flow and a focused hostile-data regression before count/fingerprint baselines are updated.
 
 **Current module counts:**
 
-- features/administration.js — 5 sites: vendor, user list, settings, audit and account views; two fixed Users loading/error states now use DOM APIs.
+- features/administration.js — 4 sites on this candidate: vendor, user list, settings and audit views; Users status states and My Account now use DOM APIs.
 - features/bulk.js — 2 sites on this candidate: initial shell and interactive preview; import-completion status now uses DOM APIs.
 - features/cash-close.js — 4 sites on this candidate: close shell, closed report, preview and print; access-denied and loading/error states use DOM APIs.
 - features/dashboard.js — 1 site: dashboard shell and financial summaries.
-- features/payments.js — 3 sites on this candidate: payment form, row template and outbox banner; offline and online save confirmations now use DOM APIs.
+- features/payments.js — 2 sites on this candidate: payment form and row template; save confirmations and the outbox banner use DOM APIs.
 - features/register.js — 2 sites on this candidate: register shell and rows; totals, pagination and empty/status states use DOM APIs.
 - features/reports.js — 1 site on this candidate: authorized report shell and report rows/results; the access-denied state uses DOM APIs.
 - features/printing.js — 1 site: printable voucher.
-- Total — 19 assignment sites across eight modules on the Phase 11 Batch 3 candidate, down from 22 on merged main after PR #144 and 33 before PR #135.
+- Total — 17 assignment sites across eight modules on the Phase 11 Batch 4 candidate, down from 19 on merged main after PR #145 and 33 before PR #135.
 
 The machine-readable expected counts live in `scripts/dom-sink-baseline.json`. The ordered per-assignment source fingerprints live in `scripts/dom-sink-source-baseline.json`; both baselines were updated independently in PR #135. `npm run check:dom-sinks` fails when a new sink is added, a reviewed sink disappears/changes count, a new module introduces an HTML sink, or one of the disallowed dynamic DOM APIs is used. A deliberate change requires review of its full interpolation/data flow, a focused adversarial test, and a reviewed baseline update.
 
@@ -61,4 +61,12 @@ The Reports and Daily Cash Close permission-denied states now use a shared `page
 
 The Register totals/status region now uses DOM construction instead of one HTML string. It preserves Paid, Received, Net, voucher count, received-total color, approval-exception message, invalid-amount message, malformed-record/field notices and the alert shown for unavailable data or invalid ranges. Existing browser cases assert the range alert, status notices, inert output and disabled CSV export.
 
-Merged main after PR #144 has 22 sites; this candidate has 19 across eight modules. Only the three reviewed assignment fingerprints and counts are removed from the machine-readable baselines. This is not XSS certification or production-operation evidence.
+Merged main after PR #145 has 19 sites; this candidate has 17 across eight modules. Only the two reviewed assignment fingerprints and counts are removed from the machine-readable baselines. This is not XSS certification or production-operation evidence.
+
+## Phase 11 Batch 4 — My Account and offline queue status
+
+My Account no longer assembles account identity, property label, profile actions and Change PIN form with an HTML template. The renderer scalar-normalizes profile values and writes all identity text through `textContent`; existing `#pf`, `#po`, `#pn`, install/sign-out action keys and delegated submit semantics remain.
+
+The outbox banner and queued/rejected entry details now use DOM nodes. Queue messages, pending/rejected vendor/amount/date/failure values and overflow notices are text, while Retry, Export, Import, Sign in to sync, Export & remove and Clear my queued entries retain their `data-act` keys. E2E tampering of locally stored payee text must remain inert in both the banner and expanded review list.
+
+Merged main after PR #145 has 19 sites; this candidate has 17 across eight modules. This does not prove every remaining template safe or the local queue durable; account-bound offline recovery still requires real-device testing.

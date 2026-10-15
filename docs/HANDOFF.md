@@ -2,19 +2,19 @@
 
 Updated: 15 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `8bd1f423700a5a392d0f672bd287e88603755d82` (PR #144 merge commit)  
+Last verified main SHA: `797cb6b08187c6cb77dfb7b198c7dd5840e67c29` (PR #145 merge commit)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current working branch: `phase-11/batch-3-access-totals-sinks-2026-10-15`  
-Current open PR: #145 — [Phase 11 Batch 3: replace access-denied and Register totals HTML sinks](https://github.com/tchouhanjsm/cash-voucher/pull/145)
+Current working branch: `phase-11/batch-4-account-outbox-dom-2026-10-15`  
+Current open PR: #146 — [Phase 11 Batch 4: retire Account and offline outbox HTML sinks](https://github.com/tchouhanjsm/cash-voucher/pull/146)
 
 ## Verified repository state
 
-- Live `main` resolves to `8bd1f423700a5a392d0f672bd287e88603755d82`, PR #144's merge commit.
-- PR #143 is closed and merged: [PR #143](https://github.com/tchouhanjsm/cash-voucher/pull/143). It retired the Users loading/error templates and reduced the merged-main inventory to 25 assignments.
-- PR #144 is closed and merged: [PR #144](https://github.com/tchouhanjsm/cash-voucher/pull/144). It retired two payment-save confirmation assignments and the bulk-import completion assignment, bringing merged main to 22 assignments across eight frontend modules. Its tested head was `e7f199a5d109f49034f349aab0dc63d040b32a1f`; CI/quality, Browser E2E (353 checks) and Full Flight Test (281 backend checks and 353 browser checks) passed on that same head.
-- Phase 11 Batch 3 / PR #145 replaces the Reports access-denied page, Daily Cash Close access-denied page and Register totals/status summary with DOM construction; the candidate inventory is 19 assignments across eight modules.
-- Browser E2E tests the shared page-notice helper with hostile title/message markup, exercises both denied states via the active modules, and verifies Register totals/status behavior. Exact-current-head CI, Browser E2E and Full Flight Test are required before merge.
-- Mock-backed source tests do not prove live Apps Script deployment identity/version, Sheet binding, real permissions, scheduled backup/isolated restore, physical-device behavior, accessibility conformance or production readiness.
+- Live `main` resolves to `797cb6b08187c6cb77dfb7b198c7dd5840e67c29`, PR #145's merge commit.
+- PR #143 retired two Users loading/error assignments. PR #144 retired two payment-save confirmation assignments plus bulk-import completion. PR #145 retired Reports/Cash Close denied-page templates and Register totals/status. Merged main now has 19 `innerHTML =` assignments across eight active frontend modules.
+- PR #145's tested head was `b044edf5e36f41cc327ef57a89f0665c40acf79e`; CI/quality, Browser E2E (356 checks) and Full Flight Test (281 backend checks plus 356 browser checks) passed on that exact head. This does not establish live Apps Script deployment.
+- Phase 11 Batch 4 / PR #146 replaces the My Account profile/PIN page and offline outbox banner/review lists with DOM construction. It preserves account fields, PIN form IDs/validation, sign-out/install actions, offline queue warnings, queued/rejected entry details and delegated queue controls. Candidate inventory: 17 assignments across eight modules.
+- Browser E2E checks hostile profile/property text and a tampered IndexedDB vendor in both the offline status banner and queued-entry details. CI, Browser E2E and Full Flight Test must pass on one exact candidate head before merge.
+- Source tests do not prove live Apps Script deployment identity/version, Sheet binding, real permissions, scheduled backup/isolated restore, physical-device behavior, accessibility conformance, quotas or production readiness.
 
 ## Phase 10 — UI refresh integration and dashboard trust states
 
@@ -47,17 +47,27 @@ Current open PR: #145 — [Phase 11 Batch 3: replace access-denied and Register 
 
 ## Phase 11 — contextual rendering-security review and sink retirement
 
-**Batch 1 — merged in PR #143:** the Users view's fixed loading/error templates were replaced with DOM construction and `textContent`. Hostile API error markup remains inert, and the existing refresh/retry flow is preserved. Merged main has 25 active assignment sites across eight modules.
+**Batch 1 — merged in PR #143:** replace Users loading/error status templates with DOM APIs; hostile API error text stays inert and retry recovers. Inventory: 27 → 25 assignments.
 
-**Batch 2 — merged in PR #144:** the local/offline payment-save confirmation, server-save confirmation and bulk-import completion template were replaced with DOM construction. Hostile server-returned voucher number/vendor strings remain inert, and the ambiguous-save recovery, approval notice, print actions, import status and follow-up controls are preserved. Merged main has 22 active assignments across eight modules. CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `e7f199a5d109f49034f349aab0dc63d040b32a1f`.
+**Batch 2 — merged in PR #144:** replace offline/server payment-save confirmations and bulk-import completion with DOM APIs; preserve ambiguous-save recovery, approval notice, print actions and import controls. Inventory: 25 → 22 assignments.
 
-**Batch 3 — current candidate (PR #145):** three access/status surfaces are replaced using DOM APIs:
+**Batch 3 — merged in PR #145:** replace Reports/Cash Close access-denied templates and Register totals/status rendering; preserve alert/status semantics and totals displays. Inventory: 22 → 19 assignments.
 
-- Shared `pageNotice()` builds page headings and messages with `textContent`; hostile title/message strings are covered by Browser E2E.
-- Reports' denied state retains its heading, card wrapper and fixed message.
-- Daily Cash Close's denied state retains its heading, muted message and `role=status`.
-- Register totals are assembled from text, amount and status nodes; Paid/Received/Net wording, received amount color, voucher count, approval/invalid/malformed-data notices, alert/status roles and CSV-disabled behavior are preserved.
-- Browser E2E exercises both denied renderer branches and extends Register totals diagnostics/invalid-range checks.
-- Candidate inventory falls from 22 to 19 assignments across eight modules; only the three reviewed assignments are removed from the count/fingerprint baselines.
+**Batch 4 — current candidate (PR #146):**
 
-**Acceptance boundary:** frontend rendering, focused Browser E2E and documentation only. No financial formulas, approval/permission policy, backend contracts, schema, historical data or dependencies change. No `clasp push`, Apps Script deployment, migration, production-data mutation, merge or release is included. This is incremental source-level risk reduction, not XSS certification.
+- My Account profile/property display, sign-out/install actions and Change PIN form are built with DOM APIs and `textContent`; profile fields are scalar-normalized.
+- Offline outbox banner, queued/rejected-entry details, status messages and Retry/Export/Import/Sign-in/Discard controls are built with DOM nodes; local IndexedDB fields use text nodes rather than HTML parsing.
+- Browser E2E injects hostile profile/property strings and tampers with a stored queue payee value, checking inert rendering and preserved controls.
+- Inventory: 19 → 17 assignments across eight modules. Only two reviewed assignments are removed from count/fingerprint baselines.
+
+**Acceptance boundary:** frontend rendering and focused Browser E2E only. Queue ownership, status transitions, API calls, authorization, financial formulas, backend contracts, schema and stored records do not change. No `clasp push`, deployment, production-data mutation, merge or release is included. This is incremental risk reduction, not XSS certification.
+
+## Next phases — grouped outcome plan
+
+**Phase 12 — Cross-workflow integrity and recovery:** complete role/action/state coverage across entry, ambiguous save, retry/idempotency, offline queue, approval, reporting, cash close and audit. Add regressions for uncovered transitions; preserve approved financial invariants.
+
+**Phase 13 — Operational release proof:** obtain owner-signable evidence for Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup, isolated restore and voucher/receipt reconciliation. These require owner authorization and real access; mock CI cannot satisfy them.
+
+**Phase 14 — Whole-product UX completion:** group cross-screen responsive, keyboard/focus/zoom, accessibility and role-task findings into one outcome-based remediation batch; document remaining device/assistive-technology checks.
+
+**Phase 15 — Evidence-led performance and repository hygiene:** establish repeatable seeded performance measurements before optimization, reconcile canonical status claims and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.

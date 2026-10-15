@@ -9,17 +9,7 @@ import {
   vno,
 } from '../core/state.js';
 import { busy, fail, head, toast } from '../core/ui.js';
-import {
-  addDays,
-  compress,
-  dmy,
-  esc,
-  money,
-  parseAmt,
-  scalarText,
-  today,
-  uid,
-} from '../core/utils.js';
+import { addDays, compress, dmy, money, parseAmt, scalarText, today, uid } from '../core/utils.js';
 import { validateRecoveryRecords } from '../core/recovery-validation.js';
 
 export function createPayments({ api, refresh }) {
@@ -668,49 +658,66 @@ export function createPayments({ api, refresh }) {
           : typeof value === 'number' && Number.isFinite(value)
             ? String(value)
             : fallback;
-      const failedDetails = failed
-        .slice(0, 5)
-        .map((record) => {
-          const entry =
-            record.entry && typeof record.entry === 'object' && !Array.isArray(record.entry)
-              ? record.entry
-              : {};
-          const kind =
-            entry.type === 'RECEIPT'
-              ? 'Cash receipt: '
-              : entry.type === 'PAYMENT'
-                ? 'Payment: '
-                : 'Entry: ';
-          const clientId = typeof record.clientId === 'string' ? record.clientId : '';
-          const removeAction = clientId
-            ? ' <button class="btn sm danger" data-act="discard-failed" data-id="' +
-              esc(clientId) +
-              '">Export &amp; remove</button>'
-            : '';
+      const makeButton = (label, action, className = 'btn sm', id = '') => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = className;
+        button.dataset.act = action;
+        if (id) button.dataset.id = id;
+        button.textContent = label;
+        return button;
+      };
+      const makeDetails = (className, label, description, entries, appendEntry, overflow) => {
+        if (!entries.length) return null;
+        const details = document.createElement('details');
+        details.className = className;
+        const summary = document.createElement('summary');
+        summary.textContent = label;
+        const help = document.createElement('p');
+        help.className = 'muted';
+        help.textContent = description;
+        const list = document.createElement('ul');
+        entries.forEach((entry) => list.appendChild(appendEntry(entry)));
+        if (overflow) {
+          const item = document.createElement('li');
+          item.textContent = overflow;
+          list.appendChild(item);
+        }
+        details.append(summary, help, list);
+        return details;
+      };
 
-          return (
-            '<li><b>' +
-            esc(kind + displayScalar(entry.vendor, 'Unnamed entry')) +
-            '</b> — ₹' +
-            esc(displayScalar(entry.amount, 'unknown')) +
-            ': ' +
-            esc(displayScalar(record.failure, 'Rejected by server')) +
-            removeAction +
-            '</li>'
-          );
-        })
-        .join('');
-      const failedReview = failedDetails
-        ? '<details class="outbox-failures"><summary>Review rejected entries</summary><p class="muted">Export a recovery copy before removing an entry. Removed entries are no longer stored on this device.</p><ul>' +
-          failedDetails +
-          (failed.length > 5
-            ? '<li>+' + (failed.length - 5) + ' more; export the queue for full details.</li>'
-            : '') +
-          '</ul></details>'
-        : '';
-      const pendingDetails = pending
-        .slice(0, 5)
-        .map((record) => {
+      if (unbound.length) {
+        messages.push(
+          '⚠️ ' +
+            unbound.length +
+            ' older queued entr' +
+            (unbound.length === 1 ? 'y' : 'ies') +
+            ' need account confirmation before upload',
+        );
+      }
+      if (S.offlineMode) {
+        messages.unshift(
+          'Offline workspace — server vouchers are unavailable. New entries stay on this device until you sign in online.',
+        );
+      }
+      if (errMsg) messages.push(errMsg);
+
+      b.className =
+        'banner' + (S.offlineMode || errMsg || failed.length || unbound.length ? ' err' : '');
+      const messageNode = document.createElement('span');
+      messages.forEach((message, index) => {
+        if (index) messageNode.appendChild(document.createElement('br'));
+        messageNode.appendChild(document.createTextNode(message));
+      });
+      b.replaceChildren(messageNode);
+
+      const pendingReview = makeDetails(
+        'outbox-pending',
+        'Review queued entries',
+        'These entries are stored on this device and are not confirmed on the server yet. Do not re-enter them just because they have not uploaded.',
+        pending.slice(0, 5),
+        (record) => {
           const entry =
             record.entry && typeof record.entry === 'object' && !Array.isArray(record.entry)
               ? record.entry
@@ -741,66 +748,65 @@ export function createPayments({ api, refresh }) {
                   (receiptCount > 99 ? '+' : '') +
                   ' receipt images'
                 : '';
-
-          return (
-            '<li><b>' +
-            esc(kind + ': ' + vendor) +
-            '</b> — ' +
-            esc(amount) +
-            ' · ' +
-            esc(date) +
-            ' · ' +
-            status +
-            esc(receiptLabel) +
-            '</li>'
+          const item = document.createElement('li');
+          const title = document.createElement('b');
+          title.textContent = kind + ': ' + vendor;
+          item.append(
+            title,
+            document.createTextNode(' — ' + amount + ' · ' + date + ' · ' + status + receiptLabel),
           );
-        })
-        .join('');
-      const pendingReview = pendingDetails
-        ? '<details class="outbox-pending"><summary>Review queued entries</summary><p class="muted">These entries are stored on this device and are not confirmed on the server yet. Do not re-enter them just because they have not uploaded.</p><ul>' +
-          pendingDetails +
-          (pending.length > 5
-            ? '<li>+' +
-              (pending.length - 5) +
-              ' more; export the queue to inspect all queued entries.</li>'
-            : '') +
-          '</ul></details>'
-        : '';
-      if (unbound.length) {
-        messages.push(
-          '⚠️ ' +
-            unbound.length +
-            ' older queued entr' +
-            (unbound.length === 1 ? 'y' : 'ies') +
-            ' need account confirmation before upload',
-        );
-      }
-      if (S.offlineMode) {
-        messages.unshift(
-          'Offline workspace — server vouchers are unavailable. New entries stay on this device until you sign in online.',
-        );
-      }
-      if (errMsg) messages.push(errMsg);
+          return item;
+        },
+        pending.length > 5
+          ? '+' + (pending.length - 5) + ' more; export the queue to inspect all queued entries.'
+          : '',
+      );
 
-      b.className =
-        'banner' + (S.offlineMode || errMsg || failed.length || unbound.length ? ' err' : '');
-      b.innerHTML =
-        '<span>' +
-        messages.map((message) => esc(message)).join('<br>') +
-        '</span>' +
-        pendingReview +
-        failedReview +
-        (pending.length && S.token
-          ? '<button class="btn sm" data-act="flush">Retry now</button>'
-          : '') +
-        (visible.length ? '<button class="btn sm" data-act="export-pending">Export</button>' : '') +
-        '<button class="btn sm" data-act="import-pending">Import</button>' +
-        (S.offlineMode && !S.token
-          ? '<button class="btn sm" data-act="reconnect-signin">Sign in to sync</button>'
-          : '') +
-        (owned.length
-          ? '<button class="btn sm danger" data-act="discard">Clear my queued entries</button>'
-          : '');
+      const failedReview = makeDetails(
+        'outbox-failures',
+        'Review rejected entries',
+        'Export a recovery copy before removing an entry. Removed entries are no longer stored on this device.',
+        failed.slice(0, 5),
+        (record) => {
+          const entry =
+            record.entry && typeof record.entry === 'object' && !Array.isArray(record.entry)
+              ? record.entry
+              : {};
+          const kind =
+            entry.type === 'RECEIPT'
+              ? 'Cash receipt: '
+              : entry.type === 'PAYMENT'
+                ? 'Payment: '
+                : 'Entry: ';
+          const clientId = typeof record.clientId === 'string' ? record.clientId : '';
+          const amount = displayScalar(entry.amount, 'unknown');
+          const failure = displayScalar(record.failure, 'Rejected by server');
+          const item = document.createElement('li');
+          const title = document.createElement('b');
+          title.textContent = kind + displayScalar(entry.vendor, 'Unnamed entry');
+          item.append(title, document.createTextNode(' — ₹' + amount + ': ' + failure));
+          if (clientId) {
+            item.append(
+              document.createTextNode(' '),
+              makeButton('Export & remove', 'discard-failed', 'btn sm danger', clientId),
+            );
+          }
+          return item;
+        },
+        failed.length > 5
+          ? '+' + (failed.length - 5) + ' more; export the queue for full details.'
+          : '',
+      );
+
+      if (pendingReview) b.appendChild(pendingReview);
+      if (failedReview) b.appendChild(failedReview);
+      if (pending.length && S.token) b.appendChild(makeButton('Retry now', 'flush'));
+      if (visible.length) b.appendChild(makeButton('Export', 'export-pending'));
+      b.appendChild(makeButton('Import', 'import-pending'));
+      if (S.offlineMode && !S.token)
+        b.appendChild(makeButton('Sign in to sync', 'reconnect-signin'));
+      if (owned.length)
+        b.appendChild(makeButton('Clear my queued entries', 'discard', 'btn sm danger'));
     } catch (error) {
       b.className = 'banner err';
       const message =

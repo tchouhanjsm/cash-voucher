@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `8bd1f423700a5a392d0f672bd287e88603755d82` (PR #144 merge; Phase 11 Batches 1–2 integrated)  
+Last verified main baseline: `797cb6b08187c6cb77dfb7b198c7dd5840e67c29` (PR #145 merge; Phase 11 Batches 1–3 integrated)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current review branch: `phase-11/batch-3-access-totals-sinks-2026-10-15`
+Current review branch: `phase-11/batch-4-account-outbox-dom-2026-10-15`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -20,7 +20,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 10 — PR #141 merged at `42ff7708535d04c15510caf90c5f93738109669e`; tested head `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`. CI, Browser E2E (353 checks) and Full Flight Test passed on that exact head; PR #141 reports post-merge main CI passed. Phase 10 updates the inline SVG icon sprite, allowlisted icons/actions, Dashboard attention states, page headings and shell cache `cv2-v16`. Dashboard statement fingerprint is `2977910e`; expected inventory remains 27 assignments in eight modules. These controls are not XSS certification.
 - Phase 11 Batch 1 — PR #143 merged at `db3c2cfd08ddbd1a80d37bdc67557b719446caaf`. It replaces the Users view's two fixed loading/error `innerHTML` templates with DOM construction and `textContent`; Browser E2E injects hostile API error text and verifies inert rendering plus retry recovery. The merged-main sink count is 25 across eight modules. PR #143's CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `d3bc6b5381d9dbd98ebddfedce81e32a5c49abca`.
 - Phase 11 Batch 2 — PR #144 merged at `8bd1f423700a5a392d0f672bd287e88603755d82`. It replaces the local/offline and server payment-save confirmation templates and bulk-import completion template with DOM APIs; hostile server-returned number/vendor markup stays inert and confirmation/retry actions are preserved. Merged inventory: 22 sites across eight modules. CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `e7f199a5d109f49034f349aab0dc63d040b32a1f`.
-- Phase 11 Batch 3 — current branch `phase-11/batch-3-access-totals-sinks-2026-10-15` / PR #145 retires the Reports and Cash Close permission-denied templates and the Register totals/status template. Browser E2E covers the shared DOM helper with hostile markup, both denied states and Register alert/status behavior. Candidate inventory: 19 sites across eight modules. CI, Browser E2E and Full Flight Test must pass on one exact head before owner review/merge.
+- Phase 11 Batch 3 — PR #145 merged at `797cb6b08187c6cb77dfb7b198c7dd5840e67c29`. It retires the Reports/Cash Close permission-denied templates and Register totals/status template. CI/quality, Browser E2E (356 checks) and Full Flight Test (281 backend checks plus 356 browser checks) passed on exact tested head `b044edf5e36f41cc327ef57a89f0665c40acf79e`.
+- Phase 11 Batch 4 — current branch `phase-11/batch-4-account-outbox-dom-2026-10-15` / PR #146 replaces My Account profile/PIN and offline outbox banner/review templates with DOM APIs; adversarial tests cover hostile profile/property strings and locally tampered queue payee values. Candidate inventory: 17 sites across eight modules. Exact-head CI, Browser E2E and Full Flight Test required before merge.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -35,14 +36,11 @@ These checks catch drift and validate tested paths. They do not claim that every
 
 ## Priority after Phase 10
 
-1. **Phase 11 — contextual rendering-security review and sink retirement:** Batch 3 targets two denied-state templates and one financial totals/status template. After it passes, continue contextual review of the remaining 19 active assignment sites by provenance, output context, escaping/validation and test coverage.
-2. Extend adversarial coverage only where the contextual review finds an untested boundary; retain stable regression coverage and update source fingerprints only after human review.
-3. Keep Phase 10 UI/CSP/offline shell assertions and the exact tested Phase 10 baseline as regression gates.
-4. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
-5. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.
-6. Run physical-device offline/install/update/recovery and manual keyboard, focus, zoom and screen-reader accessibility review.
-7. Measure real Sheet access latency, quotas, contention and concurrent numbering in an owner-approved environment.
-8. Review the clasp → micromatch → braces advisory by its 9 November 2026 due date.
+1. **Phase 11 — contextual rendering-security review and sink retirement:** complete Batch 4, then continue context-by-context review of the remaining 17 active HTML assignments. Sink counts and fingerprints are drift controls, not XSS certification.
+2. **Phase 12 — cross-workflow integrity and recovery:** close gaps in role/action/state coverage across entry, ambiguous save, retries/idempotency, offline queue, approval, reporting, cash close and audit. Add regressions only for uncovered transitions; preserve the established financial invariants.
+3. **Phase 13 — operational release proof:** obtain owner-authorized evidence for Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup, isolated restore and voucher/receipt reconciliation. Mock CI cannot satisfy this phase.
+4. **Phase 14 — whole-product UX completion:** consolidate cross-screen responsive and role-task findings, keyboard/focus/zoom and accessibility/device results into a grouped remediation batch. Keep manual screen-reader and real-device evidence separate from automated tests.
+5. **Phase 15 — evidence-led performance and repository hygiene:** measure seeded workloads before optimization, reconcile canonical status documents and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
 
 ## Financial integrity invariants
 
