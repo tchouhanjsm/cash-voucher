@@ -24,7 +24,7 @@ Integrate PR #140's Tabler-inspired UI into current main without relying on the 
 - Icon names are constrained to app-authored values, and Dashboard route actions are restricted to the Register action. No external icon package/runtime request is added.
 - Preserve capability gates, offline and unavailable-data handling, financial calculations, CSP, focus/keyboard behavior and service-worker shell correctness.
 - Recalculate the Dashboard statement fingerprint only after reviewing its data flow; keep the independent sink-count/API and source-fingerprint gates.
-- PR #141's next tested candidate must pass CI, Browser E2E and Full Flight Test on the *same exact final head*. Earlier passes do not apply after any head change.
+- PR #141's next tested candidate must pass CI, Browser E2E and Full Flight Test on the _same exact final head_. Earlier passes do not apply after any head change.
 - No backend approval-policy change, schema migration, historical backfill, `clasp push`, deployment, production-data mutation or merge. The repository owner retains merge/release authority.
 
 ## Phase acceptance criteria

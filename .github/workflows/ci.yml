@@ -39,23 +39,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: Diagnose exact Prettier diff for blocked Phase 10 files
-        run: |
-          set -eu
-          diagnostic_dir="$(mktemp -d)"
-          cp docs/HANDOFF.md "$diagnostic_dir/HANDOFF.md"
-          cp index.html "$diagnostic_dir/index.html"
-          cp scripts/dom-sink-source-baseline.json "$diagnostic_dir/dom-sink-source-baseline.json"
-          restore_files() {
-            cp "$diagnostic_dir/HANDOFF.md" docs/HANDOFF.md
-            cp "$diagnostic_dir/index.html" index.html
-            cp "$diagnostic_dir/dom-sink-source-baseline.json" scripts/dom-sink-source-baseline.json
-            rm -rf "$diagnostic_dir"
-          }
-          trap restore_files EXIT
-          npx prettier --write docs/HANDOFF.md index.html scripts/dom-sink-source-baseline.json
-          git --no-pager diff --no-ext-diff -- docs/HANDOFF.md index.html scripts/dom-sink-source-baseline.json
-          
       - name: Run quality gate
         run: npm run check
 
