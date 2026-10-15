@@ -1,9 +1,9 @@
 # Product Gap Register and Roadmap
 
 Status date: 15 October 2026  
-Last verified main baseline: 0cf47fc8d77f5dd7429a62c57ab8ec77309873f3 (PR #134 merge)  
-Current phase: Phase 6 — reduce avoidable text-only HTML sinks (PR #135 open; not merged)  
-Current review branch: phase-6/remove-text-only-html-sinks-2026-10-15
+Last verified main baseline: 572b5d68fb6b6a572a08deab908c0b83d44aba62 (PR #135 merge)  
+Current phase: Phase 7 — accountant report rendering and CSV output contract (PR #136 open; not merged)  
+Current review branch: phase-7/report-rendering-output-contract-2026-10-15
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -17,7 +17,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 3 — audit append failure sets an owner-visible marker when Script Properties remains available. When both the audit append and marker store fail, only the available execution log may surface the gap; missing events are not reconstructed.
 - Phase 4 — PR #133 is merged at `a0add3de0bf79902f046e7811e888f2f1e735f9a`; its tested head passed CI, Browser E2E (342 checks) and Full Flight Test. It adds authenticated role/action and data-visibility tests, the 33-site HTML-sink inventory, and designated high-risk DOM API checks.
 - Phase 5 — PR #134 merged at `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3`. Its exact tested head `428db8af06d0eeaa9ddede9e3a8dc06d5c6f9280` passed CI, Browser E2E (342 checks) and Full Flight Test. It adds per-statement fingerprints for the 33 known sinks; fingerprints detect drift, not contextual safety.
-- Phase 6 — PR #135 proposes replacing five text-only/error/status `innerHTML` assignments with DOM nodes and `textContent`, plus a hostile API-error E2E regression. The proposed count is 28 assignment sites across the same nine frontend modules; do not call this merged or verified until its final-head workflows pass and it is merged.
+- Phase 6 — PR #135 merged at `572b5d68fb6b6a572a08deab908c0b83d44aba62`. Its exact tested head `c4d163bcc05b543a004dcd12a617319b27a98f32` passed CI (267 backend checks and 28 sink count/fingerprint matches), Browser E2E (343 checks, zero failures) and Full Flight Test. It replaces five text-only/status/error HTML insertions with DOM APIs and `textContent`, reducing the active sink inventory from 33 to 28 across nine modules.
+- Phase 7 — PR #136 proposes adversarial browser coverage of the accountant report renderer and CSV export. A valid-shaped response injects hostile HTML payloads and a formula-leading vendor value, asserts rendered content remains inert, verifies apostrophe neutralization in CSV, and checks recovery after the mock response is removed. Sink count remains 28; no confirmed renderer defect or financial logic change is claimed.
 - Operational readiness — live Apps Script deployment/identity, real role checks, scheduled backup and isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -30,14 +31,15 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 6
+## Priority after Phase 7
 
-1. Continue the manual, context-specific semantic source-to-sink review for the 28 remaining assignments; use focused tests and DOM APIs when they materially reduce risk. The fingerprint gate makes unreviewed changes visible but does not replace contextual review.
-2. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
-3. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.
-4. Run physical-device offline/install/update/recovery and manual keyboard, focus, zoom and screen-reader accessibility review.
-5. Measure real Sheet access latency, quotas, contention and concurrent numbering in an owner-approved environment.
-6. Review the clasp → micromatch → braces advisory by its 9 November 2026 due date.
+1. Continue the manual, context-specific semantic source-to-sink review for the 28 remaining assignments; use focused tests and DOM APIs when they materially reduce risk. Fingerprints make changes visible but do not replace review.
+2. Continue adversarial coverage across remaining independently rendered surfaces without repeating test cases already covered.
+3. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
+4. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.
+5. Run physical-device offline/install/update/recovery and manual keyboard, focus, zoom and screen-reader accessibility review.
+6. Measure real Sheet access latency, quotas, contention and concurrent numbering in an owner-approved environment.
+7. Review the clasp → micromatch → braces advisory by its 9 November 2026 due date.
 
 ## Financial integrity invariants
 
