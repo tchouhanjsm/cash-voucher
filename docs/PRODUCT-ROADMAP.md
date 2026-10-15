@@ -1,40 +1,50 @@
 # Product Gap Register and Roadmap
 
-**As of:** 14 October 2026  
-**Current verified main SHA:** `69f861f86d08a19da8fe1223b3bc6c4840478895` (PR #131 merge)
+**Status date:** 15 October 2026  
+**Last verified main baseline:** 69f861f86d08a19da8fe1223b3bc6c4840478895 (PR #131 merge)  
+**Active review:** [PR #132](https://github.com/tchouhanjsm/cash-voucher/pull/132)
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
-The repository is a single-property cash-voucher PWA. Prioritize integrity of money movement, operator recovery, and release proof before speculative features.
+This is a single-property cash-voucher PWA. Prioritize accurate money movement, operator recovery, audit traceability and release evidence before speculative features. Group code-addressable items into one cohesive PR; do not pretend code can complete owner-controlled production operations.
 
-### Current phase status
+## Phase status and consolidated batch
 
-- **Phase 1 — source-based audit:** `docs/PHASE-1-REPOSITORY-AUDIT.md` records the findings and backlog, but its baseline predates PRs #127–#130. Use findings, not old SHA/check metadata, as current truth.
-- **Phase 2 — normal-path cross-workflow integrity:** PR #128 merged. A mock-backed journey covers entry, independent approval, reporting, cash-close calculation/snapshot and linked audit events. Failure-path coverage remains incomplete.
-- **Phase 3 — audit-write observability:** PR #129 merged. The degraded status surfaces only if the audit append fails and the Script Properties marker succeeds. This is best-effort, not tamper-evident storage, event reconstruction or evidence of deployment.
-- **Phase 2B — current recovery-matrix closure batch:** PR #131 closed direct online lost/malformed-response recovery. The current batch adds deterministic tests for IndexedDB acknowledgement abort after server confirmation and SESSION expiry during sync, including same-ID recovery and exactly-one-voucher assertions. Completion depends on same-head CI, Browser E2E and Full Flight Test.
-- **Cross-phase work still open:** Phase 1 security/API authorization and seeded performance evidence; Phase 3 audit-marker persistence failure/reconciliation; live Apps Script authorization/deployment/backup-restore; physical-device PWA and manual accessibility review. These remain explicit gaps until evidence exists.
-- **Release gate — not verified:** live Apps Script identity/permissions, scheduled backup, isolated restore, physical-device recovery and manual accessibility review remain owner-authorized operational work.
+- **Phase 1 — source audit:** the original audit remains a findings register, not current-main metadata. PR #132 adds a limited current-tree/reachable-history credential-pattern scan, API route-registry guardrails and seeded mock workload baselines. Full DOM-sink and per-role authorization review remains open; mock timings are not Google Apps Script SLOs.
+- **Phase 2 — normal-path cross-workflow integrity:** PR #128 merged. The mock-backed journey covers high-value payment, independent approval, reporting, cash-close calculation/snapshot and audit attribution. Treat as automated source evidence, not a live finance-system sign-off.
+- **Phase 2B — recovery matrix:** PR #131 merged direct online save recovery for lost/malformed responses after server persistence. PR #132 covers acknowledgement-storage failure after a server-confirmed write and stale-session sync/reauthentication. The exact final PR head must pass CI, Browser E2E and Full Flight Test; no earlier SHA substitutes.
+- **Phase 3 — audit-write observability:** PR #129 merged the degraded-state marker when Script Properties writes work. PR #132 adds a failure-injection test for simultaneous audit-append and marker-store failure. That case remains a known monitoring gap: console diagnostics may be the only signal, the owner-facing marker may be absent, and missing events are not reconstructed.
+- **Operational readiness — not verified:** live Apps Script deployment/identity, live roles and Sheet/Drive permissions, scheduled backup and isolated restore, physical-device recovery and accessibility review require owner-controlled evidence.
 
-## Prioritized work packages
+## Active PR #132 — bundled outcomes
 
-1. Phase 2B recovery — direct online lost/malformed response, same-client-ID retry, queue acknowledgement failure, stale-session recovery and visible operator state.
-2. Operational release proof — owner-authorized deployment/role verification, scheduled backup and isolated restore.
-3. Grouped UX completion — review major flows on actual devices and bundle cross-screen improvements.
-4. Security/data integrity — complete the dynamic DOM sink and API authorization reviews; run a non-destructive secret-history scan.
-5. Evidence-led reliability/performance — seeded Sheet-size, bootstrap/report latency and concurrency baselines.
-6. Repository hygiene — reconcile current status claims without removing historical review notes; review dependency exceptions by their documented dates.
+1. Recover a queued transaction safely when local acknowledgment fails after server acceptance; retain client ID, explain the uncertainty and rely on idempotent retry.
+2. Handle a session error in background synchronization without converting pending work to permanent rejection or uploading under a different account.
+3. Assert API action registration, explicit write classification and unauthenticated fail-closed behavior.
+4. Add seeded bootstrap/report regression metrics at 100, 500 and 1,000 vouchers, validating counts/totals while treating elapsed times as diagnostic-only.
+5. Run current-tree and full reachable-history checks for selected high-confidence credential patterns without printing matched values.
+6. Bring the handoff, backlog, audit, roadmap and release wording forward to the current verified baseline.
 
-## Invariants and boundaries
+This does **not** complete the whole product roadmap. It closes source-addressable evidence gaps in one batch, while live deployment, restore, full security review and physical-device work remain release gates.
+
+## Priorities after this batch
+
+1. Owner-authorized operational verification: deployed script/version/identity, actual role gates, private data access, scheduled backup and isolated restore.
+2. Finish complete active frontend DOM-sink and backend action-by-role authorization reviews, including adversarial findings triage. The credential-pattern scan is not a substitute for a full secret-scanning product.
+3. Run real Sheets workload and concurrency benchmarks; decide production thresholds only from measurements.
+4. Witness PWA installation/update/offline recovery on representative devices and complete accessibility/manual task review.
+5. Reconcile audit gaps only through attributable, owner-approved investigation. Do not fabricate or reconstruct events without evidence.
+6. Review the @google/clasp → micromatch → braces exception by its due date and remove it when an upstream fix is verified.
+
+## Financial integrity invariants
 
 - New PAYMENT vouchers at or above INR 10,000 require independent owner/manager approval; no self-approval.
-- Material edits to amount, vendor/identity, date or CashImpact trigger reapproval under UAT-048. Category/notes corrections retain approval but require a reason and audit history.
-- Historical blank CashImpact/approval values are not silently backfilled; unresolved states cannot enter approved totals or pass final cash close.
-- Preserve immutable close snapshots, idempotent client IDs, account-bound offline queue entries, closed-period controls and audit attribution.
-- No deployment, migration, production-data change, history rewrite or merge without explicit authorization.
-- Passing CI is necessary, not sufficient, for production readiness.
+- Material edits to amount, vendor/identity, date or CashImpact re-trigger approval under UAT-048. Category/notes edits retain approval but require a correction reason and audit history.
+- Historical blank CashImpact/approval values are not silently backfilled. Unresolved values remain excluded from approved totals and block final cash close.
+- Preserve immutable close snapshots, client-ID idempotency, account-bound offline queue records, closed-period controls and audit attribution.
+- No production deployment, schema migration, history rewrite or merge without explicit owner authorization.
 
-The detailed historical review register follows. Its PR notes are retained as history, not a live status feed.
+The detailed historical review register follows. Its PR-by-PR notes are retained as history, not a live status feed.
 
 ## 1. Code-review findings reconciled against current v2
 
