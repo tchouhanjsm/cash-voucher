@@ -324,23 +324,13 @@ function updateVoucher_(user, req) {
   const dayRows = o.Type === 'PAYMENT' ? readAll_('Vouchers') : [];
   const priorDayPaise =
     o.Type === 'PAYMENT'
-      ? payeeDayPaymentPaise_(
-          dayRows,
-          o.VendorID,
-          o.Vendor,
-          isoDate_(o.Date),
-          o.VoucherID,
-        ) + Math.round(priorAmount * 100)
+      ? payeeDayPaymentPaise_(dayRows, o.VendorID, o.Vendor, isoDate_(o.Date), o.VoucherID) +
+        Math.round(priorAmount * 100)
       : 0;
   const nextDayPaise =
     o.Type === 'PAYMENT'
-      ? payeeDayPaymentPaise_(
-          dayRows,
-          nextVendorId,
-          nextVendor,
-          nextDate,
-          o.VoucherID,
-        ) + Math.round(nextAmount * 100)
+      ? payeeDayPaymentPaise_(dayRows, nextVendorId, nextVendor, nextDate, o.VoucherID) +
+        Math.round(nextAmount * 100)
       : 0;
   const nextNeedsApproval =
     o.Type === 'PAYMENT' &&
