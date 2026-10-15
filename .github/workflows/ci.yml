@@ -40,7 +40,9 @@ jobs:
         run: npm run audit:deps
 
       - name: Run quality gate
-        run: npm run check
+        run: |
+          npx prettier backend/50-vouchers.gs
+          npm run check
 
       - name: Validate PR handoff evidence
         if: github.event_name == 'pull_request'
