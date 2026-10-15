@@ -139,12 +139,6 @@ function create() {
           files[id] = b;
           return { getId: () => id };
         },
-        getFolders: () => ({
-          hasNext: () => false,
-          next: () => {
-            throw new Error('No mock Drive folders remain.');
-          },
-        }),
       }),
       getFileById: (id) => ({
         getBlob: () => ({

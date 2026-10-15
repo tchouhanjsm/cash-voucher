@@ -234,7 +234,11 @@ const permissionCases = [
 let actionRoleChecks = 0;
 for (const testCase of permissionCases) {
   for (const role of ['staff', 'manager', 'owner', 'accountant']) {
+    // Exercise the owner-only backup guard without relying on Drive iterator behavior in the mock.
+    const backupFolderId = g.props.BACKUP_FOLDER_ID;
+    if (testCase.action === 'backupIntegrityReport') g.props.BACKUP_FOLDER_ID = '';
     const result = call(testCase.action, users[role], testCase.payload);
+    if (testCase.action === 'backupIntegrityReport') g.props.BACKUP_FOLDER_ID = backupFolderId;
     const shouldBeAllowed = testCase.allowed.includes(role);
     if (shouldBeAllowed) {
       assertNotForbidden(
