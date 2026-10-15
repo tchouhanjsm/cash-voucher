@@ -3,18 +3,44 @@
 const { spawnSync } = require('node:child_process');
 
 const PATTERNS = [
-  { name: 'Google API key', source: '\\bAIza[0-9A-Za-z_-]{35}\\b', regex: /\\bAIza[0-9A-Za-z_-]{35}\\b/g },
-  { name: 'AWS access key ID', source: '\\b(AKIA|ASIA)[0-9A-Z]{16}\\b', regex: /\\b(?:AKIA|ASIA)[0-9A-Z]{16}\\b/g },
-  { name: 'GitHub access token', source: '\\bgh[pousr]_[A-Za-z0-9_]{30,}\\b', regex: /\\bgh[pousr]_[A-Za-z0-9_]{30,}\\b/g },
-  { name: 'Google OAuth client secret', source: '\\bGOCSPX-[A-Za-z0-9_-]{20,}\\b', regex: /\\bGOCSPX-[A-Za-z0-9_-]{20,}\\b/g },
-  { name: 'Slack token', source: '\\bxox[baprs]-[A-Za-z0-9-]{10,}\\b', regex: /\\bxox[baprs]-[A-Za-z0-9-]{10,}\\b/g },
-  { name: 'Private key header', source: '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----', regex: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g },
-  { name: 'Stripe live secret key', source: '\\bsk_live_[0-9A-Za-z]{20,}\\b', regex: /\\bsk_live_[0-9A-Za-z]{20,}\\b/g },
+  {
+    name: 'Google API key',
+    source: '(^|[^A-Za-z0-9])AIza[0-9A-Za-z_-]{35}([^A-Za-z0-9_-]|$)',
+    regex: /\bAIza[0-9A-Za-z_-]{35}\b/g,
+  },
+  {
+    name: 'AWS access key ID',
+    source: '(^|[^A-Za-z0-9])(AKIA|ASIA)[0-9A-Z]{16}([^A-Za-z0-9]|$)',
+    regex: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g,
+  },
+  {
+    name: 'GitHub access token',
+    source: '(^|[^A-Za-z0-9])gh[pousr]_[A-Za-z0-9_]{30,}([^A-Za-z0-9_]|$)',
+    regex: /\bgh[pousr]_[A-Za-z0-9_]{30,}\b/g,
+  },
+  {
+    name: 'Google OAuth client secret',
+    source: '(^|[^A-Za-z0-9])GOCSPX-[A-Za-z0-9_-]{20,}([^A-Za-z0-9_-]|$)',
+    regex: /\bGOCSPX-[A-Za-z0-9_-]{20,}\b/g,
+  },
+  {
+    name: 'Slack token',
+    source: '(^|[^A-Za-z0-9])xox[baprs]-[A-Za-z0-9-]{10,}([^A-Za-z0-9-]|$)',
+    regex: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g,
+  },
+  {
+    name: 'Private key header',
+    source: '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----',
+    regex: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g,
+  },
+  {
+    name: 'Stripe live secret key',
+    source: '(^|[^A-Za-z0-9])sk_live_[0-9A-Za-z]{20,}([^A-Za-z0-9]|$)',
+    regex: /\bsk_live_[0-9A-Za-z]{20,}\b/g,
+  },
 ];
 
-const EXCLUDED_PATHS = [
-  ':(exclude)scripts/scan-secrets.js',
-];
+const EXCLUDED_PATHS = [' :(exclude)scripts/scan-secrets.js'.trim()];
 
 function findSecretKinds(content) {
   const found = [];
@@ -51,7 +77,6 @@ function scanRepository() {
     const currentFiles = runGit([
       'grep',
       '--files-with-matches',
-      '--ignore-case',
       '-I',
       '-E',
       '-e',
@@ -61,7 +86,7 @@ function scanRepository() {
       ...EXCLUDED_PATHS,
     ]);
     if (currentFiles) {
-      for (const file of currentFiles.split(/\\r?\\n/)) {
+      for (const file of currentFiles.split(/\r?\n/)) {
         if (file) findings.push({ pattern: pattern.name, where: 'working tree: ' + file });
       }
     }
@@ -78,7 +103,7 @@ function scanRepository() {
       ...EXCLUDED_PATHS,
     ]);
     if (commits) {
-      for (const commit of [...new Set(commits.split(/\\r?\\n/).filter(Boolean))]) {
+      for (const commit of [...new Set(commits.split(/\r?\n/).filter(Boolean))]) {
         findings.push({ pattern: pattern.name, where: 'Git history commit ' + commit.slice(0, 12) });
       }
     }

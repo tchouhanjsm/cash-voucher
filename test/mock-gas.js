@@ -20,7 +20,7 @@ function create() {
     cacheStore = {},
     files = {},
     faults = { failNextAuditWrite: false, failNextAuditMarkerWrite: false },
-    auditDiagnostics = [];
+    auditDiagnostics = [],
     lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false };
   const mockConsole = Object.create(console);
   mockConsole.error = (...args) => {
