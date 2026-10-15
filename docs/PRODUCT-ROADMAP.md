@@ -3,7 +3,6 @@
 Last verified main baseline: `965f16b8849fa757e46449d5fd1e80a3881100a4` (PR #139 merge; post-merge CI passed)  
 Current phase: Phase 10 — UI refresh mainline integration and dashboard trust states  
 Current review branch: `phase-10/ui-mainline-dashboard-integrity-2026-10-15`
-Current review branch: `phase-9/payee-identity-approval-integrity-2026-10-15`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
