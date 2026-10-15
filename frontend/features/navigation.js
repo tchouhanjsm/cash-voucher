@@ -1,11 +1,23 @@
-import { $, $$ } from '../core/dom.js';
+import { $, $ } from '../core/dom.js';
 import { normalizeVoucherCollection, S, can } from '../core/state.js';
 import { fail, toast } from '../core/ui.js';
-
-const NAV_ICON_NAMES = new Set(['home', 'plus', 'book', 'chart', 'wallet', 'upload', 'store', 'users', 'settings', 'receipt', 'user']);
 import { ls } from '../core/storage.js';
 import { scalarText } from '../core/utils.js';
 import { createShell } from './shell.js';
+
+const NAV_ICON_NAMES = new Set([
+  'home',
+  'plus',
+  'book',
+  'chart',
+  'wallet',
+  'upload',
+  'store',
+  'users',
+  'settings',
+  'receipt',
+  'user',
+]);
 
 export function createNavigation({ api, getAuth, getPayments, renderers }) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
