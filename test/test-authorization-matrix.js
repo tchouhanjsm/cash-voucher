@@ -188,7 +188,15 @@ const permissionCases = [
     allowed: ['manager', 'owner'],
     payload: {
       bulk: true,
-      entries: [{ date: 'not-a-date', vendor: 'Test Vendor', amount: 1, category: 'Other', cashImpact: 'CASH_OUT' }],
+      entries: [
+        {
+          date: 'not-a-date',
+          vendor: 'Test Vendor',
+          amount: 1,
+          category: 'Other',
+          cashImpact: 'CASH_OUT',
+        },
+      ],
     },
   },
   { action: 'updateVoucher', allowed: ['manager', 'owner'], payload: { id: 'missing-voucher' } },

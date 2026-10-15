@@ -39,12 +39,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: One-off Prettier diagnostics (temporary)
-        run: |
-          npx prettier --write test/test-authorization-matrix.js
-          git --no-pager diff --no-color -- test/test-authorization-matrix.js
-          exit 1
-
       - name: Run quality gate
         run: npm run check
 
