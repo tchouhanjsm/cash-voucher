@@ -43,9 +43,9 @@ count and file are unchanged.
   `npm test`.
 - Fingerprints are a drift trigger, not a cryptographic security boundary, HTML sanitizer,
   full JavaScript parser, or proof that every interpolation is safe.
-- The PR-quality gate also requires explicit `## Verification evidence`,
-  `## Security and failure review` and `## Residual risks / not verified` sections in the
-  PR body. Keep these populated and synchronized with the exact final head.
+- The PR-quality gate requires `## Verification evidence`, `## Security and failure review`,
+  `## Residual risks / not verified` and `## Release boundary` sections in the PR body. Keep
+  them populated and aligned to the latest head.
 - Existing hostile-input Browser E2E tests remain required. Manual/context-sensitive
   source-to-sink review is not complete merely because fingerprints match.
 
