@@ -8,22 +8,26 @@ function approvalStatus_(voucher) {
 function priorStatusNotRequired_(status) {
   return status === 'NOT_REQUIRED';
 }
-function approvalPayeeKey_(vendorId, vendor) {
-  const id = String(vendorId || '').trim();
-  if (id) return 'id:' + id;
-  return (
-    'name:' +
-    String(vendor || '')
-      .trim()
-      .toLowerCase()
-  );
+function approvalPayeeName_(value) {
+  return String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, ' ');
 }
-function payeeDayPaymentPaise_(rows, payeeKey, date, excludeId) {
+function sameApprovalPayee_(vendorId, vendor, row) {
+  const targetId = String(vendorId || '').trim();
+  const rowId = String((row && row.VendorID) || '').trim();
+  // Stable identity wins when both records have one. If either side is legacy/unlinked,
+  // fall back to a normalized display name so VendorID migration does not bypass the limit.
+  if (targetId && rowId) return targetId === rowId;
+  return approvalPayeeName_(vendor) === approvalPayeeName_(row && row.Vendor);
+}
+function payeeDayPaymentPaise_(rows, vendorId, vendor, date, excludeId) {
   return rows.reduce(function (sum, row) {
     if (row.Type !== 'PAYMENT' || String(row.Status || '') !== 'ACTIVE') return sum;
     if (excludeId && String(row.VoucherID) === String(excludeId)) return sum;
     if (isoDate_(row.Date) !== date) return sum;
-    if (approvalPayeeKey_(row.VendorID, row.Vendor) !== payeeKey) return sum;
+    if (!sameApprovalPayee_(vendorId, vendor, row)) return sum;
     const amount = Number(row.Amount);
     return isFinite(amount) ? sum + Math.round(amount * 100) : sum;
   }, 0);

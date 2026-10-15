@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `fabf4bba1a964c99c55391c4d4be3f260d787906` (main after PR #137; 28 assignment sites across nine modules before Phase 8's proposed modal change).
+**Latest merged review baseline:** `dee9f04d8a77c9360c1c6be433928b953f1fd597` (main after PR #138; 27 assignment sites across eight modules).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -354,11 +354,12 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 
 PR #126 adds targeted Daily Cash Close preview response validation; see the section above for its exact scope. The complete active HTML/DOM sink inventory, live authorization, secret/history scan, real backup/restore and device validation remain open. See `docs/PHASE-1-REPOSITORY-AUDIT.md`; do not treat this incremental audit as a security certification.
 
-## Phase 8 proposal — reusable modal DOM boundary (15 October 2026)
+## Phase 8 / PR #138 (merged) — reusable modal DOM boundary
 
-- Baseline is `fabf4bba1a964c99c55391c4d4be3f260d787906`, after PR #137.
-- The shared dialog validates its body as a DOM Node/DocumentFragment but creates the surrounding form, heading, alert and buttons through `modal.innerHTML`.
-- Proposed change: create the fixed dialog frame with DOM APIs and write title/submit labels via scalar normalization and `textContent`, preserving current focus and keyboard behavior.
-- This is attack-surface reduction, not a confirmed exploit. Browser regression supplies hostile labels and asserts inert text and functional controls.
-- If merged, source fingerprints record removal of this sink and the count/API baseline no longer includes `frontend/core/ui.js`. The other templates remain under review.
-- No production deployment, live role test, backup/restore, schema or financial-policy change is in scope.
+PR #138 replaced the shared modal frame's `modal.innerHTML` assignment with DOM APIs. Title and submit labels are scalar-normalized and assigned through `textContent`, while the caller-supplied body remains a DOM Node/DocumentFragment. Browser E2E injects hostile SVG/image strings and verifies inert text and focus restoration. The current active inventory is 27 assignment sites across eight modules.
+
+This is targeted attack-surface reduction, not evidence of a confirmed exploit or complete XSS certification. The remaining sites still require contextual review, and live-host headers/CSP, live authorization and adversarial manual review remain release gates.
+
+## Phase 9 priority — financial approval identity consistency
+
+During the post-PR #138 review, the payee-day aggregation was found to use a mutually exclusive identity key: VendorID when present, otherwise a name key. A legacy voucher without VendorID therefore could be missed when a newer same-name voucher has gained a stable ID. This is a financial-control gap, not a rendering finding. Phase 9 updates the shared comparison rule and regression coverage; it does not backfill legacy rows or change the owner-approved threshold.
