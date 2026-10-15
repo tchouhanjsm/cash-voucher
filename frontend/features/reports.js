@@ -1,7 +1,7 @@
 import { $ } from '../core/dom.js';
 import { can } from '../core/state.js';
 import { csvCell, dmy, download, esc, finiteAmount, money, today } from '../core/utils.js';
-import { emptyState, head, tableView, toast } from '../core/ui.js';
+import { emptyState, head, pageNotice, tableView, toast } from '../core/ui.js';
 
 export function createReports({ api }) {
   const R = {
@@ -99,9 +99,11 @@ export function createReports({ api }) {
 
   function render() {
     if (!can('reports')) {
-      $('#view').innerHTML =
-        head('Recorded Movement Report') +
-        '<div class="card"><p>Reports are unavailable for this account.</p></div>';
+      $('#view').replaceChildren(
+        pageNotice('Recorded Movement Report', 'Reports are unavailable for this account.', {
+          panelClass: 'card',
+        }),
+      );
       return;
     }
 
