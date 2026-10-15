@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `db3c2cfd08ddbd1a80d37bdc67557b719446caaf` (PR #143 merge; Phase 11 Batch 1 integrated). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `8bd1f423700a5a392d0f672bd287e88603755d82` (PR #144 merge; Phase 11 Batches 1–2 integrated). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
 
-**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#139 add source recovery, authorization/rendering drift checks, sink reductions/adversarial output coverage, and legacy-aware payee-day approval identity. PR #141 integrated the Phase 10 UI refresh, and PR #143 integrated Phase 11 Batch 1's Users status-sink retirement. PR #143's exact head passed CI/quality, Browser E2E (353 checks) and Full Flight Test. Phase 11 Batch 2 is under review in PR #144 and has not been merged. None of these facts establishes live deployment or production readiness.
+**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#139 add source recovery, authorization/rendering drift checks, sink reductions/adversarial output coverage, and legacy-aware payee-day approval identity. PR #141 integrated the Phase 10 UI refresh; PR #143 and PR #144 are merged Phase 11 source changes. PR #144's exact head passed CI/quality, Browser E2E (353 checks) and Full Flight Test. Phase 11 Batch 3 is under review in PR #145 and has not been merged. None of this evidence establishes live deployment or production readiness.
 
 ## Current go-live gates — reviewed 14 October 2026
 
