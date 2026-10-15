@@ -805,7 +805,16 @@ with sync_playwright() as p:
     )
 
     # Phase 7: valid report rows are still untrusted HTML and CSV content.
-    report_markup_payload = '<svg onload=window.__xssFired=true></svg>'
+    report_markup_payloads = {
+        'vendorId': '<svg data-xss-field="vendorId" onload=window.__xssFired=true></svg>',
+        'category': '<svg data-xss-field="category" onload=window.__xssFired=true></svg>',
+        'notes': '<svg data-xss-field="notes" onload=window.__xssFired=true></svg>',
+        'cancelReason': '<svg data-xss-field="cancelReason" onload=window.__xssFired=true></svg>',
+        'approvedBy': '<svg data-xss-field="approvedBy" onload=window.__xssFired=true></svg>',
+        'approvedAt': '<svg data-xss-field="approvedAt" onload=window.__xssFired=true></svg>',
+        'approvalReason': '<svg data-xss-field="approvalReason" onload=window.__xssFired=true></svg>',
+        'generatedAt': '<svg data-xss-field="generatedAt" onload=window.__xssFired=true></svg>',
+    }
     formula_payload = '=HYPERLINK("https://example.invalid","Report link")'
 
     def inject_untrusted_report(route):
@@ -829,16 +838,16 @@ with sync_playwright() as p:
             'voucherNo': 'P-REPORT-OUTPUT-TEST',
             'type': 'PAYMENT',
             'vendor': formula_payload,
-            'vendorId': report_markup_payload,
-            'category': report_markup_payload,
-            'notes': report_markup_payload,
+            'vendorId': report_markup_payloads['vendorId'],
+            'category': report_markup_payloads['category'],
+            'notes': report_markup_payloads['notes'],
             'amount': 125,
             'status': 'ACTIVE',
-            'cancelReason': report_markup_payload,
+            'cancelReason': report_markup_payloads['cancelReason'],
             'approvalStatus': 'REJECTED',
-            'approvedBy': report_markup_payload,
-            'approvedAt': report_markup_payload,
-            'approvalReason': report_markup_payload,
+            'approvedBy': report_markup_payloads['approvedBy'],
+            'approvedAt': report_markup_payloads['approvedAt'],
+            'approvalReason': report_markup_payloads['approvalReason'],
             'createdBy': 'accountant@test.com',
             'id': 'report-output-contract-test',
         }]
@@ -853,7 +862,7 @@ with sync_playwright() as p:
             'count': 1,
             'activeCount': 1,
             'cancelledCount': 0,
-            'generatedAt': report_markup_payload,
+            'generatedAt': report_markup_payloads['generatedAt'],
             'type': 'ALL',
             'status': 'ACTIVE',
         })
@@ -867,7 +876,7 @@ with sync_playwright() as p:
     )
     report_text = accountant_page.locator('#view').inner_text()
     check(
-        report_markup_payload in report_text
+        all(value in report_text for value in report_markup_payloads.values())
         and formula_payload in report_text
         and accountant_page.locator('#view img, #view svg').count() == 0
         and not accountant_page.evaluate('window.__xssFired === true'),
@@ -880,7 +889,7 @@ with sync_playwright() as p:
     csv_formula_cell = "'" + formula_payload.replace('"', '""')
     check(
         csv_formula_cell in hostile_report_csv
-        and report_markup_payload in hostile_report_csv
+        and all(value in hostile_report_csv for value in report_markup_payloads.values())
         and not hostile_report_csv.lstrip().startswith('='),
         'report CSV neutralizes a formula-leading vendor while preserving literal source text',
     )
@@ -891,6 +900,7 @@ with sync_playwright() as p:
     )
     check(
         'P-REPORT-OUTPUT-TEST' not in accountant_page.locator('#view').inner_text()
+        and all(value not in accountant_page.locator('#view').inner_text() for value in report_markup_payloads.values())
         and accountant_page.locator('#view img, #view svg').count() == 0,
         'report rendering recovers to the normal server response after hostile fixture removal',
     )
