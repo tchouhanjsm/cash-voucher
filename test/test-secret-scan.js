@@ -9,9 +9,17 @@ const syntheticSecrets = [
   'ghp_' + 'A'.repeat(36),
   'GOCSPX-' + 'A'.repeat(24),
   'xoxb-' + 'A'.repeat(20),
-  '-----BEGIN PRIVATE KEY-----',
   'sk_live_' + 'a'.repeat(24),
 ];
+
+const syntheticPrivateKeyBlock =
+  '-----BEGIN ' + 'PRIVATE KEY' + '-----\\n' +
+  'A'.repeat(64) + '\\n-----END ' + 'PRIVATE KEY' + '-----';
+assert.deepEqual(
+  findSecretKinds(syntheticPrivateKeyBlock),
+  ['Private key block'],
+  'scanner detects a complete synthetic PEM block assembled at runtime',
+);
 
 for (const secret of syntheticSecrets) {
   assert.ok(

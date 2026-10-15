@@ -1,71 +1,69 @@
 'use strict';
 
+const fs = require('node:fs');
 const { spawnSync } = require('node:child_process');
+
+const MAX_OUTPUT_BYTES = 256 * 1024 * 1024;
 
 const PATTERNS = [
   {
     name: 'Google API key',
-    source: '(^|[^A-Za-z0-9])AIza[0-9A-Za-z_-]{35}([^A-Za-z0-9_-]|$)',
     regex: /\bAIza[0-9A-Za-z_-]{35}\b/g,
   },
   {
     name: 'AWS access key ID',
-    source: '(^|[^A-Za-z0-9])(AKIA|ASIA)[0-9A-Z]{16}([^A-Za-z0-9]|$)',
     regex: /\b(?:AKIA|ASIA)[0-9A-Z]{16}\b/g,
   },
   {
     name: 'GitHub access token',
-    source: '(^|[^A-Za-z0-9])gh[pousr]_[A-Za-z0-9_]{30,}([^A-Za-z0-9_]|$)',
     regex: /\bgh[pousr]_[A-Za-z0-9_]{30,}\b/g,
   },
   {
     name: 'Google OAuth client secret',
-    source: '(^|[^A-Za-z0-9])GOCSPX-[A-Za-z0-9_-]{20,}([^A-Za-z0-9_-]|$)',
     regex: /\bGOCSPX-[A-Za-z0-9_-]{20,}\b/g,
   },
   {
     name: 'Slack token',
-    source: '(^|[^A-Za-z0-9])xox[baprs]-[A-Za-z0-9-]{10,}([^A-Za-z0-9-]|$)',
     regex: /\bxox[baprs]-[A-Za-z0-9-]{10,}\b/g,
   },
   {
-    name: 'Private key header',
-    source: '-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----',
-    regex: /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g,
+    name: 'Private key block',
+    regex:
+      /-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----[\r\n]+[A-Za-z0-9+/=\r\n]{40,}-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g,
+    historyRegex:
+      /(?:^|\n)[+-]-----BEGIN (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----\r?\n(?:[+-][A-Za-z0-9+/=]{1,80}\r?\n)+[+-]-----END (?:RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/g,
   },
   {
     name: 'Stripe live secret key',
-    source: '(^|[^A-Za-z0-9])sk_live_[0-9A-Za-z]{20,}([^A-Za-z0-9]|$)',
     regex: /\bsk_live_[0-9A-Za-z]{20,}\b/g,
   },
 ];
 
-const EXCLUDED_PATHS = [' :(exclude)scripts/scan-secrets.js'.trim()];
+function gitOutput(args, encoding = 'utf8') {
+  const result = spawnSync('git', args, {
+    encoding,
+    maxBuffer: MAX_OUTPUT_BYTES,
+  });
+  if (result.error) throw result.error;
+  if (result.status !== 0) {
+    throw new Error('Git secret scan command failed: git ' + args[0] + ' (' + result.status + ')');
+  }
+  return result.stdout;
+}
 
-function findSecretKinds(content) {
+function findSecretKinds(content, fromHistory = false) {
   const found = [];
   for (const pattern of PATTERNS) {
-    pattern.regex.lastIndex = 0;
-    if (pattern.regex.test(content)) found.push(pattern.name);
-    pattern.regex.lastIndex = 0;
+    const expression = fromHistory ? pattern.historyRegex || pattern.regex : pattern.regex;
+    expression.lastIndex = 0;
+    if (expression.test(content)) found.push(pattern.name);
+    expression.lastIndex = 0;
   }
   return found;
 }
 
-function runGit(args) {
-  const result = spawnSync('git', args, {
-    encoding: 'utf8',
-    maxBuffer: 32 * 1024 * 1024,
-  });
-  if (result.error) throw result.error;
-  if (result.status !== 0 && result.status !== 1) {
-    throw new Error('Git secret scan command failed: git ' + args[0] + ' (' + result.status + ')');
-  }
-  return (result.stdout || '').trim();
-}
-
 function scanRepository() {
-  const shallow = runGit(['rev-parse', '--is-shallow-repository']);
+  const shallow = gitOutput(['rev-parse', '--is-shallow-repository']).trim();
   if (shallow !== 'false') {
     throw new Error(
       'Secret-history scan requires a full Git clone. CI must use checkout fetch-depth: 0.',
@@ -73,41 +71,34 @@ function scanRepository() {
   }
 
   const findings = [];
-  for (const pattern of PATTERNS) {
-    const currentFiles = runGit([
-      'grep',
-      '--files-with-matches',
-      '-I',
-      '-E',
-      '-e',
-      pattern.source,
-      '--',
-      '.',
-      ...EXCLUDED_PATHS,
-    ]);
-    if (currentFiles) {
-      for (const file of currentFiles.split(/\r?\n/)) {
-        if (file) findings.push({ pattern: pattern.name, where: 'working tree: ' + file });
-      }
-    }
-
-    // Pickaxe scans additions and removals in all reachable commits without printing source lines.
-    const commits = runGit([
-      'log',
-      '--all',
-      '--format=%H',
-      '-G',
-      pattern.source,
-      '--',
-      '.',
-      ...EXCLUDED_PATHS,
-    ]);
-    if (commits) {
-      for (const commit of [...new Set(commits.split(/\r?\n/).filter(Boolean))]) {
-        findings.push({ pattern: pattern.name, where: 'Git history commit ' + commit.slice(0, 12) });
-      }
+  const paths = gitOutput(['ls-files', '-z'], 'buffer').toString('utf8').split('\0').filter(Boolean);
+  for (const file of paths) {
+    const bytes = fs.readFileSync(file);
+    if (bytes.includes(0)) continue;
+    for (const patternName of findSecretKinds(bytes.toString('utf8'))) {
+      findings.push({ pattern: patternName, where: 'working tree: ' + file });
     }
   }
+
+  // Scan the full diff history in memory; output only pattern type and commit, never credential text.
+  const history = gitOutput(['log', '--all', '--format=COMMIT:%H', '-p', '--']);
+  const chunks = history.split(/(?=^COMMIT:[0-9a-f]{40}\r?$)/m).filter(Boolean);
+  const historyFindings = new Set();
+  for (const chunk of chunks) {
+    const match = chunk.match(/^COMMIT:([0-9a-f]{40})/);
+    if (!match) continue;
+    const commit = match[1].slice(0, 12);
+    for (const patternName of findSecretKinds(chunk, true)) {
+      const key = patternName + ':' + commit;
+      if (historyFindings.has(key)) continue;
+      historyFindings.add(key);
+      findings.push({
+        pattern: patternName,
+        where: 'Git history commit ' + commit,
+      });
+    }
+  }
+
   return findings;
 }
 
