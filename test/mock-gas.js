@@ -19,8 +19,14 @@ function create() {
     propsStore = {},
     cacheStore = {},
     files = {},
-    faults = { failNextAuditWrite: false },
+    faults = { failNextAuditWrite: false, failNextAuditMarkerWrite: false },
+    auditDiagnostics = [];
     lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false };
+  const mockConsole = Object.create(console);
+  mockConsole.error = (...args) => {
+    auditDiagnostics.push(args.map((value) => (value && value.stack) || String(value)).join(' '));
+    console.error(...args);
+  };
   const mkSheet = (name) => {
     const rows = [];
     const rng = (r, c, nr, nc) => ({
@@ -64,7 +70,7 @@ function create() {
     insertSheet: (n) => (sheets[n] = mkSheet(n)),
   };
   const ctx = {
-    console,
+    console: mockConsole,
     JSON,
     Date,
     Math,
@@ -81,7 +87,13 @@ function create() {
     PropertiesService: {
       getScriptProperties: () => ({
         getProperty: (k) => propsStore[k] ?? null,
-        setProperty: (k, v) => (propsStore[k] = String(v)),
+        setProperty(k, v) {
+          if (faults.failNextAuditMarkerWrite && String(k).startsWith('AUDIT_WRITE_')) {
+            faults.failNextAuditMarkerWrite = false;
+            throw new Error('Simulated audit marker persistence failure');
+          }
+          propsStore[k] = String(v);
+        },
         deleteProperty: (k) => delete propsStore[k],
       }),
     },
@@ -170,7 +182,7 @@ function create() {
   vm.createContext(ctx);
   vm.runInContext(
     backendSource() +
-      '\n;this.__api={setup,doPost,PERMS,migrateVoucherApprovalFields,migrateVoucherVendorIdField,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
+      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
     ctx,
   );
   return {
@@ -182,6 +194,12 @@ function create() {
     failNextAuditWrite: () => {
       faults.failNextAuditWrite = true;
     },
+    failNextAuditMarkerWrite: () => {
+      faults.failNextAuditMarkerWrite = true;
+    },
+    auditDiagnostics,
+    registeredActions: () => Object.keys(ctx.__api.ACTIONS),
+    writeActions: () => Object.keys(ctx.__api.WRITES),
     setup: () => ctx.__api.setup(),
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),

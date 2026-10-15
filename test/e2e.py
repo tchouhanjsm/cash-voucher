@@ -4523,10 +4523,14 @@ with sync_playwright() as p:
         and session_after_expiry[0]['status'] == 'pending',
         'session expiry during sync preserves the same queue item and does not mark it failed',
     )
-    # Reauthenticate the same account that owns the pending entry. The main page is
-    # intentionally signed in as staff (s@test.com) at this point in the broader E2E suite.
-    page.fill('#lEmail', 's@test.com')
-    page.fill('#lPin', '975310')
+    # The queue diagnostic records the account key; this scenario is still bound to the manager
+    # account after the earlier manager workflow. Reauthenticate that exact account, never another role.
+    check(
+        session_before[0]['ownerKey'].endswith('|m@test.com'),
+        'stale-session queue remains bound to the manager identity that created it',
+    )
+    page.fill('#lEmail', 'm@test.com')
+    page.fill('#lPin', '864209')
     page.click('#lBtn')
     page.wait_for_selector('#nav button', timeout=10000)
     page.evaluate("window.dispatchEvent(new Event('online'))")
