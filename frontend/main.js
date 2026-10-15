@@ -167,6 +167,7 @@ registerActions({
   import: ({ element }) => bulk.runImport(element),
 
   goreg: () => bulk.goRegister(),
+  goto: ({ key }) => go(key),
 
   bulkagain: () => bulk.renderAgain(),
 

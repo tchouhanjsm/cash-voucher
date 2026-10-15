@@ -1,7 +1,7 @@
 import { $ } from '../core/dom.js';
 import { can, nm, normalizeApprovalStatus, pays, recs, S } from '../core/state.js';
 import { addDays, dmy, esc, finiteAmount, iso, money, sumAmounts, today } from '../core/utils.js';
-import { head, refreshBtn } from '../core/ui.js';
+import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard() {
   const D = { r: '30d', from: '', to: '' };
@@ -184,16 +184,58 @@ export function createDashboard() {
       );
     }
 
+    const attention = [];
+    if (dataAvailable && approvalExceptions.length) {
+      attention.push({
+        tone: 'warn',
+        icon: 'clock',
+        text: `${approvalExceptions.length} payment${approvalExceptions.length === 1 ? '' : 's'} need approval or review`,
+        action: 'reg',
+        label: 'Open register',
+      });
+    }
+    if (S.offlineMode || navigator.onLine === false) {
+      attention.push({
+        tone: 'warn',
+        icon: 'cloud-off',
+        text: 'Working offline. New entries are saved on this device until you reconnect',
+        action: '',
+        label: '',
+      });
+    }
+    if (dataAvailable && (diagnostics.malformedRecordCount || invalidAmountCount)) {
+      attention.push({
+        tone: 'bad',
+        icon: 'alert',
+        text: `${diagnostics.malformedRecordCount + invalidAmountCount} voucher record(s) have invalid data and are excluded`,
+        action: 'reg',
+        label: 'Check register',
+      });
+    }
+    // Static labels and counts only: payee or user-supplied text never enters this panel.
+    const needsAttention = !dataAvailable
+      ? ''
+      : `<section class="card needs" aria-labelledby="needsTitle"><h2 id="needsTitle">Needs attention <span class="count-pill">${attention.length}</span></h2>${
+          attention.length
+            ? `<ul class="needs-list">${attention
+                .map(
+                  (item) =>
+                    `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${item.text}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
+                )
+                .join('')}</ul>`
+            : `<p class="needs-clear">${icon('check')}<span>All clear. Nothing needs you right now.</span></p>`
+        }</section>`;
+
     const financialPanels = !dataAvailable
       ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">${esc(unavailableMessage)} No financial totals or charts are shown until valid voucher data is available.</p></div>`
       : `
   <div class="stats">
-    <div class="card stat"><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
-    <div class="card stat"><span>Vouchers</span><b>${current.length}</b><small class="muted">avg ${money(validCurrent.length ? total / validCurrent.length : 0)}</small></div>
-    <div class="card stat"><span>Largest</span><b>${money(largest ? largest.amount : 0)}</b><small class="muted">${largest ? esc(largest.vendor) : '–'}</small></div>
-    <div class="card stat"><span>Today</span><b>${money(sumAmounts(todayPayments))}</b><small class="muted">${todayPayments.length} vouchers</small></div>
-    <div class="card stat"><span>Cash received</span><b style="color:var(--ok)">${money(received)}</b><small class="muted">${receipts.length} entries · net ${money(received - total)}</small></div>
-    ${can('viewAll') ? `<div class="card stat"><span>Book balance</span><b>${money(cashInHand)}</b><small class="muted">opening balance + recorded receipts − recorded payments; not a physical cash count</small></div>` : ''}
+    <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
+    <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${current.length}</b><small class="muted">avg ${money(validCurrent.length ? total / validCurrent.length : 0)}</small></div>
+    <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(largest ? largest.amount : 0)}</b><small class="muted">${largest ? esc(largest.vendor) : '–'}</small></div>
+    <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Today</span><b>${money(sumAmounts(todayPayments))}</b><small class="muted">${todayPayments.length} vouchers</small></div>
+    <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Cash received</span><b style="color:var(--ok)">${money(received)}</b><small class="muted">${receipts.length} entries · net ${money(received - total)}</small></div>
+    ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(cashInHand)}</b><small class="muted">opening balance + recorded receipts − recorded payments; not a physical cash count</small></div>` : ''}
   </div>
   ${dataWarnings.length ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>` : ''}
   ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
@@ -218,6 +260,7 @@ export function createDashboard() {
         },
       ) +
       `
+  ${needsAttention}
   <div class="seg">${[
     ['7d', 'Last 7 days'],
     ['30d', 'Last 30 days'],

@@ -230,9 +230,15 @@ with sync_playwright() as p:
         'light theme can be restored and the explicit choice is retained',
     )
     check(
-        page.locator('#view .breadcrumbs [aria-current="page"]').inner_text() == 'Dashboard'
+        page.locator('#view .breadcrumbs').count() == 0
         and page.locator('#view .page-header h1').inner_text() == 'Dashboard',
-        'page heading has semantic breadcrumbs and one consistent page-header component',
+        'page heading uses one consistent page-header component without breadcrumb noise',
+    )
+    check(
+        page.locator('#view .needs h2').inner_text().startswith('Needs attention')
+        and page.locator('#view .stat .stat-ic svg').count() >= 5
+        and page.locator('[data-v=dash] .ic svg use').get_attribute('href') == '#i-home',
+        'Dashboard shows the needs-attention panel, KPI tile icons and SVG navigation icons',
     )
     check(
         page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
@@ -3414,10 +3420,9 @@ with sync_playwright() as p:
     go_view(page, 'reports')
     page.wait_for_selector('#movementFilters')
     check(
-        page.locator('#view .breadcrumbs [aria-current="page"]').inner_text()
-        == 'Recorded Movement Report'
+        page.locator('#view .page-header h1').inner_text() == 'Recorded Movement Report'
         and page.locator('#view .empty-state-card h2').inner_text() == 'No report generated yet',
-        'report page exposes breadcrumbs and a reusable initial empty state',
+        'report page exposes a heading and a reusable initial empty state',
     )
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
@@ -4806,6 +4811,16 @@ with sync_playwright() as p:
         and page.locator('#rows svg, #rows img').count() == 0
         and not page.evaluate('window.__xssFired === true'),
         'hostile payee names stay inert in recent-payee chips and the duplicate warning',
+    )
+
+    go_view(page, 'dash')
+    page.wait_for_selector('#view .needs')
+    check(
+        'svg onload' not in page.locator('#view .needs').inner_text()
+        and page.locator('#view .needs img').count() == 0
+        and page.locator('#view .needs svg:not(.i)').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'needs-attention panel renders static text only and stays inert with hostile payee data',
     )
 
     check(
