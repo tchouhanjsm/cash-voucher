@@ -2,7 +2,7 @@ import { $ } from '../core/dom.js';
 import { can } from '../core/state.js';
 import { offlineQueue } from '../core/offline-queue.js';
 import { csvCell, download, esc, money, today, uid } from '../core/utils.js';
-import { busy, fail, head, toast } from '../core/ui.js';
+import { busy, fail, head, pageNotice, toast } from '../core/ui.js';
 
 const CORRECTION_TYPES = [
   ['VOUCHER', 'Voucher review'],
@@ -200,9 +200,12 @@ export function createCashClose({ api }) {
 
   function render() {
     if (!can('cashClose')) {
-      $('#view').innerHTML =
-        head('Daily Cash Close') +
-        '<p class="muted" role="status">This feature is available to owners and managers.</p>';
+      $('#view').replaceChildren(
+        pageNotice('Daily Cash Close', 'This feature is available to owners and managers.', {
+          messageClass: 'muted',
+          role: 'status',
+        }),
+      );
       return;
     }
     currentDate = $('#cc-date')?.value || today();
