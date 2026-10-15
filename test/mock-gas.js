@@ -200,6 +200,7 @@ function create() {
     auditDiagnostics,
     registeredActions: () => Object.keys(ctx.__api.ACTIONS),
     writeActions: () => Object.keys(ctx.__api.WRITES),
+    permissionMap: () => JSON.parse(JSON.stringify(ctx.__api.PERMS)),
     setup: () => ctx.__api.setup(),
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),

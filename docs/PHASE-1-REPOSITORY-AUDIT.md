@@ -14,6 +14,12 @@ Still open: complete active DOM-sink review; live role and deployment authorizat
 
 ---
 
+## Follow-up — 15 October 2026
+
+The original audit below is a historical snapshot. PR #132 is merged on main at 8169cd69cba1251121cc018683c2978a360c037c. Phase 4 adds an authenticated role/action test, own/foreign voucher and receipt visibility assertions, a reviewed per-module inventory of the current 33 innerHTML assignment sites, and a drift gate rejecting new designated high-risk DOM APIs. Passing these tests is source evidence only; the live Apps Script role configuration, deployed version, Sheet/Drive permission model, backup/restore and physical-device behavior remain unverified.
+
+---
+
 ## Executive decision
 
 **Do not begin another isolated hardening PR.** The source contains a broad feature set and established automated checks, but operational readiness is explicitly unverified. Phase 1 must reconcile the product's actual state, then deliver end-to-end work packages with measurable outcomes.
