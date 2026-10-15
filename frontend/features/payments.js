@@ -181,6 +181,86 @@ export function createPayments({ api, refresh }) {
     return count === 1 ? 'payment' : 'payments';
   }
 
+  function resultPanel() {
+    const panel = document.createElement('div');
+    panel.className = 'card ok-panel';
+    panel.setAttribute('role', 'status');
+    panel.setAttribute('aria-live', 'polite');
+    return panel;
+  }
+
+  function resultButton(label, action, className = 'btn') {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = className;
+    button.dataset.act = action;
+    button.textContent = label;
+    return button;
+  }
+
+  function renderDeviceSaveResult(message) {
+    const panel = resultPanel();
+    const title = document.createElement('h2');
+    title.textContent = '📴 Saved on this device';
+    const detail = document.createElement('p');
+    detail.textContent = message;
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    actions.appendChild(
+      resultButton(
+        'New ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
+        'newagain',
+        'btn primary',
+      ),
+    );
+    panel.append(title, detail, actions);
+    $('#nres').replaceChildren(panel);
+  }
+
+  function renderServerSaveResult(created, pendingApprovalCount) {
+    const panel = resultPanel();
+    const title = document.createElement('h2');
+    title.textContent = '✔ Saved ' + created.length + ' ' + entryNoun(created.length);
+    panel.appendChild(title);
+
+    if (pendingApprovalCount) {
+      const pending = document.createElement('p');
+      pending.setAttribute('role', 'status');
+      pending.textContent =
+        pendingApprovalCount +
+        ' payment(s) are pending owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.';
+      panel.appendChild(pending);
+    }
+
+    created.forEach((voucher) => {
+      const row = document.createElement('div');
+      row.style.margin = '8px 0';
+      row.appendChild(
+        document.createTextNode(
+          '#' + String(vno(voucher) ?? '') + ' · ' + String(voucher.vendor ?? '') + ' · ',
+        ),
+      );
+      const amount = document.createElement('b');
+      amount.textContent = money(voucher.amount);
+      const print = resultButton('Print', 'print', 'btn sm');
+      print.dataset.id = String(voucher.id ?? '');
+      row.append(amount, document.createTextNode(' '), print);
+      panel.appendChild(row);
+    });
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    actions.appendChild(
+      resultButton(
+        'New ' + (NT === 'RECEIPT' ? 'cash receipt' : 'payment'),
+        'newagain',
+        'btn primary',
+      ),
+    );
+    panel.appendChild(actions);
+    $('#nres').replaceChildren(panel);
+  }
+
   function updateSaveLabel() {
     let count = 0;
     document.querySelectorAll('#rows .erow').forEach((row) => {
@@ -459,8 +539,7 @@ export function createPayments({ api, refresh }) {
         if (!(await queue(entries))) return false;
         disposeReceiptPreviews();
         $('#nf').classList.add('hidden');
-        $('#nres').innerHTML =
-          `<div class="card ok-panel" role="status" aria-live="polite"><h2>📴 Saved on this device</h2><p>${esc(message)}</p><div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
+        renderDeviceSaveResult(message);
         return true;
       };
 
@@ -483,8 +562,7 @@ export function createPayments({ api, refresh }) {
         ).length;
         disposeReceiptPreviews();
         $('#nf').classList.add('hidden');
-        $('#nres').innerHTML =
-          `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Saved ${d.created.length} ${entryNoun(d.created.length)}</h2>${pendingApprovalCount ? `<p role="status">${pendingApprovalCount} payment(s) are pending owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.</p>` : ''}${d.created.map((c) => `<div style="margin:8px 0">#${esc(vno(c))} · ${esc(c.vendor)} · <b>${money(c.amount)}</b> <button class="btn sm" data-act="print" data-id="${esc(c.id)}">Print</button></div>`).join('')}<div class="actions"><button class="btn primary" data-act="newagain">New ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button></div></div>`;
+        renderServerSaveResult(d.created, pendingApprovalCount);
       } catch (e) {
         // A lost connection or non-JSON response can happen after the server committed the voucher.
         // Preserve each original client ID locally, then retry those same IDs once through the outbox.

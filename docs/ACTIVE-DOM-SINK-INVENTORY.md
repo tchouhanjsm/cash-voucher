@@ -1,24 +1,24 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (main after PR #142; active source baseline 27 assignments).  
-**Phase 11 candidate count:** 25 assignments across eight frontend modules after retiring two Users loading/error templates. Dashboard statement fingerprint remains `2977910e`; the administration fingerprints are updated in `scripts/dom-sink-source-baseline.json`. CI is the executable gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `db3c2cfd08ddbd1a80d37bdc67557b719446caaf` (main after PR #143; active source baseline 25 assignments).  
+**Phase 11 Batch 2 candidate count:** 22 assignments across eight frontend modules after retiring two payment-save confirmation templates and one bulk-import completion template. CI is the executable gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
 
-The pre-Phase-11 main baseline has 27 `innerHTML =` assignment sites across eight JavaScript modules. This candidate removes two static Users loading/error assignments, leaving 25 active sites while keeping eight modules. Phase 10 changed the Dashboard assignment fingerprint to `2977910e`. Each future change requires review of data flow and a focused hostile-data regression before count/fingerprint baselines are updated.
+Merged main after PR #143 has 25 `innerHTML =` assignment sites across eight JavaScript modules. The Phase 11 Batch 2 candidate removes two payment-save result assignments and one bulk-import completion assignment, leaving 22 active sites. Each future change requires review of data flow and a focused hostile-data regression before count/fingerprint baselines are updated.
 
 **Current module counts:**
 
 - features/administration.js — 5 sites: vendor, user list, settings, audit and account views; two fixed Users loading/error states now use DOM APIs.
-- features/bulk.js — 3 sites: bulk shell, preview rows and import results.
+- features/bulk.js — 2 sites on this candidate: initial shell and interactive preview; import-completion status now uses DOM APIs.
 - features/cash-close.js — 5 sites: shell, close details, preview and print; loading/error states use DOM APIs.
 - features/dashboard.js — 1 site: dashboard shell and financial summaries.
-- features/payments.js — 5 sites: payment form/rows and complex save/queue feedback; text-only validation/storage errors use DOM APIs.
+- features/payments.js — 3 sites on this candidate: payment form, row template and outbox banner; offline and online save confirmations now use DOM APIs.
 - features/register.js — 3 sites: register shell, totals and rows; pagination uses DOM APIs.
 - features/reports.js — 2 sites: report shell and report rows/results.
 - features/printing.js — 1 site: printable voucher.
-- Total — 25 assignment sites across eight modules on the Phase 11 candidate, down from 27 on merged main and 33 before PR #135.
+- Total — 22 assignment sites across eight modules on the Phase 11 Batch 2 candidate, down from 25 on merged main after PR #143 and 33 before PR #135.
 
 The machine-readable expected counts live in `scripts/dom-sink-baseline.json`. The ordered per-assignment source fingerprints live in `scripts/dom-sink-source-baseline.json`; both baselines were updated independently in PR #135. `npm run check:dom-sinks` fails when a new sink is added, a reviewed sink disappears/changes count, a new module introduces an HTML sink, or one of the disallowed dynamic DOM APIs is used. A deliberate change requires review of its full interpolation/data flow, a focused adversarial test, and a reviewed baseline update.
 
@@ -46,3 +46,11 @@ No active frontend module may introduce the following without an explicit securi
 - Most sinks render templates and many interpolate values. The relevant value must be escaped for its output context or placed via DOM APIs; numeric display formatting is not an HTML sanitizer.
 - Existing Browser E2E tests exercise hostile text for specific admin, audit, bulk, register, dashboard, receipt and cash-close surfaces. They do not cover every possible persisted field, API response or browser engine.
 - The complete semantic source-to-sink review, live-host headers/CSP, live authorization and adversarial manual review remain release gates.
+
+## Phase 11 Batch 2 — payment and bulk result states
+
+The payment entry flow no longer builds its local/offline confirmation or server-save confirmation through HTML strings. Explicit DOM construction preserves the polite status panel, heading, explanatory message, conditional independent-approval notice, voucher number/vendor/amount summaries, Print actions and New entry action. The existing ambiguous-save recovery still finds the local panel's heading and message and can update them after the same-ID retry.
+
+The bulk-import completion panel now uses DOM construction. It preserves imported counts and operation wording, the pending-approval notice, skipped-row notice, polite status announcement, Open register and Import more actions. Browser E2E sends hostile server-returned voucher number and vendor markup into the save confirmation and verifies that no active image/SVG nodes or script effect appears; bulk E2E verifies the result panel's accessible status and both actions.
+
+The merged-main baseline is 25 sites; this candidate has 22 across eight modules. The two JSON baselines are updated only for these three reviewed assignments. The remaining sites still require contextual review; counts and fingerprints are not XSS certification.
