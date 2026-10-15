@@ -1,7 +1,7 @@
 import { $ } from '../core/dom.js';
 import { can, nm, normalizeApprovalStatus, pays, recs, S } from '../core/state.js';
 import { addDays, dmy, esc, finiteAmount, iso, money, sumAmounts, today } from '../core/utils.js';
-import { head, refreshBtn } from '../core/ui.js';
+import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard() {
   const D = { r: '30d', from: '', to: '' };
@@ -184,6 +184,48 @@ export function createDashboard() {
       );
     }
 
+    const attention = [];
+    if (dataAvailable && approvalExceptions.length) {
+      attention.push({
+        tone: 'warn',
+        icon: 'clock',
+        text: `${approvalExceptions.length} payment${approvalExceptions.length === 1 ? '' : 's'} need approval or review`,
+        action: 'reg',
+        label: 'Open register',
+      });
+    }
+    if (S.offlineMode || navigator.onLine === false) {
+      attention.push({
+        tone: 'warn',
+        icon: 'cloud-off',
+        text: 'Working offline. New entries are saved on this device until you reconnect',
+        action: '',
+        label: '',
+      });
+    }
+    if (dataAvailable && (diagnostics.malformedRecordCount || invalidAmountCount)) {
+      attention.push({
+        tone: 'bad',
+        icon: 'alert',
+        text: `${diagnostics.malformedRecordCount + invalidAmountCount} voucher record(s) have invalid data and are excluded`,
+        action: 'reg',
+        label: 'Check register',
+      });
+    }
+    // This panel reports dashboard-level checks only; it is not backup, queue or release health.
+    const needsAttention = !dataAvailable
+      ? ''
+      : `<section class="card needs" aria-labelledby="needsTitle"><h2 id="needsTitle">Needs attention <span class="count-pill">${attention.length}</span></h2>${
+          attention.length
+            ? `<ul class="needs-list">${attention
+                .map(
+                  (item) =>
+                    `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${item.text}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
+                )
+                .join('')}</ul>`
+            : `<p class="needs-clear">${icon('check')}<span>No known dashboard exceptions were found in the checks shown here. This does not verify backups, the full recovery queue, or release readiness.</span></p>`
+        }</section>`;
+
     const financialPanels = !dataAvailable
       ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">${esc(unavailableMessage)} No financial totals or charts are shown until valid voucher data is available.</p></div>`
       : `
@@ -218,6 +260,7 @@ export function createDashboard() {
         },
       ) +
       `
+  ${needsAttention}
   <div class="seg">${[
     ['7d', 'Last 7 days'],
     ['30d', 'Last 30 days'],
