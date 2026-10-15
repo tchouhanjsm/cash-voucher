@@ -1,4 +1,4 @@
-import { $, $ } from '../core/dom.js';
+import { $, $$ } from '../core/dom.js';
 import { normalizeVoucherCollection, S, can } from '../core/state.js';
 import { fail, toast } from '../core/ui.js';
 import { ls } from '../core/storage.js';
