@@ -2,14 +2,16 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3` (main after PR #134; Phase 5 fingerprints existing assignment statements).
+**Latest merged review baseline:** `572b5d68fb6b6a572a08deab908c0b83d44aba62` (main after PR #135; 28 assignments remain across nine modules).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
 
 **Phase 5 / PR #134 (merged):** ordered source fingerprints now detect edits to a known assignment's template, expression or escaping helper; its tested head passed all three required workflows. A matching fingerprint does not prove contextual safety, eliminate DOM-based risk, or replace manual review and hostile-input tests.
 
-**Phase 6 / PR #135 (proposed):** five status/error-only assignments are replaced by explicit DOM nodes and `textContent`, including the Daily Cash Close API error boundary. The proposed active inventory falls from 33 to 28 sinks. A hostile API-error E2E test checks that SVG markup is displayed as inert text. This is partial risk reduction; the 28 remaining assignments still require context-specific review.
+**Phase 6 / PR #135 (merged):** five status/error-only assignments were replaced by DOM nodes and `textContent`, including the Daily Cash Close API error boundary. The active inventory falls from 33 to 28 sinks. Browser E2E verifies that SVG markup in an API-error response is displayed as inert text. This is partial risk reduction; the 28 remaining assignments still require context-specific review.
+
+**Phase 7 / PR #136 (proposed):** the accountant Recorded Movement Report is given an adversarial valid-shaped response containing hostile text fields and a formula-leading vendor value. The browser test checks inert HTML rendering, CSV apostrophe neutralization and recovery to the normal report response. This expands verification; it does not claim a confirmed report-renderer defect.
 
 **Phase 4 follow-up — 15 October 2026:** the active modular frontend currently has 33 `innerHTML` assignment sites across nine modules. `scripts/check-dom-sinks.js` locks those per-module counts and fails if they drift or if specified high-risk DOM APIs are introduced. A new mock-authenticated role/action suite separately tests staff/manager/owner/accountant access and own-versus-foreign record visibility. These are drift and regression controls, not proofs that each interpolation is safe or that every authorization scenario has been penetration-tested. The live deployment and production data boundaries remain unverified.
 
