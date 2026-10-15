@@ -2332,24 +2332,30 @@ auditMarkerOutageMock.failNextAuditWrite();
 auditMarkerOutageMock.failNextAuditMarkerWrite();
 const markerOutageVoucher = auditMarkerOutageMock.call('createVouchers', {
   token: markerPinChange.data.token,
-  entries: [{
-    clientId: 'audit-marker-outage-test',
-    date: new Date().toISOString().slice(0, 10),
-    vendor: 'Audit Marker Outage Vendor',
-    amount: 146,
-    category: 'Other',
-    type: 'PAYMENT',
-    cashImpact: 'CASH_OUT',
-  }],
+  entries: [
+    {
+      clientId: 'audit-marker-outage-test',
+      date: new Date().toISOString().slice(0, 10),
+      vendor: 'Audit Marker Outage Vendor',
+      amount: 146,
+      category: 'Other',
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
 });
 assert(
   markerOutageVoucher.ok &&
-    auditMarkerOutageMock.sheets.Vouchers.rows.some((row) => row[14] === 'audit-marker-outage-test'),
+    auditMarkerOutageMock.sheets.Vouchers.rows.some(
+      (row) => row[14] === 'audit-marker-outage-test',
+    ),
   'voucher write remains successful and persisted when both audit append and marker persistence fail',
 );
 assert(
   !auditMarkerOutageMock.props.AUDIT_WRITE_STATUS &&
-    auditMarkerOutageMock.auditDiagnostics.some((entry) => entry.includes('Could not persist audit-write failure marker')),
+    auditMarkerOutageMock.auditDiagnostics.some((entry) =>
+      entry.includes('Could not persist audit-write failure marker'),
+    ),
   'marker-storage failure emits a console diagnostic without pretending a durable marker exists',
 );
 const unavailableMarkerHealth = auditMarkerOutageMock.call('auditLog', {
@@ -2361,6 +2367,7 @@ assert(
     unavailableMarkerHealth.data.auditHealth.failureCount === 0,
   'owner audit status makes the simultaneous marker-store failure limitation explicit in regression evidence',
 );
+
 n += 5;
 
 console.log('backend OK — ' + n + ' checks passed');

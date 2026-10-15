@@ -71,7 +71,10 @@ function scanRepository() {
   }
 
   const findings = [];
-  const paths = gitOutput(['ls-files', '-z'], 'buffer').toString('utf8').split('\0').filter(Boolean);
+  const paths = gitOutput(['ls-files', '-z'], 'buffer')
+    .toString('utf8')
+    .split('\0')
+    .filter(Boolean);
   for (const file of paths) {
     const bytes = fs.readFileSync(file);
     if (bytes.includes(0)) continue;
