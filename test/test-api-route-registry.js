@@ -41,11 +41,7 @@ assert.ok(
 
 for (const action of actions) {
   const result = g.call(action);
-  assert.equal(
-    result.ok,
-    false,
-    action + ' must not succeed without an authenticated session',
-  );
+  assert.equal(result.ok, false, action + ' must not succeed without an authenticated session');
   if (action !== 'login') {
     assert.equal(
       result.code,

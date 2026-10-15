@@ -38,4 +38,6 @@ assert.deepEqual(
   'ordinary app settings, public advisory identifiers, and sample URLs are not credentials',
 );
 
-console.log('Secret scan patterns OK — seven high-confidence credential families and safe examples.');
+console.log(
+  'Secret scan patterns OK — seven high-confidence credential families and safe examples.',
+);
