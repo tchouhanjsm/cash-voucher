@@ -2036,6 +2036,9 @@ with sync_playwright() as p:
     check(
         'The start date must be on or before the end date.' in page.locator('#rempty').inner_text()
         and 'Totals unavailable' in page.locator('#rtot').inner_text()
+        and page.locator('#rtot [role=alert]').inner_text()
+        == 'Totals unavailable: choose a start date on or before the end date.'
+        and page.locator('#rtot img, #rtot svg').count() == 0
         and page.locator('#rf [data-act=csv]').is_disabled()
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'invalid register date range blocks misleading totals and CSV export with a recovery action',
@@ -3018,8 +3021,10 @@ with sync_playwright() as p:
     check(
         '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#rtot').inner_text()
         and '8 malformed voucher field(s) handled for safe display' in page.locator('#rtot').inner_text()
+        and page.locator('#rtot [role=status]').count() >= 2
+        and page.locator('#rtot img, #rtot svg').count() == 0
         and '[object Object]' not in page.locator('#view').inner_text(),
-        'register surfaces the same bootstrap diagnostics and keeps malformed metadata safe',
+        'register surfaces bootstrap diagnostics as DOM status nodes and keeps malformed metadata safe',
     )
     go_view(page, 'dash')
     builtins_unchanged = page.evaluate(
@@ -4980,6 +4985,76 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'hostile payee names stay inert in recent-payee chips and the duplicate warning',
     )
+
+    denied_page_states = page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          const { pageNotice } = await import('/frontend/core/ui.js');
+          const { createReports } = await import('/frontend/features/reports.js');
+          const { createCashClose } = await import('/frontend/features/cash-close.js');
+          const originalPermissions = { ...S.me.perms };
+          const payload = '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>';
+          const results = {};
+          try {
+            document.querySelector('#view').replaceChildren(
+              pageNotice(payload, payload, { panelClass: 'card', role: 'status' }),
+            );
+            results.helper = {
+              heading: document.querySelector('#view h1')?.textContent || '',
+              message: document.querySelector('#view p')?.textContent || '',
+              hasActiveMarkup: Boolean(document.querySelector('#view img, #view svg')),
+            };
+
+            S.me.perms.reports = false;
+            createReports({ api: async () => ({}) }).render();
+            results.reports = {
+              heading: document.querySelector('#view h1')?.textContent || '',
+              message: document.querySelector('#view p')?.textContent || '',
+              hasCard: Boolean(document.querySelector('#view .card')),
+              hasActiveMarkup: Boolean(document.querySelector('#view img, #view svg')),
+            };
+
+            S.me.perms.cashClose = false;
+            createCashClose({ api: async () => ({}) }).render();
+            const status = document.querySelector('#view [role=status]');
+            results.cashClose = {
+              heading: document.querySelector('#view h1')?.textContent || '',
+              message: status?.textContent || '',
+              className: status?.className || '',
+              hasActiveMarkup: Boolean(document.querySelector('#view img, #view svg')),
+            };
+            results.scriptEffect = window.__xssFired === true;
+            return results;
+          } finally {
+            Object.assign(S.me.perms, originalPermissions);
+          }
+        }"""
+    )
+    check(
+        denied_page_states['helper']['heading']
+        == '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>'
+        and denied_page_states['helper']['message']
+        == denied_page_states['helper']['heading']
+        and not denied_page_states['helper']['hasActiveMarkup']
+        and not denied_page_states['scriptEffect'],
+        'shared page-notice renderer keeps hostile title and message payloads inert',
+    )
+    check(
+        denied_page_states['reports']['heading'] == 'Recorded Movement Report'
+        and denied_page_states['reports']['message'] == 'Reports are unavailable for this account.'
+        and denied_page_states['reports']['hasCard']
+        and not denied_page_states['reports']['hasActiveMarkup'],
+        'Reports permission-denied state uses safe DOM construction with its card layout',
+    )
+    check(
+        denied_page_states['cashClose']['heading'] == 'Daily Cash Close'
+        and denied_page_states['cashClose']['message']
+        == 'This feature is available to owners and managers.'
+        and denied_page_states['cashClose']['className'] == 'muted'
+        and not denied_page_states['cashClose']['hasActiveMarkup'],
+        'Cash Close permission-denied state preserves its status message and semantics',
+    )
+    go_view(page, 'dash')
 
     check(
         not csp_violations,

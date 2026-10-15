@@ -210,6 +210,37 @@ export const icon = (name) => {
   return `<svg class="i" aria-hidden="true" focusable="false"><use href="#i-${safeName}"></use></svg>`;
 };
 
+// Build a small status/permission page without sending text through the HTML parser.
+export function pageNotice(title, message, { panelClass = '', messageClass = '', role = '' } = {}) {
+  const fragment = document.createDocumentFragment();
+  const header = document.createElement('div');
+  header.className = 'head page-header';
+  const copy = document.createElement('div');
+  copy.className = 'page-header-copy';
+  const heading = document.createElement('h1');
+  heading.textContent = scalarModalLabel(title, 'Page');
+  copy.appendChild(heading);
+  const actions = document.createElement('div');
+  actions.className = 'page-header-actions';
+  header.append(copy, actions);
+  fragment.appendChild(header);
+
+  const paragraph = document.createElement('p');
+  if (messageClass) paragraph.className = messageClass;
+  if (role) paragraph.setAttribute('role', role);
+  paragraph.textContent = scalarText(message);
+
+  if (panelClass) {
+    const panel = document.createElement('div');
+    panel.className = panelClass;
+    panel.appendChild(paragraph);
+    fragment.appendChild(panel);
+  } else {
+    fragment.appendChild(paragraph);
+  }
+  return fragment;
+}
+
 // `extra` is trusted app-authored action markup, never a data string.
 export const head = (title, extra = '', options = {}) => {
   const description = options.description
