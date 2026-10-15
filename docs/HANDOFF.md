@@ -2,18 +2,20 @@
 
 Updated: 15 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (PR #142 merge; documentation-only reconciliation)  
+Last verified main SHA: `db3c2cfd08ddbd1a80d37bdc67557b719446caaf` (PR #143 merge commit)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current working branch: `phase-11/retire-admin-status-html-sinks-2026-10-15`  
-Current open PR: #143 — [Phase 11 Batch 1: retire Users status HTML sinks](https://github.com/tchouhanjsm/cash-voucher/pull/143) (implementation and checks in review)
+Current working branch: `phase-11/bulk-payment-result-dom-2026-10-15`  
+Current open PR: #144 — [Phase 11 Batch 2: replace payment and bulk result HTML sinks](https://github.com/tchouhanjsm/cash-voucher/pull/144)
 
 ## Verified repository state
 
-- Live `main` resolves to PR #142 merge commit `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (verified 15 October 2026). PR #142 reconciled documentation only; the active frontend source baseline remains the Phase 10 merge at `42ff7708535d04c15510caf90c5f93738109669e`.
-- PR #141 is closed and merged: [PR #141](https://github.com/tchouhanjsm/cash-voucher/pull/141). Exact PR-head evidence records CI, Browser E2E (`353 checks passed, 0 failed`) and Full Flight Test passing on `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`; the PR description reports post-merge main CI passed. The connector's commit-workflow lookup returned no runs for the merge SHA, so the post-merge statement is recorded as PR-reported, not independently reconstructed from that lookup.
-- PR #140's UI originated on `feature/fast-safe-entry`; Phase 10 integrated the UI changes on current main in PR #141. The feature-branch merge must not be mistaken for a mainline release by itself.
-- On the pre-Phase-11 mainline, the Dashboard statement fingerprint is `2977910e` and the active inventory had 27 assignments. This Phase 11 candidate retires two Users status sinks and updates the inventory to 25 assignments across eight modules. Count/fingerprint gates are drift detectors, not XSS certification.
-- Mock-backed workflow evidence does not prove live Apps Script deployment, Google permissions, scheduled backup/restore, physical-device behavior or production readiness.
+- Live `main` resolves to `db3c2cfd08ddbd1a80d37bdc67557b719446caaf`, PR #143's merge commit.
+- PR #143 is closed and merged: [PR #143](https://github.com/tchouhanjsm/cash-voucher/pull/143). Its tested head was `d3bc6b5381d9dbd98ebddfedce81e32a5c49abca`; CI/quality, Browser E2E (353 checks) and Full Flight Test passed on that exact head. This evidence is for the tested PR head and is not a claim of live Apps Script deployment.
+- Phase 11 Batch 1 removed two Users loading/error HTML assignments. The merged-main sink baseline is now 25 assignments across eight frontend modules.
+- Phase 11 Batch 2 / PR #144 replaces the offline/local payment-save confirmation, online payment-save confirmation and bulk-import completion status with explicit DOM construction. The current candidate inventory is 22 assignments across the same eight modules.
+- Browser E2E now injects hostile server-returned voucher number and vendor markup into the payment-save confirmation and checks inert rendering; it also checks bulk completion status semantics and both action controls. Exact-current-head workflow evidence is maintained in PR #144.
+- Source tests do not prove live Apps Script deployment identity/version, Sheet binding, real permissions, scheduled backup/isolated restore, physical-device behavior, accessibility conformance, quotas or concurrency.
+- Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; never stage, overwrite or delete it. `docs/HANDOFF.md` remains the single canonical handoff; do not create per-PR handoff documents.
 
 ## Phase 10 — UI refresh integration and dashboard trust states
 
@@ -37,7 +39,7 @@ Current open PR: #143 — [Phase 11 Batch 1: retire Users status HTML sinks](htt
 
 ## Remaining risks and owner-controlled operational gates
 
-- Main's pre-Phase-11 baseline has 27 active HTML assignment sites. This Phase 11 candidate retires two fixed Users loading/error templates using DOM APIs, bringing the candidate inventory to 25 across eight modules; sink counts/fingerprints remain drift gates, not proof of safety.
+- Main after PR #143 has 25 active HTML assignment sites. The current Phase 11 Batch 2 candidate retires three more result templates, leaving 22 across eight modules; sink counts/fingerprints remain drift gates, not proof of safety.
 - Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility and real-service quotas/concurrency remain unverified.
 - Investigate the documented audit-write dual-failure observability limit without fabricating missing events.
 - Reassess the `@google/clasp -> micromatch -> braces` dependency exception by 9 November 2026.
@@ -46,10 +48,13 @@ Current open PR: #143 — [Phase 11 Batch 1: retire Users status HTML sinks](htt
 
 ## Phase 11 — contextual rendering-security review and sink retirement
 
-**Batch 1 implementation:** removed the two static HTML assignments in the Users view that displayed the loading state and request-failure state. The replacement constructs the page heading, refresh action, loading status, alert and retry button with DOM APIs and `textContent`; it preserves the same roles, copy, classes, action keys and in-place retry behavior. Browser E2E now injects hostile SVG markup as the failed API's error string and verifies that it is not reflected in the view, no SVG/image is created in the view, no script effect fires, and retry succeeds.
+**Batch 1 — merged in PR #143:** the Users view's fixed loading/error templates were replaced with DOM construction and `textContent`. Hostile API error markup remains inert, and the existing refresh/retry flow is preserved. Merged main has 25 active assignment sites across eight modules.
 
-**Candidate result:** administration sink count drops from seven to five; total active HTML assignments drop from 27 to 25 across eight modules. `scripts/dom-sink-baseline.json` and `scripts/dom-sink-source-baseline.json` are updated for that reviewed change. Remaining 25 sites require contextual review; the batch is not XSS certification.
+**Batch 2 — current candidate (PR #144):** three result/status templates are replaced using DOM APIs:
+- Payment saved on this device: preserves the polite status panel, local-storage explanation and New entry action; the heading and detail paragraph remain available to ambiguous-save same-ID recovery.
+- Payment saved on the server: preserves operation counts, independent-approval notice, voucher number/vendor/amount display, Print actions and New entry.
+- Bulk import completion: preserves operation wording, pending-approval and skipped-row notices, polite status semantics, Open register and Import more.
+- Adversarial Browser E2E supplies hostile server-returned voucher number/vendor values and verifies they remain inert text.
+- Candidate inventory falls from 25 to 22 assignments across eight modules; sink count and ordered fingerprint baselines change only for these three reviewed assignments.
 
-**Acceptance boundary:** no financial calculations, permissions, API contracts, historical data or backend policy changes; no migration, `clasp push`, Apps Script deployment or production-data mutation. This is an incremental risk-reduction batch, not full XSS certification.
-
-**Do not start deployment or data migration** as part of Phase 11. Live deployment identity, live role/receipt authorization, scheduled backup and isolated restore, device/offline/accessibility, real-service quotas/concurrency, and audit dual-failure observability remain separate risks.
+**Acceptance boundary:** no financial calculations, authorization policy, backend contract, schema, historical data or dependencies change. No `clasp push`, Apps Script deployment, migration, production-data mutation, merge or release is included. This is incremental source-level risk reduction, not XSS certification.
