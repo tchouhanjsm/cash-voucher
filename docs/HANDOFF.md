@@ -51,6 +51,7 @@ Current open PR: #144 — [Phase 11 Batch 2: replace payment and bulk result HTM
 **Batch 1 — merged in PR #143:** the Users view's fixed loading/error templates were replaced with DOM construction and `textContent`. Hostile API error markup remains inert, and the existing refresh/retry flow is preserved. Merged main has 25 active assignment sites across eight modules.
 
 **Batch 2 — current candidate (PR #144):** three result/status templates are replaced using DOM APIs:
+
 - Payment saved on this device: preserves the polite status panel, local-storage explanation and New entry action; the heading and detail paragraph remain available to ambiguous-save same-ID recovery.
 - Payment saved on the server: preserves operation counts, independent-approval notice, voucher number/vendor/amount display, Print actions and New entry.
 - Bulk import completion: preserves operation wording, pending-approval and skipped-row notices, polite status semantics, Open register and Import more.
