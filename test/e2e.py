@@ -3365,6 +3365,42 @@ with sync_playwright() as p:
         'Escape closes dialog, restores opener focus, and re-enables the app',
     )
 
+    # Exercise the shared dialog API with hostile title/submit labels.
+    page.evaluate("""async () => {
+      const { dialog } = await import('./frontend/core/ui.js');
+      const trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.id = 'modal-hostile-label-trigger';
+      trigger.textContent = 'Open test dialog';
+      document.body.appendChild(trigger);
+      trigger.focus();
+      const body = document.createElement('div');
+      const input = document.createElement('input');
+      input.id = 'modal-hostile-label-input';
+      input.setAttribute('aria-label', 'Test field');
+      body.appendChild(input);
+      window.__modalLabelXss = false;
+      window.__modalHostileTitle = '<svg onload="window.__modalLabelXss=true">hostile title</svg>';
+      window.__modalHostileSubmit = '<img src=x onerror="window.__modalLabelXss=true">';
+      dialog(window.__modalHostileTitle, body, () => Promise.resolve(), window.__modalHostileSubmit);
+    }""")
+    check(
+        page.locator('#modalTitle').text_content() == page.evaluate('window.__modalHostileTitle')
+        and page.locator('#modal .primary').text_content() == page.evaluate('window.__modalHostileSubmit')
+        and page.locator('#modal svg, #modal img').count() == 0
+        and not page.evaluate('window.__modalLabelXss === true')
+        and page.locator('#modal #modal-hostile-label-input').count() == 1,
+        'shared dialog renders hostile labels as inert text while preserving caller DOM content',
+    )
+    page.evaluate("() => document.querySelector('#modal [data-x]').click()")
+    check(
+        page.locator('#modal').evaluate("(element) => element.classList.contains('hidden')")
+        and not page.locator('#app').evaluate('(element) => element.inert')
+        and page.evaluate("document.activeElement?.id === 'modal-hostile-label-trigger'"),
+        'shared dialog closes safely and restores opener focus after hostile-label rendering',
+    )
+    page.locator('#modal-hostile-label-trigger').evaluate('(element) => element.remove()')
+
     update_requests = []
 
     def capture_voucher_update(request):

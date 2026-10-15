@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `572b5d68fb6b6a572a08deab908c0b83d44aba62` (PR #135 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
 
-**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#135 add source recovery, authorization/rendering drift checks, statement fingerprints and five text-only sink reductions. Proposed PR #136 adds adversarial report-rendering and CSV output coverage; neither it nor prior mock-backed tests proves live deployment or complete semantic XSS safety.
+**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#137 add source recovery, authorization/rendering drift checks, statement fingerprints, five text-only sink reductions, adversarial accountant-report/CSV coverage and payee-day split-payment approval protection. These mock-backed tests do not prove live deployment or complete semantic XSS safety.
 
 ## Current go-live gates — reviewed 14 October 2026
 
@@ -51,7 +51,7 @@ Do not begin the pilot until the owner confirms the release target, required mig
 | Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                        |
 | Active frontend architecture                                | PASS on current main  | `index.html` loads `frontend/main.js`; source graph is modular                                           |
 | PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                             |
-| CI quality gate                                             | PASS on current main  | Post-merge CI passed on `4d80152`; each later PR must still be checked at its exact head                 |
+| CI quality gate                                             | PASS on current main  | Post-merge CI passed on `fabf4bba1a964c99c55391c4d4be3f260d787906` (run 38706374287); each later PR must still be checked at its exact head                 |
 | Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
 | Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |

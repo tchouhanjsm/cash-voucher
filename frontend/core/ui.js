@@ -1,9 +1,14 @@
 import { $, $$ } from './dom.js';
-import { esc } from './utils.js';
+import { esc, scalarText } from './utils.js';
 
 let toastTimer;
 let returnFocusTo = null;
 let restoreAppInert = null;
+
+function scalarModalLabel(value, fallback) {
+  const label = scalarText(value).trim();
+  return label || fallback;
+}
 
 export function toast(message, kind) {
   const element = $('#toast');
@@ -78,10 +83,40 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
   modal.setAttribute('aria-labelledby', 'modalTitle');
-  modal.innerHTML = `<form class="card mcard" autocomplete="off"><h2 id="modalTitle">${esc(title)}</h2><p class="error" id="mErr" role="alert" aria-live="assertive"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button type="submit" class="btn primary">${esc(ok)}</button>` : ''}</div></form>`;
+  const form = document.createElement('form');
+  form.className = 'card mcard';
+  form.autocomplete = 'off';
 
-  const form = $('form', modal);
-  form.insertBefore(body, $('#mErr', form));
+  const heading = document.createElement('h2');
+  heading.id = 'modalTitle';
+  heading.textContent = scalarModalLabel(title, 'Dialog');
+
+  const error = document.createElement('p');
+  error.className = 'error';
+  error.id = 'mErr';
+  error.setAttribute('role', 'alert');
+  error.setAttribute('aria-live', 'assertive');
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'btn';
+  closeButton.dataset.x = '';
+  closeButton.textContent = 'Close';
+  actions.appendChild(closeButton);
+
+  if (onSubmit) {
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.className = 'btn primary';
+    submitButton.textContent = scalarModalLabel(ok, 'Save');
+    actions.appendChild(submitButton);
+  }
+
+  form.append(heading, body, error, actions);
+  modal.replaceChildren(form);
   $('[data-x]', form).onclick = closeModal;
 
   modal.onkeydown = (event) => {

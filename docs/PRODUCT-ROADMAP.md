@@ -1,9 +1,9 @@
 # Product Gap Register and Roadmap
 
 Status date: 15 October 2026  
-Last verified main baseline: 572b5d68fb6b6a572a08deab908c0b83d44aba62 (PR #135 merge)  
-Current phase: Phase 7 — accountant report rendering and CSV output contract (PR #136 open; not merged)  
-Current review branch: phase-7/report-rendering-output-contract-2026-10-15
+Last verified main baseline: `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137 merge)  
+Current phase: Phase 8 — contextual rendering security and reusable DOM boundaries  
+Current review branch: `phase-8/contextual-rendering-security-2026-10-15`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -18,7 +18,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 4 — PR #133 is merged at `a0add3de0bf79902f046e7811e888f2f1e735f9a`; its tested head passed CI, Browser E2E (342 checks) and Full Flight Test. It adds authenticated role/action and data-visibility tests, the 33-site HTML-sink inventory, and designated high-risk DOM API checks.
 - Phase 5 — PR #134 merged at `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3`. Its exact tested head `428db8af06d0eeaa9ddede9e3a8dc06d5c6f9280` passed CI, Browser E2E (342 checks) and Full Flight Test. It adds per-statement fingerprints for the 33 known sinks; fingerprints detect drift, not contextual safety.
 - Phase 6 — PR #135 merged at `572b5d68fb6b6a572a08deab908c0b83d44aba62`. Its exact tested head `c4d163bcc05b543a004dcd12a617319b27a98f32` passed CI (267 backend checks and 28 sink count/fingerprint matches), Browser E2E (343 checks, zero failures) and Full Flight Test. It replaces five text-only/status/error HTML insertions with DOM APIs and `textContent`, reducing the active sink inventory from 33 to 28 across nine modules.
-- Phase 7 — PR #136 proposes adversarial browser coverage of the accountant report renderer and CSV export. A valid-shaped response injects hostile HTML payloads and a formula-leading vendor value, asserts rendered content remains inert, verifies apostrophe neutralization in CSV, and checks recovery after the mock response is removed. Sink count remains 28; no confirmed renderer defect or financial logic change is claimed.
+- Phase 7 — PR #136 merged at `4684ffabc0fbbf2ff792c687e7ce9d3a31e29170`. Its tested head `24718c238ed19f85a2ca6c6721412fdca71d92ae` passed CI, Browser E2E (347 checks, zero failures) and Full Flight Test. It adds adversarial accountant-report HTML and CSV formula-neutralization coverage. Sink count remains 28; no confirmed renderer defect or financial logic change was claimed.
+- Phase 8 — PR #137 merged at `fabf4bba1a964c99c55391c4d4be3f260d787906`. Its tested head `3d2876d68ecf763d1ed09b908bab6b59ac65648c` passed CI, Browser E2E (349 checks, zero failures) and Full Flight Test. It adds payee-day split-payment approval protection, duplicate warnings and entry UX improvements.
 - Operational readiness — live Apps Script deployment/identity, real role checks, scheduled backup and isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -31,9 +32,9 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 7
+## Priority after Phase 8
 
-1. Continue the manual, context-specific semantic source-to-sink review for the 28 remaining assignments; use focused tests and DOM APIs when they materially reduce risk. Fingerprints make changes visible but do not replace review.
+1. Continue the manual, context-specific semantic source-to-sink review for the remaining HTML assignments; use focused tests and DOM APIs when they materially reduce risk. Fingerprints make changes visible but do not replace review.
 2. Continue adversarial coverage across remaining independently rendered surfaces without repeating test cases already covered.
 3. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
 4. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.

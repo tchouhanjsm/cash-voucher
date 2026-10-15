@@ -1,7 +1,7 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `572b5d68fb6b6a572a08deab908c0b83d44aba62` (PR #135).
-**Current verified count:** 28 assignments across nine modules. PR #135 merged with independent count/API and statement-fingerprint baselines.  
+**Last merged source baseline:** `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137).
+**Current verified count:** 28 assignments across nine modules before the proposed Phase 8 modal-boundary change. PR #135 merged with independent count/API and statement-fingerprint baselines.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
@@ -27,7 +27,7 @@ The machine-readable expected counts live in `scripts/dom-sink-baseline.json`. T
 
 **Merged in Phase 6 / PR #135:** five low-complexity assignments were replaced by DOM construction and `textContent`. Browser E2E sends SVG markup as a Cash Close API error and verifies it is shown literally, creates no SVG/image node, and does not execute. This is a targeted regression, not complete XSS certification.
 
-**Proposed in Phase 7 / PR #136:** preserve the 28-site count and add a hostile-but-valid report-response regression covering report text fields and CSV formula-leading content. This extends evidence for the accountant report boundary; it does not claim a confirmed XSS defect.
+**Merged in Phase 7 / PR #136:** preserve the 28-site count and add a hostile-but-valid report-response regression covering report text fields and CSV formula-leading content. This extends evidence for the accountant report boundary; it does not claim a confirmed XSS defect.
 
 ## Disallowed dynamic APIs
 
@@ -39,3 +39,10 @@ No active frontend module may introduce the following without an explicit securi
 - Most sinks render templates and many interpolate values. The relevant value must be escaped for its output context or placed via DOM APIs; numeric display formatting is not an HTML sanitizer.
 - Existing Browser E2E tests exercise hostile text for specific admin, audit, bulk, register, dashboard, receipt and cash-close surfaces. They do not cover every possible persisted field, API response or browser engine.
 - The complete semantic source-to-sink review, live-host headers/CSP, live authorization and adversarial manual review remain release gates.
+
+
+## Phase 8 proposal — modal frame (15 October 2026)
+
+The shared modal frame is currently built with one `modal.innerHTML` assignment even though the dialog API already requires the body to be a DOM Node/DocumentFragment. The proposed change constructs the form, heading, alert, Close button and optional submit button with DOM APIs and writes labels via scalar normalization and `textContent`.
+
+This removes an unnecessary reusable HTML-parsing boundary while preserving the dialog accessibility/keyboard contract. It is not evidence of a confirmed exploit. Update the sink and fingerprint baselines only alongside the implementation and adversarial Browser E2E coverage. The remaining assignments require individual contextual review; no broad XSS certification is implied.

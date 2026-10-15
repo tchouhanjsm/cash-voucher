@@ -1,5 +1,4 @@
 {
-  "frontend/core/ui.js": 1,
   "frontend/features/administration.js": 7,
   "frontend/features/bulk.js": 3,
   "frontend/features/cash-close.js": 5,
