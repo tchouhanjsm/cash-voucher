@@ -1,7 +1,7 @@
 # Product Requirements Baseline
 
 **Status:** Proposed baseline for owner review  
-**Updated:** 13 October 2026  
+**Updated:** 15 October 2026  
 **Product today:** Single-property cash-voucher PWA using a static frontend, Google Apps Script API, Google Sheets, and Google Drive.
 
 ## 1. Purpose and decision boundary
@@ -45,9 +45,9 @@ The product should prioritize trustworthy records and clear exceptions over a la
 - Understand whether an entry is saved locally or synchronized centrally.
 - View only records allowed by the server-enforced permission model.
 
-### Accountant — proposed future role
+### Accountant — implemented in source; deployment and export fit unverified
 
-A read-only report/export role may be valuable, but it is not an existing role or approved requirement. Confirm the receiving accountant's accounting product/version, the first export format and access boundaries before designing it. The source-field inventory, finance workflows, chart catalog, reconciliation controls and tax-data decision gates are documented in `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md`.
+The repository contains an accountant role with constrained report access and automated browser/API tests. Confirm its live deployed permissions before relying on it. The receiving accountant's product/version, export format, source-field inventory, reconciliation controls and tax-data decision gates still need owner approval; the export is not destination-certified or tax-ready. See `docs/ACCOUNTANT-RECORDKEEPING-AND-REPORTING-REQUIREMENTS.md`.
 
 ## 4. Product principles
 

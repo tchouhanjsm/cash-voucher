@@ -23,7 +23,7 @@ test/ · scripts/ · docs/
 - Staff can create entries and see their own; managers can view all entries, edit/cancel, bulk import, and manage vendors; owners can manage users/settings and view the audit log.
 - Cash payments and cash receipts with separate number series and categories.
 - Receipt images stored in Drive, with access checked by the API.
-- Dashboard, searchable/filterable register, CSV export, printing, and CSV/Excel/pasted bulk import with validation.
+- Dashboard, searchable/filterable register, CSV export, printing, and CSV/TSV/TXT/pasted-row bulk import with validation.
 - Installable PWA and a durable IndexedDB offline outbox. Open tabs broadcast queue changes; stable client IDs support idempotent retries; pending records can be exported and safely re-imported.
 - Automated daily Sheet/receipt backup infrastructure, including a manifest and 90-day retention policy in code.
 
@@ -60,6 +60,7 @@ npm run test:e2e
 
 - `npm run check` runs lint, formatting, JSON validation, JS syntax checks, the frontend release-integrity check, and the mock Apps Script backend suite.
 - `npm run test:e2e` runs the browser suite against the local mock server; it must not use the production API. See `docs/DEVELOPMENT-WORKFLOW.md`.
+- CI also runs `npm run audit:secrets` against the current tracked text and reachable Git history for selected credential patterns. It is a bounded detector, not complete security certification.
 - The mock Apps Script layer does not replace tests against a real Google account or load/concurrency testing against the live service.
 
 For local Apps Script development, follow `docs/DEVELOPMENT-WORKFLOW.md` and inspect `clasp status` before every push. Never run `clasp push` or `clasp deploy` without a deliberate backend release decision.

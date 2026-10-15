@@ -4,6 +4,16 @@
 **Audited main:** `255d78ccb6a21b204d432221489114ccf514d333` (PR #126 merge)  
 **Method:** live GitHub tree, source and documentation review; latest Actions metadata; no local checkout, Google account, deployed Apps Script, production Sheet/Drive, phone or restore destination was accessed.
 
+## Follow-up evidence — 15 October 2026
+
+The audit below is the original 14 October / PR #126 snapshot, retained as historical evidence. The last verified main baseline before PR #132 was `69f861f86d08a19da8fe1223b3bc6c4840478895` (PR #131 merge). The active branch contains a consolidated cross-phase batch.
+
+New evidence work in PR #132 includes a high-confidence credential-pattern scan across current tracked text and reachable Git diff history; an API route-registry guard checking unauthenticated fail-closed behavior and declared write actions; and deterministic mock workloads validating bootstrap/report completeness and totals at 100, 500 and 1,000 voucher rows. Treat all as pending until CI passes on the final PR head. These are not a complete secret scanner, a full action-by-role authorization matrix, XSS certification, Google Sheets scale test or production verification.
+
+Still open: complete active DOM-sink review; live role and deployment authorization review; actual backup and separate-destination restore; physical-device recovery/accessibility; and real service latency/quota/concurrency evidence.
+
+---
+
 ## Executive decision
 
 **Do not begin another isolated hardening PR.** The source contains a broad feature set and established automated checks, but operational readiness is explicitly unverified. Phase 1 must reconcile the product's actual state, then deliver end-to-end work packages with measurable outcomes.

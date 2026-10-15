@@ -7,7 +7,7 @@
     "node": ">=20 <23"
   },
   "scripts": {
-    "test": "node test/test-backend.js && node test/test-backup-failure.js && node test/test-backup-observability.js && node test/test-backup-integrity.js && node test/test-csv-export.js && node test/test-state-categories.js && node test/test-recovery-validation.js && node test/test-offline-auth.js && node test/test-dependency-audit.js && node test/test-pr-quality.js",
+    "test": "node test/test-backend.js && node test/test-backup-failure.js && node test/test-backup-observability.js && node test/test-backup-integrity.js && node test/test-csv-export.js && node test/test-state-categories.js && node test/test-recovery-validation.js && node test/test-offline-auth.js && node test/test-dependency-audit.js && node test/test-pr-quality.js && node test/test-api-route-registry.js && node test/test-performance-baseline.js && node test/test-secret-scan.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -30,6 +30,7 @@
     "check:pr-quality": "node scripts/check-pr-quality.js",
     "test:e2e": "bash test/run-e2e.sh",
     "audit:deps": "node scripts/dependency-audit.js",
+    "audit:secrets": "node scripts/scan-secrets.js",
     "check:contrast": "node scripts/check-contrast.js",
     "test:flight": "npm run audit:deps && npm run check && npm run test:e2e"
   },

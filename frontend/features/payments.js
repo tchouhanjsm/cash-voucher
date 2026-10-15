@@ -665,6 +665,7 @@ export function createPayments({ api, refresh }) {
             break;
           }
 
+          let serverConfirmed = false;
           try {
             if (!CASH_IMPACT_CHOICES.includes(record.entry?.cashImpact)) {
               throw Object.assign(
@@ -676,9 +677,28 @@ export function createPayments({ api, refresh }) {
             }
             // Submit one row per request so one rejected row cannot poison its neighbours.
             await api('createVouchers', { entries: [record.entry] });
+            serverConfirmed = true;
             await offlineQueue.ack([record.clientId], leaseOwner);
             uploaded++;
           } catch (error) {
+            // A successful server response followed by an IndexedDB failure is not a failed
+            // voucher: retain the original client ID and make the local-confirmation gap explicit.
+            if (serverConfirmed) {
+              try {
+                await offlineQueue.release(remainingIds, leaseOwner);
+              } catch (storageError) {
+                console.error(
+                  'Could not release an unacknowledged payment after server confirmation:',
+                  storageError,
+                );
+              }
+              bannerError =
+                'The server accepted a payment, but this device could not confirm local cleanup. The entry remains recoverable under the same transaction ID. Do not enter it again.';
+              announceOutboxChange('changed');
+              stopFlush = true;
+              break;
+            }
+
             if (isRecordRejection(error)) {
               try {
                 await offlineQueue.markFailed(record.clientId, leaseOwner, error.message);

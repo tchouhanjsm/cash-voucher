@@ -1,5 +1,7 @@
 # Phase 2 — Cross-Workflow Integrity
 
+**Cross-phase follow-up — 15 October 2026:** the normal-path journey remains mock-backed and does not prove live financial operations. PR #132 complements it with offline-recovery failure handling, audit-marker dual-failure evidence, route-registry/authentication guardrails and seeded mock report completeness checks. None substitutes for live role authorization, actual Sheet/Drive data, real backup/restore, or production performance/concurrency testing.
+
 **Base:** `main` at `ff5a8ebde96698f15edb976c4fcd745d50085d10` (PR #127 merge)  
 **Scope:** regression evidence across voucher entry, independent approval, reporting, Daily Cash Close and audit.  
 **Release boundary:** automated tests use the in-memory Google services mock; this does not prove live Apps Script deployment or production Sheet behavior.

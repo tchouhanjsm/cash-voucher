@@ -2311,4 +2311,63 @@ ok(
   'a later successful audit read does not silently clear an unresolved audit gap',
 );
 
+// Audit-marker durability boundary: when both the audit append and its Script Properties
+// marker fail, the financial write is still successful and the owner status cannot detect the gap.
+const auditMarkerOutageMock = create();
+auditMarkerOutageMock.props.OWNER_EMAIL = 'marker-owner@test.com';
+auditMarkerOutageMock.props.OWNER_PIN = '483921';
+auditMarkerOutageMock.setup();
+const markerLogin = auditMarkerOutageMock.call('login', {
+  email: 'marker-owner@test.com',
+  pin: '483921',
+});
+assert(markerLogin.ok, 'audit-marker outage fixture owner login succeeds');
+const markerPinChange = auditMarkerOutageMock.call('changePin', {
+  token: markerLogin.data.token,
+  oldPin: '483921',
+  newPin: '579246',
+});
+assert(markerPinChange.ok, 'audit-marker outage fixture completes required first PIN change');
+auditMarkerOutageMock.failNextAuditWrite();
+auditMarkerOutageMock.failNextAuditMarkerWrite();
+const markerOutageVoucher = auditMarkerOutageMock.call('createVouchers', {
+  token: markerPinChange.data.token,
+  entries: [
+    {
+      clientId: 'audit-marker-outage-test',
+      date: new Date().toISOString().slice(0, 10),
+      vendor: 'Audit Marker Outage Vendor',
+      amount: 146,
+      category: 'Other',
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+});
+assert(
+  markerOutageVoucher.ok &&
+    auditMarkerOutageMock.sheets.Vouchers.rows.some(
+      (row) => row[14] === 'audit-marker-outage-test',
+    ),
+  'voucher write remains successful and persisted when both audit append and marker persistence fail',
+);
+assert(
+  !auditMarkerOutageMock.props.AUDIT_WRITE_STATUS &&
+    auditMarkerOutageMock.auditDiagnostics.some((entry) =>
+      entry.includes('Could not persist audit-write failure marker'),
+    ),
+  'marker-storage failure emits a console diagnostic without pretending a durable marker exists',
+);
+const unavailableMarkerHealth = auditMarkerOutageMock.call('auditLog', {
+  token: markerPinChange.data.token,
+});
+assert(
+  unavailableMarkerHealth.ok &&
+    unavailableMarkerHealth.data.auditHealth?.status === 'NO_KNOWN_FAILURE' &&
+    unavailableMarkerHealth.data.auditHealth.failureCount === 0,
+  'owner audit status makes the simultaneous marker-store failure limitation explicit in regression evidence',
+);
+
+n += 5;
+
 console.log('backend OK — ' + n + ' checks passed');
