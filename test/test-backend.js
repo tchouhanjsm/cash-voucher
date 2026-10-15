@@ -997,7 +997,10 @@ ok(
   'legacy payee fixture starts below threshold without a VendorID',
 );
 const legacyCreateVendor = as(T, 'saveVendor', { name: 'Legacy Linked Create Payee' });
-ok(legacyCreateVendor.ok, 'vendor master can be added without retroactively linking legacy vouchers');
+ok(
+  legacyCreateVendor.ok,
+  'vendor master can be added without retroactively linking legacy vouchers',
+);
 const legacyCreateSecond = as(S, 'createVouchers', {
   entries: [
     {

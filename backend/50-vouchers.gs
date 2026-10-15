@@ -132,6 +132,16 @@ function createVouchers_(user, req) {
         ids.push(id);
         createdFileIds.push(id);
       });
+      const approvalDayTotalPaise =
+        c.type === 'PAYMENT'
+          ? payeeDayPaymentPaise_(
+              existing.concat(newObjs),
+              c.vendorId,
+              c.vendor,
+              c.date,
+              '',
+            ) + Math.round(c.amount * 100)
+          : 0;
       const o = {
         VoucherID: Utilities.getUuid(),
         VoucherNo: no,
@@ -154,15 +164,7 @@ function createVouchers_(user, req) {
         ApprovalStatus:
           c.type === 'PAYMENT' &&
           (c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
-            payeeDayPaymentPaise_(
-              existing.concat(newObjs),
-              c.vendorId,
-              c.vendor,
-              c.date,
-              '',
-            ) +
-              Math.round(c.amount * 100) >=
-              approvalThresholdPaise_())
+            approvalDayTotalPaise >= approvalThresholdPaise_())
             ? 'PENDING'
             : 'NOT_REQUIRED',
         ApprovedBy: '',
