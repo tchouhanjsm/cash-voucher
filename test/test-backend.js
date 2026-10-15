@@ -975,6 +975,130 @@ ok(
       'NOT_REQUIRED,NOT_REQUIRED,PENDING',
   'splits inside one batch are combined too',
 );
+
+// A legacy voucher may have no VendorID because historical IDs are deliberately not backfilled.
+// Once a vendor master record exists, the name fallback must still include that legacy amount.
+const legacyCreateFirst = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'legacy-payee-create-first',
+      date: today,
+      vendor: 'Legacy   Linked Create Payee',
+      amount: 6000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const legacyCreateFirstVoucher = legacyCreateFirst.data.created[0];
+ok(
+  legacyCreateFirst.ok &&
+    legacyCreateFirstVoucher.approvalStatus === 'NOT_REQUIRED' &&
+    legacyCreateFirstVoucher.vendorId === '',
+  'legacy payee fixture starts below threshold without a VendorID',
+);
+const legacyCreateVendor = as(T, 'saveVendor', { name: 'Legacy Linked Create Payee' });
+ok(legacyCreateVendor.ok, 'vendor master can be added without retroactively linking legacy vouchers');
+const legacyCreateSecond = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'legacy-payee-create-second',
+      date: today,
+      vendor: ' LEGACY LINKED CREATE PAYEE ',
+      amount: 4000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const legacyCreateSecondVoucher = legacyCreateSecond.data.created[0];
+ok(
+  legacyCreateSecond.ok &&
+    legacyCreateSecondVoucher.vendorId &&
+    legacyCreateSecondVoucher.approvalStatus === 'PENDING',
+  'new linked payment includes same-name legacy payments when determining the payee-day threshold',
+);
+
+// The same name fallback is required when an edit, rather than a new payment, crosses the limit.
+const legacyEditFirst = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'legacy-payee-edit-first',
+      date: today,
+      vendor: 'Legacy   Linked Edit Payee',
+      amount: 6000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const legacyEditFirstVoucher = legacyEditFirst.data.created[0];
+ok(
+  legacyEditFirst.ok && legacyEditFirstVoucher.vendorId === '',
+  'legacy edit fixture begins without a VendorID',
+);
+const legacyEditVendor = as(T, 'saveVendor', { name: 'Legacy Linked Edit Payee' });
+ok(legacyEditVendor.ok, 'edit-path vendor master can be added');
+const legacyEditSecond = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'legacy-payee-edit-second',
+      date: today,
+      vendor: 'legacy linked edit payee',
+      amount: 2000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const legacyEditSecondVoucher = legacyEditSecond.data.created[0];
+ok(
+  legacyEditSecond.ok &&
+    legacyEditSecondVoucher.vendorId &&
+    legacyEditSecondVoucher.approvalStatus === 'NOT_REQUIRED',
+  'same payee below the cumulative threshold remains unblocked after VendorID linking',
+);
+const legacyEditThreshold = as(M, 'updateVoucher', {
+  id: legacyEditSecondVoucher.id,
+  reason: 'Corrected amount after payee identity linked',
+  fields: { amount: 4000 },
+});
+ok(
+  legacyEditThreshold.ok && legacyEditThreshold.data.approvalStatus === 'PENDING',
+  'editing a linked payment re-evaluates cumulative totals against legacy name-only vouchers',
+);
+
+// When both records have stable, non-empty IDs, the IDs remain authoritative over display names.
+const stablePayeeA = as(T, 'saveVendor', { name: 'Stable Approval Payee A' });
+const stablePayeeB = as(T, 'saveVendor', { name: 'Stable Approval Payee B' });
+ok(stablePayeeA.ok && stablePayeeB.ok, 'distinct stable payee identities can be created');
+const stablePaymentA = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'stable-payee-a',
+      date: today,
+      vendor: 'Stable Approval Payee A',
+      amount: 6000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+const stablePaymentB = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'stable-payee-b',
+      date: today,
+      vendor: 'Stable Approval Payee B',
+      amount: 4000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+ok(
+  stablePaymentA.ok &&
+    stablePaymentB.ok &&
+    stablePaymentA.data.created[0].vendorId !== stablePaymentB.data.created[0].vendorId &&
+    stablePaymentA.data.created[0].approvalStatus === 'NOT_REQUIRED' &&
+    stablePaymentB.data.created[0].approvalStatus === 'NOT_REQUIRED',
+  'different stable VendorIDs are never combined into one payee-day approval total',
+);
+
 const closeBlockedPayment = as(S, 'createVouchers', {
   entries: [
     {

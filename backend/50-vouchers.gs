@@ -156,7 +156,8 @@ function createVouchers_(user, req) {
           (c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
             payeeDayPaymentPaise_(
               existing.concat(newObjs),
-              approvalPayeeKey_(c.vendorId, c.vendor),
+              c.vendorId,
+              c.vendor,
               c.date,
               '',
             ) +
@@ -328,7 +329,8 @@ function updateVoucher_(user, req) {
     o.Type === 'PAYMENT'
       ? payeeDayPaymentPaise_(
           dayRows,
-          approvalPayeeKey_(o.VendorID, o.Vendor),
+          o.VendorID,
+          o.Vendor,
           isoDate_(o.Date),
           o.VoucherID,
         ) + Math.round(priorAmount * 100)
@@ -337,7 +339,8 @@ function updateVoucher_(user, req) {
     o.Type === 'PAYMENT'
       ? payeeDayPaymentPaise_(
           dayRows,
-          approvalPayeeKey_(nextVendorId, nextVendor),
+          nextVendorId,
+          nextVendor,
           nextDate,
           o.VoucherID,
         ) + Math.round(nextAmount * 100)

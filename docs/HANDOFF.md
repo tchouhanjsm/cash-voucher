@@ -2,41 +2,44 @@
 
 Updated: 15 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137 merge)  
-Current phase: Phase 8 — contextual rendering security and reusable DOM boundaries  
-Current working branch: `phase-8/contextual-rendering-security-2026-10-15`  
-Current open PR head: `1c0375c56489e387613aa1a11a1e79a3fe689d9b` ([PR #138](https://github.com/tchouhanjsm/cash-voucher/pull/138))
+Last verified main SHA: `dee9f04d8a77c9360c1c6be433928b953f1fd597` (PR #138 merge)  
+Current phase: Phase 9 — payee identity parity for approval-threshold aggregation  
+Current working branch: `phase-9/payee-identity-approval-integrity-2026-10-15`
 
 ## Verified repository state
 
-- PR #136 merged at `4684ffabc0fbbf2ff792c687e7ce9d3a31e29170`.
 - PR #137 merged at `fabf4bba1a964c99c55391c4d4be3f260d787906`.
-- PR #137 tested head: `3d2876d68ecf763d1ed09b908bab6b59ac65648c`.
-- CI passed on that PR head: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706006252.
-- Browser E2E passed on that PR head: 349 checks, zero failures: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706006331.
-- Full Flight Test passed on the same tested head: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706006230.
-- Post-merge CI passed on current main SHA: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706374287.
-- At Phase 8 start, live GitHub returned no open pull requests; PR #138 is now open for owner review.
-- PR #136/#137 workflow evidence is mock-backed; it does not prove live deployment, Google permissions, backup/restore, device behavior or production readiness.
+- PR #138 merged at `dee9f04d8a77c9360c1c6be433928b953f1fd597`; final tested head `eb780e893fb8388ddf4bc1e584a503ba3245df10`.
+- PR #138 CI passed: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710771619.
+- PR #138 Browser E2E passed: 351 checks, zero failures: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710771610.
+- PR #138 Full Flight Test passed: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710771634.
+- Post-merge CI passed on the current main merge SHA: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38711146077.
+- Live GitHub returned no open PRs at the start of Phase 9.
+- PR #138 removed the shared modal-frame `innerHTML` assignment; current inventory is 27 assignments across eight frontend modules. The remaining sinks are not certified safe.
+- All listed workflow evidence is GitHub Actions/mock-backed; it does not prove live deployment, Google permissions, backup/restore, device behavior or production readiness.
 
-## Phase 8 — reusable DOM boundaries
+## Phase 9 — payee identity parity for payment approval
 
-Build the shared modal frame with DOM APIs and `textContent` rather than parsing a template string. The dialog API already requires its body as a DOM Node/DocumentFragment. Review other feature templates in context; sink counts/fingerprints detect drift, not unsafe output contexts.
+Close an identity mismatch in the payee-day approval aggregation. The current function builds a key from VendorID if available, otherwise the display name. A legacy voucher with no VendorID can therefore be missed when a new voucher for the same normalized vendor name has a VendorID.
+
+The intended comparison is explicit: if both records have a non-empty VendorID, the IDs are authoritative and must match; if either record is unlinked/legacy, compare normalized vendor names (trimmed, case-insensitive, whitespace-collapsed). Do not backfill VendorID into historical vouchers.
 
 ## Acceptance criteria
 
-- Modal form, title, alert and buttons use DOM creation; title and submit label use scalar normalization and `textContent`.
-- Preserve caller-supplied body nodes, accessible naming/live regions, close and submit behavior, focus restoration, Escape handling, tab wrapping and app inert behavior.
-- Update source-fingerprint inventory alongside the implementation; the independent sink count/API gate remains enabled.
-- Browser regression proves hostile labels remain inert and controls/focus still work (351 checks passed, zero failures).
-- CI, Browser E2E and Full Flight Test passed on exact final PR head `1c0375c56489e387613aa1a11a1e79a3fe689d9b`: [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329265), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329250), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329491).
-- No accounting, permission, persistence, schema, API contract, dependency or production data changes.
+- Creation totals include same-name legacy PAYMENT rows without VendorID when the new row has a stable VendorID, including the inclusive INR 10,000 threshold.
+- Material edits use the same fallback and re-evaluate approval when a linked voucher crosses the cumulative payee-day threshold.
+- Two non-empty, different VendorIDs are never combined solely because their names match.
+- Batch creation, stable-ID matching, same-day/date filtering, active-payment filtering, integer-paise arithmetic and exclusion of the voucher being edited remain correct.
+- Add backend regressions for legacy-linked creation, edit crossing, and distinct stable identities.
+- No automatic historical VendorID backfill, schema migration, approval-policy change, production data mutation or deployment.
+- CI, Browser E2E and Full Flight Test pass on the exact final PR head.
 
-## Residual risks and external gates
+## Remaining risks and owner-controlled operational gates
 
-- The other 27 HTML assignment sites remain under contextual review; this is not full XSS certification.
-- Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, backup/restore, device/offline accessibility and real-service quotas/concurrency remain unverified.
+- The 27 active HTML assignment sites across eight modules remain under contextual review; sink counts/fingerprints are drift gates, not proof of safety.
+- Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility, and real-service quotas/concurrency remain unverified.
+- Investigate the documented audit-write dual-failure observability limit without inventing missing events.
 - Reassess the `@google/clasp -> micromatch -> braces` exception by 9 November 2026.
-- Owner retains merge and release authority. No `clasp push`, deployment, setup/migration, production data mutation or history rewrite.
-- Preserve local untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
-- This remains the only canonical handoff; do not create per-PR handoff documents.
+- Owner retains merge and release authority. Do not run `clasp push`, deploy, perform setup/migrations, mutate production data or rewrite Git history without explicit authorization.
+- Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md`. Do not stage, overwrite, delete or otherwise disturb it.
+- `docs/HANDOFF.md` remains the single canonical handoff; do not create per-PR handoff documents.

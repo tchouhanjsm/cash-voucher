@@ -1,9 +1,9 @@
 # Product Gap Register and Roadmap
 
 Status date: 15 October 2026  
-Last verified main baseline: `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137 merge)  
-Current phase: Phase 8 — contextual rendering security and reusable DOM boundaries  
-Current review branch: `phase-8/contextual-rendering-security-2026-10-15`
+Last verified main baseline: `dee9f04d8a77c9360c1c6be433928b953f1fd597` (PR #138 merge)  
+Current phase: Phase 9 — payee identity parity for approval-threshold aggregation  
+Current review branch: `phase-9/payee-identity-approval-integrity-2026-10-15`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -20,6 +20,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 6 — PR #135 merged at `572b5d68fb6b6a572a08deab908c0b83d44aba62`. Its exact tested head `c4d163bcc05b543a004dcd12a617319b27a98f32` passed CI (267 backend checks and 28 sink count/fingerprint matches), Browser E2E (343 checks, zero failures) and Full Flight Test. It replaces five text-only/status/error HTML insertions with DOM APIs and `textContent`, reducing the active sink inventory from 33 to 28 across nine modules.
 - Phase 7 — PR #136 merged at `4684ffabc0fbbf2ff792c687e7ce9d3a31e29170`. Its tested head `24718c238ed19f85a2ca6c6721412fdca71d92ae` passed CI, Browser E2E (347 checks, zero failures) and Full Flight Test. It adds adversarial accountant-report HTML and CSV formula-neutralization coverage. Sink count remains 28; no confirmed renderer defect or financial logic change was claimed.
 - Phase 8 — PR #137 merged at `fabf4bba1a964c99c55391c4d4be3f260d787906`. Its tested head `3d2876d68ecf763d1ed09b908bab6b59ac65648c` passed CI, Browser E2E (349 checks, zero failures) and Full Flight Test. It adds payee-day split-payment approval protection, duplicate warnings and entry UX improvements.
+- Phase 8 follow-through — PR #138 merged at `dee9f04d8a77c9360c1c6be433928b953f1fd597`. Its exact final tested head `eb780e893fb8388ddf4bc1e584a503ba3245df10` passed CI, Browser E2E (351 checks, zero failures) and Full Flight Test. It removes the shared modal frame `innerHTML` assignment and reduces the active sink inventory from 28 to 27 assignments across eight modules.
+- Phase 9 — ongoing work on branch `phase-9/payee-identity-approval-integrity-2026-10-15`: address payee-day approval aggregation where a historical voucher has no VendorID but a new same-name voucher does. Preserve stable-ID authority when both IDs exist; no historical backfill.
 - Operational readiness — live Apps Script deployment/identity, real role checks, scheduled backup and isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -32,9 +34,9 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 8
+## Priority after Phase 9
 
-1. Continue the manual, context-specific semantic source-to-sink review for the remaining HTML assignments; use focused tests and DOM APIs when they materially reduce risk. Fingerprints make changes visible but do not replace review.
+1. Continue the manual, context-specific semantic source-to-sink review for the 27 remaining HTML assignments; use focused tests and DOM APIs when they materially reduce risk. Fingerprints make changes visible but do not replace review.
 2. Continue adversarial coverage across remaining independently rendered surfaces without repeating test cases already covered.
 3. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
 4. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.

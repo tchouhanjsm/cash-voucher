@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `dee9f04d8a77c9360c1c6be433928b953f1fd597` (PR #138 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
 
-**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#137 add source recovery, authorization/rendering drift checks, statement fingerprints, five text-only sink reductions, adversarial accountant-report/CSV coverage and payee-day split-payment approval protection. These mock-backed tests do not prove live deployment or complete semantic XSS safety.
+**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#138 add source recovery, authorization/rendering drift checks, statement fingerprints, six avoidable HTML-sink reductions, adversarial accountant-report/CSV and modal-label coverage, and payee-day split-payment approval protection. PR #138's 351 Browser E2E checks and all required workflows passed on its exact tested head. These mock-backed tests do not prove live deployment or complete semantic XSS safety.
 
 ## Current go-live gates — reviewed 14 October 2026
 
