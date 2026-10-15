@@ -7,13 +7,7 @@
     "5d4a6ae6"
   ],
   "frontend/features/bulk.js": ["4f70bf20", "39b37d93"],
-  "frontend/features/cash-close.js": [
-    "b6a1d022",
-    "81286bb0",
-    "269d5b33",
-    "4054cdbb",
-    "136bf987"
-  ],
+  "frontend/features/cash-close.js": ["b6a1d022", "81286bb0", "269d5b33", "4054cdbb", "136bf987"],
   "frontend/features/dashboard.js": ["2977910e"],
   "frontend/features/payments.js": ["a7e530de", "86fe0972", "643df575"],
   "frontend/features/register.js": ["5e0a8899", "a7892599", "7ce93a1f"],
