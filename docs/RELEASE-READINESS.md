@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 14 October 2026. **Source baseline:** `255d78ccb6a21b204d432221489114ccf514d333` (PR #126 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for current evidence classification and ranked work packages.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `69f861f86d08a19da8fe1223b3bc6c4840478895` (PR #131 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for current evidence classification and ranked work packages.
 
-**Status: not verified as production-ready.** This document tracks operational release gates, not the latest source SHA or routine PR history. Verify the current `main` commit and current deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified.
+**Status: not verified as production-ready.** This document tracks operational release gates, not the latest source SHA or routine PR history. Verify the current `main` commit and current deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PR #132 adds source-level recovery, audit-failure, route-registry and mock-performance evidence only; it does not change or prove the live deployment.
 
 ## Current go-live gates — reviewed 14 October 2026
 

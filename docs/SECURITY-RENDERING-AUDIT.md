@@ -2,10 +2,12 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `255d78ccb6a21b204d432221489114ccf514d333` (main after PR #126; Phase 1 continues the full sink-by-sink audit)
+**Latest merged review baseline:** `69f861f86d08a19da8fe1223b3bc6c4840478895` (main after PR #131; Phase 1 continues the full sink-by-sink audit)
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
+
+**Cross-phase status update — 15 October 2026:** PR #132 adds a limited high-confidence credential-pattern scan across current tracked text and reachable history, plus a route-registry regression asserting registered actions reject unauthenticated calls. These guardrails do not certify every credential format, prove every role/action combination, or replace the full active DOM-sink review. Count them as verified only after final-head CI passes.
 
 The active application uses HTML template strings for several views. The review traces persisted or user-controlled values into text and attribute contexts. Values must be escaped for the output context, and dynamic resource URLs should be assigned through DOM properties after validation rather than concatenated into markup. A green test suite only supports the paths exercised; it does not prove all sinks are safe.
 
