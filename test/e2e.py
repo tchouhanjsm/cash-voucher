@@ -816,6 +816,8 @@ with sync_playwright() as p:
         'generatedAt': '<svg data-xss-field="generatedAt" onload=window.__xssFired=true></svg>',
     }
     formula_payload = '=HYPERLINK("https://example.invalid","Report link")'
+    # Keep the hostile fixture inside the report's selected date range.
+    date_text = accountant_page.locator('#movementTo').input_value()
 
     def inject_untrusted_report(route):
         try:
