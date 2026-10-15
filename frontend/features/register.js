@@ -224,7 +224,7 @@ export function createRegister({ api, go }) {
       invalidAmountCount,
       malformedRecordCount,
       malformedFieldCount,
-    });`;
+    });
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
 
