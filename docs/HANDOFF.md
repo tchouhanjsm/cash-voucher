@@ -2,72 +2,58 @@
 
 Updated: 15 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `a0add3de0bf79902f046e7811e888f2f1e735f9a` (PR #133 merge)  
-Current phase: Phase 5 — HTML sink source fingerprinting  
-Current working PR: #134 — fingerprint reviewed HTML sink source (open; not merged)  
-Branch: `phase-5/dom-sink-source-fingerprint-2026-10-15`
+Last verified main SHA: `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3` (PR #134 merge)  
+Current phase: Phase 6 — remove avoidable text-only HTML sinks  
+Current working PR: #135 — reduce text-only HTML insertion and test hostile API errors (open; not merged)  
+Branch: `phase-6/remove-text-only-html-sinks-2026-10-15`
 
-Canonical documents: `docs/PRODUCT-ROADMAP.md`,
-`docs/ACTIVE-DOM-SINK-INVENTORY.md`, `docs/SECURITY-RENDERING-AUDIT.md`,
-`docs/RELEASE-READINESS.md` and `docs/PHASE-4-AUTHORIZATION-RENDERING.md`.
+Canonical documents: `docs/PRODUCT-ROADMAP.md`, `docs/ACTIVE-DOM-SINK-INVENTORY.md`, `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, and `docs/PHASE-4-AUTHORIZATION-RENDERING.md`.
 
-## Verified state
+## Verified main state
 
 - PR #133 merged at `a0add3de0bf79902f046e7811e888f2f1e735f9a`.
-- PR #133 exact tested head: `8cf03be77a5cfacb067481c69bb391cff70710bc`.
-- CI passed on that head:
-  https://github.com/tchouhanjsm/cash-voucher/actions/runs/38676171464
-- Browser E2E passed on that head: 342 checks, zero failures:
-  https://github.com/tchouhanjsm/cash-voucher/actions/runs/38676171400
-- Full Flight Test passed on that head:
-  https://github.com/tchouhanjsm/cash-voucher/actions/runs/38676171377
-- PR #134 is the current proposed Phase 5 batch. Its initial code commit is
-  `e2a658274dedb8671166f816c10a9e4322d78947`; rerun checks after every push and verify
-  results against the final head SHA.
-- The main branch remains untouched by Phase 5. No live Apps Script, production Sheet/Drive,
-  or physical device was accessed.
+- PR #134 merged at `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3`.
+- PR #134 exact tested head: `428db8af06d0eeaa9ddede9e3a8dc06d5c6f9280`.
+- CI passed: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38692876968
+- Browser E2E passed: 342 checks, zero failures: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38692877034
+- Full Flight Test passed: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38692877019
+- No open PRs were returned when Phase 6 began. PR #135 is the current proposal and has not been merged.
+- Evidence is GitHub Actions/mock-backed. It does not prove deployed Apps Script version, live Sheet/Drive permissions, scheduled backup, isolated restore, physical devices or accessibility.
 
-## Phase 5 — HTML sink source fingerprinting
+## Phase 6 — reduce avoidable HTML sinks
 
-### Intended outcome
+### Outcome
 
-Phase 4 catches changes to the number/location of `innerHTML` assignment sites and new uses
-of designated high-risk DOM APIs. PR #134 adds per-assignment source fingerprints, so changing
-an existing template, interpolation or escaping expression should fail CI even when the sink
-count and file are unchanged.
+Replace simple text/status/error uses of `innerHTML` with DOM nodes and `textContent`. Keep complex template renderers unchanged until their complete source-to-sink context has been reviewed and tested.
 
-- Track 33 assignment statements across nine active frontend modules.
-- Add a scanner that respects the current template-literal/interpolation constructs and a
-  focused unit suite for interpolation changes and semicolons inside template content.
-- Run the fingerprint check as part of `npm run check` and its regression test as part of
-  `npm test`.
-- Fingerprints are a drift trigger, not a cryptographic security boundary, HTML sanitizer,
-  full JavaScript parser, or proof that every interpolation is safe.
-- The PR-quality gate requires `## Verification evidence`, `## Security and failure review`,
-  `## Residual risks / not verified` and `## Release boundary` sections in the PR body. Keep
-  them populated and aligned to the latest head.
-- Existing hostile-input Browser E2E tests remain required. Manual/context-sensitive
-  source-to-sink review is not complete merely because fingerprints match.
+Proposed changes in PR #135:
 
-## Next operational phase — owner-controlled gates
+1. Payment form validation error: create a role=alert paragraph and assign its message through `textContent`.
+2. Offline queue-storage fallback error: show the warning as a text-only span.
+3. Daily Cash Close preview loading state: create a muted paragraph through DOM APIs.
+4. Daily Cash Close API error state: create the card and paragraphs with DOM APIs; server-returned error messages are displayed as text.
+5. Register pagination control: create the action wrapper and button with DOM APIs and set the dynamic count through `textContent`.
+6. Add a Browser E2E injection case proving a hostile server-provided cash-close error remains inert.
+7. Update the count and per-statement fingerprint baselines independently; the active sink count should fall from 33 to 28 across nine modules when merged.
 
-These cannot be closed by mock-only CI:
+### Review boundaries
 
-1. Verify the intended Apps Script project, deployed version, execution identity, deployment
-   ID, Script Properties and Sheet binding in the Apps Script editor.
-2. After owner-approved release authorization and a verified backup, test live
-   owner/manager/staff/accountant permissions and receipt access.
-3. Witness a scheduled Drive backup and restore it to a separate recovery Sheet/folder;
-   reconcile voucher/receipt counts, numbering and manifest references.
-4. Test install/update/offline queue/recovery on operating phones and tablets, plus
-   keyboard/focus/zoom/screen-reader accessibility.
-5. Measure real Sheets latency, quotas, locking/concurrency and voucher numbering in an
-   owner-approved test setup.
+- No voucher amounts, totals, approval policy, role authorization, persisted data contracts or API success responses change.
+- The source-fingerprint gate is a drift marker, not a security hash or proof of contextual safety.
+- The remaining 28 HTML assignments still need context-specific review; do not call the full semantic XSS audit complete.
+- Run all required CI, Browser E2E and Full Flight Test workflows on the same final PR head before accepting the batch.
+
+## Next priorities
+
+1. Continue the semantic source-to-sink review of the 28 remaining assignments and convert additional avoidable sinks only when the change is behavior-preserving and covered.
+2. Owner-controlled operational release: confirm Apps Script project/version, execution identity, deployment ID, Script Properties and Sheet binding.
+3. Witness a scheduled backup and restore into a separate recovery Sheet/folder; reconcile voucher/receipt counts, numbering and manifest references.
+4. Test install/update/offline recovery on operating phones/tablets, then keyboard/focus/zoom/screen-reader accessibility.
+5. Measure real Sheets latency, quotas, locking/concurrency and voucher numbering in an owner-approved test setup.
 6. Reassess the clasp → micromatch → braces advisory by 9 November 2026.
 
 ## Engineering boundaries
 
-- Owner retains merge and release authority. Do not merge, deploy, run `clasp push`, setup,
-  migrations, modify production data or rewrite Git history without explicit authorization.
+- Owner retains merge and release authority. Do not merge, deploy, run `clasp push`, setup, migrations, modify production data or rewrite Git history without explicit authorization.
 - Preserve local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; never stage, overwrite or delete it.
 - Keep this as the single current handoff. Do not create per-PR handoff files.

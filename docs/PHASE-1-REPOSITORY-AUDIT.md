@@ -20,6 +20,16 @@ The original audit below is a historical snapshot. PR #132 is merged on main at 
 
 ---
 
+## Follow-up — PR #134 merged and Phase 6 proposed (15 October 2026)
+
+- Current merged `main` after PR #134: `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3`.
+- PR #134's exact tested head `428db8af06d0eeaa9ddede9e3a8dc06d5c6f9280` passed CI, Browser E2E (342 checks) and Full Flight Test.
+- Per-statement fingerprints supplement the 33-site count/API gate; they are drift markers, not contextual-safety proofs.
+- PR #135 proposes converting five text/status/error-only sinks to DOM nodes, adding hostile server-error E2E coverage and lowering the proposed sink count from 33 to 28. This is not merged evidence until its final-head workflows pass.
+- Live deployment/version, real authorization, scheduled backup, separate-destination restore, device recovery/accessibility, and production quota/concurrency evidence remain unverified.
+
+---
+
 ## Executive decision
 
 **Do not begin another isolated hardening PR.** The source contains a broad feature set and established automated checks, but operational readiness is explicitly unverified. Phase 1 must reconcile the product's actual state, then deliver end-to-end work packages with measurable outcomes.

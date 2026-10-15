@@ -367,6 +367,42 @@ with sync_playwright() as p:
     )
     page.unroute('**/api?*', inject_cash_close_markup)
 
+    # A server-provided error message is untrusted text, not an HTML template.
+    cash_close_error_payload = '<svg onload=window.__xssFired=true></svg>'
+
+    def inject_cash_close_error(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if (
+            request_data.get('action') == 'cashClosePreview'
+            and request_data.get('date') == '2020-01-01'
+        ):
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps(
+                    {'ok': False, 'error': cash_close_error_payload, 'code': 'TEST_ERROR'}
+                ),
+            )
+            return
+        route.continue_()
+
+    page.route('**/api?*', inject_cash_close_error)
+    page.evaluate('window.__xssFired = false')
+    page.click('[data-act=closePreview]')
+    page.wait_for_selector('#cc-results .cc-error[role=alert]')
+    check(
+        cash_close_error_payload in page.locator('#cc-results').inner_text()
+        and page.locator('#cc-results img, #cc-results svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'server-provided cash-close error text stays inert and cannot inject markup',
+    )
+    page.unroute('**/api?*', inject_cash_close_error)
+    page.click('[data-act=closePreview]')
+    page.wait_for_selector('#cc-closed-report')
+
     # Malformed cash-close preview shapes must fail closed and clear stale writable state.
     preview_shape_case = {'mode': 'null-unclassified-row'}
 

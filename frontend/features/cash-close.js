@@ -519,7 +519,10 @@ export function createCashClose({ api }) {
     data = null;
     if (results) {
       results.setAttribute('aria-busy', 'true');
-      results.innerHTML = '<p class="muted">Refreshing server cash-close preview…</p>';
+      const loading = document.createElement('p');
+      loading.className = 'muted';
+      loading.textContent = 'Refreshing server cash-close preview…';
+      results.replaceChildren(loading);
     }
     const payload = { date };
     if (opening !== undefined && opening !== '') payload.openingCash = opening;
@@ -540,10 +543,18 @@ export function createCashClose({ api }) {
       previewReport(data);
     } catch (error) {
       if (results) {
-        results.innerHTML =
-          '<section class="card"><p class="cc-error" role="alert">' +
-          esc(error.message || 'Unable to load cash-close preview.') +
-          '</p><p class="muted">No close was created. Confirm storage migration and refresh after the reviewed backend is installed.</p></section>';
+        const section = document.createElement('section');
+        section.className = 'card';
+        const errorMessage = document.createElement('p');
+        errorMessage.className = 'cc-error';
+        errorMessage.setAttribute('role', 'alert');
+        errorMessage.textContent = error.message || 'Unable to load cash-close preview.';
+        const recoveryNote = document.createElement('p');
+        recoveryNote.className = 'muted';
+        recoveryNote.textContent =
+          'No close was created. Confirm storage migration and refresh after the reviewed backend is installed.';
+        section.append(errorMessage, recoveryNote);
+        results.replaceChildren(section);
         results.setAttribute('aria-busy', 'false');
       }
       fail(error);

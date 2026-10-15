@@ -281,10 +281,19 @@ export function createRegister({ api, go }) {
       }
     }
 
-    $('#rmore').innerHTML =
-      list.length > R.limit
-        ? `<div class="actions"><button class="btn" data-act="more">Show more (${list.length - R.limit} left)</button></div>`
-        : '';
+    const more = $('#rmore');
+    more.replaceChildren();
+    if (list.length > R.limit) {
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn';
+      button.dataset.act = 'more';
+      button.textContent = 'Show more (' + (list.length - R.limit) + ' left)';
+      actions.appendChild(button);
+      more.appendChild(actions);
+    }
   }
 
   function render() {

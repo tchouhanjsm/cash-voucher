@@ -1,9 +1,9 @@
 # Product Gap Register and Roadmap
 
 Status date: 15 October 2026  
-Last verified main baseline: a0add3de0bf79902f046e7811e888f2f1e735f9a (PR #133 merge)  
-Current phase: Phase 5 — HTML sink source fingerprinting (PR #134 open; not merged)  
-Current review branch: phase-5/dom-sink-source-fingerprint-2026-10-15
+Last verified main baseline: 0cf47fc8d77f5dd7429a62c57ab8ec77309873f3 (PR #134 merge)  
+Current phase: Phase 6 — reduce avoidable text-only HTML sinks (PR #135 open; not merged)  
+Current review branch: phase-6/remove-text-only-html-sinks-2026-10-15
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -16,7 +16,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 2B — PR #131 and PR #132 implement direct ambiguous-save, IndexedDB acknowledgement-failure and stale-session queue recovery, with idempotent client IDs and account binding.
 - Phase 3 — audit append failure sets an owner-visible marker when Script Properties remains available. When both the audit append and marker store fail, only the available execution log may surface the gap; missing events are not reconstructed.
 - Phase 4 — PR #133 is merged at `a0add3de0bf79902f046e7811e888f2f1e735f9a`; its tested head passed CI, Browser E2E (342 checks) and Full Flight Test. It adds authenticated role/action and data-visibility tests, the 33-site HTML-sink inventory, and designated high-risk DOM API checks.
-- Phase 5 — PR #134 (open; not merged) adds source fingerprints for the existing 33 `innerHTML` assignments and a focused scanner unit suite. The final PR head still needs CI, Browser E2E and Full Flight Test evidence. Fingerprints detect drift; they do not establish that all interpolation contexts are safe.
+- Phase 5 — PR #134 merged at `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3`. Its exact tested head `428db8af06d0eeaa9ddede9e3a8dc06d5c6f9280` passed CI, Browser E2E (342 checks) and Full Flight Test. It adds per-statement fingerprints for the 33 known sinks; fingerprints detect drift, not contextual safety.
+- Phase 6 — PR #135 proposes replacing five text-only/error/status `innerHTML` assignments with DOM nodes and `textContent`, plus a hostile API-error E2E regression. The proposed count is 28 assignment sites across the same nine frontend modules; do not call this merged or verified until its final-head workflows pass and it is merged.
 - Operational readiness — live Apps Script deployment/identity, real role checks, scheduled backup and isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -29,13 +30,13 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 5
+## Priority after Phase 6
 
-1. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
-2. Perform a real backup and isolated restore drill with row-count, numbering and receipt-reference reconciliation.
-3. Continue the manual, context-specific semantic source-to-sink review for all 33 assignments; the PR #134 fingerprint gate only makes unreviewed changes visible and does not replace this review. Conduct a scoped adversarial review of server authorization branches.
-4. Run physical-device offline/install/update/recovery and manual accessibility review.
-5. Measure real Sheet access latency, quotas, contention and concurrent numbering.
+1. Continue the manual, context-specific semantic source-to-sink review for the 28 remaining assignments; use focused tests and DOM APIs when they materially reduce risk. The fingerprint gate makes unreviewed changes visible but does not replace contextual review.
+2. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
+3. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.
+4. Run physical-device offline/install/update/recovery and manual keyboard, focus, zoom and screen-reader accessibility review.
+5. Measure real Sheet access latency, quotas, contention and concurrent numbering in an owner-approved environment.
 6. Review the clasp → micromatch → braces advisory by its 9 November 2026 due date.
 
 ## Financial integrity invariants
