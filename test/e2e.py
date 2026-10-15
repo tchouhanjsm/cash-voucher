@@ -1572,8 +1572,10 @@ with sync_playwright() as p:
     check(
         hostile_queued_vendor in queued_review_text
         and page.locator('.outbox-pending img, .outbox-pending svg').count() == 0
+        and page.locator('#banner img, #banner svg').count() == 0
+        and page.locator('#banner [data-act=import-pending]').count() == 1
         and not page.evaluate('window.__xssFired === true'),
-        'tampered local queue vendor content remains inert text in the review list',
+        'tampered local queue vendor remains inert in the status banner and review list while queue actions remain available',
     )
     page.evaluate(
         """async () => {
@@ -5053,6 +5055,54 @@ with sync_playwright() as p:
         and denied_page_states['cashClose']['className'] == 'muted'
         and not denied_page_states['cashClose']['hasActiveMarkup'],
         'Cash Close permission-denied state preserves its status message and semantics',
+    )
+    go_view(page, 'dash')
+
+    account_dom_result = page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          const { createAdministration } = await import('/frontend/features/administration.js');
+          const originalMe = S.me;
+          const originalSettings = S.settings;
+          const payload = '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>';
+          try {
+            S.me = { ...originalMe, name: payload, email: payload, role: payload };
+            S.settings = { ...originalSettings, propertyName: payload };
+            createAdministration({ api: async () => ({}), getNavigation: () => ({}), signOut: () => {} }).account();
+            const view = document.querySelector('#view');
+            return {
+              name: view.querySelector('.profile-main h2')?.textContent || '',
+              email: view.querySelector('.profile-main p')?.textContent || '',
+              role: view.querySelector('.profile-main .badge')?.textContent || '',
+              property: view.querySelector('.profile-main .muted')?.textContent || '',
+              hasActiveMarkup: Boolean(view.querySelector('img, svg')),
+              hasSignOut: view.querySelector('[data-act=signout]')?.textContent === 'Sign out',
+              hasCurrentPin: Boolean(view.querySelector('#pf #po[aria-label="Current PIN"][autocomplete="current-password"]')),
+              hasNewPin: Boolean(view.querySelector('#pf #pn[aria-label="New PIN"][autocomplete="new-password"]')),
+              hasSubmit: view.querySelector('#pf button[type=submit]')?.textContent === 'Change PIN',
+              scriptEffect: window.__xssFired === true
+            };
+          } finally {
+            S.me = originalMe;
+            S.settings = originalSettings;
+          }
+        }"""
+    )
+    check(
+        account_dom_result['name'] == '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>'
+        and account_dom_result['email'] == account_dom_result['name']
+        and account_dom_result['role'] == account_dom_result['name']
+        and account_dom_result['property'] == account_dom_result['name']
+        and not account_dom_result['hasActiveMarkup']
+        and not account_dom_result['scriptEffect'],
+        'My Account treats hostile profile and property values as inert text',
+    )
+    check(
+        account_dom_result['hasSignOut']
+        and account_dom_result['hasCurrentPin']
+        and account_dom_result['hasNewPin']
+        and account_dom_result['hasSubmit'],
+        'My Account preserves sign-out and Change PIN controls after DOM rendering',
     )
     go_view(page, 'dash')
 
