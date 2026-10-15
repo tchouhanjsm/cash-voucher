@@ -118,7 +118,7 @@ export function createPayments({ api, refresh }) {
     error.setAttribute('role', 'alert');
     error.textContent = message;
     $('#nres').replaceChildren(error);
-    const firstRow = $('#rows .erow')[0];
+    const firstRow = document.querySelector('#rows .erow');
     if (firstRow) $('.rv', firstRow).focus();
   }
 
