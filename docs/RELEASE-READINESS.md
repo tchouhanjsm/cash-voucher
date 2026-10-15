@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (PR #142 merge; documentation-only change). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `db3c2cfd08ddbd1a80d37bdc67557b719446caaf` (PR #143 merge; Phase 11 Batch 1 integrated). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
 
-**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#139 add source recovery, authorization/rendering drift checks, sink reductions/adversarial output coverage, and legacy-aware payee-day approval identity. PR #141 integrated the Phase 10 UI refresh on current main; its exact pre-merge head passed CI, Browser E2E (353 checks) and Full Flight Test, and the PR reports post-merge main CI passed. This does not establish live deployment or production readiness.
+**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#139 add source recovery, authorization/rendering drift checks, sink reductions/adversarial output coverage, and legacy-aware payee-day approval identity. PR #141 integrated the Phase 10 UI refresh, and PR #143 integrated Phase 11 Batch 1's Users status-sink retirement. PR #143's exact head passed CI/quality, Browser E2E (353 checks) and Full Flight Test. Phase 11 Batch 2 is under review in PR #144 and has not been merged. None of these facts establishes live deployment or production readiness.
 
 ## Current go-live gates — reviewed 14 October 2026
 
