@@ -43,20 +43,20 @@ Do not begin the pilot until the owner confirms the release target, required mig
 
 ## Evidence-based baseline
 
-| Area                                                        | Current status        | Evidence / limitation                                                                                    |
-| ----------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
-| Backend validation, schema checks and number reconciliation | Implemented           | Current `backend/*.gs` and mock backend suite; not a live Google-account test                            |
-| PIN hash and session protection                             | Implemented           | HMAC-SHA256 with per-user salt + script property pepper; salt rotation invalidates old session tokens    |
-| Login/PIN-change attempt throttling                         | Implemented in source | PR #32 is merged and post-merge CI passed; not deployed to Apps Script                                   |
-| Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                        |
-| Active frontend architecture                                | PASS on current main  | `index.html` loads `frontend/main.js`; source graph is modular                                           |
-| PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                             |
+| Area                                                        | Current status        | Evidence / limitation                                                                                                       |
+| ----------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Backend validation, schema checks and number reconciliation | Implemented           | Current `backend/*.gs` and mock backend suite; not a live Google-account test                                               |
+| PIN hash and session protection                             | Implemented           | HMAC-SHA256 with per-user salt + script property pepper; salt rotation invalidates old session tokens                       |
+| Login/PIN-change attempt throttling                         | Implemented in source | PR #32 is merged and post-merge CI passed; not deployed to Apps Script                                                      |
+| Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                                           |
+| Active frontend architecture                                | PASS on current main  | `index.html` loads `frontend/main.js`; source graph is modular                                                              |
+| PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                                                |
 | CI quality gate                                             | PASS on current main  | Post-merge CI passed on `fabf4bba1a964c99c55391c4d4be3f260d787906` (run 38706374287). Check later PRs at their exact heads. |
-| Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
-| Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
-| Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
-| Production Apps Script deployment                           | Unconfirmed           | Owner reported version 4 before PRs #64/#65; current merged backend deployment is unconfirmed            |
-| Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
+| Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility                           |
+| Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                                   |
+| Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence                    |
+| Production Apps Script deployment                           | Unconfirmed           | Owner reported version 4 before PRs #64/#65; current merged backend deployment is unconfirmed                               |
+| Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                                                 |
 
 The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
 
