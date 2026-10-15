@@ -876,7 +876,8 @@ with sync_playwright() as p:
     )
     report_text = accountant_page.locator('#view').inner_text()
     check(
-        all(value in report_text for value in report_markup_payloads.values())
+        accountant_page.locator('#view tbody tr').count() == 1
+        and all(value in report_text for value in report_markup_payloads.values())
         and formula_payload in report_text
         and accountant_page.locator('#view img, #view svg').count() == 0
         and not accountant_page.evaluate('window.__xssFired === true'),
