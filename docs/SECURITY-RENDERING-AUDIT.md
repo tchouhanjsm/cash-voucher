@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `42ff7708535d04c15510caf90c5f93738109669e` (main after PR #141; expected 27 assignment sites across eight modules; Dashboard fingerprint `2977910e`).
+**Latest merged review baseline:** `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (main after PR #142; 27 assignment sites across eight modules before Phase 11; Dashboard fingerprint `2977910e`).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -368,4 +368,4 @@ PR #139 updated payee-day aggregation to compare stable IDs when both records ha
 
 PR #141 integrated the UI refresh on current main. It adds a local inline SVG sprite, allowlisted icons and action routing, Dashboard needs-attention states, KPI icons, removes breadcrumbs, advances the shell cache to `cv2-v16`, and changes the Dashboard assignment fingerprint to `2977910e`. The panel's empty state is scoped and does not certify backup health, the full recovery queue or release readiness. CI, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`; the PR reports post-merge CI passed. The exact merge SHA is `42ff7708535d04c15510caf90c5f93738109669e`.
 
-This is not a complete rendering-security certification. Phase 11 is a contextual review of each remaining active HTML assignment, with the first cohesive batch retiring avoidable text-only/status/error templates through DOM APIs and adding adversarial tests. Preserve the current sink count/fingerprint gates. Live CSP headers, live authorization, backup/restore, device/offline testing and manual accessibility remain release gates.
+This is not a complete rendering-security certification. Phase 11 batch 1 (current candidate) retires the Users view's fixed loading and request-failure `innerHTML` assignments. The error panel is built with DOM APIs and ignores arbitrary error text; Browser E2E sends hostile SVG markup in the failed API envelope and verifies no reflection, element creation or script effect, then verifies recovery through Retry. This reduces the candidate count from 27 to 25 across eight modules. Preserve count/fingerprint gates and continue contextual review of the remaining sites. Live CSP headers, live authorization, backup/restore, device/offline testing and manual accessibility remain release gates.

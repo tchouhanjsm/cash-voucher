@@ -2,17 +2,17 @@
 
 Updated: 15 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `42ff7708535d04c15510caf90c5f93738109669e` (PR #141 merge commit; post-merge CI reported in PR #141)  
+Last verified main SHA: `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (PR #142 merge; documentation-only reconciliation)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current working branch: none verified; create a fresh branch from live `main` before implementation  
-Current open PR: #142 — [Docs: reconcile Phase 10 merge and define Phase 11](https://github.com/tchouhanjsm/cash-voucher/pull/142) (documentation only; awaiting quality check)
+Current working branch: `phase-11/retire-admin-status-html-sinks-2026-10-15`  
+Current open PR: #143 — [Phase 11 Batch 1: retire Users status HTML sinks](https://github.com/tchouhanjsm/cash-voucher/pull/143) (implementation and checks in review)
 
 ## Verified repository state
 
-- Live `main` resolves to merge commit `42ff7708535d04c15510caf90c5f93738109669e` (verified 15 October 2026). Its first parent is PR #139 baseline `965f16b8849fa757e46449d5fd1e80a3881100a4`; its second parent is the tested Phase 10 head `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`.
+- Live `main` resolves to PR #142 merge commit `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (verified 15 October 2026). PR #142 reconciled documentation only; the active frontend source baseline remains the Phase 10 merge at `42ff7708535d04c15510caf90c5f93738109669e`.
 - PR #141 is closed and merged: [PR #141](https://github.com/tchouhanjsm/cash-voucher/pull/141). Exact PR-head evidence records CI, Browser E2E (`353 checks passed, 0 failed`) and Full Flight Test passing on `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`; the PR description reports post-merge main CI passed. The connector's commit-workflow lookup returned no runs for the merge SHA, so the post-merge statement is recorded as PR-reported, not independently reconstructed from that lookup.
 - PR #140's UI originated on `feature/fast-safe-entry`; Phase 10 integrated the UI changes on current main in PR #141. The feature-branch merge must not be mistaken for a mainline release by itself.
-- The Dashboard statement fingerprint is now `2977910e`, recorded in `scripts/dom-sink-source-baseline.json`; active HTML assignment count is expected to remain 27 across eight modules. Count/fingerprint gates are drift detectors, not XSS certification.
+- On the pre-Phase-11 mainline, the Dashboard statement fingerprint is `2977910e` and the active inventory had 27 assignments. This Phase 11 candidate retires two Users status sinks and updates the inventory to 25 assignments across eight modules. Count/fingerprint gates are drift detectors, not XSS certification.
 - Mock-backed workflow evidence does not prove live Apps Script deployment, Google permissions, scheduled backup/restore, physical-device behavior or production readiness.
 
 ## Phase 10 — UI refresh integration and dashboard trust states
@@ -37,19 +37,19 @@ Current open PR: #142 — [Docs: reconcile Phase 10 merge and define Phase 11](h
 
 ## Remaining risks and owner-controlled operational gates
 
-- 27 active HTML assignment sites remain under contextual review after Phase 10; sink counts/fingerprints are drift gates, not proof of safety.
+- Main's pre-Phase-11 baseline has 27 active HTML assignment sites. This Phase 11 candidate retires two fixed Users loading/error templates using DOM APIs, bringing the candidate inventory to 25 across eight modules; sink counts/fingerprints remain drift gates, not proof of safety.
 - Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility and real-service quotas/concurrency remain unverified.
 - Investigate the documented audit-write dual-failure observability limit without fabricating missing events.
 - Reassess the `@google/clasp -> micromatch -> braces` dependency exception by 9 November 2026.
 - Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; never stage, overwrite or delete it.
 - `docs/HANDOFF.md` is the single canonical handoff. Do not create per-PR handoff documents.
 
-## Next phase — Phase 11: contextual rendering-security review and sink retirement
+## Phase 11 — contextual rendering-security review and sink retirement
 
-**Goal:** systematically review active HTML assignment sites by output context and retire the highest-risk avoidable assignments with DOM APIs, without mixing financial-policy or backend changes into the same batch.
+**Batch 1 implementation:** removed the two static HTML assignments in the Users view that displayed the loading state and request-failure state. The replacement constructs the page heading, refresh action, loading status, alert and retry button with DOM APIs and `textContent`; it preserves the same roles, copy, classes, action keys and in-place retry behavior. Browser E2E now injects hostile SVG markup as the failed API's error string and verifies that it is not reflected in the view, no SVG/image is created in the view, no script effect fires, and retry succeeds.
 
-**First batch:** inventory each of the 27 assignments with its interpolated values, provenance, output context (text, attribute, URL, style, or structure), current escaping/validation, caller paths, and existing hostile-data coverage. Choose a cohesive set of text-only/status/error surfaces where `textContent` or explicit DOM construction preserves behavior. Update focused adversarial tests and the count/fingerprint baselines only after review.
+**Candidate result:** administration sink count drops from seven to five; total active HTML assignments drop from 27 to 25 across eight modules. `scripts/dom-sink-baseline.json` and `scripts/dom-sink-source-baseline.json` are updated for that reviewed change. Remaining 25 sites require contextual review; the batch is not XSS certification.
 
-**Acceptance:** no financial calculations, permissions, API contracts, historical data or backend policy changes; hostile values render inertly in added regressions; the sink inventory and statement fingerprints accurately match source; CI, Browser E2E and Full Flight Test pass on one exact head. This is incremental risk reduction, not full XSS certification.
+**Acceptance boundary:** no financial calculations, permissions, API contracts, historical data or backend policy changes; no migration, `clasp push`, Apps Script deployment or production-data mutation. This is an incremental risk-reduction batch, not full XSS certification.
 
 **Do not start deployment or data migration** as part of Phase 11. Live deployment identity, live role/receipt authorization, scheduled backup and isolated restore, device/offline/accessibility, real-service quotas/concurrency, and audit dual-failure observability remain separate risks.

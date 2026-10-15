@@ -1,16 +1,16 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `42ff7708535d04c15510caf90c5f93738109669e` (main after PR #141).  
-**Current expected count:** 27 assignments across eight frontend modules. Dashboard statement fingerprint: `2977910e`, reflected in `scripts/dom-sink-source-baseline.json`. CI is the executable gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (main after PR #142; active source baseline 27 assignments).  
+**Phase 11 candidate count:** 25 assignments across eight frontend modules after retiring two Users loading/error templates. Dashboard statement fingerprint remains `2977910e`; the administration fingerprints are updated in `scripts/dom-sink-source-baseline.json`. CI is the executable gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
 
-The current main baseline has 27 `innerHTML =` assignment sites across eight JavaScript modules. Phase 10 changes the Dashboard assignment fingerprint to `2977910e`. Each future change requires review of data flow and a focused hostile-data regression before count/fingerprint baselines are updated.
+The pre-Phase-11 main baseline has 27 `innerHTML =` assignment sites across eight JavaScript modules. This candidate removes two static Users loading/error assignments, leaving 25 active sites while keeping eight modules. Phase 10 changed the Dashboard assignment fingerprint to `2977910e`. Each future change requires review of data flow and a focused hostile-data regression before count/fingerprint baselines are updated.
 
 **Current module counts:**
 
-- features/administration.js — 7 sites: vendor, user, settings, audit, account and administration views.
+- features/administration.js — 5 sites: vendor, user list, settings, audit and account views; two fixed Users loading/error states now use DOM APIs.
 - features/bulk.js — 3 sites: bulk shell, preview rows and import results.
 - features/cash-close.js — 5 sites: shell, close details, preview and print; loading/error states use DOM APIs.
 - features/dashboard.js — 1 site: dashboard shell and financial summaries.
@@ -18,7 +18,7 @@ The current main baseline has 27 `innerHTML =` assignment sites across eight Jav
 - features/register.js — 3 sites: register shell, totals and rows; pagination uses DOM APIs.
 - features/reports.js — 2 sites: report shell and report rows/results.
 - features/printing.js — 1 site: printable voucher.
-- Total — 27 assignment sites across eight modules, down from 33 before PR #135.
+- Total — 25 assignment sites across eight modules on the Phase 11 candidate, down from 27 on merged main and 33 before PR #135.
 
 The machine-readable expected counts live in `scripts/dom-sink-baseline.json`. The ordered per-assignment source fingerprints live in `scripts/dom-sink-source-baseline.json`; both baselines were updated independently in PR #135. `npm run check:dom-sinks` fails when a new sink is added, a reviewed sink disappears/changes count, a new module introduces an HTML sink, or one of the disallowed dynamic DOM APIs is used. A deliberate change requires review of its full interpolation/data flow, a focused adversarial test, and a reviewed baseline update.
 
@@ -29,6 +29,12 @@ The machine-readable expected counts live in `scripts/dom-sink-baseline.json`. T
 **Merged in Phase 7 / PR #136:** preserve the 28-site count and add a hostile-but-valid report-response regression covering report text fields and CSV formula-leading content. This extends evidence for the accountant report boundary; it does not claim a confirmed XSS defect.
 
 **Merged in Phase 8 / PR #138:** the shared modal frame is now built with DOM APIs; heading and submit labels use scalar normalization plus `textContent`. Adversarial Browser E2E supplies hostile labels and verifies inert rendering, caller-provided DOM content, and focus restoration. The independent sink-count/API and source-fingerprint gates no longer list `frontend/core/ui.js`.
+
+## Phase 11 batch 1 — Users loading and request-failure states
+
+The Users view no longer assigns HTML strings for its initial loading state or `listUsers` failure state. `renderUsersLoadState()` builds the heading, refresh button, polite loading message, assertive error panel, message and retry button through `createElement`, `textContent`, and `replaceChildren`. It intentionally does not display arbitrary error text from the API. Browser E2E injects an SVG payload into the API error and checks that the payload is not reflected in `#view`, no SVG/image is created in that region, no script effect fires, and the existing retry path restores the list.
+
+The mainline baseline was 27 sinks; this candidate has 25. The change removes two avoidable HTML parsing assignments without changing financial or authorization behavior. The 25 remaining assignments still require context-specific review.
 
 ## Disallowed dynamic APIs
 

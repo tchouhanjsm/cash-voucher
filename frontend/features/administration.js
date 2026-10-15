@@ -148,23 +148,71 @@ export function createAdministration({ api, getNavigation, signOut }) {
     }
   }
 
+  function renderUsersLoadState(failed = false) {
+    const view = $('#view');
+    const pageHeader = document.createElement('div');
+    pageHeader.className = 'head page-header';
+
+    const pageHeaderCopy = document.createElement('div');
+    pageHeaderCopy.className = 'page-header-copy';
+
+    const pageTitle = document.createElement('h1');
+    pageTitle.textContent = 'Users';
+    pageHeaderCopy.appendChild(pageTitle);
+
+    const pageHeaderActions = document.createElement('div');
+    pageHeaderActions.className = 'page-header-actions';
+
+    const refresh = document.createElement('button');
+    refresh.className = 'btn sm';
+    refresh.type = 'button';
+    refresh.dataset.act = 'refresh';
+    refresh.textContent = '↻ Refresh';
+    pageHeaderActions.appendChild(refresh);
+    pageHeader.append(pageHeaderCopy, pageHeaderActions);
+
+    if (!failed) {
+      const loading = document.createElement('p');
+      loading.className = 'muted';
+      loading.setAttribute('role', 'status');
+      loading.setAttribute('aria-live', 'polite');
+      loading.textContent = 'Loading users…';
+      view.replaceChildren(pageHeader, loading);
+      return;
+    }
+
+    const errorPanel = document.createElement('section');
+    errorPanel.id = 'users-load-error';
+    errorPanel.className = 'card form-error';
+    errorPanel.setAttribute('role', 'alert');
+    errorPanel.setAttribute('aria-live', 'assertive');
+
+    const errorTitle = document.createElement('h2');
+    errorTitle.textContent = 'Users unavailable';
+
+    const errorMessage = document.createElement('p');
+    errorMessage.textContent =
+      'The user list could not be loaded. Check your connection and retry. The failure is not treated as an empty user list.';
+
+    const retry = document.createElement('button');
+    retry.className = 'btn primary';
+    retry.type = 'button';
+    retry.dataset.act = 'usersRetry';
+    retry.textContent = 'Retry loading users';
+
+    errorPanel.append(errorTitle, errorMessage, retry);
+    view.replaceChildren(pageHeader, errorPanel);
+  }
+
   async function usersView() {
-    $('#view').innerHTML =
-      head('Users', refreshBtn) +
-      '<p class="muted" role="status" aria-live="polite">Loading users…</p>';
+    renderUsersLoadState();
 
     let response;
     try {
       response = await api('listUsers');
     } catch (error) {
       console.warn('Users list could not be loaded:', error);
-      $('#view').innerHTML =
-        head('Users', refreshBtn) +
-        '<section id="users-load-error" class="card form-error" role="alert" aria-live="assertive">' +
-        '<h2>Users unavailable</h2>' +
-        '<p>The user list could not be loaded. Check your connection and retry. The failure is not treated as an empty user list.</p>' +
-        '<button class="btn primary" type="button" data-act="usersRetry">Retry loading users</button>' +
-        '</section>';
+      renderUsersLoadState(true);
       return;
     }
 

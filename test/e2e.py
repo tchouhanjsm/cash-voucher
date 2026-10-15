@@ -951,6 +951,7 @@ with sync_playwright() as p:
     # A transient listUsers failure must replace "Loading" with a useful, retryable state.
     go_view(page, 'dash')
     user_list_failure_once = {'value': True}
+    hostile_user_list_error = '<svg onload=window.__xssFired=true></svg>'
 
     def fail_initial_user_list(route):
         try:
@@ -966,7 +967,7 @@ with sync_playwright() as p:
         if payload.get('ok'):
             user_list_failure_once['value'] = False
             payload['ok'] = False
-            payload['error'] = 'Simulated transient user-list failure'
+            payload['error'] = hostile_user_list_error
             payload['code'] = 'SERVER'
         route.fulfill(response=response, body=json.dumps(payload))
 
@@ -976,8 +977,12 @@ with sync_playwright() as p:
     check(
         'The user list could not be loaded' in page.locator('#users-load-error').inner_text()
         and page.locator('#users-load-error [data-act=usersRetry]').is_visible()
+        and page.locator('#view .page-header-actions [data-act=refresh]').is_visible()
         and page.locator('#view').inner_text().count('Loading users…') == 0
-        and 'No users yet' not in page.locator('#view').inner_text(),
+        and 'No users yet' not in page.locator('#view').inner_text()
+        and hostile_user_list_error not in page.locator('#view').inner_text()
+        and page.locator('#view svg, #view img').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
         'Users request failure is explicit and offers an in-context retry instead of an endless loading state',
     )
     page.click('#users-load-error [data-act=usersRetry]')
