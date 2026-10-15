@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `8169cd69cba1251121cc018683c2978a360c037c` (PR #132 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for current evidence classification and ranked work packages.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `a0add3de0bf79902f046e7811e888f2f1e735f9a` (PR #133 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for current evidence classification and ranked work packages.
 
-**Status: not verified as production-ready.** This document tracks operational release gates, not the latest source SHA or routine PR history. Verify the current `main` commit and current deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PR #132 added source-level recovery, audit-failure, route-registry and mock-performance evidence; Phase 4 adds authenticated mock role/action and rendering-sink drift checks. None changes or proves the live deployment.
+**Status: not verified as production-ready.** This document tracks operational release gates, not the latest source SHA or routine PR history. Verify the current `main` commit and current deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PR #132 added source-level recovery, audit-failure, route-registry and mock-performance evidence; merged Phase 4 (PR #133) adds authenticated mock role/action and rendering-sink count/API drift checks. Proposed PR #134 adds source fingerprints to detect edits within an existing sink, but must pass the final-head gates before it is treated as merged evidence. None changes or proves the live deployment.
 
 ## Current go-live gates — reviewed 14 October 2026
 

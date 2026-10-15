@@ -58,12 +58,12 @@ npm run check
 npm run test:e2e
 ```
 
-- `npm run check` runs lint, formatting, JSON validation, JS syntax checks, the frontend release-integrity check, the reviewed DOM-sink inventory gate, and the mock Apps Script backend suite including an authenticated authorization matrix.
+- `npm run check` runs lint, formatting, JSON validation, JS syntax checks, the frontend release-integrity check, DOM-sink count/API drift checks, the proposed Phase 5 source-fingerprint gate, and the mock Apps Script backend suite. `npm test` includes the focused fingerprint-scanner unit test and authenticated authorization matrix.
 - `npm run test:e2e` runs the browser suite against the local mock server; it must not use the production API. See `docs/DEVELOPMENT-WORKFLOW.md`.
 - CI also runs `npm run audit:secrets` against the current tracked text and reachable Git history for selected credential patterns. It is a bounded detector, not complete security certification.
 - The mock Apps Script layer does not replace tests against a real Google account or load/concurrency testing against the live service.
 
-The source inventory is documented in `docs/ACTIVE-DOM-SINK-INVENTORY.md`; it detects sink drift but does not prove every HTML interpolation is safe. The role/action coverage and explicit visibility boundaries are recorded in `docs/PHASE-4-AUTHORIZATION-RENDERING.md`.
+The source inventory is documented in `docs/ACTIVE-DOM-SINK-INVENTORY.md`. The count/API gate plus proposed source fingerprint gate detect changes that warrant review; neither proves every HTML interpolation is safe. The role/action coverage and explicit visibility boundaries are recorded in `docs/PHASE-4-AUTHORIZATION-RENDERING.md`.
 
 For local Apps Script development, follow `docs/DEVELOPMENT-WORKFLOW.md` and inspect `clasp status` before every push. Never run `clasp push` or `clasp deploy` without a deliberate backend release decision.
 

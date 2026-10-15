@@ -1,9 +1,9 @@
 # Product Gap Register and Roadmap
 
 Status date: 15 October 2026  
-Last verified main baseline: 8169cd69cba1251121cc018683c2978a360c037c (PR #132 merge)  
-Current phase: Phase 4 — authorization and rendering assurance  
-Current review branch: phase-4/authorization-rendering-assurance-2026-10-15
+Last verified main baseline: a0add3de0bf79902f046e7811e888f2f1e735f9a (PR #133 merge)  
+Current phase: Phase 5 — HTML sink source fingerprinting (PR #134 open; not merged)  
+Current review branch: phase-5/dom-sink-source-fingerprint-2026-10-15
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -11,11 +11,12 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 ## Phase status
 
-- Phase 1 — repository source audit, credential-pattern guard and seeded mock performance baseline are present. The full semantic DOM-sink and action-by-role reviews remained open; Phase 4 adds regression gates for those gaps.
+- Phase 1 — repository source audit, selected credential-pattern guard and seeded mock performance baseline are present. They remain bounded source/mock evidence, not live-service measurements.
 - Phase 2 — the normal-path payment → independent approval → reporting → cash-close snapshot → audit journey is covered by mock-backed tests. Real Sheet behavior and live permissions remain unverified.
 - Phase 2B — PR #131 and PR #132 implement direct ambiguous-save, IndexedDB acknowledgement-failure and stale-session queue recovery, with idempotent client IDs and account binding.
 - Phase 3 — audit append failure sets an owner-visible marker when Script Properties remains available. When both the audit append and marker store fail, only the available execution log may surface the gap; missing events are not reconstructed.
-- Phase 4 — PR #133 adds an authenticated role/action matrix and data-visibility tests, plus a machine-checked frontend HTML-sink inventory and a list of disallowed DOM APIs. Exact-final-head CI, Browser E2E and Full Flight Test are required.
+- Phase 4 — PR #133 is merged at `a0add3de0bf79902f046e7811e888f2f1e735f9a`; its tested head passed CI, Browser E2E (342 checks) and Full Flight Test. It adds authenticated role/action and data-visibility tests, the 33-site HTML-sink inventory, and designated high-risk DOM API checks.
+- Phase 5 — PR #134 (open; not merged) adds source fingerprints for the existing 33 `innerHTML` assignments and a focused scanner unit suite. The final PR head still needs CI, Browser E2E and Full Flight Test evidence. Fingerprints detect drift; they do not establish that all interpolation contexts are safe.
 - Operational readiness — live Apps Script deployment/identity, real role checks, scheduled backup and isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -28,11 +29,11 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 4
+## Priority after Phase 5
 
 1. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
 2. Perform a real backup and isolated restore drill with row-count, numbering and receipt-reference reconciliation.
-3. Finish the semantic source-to-sink review for the known template renderers and conduct a scoped adversarial review of server authorization branches.
+3. Continue the manual, context-specific semantic source-to-sink review for all 33 assignments; the PR #134 fingerprint gate only makes unreviewed changes visible and does not replace this review. Conduct a scoped adversarial review of server authorization branches.
 4. Run physical-device offline/install/update/recovery and manual accessibility review.
 5. Measure real Sheet access latency, quotas, contention and concurrent numbering.
 6. Review the clasp → micromatch → braces advisory by its 9 November 2026 due date.
