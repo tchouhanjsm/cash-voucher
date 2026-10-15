@@ -1826,6 +1826,7 @@ with sync_playwright() as p:
 
     # A malformed server response must not become active HTML in the save confirmation.
     success_number_payload = '<svg onload=window.__xssFired=true></svg>'
+    success_vendor_payload = '<img src=x onerror=window.__xssFired=true>'
 
     def tamper_created_voucher_number(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -1834,6 +1835,7 @@ with sync_playwright() as p:
         created = payload.get('data', {}).get('created', [])
         if request_data.get('action') == 'createVouchers' and created:
             created[0]['no'] = success_number_payload
+            created[0]['vendor'] = success_vendor_payload
             # createVouchers responses are pushed into the client cache before a later bootstrap normalization.
             created[0]['date'] = {'split': None}
             route.fulfill(response=response, json=payload)
@@ -1848,10 +1850,11 @@ with sync_playwright() as p:
     page.wait_for_selector('.ok-panel')
     check('Saved 2 payments' in page.inner_text('#nres'), 'saved 2 payments')
     check(
-        page.locator('#nres svg').count() == 0
+        page.locator('#nres img, #nres svg').count() == 0
         and success_number_payload in page.locator('#nres').inner_text()
+        and success_vendor_payload in page.locator('#nres').inner_text()
         and not page.evaluate('window.__xssFired === true'),
-        'server-returned voucher number remains inert text in save confirmation',
+        'server-returned voucher number and vendor remain inert text in save confirmation',
     )
     page.evaluate('window.print = () => {}')
     page_errors_before_print = sum(message.startswith('PAGEERR ') for message in logs)
@@ -2831,8 +2834,12 @@ with sync_playwright() as p:
     check('Imported 2 payments' in page.inner_text('#bprev'), 'payment import completion names payments')
     check(
         page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
-        and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite',
-        'bulk import completion is announced as a polite status update',
+        and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite'
+        and page.locator('#bprev img, #bprev svg').count() == 0
+        and page.locator('#bprev [data-act=goreg]').count() == 1
+        and page.locator('#bprev [data-act=bulkagain]').count() == 1
+        and not page.evaluate('window.__xssFired === true'),
+        'bulk completion retains polite status, inert DOM and both actions',
     )
 
     # Import one receipt to ensure completion wording reflects the selected operation type.
