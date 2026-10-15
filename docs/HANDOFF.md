@@ -2,59 +2,41 @@
 
 Updated: 15 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `572b5d68fb6b6a572a08deab908c0b83d44aba62` (PR #135 merge)  
-Current phase: Phase 7 — accountant report rendering and CSV output contract  
-Current working PR: #136 — test hostile report content and CSV formula neutralization (open; not merged)  
-Branch: `phase-7/report-rendering-output-contract-2026-10-15`
+Last verified main SHA: `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137 merge)  
+Current phase: Phase 8 — contextual rendering security and reusable DOM boundaries  
+Current working branch: `phase-8/contextual-rendering-security-2026-10-15`  
+Current open PR head: `1c0375c56489e387613aa1a11a1e79a3fe689d9b` ([PR #138](https://github.com/tchouhanjsm/cash-voucher/pull/138))
 
-Canonical documents: `docs/PRODUCT-ROADMAP.md`, `docs/ACTIVE-DOM-SINK-INVENTORY.md`, `docs/SECURITY-RENDERING-AUDIT.md`, `docs/RELEASE-READINESS.md`, and `docs/PHASE-4-AUTHORIZATION-RENDERING.md`.
+## Verified repository state
 
-## Verified main state
+- PR #136 merged at `4684ffabc0fbbf2ff792c687e7ce9d3a31e29170`.
+- PR #137 merged at `fabf4bba1a964c99c55391c4d4be3f260d787906`.
+- PR #137 tested head: `3d2876d68ecf763d1ed09b908bab6b59ac65648c`.
+- CI passed on that PR head: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706006252.
+- Browser E2E passed on that PR head: 349 checks, zero failures: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706006331.
+- Full Flight Test passed on the same tested head: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706006230.
+- Post-merge CI passed on current main SHA: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706374287.
+- At Phase 8 start, live GitHub returned no open pull requests; PR #138 is now open for owner review.
+- PR #136/#137 workflow evidence is mock-backed; it does not prove live deployment, Google permissions, backup/restore, device behavior or production readiness.
 
-- PR #133 merged at `a0add3de0bf79902f046e7811e888f2f1e735f9a`.
-- PR #134 merged at `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3`.
-- PR #135 merged at `572b5d68fb6b6a572a08deab908c0b83d44aba62`.
-- PR #135 exact tested head: `c4d163bcc05b543a004dcd12a617319b27a98f32`.
-- CI: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38701343552 — passed; 267 backend checks, 28 sink count/fingerprint matches, scanner tests and handoff quality checks.
-- Browser E2E: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38701343478 — 343 checks passed, zero failures.
-- Full Flight Test: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38701343568 — passed, including the same 343 browser checks.
-- Post-merge CI on the exact main merge commit: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38701556441 — passed.
-- No other open PRs were found when Phase 7 began. PR #136 is the current proposal and has not been merged.
-- These are GitHub Actions/mock-backed results. They do not prove the deployed Apps Script version, live Sheet/Drive permissions, scheduled backup, isolated restore, physical-device behavior or accessibility.
+## Phase 8 — reusable DOM boundaries
 
-## Phase 6 — avoidable text-only HTML sinks (merged)
+Build the shared modal frame with DOM APIs and `textContent` rather than parsing a template string. The dialog API already requires its body as a DOM Node/DocumentFragment. Review other feature templates in context; sink counts/fingerprints detect drift, not unsafe output contexts.
 
-PR #135 replaces five text/status/error-only assignments with DOM construction and `textContent`, and adds a hostile server-error browser test. The reviewed inventory falls from 33 to 28 `innerHTML` assignment sites across nine modules. The count and source-fingerprint checks pass on the merged source. This reduces avoidable HTML parsing but does not certify the other 28 templates.
+## Acceptance criteria
 
-## Phase 7 — accountant report rendering and CSV output contract
+- Modal form, title, alert and buttons use DOM creation; title and submit label use scalar normalization and `textContent`.
+- Preserve caller-supplied body nodes, accessible naming/live regions, close and submit behavior, focus restoration, Escape handling, tab wrapping and app inert behavior.
+- Update source-fingerprint inventory alongside the implementation; the independent sink count/API gate remains enabled.
+- Browser regression proves hostile labels remain inert and controls/focus still work (351 checks passed, zero failures).
+- CI, Browser E2E and Full Flight Test passed on exact final PR head `1c0375c56489e387613aa1a11a1e79a3fe689d9b`: [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329265), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329250), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329491).
+- No accounting, permission, persistence, schema, API contract, dependency or production data changes.
 
-PR #136 adds one isolated browser adversarial scenario using the actual report-only accountant session and the Recorded Movement Report rendering/export controls:
+## Residual risks and external gates
 
-1. Intercept a valid-shaped report response containing hostile SVG markup in vendor ID, category, notes, cancellation and approval text, and a formula-leading vendor value.
-2. Confirm hostile values remain literal text, no SVG/image element is created, and no payload executes.
-3. Export that response and verify formula-leading CSV content is prefixed with an apostrophe after quoting/escaping; hostile text remains represented as data.
-4. Remove the injected response and verify the report returns to the normal server dataset.
-5. Keep the sink count at 28; this batch adds coverage, not an arbitrary baseline reduction.
-
-### Acceptance / review boundaries
-
-- The report renderer validates response shapes and escapes dynamic HTML text. PR #136 adds adversarial evidence for that boundary; it does not claim the renderer had a confirmed XSS defect.
-- CSV export must neutralize formula-leading values without changing the source record.
-- No financial calculations, report permissions, server response contracts, schemas or persisted rows change.
-- All three required workflows must pass on the same final PR head SHA before the batch is considered complete.
-- The semantic review for all remaining template expressions remains incremental, not a formal XSS certification.
-
-## Remaining priorities
-
-1. Continue context-by-context review of the 28 remaining HTML assignments and convert additional templates only when risk meaningfully decreases without changing behavior.
-2. Owner-controlled release proof: verify Apps Script project/version, execution identity, deployment ID, Script Properties, Sheet binding and live role/receipt authorization.
-3. Witness a scheduled backup and restore into a separate recovery Sheet/folder; reconcile voucher/receipt counts, numbering and manifest references.
-4. Test install/update/offline recovery on operating phones/tablets and conduct keyboard, focus, zoom and screen-reader accessibility review.
-5. Measure real Sheets latency, quotas, lock contention and concurrent voucher numbering in an owner-approved setup.
-6. Reassess the clasp → micromatch → braces security exception by 9 November 2026.
-
-## Engineering boundaries
-
-- Owner retains merge and release authority. Do not merge, deploy, run `clasp push`, setup, migrations, modify production data or rewrite Git history without explicit authorization.
-- Preserve local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; never stage, overwrite or delete it.
-- Keep this as the single current handoff. Do not create per-PR handoff files.
+- The other 27 HTML assignment sites remain under contextual review; this is not full XSS certification.
+- Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, backup/restore, device/offline accessibility and real-service quotas/concurrency remain unverified.
+- Reassess the `@google/clasp -> micromatch -> braces` exception by 9 November 2026.
+- Owner retains merge and release authority. No `clasp push`, deployment, setup/migration, production data mutation or history rewrite.
+- Preserve local untracked `docs/AI-ENGINEERING-PROTOCOL.md`.
+- This remains the only canonical handoff; do not create per-PR handoff documents.

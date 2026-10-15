@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `572b5d68fb6b6a572a08deab908c0b83d44aba62` (PR #135 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
 
-**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#135 add source recovery, authorization/rendering drift checks, statement fingerprints and five text-only sink reductions. Proposed PR #136 adds adversarial report-rendering and CSV output coverage; neither it nor prior mock-backed tests proves live deployment or complete semantic XSS safety.
+**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#137 add source recovery, authorization/rendering drift checks, statement fingerprints, five text-only sink reductions, adversarial accountant-report/CSV coverage and payee-day split-payment approval protection. These mock-backed tests do not prove live deployment or complete semantic XSS safety.
 
 ## Current go-live gates — reviewed 14 October 2026
 
@@ -43,20 +43,20 @@ Do not begin the pilot until the owner confirms the release target, required mig
 
 ## Evidence-based baseline
 
-| Area                                                        | Current status        | Evidence / limitation                                                                                    |
-| ----------------------------------------------------------- | --------------------- | -------------------------------------------------------------------------------------------------------- |
-| Backend validation, schema checks and number reconciliation | Implemented           | Current `backend/*.gs` and mock backend suite; not a live Google-account test                            |
-| PIN hash and session protection                             | Implemented           | HMAC-SHA256 with per-user salt + script property pepper; salt rotation invalidates old session tokens    |
-| Login/PIN-change attempt throttling                         | Implemented in source | PR #32 is merged and post-merge CI passed; not deployed to Apps Script                                   |
-| Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                        |
-| Active frontend architecture                                | PASS on current main  | `index.html` loads `frontend/main.js`; source graph is modular                                           |
-| PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                             |
-| CI quality gate                                             | PASS on current main  | Post-merge CI passed on `4d80152`; each later PR must still be checked at its exact head                 |
-| Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
-| Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
-| Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
-| Production Apps Script deployment                           | Unconfirmed           | Owner reported version 4 before PRs #64/#65; current merged backend deployment is unconfirmed            |
-| Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                              |
+| Area                                                        | Current status        | Evidence / limitation                                                                                                       |
+| ----------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| Backend validation, schema checks and number reconciliation | Implemented           | Current `backend/*.gs` and mock backend suite; not a live Google-account test                                               |
+| PIN hash and session protection                             | Implemented           | HMAC-SHA256 with per-user salt + script property pepper; salt rotation invalidates old session tokens                       |
+| Login/PIN-change attempt throttling                         | Implemented in source | PR #32 is merged and post-merge CI passed; not deployed to Apps Script                                                      |
+| Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                                           |
+| Active frontend architecture                                | PASS on current main  | `index.html` loads `frontend/main.js`; source graph is modular                                                              |
+| PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                                                |
+| CI quality gate                                             | PASS on current main  | Post-merge CI passed on `fabf4bba1a964c99c55391c4d4be3f260d787906` (run 38706374287). Check later PRs at their exact heads. |
+| Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility                           |
+| Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                                   |
+| Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence                    |
+| Production Apps Script deployment                           | Unconfirmed           | Owner reported version 4 before PRs #64/#65; current merged backend deployment is unconfirmed                               |
+| Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                                                 |
 
 The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
 
