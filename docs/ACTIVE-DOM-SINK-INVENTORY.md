@@ -69,8 +69,7 @@ My Account no longer assembles account identity, property label, profile actions
 
 The outbox banner and queued/rejected entry details now use DOM nodes. Queue messages, pending/rejected vendor/amount/date/failure values and overflow notices are text, while Retry, Export, Import, Sign in to sync, Export & remove and Clear my queued entries retain their `data-act` keys. E2E tampering of locally stored payee text must remain inert in both the banner and expanded review list.
 
-Merged main after PR #145 has 19 sites; this candidate has 17 across eight modules. This does not prove every remaining template safe or the local queue durable; account-bound offline recovery still requires real-device testing.
-
+Merged main after PR #146 has 17 sites across eight modules. PR #147 fixes Change PIN submit semantics without changing the sink count; the local queue still requires real-device durability/recovery checks.
 
 ## Phase 11 Batch 4 follow-up — Change PIN submit semantics
 
