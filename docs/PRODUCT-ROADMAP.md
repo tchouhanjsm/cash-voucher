@@ -31,14 +31,15 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
 ## Priority after Phase 10
-1. Integrate the UI refresh on current main; audit dashboard alert claims, fixed icon/action inputs, service-worker assets/cache key and hostile-data rendering.
-1. Continue the manual, context-specific semantic source-to-sink review for the 27 remaining HTML assignments; use focused tests and DOM APIs when they materially reduce risk. Fingerprints make changes visible but do not replace review.
-2. Continue adversarial coverage across remaining independently rendered surfaces without repeating test cases already covered.
-3. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
-4. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.
-5. Run physical-device offline/install/update/recovery and manual keyboard, focus, zoom and screen-reader accessibility review.
-6. Measure real Sheet access latency, quotas, contention and concurrent numbering in an owner-approved environment.
-7. Review the clasp → micromatch → braces advisory by its 9 November 2026 due date.
+
+1. Complete the UI refresh integration on current main; validate dashboard trust claims, allowlisted icon/action inputs, service-worker assets/cache and hostile-data rendering.
+2. Continue the manual, context-specific semantic source-to-sink review for the 27 remaining HTML assignments; use focused tests and DOM APIs where they materially reduce risk.
+3. Continue adversarial coverage across independently rendered surfaces without repeating tests already covered.
+4. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
+5. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.
+6. Run physical-device offline/install/update/recovery and manual keyboard, focus, zoom and screen-reader accessibility review.
+7. Measure real Sheet access latency, quotas, contention and concurrent numbering in an owner-approved environment.
+8. Review the clasp → micromatch → braces advisory by its 9 November 2026 due date.
 
 ## Financial integrity invariants
 
