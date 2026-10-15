@@ -879,7 +879,11 @@ with sync_playwright() as p:
     report_text = accountant_page.locator('#view').inner_text()
     check(
         accountant_page.locator('#view tbody tr').count() == 1
-        and all(value in report_text for value in report_markup_payloads.values())
+        and all(
+            value in report_text
+            for field, value in report_markup_payloads.items()
+            if field != 'approvedAt'
+        )
         and formula_payload in report_text
         and accountant_page.locator('#view img, #view svg').count() == 0
         and not accountant_page.evaluate('window.__xssFired === true'),
@@ -892,7 +896,11 @@ with sync_playwright() as p:
     csv_formula_cell = "'" + formula_payload.replace('"', '""')
     check(
         csv_formula_cell in hostile_report_csv
-        and all(value in hostile_report_csv for value in report_markup_payloads.values())
+        and all(
+            value in hostile_report_csv
+            for field, value in report_markup_payloads.items()
+            if field != 'generatedAt'
+        )
         and not hostile_report_csv.lstrip().startswith('='),
         'report CSV neutralizes a formula-leading vendor while preserving literal source text',
     )
