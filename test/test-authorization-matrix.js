@@ -186,7 +186,10 @@ const permissionCases = [
     action: 'createVouchers',
     label: 'bulk create',
     allowed: ['manager', 'owner'],
-    payload: { bulk: true, entries: [null] },
+    payload: {
+      bulk: true,
+      entries: [{ date: 'not-a-date', vendor: 'Test Vendor', amount: 1, category: 'Other', cashImpact: 'CASH_OUT' }],
+    },
   },
   { action: 'updateVoucher', allowed: ['manager', 'owner'], payload: { id: 'missing-voucher' } },
   { action: 'cancelVoucher', allowed: ['manager', 'owner'], payload: { id: 'missing-voucher' } },
@@ -242,7 +245,7 @@ for (const testCase of permissionCases) {
 }
 
 const bootstrap = {};
-for (const role of ['staff', 'manager', 'owner', 'accountant']) {
+for (const role of ['staff', 'staff2', 'manager', 'owner', 'accountant']) {
   const result = call('bootstrap', users[role]);
   assert.ok(result.ok, role + ' can load the shell bootstrap');
   bootstrap[role] = result.data;
