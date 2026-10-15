@@ -896,13 +896,16 @@ with sync_playwright() as p:
     csv_formula_cell = "'" + formula_payload.replace('"', '""')
     check(
         csv_formula_cell in hostile_report_csv
-        and all(
-            value in hostile_report_csv
+        and not hostile_report_csv.lstrip().startswith('='),
+        'report CSV prefixes a formula-leading vendor after CSV quote escaping',
+    )
+    check(
+        all(
+            value.replace('"', '""') in hostile_report_csv
             for field, value in report_markup_payloads.items()
             if field != 'generatedAt'
-        )
-        and not hostile_report_csv.lstrip().startswith('='),
-        'report CSV neutralizes a formula-leading vendor while preserving literal source text',
+        ),
+        'report CSV preserves hostile row fields as data after CSV quote escaping',
     )
     accountant_page.unroute('**/api?*', inject_untrusted_report)
     accountant_page.locator('#movementFilters button[type=submit]').click()
