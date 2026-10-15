@@ -4,7 +4,8 @@ Updated: 15 October 2026
 Repository: tchouhanjsm/cash-voucher  
 Last verified main SHA: `fabf4bba1a964c99c55391c4d4be3f260d787906` (PR #137 merge)  
 Current phase: Phase 8 — contextual rendering security and reusable DOM boundaries  
-Current working branch: `phase-8/contextual-rendering-security-2026-10-15`
+Current working branch: `phase-8/contextual-rendering-security-2026-10-15`  
+Current open PR head: `1c0375c56489e387613aa1a11a1e79a3fe689d9b` ([PR #138](https://github.com/tchouhanjsm/cash-voucher/pull/138))
 
 ## Verified repository state
 
@@ -15,7 +16,7 @@ Current working branch: `phase-8/contextual-rendering-security-2026-10-15`
 - Browser E2E passed on that PR head: 349 checks, zero failures: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706006331.
 - Full Flight Test passed on the same tested head: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706006230.
 - Post-merge CI passed on current main SHA: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38706374287.
-- Live GitHub returned no open pull requests at session start.
+- At Phase 8 start, live GitHub returned no open pull requests; PR #138 is now open for owner review.
 - PR #136/#137 workflow evidence is mock-backed; it does not prove live deployment, Google permissions, backup/restore, device behavior or production readiness.
 
 ## Phase 8 — reusable DOM boundaries
@@ -27,8 +28,8 @@ Build the shared modal frame with DOM APIs and `textContent` rather than parsing
 - Modal form, title, alert and buttons use DOM creation; title and submit label use scalar normalization and `textContent`.
 - Preserve caller-supplied body nodes, accessible naming/live regions, close and submit behavior, focus restoration, Escape handling, tab wrapping and app inert behavior.
 - Update source-fingerprint inventory alongside the implementation; the independent sink count/API gate remains enabled.
-- Browser regression proves hostile labels remain inert and controls/focus still work.
-- CI, Browser E2E and Full Flight Test pass on the exact final PR head.
+- Browser regression proves hostile labels remain inert and controls/focus still work (351 checks passed, zero failures).
+- CI, Browser E2E and Full Flight Test passed on exact final PR head `1c0375c56489e387613aa1a11a1e79a3fe689d9b`: [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329265), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329250), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710329491).
 - No accounting, permission, persistence, schema, API contract, dependency or production data changes.
 
 ## Residual risks and external gates
