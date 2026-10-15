@@ -255,6 +255,10 @@ assert.deepEqual(
   'second staff bootstrap cannot see another staff member’s vouchers',
 );
 assert.equal(bootstrap.manager.vouchers.length, 3, 'manager bootstrap sees all fixture vouchers');
+assert.ok(
+  bootstrap.manager.vouchers.some((voucher) => voucher.id === managerVoucher.id),
+  'manager bootstrap contains the voucher created by the manager account',
+);
 assert.equal(bootstrap.owner.vouchers.length, 3, 'owner bootstrap sees all fixture vouchers');
 assert.equal(bootstrap.accountant.vouchers.length, 0, 'accountant bootstrap contains no register rows');
 assert.equal(bootstrap.accountant.vendors.length, 0, 'accountant bootstrap contains no vendor directory');
@@ -330,7 +334,6 @@ checkAddReceiptRole('manager', staffVoucher, true, 'manager can attach a receipt
 checkAddReceiptRole('owner', staffVoucher, true, 'owner can attach a receipt to a staff voucher');
 checkAddReceiptRole('accountant', staffVoucher, false, 'accountant cannot attach receipts');
 
-let changePinChecks = 0;
 for (const role of ['staff', 'manager', 'owner', 'accountant']) {
   const account = users[role];
   const result = call('changePin', account, {
@@ -340,7 +343,6 @@ for (const role of ['staff', 'manager', 'owner', 'accountant']) {
   assert.ok(result.ok, role + ' may change their own PIN without owner-level permission');
   account.pin = accountSpecs[role].rotatePin;
   account.token = result.data.token;
-  changePinChecks += 1;
 }
 
 for (const [role, account] of Object.entries(users)) {
