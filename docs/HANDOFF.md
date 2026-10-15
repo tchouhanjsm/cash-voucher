@@ -54,6 +54,7 @@ Current open PR: #146 — [Phase 11 Batch 4: retire Account and offline outbox H
 **Batch 3 — merged in PR #145:** replace Reports/Cash Close access-denied templates and Register totals/status rendering; preserve alert/status semantics and totals displays. Inventory: 22 → 19 assignments.
 
 **Batch 4 — current candidate (PR #146):**
+
 - My Account profile/property display, sign-out/install actions and Change PIN form are built with DOM APIs and `textContent`; profile fields are scalar-normalized.
 - Offline outbox banner, queued/rejected-entry details, status messages and Retry/Export/Import/Sign-in/Discard controls are built with DOM nodes; local IndexedDB fields use text nodes rather than HTML parsing.
 - Browser E2E injects hostile profile/property strings and tampers with a stored queue payee value, checking inert rendering and preserved controls.
