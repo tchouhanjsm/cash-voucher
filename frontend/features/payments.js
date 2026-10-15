@@ -753,7 +753,10 @@ export function createPayments({ api, refresh }) {
             receiptCount === 1
               ? ' · 1 receipt image'
               : receiptCount > 1
-                ? ' · ' + Math.min(receiptCount, 99) + (receiptCount > 99 ? '+' : '') + ' receipt images'
+                ? ' · ' +
+                  Math.min(receiptCount, 99) +
+                  (receiptCount > 99 ? '+' : '') +
+                  ' receipt images'
                 : '';
           const item = document.createElement('li');
           const title = document.createElement('b');
@@ -800,7 +803,9 @@ export function createPayments({ api, refresh }) {
           }
           return item;
         },
-        failed.length > 5 ? '+' + (failed.length - 5) + ' more; export the queue for full details.' : '',
+        failed.length > 5
+          ? '+' + (failed.length - 5) + ' more; export the queue for full details.'
+          : '',
       );
 
       if (pendingReview) b.appendChild(pendingReview);
@@ -808,8 +813,10 @@ export function createPayments({ api, refresh }) {
       if (pending.length && S.token) b.appendChild(makeButton('Retry now', 'flush'));
       if (visible.length) b.appendChild(makeButton('Export', 'export-pending'));
       b.appendChild(makeButton('Import', 'import-pending'));
-      if (S.offlineMode && !S.token) b.appendChild(makeButton('Sign in to sync', 'reconnect-signin'));
-      if (owned.length) b.appendChild(makeButton('Clear my queued entries', 'discard', 'btn sm danger'));
+      if (S.offlineMode && !S.token)
+        b.appendChild(makeButton('Sign in to sync', 'reconnect-signin'));
+      if (owned.length)
+        b.appendChild(makeButton('Clear my queued entries', 'discard', 'btn sm danger'));
     } catch (error) {
       b.className = 'banner err';
       const message =
