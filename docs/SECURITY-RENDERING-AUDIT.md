@@ -2,10 +2,13 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `69f861f86d08a19da8fe1223b3bc6c4840478895` (main after PR #131; Phase 1 continues the full sink-by-sink audit)
+**Latest merged review baseline:** `8169cd69cba1251121cc018683c2978a360c037c` (main after PR #132; Phase 4 adds role/action and sink-inventory drift checks)
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
+
+**Phase 4 follow-up — 15 October 2026:** the active modular frontend currently has 33 `innerHTML` assignment sites across nine modules. `scripts/check-dom-sinks.js` locks those per-module counts and fails if they drift or if specified high-risk DOM APIs are introduced. A new mock-authenticated role/action suite separately tests staff/manager/owner/accountant access and own-versus-foreign record visibility. These are drift and regression controls, not proofs that each interpolation is safe or that every authorization scenario has been penetration-tested. The live deployment and production data boundaries remain unverified.
+
 
 **Cross-phase status update — 15 October 2026:** PR #132 adds a limited high-confidence credential-pattern scan across current tracked text and reachable history, plus a route-registry regression asserting registered actions reject unauthenticated calls. These guardrails do not certify every credential format, prove every role/action combination, or replace the full active DOM-sink review. Count them as verified only after final-head CI passes.
 
