@@ -40,7 +40,6 @@ No active frontend module may introduce the following without an explicit securi
 - Existing Browser E2E tests exercise hostile text for specific admin, audit, bulk, register, dashboard, receipt and cash-close surfaces. They do not cover every possible persisted field, API response or browser engine.
 - The complete semantic source-to-sink review, live-host headers/CSP, live authorization and adversarial manual review remain release gates.
 
-
 ## Phase 8 proposal — modal frame (15 October 2026)
 
 The shared modal frame is currently built with one `modal.innerHTML` assignment even though the dialog API already requires the body to be a DOM Node/DocumentFragment. The proposed change constructs the form, heading, alert, Close button and optional submit button with DOM APIs and writes labels via scalar normalization and `textContent`.

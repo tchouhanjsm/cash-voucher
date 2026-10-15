@@ -354,7 +354,6 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 
 PR #126 adds targeted Daily Cash Close preview response validation; see the section above for its exact scope. The complete active HTML/DOM sink inventory, live authorization, secret/history scan, real backup/restore and device validation remain open. See `docs/PHASE-1-REPOSITORY-AUDIT.md`; do not treat this incremental audit as a security certification.
 
-
 ## Phase 8 proposal — reusable modal DOM boundary (15 October 2026)
 
 - Baseline is `fabf4bba1a964c99c55391c4d4be3f260d787906`, after PR #137.
