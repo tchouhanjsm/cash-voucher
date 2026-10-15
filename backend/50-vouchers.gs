@@ -135,13 +135,8 @@ function createVouchers_(user, req) {
       let approvalDayTotalPaise = 0;
       if (c.type === 'PAYMENT') {
         approvalDayTotalPaise =
-          payeeDayPaymentPaise_(
-            existing.concat(newObjs),
-            c.vendorId,
-            c.vendor,
-            c.date,
-            '',
-          ) + Math.round(c.amount * 100);
+          payeeDayPaymentPaise_(existing.concat(newObjs), c.vendorId, c.vendor, c.date, '') +
+          Math.round(c.amount * 100);
       }
       const paymentNeedsApproval =
         c.type === 'PAYMENT' &&
