@@ -289,6 +289,51 @@ export function createBulk({ api, refresh, go }) {
     drawPreview();
   }
 
+  function renderImportResult(done, pendingApprovalIds, skipped) {
+    const panel = document.createElement('div');
+    panel.className = 'card ok-panel';
+    panel.setAttribute('role', 'status');
+    panel.setAttribute('aria-live', 'polite');
+
+    const title = document.createElement('h2');
+    title.textContent =
+      '✔ Imported ' + done + ' ' + (type === 'RECEIPT' ? 'cash receipts' : 'payments');
+    panel.appendChild(title);
+
+    if (pendingApprovalIds.size) {
+      const pending = document.createElement('p');
+      pending.setAttribute('role', 'status');
+      pending.textContent =
+        pendingApprovalIds.size +
+        ' payment(s) need owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.';
+      panel.appendChild(pending);
+    }
+
+    if (skipped) {
+      const skippedMessage = document.createElement('p');
+      skippedMessage.className = 'muted';
+      skippedMessage.textContent = skipped + ' already existed and were skipped.';
+      panel.appendChild(skippedMessage);
+    }
+
+    const actions = document.createElement('div');
+    actions.className = 'actions';
+    const openRegister = document.createElement('button');
+    openRegister.type = 'button';
+    openRegister.className = 'btn primary';
+    openRegister.dataset.act = 'goreg';
+    openRegister.textContent = 'Open register';
+    const importMore = document.createElement('button');
+    importMore.type = 'button';
+    importMore.className = 'btn';
+    importMore.dataset.act = 'bulkagain';
+    importMore.textContent = 'Import more';
+    actions.append(openRegister, importMore);
+    panel.appendChild(actions);
+
+    $('#bprev').replaceChildren(panel);
+  }
+
   async function runImport(button) {
     const ready = rows.filter((row) => !row.errs.length && !row.skip);
     const unclassified = rows.some(
@@ -338,8 +383,7 @@ export function createBulk({ api, refresh, go }) {
             `Imported ${Math.min(index + 100, ready.length)} of ${ready.length}…`;
         }
 
-        $('#bprev').innerHTML =
-          `<div class="card ok-panel" role="status" aria-live="polite"><h2>✔ Imported ${done} ${type === 'RECEIPT' ? 'cash receipts' : 'payments'}</h2>${pendingApprovalIds.size ? `<p role="status">${pendingApprovalIds.size} payment(s) need owner/manager approval. They are excluded from approved totals and Daily Cash Close until approved by someone other than the creator.</p>` : ''}${skipped ? `<p class="muted">${skipped} already existed and were skipped.</p>` : ''}<div class="actions"><button class="btn primary" data-act="goreg">Open register</button><button class="btn" data-act="bulkagain">Import more</button></div></div>`;
+        renderImportResult(done, pendingApprovalIds, skipped);
       } catch (error) {
         fail(error);
         $('#bprog').textContent =
