@@ -168,6 +168,10 @@ registerActions({
 
   goreg: () => bulk.goRegister(),
 
+  goto: ({ key }) => {
+    if (key === 'reg') navigation.go('reg');
+  },
+
   bulkagain: () => bulk.renderAgain(),
 
   vclr: () => {
