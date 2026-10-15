@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (PR #142 merge; docs-only; Phase 10 source remains integrated)  
+Last verified main baseline: `db3c2cfd08ddbd1a80d37bdc67557b719446caaf` (PR #143 merge; Phase 11 Batch 1 integrated)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current review branch: `phase-11/retire-admin-status-html-sinks-2026-10-15`
+Current review branch: `phase-11/bulk-payment-result-dom-2026-10-15`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -18,7 +18,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 8 — PR #137 strengthened payee-day split-payment approval and entry UX. PR #138 removed the shared modal-frame `innerHTML` assignment; sink inventory fell from 28 to 27 assignments across eight modules.
 - Phase 9 — PR #139 merged at `965f16b8849fa757e46449d5fd1e80a3881100a4`. It adds normalized-name fallback only when one payment lacks VendorID, preserves distinct non-empty stable IDs and does not backfill historical data. Post-merge CI passed on main.
 - Phase 10 — PR #141 merged at `42ff7708535d04c15510caf90c5f93738109669e`; tested head `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`. CI, Browser E2E (353 checks) and Full Flight Test passed on that exact head; PR #141 reports post-merge main CI passed. Phase 10 updates the inline SVG icon sprite, allowlisted icons/actions, Dashboard attention states, page headings and shell cache `cv2-v16`. Dashboard statement fingerprint is `2977910e`; expected inventory remains 27 assignments in eight modules. These controls are not XSS certification.
-- Phase 11 batch 1 — implementation candidate replaces the Users view's two fixed loading/error `innerHTML` templates with DOM construction and `textContent`. The browser regression injects a hostile API error string, checks inert rendering and the existing retry path. Candidate sink count is 25 across eight modules (down from the merged-main baseline of 27). CI, Browser E2E and Full Flight Test must pass on the same exact PR head before merge; current check status is available in PR #143.
+- Phase 11 Batch 1 — PR #143 merged at `db3c2cfd08ddbd1a80d37bdc67557b719446caaf`. It replaces the Users view's two fixed loading/error `innerHTML` templates with DOM construction and `textContent`; Browser E2E injects hostile API error text and verifies inert rendering plus retry recovery. The merged-main sink count is 25 across eight modules. PR #143's CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `d3bc6b5381d9dbd98ebddfedce81e32a5c49abca`.
+- Phase 11 Batch 2 — current candidate branch `phase-11/bulk-payment-result-dom-2026-10-15` / PR #144 replaces two payment-save confirmation templates and one bulk-import completion template with DOM APIs. It strengthens hostile server-returned payment number/vendor coverage and preserves bulk completion status/actions. Candidate inventory: 22 sites across eight modules. CI, Browser E2E and Full Flight Test must pass on one exact head before owner review/merge; current evidence belongs in PR #144.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -33,7 +34,7 @@ These checks catch drift and validate tested paths. They do not claim that every
 
 ## Priority after Phase 10
 
-1. **Phase 11 — contextual rendering-security review and sink retirement:** after batch 1, review the remaining 25 active HTML assignment sites by provenance, output context, escaping/validation and test coverage. Prioritize avoidable text-only/status/error templates and replace them with DOM APIs without behavior change.
+1. **Phase 11 — contextual rendering-security review and sink retirement:** Batch 2 targets three text-only result/status templates. After it passes, continue the remaining context-by-context review of 22 active assignment sites by provenance, output context, escaping/validation and test coverage.
 2. Extend adversarial coverage only where the contextual review finds an untested boundary; retain stable regression coverage and update source fingerprints only after human review.
 3. Keep Phase 10 UI/CSP/offline shell assertions and the exact tested Phase 10 baseline as regression gates.
 4. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
