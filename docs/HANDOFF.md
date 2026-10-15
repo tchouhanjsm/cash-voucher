@@ -5,7 +5,7 @@ Repository: tchouhanjsm/cash-voucher
 Last verified main SHA: `7beef835cc834b9b1f51fcdfc77a5074a2c1c67e` (PR #142 merge; documentation-only reconciliation)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
 Current working branch: `phase-11/retire-admin-status-html-sinks-2026-10-15`  
-Current open PR: Phase 11 implementation PR is being prepared from verified `main`
+Current open PR: #143 — [Phase 11 Batch 1: retire Users status HTML sinks](https://github.com/tchouhanjsm/cash-voucher/pull/143) (implementation and checks in review)
 
 ## Verified repository state
 
