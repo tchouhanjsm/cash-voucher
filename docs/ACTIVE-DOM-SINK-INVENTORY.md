@@ -8,16 +8,18 @@
 
 The pre-PR #135 main baseline has 33 `innerHTML =` assignment sites across nine JavaScript modules. PR #135 proposes reducing this to 28 by replacing five status/error-only assignments with DOM APIs:
 
+**Proposed post-PR #135 counts (not merged evidence):**
+
 - core/ui.js — 1 site: modal frame, escaped title/submit label, DOM-only body.
 - features/administration.js — 7 sites: vendor, user, settings, audit, account and administration views.
 - features/bulk.js — 3 sites: bulk shell, preview rows and import results.
-- features/cash-close.js — 5 proposed remaining sites: shell, close details, preview and print; loading/error states move to DOM APIs.
+- features/cash-close.js — 5 sites: shell, close details, preview and print; loading/error states use DOM APIs.
 - features/dashboard.js — 1 site: dashboard shell and financial summaries.
-- features/payments.js — 5 proposed remaining sites: payment form/rows and complex save/queue feedback; text-only validation/storage errors move to DOM APIs.
-- features/register.js — 3 proposed remaining sites: register shell, totals and rows; pagination moves to DOM APIs.
+- features/payments.js — 5 sites: payment form/rows and complex save/queue feedback; text-only validation/storage errors use DOM APIs.
+- features/register.js — 3 sites: register shell, totals and rows; pagination uses DOM APIs.
 - features/reports.js — 2 sites: report shell and report rows/results.
 - features/printing.js — 1 site: printable voucher.
-- Proposed total after PR #135 — 28 assignment sites across nine modules, down from 33 on merged main.
+- Proposed total — 28 assignment sites across nine modules, down from the current merged-main baseline of 33.
 
 The machine-readable expected counts live in `scripts/dom-sink-baseline.json`. The ordered per-assignment source fingerprints live in `scripts/dom-sink-source-baseline.json`; both baselines are updated independently as part of the proposed PR #135 source cleanup. `npm run check:dom-sinks` fails when a new sink is added, a reviewed sink disappears/changes count, a new module introduces an HTML sink, or one of the disallowed dynamic DOM APIs is used. A deliberate change requires review of its full interpolation/data flow, a focused adversarial test, and a reviewed baseline update.
 
