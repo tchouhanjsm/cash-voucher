@@ -113,8 +113,12 @@ export function createPayments({ api, refresh }) {
   }
 
   function showFormError(message) {
-    $('#nres').innerHTML = `<p class="error form-error" role="alert">${esc(message)}</p>`;
-    const firstRow = $$('#rows .erow')[0];
+    const error = document.createElement('p');
+    error.className = 'error form-error';
+    error.setAttribute('role', 'alert');
+    error.textContent = message;
+    $('#nres').replaceChildren(error);
+    const firstRow = document.querySelector('#rows .erow');
     if (firstRow) $('.rv', firstRow).focus();
   }
 
@@ -629,7 +633,9 @@ export function createPayments({ api, refresh }) {
       const message =
         error.message ||
         'Offline storage is unavailable. Reconnect before saving unsynced payments.';
-      b.innerHTML = '<span>⚠️ ' + esc(message) + '</span>';
+      const messageNode = document.createElement('span');
+      messageNode.textContent = '⚠️ ' + message;
+      b.replaceChildren(messageNode);
       console.error('Offline queue unavailable:', error);
     }
   }
