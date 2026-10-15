@@ -9,7 +9,6 @@
 
 **Phase 4 follow-up — 15 October 2026:** the active modular frontend currently has 33 `innerHTML` assignment sites across nine modules. `scripts/check-dom-sinks.js` locks those per-module counts and fails if they drift or if specified high-risk DOM APIs are introduced. A new mock-authenticated role/action suite separately tests staff/manager/owner/accountant access and own-versus-foreign record visibility. These are drift and regression controls, not proofs that each interpolation is safe or that every authorization scenario has been penetration-tested. The live deployment and production data boundaries remain unverified.
 
-
 **Cross-phase status update — 15 October 2026:** PR #132 adds a limited high-confidence credential-pattern scan across current tracked text and reachable history, plus a route-registry regression asserting registered actions reject unauthenticated calls. These guardrails do not certify every credential format, prove every role/action combination, or replace the full active DOM-sink review. Count them as verified only after final-head CI passes.
 
 The active application uses HTML template strings for several views. The review traces persisted or user-controlled values into text and attribute contexts. Values must be escaped for the output context, and dynamic resource URLs should be assigned through DOM properties after validation rather than concatenated into markup. A green test suite only supports the paths exercised; it does not prove all sinks are safe.

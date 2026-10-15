@@ -1,6 +1,6 @@
 # Phase 4 — Authorization and Rendering Assurance
 
-**Base:** main after PR #132, \`8169cd69cba1251121cc018683c2978a360c037c\`  
+**Base:** main after PR #132, `8169cd69cba1251121cc018683c2978a360c037c`  
 **Batch:** PR #133, one security-assurance outcome across backend role enforcement, information visibility and active frontend DOM-sink governance.  
 **Verification boundary:** automated tests use the Apps Script mock and Playwright against the local mock API; no live production Google account or deployment is accessed.
 
@@ -10,23 +10,23 @@ Prove that authenticated roles receive only the documented API capabilities and 
 
 ## Authorization acceptance matrix
 
-| Capability / API action | Staff | Manager | Owner | Accountant |
-|---|---|---|---|---|
-| Bootstrap | Own records/profile | All records | All records | Report-only shell; no register/vendor directory |
-| Create voucher | Yes | Yes | Yes | No |
-| Bulk create | No | Yes | Yes | No |
-| Edit / cancel voucher | No | Yes | Yes | No |
-| Approve / reject high-value payment | No | Yes, independent actor | Yes, independent actor | No |
-| Attach/read receipt | Own vouchers only | All vouchers | All vouchers | No |
-| Vendor directory mutations | No | Yes | Yes | No |
-| User list/create/reset | No | No | Yes | No |
-| Property settings, quality scan, backup status/integrity | No | No | Yes | No |
-| Audit log | No | No | Yes | No |
-| Recorded movement report | No | Yes | Yes | Yes |
-| Daily Cash Close / corrections | No | Yes | Yes | No |
-| Change own PIN / logout | Yes | Yes | Yes | Yes |
+| Capability / API action                                  | Staff               | Manager                | Owner                  | Accountant                                      |
+| -------------------------------------------------------- | ------------------- | ---------------------- | ---------------------- | ----------------------------------------------- |
+| Bootstrap                                                | Own records/profile | All records            | All records            | Report-only shell; no register/vendor directory |
+| Create voucher                                           | Yes                 | Yes                    | Yes                    | No                                              |
+| Bulk create                                              | No                  | Yes                    | Yes                    | No                                              |
+| Edit / cancel voucher                                    | No                  | Yes                    | Yes                    | No                                              |
+| Approve / reject high-value payment                      | No                  | Yes, independent actor | Yes, independent actor | No                                              |
+| Attach/read receipt                                      | Own vouchers only   | All vouchers           | All vouchers           | No                                              |
+| Vendor directory mutations                               | No                  | Yes                    | Yes                    | No                                              |
+| User list/create/reset                                   | No                  | No                     | Yes                    | No                                              |
+| Property settings, quality scan, backup status/integrity | No                  | No                     | Yes                    | No                                              |
+| Audit log                                                | No                  | No                     | Yes                    | No                                              |
+| Recorded movement report                                 | No                  | Yes                    | Yes                    | Yes                                             |
+| Daily Cash Close / corrections                           | No                  | Yes                    | Yes                    | No                                              |
+| Change own PIN / logout                                  | Yes                 | Yes                    | Yes                    | Yes                                             |
 
-The automated test asserts the exact \`PERMS\` contract and checks protected API actions against every role with authenticated tokens. Allowed requests are given safe invalid payloads when needed so the handler's authorization guard can be tested without performing a financial mutation. Receipt actions additionally use real mock voucher ownership to prove own-versus-foreign access.
+The automated test asserts the exact `PERMS` contract and checks protected API actions against every role with authenticated tokens. Allowed requests are given safe invalid payloads when needed so the handler's authorization guard can be tested without performing a financial mutation. Receipt actions additionally use real mock voucher ownership to prove own-versus-foreign access.
 
 ## Data-visibility assertions
 
@@ -38,7 +38,7 @@ The automated test asserts the exact \`PERMS\` contract and checks protected API
 
 ## DOM-sink assurance
 
-\`scripts/check-dom-sinks.js\` checks the current frontend JavaScript source against \`scripts/dom-sink-baseline.json\`. Any count drift, newly introduced sink file, or use of the separately disallowed APIs fails \`npm run check\` until the source is reviewed and a targeted regression is added.
+`scripts/check-dom-sinks.js` checks the current frontend JavaScript source against `scripts/dom-sink-baseline.json`. Any count drift, newly introduced sink file, or use of the separately disallowed APIs fails `npm run check` until the source is reviewed and a targeted regression is added.
 
 The sink baseline is a change detector, not a proof that each interpolated value is safe. The existing adversarial Browser E2E suite plus review of each modified rendering context remain required.
 

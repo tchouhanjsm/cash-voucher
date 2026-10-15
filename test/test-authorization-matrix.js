@@ -83,7 +83,11 @@ const ownerChanged = g.call('changePin', {
 });
 assert.ok(ownerChanged.ok, 'initial owner PIN change succeeds');
 const users = {
-  owner: { ...accountSpecs.owner, token: ownerChanged.data.token, pin: accountSpecs.owner.firstPin },
+  owner: {
+    ...accountSpecs.owner,
+    token: ownerChanged.data.token,
+    pin: accountSpecs.owner.firstPin,
+  },
 };
 
 for (const key of ['manager', 'staff', 'staff2', 'accountant']) {
@@ -260,12 +264,32 @@ assert.ok(
   'manager bootstrap contains the voucher created by the manager account',
 );
 assert.equal(bootstrap.owner.vouchers.length, 3, 'owner bootstrap sees all fixture vouchers');
-assert.equal(bootstrap.accountant.vouchers.length, 0, 'accountant bootstrap contains no register rows');
-assert.equal(bootstrap.accountant.vendors.length, 0, 'accountant bootstrap contains no vendor directory');
-assert.equal(bootstrap.owner.settings.openingBalance, 4312, 'owner sees configured opening balance');
-assert.equal(bootstrap.manager.settings.openingBalance, 4312, 'manager sees configured opening balance');
+assert.equal(
+  bootstrap.accountant.vouchers.length,
+  0,
+  'accountant bootstrap contains no register rows',
+);
+assert.equal(
+  bootstrap.accountant.vendors.length,
+  0,
+  'accountant bootstrap contains no vendor directory',
+);
+assert.equal(
+  bootstrap.owner.settings.openingBalance,
+  4312,
+  'owner sees configured opening balance',
+);
+assert.equal(
+  bootstrap.manager.settings.openingBalance,
+  4312,
+  'manager sees configured opening balance',
+);
 assert.equal(bootstrap.staff.settings.openingBalance, 0, 'staff does not receive opening balance');
-assert.equal(bootstrap.accountant.settings.openingBalance, 0, 'accountant does not receive opening balance');
+assert.equal(
+  bootstrap.accountant.settings.openingBalance,
+  0,
+  'accountant does not receive opening balance',
+);
 assert.deepEqual(
   Object.keys(bootstrap.staff.names),
   ['staff@auth-matrix.test'],
@@ -308,8 +332,20 @@ function checkReceiptRole(action, role, voucher, shouldBeAllowed, label) {
   }
 }
 
-checkReceiptRole('getReceipt', 'staff', staffVoucher, true, 'staff can access a receipt on own voucher');
-checkReceiptRole('getReceipt', 'staff2', staffVoucher, false, 'staff cannot access another user’s receipt');
+checkReceiptRole(
+  'getReceipt',
+  'staff',
+  staffVoucher,
+  true,
+  'staff can access a receipt on own voucher',
+);
+checkReceiptRole(
+  'getReceipt',
+  'staff2',
+  staffVoucher,
+  false,
+  'staff cannot access another user’s receipt',
+);
 checkReceiptRole('getReceipt', 'manager', staffVoucher, true, 'manager can access a staff receipt');
 checkReceiptRole('getReceipt', 'owner', staffVoucher, true, 'owner can access a staff receipt');
 checkReceiptRole(
@@ -329,8 +365,18 @@ function checkAddReceiptRole(role, voucher, shouldBeAllowed, label) {
   }
 }
 checkAddReceiptRole('staff', staffVoucher, true, 'staff can attach a receipt to own voucher');
-checkAddReceiptRole('staff2', staffVoucher, false, 'staff cannot attach a receipt to another user’s voucher');
-checkAddReceiptRole('manager', staffVoucher, true, 'manager can attach a receipt to a staff voucher');
+checkAddReceiptRole(
+  'staff2',
+  staffVoucher,
+  false,
+  'staff cannot attach a receipt to another user’s voucher',
+);
+checkAddReceiptRole(
+  'manager',
+  staffVoucher,
+  true,
+  'manager can attach a receipt to a staff voucher',
+);
 checkAddReceiptRole('owner', staffVoucher, true, 'owner can attach a receipt to a staff voucher');
 checkAddReceiptRole('accountant', staffVoucher, false, 'accountant cannot attach receipts');
 
