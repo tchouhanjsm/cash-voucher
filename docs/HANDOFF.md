@@ -5,18 +5,16 @@ Repository: tchouhanjsm/cash-voucher
 Last verified main SHA: `8bd1f423700a5a392d0f672bd287e88603755d82` (PR #144 merge commit)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
 Current working branch: `phase-11/batch-3-access-totals-sinks-2026-10-15`  
-Current open PR: #145 — Phase 11 Batch 3: replace access-denied and Register totals HTML sinks
+Current open PR: #145 — [Phase 11 Batch 3: replace access-denied and Register totals HTML sinks](https://github.com/tchouhanjsm/cash-voucher/pull/145)
 
 ## Verified repository state
 
 - Live `main` resolves to `8bd1f423700a5a392d0f672bd287e88603755d82`, PR #144's merge commit.
-- PR #143 is merged at `db3c2cfd08ddbd1a80d37bdc67557b719446caaf`; it retired two Users loading/error assignments. PR #144 is now merged at `8bd1f423700a5a392d0f672bd287e88603755d82` and retired two payment-save confirmation assignments plus the bulk-import completion assignment.
-- PR #144's exact tested head was `e7f199a5d109f49034f349aab0dc63d040b32a1f`; CI/quality, Browser E2E (353 checks) and Full Flight Test (281 backend checks and 353 browser checks) passed on that same head. This does not establish live Apps Script deployment.
-- The merged-main inventory is 22 `innerHTML =` assignments across eight frontend modules.
-- Phase 11 Batch 3 / PR #145 removes the Reports access-denied page, Daily Cash Close access-denied page and Register totals/status summary from HTML-string rendering. A shared `pageNotice()` uses `textContent`; the Register totals summary preserves its text, formatting, and `role=alert`/`role=status` semantics. The candidate inventory is 19 assignments across eight modules.
-- Browser E2E covers the shared page-notice helper with hostile title/message markup, exercises both denied states via the active modules, and verifies Register totals/status behavior. Exact-current-head CI, Browser E2E and Full Flight Test are required before merge.
-- Source tests do not prove live Apps Script deployment identity/version, Sheet binding, real permissions, scheduled backup/isolated restore, physical-device behavior, accessibility conformance, quotas or concurrency.
-- Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; never stage, overwrite or delete it. `docs/HANDOFF.md` remains the single canonical handoff; do not create per-PR handoff documents.
+- PR #143 is closed and merged: [PR #143](https://github.com/tchouhanjsm/cash-voucher/pull/143). It retired the Users loading/error templates and reduced the merged-main inventory to 25 assignments.
+- PR #144 is closed and merged: [PR #144](https://github.com/tchouhanjsm/cash-voucher/pull/144). It retired two payment-save confirmation assignments and the bulk-import completion assignment, bringing merged main to 22 assignments across eight frontend modules. Its tested head was `e7f199a5d109f49034f349aab0dc63d040b32a1f`; CI/quality, Browser E2E (353 checks) and Full Flight Test (281 backend checks and 353 browser checks) passed on that same head.
+- Phase 11 Batch 3 / PR #145 replaces the Reports access-denied page, Daily Cash Close access-denied page and Register totals/status summary with DOM construction; the candidate inventory is 19 assignments across eight modules.
+- Browser E2E tests the shared page-notice helper with hostile title/message markup, exercises both denied states via the active modules, and verifies Register totals/status behavior. Exact-current-head CI, Browser E2E and Full Flight Test are required before merge.
+- Mock-backed source tests do not prove live Apps Script deployment identity/version, Sheet binding, real permissions, scheduled backup/isolated restore, physical-device behavior, accessibility conformance or production readiness.
 
 ## Phase 10 — UI refresh integration and dashboard trust states
 
@@ -49,18 +47,17 @@ Current open PR: #145 — Phase 11 Batch 3: replace access-denied and Register t
 
 ## Phase 11 — contextual rendering-security review and sink retirement
 
-**Batch 1 — merged in PR #143:** removed the Users view's fixed loading/error templates with DOM construction and `textContent`; hostile API error markup stays inert and retry recovers. The active inventory fell from 27 to 25.
+**Batch 1 — merged in PR #143:** the Users view's fixed loading/error templates were replaced with DOM construction and `textContent`. Hostile API error markup remains inert, and the existing refresh/retry flow is preserved. Merged main has 25 active assignment sites across eight modules.
 
-**Batch 2 — merged in PR #144:** replaced local/offline and server payment-save confirmations and bulk-import completion with DOM construction. Hostile server-returned voucher number/vendor values stay inert; the ambiguous-save recovery targets, approval notice, print actions, import status and follow-up buttons remain. The active inventory fell from 25 to 22. CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `e7f199a5d109f49034f349aab0dc63d040b32a1f`.
+**Batch 2 — merged in PR #144:** the local/offline payment-save confirmation, server-save confirmation and bulk-import completion template were replaced with DOM construction. Hostile server-returned voucher number/vendor strings remain inert, and the ambiguous-save recovery, approval notice, print actions, import status and follow-up controls are preserved. Merged main has 22 active assignments across eight modules. CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `e7f199a5d109f49034f349aab0dc63d040b32a1f`.
 
-**Batch 3 — current candidate (PR #145):**
+**Batch 3 — current candidate (PR #145):** three access/status surfaces are replaced using DOM APIs:
 
-- Shared `pageNotice()` builds a page heading and message with explicit DOM nodes and `textContent`.
-- Reports' denied state retains its heading, card and message without HTML parsing.
-- Daily Cash Close's denied state retains its heading, muted message and `role=status` without HTML parsing.
-- Register totals now use DOM nodes and preserve Paid/Received/Net, status notices, alert wording, amount styling and the CSV-disable behavior.
-- Browser E2E injects hostile SVG/image text through the shared helper and verifies no active node/script effect; it exercises both denied views and extends Register totals assertions.
-- Candidate inventory falls from 22 to 19 assignments across eight modules; only the three removed assignments are deleted from count/source-fingerprint baselines.
+- Shared `pageNotice()` builds page headings and messages with `textContent`; hostile title/message strings are covered by Browser E2E.
+- Reports' denied state retains its heading, card wrapper and fixed message.
+- Daily Cash Close's denied state retains its heading, muted message and `role=status`.
+- Register totals are assembled from text, amount and status nodes; Paid/Received/Net wording, received amount color, voucher count, approval/invalid/malformed-data notices, alert/status roles and CSV-disabled behavior are preserved.
+- Browser E2E exercises both denied renderer branches and extends Register totals diagnostics/invalid-range checks.
+- Candidate inventory falls from 22 to 19 assignments across eight modules; only the three reviewed assignments are removed from the count/fingerprint baselines.
 
-**Acceptance boundary:** frontend rendering, focused Browser E2E and documentation only. No financial formulas, approval/permission policy, backend contracts, schema, historical data or dependencies change. No `clasp push`, Apps Script deployment, migration, production-data mutation, merge or release is included. Sink counts/fingerprints are drift controls, not XSS certification.
-
+**Acceptance boundary:** frontend rendering, focused Browser E2E and documentation only. No financial formulas, approval/permission policy, backend contracts, schema, historical data or dependencies change. No `clasp push`, Apps Script deployment, migration, production-data mutation, merge or release is included. This is incremental source-level risk reduction, not XSS certification.
