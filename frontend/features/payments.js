@@ -747,8 +747,7 @@ export function createPayments({ api, refresh }) {
               ? entry.date
               : 'Date unavailable';
           const receiptCount = Array.isArray(entry.receipts) ? entry.receipts.length : 0;
-          const status =
-            record.status === 'sending' ? 'Upload in progress' : 'Waiting to upload';
+          const status = record.status === 'sending' ? 'Upload in progress' : 'Waiting to upload';
           const receiptLabel =
             receiptCount === 1
               ? ' · 1 receipt image'
