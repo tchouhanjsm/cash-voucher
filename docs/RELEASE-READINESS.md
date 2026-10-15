@@ -51,8 +51,7 @@ Do not begin the pilot until the owner confirms the release target, required mig
 | Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                        |
 | Active frontend architecture                                | PASS on current main  | `index.html` loads `frontend/main.js`; source graph is modular                                           |
 | PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                             |
-| CI quality gate                                             | PASS on current main  | Post-merge CI passed on `fabf4bba1a964c99c55391c4d4be3f260d787906` (run 38706374287); each later PR must still be checked at its exact head |
-
+| CI quality gate                                             | PASS on current main  | Post-merge CI passed on `fabf4bba1a964c99c55391c4d4be3f260d787906` (run 38706374287). Check later PRs at their exact heads. |
 | Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility        |
 | Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                |
 | Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence |
