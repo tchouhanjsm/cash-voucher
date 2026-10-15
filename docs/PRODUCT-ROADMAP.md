@@ -36,18 +36,11 @@ These checks catch drift and validate tested paths. They do not claim that every
 
 ## Priority after Phase 10
 
-1. **Phase 11 — contextual rendering-security review and sink retirement:** Batch 4 targets My Account and offline outbox templates. After it passes, continue the context-by-context review of the remaining 17 active assignment sites; a lower count is not XSS certification.
-2. **Phase 12 — cross-workflow integrity and recovery:** complete role/action/state coverage across entry, ambiguous save, retries/idempotency, offline queue, approval, reporting, cash close and audit. Add regressions for uncovered transitions while preserving financial invariants.
+1. **Phase 11 — contextual rendering-security review and sink retirement:** complete Batch 4, then continue context-by-context review of the remaining 17 active HTML assignments. Sink counts and fingerprints are drift controls, not XSS certification.
+2. **Phase 12 — cross-workflow integrity and recovery:** close gaps in role/action/state coverage across entry, ambiguous save, retries/idempotency, offline queue, approval, reporting, cash close and audit. Add regressions only for uncovered transitions; preserve the established financial invariants.
 3. **Phase 13 — operational release proof:** obtain owner-authorized evidence for Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup, isolated restore and voucher/receipt reconciliation. Mock CI cannot satisfy this phase.
-4. **Phase 14 — whole-product UX completion:** consolidate cross-screen responsive and role-task findings, keyboard/focus/zoom checks and accessibility/device results into a grouped remediation batch. Keep manual screen-reader and real-device evidence distinct from automated checks.
+4. **Phase 14 — whole-product UX completion:** consolidate cross-screen responsive and role-task findings, keyboard/focus/zoom and accessibility/device results into a grouped remediation batch. Keep manual screen-reader and real-device evidence separate from automated tests.
 5. **Phase 15 — evidence-led performance and repository hygiene:** measure seeded workloads before optimization, reconcile canonical status documents and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
-2. Extend adversarial coverage only where the contextual review finds an untested boundary; retain stable regression coverage and update source fingerprints only after human review.
-3. Keep Phase 10 UI/CSP/offline shell assertions and the exact tested Phase 10 baseline as regression gates.
-4. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
-5. Perform a real scheduled-backup and isolated-restore drill with row-count, voucher-numbering and receipt-reference reconciliation.
-6. Run physical-device offline/install/update/recovery and manual keyboard, focus, zoom and screen-reader accessibility review.
-7. Measure real Sheet access latency, quotas, contention and concurrent numbering in an owner-approved environment.
-8. Review the clasp → micromatch → braces advisory by its 9 November 2026 due date.
 
 ## Financial integrity invariants
 
