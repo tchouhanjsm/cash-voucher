@@ -803,6 +803,121 @@ with sync_playwright() as p:
         and 'tax' not in report_download.suggested_filename.lower(),
         'generic accountant CSV includes vendor identity without claiming tax/accounting-system compatibility',
     )
+
+    # Phase 7: valid report rows are still untrusted HTML and CSV content.
+    report_markup_payloads = {
+        'vendorId': '<svg data-xss-field="vendorId" onload=window.__xssFired=true></svg>',
+        'category': '<svg data-xss-field="category" onload=window.__xssFired=true></svg>',
+        'notes': '<svg data-xss-field="notes" onload=window.__xssFired=true></svg>',
+        'cancelReason': '<svg data-xss-field="cancelReason" onload=window.__xssFired=true></svg>',
+        'approvedBy': '<svg data-xss-field="approvedBy" onload=window.__xssFired=true></svg>',
+        'approvedAt': '<svg data-xss-field="approvedAt" onload=window.__xssFired=true></svg>',
+        'approvalReason': '<svg data-xss-field="approvalReason" onload=window.__xssFired=true></svg>',
+        'generatedAt': '<svg data-xss-field="generatedAt" onload=window.__xssFired=true></svg>',
+    }
+    formula_payload = '=HYPERLINK("https://example.invalid","Report link")'
+    # Keep the hostile fixture inside the report's selected date range.
+    date_text = accountant_page.locator('#movementTo').input_value()
+
+    def inject_untrusted_report(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'recordedMovementReport':
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        report_data = payload.get('data', {})
+        if not isinstance(report_data, dict):
+            route.fulfill(response=response)
+            return
+
+        report_data['items'] = [{
+            'date': date_text,
+            'voucherNo': 'P-REPORT-OUTPUT-TEST',
+            'type': 'PAYMENT',
+            'vendor': formula_payload,
+            'vendorId': report_markup_payloads['vendorId'],
+            'category': report_markup_payloads['category'],
+            'notes': report_markup_payloads['notes'],
+            'amount': 125,
+            'status': 'ACTIVE',
+            'cancelReason': report_markup_payloads['cancelReason'],
+            'approvalStatus': 'REJECTED',
+            'approvedBy': report_markup_payloads['approvedBy'],
+            'approvedAt': report_markup_payloads['approvedAt'],
+            'approvalReason': report_markup_payloads['approvalReason'],
+            'createdBy': 'accountant@test.com',
+            'id': 'report-output-contract-test',
+        }]
+        report_data.update({
+            'paymentTotal': 125,
+            'receiptTotal': 0,
+            'activePaymentTotal': 0,
+            'activeReceiptTotal': 0,
+            'approvalExceptionCount': 1,
+            'unmatchedVendorCount': 1,
+            'ambiguousVendorCount': 0,
+            'count': 1,
+            'activeCount': 1,
+            'cancelledCount': 0,
+            'generatedAt': report_markup_payloads['generatedAt'],
+            'type': 'ALL',
+            'status': 'ACTIVE',
+        })
+        route.fulfill(response=response, json=payload)
+
+    accountant_page.route('**/api?*', inject_untrusted_report)
+    accountant_page.evaluate('window.__xssFired = false')
+    accountant_page.locator('#movementFilters button[type=submit]').click()
+    accountant_page.wait_for_function(
+        "document.querySelector('#view tbody')?.innerText.includes('P-REPORT-OUTPUT-TEST')"
+    )
+    report_text = accountant_page.locator('#view').inner_text()
+    check(
+        accountant_page.locator('#view tbody tr').count() == 1
+        and all(
+            value in report_text
+            for field, value in report_markup_payloads.items()
+            if field != 'approvedAt'
+        )
+        and formula_payload in report_text
+        and accountant_page.locator('#view img, #view svg').count() == 0
+        and not accountant_page.evaluate('window.__xssFired === true'),
+        'valid hostile report row fields remain inert text across vendor, category, notes, cancellation and approval contexts',
+    )
+    with accountant_page.expect_download() as hostile_report_download:
+        accountant_page.locator('[data-act=reportCsv]').click()
+    hostile_csv_path = hostile_report_download.value.path()
+    hostile_report_csv = open(hostile_csv_path, encoding='utf-8').read()
+    csv_formula_cell = "'" + formula_payload.replace('"', '""')
+    check(
+        csv_formula_cell in hostile_report_csv
+        and not hostile_report_csv.lstrip().startswith('='),
+        'report CSV prefixes a formula-leading vendor after CSV quote escaping',
+    )
+    check(
+        all(
+            value.replace('"', '""') in hostile_report_csv
+            for field, value in report_markup_payloads.items()
+            if field != 'generatedAt'
+        ),
+        'report CSV preserves hostile row fields as data after CSV quote escaping',
+    )
+    accountant_page.unroute('**/api?*', inject_untrusted_report)
+    accountant_page.locator('#movementFilters button[type=submit]').click()
+    accountant_page.wait_for_function(
+        "document.querySelector('#view tbody')?.innerText.includes('Accountant E2E Vendor')"
+    )
+    check(
+        'P-REPORT-OUTPUT-TEST' not in accountant_page.locator('#view').inner_text()
+        and all(value not in accountant_page.locator('#view').inner_text() for value in report_markup_payloads.values())
+        and accountant_page.locator('#view img, #view svg').count() == 0,
+        'report rendering recovers to the normal server response after hostile fixture removal',
+    )
     accountant_context.close()
     go_view(page, 'users')
     page.wait_for_selector('#uf')

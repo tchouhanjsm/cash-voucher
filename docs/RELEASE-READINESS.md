@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3` (PR #134 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `572b5d68fb6b6a572a08deab908c0b83d44aba62` (PR #135 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
 
-**Status: not verified as production-ready.** This document tracks operational release gates, not routine PR history. Verify the current `main` commit and deployment directly from GitHub and the Apps Script editor before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PR #132 adds source-level recovery/audit/route checks; PR #133 adds mock role/action and sink-count/API checks; PR #134 fingerprints existing HTML assignment statements. Proposed PR #135 removes five simple text/error HTML sinks and adds a hostile API-error E2E case. None of these source checks proves the live deployment or a complete semantic XSS review.
+**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#135 add source recovery, authorization/rendering drift checks, statement fingerprints and five text-only sink reductions. Proposed PR #136 adds adversarial report-rendering and CSV output coverage; neither it nor prior mock-backed tests proves live deployment or complete semantic XSS safety.
 
 ## Current go-live gates — reviewed 14 October 2026
 
