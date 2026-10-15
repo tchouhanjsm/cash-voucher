@@ -1,9 +1,17 @@
 # Phase 2B — Offline Save and Recovery Matrix
 
-**Base:** `main` at `69f861f86d08a19da8fe1223b3bc6c4840478895` (PR #131 merge)  
-**Working branch:** `phase-2b/recovery-matrix-closure-2026-10-14`  
-**Status:** Recovery-matrix closure in implementation; exact-head CI evidence is pending.  
-**Release boundary:** Mock backend and browser tests unless separately authorized live verification is documented.
+**Base:** main at 69f861f86d08a19da8fe1223b3bc6c4840478895 (PR #131 merge)  
+**Working branch:** phase-2b/recovery-matrix-closure-2026-10-14  
+**Status:** consolidated recovery and cross-phase evidence batch in review; exact final-head checks decide acceptance.  
+**Release boundary:** mock backend and browser tests unless separately authorized live verification is documented.
+
+## Batch additions for PR #132
+
+- Adds post-commit IndexedDB acknowledgment-failure feedback and queue retention for same-client-ID retry.
+- Adds a stale-session E2E path that checks account ownership before retry and reauthenticates the queue's actual manager identity; account isolation remains a requirement.
+- Adds a backend fault test for simultaneous audit append and Script Properties marker failure. A diagnostic is expected, but owner-visible health can read NO_KNOWN_FAILURE; this is a documented residual limitation, not a repaired audit event.
+- Adds full-history high-confidence credential-pattern scanning, an unauthenticated API route guard and seeded mock bootstrap/report checks at 100/500/1,000 vouchers. Those are supporting evidence, not production verification.
+- All CI, Browser E2E and Full Flight Test checks must pass on the same final SHA. Earlier/intermediate-head results are not acceptance evidence.
 
 ## Business outcome
 
