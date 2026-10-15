@@ -4784,6 +4784,30 @@ with sync_playwright() as p:
     page.wait_for_selector('#nf')
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'new cash receipt action preserves the selected mode')
 
+    # Adversarial coverage for the entry-form sinks: a hostile saved payee name must render as
+    # inert text in the recent-payee chips, the duplicate warning and the row.
+    page.click('[data-k=PAYMENT]')
+    page.fill('.erow .rv', xss_payload)
+    page.fill('.erow .ra', '11')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1 payment')")
+    page.click('#nres [data-act=newagain]')
+    page.wait_for_selector('#recentVendors .vchip')
+    page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
+    page.fill('.erow .ra', '11')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_selector('#rows .erow .row-error')
+    check(
+        page.locator('#recentVendors .vchip', has_text='svg onload').count() >= 1
+        and page.locator('#recentVendors svg, #recentVendors img').count() == 0
+        and page.locator('#rows .erow .row-error').inner_text().startswith('Possible duplicate')
+        and page.locator('#rows svg, #rows img').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile payee names stay inert in recent-payee chips and the duplicate warning',
+    )
+
     check(
         not csp_violations,
         'CSP does not block required assets, scripts, or API requests during browser workflows',

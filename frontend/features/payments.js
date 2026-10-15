@@ -209,7 +209,7 @@ export function createPayments({ api, refresh }) {
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
     [...vouchers]
       .filter((voucher) => voucher && voucher.status === 'ACTIVE' && voucher.type === NT)
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)))
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no))
       .forEach((voucher) => {
         const name = scalarText(voucher.vendor).trim();
         const key = name.toLowerCase();
