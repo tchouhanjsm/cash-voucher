@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `dee9f04d8a77c9360c1c6be433928b953f1fd597` (PR #138 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
+**Reviewed:** 15 October 2026. **Last verified main baseline:** `965f16b8849fa757e46449d5fd1e80a3881100a4` (PR #139 merge; post-merge CI passed). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
 
-**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#138 add source recovery, authorization/rendering drift checks, statement fingerprints, six avoidable HTML-sink reductions, adversarial accountant-report/CSV and modal-label coverage, and payee-day split-payment approval protection. PR #138's 351 Browser E2E checks and all required workflows passed on its exact tested head. These mock-backed tests do not prove live deployment or complete semantic XSS safety.
+**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#139 add source recovery, authorization/rendering drift checks, sink reductions/adversarial output coverage, and legacy-aware payee-day approval identity. PR #140's UI refresh was merged from `feature/fast-safe-entry` and has no recorded GitHub check runs on its head/merge commit; Phase 10 is reconciling and re-verifying the UI changes against current main. Do not infer mainline integration or release readiness from a merge status alone.
 
 ## Current go-live gates — reviewed 14 October 2026
 

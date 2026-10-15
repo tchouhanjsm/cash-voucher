@@ -1,12 +1,12 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `dee9f04d8a77c9360c1c6be433928b953f1fd597` (PR #138).  
-**Current verified count:** 27 assignments across eight frontend modules. PR #138 removed the shared modal-frame sink while keeping both independent count/API and statement-fingerprint baselines active.  
+**Last merged source baseline:** `965f16b8849fa757e46449d5fd1e80a3881100a4` (main after PR #139).  
+**Current verified count:** 27 assignments across eight frontend modules. This is the baseline before integrating the PR #140 UI refresh; re-run count and per-statement fingerprints on Phase 10's final head.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
 
-The current merged main baseline has 27 `innerHTML =` assignment sites across eight JavaScript modules after PR #135 replaced five status/error-only assignments and PR #138 removed the shared modal-frame assignment.
+The last verified main baseline has 27 `innerHTML =` assignment sites across eight JavaScript modules. The UI branch changes the dashboard sink and its fingerprint, but is not verified on current main. Any integration must review the data flow and update count/fingerprint baselines only after contextual review plus focused hostile-data regression.
 
 **Current module counts:**
 

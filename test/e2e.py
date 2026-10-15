@@ -230,9 +230,20 @@ with sync_playwright() as p:
         'light theme can be restored and the explicit choice is retained',
     )
     check(
-        page.locator('#view .breadcrumbs [aria-current="page"]').inner_text() == 'Dashboard'
+        page.locator('#view .breadcrumbs').count() == 0
         and page.locator('#view .page-header h1').inner_text() == 'Dashboard',
-        'page heading has semantic breadcrumbs and one consistent page-header component',
+        'page heading uses one consistent page-header component without breadcrumb noise',
+    )
+    check(
+        page.locator('#view .needs h2').inner_text().startswith('Needs attention')
+        and page.locator('#view .stat .stat-ic svg').count() >= 5
+        and page.locator('[data-v=dash] .ic svg use').get_attribute('href') == '#i-home',
+        'Dashboard shows scoped needs-attention text, KPI icons and SVG navigation icons',
+    )
+    check(
+        page.locator('#view .needs .needs-clear').count() == 1
+        and 'does not verify backups' in page.locator('#view .needs .needs-clear').inner_text(),
+        'dashboard empty-attention state does not imply complete operational health',
     )
     check(
         page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
@@ -3565,10 +3576,9 @@ with sync_playwright() as p:
     go_view(page, 'reports')
     page.wait_for_selector('#movementFilters')
     check(
-        page.locator('#view .breadcrumbs [aria-current="page"]').inner_text()
-        == 'Recorded Movement Report'
+        page.locator('#view .page-header h1').inner_text() == 'Recorded Movement Report'
         and page.locator('#view .empty-state-card h2').inner_text() == 'No report generated yet',
-        'report page exposes breadcrumbs and a reusable initial empty state',
+        'report page exposes a heading and a reusable initial empty state',
     )
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(

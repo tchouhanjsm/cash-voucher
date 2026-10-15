@@ -2,45 +2,46 @@
 
 Updated: 15 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `dee9f04d8a77c9360c1c6be433928b953f1fd597` (PR #138 merge)  
-Current phase: Phase 9 — payee identity parity for approval-threshold aggregation  
-Current working branch: `phase-9/payee-identity-approval-integrity-2026-10-15`  
-Current open PR: #139 — [Preserve payee-day approval across legacy VendorIDs](https://github.com/tchouhanjsm/cash-voucher/pull/139)
+Last verified main SHA: `965f16b8849fa757e46449d5fd1e80a3881100a4` (PR #139 merge; post-merge CI passed)  
+Current phase: Phase 10 — UI refresh mainline integration and dashboard trust states  
+Current working branch: `phase-10/ui-mainline-dashboard-integrity-2026-10-15`  
+Current open PR: #141 — [Phase 10: Integrate dashboard UI refresh with truthful attention states](https://github.com/tchouhanjsm/cash-voucher/pull/141)
 
 ## Verified repository state
 
-- PR #137 merged at `fabf4bba1a964c99c55391c4d4be3f260d787906`.
-- PR #138 merged at `dee9f04d8a77c9360c1c6be433928b953f1fd597`; final tested head `eb780e893fb8388ddf4bc1e584a503ba3245df10`.
-- PR #138 CI passed: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710771619.
-- PR #138 Browser E2E passed: 351 checks, zero failures: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710771610.
-- PR #138 Full Flight Test passed: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38710771634.
-- Post-merge CI passed on the current main merge SHA: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38711146077.
-- PR #139 is the active Phase 9 review; merge authority remains with the owner. Exact final-head workflow evidence and review status are maintained in the PR description. Re-run required workflows after every branch-head change.
-- PR #138 removed the shared modal-frame `innerHTML` assignment; current inventory is 27 assignments across eight frontend modules. The remaining sinks are not certified safe.
-- All listed workflow evidence is GitHub Actions/mock-backed; it does not prove live deployment, Google permissions, backup/restore, device behavior or production readiness.
+- PR #139 merged at `965f16b8849fa757e46449d5fd1e80a3881100a4`. Post-merge CI passed: https://github.com/tchouhanjsm/cash-voucher/actions/runs/38715423314.
+- PR #140 merged at `666bf77afe5288bdd6509bede3f811d32812e2a9` **into `feature/fast-safe-entry`, not `main`**. Its code head is `0bdfb00c68e9610c128d88f3b71f12be14666ef8`; GitHub recorded no CI checks for that head or merge commit. Its UI changes are being integrated and retested on main by PR #141.
+- PR #141 targets current main baseline `965f16b8849fa757e46449d5fd1e80a3881100a4`. The current PR head and exact-head check status are authoritative in the live [PR #141 checks](https://github.com/tchouhanjsm/cash-voucher/pull/141); do not rely on a static head SHA here.
+- The exact pinned Prettier diff was obtained from CI and applied to `docs/HANDOFF.md`, `index.html`, and `scripts/dom-sink-source-baseline.json`; the temporary diagnostic step was removed and the original CI workflow restored. Candidate `11f646a1b07d8db830b4dd2ef447940900023394` passed CI (https://github.com/tchouhanjsm/cash-voucher/actions/runs/38729338204), Browser E2E (https://github.com/tchouhanjsm/cash-voucher/actions/runs/38729338208), and Full Flight Test (https://github.com/tchouhanjsm/cash-voucher/actions/runs/38729338339). The [live PR #141 checks](https://github.com/tchouhanjsm/cash-voucher/pull/141) are authoritative for the current head. CI, Browser E2E and Full Flight Test must all pass for the same current SHA; rerun all three after any branch-head change. Prior-head results do not carry forward.
+- Last verified main before Phase 10 has 27 HTML assignment sites across eight frontend modules. The Dashboard HTML sink and its fingerprint change in Phase 10; confirm count and fingerprint gates on the corrected head. These drift controls are not XSS certification.
+- GitHub workflow evidence is mock-backed. It does not prove live Apps Script deployment, real Google permissions, scheduled backup/restore, physical-device behavior or production readiness.
 
-## Phase 9 — payee identity parity for payment approval (PR #139 open)
+## Phase 10 — UI refresh integration and dashboard trust states
 
-Close an identity mismatch in the payee-day approval aggregation. The current function builds a key from VendorID if available, otherwise the display name. A legacy voucher with no VendorID can therefore be missed when a new voucher for the same normalized vendor name has a VendorID.
+Integrate PR #140's Tabler-inspired UI into current main without relying on the feature-only merge. The implementation adds a local inline SVG sprite, allowlisted icon helper, DOM-created navigation icons, Dashboard KPI icons and a needs-attention panel, removes breadcrumbs, bumps the app-shell cache version, and adds focused browser coverage.
 
-The intended comparison is explicit: if both records have a non-empty VendorID, the IDs are authoritative and must match; if either record is unlinked/legacy, compare normalized vendor names (trimmed, case-insensitive, whitespace-collapsed). Do not backfill VendorID into historical vouchers.
+- The panel inspects only approval/review exceptions, offline state, malformed records and invalid monetary values. Its empty state says no known dashboard exceptions were found in those checks and explicitly does not verify backups, the full recovery queue or release readiness.
+- Icon names are constrained to app-authored values, and Dashboard route actions are restricted to the Register action. No external icon package/runtime request is added.
+- Preserve capability gates, offline and unavailable-data handling, financial calculations, CSP, focus/keyboard behavior and service-worker shell correctness.
+- Recalculate the Dashboard statement fingerprint only after reviewing its data flow; keep the independent sink-count/API and source-fingerprint gates.
+- PR #141's next tested candidate must pass CI, Browser E2E and Full Flight Test on the _same exact final head_. Earlier passes do not apply after any head change.
+- No backend approval-policy change, schema migration, historical backfill, `clasp push`, deployment, production-data mutation or merge. The repository owner retains merge/release authority.
 
-## Acceptance criteria
+## Phase acceptance criteria
 
-- Creation totals include same-name legacy PAYMENT rows without VendorID when the new row has a stable VendorID, including the inclusive INR 10,000 threshold.
-- Material edits use the same fallback and re-evaluate approval when a linked voucher crosses the cumulative payee-day threshold.
-- Two non-empty, different VendorIDs are never combined solely because their names match.
-- Batch creation, stable-ID matching, same-day/date filtering, active-payment filtering, integer-paise arithmetic and exclusion of the voucher being edited remain correct.
-- Add backend regressions for legacy-linked creation, edit crossing, and distinct stable identities.
-- No automatic historical VendorID backfill, schema migration, approval-policy change, production data mutation or deployment.
-- CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. The PR-quality gate also enforces the required sections in the PR description. Exact-head workflow evidence and current review status are maintained in PR #139; any branch-head change invalidates earlier check evidence and requires fresh runs before merge.
+- Merge target and ancestry are accurately described; a feature-only PR is not treated as a mainline release.
+- Dashboard has no universal safety/all-clear claim while backup, all queue states and release controls are not checked.
+- SVG renderer inputs and navigation action keys are allowlisted.
+- Service-worker cache/precache, CSP and offline shell behavior are checked.
+- Changed sink fingerprint matches exact source and hostile-data browser coverage.
+- CI, Browser E2E and Full Flight Test pass on one final SHA; post-merge CI is checked separately.
+- No live-service, device, assistive-technology or deployment test is claimed without evidence.
 
 ## Remaining risks and owner-controlled operational gates
 
-- The 27 active HTML assignment sites across eight modules remain under contextual review; sink counts/fingerprints are drift gates, not proof of safety.
-- Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility, and real-service quotas/concurrency remain unverified.
-- Investigate the documented audit-write dual-failure observability limit without inventing missing events.
-- Reassess the `@google/clasp -> micromatch -> braces` exception by 9 November 2026.
-- Owner retains merge and release authority. Do not run `clasp push`, deploy, perform setup/migrations, mutate production data or rewrite Git history without explicit authorization.
-- Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md`. Do not stage, overwrite, delete or otherwise disturb it.
-- `docs/HANDOFF.md` remains the single canonical handoff; do not create per-PR handoff documents.
+- 27 active HTML assignment sites before Phase 10 remain under contextual review; sink counts/fingerprints are drift gates, not proof of safety.
+- Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility and real-service quotas/concurrency remain unverified.
+- Investigate the documented audit-write dual-failure observability limit without fabricating missing events.
+- Reassess the `@google/clasp -> micromatch -> braces` dependency exception by 9 November 2026.
+- Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; never stage, overwrite or delete it.
+- `docs/HANDOFF.md` is the single canonical handoff. Do not create per-PR handoff documents.

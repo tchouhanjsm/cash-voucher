@@ -184,35 +184,39 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   return form;
 }
 
-const PAGE_SECTIONS = {
-  Dashboard: 'Work',
-  'My Dashboard': 'Work',
-  'Payment Register': 'Work',
-  'Recorded Movement Report': 'Money',
-  'Daily Cash Close': 'Money',
-  'Bulk Upload': 'Manage',
-  Vendors: 'Manage',
-  Users: 'Manage',
-  Settings: 'Manage',
-  'Audit log': 'Manage',
-  'My profile': 'Account',
+const ICON_NAMES = new Set([
+  'home',
+  'plus',
+  'book',
+  'chart',
+  'wallet',
+  'upload',
+  'store',
+  'users',
+  'settings',
+  'receipt',
+  'user',
+  'alert',
+  'check',
+  'clock',
+  'cloud-off',
+  'arrow-right',
+  'trend',
+  'cash',
+]);
+
+export const icon = (name) => {
+  const safeName = ICON_NAMES.has(name) ? name : 'alert';
+  return `<svg class="i" aria-hidden="true" focusable="false"><use href="#i-${safeName}"></use></svg>`;
 };
 
 // `extra` is trusted app-authored action markup, never a data string.
 export const head = (title, extra = '', options = {}) => {
-  const section = options.section || PAGE_SECTIONS[title] || 'Workspace';
   const description = options.description
     ? `<p class="page-description">${esc(options.description)}</p>`
     : '';
 
   return `
-    <nav class="breadcrumbs" aria-label="Breadcrumb">
-      <ol>
-        <li><span>Cash Vouchers</span></li>
-        <li><span>${esc(section)}</span></li>
-        <li aria-current="page"><span>${esc(title)}</span></li>
-      </ol>
-    </nav>
     <div class="head page-header">
       <div class="page-header-copy">
         <h1>${esc(title)}</h1>
