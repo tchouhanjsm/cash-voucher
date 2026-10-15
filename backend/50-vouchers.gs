@@ -142,6 +142,10 @@ function createVouchers_(user, req) {
               '',
             ) + Math.round(c.amount * 100)
           : 0;
+      const paymentNeedsApproval =
+        c.type === 'PAYMENT' &&
+        (c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
+          approvalDayTotalPaise >= approvalThresholdPaise_());
       const o = {
         VoucherID: Utilities.getUuid(),
         VoucherNo: no,
@@ -161,12 +165,7 @@ function createVouchers_(user, req) {
         ClientID: c.clientId,
         Type: c.type,
         CashImpact: c.cashImpact,
-        ApprovalStatus:
-          c.type === 'PAYMENT' &&
-          (c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
-            approvalDayTotalPaise >= approvalThresholdPaise_())
-            ? 'PENDING'
-            : 'NOT_REQUIRED',
+        ApprovalStatus: paymentNeedsApproval ? 'PENDING' : 'NOT_REQUIRED',
         ApprovedBy: '',
         ApprovedAt: '',
         ApprovalReason: '',
