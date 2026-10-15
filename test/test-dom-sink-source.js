@@ -17,7 +17,11 @@ const originalSource = [
 ].join('\n');
 
 const original = scanSource(originalSource);
-assert.deepEqual(original.errors, [], 'template content semicolons do not end the assignment early');
+assert.deepEqual(
+  original.errors,
+  [],
+  'template content semicolons do not end the assignment early',
+);
 assert.equal(original.sites.length, 2, 'both sink assignments are inventoried');
 
 const changedInterpolation = scanSource(originalSource.replace(interpolation, '$' + '{value}'));
@@ -39,4 +43,4 @@ assert.notEqual(
   'changes to the full HTML assignment source require re-review',
 );
 
-console.log('DOM sink source fingerprint unit checks passed — 4 assertions.');
+console.log('DOM sink source fingerprint unit checks passed — 5 assertions.');
