@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `965f16b8849fa757e46449d5fd1e80a3881100a4` (main after PR #139; 27 assignment sites across eight modules before UI refresh integration).
+**Latest merged review baseline:** `42ff7708535d04c15510caf90c5f93738109669e` (main after PR #141; expected 27 assignment sites across eight modules; Dashboard fingerprint `2977910e`).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -364,8 +364,8 @@ This is targeted attack-surface reduction, not evidence of a confirmed exploit o
 
 PR #139 updated payee-day aggregation to compare stable IDs when both records have non-empty VendorIDs and fall back to normalized names if either side is legacy/unlinked. Create/edit regressions cover threshold crossings and distinct stable identities; no historical backfill or policy change was made. Exact-head CI, Browser E2E and Full Flight Test passed, and post-merge CI passed on main.
 
-## Phase 10 review target — UI refresh mainline integration
+## Phase 10 / PR #141 (merged) — UI refresh mainline integration
 
-PR #140 adds an inline SVG icon sprite, dashboard needs-attention panel, KPI icons and removes breadcrumbs. It was merged against `feature/fast-safe-entry`, while current main remained at the PR #139 merge SHA. GitHub recorded no check runs/status contexts for the PR #140 head or merge commit. The dashboard template is a pre-existing HTML sink whose fingerprint changes, so integration must review interpolated values and constrain icon/action names to app constants or explicit allowlists. The new 'All clear' copy is too broad for a panel that does not inspect all operational controls such as backup integrity and all offline recovery states; use a truthful, scoped no-known-exceptions state unless all relevant controls are actually checked.
+PR #141 integrated the UI refresh on current main. It adds a local inline SVG sprite, allowlisted icons and action routing, Dashboard needs-attention states, KPI icons, removes breadcrumbs, advances the shell cache to `cv2-v16`, and changes the Dashboard assignment fingerprint to `2977910e`. The panel's empty state is scoped and does not certify backup health, the full recovery queue or release readiness. CI, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`; the PR reports post-merge CI passed. The exact merge SHA is `42ff7708535d04c15510caf90c5f93738109669e`.
 
-This is not a complete rendering-security certification. Review CSP/offline loading, service-worker cache/precache integrity, action routing and hostile persisted data, then rerun CI, Browser E2E and Full Flight Test on the exact integrated head.
+This is not a complete rendering-security certification. Phase 11 is a contextual review of each remaining active HTML assignment, with the first cohesive batch retiring avoidable text-only/status/error templates through DOM APIs and adding adversarial tests. Preserve the current sink count/fingerprint gates. Live CSP headers, live authorization, backup/restore, device/offline testing and manual accessibility remain release gates.
