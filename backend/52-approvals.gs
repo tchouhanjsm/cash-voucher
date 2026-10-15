@@ -4,6 +4,33 @@ function approvalStatus_(voucher) {
   if (raw === undefined || raw === null || raw === '') return 'NOT_REQUIRED';
   return PAYMENT_APPROVAL_STATUSES.indexOf(raw) >= 0 ? raw : 'REVIEW_REQUIRED';
 }
+// Cash limits apply per payee per day, so approval looks at the payee's daily total, not one voucher.
+function priorStatusNotRequired_(status) {
+  return status === 'NOT_REQUIRED';
+}
+function approvalPayeeKey_(vendorId, vendor) {
+  const id = String(vendorId || '').trim();
+  if (id) return 'id:' + id;
+  return (
+    'name:' +
+    String(vendor || '')
+      .trim()
+      .toLowerCase()
+  );
+}
+function payeeDayPaymentPaise_(rows, payeeKey, date, excludeId) {
+  return rows.reduce(function (sum, row) {
+    if (row.Type !== 'PAYMENT' || String(row.Status || '') !== 'ACTIVE') return sum;
+    if (excludeId && String(row.VoucherID) === String(excludeId)) return sum;
+    if (isoDate_(row.Date) !== date) return sum;
+    if (approvalPayeeKey_(row.VendorID, row.Vendor) !== payeeKey) return sum;
+    const amount = Number(row.Amount);
+    return isFinite(amount) ? sum + Math.round(amount * 100) : sum;
+  }, 0);
+}
+function approvalThresholdPaise_() {
+  return Math.round(CFG.PAYMENT_APPROVAL_THRESHOLD * 100);
+}
 function isEligibleApprovalPayment_(voucher) {
   if (!voucher || voucher.Type !== 'PAYMENT') return false;
   const rawAmount = voucher.Amount;
@@ -18,7 +45,9 @@ function isEligibleApprovalPayment_(voucher) {
   const amount = Number(rawAmount);
   return (
     isFinite(amount) &&
-    amount >= CFG.PAYMENT_APPROVAL_THRESHOLD &&
+    (amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
+      ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].indexOf(approvalStatus_(voucher)) >=
+        0) &&
     amount <= CFG.MAX_AMOUNT &&
     Number.isSafeInteger(Math.round(amount * 100))
   );

@@ -19,6 +19,11 @@ export const S = {
 };
 
 export const CASH_IMPACT_CHOICES = ['CASH_IN', 'CASH_OUT', 'NO_CASH'];
+export const CASH_IMPACT_LABELS = {
+  CASH_IN: 'Cash received into the drawer',
+  CASH_OUT: 'Cash paid out of the drawer',
+  NO_CASH: 'Not cash (UPI, card or bank transfer)',
+};
 export const CASH_IMPACT_VALUES = [...CASH_IMPACT_CHOICES, 'UNCLASSIFIED'];
 export const APPROVAL_STATUS_VALUES = [
   'NOT_REQUIRED',
