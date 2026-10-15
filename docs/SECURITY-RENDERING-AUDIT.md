@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `dee9f04d8a77c9360c1c6be433928b953f1fd597` (main after PR #138; 27 assignment sites across eight modules).
+**Latest merged review baseline:** `965f16b8849fa757e46449d5fd1e80a3881100a4` (main after PR #139; 27 assignment sites across eight modules before UI refresh integration).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -360,6 +360,12 @@ PR #138 replaced the shared modal frame's `modal.innerHTML` assignment with DOM 
 
 This is targeted attack-surface reduction, not evidence of a confirmed exploit or complete XSS certification. The remaining sites still require contextual review, and live-host headers/CSP, live authorization and adversarial manual review remain release gates.
 
-## Phase 9 priority — financial approval identity consistency
+## Phase 9 / PR #139 (merged) — financial approval identity consistency
 
-During the post-PR #138 review, the payee-day aggregation was found to use a mutually exclusive identity key: VendorID when present, otherwise a name key. A legacy voucher without VendorID therefore could be missed when a newer same-name voucher has gained a stable ID. This is a financial-control gap, not a rendering finding. Phase 9 updates the shared comparison rule and regression coverage; it does not backfill legacy rows or change the owner-approved threshold.
+PR #139 updated payee-day aggregation to compare stable IDs when both records have non-empty VendorIDs and fall back to normalized names if either side is legacy/unlinked. Create/edit regressions cover threshold crossings and distinct stable identities; no historical backfill or policy change was made. Exact-head CI, Browser E2E and Full Flight Test passed, and post-merge CI passed on main.
+
+## Phase 10 review target — UI refresh mainline integration
+
+PR #140 adds an inline SVG icon sprite, dashboard needs-attention panel, KPI icons and removes breadcrumbs. It was merged against `feature/fast-safe-entry`, while current main remained at the PR #139 merge SHA. GitHub recorded no check runs/status contexts for the PR #140 head or merge commit. The dashboard template is a pre-existing HTML sink whose fingerprint changes, so integration must review interpolated values and constrain icon/action names to app constants or explicit allowlists. The new 'All clear' copy is too broad for a panel that does not inspect all operational controls such as backup integrity and all offline recovery states; use a truthful, scoped no-known-exceptions state unless all relevant controls are actually checked.
+
+This is not a complete rendering-security certification. Review CSP/offline loading, service-worker cache/precache integrity, action routing and hostile persisted data, then rerun CI, Browser E2E and Full Flight Test on the exact integrated head.
