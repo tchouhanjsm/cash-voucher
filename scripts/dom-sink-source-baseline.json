@@ -20,9 +20,7 @@
     "4054cdbb",
     "136bf987"
   ],
-  "frontend/features/dashboard.js": [
-    "2977910e"
-  ],
+  "frontend/features/dashboard.js": ["2977910e"],
   "frontend/features/payments.js": [
     "a7e530de",
     "86fe0972",
@@ -30,16 +28,7 @@
     "3285d4d3",
     "643df575"
   ],
-  "frontend/features/register.js": [
-    "5e0a8899",
-    "a7892599",
-    "7ce93a1f"
-  ],
-  "frontend/features/reports.js": [
-    "d4760088",
-    "dfdc765f"
-  ],
-  "frontend/features/printing.js": [
-    "ee615655"
-  ]
+  "frontend/features/register.js": ["5e0a8899", "a7892599", "7ce93a1f"],
+  "frontend/features/reports.js": ["d4760088", "dfdc765f"],
+  "frontend/features/printing.js": ["ee615655"]
 }
