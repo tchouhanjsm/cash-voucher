@@ -63,7 +63,6 @@ The Register totals/status region now uses DOM construction instead of one HTML 
 
 Merged main after PR #145 has 19 sites; this candidate has 17 across eight modules. Only the two reviewed assignment fingerprints and counts are removed from the machine-readable baselines. This is not XSS certification or production-operation evidence.
 
-
 ## Phase 11 Batch 4 — My Account and offline queue status
 
 My Account no longer assembles account identity, property label, profile actions and Change PIN form with an HTML template. The renderer scalar-normalizes profile values and writes all identity text through `textContent`; existing `#pf`, `#po`, `#pn`, install/sign-out action keys and delegated submit semantics remain.
