@@ -132,16 +132,17 @@ function createVouchers_(user, req) {
         ids.push(id);
         createdFileIds.push(id);
       });
-      const approvalDayTotalPaise =
-        c.type === 'PAYMENT'
-          ? payeeDayPaymentPaise_(
-              existing.concat(newObjs),
-              c.vendorId,
-              c.vendor,
-              c.date,
-              '',
-            ) + Math.round(c.amount * 100)
-          : 0;
+      let approvalDayTotalPaise = 0;
+      if (c.type === 'PAYMENT') {
+        approvalDayTotalPaise =
+          payeeDayPaymentPaise_(
+            existing.concat(newObjs),
+            c.vendorId,
+            c.vendor,
+            c.date,
+            '',
+          ) + Math.round(c.amount * 100);
+      }
       const paymentNeedsApproval =
         c.type === 'PAYMENT' &&
         (c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
