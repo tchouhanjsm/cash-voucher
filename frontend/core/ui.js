@@ -211,7 +211,6 @@ export const icon = (name) => {
 
 // `extra` is trusted app-authored action markup, never a data string.
 export const head = (title, extra = '', options = {}) => {
-  const section = options.section || PAGE_SECTIONS[title] || 'Workspace';
   const description = options.description
     ? `<p class="page-description">${esc(options.description)}</p>`
     : '';
