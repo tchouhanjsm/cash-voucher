@@ -29,6 +29,9 @@ Phase 4 catches changes to the number/location of `innerHTML` assignment sites a
 - Add a scanner that respects the current template-literal/interpolation constructs and a focused unit suite for interpolation changes and semicolons inside template content.
 - Run the fingerprint check as part of `npm run check` and its regression test as part of `npm test`.
 - Fingerprints are a drift trigger, not a cryptographic security boundary, HTML sanitizer, full JavaScript parser, or proof every interpolation is safe.
+- The PR-quality gate also requires explicit `## Verification evidence`, `## Security and failure
+  review` and `## Residual risks / not verified` sections in the PR body. Keep these populated and
+  synchronized with the exact final head.
 - Existing hostile-input Browser E2E tests remain required. Manual/context-sensitive source-to-sink review is not complete merely because fingerprints match.
 
 ## Next operational phase — owner-controlled gates
