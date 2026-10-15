@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Status date: 15 October 2026  
-Last verified main baseline: `dee9f04d8a77c9360c1c6be433928b953f1fd597` (PR #138 merge)  
-Current phase: Phase 9 — payee identity parity for approval-threshold aggregation  
+Last verified main baseline: `965f16b8849fa757e46449d5fd1e80a3881100a4` (PR #139 merge; post-merge CI passed)  
+Current phase: Phase 10 — UI refresh mainline integration and dashboard trust states  
+Current review branch: `phase-10/ui-mainline-dashboard-integrity-2026-10-15`
 Current review branch: `phase-9/payee-identity-approval-integrity-2026-10-15`
 
 ## Founder plan — outcome-based work, not PR-count optimization
@@ -11,18 +11,15 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 ## Phase status
 
-- Phase 1 — repository source audit, selected credential-pattern guard and seeded mock performance baseline are present. They remain bounded source/mock evidence, not live-service measurements.
-- Phase 2 — the normal-path payment → independent approval → reporting → cash-close snapshot → audit journey is covered by mock-backed tests. Real Sheet behavior and live permissions remain unverified.
-- Phase 2B — PR #131 and PR #132 implement direct ambiguous-save, IndexedDB acknowledgement-failure and stale-session queue recovery, with idempotent client IDs and account binding.
-- Phase 3 — audit append failure sets an owner-visible marker when Script Properties remains available. When both the audit append and marker store fail, only the available execution log may surface the gap; missing events are not reconstructed.
-- Phase 4 — PR #133 is merged at `a0add3de0bf79902f046e7811e888f2f1e735f9a`; its tested head passed CI, Browser E2E (342 checks) and Full Flight Test. It adds authenticated role/action and data-visibility tests, the 33-site HTML-sink inventory, and designated high-risk DOM API checks.
-- Phase 5 — PR #134 merged at `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3`. Its exact tested head `428db8af06d0eeaa9ddede9e3a8dc06d5c6f9280` passed CI, Browser E2E (342 checks) and Full Flight Test. It adds per-statement fingerprints for the 33 known sinks; fingerprints detect drift, not contextual safety.
-- Phase 6 — PR #135 merged at `572b5d68fb6b6a572a08deab908c0b83d44aba62`. Its exact tested head `c4d163bcc05b543a004dcd12a617319b27a98f32` passed CI (267 backend checks and 28 sink count/fingerprint matches), Browser E2E (343 checks, zero failures) and Full Flight Test. It replaces five text-only/status/error HTML insertions with DOM APIs and `textContent`, reducing the active sink inventory from 33 to 28 across nine modules.
-- Phase 7 — PR #136 merged at `4684ffabc0fbbf2ff792c687e7ce9d3a31e29170`. Its tested head `24718c238ed19f85a2ca6c6721412fdca71d92ae` passed CI, Browser E2E (347 checks, zero failures) and Full Flight Test. It adds adversarial accountant-report HTML and CSV formula-neutralization coverage. Sink count remains 28; no confirmed renderer defect or financial logic change was claimed.
-- Phase 8 — PR #137 merged at `fabf4bba1a964c99c55391c4d4be3f260d787906`. Its tested head `3d2876d68ecf763d1ed09b908bab6b59ac65648c` passed CI, Browser E2E (349 checks, zero failures) and Full Flight Test. It adds payee-day split-payment approval protection, duplicate warnings and entry UX improvements.
-- Phase 8 follow-through — PR #138 merged at `dee9f04d8a77c9360c1c6be433928b953f1fd597`. Its exact final tested head `eb780e893fb8388ddf4bc1e584a503ba3245df10` passed CI, Browser E2E (351 checks, zero failures) and Full Flight Test. It removes the shared modal frame `innerHTML` assignment and reduces the active sink inventory from 28 to 27 assignments across eight modules.
-- Phase 9 — ongoing work on branch `phase-9/payee-identity-approval-integrity-2026-10-15`: address payee-day approval aggregation where a historical voucher has no VendorID but a new same-name voucher does. Preserve stable-ID authority when both IDs exist; no historical backfill.
-- Operational readiness — live Apps Script deployment/identity, real role checks, scheduled backup and isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
+- Phase 1 — repository source audit, selected credential-pattern guard and seeded mock performance baseline are present. These remain bounded source/mock evidence, not live-service measurements.
+- Phase 2 — payment → independent approval → reporting → cash-close snapshot → audit journey is covered by mock-backed tests. Real Sheet behavior and live permissions remain unverified.
+- Phase 2B — PR #131 and PR #132 add ambiguous-save, IndexedDB acknowledgement-failure and stale-session queue recovery with idempotent client IDs/account binding.
+- Phase 3 — audit append failure records an owner-visible marker when Script Properties remains available. Dual append/marker failure remains a durability limitation.
+- Phases 4–7 — authorization/rendering matrix, sink count/fingerprint gates, text-only sink reductions and adversarial accountant report/CSV coverage are merged; checks are bounded, not full security certification.
+- Phase 8 — PR #137 strengthened payee-day split-payment approval and entry UX. PR #138 removed the shared modal-frame `innerHTML` assignment; sink inventory fell from 28 to 27 assignments across eight modules.
+- Phase 9 — PR #139 merged at `965f16b8849fa757e46449d5fd1e80a3881100a4`. It adds normalized-name fallback only when one payment lacks VendorID, preserves distinct non-empty stable IDs and does not backfill historical data. Post-merge CI passed on main.
+- PR #140 UI refresh — merge commit `666bf77afe5288bdd6509bede3f811d32812e2a9` was based on `feature/fast-safe-entry`, not current main. Head `0bdfb00c68e9610c128d88f3b71f12be14666ef8` diverges from main and has no recorded GitHub Actions check runs/status contexts. Its UI changes are not verified as integrated on main; Phase 10 performs the integration and re-test.
+- Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
 
@@ -34,8 +31,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 9
-
+## Priority after Phase 10
+1. Integrate the UI refresh on current main; audit dashboard alert claims, fixed icon/action inputs, service-worker assets/cache key and hostile-data rendering.
 1. Continue the manual, context-specific semantic source-to-sink review for the 27 remaining HTML assignments; use focused tests and DOM APIs when they materially reduce risk. Fingerprints make changes visible but do not replace review.
 2. Continue adversarial coverage across remaining independently rendered surfaces without repeating test cases already covered.
 3. Run owner-authorized live deployment, Sheet/Drive access and role checks; never infer these from mock coverage.
