@@ -37,7 +37,7 @@ Current open PR: #142 — [Docs: reconcile Phase 10 merge and define Phase 11](h
 
 ## Remaining risks and owner-controlled operational gates
 
-- 27 active HTML assignment sites before Phase 10 remain under contextual review; sink counts/fingerprints are drift gates, not proof of safety.
+- 27 active HTML assignment sites remain under contextual review after Phase 10; sink counts/fingerprints are drift gates, not proof of safety.
 - Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility and real-service quotas/concurrency remain unverified.
 - Investigate the documented audit-write dual-failure observability limit without fabricating missing events.
 - Reassess the `@google/clasp -> micromatch -> braces` dependency exception by 9 November 2026.
