@@ -39,9 +39,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: Temporary inspect formatting diff
-        run: npx prettier frontend/features/payments.js | diff -u frontend/features/payments.js - || true
-
       - name: Run quality gate
         run: npm run check
 
