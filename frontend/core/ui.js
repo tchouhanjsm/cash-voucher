@@ -163,6 +163,10 @@ const PAGE_SECTIONS = {
   'My profile': 'Account',
 };
 
+// Icons come from the inline sprite in index.html. `name` is always an app constant.
+export const icon = (name, className = 'i') =>
+  `<svg class="${className}" aria-hidden="true" focusable="false"><use href="#i-${name}"></use></svg>`;
+
 // `extra` is trusted app-authored action markup, never a data string.
 export const head = (title, extra = '', options = {}) => {
   const section = options.section || PAGE_SECTIONS[title] || 'Workspace';
@@ -171,13 +175,6 @@ export const head = (title, extra = '', options = {}) => {
     : '';
 
   return `
-    <nav class="breadcrumbs" aria-label="Breadcrumb">
-      <ol>
-        <li><span>Cash Vouchers</span></li>
-        <li><span>${esc(section)}</span></li>
-        <li aria-current="page"><span>${esc(title)}</span></li>
-      </ol>
-    </nav>
     <div class="head page-header">
       <div class="page-header-copy">
         <h1>${esc(title)}</h1>
