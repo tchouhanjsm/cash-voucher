@@ -1,0 +1,53 @@
+{
+  "frontend/core/ui.js": [
+    "0883ba2c"
+  ],
+  "frontend/features/administration.js": [
+    "d8ea7968",
+    "5970a26a",
+    "4015da32",
+    "e436446c",
+    "0fb3a317",
+    "77b008d6",
+    "5d4a6ae6"
+  ],
+  "frontend/features/bulk.js": [
+    "4f70bf20",
+    "39b37d93",
+    "78b8d191"
+  ],
+  "frontend/features/cash-close.js": [
+    "b6a1d022",
+    "81286bb0",
+    "269d5b33",
+    "4054cdbb",
+    "97fb9387",
+    "a7c951eb",
+    "136bf987"
+  ],
+  "frontend/features/dashboard.js": [
+    "7fa6ffd3"
+  ],
+  "frontend/features/payments.js": [
+    "e041d8c1",
+    "e37f542e",
+    "86fe0972",
+    "da7e55e6",
+    "3285d4d3",
+    "643df575",
+    "f90b37c3"
+  ],
+  "frontend/features/register.js": [
+    "5e0a8899",
+    "a7892599",
+    "643bafc9",
+    "7ce93a1f"
+  ],
+  "frontend/features/reports.js": [
+    "d4760088",
+    "dfdc765f"
+  ],
+  "frontend/features/printing.js": [
+    "ee615655"
+  ]
+}
