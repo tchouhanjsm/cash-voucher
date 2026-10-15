@@ -185,9 +185,24 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
 }
 
 const ICON_NAMES = new Set([
-  'home', 'plus', 'book', 'chart', 'wallet', 'upload', 'store', 'users',
-  'settings', 'receipt', 'user', 'alert', 'check', 'clock', 'cloud-off',
-  'arrow-right', 'trend', 'cash',
+  'home',
+  'plus',
+  'book',
+  'chart',
+  'wallet',
+  'upload',
+  'store',
+  'users',
+  'settings',
+  'receipt',
+  'user',
+  'alert',
+  'check',
+  'clock',
+  'cloud-off',
+  'arrow-right',
+  'trend',
+  'cash',
 ]);
 
 export const icon = (name) => {
