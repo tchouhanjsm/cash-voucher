@@ -1340,7 +1340,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#rows .erow .rc')
     check(
         page.locator('#rows .erow .rci').input_value() == ''
-        and 'CASH_OUT' in page.locator('#rows .erow .ci-suggestion').inner_text(),
+        and 'Cash paid out' in page.locator('#rows .erow .ci-suggestion').inner_text(),
         'new payment requires explicit classification while showing a non-binding suggestion',
     )
     page.locator('#rows .erow .rv').fill('Cash Impact Test Vendor')
@@ -1348,8 +1348,12 @@ with sync_playwright() as p:
     page.locator('#nsave').click()
     check(
         page.locator('#rows .erow .row-error').inner_text()
-        == 'Choose a cash-impact classification before saving.',
+        == 'Choose how this was settled (cash or not cash) before saving.',
         'saving without cash-impact selection is blocked with an actionable error',
+    )
+    check(
+        page.locator('#recentVendors').count() == 1,
+        'entry form offers a recent-payee chip row',
     )
     page.select_option('#rows .erow .rci', 'NO_CASH')
     page.select_option('#rows .erow .rc', 'Office')
@@ -1722,7 +1726,7 @@ with sync_playwright() as p:
         page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
         and page.locator('.ra').first.get_attribute('aria-label') == 'Amount in rupees, row 1'
         and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1'
-        and page.locator('.rci').first.get_attribute('aria-label') == 'Cash impact, row 1',
+        and page.locator('.rci').first.get_attribute('aria-label') == 'How it was settled, row 1',
         'payment row fields have explicit accessible names',
     )
     choose_cash_impact_for_current_rows()
@@ -4777,6 +4781,16 @@ with sync_playwright() as p:
             if kind == 'lost-response':
                 page.unroute('**/api?*', drop_browser_response_after_server_commit)
 
+        # The interim "Saved on this device" panel appears first; wait for the automatic
+        # same-ID retry to confirm instead of racing it.
+        try:
+            page.wait_for_function(
+                "document.querySelector('#nres .ok-panel h2')?.innerText.includes('Saved and synchronized')",
+                timeout=8000,
+            )
+        except Exception:
+            pass
+
         title = (
             page.locator('#nres .ok-panel h2').inner_text()
             if page.locator('#nres .ok-panel h2').count()
@@ -4884,6 +4898,30 @@ with sync_playwright() as p:
     page.click('#nres [data-act=newagain]')
     page.wait_for_selector('#nf')
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'new cash receipt action preserves the selected mode')
+
+    # Adversarial coverage for the entry-form sinks: a hostile saved payee name must render as
+    # inert text in the recent-payee chips, the duplicate warning and the row.
+    page.click('[data-k=PAYMENT]')
+    page.fill('.erow .rv', xss_payload)
+    page.fill('.erow .ra', '11')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1 payment')")
+    page.click('#nres [data-act=newagain]')
+    page.wait_for_selector('#recentVendors .vchip')
+    page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
+    page.fill('.erow .ra', '11')
+    choose_cash_impact_for_current_rows()
+    page.click('#nsave')
+    page.wait_for_selector('#rows .erow .row-error')
+    check(
+        page.locator('#recentVendors .vchip', has_text='svg onload').count() >= 1
+        and page.locator('#recentVendors svg, #recentVendors img').count() == 0
+        and page.locator('#rows .erow .row-error').inner_text().startswith('Possible duplicate')
+        and page.locator('#rows svg, #rows img').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile payee names stay inert in recent-payee chips and the duplicate warning',
+    )
 
     check(
         not csp_violations,

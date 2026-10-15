@@ -1,9 +1,25 @@
 import { $, $$ } from '../core/dom.js';
 import { catOpts, vendorList } from '../core/form-options.js';
 import { offlineQueue } from '../core/offline-queue.js';
-import { CASH_IMPACT_CHOICES, S, suggestCashImpact, vno } from '../core/state.js';
+import {
+  CASH_IMPACT_CHOICES,
+  CASH_IMPACT_LABELS,
+  S,
+  suggestCashImpact,
+  vno,
+} from '../core/state.js';
 import { busy, fail, head, toast } from '../core/ui.js';
-import { addDays, compress, esc, money, parseAmt, scalarText, today, uid } from '../core/utils.js';
+import {
+  addDays,
+  compress,
+  dmy,
+  esc,
+  money,
+  parseAmt,
+  scalarText,
+  today,
+  uid,
+} from '../core/utils.js';
 import { validateRecoveryRecords } from '../core/recovery-validation.js';
 
 export function createPayments({ api, refresh }) {
@@ -49,13 +65,13 @@ export function createPayments({ api, refresh }) {
 
   function cashImpactOptions(selected) {
     const labels = {
-      CASH_IN: 'CASH_IN — physical cash enters the drawer',
-      CASH_OUT: 'CASH_OUT — physical cash leaves the drawer',
-      NO_CASH: 'NO_CASH — no physical drawer movement',
+      CASH_IN: CASH_IMPACT_LABELS.CASH_IN,
+      CASH_OUT: CASH_IMPACT_LABELS.CASH_OUT,
+      NO_CASH: CASH_IMPACT_LABELS.NO_CASH,
     };
     const placeholder = selected
       ? ''
-      : `<option value='' selected disabled>Choose cash impact…</option>`;
+      : `<option value='' selected disabled>Choose how it was settled…</option>`;
     return (
       placeholder +
       CASH_IMPACT_CHOICES.map(
@@ -69,8 +85,8 @@ export function createPayments({ api, refresh }) {
     const suggested = suggestCashImpact(NT, 'Other');
     return `<div class='erow'><div class='top'><input class='rv' list='vlist' placeholder='${NT === 'RECEIPT' ? 'Received from' : 'Paid to (vendor)'}' autocapitalize='words'><input class='ra' inputmode='decimal' placeholder='Amount ₹'><button type='button' class='x' data-act='delrow' title='Remove'>✕</button></div>
   <div class='bot'><select class='rc'>${catOpts('Other', NT)}</select><input class='rn' placeholder='Note (optional)'></div>
-  <label class='cash-impact-control'>Cash impact (required)<select class='rci'>${cashImpactOptions('')}</select></label>
-  <p class='muted ci-hint'>Suggested only: <span class='ci-suggestion'>${suggested}</span>. Verify physical notes/coins movement; UPI, card, or bank transfer uses NO_CASH.</p>
+  <label class='cash-impact-control'>How was it settled? (required)<select class='rci'>${cashImpactOptions('')}</select></label>
+  <p class='muted ci-hint'>Usual for this category: <span class='ci-suggestion'>${CASH_IMPACT_LABELS[suggested]}</span>. Pick Cash only if notes or coins moved; UPI, card or bank transfer is Not cash.</p>
   <div class='chips'><label class='btn sm' style='margin:0'>📷 Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>`;
   }
 
@@ -82,7 +98,7 @@ export function createPayments({ api, refresh }) {
       $('.rv', row).setAttribute('aria-label', `${direction}, row ${number}`);
       $('.ra', row).setAttribute('aria-label', `Amount in rupees, row ${number}`);
       $('.rc', row).setAttribute('aria-label', `Category, row ${number}`);
-      $('.rci', row).setAttribute('aria-label', `Cash impact, row ${number}`);
+      $('.rci', row).setAttribute('aria-label', `How it was settled, row ${number}`);
       $('.rn', row).setAttribute('aria-label', `Note, row ${number}`);
       $('.rf', row).setAttribute('aria-label', `Receipt images, row ${number}`);
       $('[data-act="delrow"]', row).setAttribute('aria-label', `Remove row ${number}`);
@@ -180,10 +196,73 @@ export function createPayments({ api, refresh }) {
     $('#view').innerHTML =
       head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment') +
       `<div class="seg"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">💸 Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">💰 Cash received</button></div><form id="nf" class="card" autocomplete="off">${vendorList()}
-    <label style="max-width:220px">Date<input type="date" id="nd" value="${today()}" max="${addDays(today(), 1)}" required></label><div id="rows"></div>
+    <label style="max-width:220px">Date<input type="date" id="nd" value="${today()}" max="${addDays(today(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="Recent payees"></div><div id="rows"></div>
     <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button><button type="button" class="btn" data-act="import-pending">Import recovery file</button></div>
     <p class="muted">Tip: tap “Receipt” to take a photo or pick a screenshot (up to 3 per payment).</p></form><div id="nres"></div>`;
     addRow();
+    renderRecentVendors();
+  }
+
+  function recentVendors(limit = 6) {
+    const seen = new Set();
+    const names = [];
+    const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
+    [...vouchers]
+      .filter((voucher) => voucher && voucher.status === 'ACTIVE' && voucher.type === NT)
+      .sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no))
+      .forEach((voucher) => {
+        const name = scalarText(voucher.vendor).trim();
+        const key = name.toLowerCase();
+        if (!name || seen.has(key) || names.length >= limit) return;
+        seen.add(key);
+        names.push(name);
+      });
+    return names;
+  }
+
+  function renderRecentVendors() {
+    const holder = $('#recentVendors');
+    if (!holder) return;
+    holder.replaceChildren(
+      ...recentVendors().map((name) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'btn sm vchip';
+        chip.textContent = name;
+        return chip;
+      }),
+    );
+  }
+
+  document.addEventListener('click', (event) => {
+    const chip = event.target.closest('.vchip');
+    if (!chip) return;
+    const rows = $$('#rows .erow');
+    const row = rows.find((item) => !$('.rv', item).value.trim()) || rows[rows.length - 1];
+    if (!row) return;
+    $('.rv', row).value = chip.textContent;
+    clearRowError(row);
+    $('.ra', row).focus();
+  });
+
+  // Same payee, same amount, within 3 days: ask for a second tap before saving.
+  function findPossibleDuplicate(entry) {
+    if (entry.type !== 'PAYMENT') return null;
+    const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
+    const target = new Date(entry.date + 'T12:00:00').getTime();
+    return (
+      vouchers.find((voucher) => {
+        if (!voucher || voucher.status !== 'ACTIVE' || voucher.type !== 'PAYMENT') return false;
+        if (scalarText(voucher.vendor).trim().toLowerCase() !== entry.vendor.toLowerCase()) {
+          return false;
+        }
+        if (Math.round(Number(voucher.amount) * 100) !== Math.round(entry.amount * 100)) {
+          return false;
+        }
+        const days = Math.abs(new Date(voucher.date + 'T12:00:00').getTime() - target) / 864e5;
+        return days <= 3;
+      }) || null
+    );
   }
 
   function open(type = 'PAYMENT') {
@@ -277,7 +356,8 @@ export function createPayments({ api, refresh }) {
       return;
     }
     if (event.target.matches('.rc')) {
-      $('.ci-suggestion', row).textContent = suggestCashImpact(NT, event.target.value);
+      $('.ci-suggestion', row).textContent =
+        CASH_IMPACT_LABELS[suggestCashImpact(NT, event.target.value)];
     }
   });
   document.addEventListener('keydown', (e) => {
@@ -328,7 +408,22 @@ export function createPayments({ api, refresh }) {
 
       const cashImpact = $('.rci', r).value;
       if (!CASH_IMPACT_CHOICES.includes(cashImpact)) {
-        showRowError(r, $('.rci', r), 'Choose a cash-impact classification before saving.');
+        showRowError(
+          r,
+          $('.rci', r),
+          'Choose how this was settled (cash or not cash) before saving.',
+        );
+        return;
+      }
+
+      const duplicate = findPossibleDuplicate({ type: NT, vendor, amount, date });
+      if (duplicate && r.dataset.duplicateConfirmed !== 'true') {
+        r.dataset.duplicateConfirmed = 'true';
+        showRowError(
+          r,
+          $('.ra', r),
+          `Possible duplicate: ${money(amount)} to ${vendor} on ${dmy(duplicate.date)} (${vno(duplicate)}). Tap Save again if this is a separate payment.`,
+        );
         return;
       }
 

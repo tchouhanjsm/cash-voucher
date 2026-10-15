@@ -152,7 +152,16 @@ function createVouchers_(user, req) {
         Type: c.type,
         CashImpact: c.cashImpact,
         ApprovalStatus:
-          c.type === 'PAYMENT' && c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD
+          c.type === 'PAYMENT' &&
+          (c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
+            payeeDayPaymentPaise_(
+              existing.concat(newObjs),
+              approvalPayeeKey_(c.vendorId, c.vendor),
+              c.date,
+              '',
+            ) +
+              Math.round(c.amount * 100) >=
+              approvalThresholdPaise_())
             ? 'PENDING'
             : 'NOT_REQUIRED',
         ApprovedBy: '',
@@ -311,10 +320,38 @@ function updateVoucher_(user, req) {
   const priorApprovalStatus = approvalStatus_(o);
   const priorAmount = Number(o.Amount);
   const nextAmount = Number(patch.Amount === undefined ? o.Amount : patch.Amount);
+  const nextVendor = patch.Vendor !== undefined ? patch.Vendor : o.Vendor;
+  const nextVendorId = patch.VendorID !== undefined ? patch.VendorID : o.VendorID;
+  const nextDate = patch.Date !== undefined ? patch.Date : isoDate_(o.Date);
+  const dayRows = o.Type === 'PAYMENT' ? readAll_('Vouchers') : [];
+  const priorDayPaise =
+    o.Type === 'PAYMENT'
+      ? payeeDayPaymentPaise_(
+          dayRows,
+          approvalPayeeKey_(o.VendorID, o.Vendor),
+          isoDate_(o.Date),
+          o.VoucherID,
+        ) + Math.round(priorAmount * 100)
+      : 0;
+  const nextDayPaise =
+    o.Type === 'PAYMENT'
+      ? payeeDayPaymentPaise_(
+          dayRows,
+          approvalPayeeKey_(nextVendorId, nextVendor),
+          nextDate,
+          o.VoucherID,
+        ) + Math.round(nextAmount * 100)
+      : 0;
+  const nextNeedsApproval =
+    o.Type === 'PAYMENT' &&
+    (nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD || nextDayPaise >= approvalThresholdPaise_());
   const crossedApprovalThreshold =
     o.Type === 'PAYMENT' &&
-    priorAmount < CFG.PAYMENT_APPROVAL_THRESHOLD &&
-    nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD;
+    ((priorAmount < CFG.PAYMENT_APPROVAL_THRESHOLD &&
+      nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD) ||
+      (priorStatusNotRequired_(priorApprovalStatus) &&
+        priorDayPaise < approvalThresholdPaise_() &&
+        nextDayPaise >= approvalThresholdPaise_()));
   const approvalManaged =
     ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].indexOf(priorApprovalStatus) >= 0;
   const materialApprovalChange = changes.some(function (change) {
@@ -327,8 +364,7 @@ function updateVoucher_(user, req) {
     o.Type === 'PAYMENT' &&
     ((approvalManaged && materialApprovalChange) || crossedApprovalThreshold);
   if (shouldReevaluateApproval) {
-    const nextApprovalStatus =
-      nextAmount >= CFG.PAYMENT_APPROVAL_THRESHOLD ? 'PENDING' : 'NOT_REQUIRED';
+    const nextApprovalStatus = nextNeedsApproval ? 'PENDING' : 'NOT_REQUIRED';
     if (priorApprovalStatus !== nextApprovalStatus) {
       changes.push({
         field: 'approvalStatus',

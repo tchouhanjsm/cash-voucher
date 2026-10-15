@@ -923,6 +923,58 @@ ok(
   highValueReceipt.ok && highValueReceipt.data.created[0].approvalStatus === 'NOT_REQUIRED',
   'high-value cash receipts are outside the PAYMENT-only approval policy',
 );
+// Cash limits apply per payee per day: splitting one payment must not bypass approval.
+const splitFirst = as(S, 'createVouchers', {
+  entries: [
+    { clientId: 'split-1', date: today, vendor: 'Split Payee Test', amount: 6000, type: 'PAYMENT' },
+  ],
+});
+ok(
+  splitFirst.ok && splitFirst.data.created[0].approvalStatus === 'NOT_REQUIRED',
+  'first sub-threshold payment to a payee needs no approval',
+);
+const splitSecond = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'split-2',
+      date: today,
+      vendor: ' split payee TEST ',
+      amount: 5000,
+      type: 'PAYMENT',
+    },
+  ],
+});
+ok(
+  splitSecond.ok && splitSecond.data.created[0].approvalStatus === 'PENDING',
+  'a second payment that takes the same payee-day total to the threshold needs approval',
+);
+const splitOtherPayee = as(S, 'createVouchers', {
+  entries: [
+    { clientId: 'split-3', date: today, vendor: 'Different Payee', amount: 5000, type: 'PAYMENT' },
+  ],
+});
+ok(
+  splitOtherPayee.ok && splitOtherPayee.data.created[0].approvalStatus === 'NOT_REQUIRED',
+  'payments to different payees are not combined',
+);
+const splitApprove = as(M, 'approveVoucher', { id: splitSecond.data.created[0].id });
+ok(
+  splitApprove.ok && splitApprove.data.approvalStatus === 'APPROVED',
+  'a manager can approve a sub-threshold payment flagged by the payee-day total',
+);
+const splitBatch = as(S, 'createVouchers', {
+  entries: [
+    { clientId: 'split-b1', date: today, vendor: 'Batch Split', amount: 4000, type: 'PAYMENT' },
+    { clientId: 'split-b2', date: today, vendor: 'Batch Split', amount: 4000, type: 'PAYMENT' },
+    { clientId: 'split-b3', date: today, vendor: 'Batch Split', amount: 2000, type: 'PAYMENT' },
+  ],
+});
+ok(
+  splitBatch.ok &&
+    splitBatch.data.created.map((item) => item.approvalStatus).join() ===
+      'NOT_REQUIRED,NOT_REQUIRED,PENDING',
+  'splits inside one batch are combined too',
+);
 const closeBlockedPayment = as(S, 'createVouchers', {
   entries: [
     {

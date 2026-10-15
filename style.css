@@ -1812,3 +1812,20 @@ button {
     page-break-inside: avoid;
   }
 }
+
+/* Recent payee chips on the entry form */
+#recentVendors {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 8px 0;
+}
+#recentVendors:empty {
+  display: none;
+}
+.vchip {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
