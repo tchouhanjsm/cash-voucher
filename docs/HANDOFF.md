@@ -54,6 +54,7 @@ Current open PR: #145 — Phase 11 Batch 3: replace access-denied and Register t
 **Batch 2 — merged in PR #144:** replaced local/offline and server payment-save confirmations and bulk-import completion with DOM construction. Hostile server-returned voucher number/vendor values stay inert; the ambiguous-save recovery targets, approval notice, print actions, import status and follow-up buttons remain. The active inventory fell from 25 to 22. CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `e7f199a5d109f49034f349aab0dc63d040b32a1f`.
 
 **Batch 3 — current candidate (PR #145):**
+
 - Shared `pageNotice()` builds a page heading and message with explicit DOM nodes and `textContent`.
 - Reports' denied state retains its heading, card and message without HTML parsing.
 - Daily Cash Close's denied state retains its heading, muted message and `role=status` without HTML parsing.
