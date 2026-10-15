@@ -1,11 +1,8 @@
 # Engineering Handoff
-
 Last verified main SHA: `965f16b8849fa757e46449d5fd1e80a3881100a4` (PR #139 merge; post-merge CI passed)  
 Current phase: Phase 10 — UI refresh mainline integration and dashboard trust states  
 Current working branch: `phase-10/ui-mainline-dashboard-integrity-2026-10-15`  
 Current open PR: Phase 10 UI refresh integration — being prepared against `main`  
-Current working branch: `phase-9/payee-identity-approval-integrity-2026-10-15`  
-Current open PR: #139 — [Preserve payee-day approval across legacy VendorIDs](https://github.com/tchouhanjsm/cash-voucher/pull/139)
 
 ## Verified repository state
 
