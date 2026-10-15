@@ -2,19 +2,19 @@
 
 Updated: 15 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `797cb6b08187c6cb77dfb7b198c7dd5840e67c29` (PR #145 merge commit)  
+Last verified main SHA: `f2afdb08bece0a7f529a64a84164685269805641` (PR #146 merge commit)  
 Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current working branch: `phase-11/batch-4-account-outbox-dom-2026-10-15`  
-Current open PR: #146 — [Phase 11 Batch 4: retire Account and offline outbox HTML sinks](https://github.com/tchouhanjsm/cash-voucher/pull/146)
+Current working branch: `phase-11/batch-4-pin-submit-regression-2026-10-15`  
+Current open PR: #147 — [Fix Change PIN submit semantics after Phase 11 Batch 4](https://github.com/tchouhanjsm/cash-voucher/pull/147)
 
 ## Verified repository state
 
-- Live `main` resolves to `797cb6b08187c6cb77dfb7b198c7dd5840e67c29`, PR #145's merge commit.
-- PR #143 retired two Users loading/error assignments. PR #144 retired two payment-save confirmation assignments plus bulk-import completion. PR #145 retired Reports/Cash Close denied-page templates and Register totals/status. Merged main now has 19 `innerHTML =` assignments across eight active frontend modules.
-- PR #145's tested head was `b044edf5e36f41cc327ef57a89f0665c40acf79e`; CI/quality, Browser E2E (356 checks) and Full Flight Test (281 backend checks plus 356 browser checks) passed on that exact head. This does not establish live Apps Script deployment.
-- Phase 11 Batch 4 / PR #146 replaces the My Account profile/PIN page and offline outbox banner/review lists with DOM construction. It preserves account fields, PIN form IDs/validation, sign-out/install actions, offline queue warnings, queued/rejected entry details and delegated queue controls. Candidate inventory: 17 assignments across eight modules.
-- Browser E2E checks hostile profile/property text and a tampered IndexedDB vendor in both the offline status banner and queued-entry details. CI, Browser E2E and Full Flight Test must pass on one exact candidate head before merge.
-- Source tests do not prove live Apps Script deployment identity/version, Sheet binding, real permissions, scheduled backup/isolated restore, physical-device behavior, accessibility conformance, quotas or production readiness.
+- Live `main` resolves to `f2afdb08bece0a7f529a64a84164685269805641`, PR #146's merge commit.
+- PRs #143–#145 reduced active HTML assignments from 27 to 19; PR #146 merged the My Account profile/PIN page and offline outbox banner/review templates using DOM APIs. Merged main now has 17 assignments across eight frontend modules.
+- PR #146 merged at `f2afdb08bece0a7f529a64a84164685269805641`, with tested PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c`. Its CI/quality passed (281 backend checks and sink count/fingerprint gates); Browser E2E and Full Flight Test reported the same one failing regression: `My Account preserves sign-out and Change PIN controls after DOM rendering` (357 passed, 1 failed). This is not a green end-to-end release signal.
+- PR #147 fixes the underlying mismatch by explicitly setting `type='submit'` on the Change PIN button. This keeps the expected form semantics explicit and satisfies the already-added Browser E2E selector. Fix commit on this follow-up branch: `f04f3f26bda9a22defc91945d23b836e84d13108`.
+- Current follow-up changes no sink count, financial logic, authorization, backend contract, schema or persisted data. Exact-head CI, Browser E2E and Full Flight Test are required before treating this as closed.
+- Source tests do not prove live Apps Script deployment identity/version, Sheet binding, real permissions, scheduled backup/isolated restore, physical-device behavior, accessibility conformance or production readiness.
 
 ## Phase 10 — UI refresh integration and dashboard trust states
 
@@ -47,20 +47,13 @@ Current open PR: #146 — [Phase 11 Batch 4: retire Account and offline outbox H
 
 ## Phase 11 — contextual rendering-security review and sink retirement
 
-**Batch 1 — merged in PR #143:** replace Users loading/error status templates with DOM APIs; hostile API error text stays inert and retry recovers. Inventory: 27 → 25 assignments.
+**Batches 1–3 — merged in PRs #143–#145:** Users loading/error, payment-save/bulk completion, Reports/Cash Close access denied and Register totals/status templates were moved to DOM APIs. Inventory reduced from 27 to 19; each merged batch passed its recorded exact-head gates.
 
-**Batch 2 — merged in PR #144:** replace offline/server payment-save confirmations and bulk-import completion with DOM APIs; preserve ambiguous-save recovery, approval notice, print actions and import controls. Inventory: 25 → 22 assignments.
+**Batch 4 — merged in PR #146:** the My Account profile/PIN page and offline outbox banner/review details now use DOM construction. The sink count is 19 → 17 across eight modules, hostile stored profile/queue content is tested as inert, and existing queue action keys and account controls are preserved. However, the full Browser E2E and Full Flight Test on exact PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` each report one failing check: `My Account preserves sign-out and Change PIN controls after DOM rendering`. Do not describe Batch 4 as fully verified until the fix below passes all required workflows.
 
-**Batch 3 — merged in PR #145:** replace Reports/Cash Close access-denied templates and Register totals/status rendering; preserve alert/status semantics and totals displays. Inventory: 22 → 19 assignments.
+**Batch 4 follow-up — PR #147:** explicitly assigns `type='submit'` to the Change PIN submit control. The browser regression looks for `button[type=submit]`; the previous DOM renderer relied on the browser's default button type without setting the attribute. This is a focused correction to the already merged change, not a change in financial/authorization policy or sink count.
 
-**Batch 4 — current candidate (PR #146):**
-
-- My Account profile/property display, sign-out/install actions and Change PIN form are built with DOM APIs and `textContent`; profile fields are scalar-normalized.
-- Offline outbox banner, queued/rejected-entry details, status messages and Retry/Export/Import/Sign-in/Discard controls are built with DOM nodes; local IndexedDB fields use text nodes rather than HTML parsing.
-- Browser E2E injects hostile profile/property strings and tampers with a stored queue payee value, checking inert rendering and preserved controls.
-- Inventory: 19 → 17 assignments across eight modules. Only two reviewed assignments are removed from count/fingerprint baselines.
-
-**Acceptance boundary:** frontend rendering and focused Browser E2E only. Queue ownership, status transitions, API calls, authorization, financial formulas, backend contracts, schema and stored records do not change. No `clasp push`, deployment, production-data mutation, merge or release is included. This is incremental risk reduction, not XSS certification.
+**Acceptance boundary:** frontend rendering and focused Browser E2E only. No `clasp push`, Apps Script deployment, production-data mutation, schema change, merge or release is performed by this follow-up. It is incremental risk reduction, not XSS certification.
 
 ## Next phases — grouped outcome plan
 
