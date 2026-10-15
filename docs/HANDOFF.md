@@ -33,7 +33,7 @@ The intended comparison is explicit: if both records have a non-empty VendorID, 
 - Batch creation, stable-ID matching, same-day/date filtering, active-payment filtering, integer-paise arithmetic and exclusion of the voucher being edited remain correct.
 - Add backend regressions for legacy-linked creation, edit crossing, and distinct stable identities.
 - No automatic historical VendorID backfill, schema migration, approval-policy change, production data mutation or deployment.
-- CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. A prior source head passed code quality/backend tests, Browser E2E and Full Flight Test; its CI job failed the PR-description handoff validator because the required Security and failure review section was absent. The PR description has now been corrected, and this handoff update requires fresh exact-head runs.
+- CI, Browser E2E and Full Flight Test must pass on the same exact final PR head. The PR-quality gate also enforces the required sections in the PR description. Exact-head workflow evidence and current review status are maintained in PR #139; any branch-head change invalidates earlier check evidence and requires fresh runs before merge.
 
 ## Remaining risks and owner-controlled operational gates
 
