@@ -1375,6 +1375,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         makePinInput('pn', 'New PIN', 'new-password', 'New PIN'),
       );
       const submit = document.createElement('button');
+      submit.type = 'submit';
       submit.className = 'btn primary';
       submit.textContent = 'Change PIN';
       controls.appendChild(submit);

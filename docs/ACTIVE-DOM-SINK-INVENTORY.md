@@ -1,12 +1,12 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `797cb6b08187c6cb77dfb7b198c7dd5840e67c29` (main after PR #145; active source baseline 19 assignments).  
-**Phase 11 Batch 4 candidate count:** 17 assignments across eight frontend modules after retiring the My Account page template and offline outbox banner template. CI is the executable gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `f2afdb08bece0a7f529a64a84164685269805641` (main after PR #146; active source baseline 17 assignments).  
+**Phase 11 Batch 4 follow-up count:** 17 assignments across eight frontend modules; PR #147 explicitly sets the Change PIN submit type and does not change any sink or fingerprint count. CI is the executable gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
 
-Merged main after PR #145 has 19 `innerHTML =` assignment sites across eight JavaScript modules. The Phase 11 Batch 4 candidate removes the My Account profile/PIN page assignment and offline outbox banner/review-list assignment, leaving 17 active sites. Each future change requires review of data flow and a focused hostile-data regression before count/fingerprint baselines are updated.
+Merged main after PR #146 has 17 `innerHTML =` assignment sites across eight JavaScript modules. PR #146 retired the My Account profile/PIN page and outbox banner/review-list assignment. The Phase 11 Batch 4 follow-up PR #147 adds explicit submit semantics for the PIN form without changing the sink count. Future sink changes still require contextual review and focused hostile-data regression before baseline updates.
 
 **Current module counts:**
 
@@ -61,7 +61,7 @@ The Reports and Daily Cash Close permission-denied states now use a shared `page
 
 The Register totals/status region now uses DOM construction instead of one HTML string. It preserves Paid, Received, Net, voucher count, received-total color, approval-exception message, invalid-amount message, malformed-record/field notices and the alert shown for unavailable data or invalid ranges. Existing browser cases assert the range alert, status notices, inert output and disabled CSV export.
 
-Merged main after PR #145 has 19 sites; this candidate has 17 across eight modules. Only the two reviewed assignment fingerprints and counts are removed from the machine-readable baselines. This is not XSS certification or production-operation evidence.
+Merged main after PR #146 has 17 sites across eight modules. PR #147 does not change counts or fingerprints; it fixes the explicit submit-type regression discovered by Browser E2E. The remaining templates still require contextual review; this is not XSS certification or production-operation evidence.
 
 ## Phase 11 Batch 4 — My Account and offline queue status
 
@@ -69,4 +69,8 @@ My Account no longer assembles account identity, property label, profile actions
 
 The outbox banner and queued/rejected entry details now use DOM nodes. Queue messages, pending/rejected vendor/amount/date/failure values and overflow notices are text, while Retry, Export, Import, Sign in to sync, Export & remove and Clear my queued entries retain their `data-act` keys. E2E tampering of locally stored payee text must remain inert in both the banner and expanded review list.
 
-Merged main after PR #145 has 19 sites; this candidate has 17 across eight modules. This does not prove every remaining template safe or the local queue durable; account-bound offline recovery still requires real-device testing.
+Merged main after PR #146 has 17 sites across eight modules. PR #147 fixes Change PIN submit semantics without changing the sink count; the local queue still requires real-device durability/recovery checks.
+
+## Phase 11 Batch 4 follow-up — Change PIN submit semantics
+
+PR #146's Browser E2E on exact head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` reported 357 passed and one failed check because the new DOM-built Change PIN button omitted an explicit `type="submit"` attribute. PR #147 sets `submit.type = 'submit'`; the sink inventory remains 17 assignments across eight modules. The fix passed exact-head CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend checks plus 358 browser checks, 0 failures) on `eb473402dca0cbdc085af1f961ca00e9b70705d8`.
