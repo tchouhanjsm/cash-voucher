@@ -1,6 +1,6 @@
 # Dependency Security Exception Register
 
-**Last reviewed:** 9 October 2026  
+**Last reviewed:** 16 October 2026  
 **Scope:** development/build dependencies installed by `npm ci`; this does not claim the local developer toolchain is risk-free.
 
 ## Current exception
@@ -11,12 +11,12 @@
 - **Affected package:** `braces` through version 3.0.3
 - **Observed dependency path:** `@google/clasp@3.4.1 → micromatch@4.x → braces@3.0.3`
 - **Why three npm audit entries appear:** npm aggregates the same underlying advisory at the affected `braces` package, its `micromatch` parent, and the direct `@google/clasp` dependency. The audit output lists three high-severity package entries, but one distinct GHSA is present in this chain.
-- **Upstream status as checked on 9 October 2026:** the [GitHub Advisory Database record](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) states that versions through 3.0.3 are affected and that no patched version is listed. The [upstream issue](https://github.com/micromatch/braces/issues/70) discusses the uncontrolled-recursion flaw.
+- **Upstream status rechecked on 16 October 2026:** the [GitHub Advisory Database record](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) still marks versions through 3.0.3 as affected and lists no patched version. The current lockfile still resolves `braces@3.0.3`, so this review found no verified compatible upgrade to apply. The [upstream issue](https://github.com/micromatch/braces/issues/70) discusses the uncontrolled-recursion flaw.
 - **Why we are not applying npm's automated suggestion:** npm proposes a semver-major downgrade of `@google/clasp` to 2.5.0. The current lockfile uses clasp 3.4.1, whose newer releases include security-related filesystem and credential-handling hardening. A blind major downgrade could remove those protections and may introduce older transitive dependencies; it is not a verified safe fix.
 - **Decision:** retain the current lock while upstream has no published patched release; track this exact advisory as a time-bounded exception. This is a risk acceptance, not a claim that the dependency is fixed.
 - **Scope/exposure:** the vulnerable package exists only in the repository's `devDependencies`, and it is not bundled into the static app or Apps Script runtime. It can affect developer/CI availability when a vulnerable brace pattern is actually processed; do not pass untrusted brace patterns or untrusted file-name patterns to the clasp CLI.
 - **Compensating controls:** the full audit remains visible in CI logs; the script permits only this exact advisory through its package-dependency chain; any new or unrelated high/critical finding fails CI. Review is due by **9 November 2026**; CI will reject the exception from **10 November 2026** if it has not been renewed.
-- **Owner follow-up:** review upstream for a patched `braces` release or a clasp release removing this dependency path before the review date. If upstream ships a fix, remove the exception and update the lockfile in the same batch.
+- **Owner follow-up:** review upstream for a patched `braces` release or a clasp release removing this dependency path by 9 November 2026. If upstream ships a fix, verify compatibility and the full lockfile audit, remove the exception and update the lockfile in the same batch. Do not treat this recheck as a renewal beyond the current review date.
 
 ## Enforcement behavior
 

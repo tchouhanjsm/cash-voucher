@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: phases 1–8 shipped on main. Phase 9 (FrontUI Studio + shared component kit) is the active design increment. Physical-device and assistive-technology validation remain release gates.
+Status: phases 1–9 are shipped on main. Phase 9 (FrontUI Studio + shared component kit) merged in PR #151. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
 
 ## Approach
 
@@ -80,7 +80,9 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 - New components use semantic tokens, not raw colors. `npm run check:contrast` checks the supported light and dark palettes; manual rendered-state checks remain required.
 - No inline scripts or handlers (CSP). Use `data-act` actions or module listeners.
 
-## Phase 9 — FrontUI Studio and shared UI kit
+## Phase 9 — FrontUI Studio and shared UI kit (complete in PR #151)
+
+**Merged main SHA:** `91b8b46f4a09b868db0157d6f89dcebd0d14eae0`. The exact PR head passed CI/quality, Browser E2E (382 checks) and Full Flight Test (281 backend plus 382 browser checks), with zero failures. The gallery remains a static design reference, not a production route.
 
 - `frontend-ui-kit.css` is the shared, dependency-free visual layer loaded after `style.css`. It adds the 4px spacing scale, type and radius tokens, low-elevation surface rules, consistent field/button sizes, KPI hierarchy, table states and focus treatment without a framework, remote font, icon service or build step.
 - `ui-studio.html` is a standalone, static component gallery. It documents palette, type, spacing, radius, elevation, buttons, fields, statuses, attention patterns, KPI cards, a keyboard-scroll table and light/dark treatments. It contains no scripts or inline styles and uses the same stylesheet pair as the live app.

@@ -60,14 +60,16 @@ Install dependencies with Node 20:
 npm ci
 npm run check
 npm run test:e2e
+npm run measure:performance-baseline
 ```
 
 - `npm run check` runs lint, formatting, JSON validation, JS syntax checks, the frontend release-integrity check, both DOM-sink count/API and source-fingerprint gates, and the mock Apps Script backend suite. `npm test` includes the focused fingerprint-scanner unit test and authenticated authorization matrix.
 - `npm run test:e2e` runs the browser suite against the local mock server; it must not use the production API. See `docs/DEVELOPMENT-WORKFLOW.md`.
+- `npm run measure:performance-baseline` captures a warm-up plus five samples for bootstrap and recorded-movement reporting at 100, 500 and 1,000 deterministic mock vouchers. Set `CV_PERFORMANCE_BASELINE_OUT=/path/to/baseline.json` to write a machine-readable result; CI uploads this result as an artifact. It is diagnostic mock evidence, not a production SLO.
 - CI also runs `npm run audit:secrets` against the current tracked text and reachable Git history for selected credential patterns. It is a bounded detector, not complete security certification.
 - The mock Apps Script layer does not replace tests against a real Google account or load/concurrency testing against the live service.
 
-The source inventory is documented in `docs/ACTIVE-DOM-SINK-INVENTORY.md`. The count/API and source-fingerprint gates detect changes that warrant review; neither proves every HTML interpolation is safe. PR #135 replaced five avoidable text-only HTML sinks; PR #136 added adversarial accountant-report/CSV coverage; PR #137 strengthened payee-day approval and entry UX; PR #138 replaced the shared modal-frame HTML parsing sink with DOM construction; PR #139 fixed legacy-aware approval aggregation without historical VendorID backfill. PR #140's Tabler-inspired UI changes were merged against a feature branch, not current `main`, and have no recorded CI checks; see the canonical handoff and roadmap for the Phase 10 mainline integration review. The active sink inventory and remaining contextual review are tracked in `docs/ACTIVE-DOM-SINK-INVENTORY.md` and `docs/SECURITY-RENDERING-AUDIT.md`.
+The source inventory is documented in `docs/ACTIVE-DOM-SINK-INVENTORY.md`. The count/API and source-fingerprint gates detect changes that warrant review; neither proves every HTML interpolation is safe. PRs #135–#138 reduced avoidable HTML sinks and added hostile-data regressions; PR #139 fixed legacy-aware approval aggregation without historical VendorID backfill. PR #149's dashboard/navigation refresh was integrated into main, and PR #151 added FrontUI Studio plus the shared CSS kit without changing the active DOM-sink inventory. The mainline remains at 17 assignment sites across eight frontend modules; see `docs/ACTIVE-DOM-SINK-INVENTORY.md` and `docs/SECURITY-RENDERING-AUDIT.md` for the contextual review and limitations.
 
 For local Apps Script development, follow `docs/DEVELOPMENT-WORKFLOW.md` and inspect `clasp status` before every push. Never run `clasp push` or `clasp deploy` without a deliberate backend release decision.
 

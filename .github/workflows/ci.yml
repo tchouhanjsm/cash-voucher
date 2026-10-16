@@ -39,6 +39,18 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
+      - name: Capture seeded mock performance baseline
+        env:
+          CV_PERFORMANCE_BASELINE_OUT: ${{ runner.temp }}/cash-voucher-performance-baseline.json
+        run: npm run measure:performance-baseline
+
+      - name: Upload seeded mock performance baseline
+        uses: actions/upload-artifact@v7
+        with:
+          name: cash-voucher-performance-baseline-${{ github.run_id }}
+          path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
+          if-no-files-found: error
+
       - name: Run quality gate
         run: npm run check
 
