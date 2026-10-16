@@ -64,6 +64,15 @@ function indexModuleEntrypoints() {
   ].map((match) => normalize(match[1]));
 }
 
+function indexStylesheets() {
+  const source = read('index.html');
+  return [...source.matchAll(/<link\b[^>]*>/gi)]
+    .filter((match) => /\brel=["']stylesheet["']/i.test(match[0]))
+    .map((match) => match[0].match(/\bhref=["']([^"']+)["']/i)?.[1])
+    .filter(Boolean)
+    .map(normalize);
+}
+
 function verifyContentSecurityPolicy() {
   const source = read('index.html');
   const metaTags = [];
@@ -142,10 +151,14 @@ if (entrypoints.length !== 1 || entrypoints[0] !== 'frontend/main.js') {
 }
 
 const graph = collectModuleGraph('frontend/main.js');
+const stylesheetLinks = indexStylesheets();
+const requiredStylesheets = ['style.css', 'frontend-ui-kit.css'];
+const missingStylesheets = requiredStylesheets.filter((file) => !stylesheetLinks.includes(file));
 const shell = new Set(serviceWorkerShell());
 const requiredShell = new Set([
   'index.html',
   'style.css',
+  'frontend-ui-kit.css',
   'config.js',
   'manifest.webmanifest',
   ...graph.files,
@@ -162,6 +175,7 @@ const cspFailures = verifyContentSecurityPolicy();
 
 if (
   missingModules.length ||
+  missingStylesheets.length ||
   missingShell.length ||
   missingShellFiles.length ||
   duplicates.length ||
@@ -171,6 +185,7 @@ if (
   console.error('Frontend release integrity FAILED.');
 
   if (missingModules.length) console.error('Missing imported modules:', missingModules);
+  if (missingStylesheets.length) console.error('Required UI stylesheets are not linked by index.html:', missingStylesheets);
   if (missingShell.length) console.error('Module/shell assets missing from sw.js:', missingShell);
   if (missingShellFiles.length) console.error('sw.js references missing files:', missingShellFiles);
   if (duplicates.length)
