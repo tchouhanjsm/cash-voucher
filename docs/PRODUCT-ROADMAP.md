@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `a0d6529da2534977b69426e1affc1b182fa3bf56` (PR #152 merge; repeatable mock performance evidence integrated)  
-Current engineering batch: Phase 17 — truthful audit health + owner-exportable monitoring snapshot  
-Current candidate branch: `phase-17/audit-health-snapshot-and-truthful-states-2026-10-16`
+Last verified main baseline: `36402f97f43d6c07b920efb726c67092121e451b` (PR #153 merge; audit health snapshot integrated)  
+Current engineering batch: Phase 18 — actionable diagnostic exports and truthful recovery states  
+Current candidate branch: `phase-18/diagnostic-exports-and-truthful-recovery-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
