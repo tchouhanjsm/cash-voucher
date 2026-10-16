@@ -1,12 +1,12 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `a478c52c68c520b8eddbf80692d101dc20210c58` (main after PR #149; active source baseline 17 assignments).  
-**PR #149 UI refresh:** the Payments template fingerprint was reviewed and updated to `847d68e0` after app-authored emoji labels became inline-SVG helper output; the site count remains 17 across eight modules. CI is the executable gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `91b8b46f4a09b868db0157d6f89dcebd0d14eae0` (main after PR #151; active source baseline remains 17 assignments).  
+**PR #149 UI refresh / PR #151 design kit:** the Payments template fingerprint remains `847d68e0`; PR #151 changed only CSS/static studio markup and did not change active JavaScript assignment sites. The count remains 17 across eight modules. CI is the executable gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
 
-Merged main after PR #147 has 17 `innerHTML =` assignment sites across eight JavaScript modules. PR #146 retired the My Account profile/PIN page and outbox banner/review-list assignment. The Phase 11 Batch 4 follow-up PR #147 adds explicit submit semantics for the PIN form without changing the sink count. Future sink changes still require contextual review and focused hostile-data regression before baseline updates.
+Merged main after PR #151 still has 17 `innerHTML =` assignment sites across eight JavaScript modules. PR #146 retired the My Account profile/PIN page and outbox banner/review-list assignment. The Phase 11 Batch 4 follow-up PR #147 adds explicit submit semantics for the PIN form without changing the sink count. Future sink changes still require contextual review and focused hostile-data regression before baseline updates.
 
 **Current module counts:**
 

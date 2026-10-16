@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 16 October 2026. **Last verified main baseline:** `a478c52c68c520b8eddbf80692d101dc20210c58` (PR #149 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for historical evidence; older snapshots are not a live status feed.
+**Reviewed:** 16 October 2026. **Last verified main baseline:** `91b8b46f4a09b868db0157d6f89dcebd0d14eae0` (PR #151 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for historical evidence; older snapshots are not a live status feed.
 
-**Status: not verified as production-ready.** PR #148's Phase 12 endpoint-bound queue-isolation batch merged at `87a39f8e58594abc3eba7f5900c0be45f0cf8341`; its exact final head `9d5dea25eeddfa98d9c81995a7a140d0af709bdc` passed CI/quality, Browser E2E (359 checks) and Full Flight Test (281 backend plus 359 browser checks), all with zero failures. PR #149's exact final head `2c1a25c144fe27ed959cd7aae6793b9c3c75bddf` passed CI/quality, Browser E2E and Full Flight Test; post-merge CI/quality passed on `main`. These are source/mock tests. Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup and isolated restore remain unverified. PR #149 and the Phase 14 UX guardrails do not prove production readiness.
+**Status: not verified as production-ready.** PR #151's exact head `b7632abcff44cf10969b731da2eef5e9b679bd60` passed CI/quality ([run 38864262074](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38864262074)), Browser E2E ([run 38864262052](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38864262052), 382 checks) and Full Flight Test ([run 38864262171](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38864262171), 281 backend plus 382 browser checks), all with zero failures. These are source/mock tests. Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup and isolated restore remain unverified; physical-device and assistive-technology validation also remain open.
 
 ## Current go-live gates — reviewed 14 October 2026
 

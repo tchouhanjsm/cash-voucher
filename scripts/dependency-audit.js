@@ -31,7 +31,7 @@ const exceptions = {
     packageName: 'braces',
     reviewBy: '2026-11-09',
     rationale:
-      'No patched release is listed by the upstream GitHub advisory as of 2026-10-09. ' +
+      'No patched release is listed by the upstream GitHub advisory as of 2026-10-16. ' +
       'This is a dev-tool dependency path: @google/clasp -> micromatch -> braces.',
   },
 };
