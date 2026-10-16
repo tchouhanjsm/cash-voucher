@@ -2133,6 +2133,7 @@ here and in the production app. It requires no JS or remote assets. */
 
   @media (min-width: 561px) {
     .settings-diagnostics .diagnostic-actions {
+      align-items: flex-start;
       flex-wrap: nowrap;
     }
 
