@@ -819,6 +819,23 @@
   border-radius: var(--ui-radius-pill);
   background: var(--brand);
 }
+.studio-space-4 { width: 4px; }
+.studio-space-8 { width: 8px; }
+.studio-space-12 { width: 12px; }
+.studio-space-16 { width: 16px; }
+.studio-space-24 { width: 24px; }
+.studio-space-32 { width: 32px; }
+.studio-space-40 { width: 40px; }
+
+.studio-radius-8 { border-radius: 8px; }
+.studio-radius-10 { border-radius: 10px; }
+.studio-radius-14 { border-radius: 14px; }
+.studio-radius-18 { border-radius: 18px; }
+
+.studio-mt-18 { margin-top: 18px; }
+.studio-elevation-card { box-shadow: var(--ui-shadow-card); }
+.studio-elevation-raised { box-shadow: var(--ui-shadow-raised); }
+.studio-span-all { grid-column: 1 / -1; }
 
 .studio-radius-row {
   display: flex;
