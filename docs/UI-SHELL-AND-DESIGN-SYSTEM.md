@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: FrontUI Studio (PR #151), light-first redesign (PR #157), and selected production workflow adoption (PR #159) are merged. Phase 24 is extending responsive composition across report, register, administration, audit, account and sign-in screens. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
+Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), and responsive reporting/admin adoption (PR #160) are merged. The consolidated Phases 25–27 batch finishes Bulk Upload/Cash Close parity, focusable preview scrolling, keyboard-reachable file selection, and reduced-motion/forced-colors states. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
 
 ## Approach
 
@@ -97,6 +97,16 @@ The Studio remains a static reference gallery, not a production route. PR #159 i
 
 The batch made no financial-rule, API, role-permission or schema changes. Screenshot comparison, physical-device interaction, zoom/reflow, manual keyboard traversal and screen-reader review remain human release checks.
 
-## Phase 24 — reporting and administration workflow adoption (candidate)
+## Phase 24 — reporting and administration workflow adoption (merged PR #160)
 
-Candidate branch: `phase-24-workflows-ui-adoption-2026-10-16`. This batch gives the Report filter/results areas, Register totals, Vendor/User forms, Audit filters, Account/PIN layout and sign-in surface shared responsive styling. Regression coverage targets desktop and phone layouts. This candidate remains unmerged until the exact-head CI, Browser E2E and Full Flight Test pass and owner review is complete; no live deployment is included.
+PR #160 completed responsive Report filters/results, Register totals, Vendor/User forms, Audit filters, Account/PIN layout and sign-in styling. Exact-head CI/quality, Browser E2E (418 checks) and Full Flight Test (285 backend + 418 browser checks) passed; post-merge main CI passed. It made no live deployment.
+
+## Phases 25–27 — Fresh Design Studio completion (consolidated candidate)
+
+Branch: `phase-25-frontui-completion-bulk-2026-10-16`, based on main `0d900235f9230ab05db940bb57881a171737ae0c`.
+
+- **Workflow parity:** bring Bulk Upload review and Daily Cash Close setup/report/blockers into the same intentional surface, spacing, wrapping and internal table-scroll system as the rest of the design kit. Use semantic CSS classes instead of ad hoc inline styles.
+- **Interaction states:** preserve keyboard focus on the bulk file chooser and review table, keep controls touch-sized, and support reduced-motion plus forced-colors/high-contrast preferences.
+- **Regression protection:** extend source-level design-system assertions and real-browser checks at 320px and desktop/mobile Cash Close widths. Keep the service-worker cache revision aligned with shared CSS.
+
+This batch does not turn the static Studio gallery into a production route and does not change money movement, approval policy, role permissions, API contracts or data schema. CI and mocked E2E can establish regression coverage, not device/zoom certification. Manual keyboard traversal, assistive-technology review, physical-device PWA install/update recovery and live-service validation remain release gates.
