@@ -2,19 +2,22 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `61e46989032985fba54ceb48d768ab57430aa48a` (PR #147 merge commit)  
-Current phase: Phase 12 — Cross-workflow integrity and recovery  
-Current working branch: `phase-12/endpoint-bound-recovery-2026-10-16`  
-Current open PR: #148 — [Phase 12: harden endpoint-bound offline queue recovery](https://github.com/tchouhanjsm/cash-voucher/pull/148)
+Last verified main SHA: `a478c52c68c520b8eddbf80692d101dc20210c58` (PR #149 merge commit)  
+Current engineering batch: Phase 14 — whole-product UX completion (Register keyboard scrolling and Reports responsive coverage)  
+Current working branch: `phase-14/register-reports-ux-2026-10-16`  
+Current candidate: Register and Reports responsive/accessibility batch; live branch/PR state and exact-head checks are authoritative
 
 ## Verified repository state
 
-- Live `main` resolves to `61e46989032985fba54ceb48d768ab57430aa48a`, the merge commit for PR #147. PR #147 explicitly sets the Change PIN control to `type='submit'`; CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend plus 358 browser checks, 0 failures) passed on the exact PR head `bfdbbb401c397730b12480fec5ac9fd1e57072d9`. This is source/mock evidence, not proof of live deployment.
-- Phase 11 Batch 4 is closed in source: the active DOM-sink inventory is 17 assignments across eight frontend modules. Sink counts and fingerprints remain drift controls, not XSS certification.
-- Local sync was confirmed by the owner’s terminal report: local `main` and `origin/main` both resolve to `61e4698`; the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md` remains untracked and must not be staged, overwritten or deleted.
-- Phase 12 candidate PR #148 adds Browser E2E coverage that a queued record bound to a different API endpoint is not surfaced or uploaded, even when its account email matches the current account. The endpoint is represented only as tampered IndexedDB metadata using a reserved `.invalid` host.
-- PR #148 also reconciles stale phase/status metadata across the canonical handoff, roadmap, backlog, release readiness and rendering/recovery evidence. CI/quality, Browser E2E and Full Flight Test must pass on the same final PR head before acceptance; results for intermediate commits do not count.
-- Mock/source tests do not prove live Apps Script deployment identity/version, Sheet binding, actual role/receipt permissions, scheduled backup/isolated restore, physical-device recovery, assistive-technology conformance or production readiness.
+- Live `main` is `a478c52c68c520b8eddbf80692d101dc20210c58`, the merge commit for PR #149. Its first parent is the PR #147 base; the PR #148 merge is `87a39f8e58594abc3eba7f5900c0be45f0cf8341`.
+- PR #148 completed Phase 12 endpoint-bound outbox isolation. Its exact final head `9d5dea25eeddfa98d9c81995a7a140d0af709bdc` passed CI/quality, Browser E2E (359 checks) and Full Flight Test (281 backend plus 359 browser checks, zero failures).
+- PR #149 refreshed the Dashboard/navigation visual treatment, added the Needs-attention panel and SVG icon usage, and adjusted layout spacing without API, schema, dependency or financial-policy changes. CI/quality, Browser E2E and Full Flight Test passed on its exact final PR head `2c1a25c144fe27ed959cd7aae6793b9c3c75bddf`; post-merge CI/quality passed on the merge SHA.
+- The active DOM-sink inventory remains 17 assignments across eight frontend modules. PR #149 changed the reviewed Payments template fingerprint while retaining the sink count; the baseline records `847d68e0` for that assignment. Drift fingerprints are not XSS certification.
+- PR #149 did not update this handoff. Register and Reports still warrant responsive/keyboard review; the current engineering batch adds a named keyboard-focusable Register table region and Reports viewport guardrails.
+- Phase 13 operational release proof remains an owner-controlled P0 gate: live Apps Script project/version, execution identity, Sheet/Drive permissions, role/receipt access, scheduled backup, isolated restore and production reconciliation cannot be established by mock tests. Do not deploy or mutate production.
+- The repository declares Node `>=20 <23`; verify the actual local runtime before running checks.
+- Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md` if present; never stage, overwrite or delete it.
+- Mock/source tests do not prove live Apps Script deployment identity, live Google Sheet/Drive behavior, backup restore, physical-device recovery, assistive-technology conformance or production readiness.
 
 ## Phase 10 — UI refresh integration and dashboard trust states
 
@@ -57,10 +60,10 @@ Current open PR: #148 — [Phase 12: harden endpoint-bound offline queue recover
 
 ## Next phases — grouped outcome plan
 
-**Phase 12 — Cross-workflow integrity and recovery (current):** PR #148 adds an endpoint-bound outbox isolation regression and reconciles phase evidence. Continue only with gaps shown by the test matrix; preserve approved financial invariants.
+**Phase 12 — Cross-workflow integrity and recovery: complete.** PR #148 merged at `87a39f8e58594abc3eba7f5900c0be45f0cf8341`. Its endpoint-bound outbox isolation regression and canonical evidence reconciliation passed all required exact-head workflows.
 
-**Phase 13 — Operational release proof:** obtain owner-signable evidence for Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup, isolated restore and voucher/receipt reconciliation. These require owner authorization and real access; mock CI cannot satisfy them.
+**Phase 13 — Operational release proof: P0 owner-controlled blocker.** Verify Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation only with explicit owner authorization. Mock CI cannot satisfy this phase, and the source/UI work below does not clear the release gate.
 
-**Phase 14 — Whole-product UX completion:** group cross-screen responsive, keyboard/focus/zoom, accessibility and role-task findings into one outcome-based remediation batch; document remaining device/assistive-technology checks.
+**Phase 14 — Whole-product UX completion: current engineering batch.** Add keyboard access to the Register's horizontally scrollable table and responsive/keyboard regression coverage for Reports at 320, 360, 390, 768, 801, 1024 and 1280 CSS-pixel widths. Manual device, zoom and assistive-technology checks remain owner-operated work.
 
-**Phase 15 — Evidence-led performance and repository hygiene:** establish repeatable seeded performance measurements before optimization, reconcile canonical status claims and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
+**Phase 15 — Evidence-led performance and repository hygiene.** Establish repeatable seeded performance measurements before optimization, reconcile canonical status claims and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
