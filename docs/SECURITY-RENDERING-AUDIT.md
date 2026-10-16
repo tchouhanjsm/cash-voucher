@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `f2afdb08bece0a7f529a64a84164685269805641` (main after PR #146; 17 assignment sites across eight modules after Phase 11 Batches 1–4; Dashboard fingerprint `2977910e`).
+**Latest merged review baseline:** `61e46989032985fba54ceb48d768ab57430aa48a` (main after PR #147; 17 assignment sites across eight modules after Phase 11 Batches 1–4; Dashboard fingerprint `2977910e`).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
