@@ -3771,10 +3771,18 @@ with sync_playwright() as p:
     degraded_audit_health_text = audit_page.locator('#aud-health').inner_text()
     check(
         '3 write failure(s) recorded' in degraded_audit_health_text
-        and hostile_audit_health_kind.replace('_', ' ').replace('  ', ' ') in degraded_audit_health_text
-        and audit_page.locator('#aud-health svg, #aud-health img').count() == 0
+        and audit_page.locator('#aud-health [role=alert]').count() == 1,
+        'degraded audit health is assertively announced',
+    )
+    check(
+        hostile_audit_health_kind.lower().replace('_', ' ').replace('  ', ' ')
+        in degraded_audit_health_text,
+        'degraded audit health preserves the normalized monitor failure kind as literal text',
+    )
+    check(
+        audit_page.locator('#aud-health svg, #aud-health img').count() == 0
         and not audit_page.evaluate('window.__xssFired === true'),
-        'degraded audit health is assertively announced and hostile monitor text remains inert',
+        'hostile monitor failure kind remains inert and does not execute',
     )
     with audit_page.expect_download() as degraded_snapshot_download_info:
         audit_page.click('[data-act=audhealth]')
