@@ -100,10 +100,10 @@ Current candidate: simulate write-session invalidation at ScriptLock acquisition
 - Default first-use theme is light; a previously saved explicit theme preference remains respected. No framework, external font/icon service, dependency, API or production integration is introduced.
 - Operational release proof remains P0 and owner-controlled. The visual batch is not staging/production verification.
 
-## Phase 22 — authentication race regression and project-record reconciliation (candidate)
+## Phase 22 — authentication race regression and project-record reconciliation (PR #158)
 
 - Source review confirms login failure counters are updated inside `withScriptLock_`; current-PIN failures are throttled for 15 minutes; owner PIN reset clears both lockout counters; write routes acquire the shared lock and authenticate the session inside the lock before invoking a write handler.
-- The remaining regression gap is the interval around write-lock acquisition. The candidate adds a deterministic test hook that invalidates a cached session after lock acquisition but before route authentication. The test must prove the route returns `SESSION`, appends no voucher, and releases the acquired lock.
+- [PR #158](https://github.com/tchouhanjsm/cash-voucher/pull/158) is the active review candidate. Its regression invalidates a cached session after lock acquisition but before route authentication; the route must return `SESSION`, append no voucher, and release the acquired lock. The live PR page remains authoritative for the exact final head and workflow evidence.
 - The test hook is one-shot and exists only in the in-memory mock. It does not simulate real simultaneous Apps Script executions or prove live authorization.
 - Reconcile the current main/PR state in the handoff, roadmap, backlog, project guide and release-readiness status. Do not modify financial policy or run migrations/deployments.
 - Next cash-close enhancement requiring an owner decision: denomination rows remain optional and must not be assumed useful or made mandatory without approval; the existing close MVP is already implemented.
