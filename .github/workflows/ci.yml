@@ -54,11 +54,21 @@ jobs:
       - name: Capture formatted Phase 21 files for local reconciliation
         if: always()
         run: |
-          mkdir -p "$RUNNER_TEMP/phase21-prettier"
-          npx prettier --write docs/HANDOFF.md frontend-ui-kit.css style.css test/test-design-system.js
-          cp docs/HANDOFF.md frontend-ui-kit.css style.css test/test-design-system.js "$RUNNER_TEMP/phase21-prettier/"
+          mkdir -p "$RUNNER_TEMP/phase21-original" "$RUNNER_TEMP/phase21-prettier"
+          files="docs/HANDOFF.md frontend-ui-kit.css style.css test/test-design-system.js"
+          for file in $files; do
+            mkdir -p "$RUNNER_TEMP/phase21-original/$(dirname "$file")"
+            cp "$file" "$RUNNER_TEMP/phase21-original/$file"
+          done
+          npx prettier --write $files
+          for file in $files; do
+            mkdir -p "$RUNNER_TEMP/phase21-prettier/$(dirname "$file")"
+            cp "$file" "$RUNNER_TEMP/phase21-prettier/$file"
+            diff -u "$RUNNER_TEMP/phase21-original/$file" "$file" >> "$RUNNER_TEMP/phase21-format-diff.txt" || true
+          done
+          cp "$RUNNER_TEMP/phase21-format-diff.txt" "$RUNNER_TEMP/phase21-prettier/format-diff.txt"
           cd "$RUNNER_TEMP/phase21-prettier"
-          zip -q "$RUNNER_TEMP/phase21-prettier-output.zip" ./*
+          zip -qr "$RUNNER_TEMP/phase21-prettier-output.zip" .
       - name: Upload formatted Phase 21 files
         if: always()
         uses: actions/upload-artifact@v7
