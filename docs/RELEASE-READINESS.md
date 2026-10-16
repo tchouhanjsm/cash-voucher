@@ -9,6 +9,7 @@
 PR #155 merged the manual `.github/workflows/staging-uat.yml` pipeline. The workflow requires `main`, the exact `STAGING-ONLY` confirmation, explicit staging-write consent, and the protected GitHub `staging` Environment for deploy/UAT jobs. The workflow is not a live deployment record.
 
 Owner provisioning/execution remains outstanding until independently evidenced:
+
 - Dedicated staging Apps Script project, separate Spreadsheet, receipt folder and backup folder.
 - A first versioned staging Web App deployment, with its exact Script/deployment/Sheet/Drive identities verified.
 - Protected GitHub `staging` Environment, restricted to `main`, with required reviewers where supported.
