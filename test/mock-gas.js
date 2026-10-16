@@ -94,9 +94,15 @@ function create() {
       },
       newTrigger: (handler) => ({
         getHandlerFunction: () => handler,
-        timeBased() { return this; },
-        atHour() { return this; },
-        everyDays() { return this; },
+        timeBased() {
+          return this;
+        },
+        atHour() {
+          return this;
+        },
+        everyDays() {
+          return this;
+        },
         create() {
           const trigger = { getHandlerFunction: () => handler };
           scriptTriggers.push(trigger);

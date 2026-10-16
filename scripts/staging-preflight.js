@@ -23,7 +23,9 @@ function readProductionApiUrl(root = ROOT) {
   const urls = [...new Set(matches.map((match) => match[0]))];
 
   if (urls.length !== 1) {
-    throw new Error('The production API URL must be a single explicit Apps Script /exec URL in config.js.');
+    throw new Error(
+      'The production API URL must be a single explicit Apps Script /exec URL in config.js.',
+    );
   }
 
   return urls[0];
@@ -100,17 +102,26 @@ function validateStagingConfiguration(env = process.env, options = {}) {
         stagingUrl.search ||
         stagingUrl.hash
       ) {
-        errors.push('The staging API URL must be a plain HTTPS Apps Script URL without query or fragment.');
+        errors.push(
+          'The staging API URL must be a plain HTTPS Apps Script URL without query or fragment.',
+        );
       }
       const match = stagingUrl.pathname.match(/^\/macros\/s\/([^/]+)\/exec\/?$/);
-      if (stagingUrl.pathname !== '/macros/s/' + String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec') {
-        errors.push('The staging API URL path must be the exact configured /exec endpoint without a trailing slash.');
+      if (
+        stagingUrl.pathname !==
+        '/macros/s/' + String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec'
+      ) {
+        errors.push(
+          'The staging API URL path must be the exact configured /exec endpoint without a trailing slash.',
+        );
       }
       if (!match || match[1] !== String(env.CV_STAGING_DEPLOYMENT_ID || '').trim()) {
         errors.push('The staging API URL does not match CV_STAGING_DEPLOYMENT_ID.');
       }
       if (productionApiUrl && normalizeUrl(stagingApiUrl) === normalizeUrl(productionApiUrl)) {
-        errors.push('The staging API URL resolves to the production endpoint; refusing to continue.');
+        errors.push(
+          'The staging API URL resolves to the production endpoint; refusing to continue.',
+        );
       }
       if (match && productionDeploymentId && match[1] === productionDeploymentId) {
         errors.push('The staging deployment ID matches the production URL deployment ID.');
@@ -136,18 +147,31 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   ];
 
   if (stageValues.every(Boolean) && new Set(stageValues).size !== stageValues.length) {
-    errors.push('Staging Script, deployment, Sheet, receipt folder and backup folder must be five distinct resources.');
+    errors.push(
+      'Staging Script, deployment, Sheet, receipt folder and backup folder must be five distinct resources.',
+    );
   }
-  if (productionValues.every(Boolean) && new Set(productionValues).size !== productionValues.length) {
-    errors.push('Production Script, deployment, Sheet, receipt folder and backup folder must be distinct resources.');
+  if (
+    productionValues.every(Boolean) &&
+    new Set(productionValues).size !== productionValues.length
+  ) {
+    errors.push(
+      'Production Script, deployment, Sheet, receipt folder and backup folder must be distinct resources.',
+    );
   }
   const productionSet = new Set(productionValues.filter(Boolean));
   if (stageValues.some((value) => value && productionSet.has(value))) {
-    errors.push('At least one staging resource identifier is also configured as a production resource.');
+    errors.push(
+      'At least one staging resource identifier is also configured as a production resource.',
+    );
   }
 
-  const ownerEmail = String(env.CV_STAGING_UAT_OWNER_EMAIL || '').trim().toLowerCase();
-  const managerEmail = String(env.CV_STAGING_UAT_MANAGER_EMAIL || '').trim().toLowerCase();
+  const ownerEmail = String(env.CV_STAGING_UAT_OWNER_EMAIL || '')
+    .trim()
+    .toLowerCase();
+  const managerEmail = String(env.CV_STAGING_UAT_MANAGER_EMAIL || '')
+    .trim()
+    .toLowerCase();
   const ownerPin = String(env.CV_STAGING_UAT_OWNER_PIN || '').trim();
   const managerPin = String(env.CV_STAGING_UAT_MANAGER_PIN || '').trim();
 
@@ -160,8 +184,10 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   if (ownerEmail && managerEmail && ownerEmail === managerEmail) {
     errors.push('The staging owner and manager UAT accounts must be different accounts.');
   }
-  if (!isStrongPin(ownerPin)) errors.push('The staging owner UAT PIN must be six digits and non-trivial.');
-  if (!isStrongPin(managerPin)) errors.push('The staging manager UAT PIN must be six digits and non-trivial.');
+  if (!isStrongPin(ownerPin))
+    errors.push('The staging owner UAT PIN must be six digits and non-trivial.');
+  if (!isStrongPin(managerPin))
+    errors.push('The staging manager UAT PIN must be six digits and non-trivial.');
   if (ownerPin && managerPin && ownerPin === managerPin) {
     errors.push('Use different PINs for the staging owner and manager UAT accounts.');
   }
@@ -192,14 +218,16 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     errors,
     productionApiUrl,
     checks: {
-      targetIdsAreSeparated: stageValues.every(Boolean) &&
+      targetIdsAreSeparated:
+        stageValues.every(Boolean) &&
         productionValues.every(Boolean) &&
         stageValues.every((value) => !productionSet.has(value)) &&
         new Set(stageValues).size === stageValues.length,
-      stagingApiUrlMatchesConfiguredDeployment: Boolean(stagingUrl) &&
+      stagingApiUrlMatchesConfiguredDeployment:
+        Boolean(stagingUrl) &&
         stagingUrl.hostname === 'script.google.com' &&
-        stagingUrl.pathname === '/macros/s/' +
-          String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec',
+        stagingUrl.pathname ===
+          '/macros/s/' + String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec',
       dedicatedUatAccountsPresent: Boolean(ownerEmail && managerEmail && ownerPin && managerPin),
     },
   };
@@ -217,7 +245,9 @@ function main() {
     return;
   }
 
-  console.log('Staging preflight passed: Script, deployment, Sheet and Drive targets are separated from production.');
+  console.log(
+    'Staging preflight passed: Script, deployment, Sheet and Drive targets are separated from production.',
+  );
   console.log('Staging URL shape and dedicated owner/manager UAT credentials are valid.');
   if (mode === 'deploy') {
     console.log('Clasp OAuth configuration is present; credential values are not printed.');

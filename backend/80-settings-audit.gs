@@ -122,7 +122,6 @@ function auditLog_(user, req) {
   };
 }
 
-
 /**
  * Owner-only, read-only release target probe used by the staging/UAT guard.
  * It reports resource identifiers only to a user with the Settings permission;
@@ -156,7 +155,11 @@ function deploymentReadiness_(user) {
       }
       try {
         const actual = sheet.getRange(1, 1, 1, expected.length).getValues()[0];
-        if (!expected.every(function (header, index) { return actual[index] === header; })) {
+        if (
+          !expected.every(function (header, index) {
+            return actual[index] === header;
+          })
+        ) {
           invalidHeaders.push(name);
         }
       } catch (_) {
@@ -190,9 +193,10 @@ function deploymentReadiness_(user) {
   }
 
   return {
-    scriptId: typeof ScriptApp !== 'undefined' && typeof ScriptApp.getScriptId === 'function'
-      ? String(ScriptApp.getScriptId() || '')
-      : '',
+    scriptId:
+      typeof ScriptApp !== 'undefined' && typeof ScriptApp.getScriptId === 'function'
+        ? String(ScriptApp.getScriptId() || '')
+        : '',
     spreadsheetId: spreadsheetId,
     receiptFolderId: receiptFolderId,
     backupFolderId: backupFolderId,

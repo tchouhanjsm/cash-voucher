@@ -182,7 +182,6 @@ Vendor identity rules: new vouchers resolve a saved VendorID only on a unique ca
 Do not run migrations or deploy from the feature PR. Preserve every existing row and all historical unclassified vouchers. Do not infer approval from historical amount or vendor identity from a fuzzy/partial name.
 The client-side queue gate can inspect only the browser used for closing. Before trusting a daily close, confirm pending/rejected/offline recovery entries are reviewed and synchronized on every operating device. A successful close response is a central Sheet record, but it cannot prove that a different offline device has no unsynchronized entries.
 
-
 ## Staging environment and controlled UAT — Phase 19
 
 The repository now provides a manually dispatched staging workflow at `.github/workflows/staging-uat.yml`. It is separate from production release and never runs on a push or pull request.

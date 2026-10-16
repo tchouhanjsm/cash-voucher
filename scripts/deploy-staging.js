@@ -26,7 +26,9 @@ function sanitized(value, env = process.env) {
     env.CV_PRODUCTION_SPREADSHEET_ID,
     env.CV_PRODUCTION_RECEIPT_FOLDER_ID,
     env.CV_PRODUCTION_BACKUP_FOLDER_ID,
-  ].filter(Boolean).sort((a, b) => b.length - a.length);
+  ]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
 
   for (const valueToHide of hidden) {
     text = text.split(String(valueToHide)).join('[redacted]');
@@ -41,7 +43,12 @@ function runClasp(args, options = {}) {
   const env = { ...process.env, HOME: tempHome, USERPROFILE: tempHome };
   delete env.CLASPRC_JSON;
 
-  const binary = path.join(root, 'node_modules', '.bin', process.platform === 'win32' ? 'clasp.cmd' : 'clasp');
+  const binary = path.join(
+    root,
+    'node_modules',
+    '.bin',
+    process.platform === 'win32' ? 'clasp.cmd' : 'clasp',
+  );
   if (!fs.existsSync(binary)) {
     throw new Error('Local Clasp executable not found. Run npm ci before deploying staging.');
   }
@@ -91,11 +98,15 @@ function deployStaging(env = process.env, root = ROOT) {
 
     fs.writeFileSync(
       path.join(projectRoot, '.clasp.json'),
-      JSON.stringify({
-        scriptId: String(env.CV_STAGING_SCRIPT_ID).trim(),
-        rootDir: 'backend',
-        fileExtension: 'gs',
-      }, null, 2) + '\n',
+      JSON.stringify(
+        {
+          scriptId: String(env.CV_STAGING_SCRIPT_ID).trim(),
+          rootDir: 'backend',
+          fileExtension: 'gs',
+        },
+        null,
+        2,
+      ) + '\n',
       { mode: 0o600 },
     );
     fs.writeFileSync(
@@ -118,7 +129,7 @@ function deployStaging(env = process.env, root = ROOT) {
       if (!deploymentOutput.includes(expectedDeploymentId)) {
         throw new Error(
           'Configured staging deployment ID was not found in the configured staging Script project. ' +
-          'Provision the first staging Web App deployment manually, verify its URL, and retry.',
+            'Provision the first staging Web App deployment manually, verify its URL, and retry.',
         );
       }
 
@@ -127,17 +138,20 @@ function deployStaging(env = process.env, root = ROOT) {
         tempHome,
         workspace: projectRoot,
       });
-      runClasp([
-        'create-deployment',
-        '--deploymentId',
-        expectedDeploymentId,
-        '--description',
-        'Cash Voucher staging UAT ' + String(env.GITHUB_SHA || 'manual').slice(0, 12),
-      ], {
-        root,
-        tempHome,
-        workspace: projectRoot,
-      });
+      runClasp(
+        [
+          'create-deployment',
+          '--deploymentId',
+          expectedDeploymentId,
+          '--description',
+          'Cash Voucher staging UAT ' + String(env.GITHUB_SHA || 'manual').slice(0, 12),
+        ],
+        {
+          root,
+          tempHome,
+          workspace: projectRoot,
+        },
+      );
     } finally {
       if (originalHome === undefined) delete process.env.HOME;
       else process.env.HOME = originalHome;
@@ -145,7 +159,9 @@ function deployStaging(env = process.env, root = ROOT) {
       else process.env.USERPROFILE = originalUserProfile;
     }
 
-    console.log('Staging deployment updated. The deployment ID and URL were intentionally not printed.');
+    console.log(
+      'Staging deployment updated. The deployment ID and URL were intentionally not printed.',
+    );
     return { ok: true };
   } finally {
     fs.rmSync(workspace, { recursive: true, force: true });

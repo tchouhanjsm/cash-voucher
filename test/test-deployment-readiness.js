@@ -64,4 +64,6 @@ const actions = g.registeredActions();
 assert.ok(actions.includes('deploymentReadiness'));
 assert.ok(!g.writeActions().includes('deploymentReadiness'));
 
-console.log('Deployment readiness OK — resource/schema/trigger diagnostics are read-only and settings-authorized.');
+console.log(
+  'Deployment readiness OK — resource/schema/trigger diagnostics are read-only and settings-authorized.',
+);

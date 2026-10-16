@@ -1,7 +1,10 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const { readProductionApiUrl, validateStagingConfiguration } = require('../scripts/staging-preflight');
+const {
+  readProductionApiUrl,
+  validateStagingConfiguration,
+} = require('../scripts/staging-preflight');
 
 const productionApiUrl = readProductionApiUrl();
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
@@ -28,7 +31,10 @@ const fixture = {
 };
 
 assert.ok(productionApiUrl.startsWith('https://script.google.com/macros/s/'));
-assert.ok(productionDeploymentId, 'production deployment ID is extracted from the configured /exec URL');
+assert.ok(
+  productionDeploymentId,
+  'production deployment ID is extracted from the configured /exec URL',
+);
 
 const validUat = validateStagingConfiguration(fixture, { mode: 'uat' });
 assert.equal(validUat.ok, true, validUat.errors.join('; '));
@@ -74,7 +80,9 @@ const productionDeployment = validateStagingConfiguration({
 });
 assert.equal(productionDeployment.ok, false);
 assert.ok(productionDeployment.errors.some((message) => message.includes('production endpoint')));
-assert.ok(productionDeployment.errors.some((message) => message.includes('production URL deployment ID')));
+assert.ok(
+  productionDeployment.errors.some((message) => message.includes('production URL deployment ID')),
+);
 
 const urlMismatch = validateStagingConfiguration({
   ...fixture,
@@ -90,17 +98,23 @@ const malformedUrl = validateStagingConfiguration({
 assert.equal(malformedUrl.ok, false);
 assert.ok(malformedUrl.errors.some((message) => message.includes('Apps Script URL')));
 
-const missingClasp = validateStagingConfiguration({
-  ...fixture,
-  CLASPRC_JSON: '',
-}, { mode: 'deploy' });
+const missingClasp = validateStagingConfiguration(
+  {
+    ...fixture,
+    CLASPRC_JSON: '',
+  },
+  { mode: 'deploy' },
+);
 assert.equal(missingClasp.ok, false);
 assert.ok(missingClasp.errors.some((message) => message.includes('CLASPRC_JSON')));
 
-const missingConfirmation = validateStagingConfiguration({
-  ...fixture,
-  CV_STAGING_DEPLOY_CONFIRMATION: '',
-}, { mode: 'deploy' });
+const missingConfirmation = validateStagingConfiguration(
+  {
+    ...fixture,
+    CV_STAGING_DEPLOY_CONFIRMATION: '',
+  },
+  { mode: 'deploy' },
+);
 assert.equal(missingConfirmation.ok, false);
 assert.ok(missingConfirmation.errors.some((message) => message.includes('STAGING-ONLY')));
 
@@ -134,4 +148,6 @@ assert.equal(
   'preflight diagnostics never echo Clasp credential content',
 );
 
-console.log('Staging preflight OK — isolated target, URL/deployment matching, credential validation and fail-closed cases.');
+console.log(
+  'Staging preflight OK — isolated target, URL/deployment matching, credential validation and fail-closed cases.',
+);

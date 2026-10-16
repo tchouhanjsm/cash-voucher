@@ -75,7 +75,6 @@ Current candidate: PR pending — separate staging target readiness, isolated Cl
 
 **Phase 18 — Actionable diagnostic exports: complete in PR #154**, merged at `17665e82c3acd26d717c796d1eecd79c42a963b7`. Settings offers schema-versioned JSON exports for validated data-quality and backup-integrity reports; failed/invalid refreshes do not leave stale export actions.
 
-
 ## Phase 19 — staging and UAT implementation status
 
 - Added a read-only owner/settings-authorized backend readiness probe that reports Script ID, bound Sheet/Drive targets, expected sheet headers and backup-trigger presence without returning voucher rows or credentials.

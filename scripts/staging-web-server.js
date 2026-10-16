@@ -66,7 +66,8 @@ function resolveStaticPath(urlPath, root = ROOT) {
   const target = path.resolve(root, relative);
   if (!target.startsWith(path.resolve(root) + path.sep)) return null;
   if (!fs.existsSync(target) || !fs.statSync(target).isFile()) return null;
-  if (target.endsWith('.map') || (target.endsWith('.json') && relative !== 'manifest.webmanifest')) return null;
+  if (target.endsWith('.map') || (target.endsWith('.json') && relative !== 'manifest.webmanifest'))
+    return null;
   return { path: target };
 }
 
@@ -150,4 +151,9 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { buildStagingConfig, createStagingServer, resolveStaticPath, stagingServiceWorker };
+module.exports = {
+  buildStagingConfig,
+  createStagingServer,
+  resolveStaticPath,
+  stagingServiceWorker,
+};

@@ -79,7 +79,11 @@ async function run() {
       '/.clasprc.json',
     ]) {
       const response = await fetch(base + blocked);
-      assert.equal(response.status, 404, blocked + ' must remain outside the staging static allowlist');
+      assert.equal(
+        response.status,
+        404,
+        blocked + ' must remain outside the staging static allowlist',
+      );
     }
 
     const index = await fetch(base + '/');
@@ -89,7 +93,9 @@ async function run() {
     await new Promise((resolve) => server.close(resolve));
   }
 
-  console.log('Staging web server OK — dynamic stage config, no-cache service worker, resource allowlist, headers and traversal guards.');
+  console.log(
+    'Staging web server OK — dynamic stage config, no-cache service worker, resource allowlist, headers and traversal guards.',
+  );
 }
 
 run().catch((error) => {
