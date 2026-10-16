@@ -1,10 +1,23 @@
 # Release Readiness
 
-**Reviewed:** 16 October 2026. **Last verified main baseline:** `36402f97f43d6c07b920efb726c67092121e451b` (PR #153 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for historical evidence; older snapshots are not a live status feed.
+**Reviewed:** 16 October 2026. **Last verified main baseline:** `4b15ce7e05d3a524b727f40edbc06e19295beef4` (PR #155 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for historical evidence; older snapshots are not a live status feed.
 
-**Status: not verified as production-ready.** PR #153's exact head `512031fe48c34141de0983bac5dd01e46d0a706e` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967315), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967286) (393 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967329) (281 backend plus 393 browser checks), all with zero failures. These are source/mock tests. Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup and isolated restore remain unverified; physical-device and assistive-technology validation also remain open.
+**Status: not verified as production-ready.** PR #155 is merged at the main baseline above. Its exact tested head `c35a9a98e77ed9a077fc16ec0436721c8ef62b01` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38882528999), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38882529031) (402 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38882528998) (281 backend plus 402 browser checks), all with zero failures recorded for that PR head. A separate post-merge workflow result on the merge commit was not established during this review. These are source/mock tests; they do not prove that Google staging resources have been provisioned or tested. Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup and isolated restore remain unverified; physical-device and assistive-technology validation also remain open.
 
-## Current go-live gates — reviewed 14 October 2026
+## Staging pipeline — code implemented, live environment not verified
+
+PR #155 merged the manual `.github/workflows/staging-uat.yml` pipeline. The workflow requires `main`, the exact `STAGING-ONLY` confirmation, explicit staging-write consent, and the protected GitHub `staging` Environment for deploy/UAT jobs. The workflow is not a live deployment record.
+
+Owner provisioning/execution remains outstanding until independently evidenced:
+- Dedicated staging Apps Script project, separate Spreadsheet, receipt folder and backup folder.
+- A first versioned staging Web App deployment, with its exact Script/deployment/Sheet/Drive identities verified.
+- Protected GitHub `staging` Environment, restricted to `main`, with required reviewers where supported.
+- The documented environment variables, isolated Clasp OAuth credential secret and distinct staging Owner/Manager account secrets.
+- Owner-authorized `workflow_dispatch` execution and review of the live UAT result.
+
+Do not run `setup()` against an existing production property, use the staging workflow to target production, expose secret values, or treat mock checks as live evidence. No provisioning/deployment/UAT is claimed by this source review.
+
+## Current go-live gates — reviewed 16 October 2026
 
 PR #111 is merged to source at `6092152c64adff084abfda5407056dac9401b5e9`; PR #126 is also merged on current main. Daily Cash Close source is **not proof of live deployment**; after a verified backup and owner-authorized release, the guarded schema steps remain `migrateCashImpactField()` if needed, then `migrateDailyCashCloseSchema()`. Verify both new tabs and unchanged voucher row counts before publishing.
 
