@@ -1186,7 +1186,6 @@ here and in the production app. It requires no JS or remote assets. */
   }
 }
 
-
 /* Phase 21 — warm, light operator workspace.
    The palette is shared across pages; selectors here re-skin the running app
    without changing the static FrontUI reference page or financial behavior. */
@@ -1437,7 +1436,7 @@ here and in the production app. It requires no JS or remote assets. */
   .btn.primary {
     border-color: var(--brand);
     background: var(--brand);
-    color: #FFFFFF;
+    color: #ffffff;
     box-shadow: 0 2px 5px rgb(88 57 26 / 14%);
   }
 
@@ -1744,9 +1743,7 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   .lock {
-    background:
-      radial-gradient(ellipse at 80% 10%, var(--main-glow), transparent 26rem),
-      var(--bg);
+    background: radial-gradient(ellipse at 80% 10%, var(--main-glow), transparent 26rem), var(--bg);
   }
 
   .lock-card {
