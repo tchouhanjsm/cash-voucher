@@ -91,7 +91,6 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 - The kit follows the existing warm-neutral, navy and gold palette. Spacing and typography tokens are centralized; status colors remain semantic and retain text labels. Dark-mode app tokens continue to come from the root `data-theme` palette.
 - Acceptance is source and browser regression only. No screenshot gallery or automated token checks replace rendered-device inspection, manual keyboard traversal, zoom/reflow, screen-reader review or live-service validation.
 
-
 ## Phase 23 — production workflow adoption (candidate)
 
 The Studio is a static reference page; it does not replace adoption in the real portal. This batch applies section context through the shared page header and standardizes the live New Entry form, Register filters, Daily Cash Close intro, Bulk Upload panel, and owner Settings layout. Settings groups editable property configuration separately from operational diagnostics on desktop and stacks those groups on smaller screens. The service-worker cache version advances with the shared UI-kit changes.
