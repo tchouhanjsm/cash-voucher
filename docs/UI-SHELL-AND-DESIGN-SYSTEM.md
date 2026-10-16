@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: phases 1–9 are shipped on main. Phase 9 (FrontUI Studio + shared component kit) merged in PR #151. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
+Status: FrontUI Studio (PR #151) and the light-first redesign (PR #157) are merged. Phase 23 applies the shared system consistently to real workflow screens and adds responsive browser regressions. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
 
 ## Approach
 
@@ -90,3 +90,9 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 - The app-shell cache revision advances to `cv2-v17` and precaches `frontend-ui-kit.css`. `scripts/verify-frontend-release.js` now requires the stylesheet to be both linked by `index.html` and present in the offline shell.
 - The kit follows the existing warm-neutral, navy and gold palette. Spacing and typography tokens are centralized; status colors remain semantic and retain text labels. Dark-mode app tokens continue to come from the root `data-theme` palette.
 - Acceptance is source and browser regression only. No screenshot gallery or automated token checks replace rendered-device inspection, manual keyboard traversal, zoom/reflow, screen-reader review or live-service validation.
+
+## Phase 23 — production workflow adoption (candidate)
+
+The Studio is a static reference page; it does not replace adoption in the real portal. This batch applies section context through the shared page header and standardizes the live New Entry form, Register filters, Daily Cash Close intro, Bulk Upload panel, and owner Settings layout. Settings groups editable property configuration separately from operational diagnostics on desktop and stacks those groups on smaller screens. The service-worker cache version advances with the shared UI-kit changes.
+
+The batch intentionally adds no breadcrumb trail, financial rules, API routes, role permissions or schema changes. Source and browser checks cover targeted rendered CSS/layout behavior only; screenshots, physical-device interaction, zoom/reflow, manual keyboard traversal and screen-reader review remain human release checks. Treat this as candidate work until review, exact-head CI/E2E/Flight results, and owner merge.

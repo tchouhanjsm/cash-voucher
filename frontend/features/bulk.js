@@ -18,11 +18,14 @@ export function createBulk({ api, refresh, go }) {
     rows = [];
 
     $('#view').innerHTML =
-      head('Bulk Upload') +
-      `<div class="card"><h2>1. Get your data in</h2>
+      head('Bulk Upload', '', {
+        section: 'Manage',
+        description: 'Review row data and cash-impact classifications before importing a batch.',
+      }) +
+      `<div class="card bulk-import-panel"><h2>1. Get your data in</h2>
     <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes, CashImpact</b>. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
-    <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn" style="margin:0">📁 Choose file<input type="file" id="bf" accept=".csv,.tsv,.txt" hidden></label></div>
-    <label style="margin-top:12px;max-width:280px">These rows are<select id="bt2"><option value="PAYMENT">Payments (cash out)</option><option value="RECEIPT">Cash received (cash in)</option></select></label>
+    <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn bulk-file-label">📁 Choose file<input type="file" id="bf" accept=".csv,.tsv,.txt" hidden></label></div>
+    <label class="bulk-entry-kind">These rows are<select id="bt2"><option value="PAYMENT">Payments (cash out)</option><option value="RECEIPT">Cash received (cash in)</option></select></label>
     <label>…or paste rows here<textarea id="bt" rows="5" placeholder="25/12/2026&#9;Ram Traders&#9;1500&#9;Kitchen&#9;vegetables"></textarea></label>
     <button class="btn primary" data-act="parse">Check data</button></div><div id="bprev"></div>`;
   }

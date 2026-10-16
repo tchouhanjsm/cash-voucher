@@ -243,6 +243,8 @@ export function pageNotice(title, message, { panelClass = '', messageClass = '',
 
 // `extra` is trusted app-authored action markup, never a data string.
 export const head = (title, extra = '', options = {}) => {
+  const section = scalarText(options.section).trim();
+  const eyebrow = section ? `<p class="page-eyebrow">${esc(section)}</p>` : '';
   const description = options.description
     ? `<p class="page-description">${esc(options.description)}</p>`
     : '';
@@ -250,6 +252,7 @@ export const head = (title, extra = '', options = {}) => {
   return `
     <div class="head page-header">
       <div class="page-header-copy">
+        ${eyebrow}
         <h1>${esc(title)}</h1>
         ${description}
       </div>

@@ -169,6 +169,17 @@ with sync_playwright() as p:
     studio_page.close()
 
     page.goto(URL)
+    escaped_header_html = page.evaluate("""async () => {
+        const { head } = await import('/frontend/core/ui.js');
+        const payload = '<svg onload=window.__xssFired=true></svg>';
+        return head('Heading', '', { section: payload, description: payload });
+    }""")
+    check(
+        '&lt;svg' in escaped_header_html
+        and '<svg' not in escaped_header_html
+        and not page.evaluate('window.__xssFired === true'),
+        'shared page header escapes hostile section and description values as text',
+    )
     check(
         page.locator('html').get_attribute('data-theme') == 'light'
         and page.evaluate("localStorage.getItem('cv.theme')") is None,
@@ -290,6 +301,32 @@ with sync_playwright() as p:
         and page.locator('#view .page-header h1').inner_text() == 'Dashboard',
         'page heading uses one consistent page-header component without breadcrumb noise',
     )
+    check(
+        page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
+        and page.locator('#view .page-description').count() == 1,
+        'page context and description are rendered in the shared production header',
+    )
+    go_view(page, 'new')
+    check(
+        page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
+        and page.locator('#view .page-header h1').inner_text() == 'New Cash Payment'
+        and page.locator('#nf.entry-form').count() == 1
+        and page.locator('.entry-type-switch[role="group"]').count() == 1
+        and page.locator('.entry-date-field').count() == 1,
+        'New Entry adopts the shared header, labelled type switch and dedicated form layout',
+    )
+    entry_style_metrics = page.evaluate("""() => ({
+      formPadding: Number.parseFloat(getComputedStyle(document.querySelector('#nf.entry-form')).paddingTop),
+      saveMinHeight: Number.parseFloat(getComputedStyle(document.querySelector('#nsave')).minHeight),
+      cashImpactPadding: Number.parseFloat(getComputedStyle(document.querySelector('.cash-impact-control')).paddingTop),
+    })""")
+    check(
+        entry_style_metrics['formPadding'] >= 16
+        and entry_style_metrics['saveMinHeight'] >= 44
+        and entry_style_metrics['cashImpactPadding'] >= 10,
+        'New Entry applies the shared card spacing, comfortable save target and visually grouped cash classification',
+    )
+    go_view(page, 'dash')
     check(
         page.locator('#view .needs h2').inner_text().startswith('Needs attention')
         and page.locator('#view .stat .stat-ic svg').count() >= 5
@@ -1291,6 +1328,26 @@ with sync_playwright() as p:
         "document.querySelector('[data-v=dash]').getAttribute('aria-current') === 'page'"
     )
     go_view(page, 'set')
+    check(
+        page.locator('.settings-layout').count() == 1
+        and page.locator('.settings-property-form#sf').count() == 1
+        and page.locator('.settings-diagnostics #backup-status').count() == 1
+        and page.locator('.settings-diagnostics #data-quality').count() == 1,
+        'Settings separates editable property configuration from operational diagnostic panels',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 900})
+    settings_columns = page.locator('.settings-layout').evaluate(
+        "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
+    )
+    check(
+        settings_columns >= 2,
+        'Settings uses a two-column desktop layout for property edits and owner diagnostics',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    check(
+        page.locator('.settings-layout').evaluate("el => getComputedStyle(el).display") == 'grid',
+        'Settings retains its shared responsive layout on mobile',
+    )
     page.wait_for_function(
         "document.querySelector('#backup-status').innerText.includes('Latest backup attempt failed')"
     )
@@ -4968,6 +5025,7 @@ with sync_playwright() as p:
         and audit_page.locator('[data-act=bkexport]').count() == 1,
         'backup integrity inspection recovers and exposes an export after a valid report returns',
     )
+    audit_page.set_viewport_size({'width': 1280, 'height': 800})
     desktop_diagnostic_layout = audit_page.evaluate(
         """() => {
           const actions = document.querySelector('#backup-integrity-results .diagnostic-actions');

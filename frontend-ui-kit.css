@@ -1961,3 +1961,287 @@ here and in the production app. It requires no JS or remote assets. */
     }
   }
 }
+
+/* Phase 23 — bring high-traffic workflows onto the shared FrontUI layout rules. */
+@media screen {
+  .page-header-copy {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .page-eyebrow {
+    margin: 0 0 8px;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .page-header h1 {
+    margin: 0;
+  }
+
+  .page-header-actions {
+    flex: 0 1 auto;
+  }
+
+  .entry-type-switch {
+    display: flex;
+    gap: 4px;
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 14px;
+  }
+
+  .entry-type-switch button {
+    min-width: 150px;
+  }
+
+  #nf.entry-form {
+    display: block;
+    min-width: 0;
+    padding: clamp(16px, 2.2vw, 26px);
+  }
+
+  #nf.entry-form > .entry-date-field {
+    width: 100%;
+    max-width: 280px;
+  }
+
+  #nf.entry-form #rows {
+    display: grid;
+    gap: 12px;
+  }
+
+  #nf.entry-form #rows > .erow {
+    margin: 0;
+    padding: 16px;
+    border-radius: 14px;
+    background: var(--card);
+  }
+
+  #nf.entry-form .erow .top {
+    grid-template-columns: minmax(0, 1fr) minmax(120px, 180px) 44px;
+    align-items: start;
+    gap: 10px;
+  }
+
+  #nf.entry-form .erow .bot {
+    gap: 10px;
+  }
+
+  #nf.entry-form .cash-impact-control {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    padding: 12px 14px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface-subtle);
+    color: var(--ink);
+  }
+
+  #nf.entry-form .ci-hint {
+    margin: 7px 0;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  #nf.entry-form .receipt-upload-label {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: auto;
+    margin: 0;
+  }
+
+  #nf.entry-form .actions {
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  #nf.entry-form #nsave {
+    min-width: 180px;
+  }
+
+  .card.filters#rf {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 12px;
+    align-items: end;
+  }
+
+  #rf #rq {
+    grid-column: span 2;
+  }
+
+  #rf > label {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 0;
+  }
+
+  #rf > input,
+  #rf > select,
+  #rf > label {
+    width: 100%;
+    min-width: 0;
+  }
+
+  #rf > .btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .settings-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    align-items: start;
+    gap: 18px;
+  }
+
+  .settings-property-form {
+    min-width: 0;
+    margin-bottom: 0;
+  }
+
+  .settings-property-form > h2 {
+    margin: 0 0 16px;
+  }
+
+  .settings-property-form label {
+    margin-bottom: 14px;
+  }
+
+  .settings-diagnostics {
+    display: grid;
+    min-width: 0;
+    gap: 16px;
+  }
+
+  .settings-diagnostics > .card {
+    margin-bottom: 0;
+  }
+
+  .settings-diagnostics .card > h2 {
+    line-height: 1.35;
+  }
+
+  @media (min-width: 561px) {
+    .settings-diagnostics .diagnostic-actions {
+      align-items: flex-start;
+      flex-wrap: nowrap;
+    }
+
+    .settings-diagnostics .diagnostic-actions > .muted {
+      flex: 1 1 0;
+    }
+  }
+
+  .bulk-import-panel {
+    background: linear-gradient(145deg, var(--card), var(--surface-subtle));
+  }
+
+  .bulk-import-panel > h2 {
+    margin-bottom: 10px;
+  }
+
+  .bulk-import-panel .bulk-file-label {
+    width: auto;
+    margin: 0;
+  }
+
+  .bulk-import-panel .bulk-entry-kind {
+    flex: 0 1 290px;
+    margin-top: 12px;
+  }
+
+  .bulk-import-panel textarea {
+    min-height: 140px;
+    resize: vertical;
+  }
+
+  .cc-intro {
+    max-width: 80ch;
+    margin: -6px 0 16px;
+    line-height: 1.65;
+  }
+
+  @media (max-width: 1100px) {
+    .settings-layout {
+      grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
+    }
+
+    .card.filters#rf {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 800px) {
+    .page-eyebrow {
+      margin-bottom: 6px;
+    }
+
+    .page-header-actions {
+      width: 100%;
+    }
+
+    .entry-type-switch {
+      width: 100%;
+    }
+
+    .entry-type-switch button {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+
+    .card.filters#rf {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    #rf #rq {
+      grid-column: 1 / -1;
+    }
+
+    #rf > .btn {
+      width: 100%;
+    }
+
+    .settings-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 440px) {
+    #nf.entry-form .erow {
+      padding: 12px;
+    }
+
+    #nf.entry-form .erow .top {
+      grid-template-columns: minmax(0, 1fr) 44px;
+    }
+
+    #nf.entry-form .erow .rv {
+      grid-column: 1 / -1;
+    }
+
+    #nf.entry-form .erow .ra {
+      grid-column: 1;
+    }
+
+    #nf.entry-form .erow .x {
+      grid-column: 2;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
+    #nf.entry-form #nsave {
+      flex: 1 1 100%;
+      min-width: 0;
+    }
+  }
+}
