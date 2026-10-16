@@ -21,7 +21,7 @@ function create() {
     files = {},
     faults = { failNextAuditWrite: false, failNextAuditMarkerWrite: false },
     auditDiagnostics = [],
-    lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false },
+    lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false, afterAcquire: null },
     scriptTriggers = [];
   const mockConsole = Object.create(console);
   mockConsole.error = (...args) => {
@@ -139,6 +139,9 @@ function create() {
             throw new Error('Simulated lock contention timeout');
           }
           lockStats.waits++;
+          const afterAcquire = lockStats.afterAcquire;
+          lockStats.afterAcquire = null;
+          if (typeof afterAcquire === 'function') afterAcquire();
         },
         releaseLock() {
           lockStats.releases++;
