@@ -302,13 +302,13 @@ with sync_playwright() as p:
         'page heading uses one consistent page-header component without breadcrumb noise',
     )
     check(
-        page.locator('#view .page-eyebrow').inner_text() == 'Work'
+        page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
         and page.locator('#view .page-description').count() == 1,
         'page context and description are rendered in the shared production header',
     )
     go_view(page, 'new')
     check(
-        page.locator('#view .page-eyebrow').inner_text() == 'Work'
+        page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
         and page.locator('#view .page-header h1').inner_text() == 'New Cash Payment'
         and page.locator('#nf.entry-form').count() == 1
         and page.locator('.entry-type-switch[role="group"]').count() == 1
@@ -5025,6 +5025,7 @@ with sync_playwright() as p:
         and audit_page.locator('[data-act=bkexport]').count() == 1,
         'backup integrity inspection recovers and exposes an export after a valid report returns',
     )
+    audit_page.set_viewport_size({'width': 1280, 'height': 800})
     desktop_diagnostic_layout = audit_page.evaluate(
         """() => {
           const actions = document.querySelector('#backup-integrity-results .diagnostic-actions');
