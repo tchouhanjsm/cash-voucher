@@ -1225,6 +1225,50 @@ with sync_playwright() as p:
         and 'does not determine tax compliance' in dq_text,
         'owner data-quality scan shows results and its accounting/tax limitation',
     )
+    check(
+        page.locator('[data-act=dqexport]').count() == 1,
+        'a successful data-quality scan exposes its JSON export action',
+    )
+    mobile_diagnostic_layout = page.evaluate(
+        """() => {
+          const actions = document.querySelector('#dq-results .diagnostic-actions');
+          const button = actions?.querySelector('[data-act="dqexport"]');
+          const note = actions?.querySelector('.muted');
+          if (!actions || !button || !note) return null;
+          return {
+            display: getComputedStyle(actions).display,
+            direction: getComputedStyle(actions).flexDirection,
+            buttonWidth: button.getBoundingClientRect().width,
+            actionsWidth: actions.getBoundingClientRect().width,
+            noteText: note.textContent
+          };
+        }"""
+    )
+    check(
+        mobile_diagnostic_layout is not None
+        and mobile_diagnostic_layout['display'] == 'flex'
+        and mobile_diagnostic_layout['direction'] == 'column'
+        and mobile_diagnostic_layout['buttonWidth'] >= mobile_diagnostic_layout['actionsWidth'] - 4
+        and 'authorized recipients' in mobile_diagnostic_layout['noteText'],
+        'mobile diagnostic export controls stack into a full-width, clearly scoped action',
+    )
+    with page.expect_download() as dq_export_info:
+        page.click('[data-act=dqexport]')
+    dq_export = dq_export_info.value
+    with open(dq_export.path(), encoding='utf-8') as dq_export_file:
+        dq_snapshot = json.load(dq_export_file)
+    dq_export_report = dq_snapshot.get('report', {})
+    check(
+        dq_export.suggested_filename.startswith('cash-voucher-data-quality-')
+        and dq_export.suggested_filename.endswith('.json')
+        and dq_snapshot.get('schemaVersion') == 1
+        and dq_snapshot.get('snapshotType') == 'cash-voucher-data-quality'
+        and isinstance(dq_export_report.get('scanned'), int)
+        and dq_export_report.get('returnedIssueCount') == len(dq_export_report.get('issues', []))
+        and dq_export_report.get('malformedIssueCount') == 0
+        and any('not accounting, tax' in item for item in dq_snapshot.get('limitations', [])),
+        'data-quality JSON has a stable schema, honest coverage counts and explicit limitations',
+    )
     page.click('[data-act=bkintegrity]')
     page.wait_for_function(
         "document.querySelector('#backup-integrity-results').getAttribute('role') === 'alert' && document.querySelector('#backup-integrity-results').innerText.includes('Backup integrity inspection returned an invalid response or failed.')"
@@ -4869,6 +4913,32 @@ with sync_playwright() as p:
         and not audit_page.evaluate('window.__xssFired === true'),
         'data-quality scan omits malformed issue rows and renders valid hostile text inertly',
     )
+    with audit_page.expect_download() as malformed_dq_export_info:
+        audit_page.click('[data-act=dqexport]')
+    malformed_dq_export = malformed_dq_export_info.value
+    with open(malformed_dq_export.path(), encoding='utf-8') as malformed_dq_file:
+        malformed_dq_snapshot = json.load(malformed_dq_file)
+    malformed_dq_report = malformed_dq_snapshot.get('report', {})
+    check(
+        malformed_dq_snapshot.get('snapshotType') == 'cash-voucher-data-quality'
+        and malformed_dq_report.get('issueCount') == 3
+        and malformed_dq_report.get('returnedIssueCount') == 1
+        and malformed_dq_report.get('malformedIssueCount') == 2
+        and malformed_dq_report.get('issues', [{}])[0].get('message') == audit_malformed_payload,
+        'data-quality export preserves summary totals, omits malformed records and serializes hostile findings as inert JSON',
+    )
+
+    diagnostic_response_modes['dataQualityReport'] = 'invalid-envelope'
+    audit_page.click('[data-act=dqscan]')
+    audit_page.wait_for_function(
+        "document.querySelector('#dq-results')?.getAttribute('role') === 'alert' && document.querySelector('#dq-results')?.innerText.includes('invalid response')",
+        timeout=10000,
+    )
+    check(
+        audit_page.locator('[data-act=dqexport]').count() == 0,
+        'a failed refresh removes the previous data-quality export and cannot present stale results as current',
+    )
+    diagnostic_response_modes['dataQualityReport'] = 'valid'
 
     diagnostic_response_modes['backupIntegrityReport'] = 'invalid-snapshot'
     audit_page.click('[data-act=bkintegrity]')
@@ -4881,6 +4951,10 @@ with sync_playwright() as p:
         and audit_page.locator('[data-act=bkintegrity]').is_enabled(),
         'malformed backup snapshot fails closed and leaves inspection retryable',
     )
+    check(
+        audit_page.locator('[data-act=bkexport]').count() == 0,
+        'invalid backup-integrity responses expose no export action',
+    )
 
     diagnostic_response_modes['backupIntegrityReport'] = 'valid'
     audit_page.click('[data-act=bkintegrity]')
@@ -4889,8 +4963,59 @@ with sync_playwright() as p:
         timeout=10000,
     )
     check(
-        'invalid response' not in audit_page.locator('#backup-integrity-results').inner_text().lower(),
-        'backup integrity inspection recovers after a valid report returns',
+        'invalid response' not in audit_page.locator('#backup-integrity-results').inner_text().lower()
+        and audit_page.locator('[data-act=bkexport]').count() == 1,
+        'backup integrity inspection recovers and exposes an export after a valid report returns',
+    )
+    desktop_diagnostic_layout = audit_page.evaluate(
+        """() => {
+          const actions = document.querySelector('#backup-integrity-results .diagnostic-actions');
+          const button = actions?.querySelector('[data-act="bkexport"]');
+          const note = actions?.querySelector('.muted');
+          if (!actions || !button || !note) return null;
+          return {
+            display: getComputedStyle(actions).display,
+            direction: getComputedStyle(actions).flexDirection,
+            buttonTop: button.getBoundingClientRect().top,
+            noteTop: note.getBoundingClientRect().top,
+            noteText: note.textContent
+          };
+        }"""
+    )
+    check(
+        desktop_diagnostic_layout is not None
+        and desktop_diagnostic_layout['display'] == 'flex'
+        and desktop_diagnostic_layout['direction'] == 'row'
+        and abs(desktop_diagnostic_layout['buttonTop'] - desktop_diagnostic_layout['noteTop']) < 30
+        and 'does not prove restoreability' in desktop_diagnostic_layout['noteText'],
+        'desktop diagnostic export controls align in one row with explicit restore limitations',
+    )
+    with audit_page.expect_download() as backup_export_info:
+        audit_page.click('[data-act=bkexport]')
+    backup_export = backup_export_info.value
+    with open(backup_export.path(), encoding='utf-8') as backup_export_file:
+        backup_snapshot = json.load(backup_export_file)
+    backup_export_report = backup_snapshot.get('report', {})
+    check(
+        backup_export.suggested_filename.startswith('cash-voucher-backup-integrity-')
+        and backup_export.suggested_filename.endswith('.json')
+        and backup_snapshot.get('schemaVersion') == 1
+        and backup_snapshot.get('snapshotType') == 'cash-voucher-backup-integrity'
+        and backup_export_report.get('inspected') == len(backup_export_report.get('snapshots', []))
+        and backup_export_report.get('passCount', 0) + backup_export_report.get('warningCount', 0) + backup_export_report.get('failCount', 0) == backup_export_report.get('inspected')
+        and any('do not prove a successful restore' in item for item in backup_snapshot.get('limitations', [])),
+        'backup-integrity JSON has consistent counts and explicitly stops short of a restore claim',
+    )
+
+    diagnostic_response_modes['backupIntegrityReport'] = 'invalid-snapshot'
+    audit_page.click('[data-act=bkintegrity]')
+    audit_page.wait_for_function(
+        "document.querySelector('#backup-integrity-results')?.getAttribute('role') === 'alert' && document.querySelector('#backup-integrity-results')?.innerText.includes('invalid response')",
+        timeout=10000,
+    )
+    check(
+        audit_page.locator('[data-act=bkexport]').count() == 0,
+        'a failed backup re-inspection removes the previous export instead of allowing a stale report download',
     )
     audit_page.close()
 

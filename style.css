@@ -1908,3 +1908,38 @@ nav .ic {
     justify-content: center;
   }
 }
+
+/* Owner-facing diagnostic report actions. */
+.diagnostic-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.diagnostic-actions > .btn {
+  flex: 0 0 auto;
+}
+
+.diagnostic-actions > .muted {
+  flex: 1 1 240px;
+  min-width: 0;
+  margin: 0;
+}
+
+@media (max-width: 560px) {
+  .diagnostic-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .diagnostic-actions > .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .diagnostic-actions > .muted {
+    flex-basis: auto;
+  }
+}

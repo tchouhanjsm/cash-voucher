@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 16 October 2026. **Last verified main baseline:** `91b8b46f4a09b868db0157d6f89dcebd0d14eae0` (PR #151 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for historical evidence; older snapshots are not a live status feed.
+**Reviewed:** 16 October 2026. **Last verified main baseline:** `36402f97f43d6c07b920efb726c67092121e451b` (PR #153 merge). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for historical evidence; older snapshots are not a live status feed.
 
-**Status: not verified as production-ready.** PR #151's exact head `b7632abcff44cf10969b731da2eef5e9b679bd60` passed CI/quality ([run 38864262074](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38864262074)), Browser E2E ([run 38864262052](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38864262052), 382 checks) and Full Flight Test ([run 38864262171](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38864262171), 281 backend plus 382 browser checks), all with zero failures. These are source/mock tests. Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup and isolated restore remain unverified; physical-device and assistive-technology validation also remain open.
+**Status: not verified as production-ready.** PR #153's exact head `512031fe48c34141de0983bac5dd01e46d0a706e` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967315), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967286) (393 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967329) (281 backend plus 393 browser checks), all with zero failures. These are source/mock tests. Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup and isolated restore remain unverified; physical-device and assistive-technology validation also remain open.
 
 ## Current go-live gates — reviewed 14 October 2026
 

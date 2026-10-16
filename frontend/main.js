@@ -205,7 +205,11 @@ registerActions({
 
   dqscan: () => administration.dataQualityScan(),
 
+  dqexport: () => administration.exportDataQualityReport(),
+
   bkintegrity: () => administration.backupIntegrityScan(),
+
+  bkexport: () => administration.exportBackupIntegrityReport(),
 
   reportRun: () => reports.load(),
 

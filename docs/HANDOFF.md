@@ -2,17 +2,17 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `a0d6529da2534977b69426e1affc1b182fa3bf56` (PR #152 merge commit)  
-Current engineering batch: Phase 17 — truthful audit health + owner-exportable monitoring snapshot  
-Current working branch: `phase-17/audit-health-snapshot-and-truthful-states-2026-10-16`  
-Current candidate: PR #153 — https://github.com/tchouhanjsm/cash-voucher/pull/153 (audit health wording, monitoring snapshot export and browser regressions); live PR head and exact-head checks are authoritative
+Last verified main SHA: `36402f97f43d6c07b920efb726c67092121e451b` (PR #153 merge commit)  
+Current engineering batch: Phase 18 — actionable diagnostic exports and truthful recovery states  
+Current working branch: `phase-18/diagnostic-exports-and-truthful-recovery-2026-10-16`  
+Current candidate: PR #154 — https://github.com/tchouhanjsm/cash-voucher/pull/154 (validated JSON exports for data-quality and backup-integrity diagnostics)
 
 ## Verified repository state
 
-- Live `main` is `a0d6529da2534977b69426e1affc1b182fa3bf56`, the merge commit for PR #152. PR #152's exact head `0b4154071bbb51a537d604cd58066417f1aa0d63` passed CI/quality, Browser E2E (382 checks) and Full Flight Test (281 backend plus 382 browser checks), with zero failures. It adds repeated seeded mock measurements and a retained JSON artifact; those results are not production SLO evidence.
+- Live `main` is `36402f97f43d6c07b920efb726c67092121e451b`, the merge commit for PR #153. PR #153's exact head `512031fe48c34141de0983bac5dd01e46d0a706e` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967315), [Browser E2E (393 checks)](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967286) and [Full Flight Test (281 backend plus 393 browser checks)](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967329), with zero failures. Those results are source/mock checks, not production SLO or restore evidence.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
-- Phase 16 performance/repository-hygiene work is complete in PR #152. The current Phase 17 candidate changes actual owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
+- Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
 - Preserve the plain JS/no-build architecture and no-external-runtime-assets policy. No React/UI package, remote font/icon service or dependency is added; app CSP remains strict and studio HTML uses no inline scripts, handlers or styles.
 - `scripts/verify-frontend-release.js` now checks the kit CSS is linked by `index.html` and present in the service-worker shell. Browser E2E should verify static gallery loading/CSP, component tokens and no page-level overflow across narrow through desktop widths.
 - Phase 13 operational release proof remains an owner-controlled P0 gate: live Apps Script project/version, execution identity, Sheet/Drive permissions, role/receipt access, scheduled backup, isolated restore and production reconciliation cannot be established by source/mock tests. Do not deploy or mutate production.
@@ -71,4 +71,6 @@ Current candidate: PR #153 — https://github.com/tchouhanjsm/cash-voucher/pull/
 
 **Phase 16 — Evidence-led performance and repository hygiene: complete in PR #152.** Repeated seeded mock measurements are captured as a versioned JSON workflow artifact; the dependency exception was rechecked with its original deadline preserved.
 
-**Phase 17 — Audit monitoring clarity and portable health snapshot: current candidate, PR #153.** The owner-facing UI explicitly explains the dual-store blind spot, keeps health request/invalid-response states visibly unknown, and downloads a JSON snapshot of status and coverage metadata. It does not persist a second audit log, claim history completeness, or reconstruct missing events. Phase 13 live release proof remains an owner-controlled P0 gate.
+**Phase 17 — Audit monitoring clarity and portable health snapshot: completed in PR #153.** The owner-facing UI explicitly explains the dual-store blind spot, keeps health request/invalid-response states visibly unknown, and downloads a JSON snapshot of status and coverage metadata. It does not persist a second audit log, claim history completeness, or reconstruct missing events. Phase 13 live release proof remains an owner-controlled P0 gate.
+
+**Phase 18 — Actionable diagnostic exports: PR #154 ready for review.** Settings now offers schema-versioned JSON exports for successfully validated data-quality and backup-integrity reports. A scan clears its preceding exportable state; failed/invalid scans provide no export action. Report fields are allowlisted and limitations/privacy scope are explicit. See [PR #154](https://github.com/tchouhanjsm/cash-voucher/pull/154) for exact-head CI, E2E and Flight Test evidence.

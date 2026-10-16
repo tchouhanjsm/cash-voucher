@@ -26,6 +26,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
   let auditHealth = null;
   let auditLoadingOlder = false;
   let backupStatusLoading = false;
+  let lastDataQualityReport = null;
+  let lastBackupIntegrityReport = null;
 
   function getVendorRows() {
     const envelopeValid = Array.isArray(S.vendors);
@@ -499,6 +501,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const results = $('#dq-results');
     const button = $('[data-act="dqscan"]');
     if (!results) return;
+    lastDataQualityReport = null;
 
     if (button) {
       button.disabled = true;
@@ -591,6 +594,13 @@ export function createAdministration({ api, getNavigation, signOut }) {
           'Showing the first 500 exceptions. The summary counts include all detected exceptions.';
         results.appendChild(limited);
       }
+      lastDataQualityReport = report;
+      appendDiagnosticExportButton(
+        results,
+        'dqexport',
+        'Export data-quality report (JSON)',
+        'The export can include voucher references, dates and diagnostic text. Share it only with authorized recipients.',
+      );
     } catch (error) {
       results.setAttribute('role', 'alert');
       results.textContent =
@@ -1215,6 +1225,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const results = $('#backup-integrity-results');
     const button = $('[data-act="bkintegrity"]');
     if (!results) return;
+    lastBackupIntegrityReport = null;
     if (button) {
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
@@ -1286,6 +1297,13 @@ export function createAdministration({ api, getNavigation, signOut }) {
       note.className = 'muted';
       note.textContent = report.note;
       results.appendChild(note);
+      lastBackupIntegrityReport = report;
+      appendDiagnosticExportButton(
+        results,
+        'bkexport',
+        'Export backup-integrity report (JSON)',
+        'This export contains snapshot names, row counts and structural findings—not the copied spreadsheet or receipt files. A clean scan does not prove restoreability.',
+      );
     } catch {
       results.setAttribute('role', 'alert');
       results.textContent =
@@ -1332,6 +1350,137 @@ export function createAdministration({ api, getNavigation, signOut }) {
       unit = units[index];
     }
     return scaled.toFixed(2) + ' ' + unit;
+  }
+
+  function appendDiagnosticExportButton(container, action, label, notice) {
+    const actions = document.createElement('div');
+    actions.className = 'diagnostic-actions';
+
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn';
+    button.dataset.act = action;
+    button.textContent = label;
+    actions.appendChild(button);
+
+    const privacyNote = document.createElement('p');
+    privacyNote.className = 'muted';
+    privacyNote.textContent = notice;
+    actions.appendChild(privacyNote);
+
+    container.appendChild(actions);
+  }
+
+  function downloadDiagnosticJson(
+    filenamePrefix,
+    snapshotType,
+    report,
+    limitations,
+    successMessage,
+  ) {
+    const capturedAt = new Date().toISOString();
+    const snapshot = { schemaVersion: 1, snapshotType, capturedAt, report, limitations };
+    download(
+      filenamePrefix + '-' + capturedAt.slice(0, 10) + '.json',
+      JSON.stringify(snapshot, null, 2),
+      'application/json;charset=utf-8',
+    );
+    toast(successMessage, 'ok');
+  }
+
+  function exportDataQualityReport() {
+    if (!lastDataQualityReport) {
+      toast('Run a successful data-quality scan before exporting.', 'err');
+      return;
+    }
+
+    const report = lastDataQualityReport;
+    downloadDiagnosticJson(
+      'cash-voucher-data-quality',
+      'cash-voucher-data-quality',
+      {
+        generatedAt: report.generatedAt,
+        scanned: report.scanned,
+        issueCount: report.issueCount,
+        errors: report.errors,
+        warnings: report.warnings,
+        truncated: report.truncated,
+        returnedIssueCount: report.issues.length,
+        malformedIssueCount: report.malformedIssueCount,
+        issues: report.issues.map((issue) => ({
+          severity: issue.severity,
+          code: issue.code,
+          sourceRow: issue.sourceRow,
+          voucherId: issue.voucherId,
+          voucherNo: issue.voucherNo,
+          date: issue.date,
+          type: issue.type,
+          field: issue.field,
+          message: issue.message,
+        })),
+      },
+      [
+        'This is a structural record-quality scan, not accounting, tax, cash-impact or financial correctness certification.',
+        'Issue details include at most the first 500 valid issue rows; summary counts cover all detected issues.',
+        'Malformed issue rows are omitted from detail and counted in malformedIssueCount.',
+        'The report may contain voucher references, dates and diagnostic text. Share only with authorized recipients.',
+      ],
+      'Exported the data-quality diagnostic report. Review its scope and handle it as business data.',
+    );
+  }
+
+  function exportBackupIntegrityReport() {
+    if (!lastBackupIntegrityReport) {
+      toast('Run a successful backup-integrity inspection before exporting.', 'err');
+      return;
+    }
+
+    const report = lastBackupIntegrityReport;
+    const knownSheets = [
+      'Users',
+      'Vouchers',
+      'Vendors',
+      'Settings',
+      'AuditLog',
+      'CashCloses',
+      'CashCloseCorrections',
+    ];
+    downloadDiagnosticJson(
+      'cash-voucher-backup-integrity',
+      'cash-voucher-backup-integrity',
+      {
+        generatedAt: report.generatedAt,
+        inspected: report.inspected,
+        limit: report.limit,
+        passCount: report.passCount,
+        warningCount: report.warningCount,
+        failCount: report.failCount,
+        snapshots: report.snapshots.map((snapshot) => ({
+          name: snapshot.name,
+          createdAt: snapshot.createdAt,
+          state: snapshot.state,
+          rowCounts: Object.fromEntries(
+            Object.entries(snapshot.rowCounts).filter(
+              ([name, count]) => knownSheets.includes(name) && isDiagnosticCount(count),
+            ),
+          ),
+          receiptCount: snapshot.receiptCount,
+          manifestCount: snapshot.manifestCount,
+          checks: snapshot.checks.map((check) => ({
+            code: check.code,
+            state: check.state,
+            detail: check.detail,
+          })),
+        })),
+      },
+      [
+        'The report inspects at most the ten most recent managed backup snapshots.',
+        'Structural checks do not prove a successful restore; restore only into a separate recovery destination and validate it.',
+        'The report contains snapshot names, table row counts and structural findings, but not copied spreadsheet rows or receipt payloads.',
+        'Share diagnostic reports only with authorized recipients.',
+      ],
+      'Exported the backup-integrity diagnostic report. A clean scan is not proof of restoreability.',
+    );
   }
 
   async function saveSettings() {
@@ -1512,7 +1661,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
     exportAuditHealthSnapshot,
     loadOlderAuditEvents,
     dataQualityScan,
+    exportDataQualityReport,
     backupIntegrityScan,
+    exportBackupIntegrityReport,
     retryBackupStatus: renderBackupStatus,
     account,
     handleSubmit,
