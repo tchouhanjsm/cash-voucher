@@ -929,6 +929,50 @@ with sync_playwright() as p:
         and accountant_page.locator('#view img, #view svg').count() == 0,
         'report rendering recovers to the normal server response after hostile fixture removal',
     )
+    report_table_region = accountant_page.locator('#view .table-wrap[role=region][tabindex="0"]')
+    check(
+        report_table_region.count() == 1
+        and bool(report_table_region.get_attribute('aria-label')),
+        'Reports table exposes a named, keyboard-focusable region',
+    )
+    accountant_page.locator('[data-act=reportCsv]').focus()
+    accountant_page.keyboard.press('Tab')
+    check(
+        accountant_page.evaluate("""() => {
+            const active = document.activeElement;
+            if (!active?.matches('#view .table-wrap[role="region"][tabindex="0"]:focus-visible')) return false;
+            const style = getComputedStyle(active);
+            return style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
+        }"""),
+        'Reports source-voucher table is keyboard reachable with a visible focus indicator',
+    )
+    for width in [320, 360, 390, 768, 801, 1024, 1280]:
+        accountant_page.set_viewport_size({'width': width, 'height': 800})
+        layout = accountant_page.evaluate("""() => {
+            const root = document.documentElement;
+            const filters = document.querySelector('#movementFilters');
+            const region = document.querySelector('#view .table-wrap[role="region"][tabindex="0"]');
+            const inside = (element) => {
+                if (!element) return false;
+                const rect = element.getBoundingClientRect();
+                return rect.left >= -1 && rect.right <= window.innerWidth + 1;
+            };
+            const controls = filters ? Array.from(filters.querySelectorAll('input, select, button')) : [];
+            return {
+                pageOverflow: root.scrollWidth > root.clientWidth,
+                filterPanelInside: inside(filters),
+                controlsInside: controls.length > 0 && controls.every(inside),
+                tableRegionInside: inside(region),
+            };
+        }""")
+        check(
+            not layout['pageOverflow']
+            and layout['filterPanelInside']
+            and layout['controlsInside']
+            and layout['tableRegionInside'],
+            f'Reports filters and result region remain within the viewport at {width}px',
+        )
+    accountant_page.set_viewport_size({'width': 390, 'height': 800})
     accountant_context.close()
     go_view(page, 'users')
     page.wait_for_selector('#uf')
@@ -3363,6 +3407,23 @@ with sync_playwright() as p:
     check(
         not page.evaluate('document.documentElement.scrollWidth > document.documentElement.clientWidth'),
         'manager register mobile layout has no page-level horizontal overflow',
+    )
+    register_table_region = page.locator('#view .table-wrap[role=region][tabindex="0"]')
+    check(
+        register_table_region.count() == 1
+        and register_table_region.get_attribute('aria-label') == 'Payment register vouchers',
+        'Register table scrolling has a named, keyboard-focusable region',
+    )
+    page.locator('#rf [data-act=csv]').focus()
+    page.keyboard.press('Tab')
+    check(
+        page.evaluate("""() => {
+            const active = document.activeElement;
+            if (!active?.matches('#view .table-wrap[role="region"][tabindex="0"]:focus-visible')) return false;
+            const style = getComputedStyle(active);
+            return style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
+        }"""),
+        'Register table region is reachable in tab order with a visible focus indicator',
     )
     page.set_viewport_size({'width': 1280, 'height': 800})
     check(

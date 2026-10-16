@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `61e46989032985fba54ceb48d768ab57430aa48a` (main after PR #147; 17 assignment sites across eight modules after Phase 11 Batches 1–4; Dashboard fingerprint `2977910e`).
+**Latest merged review baseline:** `a478c52c68c520b8eddbf80692d101dc20210c58` (main after PR #149; 17 assignment sites across eight modules; Dashboard fingerprint `2977910e`, Payments template fingerprint `847d68e0`).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -371,3 +371,11 @@ PR #141 integrated the UI refresh on current main. It adds a local inline SVG sp
 This is not a complete rendering-security certification. Phase 11 Batches 1–4 are merged in PRs #143–#146; they reduced the active inventory from 27 to 17 assignments across eight frontend modules. PR #146's source CI passed and sink inventory/fingerprint gates matched 17 assignments, but its Browser E2E and Full Flight Test on exact PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` each reported one failure: `My Account preserves sign-out and Change PIN controls after DOM rendering`.
 
 PR #147 explicitly sets the Change PIN button's `type="submit"`, preserving the intended form behavior and satisfying the existing regression. It does not alter sink count or financial/authorization logic. Exact-head CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend checks plus 358 browser checks, 0 failures) passed on `eb473402dca0cbdc085af1f961ca00e9b70705d8`. Remaining templates require contextual review; sink counts/fingerprints are drift controls, not XSS proof. Live CSP headers, live authorization, Apps Script deployment identity, backup/restore, offline/device behavior and manual accessibility remain release gates.
+
+## PR #149 — UI refresh rendering review (merged 16 October 2026)
+
+PR #149 updated the Dashboard and Payments templates to use allowlisted, app-authored inline SVG icon markup. The Dashboard attention panel uses static labels and normalized counts; it does not interpolate payee names or user-supplied content. Browser E2E includes a hostile-payee regression for the panel. The Payments template source fingerprint was reviewed and changed to `847d68e0`; the active inventory remains 17 assignment sites across eight modules. This is targeted rendering review and regression evidence, not exhaustive taint analysis or XSS certification.
+
+## Phase 14 candidate — Register table keyboard scrolling
+
+The Register template adds only static `role`, `aria-label` and `tabindex` attributes to its existing table wrapper. No new sink is introduced and no API-derived value is added to the assignment. Browser E2E verifies keyboard reachability and the visible focus indicator; the full active template set still requires contextual review.
