@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `a478c52c68c520b8eddbf80692d101dc20210c58` (PR #149 merge; Phase 12 recovery batch and visual refresh integrated)  
-Current engineering batch: Phase 14 — whole-product UX completion  
-Current candidate branch: `phase-14/register-reports-ux-2026-10-16`
+Last verified main baseline: `ad1eb78847a9263c95870b043465b83dd48998be` (PR #150 merge; Register/Reports keyboard and responsive guardrails integrated)  
+Current engineering batch: Phase 15 — FrontUI Studio + shared component kit  
+Current candidate branch: `phase-15/frontend-ui-studio-kit-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -26,7 +26,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 12 — PR #148 merged at `87a39f8e58594abc3eba7f5900c0be45f0cf8341`. Exact final PR head `9d5dea25eeddfa98d9c81995a7a140d0af709bdc` passed CI/quality, Browser E2E (359 checks) and Full Flight Test (281 backend plus 359 browser checks), all with zero failures. Same-email queue records bound to a different API endpoint remain pending, hidden and not uploaded.
 - PR #149 UI refresh mainline integration — merged at `a478c52c68c520b8eddbf80692d101dc20210c58`. It improves Dashboard attention hierarchy, iconography and spacing without changing financial or authorization policy. CI/quality, Browser E2E and Full Flight Test passed on exact PR head `2c1a25c144fe27ed959cd7aae6793b9c3c75bddf`; post-merge CI/quality passed on main. Inventory remains 17 sinks across eight frontend modules.
 - Phase 13 operational release proof is still P0 and owner-controlled; no source-only test can verify live Apps Script identity, production permissions, scheduled backup or isolated restore.
-- Phase 14 candidate work adds named keyboard access for the Register table scroller and seven viewport-width checks plus table-focus assertions for Reports. Automated viewport checks do not replace manual device, zoom, keyboard traversal or screen-reader evaluation.
+- Phase 14 Batch 1 — PR #150 merged at `ad1eb78847a9263c95870b043465b83dd48998be`. It makes the Register table keyboard reachable and adds Reports focus/viewport assertions at seven widths. Exact final head `32c0b31916e1e48eda58bf115aaf17f97f8485a7` passed CI/quality, Browser E2E (371 checks) and Full Flight Test (281 backend plus 371 browser checks, zero failures); post-merge CI passed. Manual device, zoom, keyboard traversal and screen-reader checks remain open.
+- Phase 15 — FrontUI Studio + shared component kit is the next implementation candidate. It adds a static UI gallery and a local shared CSS layer, retaining the existing warm-neutral/navy/gold identity and vanilla-JS/no-build architecture. The UI kit must pass strict CSP, stylesheet/offline-shell integrity, contrast/quality and browser-layout gates on one final PR head.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -39,11 +40,11 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 12 (reviewed 16 October 2026)
+## Priority after Phase 14 (reviewed 16 October 2026)
 
-1. **Phase 13 — operational release proof (P0, owner-controlled):** the next release gate is live evidence for Apps Script project/version, execution identity, Sheet binding, role/receipt permissions, a scheduled backup, an isolated restore and voucher/receipt reconciliation. This cannot be replaced by source changes or mock CI and remains blocked until the owner authorizes and witnesses the checks.
-2. **Phase 14 — whole-product UX completion (active engineering batch):** improve keyboard scrolling on the Register and add responsive/focus regression coverage for Reports. Group code/test/doc changes in one PR; leave manual device, zoom and screen-reader work explicitly outstanding.
-3. **Phase 15 — evidence-led performance and repository hygiene:** measure seeded workloads before optimization, reconcile canonical status documents and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
+1. **Phase 13 — operational release proof (P0, owner-controlled):** Apps Script project/version, execution identity, Sheet binding, role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation still require explicit owner authorization. No source-only test or design PR satisfies this gate.
+2. **Phase 15 — FrontUI Studio + shared component kit (active engineering batch):** establish a visual source of truth and reusable dependency-free styling, apply it to the existing shell, and test CSP/offline integration plus responsive component states. Preserve financial semantics and backend authorization.
+3. **Phase 16 — evidence-led performance and repository hygiene:** measure seeded workloads before optimization, reconcile canonical status documents and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
 
 ## Financial integrity invariants
 

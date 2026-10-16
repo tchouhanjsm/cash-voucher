@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#1f3a4d" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self'; img-src 'self' data:; font-src 'self' data:; form-action 'self'; frame-src 'none'"
+    />
+    <meta
+      name="description"
+      content="FrontUI Studio — the token, component and workflow reference for Cash Vouchers."
+    />
+    <title>FrontUI Studio · Cash Vouchers UI Kit</title>
+    <link rel="stylesheet" href="style.css" />
+    <link rel="stylesheet" href="frontend-ui-kit.css" />
+  </head>
+  <body class="studio-body">
+    <a class="skip-link" href="#studio-main">Skip to content</a>
+    <div class="studio-shell">
+      <aside class="studio-rail" aria-label="FrontUI Studio navigation">
+        <a class="studio-brand" href="index.html">
+          <span class="studio-mark" aria-hidden="true">CV</span>
+          <span>
+            CASH VOUCHERS
+            <small>FrontUI Studio</small>
+          </span>
+        </a>
+
+        <div>
+          <p class="studio-rail-label">Design system</p>
+          <nav aria-label="UI kit sections">
+            <a href="#foundations"> <span class="studio-nav-number">01</span> Foundations </a>
+            <a href="#components"> <span class="studio-nav-number">02</span> Components </a>
+            <a href="#patterns"> <span class="studio-nav-number">03</span> Workflow patterns </a>
+            <a href="#themes"> <span class="studio-nav-number">04</span> Theme modes </a>
+          </nav>
+        </div>
+
+        <div class="studio-rail-note">
+          <span class="studio-live-dot" aria-hidden="true"></span>
+          <span>
+            <strong>Native CSS kit</strong><br />
+            No framework, remote fonts, icon service or build step.
+          </span>
+        </div>
+      </aside>
+
+      <main class="studio-main" id="studio-main">
+        <header class="studio-hero">
+          <div>
+            <p class="studio-eyebrow">Product UI system · v1.0</p>
+            <h1>FrontUI Studio</h1>
+            <p class="studio-lede">
+              A consistent visual language for cash operations: quiet surfaces, unmistakable
+              financial hierarchy, purposeful status states and controls that stay usable at every
+              screen size.
+            </p>
+          </div>
+          <div class="studio-hero-meta" aria-label="Kit characteristics">
+            <span class="studio-chip">
+              <span class="studio-live-dot" aria-hidden="true"></span>
+              Light + dark
+            </span>
+            <span class="studio-chip">4px spacing base</span>
+            <span class="studio-chip">Zero dependencies</span>
+          </div>
+        </header>
+
+        <section class="studio-section" id="foundations" aria-labelledby="foundations-title">
+          <div class="studio-section-heading">
+            <div>
+              <p class="studio-eyebrow">01 · Foundations</p>
+              <h2 id="foundations-title">Color, type and geometry</h2>
+              <p>
+                Tokens first. Components inherit the same surfaces, spacing and interaction rules.
+              </p>
+            </div>
+            <span class="studio-section-index">FOUNDATION / 01</span>
+          </div>
+
+          <div class="studio-grid studio-grid-2">
+            <article class="studio-card">
+              <h3>Core palette</h3>
+              <div class="studio-palette">
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-canvas" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy">
+                    <b>Canvas</b>
+                    <span>#F7F5F0 · Page surface</span>
+                  </span>
+                </div>
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-paper" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy">
+                    <b>Paper</b>
+                    <span>#FFFFFF · Raised surface</span>
+                  </span>
+                </div>
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-ink" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy">
+                    <b>Ink</b>
+                    <span>#1C2630 · Primary text</span>
+                  </span>
+                </div>
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-navy" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy"><b>Navy</b><span>#1F3A4D · Identity</span></span>
+                </div>
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-gold" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy"><b>Gold</b><span>#946515 · Accent</span></span>
+                </div>
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-stroke" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy">
+                    <b>Stroke</b>
+                    <span>#DFDED8 · Dividers</span>
+                  </span>
+                </div>
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-success" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy">
+                    <b>Success</b>
+                    <span>#1B7A43 · Confirmed</span>
+                  </span>
+                </div>
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-warning" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy">
+                    <b>Warning</b>
+                    <span>#895B00 · Review</span>
+                  </span>
+                </div>
+                <div class="studio-swatch">
+                  <span class="studio-swatch-surface studio-danger" aria-hidden="true"></span>
+                  <span class="studio-swatch-copy">
+                    <b>Danger</b>
+                    <span>#B3261E · Blocked</span>
+                  </span>
+                </div>
+              </div>
+              <p>
+                Semantic color always pairs with readable copy or an explicit label, never color
+                alone.
+              </p>
+            </article>
+
+            <article class="studio-card">
+              <h3>Type scale</h3>
+              <div class="studio-type-sample">
+                <b class="studio-type-display">Money in focus</b><code>36 / Display</code>
+              </div>
+              <div class="studio-type-sample">
+                <b class="studio-type-title">Page title and section</b><code>26 / Title</code>
+              </div>
+              <div class="studio-type-sample">
+                <b class="studio-type-body">Readable body text for operators</b>
+                <code>15 / Body</code>
+              </div>
+              <div class="studio-type-sample">
+                <b class="studio-type-label">Approval status</b><code>12 / Label</code>
+              </div>
+              <p>
+                System fonts only. Tabular figures are used wherever amounts or counts need
+                comparison.
+              </p>
+            </article>
+
+            <article class="studio-card">
+              <h3>Spacing rhythm</h3>
+              <div class="studio-space-list" aria-label="Spacing tokens">
+                <div class="studio-space-row">
+                  <code>space-1</code>
+                  <span class="studio-space-bar studio-space-4"></span>
+                  <code>4</code>
+                </div>
+                <div class="studio-space-row">
+                  <code>space-2</code>
+                  <span class="studio-space-bar studio-space-8"></span>
+                  <code>8</code>
+                </div>
+                <div class="studio-space-row">
+                  <code>space-3</code>
+                  <span class="studio-space-bar studio-space-12"></span>
+                  <code>12</code>
+                </div>
+                <div class="studio-space-row">
+                  <code>space-4</code>
+                  <span class="studio-space-bar studio-space-16"></span>
+                  <code>16</code>
+                </div>
+                <div class="studio-space-row">
+                  <code>space-6</code>
+                  <span class="studio-space-bar studio-space-24"></span>
+                  <code>24</code>
+                </div>
+                <div class="studio-space-row">
+                  <code>space-8</code>
+                  <span class="studio-space-bar studio-space-32"></span>
+                  <code>32</code>
+                </div>
+                <div class="studio-space-row">
+                  <code>space-10</code>
+                  <span class="studio-space-bar studio-space-40"></span>
+                  <code>40</code>
+                </div>
+              </div>
+              <p>
+                Small, repeatable spacing units remove one-off margins and make layouts predictable.
+              </p>
+            </article>
+
+            <article class="studio-card">
+              <h3>Radius and elevation</h3>
+              <div class="studio-radius-row" aria-label="Radius tokens">
+                <div class="studio-radius-sample studio-radius-8">8px</div>
+                <div class="studio-radius-sample studio-radius-10">10px</div>
+                <div class="studio-radius-sample studio-radius-14">14px</div>
+                <div class="studio-radius-sample studio-radius-18">18px</div>
+              </div>
+              <div class="studio-grid studio-grid-2 studio-mt-18">
+                <div class="studio-elevation-sample studio-elevation-card"></div>
+                <div class="studio-elevation-sample studio-elevation-raised"></div>
+              </div>
+              <p>
+                Cards use low elevation; overlays use stronger elevation. Financial information
+                never sits on blurred glass.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="studio-section" id="components" aria-labelledby="components-title">
+          <div class="studio-section-heading">
+            <div>
+              <p class="studio-eyebrow">02 · Components</p>
+              <h2 id="components-title">Controls with predictable states</h2>
+              <p>
+                Primary, neutral, destructive and disabled states share the same sizing and focus
+                language.
+              </p>
+            </div>
+            <span class="studio-section-index">COMPONENTS / 02</span>
+          </div>
+
+          <div class="studio-grid studio-grid-2">
+            <article class="studio-card">
+              <h3>Buttons</h3>
+              <div class="studio-button-row">
+                <button class="btn primary" type="button">Save entry</button>
+                <button class="btn" type="button">Secondary</button>
+                <button class="btn danger" type="button">Cancel voucher</button>
+                <button class="btn" type="button" disabled>Unavailable</button>
+              </div>
+              <p>
+                Action hierarchy stays clear; destructive actions are explicit and are never styled
+                as the primary path.
+              </p>
+            </article>
+
+            <article class="studio-card">
+              <h3>Financial form fields</h3>
+              <div class="studio-field-grid">
+                <label>
+                  Payee / vendor
+                  <input
+                    type="text"
+                    value="Rajasthan Supplies"
+                    readonly
+                    aria-label="Example payee vendor"
+                  />
+                  <span class="studio-help">Example data only · readonly preview</span>
+                </label>
+                <label>
+                  Amount (INR)
+                  <input
+                    type="text"
+                    value="₹ 12,450.00"
+                    readonly
+                    aria-label="Example amount in rupees"
+                  />
+                  <span class="studio-help">Amounts align with tabular numerals.</span>
+                </label>
+                <label class="studio-field-wide">
+                  Review note
+                  <input
+                    type="text"
+                    value="Awaiting independent approval"
+                    readonly
+                    aria-label="Example review note"
+                  />
+                  <span class="studio-feedback">Pending review · not an approved payment</span>
+                </label>
+              </div>
+            </article>
+
+            <article class="studio-card">
+              <h3>Badges and connectivity</h3>
+              <div class="studio-status-list">
+                <span class="badge">Approved</span>
+                <span class="badge warn">Pending review</span>
+                <span class="badge bad">Rejected</span>
+                <span class="net-pill on">Online</span>
+                <span class="net-pill">Offline</span>
+              </div>
+              <p>
+                Labels remain understandable in grayscale and to assistive technology. “Online” is
+                not a claim that every service is healthy.
+              </p>
+            </article>
+
+            <article class="studio-card">
+              <h3>Empty, info and error surfaces</h3>
+              <div class="studio-pattern">
+                <div class="ok-panel form-error" role="status">
+                  <strong>Nothing needs review</strong>
+                  <p class="muted">A scoped empty state explains what was checked.</p>
+                </div>
+                <div class="form-error" role="alert">
+                  <strong>Report unavailable</strong>
+                  <p class="muted">
+                    Retry after reconnecting. Previous totals are not presented as current.
+                  </p>
+                  <button class="btn sm" type="button">Retry report</button>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="studio-section" id="patterns" aria-labelledby="patterns-title">
+          <div class="studio-section-heading">
+            <div>
+              <p class="studio-eyebrow">03 · Workflow patterns</p>
+              <h2 id="patterns-title">Information for real cash tasks</h2>
+              <p>
+                Patterns emphasize what the operator should do next while keeping the financial
+                meaning precise.
+              </p>
+            </div>
+            <span class="studio-section-index">PATTERNS / 03</span>
+          </div>
+
+          <div class="studio-grid studio-grid-2">
+            <article class="studio-card">
+              <h3>Needs attention</h3>
+              <div class="studio-pattern">
+                <div class="studio-attention" role="status">
+                  <span class="studio-attention-mark" aria-hidden="true">!</span>
+                  <div>
+                    <b>1 payment needs independent approval</b>
+                    <p>
+                      Pending payments are excluded from approved totals and block final cash close
+                      until resolved.
+                    </p>
+                  </div>
+                </div>
+                <div class="studio-attention" role="status">
+                  <span class="studio-attention-mark" aria-hidden="true">↻</span>
+                  <div>
+                    <b>Offline queue needs sync</b>
+                    <p>
+                      The entry is saved on this device. It is not described as server-confirmed
+                      until upload succeeds.
+                    </p>
+                  </div>
+                </div>
+                <button class="btn primary" type="button">Open register</button>
+              </div>
+            </article>
+
+            <article class="studio-card">
+              <h3>KPI hierarchy</h3>
+              <div class="studio-grid studio-grid-2">
+                <div class="card stat">
+                  <span class="stat-ic" aria-hidden="true">₹</span>
+                  <span>Total paid</span>
+                  <b>₹ 48,250</b>
+                  <small class="muted">Recorded payments · selected period</small>
+                </div>
+                <div class="card stat">
+                  <span class="stat-ic" aria-hidden="true">↙</span>
+                  <span>Cash received</span>
+                  <b>₹ 71,800</b>
+                  <small class="muted">Recorded receipts · selected period</small>
+                </div>
+              </div>
+              <p>Sample figures demonstrate hierarchy only and are not real business records.</p>
+            </article>
+
+            <article class="studio-card studio-span-all">
+              <h3>Register / report table</h3>
+              <div
+                class="table-wrap"
+                role="region"
+                aria-label="FrontUI Studio example voucher rows"
+                tabindex="0"
+              >
+                <table>
+                  <thead>
+                    <tr>
+                      <th scope="col">Voucher / type</th>
+                      <th scope="col">Date</th>
+                      <th scope="col">Payee</th>
+                      <th scope="col" class="r">Amount</th>
+                      <th scope="col">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>
+                        <strong>PV-00482</strong>
+                        <div class="cat">Payment</div>
+                      </td>
+                      <td>16 Oct 2026</td>
+                      <td>Rajasthan Supplies</td>
+                      <td class="r amt">₹ 12,450.00</td>
+                      <td><span class="badge">Approved</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>RV-00106</strong>
+                        <div class="cat">Receipt</div>
+                      </td>
+                      <td>16 Oct 2026</td>
+                      <td>Front desk collection</td>
+                      <td class="r amt">₹ 8,200.00</td>
+                      <td><span class="badge">Recorded</span></td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <strong>PV-00483</strong>
+                        <div class="cat">Payment</div>
+                      </td>
+                      <td>16 Oct 2026</td>
+                      <td>Maintenance service</td>
+                      <td class="r amt">₹ 10,000.00</td>
+                      <td><span class="badge warn">Pending review</span></td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <p>
+                Tables retain a named keyboard-scroll region; status is text plus semantic styling.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="studio-section" id="themes" aria-labelledby="themes-title">
+          <div class="studio-section-heading">
+            <div>
+              <p class="studio-eyebrow">04 · Theme modes</p>
+              <h2 id="themes-title">One kit, two palettes</h2>
+              <p>
+                Light remains paper-like. Dark mode uses raised slate surfaces with brighter
+                readable text.
+              </p>
+            </div>
+            <span class="studio-section-index">THEMES / 04</span>
+          </div>
+
+          <div class="studio-grid studio-grid-2">
+            <article class="studio-card">
+              <h3>Light mode</h3>
+              <div class="studio-grid studio-grid-2">
+                <div class="card">
+                  <span class="badge">Approved</span>
+                  <h3>Daily cash summary</h3>
+                  <p class="muted">Recorded movements for the selected period.</p>
+                  <strong>₹ 24,850.00</strong>
+                </div>
+                <div class="card">
+                  <span class="badge warn">Needs review</span>
+                  <h3>Payment approval</h3>
+                  <p class="muted">Independent manager or owner action required.</p>
+                  <button class="btn primary" type="button">Review</button>
+                </div>
+              </div>
+            </article>
+
+            <article class="studio-card studio-dark-sample">
+              <h3>Dark mode</h3>
+              <div class="studio-grid studio-grid-2">
+                <div class="studio-card">
+                  <span class="badge">Approved</span>
+                  <h3>Daily cash summary</h3>
+                  <p class="muted">Recorded movements for the selected period.</p>
+                  <strong>₹ 24,850.00</strong>
+                </div>
+                <div class="studio-card">
+                  <span class="badge warn">Needs review</span>
+                  <h3>Payment approval</h3>
+                  <p class="muted">Independent manager or owner action required.</p>
+                  <button class="btn primary" type="button">Review</button>
+                </div>
+              </div>
+            </article>
+          </div>
+          <p class="studio-footnote">
+            This static studio page is a visual reference, not a production route or a replacement
+            for testing actual role-based screens. Real-device, zoom/reflow, screen-reader and
+            live-service checks remain separate.
+          </p>
+        </section>
+      </main>
+    </div>
+  </body>
+</html>

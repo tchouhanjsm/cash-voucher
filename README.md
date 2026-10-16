@@ -10,7 +10,7 @@ index.html
        ├── frontend/core/               API, state, storage, UI, actions, offline queue
        └── frontend/features/            auth, payments, dashboard, register, bulk,
                                          administration, navigation, printing
-style.css · config.js · sw.js · manifest.webmanifest · icons/
+style.css · frontend-ui-kit.css · config.js · sw.js · manifest.webmanifest · icons/
 backend/Code.gs · backend/appsscript.json
 test/ · scripts/ · docs/
 ```
@@ -28,6 +28,10 @@ test/ · scripts/ · docs/
 - Automated daily Sheet/receipt backup infrastructure, including a manifest and 90-day retention policy in code.
 
 The existence of code and green mock/browser tests does not prove the real property's deployment, scheduled backups, restore drill, phone install/update path, or cash reconciliation have been verified. See `docs/RELEASE-READINESS.md`.
+
+## Frontend design studio
+
+[FrontUI Studio](ui-studio.html) is a static component gallery for the shared palette, spacing/type/radius tokens, buttons, form fields, status treatments, KPI cards and data tables. It loads local CSS only and uses safe sample data; it is a design reference, not an authenticated application route or production data source.
 
 ## One-time backend setup
 

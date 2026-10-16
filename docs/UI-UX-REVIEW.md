@@ -153,3 +153,11 @@ The Register has a horizontally scrollable table region. Its wrapper now has an 
 Reports now has viewport regression assertions at 320, 360, 390, 768, 801, 1024 and 1280 CSS-pixel widths. Each assertion checks page-level horizontal overflow, filter/control containment and that the result-table region stays within the viewport; contained horizontal scrolling inside the table region remains acceptable. The report table's named/focusable region and focus indicator are also checked.
 
 These are layout and keyboard interaction guardrails, not pixel-level visual approval, a complete accessibility audit or proof of 400% zoom behavior. Real-device touch reach, manual keyboard traversal, screen-reader output and role-based usability sessions remain open. The owner-controlled Phase 13 live deployment/recovery gates remain separate from this UI work.
+
+## FrontUI Studio + shared component kit — October 2026
+
+The new static `ui-studio.html` gallery provides a single reference for the existing warm-neutral/navy/gold identity and the shared component rules used by the app. `frontend-ui-kit.css` adds reusable spacing, type, radius and elevation tokens and a shared layer for page headings, controls, cards, KPI tiles, badges, tables, focus states and responsive spacing. The gallery covers foundations, fields/buttons, scoped attention/error states, KPI hierarchy, register/report table density and a light/dark comparison.
+
+The design direction is deliberately operational rather than decorative: no glass treatment behind amounts, no remote dependencies, no new icon runtime, and no status communicated by color alone. The production app remains vanilla JavaScript and uses the new stylesheet after `style.css`; the service-worker cache is bumped so installed clients request the new component layer.
+
+Browser E2E should verify the gallery loads under its strict static CSP, links the local kit stylesheet, preserves the key component tokens and avoids document-level horizontal overflow at phone/tablet/desktop widths. Those tests are layout regressions, not a human visual sign-off. Physical devices, zoom/reflow, manual keyboard traversal, screen readers and role-based operator observation remain open.

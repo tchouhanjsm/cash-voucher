@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: phases 1–8 shipped on main. Physical-device and assistive-technology validation remain release gates.
+Status: phases 1–8 shipped on main. Phase 9 (FrontUI Studio + shared component kit) is the active design increment. Physical-device and assistive-technology validation remain release gates.
 
 ## Approach
 
@@ -79,3 +79,12 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 - Identity, status and sign-out belong in the shell, never inside a page.
 - New components use semantic tokens, not raw colors. `npm run check:contrast` checks the supported light and dark palettes; manual rendered-state checks remain required.
 - No inline scripts or handlers (CSP). Use `data-act` actions or module listeners.
+
+## Phase 9 — FrontUI Studio and shared UI kit
+
+- `frontend-ui-kit.css` is the shared, dependency-free visual layer loaded after `style.css`. It adds the 4px spacing scale, type and radius tokens, low-elevation surface rules, consistent field/button sizes, KPI hierarchy, table states and focus treatment without a framework, remote font, icon service or build step.
+- `ui-studio.html` is a standalone, static component gallery. It documents palette, type, spacing, radius, elevation, buttons, fields, statuses, attention patterns, KPI cards, a keyboard-scroll table and light/dark treatments. It contains no scripts or inline styles and uses the same stylesheet pair as the live app.
+- The component gallery is deliberately not an application route or a financial workflow. It is safe sample data for design review; no API, permission, approval, cash-impact, report or close behavior is changed.
+- The app-shell cache revision advances to `cv2-v17` and precaches `frontend-ui-kit.css`. `scripts/verify-frontend-release.js` now requires the stylesheet to be both linked by `index.html` and present in the offline shell.
+- The kit follows the existing warm-neutral, navy and gold palette. Spacing and typography tokens are centralized; status colors remain semantic and retain text labels. Dark-mode app tokens continue to come from the root `data-theme` palette.
+- Acceptance is source and browser regression only. No screenshot gallery or automated token checks replace rendered-device inspection, manual keyboard traversal, zoom/reflow, screen-reader review or live-service validation.
