@@ -39,9 +39,6 @@ jobs:
       - name: Enforce dependency advisory policy
         run: npm run audit:deps
 
-      - name: Temporary inspect handoff formatting
-        run: npx prettier docs/HANDOFF.md | diff -u docs/HANDOFF.md - || true
-
       - name: Run quality gate
         run: npm run check
 
