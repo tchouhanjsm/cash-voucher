@@ -2131,6 +2131,16 @@ here and in the production app. It requires no JS or remote assets. */
     line-height: 1.35;
   }
 
+  @media (min-width: 561px) {
+    .settings-diagnostics .diagnostic-actions {
+      flex-wrap: nowrap;
+    }
+
+    .settings-diagnostics .diagnostic-actions > .muted {
+      flex: 1 1 0;
+    }
+  }
+
   .bulk-import-panel {
     background: linear-gradient(145deg, var(--card), var(--surface-subtle));
   }
