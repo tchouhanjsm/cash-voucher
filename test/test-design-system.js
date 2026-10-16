@@ -254,6 +254,16 @@ assert.match(
   'cash-close setup controls use the shared responsive grid',
 );
 assert.match(
+  cashClose,
+  /class="card cc-controls"/,
+  'cash-close setup markup exposes the responsive control surface',
+);
+assert.match(
+  cashClose,
+  /class="card cc-preview"/,
+  'cash-close preview markup exposes the shared report surface',
+);
+assert.match(
   components,
   /\.cc-blockers\[role='alert'\]/,
   'cash-close blockers preserve their explicit alert state in the visual system',
