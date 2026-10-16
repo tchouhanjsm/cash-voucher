@@ -83,7 +83,6 @@ Current candidate: Clasp credential-diagnostic redaction and regression coverage
 - **Not yet provisioned or executed against real Google resources:** GitHub Environment `staging`, staging Apps Script/Sheet/Drive resources, first versioned staging deployment, Clasp OAuth secret, and separate UAT account secrets. The automated pipeline cannot deploy or perform live UAT until the owner provides these. No production deployment or live Google data mutation has been performed by this change.
 - Remaining non-automated UAT gates: real scheduled backup and witnessed restore/reconciliation, device/offline/assistive-technology validation and Google quota/lock-contention testing in an authorized environment.
 
-
 ## Phase 20 — harden staging OAuth diagnostic redaction
 
 - Code review found that the staging deployer's `sanitized()` function redacted the complete `CLASPRC_JSON` string but did not independently redact nested access tokens, refresh tokens, ID tokens, OAuth client IDs/secrets, or other strings stored inside the credential document if a Clasp diagnostic echoed one field separately.
