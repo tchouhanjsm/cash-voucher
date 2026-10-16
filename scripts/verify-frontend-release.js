@@ -184,18 +184,27 @@ if (
 ) {
   console.error('Frontend release integrity FAILED.');
 
-  if (missingModules.length) console.error('Missing imported modules:', missingModules);
+  if (missingModules.length) {
+    console.error('Missing imported modules:', missingModules);
+  }
   if (missingStylesheets.length) {
     console.error(
       'Required UI stylesheets are not linked by index.html:',
       missingStylesheets,
     );
   }
-  if (missingShell.length) console.error('Module/shell assets missing from sw.js:', missingShell);
-  if (missingShellFiles.length) console.error('sw.js references missing files:', missingShellFiles);
-  if (duplicates.length)
+  if (missingShell.length) {
+    console.error('Module/shell assets missing from sw.js:', missingShell);
+  }
+  if (missingShellFiles.length) {
+    console.error('sw.js references missing files:', missingShellFiles);
+  }
+  if (duplicates.length) {
     console.error('Duplicate service-worker shell entries:', [...new Set(duplicates)]);
-  if (retiredAppReference) console.error('Retired app.js is still referenced by the active shell.');
+  }
+  if (retiredAppReference) {
+    console.error('Retired app.js is still referenced by the active shell.');
+  }
   if (cspFailures.length) {
     console.error('Content Security Policy verification FAILED:', cspFailures);
   }
