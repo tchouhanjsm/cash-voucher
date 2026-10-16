@@ -3094,7 +3094,7 @@ with sync_playwright() as p:
         'vendor suggestions preserve constructor, __proto__, toString and hasOwnProperty names',
     )
     check(
-        page.locator('#view img, #view svg').count() == 0
+        page.locator('#view img, #view svg:not(.i)').count() == 0
         and not page.evaluate('window.__xssFired === true')
         and '[object Object]' not in vendor_option_values,
         'malformed vendor API values are ignored without unsafe coercion or injected markup',
@@ -5007,11 +5007,20 @@ with sync_playwright() as p:
         page.locator('#recentVendors .vchip', has_text='svg onload').count() >= 1
         and page.locator('#recentVendors svg, #recentVendors img').count() == 0
         and page.locator('#rows .erow .row-error').inner_text().startswith('Possible duplicate')
-        and page.locator('#rows svg, #rows img').count() == 0
+        and page.locator('#rows svg:not(.i), #rows img').count() == 0
         and not page.evaluate('window.__xssFired === true'),
         'hostile payee names stay inert in recent-payee chips and the duplicate warning',
     )
 
+    go_view(page, 'dash')
+    page.wait_for_selector('#view .needs')
+    check(
+        'svg onload' not in page.locator('#view .needs').inner_text()
+        and page.locator('#view .needs img').count() == 0
+        and page.locator('#view .needs svg:not(.i)').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'needs-attention panel renders static text only and stays inert with hostile payee data',
+    )
     denied_page_states = page.evaluate(
         """async () => {
           const { S } = await import('/frontend/core/state.js');

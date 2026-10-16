@@ -295,7 +295,8 @@ nav button:hover {
   background: #ffffff14;
 }
 nav button.on {
-  background: var(--nav-active);
+  background: var(--nav-surface-hover);
+  box-shadow: inset 3px 0 0 var(--focus-on-brand);
   color: #fff;
   font-weight: 600;
 }
@@ -313,7 +314,7 @@ nav .ic {
 }
 .main {
   flex: 1;
-  padding: 22px;
+  padding: 24px 32px;
   max-width: 1150px;
   min-width: 0;
 }
@@ -1821,6 +1822,11 @@ button {
   stroke-linecap: round;
   stroke-linejoin: round;
   vertical-align: middle;
+}
+nav .ic {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .stat {
   position: relative;
