@@ -34,7 +34,7 @@ The machine-readable expected counts live in `scripts/dom-sink-baseline.json`. T
 
 The Users view no longer assigns HTML strings for its initial loading state or `listUsers` failure state. `renderUsersLoadState()` builds the heading, refresh button, polite loading message, assertive error panel, message and retry button through `createElement`, `textContent`, and `replaceChildren`. It intentionally does not display arbitrary error text from the API. Browser E2E injects an SVG payload into the API error and checks that the payload is not reflected in `#view`, no SVG/image is created in that region, no script effect fires, and the existing retry path restores the list.
 
-The pre-Batch-1 mainline had 27 sinks; PR #143's Users status-sink retirement reduced it to 25. PR #144 reduced merged main to 22, and this Batch 3 candidate targets 19. Each reduction is incremental and leaves the remaining assignments under contextual review.
+The pre-Batch-1 mainline had 27 sinks; PR #143 reduced it to 25, PR #144 to 22, PR #145 to 19, and PR #146 to 17. PR #147 fixed the Change PIN submit semantics without changing the inventory. Main after PR #147 retains 17 assignments across eight modules; each remaining assignment still requires contextual review.
 
 ## Disallowed dynamic APIs
 
