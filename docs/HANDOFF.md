@@ -100,7 +100,6 @@ Current candidate: simulate write-session invalidation at ScriptLock acquisition
 - Default first-use theme is light; a previously saved explicit theme preference remains respected. No framework, external font/icon service, dependency, API or production integration is introduced.
 - Operational release proof remains P0 and owner-controlled. The visual batch is not staging/production verification.
 
-
 ## Phase 22 — authentication race regression and project-record reconciliation (candidate)
 
 - Source review confirms login failure counters are updated inside `withScriptLock_`; current-PIN failures are throttled for 15 minutes; owner PIN reset clears both lockout counters; write routes acquire the shared lock and authenticate the session inside the lock before invoking a write handler.
