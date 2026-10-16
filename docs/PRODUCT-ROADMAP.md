@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `4b15ce7e05d3a524b727f40edbc06e19295beef4` (PR #155 merge; staging/UAT source pipeline integrated)  
-Current engineering batch: Phase 20 — staging credential-diagnostic redaction and release evidence reconciliation  
-Current candidate branch: `phase-20-staging-oauth-redaction-2026-10-16`
+Last verified main baseline: `0b6f89a393dd47edb8a33a5fb9fe0653ea6b6ab2` (PR #156 merge; staging OAuth diagnostic redaction integrated)  
+Current engineering batch: Phase 21 — premium light frontend redesign  
+Current candidate branch: `phase-21-light-premium-frontend-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -32,7 +32,7 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 17 — truthful audit health and owner-exportable monitoring snapshot is complete in PR #153. It adds an owner-facing JSON snapshot download and clearer wording for degraded/unavailable/invalid monitoring states; the separate durable-fallback design decision remains unresolved.
 - Phase 18 — actionable diagnostic exports is complete in PR #154, merged before the current main baseline. It adds scoped JSON exports for validated data-quality and backup-integrity reports, stale-export prevention after failed refreshes, privacy/scope notices and browser download/malformed-response coverage.
 - Phase 19 — isolated staging deployment and owner/manager UAT pipeline is merged in PR #155 at main SHA `4b15ce7e05d3a524b727f40edbc06e19295beef4`. Its exact PR head passed CI/quality, Browser E2E (402 checks) and Full Flight Test (281 backend plus 402 browser checks), with zero failures reported. These checks are source/mock evidence only; live staging is not verified.
-- Phase 20 — staging credential-diagnostic redaction is the current code/test candidate. The deployer now redacts scalar values nested inside `CLASPRC_JSON` as well as the complete credential document; regression coverage is being added before exact-head CI review.
+- Phase 20 — staging credential-diagnostic redaction is complete in merged PR #156. The deployer redacts scalar values nested inside `CLASPRC_JSON` as well as the complete credential document; exact-head CI/quality, Browser E2E (402 checks) and Full Flight Test (281 backend + 402 browser checks) passed.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -45,7 +45,7 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Remaining priorities after Phase 20 (reviewed 16 October 2026)
+## Remaining priorities after Phase 21 (reviewed 16 October 2026)
 
 1. **P0 — staging operational readiness (owner-controlled):** provision a dedicated staging Apps Script project, Spreadsheet and receipt/backup Drive folders; create its first versioned deployment; configure the protected GitHub `staging` Environment and its variables/secrets; then run the manual workflow from `main` with explicit staging/write consent. No credentials or target IDs may be guessed, and no production resource may be mutated.
 2. **P0 — operational release proof remains separate:** witness a real scheduled backup and restore into an isolated recovery Sheet/folder, reconcile row counts and voucher numbering, and verify deployment identity, role/receipt permissions and production settings only with owner authorization.
@@ -53,7 +53,9 @@ These checks catch drift and validate tested paths. They do not claim that every
 4. **P1 — real-service capacity:** measure live Google Sheets latency, quotas and voucher-numbering contention in an explicitly authorized staging/recovery environment before setting production SLOs.
 5. **P2 — audit durability and dependency exception:** the simultaneous AuditLog append/marker-store failure remains unresolved and needs an owner-approved durable fallback; reassess the documented `braces` dependency exception by 9 November 2026.
 
-The Phase 20 security fix is source/test-only. Passing automation cannot provision protected environments, prove live Google identities, witness recovery, or substitute for the owner's explicit release decision.
+The Phase 20 security fix is source/test-only. Phase 21 is a presentation/accessibility-focused frontend batch and must preserve financial and authorization semantics. Neither passing automation nor visual polish can provision protected environments, prove live Google identities, witness recovery, or substitute for the owner's explicit release decision.
+
+6. **Phase 21 — premium light frontend redesign (current candidate):** consolidate the visual system around warm light surfaces, restrained gold actions, clear financial hierarchy, accessible states, mobile navigation and an updated dashboard layout. Keep all existing permissions, cash/approval semantics, CSP, offline/PWA behavior, and print output intact.
 
 ## Financial integrity invariants
 
