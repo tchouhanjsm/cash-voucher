@@ -199,6 +199,8 @@ registerActions({
 
   audcsv: () => administration.exportAuditCsv(),
 
+  audhealth: () => administration.exportAuditHealthSnapshot(),
+
   audmore: () => administration.loadOlderAuditEvents(),
 
   dqscan: () => administration.dataQualityScan(),

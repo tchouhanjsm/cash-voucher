@@ -37,6 +37,10 @@ The existing owner-only API returns newest-first pages of up to 200 events using
 
 Old plain-text audit details remain readable. The owner-only UI renders recognized JSON fields as text and exposes the event ID for follow-up.
 
+## Audit health snapshot
+
+The owner-only Audit Log offers a JSON health snapshot download. It contains the monitor status, failure metadata when known, the number of loaded rows, server-reported total when the page read is valid, malformed-row count and explicit limitations. It intentionally does not export audit-event contents. `NO_KNOWN_FAILURE` means no failure marker was read; it is not a completeness guarantee. The snapshot is a point-in-time support artifact, not a durable second audit log, not a tamper-evident record, and not a repair mechanism for missing events. An unavailable or invalid health read is exported as unknown rather than as zero failures.
+
 ## Boundaries
 
 - An event ID is a correlation identifier, not a cryptographic integrity proof.

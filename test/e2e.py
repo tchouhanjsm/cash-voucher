@@ -1277,6 +1277,36 @@ with sync_playwright() as p:
         and 'loaded pages only' in page.locator('#audit-scope').inner_text(),
         'audit page explains server limit and filtered export scope',
     )
+    healthy_audit_text = page.locator('#aud-health').inner_text()
+    check(
+        'No durable audit-write failure marker is recorded' in healthy_audit_text
+        and 'simultaneous AuditLog append and failure-marker storage outage may be undetectable'
+        in healthy_audit_text
+        and 'Historical audit completeness is not verified.' in healthy_audit_text
+        and page.locator('#aud-health [role=alert]').count() == 0,
+        'no-known-failure state explains the dual-store blind spot without claiming complete audit history',
+    )
+    with page.expect_download() as audit_health_snapshot_download_info:
+        page.click('[data-act=audhealth]')
+    audit_health_snapshot_download = audit_health_snapshot_download_info.value
+    with open(audit_health_snapshot_download.path(), encoding='utf-8') as audit_health_snapshot_file:
+        healthy_audit_snapshot = json.load(audit_health_snapshot_file)
+    check(
+        audit_health_snapshot_download.suggested_filename.startswith('cash-voucher-audit-health-')
+        and audit_health_snapshot_download.suggested_filename.endswith('.json')
+        and healthy_audit_snapshot.get('schemaVersion') == 1
+        and healthy_audit_snapshot.get('snapshotType') == 'cash-voucher-audit-health'
+        and healthy_audit_snapshot.get('monitoring', {}).get('status') == 'NO_KNOWN_FAILURE'
+        and healthy_audit_snapshot.get('monitoring', {}).get('failureCount') == 0
+        and healthy_audit_snapshot.get('coverage', {}).get('loadedRowCount', 0) > 0
+        and healthy_audit_snapshot.get('coverage', {}).get('serverReportedTotalCount', 0) > 0
+        and 'rows' not in healthy_audit_snapshot
+        and any(
+            'does not contain or reconstruct missing audit events' in limitation
+            for limitation in healthy_audit_snapshot.get('limitations', [])
+        ),
+        'audit health JSON export captures status and coverage metadata without exporting event contents',
+    )
     page.fill('#aud-q', xss_vendor)
     page.wait_for_function(
         "document.querySelector('#aud-count').innerText.includes('of')"
@@ -3623,6 +3653,8 @@ with sync_playwright() as p:
     audit_page.add_init_script('window.__xssFired = false;')
 
     legacy_update_text = 'amount,vendor <svg onload=window.__xssFired=true></svg>'
+    audit_health_mode = {'status': 'NO_KNOWN_FAILURE'}
+    hostile_audit_health_kind = '<svg onload=window.__xssFired=true></svg>'
 
     def inject_legacy_update_audit(route):
         try:
@@ -3631,6 +3663,9 @@ with sync_playwright() as p:
             request_data = {}
         if request_data.get('action') != 'auditLog':
             route.continue_()
+            return
+        if audit_health_mode['status'] == 'UNAVAILABLE':
+            route.abort()
             return
 
         response = route.fetch()
@@ -3665,6 +3700,28 @@ with sync_playwright() as p:
             )
             payload['data']['nextBeforeRow'] = 2
             payload['data']['totalCount'] = max(201, payload['data'].get('totalCount', 0))
+        if payload.get('ok') and isinstance(payload.get('data'), dict):
+            if audit_health_mode['status'] == 'INVALID_RESPONSE':
+                payload['data']['auditHealth'] = {
+                    'status': 'UNKNOWN',
+                    'failureCount': 0,
+                    'lastFailureAt': '',
+                    'lastFailureKind': '',
+                }
+            elif audit_health_mode['status'] == 'DEGRADED':
+                payload['data']['auditHealth'] = {
+                    'status': 'DEGRADED',
+                    'failureCount': 3,
+                    'lastFailureAt': '2026-10-16T09:10:00',
+                    'lastFailureKind': hostile_audit_health_kind,
+                }
+            else:
+                payload['data']['auditHealth'] = {
+                    'status': 'NO_KNOWN_FAILURE',
+                    'failureCount': 0,
+                    'lastFailureAt': '',
+                    'lastFailureKind': '',
+                }
         route.fulfill(response=response, body=json.dumps(payload))
 
     audit_page.route('**/api?*', inject_legacy_update_audit)
@@ -3696,6 +3753,102 @@ with sync_playwright() as p:
         and legacy_row.locator('svg, img').count() == 0
         and not audit_page.evaluate('window.__xssFired === true'),
         'legacy free-text update details remain compatible and render as inert text',
+    )
+    healthy_audit_text = audit_page.locator('#aud-health').inner_text()
+    check(
+        'simultaneous AuditLog append and failure-marker storage outage may be undetectable'
+        in healthy_audit_text
+        and 'Historical audit completeness is not verified.' in healthy_audit_text,
+        'owner audit view keeps the explicit limitation visible on the loaded audit page',
+    )
+    audit_health_mode['status'] = 'DEGRADED'
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-health [role=alert]')?.innerText.includes('3 write failure(s) recorded')",
+        timeout=10000,
+    )
+    degraded_audit_health_text = audit_page.locator('#aud-health').inner_text()
+    check(
+        '3 write failure(s) recorded' in degraded_audit_health_text
+        and audit_page.locator('#aud-health [role=alert]').count() == 1,
+        'degraded audit health is assertively announced',
+    )
+    check(
+        hostile_audit_health_kind.lower().replace('_', ' ').replace('  ', ' ')
+        in degraded_audit_health_text,
+        'degraded audit health preserves the normalized monitor failure kind as literal text',
+    )
+    check(
+        audit_page.locator('#aud-health svg, #aud-health img').count() == 0
+        and not audit_page.evaluate('window.__xssFired === true'),
+        'hostile monitor failure kind remains inert and does not execute',
+    )
+    with audit_page.expect_download() as degraded_snapshot_download_info:
+        audit_page.click('[data-act=audhealth]')
+    degraded_snapshot_download = degraded_snapshot_download_info.value
+    with open(degraded_snapshot_download.path(), encoding='utf-8') as degraded_snapshot_file:
+        degraded_audit_snapshot = json.load(degraded_snapshot_file)
+    check(
+        degraded_audit_snapshot.get('monitoring', {}).get('status') == 'DEGRADED'
+        and degraded_audit_snapshot.get('monitoring', {}).get('failureCount') == 3
+        and degraded_audit_snapshot.get('monitoring', {}).get('lastFailureKind') == hostile_audit_health_kind,
+        'degraded JSON snapshot preserves failure metadata for owner follow-up',
+    )
+    audit_health_mode['status'] = 'INVALID_RESPONSE'
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-health [role=alert]')?.innerText.includes('server response was invalid')",
+        timeout=10000,
+    )
+    check(
+        audit_page.locator('#aud-health [role=alert]').count() == 1
+        and 'Historical audit completeness is not verified.' not in audit_page.locator('#aud-health').inner_text(),
+        'invalid audit-health response is visibly reported as unverified rather than as known healthy',
+    )
+    with audit_page.expect_download() as invalid_snapshot_download_info:
+        audit_page.click('[data-act=audhealth]')
+    invalid_snapshot_download = invalid_snapshot_download_info.value
+    with open(invalid_snapshot_download.path(), encoding='utf-8') as invalid_snapshot_file:
+        invalid_audit_snapshot = json.load(invalid_snapshot_file)
+    check(
+        invalid_audit_snapshot.get('monitoring', {}).get('status') == 'INVALID_RESPONSE'
+        and invalid_audit_snapshot.get('monitoring', {}).get('failureCount') is None
+        and invalid_audit_snapshot.get('coverage', {}).get('responseInvalid') is True
+        and invalid_audit_snapshot.get('coverage', {}).get('serverReportedTotalCount') is None,
+        'invalid health JSON snapshot preserves unknown status without inventing a zero failure count',
+    )
+    audit_health_mode['status'] = 'UNAVAILABLE'
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-health [role=alert]')?.innerText.includes('audit request failed')",
+        timeout=10000,
+    )
+    check(
+        audit_page.locator('#aud-health [role=alert]').count() == 1
+        and audit_page.locator('#aud [data-act=audretry]').is_visible(),
+        'audit monitoring request failure stays visibly unknown and offers a retry',
+    )
+    with audit_page.expect_download() as unavailable_snapshot_download_info:
+        audit_page.click('[data-act=audhealth]')
+    unavailable_snapshot_download = unavailable_snapshot_download_info.value
+    with open(unavailable_snapshot_download.path(), encoding='utf-8') as unavailable_snapshot_file:
+        unavailable_audit_snapshot = json.load(unavailable_snapshot_file)
+    check(
+        unavailable_audit_snapshot.get('monitoring', {}).get('status') == 'UNAVAILABLE'
+        and unavailable_audit_snapshot.get('monitoring', {}).get('failureCount') is None
+        and unavailable_audit_snapshot.get('coverage', {}).get('requestFailed') is True
+        and unavailable_audit_snapshot.get('coverage', {}).get('serverReportedTotalCount') is None,
+        'unavailable health snapshot does not manufacture a zero-failure status',
+    )
+    audit_health_mode['status'] = 'NO_KNOWN_FAILURE'
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-more') && !document.querySelector('#aud-more').classList.contains('hidden')",
+        timeout=10000,
     )
     check(
         not audit_page.locator('#aud-more').is_hidden(),
