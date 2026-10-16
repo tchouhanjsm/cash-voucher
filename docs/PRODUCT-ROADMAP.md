@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `ec5f76c215b8d8986d7dd38e265cc4d1b50e36ee` (PR #157 merge; premium light frontend redesign integrated)  
-Current engineering batch: Phase 22 — authentication race regression and project-record reconciliation  
-Current candidate branch: `phase-22-auth-race-evidence-docs-2026-10-16`
+Last verified main baseline: `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91` (PR #158 merge; auth regression and source-of-truth reconciliation)  
+Current engineering batch: Phase 23 — FrontUI adoption across production workflows  
+Current candidate branch: `phase-23-frontui-portal-adoption-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -35,6 +35,9 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 20 — staging credential-diagnostic redaction is complete in merged PR #156. The deployer redacts scalar values nested inside `CLASPRC_JSON` as well as the complete credential document; exact-head CI/quality, Browser E2E (402 checks) and Full Flight Test (281 backend + 402 browser checks) passed.
 - Phase 21 — premium light frontend redesign is complete in merged PR #157 at `ec5f76c215b8d8986d7dd38e265cc4d1b50e36ee`. The exact tested PR head `f38feeafdf7fd682d4e07e134026627c0bfc2413` passed CI/quality, Browser E2E (402 checks) and Full Flight Test (281 backend + 402 browser checks); a post-merge run on the merge commit was not established during this review.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
+
+- Phase 22 — authentication race regression and project-record reconciliation is complete in merged PR #158 at `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91`. Its exact tested head passed CI/quality (285 backend checks), Browser E2E (402 checks), and Full Flight Test (285 backend + 402 browser checks). The direct post-lock stale-session regression proves the mocked write route fails closed without creating a voucher; it does not simulate true concurrent Apps Script calls.
+- Phase 23 — candidate branch `phase-23-frontui-portal-adoption-2026-10-16`: shared page context plus production layout changes for New Entry, responsive Register filters, grouped Settings diagnostics, Bulk Upload and Daily Cash Close. Candidate work remains unmerged and undeployed until exact-head CI, Browser E2E and Full Flight Test pass and the owner reviews it.
 
 ## Phase 4 batch outcomes
 
