@@ -5,6 +5,7 @@ Repository: tchouhanjsm/cash-voucher
 Last verified main SHA: `0d900235f9230ab05db940bb57881a171737ae0c` (PR #160 merge commit)  
 Current engineering batch: Phases 25–27 — Fresh Design Studio completion in one implementation batch  
 Current working branch: `phase-25-frontui-completion-bulk-2026-10-16`  
+Current pull request: [#161](https://github.com/tchouhanjsm/cash-voucher/pull/161) — exact-head CI, Browser E2E and Full Flight Test are required before merge  
 Current candidate: finish responsive and accessibility parity for Bulk Upload and Daily Cash Close, expand cross-workflow regression coverage, and remove remaining one-off presentation styles; no accounting-policy, authorization or deployment changes
 
 ## Verified repository state
