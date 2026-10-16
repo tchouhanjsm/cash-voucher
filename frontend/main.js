@@ -167,7 +167,6 @@ registerActions({
   import: ({ element }) => bulk.runImport(element),
 
   goreg: () => bulk.goRegister(),
-  goto: ({ key }) => go(key),
 
   goto: ({ key }) => {
     if (key === 'reg') navigation.go('reg');

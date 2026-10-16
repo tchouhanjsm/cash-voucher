@@ -8,7 +8,7 @@ import {
   suggestCashImpact,
   vno,
 } from '../core/state.js';
-import { busy, fail, head, toast } from '../core/ui.js';
+import { busy, fail, head, icon, toast } from '../core/ui.js';
 import { addDays, compress, dmy, money, parseAmt, scalarText, today, uid } from '../core/utils.js';
 import { validateRecoveryRecords } from '../core/recovery-validation.js';
 
