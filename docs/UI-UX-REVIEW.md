@@ -145,3 +145,11 @@ The current UI shell batches explicit loading/error/empty states for administrat
 - Backup-status failure is treated as unknown, announced as an alert, and includes an in-place retry that does not reload Settings or discard unsaved property fields.
 
 Browser E2E injects transient Users, Audit and Backup status failures and verifies retry/recovery paths. These mock-backed checks establish UI behavior only; they do not prove live Apps Script service availability, role authorization, actual backup contents or restore success. Screen-reader, physical-device and owner usability review remain separate release gates.
+
+## Phase 14 — Register/Reports responsive and keyboard guardrails (16 October 2026)
+
+The Register has a horizontally scrollable table region. Its wrapper now has an accessible name, `role="region"` and `tabindex="0"`, so keyboard users can reach the scroller and receive the existing visible focus outline. Browser E2E checks the region name, tab order and focus indicator.
+
+Reports now has viewport regression assertions at 320, 360, 390, 768, 801, 1024 and 1280 CSS-pixel widths. Each assertion checks page-level horizontal overflow, filter/control containment and that the result-table region stays within the viewport; contained horizontal scrolling inside the table region remains acceptable. The report table's named/focusable region and focus indicator are also checked.
+
+These are layout and keyboard interaction guardrails, not pixel-level visual approval, a complete accessibility audit or proof of 400% zoom behavior. Real-device touch reach, manual keyboard traversal, screen-reader output and role-based usability sessions remain open. The owner-controlled Phase 13 live deployment/recovery gates remain separate from this UI work.
