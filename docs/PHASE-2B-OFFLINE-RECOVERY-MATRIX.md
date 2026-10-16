@@ -2,7 +2,7 @@
 
 **Base:** main at 69f861f86d08a19da8fe1223b3bc6c4840478895 (PR #131 merge)  
 **Working branch:** phase-2b/recovery-matrix-closure-2026-10-14  
-**Status:** consolidated recovery and cross-phase evidence batch in review; exact final-head checks decide acceptance.  
+**Status:** historical recovery design; the current Phase 12 candidate extends runtime coverage for endpoint-bound queue isolation. Exact final-head checks decide acceptance.  
 **Release boundary:** mock backend and browser tests unless separately authorized live verification is documented.
 
 ## Batch additions for PR #132
@@ -61,15 +61,19 @@ Required evidence: exact same client ID before/after sign-out, pending status, a
 
 ### Account or endpoint changes
 
-No record uploads under another account binding; other-account records remain untouched.
+No record uploads under another account or API-endpoint binding. The queue owner key combines endpoint identity and normalized email; a mismatched record stays pending and is not eligible for the current session's upload.
 
-Required evidence: existing account-binding E2E. Endpoint-switch behavior remains a separate follow-up if it is not proven by current owner-key isolation tests.
+- Existing Browser E2E changes the email part of a stored owner key and verifies a foreign-account record remains pending and untouched.
+- Phase 12 / PR #148 adds a same-email, different-endpoint owner key using a reserved `.invalid` URL in IndexedDB metadata, then triggers queue refresh and the online event. The record must remain pending, stay hidden from the current account's queue, and never be uploaded to the current endpoint.
+- Offline-auth and recovery-validation unit tests already reject a verifier/record bound to another endpoint or user.
+
+PR #148's endpoint assertion is candidate-only until CI/quality, Browser E2E and Full Flight Test pass on one exact final head. These mock tests do not prove a real device's behavior during a live endpoint reconfiguration.
 
 ### Permanent and transient failures
 
 Validation/conflict rejection must become review-required, stop automatic retry and retain the export-before-removal flow. Transient server/network errors must release unprocessed entries to pending and expose recovery state.
 
-Required evidence: existing poison-entry/healthy-neighbor E2E plus a fault-injected multi-entry partial failure.
+Required evidence: existing poison-entry/healthy-neighbor E2E covers the per-record failure case: the rejected record is retained for review, the healthy neighbor synchronizes once, automatic retry is stopped for the rejected record, and the draft remains editable. Do not add a duplicate test unless a new failure mode is identified.
 
 ### Historical CashImpact and financial outcome
 
