@@ -16,6 +16,7 @@ const bulk = read('frontend/features/bulk.js');
 const reports = read('frontend/features/reports.js');
 const register = read('frontend/features/register.js');
 const authHtml = read('index.html');
+const cashClose = read('frontend/features/cash-close.js');
 
 assert.match(palette, /--bg:\s*#f7f5f0;/, 'main canvas stays warm and light');
 assert.match(palette, /--card:\s*#fffefc;/, 'cards stay close to warm white');
@@ -203,6 +204,79 @@ assert.match(
   authHtml,
   /class="card lock-card"/,
   'the refined sign-in composition is wired into the real application page',
+);
+
+
+assert.match(
+  dashboard,
+  /class="cash-received-value"/,
+  'cash-received KPI uses a named semantic color hook rather than inline styling',
+);
+assert.match(
+  register,
+  /cash-impact-in/,
+  'inflow amounts use a named semantic class instead of inline color',
+);
+assert.doesNotMatch(
+  register,
+  /style="color:var\(--ok\)"/,
+  'register rows contain no one-off inline cash-impact color',
+);
+assert.match(
+  bulk,
+  /class="card bulk-review-panel"/,
+  'bulk preview adopts the Studio review surface',
+);
+assert.match(
+  bulk,
+  /class="table-wrap bulk-review-table" role="region"[^>]*tabindex="0"/,
+  'bulk preview is a named keyboard-scrollable table region',
+);
+assert.match(
+  bulk,
+  /class="bulk-duplicate-option"/,
+  'duplicate confirmation uses a designed inline checkbox control',
+);
+assert.match(
+  bulk,
+  /class="bulk-file-input"/,
+  'bulk file chooser remains keyboard reachable through a visually-hidden control',
+);
+assert.doesNotMatch(bulk, /style=/, 'bulk workflow no longer relies on inline presentation styles');
+assert.match(
+  components,
+  /\.bulk-review-table\s*\{[\s\S]*?overflow:\s*auto/,
+  'bulk import table scrolls inside its own region instead of widening the page',
+);
+assert.match(
+  components,
+  /\.cc-controls\s*>\s*\.filters\s*\{[\s\S]*?display:\s*grid/,
+  'cash-close setup controls use the shared responsive grid',
+);
+assert.match(
+  components,
+  /\.cc-blockers\[role='alert'\]/,
+  'cash-close blockers preserve their explicit alert state in the visual system',
+);
+assert.match(
+  components,
+  /\.cc-report-heading\s*\{[\s\S]*?flex-wrap:\s*wrap/,
+  'cash-close report headings can reflow without clipping',
+);
+assert.match(
+  components,
+  /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*?transition-duration:\s*0\.01ms/,
+  'app and studio honor reduced-motion preferences beyond navigation alone',
+);
+assert.match(
+  components,
+  /@media \(forced-colors:\s*active\)[\s\S]*?outline:\s*3px solid Highlight/,
+  'keyboard focus and controls remain discernible in forced-colors mode',
+);
+assert.match(
+  components,
+  /\.app \.table-wrap:focus-visible/,
+  'scrollable work tables share a visible keyboard focus treatment',
 );
 
 console.log(
