@@ -85,7 +85,7 @@ assert.ok(urlMismatch.errors.some((message) => message.includes('does not match'
 
 const malformedUrl = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_API_URL: 'https://example.test/not-an-apps-script-url',
+  CV_STAGING_API_URL: 'https://staging.invalid/not-an-apps-script-url',
 });
 assert.equal(malformedUrl.ok, false);
 assert.ok(malformedUrl.errors.some((message) => message.includes('Apps Script URL')));

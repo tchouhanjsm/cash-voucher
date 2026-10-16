@@ -81,6 +81,7 @@ jobs:
             test/test-staging-web-server.js \
             test/test-staging-workflow.js \
             "${RUNNER_TEMP}/staging-prettier-output"
+          cp .github/workflows/staging-uat.yml "${RUNNER_TEMP}/staging-prettier-output/staging-uat.formatted.yml"
 
       - name: Upload formatted staging candidate files for remediation
         uses: actions/upload-artifact@v7
