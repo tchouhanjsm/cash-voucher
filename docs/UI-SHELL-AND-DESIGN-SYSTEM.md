@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: FrontUI Studio (PR #151) and the light-first redesign (PR #157) are merged. Phase 23 applies the shared system consistently to real workflow screens and adds responsive browser regressions. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
+Status: FrontUI Studio (PR #151), light-first redesign (PR #157), and selected production workflow adoption (PR #159) are merged. Phase 24 is extending responsive composition across report, register, administration, audit, account and sign-in screens. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
 
 ## Approach
 
@@ -91,8 +91,12 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 - The kit follows the existing warm-neutral, navy and gold palette. Spacing and typography tokens are centralized; status colors remain semantic and retain text labels. Dark-mode app tokens continue to come from the root `data-theme` palette.
 - Acceptance is source and browser regression only. No screenshot gallery or automated token checks replace rendered-device inspection, manual keyboard traversal, zoom/reflow, screen-reader review or live-service validation.
 
-## Phase 23 — production workflow adoption (candidate)
+## Phase 23 — production workflow adoption (merged PR #159)
 
-The Studio is a static reference page; it does not replace adoption in the real portal. This batch applies section context through the shared page header and standardizes the live New Entry form, Register filters, Daily Cash Close intro, Bulk Upload panel, and owner Settings layout. Settings groups editable property configuration separately from operational diagnostics on desktop and stacks those groups on smaller screens. The service-worker cache version advances with the shared UI-kit changes.
+The Studio remains a static reference gallery, not a production route. PR #159 integrated the shared section eyebrow and responsive layout hooks into the live New Entry, Register, Daily Cash Close, Bulk Upload and Settings workflows. It also advanced the service-worker cache revision. Its exact PR head passed CI/quality, Browser E2E and Full Flight Test; the merge commit is `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`.
 
-The batch intentionally adds no breadcrumb trail, financial rules, API routes, role permissions or schema changes. Source and browser checks cover targeted rendered CSS/layout behavior only; screenshots, physical-device interaction, zoom/reflow, manual keyboard traversal and screen-reader review remain human release checks. Treat this as candidate work until review, exact-head CI/E2E/Flight results, and owner merge.
+The batch made no financial-rule, API, role-permission or schema changes. Screenshot comparison, physical-device interaction, zoom/reflow, manual keyboard traversal and screen-reader review remain human release checks.
+
+## Phase 24 — reporting and administration workflow adoption (candidate)
+
+Candidate branch: `phase-24-workflows-ui-adoption-2026-10-16`. This batch gives the Report filter/results areas, Register totals, Vendor/User forms, Audit filters, Account/PIN layout and sign-in surface shared responsive styling. Regression coverage targets desktop and phone layouts. This candidate remains unmerged until the exact-head CI, Browser E2E and Full Flight Test pass and owner review is complete; no live deployment is included.
