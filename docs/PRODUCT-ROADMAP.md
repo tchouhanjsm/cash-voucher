@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `f2afdb08bece0a7f529a64a84164685269805641` (PR #146 merge; Phase 11 Batches 1–4 integrated, one browser regression under follow-up)  
-Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current review branch: `phase-11/batch-4-pin-submit-regression-2026-10-15`
+Last verified main baseline: `61e46989032985fba54ceb48d768ab57430aa48a` (PR #147 merge; Phase 11 Batch 4 follow-up included)  
+Current phase: Phase 12 — Cross-workflow integrity and recovery  
+Current review branch: `phase-12/endpoint-bound-recovery-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -22,7 +22,7 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 11 Batch 2 — PR #144 merged at `8bd1f423700a5a392d0f672bd287e88603755d82`. It replaces the local/offline and server payment-save confirmation templates and bulk-import completion template with DOM APIs; hostile server-returned number/vendor markup stays inert and confirmation/retry actions are preserved. Merged inventory: 22 sites across eight modules. CI/quality, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `e7f199a5d109f49034f349aab0dc63d040b32a1f`.
 - Phase 11 Batch 3 — PR #145 merged at `797cb6b08187c6cb77dfb7b198c7dd5840e67c29`. It retires the Reports/Cash Close permission-denied templates and Register totals/status template. CI/quality, Browser E2E (356 checks) and Full Flight Test (281 backend checks plus 356 browser checks) passed on exact tested head `b044edf5e36f41cc327ef57a89f0665c40acf79e`.
 - Phase 11 Batch 4 — PR #146 merged at `f2afdb08bece0a7f529a64a84164685269805641`, replacing My Account profile/PIN and offline outbox banner/review templates with DOM APIs; hostile profile/property strings and locally tampered queue payee values are covered. Inventory: 17 assignments across eight modules. CI passed, but Browser E2E and Full Flight Test on exact tested PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` each had one failed assertion concerning the Change PIN submit control.
-- Phase 11 Batch 4 follow-up — PR #147 explicitly sets the Change PIN button to `type="submit"`. It changes no sink count, API, financial logic or data. Exact-head CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend plus 358 browser checks, 0 failures) passed on `eb473402dca0cbdc085af1f961ca00e9b70705d8`; PR #147 remains open pending owner review/merge.
+- Phase 11 Batch 4 follow-up — PR #147 merged into main at `61e46989032985fba54ceb48d768ab57430aa48a`. It explicitly sets the Change PIN button to `type="submit"`, changing no sink count, API, financial logic or data. Exact-head CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend plus 358 browser checks, 0 failures) passed on `bfdbbb401c397730b12480fec5ac9fd1e57072d9`.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -35,13 +35,12 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 10
+## Priority after Phase 11 (reviewed 16 October 2026)
 
-1. **Phase 11 — contextual rendering-security review and sink retirement:** complete Batch 4, then continue context-by-context review of the remaining 17 active HTML assignments. Sink counts and fingerprints are drift controls, not XSS certification.
-2. **Phase 12 — cross-workflow integrity and recovery:** close gaps in role/action/state coverage across entry, ambiguous save, retries/idempotency, offline queue, approval, reporting, cash close and audit. Add regressions only for uncovered transitions; preserve the established financial invariants.
-3. **Phase 13 — operational release proof:** obtain owner-authorized evidence for Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup, isolated restore and voucher/receipt reconciliation. Mock CI cannot satisfy this phase.
-4. **Phase 14 — whole-product UX completion:** consolidate cross-screen responsive and role-task findings, keyboard/focus/zoom and accessibility/device results into a grouped remediation batch. Keep manual screen-reader and real-device evidence separate from automated tests.
-5. **Phase 15 — evidence-led performance and repository hygiene:** measure seeded workloads before optimization, reconcile canonical status documents and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
+1. **Phase 12 — cross-workflow integrity and recovery:** current PR #148 adds endpoint-bound outbox isolation evidence and reconciles the existing regression matrix. Acceptance depends on CI/quality, Browser E2E and Full Flight Test passing on the same final head. Extend tests only where the evidence matrix exposes a real gap.
+2. **Phase 13 — operational release proof:** obtain owner-authorized evidence for Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup, isolated restore and voucher/receipt reconciliation. Mock CI cannot satisfy this phase.
+3. **Phase 14 — whole-product UX completion:** consolidate cross-screen responsive and role-task findings, keyboard/focus/zoom and accessibility/device results into a grouped remediation batch. Keep manual screen-reader and real-device evidence separate from automated tests.
+4. **Phase 15 — evidence-led performance and repository hygiene:** measure seeded workloads before optimization, reconcile canonical status documents and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
 
 ## Financial integrity invariants
 
