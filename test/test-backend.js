@@ -203,6 +203,45 @@ const as = (t, a, p = {}) => {
 };
 ok(as(r.data.token, 'bootstrap').code === 'PIN_CHANGE', 'owner must change setup PIN');
 let T = as(r.data.token, 'changePin', { oldPin: '483921', newPin: '579246' }).data.token;
+
+// Revalidate write sessions after acquiring the ScriptLock. Simulate a session being
+// invalidated while a write request waits for the lock; no voucher may be written.
+const raceLogin = g.call('login', { email: 'OWNER@test.com', pin: '579246' });
+ok(raceLogin.ok, 'dedicated login succeeds for write-lock session race test');
+const raceToken = raceLogin.data.token;
+const raceSessionKey = 's:' + raceToken;
+const raceDate = new Date().toISOString().slice(0, 10);
+const voucherRowsBeforeRace = g.sheets.Vouchers.rows.length;
+const raceLockWaits = g.lockStats.waits;
+const raceLockReleases = g.lockStats.releases;
+g.lockStats.afterAcquire = () => {
+  delete g.cache[raceSessionKey];
+};
+const invalidatedSessionWrite = g.call('createVouchers', {
+  token: raceToken,
+  entries: [
+    {
+      date: raceDate,
+      vendor: 'Auth Race Regression Vendor',
+      amount: 17,
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+});
+ok(
+  !invalidatedSessionWrite.ok && invalidatedSessionWrite.code === 'SESSION',
+  'write route revalidates a session invalidated while acquiring the script lock',
+);
+ok(
+  g.sheets.Vouchers.rows.length === voucherRowsBeforeRace,
+  'write is rejected before any voucher row is appended when the session expires at lock acquisition',
+);
+ok(
+  g.lockStats.waits === raceLockWaits + 1 &&
+    g.lockStats.releases === raceLockReleases + 1 &&
+    g.lockStats.afterAcquire === null,
+  'session-race regression releases the acquired lock and consumes the one-shot test hook',
+);
 const unknownAction = as(T, 'doesNotExist');
 ok(unknownAction.code === 'NOT_FOUND', 'unknown action rejected');
 const inheritedActionResults = ['constructor', 'toString', '__proto__', 'hasOwnProperty'].map(
