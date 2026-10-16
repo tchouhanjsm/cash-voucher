@@ -4,7 +4,7 @@
 
 ## Current release boundary
 
-PR #67 is merged; the current `main` baseline is `628f691fe9e4353cc6b701bd57c95c3e169aa495`. PRs #64–#66 include backend changes after the previously reported version-4 deployment. The current merged backend must not be assumed deployed. Local quality checks and mock Browser E2E do not deploy Apps Script or prove live Google Sheets/Drive behavior.
+PR #154 is merged; the verified source baseline is `17665e82c3acd26d717c796d1eecd79c42a963b7`. A merge is still separate from a Clasp upload or Web App deployment. The version of Apps Script actually serving the configured production `/exec` URL must be verified independently. Local quality checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
 
 The frontend `config.js` already contains a Web App `/exec` URL. Do not replace it or create a different URL until the local Clasp deployment list proves which Apps Script project and deployment serve that URL.
 
@@ -181,3 +181,31 @@ Vendor identity rules: new vouchers resolve a saved VendorID only on a unique ca
 
 Do not run migrations or deploy from the feature PR. Preserve every existing row and all historical unclassified vouchers. Do not infer approval from historical amount or vendor identity from a fuzzy/partial name.
 The client-side queue gate can inspect only the browser used for closing. Before trusting a daily close, confirm pending/rejected/offline recovery entries are reviewed and synchronized on every operating device. A successful close response is a central Sheet record, but it cannot prove that a different offline device has no unsynchronized entries.
+
+
+## Staging environment and controlled UAT — Phase 19
+
+The repository now provides a manually dispatched staging workflow at `.github/workflows/staging-uat.yml`. It is separate from production release and never runs on a push or pull request.
+
+### One-time owner provisioning
+
+1. Create a **dedicated staging Apps Script project**, staging Spreadsheet, staging receipt folder and staging backup folder. None may be the production resource. Set the staging project's Web App execution/access settings deliberately to support the UAT accounts while using synthetic data only.
+2. In the staging Apps Script editor, set the required initial Script Properties for the staging owner and run `setup()` **once only on this verified empty staging project**. This initializes its tabs, folders and backup trigger. Do not run `setup()` from GitHub Actions and never use it as a production release step.
+3. Create a dedicated staging manager account in the staging app. Manually complete first-login PIN changes for both staging owner and manager before workflow UAT; their emails and PINs must be distinct and must not be shared with production.
+4. Create the first versioned staging Web App deployment manually, confirm its Web App URL identifies that staging deployment, and record the deployment ID and URL. The automated deploy step deliberately refuses to create a new/unknown deployment; it updates only this pre-existing staging deployment.
+
+### GitHub Environment configuration
+
+Create a GitHub Environment named `staging`, restrict its deployment branch to `main`, and require reviewer approval where available. Configure these environment **variables**: `CV_STAGING_SCRIPT_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_API_URL`, `CV_STAGING_SPREADSHEET_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_PRODUCTION_SCRIPT_ID`, `CV_PRODUCTION_SPREADSHEET_ID`, `CV_PRODUCTION_RECEIPT_FOLDER_ID`, and `CV_PRODUCTION_BACKUP_FOLDER_ID`. The production Web App deployment ID is extracted from the existing production `config.js` URL.
+
+Configure these environment **secrets**: `CLASPRC_JSON` (valid Clasp OAuth credential document), `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PIN`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PIN`. Keep credential material out of repository files and logs. If these resources/credentials are not configured, staging preflight must fail closed rather than inventing target values.
+
+### Running the phases
+
+- **validate-only** runs source/security checks, unit/regression tests and the existing mock Browser E2E without staging credentials.
+- **deploy-and-uat** runs only from `main`; type `STAGING-ONLY` and explicitly enable `confirm_staging_writes`. The workflow verifies that all configured staging resources differ from production, pushes backend files to the dedicated staging Script ID using temporary Clasp files, updates the already configured staging deployment, and runs owner/manager browser UAT.
+- **uat-only** uses the same guarded UAT against an already deployed staging version without uploading source.
+
+The automated transactional UAT creates one uniquely marked INR 10,000 PAYMENT, verifies that the creator cannot self-approve, verifies independent manager approval affects active totals correctly, and cancels the test voucher with a reason. The cancelled voucher and audit trail remain in the staging data; the UAT never deletes audit history, creates a Daily Cash Close, writes receipt payloads, or targets a production ID.
+
+**UAT boundaries:** a green workflow is not a complete production-release sign-off. After automated UAT, the owner must separately review the Apps Script execution identity/access settings, verify a real scheduled staging backup, witness restore into a separate recovery Sheet/folder and reconcile row counts/voucher numbering, and complete device/offline/accessibility checks. The automated backup-integrity scan is structural only and does not prove restoreability.

@@ -103,6 +103,9 @@ function validateStagingConfiguration(env = process.env, options = {}) {
         errors.push('The staging API URL must be a plain HTTPS Apps Script URL without query or fragment.');
       }
       const match = stagingUrl.pathname.match(/^\/macros\/s\/([^/]+)\/exec\/?$/);
+      if (stagingUrl.pathname !== '/macros/s/' + String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec') {
+        errors.push('The staging API URL path must be the exact configured /exec endpoint without a trailing slash.');
+      }
       if (!match || match[1] !== String(env.CV_STAGING_DEPLOYMENT_ID || '').trim()) {
         errors.push('The staging API URL does not match CV_STAGING_DEPLOYMENT_ID.');
       }

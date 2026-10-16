@@ -157,7 +157,7 @@ def run():
         browser = playwright.chromium.launch()
         owner_context = browser.new_context(viewport={"width": 1280, "height": 800})
         owner_page = owner_context.new_page()
-        owner_signin = sign_in(owner_page, owner_email, owner_pin, "staging owner")
+        owner_token = sign_in(owner_page, owner_email, owner_pin, "staging owner")
         staging_target_check(owner_page)
         target_verified = True
 
@@ -288,6 +288,7 @@ def run():
             manager_page.locator('#modal:not(.hidden) #cr').wait_for(state="visible", timeout=10000)
             manager_page.locator("#cr").fill("Automated staging UAT cleanup; retain audit trace")
             manager_page.locator('#modal:not(.hidden) .mcard .primary').click()
+            manager_page.locator('#modal:not(.hidden)').wait_for(state="detached", timeout=15000)
             manager_page.locator("#rs").select_option("ALL")
             manager_page.locator("#rq").fill(unique_vendor)
             cancelled_row = manager_page.locator("#rbody tr").filter(has_text=unique_vendor)
