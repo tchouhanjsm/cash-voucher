@@ -9,7 +9,7 @@ Current candidate: PR #150 — https://github.com/tchouhanjsm/cash-voucher/pull/
 
 ## Verified repository state
 
-- Live `main` is `a478c52c68c520b8eddbf80692d101dc20210c58`, the merge commit for PR #149. Its first parent is the PR #147 base; the PR #148 merge is `87a39f8e58594abc3eba7f5900c0be45f0cf8341`.
+- Live `main` is `a478c52c68c520b8eddbf80692d101dc20210c58`, the merge commit for PR #149. Its first parent is the PR #148 merge commit `87a39f8e58594abc3eba7f5900c0be45f0cf8341`; PR #147's merge baseline was `61e46989032985fba54ceb48d768ab57430aa48a`.
 - PR #148 completed Phase 12 endpoint-bound outbox isolation. Its exact final head `9d5dea25eeddfa98d9c81995a7a140d0af709bdc` passed CI/quality, Browser E2E (359 checks) and Full Flight Test (281 backend plus 359 browser checks, zero failures).
 - PR #149 refreshed the Dashboard/navigation visual treatment, added the Needs-attention panel and SVG icon usage, and adjusted layout spacing without API, schema, dependency or financial-policy changes. CI/quality, Browser E2E and Full Flight Test passed on its exact final PR head `2c1a25c144fe27ed959cd7aae6793b9c3c75bddf`; post-merge CI/quality passed on the merge SHA.
 - The active DOM-sink inventory remains 17 assignments across eight frontend modules. PR #149 changed the reviewed Payments template fingerprint while retaining the sink count; the baseline records `847d68e0` for that assignment. Drift fingerprints are not XSS certification.
