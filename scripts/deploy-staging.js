@@ -83,9 +83,7 @@ function deployStaging(env = process.env, root = ROOT) {
   const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-staging-home-'));
   try {
     const projectRoot = path.join(workspace, 'project');
-    const claspHome = path.join(workspace, 'home');
     fs.mkdirSync(projectRoot, { recursive: true, mode: 0o700 });
-    fs.mkdirSync(claspHome, { recursive: true, mode: 0o700 });
     fs.cpSync(sourceBackend, path.join(projectRoot, 'backend'), {
       recursive: true,
       errorOnExist: true,
@@ -101,7 +99,7 @@ function deployStaging(env = process.env, root = ROOT) {
       { mode: 0o600 },
     );
     fs.writeFileSync(
-      path.join(claspHome, '.clasprc.json'),
+      path.join(tempHome, '.clasprc.json'),
       JSON.stringify(JSON.parse(String(env.CLASPRC_JSON))),
       { mode: 0o600 },
     );
@@ -109,8 +107,8 @@ function deployStaging(env = process.env, root = ROOT) {
     const originalHome = process.env.HOME;
     const originalUserProfile = process.env.USERPROFILE;
     try {
-      process.env.HOME = claspHome;
-      process.env.USERPROFILE = claspHome;
+      process.env.HOME = tempHome;
+      process.env.USERPROFILE = tempHome;
       const deploymentOutput = runClasp(['list-deployments'], {
         root,
         tempHome: claspHome,

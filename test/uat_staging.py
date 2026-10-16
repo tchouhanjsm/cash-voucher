@@ -186,10 +186,11 @@ def run():
         owner_page.locator("#cc-date").wait_for(state="visible")
         owner_page.locator("#cc-results").wait_for(state="attached")
         try:
-            owner_page.locator("#cc-results [role=alert]").wait_for(state="detached", timeout=12000)
+            owner_page.locator('#cc-results[aria-busy="false"]').wait_for(state="attached", timeout=12000)
         except PlaywrightTimeoutError as exc:
-            raise AssertionError("Staging Cash Close preview returned an error; no close was created.") from exc
-        check(True, "Cash Close preview loads without creating a close")
+            raise AssertionError("Staging Cash Close preview did not complete; no close was created.") from exc
+        check(owner_page.locator("#cc-results [role=alert]").count() == 0,
+              "Cash Close preview loads without creating a close")
 
         go(owner_page, "set")
         owner_page.locator("#backup-status h2").wait_for(state="attached")
@@ -227,6 +228,7 @@ def run():
             owner_page.locator("#rows .rci").first.select_option("CASH_OUT")
             owner_page.locator("#rows .rn").first.fill("Staging UAT high-value approval journey")
             owner_page.locator("#nsave").click()
+            payment_created = True
             try:
                 owner_page.locator("#nres").get_by_text("pending owner/manager approval", exact=False).wait_for(
                     state="attached", timeout=15000
@@ -238,8 +240,6 @@ def run():
                 and "Daily Cash Close" in owner_page.locator("#nres").inner_text(),
                 "high-value payment is shown as pending and excluded from totals and Cash Close",
             )
-            payment_created = True
-
             voucher = find_uat_payment(owner_page, unique_vendor)
             check(voucher.get("approvalStatus") == "PENDING", "created high-value payment is pending on the server")
             voucher_id = voucher["id"]
@@ -299,13 +299,7 @@ def run():
                   "the UAT payment is cancelled with a retained audit trace")
             payment_cancelled = True
 
-            owner_page.reload(wait_until="domcontentloaded")
-            owner_page.locator("#lEmail").fill(owner_email)
-            owner_page.locator("#lPin").fill(owner_pin)
-            owner_page.locator("#lBtn").click()
-            owner_page.locator("#app:not(.hidden)").wait_for(state="visible", timeout=20000)
-            owner_token = owner_page.evaluate("() => localStorage.getItem('cv.token')")
-            final_audit = api_data(owner_page, "auditLog", {"beforeRow": ""})
+            final_audit = api_data(owner_page, "auditLog")
             check(
                 any(isinstance(row, dict) and row.get("target") == "#" + str(voucher.get("no"))
                     for row in final_audit.get("rows", [])),
