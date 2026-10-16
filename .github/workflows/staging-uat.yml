@@ -1,0 +1,207 @@
+name: Staging UAT
+
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: "Validate only, deploy to the dedicated staging project, or test the already deployed staging project"
+        type: choice
+        required: true
+        default: validate-only
+        options:
+          - validate-only
+          - deploy-and-uat
+          - uat-only
+      confirmation:
+        description: "Type STAGING-ONLY to permit a staging deployment or transactional UAT"
+        type: string
+        required: true
+        default: ""
+      confirm_staging_writes:
+        description: "Explicitly permit the workflow to create and cancel one tagged INR 10,000 test payment in staging"
+        type: boolean
+        required: true
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cash-voucher-staging-uat
+  cancel-in-progress: false
+
+jobs:
+  validate:
+    name: Validate source and mock journeys
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Run source, security, backend and regression gates
+        run: npm run check
+
+      - name: Install browser test dependency
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Run mock browser E2E
+        run: npm run test:e2e
+
+      - name: Validate staging UAT Python syntax
+        run: python -m py_compile test/uat_staging.py
+
+  guard:
+    name: Require main, staging-only confirmation and write consent
+    if: ${{ inputs.operation == 'deploy-and-uat' || inputs.operation == 'uat-only' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Refuse non-staging or unconfirmed execution
+        env:
+          ACTION_REF: ${{ github.ref }}
+          OPERATION: ${{ inputs.operation }}
+          CONFIRMATION: ${{ inputs.confirmation }}
+          CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
+        run: |
+          if [ "$ACTION_REF" != "refs/heads/main" ]; then
+            echo "Staging deployment/UAT can run only from main."
+            exit 1
+          fi
+          if [ "$CONFIRMATION" != "STAGING-ONLY" ]; then
+            echo "Type STAGING-ONLY in the workflow input."
+            exit 1
+          fi
+          if [ "$CONFIRM_WRITES" != "true" ]; then
+            echo "Transactional UAT requires explicit confirmation that writes are staging-only."
+            exit 1
+          fi
+          echo "Manual guard passed for $OPERATION. No credentials are available to this job."
+
+  deploy:
+    name: Deploy to staging and run UAT
+    if: ${{ inputs.operation == 'deploy-and-uat' && needs.guard.result == 'success' }}
+    needs: [validate, guard]
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    environment:
+      name: staging
+    env:
+      CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
+      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+      CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
+      CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
+      CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
+      CV_PRODUCTION_SPREADSHEET_ID: ${{ vars.CV_PRODUCTION_SPREADSHEET_ID }}
+      CV_STAGING_RECEIPT_FOLDER_ID: ${{ vars.CV_STAGING_RECEIPT_FOLDER_ID }}
+      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ vars.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+      CV_STAGING_BACKUP_FOLDER_ID: ${{ vars.CV_STAGING_BACKUP_FOLDER_ID }}
+      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ vars.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+      CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+      CV_STAGING_UAT_OWNER_PIN: ${{ secrets.CV_STAGING_UAT_OWNER_PIN }}
+      CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+      CV_STAGING_UAT_MANAGER_PIN: ${{ secrets.CV_STAGING_UAT_MANAGER_PIN }}
+      CV_STAGING_UAT_CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
+      CV_STAGING_DEPLOY_CONFIRMATION: ${{ inputs.confirmation }}
+      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright
+        run: |
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Validate isolated deployment configuration
+        run: npm run staging:preflight -- --mode=deploy
+
+      - name: Update the existing staging deployment only
+        run: npm run staging:deploy
+
+      - name: Verify target before testing
+        run: npm run staging:preflight -- --mode=uat
+
+      - name: Run staging UAT
+        run: npm run uat:staging
+
+  uat:
+    name: Test the already deployed staging project
+    if: ${{ inputs.operation == 'uat-only' && needs.guard.result == 'success' }}
+    needs: [validate, guard]
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    environment:
+      name: staging
+    env:
+      CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
+      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+      CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
+      CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
+      CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
+      CV_PRODUCTION_SPREADSHEET_ID: ${{ vars.CV_PRODUCTION_SPREADSHEET_ID }}
+      CV_STAGING_RECEIPT_FOLDER_ID: ${{ vars.CV_STAGING_RECEIPT_FOLDER_ID }}
+      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ vars.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+      CV_STAGING_BACKUP_FOLDER_ID: ${{ vars.CV_STAGING_BACKUP_FOLDER_ID }}
+      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ vars.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+      CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+      CV_STAGING_UAT_OWNER_PIN: ${{ secrets.CV_STAGING_UAT_OWNER_PIN }}
+      CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+      CV_STAGING_UAT_MANAGER_PIN: ${{ secrets.CV_STAGING_UAT_MANAGER_PIN }}
+      CV_STAGING_UAT_CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      - name: Setup Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          npm ci
+          python -m pip install playwright
+          python -m playwright install --with-deps chromium
+
+      - name: Validate isolated staging target
+        run: npm run staging:preflight -- --mode=uat
+
+      - name: Run staging UAT without deploying
+        run: npm run uat:staging
