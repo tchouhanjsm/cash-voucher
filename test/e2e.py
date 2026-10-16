@@ -113,6 +113,61 @@ with sync_playwright() as p:
     page.on('console', capture_console)
     page.on('pageerror', lambda error: logs.append('PAGEERR ' + str(error)))
 
+    # FrontUI Studio is a static, same-origin design reference. Keep it independent
+    # from authentication and verify the shared kit is present without inline assets.
+    studio_page = context.new_page()
+    studio_page.goto(BASE + '/ui-studio.html', wait_until='domcontentloaded')
+    check(
+        'FrontUI Studio' in studio_page.title()
+        and studio_page.locator('#studio-main h1').inner_text() == 'FrontUI Studio',
+        'FrontUI Studio gallery loads as a standalone static page',
+    )
+    studio_csp = studio_page.locator('meta[http-equiv="Content-Security-Policy"]')
+    studio_csp_content = studio_csp.get_attribute('content') if studio_csp.count() == 1 else ''
+    check(
+        studio_csp.count() == 1
+        and "style-src 'self'" in studio_csp_content
+        and "script-src 'self'" in studio_csp_content
+        and studio_page.locator('script').count() == 0
+        and studio_page.locator('[style]').count() == 0,
+        'FrontUI Studio uses a strict static CSP without inline scripts or styles',
+    )
+    kit_metrics = studio_page.evaluate("""() => {
+        const root = getComputedStyle(document.documentElement);
+        const button = document.querySelector('.studio-button-row .btn.primary');
+        const card = document.querySelector('.studio-card');
+        return {
+            space4: root.getPropertyValue('--ui-space-4').trim(),
+            buttonHeight: Number.parseFloat(getComputedStyle(button).minHeight),
+            cardRadius: Number.parseFloat(getComputedStyle(card).borderTopLeftRadius),
+            kitStylesheet: Array.from(document.querySelectorAll('link[rel="stylesheet"]'))
+                .some((link) => link.getAttribute('href') === 'frontend-ui-kit.css'),
+        };
+    }""")
+    check(
+        kit_metrics['space4'] == '16px'
+        and kit_metrics['buttonHeight'] >= 44
+        and kit_metrics['cardRadius'] >= 14
+        and kit_metrics['kitStylesheet'],
+        'FrontUI Studio consumes the shared spacing, control and card tokens',
+    )
+    check(
+        all(
+            studio_page.locator('#' + section).count() == 1
+            for section in ['foundations', 'components', 'patterns', 'themes']
+        ),
+        'FrontUI Studio exposes all four named kit sections',
+    )
+    for width in [320, 360, 390, 768, 801, 1024, 1280]:
+        studio_page.set_viewport_size({'width': width, 'height': 800})
+        check(
+            not studio_page.evaluate(
+                'document.documentElement.scrollWidth > document.documentElement.clientWidth'
+            ),
+            f'FrontUI Studio has no page-level horizontal overflow at {width}px',
+        )
+    studio_page.close()
+
     page.goto(URL)
     check(
         page.locator('html').get_attribute('data-theme') == 'light',
