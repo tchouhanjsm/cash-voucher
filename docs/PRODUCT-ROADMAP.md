@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `36402f97f43d6c07b920efb726c67092121e451b` (PR #153 merge; audit health snapshot integrated)  
-Current engineering batch: Phase 18 — actionable diagnostic exports and truthful recovery states  
-Current candidate branch: `phase-18/diagnostic-exports-and-truthful-recovery-2026-10-16`
+Last verified main baseline: `4b15ce7e05d3a524b727f40edbc06e19295beef4` (PR #155 merge; staging/UAT source pipeline integrated)  
+Current engineering batch: Phase 20 — staging credential-diagnostic redaction and release evidence reconciliation  
+Current candidate branch: `phase-20-staging-oauth-redaction-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -30,7 +30,9 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 15 — FrontUI Studio + shared component kit is complete in PR #151, merged at `91b8b46f4a09b868db0157d6f89dcebd0d14eae0`. Exact PR head `b7632abcff44cf10969b731da2eef5e9b679bd60` passed CI/quality, Browser E2E (382 checks) and Full Flight Test (281 backend plus 382 browser checks), all with zero failures. The static gallery and shared stylesheet are integrated; manual device/assistive-technology validation remains open.
 - Phase 16 — evidence-led performance and repository hygiene is complete in PR #152, merged at `a0d6529da2534977b69426e1affc1b182fa3bf56`. Repeated seeded mock timings are retained as a machine-readable CI artifact; the dependency exception remains scoped and time-boxed, with no unverified downgrade. Mock timings are not production SLOs.
 - Phase 17 — truthful audit health and owner-exportable monitoring snapshot is complete in PR #153. It adds an owner-facing JSON snapshot download and clearer wording for degraded/unavailable/invalid monitoring states; the separate durable-fallback design decision remains unresolved.
-- Phase 18 — actionable diagnostic exports is in PR #154, ready for review. It adds scoped JSON exports for validated data-quality and backup-integrity reports, stale-export prevention after failed refreshes, privacy/scope notices and browser download/malformed-response coverage.
+- Phase 18 — actionable diagnostic exports is complete in PR #154, merged before the current main baseline. It adds scoped JSON exports for validated data-quality and backup-integrity reports, stale-export prevention after failed refreshes, privacy/scope notices and browser download/malformed-response coverage.
+- Phase 19 — isolated staging deployment and owner/manager UAT pipeline is merged in PR #155 at main SHA `4b15ce7e05d3a524b727f40edbc06e19295beef4`. Its exact PR head passed CI/quality, Browser E2E (402 checks) and Full Flight Test (281 backend plus 402 browser checks), with zero failures reported. These checks are source/mock evidence only; live staging is not verified.
+- Phase 20 — staging credential-diagnostic redaction is the current code/test candidate. The deployer now redacts scalar values nested inside `CLASPRC_JSON` as well as the complete credential document; regression coverage is being added before exact-head CI review.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -43,12 +45,15 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Remaining priorities after Phase 18 (reviewed 16 October 2026)
+## Remaining priorities after Phase 20 (reviewed 16 October 2026)
 
-1. **Phase 13 — operational release proof (P0, owner-controlled):** Apps Script project/version, execution identity, Sheet binding, role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation still require explicit owner authorization. No source-only test or source-only benchmark satisfies this gate.
-2. **Phase 17 — audit monitoring clarity + health snapshot (completed in PR #153):** make the limitations of `NO_KNOWN_FAILURE` explicit, distinguish unavailable or invalid monitoring reads, and let the owner save a JSON snapshot of the status and coverage metadata for manual follow-up. The underlying dual audit/marker-store failure still requires an owner-approved durable fallback design.
-3. **Phase 18 — diagnostic exports (PR #154):** let owners export validated data-quality and backup-integrity findings with a stable JSON schema, bounded fields and explicit limitations; prevent stale reports from remaining exportable after a failed re-scan.
-4. **Physical-device quality and real-service capacity:** owner-operated validation for PWA install/update/offline recovery, zoom/reflow, keyboard and screen readers; separately measure live Sheets latency, quotas and voucher-numbering contention in an explicitly authorized test environment.
+1. **P0 — staging operational readiness (owner-controlled):** provision a dedicated staging Apps Script project, Spreadsheet and receipt/backup Drive folders; create its first versioned deployment; configure the protected GitHub `staging` Environment and its variables/secrets; then run the manual workflow from `main` with explicit staging/write consent. No credentials or target IDs may be guessed, and no production resource may be mutated.
+2. **P0 — operational release proof remains separate:** witness a real scheduled backup and restore into an isolated recovery Sheet/folder, reconcile row counts and voucher numbering, and verify deployment identity, role/receipt permissions and production settings only with owner authorization.
+3. **P1 — physical-device and accessibility validation:** test PWA install/update/offline recovery, zoom/reflow, keyboard, focus and assistive technology on representative devices.
+4. **P1 — real-service capacity:** measure live Google Sheets latency, quotas and voucher-numbering contention in an explicitly authorized staging/recovery environment before setting production SLOs.
+5. **P2 — audit durability and dependency exception:** the simultaneous AuditLog append/marker-store failure remains unresolved and needs an owner-approved durable fallback; reassess the documented `braces` dependency exception by 9 November 2026.
+
+The Phase 20 security fix is source/test-only. Passing automation cannot provision protected environments, prove live Google identities, witness recovery, or substitute for the owner's explicit release decision.
 
 ## Financial integrity invariants
 
