@@ -86,7 +86,9 @@ spacing/type/component tokens and the shared visual layer. */
   nav button {
     min-height: 42px;
     border-radius: var(--ui-radius-control);
-    transition: background-color 140ms ease, color 140ms ease;
+    transition:
+      background-color 140ms ease,
+      color 140ms ease;
   }
 
   nav button.on {
@@ -98,7 +100,9 @@ spacing/type/component tokens and the shared visual layer. */
   .user-btn {
     border-radius: var(--ui-radius-pill);
     padding: 5px 10px 5px 5px;
-    transition: background-color 140ms ease, border-color 140ms ease;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease;
   }
 
   .head {
@@ -141,7 +145,9 @@ spacing/type/component tokens and the shared visual layer. */
     min-height: 44px;
     padding: 10px 12px;
     border-radius: var(--ui-radius-control);
-    transition: border-color 140ms ease, box-shadow 140ms ease;
+    transition:
+      border-color 140ms ease,
+      box-shadow 140ms ease;
   }
 
   input:focus,
@@ -167,10 +173,10 @@ spacing/type/component tokens and the shared visual layer. */
     font-weight: 650;
     line-height: 1.25;
     transition:
-    background-color 140ms ease,
-    border-color 140ms ease,
-    box-shadow 140ms ease,
-    transform 140ms ease;
+      background-color 140ms ease,
+      border-color 140ms ease,
+      box-shadow 140ms ease,
+      transform 140ms ease;
   }
 
   .btn:hover:not(:disabled) {
@@ -211,7 +217,9 @@ spacing/type/component tokens and the shared visual layer. */
     min-width: 0;
     padding: 18px;
     border-radius: var(--ui-radius-card);
-    transition: border-color 140ms ease, box-shadow 140ms ease;
+    transition:
+      border-color 140ms ease,
+      box-shadow 140ms ease;
   }
 
   .stat span:not(.stat-ic) {
