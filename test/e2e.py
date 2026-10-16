@@ -4539,7 +4539,7 @@ with sync_playwright() as p:
         '(element) => getComputedStyle(element).color'
     )
     check(
-        muted_color == 'rgb(89, 105, 120)',
+        muted_color == 'rgb(86, 101, 117)',
         'muted interface text uses the reviewed higher-contrast token',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
