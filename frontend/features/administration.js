@@ -20,6 +20,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
   let malformedAuditCount = 0;
   let auditResponseInvalid = false;
+  let auditRequestFailed = false;
   let auditNextBeforeRow = null;
   let auditTotalCount = 0;
   let auditHealth = null;
@@ -612,6 +613,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     auditRows = [];
     malformedAuditCount = 0;
     auditResponseInvalid = false;
+    auditRequestFailed = false;
     auditNextBeforeRow = null;
     auditTotalCount = 0;
     auditHealth = null;
@@ -629,6 +631,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
           <label>From<input id="aud-from" type="date" aria-label="Audit start date"></label>
           <label>To<input id="aud-to" type="date" aria-label="Audit end date"></label>
           <button class="btn" type="button" data-act="audclear">Clear filters</button>
+          <button class="btn" type="button" data-act="audhealth">Export health snapshot (JSON)</button>
           <button class="btn primary" type="button" data-act="audcsv">Export filtered CSV</button>
         </div>
         <p id="aud-count" class="muted" role="status" aria-live="polite">Loading audit events…</p>
@@ -649,6 +652,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
         }
       })
       .catch((error) => {
+        auditRequestFailed = true;
+        renderAuditHealth();
         const body = $('#aud');
         if (!body) return;
         body.replaceChildren();
@@ -695,6 +700,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     if (!validPage || !validHealth) return false;
     if (health !== undefined) auditHealth = health;
     else if (!append) auditHealth = null;
+    auditRequestFailed = false;
 
     const isValidAuditRow = (row) =>
       row !== null &&
@@ -884,10 +890,26 @@ export function createAdministration({ api, getNavigation, signOut }) {
     if (!panel) return;
     panel.replaceChildren();
     const message = document.createElement('p');
+
+    if (auditRequestFailed || auditResponseInvalid) {
+      panel.className = 'audit-health degraded';
+      message.className = 'error form-error';
+      message.setAttribute('role', 'alert');
+      message.setAttribute('aria-live', 'assertive');
+      message.textContent = auditResponseInvalid
+        ? 'Audit monitoring could not be verified because the server response was invalid. Retry the audit read before relying on this status.'
+        : 'Audit monitoring could not be checked because the audit request failed. Retry the audit read before relying on this status.';
+      panel.appendChild(message);
+      return;
+    }
+
     if (!auditHealth) {
-      message.className = 'muted';
+      panel.className = 'audit-health degraded';
+      message.className = 'error form-error';
+      message.setAttribute('role', 'alert');
+      message.setAttribute('aria-live', 'assertive');
       message.textContent =
-        'Audit-write monitoring is unavailable from this deployed backend. Updating the approved Apps Script source is required to enable it; historical log completeness is not verified.';
+        'Audit-write monitoring is unavailable from this backend. The health snapshot will record monitoring as unavailable; historical audit completeness is not verified.';
       panel.appendChild(message);
       return;
     }
@@ -912,7 +934,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       panel.className = 'audit-health';
       message.className = 'muted';
       message.textContent =
-        'No audit-write failures have been recorded since monitoring was introduced. Historical audit completeness is not verified.';
+        'No durable audit-write failure marker is recorded by the current monitor. This does not prove every action was logged: a simultaneous AuditLog append and failure-marker storage outage may be undetectable. Historical audit completeness is not verified.';
     }
     panel.appendChild(message);
   }
@@ -981,6 +1003,49 @@ export function createAdministration({ api, getNavigation, signOut }) {
       if (field) field.value = '';
     });
     renderAuditRows();
+  }
+
+  function exportAuditHealthSnapshot() {
+    const monitoringStatus = auditRequestFailed
+      ? 'UNAVAILABLE'
+      : auditResponseInvalid
+        ? 'INVALID_RESPONSE'
+        : auditHealth
+          ? auditHealth.status
+          : 'UNAVAILABLE';
+    const monitoringKnown = ['NO_KNOWN_FAILURE', 'DEGRADED'].includes(monitoringStatus);
+    const auditPageUnavailable = auditRequestFailed || auditResponseInvalid;
+    const snapshot = {
+      schemaVersion: 1,
+      snapshotType: 'cash-voucher-audit-health',
+      capturedAt: new Date().toISOString(),
+      monitoring: {
+        status: monitoringStatus,
+        failureCount: monitoringKnown ? auditHealth.failureCount : null,
+        lastFailureAt: monitoringKnown ? auditHealth.lastFailureAt || null : null,
+        lastFailureKind: monitoringKnown ? auditHealth.lastFailureKind || null : null,
+      },
+      coverage: {
+        loadedRowCount: auditRows.length,
+        serverReportedTotalCount: auditPageUnavailable ? null : auditTotalCount,
+        malformedRowsOmitted: malformedAuditCount,
+        requestFailed: auditRequestFailed,
+        responseInvalid: auditResponseInvalid,
+      },
+      limitations: [
+        'This snapshot contains monitoring metadata only; it does not contain or reconstruct missing audit events.',
+        'NO_KNOWN_FAILURE means no failure marker was read; it does not prove audit history is complete.',
+        'A simultaneous AuditLog append and Script Properties marker write failure may be undetectable without an independent durable fallback.',
+        'Historical audit completeness is not verified.',
+      ],
+    };
+
+    download(
+      'cash-voucher-audit-health-' + new Date().toISOString().slice(0, 10) + '.json',
+      JSON.stringify(snapshot, null, 2),
+      'application/json;charset=utf-8',
+    );
+    toast('Exported audit health metadata only; the snapshot does not reconstruct missing events.', 'ok');
   }
 
   function exportAuditCsv() {
@@ -1441,6 +1506,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     audit: auditView,
     clearAuditFilters,
     exportAuditCsv,
+    exportAuditHealthSnapshot,
     loadOlderAuditEvents,
     dataQualityScan,
     backupIntegrityScan,

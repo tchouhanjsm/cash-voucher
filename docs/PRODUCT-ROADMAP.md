@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `91b8b46f4a09b868db0157d6f89dcebd0d14eae0` (PR #151 merge; FrontUI Studio and shared CSS kit integrated)  
-Current engineering batch: Phase 16 — evidence-led performance and repository hygiene  
-Current candidate branch: `phase-16/performance-repository-hygiene-2026-10-16`
+Last verified main baseline: `a0d6529da2534977b69426e1affc1b182fa3bf56` (PR #152 merge; repeatable mock performance evidence integrated)  
+Current engineering batch: Phase 17 — truthful audit health + owner-exportable monitoring snapshot  
+Current candidate branch: `phase-17/audit-health-snapshot-and-truthful-states-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -28,7 +28,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 13 operational release proof is still P0 and owner-controlled; no source-only test can verify live Apps Script identity, production permissions, scheduled backup or isolated restore.
 - Phase 14 Batch 1 — PR #150 merged at `ad1eb78847a9263c95870b043465b83dd48998be`. It makes the Register table keyboard reachable and adds Reports focus/viewport assertions at seven widths. Exact final head `32c0b31916e1e48eda58bf115aaf17f97f8485a7` passed CI/quality, Browser E2E (371 checks) and Full Flight Test (281 backend plus 371 browser checks, zero failures); post-merge CI passed. Manual device, zoom, keyboard traversal and screen-reader checks remain open.
 - Phase 15 — FrontUI Studio + shared component kit is complete in PR #151, merged at `91b8b46f4a09b868db0157d6f89dcebd0d14eae0`. Exact PR head `b7632abcff44cf10969b731da2eef5e9b679bd60` passed CI/quality, Browser E2E (382 checks) and Full Flight Test (281 backend plus 382 browser checks), all with zero failures. The static gallery and shared stylesheet are integrated; manual device/assistive-technology validation remains open.
-- Phase 16 — evidence-led performance and repository hygiene is the current candidate. Improve the deterministic mock benchmark with repeated samples and a machine-readable CI artifact, re-verify the time-boxed dependency exception and reconcile canonical current-state documents. No optimization should be justified by mock timings alone.
+- Phase 16 — evidence-led performance and repository hygiene is complete in PR #152, merged at `a0d6529da2534977b69426e1affc1b182fa3bf56`. Repeated seeded mock timings are retained as a machine-readable CI artifact; the dependency exception remains scoped and time-boxed, with no unverified downgrade. Mock timings are not production SLOs.
+- Phase 17 — truthful audit health and owner-exportable monitoring snapshot is the current code candidate. It adds an owner-facing JSON snapshot download, clearer wording for the `NO_KNOWN_FAILURE` status, and browser regressions for degraded/unavailable/invalid monitoring states. It does not solve the separate durable-fallback design decision.
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 ## Phase 4 batch outcomes
@@ -41,10 +42,10 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 15 (reviewed 16 October 2026)
+## Priority after Phase 16 (reviewed 16 October 2026)
 
-1. **Phase 13 — operational release proof (P0, owner-controlled):** Apps Script project/version, execution identity, Sheet binding, role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation still require explicit owner authorization. No source-only test or design PR satisfies this gate.
-2. **Phase 16 — evidence-led performance and repository hygiene (current engineering batch):** capture repeated seeded mock timings as a JSON CI artifact, keep production SLO claims out of mock data, reconcile canonical current-state documents, and recheck the `@google/clasp → micromatch → braces` exception before 9 November 2026.
+1. **Phase 13 — operational release proof (P0, owner-controlled):** Apps Script project/version, execution identity, Sheet binding, role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation still require explicit owner authorization. No source-only test or source-only benchmark satisfies this gate.
+2. **Phase 17 — audit monitoring clarity + health snapshot (current code batch):** make the limitations of `NO_KNOWN_FAILURE` explicit, distinguish unavailable or invalid monitoring reads, and let the owner save a JSON snapshot of the status and coverage metadata for manual follow-up. The underlying dual audit/marker-store failure still requires an owner-approved durable fallback design.
 3. **Physical-device quality and real-service capacity:** owner-operated validation for PWA install/update/offline recovery, zoom/reflow, keyboard and screen readers; separately measure live Sheets latency, quotas and voucher-numbering contention in an explicitly authorized test environment.
 
 ## Financial integrity invariants

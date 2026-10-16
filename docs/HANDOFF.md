@@ -2,17 +2,17 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `91b8b46f4a09b868db0157d6f89dcebd0d14eae0` (PR #151 merge commit)  
-Current engineering batch: Phase 16 — repeatable performance evidence + repository hygiene  
-Current working branch: `phase-16/performance-repository-hygiene-2026-10-16`  
-Current candidate: PR #152 — https://github.com/tchouhanjsm/cash-voucher/pull/152 (seeded benchmark artifact, dependency-exception recheck and canonical-document reconciliation); live PR head and exact-head checks are authoritative
+Last verified main SHA: `a0d6529da2534977b69426e1affc1b182fa3bf56` (PR #152 merge commit)  
+Current engineering batch: Phase 17 — truthful audit health + owner-exportable monitoring snapshot  
+Current working branch: `phase-17/audit-health-snapshot-and-truthful-states-2026-10-16`  
+Current candidate: PR #153 — https://github.com/tchouhanjsm/cash-voucher/pull/153 (audit health wording, monitoring snapshot export and browser regressions); live PR head and exact-head checks are authoritative
 
 ## Verified repository state
 
-- Live `main` is `91b8b46f4a09b868db0157d6f89dcebd0d14eae0`, the merge commit for PR #151. PR #151's FrontUI Studio/shared CSS kit is merged; its exact head `b7632abcff44cf10969b731da2eef5e9b679bd60` passed CI/quality, Browser E2E (382 checks) and Full Flight Test (281 backend plus 382 browser checks), with zero failures. Mainline includes the Register/Reports guardrails from PR #150.
+- Live `main` is `a0d6529da2534977b69426e1affc1b182fa3bf56`, the merge commit for PR #152. PR #152's exact head `0b4154071bbb51a537d604cd58066417f1aa0d63` passed CI/quality, Browser E2E (382 checks) and Full Flight Test (281 backend plus 382 browser checks), with zero failures. It adds repeated seeded mock measurements and a retained JSON artifact; those results are not production SLO evidence.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
-- The Phase 16 candidate expands the seeded mock benchmark to one warm-up plus five measured samples for bootstrap and recorded-movement reporting at 100, 500 and 1,000 voucher rows, writes a machine-readable JSON result on request, and publishes it as a CI artifact. These are local mock timings, not live Sheets latency or production SLOs.
+- Phase 16 performance/repository-hygiene work is complete in PR #152. The current Phase 17 candidate changes actual owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
 - Preserve the plain JS/no-build architecture and no-external-runtime-assets policy. No React/UI package, remote font/icon service or dependency is added; app CSP remains strict and studio HTML uses no inline scripts, handlers or styles.
 - `scripts/verify-frontend-release.js` now checks the kit CSS is linked by `index.html` and present in the service-worker shell. Browser E2E should verify static gallery loading/CSP, component tokens and no page-level overflow across narrow through desktop widths.
 - Phase 13 operational release proof remains an owner-controlled P0 gate: live Apps Script project/version, execution identity, Sheet/Drive permissions, role/receipt access, scheduled backup, isolated restore and production reconciliation cannot be established by source/mock tests. Do not deploy or mutate production.
@@ -42,7 +42,7 @@ Current candidate: PR #152 — https://github.com/tchouhanjsm/cash-voucher/pull/
 
 ## Remaining risks and owner-controlled operational gates
 
-- Main after PR #151 still has 17 active HTML assignment sites across eight frontend modules; the FrontUI CSS/studio batch changed no active sink assignments. Remaining assignments still require contextual review; sink counts/fingerprints are drift gates, not proof of safety.
+- Main after PR #152 retains 17 active HTML assignment sites across eight frontend modules. Phase 17 is limited to the Audit Log UI/action mapping and browser regression coverage; no backend/audit data contract changes are proposed.
 - Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility and real-service quotas/concurrency remain unverified.
 - Investigate the documented audit-write dual-failure observability limit without fabricating missing events.
 - Reassess the `@google/clasp -> micromatch -> braces` dependency exception by 9 November 2026.
@@ -67,6 +67,8 @@ Current candidate: PR #152 — https://github.com/tchouhanjsm/cash-voucher/pull/
 
 **Phase 14 — Whole-product UX completion: Batch 1 complete in PR #150.** Register keyboard table scrolling and Reports responsive/focus regression guardrails are merged. Manual device, zoom and assistive-technology checks remain open.
 
-**Phase 15 — FrontUI Studio + shared component kit: complete in PR #151.** Static gallery, shared CSS tokens/components and offline/release-integrity coverage are merged. Exact-head CI, Browser E2E (382) and Full Flight Test (281 backend + 382 browser checks) passed. Manual device/accessibility and owner-controlled release gates remain open.
+**Phase 15 — FrontUI Studio + shared component kit: complete in PR #151.** Static gallery, shared CSS tokens/components and offline/release-integrity coverage are merged. Manual device/accessibility and owner-controlled release gates remain open.
 
-**Phase 16 — Evidence-led performance and repository hygiene: current candidate, PR #152.** Publish repeated deterministic mock measurements as a JSON workflow artifact; reconcile current handoff, roadmap, backlog, UI kit status, rendering inventory, README and release-readiness notes. The `braces` advisory remains under the existing exception through the review date of 9 November 2026; no unverified dependency downgrade is planned.
+**Phase 16 — Evidence-led performance and repository hygiene: complete in PR #152.** Repeated seeded mock measurements are captured as a versioned JSON workflow artifact; the dependency exception was rechecked with its original deadline preserved.
+
+**Phase 17 — Audit monitoring clarity and portable health snapshot: current candidate, PR #153.** The owner-facing UI explicitly explains the dual-store blind spot, keeps health request/invalid-response states visibly unknown, and downloads a JSON snapshot of status and coverage metadata. It does not persist a second audit log, claim history completeness, or reconstruct missing events. Phase 13 live release proof remains an owner-controlled P0 gate.
