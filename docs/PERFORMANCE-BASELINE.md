@@ -8,11 +8,9 @@ The baseline measures source-level backend operations against the repository's i
 
 The deterministic fixture creates active `PAYMENT` vouchers and validates both the returned row count and the calculated active-payment total at these dataset sizes:
 
-| Seeded voucher rows | Operations |
-| ---: | --- |
-| 100 | `bootstrap`, `recordedMovementReport` |
-| 500 | `bootstrap`, `recordedMovementReport` |
-| 1,000 | `bootstrap`, `recordedMovementReport` |
+- **100 voucher rows:** `bootstrap` and `recordedMovementReport`.
+- **500 voucher rows:** `bootstrap` and `recordedMovementReport`.
+- **1,000 voucher rows:** `bootstrap` and `recordedMovementReport`.
 
 Each operation performs one warm-up followed by five measured samples. The JSON result records the Node.js version, platform, architecture, capture timestamp, individual sample timings, and min/median/max. Timings are diagnostic only: there are no hard latency thresholds because runner load and hardware affect elapsed time.
 
