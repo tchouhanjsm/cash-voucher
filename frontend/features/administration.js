@@ -1042,7 +1042,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     download(
       'cash-voucher-audit-health-' + new Date().toISOString().slice(0, 10) + '.json',
-      JSON.stringify(snapshot, null, 2) + '\\n',
+      JSON.stringify(snapshot, null, 2),
       'application/json;charset=utf-8',
     );
     toast(
