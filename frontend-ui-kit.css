@@ -1962,7 +1962,6 @@ here and in the production app. It requires no JS or remote assets. */
   }
 }
 
-
 /* Phase 23 — bring high-traffic workflows onto the shared FrontUI layout rules. */
 @media screen {
   .page-header-copy {

@@ -108,7 +108,6 @@ Current candidate: apply the shared studio system to actual workflow screens, ad
 - Reconcile the current main/PR state in the handoff, roadmap, backlog, project guide and release-readiness status. Do not modify financial policy or run migrations/deployments.
 - Next cash-close enhancement requiring an owner decision: denomination rows remain optional and must not be assumed useful or made mandatory without approval; the existing close MVP is already implemented.
 
-
 ## Phase 23 candidate — FrontUI adoption across real workflows
 
 Candidate branch: `phase-23-frontui-portal-adoption-2026-10-16`; based on merged PR #158 main SHA `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91`. The batch wires section context into the shared page header, establishes a designed New Entry form, normalizes Register filter density, scopes Bulk Upload and Daily Cash Close layout styles, groups Settings diagnostics apart from editable property configuration, advances the PWA cache, and adds design-system plus Browser E2E assertions. Pending: exact-head CI, Browser E2E and Full Flight Test, visual review of changed screens, then one consolidated PR for owner review. No live deployment or production-data operation.
