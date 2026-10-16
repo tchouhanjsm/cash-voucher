@@ -51,31 +51,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Capture formatted Phase 21 files for local reconciliation
-        if: always()
-        run: |
-          mkdir -p "$RUNNER_TEMP/phase21-original" "$RUNNER_TEMP/phase21-prettier"
-          files="docs/HANDOFF.md frontend-ui-kit.css style.css test/test-design-system.js"
-          for file in $files; do
-            mkdir -p "$RUNNER_TEMP/phase21-original/$(dirname "$file")"
-            cp "$file" "$RUNNER_TEMP/phase21-original/$file"
-          done
-          npx prettier --write $files
-          for file in $files; do
-            mkdir -p "$RUNNER_TEMP/phase21-prettier/$(dirname "$file")"
-            cp "$file" "$RUNNER_TEMP/phase21-prettier/$file"
-            diff -u "$RUNNER_TEMP/phase21-original/$file" "$file" >> "$RUNNER_TEMP/phase21-format-diff.txt" || true
-          done
-          cp "$RUNNER_TEMP/phase21-format-diff.txt" "$RUNNER_TEMP/phase21-prettier/format-diff.txt"
-          cd "$RUNNER_TEMP/phase21-prettier"
-          zip -qr "$RUNNER_TEMP/phase21-prettier-output.zip" .
-      - name: Upload formatted Phase 21 files
-        if: always()
-        uses: actions/upload-artifact@v7
-        with:
-          name: phase21-prettier-output-${{ github.run_id }}
-          path: ${{ runner.temp }}/phase21-prettier-output.zip
-          if-no-files-found: error
       - name: Run quality gate
         run: npm run check
 
