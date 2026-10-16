@@ -11,7 +11,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   quality:
@@ -22,6 +22,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Setup Node.js
@@ -82,6 +83,32 @@ jobs:
             test/test-staging-workflow.js \
             "${RUNNER_TEMP}/staging-prettier-output"
           cp .github/workflows/staging-uat.yml "${RUNNER_TEMP}/staging-prettier-output/staging-uat.formatted.yml"
+
+      - name: Commit formatter changes to the PR branch
+        env:
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -- \
+            .github/workflows/staging-uat.yml \
+            backend/80-settings-audit.gs \
+            docs/APPS-SCRIPT-RELEASE-RUNBOOK.md \
+            docs/HANDOFF.md \
+            scripts/deploy-staging.js \
+            scripts/staging-preflight.js \
+            scripts/staging-web-server.js \
+            test/mock-gas.js \
+            test/test-deployment-readiness.js \
+            test/test-staging-pipeline.js \
+            test/test-staging-web-server.js \
+            test/test-staging-workflow.js
+          if git diff --cached --quiet; then
+            echo "No formatter changes to commit."
+          else
+            git commit -m "Format staging deployment and UAT pipeline"
+            git push origin "HEAD:${PR_HEAD_REF}"
+          fi
 
       - name: Upload formatted staging candidate files for remediation
         uses: actions/upload-artifact@v7
