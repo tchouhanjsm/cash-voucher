@@ -5047,7 +5047,7 @@ with sync_playwright() as p:
         and desktop_diagnostic_layout['direction'] == 'row'
         and abs(desktop_diagnostic_layout['buttonTop'] - desktop_diagnostic_layout['noteTop']) < 30
         and 'does not prove restoreability' in desktop_diagnostic_layout['noteText'],
-        'desktop diagnostic export controls align in one row with explicit restore limitations',
+        'desktop diagnostic export controls align in one row with explicit restore limitations: ' + str(desktop_diagnostic_layout),
     )
     with audit_page.expect_download() as backup_export_info:
         audit_page.click('[data-act=bkexport]')
