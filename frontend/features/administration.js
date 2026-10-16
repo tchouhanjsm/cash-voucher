@@ -1042,10 +1042,13 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     download(
       'cash-voucher-audit-health-' + new Date().toISOString().slice(0, 10) + '.json',
-      JSON.stringify(snapshot, null, 2),
+      JSON.stringify(snapshot, null, 2) + '\\n',
       'application/json;charset=utf-8',
     );
-    toast('Exported audit health metadata only; the snapshot does not reconstruct missing events.', 'ok');
+    toast(
+      'Exported audit health metadata only; the snapshot does not reconstruct missing events.',
+      'ok',
+    );
   }
 
   function exportAuditCsv() {
