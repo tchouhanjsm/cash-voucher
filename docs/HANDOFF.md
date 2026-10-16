@@ -5,7 +5,7 @@ Repository: tchouhanjsm/cash-voucher
 Last verified main SHA: `ad1eb78847a9263c95870b043465b83dd48998be` (PR #150 merge commit)  
 Current engineering batch: Phase 15 — FrontUI Studio + shared component kit  
 Current working branch: `phase-15/frontend-ui-studio-kit-2026-10-16`  
-Current candidate: FrontUI Studio static gallery + shared CSS kit; verify the live PR and final-head checks before review
+Current candidate: PR #151 — https://github.com/tchouhanjsm/cash-voucher/pull/151 (FrontUI Studio static gallery + shared CSS kit); live PR head and exact-head checks are authoritative
 
 ## Verified repository state
 
