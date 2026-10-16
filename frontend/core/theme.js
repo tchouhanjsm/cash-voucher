@@ -2,7 +2,7 @@ import { ls } from './storage.js';
 
 const STORAGE_KEY = 'cv.theme';
 const THEME_COLORS = {
-  light: '#1f3a4d',
+  light: '#f7f5f0',
   dark: '#111820',
 };
 
@@ -29,16 +29,8 @@ function updateTheme(theme) {
 }
 
 export function initTheme() {
-  const media =
-    typeof window.matchMedia === 'function'
-      ? window.matchMedia('(prefers-color-scheme: dark)')
-      : null;
-  updateTheme(storedTheme() || (media?.matches ? 'dark' : 'light'));
-
-  media?.addEventListener?.('change', (event) => {
-    if (storedTheme()) return;
-    updateTheme(event.matches ? 'dark' : 'light');
-  });
+  // The app opens in the light workspace unless the user has explicitly saved a theme choice.
+  updateTheme(storedTheme() || 'light');
 
   document.getElementById('themeToggle')?.addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
