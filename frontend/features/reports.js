@@ -109,9 +109,9 @@ export function createReports({ api }) {
 
     const summary = R.summary;
     const filters = `
-      <div class="card">
-        <p class="muted">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p>
-        <form id="movementFilters" class="filters" autocomplete="off">
+      <div class="card report-filter-panel">
+        <p class="muted report-scope-note">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p>
+        <form id="movementFilters" class="filters report-filters" autocomplete="off">
           <label>From<input id="movementFrom" type="date" value="${esc(R.from)}" required></label>
           <label>To<input id="movementTo" type="date" value="${esc(R.to)}" required></label>
           <label>Type
@@ -140,7 +140,7 @@ export function createReports({ api }) {
 
     const error = R.error
       ? `
-          <div class="card form-error" role="alert">
+          <div class="card form-error report-error" role="alert">
             ${esc(R.error)}
             <button class="btn sm" type="button" data-act="reportRun">Retry</button>
           </div>
@@ -150,7 +150,7 @@ export function createReports({ api }) {
     let results = '';
     if (summary) {
       results = `
-        <div class="stats">
+        <div class="stats report-stats">
           <div class="card stat">
             <span>Selected payment total</span>
             <b>${money(summary.paymentTotal)}</b>
@@ -172,7 +172,7 @@ export function createReports({ api }) {
             <small class="muted">Cancelled rows excluded</small>
           </div>
         </div>
-        <div class="card">
+        <div class="card report-results-card">
           ${hasPositiveCount(summary.approvalExceptionCount) ? `<p class="muted" role="status">${esc(scalarText(summary.approvalExceptionCount))} active payment(s) have unresolved approval states. They remain visible below but are excluded from approved payment totals and block daily cash close until approved or cancelled.</p>` : ''}
           ${hasPositiveCount(summary.unmatchedVendorCount) ? `<p class="muted" role="status">${esc(scalarText(summary.unmatchedVendorCount))} report row(s) have no unique saved Vendor ID. IDs are linked only when the counterparty exactly matches one unambiguous saved vendor name; unmatched historical/free-text names remain blank.</p>` : ''}
           ${hasPositiveCount(summary.ambiguousVendorCount) ? `<p class="muted" role="status">${esc(scalarText(summary.ambiguousVendorCount))} report row(s) have ambiguous vendor names because the saved vendor master contains duplicates. No VendorID is inferred for these rows; reconcile them manually before relying on party-level summaries.</p>` : ''}
@@ -186,7 +186,7 @@ export function createReports({ api }) {
       `;
     } else if (R.loading) {
       results =
-        '<div class="card" role="status" aria-live="polite"><p class="muted">Loading report… Previous results are hidden until this request completes.</p></div>';
+        '<div class="card report-status-card" role="status" aria-live="polite"><p class="muted">Loading report… Previous results are hidden until this request completes.</p></div>';
     } else if (!R.error) {
       results = emptyState({
         title: 'No report generated yet',

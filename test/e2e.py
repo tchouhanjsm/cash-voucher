@@ -226,6 +226,24 @@ with sync_playwright() as p:
         page.locator('#lUrl').count() == 0 or page.locator('#lUrl').is_hidden(),
         'local E2E API override is active',
     )
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    login_style = page.evaluate("""() => ({
+      background: getComputedStyle(document.querySelector('#login')).backgroundImage,
+      cardPadding: Number.parseFloat(getComputedStyle(document.querySelector('#loginForm')).paddingTop),
+      emailHeight: document.querySelector('#lEmail').getBoundingClientRect().height,
+      buttonHeight: document.querySelector('#lBtn').getBoundingClientRect().height,
+      viewportWidth: document.documentElement.clientWidth,
+      pageWidth: document.documentElement.scrollWidth
+    })""")
+    check(
+        'radial-gradient' in login_style['background']
+        and login_style['cardPadding'] >= 24
+        and login_style['emailHeight'] >= 48
+        and login_style['buttonHeight'] >= 48
+        and login_style['pageWidth'] <= login_style['viewportWidth'],
+        'sign-in surface uses light-theme tokens, generous card spacing and touch-friendly controls',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
 
     page.fill('#lEmail', 'owner@test.com')
     page.fill('#lPin', '000000')
@@ -306,6 +324,32 @@ with sync_playwright() as p:
         and page.locator('#view .page-description').count() == 1,
         'page context and description are rendered in the shared production header',
     )
+    page.click('#userBtn')
+    page.locator('#userPop button[data-go="acct"]').first.click()
+    page.wait_for_selector('#pf')
+    account_header = page.locator('#view .page-header')
+    check(
+        account_header.locator('.page-eyebrow').text_content().strip() == 'Account'
+        and account_header.locator('.page-description').count() == 1
+        and page.locator('.profile-account-card').count() == 1
+        and page.locator('.account-pin-form#pf').count() == 1,
+        'My Account uses shared page context and a dedicated profile/PIN layout',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    account_columns = page.locator('.account-pin-controls').evaluate(
+        "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
+    )
+    check(account_columns >= 3, 'Account PIN controls align into a clear three-column desktop form')
+    page.set_viewport_size({'width': 390, 'height': 800})
+    check(
+        page.locator('.account-pin-controls').evaluate(
+            "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
+        ) == 1
+        and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
+        'Account PIN controls stack cleanly without page-level overflow on mobile',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    go_view(page, 'dash')
     go_view(page, 'new')
     check(
         page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
@@ -1223,6 +1267,16 @@ with sync_playwright() as p:
     xss_company = '<img src=x onerror=window.__xssFired=true>'
     go_view(page, 'vend')
     page.wait_for_selector('#vf')
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    vendor_form_layout = page.locator('#vf').evaluate(
+        "el => ({display:getComputedStyle(el).display,columns:getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0})"
+    )
+    check(
+        vendor_form_layout['display'] == 'grid' and vendor_form_layout['columns'] >= 4
+        and page.locator('.management-results-card').count() == 1,
+        'Vendor editor and saved-vendor list use the shared management composition',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
     check(
         page.locator('#vn').get_attribute('aria-label') == 'Vendor name'
         and page.locator('#vc').get_attribute('aria-label') == 'Company name (optional)'
@@ -3989,6 +4043,25 @@ with sync_playwright() as p:
     # Exercise the recorded movement report through the actual browser/API mock.
     go_view(page, 'reports')
     page.wait_for_selector('#movementFilters')
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    report_layout = page.locator('#movementFilters').evaluate(
+        "el => ({display:getComputedStyle(el).display, columns:getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0})"
+    )
+    check(
+        report_layout['display'] == 'grid' and report_layout['columns'] == 6,
+        'movement report filters align in a six-column desktop workspace',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    mobile_report_layout = page.locator('#movementFilters').evaluate(
+        "el => ({display:getComputedStyle(el).display, columns:getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0})"
+    )
+    check(
+        mobile_report_layout['display'] == 'grid'
+        and mobile_report_layout['columns'] == 1
+        and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
+        'movement report filters become a single, overflow-safe mobile column',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
     check(
         page.locator('#view .page-header h1').inner_text() == 'Recorded Movement Report'
         and page.locator('#view .empty-state-card h2').inner_text() == 'No report generated yet',
@@ -4840,6 +4913,25 @@ with sync_playwright() as p:
     audit_page.wait_for_selector('[data-v=audit]')
     go_view(audit_page, 'audit')
     audit_page.wait_for_selector('#aud [data-act=audretry]', timeout=10000)
+    audit_layout = audit_page.locator('.audit-filters').evaluate(
+        "el => ({display:getComputedStyle(el).display,columns:getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0})"
+    )
+    check(
+        audit_page.locator('.audit-panel').count() == 1
+        and audit_layout['display'] == 'grid'
+        and audit_layout['columns'] == 4,
+        'Audit log uses the shared review panel and four-column desktop filter grid',
+    )
+    audit_page.set_viewport_size({'width': 390, 'height': 800})
+    audit_mobile_columns = audit_page.locator('.audit-filters').evaluate(
+        "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
+    )
+    check(
+        audit_mobile_columns == 1
+        and audit_page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
+        'Audit filters reflow to one mobile column without horizontal page overflow',
+    )
+    audit_page.set_viewport_size({'width': 1280, 'height': 800})
     check(
         'Audit events unavailable.' in audit_page.locator('#aud-count').inner_text()
         and 'No audit events are available' not in audit_page.locator('#aud').inner_text()

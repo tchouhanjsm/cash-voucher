@@ -110,8 +110,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
           '<button class="btn primary">Save vendor</button>',
           '<button type="button" class="btn" data-act="vclr">Clear</button>',
         ].join(''),
+        className: 'filters vendor-form-fields',
       }) +
-      '<div class="card">' +
+      '<div class="card management-results-card">' +
       vendorTable +
       '</div>';
   }
@@ -253,7 +254,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const rows = users
       .map(
         (user) =>
-          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" style="min-height:34px;padding:4px">${roles.map((role) => `<option${role === user.role ? ' selected' : ''}>${role}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
+          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option${role === user.role ? ' selected' : ''}>${role}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
      <td class="r nw"><button class="btn sm" data-act="upin" data-id="${esc(user.id)}">Reset PIN</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
       )
       .join('');
@@ -290,10 +291,11 @@ export function createAdministration({ api, getNavigation, signOut }) {
         id: 'uf',
         title: 'Add user',
         fields: userFormFields,
+        className: 'filters user-form-fields',
         footer:
           '<p class="muted"><b>Staff</b>: create and view own entries · <b>Manager</b>: view, edit, cancel, bulk upload, vendors, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
       }) +
-      '<div class="card">' +
+      '<div class="card management-results-card">' +
       userTable +
       '</div>';
   }
@@ -647,7 +649,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         section: 'Manage',
         description: 'Review administrative events and export the loaded records.',
       }) +
-      `<section class="card" aria-describedby="audit-scope">
+      `<section class="card audit-panel" aria-describedby="audit-scope">
         <p id="audit-scope" class="muted">Audit events load newest-first in pages of 200. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
         <div id="aud-health" aria-live="polite"><p class="muted">Loading audit-write health…</p></div>
         <div class="filters audit-filters">
@@ -1527,9 +1529,16 @@ export function createAdministration({ api, getNavigation, signOut }) {
       header.className = 'head page-header';
       const headerCopy = document.createElement('div');
       headerCopy.className = 'page-header-copy';
+      const eyebrow = document.createElement('p');
+      eyebrow.className = 'page-eyebrow';
+      eyebrow.textContent = 'Account';
       const heading = document.createElement('h1');
       heading.textContent = 'My Account';
-      headerCopy.appendChild(heading);
+      const description = document.createElement('p');
+      description.className = 'page-description';
+      description.textContent =
+        'Review your signed-in profile, installation options, and PIN settings.';
+      headerCopy.append(eyebrow, heading, description);
       const headerActions = document.createElement('div');
       headerActions.className = 'page-header-actions';
       header.append(headerCopy, headerActions);
@@ -1540,7 +1549,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       const role = scalarText(S.me?.role);
       const propertyName = scalarText(S.settings?.propertyName);
       const profile = document.createElement('div');
-      profile.className = 'card profile';
+      profile.className = 'card profile profile-account-card';
       const avatar = document.createElement('span');
       avatar.className = 'avatar lg';
       avatar.setAttribute('aria-hidden', 'true');
@@ -1583,12 +1592,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
       const form = document.createElement('form');
       form.id = 'pf';
-      form.className = 'card';
+      form.className = 'card account-pin-form';
       form.autocomplete = 'off';
       const formHeading = document.createElement('h2');
       formHeading.textContent = 'Change PIN';
       const controls = document.createElement('div');
-      controls.className = 'filters';
+      controls.className = 'filters account-pin-controls';
       const makePinInput = (id, label, autocomplete, placeholder) => {
         const input = document.createElement('input');
         input.id = id;

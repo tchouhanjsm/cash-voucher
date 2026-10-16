@@ -2,14 +2,14 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91` (PR #158 merge commit)  
-Current engineering batch: Phase 23 — FrontUI adoption across production workflows  
-Current working branch: `phase-23-frontui-portal-adoption-2026-10-16`  
-Current candidate: apply the shared studio system to actual workflow screens, add focused browser regressions for responsive layouts, and remove one-off styling; no deployment or accounting/authorization changes
+Last verified main SHA: `dabd39b2b70d516d714e08ac0cf6ed57fa806eee` (PR #159 merge commit)  
+Current engineering batch: Phase 24 — responsive reporting and administration workflow adoption  
+Current working branch: `phase-24-workflows-ui-adoption-2026-10-16`  
+Current candidate: bring report, register, admin, audit, account and sign-in screens onto responsive shared layouts with browser regression coverage; no financial-policy or deployment changes
 
 ## Verified repository state
 
-- Live `main` is `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91`, the PR #158 merge commit. PR #158's exact tested head `4b4cadb70d86400726886cda289228f8240579cc` passed CI/quality (285 backend checks), Browser E2E (402 checks) and Full Flight Test (285 backend + 402 browser checks). Phase 21's light-first redesign is merged; Phase 23 is the next candidate for production-screen adoption. Source/mock checks are distinct from proof of live staging, real role/Drive permissions or a witnessed restore.
+- Live `main` is `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`, the PR #159 merge commit. PR #159's exact tested head `41b25f42c39a033585128ddf8c7e89f247e1fc61` passed CI/quality (285 backend checks), Browser E2E (409 checks) and Full Flight Test (285 backend + 409 browser checks); post-merge main CI/quality passed. The FrontUI static gallery is still a design reference, while merged PR #159 integrates the shared system into selected production workflows. Phase 24 is the next candidate for broader report/admin/account/sign-in screen adoption. Source/mock checks remain distinct from proof of live staging, real role/Drive permissions or a witnessed restore.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
 - Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
@@ -108,6 +108,10 @@ Current candidate: apply the shared studio system to actual workflow screens, ad
 - Reconcile the current main/PR state in the handoff, roadmap, backlog, project guide and release-readiness status. Do not modify financial policy or run migrations/deployments.
 - Next cash-close enhancement requiring an owner decision: denomination rows remain optional and must not be assumed useful or made mandatory without approval; the existing close MVP is already implemented.
 
-## Phase 23 candidate — FrontUI adoption across real workflows
+## Phase 23 — FrontUI adoption across real workflows (merged PR #159)
 
-Candidate branch: `phase-23-frontui-portal-adoption-2026-10-16`; based on merged PR #158 main SHA `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91`. The batch wires section context into the shared page header, establishes a designed New Entry form, normalizes Register filter density, scopes Bulk Upload and Daily Cash Close layout styles, groups Settings diagnostics apart from editable property configuration, advances the PWA cache, and adds design-system plus Browser E2E assertions. Pending: exact-head CI, Browser E2E and Full Flight Test, visual review of changed screens, then one consolidated PR for owner review. No live deployment or production-data operation.
+Merged main SHA: `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`; tested PR head: `41b25f42c39a033585128ddf8c7e89f247e1fc61`. CI/quality passed 285 backend checks; Browser E2E passed 409 checks; Full Flight Test passed 285 backend + 409 browser checks. The work integrates shared page context and responsive layout hooks into New Entry, Register, Cash Close, Bulk Upload and Settings. No live deployment or production-data operation occurred.
+
+## Phase 24 candidate — responsive reporting and administration workflows
+
+Candidate branch: `phase-24-workflows-ui-adoption-2026-10-16`, based on main SHA `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`. Scope: responsive report filter/summary composition, Register totals, Vendor/User administration form grids, Audit panel filters, Account/PIN layout and sign-in surface. Add desktop/mobile regression coverage, maintain existing IDs and permissions, run all required checks on one exact final head, and do not deploy Apps Script or mutate production data.

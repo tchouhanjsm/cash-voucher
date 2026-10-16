@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91` (PR #158 merge; auth regression and source-of-truth reconciliation)  
-Current engineering batch: Phase 23 — FrontUI adoption across production workflows  
-Current candidate branch: `phase-23-frontui-portal-adoption-2026-10-16`
+Last verified main baseline: `dabd39b2b70d516d714e08ac0cf6ed57fa806eee` (PR #159 merge; FrontUI adoption across production workflows)  
+Current engineering batch: Phase 24 — responsive reporting and administration workflow adoption  
+Current candidate branch: `phase-24-workflows-ui-adoption-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -37,7 +37,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Operational readiness — live Apps Script deployment/identity, live role/receipt checks, scheduled backup plus isolated restore, physical-device PWA recovery and manual accessibility remain owner-controlled release gates.
 
 - Phase 22 — authentication race regression and project-record reconciliation is complete in merged PR #158 at `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91`. Its exact tested head passed CI/quality (285 backend checks), Browser E2E (402 checks), and Full Flight Test (285 backend + 402 browser checks). The direct post-lock stale-session regression proves the mocked write route fails closed without creating a voucher; it does not simulate true concurrent Apps Script calls.
-- Phase 23 — candidate branch `phase-23-frontui-portal-adoption-2026-10-16`: shared page context plus production layout changes for New Entry, responsive Register filters, grouped Settings diagnostics, Bulk Upload and Daily Cash Close. Candidate work remains unmerged and undeployed until exact-head CI, Browser E2E and Full Flight Test pass and the owner reviews it.
+- Phase 23 — FrontUI production-screen adoption is complete in merged PR #159 at main SHA `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`. It adds a shared section eyebrow, standardized New Entry layout, responsive Register filters, Settings diagnostic composition, Bulk Upload and Cash Close presentation, and bumps the PWA shell cache to `cv2-v18`. Exact head `41b25f42c39a033585128ddf8c7e89f247e1fc61` passed CI/quality (285 backend checks), Browser E2E (409 checks) and Full Flight Test (285 backend + 409 browser checks); post-merge CI passed on main. Manual device/zoom/screen-reader verification and live operational release gates remain open.
+- Phase 24 — candidate branch `phase-24-workflows-ui-adoption-2026-10-16`: responsive report filters/summary cards, Register totals styling, vendor/user administration forms, dedicated Audit composition, Account PIN layout and sign-in surface. Exact-head CI, Browser E2E and Full Flight Test are required before merge.
 
 ## Phase 4 batch outcomes
 
