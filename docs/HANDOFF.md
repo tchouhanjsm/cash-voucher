@@ -5,7 +5,7 @@ Repository: tchouhanjsm/cash-voucher
 Last verified main SHA: `a478c52c68c520b8eddbf80692d101dc20210c58` (PR #149 merge commit)  
 Current engineering batch: Phase 14 — whole-product UX completion (Register keyboard scrolling and Reports responsive coverage)  
 Current working branch: `phase-14/register-reports-ux-2026-10-16`  
-Current candidate: Register and Reports responsive/accessibility batch; live branch/PR state and exact-head checks are authoritative
+Current candidate: PR #150 — https://github.com/tchouhanjsm/cash-voucher/pull/150 (Register and Reports responsive/accessibility batch); live PR head and exact-head checks are authoritative
 
 ## Verified repository state
 
