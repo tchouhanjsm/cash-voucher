@@ -2,16 +2,18 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `0cf47fc8d77f5dd7429a62c57ab8ec77309873f3` (main after PR #134; Phase 5 fingerprints existing assignment statements).
+**Latest merged review baseline:** `61e46989032985fba54ceb48d768ab57430aa48a` (main after PR #147; 17 assignment sites across eight modules after Phase 11 Batches 1–4; Dashboard fingerprint `2977910e`).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
 
 **Phase 5 / PR #134 (merged):** ordered source fingerprints now detect edits to a known assignment's template, expression or escaping helper; its tested head passed all three required workflows. A matching fingerprint does not prove contextual safety, eliminate DOM-based risk, or replace manual review and hostile-input tests.
 
-**Phase 6 / PR #135 (proposed):** five status/error-only assignments are replaced by explicit DOM nodes and `textContent`, including the Daily Cash Close API error boundary. The proposed active inventory falls from 33 to 28 sinks. A hostile API-error E2E test checks that SVG markup is displayed as inert text. This is partial risk reduction; the 28 remaining assignments still require context-specific review.
+**Phase 6 / PR #135 (merged):** five status/error-only assignments were replaced by DOM nodes and `textContent`, including the Daily Cash Close API error boundary. The active inventory falls from 33 to 28 sinks. Browser E2E verifies that SVG markup in an API-error response is displayed as inert text. This is partial risk reduction; the 28 remaining assignments still require context-specific review.
 
-**Phase 4 follow-up — 15 October 2026:** the active modular frontend currently has 33 `innerHTML` assignment sites across nine modules. `scripts/check-dom-sinks.js` locks those per-module counts and fails if they drift or if specified high-risk DOM APIs are introduced. A new mock-authenticated role/action suite separately tests staff/manager/owner/accountant access and own-versus-foreign record visibility. These are drift and regression controls, not proofs that each interpolation is safe or that every authorization scenario has been penetration-tested. The live deployment and production data boundaries remain unverified.
+**Phase 7 / PR #136 (merged):** the accountant Recorded Movement Report is given an adversarial valid-shaped response containing hostile text fields and a formula-leading vendor value. The browser test checks inert HTML rendering, CSV apostrophe neutralization and recovery to the normal report response. This expands verification; it does not claim a confirmed report-renderer defect.
+
+**Phase 4 follow-up — historical baseline, 15 October 2026:** at that review stage the active modular frontend had 33 `innerHTML` assignment sites across nine modules. Subsequent Phase 11 Batches 1–4 reduced the merged inventory to 17 sites across eight modules on main after PR #147. `scripts/check-dom-sinks.js` continues to detect drift and specified high-risk DOM APIs. The mock-authenticated role/action suite tests selected staff/manager/owner/accountant access and own-versus-foreign record visibility. These are drift and regression controls, not proofs that each interpolation is safe or that every authorization scenario has been penetration-tested. Live deployment and production data boundaries remain unverified.
 
 **Cross-phase status update — 15 October 2026:** PR #132 adds a limited high-confidence credential-pattern scan across current tracked text and reachable history, plus a route-registry regression asserting registered actions reject unauthenticated calls. These guardrails do not certify every credential format, prove every role/action combination, or replace the full active DOM-sink review. Count them as verified only after final-head CI passes.
 
@@ -351,3 +353,21 @@ The active Cash Close renderer in `frontend/features/cash-close.js` was added af
 ## Phase 1 review status — 14 October 2026
 
 PR #126 adds targeted Daily Cash Close preview response validation; see the section above for its exact scope. The complete active HTML/DOM sink inventory, live authorization, secret/history scan, real backup/restore and device validation remain open. See `docs/PHASE-1-REPOSITORY-AUDIT.md`; do not treat this incremental audit as a security certification.
+
+## Phase 8 / PR #138 (merged) — reusable modal DOM boundary
+
+PR #138 replaced the shared modal frame's `modal.innerHTML` assignment with DOM APIs. Title and submit labels are scalar-normalized and assigned through `textContent`, while the caller-supplied body remains a DOM Node/DocumentFragment. Browser E2E injects hostile SVG/image strings and verifies inert text and focus restoration. The current active inventory is 27 assignment sites across eight modules.
+
+This is targeted attack-surface reduction, not evidence of a confirmed exploit or complete XSS certification. The remaining sites still require contextual review, and live-host headers/CSP, live authorization and adversarial manual review remain release gates.
+
+## Phase 9 / PR #139 (merged) — financial approval identity consistency
+
+PR #139 updated payee-day aggregation to compare stable IDs when both records have non-empty VendorIDs and fall back to normalized names if either side is legacy/unlinked. Create/edit regressions cover threshold crossings and distinct stable identities; no historical backfill or policy change was made. Exact-head CI, Browser E2E and Full Flight Test passed, and post-merge CI passed on main.
+
+## Phase 10 / PR #141 (merged) — UI refresh mainline integration
+
+PR #141 integrated the UI refresh on current main. It adds a local inline SVG sprite, allowlisted icons and action routing, Dashboard needs-attention states, KPI icons, removes breadcrumbs, advances the shell cache to `cv2-v16`, and changes the Dashboard assignment fingerprint to `2977910e`. The panel's empty state is scoped and does not certify backup health, the full recovery queue or release readiness. CI, Browser E2E (353 checks) and Full Flight Test passed on exact tested head `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`; the PR reports post-merge CI passed. The exact merge SHA is `42ff7708535d04c15510caf90c5f93738109669e`.
+
+This is not a complete rendering-security certification. Phase 11 Batches 1–4 are merged in PRs #143–#146; they reduced the active inventory from 27 to 17 assignments across eight frontend modules. PR #146's source CI passed and sink inventory/fingerprint gates matched 17 assignments, but its Browser E2E and Full Flight Test on exact PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` each reported one failure: `My Account preserves sign-out and Change PIN controls after DOM rendering`.
+
+PR #147 explicitly sets the Change PIN button's `type="submit"`, preserving the intended form behavior and satisfying the existing regression. It does not alter sink count or financial/authorization logic. Exact-head CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend checks plus 358 browser checks, 0 failures) passed on `eb473402dca0cbdc085af1f961ca00e9b70705d8`. Remaining templates require contextual review; sink counts/fingerprints are drift controls, not XSS proof. Live CSP headers, live authorization, Apps Script deployment identity, backup/restore, offline/device behavior and manual accessibility remain release gates.

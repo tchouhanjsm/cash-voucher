@@ -35,9 +35,24 @@ A single high-value payment must retain consistent identity and financial treatm
 - CashImpact is explicit, and saved Daily Cash Close snapshots remain immutable.
 - No production data, Apps Script deployment, schema or accounting rule is changed by this phase.
 
-## Remaining cross-workflow risks
+## Cross-workflow recovery coverage now present
 
-This integration regression is not a complete role/action matrix. Follow-on work must still test duplicate retry after an ambiguous network response, concurrent tabs, stale sessions, permission denial, offline queue recovery, and partial write/audit failure behavior. The existing Browser E2E suite covers portions of the browser/offline and role flows; its evidence remains separate from real-device and production validation.
+The current source test suite covers the following regressions across Browser E2E, backend and authorization tests:
+
+- Lost or malformed direct-save responses are treated as ambiguous and retried with the original client ID; the Register contains exactly one voucher.
+- IndexedDB acknowledgement failure after server commit preserves the same pending client ID and safely retries without a duplicate.
+- Multi-tab queue synchronization and expired claim leases are exercised; the same queued transaction results in one create request and one Register row.
+- Stale session during sync preserves the account-bound pending record, signs the operator back in and retries without permanent rejection.
+- A poison/rejected queue item is isolated from a healthy neighboring record; rejected data remains reviewable/exportable and is removed only after explicit confirmation.
+- Role/action checks cover the staff, manager, owner and accountant boundaries. The integrated high-value payment path checks pending/approved report treatment, cash-close arithmetic/snapshot and attributable audit events.
+
+Phase 12 / PR #148 adds the missing explicit runtime assertion for a record whose stored endpoint binding differs while the account email matches. The assertion is candidate-only until all required workflows pass on one final PR head.
+
+## Residual cross-workflow risks
+
+- Simultaneous audit append and Script Properties marker failure remains a durability/observability limitation; automated tests document it but do not repair a missing audit event.
+- Test runs use mocks and do not establish live Sheet/Drive behavior, actual authorization, Apps Script deployment identity/version, production latency/concurrency, scheduled backup/restore, or physical-device offline durability.
+- Permission-denial, financial-state and recovery-path tests cover selected combinations, not an exhaustive penetration test of every role/action/state tuple.
 
 ## Acceptance and evidence
 

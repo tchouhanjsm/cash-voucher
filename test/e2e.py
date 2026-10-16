@@ -238,7 +238,12 @@ with sync_playwright() as p:
         page.locator('#view .needs h2').inner_text().startswith('Needs attention')
         and page.locator('#view .stat .stat-ic svg').count() >= 5
         and page.locator('[data-v=dash] .ic svg use').get_attribute('href') == '#i-home',
-        'Dashboard shows the needs-attention panel, KPI tile icons and SVG navigation icons',
+        'Dashboard shows scoped needs-attention text, KPI icons and SVG navigation icons',
+    )
+    check(
+        page.locator('#view .needs .needs-clear').count() == 1
+        and 'does not verify backups' in page.locator('#view .needs .needs-clear').inner_text(),
+        'dashboard empty-attention state does not imply complete operational health',
     )
     check(
         page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
@@ -809,6 +814,121 @@ with sync_playwright() as p:
         and 'tax' not in report_download.suggested_filename.lower(),
         'generic accountant CSV includes vendor identity without claiming tax/accounting-system compatibility',
     )
+
+    # Phase 7: valid report rows are still untrusted HTML and CSV content.
+    report_markup_payloads = {
+        'vendorId': '<svg data-xss-field="vendorId" onload=window.__xssFired=true></svg>',
+        'category': '<svg data-xss-field="category" onload=window.__xssFired=true></svg>',
+        'notes': '<svg data-xss-field="notes" onload=window.__xssFired=true></svg>',
+        'cancelReason': '<svg data-xss-field="cancelReason" onload=window.__xssFired=true></svg>',
+        'approvedBy': '<svg data-xss-field="approvedBy" onload=window.__xssFired=true></svg>',
+        'approvedAt': '<svg data-xss-field="approvedAt" onload=window.__xssFired=true></svg>',
+        'approvalReason': '<svg data-xss-field="approvalReason" onload=window.__xssFired=true></svg>',
+        'generatedAt': '<svg data-xss-field="generatedAt" onload=window.__xssFired=true></svg>',
+    }
+    formula_payload = '=HYPERLINK("https://example.invalid","Report link")'
+    # Keep the hostile fixture inside the report's selected date range.
+    date_text = accountant_page.locator('#movementTo').input_value()
+
+    def inject_untrusted_report(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'recordedMovementReport':
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        report_data = payload.get('data', {})
+        if not isinstance(report_data, dict):
+            route.fulfill(response=response)
+            return
+
+        report_data['items'] = [{
+            'date': date_text,
+            'voucherNo': 'P-REPORT-OUTPUT-TEST',
+            'type': 'PAYMENT',
+            'vendor': formula_payload,
+            'vendorId': report_markup_payloads['vendorId'],
+            'category': report_markup_payloads['category'],
+            'notes': report_markup_payloads['notes'],
+            'amount': 125,
+            'status': 'ACTIVE',
+            'cancelReason': report_markup_payloads['cancelReason'],
+            'approvalStatus': 'REJECTED',
+            'approvedBy': report_markup_payloads['approvedBy'],
+            'approvedAt': report_markup_payloads['approvedAt'],
+            'approvalReason': report_markup_payloads['approvalReason'],
+            'createdBy': 'accountant@test.com',
+            'id': 'report-output-contract-test',
+        }]
+        report_data.update({
+            'paymentTotal': 125,
+            'receiptTotal': 0,
+            'activePaymentTotal': 0,
+            'activeReceiptTotal': 0,
+            'approvalExceptionCount': 1,
+            'unmatchedVendorCount': 1,
+            'ambiguousVendorCount': 0,
+            'count': 1,
+            'activeCount': 1,
+            'cancelledCount': 0,
+            'generatedAt': report_markup_payloads['generatedAt'],
+            'type': 'ALL',
+            'status': 'ACTIVE',
+        })
+        route.fulfill(response=response, json=payload)
+
+    accountant_page.route('**/api?*', inject_untrusted_report)
+    accountant_page.evaluate('window.__xssFired = false')
+    accountant_page.locator('#movementFilters button[type=submit]').click()
+    accountant_page.wait_for_function(
+        "document.querySelector('#view tbody')?.innerText.includes('P-REPORT-OUTPUT-TEST')"
+    )
+    report_text = accountant_page.locator('#view').inner_text()
+    check(
+        accountant_page.locator('#view tbody tr').count() == 1
+        and all(
+            value in report_text
+            for field, value in report_markup_payloads.items()
+            if field != 'approvedAt'
+        )
+        and formula_payload in report_text
+        and accountant_page.locator('#view img, #view svg').count() == 0
+        and not accountant_page.evaluate('window.__xssFired === true'),
+        'valid hostile report row fields remain inert text across vendor, category, notes, cancellation and approval contexts',
+    )
+    with accountant_page.expect_download() as hostile_report_download:
+        accountant_page.locator('[data-act=reportCsv]').click()
+    hostile_csv_path = hostile_report_download.value.path()
+    hostile_report_csv = open(hostile_csv_path, encoding='utf-8').read()
+    csv_formula_cell = "'" + formula_payload.replace('"', '""')
+    check(
+        csv_formula_cell in hostile_report_csv
+        and not hostile_report_csv.lstrip().startswith('='),
+        'report CSV prefixes a formula-leading vendor after CSV quote escaping',
+    )
+    check(
+        all(
+            value.replace('"', '""') in hostile_report_csv
+            for field, value in report_markup_payloads.items()
+            if field != 'generatedAt'
+        ),
+        'report CSV preserves hostile row fields as data after CSV quote escaping',
+    )
+    accountant_page.unroute('**/api?*', inject_untrusted_report)
+    accountant_page.locator('#movementFilters button[type=submit]').click()
+    accountant_page.wait_for_function(
+        "document.querySelector('#view tbody')?.innerText.includes('Accountant E2E Vendor')"
+    )
+    check(
+        'P-REPORT-OUTPUT-TEST' not in accountant_page.locator('#view').inner_text()
+        and all(value not in accountant_page.locator('#view').inner_text() for value in report_markup_payloads.values())
+        and accountant_page.locator('#view img, #view svg').count() == 0,
+        'report rendering recovers to the normal server response after hostile fixture removal',
+    )
     accountant_context.close()
     go_view(page, 'users')
     page.wait_for_selector('#uf')
@@ -831,6 +951,7 @@ with sync_playwright() as p:
     # A transient listUsers failure must replace "Loading" with a useful, retryable state.
     go_view(page, 'dash')
     user_list_failure_once = {'value': True}
+    hostile_user_list_error = '<svg onload=window.__xssFired=true></svg>'
 
     def fail_initial_user_list(route):
         try:
@@ -846,7 +967,7 @@ with sync_playwright() as p:
         if payload.get('ok'):
             user_list_failure_once['value'] = False
             payload['ok'] = False
-            payload['error'] = 'Simulated transient user-list failure'
+            payload['error'] = hostile_user_list_error
             payload['code'] = 'SERVER'
         route.fulfill(response=response, body=json.dumps(payload))
 
@@ -856,8 +977,12 @@ with sync_playwright() as p:
     check(
         'The user list could not be loaded' in page.locator('#users-load-error').inner_text()
         and page.locator('#users-load-error [data-act=usersRetry]').is_visible()
+        and page.locator('#view .page-header-actions [data-act=refresh]').is_visible()
         and page.locator('#view').inner_text().count('Loading users…') == 0
-        and 'No users yet' not in page.locator('#view').inner_text(),
+        and 'No users yet' not in page.locator('#view').inner_text()
+        and hostile_user_list_error not in page.locator('#view').inner_text()
+        and page.locator('#view svg, #view img').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
         'Users request failure is explicit and offers an in-context retry instead of an endless loading state',
     )
     page.click('#users-load-error [data-act=usersRetry]')
@@ -1447,8 +1572,10 @@ with sync_playwright() as p:
     check(
         hostile_queued_vendor in queued_review_text
         and page.locator('.outbox-pending img, .outbox-pending svg').count() == 0
+        and page.locator('#banner img, #banner svg').count() == 0
+        and page.locator('#banner [data-act=import-pending]').count() == 1
         and not page.evaluate('window.__xssFired === true'),
-        'tampered local queue vendor content remains inert text in the review list',
+        'tampered local queue vendor remains inert in the status banner and review list while queue actions remain available',
     )
     page.evaluate(
         """async () => {
@@ -1701,6 +1828,7 @@ with sync_playwright() as p:
 
     # A malformed server response must not become active HTML in the save confirmation.
     success_number_payload = '<svg onload=window.__xssFired=true></svg>'
+    success_vendor_payload = '<img src=x onerror=window.__xssFired=true>'
 
     def tamper_created_voucher_number(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -1709,6 +1837,7 @@ with sync_playwright() as p:
         created = payload.get('data', {}).get('created', [])
         if request_data.get('action') == 'createVouchers' and created:
             created[0]['no'] = success_number_payload
+            created[0]['vendor'] = success_vendor_payload
             # createVouchers responses are pushed into the client cache before a later bootstrap normalization.
             created[0]['date'] = {'split': None}
             route.fulfill(response=response, json=payload)
@@ -1723,10 +1852,11 @@ with sync_playwright() as p:
     page.wait_for_selector('.ok-panel')
     check('Saved 2 payments' in page.inner_text('#nres'), 'saved 2 payments')
     check(
-        page.locator('#nres svg').count() == 0
+        page.locator('#nres img, #nres svg').count() == 0
         and success_number_payload in page.locator('#nres').inner_text()
+        and success_vendor_payload in page.locator('#nres').inner_text()
         and not page.evaluate('window.__xssFired === true'),
-        'server-returned voucher number remains inert text in save confirmation',
+        'server-returned voucher number and vendor remain inert text in save confirmation',
     )
     page.evaluate('window.print = () => {}')
     page_errors_before_print = sum(message.startswith('PAGEERR ') for message in logs)
@@ -1908,6 +2038,9 @@ with sync_playwright() as p:
     check(
         'The start date must be on or before the end date.' in page.locator('#rempty').inner_text()
         and 'Totals unavailable' in page.locator('#rtot').inner_text()
+        and page.locator('#rtot [role=alert]').inner_text()
+        == 'Totals unavailable: choose a start date on or before the end date.'
+        and page.locator('#rtot img, #rtot svg').count() == 0
         and page.locator('#rf [data-act=csv]').is_disabled()
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'invalid register date range blocks misleading totals and CSV export with a recovery action',
@@ -2425,6 +2558,30 @@ with sync_playwright() as p:
         'another account neither sees nor uploads a foreign-bound outbox item',
     )
 
+    # Endpoint identity is part of the queue binding, even when the email matches.
+    foreign_endpoint_owner_key = (
+        'https://cash-voucher-endpoint-switch.invalid/api|'
+        + original_owner_key.rsplit('|', 1)[1]
+    )
+    update_outbox_owner('Account-bound Vendor', foreign_endpoint_owner_key)
+    page.evaluate(
+        """() => {
+          const channel = new BroadcastChannel('cash-voucher-outbox');
+          channel.postMessage({ type: 'changed' });
+          channel.close();
+          window.dispatchEvent(new Event('online'));
+        }"""
+    )
+    page.wait_for_timeout(500)
+    endpoint_records = outbox_vendor_records('Account-bound Vendor')
+    check(
+        page.locator('#banner').is_hidden()
+        and len(endpoint_records) == 1
+        and endpoint_records[0]['status'] == 'pending'
+        and endpoint_records[0]['ownerKey'] == foreign_endpoint_owner_key,
+        'same account bound to a different endpoint neither sees nor uploads the queued item',
+    )
+
     # Restore the intended account binding and leave a draft open while the background sync runs.
     context.set_offline(True)
     update_outbox_owner('Account-bound Vendor', original_owner_key)
@@ -2706,8 +2863,12 @@ with sync_playwright() as p:
     check('Imported 2 payments' in page.inner_text('#bprev'), 'payment import completion names payments')
     check(
         page.locator('#bprev .ok-panel').get_attribute('role') == 'status'
-        and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite',
-        'bulk import completion is announced as a polite status update',
+        and page.locator('#bprev .ok-panel').get_attribute('aria-live') == 'polite'
+        and page.locator('#bprev img, #bprev svg').count() == 0
+        and page.locator('#bprev [data-act=goreg]').count() == 1
+        and page.locator('#bprev [data-act=bulkagain]').count() == 1
+        and not page.evaluate('window.__xssFired === true'),
+        'bulk completion retains polite status, inert DOM and both actions',
     )
 
     # Import one receipt to ensure completion wording reflects the selected operation type.
@@ -2886,8 +3047,10 @@ with sync_playwright() as p:
     check(
         '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#rtot').inner_text()
         and '8 malformed voucher field(s) handled for safe display' in page.locator('#rtot').inner_text()
+        and page.locator('#rtot [role=status]').count() >= 2
+        and page.locator('#rtot img, #rtot svg').count() == 0
         and '[object Object]' not in page.locator('#view').inner_text(),
-        'register surfaces the same bootstrap diagnostics and keeps malformed metadata safe',
+        'register surfaces bootstrap diagnostics as DOM status nodes and keeps malformed metadata safe',
     )
     go_view(page, 'dash')
     builtins_unchanged = page.evaluate(
@@ -3255,6 +3418,42 @@ with sync_playwright() as p:
         and not page.locator('#app').evaluate('(element) => element.inert'),
         'Escape closes dialog, restores opener focus, and re-enables the app',
     )
+
+    # Exercise the shared dialog API with hostile title/submit labels.
+    page.evaluate("""async () => {
+      const { dialog } = await import('./frontend/core/ui.js');
+      const trigger = document.createElement('button');
+      trigger.type = 'button';
+      trigger.id = 'modal-hostile-label-trigger';
+      trigger.textContent = 'Open test dialog';
+      document.body.appendChild(trigger);
+      trigger.focus();
+      const body = document.createElement('div');
+      const input = document.createElement('input');
+      input.id = 'modal-hostile-label-input';
+      input.setAttribute('aria-label', 'Test field');
+      body.appendChild(input);
+      window.__modalLabelXss = false;
+      window.__modalHostileTitle = '<svg onload="window.__modalLabelXss=true">hostile title</svg>';
+      window.__modalHostileSubmit = '<img src=x onerror="window.__modalLabelXss=true">';
+      dialog(window.__modalHostileTitle, body, () => Promise.resolve(), window.__modalHostileSubmit);
+    }""")
+    check(
+        page.locator('#modalTitle').text_content() == page.evaluate('window.__modalHostileTitle')
+        and page.locator('#modal .primary').text_content() == page.evaluate('window.__modalHostileSubmit')
+        and page.locator('#modal svg, #modal img').count() == 0
+        and not page.evaluate('window.__modalLabelXss === true')
+        and page.locator('#modal #modal-hostile-label-input').count() == 1,
+        'shared dialog renders hostile labels as inert text while preserving caller DOM content',
+    )
+    page.evaluate("() => document.querySelector('#modal [data-x]').click()")
+    check(
+        page.locator('#modal').evaluate("(element) => element.classList.contains('hidden')")
+        and not page.locator('#app').evaluate('(element) => element.inert')
+        and page.evaluate("document.activeElement?.id === 'modal-hostile-label-trigger'"),
+        'shared dialog closes safely and restores opener focus after hostile-label rendering',
+    )
+    page.locator('#modal-hostile-label-trigger').evaluate('(element) => element.remove()')
 
     update_requests = []
 
@@ -4822,6 +5021,123 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'needs-attention panel renders static text only and stays inert with hostile payee data',
     )
+    denied_page_states = page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          const { pageNotice } = await import('/frontend/core/ui.js');
+          const { createReports } = await import('/frontend/features/reports.js');
+          const { createCashClose } = await import('/frontend/features/cash-close.js');
+          const originalPermissions = { ...S.me.perms };
+          const payload = '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>';
+          const results = {};
+          try {
+            document.querySelector('#view').replaceChildren(
+              pageNotice(payload, payload, { panelClass: 'card', role: 'status' }),
+            );
+            results.helper = {
+              heading: document.querySelector('#view h1')?.textContent || '',
+              message: document.querySelector('#view p')?.textContent || '',
+              hasActiveMarkup: Boolean(document.querySelector('#view img, #view svg')),
+            };
+
+            S.me.perms.reports = false;
+            createReports({ api: async () => ({}) }).render();
+            results.reports = {
+              heading: document.querySelector('#view h1')?.textContent || '',
+              message: document.querySelector('#view p')?.textContent || '',
+              hasCard: Boolean(document.querySelector('#view .card')),
+              hasActiveMarkup: Boolean(document.querySelector('#view img, #view svg')),
+            };
+
+            S.me.perms.cashClose = false;
+            createCashClose({ api: async () => ({}) }).render();
+            const status = document.querySelector('#view [role=status]');
+            results.cashClose = {
+              heading: document.querySelector('#view h1')?.textContent || '',
+              message: status?.textContent || '',
+              className: status?.className || '',
+              hasActiveMarkup: Boolean(document.querySelector('#view img, #view svg')),
+            };
+            results.scriptEffect = window.__xssFired === true;
+            return results;
+          } finally {
+            Object.assign(S.me.perms, originalPermissions);
+          }
+        }"""
+    )
+    check(
+        denied_page_states['helper']['heading']
+        == '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>'
+        and denied_page_states['helper']['message']
+        == denied_page_states['helper']['heading']
+        and not denied_page_states['helper']['hasActiveMarkup']
+        and not denied_page_states['scriptEffect'],
+        'shared page-notice renderer keeps hostile title and message payloads inert',
+    )
+    check(
+        denied_page_states['reports']['heading'] == 'Recorded Movement Report'
+        and denied_page_states['reports']['message'] == 'Reports are unavailable for this account.'
+        and denied_page_states['reports']['hasCard']
+        and not denied_page_states['reports']['hasActiveMarkup'],
+        'Reports permission-denied state uses safe DOM construction with its card layout',
+    )
+    check(
+        denied_page_states['cashClose']['heading'] == 'Daily Cash Close'
+        and denied_page_states['cashClose']['message']
+        == 'This feature is available to owners and managers.'
+        and denied_page_states['cashClose']['className'] == 'muted'
+        and not denied_page_states['cashClose']['hasActiveMarkup'],
+        'Cash Close permission-denied state preserves its status message and semantics',
+    )
+    go_view(page, 'dash')
+
+    account_dom_result = page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          const { createAdministration } = await import('/frontend/features/administration.js');
+          const originalMe = S.me;
+          const originalSettings = S.settings;
+          const payload = '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>';
+          try {
+            S.me = { ...originalMe, name: payload, email: payload, role: payload };
+            S.settings = { ...originalSettings, propertyName: payload };
+            createAdministration({ api: async () => ({}), getNavigation: () => ({}), signOut: () => {} }).account();
+            const view = document.querySelector('#view');
+            return {
+              name: view.querySelector('.profile-main h2')?.textContent || '',
+              email: view.querySelector('.profile-main p')?.textContent || '',
+              role: view.querySelector('.profile-main .badge')?.textContent || '',
+              property: view.querySelector('.profile-main .muted')?.textContent || '',
+              hasActiveMarkup: Boolean(view.querySelector('img, svg')),
+              hasSignOut: view.querySelector('[data-act=signout]')?.textContent === 'Sign out',
+              hasCurrentPin: Boolean(view.querySelector('#pf #po[aria-label="Current PIN"][autocomplete="current-password"]')),
+              hasNewPin: Boolean(view.querySelector('#pf #pn[aria-label="New PIN"][autocomplete="new-password"]')),
+              hasSubmit: view.querySelector('#pf button[type=submit]')?.textContent === 'Change PIN',
+              scriptEffect: window.__xssFired === true
+            };
+          } finally {
+            S.me = originalMe;
+            S.settings = originalSettings;
+          }
+        }"""
+    )
+    check(
+        account_dom_result['name'] == '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>'
+        and account_dom_result['email'] == account_dom_result['name']
+        and account_dom_result['role'] == account_dom_result['name']
+        and account_dom_result['property'] == account_dom_result['name']
+        and not account_dom_result['hasActiveMarkup']
+        and not account_dom_result['scriptEffect'],
+        'My Account treats hostile profile and property values as inert text',
+    )
+    check(
+        account_dom_result['hasSignOut']
+        and account_dom_result['hasCurrentPin']
+        and account_dom_result['hasNewPin']
+        and account_dom_result['hasSubmit'],
+        'My Account preserves sign-out and Change PIN controls after DOM rendering',
+    )
+    go_view(page, 'dash')
 
     check(
         not csp_violations,

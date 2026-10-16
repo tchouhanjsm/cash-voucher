@@ -5,6 +5,20 @@ import { ls } from '../core/storage.js';
 import { scalarText } from '../core/utils.js';
 import { createShell } from './shell.js';
 
+const NAV_ICON_NAMES = new Set([
+  'home',
+  'plus',
+  'book',
+  'chart',
+  'wallet',
+  'upload',
+  'store',
+  'users',
+  'settings',
+  'receipt',
+  'user',
+]);
+
 export function createNavigation({ api, getAuth, getPayments, renderers }) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
   const NAV = [
@@ -195,8 +209,9 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('class', 'i');
     svg.setAttribute('focusable', 'false');
+    const iconName = NAV_ICON_NAMES.has(icon) ? icon : 'user';
     const use = document.createElementNS('http://www.w3.org/2000/svg', 'use');
-    use.setAttribute('href', `#i-${icon}`);
+    use.setAttribute('href', `#i-${iconName}`);
     svg.appendChild(use);
     iconElement.appendChild(svg);
 

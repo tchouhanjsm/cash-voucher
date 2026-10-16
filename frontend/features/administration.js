@@ -148,23 +148,71 @@ export function createAdministration({ api, getNavigation, signOut }) {
     }
   }
 
+  function renderUsersLoadState(failed = false) {
+    const view = $('#view');
+    const pageHeader = document.createElement('div');
+    pageHeader.className = 'head page-header';
+
+    const pageHeaderCopy = document.createElement('div');
+    pageHeaderCopy.className = 'page-header-copy';
+
+    const pageTitle = document.createElement('h1');
+    pageTitle.textContent = 'Users';
+    pageHeaderCopy.appendChild(pageTitle);
+
+    const pageHeaderActions = document.createElement('div');
+    pageHeaderActions.className = 'page-header-actions';
+
+    const refresh = document.createElement('button');
+    refresh.className = 'btn sm';
+    refresh.type = 'button';
+    refresh.dataset.act = 'refresh';
+    refresh.textContent = '↻ Refresh';
+    pageHeaderActions.appendChild(refresh);
+    pageHeader.append(pageHeaderCopy, pageHeaderActions);
+
+    if (!failed) {
+      const loading = document.createElement('p');
+      loading.className = 'muted';
+      loading.setAttribute('role', 'status');
+      loading.setAttribute('aria-live', 'polite');
+      loading.textContent = 'Loading users…';
+      view.replaceChildren(pageHeader, loading);
+      return;
+    }
+
+    const errorPanel = document.createElement('section');
+    errorPanel.id = 'users-load-error';
+    errorPanel.className = 'card form-error';
+    errorPanel.setAttribute('role', 'alert');
+    errorPanel.setAttribute('aria-live', 'assertive');
+
+    const errorTitle = document.createElement('h2');
+    errorTitle.textContent = 'Users unavailable';
+
+    const errorMessage = document.createElement('p');
+    errorMessage.textContent =
+      'The user list could not be loaded. Check your connection and retry. The failure is not treated as an empty user list.';
+
+    const retry = document.createElement('button');
+    retry.className = 'btn primary';
+    retry.type = 'button';
+    retry.dataset.act = 'usersRetry';
+    retry.textContent = 'Retry loading users';
+
+    errorPanel.append(errorTitle, errorMessage, retry);
+    view.replaceChildren(pageHeader, errorPanel);
+  }
+
   async function usersView() {
-    $('#view').innerHTML =
-      head('Users', refreshBtn) +
-      '<p class="muted" role="status" aria-live="polite">Loading users…</p>';
+    renderUsersLoadState();
 
     let response;
     try {
       response = await api('listUsers');
     } catch (error) {
       console.warn('Users list could not be loaded:', error);
-      $('#view').innerHTML =
-        head('Users', refreshBtn) +
-        '<section id="users-load-error" class="card form-error" role="alert" aria-live="assertive">' +
-        '<h2>Users unavailable</h2>' +
-        '<p>The user list could not be loaded. Check your connection and retry. The failure is not treated as an empty user list.</p>' +
-        '<button class="btn primary" type="button" data-act="usersRetry">Retry loading users</button>' +
-        '</section>';
+      renderUsersLoadState(true);
       return;
     }
 
@@ -1239,11 +1287,102 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   function account() {
-    $('#view').innerHTML =
-      head('My Account') +
-      `<div class="card profile"><span class="avatar lg" aria-hidden="true">${esc(initials(S.me.name || S.me.email))}</span><div class="profile-main"><h2>${esc(S.me.name)}</h2><p>${esc(S.me.email)}</p><p><span class="badge">${esc(S.me.role)}</span> <span class="muted">${esc(scalarText(S.settings?.propertyName))}</span></p></div><div class="actions">${deferredInstall ? '<button class="btn" data-act="install">📲 Install app</button>' : ''}<button class="btn danger" data-act="signout">Sign out</button></div></div>
-    <p class="muted">Tip: on iPhone use Share → Add to Home Screen. On Android/Chrome use the menu → Install app.</p>
-    <form id="pf" class="card" autocomplete="off"><h2>Change PIN</h2><div class="filters"><input id="po" aria-label="Current PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="current-password" placeholder="Current PIN" required><input id="pn" aria-label="New PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="New PIN" required><button class="btn primary">Change PIN</button></div></form>`;
+    (() => {
+      const view = $('#view');
+      const fragment = document.createDocumentFragment();
+      const header = document.createElement('div');
+      header.className = 'head page-header';
+      const headerCopy = document.createElement('div');
+      headerCopy.className = 'page-header-copy';
+      const heading = document.createElement('h1');
+      heading.textContent = 'My Account';
+      headerCopy.appendChild(heading);
+      const headerActions = document.createElement('div');
+      headerActions.className = 'page-header-actions';
+      header.append(headerCopy, headerActions);
+      fragment.appendChild(header);
+
+      const name = scalarText(S.me?.name);
+      const email = scalarText(S.me?.email);
+      const role = scalarText(S.me?.role);
+      const propertyName = scalarText(S.settings?.propertyName);
+      const profile = document.createElement('div');
+      profile.className = 'card profile';
+      const avatar = document.createElement('span');
+      avatar.className = 'avatar lg';
+      avatar.setAttribute('aria-hidden', 'true');
+      avatar.textContent = initials(name || email);
+      const profileMain = document.createElement('div');
+      profileMain.className = 'profile-main';
+      const profileName = document.createElement('h2');
+      profileName.textContent = name;
+      const profileEmail = document.createElement('p');
+      profileEmail.textContent = email;
+      const metadata = document.createElement('p');
+      const roleBadge = document.createElement('span');
+      roleBadge.className = 'badge';
+      roleBadge.textContent = role;
+      const property = document.createElement('span');
+      property.className = 'muted';
+      property.textContent = propertyName;
+      metadata.append(roleBadge, document.createTextNode(' '), property);
+      profileMain.append(profileName, profileEmail, metadata);
+      const actions = document.createElement('div');
+      actions.className = 'actions';
+      const makeAction = (label, action, className) => {
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.className = className;
+        button.dataset.act = action;
+        button.textContent = label;
+        return button;
+      };
+      if (deferredInstall) actions.appendChild(makeAction('📲 Install app', 'install', 'btn'));
+      actions.appendChild(makeAction('Sign out', 'signout', 'btn danger'));
+      profile.append(avatar, profileMain, actions);
+      fragment.appendChild(profile);
+
+      const tip = document.createElement('p');
+      tip.className = 'muted';
+      tip.textContent =
+        'Tip: on iPhone use Share → Add to Home Screen. On Android/Chrome use the menu → Install app.';
+      fragment.appendChild(tip);
+
+      const form = document.createElement('form');
+      form.id = 'pf';
+      form.className = 'card';
+      form.autocomplete = 'off';
+      const formHeading = document.createElement('h2');
+      formHeading.textContent = 'Change PIN';
+      const controls = document.createElement('div');
+      controls.className = 'filters';
+      const makePinInput = (id, label, autocomplete, placeholder) => {
+        const input = document.createElement('input');
+        input.id = id;
+        input.type = 'password';
+        input.inputMode = 'numeric';
+        input.pattern = '[0-9]{6}';
+        input.title = 'Enter exactly 6 digits';
+        input.maxLength = 6;
+        input.autocomplete = autocomplete;
+        input.placeholder = placeholder;
+        input.setAttribute('aria-label', label);
+        input.required = true;
+        return input;
+      };
+      controls.append(
+        makePinInput('po', 'Current PIN', 'current-password', 'Current PIN'),
+        makePinInput('pn', 'New PIN', 'new-password', 'New PIN'),
+      );
+      const submit = document.createElement('button');
+      submit.type = 'submit';
+      submit.className = 'btn primary';
+      submit.textContent = 'Change PIN';
+      controls.appendChild(submit);
+      form.append(formHeading, controls);
+      fragment.appendChild(form);
+      view.replaceChildren(fragment);
+    })();
   }
 
   async function changePin(event) {

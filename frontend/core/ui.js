@@ -1,9 +1,14 @@
 import { $, $$ } from './dom.js';
-import { esc } from './utils.js';
+import { esc, scalarText } from './utils.js';
 
 let toastTimer;
 let returnFocusTo = null;
 let restoreAppInert = null;
+
+function scalarModalLabel(value, fallback) {
+  const label = scalarText(value).trim();
+  return label || fallback;
+}
 
 export function toast(message, kind) {
   const element = $('#toast');
@@ -78,10 +83,40 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   modal.classList.remove('hidden');
   modal.setAttribute('aria-hidden', 'false');
   modal.setAttribute('aria-labelledby', 'modalTitle');
-  modal.innerHTML = `<form class="card mcard" autocomplete="off"><h2 id="modalTitle">${esc(title)}</h2><p class="error" id="mErr" role="alert" aria-live="assertive"></p><div class="actions"><button type="button" class="btn" data-x>Close</button>${onSubmit ? `<button type="submit" class="btn primary">${esc(ok)}</button>` : ''}</div></form>`;
+  const form = document.createElement('form');
+  form.className = 'card mcard';
+  form.autocomplete = 'off';
 
-  const form = $('form', modal);
-  form.insertBefore(body, $('#mErr', form));
+  const heading = document.createElement('h2');
+  heading.id = 'modalTitle';
+  heading.textContent = scalarModalLabel(title, 'Dialog');
+
+  const error = document.createElement('p');
+  error.className = 'error';
+  error.id = 'mErr';
+  error.setAttribute('role', 'alert');
+  error.setAttribute('aria-live', 'assertive');
+
+  const actions = document.createElement('div');
+  actions.className = 'actions';
+
+  const closeButton = document.createElement('button');
+  closeButton.type = 'button';
+  closeButton.className = 'btn';
+  closeButton.dataset.x = '';
+  closeButton.textContent = 'Close';
+  actions.appendChild(closeButton);
+
+  if (onSubmit) {
+    const submitButton = document.createElement('button');
+    submitButton.type = 'submit';
+    submitButton.className = 'btn primary';
+    submitButton.textContent = scalarModalLabel(ok, 'Save');
+    actions.appendChild(submitButton);
+  }
+
+  form.append(heading, body, error, actions);
+  modal.replaceChildren(form);
   $('[data-x]', form).onclick = closeModal;
 
   modal.onkeydown = (event) => {
@@ -149,27 +184,65 @@ export function dialog(title, body, onSubmit, ok = 'Save') {
   return form;
 }
 
-const PAGE_SECTIONS = {
-  Dashboard: 'Work',
-  'My Dashboard': 'Work',
-  'Payment Register': 'Work',
-  'Recorded Movement Report': 'Money',
-  'Daily Cash Close': 'Money',
-  'Bulk Upload': 'Manage',
-  Vendors: 'Manage',
-  Users: 'Manage',
-  Settings: 'Manage',
-  'Audit log': 'Manage',
-  'My profile': 'Account',
+const ICON_NAMES = new Set([
+  'home',
+  'plus',
+  'book',
+  'chart',
+  'wallet',
+  'upload',
+  'store',
+  'users',
+  'settings',
+  'receipt',
+  'user',
+  'alert',
+  'check',
+  'clock',
+  'cloud-off',
+  'arrow-right',
+  'trend',
+  'cash',
+]);
+
+export const icon = (name) => {
+  const safeName = ICON_NAMES.has(name) ? name : 'alert';
+  return `<svg class="i" aria-hidden="true" focusable="false"><use href="#i-${safeName}"></use></svg>`;
 };
 
-// Icons come from the inline sprite in index.html. `name` is always an app constant.
-export const icon = (name, className = 'i') =>
-  `<svg class="${className}" aria-hidden="true" focusable="false"><use href="#i-${name}"></use></svg>`;
+// Build a small status/permission page without sending text through the HTML parser.
+export function pageNotice(title, message, { panelClass = '', messageClass = '', role = '' } = {}) {
+  const fragment = document.createDocumentFragment();
+  const header = document.createElement('div');
+  header.className = 'head page-header';
+  const copy = document.createElement('div');
+  copy.className = 'page-header-copy';
+  const heading = document.createElement('h1');
+  heading.textContent = scalarModalLabel(title, 'Page');
+  copy.appendChild(heading);
+  const actions = document.createElement('div');
+  actions.className = 'page-header-actions';
+  header.append(copy, actions);
+  fragment.appendChild(header);
+
+  const paragraph = document.createElement('p');
+  if (messageClass) paragraph.className = messageClass;
+  if (role) paragraph.setAttribute('role', role);
+  paragraph.textContent = scalarText(message);
+
+  if (panelClass) {
+    const panel = document.createElement('div');
+    panel.className = panelClass;
+    panel.appendChild(paragraph);
+    fragment.appendChild(panel);
+  } else {
+    fragment.appendChild(paragraph);
+  }
+  return fragment;
+}
 
 // `extra` is trusted app-authored action markup, never a data string.
 export const head = (title, extra = '', options = {}) => {
-  const section = options.section || PAGE_SECTIONS[title] || 'Workspace';
   const description = options.description
     ? `<p class="page-description">${esc(options.description)}</p>`
     : '';

@@ -95,6 +95,79 @@ export function createRegister({ api, go }) {
       .sort(bySeq);
   }
 
+  function renderTotals({
+    dataAvailable,
+    rangeInvalid,
+    unavailableTotalsMessage,
+    list,
+    paid,
+    received,
+    approvalExceptionCount,
+    invalidAmountCount,
+    malformedRecordCount,
+    malformedFieldCount,
+  }) {
+    const target = $('#rtot');
+    target.replaceChildren();
+
+    const appendText = (value) => target.appendChild(document.createTextNode(value));
+    const appendAmount = (value, color) => {
+      const amount = document.createElement('b');
+      if (color) amount.style.color = color;
+      amount.textContent = value;
+      target.appendChild(amount);
+    };
+    const appendStatus = (message) => {
+      appendText(' · ');
+      const status = document.createElement('span');
+      status.className = 'muted';
+      status.setAttribute('role', 'status');
+      status.textContent = message;
+      target.appendChild(status);
+    };
+
+    if (!dataAvailable || rangeInvalid) {
+      const alert = document.createElement('span');
+      alert.className = 'error';
+      alert.setAttribute('role', 'alert');
+      alert.textContent = !dataAvailable
+        ? unavailableTotalsMessage
+        : 'Totals unavailable: choose a start date on or before the end date.';
+      target.appendChild(alert);
+      return;
+    }
+
+    appendText('Paid: ');
+    appendAmount(money(paid));
+    appendText(' · Received: ');
+    appendAmount(money(received), 'var(--ok)');
+    appendText(' · Net: ');
+    appendAmount(money(received - paid));
+    appendText(' ');
+    const count = document.createElement('span');
+    count.className = 'muted';
+    count.textContent = '(' + list.length + ' vouchers)';
+    target.appendChild(count);
+
+    if (approvalExceptionCount) {
+      appendStatus(
+        approvalExceptionCount +
+          ' active payment(s) awaiting approval or requiring review are excluded from approved totals and cash close',
+      );
+    }
+    if (invalidAmountCount) {
+      appendStatus(invalidAmountCount + ' invalid amount(s) excluded from totals');
+    }
+    if (malformedRecordCount) {
+      appendStatus(
+        malformedRecordCount + ' malformed voucher record(s) omitted from Dashboard and Register',
+      );
+    }
+    if (malformedFieldCount) {
+      appendStatus(malformedFieldCount + ' malformed voucher field(s) handled for safe display');
+    }
+  }
+
   function renderRows() {
     const sourceRows = Array.isArray(S.vouchers) ? S.vouchers : [];
     const diagnostics = S.voucherDiagnostics || {
@@ -140,25 +213,18 @@ export function createRegister({ api, go }) {
       (voucher) => finiteAmount(voucher.amount) === null,
     ).length;
 
-    const malformedRecordMessage = !dataAvailable
-      ? ' · <span class="muted" role="status">' + esc(unavailableMessage) + '</span>'
-      : [
-          malformedRecordCount
-            ? `<span class="muted" role="status">${malformedRecordCount} malformed voucher record(s) omitted from Dashboard and Register</span>`
-            : '',
-          malformedFieldCount
-            ? `<span class="muted" role="status">${malformedFieldCount} malformed voucher field(s) handled for safe display</span>`
-            : '',
-        ]
-          .filter(Boolean)
-          .map((message) => ' · ' + message)
-          .join('');
-
-    $('#rtot').innerHTML = !dataAvailable
-      ? `<span class="error" role="alert">${esc(unavailableTotalsMessage)}</span>`
-      : rangeInvalid
-        ? '<span class="error" role="alert">Totals unavailable: choose a start date on or before the end date.</span>'
-        : `Paid: <b>${money(paid)}</b> · Received: <b style="color:var(--ok)">${money(received)}</b> · Net: <b>${money(received - paid)}</b> <span class="muted">(${list.length} vouchers)</span>${approvalExceptionCount ? ` · <span class="muted" role="status">${approvalExceptionCount} active payment(s) awaiting approval or requiring review are excluded from approved totals and cash close</span>` : ''}${invalidAmountCount ? ` · <span class="muted" role="status">${invalidAmountCount} invalid amount(s) excluded from totals</span>` : ''}${malformedRecordMessage}`;
+    renderTotals({
+      dataAvailable,
+      rangeInvalid,
+      unavailableTotalsMessage,
+      list,
+      paid,
+      received,
+      approvalExceptionCount,
+      invalidAmountCount,
+      malformedRecordCount,
+      malformedFieldCount,
+    });
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
 

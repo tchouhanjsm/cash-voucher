@@ -302,7 +302,9 @@ nav button.on {
 }
 nav .ic {
   width: 20px;
-  text-align: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 .who {
   font-size: 12px;
@@ -1809,7 +1811,7 @@ button {
   white-space: nowrap;
 }
 
-/* Tabler-inspired refinements: icons, KPI tiles, needs-attention panel. */
+/* Tabler-inspired refinements: local SVG icons, KPI tiles and scoped attention panel. */
 .i {
   width: 20px;
   height: 20px;
@@ -1891,11 +1893,11 @@ nav .ic {
 }
 .needs-clear {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 8px;
   margin: 0;
-  color: var(--ok);
-  font-weight: 600;
+  color: var(--ink);
+  font-weight: 500;
 }
 @media (max-width: 560px) {
   .needs-item {
@@ -1905,84 +1907,4 @@ nav .ic {
     width: 100%;
     justify-content: center;
   }
-}
-
-/* Spacing and tile polish: 4-point rhythm, compact KPI tiles, label never collides with its icon. */
-.stats {
-  align-items: start;
-  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-  gap: 16px;
-  margin-bottom: 16px;
-}
-.stat {
-  padding: 16px 56px 16px 16px;
-  min-height: 0;
-}
-.stat .stat-ic {
-  top: 16px;
-  right: 16px;
-}
-.stat b {
-  font-size: 24px;
-  margin: 4px 0;
-}
-.stat small {
-  line-height: 1.4;
-}
-.page-header {
-  margin-bottom: 16px;
-}
-.page-description {
-  margin: 4px 0 0;
-}
-.card {
-  margin-bottom: 16px;
-}
-.seg {
-  margin-bottom: 16px;
-}
-.page-header-actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-}
-@media (max-width: 800px) {
-  .main {
-    padding: 16px 12px 96px;
-  }
-  .stats {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-  }
-  .stat {
-    padding: 14px 48px 14px 14px;
-  }
-  .stat .stat-ic {
-    top: 12px;
-    right: 12px;
-  }
-}
-
-.stat {
-  margin: 0;
-}
-@media (min-width: 801px) {
-  .stats {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
-.seg button,
-.chips .btn,
-.btn {
-  gap: 6px;
-}
-.seg button .i,
-.chips .btn .i {
-  width: 18px;
-  height: 18px;
-  margin-right: 6px;
-}
-.cash-impact-control {
-  display: block;
-  margin-top: 8px;
 }

@@ -132,6 +132,16 @@ function createVouchers_(user, req) {
         ids.push(id);
         createdFileIds.push(id);
       });
+      let approvalDayTotalPaise = 0;
+      if (c.type === 'PAYMENT') {
+        approvalDayTotalPaise =
+          payeeDayPaymentPaise_(existing.concat(newObjs), c.vendorId, c.vendor, c.date, '') +
+          Math.round(c.amount * 100);
+      }
+      const paymentNeedsApproval =
+        c.type === 'PAYMENT' &&
+        (c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
+          approvalDayTotalPaise >= approvalThresholdPaise_());
       const o = {
         VoucherID: Utilities.getUuid(),
         VoucherNo: no,
@@ -151,19 +161,7 @@ function createVouchers_(user, req) {
         ClientID: c.clientId,
         Type: c.type,
         CashImpact: c.cashImpact,
-        ApprovalStatus:
-          c.type === 'PAYMENT' &&
-          (c.amount >= CFG.PAYMENT_APPROVAL_THRESHOLD ||
-            payeeDayPaymentPaise_(
-              existing.concat(newObjs),
-              approvalPayeeKey_(c.vendorId, c.vendor),
-              c.date,
-              '',
-            ) +
-              Math.round(c.amount * 100) >=
-              approvalThresholdPaise_())
-            ? 'PENDING'
-            : 'NOT_REQUIRED',
+        ApprovalStatus: paymentNeedsApproval ? 'PENDING' : 'NOT_REQUIRED',
         ApprovedBy: '',
         ApprovedAt: '',
         ApprovalReason: '',
@@ -326,21 +324,13 @@ function updateVoucher_(user, req) {
   const dayRows = o.Type === 'PAYMENT' ? readAll_('Vouchers') : [];
   const priorDayPaise =
     o.Type === 'PAYMENT'
-      ? payeeDayPaymentPaise_(
-          dayRows,
-          approvalPayeeKey_(o.VendorID, o.Vendor),
-          isoDate_(o.Date),
-          o.VoucherID,
-        ) + Math.round(priorAmount * 100)
+      ? payeeDayPaymentPaise_(dayRows, o.VendorID, o.Vendor, isoDate_(o.Date), o.VoucherID) +
+        Math.round(priorAmount * 100)
       : 0;
   const nextDayPaise =
     o.Type === 'PAYMENT'
-      ? payeeDayPaymentPaise_(
-          dayRows,
-          approvalPayeeKey_(nextVendorId, nextVendor),
-          nextDate,
-          o.VoucherID,
-        ) + Math.round(nextAmount * 100)
+      ? payeeDayPaymentPaise_(dayRows, nextVendorId, nextVendor, nextDate, o.VoucherID) +
+        Math.round(nextAmount * 100)
       : 0;
   const nextNeedsApproval =
     o.Type === 'PAYMENT' &&

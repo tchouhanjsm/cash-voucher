@@ -212,10 +212,10 @@ export function createDashboard() {
         label: 'Check register',
       });
     }
-    // Static labels and counts only: payee or user-supplied text never enters this panel.
+    // This panel reports dashboard-level checks only; it is not backup, queue or release health.
     const needsAttention = !dataAvailable
       ? ''
-      : `<section class="card needs" aria-labelledby="needsTitle"><h2 id="needsTitle">Needs attention${attention.length ? ` <span class="count-pill">${attention.length}</span>` : ''}</h2>${
+      : `<section class="card needs" aria-labelledby="needsTitle"><h2 id="needsTitle">Needs attention <span class="count-pill">${attention.length}</span></h2>${
           attention.length
             ? `<ul class="needs-list">${attention
                 .map(
@@ -223,7 +223,7 @@ export function createDashboard() {
                     `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${item.text}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
                 )
                 .join('')}</ul>`
-            : `<p class="needs-clear">${icon('check')}<span>All clear. Nothing needs you right now.</span></p>`
+            : `<p class="needs-clear">${icon('check')}<span>No known dashboard exceptions were found in the checks shown here. This does not verify backups, the full recovery queue, or release readiness.</span></p>`
         }</section>`;
 
     const financialPanels = !dataAvailable
@@ -235,7 +235,7 @@ export function createDashboard() {
     <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(largest ? largest.amount : 0)}</b><small class="muted">${largest ? esc(largest.vendor) : '–'}</small></div>
     <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Today</span><b>${money(sumAmounts(todayPayments))}</b><small class="muted">${todayPayments.length} vouchers</small></div>
     <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Cash received</span><b style="color:var(--ok)">${money(received)}</b><small class="muted">${receipts.length} entries · net ${money(received - total)}</small></div>
-    ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(cashInHand)}</b><small class="muted">Opening + receipts − payments. Not a physical cash count</small></div>` : ''}
+    ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(cashInHand)}</b><small class="muted">opening balance + recorded receipts − recorded payments; not a physical cash count</small></div>` : ''}
   </div>
   ${dataWarnings.length ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>` : ''}
   ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
