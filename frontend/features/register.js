@@ -297,10 +297,7 @@ export function createRegister({ api, go }) {
               <div class="cat">Cash impact: ${esc(normalizeCashImpact(voucher.cashImpact))}${approvalNote}</div>
             </div>
           </td>
-          <td
-            class="r nw amt"
-            ${isIn(voucher) ? 'style="color:var(--ok)"' : ''}
-          >
+          <td class="r nw amt${isIn(voucher) ? ' cash-impact-in' : ''}">
             <span class="voucher-amount">
               ${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}
             </span>
