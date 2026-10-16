@@ -291,6 +291,32 @@ with sync_playwright() as p:
         'page heading uses one consistent page-header component without breadcrumb noise',
     )
     check(
+        page.locator('#view .page-eyebrow').inner_text() == 'Work'
+        and page.locator('#view .page-description').count() == 1,
+        'page context and description are rendered in the shared production header',
+    )
+    go_view(page, 'new')
+    check(
+        page.locator('#view .page-eyebrow').inner_text() == 'Work'
+        and page.locator('#view .page-header h1').inner_text() == 'New Cash Payment'
+        and page.locator('#nf.entry-form').count() == 1
+        and page.locator('.entry-type-switch[role="group"]').count() == 1
+        and page.locator('.entry-date-field').count() == 1,
+        'New Entry adopts the shared header, labelled type switch and dedicated form layout',
+    )
+    entry_style_metrics = page.evaluate("""() => ({
+      formPadding: Number.parseFloat(getComputedStyle(document.querySelector('#nf.entry-form')).paddingTop),
+      saveMinHeight: Number.parseFloat(getComputedStyle(document.querySelector('#nsave')).minHeight),
+      cashImpactPadding: Number.parseFloat(getComputedStyle(document.querySelector('.cash-impact-control')).paddingTop),
+    })""")
+    check(
+        entry_style_metrics['formPadding'] >= 16
+        and entry_style_metrics['saveMinHeight'] >= 44
+        and entry_style_metrics['cashImpactPadding'] >= 10,
+        'New Entry applies the shared card spacing, comfortable save target and visually grouped cash classification',
+    )
+    go_view(page, 'dash')
+    check(
         page.locator('#view .needs h2').inner_text().startswith('Needs attention')
         and page.locator('#view .stat .stat-ic svg').count() >= 5
         and page.locator('[data-v=dash] .ic svg use').get_attribute('href') == '#i-home',
@@ -1291,6 +1317,26 @@ with sync_playwright() as p:
         "document.querySelector('[data-v=dash]').getAttribute('aria-current') === 'page'"
     )
     go_view(page, 'set')
+    check(
+        page.locator('.settings-layout').count() == 1
+        and page.locator('.settings-property-form#sf').count() == 1
+        and page.locator('.settings-diagnostics #backup-status').count() == 1
+        and page.locator('.settings-diagnostics #data-quality').count() == 1,
+        'Settings separates editable property configuration from operational diagnostic panels',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 900})
+    settings_columns = page.locator('.settings-layout').evaluate(
+        "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
+    )
+    check(
+        settings_columns >= 2,
+        'Settings uses a two-column desktop layout for property edits and owner diagnostics',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    check(
+        page.locator('.settings-layout').evaluate("el => getComputedStyle(el).display") == 'grid',
+        'Settings retains its shared responsive layout on mobile',
+    )
     page.wait_for_function(
         "document.querySelector('#backup-status').innerText.includes('Latest backup attempt failed')"
     )
