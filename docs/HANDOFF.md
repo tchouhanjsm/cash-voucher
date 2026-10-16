@@ -2,22 +2,23 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `a478c52c68c520b8eddbf80692d101dc20210c58` (PR #149 merge commit)  
-Current engineering batch: Phase 14 — whole-product UX completion (Register keyboard scrolling and Reports responsive coverage)  
-Current working branch: `phase-14/register-reports-ux-2026-10-16`  
-Current candidate: PR #150 — https://github.com/tchouhanjsm/cash-voucher/pull/150 (Register and Reports responsive/accessibility batch); live PR head and exact-head checks are authoritative
+Last verified main SHA: `ad1eb78847a9263c95870b043465b83dd48998be` (PR #150 merge commit)  
+Current engineering batch: Phase 15 — FrontUI Studio + shared component kit  
+Current working branch: `phase-15/frontend-ui-studio-kit-2026-10-16`  
+Current candidate: FrontUI Studio static gallery + shared CSS kit; verify the live PR and final-head checks before review
 
 ## Verified repository state
 
-- Live `main` is `a478c52c68c520b8eddbf80692d101dc20210c58`, the merge commit for PR #149. Its first parent is the PR #148 merge commit `87a39f8e58594abc3eba7f5900c0be45f0cf8341`; PR #147's merge baseline was `61e46989032985fba54ceb48d768ab57430aa48a`.
-- PR #148 completed Phase 12 endpoint-bound outbox isolation. Its exact final head `9d5dea25eeddfa98d9c81995a7a140d0af709bdc` passed CI/quality, Browser E2E (359 checks) and Full Flight Test (281 backend plus 359 browser checks, zero failures).
-- PR #149 refreshed the Dashboard/navigation visual treatment, added the Needs-attention panel and SVG icon usage, and adjusted layout spacing without API, schema, dependency or financial-policy changes. CI/quality, Browser E2E and Full Flight Test passed on its exact final PR head `2c1a25c144fe27ed959cd7aae6793b9c3c75bddf`; post-merge CI/quality passed on the merge SHA.
-- The active DOM-sink inventory remains 17 assignments across eight frontend modules. PR #149 changed the reviewed Payments template fingerprint while retaining the sink count; the baseline records `847d68e0` for that assignment. Drift fingerprints are not XSS certification.
-- PR #149 did not update this handoff. Register and Reports still warrant responsive/keyboard review; the current engineering batch adds a named keyboard-focusable Register table region and Reports viewport guardrails.
-- Phase 13 operational release proof remains an owner-controlled P0 gate: live Apps Script project/version, execution identity, Sheet/Drive permissions, role/receipt access, scheduled backup, isolated restore and production reconciliation cannot be established by mock tests. Do not deploy or mutate production.
-- The repository declares Node `>=20 <23`; verify the actual local runtime before running checks.
+- Live `main` is `ad1eb78847a9263c95870b043465b83dd48998be`, the merge commit for PR #150. This includes PR #149's Dashboard/navigation refresh and PR #150's Register keyboard-scroll and Reports responsive/focus guardrails.
+- PR #150's final head `32c0b31916e1e48eda58bf115aaf17f97f8485a7` passed CI/quality, Browser E2E (371 checks) and Full Flight Test (281 backend plus 371 browser checks), all with zero failures. Post-merge CI passed on `main` in run 38855982925.
+- The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
+- Current Phase 15 candidate builds the static `ui-studio.html` gallery and `frontend-ui-kit.css`; the shared stylesheet is linked after `style.css` and precached with cache revision `cv2-v17`. The studio is a design reference, not a production route or real-data workflow.
+- Preserve the plain JS/no-build architecture and no-external-runtime-assets policy. No React/UI package, remote font/icon service or dependency is added; app CSP remains strict and studio HTML uses no inline scripts, handlers or styles.
+- `scripts/verify-frontend-release.js` now checks the kit CSS is linked by `index.html` and present in the service-worker shell. Browser E2E should verify static gallery loading/CSP, component tokens and no page-level overflow across narrow through desktop widths.
+- Phase 13 operational release proof remains an owner-controlled P0 gate: live Apps Script project/version, execution identity, Sheet/Drive permissions, role/receipt access, scheduled backup, isolated restore and production reconciliation cannot be established by source/mock tests. Do not deploy or mutate production.
+- The repository declares Node `>=20 <23`; verify local Node version before running checks.
 - Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md` if present; never stage, overwrite or delete it.
-- Mock/source tests do not prove live Apps Script deployment identity, live Google Sheet/Drive behavior, backup restore, physical-device recovery, assistive-technology conformance or production readiness.
+- Real-device recovery, zoom/reflow, manual keyboard traversal, screen-reader checks and role-based operator review remain open even if automation passes.
 
 ## Phase 10 — UI refresh integration and dashboard trust states
 
@@ -60,10 +61,12 @@ Current candidate: PR #150 — https://github.com/tchouhanjsm/cash-voucher/pull/
 
 ## Next phases — grouped outcome plan
 
-**Phase 12 — Cross-workflow integrity and recovery: complete.** PR #148 merged at `87a39f8e58594abc3eba7f5900c0be45f0cf8341`. Its endpoint-bound outbox isolation regression and canonical evidence reconciliation passed all required exact-head workflows.
+**Phase 12 — Cross-workflow integrity and recovery: complete.** PR #148 merged; endpoint-bound outbox isolation regression and canonical evidence reconciliation passed all required exact-head workflows.
 
-**Phase 13 — Operational release proof: P0 owner-controlled blocker.** Verify Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation only with explicit owner authorization. Mock CI cannot satisfy this phase, and the source/UI work below does not clear the release gate.
+**Phase 13 — Operational release proof: P0 owner-controlled blocker.** Verify Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation only with explicit owner authorization. Mock CI cannot satisfy this phase.
 
-**Phase 14 — Whole-product UX completion: current engineering batch.** Add keyboard access to the Register's horizontally scrollable table and responsive/keyboard regression coverage for Reports at 320, 360, 390, 768, 801, 1024 and 1280 CSS-pixel widths. Manual device, zoom and assistive-technology checks remain owner-operated work.
+**Phase 14 — Whole-product UX completion: Batch 1 complete in PR #150.** Register keyboard table scrolling and Reports responsive/focus regression guardrails are merged. Manual device, zoom and assistive-technology checks remain open.
 
-**Phase 15 — Evidence-led performance and repository hygiene.** Establish repeatable seeded performance measurements before optimization, reconcile canonical status claims and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
+**Phase 15 — FrontUI Studio + shared component kit: current engineering batch.** Deliver the static component gallery, reusable CSS token/component layer and release/offline integration checks. This is a front-end design system increment, not a policy/API redesign.
+
+**Phase 16 — Evidence-led performance and repository hygiene.** Establish repeatable seeded performance measurements before optimization, reconcile canonical status claims and review the `@google/clasp → micromatch → braces` exception by 9 November 2026.
