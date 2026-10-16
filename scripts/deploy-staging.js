@@ -111,7 +111,7 @@ function deployStaging(env = process.env, root = ROOT) {
       process.env.USERPROFILE = tempHome;
       const deploymentOutput = runClasp(['list-deployments'], {
         root,
-        tempHome: claspHome,
+        tempHome,
         workspace: projectRoot,
       });
       const expectedDeploymentId = String(env.CV_STAGING_DEPLOYMENT_ID).trim();
@@ -124,7 +124,7 @@ function deployStaging(env = process.env, root = ROOT) {
 
       runClasp(['push', '--force'], {
         root,
-        tempHome: claspHome,
+        tempHome,
         workspace: projectRoot,
       });
       runClasp([
@@ -135,7 +135,7 @@ function deployStaging(env = process.env, root = ROOT) {
         'Cash Voucher staging UAT ' + String(env.GITHUB_SHA || 'manual').slice(0, 12),
       ], {
         root,
-        tempHome: claspHome,
+        tempHome,
         workspace: projectRoot,
       });
     } finally {

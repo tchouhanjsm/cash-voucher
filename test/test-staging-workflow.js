@@ -11,13 +11,13 @@ const preflight = fs.readFileSync(path.join(root, 'scripts/staging-preflight.js'
 const uat = fs.readFileSync(path.join(root, 'test/uat_staging.py'), 'utf8');
 const localServer = fs.readFileSync(path.join(root, 'scripts/staging-web-server.js'), 'utf8');
 
-assert.match(workflow, /^on:\n  workflow_dispatch:/m, 'staging workflow must be manual-only');
+assert.match(workflow, /^on:\n {2}workflow_dispatch:/m, 'staging workflow must be manual-only');
 assert.doesNotMatch(workflow, /^\s+(push|pull_request):/m, 'staging workflow must not deploy on push or PR');
 assert.match(workflow, /ACTION_REF: \$\{\{ github\.ref \}\}/);
 assert.match(workflow, /ACTION_REF" != "refs\/heads\/main"/);
 assert.match(workflow, /CONFIRMATION" != "STAGING-ONLY"/);
 assert.match(workflow, /CONFIRM_WRITES" != "true"/);
-assert.match(workflow, /environment:\n      name: staging/m);
+assert.match(workflow, /environment:\n {6}name: staging/m);
 assert.match(workflow, /needs: \[validate, guard\]/);
 assert.match(workflow, /confirm_staging_writes/);
 assert.match(workflow, /CV_STAGING_DEPLOY_CONFIRMATION/);
