@@ -8,10 +8,44 @@ const { validateStagingConfiguration } = require('./staging-preflight');
 
 const ROOT = path.resolve(__dirname, '..');
 
+function extractCredentialValues(raw) {
+  let parsed;
+  try {
+    parsed = JSON.parse(String(raw || ''));
+  } catch {
+    return [];
+  }
+
+  const values = [];
+  const sensitiveKey =
+    /token|secret|client.?id|authorization|credential|password|pin|email|private.?key|api.?key/i;
+  const sensitiveContainer = /^(token|tokens|oauth2ClientSettings|credentials?)$/i;
+
+  function visit(value, key = '', insideSensitiveContainer = false) {
+    const inside = insideSensitiveContainer || sensitiveContainer.test(key);
+    if (typeof value === 'string') {
+      if (value && (inside || sensitiveKey.test(key))) values.push(value);
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach((item) => visit(item, key, inside));
+      return;
+    }
+    if (!value || typeof value !== 'object') return;
+    Object.entries(value).forEach(([childKey, childValue]) => {
+      visit(childValue, childKey, inside);
+    });
+  }
+
+  visit(parsed);
+  return [...new Set(values)];
+}
+
 function sanitized(value, env = process.env) {
   let text = String(value || '');
   const hidden = [
     env.CLASPRC_JSON,
+    ...extractCredentialValues(env.CLASPRC_JSON),
     env.CV_STAGING_UAT_OWNER_PIN,
     env.CV_STAGING_UAT_MANAGER_PIN,
     env.CV_STAGING_UAT_OWNER_EMAIL,

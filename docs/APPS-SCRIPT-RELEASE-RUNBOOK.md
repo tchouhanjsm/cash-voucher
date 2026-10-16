@@ -4,7 +4,7 @@
 
 ## Current release boundary
 
-PR #154 is merged; the verified source baseline is `17665e82c3acd26d717c796d1eecd79c42a963b7`. A merge is still separate from a Clasp upload or Web App deployment. The version of Apps Script actually serving the configured production `/exec` URL must be verified independently. Local quality checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
+PR #155 is merged; the verified source baseline is `4b15ce7e05d3a524b727f40edbc06e19295beef4`. A merge is still separate from a Clasp upload or Web App deployment. The staging/UAT workflow exists in source, but its dedicated Google resources, protected GitHub Environment and OAuth/UAT credentials must be provisioned and live-tested by the owner before it can be considered operational. The version of Apps Script actually serving the configured production `/exec` URL must be verified independently. Local quality checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
 
 The frontend `config.js` already contains a Web App `/exec` URL. Do not replace it or create a different URL until the local Clasp deployment list proves which Apps Script project and deployment serve that URL.
 
@@ -197,7 +197,7 @@ The repository now provides a manually dispatched staging workflow at `.github/w
 
 Create a GitHub Environment named `staging`, restrict its deployment branch to `main`, and require reviewer approval where available. Configure these environment **variables**: `CV_STAGING_SCRIPT_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_API_URL`, `CV_STAGING_SPREADSHEET_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_PRODUCTION_SCRIPT_ID`, `CV_PRODUCTION_SPREADSHEET_ID`, `CV_PRODUCTION_RECEIPT_FOLDER_ID`, and `CV_PRODUCTION_BACKUP_FOLDER_ID`. The production Web App deployment ID is extracted from the existing production `config.js` URL.
 
-Configure these environment **secrets**: `CLASPRC_JSON` (valid Clasp OAuth credential document), `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PIN`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PIN`. Keep credential material out of repository files and logs. If these resources/credentials are not configured, staging preflight must fail closed rather than inventing target values.
+Configure these environment **secrets**: `CLASPRC_JSON` (valid Clasp OAuth credential document), `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PIN`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PIN`. Keep credential material out of repository files and logs. The deployer's diagnostic sanitizer must redact both the complete `CLASPRC_JSON` value and individual nested OAuth token/client credential strings if they appear in tool output. If resources/credentials are not configured, staging preflight must fail closed rather than inventing target values.
 
 ### Running the phases
 

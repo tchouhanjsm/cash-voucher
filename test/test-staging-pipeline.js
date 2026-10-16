@@ -5,6 +5,7 @@ const {
   readProductionApiUrl,
   validateStagingConfiguration,
 } = require('../scripts/staging-preflight');
+const { sanitized } = require('../scripts/deploy-staging');
 
 const productionApiUrl = readProductionApiUrl();
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
@@ -44,6 +45,51 @@ assert.equal(validUat.checks.dedicatedUatAccountsPresent, true);
 
 const validDeploy = validateStagingConfiguration(fixture, { mode: 'deploy' });
 assert.equal(validDeploy.ok, true, validDeploy.errors.join('; '));
+
+// Clasp may echo individual OAuth fields rather than the complete JSON document.
+// Every string stored under token/oauth settings must therefore be redacted too.
+const oauthCredentials = JSON.stringify({
+  token: {
+    access_token: 'ACCESS_TOKEN_SECRET_VALUE',
+    refresh_token: 'REFRESH_TOKEN_SECRET_VALUE',
+    id_token: 'ID_TOKEN_SECRET_VALUE',
+    scope: 'OAUTH_SCOPE_SECRET_VALUE',
+  },
+  oauth2ClientSettings: {
+    clientId: 'OAUTH_CLIENT_ID_SECRET_VALUE',
+    clientSecret: 'OAUTH_CLIENT_SECRET_VALUE',
+    redirectUri: 'OAUTH_REDIRECT_SECRET_VALUE',
+  },
+});
+const rawClaspDiagnostic = [
+  'access token ACCESS_TOKEN_SECRET_VALUE',
+  'refresh token REFRESH_TOKEN_SECRET_VALUE',
+  'identity token ID_TOKEN_SECRET_VALUE',
+  'client ID OAUTH_CLIENT_ID_SECRET_VALUE',
+  'client secret OAUTH_CLIENT_SECRET_VALUE',
+  'redirect OAUTH_REDIRECT_SECRET_VALUE',
+  oauthCredentials,
+].join('\\n');
+const safeClaspDiagnostic = sanitized(rawClaspDiagnostic, {
+  ...fixture,
+  CLASPRC_JSON: oauthCredentials,
+});
+for (const secret of [
+  'ACCESS_TOKEN_SECRET_VALUE',
+  'REFRESH_TOKEN_SECRET_VALUE',
+  'ID_TOKEN_SECRET_VALUE',
+  'OAUTH_SCOPE_SECRET_VALUE',
+  'OAUTH_CLIENT_ID_SECRET_VALUE',
+  'OAUTH_CLIENT_SECRET_VALUE',
+  'OAUTH_REDIRECT_SECRET_VALUE',
+]) {
+  assert.equal(
+    safeClaspDiagnostic.includes(secret),
+    false,
+    'Clasp diagnostics must redact nested credential value: ' + secret,
+  );
+}
+assert.ok(safeClaspDiagnostic.includes('[redacted]'));
 
 const sameScript = validateStagingConfiguration({
   ...fixture,

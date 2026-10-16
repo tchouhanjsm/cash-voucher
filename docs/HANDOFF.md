@@ -2,14 +2,14 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `17665e82c3acd26d717c796d1eecd79c42a963b7` (PR #154 merge commit)  
-Current engineering batch: Phase 19 — staging deployment and automated UAT gates  
-Current working branch: `phase-19/staging-deployment-and-uat-gates-2026-10-16`  
-Current candidate: PR pending — separate staging target readiness, isolated Clasp deployment, no-cache staging web server and owner/manager UAT; exact-head checks are authoritative
+Last verified main SHA: `4b15ce7e05d3a524b727f40edbc06e19295beef4` (PR #155 merge commit)  
+Current engineering batch: Phase 20 — harden staging OAuth diagnostic redaction and reconcile release evidence  
+Current working branch: `phase-20-staging-oauth-redaction-2026-10-16`  
+Current candidate: Clasp credential-diagnostic redaction and regression coverage; final PR-head checks are authoritative
 
 ## Verified repository state
 
-- Live `main` is `17665e82c3acd26d717c796d1eecd79c42a963b7`, the PR #154 merge commit. Phase 18 diagnostic JSON exports are part of main. These CI/browser results are source/mock checks, not proof of an actual staging deployment, live role/Drive permissions or a witnessed restore.
+- Live `main` is `4b15ce7e05d3a524b727f40edbc06e19295beef4`, the PR #155 merge commit. Phase 19's staging deployment and UAT source/pipeline changes are merged. The PR-head CI, Browser E2E and Full Flight Test results passed, but they remain source/mock evidence rather than proof of an actual staging deployment, live role/Drive permissions or a witnessed restore.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
 - Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
@@ -82,3 +82,11 @@ Current candidate: PR pending — separate staging target readiness, isolated Cl
 - The transactional UAT is configured to create, approve and cancel one unique INR 10,000 staging payment after target isolation is verified; it asserts the approved-payment total remains unchanged while pending, rises only after independent approval, and returns to baseline after cancellation.
 - **Not yet provisioned or executed against real Google resources:** GitHub Environment `staging`, staging Apps Script/Sheet/Drive resources, first versioned staging deployment, Clasp OAuth secret, and separate UAT account secrets. The automated pipeline cannot deploy or perform live UAT until the owner provides these. No production deployment or live Google data mutation has been performed by this change.
 - Remaining non-automated UAT gates: real scheduled backup and witnessed restore/reconciliation, device/offline/assistive-technology validation and Google quota/lock-contention testing in an authorized environment.
+
+## Phase 20 — harden staging OAuth diagnostic redaction
+
+- Code review found that the staging deployer's `sanitized()` function redacted the complete `CLASPRC_JSON` string but did not independently redact nested access tokens, refresh tokens, ID tokens, OAuth client IDs/secrets, or other strings stored inside the credential document if a Clasp diagnostic echoed one field separately.
+- The candidate adds recursive extraction of sensitive scalar values from the parsed Clasp credential document and redacts those values before any Clasp output is printed.
+- Regression coverage injects representative nested OAuth fields into simulated diagnostics and asserts that no credential value survives sanitization. The existing `test/test-staging-pipeline.js` command is part of `npm test`.
+- The change is source/test-only. It does not execute Clasp, access Google credentials, deploy staging or production, or mutate voucher data.
+- Live staging provisioning and owner-authorized UAT remain blocked on separate Google resources, the protected GitHub `staging` environment, isolated Clasp OAuth credentials and dedicated Owner/Manager test accounts. Do not infer that these are provisioned from CI.
