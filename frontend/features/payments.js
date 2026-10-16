@@ -77,7 +77,7 @@ export function createPayments({ api, refresh }) {
   <div class='bot'><select class='rc'>${catOpts('Other', NT)}</select><input class='rn' placeholder='Note (optional)'></div>
   <label class='cash-impact-control'>How was it settled? (required)<select class='rci'>${cashImpactOptions('')}</select></label>
   <p class='muted ci-hint'>Usual for this category: <span class='ci-suggestion'>${CASH_IMPACT_LABELS[suggested]}</span>. Pick Cash only if notes or coins moved; UPI, card or bank transfer is Not cash.</p>
-  <div class='chips'><label class='btn sm' style='margin:0'>${icon('receipt')} Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>`;
+  <div class='chips'><label class='btn sm receipt-upload-label'>${icon('receipt')} Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>`;
   }
 
   function labelRows() {
@@ -264,9 +264,13 @@ export function createPayments({ api, refresh }) {
 
   function vNew() {
     $('#view').innerHTML =
-      head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment') +
-      `<div class="seg"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card" autocomplete="off">${vendorList()}
-    <label style="max-width:220px">Date<input type="date" id="nd" value="${today()}" max="${addDays(today(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="Recent payees"></div><div id="rows"></div>
+      head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment', '', {
+        section: 'Work',
+        description:
+          'Record a payment or receipt, attach supporting evidence, and confirm how the money moved.',
+      }) +
+      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" autocomplete="off">${vendorList()}
+    <label class="entry-date-field">Date<input type="date" id="nd" value="${today()}" max="${addDays(today(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="Recent payees"></div><div id="rows"></div>
     <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button><button type="button" class="btn" data-act="import-pending">Import recovery file</button></div>
     <p class="muted">Tip: tap “Receipt” to take a photo or pick a screenshot (up to 3 per payment).</p></form><div id="nres"></div>`;
     addRow();

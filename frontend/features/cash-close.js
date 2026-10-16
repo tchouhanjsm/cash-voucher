@@ -210,8 +210,11 @@ export function createCashClose({ api }) {
     }
     currentDate = $('#cc-date')?.value || today();
     $('#view').innerHTML =
-      head('Daily Cash Close') +
-      '<p class="muted">One physical drawer · calendar day in Asia/Kolkata · server-saved vouchers only. This report is a physical cash reconciliation, not a bank balance or general ledger.</p>' +
+      head('Daily Cash Close', '', {
+        section: 'Money',
+        description: 'Reconcile the physical cash drawer against synchronized vouchers before finalizing the day.',
+      }) +
+      '<p class="muted cc-intro">One physical drawer · calendar day in Asia/Kolkata · server-saved vouchers only. This report is a physical cash reconciliation, not a bank balance or general ledger.</p>' +
       '<section class="card cc-controls"><div class="filters">' +
       '<label for="cc-date">Business date <input id="cc-date" type="date" min="2000-01-01" max="' +
       esc(today()) +
