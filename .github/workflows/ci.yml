@@ -51,9 +51,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary formatter diagnosis for design-system test
-        run: npx prettier test/test-design-system.js | diff -u test/test-design-system.js - || true
-
       - name: Run quality gate
         run: npm run check
 
