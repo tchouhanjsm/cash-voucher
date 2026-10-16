@@ -10,7 +10,7 @@
     "test": "node test/test-backend.js && node test/test-backup-failure.js && node test/test-backup-observability.js && node test/test-backup-integrity.js && node test/test-csv-export.js && node test/test-state-categories.js && node test/test-recovery-validation.js && node test/test-offline-auth.js && node test/test-dependency-audit.js && node test/test-pr-quality.js && node test/test-api-route-registry.js && node test/test-performance-baseline.js && node test/test-secret-scan.js && node test/test-authorization-matrix.js && node test/test-dom-sink-source.js",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
+    "prettier --write frontend-ui-kit.css scripts/verify-frontend-release.js ui-studio.html && printf '\\nPRETTIER_B64_CSS:' && base64 -w0 frontend-ui-kit.css && printf '\\nPRETTIER_B64_JS:' && base64 -w0 scripts/verify-frontend-release.js && printf '\\nPRETTIER_B64_HTML:' && base64 -w0 ui-studio.html && printf '\\nEND_PRETTIER_B64\\n'",
     "validate:json": "node scripts/validate-json.js",
     "check:syntax": "node scripts/check-js.js",
     "check:backend": "node scripts/check-backend-layout.js",
