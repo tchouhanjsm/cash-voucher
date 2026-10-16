@@ -43,12 +43,12 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Priority after Phase 16 (reviewed 16 October 2026)
+## Remaining priorities after Phase 18 (reviewed 16 October 2026)
 
 1. **Phase 13 — operational release proof (P0, owner-controlled):** Apps Script project/version, execution identity, Sheet binding, role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation still require explicit owner authorization. No source-only test or source-only benchmark satisfies this gate.
 2. **Phase 17 — audit monitoring clarity + health snapshot (completed in PR #153):** make the limitations of `NO_KNOWN_FAILURE` explicit, distinguish unavailable or invalid monitoring reads, and let the owner save a JSON snapshot of the status and coverage metadata for manual follow-up. The underlying dual audit/marker-store failure still requires an owner-approved durable fallback design.
 3. **Phase 18 — diagnostic exports (PR #154):** let owners export validated data-quality and backup-integrity findings with a stable JSON schema, bounded fields and explicit limitations; prevent stale reports from remaining exportable after a failed re-scan.
-3. **Physical-device quality and real-service capacity:** owner-operated validation for PWA install/update/offline recovery, zoom/reflow, keyboard and screen readers; separately measure live Sheets latency, quotas and voucher-numbering contention in an explicitly authorized test environment.
+4. **Physical-device quality and real-service capacity:** owner-operated validation for PWA install/update/offline recovery, zoom/reflow, keyboard and screen readers; separately measure live Sheets latency, quotas and voucher-numbering contention in an explicitly authorized test environment.
 
 ## Financial integrity invariants
 
