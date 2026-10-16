@@ -28,7 +28,7 @@ The first command emits a single-line JSON result to stdout. The second also wri
 
 ## CI artifact and comparison
 
-The CI quality workflow captures the same benchmark as `cash-voucher-performance-baseline-<run_id>` and uploads `cash-voucher-performance-baseline.json` for inspection. When comparing runs, compare the same workload, operation, Node version and similar runner environment. Prefer medians over a single timing, retain sample ranges, and look for a repeatable change across multiple runs before drawing conclusions.
+The CI quality workflow captures the same benchmark as `cash-voucher-performance-baseline-<run_id>` and uploads `cash-voucher-performance-baseline.json` for inspection. When comparing runs, compare the same workload, operation, Node version and similar runner environment. Record the tested source commit alongside each artifact; do not compare results from different code revisions as if they were the same baseline. Prefer medians over a single timing, retain sample ranges, and look for a repeatable change across multiple runs before drawing conclusions.
 
 Do not add hard performance gates until there is a repeated, stable benchmark and an owner-approved target. If a future performance concern needs a production capacity decision, collect separate measurements in an explicitly authorized test environment and include live Apps Script/Sheets latency, quota and contention evidence.
 
