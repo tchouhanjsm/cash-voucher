@@ -91,7 +91,6 @@ Current candidate: shared light visual system, operator shell and dashboard hier
 - The change is source/test-only. It does not execute Clasp, access Google credentials, deploy staging or production, or mutate voucher data.
 - Live staging provisioning and owner-authorized UAT remain blocked on separate Google resources, the protected GitHub `staging` environment, isolated Clasp OAuth credentials and dedicated Owner/Manager test accounts. Do not infer that these are provisioned from CI.
 
-
 ## Phase 21 — premium light frontend redesign (candidate)
 
 - Art direction: warm ivory canvas, near-white surfaces, soft blue-grey secondary information, restrained gold-brown primary actions, and pale beige selected navigation. Keep the dashboard light-first while preserving an explicit, user-selectable dark theme.
