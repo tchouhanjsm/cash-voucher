@@ -2558,6 +2558,30 @@ with sync_playwright() as p:
         'another account neither sees nor uploads a foreign-bound outbox item',
     )
 
+    # Endpoint identity is part of the queue binding, even when the email matches.
+    foreign_endpoint_owner_key = (
+        'https://cash-voucher-endpoint-switch.invalid/api|'
+        + original_owner_key.rsplit('|', 1)[1]
+    )
+    update_outbox_owner('Account-bound Vendor', foreign_endpoint_owner_key)
+    page.evaluate(
+        """() => {
+          const channel = new BroadcastChannel('cash-voucher-outbox');
+          channel.postMessage({ type: 'changed' });
+          channel.close();
+          window.dispatchEvent(new Event('online'));
+        }"""
+    )
+    page.wait_for_timeout(500)
+    endpoint_records = outbox_vendor_records('Account-bound Vendor')
+    check(
+        page.locator('#banner').is_hidden()
+        and len(endpoint_records) == 1
+        and endpoint_records[0]['status'] == 'pending'
+        and endpoint_records[0]['ownerKey'] == foreign_endpoint_owner_key,
+        'same account bound to a different endpoint neither sees nor uploads the queued item',
+    )
+
     # Restore the intended account binding and leave a draft open while the background sync runs.
     context.set_offline(True)
     update_outbox_owner('Account-bound Vendor', original_owner_key)
