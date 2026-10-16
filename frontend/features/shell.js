@@ -34,7 +34,8 @@ export function createShell({ go }) {
     $('#brandTop').textContent = brand;
     $('#avatar').textContent = initials(name);
     $('#userName').textContent = name;
-    $('#userRole').textContent = scalarText(S.me?.role);
+    const role = scalarText(S.me?.role);
+    $('#userRole').textContent = role.toLowerCase() === name.toLowerCase() ? '' : role;
     $('#popName').textContent = name;
     $('#popEmail').textContent = email;
     closeMenu();
