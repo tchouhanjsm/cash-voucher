@@ -1,7 +1,7 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `61e46989032985fba54ceb48d768ab57430aa48a` (main after PR #147; active source baseline 17 assignments).  
-**Phase 11 Batch 4 follow-up:** PR #147 is merged; 17 assignments remain across eight frontend modules and the explicit Change PIN submit type changes no sink or fingerprint count. CI is the executable gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `a478c52c68c520b8eddbf80692d101dc20210c58` (main after PR #149; active source baseline 17 assignments).  
+**PR #149 UI refresh:** the Payments template fingerprint was reviewed and updated to `847d68e0` after app-authored emoji labels became inline-SVG helper output; the site count remains 17 across eight modules. CI is the executable gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
@@ -74,3 +74,7 @@ Merged main after PR #147 has 17 sites across eight modules. PR #147 fixes Chang
 ## Phase 11 Batch 4 follow-up — Change PIN submit semantics
 
 PR #146's Browser E2E on exact head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` reported 357 passed and one failed check because the new DOM-built Change PIN button omitted an explicit `type="submit"` attribute. PR #147 sets `submit.type = 'submit'`; the sink inventory remains 17 assignments across eight modules. The fix passed exact-head CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend checks plus 358 browser checks, 0 failures) on `eb473402dca0cbdc085af1f961ca00e9b70705d8`.
+
+## Phase 14 candidate — keyboard-accessible Register table region
+
+The Register table wrapper now declares a concise accessible name, `role="region"`, and `tabindex="0"`. This makes the horizontally scrollable table reachable by keyboard and activates the existing `.table-wrap[role='region']:focus-visible` focus indicator. The change adds no HTML assignment site and introduces no API-derived value into the template; the source fingerprint was updated only after reviewing the exact static-attribute change and paired Browser E2E coverage. The expected active sink count remains 17 assignments across eight frontend modules.
