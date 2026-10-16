@@ -60,19 +60,71 @@ assert.match(
   'vendor and category analysis stay in shared dashboard layout',
 );
 
-assert.match(ui, /class="page-eyebrow"/, 'shared page header renders the supplied section as a visual eyebrow');
-assert.match(ui, /scalarText\(options\.section\)/, 'page section text is normalized before escaping');
-assert.match(components, /\.page-eyebrow\s*\{/, 'shared title eyebrow has a dedicated token-based style');
-assert.match(components, /#nf\.entry-form\s*\{/, 'new payment and receipt forms adopt shared panel geometry');
-assert.match(components, /\.settings-layout\s*\{[\s\S]*?display:\s*grid/, 'settings groups property editing and diagnostics in a consistent grid');
-assert.match(components, /\.card\.filters#rf\s*\{[\s\S]*?grid-template-columns/, 'register filters use a predictable responsive grid');
-assert.match(payments, /class="seg entry-type-switch"/, 'entry type choices have a named shared component');
-assert.match(payments, /class="card entry-form"/, 'payment/receipt fields use the dedicated application form layout');
-assert.match(administration, /class="settings-layout"/, 'owner settings uses the shared workspace structure');
-assert.match(administration, /class="settings-diagnostics"/, 'owner operational panels are grouped separately from editable property settings');
-assert.match(bulk, /class="card bulk-import-panel"/, 'bulk upload has a scoped import panel for consistent layout');
-assert.match(bulk, /class="bulk-entry-kind"/, 'bulk transaction type control does not rely on inline spacing');
-assert.doesNotMatch(payments, /class='btn sm' style='margin:0'/, 'receipt-upload action uses a stylesheet class, not a one-off inline margin');
+assert.match(
+  ui,
+  /class="page-eyebrow"/,
+  'shared page header renders the supplied section as a visual eyebrow',
+);
+assert.match(
+  ui,
+  /scalarText\(options\.section\)/,
+  'page section text is normalized before escaping',
+);
+assert.match(
+  components,
+  /\.page-eyebrow\s*\{/,
+  'shared title eyebrow has a dedicated token-based style',
+);
+assert.match(
+  components,
+  /#nf\.entry-form\s*\{/,
+  'new payment and receipt forms adopt shared panel geometry',
+);
+assert.match(
+  components,
+  /\.settings-layout\s*\{[\s\S]*?display:\s*grid/,
+  'settings groups property editing and diagnostics in a consistent grid',
+);
+assert.match(
+  components,
+  /\.card\.filters#rf\s*\{[\s\S]*?grid-template-columns/,
+  'register filters use a predictable responsive grid',
+);
+assert.match(
+  payments,
+  /class="seg entry-type-switch"/,
+  'entry type choices have a named shared component',
+);
+assert.match(
+  payments,
+  /class="card entry-form"/,
+  'payment/receipt fields use the dedicated application form layout',
+);
+assert.match(
+  administration,
+  /class="settings-layout"/,
+  'owner settings uses the shared workspace structure',
+);
+assert.match(
+  administration,
+  /class="settings-diagnostics"/,
+  'owner operational panels are grouped separately from editable property settings',
+);
+assert.match(
+  bulk,
+  /class="card bulk-import-panel"/,
+  'bulk upload has a scoped import panel for consistent layout',
+);
+assert.match(
+  bulk,
+  /class="bulk-entry-kind"/,
+  'bulk transaction type control does not rely on inline spacing',
+);
+assert.doesNotMatch(
+  payments,
+  /class='btn sm' style='margin:0'/,
+  'receipt-upload action uses a stylesheet class, not a one-off inline margin',
+);
 
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',

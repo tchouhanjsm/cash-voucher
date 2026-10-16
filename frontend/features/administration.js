@@ -389,7 +389,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     $('#view').innerHTML =
       head('Settings', '', {
         section: 'Manage',
-        description: 'Configure property details, voucher defaults, and owner-only operational diagnostics.',
+        description: 'Configure property defaults and review operational diagnostics.',
       }) +
       '<div class="settings-layout">' +
       `<form id="sf" class="card settings-property-form" autocomplete="off"><h2>Property</h2><label>Name<input id="sn" value="${esc(S.settings.propertyName)}" required></label><label>Address (printed on vouchers)<textarea id="sa" rows="2">${esc(S.settings.propertyAddress)}</textarea></label>

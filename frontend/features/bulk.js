@@ -20,7 +20,7 @@ export function createBulk({ api, refresh, go }) {
     $('#view').innerHTML =
       head('Bulk Upload', '', {
         section: 'Manage',
-        description: 'Import a prepared batch only after reviewing row data and cash-impact classifications.',
+        description: 'Review row data and cash-impact classifications before importing a batch.',
       }) +
       `<div class="card bulk-import-panel"><h2>1. Get your data in</h2>
     <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes, CashImpact</b>. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
