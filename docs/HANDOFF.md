@@ -73,7 +73,7 @@ Current candidate: PR pending — separate staging target readiness, isolated Cl
 
 **Phase 17 — Audit monitoring clarity and portable health snapshot: completed in PR #153.** The owner-facing UI explicitly explains the dual-store blind spot, keeps health request/invalid-response states visibly unknown, and downloads a JSON snapshot of status and coverage metadata. It does not persist a second audit log, claim history completeness, or reconstruct missing events. Phase 13 live release proof remains an owner-controlled P0 gate.
 
-**Phase 18 — Actionable diagnostic exports: PR #154 ready for review.** Settings now offers schema-versioned JSON exports for successfully validated data-quality and backup-integrity reports. A scan clears its preceding exportable state; failed/invalid scans provide no export action. Report fields are allowlisted and limitations/privacy scope are explicit. See [PR #154](https://github.com/tchouhanjsm/cash-voucher/pull/154) for exact-head CI, E2E and Flight Test evidence.
+**Phase 18 — Actionable diagnostic exports: complete in PR #154**, merged at `17665e82c3acd26d717c796d1eecd79c42a963b7`. Settings offers schema-versioned JSON exports for validated data-quality and backup-integrity reports; failed/invalid refreshes do not leave stale export actions.
 
 
 ## Phase 19 — staging and UAT implementation status
