@@ -58,6 +58,7 @@ for (const readAction of [
   'dataQualityReport',
   'backupStatus',
   'backupIntegrityReport',
+  'deploymentReadiness',
 ]) {
   assert.ok(actions.includes(readAction), readAction + ' must remain explicitly registered');
   assert.ok(!writes.includes(readAction), readAction + ' must not be classified as a write');

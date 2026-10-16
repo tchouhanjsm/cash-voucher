@@ -21,7 +21,8 @@ function create() {
     files = {},
     faults = { failNextAuditWrite: false, failNextAuditMarkerWrite: false },
     auditDiagnostics = [],
-    lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false };
+    lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false },
+    scriptTriggers = [];
   const mockConsole = Object.create(console);
   mockConsole.error = (...args) => {
     auditDiagnostics.push(args.map((value) => (value && value.stack) || String(value)).join(' '));
@@ -84,6 +85,25 @@ function create() {
     Error,
     parseInt,
     SpreadsheetApp: { getActiveSpreadsheet: () => ss, openById: () => ss },
+    ScriptApp: {
+      getScriptId: () => 'MOCK_SCRIPT_ID',
+      getProjectTriggers: () => scriptTriggers.slice(),
+      deleteTrigger: (trigger) => {
+        const index = scriptTriggers.indexOf(trigger);
+        if (index >= 0) scriptTriggers.splice(index, 1);
+      },
+      newTrigger: (handler) => ({
+        getHandlerFunction: () => handler,
+        timeBased() { return this; },
+        atHour() { return this; },
+        everyDays() { return this; },
+        create() {
+          const trigger = { getHandlerFunction: () => handler };
+          scriptTriggers.push(trigger);
+          return trigger;
+        },
+      }),
+    },
     PropertiesService: {
       getScriptProperties: () => ({
         getProperty: (k) => propsStore[k] ?? null,
@@ -133,7 +153,9 @@ function create() {
     },
     DriveApp: {
       createFolder: () => ({ getId: () => 'FOLDER' }),
-      getFolderById: () => ({
+      getFolderById: (folderId) => ({
+        getId: () => folderId,
+        getName: () => 'Mock folder',
         createFile: (b) => {
           const id = 'F' + Object.keys(files).length;
           files[id] = b;

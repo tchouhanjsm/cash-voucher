@@ -17,6 +17,7 @@ const ACTIONS = {
   auditLog: auditLog_,
   backupStatus: backupStatus_,
   backupIntegrityReport: backupIntegrityReport_,
+  deploymentReadiness: deploymentReadiness_,
   dataQualityReport: dataQualityReport_,
   recordedMovementReport: recordedMovementReport_,
   cashClosePreview: cashClosePreview_,

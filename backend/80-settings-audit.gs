@@ -121,3 +121,88 @@ function auditLog_(user, req) {
     auditHealth: auditWriteHealth_(),
   };
 }
+
+
+/**
+ * Owner-only, read-only release target probe used by the staging/UAT guard.
+ * It reports resource identifiers only to a user with the Settings permission;
+ * it never returns voucher rows, receipt contents, credentials or property values.
+ */
+function deploymentReadiness_(user) {
+  need_(user, 'settings');
+
+  const p = props_();
+  const spreadsheetId = String(p.getProperty('SS_ID') || '');
+  const receiptFolderId = String(p.getProperty('RECEIPT_FOLDER_ID') || '');
+  const backupFolderId = String(p.getProperty('BACKUP_FOLDER_ID') || '');
+  const missingSheets = [];
+  const invalidHeaders = [];
+  let spreadsheetReadable = false;
+
+  try {
+    if (!spreadsheetId) throw new Error('Spreadsheet property is missing.');
+    const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+    if (!spreadsheet || spreadsheet.getId() !== spreadsheetId) {
+      throw new Error('Configured spreadsheet did not match the expected target.');
+    }
+    spreadsheetReadable = true;
+
+    Object.keys(CFG.H).forEach(function (name) {
+      const expected = CFG.H[name];
+      const sheet = spreadsheet.getSheetByName(name);
+      if (!sheet) {
+        missingSheets.push(name);
+        return;
+      }
+      try {
+        const actual = sheet.getRange(1, 1, 1, expected.length).getValues()[0];
+        if (!expected.every(function (header, index) { return actual[index] === header; })) {
+          invalidHeaders.push(name);
+        }
+      } catch (_) {
+        invalidHeaders.push(name);
+      }
+    });
+  } catch (_) {
+    spreadsheetReadable = false;
+  }
+
+  const folderReadable = function (id) {
+    if (!id) return false;
+    try {
+      const folder = DriveApp.getFolderById(id);
+      return Boolean(folder && folder.getId() === id && folder.getName());
+    } catch (_) {
+      return false;
+    }
+  };
+
+  let backupTriggerInstalled = false;
+  try {
+    backupTriggerInstalled =
+      typeof ScriptApp !== 'undefined' &&
+      typeof ScriptApp.getProjectTriggers === 'function' &&
+      ScriptApp.getProjectTriggers().some(function (trigger) {
+        return trigger.getHandlerFunction() === 'backupData_';
+      });
+  } catch (_) {
+    backupTriggerInstalled = false;
+  }
+
+  return {
+    scriptId: typeof ScriptApp !== 'undefined' && typeof ScriptApp.getScriptId === 'function'
+      ? String(ScriptApp.getScriptId() || '')
+      : '',
+    spreadsheetId: spreadsheetId,
+    receiptFolderId: receiptFolderId,
+    backupFolderId: backupFolderId,
+    checks: {
+      spreadsheetReadable: spreadsheetReadable,
+      missingSheets: missingSheets,
+      invalidHeaders: invalidHeaders,
+      receiptFolderReadable: folderReadable(receiptFolderId),
+      backupFolderReadable: folderReadable(backupFolderId),
+      backupTriggerInstalled: backupTriggerInstalled,
+    },
+  };
+}
