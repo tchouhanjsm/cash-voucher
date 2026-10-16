@@ -71,6 +71,11 @@ assert.match(
   'page section text is normalized before escaping',
 );
 assert.match(
+  ui,
+  /esc\(section\)/,
+  'shared page header escapes its section label before rendering HTML',
+);
+assert.match(
   components,
   /\.page-eyebrow\s*\{/,
   'shared title eyebrow has a dedicated token-based style',

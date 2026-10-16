@@ -169,6 +169,17 @@ with sync_playwright() as p:
     studio_page.close()
 
     page.goto(URL)
+    escaped_header_html = page.evaluate("""async () => {
+        const { head } = await import('/frontend/core/ui.js');
+        const payload = '<svg onload=window.__xssFired=true></svg>';
+        return head('Heading', '', { section: payload, description: payload });
+    }""")
+    check(
+        '&lt;svg' in escaped_header_html
+        and '<svg' not in escaped_header_html
+        and not page.evaluate('window.__xssFired === true'),
+        'shared page header escapes hostile section and description values as text',
+    )
     check(
         page.locator('html').get_attribute('data-theme') == 'light'
         and page.evaluate("localStorage.getItem('cv.theme')") is None,
