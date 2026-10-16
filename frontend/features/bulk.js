@@ -24,7 +24,7 @@ export function createBulk({ api, refresh, go }) {
       }) +
       `<div class="card bulk-import-panel"><h2>1. Get your data in</h2>
     <p class="muted">Columns: <b>Date, Vendor, Amount</b>, optional <b>Category, Notes, CashImpact</b>. CashImpact values: CASH_IN, CASH_OUT, NO_CASH. If omitted, the preview shows a suggestion only and requires your explicit selection before import. Verify each choice against physical drawer movement. Dates like 25/12/2026 or 2026-12-25. Import CSV/TSV files or paste spreadsheet rows. Excel (.xls/.xlsx) is temporarily disabled for security; save as CSV/TSV or paste the rows instead.</p>
-    <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn bulk-file-label">📁 Choose file<input type="file" id="bf" accept=".csv,.tsv,.txt" hidden></label></div>
+    <div class="actions"><button class="btn" data-act="tpl">⬇ Download template</button><label class="btn bulk-file-label">📁 Choose file<input type="file" id="bf" class="bulk-file-input" accept=".csv,.tsv,.txt" aria-label="Choose CSV or TSV file"></label></div>
     <label class="bulk-entry-kind">These rows are<select id="bt2"><option value="PAYMENT">Payments (cash out)</option><option value="RECEIPT">Cash received (cash in)</option></select></label>
     <label>…or paste rows here<textarea id="bt" rows="5" placeholder="25/12/2026&#9;Ram Traders&#9;1500&#9;Kitchen&#9;vegetables"></textarea></label>
     <button class="btn primary" data-act="parse">Check data</button></div><div id="bprev"></div>`;
@@ -246,8 +246,8 @@ export function createBulk({ api, refresh, go }) {
           : 'payments';
 
     $('#bprev').innerHTML =
-      `<div class="card"><h2>2. Review</h2><p role="status" aria-live="polite"><b>${ready.length}</b> ready · <b>${needImpact.length}</b> need cash-impact selection · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label style="display:inline;margin-left:8px"><input type="checkbox" id="bdup" style="width:auto;min-height:0"> import duplicates too</label>' : ''}</p>
-    <div class="table-wrap" style="max-height:340px;overflow:auto"><table><thead><tr><th>#</th><th>Date</th><th>Vendor</th><th class="r">Amount</th><th>Category</th><th>Cash impact (required)</th><th>Status</th></tr></thead><tbody>${rows
+      `<div class="card bulk-review-panel"><h2>2. Review</h2><p class="bulk-review-summary" role="status" aria-live="polite"><b>${ready.length}</b> ready · <b>${needImpact.length}</b> need cash-impact selection · <span class="${bad.length ? 'up' : ''}"><b>${bad.length}</b> with errors (skipped)</span> · <b>${duplicates.length}</b> possible duplicates ${duplicates.length ? '<label class="bulk-duplicate-option"><input type="checkbox" id="bdup"> import duplicates too</label>' : ''}</p>
+    <div class="table-wrap bulk-review-table" role="region" aria-label="Bulk import preview table" tabindex="0"><table><thead><tr><th>#</th><th>Date</th><th>Vendor</th><th class="r">Amount</th><th>Category</th><th>Cash impact (required)</th><th>Status</th></tr></thead><tbody>${rows
       .slice(0, 300)
       .map(
         (row) =>
