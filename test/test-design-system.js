@@ -241,11 +241,7 @@ assert.match(
   /class="bulk-file-input"/,
   'bulk file chooser remains keyboard reachable through a visually-hidden control',
 );
-assert.doesNotMatch(
-  bulk,
-  /style=/,
-  'bulk workflow no longer relies on inline presentation styles',
-);
+assert.doesNotMatch(bulk, /style=/, 'bulk workflow no longer relies on inline presentation styles');
 assert.match(
   components,
   /\.bulk-review-table\s*\{[\s\S]*?overflow:\s*auto/,
