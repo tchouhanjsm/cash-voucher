@@ -1371,7 +1371,13 @@ export function createAdministration({ api, getNavigation, signOut }) {
     container.appendChild(actions);
   }
 
-  function downloadDiagnosticJson(filenamePrefix, snapshotType, report, limitations, successMessage) {
+  function downloadDiagnosticJson(
+    filenamePrefix,
+    snapshotType,
+    report,
+    limitations,
+    successMessage,
+  ) {
     const capturedAt = new Date().toISOString();
     const snapshot = { schemaVersion: 1, snapshotType, capturedAt, report, limitations };
     download(

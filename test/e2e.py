@@ -4957,7 +4957,7 @@ with sync_playwright() as p:
         and backup_snapshot.get('snapshotType') == 'cash-voucher-backup-integrity'
         and backup_export_report.get('inspected') == len(backup_export_report.get('snapshots', []))
         and backup_export_report.get('passCount', 0) + backup_export_report.get('warningCount', 0) + backup_export_report.get('failCount', 0) == backup_export_report.get('inspected')
-        and any('does not prove a successful restore' in item for item in backup_snapshot.get('limitations', [])),
+        and any('do not prove a successful restore' in item for item in backup_snapshot.get('limitations', [])),
         'backup-integrity JSON has consistent counts and explicitly stops short of a restore claim',
     )
 
