@@ -1,7 +1,7 @@
 # Daily Cash Close and Physical Reconciliation — Design and Owner Policy Record
 
 **Phase:** 23 design record; the MVP implementation is merged in PR #111.  
-**Status:** close rules and the one-drawer/day MVP are implemented in source; live deployment, schema migration, real backup/restore and hotel-pilot evidence remain unverified. The payment-approval policy, report-only accountant role and VendorID export are grouped in active PR #114.  
+**Status:** close rules and the one-drawer/day MVP are implemented in source; live deployment, schema migration, real backup/restore and hotel-pilot evidence remain unverified. The payment-approval policy, report-only accountant role and VendorID export merged in PR #114 at `95cd5e0e733d07354e1a2e0b9291a65dee19d126`; they are not an active PR. Denomination-level cash counts remain optional and require an explicit owner decision before implementation.
 **Historical source baseline:** `main` at `f0377937b260d9e873360ae3f726258e0ae8c272`  
 **Scope:** preserve the original design reasoning and owner-approved rules for the single-property Apps Script/Sheets product. Editing this record does not run migrations or release code.
 

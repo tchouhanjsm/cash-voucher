@@ -4,7 +4,7 @@
 
 ## Current release boundary
 
-PR #155 is merged; the verified source baseline is `4b15ce7e05d3a524b727f40edbc06e19295beef4`. A merge is still separate from a Clasp upload or Web App deployment. The staging/UAT workflow exists in source, but its dedicated Google resources, protected GitHub Environment and OAuth/UAT credentials must be provisioned and live-tested by the owner before it can be considered operational. The version of Apps Script actually serving the configured production `/exec` URL must be verified independently. Local quality checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
+PR #157 is merged; the verified source baseline is `ec5f76c215b8d8986d7dd38e265cc4d1b50e36ee`. Its exact tested PR head passed CI/quality, Browser E2E (402 checks) and Full Flight Test (281 backend + 402 browser checks), but a separate post-merge workflow result on the merge commit was not established during this review. A merge is still separate from a Clasp upload or Web App deployment. The staging/UAT workflow exists in source, but its dedicated Google resources, protected GitHub Environment and OAuth/UAT credentials must be provisioned and live-tested by the owner before it can be considered operational. The version of Apps Script actually serving the configured production `/exec` URL must be verified independently. Local quality checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
 
 The frontend `config.js` already contains a Web App `/exec` URL. Do not replace it or create a different URL until the local Clasp deployment list proves which Apps Script project and deployment serve that URL.
 

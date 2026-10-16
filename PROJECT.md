@@ -69,7 +69,7 @@ Dates are normalized by the API. Monetary inputs are validated and rounded to tw
 - Audit records are appended best-effort by `audit_`; this is not yet a tamper-evident/append-only financial ledger.
 - Current v2 tree does not contain the old review's cited `src/01_Config.js` or `03_Auth.js` files. This does not prove that reported values never existed elsewhere; if those reported credentials were ever used, rotate the deployed owner PIN. No Git history rewrite has been performed.
 
-Phase 22 serializes login failure counting and throttles repeated current-PIN failures. The mock tests check that the lock path is called and lockout behavior is enforced; the mock does not simulate real concurrent requests.
+Authentication controls already present in source serialize login failure counting under ScriptLock, throttle incorrect current-PIN attempts for 15 minutes, clear login/PIN-change counters on owner PIN reset, and authenticate write sessions after lock acquisition. This mock suite does not simulate real concurrent Apps Script requests; the current Phase 22 regression batch injects session invalidation at that boundary to verify fail-closed behavior without writing a voucher.
 
 ## 5. Develop, test, release
 
@@ -93,6 +93,6 @@ The offline outbox only protects pending work on the same browser/device, while 
 - PRs #15–16 improved PWA shell/release-integrity checks and browser E2E.
 - PR #17 added backend backup infrastructure.
 - PRs #18–21 added durable offline queue, pending export/recovery import, and cross-tab/migration reliability.
-- Phase 22 addresses authentication lockout concurrency and updates stale documentation based on the supplied review.
+- Phase 22 verifies the write-session invalidation race at lock acquisition and reconciles stale project records; existing lockout controls are preserved, not duplicated.
 
-Next proposed slice, **after Phase 22 is reviewed and merged**, is a product-design pass for daily cash close: opening/book balance, physical denomination count, variance reason, day seal and post-close correction audit. No Phase 23 work begins until the current PR has been reviewed and merged by the owner.
+Next proposed slice, **after Phase 22 is reviewed and merged**, is an owner decision on whether denomination-level physical cash counts would help Daily Cash Close operators. The existing MVP already supports expected cash, physical count, variance reason, immutable daily close and attributed correction notes. Denomination rows remain optional and unapproved; do not add new schema fields or make them mandatory until the owner confirms their operational value and denomination vocabulary.

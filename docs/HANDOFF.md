@@ -2,14 +2,14 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `0b6f89a393dd47edb8a33a5fb9fe0653ea6b6ab2` (PR #156 merge commit)  
-Current engineering batch: Phase 21 — premium light frontend redesign  
-Current working branch: `phase-21-light-premium-frontend-2026-10-16`  
-Current candidate: shared light visual system, operator shell and dashboard hierarchy; exact-head CI/E2E/Flight checks are authoritative
+Last verified main SHA: `ec5f76c215b8d8986d7dd38e265cc4d1b50e36ee` (PR #157 merge commit)  
+Current engineering batch: Phase 22 — authentication race regression and source-of-truth reconciliation  
+Current working branch: `phase-22-auth-race-evidence-docs-2026-10-16`  
+Current candidate: simulate write-session invalidation at ScriptLock acquisition, prove fail-closed behavior, and reconcile stale project records; exact-head CI/E2E/Flight checks are authoritative
 
 ## Verified repository state
 
-- Live `main` is `0b6f89a393dd47edb8a33a5fb9fe0653ea6b6ab2`, the PR #156 merge commit. Phase 20 added nested Clasp OAuth diagnostic redaction; its CI, Browser E2E and Full Flight Test passed on the exact final PR head. These source/mock checks remain separate from proof of a live staging deployment, role/Drive permissions or a witnessed restore.
+- Live `main` is `ec5f76c215b8d8986d7dd38e265cc4d1b50e36ee`, the PR #157 merge commit. Phase 21's light-first shared UI redesign is merged; the exact tested head `f38feeafdf7fd682d4e07e134026627c0bfc2413` passed CI/quality, Browser E2E (402 checks) and Full Flight Test (281 backend + 402 browser checks). A post-merge run on the merge commit was not established in the current review. Source/mock checks remain separate from proof of a live staging deployment, role/Drive permissions or witnessed restore.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
 - Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
@@ -91,11 +91,19 @@ Current candidate: shared light visual system, operator shell and dashboard hier
 - The change is source/test-only. It does not execute Clasp, access Google credentials, deploy staging or production, or mutate voucher data.
 - Live staging provisioning and owner-authorized UAT remain blocked on separate Google resources, the protected GitHub `staging` environment, isolated Clasp OAuth credentials and dedicated Owner/Manager test accounts. Do not infer that these are provisioned from CI.
 
-## Phase 21 — premium light frontend redesign (candidate)
+## Phase 21 — premium light frontend redesign (completed in PR #157)
 
 - Art direction: warm ivory canvas, near-white surfaces, soft blue-grey secondary information, restrained gold-brown primary actions, and pale beige selected navigation. Keep the dashboard light-first while preserving an explicit, user-selectable dark theme.
 - Bulk scope: shared application shell/navigation, top bar/account states, typography, cards and KPI composition, segmented filters, forms/buttons, status badges, tables, charts, modals, notifications and responsive mobile navigation.
 - Dashboard presentation is reorganized around a scoped overview, compact horizontal KPI cards, a clearly separated date-range control, trend panel and vendor/category breakdowns. No financial calculation, approval state, voucher schema, authorization, audit or offline queue semantics should change.
 - Add a design-system regression gate and update contrast verification to measure the new navigation surfaces and active-state text. Existing DOM-sink source/fingerprint gates remain unchanged.
 - Default first-use theme is light; a previously saved explicit theme preference remains respected. No framework, external font/icon service, dependency, API or production integration is introduced.
-- Operational release proof remains P0 and owner-controlled. This visual batch must not be described as staging/production verification.
+- Operational release proof remains P0 and owner-controlled. The visual batch is not staging/production verification.
+
+## Phase 22 — authentication race regression and project-record reconciliation (PR #158)
+
+- Source review confirms login failure counters are updated inside `withScriptLock_`; current-PIN failures are throttled for 15 minutes; owner PIN reset clears both lockout counters; write routes acquire the shared lock and authenticate the session inside the lock before invoking a write handler.
+- [PR #158](https://github.com/tchouhanjsm/cash-voucher/pull/158) is the active review candidate. Its regression invalidates a cached session after lock acquisition but before route authentication; the route must return `SESSION`, append no voucher, and release the acquired lock. The live PR page remains authoritative for the exact final head and workflow evidence.
+- The test hook is one-shot and exists only in the in-memory mock. It does not simulate real simultaneous Apps Script executions or prove live authorization.
+- Reconcile the current main/PR state in the handoff, roadmap, backlog, project guide and release-readiness status. Do not modify financial policy or run migrations/deployments.
+- Next cash-close enhancement requiring an owner decision: denomination rows remain optional and must not be assumed useful or made mandatory without approval; the existing close MVP is already implemented.
