@@ -51,6 +51,44 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
+      - name: Format staging candidate files for CI diagnosis
+        run: |
+          npx prettier --write \
+            .github/workflows/staging-uat.yml \
+            backend/80-settings-audit.gs \
+            docs/APPS-SCRIPT-RELEASE-RUNBOOK.md \
+            docs/HANDOFF.md \
+            scripts/deploy-staging.js \
+            scripts/staging-preflight.js \
+            scripts/staging-web-server.js \
+            test/mock-gas.js \
+            test/test-deployment-readiness.js \
+            test/test-staging-pipeline.js \
+            test/test-staging-web-server.js \
+            test/test-staging-workflow.js
+          mkdir -p "${RUNNER_TEMP}/staging-prettier-output"
+          cp --parents \
+            .github/workflows/staging-uat.yml \
+            backend/80-settings-audit.gs \
+            docs/APPS-SCRIPT-RELEASE-RUNBOOK.md \
+            docs/HANDOFF.md \
+            scripts/deploy-staging.js \
+            scripts/staging-preflight.js \
+            scripts/staging-web-server.js \
+            test/mock-gas.js \
+            test/test-deployment-readiness.js \
+            test/test-staging-pipeline.js \
+            test/test-staging-web-server.js \
+            test/test-staging-workflow.js \
+            "${RUNNER_TEMP}/staging-prettier-output"
+
+      - name: Upload formatted staging candidate files for remediation
+        uses: actions/upload-artifact@v7
+        with:
+          name: staging-prettier-output-${{ github.run_id }}
+          path: ${{ runner.temp }}/staging-prettier-output/
+          if-no-files-found: error
+
       - name: Run quality gate
         run: npm run check
 
