@@ -12,7 +12,7 @@ The deterministic fixture creates active `PAYMENT` vouchers and validates both t
 - **500 voucher rows:** `bootstrap` and `recordedMovementReport`.
 - **1,000 voucher rows:** `bootstrap` and `recordedMovementReport`.
 
-Each operation performs one warm-up followed by five measured samples. The JSON result records the Node.js version, platform, architecture, capture timestamp, individual sample timings, and min/median/max. Timings are diagnostic only: there are no hard latency thresholds because runner load and hardware affect elapsed time.
+Each operation performs one warm-up followed by five measured samples. The JSON result uses `schemaVersion: 1` and records the Node.js version, platform, architecture, capture timestamp, individual sample timings, and min/median/max. Consumers should check `schemaVersion` before interpreting fields; an incompatible result-shape change should update the schema and this document together. Timings are diagnostic only: there are no hard latency thresholds because runner load and hardware affect elapsed time.
 
 ## Run locally
 
