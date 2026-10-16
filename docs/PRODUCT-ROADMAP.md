@@ -390,7 +390,6 @@ PR #125 merged at `6dd53d3b927f184ceda8fb14916367c63199ae2d`. Exact tested head 
 
 The live audit supersedes stale “current sprint” and “active PR” wording where it conflicts with current GitHub state. PR #126 is merged. Its tested PR head passed CI, Browser E2E (325 checks) and Full Flight Test; post-merge CI passed on main SHA `255d78ccb6a21b204d432221489114ccf514d333`. These results do not close live deployment, backup/restore, device, accessibility or pilot gates. See [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md).
 
-
 ## Phases 25–27 — Fresh Design Studio completion (bulk candidate)
 
 Branch: `phase-25-frontui-completion-bulk-2026-10-16`, based on main SHA `0d900235f9230ab05db940bb57881a171737ae0c`.
