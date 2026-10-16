@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `dabd39b2b70d516d714e08ac0cf6ed57fa806eee` (PR #159 merge; FrontUI adoption across production workflows)  
-Current engineering batch: Phase 24 — responsive reporting and administration workflow adoption  
-Current candidate branch: `phase-24-workflows-ui-adoption-2026-10-16`
+Last verified main baseline: `0d900235f9230ab05db940bb57881a171737ae0c` (PR #160 merge; responsive reporting and administration adoption)  
+Current engineering batch: Phases 25–27 — Fresh Design Studio completion in one implementation batch  
+Current candidate branch: `phase-25-frontui-completion-bulk-2026-10-16`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -38,7 +38,8 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 - Phase 22 — authentication race regression and project-record reconciliation is complete in merged PR #158 at `6fba1dd4fcd41aa635311e0c64ff445d46f0fe91`. Its exact tested head passed CI/quality (285 backend checks), Browser E2E (402 checks), and Full Flight Test (285 backend + 402 browser checks). The direct post-lock stale-session regression proves the mocked write route fails closed without creating a voucher; it does not simulate true concurrent Apps Script calls.
 - Phase 23 — FrontUI production-screen adoption is complete in merged PR #159 at main SHA `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`. It adds a shared section eyebrow, standardized New Entry layout, responsive Register filters, Settings diagnostic composition, Bulk Upload and Cash Close presentation, and bumps the PWA shell cache to `cv2-v18`. Exact head `41b25f42c39a033585128ddf8c7e89f247e1fc61` passed CI/quality (285 backend checks), Browser E2E (409 checks) and Full Flight Test (285 backend + 409 browser checks); post-merge CI passed on main. Manual device/zoom/screen-reader verification and live operational release gates remain open.
-- Phase 24 — candidate branch `phase-24-workflows-ui-adoption-2026-10-16`: responsive report filters/summary cards, Register totals styling, vendor/user administration forms, dedicated Audit composition, Account PIN layout and sign-in surface. Exact-head CI, Browser E2E and Full Flight Test are required before merge.
+- Phase 24 — responsive reporting and administration UI adoption is complete in merged PR #160 at main SHA `0d900235f9230ab05db940bb57881a171737ae0c`. The exact tested head passed CI/quality (285 backend checks), Browser E2E (418 checks) and Full Flight Test (285 backend + 418 browser checks); post-merge main CI passed. Source and mock checks do not certify real-device layout, live roles, backup/restore or production deployment.
+- Phases 25–27 — consolidated Fresh Design Studio completion is proposed in branch `phase-25-frontui-completion-bulk-2026-10-16`. This outcome-based batch finishes shared responsive/error/loading/interaction states across Bulk Upload and Daily Cash Close; removes remaining workflow-level inline presentation where a semantic class is clearer; makes the bulk preview keyboard-scrollable and the file picker keyboard reachable; adds reduced-motion and forced-colors safeguards; and expands real-browser responsive assertions. Financial rules, permissions, API contracts and production data remain out of scope pending exact-head CI and owner review.
 
 ## Phase 4 batch outcomes
 
@@ -388,3 +389,13 @@ PR #125 merged at `6dd53d3b927f184ceda8fb14916367c63199ae2d`. Exact tested head 
 ## Phase 1 audit correction — 14 October 2026
 
 The live audit supersedes stale “current sprint” and “active PR” wording where it conflicts with current GitHub state. PR #126 is merged. Its tested PR head passed CI, Browser E2E (325 checks) and Full Flight Test; post-merge CI passed on main SHA `255d78ccb6a21b204d432221489114ccf514d333`. These results do not close live deployment, backup/restore, device, accessibility or pilot gates. See [Phase 1 Repository Audit](PHASE-1-REPOSITORY-AUDIT.md).
+
+
+## Phases 25–27 — Fresh Design Studio completion (bulk candidate)
+
+Branch: `phase-25-frontui-completion-bulk-2026-10-16`, based on main SHA `0d900235f9230ab05db940bb57881a171737ae0c`.
+
+- **Phase 25 — workflow parity:** extend named FrontUI surfaces to Bulk Upload and Daily Cash Close, standardize summary/blocker/preview spacing, and replace ad-hoc inline presentation with semantic CSS classes.
+- **Phase 26 — accessible states:** keep the file chooser keyboard reachable, make the bulk preview a named focusable scroll region, retain touch-sized controls, and support reduced-motion and forced-colors preferences.
+- **Phase 27 — regression and release integrity:** test the new source hooks, check bulk preview reflow at 320px and Cash Close form reflow at desktop/mobile sizes, and advance the PWA cache for the changed shared CSS.
+- **Acceptance boundary:** CI, source checks and mocked E2E are regression evidence only. They do not certify physical devices, 200–400% zoom, manual keyboard traversal, screen readers, live Apps Script deployment, production identities or backup/restore. No production deployment or data mutation is included.
