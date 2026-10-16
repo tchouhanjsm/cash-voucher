@@ -1,21 +1,20 @@
 # Engineering Handoff
 
-Updated: 15 October 2026  
+Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `f2afdb08bece0a7f529a64a84164685269805641` (PR #146 merge commit)  
-Current phase: Phase 11 — Contextual rendering-security review and sink retirement  
-Current working branch: `phase-11/batch-4-pin-submit-regression-2026-10-15`  
-Current open PR: #147 — [Fix Change PIN submit semantics after Phase 11 Batch 4](https://github.com/tchouhanjsm/cash-voucher/pull/147)
+Last verified main SHA: `61e46989032985fba54ceb48d768ab57430aa48a` (PR #147 merge commit)  
+Current phase: Phase 12 — Cross-workflow integrity and recovery  
+Current working branch: `phase-12/endpoint-bound-recovery-2026-10-16`  
+Current open PR: #148 — [Phase 12: harden endpoint-bound offline queue recovery](https://github.com/tchouhanjsm/cash-voucher/pull/148)
 
 ## Verified repository state
 
-- Live `main` resolves to `f2afdb08bece0a7f529a64a84164685269805641`, PR #146's merge commit.
-- PRs #143–#145 reduced active HTML assignments from 27 to 19; PR #146 merged the My Account profile/PIN page and offline outbox banner/review templates using DOM APIs. Merged main now has 17 assignments across eight frontend modules.
-- PR #146 merged at `f2afdb08bece0a7f529a64a84164685269805641`, with tested PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c`. Its CI/quality passed (281 backend checks and sink count/fingerprint gates); Browser E2E and Full Flight Test reported the same one failing regression: `My Account preserves sign-out and Change PIN controls after DOM rendering` (357 passed, 1 failed). This is not a green end-to-end release signal.
-- PR #147 fixes the underlying mismatch by explicitly setting `type='submit'` on the Change PIN button. This keeps the expected form semantics explicit and satisfies the already-added Browser E2E selector. Fix commit: `f04f3f26bda9a22defc91945d23b836e84d13108`.
-- Final checks passed on the exact follow-up PR head `eb473402dca0cbdc085af1f961ca00e9b70705d8`: CI/quality [passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38773868316), Browser E2E **358 passed, 0 failed** ([run](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38773868470)), and Full Flight Test **281 backend checks plus 358 browser checks, 0 failures** ([run](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38773868437)). The PR is still open and unmerged.
-- Current follow-up changes no sink count, financial logic, authorization, backend contract, schema or persisted data. Exact-head CI, Browser E2E and Full Flight Test are required before treating this as closed.
-- Source tests do not prove live Apps Script deployment identity/version, Sheet binding, real permissions, scheduled backup/isolated restore, physical-device behavior, accessibility conformance or production readiness.
+- Live `main` resolves to `61e46989032985fba54ceb48d768ab57430aa48a`, the merge commit for PR #147. PR #147 explicitly sets the Change PIN control to `type='submit'`; CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend plus 358 browser checks, 0 failures) passed on the exact PR head `bfdbbb401c397730b12480fec5ac9fd1e57072d9`. This is source/mock evidence, not proof of live deployment.
+- Phase 11 Batch 4 is closed in source: the active DOM-sink inventory is 17 assignments across eight frontend modules. Sink counts and fingerprints remain drift controls, not XSS certification.
+- Local sync was confirmed by the owner’s terminal report: local `main` and `origin/main` both resolve to `61e4698`; the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md` remains untracked and must not be staged, overwritten or deleted.
+- Phase 12 candidate PR #148 adds Browser E2E coverage that a queued record bound to a different API endpoint is not surfaced or uploaded, even when its account email matches the current account. The endpoint is represented only as tampered IndexedDB metadata using a reserved `.invalid` host.
+- PR #148 also reconciles stale phase/status metadata across the canonical handoff, roadmap, backlog, release readiness and rendering/recovery evidence. CI/quality, Browser E2E and Full Flight Test must pass on the same final PR head before acceptance; results for intermediate commits do not count.
+- Mock/source tests do not prove live Apps Script deployment identity/version, Sheet binding, actual role/receipt permissions, scheduled backup/isolated restore, physical-device recovery, assistive-technology conformance or production readiness.
 
 ## Phase 10 — UI refresh integration and dashboard trust states
 
@@ -39,7 +38,7 @@ Current open PR: #147 — [Fix Change PIN submit semantics after Phase 11 Batch 
 
 ## Remaining risks and owner-controlled operational gates
 
-- Main after PR #144 has 22 active HTML assignment sites. The current Phase 11 Batch 3 candidate retires three more status/totals sinks, leaving 19 across eight modules; sink counts/fingerprints remain drift gates, not proof of safety.
+- Main after PR #147 has 17 active HTML assignment sites across eight frontend modules. Remaining assignments still require contextual review; sink counts/fingerprints are drift gates, not proof of safety.
 - Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility and real-service quotas/concurrency remain unverified.
 - Investigate the documented audit-write dual-failure observability limit without fabricating missing events.
 - Reassess the `@google/clasp -> micromatch -> braces` dependency exception by 9 November 2026.
@@ -52,13 +51,13 @@ Current open PR: #147 — [Fix Change PIN submit semantics after Phase 11 Batch 
 
 **Batch 4 — merged in PR #146:** the My Account profile/PIN page and offline outbox banner/review details now use DOM construction. The sink count is 19 → 17 across eight modules, hostile stored profile/queue content is tested as inert, and existing queue action keys and account controls are preserved. However, the full Browser E2E and Full Flight Test on exact PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` each report one failing check: `My Account preserves sign-out and Change PIN controls after DOM rendering`. Do not describe Batch 4 as fully verified until the fix below passes all required workflows.
 
-**Batch 4 follow-up — PR #147:** explicitly assigns `type='submit'` to the Change PIN submit control. The browser regression looks for `button[type=submit]`; the previous DOM renderer relied on the browser's default button type without setting the attribute. CI, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend checks plus 358 browser checks, 0 failures) now pass on exact head `eb473402dca0cbdc085af1f961ca00e9b70705d8`. This is a focused correction to the already merged change, not a change in financial/authorization policy or sink count.
+**Batch 4 follow-up — PR #147, merged into main at `61e46989032985fba54ceb48d768ab57430aa48a`:** explicitly assigns `type='submit'` to the Change PIN submit control. The previous DOM renderer relied on the browser's default button type without setting the attribute, while Browser E2E looks for `button[type=submit]`. CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend checks plus 358 browser checks, 0 failures) passed on exact PR head `bfdbbb401c397730b12480fec5ac9fd1e57072d9`. This is a focused correction, not a financial/authorization policy or sink-count change.
 
 **Acceptance boundary:** frontend rendering and focused Browser E2E only. No `clasp push`, Apps Script deployment, production-data mutation, schema change, merge or release is performed by this follow-up. It is incremental risk reduction, not XSS certification.
 
 ## Next phases — grouped outcome plan
 
-**Phase 12 — Cross-workflow integrity and recovery:** complete role/action/state coverage across entry, ambiguous save, retry/idempotency, offline queue, approval, reporting, cash close and audit. Add regressions for uncovered transitions; preserve approved financial invariants.
+**Phase 12 — Cross-workflow integrity and recovery (current):** PR #148 adds an endpoint-bound outbox isolation regression and reconciles phase evidence. Continue only with gaps shown by the test matrix; preserve approved financial invariants.
 
 **Phase 13 — Operational release proof:** obtain owner-signable evidence for Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup, isolated restore and voucher/receipt reconciliation. These require owner authorization and real access; mock CI cannot satisfy them.
 

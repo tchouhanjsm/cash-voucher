@@ -1,8 +1,8 @@
 # Release Readiness
 
-**Reviewed:** 15 October 2026. **Last verified main baseline:** `f2afdb08bece0a7f529a64a84164685269805641` (PR #146 merge; Phase 11 Batches 1–4 integrated, one browser regression under follow-up). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
+**Reviewed:** 16 October 2026. **Last verified main baseline:** `61e46989032985fba54ceb48d768ab57430aa48a` (PR #147 merge; Phase 11 Batch 4 follow-up included). See `docs/PHASE-1-REPOSITORY-AUDIT.md` for the repository and operational evidence register.
 
-**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#139 add source recovery, authorization/rendering drift checks, sink reductions/adversarial output coverage, and legacy-aware payee-day approval identity. PR #141 integrated the Phase 10 UI refresh; PRs #143–#146 are merged Phase 11 source changes. PR #146's CI/quality passed and its sink gates matched the 17-site baseline, but Browser E2E and Full Flight Test each reported one failure on exact PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` (357 passed, one failed: Change PIN submit selector). PR #147 explicitly sets `type="submit"`; CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend plus 358 browser checks, 0 failures) passed on exact head `eb473402dca0cbdc085af1f961ca00e9b70705d8`. PR #147 remains open and unmerged pending owner review. None of this evidence establishes live deployment or production readiness.
+**Status: not verified as production-ready.** Verify the current `main` commit and deployed Apps Script version before release. Passing CI or merging frontend changes does not prove that the current source is deployed. Live authorization, scheduled backup and isolated restore remain unverified. PRs #132–#139 add source recovery, authorization/rendering drift checks, sink reductions/adversarial output coverage, and legacy-aware payee-day approval identity. PR #141 integrated the Phase 10 UI refresh; PRs #143–#146 are merged Phase 11 source changes. PR #146's CI/quality passed and its sink gates matched the 17-site baseline, but Browser E2E and Full Flight Test each reported one failure on exact PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` (357 passed, one failed: Change PIN submit selector). PR #147 explicitly sets `type="submit"` and is merged at `61e46989032985fba54ceb48d768ab57430aa48a`; CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend plus 358 browser checks, 0 failures) passed on exact PR head `bfdbbb401c397730b12480fec5ac9fd1e57072d9`. PR #148 adds endpoint-bound queue isolation coverage; its exact final-head checks remain pending. None of this evidence establishes live deployment or production readiness.
 
 ## Current go-live gates — reviewed 14 October 2026
 
@@ -43,20 +43,18 @@ Do not begin the pilot until the owner confirms the release target, required mig
 
 ## Evidence-based baseline
 
-| Area                                                        | Current status        | Evidence / limitation                                                                                                       |
-| ----------------------------------------------------------- | --------------------- | --------------------------------------------------------------------------------------------------------------------------- |
-| Backend validation, schema checks and number reconciliation | Implemented           | Current `backend/*.gs` and mock backend suite; not a live Google-account test                                               |
-| PIN hash and session protection                             | Implemented           | HMAC-SHA256 with per-user salt + script property pepper; salt rotation invalidates old session tokens                       |
-| Login/PIN-change attempt throttling                         | Implemented in source | PR #32 is merged and post-merge CI passed; not deployed to Apps Script                                                      |
-| Server-side role enforcement                                | Implemented           | `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary                                           |
-| Active frontend architecture                                | PASS on current main  | `index.html` loads `frontend/main.js`; source graph is modular                                                              |
-| PWA/outbox recovery                                         | Implemented in source | PRs #18–21 and browser E2E; device/storage durability is not a server backup                                                |
-| CI quality gate                                             | PASS on current main  | Post-merge CI passed on `fabf4bba1a964c99c55391c4d4be3f260d787906` (run 38706374287). Check later PRs at their exact heads. |
-| Browser E2E                                                 | PASS on PR #32 head   | 47 checks passed; mock-only coverage does not verify live Google services or device accessibility                           |
-| Daily backup mechanism                                      | Implemented in source | Live trigger success, backup contents and restore drill remain unverified                                                   |
-| Accessibility / design audit                                | NOT VERIFIED          | HTML contains semantic labels/skip link/status landmarks; no completed contrast/usability audit evidence                    |
-| Production Apps Script deployment                           | Unconfirmed           | Owner reported version 4 before PRs #64/#65; current merged backend deployment is unconfirmed                               |
-| Hotel operational pilot / cash reconciliation               | NOT STARTED           | Requires real operators/devices and an owner-approved trial                                                                 |
+- **Backend validation, schema checks and number reconciliation — Implemented in source.** Current `backend/*.gs` and mock backend suite; not a live Google-account test.
+- **PIN hash and session protection — Implemented in source.** HMAC-SHA256 with per-user salt and a Script Properties pepper; salt rotation invalidates old session tokens.
+- **Login/PIN-change attempt throttling — Implemented in source.** PR #32 is merged; this does not establish deployment to Apps Script.
+- **Server-side role enforcement — Implemented in source.** `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary.
+- **Active frontend architecture — Verified in source.** `index.html` loads `frontend/main.js`; the source graph is modular.
+- **PWA/outbox recovery — Implemented in source.** Existing browser regressions cover recovery paths; device/storage durability is not a server backup.
+- **CI quality gate — Last recorded on PR #147.** Exact PR head `bfdbbb401c397730b12480fec5ac9fd1e57072d9` passed CI/quality; PR #148 must pass again on its own final head.
+- **Browser E2E — Last recorded on PR #147.** 358 checks passed with zero failures on that exact PR head; PR #148 adds a new endpoint-binding case that still requires final-head evidence.
+- **Daily backup mechanism — Implemented in source.** Live trigger success, backup contents and restore drill remain unverified.
+- **Accessibility/design audit — Not verified as conformance.** Semantic labels and status landmarks exist; manual device and assistive-technology checks remain outstanding.
+- **Production Apps Script deployment — Unconfirmed.** Current merged backend deployment identity/version is unverified.
+- **Hotel operational pilot/cash reconciliation — Not started.** Requires real operators/devices and an owner-approved trial.
 
 The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
 

@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `f2afdb08bece0a7f529a64a84164685269805641` (main after PR #146; 17 assignment sites across eight modules after Phase 11 Batches 1–4; Dashboard fingerprint `2977910e`).
+**Latest merged review baseline:** `61e46989032985fba54ceb48d768ab57430aa48a` (main after PR #147; 17 assignment sites across eight modules after Phase 11 Batches 1–4; Dashboard fingerprint `2977910e`).
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
@@ -13,7 +13,7 @@
 
 **Phase 7 / PR #136 (merged):** the accountant Recorded Movement Report is given an adversarial valid-shaped response containing hostile text fields and a formula-leading vendor value. The browser test checks inert HTML rendering, CSV apostrophe neutralization and recovery to the normal report response. This expands verification; it does not claim a confirmed report-renderer defect.
 
-**Phase 4 follow-up — 15 October 2026:** the active modular frontend currently has 33 `innerHTML` assignment sites across nine modules. `scripts/check-dom-sinks.js` locks those per-module counts and fails if they drift or if specified high-risk DOM APIs are introduced. A new mock-authenticated role/action suite separately tests staff/manager/owner/accountant access and own-versus-foreign record visibility. These are drift and regression controls, not proofs that each interpolation is safe or that every authorization scenario has been penetration-tested. The live deployment and production data boundaries remain unverified.
+**Phase 4 follow-up — historical baseline, 15 October 2026:** at that review stage the active modular frontend had 33 `innerHTML` assignment sites across nine modules. Subsequent Phase 11 Batches 1–4 reduced the merged inventory to 17 sites across eight modules on main after PR #147. `scripts/check-dom-sinks.js` continues to detect drift and specified high-risk DOM APIs. The mock-authenticated role/action suite tests selected staff/manager/owner/accountant access and own-versus-foreign record visibility. These are drift and regression controls, not proofs that each interpolation is safe or that every authorization scenario has been penetration-tested. Live deployment and production data boundaries remain unverified.
 
 **Cross-phase status update — 15 October 2026:** PR #132 adds a limited high-confidence credential-pattern scan across current tracked text and reachable history, plus a route-registry regression asserting registered actions reject unauthenticated calls. These guardrails do not certify every credential format, prove every role/action combination, or replace the full active DOM-sink review. Count them as verified only after final-head CI passes.
 
