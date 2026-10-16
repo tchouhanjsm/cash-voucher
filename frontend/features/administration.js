@@ -1529,7 +1529,6 @@ export function createAdministration({ api, getNavigation, signOut }) {
       header.className = 'head page-header';
       const headerCopy = document.createElement('div');
       headerCopy.className = 'page-header-copy';
-      const heading = document.createElement('h1');
       const eyebrow = document.createElement('p');
       eyebrow.className = 'page-eyebrow';
       eyebrow.textContent = 'Account';
