@@ -3771,7 +3771,7 @@ with sync_playwright() as p:
     degraded_audit_health_text = audit_page.locator('#aud-health').inner_text()
     check(
         '3 write failure(s) recorded' in degraded_audit_health_text
-        and hostile_audit_health_kind.replace('_', ' ') in degraded_audit_health_text
+        and hostile_audit_health_kind.replace('_', ' ').replace('  ', ' ') in degraded_audit_health_text
         and audit_page.locator('#aud-health svg, #aud-health img').count() == 0
         and not audit_page.evaluate('window.__xssFired === true'),
         'degraded audit health is assertively announced and hostile monitor text remains inert',
