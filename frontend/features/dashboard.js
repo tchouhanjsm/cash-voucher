@@ -229,7 +229,7 @@ export function createDashboard() {
     const financialPanels = !dataAvailable
       ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">${esc(unavailableMessage)} No financial totals or charts are shown until valid voucher data is available.</p></div>`
       : `
-  <div class="stats">
+  <div class="stats dashboard-stats">
     <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
     <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${current.length}</b><small class="muted">avg ${money(validCurrent.length ? total / validCurrent.length : 0)}</small></div>
     <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(largest ? largest.amount : 0)}</b><small class="muted">${largest ? esc(largest.vendor) : '–'}</small></div>
@@ -239,11 +239,11 @@ export function createDashboard() {
   </div>
   ${dataWarnings.length ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>` : ''}
   ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
-  <div class="card"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(current, from, to)}</div>
-  <div class="two"><div class="card"><h2>Top vendors</h2>${bars(group(current, (voucher) => voucher.vendor))}</div><div class="card"><h2>By category</h2>${bars(group(current, (voucher) => voucher.category || 'Other'))}</div></div>
+  <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(current, from, to)}</div>
+  <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(group(current, (voucher) => voucher.vendor))}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(group(current, (voucher) => voucher.category || 'Other'))}</div></div>
   ${
     can('viewAll')
-      ? `<div class="card"><h2>By team member</h2>${bars(
+      ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(
           group(current, (voucher) => nm(voucher.createdBy)),
           10,
         )}</div>`
@@ -251,6 +251,7 @@ export function createDashboard() {
   }`;
 
     $('#view').innerHTML =
+      `<div class="dashboard-view">` +
       head(
         can('viewAll') ? 'Dashboard' : 'My Dashboard',
         `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
@@ -260,8 +261,9 @@ export function createDashboard() {
         },
       ) +
       `
+  <div class="dashboard-body">
   ${needsAttention}
-  <div class="seg">${[
+  <div class="seg dashboard-period">${[
     ['7d', 'Last 7 days'],
     ['30d', 'Last 30 days'],
     ['mtd', 'This month'],
@@ -274,7 +276,9 @@ export function createDashboard() {
     )
     .join('')}</div>
   ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
-  ${financialPanels}`;
+  ${financialPanels}
+  </div>
+  </div>`;
   }
 
   return {
