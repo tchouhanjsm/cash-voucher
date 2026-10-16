@@ -11,18 +11,55 @@ A voucher should retain the same business identity and financial treatment from 
 
 ## Cross-workflow test matrix
 
-| Boundary | Existing source evidence | Phase 12 disposition |
-| --- | --- | --- |
-| High-value payment approval journey | `test/test-backend.js` exercises independent approval, approval-state totals, movement reporting, cash-close preview/finalization, immutable snapshot and audit attribution. `docs/PHASE-2-CROSS-WORKFLOW-INTEGRITY.md` defines the shared-voucher invariant. | Preserve unchanged; avoid duplicating covered normal-path tests. |
-| Role and resource boundaries | `test/test-authorization-matrix.js` covers staff, manager, owner and accountant authorization and receipt/report boundaries. | Bounded mock role/action evidence; not a live authorization proof or exhaustive penetration test. |
-| Lost or malformed direct-save response | `test/e2e.py` exercises both response faults, retries the same client ID and asserts exactly one Register row. | Existing regression retained. |
-| Server commit followed by IndexedDB acknowledgement failure | `test/e2e.py` aborts the local acknowledgement transaction after server commit, verifies the same pending client ID, then retries without duplicating the voucher. | Existing regression retained. |
-| Parallel tabs, lease expiry and stale session | `test/e2e.py` verifies single-request multi-tab synchronization, expired lease recovery, account-bound queue retention after SESSION, and same-account reauthentication. | Existing regressions retained. |
-| Per-entry partial failure | `test/e2e.py` injects a validation rejection for a poison queue record while a healthy neighbor uploads; the rejected item remains reviewable/exportable and is not retried endlessly. | Existing regression retained; don't duplicate without a distinct failure mode. |
-| Account binding | `test/e2e.py` changes the stored queue owner's email and verifies the foreign-account entry stays pending and is neither surfaced nor uploaded. | Existing regression retained. |
-| API-endpoint binding | PR #148 adds a same-email/different-endpoint stored owner-key case using a reserved `.invalid` host in tampered IndexedDB metadata. It dispatches a queue-change notification and online event, then asserts the foreign-bound record remains pending and hidden. | Candidate-only until exact-head workflows pass; the reserved endpoint is metadata and must never be contacted. |
-| Idempotency and payload conflict | `test/test-backend.js` verifies matching same-user client-ID retries are idempotent and changed payloads with that ID are rejected as conflicts; recovery-validation rejects duplicate IDs. | Existing regressions retained. |
-| Audit write observability | The source suite records the dual audit-append/Script Properties marker-failure limit. | Known residual limitation. Do not fabricate a successful audit event or claim automatic repair. |
+### High-value payment approval journey
+
+- **Existing evidence:** `test/test-backend.js` exercises independent approval, approval-state totals, movement reporting, cash-close preview/finalization, immutable snapshot and audit attribution. `docs/PHASE-2-CROSS-WORKFLOW-INTEGRITY.md` defines the shared-voucher invariant.
+- **Disposition:** Preserve the existing normal path; avoid duplicating covered tests.
+
+### Role and resource boundaries
+
+- **Existing evidence:** `test/test-authorization-matrix.js` covers staff, manager, owner and accountant authorization and receipt/report boundaries.
+- **Disposition:** Bounded mock role/action evidence, not live authorization proof or an exhaustive penetration test.
+
+### Lost or malformed direct-save response
+
+- **Existing evidence:** `test/e2e.py` exercises both response faults, retries the same client ID and asserts exactly one Register row.
+- **Disposition:** Existing regression retained.
+
+### Server commit followed by IndexedDB acknowledgement failure
+
+- **Existing evidence:** `test/e2e.py` aborts the local acknowledgement transaction after server commit, verifies the same pending client ID, then retries without duplicating the voucher.
+- **Disposition:** Existing regression retained.
+
+### Parallel tabs, lease expiry and stale session
+
+- **Existing evidence:** `test/e2e.py` verifies single-request multi-tab synchronization, expired lease recovery, account-bound queue retention after SESSION, and same-account reauthentication.
+- **Disposition:** Existing regressions retained.
+
+### Per-entry partial failure
+
+- **Existing evidence:** `test/e2e.py` injects a validation rejection for a poison queue record while a healthy neighbor uploads. The rejected item remains reviewable/exportable and is not retried endlessly.
+- **Disposition:** Existing regression retained; don't duplicate it without a distinct failure mode.
+
+### Account binding
+
+- **Existing evidence:** `test/e2e.py` changes the stored queue owner's email and verifies that the foreign-account entry stays pending and is neither surfaced nor uploaded.
+- **Disposition:** Existing regression retained.
+
+### API-endpoint binding
+
+- **Candidate evidence:** PR #148 adds a same-email/different-endpoint owner key using a reserved `.invalid` host in tampered IndexedDB metadata. It dispatches a queue-change notification and online event, then asserts that the foreign-bound record remains pending and hidden.
+- **Disposition:** Candidate-only until exact-head workflows pass; the reserved endpoint is metadata and must never be contacted.
+
+### Idempotency and payload conflict
+
+- **Existing evidence:** `test/test-backend.js` verifies that matching same-user client-ID retries are idempotent and changed payloads with that ID are rejected as conflicts; recovery validation rejects duplicate IDs.
+- **Disposition:** Existing regressions retained.
+
+### Audit-write observability
+
+- **Existing evidence:** The source suite records the dual audit-append/Script Properties marker-failure limit.
+- **Disposition:** Known residual limitation. Do not fabricate a successful audit event or claim automatic repair.
 
 ## Financial and lifecycle invariants
 
