@@ -94,7 +94,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
     });
 
     $('#view').innerHTML =
-      head('Vendors', refreshBtn) +
+      head('Vendors', refreshBtn, {
+        section: 'Manage',
+        description: 'Maintain the payee directory used when recording vouchers.',
+      }) +
       status +
       formPanel({
         id: 'vf',
@@ -278,7 +281,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
     ].join('');
 
     $('#view').innerHTML =
-      head('Users', refreshBtn) +
+      head('Users', refreshBtn, {
+        section: 'Manage',
+        description: 'Manage team access and role assignments.',
+      }) +
       status +
       formPanel({
         id: 'uf',
@@ -381,11 +387,18 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
   async function settings() {
     $('#view').innerHTML =
-      head('Settings') +
-      `<form id="sf" class="card" autocomplete="off"><h2>Property</h2><label>Name<input id="sn" value="${esc(S.settings.propertyName)}" required></label><label>Address (printed on vouchers)<textarea id="sa" rows="2">${esc(S.settings.propertyAddress)}</textarea></label>
+      head('Settings', '', {
+        section: 'Manage',
+        description: 'Configure property details, voucher defaults, and owner-only operational diagnostics.',
+      }) +
+      '<div class="settings-layout">' +
+      `<form id="sf" class="card settings-property-form" autocomplete="off"><h2>Property</h2><label>Name<input id="sn" value="${esc(S.settings.propertyName)}" required></label><label>Address (printed on vouchers)<textarea id="sa" rows="2">${esc(S.settings.propertyAddress)}</textarea></label>
     <label>Categories (one per line)<textarea id="sc" rows="8">${esc(categories().join('\n'))}</textarea></label><div class="grid g2"><label>Next payment voucher no.<input id="sq" type="number" min="1" value="${esc(S.settings.nextVoucherNo)}"></label><label>Next cash-received no. (R-)<input id="sr" type="number" min="1" value="${esc(S.settings.nextReceiptNo)}"></label><label>Opening cash balance ₹<input id="so" inputmode="decimal" value="${esc(S.settings.openingBalance || 0)}"></label></div><label>Cash-received categories (one per line)<textarea id="sx" rows="5">${esc(rcats().join('\n'))}</textarea></label><button class="btn primary">Save settings</button></form>
+    <div class="settings-diagnostics">
     <section class="card" id="backup-status" aria-live="polite"><h2>🛡️ Backup &amp; recovery</h2><p class="muted">Loading backup status…</p></section>
     <section class="card" id="data-quality"><h2>🔎 Voucher data quality</h2><p class="muted">Scan saved vouchers for missing required values, invalid amounts/dates/statuses, and duplicate identifiers. This is a record-quality check, not an accounting or tax certification.</p><button class="btn primary" type="button" data-act="dqscan">Run data-quality scan</button><div id="dq-results" role="status" aria-live="polite"><p class="muted">Run a scan to review exceptions.</p></div></section>
+    </div>
+    </div>
 `;
 
     await renderBackupStatus();
@@ -630,7 +643,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
     auditLoadingOlder = false;
 
     $('#view').innerHTML =
-      head('Audit log') +
+      head('Audit log', '', {
+        section: 'Manage',
+        description: 'Review recorded administrative events and export the currently loaded event set.',
+      }) +
       `<section class="card" aria-describedby="audit-scope">
         <p id="audit-scope" class="muted">Audit events load newest-first in pages of 200. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
         <div id="aud-health" aria-live="polite"><p class="muted">Loading audit-write health…</p></div>
