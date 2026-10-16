@@ -212,7 +212,7 @@ export function createCashClose({ api }) {
     $('#view').innerHTML =
       head('Daily Cash Close', '', {
         section: 'Money',
-        description: 'Reconcile synchronized vouchers against physical cash before finalizing the day.',
+        description: 'Reconcile physical cash against synced vouchers.',
       }) +
       '<p class="muted cc-intro">One physical drawer · calendar day in Asia/Kolkata · server-saved vouchers only. This report is a physical cash reconciliation, not a bank balance or general ledger.</p>' +
       '<section class="card cc-controls"><div class="filters">' +

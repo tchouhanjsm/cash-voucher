@@ -645,7 +645,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     $('#view').innerHTML =
       head('Audit log', '', {
         section: 'Manage',
-        description: 'Review recorded administrative events and export the currently loaded event set.',
+        description: 'Review administrative events and export the loaded records.',
       }) +
       `<section class="card" aria-describedby="audit-scope">
         <p id="audit-scope" class="muted">Audit events load newest-first in pages of 200. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
