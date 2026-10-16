@@ -89,14 +89,14 @@ const checks = [
     minimum: 4.5,
   },
   {
-    name: 'default navigation label',
-    foreground: '#d6e0e8',
-    background: 'var(--brand)',
+    name: 'default navigation label on light navigation surface',
+    foreground: 'var(--nav-muted)',
+    background: 'var(--nav-bg)',
     minimum: 4.5,
   },
   {
-    name: 'active navigation label',
-    foreground: '#ffffff',
+    name: 'active navigation label on selected surface',
+    foreground: 'var(--nav-active-ink)',
     background: 'var(--nav-active)',
     minimum: 4.5,
   },
@@ -161,14 +161,14 @@ const checks = [
     minimum: 3,
   },
   {
-    name: 'navigation focus outline on brand surface',
-    foreground: '#f3d17c',
-    background: 'var(--brand)',
+    name: 'navigation focus outline on light sidebar',
+    foreground: 'var(--focus-on-brand)',
+    background: 'var(--nav-bg)',
     minimum: 3,
   },
   {
     name: 'navigation focus outline on active item',
-    foreground: '#f3d17c',
+    foreground: 'var(--focus-on-brand)',
     background: 'var(--nav-active)',
     minimum: 3,
   },
@@ -225,12 +225,12 @@ const darkChecks = [
   {
     name: 'dark default navigation label',
     foreground: 'var(--nav-muted)',
-    background: 'var(--brand)',
+    background: 'var(--nav-bg)',
     minimum: 4.5,
   },
   {
     name: 'dark active navigation label',
-    foreground: '#ffffff',
+    foreground: 'var(--nav-active-ink)',
     background: 'var(--nav-active)',
     minimum: 4.5,
   },
@@ -297,7 +297,7 @@ const darkChecks = [
   {
     name: 'dark navigation focus outline',
     foreground: 'var(--focus-on-brand)',
-    background: 'var(--brand)',
+    background: 'var(--nav-bg)',
     minimum: 3,
   },
   {

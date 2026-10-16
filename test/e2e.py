@@ -170,21 +170,22 @@ with sync_playwright() as p:
 
     page.goto(URL)
     check(
-        page.locator('html').get_attribute('data-theme') == 'light',
-        'theme initializes from the configured system light preference',
+        page.locator('html').get_attribute('data-theme') == 'light'
+        and page.evaluate("localStorage.getItem('cv.theme')") is None,
+        'first-use workspace defaults to light without creating a saved preference',
     )
     page.emulate_media(color_scheme='dark')
-    page.wait_for_function("document.documentElement.dataset.theme === 'dark'")
+    page.wait_for_timeout(150)
     check(
-        page.locator('html').get_attribute('data-theme') == 'dark'
+        page.locator('html').get_attribute('data-theme') == 'light'
         and page.evaluate("localStorage.getItem('cv.theme')") is None,
-        'unsaved theme follows the operating-system dark preference without persisting it',
+        'dark operating-system preference does not silently override the light workspace',
     )
     page.emulate_media(color_scheme='light')
-    page.wait_for_function("document.documentElement.dataset.theme === 'light'")
+    page.wait_for_timeout(150)
     check(
         page.locator('html').get_attribute('data-theme') == 'light',
-        'unsaved theme returns to light when the system preference changes',
+        'workspace remains light when the operating-system preference returns to light',
     )
     manifest_data = page.evaluate(
         """async () => {
@@ -280,7 +281,7 @@ with sync_playwright() as p:
         page.locator('html').get_attribute('data-theme') == 'light'
         and page.evaluate("localStorage.getItem('cv.theme')") == 'light'
         and page.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(247, 245, 240)'
-        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#1f3a4d'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#f7f5f0'
         and page.locator('#themeToggle').get_attribute('aria-pressed') == 'false',
         'light theme can be restored and the explicit choice is retained',
     )
@@ -4538,7 +4539,7 @@ with sync_playwright() as p:
         '(element) => getComputedStyle(element).color'
     )
     check(
-        muted_color == 'rgb(89, 105, 120)',
+        muted_color == 'rgb(86, 101, 117)',
         'muted interface text uses the reviewed higher-contrast token',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
