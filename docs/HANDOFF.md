@@ -2,14 +2,14 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `36402f97f43d6c07b920efb726c67092121e451b` (PR #153 merge commit)  
-Current engineering batch: Phase 18 — actionable diagnostic exports and truthful recovery states  
-Current working branch: `phase-18/diagnostic-exports-and-truthful-recovery-2026-10-16`  
-Current candidate: PR #154 — https://github.com/tchouhanjsm/cash-voucher/pull/154 (validated JSON exports for data-quality and backup-integrity diagnostics)
+Last verified main SHA: `17665e82c3acd26d717c796d1eecd79c42a963b7` (PR #154 merge commit)  
+Current engineering batch: Phase 19 — staging deployment and automated UAT gates  
+Current working branch: `phase-19/staging-deployment-and-uat-gates-2026-10-16`  
+Current candidate: PR pending — separate staging target readiness, isolated Clasp deployment, no-cache staging web server and owner/manager UAT; exact-head checks are authoritative
 
 ## Verified repository state
 
-- Live `main` is `36402f97f43d6c07b920efb726c67092121e451b`, the merge commit for PR #153. PR #153's exact head `512031fe48c34141de0983bac5dd01e46d0a706e` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967315), [Browser E2E (393 checks)](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967286) and [Full Flight Test (281 backend plus 393 browser checks)](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38869967329), with zero failures. Those results are source/mock checks, not production SLO or restore evidence.
+- Live `main` is `17665e82c3acd26d717c796d1eecd79c42a963b7`, the PR #154 merge commit. Phase 18 diagnostic JSON exports are part of main. These CI/browser results are source/mock checks, not proof of an actual staging deployment, live role/Drive permissions or a witnessed restore.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
 - Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
@@ -73,4 +73,12 @@ Current candidate: PR #154 — https://github.com/tchouhanjsm/cash-voucher/pull/
 
 **Phase 17 — Audit monitoring clarity and portable health snapshot: completed in PR #153.** The owner-facing UI explicitly explains the dual-store blind spot, keeps health request/invalid-response states visibly unknown, and downloads a JSON snapshot of status and coverage metadata. It does not persist a second audit log, claim history completeness, or reconstruct missing events. Phase 13 live release proof remains an owner-controlled P0 gate.
 
-**Phase 18 — Actionable diagnostic exports: PR #154 ready for review.** Settings now offers schema-versioned JSON exports for successfully validated data-quality and backup-integrity reports. A scan clears its preceding exportable state; failed/invalid scans provide no export action. Report fields are allowlisted and limitations/privacy scope are explicit. See [PR #154](https://github.com/tchouhanjsm/cash-voucher/pull/154) for exact-head CI, E2E and Flight Test evidence.
+**Phase 18 — Actionable diagnostic exports: complete in PR #154**, merged at `17665e82c3acd26d717c796d1eecd79c42a963b7`. Settings offers schema-versioned JSON exports for validated data-quality and backup-integrity reports; failed/invalid refreshes do not leave stale export actions.
+
+## Phase 19 — staging and UAT implementation status
+
+- Added a read-only owner/settings-authorized backend readiness probe that reports Script ID, bound Sheet/Drive targets, expected sheet headers and backup-trigger presence without returning voucher rows or credentials.
+- Added fail-closed staging target validation, an isolated temporary Clasp workspace/HOME, a no-cache local staging web server, a separate staging Playwright UAT script and a manually dispatched GitHub staging workflow.
+- The transactional UAT is configured to create, approve and cancel one unique INR 10,000 staging payment after target isolation is verified; it asserts the approved-payment total remains unchanged while pending, rises only after independent approval, and returns to baseline after cancellation.
+- **Not yet provisioned or executed against real Google resources:** GitHub Environment `staging`, staging Apps Script/Sheet/Drive resources, first versioned staging deployment, Clasp OAuth secret, and separate UAT account secrets. The automated pipeline cannot deploy or perform live UAT until the owner provides these. No production deployment or live Google data mutation has been performed by this change.
+- Remaining non-automated UAT gates: real scheduled backup and witnessed restore/reconciliation, device/offline/assistive-technology validation and Google quota/lock-contention testing in an authorized environment.
