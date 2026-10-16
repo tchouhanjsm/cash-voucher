@@ -2340,7 +2340,7 @@ here and in the production app. It requires no JS or remote assets. */
 
   .user-form-fields {
     display: grid;
-    grid-template-columns: minmax(150px, 1.1fr) minmax(180px, 1.5fr) minmax(120px, 0.9fr) minmax(135px, 1fr) auto;
+    grid-template-columns: 1.1fr 1.5fr 0.9fr 1fr auto;
     align-items: end;
     gap: 12px;
   }

@@ -1536,7 +1536,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
       heading.textContent = 'My Account';
       const description = document.createElement('p');
       description.className = 'page-description';
-      description.textContent = 'Review your signed-in profile, installation options, and PIN settings.';
+      description.textContent =
+        'Review your signed-in profile, installation options, and PIN settings.';
       headerCopy.append(eyebrow, heading, description);
       const headerActions = document.createElement('div');
       headerActions.className = 'page-header-actions';
