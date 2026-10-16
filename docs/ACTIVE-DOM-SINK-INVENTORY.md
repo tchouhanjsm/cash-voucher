@@ -1,12 +1,12 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `f2afdb08bece0a7f529a64a84164685269805641` (main after PR #146; active source baseline 17 assignments).  
-**Phase 11 Batch 4 follow-up count:** 17 assignments across eight frontend modules; PR #147 explicitly sets the Change PIN submit type and does not change any sink or fingerprint count. CI is the executable gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `61e46989032985fba54ceb48d768ab57430aa48a` (main after PR #147; active source baseline 17 assignments).  
+**Phase 11 Batch 4 follow-up:** PR #147 is merged; 17 assignments remain across eight frontend modules and the explicit Change PIN submit type changes no sink or fingerprint count. CI is the executable gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
 
-Merged main after PR #146 has 17 `innerHTML =` assignment sites across eight JavaScript modules. PR #146 retired the My Account profile/PIN page and outbox banner/review-list assignment. The Phase 11 Batch 4 follow-up PR #147 adds explicit submit semantics for the PIN form without changing the sink count. Future sink changes still require contextual review and focused hostile-data regression before baseline updates.
+Merged main after PR #147 has 17 `innerHTML =` assignment sites across eight JavaScript modules. PR #146 retired the My Account profile/PIN page and outbox banner/review-list assignment. The Phase 11 Batch 4 follow-up PR #147 adds explicit submit semantics for the PIN form without changing the sink count. Future sink changes still require contextual review and focused hostile-data regression before baseline updates.
 
 **Current module counts:**
 
@@ -61,7 +61,7 @@ The Reports and Daily Cash Close permission-denied states now use a shared `page
 
 The Register totals/status region now uses DOM construction instead of one HTML string. It preserves Paid, Received, Net, voucher count, received-total color, approval-exception message, invalid-amount message, malformed-record/field notices and the alert shown for unavailable data or invalid ranges. Existing browser cases assert the range alert, status notices, inert output and disabled CSV export.
 
-Merged main after PR #146 has 17 sites across eight modules. PR #147 does not change counts or fingerprints; it fixes the explicit submit-type regression discovered by Browser E2E. The remaining templates still require contextual review; this is not XSS certification or production-operation evidence.
+Merged main after PR #147 has 17 sites across eight modules. PR #147 does not change counts or fingerprints; it fixes the explicit submit-type regression discovered by Browser E2E. The remaining templates still require contextual review; this is not XSS certification or production-operation evidence.
 
 ## Phase 11 Batch 4 — My Account and offline queue status
 
@@ -69,7 +69,7 @@ My Account no longer assembles account identity, property label, profile actions
 
 The outbox banner and queued/rejected entry details now use DOM nodes. Queue messages, pending/rejected vendor/amount/date/failure values and overflow notices are text, while Retry, Export, Import, Sign in to sync, Export & remove and Clear my queued entries retain their `data-act` keys. E2E tampering of locally stored payee text must remain inert in both the banner and expanded review list.
 
-Merged main after PR #146 has 17 sites across eight modules. PR #147 fixes Change PIN submit semantics without changing the sink count; the local queue still requires real-device durability/recovery checks.
+Merged main after PR #147 has 17 sites across eight modules. PR #147 fixes Change PIN submit semantics without changing the sink count; the local queue still requires real-device durability/recovery checks.
 
 ## Phase 11 Batch 4 follow-up — Change PIN submit semantics
 
