@@ -243,6 +243,7 @@ with sync_playwright() as p:
         and login_style['pageWidth'] <= login_style['viewportWidth'],
         'sign-in surface uses light-theme tokens, generous card spacing and touch-friendly controls',
     )
+    page.set_viewport_size({'width': 390, 'height': 800})
 
     page.fill('#lEmail', 'owner@test.com')
     page.fill('#lPin', '000000')
@@ -347,7 +348,7 @@ with sync_playwright() as p:
         and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
         'Account PIN controls stack cleanly without page-level overflow on mobile',
     )
-    page.set_viewport_size({'width': 1280, 'height': 800})
+    page.set_viewport_size({'width': 390, 'height': 800})
     go_view(page, 'dash')
     go_view(page, 'new')
     check(
@@ -1275,6 +1276,7 @@ with sync_playwright() as p:
         and page.locator('.management-results-card').count() == 1,
         'Vendor editor and saved-vendor list use the shared management composition',
     )
+    page.set_viewport_size({'width': 390, 'height': 800})
     check(
         page.locator('#vn').get_attribute('aria-label') == 'Vendor name'
         and page.locator('#vc').get_attribute('aria-label') == 'Company name (optional)'
