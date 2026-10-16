@@ -13,6 +13,9 @@ const ui = read('frontend/core/ui.js');
 const payments = read('frontend/features/payments.js');
 const administration = read('frontend/features/administration.js');
 const bulk = read('frontend/features/bulk.js');
+const reports = read('frontend/features/reports.js');
+const register = read('frontend/features/register.js');
+const authHtml = read('index.html');
 
 assert.match(palette, /--bg:\s*#f7f5f0;/, 'main canvas stays warm and light');
 assert.match(palette, /--card:\s*#fffefc;/, 'cards stay close to warm white');
@@ -129,6 +132,77 @@ assert.doesNotMatch(
   payments,
   /class='btn sm' style='margin:0'/,
   'receipt-upload action uses a stylesheet class, not a one-off inline margin',
+);
+
+assert.match(
+  reports,
+  /class="filters report-filters"/,
+  'movement report filters use the shared responsive grid',
+);
+assert.match(
+  components,
+  /\.report-filters\s*\{[\s\S]*?display:\s*grid/,
+  'report filters have a designed grid instead of ad hoc row wrapping',
+);
+assert.match(
+  reports,
+  /class="card report-results-card"/,
+  'report source data is contained in a dedicated results surface',
+);
+assert.match(
+  register,
+  /class="card register-results-card"/,
+  'register results use a scoped card layout',
+);
+assert.match(
+  register,
+  /class="register-totals"/,
+  'register totals have a dedicated non-inline layout hook',
+);
+assert.match(
+  administration,
+  /className: 'filters vendor-form-fields'/,
+  'vendor details use a responsive, named form layout',
+);
+assert.match(
+  administration,
+  /className: 'filters user-form-fields'/,
+  'user administration uses a responsive, named form layout',
+);
+assert.match(
+  administration,
+  /class="card audit-panel"/,
+  'audit filters and events are organized inside the dedicated review panel',
+);
+assert.match(
+  administration,
+  /className = 'card account-pin-form'/,
+  'account PIN form uses the shared workflow styling',
+);
+assert.match(
+  components,
+  /\.audit-panel > \.audit-filters\s*\{[\s\S]*?display:\s*grid/,
+  'audit filters reflow through a responsive grid',
+);
+assert.match(
+  components,
+  /\.vendor-form-fields\s*\{[\s\S]*?display:\s*grid/,
+  'vendor fields use a deliberate desktop grid',
+);
+assert.match(
+  components,
+  /#login \.lock-card input:not\(\.hidden\)/,
+  'sign-in controls use consistent full-width touch-friendly dimensions',
+);
+assert.doesNotMatch(
+  administration,
+  /style="min-height:34px;padding:4px"/,
+  'role selector no longer relies on one-off inline sizing',
+);
+assert.match(
+  authHtml,
+  /class="card lock-card"/,
+  'the refined sign-in composition is wired into the real application page',
 );
 
 console.log(
