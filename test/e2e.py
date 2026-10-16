@@ -1229,6 +1229,29 @@ with sync_playwright() as p:
         page.locator('[data-act=dqexport]').count() == 1,
         'a successful data-quality scan exposes its JSON export action',
     )
+    mobile_diagnostic_layout = page.evaluate(
+        """() => {
+          const actions = document.querySelector('#dq-results .diagnostic-actions');
+          const button = actions?.querySelector('[data-act="dqexport"]');
+          const note = actions?.querySelector('.muted');
+          if (!actions || !button || !note) return null;
+          return {
+            display: getComputedStyle(actions).display,
+            direction: getComputedStyle(actions).flexDirection,
+            buttonWidth: button.getBoundingClientRect().width,
+            actionsWidth: actions.getBoundingClientRect().width,
+            noteText: note.textContent
+          };
+        }"""
+    )
+    check(
+        mobile_diagnostic_layout is not None
+        and mobile_diagnostic_layout['display'] == 'flex'
+        and mobile_diagnostic_layout['direction'] == 'column'
+        and mobile_diagnostic_layout['buttonWidth'] >= mobile_diagnostic_layout['actionsWidth'] - 4
+        and 'authorized recipients' in mobile_diagnostic_layout['noteText'],
+        'mobile diagnostic export controls stack into a full-width, clearly scoped action',
+    )
     with page.expect_download() as dq_export_info:
         page.click('[data-act=dqexport]')
     dq_export = dq_export_info.value
@@ -4943,6 +4966,29 @@ with sync_playwright() as p:
         'invalid response' not in audit_page.locator('#backup-integrity-results').inner_text().lower()
         and audit_page.locator('[data-act=bkexport]').count() == 1,
         'backup integrity inspection recovers and exposes an export after a valid report returns',
+    )
+    desktop_diagnostic_layout = audit_page.evaluate(
+        """() => {
+          const actions = document.querySelector('#backup-integrity-results .diagnostic-actions');
+          const button = actions?.querySelector('[data-act="bkexport"]');
+          const note = actions?.querySelector('.muted');
+          if (!actions || !button || !note) return null;
+          return {
+            display: getComputedStyle(actions).display,
+            direction: getComputedStyle(actions).flexDirection,
+            buttonTop: button.getBoundingClientRect().top,
+            noteTop: note.getBoundingClientRect().top,
+            noteText: note.textContent
+          };
+        }"""
+    )
+    check(
+        desktop_diagnostic_layout is not None
+        and desktop_diagnostic_layout['display'] == 'flex'
+        and desktop_diagnostic_layout['direction'] == 'row'
+        and abs(desktop_diagnostic_layout['buttonTop'] - desktop_diagnostic_layout['noteTop']) < 30
+        and 'does not prove restoreability' in desktop_diagnostic_layout['noteText'],
+        'desktop diagnostic export controls align in one row with explicit restore limitations',
     )
     with audit_page.expect_download() as backup_export_info:
         audit_page.click('[data-act=bkexport]')
