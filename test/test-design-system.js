@@ -360,6 +360,46 @@ assert.match(
   /const C = 'cv2-v21'/,
   'PWA cache revision advances with navigation focus styling',
 );
+assert.match(
+  payments,
+  /hint\.id = `payment-row-hint-\$\{number\}`/,
+  'cash-impact help has a stable per-row identifier',
+);
+assert.match(
+  payments,
+  /setAttribute\('aria-describedby', describedBy\)/,
+  'cash-impact selection exposes its explanatory help through aria-describedby',
+);
+assert.match(
+  payments,
+  /descriptions\.push\(error\.id\)/,
+  'field validation appends an error reference without removing persistent help',
+);
+assert.match(
+  payments,
+  /filter\(\(id\) => id && id !== errorId\)/,
+  'clearing row validation removes only the error reference',
+);
+assert.match(
+  reports,
+  /dateRangeInvalid:\s*false/,
+  'report date-range validation has an explicit state separate from API errors',
+);
+assert.match(
+  reports,
+  /aria-describedby="report-date-range-error"/,
+  'invalid report date fields reference the shared date-range alert',
+);
+assert.match(
+  reports,
+  /id="report-output" class="report-output" aria-busy="\$\{R\.loading \? 'true' : 'false'\}"/,
+  'report results expose the asynchronous busy state on a persistent wrapper',
+);
+assert.match(
+  components,
+  /\.report-filters \[aria-invalid='true'\]/,
+  'invalid date filters have a visible design-system treatment',
+);
 
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',
