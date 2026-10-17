@@ -89,6 +89,11 @@ export function createPayments({ api, refresh }) {
       $('.ra', row).setAttribute('aria-label', `Amount in rupees, row ${number}`);
       $('.rc', row).setAttribute('aria-label', `Category, row ${number}`);
       $('.rci', row).setAttribute('aria-label', `How it was settled, row ${number}`);
+      const hint = $('.ci-hint', row);
+      hint.id = `payment-row-hint-${number}`;
+      const rowError = $('.row-error', row);
+      const describedBy = [hint.id, rowError?.id].filter(Boolean).join(' ');
+      $('.rci', row).setAttribute('aria-describedby', describedBy);
       $('.rn', row).setAttribute('aria-label', `Note, row ${number}`);
       $('.rf', row).setAttribute('aria-label', `Receipt images, row ${number}`);
       $('[data-act="delrow"]', row).setAttribute('aria-label', `Remove row ${number}`);
@@ -96,12 +101,18 @@ export function createPayments({ api, refresh }) {
   }
 
   function clearRowError(row) {
-    $('.row-error', row)?.remove();
+    const error = $('.row-error', row);
+    const errorId = error?.id || '';
+    error?.remove();
 
     ['.rv', '.ra', '.rci'].forEach((selector) => {
       const field = $(selector, row);
       field.removeAttribute('aria-invalid');
-      field.removeAttribute('aria-describedby');
+      const descriptions = (field.getAttribute('aria-describedby') || '')
+        .split(/\s+/)
+        .filter((id) => id && id !== errorId);
+      if (descriptions.length) field.setAttribute('aria-describedby', descriptions.join(' '));
+      else field.removeAttribute('aria-describedby');
     });
   }
 
@@ -114,7 +125,11 @@ export function createPayments({ api, refresh }) {
     error.textContent = message;
     row.appendChild(error);
     field.setAttribute('aria-invalid', 'true');
-    field.setAttribute('aria-describedby', error.id);
+    const descriptions = (field.getAttribute('aria-describedby') || '')
+      .split(/\s+/)
+      .filter(Boolean);
+    if (!descriptions.includes(error.id)) descriptions.push(error.id);
+    field.setAttribute('aria-describedby', descriptions.join(' '));
     field.focus();
   }
 

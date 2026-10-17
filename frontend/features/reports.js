@@ -13,6 +13,7 @@ export function createReports({ api }) {
     summary: null,
     invalidRowCount: 0,
     error: '',
+    dateRangeInvalid: false,
     loading: false,
   };
 
@@ -112,8 +113,8 @@ export function createReports({ api }) {
       <div class="card report-filter-panel">
         <p class="muted report-scope-note">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p>
         <form id="movementFilters" class="filters report-filters" autocomplete="off">
-          <label>From<input id="movementFrom" type="date" value="${esc(R.from)}" required></label>
-          <label>To<input id="movementTo" type="date" value="${esc(R.to)}" required></label>
+          <label>From<input id="movementFrom" type="date" value="${esc(R.from)}" required${R.dateRangeInvalid ? ' aria-invalid="true" aria-describedby="report-date-range-error"' : ''}></label>
+          <label>To<input id="movementTo" type="date" value="${esc(R.to)}" required${R.dateRangeInvalid ? ' aria-invalid="true" aria-describedby="report-date-range-error"' : ''}></label>
           <label>Type
             <select id="movementType">
               <option value="ALL"${R.type === 'ALL' ? ' selected' : ''}>Payments and receipts</option>
@@ -140,7 +141,7 @@ export function createReports({ api }) {
 
     const error = R.error
       ? `
-          <div class="card form-error report-error" role="alert">
+          <div class="card form-error report-error"${R.dateRangeInvalid ? ' id="report-date-range-error"' : ''} role="alert">
             ${esc(R.error)}
             <button class="btn sm" type="button" data-act="reportRun">Retry</button>
           </div>
@@ -202,8 +203,10 @@ export function createReports({ api }) {
         description: 'Filter server-recorded payments and receipts for a selected date range.',
       }) +
       filters +
+      `<div id="report-output" class="report-output" aria-busy="${R.loading ? 'true' : 'false'}">` +
       error +
-      results;
+      results +
+      '</div>';
     $('#movementFilters')?.addEventListener('submit', (event) => {
       event.preventDefault();
       R.from = $('#movementFrom').value;
@@ -221,11 +224,13 @@ export function createReports({ api }) {
       R.summary = null;
       R.rows = [];
       R.invalidRowCount = 0;
+      R.dateRangeInvalid = true;
       R.error = 'Choose a valid date range (From must not be after To).';
       render();
       return;
     }
 
+    R.dateRangeInvalid = false;
     R.loading = true;
     R.error = '';
     R.summary = null;
