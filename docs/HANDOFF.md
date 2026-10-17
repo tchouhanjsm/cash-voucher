@@ -5,6 +5,7 @@ Repository: tchouhanjsm/cash-voucher
 Last verified main SHA: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1` (PR #162 merge commit)  
 Current engineering batch: Phases 31–33 — route focus, accessible naming and interaction contract  
 Current working branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`  
+Current pull request: [#163](https://github.com/tchouhanjsm/cash-voucher/pull/163) — exact-head CI, Browser E2E and Full Flight Test are the merge gate  
 Current candidate: focus destination headings on explicit user navigation, audit accessible names across all owner-visible workflow screens, test account-menu Escape/focus restoration, and refresh the PWA shell cache; no money, authorization or deployment changes
 
 ## Verified repository state
