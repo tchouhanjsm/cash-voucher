@@ -278,7 +278,7 @@ ok(
 );
 // create users
 ok(
-  !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', password: 'Test#111111Pass' })
+  !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', password: 'short' })
     .ok,
   'weak password rejected',
 );
@@ -1772,7 +1772,7 @@ const resetLogin = g.call('login', { email: 'm@test.com', password: 'Lock#Start2
 ok(resetLogin.ok, 'owner reset password clears login lockout');
 const resetChange = as(resetLogin.data.token, 'changePassword', {
   oldPassword: 'Lock#Start2026',
-  newPassword: '417258',
+  newPassword: 'Password#Reset2026',
 });
 ok(
   resetChange.ok && as(resetChange.data.token, 'bootstrap').ok,
@@ -2223,7 +2223,7 @@ ok(
 );
 const accountantPinChange = as(accountantLogin.data.token, 'changePassword', {
   oldPassword: 'Manager#Final2026',
-  newPassword: '975318',
+  newPassword: 'Account#Final2026',
 });
 const accountantToken = accountantPinChange.data.token;
 const accountantBootstrap = as(accountantToken, 'bootstrap').data;
