@@ -287,6 +287,26 @@ assert.match(
   /\.app \.table-wrap:focus-visible/,
   'scrollable work tables share a visible keyboard focus treatment',
 );
+assert.match(
+  components,
+  /@media \(prefers-contrast:\s*more\)/,
+  'high-contrast preference receives an explicit component treatment',
+);
+assert.match(
+  components,
+  /\.app #view > \*\s*\{[\s\S]*?min-width:\s*0/,
+  'all top-level workflow panels can shrink inside narrow app viewports',
+);
+assert.match(
+  components,
+  /\.app #view \.table-wrap\s*\{[\s\S]*?overflow-x:\s*auto/,
+  'all workflow tables remain in horizontally scrollable local regions',
+);
+assert.match(
+  components,
+  /\.app #view \.page-header-actions\s*\{[\s\S]*?flex-wrap:\s*wrap/,
+  'page-header actions wrap instead of widening narrow screens',
+);
 
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',
