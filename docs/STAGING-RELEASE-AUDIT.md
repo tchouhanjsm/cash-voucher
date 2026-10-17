@@ -6,7 +6,7 @@
 
 ## Executive status
 
-**Source baseline:** the code and delivery-packaging changes are merged. PR #165 (Phases 37–39) merged at `4b729f33d9caff13a088cddc994d1a398d63d908ec8e`? See the live PR link for authoritative merge metadata. PR #166 (customer-specific static build, security headers and onboarding/runbook material) merged at `4a759b7513a925aee796949d8f6e79085f096314`.
+**Source baseline:** the code and delivery-packaging changes are merged. PR #165 (Phases 37–39) merged at `4b729f33d9caff13e01ed56acbc231375c5beec0`. PR #166 (customer-specific static build, security headers and onboarding/runbook material) merged at `4a759b7513a925aee796949d8f6e79085f096314`.
 
 - [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165): CI/quality, Browser E2E and Full Flight Test passed on exact head `26a92a70513a088cddc994d1a398d63d908ec8e0`.
 - [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166): CI/quality, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks) passed on exact head `13f12d314687ec88d9044ccae7e8fb3c202743fb`.
