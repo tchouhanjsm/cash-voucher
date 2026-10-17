@@ -4,6 +4,7 @@ Use this as a field checklist only. Keep the completed register in a private ope
 
 | Field                                                     | Value                                          |
 | --------------------------------------------------------- | ---------------------------------------------- |
+| Customer code (non-sensitive short ID)                    | [FILL PRIVATELY]                               |
 | Customer/business display name                            | [FILL PRIVATELY]                               |
 | Contract signed date / reference                          | [FILL PRIVATELY]                               |
 | Subscription amount / billing cadence                     | ₹500 / month (confirm against signed contract) |
