@@ -1,0 +1,43 @@
+name: Temporary Backend Test Formatter
+
+on:
+  push:
+    branches:
+      - feature/password-login-staging-20261017
+
+permissions:
+  contents: write
+
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out canonical password-auth branch
+        uses: actions/checkout@v4
+        with:
+          ref: feature/password-login-staging-20261017
+          persist-credentials: true
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+
+      - name: Format the corrected backend regression tests
+        run: npx --no-install prettier --write test/test-backend.js
+
+      - name: Commit formatting change
+        run: |
+          if git diff --quiet -- test/test-backend.js; then
+            echo "No formatting changes needed."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/test-backend.js
+          git commit -m "Format password authentication regression tests"
+          git push origin HEAD:feature/password-login-staging-20261017
