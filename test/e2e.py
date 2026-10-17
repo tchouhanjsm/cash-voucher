@@ -425,6 +425,24 @@ with sync_playwright() as p:
     # Daily Cash Close journey: manual opening, immutable report, correction note and carry-forward.
     go_view(page, 'cashClose')
     page.wait_for_selector('#cc-date')
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    close_desktop_columns = page.locator('.cc-controls > .filters').evaluate(
+        "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
+    )
+    check(
+        close_desktop_columns == 3,
+        'cash-close setup uses a three-column desktop workspace',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    close_mobile = page.evaluate("""() => ({
+        columns: getComputedStyle(document.querySelector('.cc-controls > .filters')).gridTemplateColumns
+            .match(/\\d+(?:\\.\\d+)?px/g)?.length || 0,
+        pageOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth
+    })""")
+    check(
+        close_mobile['columns'] == 1 and not close_mobile['pageOverflow'],
+        'cash-close controls reflow to one column without page-level mobile overflow',
+    )
     page.fill('#cc-date', '2020-01-01')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-opening')
@@ -3109,6 +3127,35 @@ with sync_playwright() as p:
     })
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
+    file_picker_style = page.locator('#bf').evaluate(
+        "el => ({display:getComputedStyle(el).display, position:getComputedStyle(el).position})"
+    )
+    check(
+        file_picker_style['display'] != 'none' and file_picker_style['position'] == 'absolute'
+        and page.locator('.bulk-file-label').count() == 1,
+        'bulk file picker stays keyboard reachable while retaining its designed label',
+    )
+    page.set_viewport_size({'width': 320, 'height': 800})
+    bulk_mobile_layout = page.evaluate("""() => {
+        const root = document.documentElement;
+        const region = document.querySelector('.bulk-review-table');
+        return {
+            pageOverflow: root.scrollWidth > root.clientWidth,
+            regionWidth: region?.clientWidth || 0,
+            regionScrollWidth: region?.scrollWidth || 0,
+            regionRole: region?.getAttribute('role'),
+            regionTabindex: region?.getAttribute('tabindex')
+        };
+    }""")
+    check(
+        not bulk_mobile_layout['pageOverflow']
+        and bulk_mobile_layout['regionWidth'] > 0
+        and bulk_mobile_layout['regionScrollWidth'] > bulk_mobile_layout['regionWidth']
+        and bulk_mobile_layout['regionRole'] == 'region'
+        and bulk_mobile_layout['regionTabindex'] == '0',
+        'bulk preview scrolls inside a named keyboard-focusable region at 320px',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
     choose_bulk_cash_impact_for_current_rows()
     check(
         'CSV File Vendor' in page.locator('#bprev').inner_text()

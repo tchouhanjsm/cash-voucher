@@ -2539,3 +2539,343 @@ here and in the production app. It requires no JS or remote assets. */
     }
   }
 }
+
+/* Phase 25–27 — finish Studio parity for financial workflows and interaction states. */
+@media screen {
+  .app .cash-received-value,
+  .app .cash-impact-in {
+    color: var(--ok);
+  }
+
+  .bulk-review-panel {
+    min-width: 0;
+    padding: clamp(14px, 2vw, 24px);
+  }
+
+  .bulk-review-summary {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    gap: 4px 8px;
+    line-height: 1.6;
+  }
+
+  .bulk-duplicate-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin: 0 0 0 8px;
+    font-weight: 650;
+    line-height: 1.4;
+  }
+
+  .bulk-duplicate-option input {
+    width: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    margin: 0;
+    padding: 0;
+  }
+
+  .bulk-import-panel .bulk-file-label {
+    position: relative;
+    cursor: pointer;
+  }
+
+  .bulk-import-panel .bulk-file-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .bulk-import-panel .bulk-file-label:focus-within {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .bulk-review-table {
+    max-width: 100%;
+    max-height: min(52vh, 340px);
+    overflow: auto;
+    overscroll-behavior: contain;
+    border: 1px solid var(--line);
+    border-radius: var(--ui-radius-sm);
+    background: var(--card);
+  }
+
+  .bulk-review-table:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .bulk-review-table table {
+    min-width: 880px;
+  }
+
+  .bulk-review-table th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: var(--card);
+  }
+
+  .bulk-review-table select {
+    min-width: 140px;
+  }
+
+  .cc-controls,
+  .cc-corrections-card,
+  .cc-preview,
+  .cc-report,
+  .cc-history {
+    min-width: 0;
+    padding: clamp(14px, 2vw, 24px);
+  }
+
+  .cc-controls {
+    background: linear-gradient(145deg, var(--card), var(--surface-subtle));
+  }
+
+  .cc-controls > .filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+  }
+
+  .cc-controls .filters label,
+  .cc-count .filters label {
+    min-width: 0;
+  }
+
+  .cc-controls input,
+  .cc-controls select,
+  .cc-corrections-card input,
+  .cc-corrections-card textarea,
+  .cc-count input {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cc-corrections-card .cc-correction-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+  }
+
+  .cc-preview {
+    background: linear-gradient(145deg, var(--card), var(--surface-subtle));
+  }
+
+  .cc-report-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+
+  .cc-report-heading > div {
+    min-width: 0;
+  }
+
+  .cc-report-heading h2 {
+    margin-top: 8px;
+    overflow-wrap: anywhere;
+  }
+
+  .cc-blockers {
+    margin-block: 14px;
+    padding: clamp(14px, 2vw, 22px);
+    border: 1px solid var(--border-warning);
+    border-radius: var(--ui-radius-card);
+    background: var(--surface-warning);
+    color: var(--warning-ink);
+    overflow-wrap: anywhere;
+  }
+
+  .cc-blockers[role='alert'] {
+    border-color: var(--border-danger);
+    background: var(--surface-danger);
+    color: var(--bad);
+  }
+
+  .cc-blockers h3 {
+    margin: 0 0 8px;
+  }
+
+  .cc-blockers .table-wrap,
+  .cc-report .table-wrap,
+  .cc-history .table-wrap {
+    max-width: 100%;
+    margin-top: 12px;
+    overscroll-behavior-inline: contain;
+  }
+
+  .cc-preview .cc-count {
+    min-width: 0;
+    margin-top: 18px;
+    padding-top: 16px;
+    border-top: 1px solid var(--line);
+  }
+
+  .cc-count > .filters {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 12px;
+  }
+
+  .cc-report,
+  .cc-history,
+  .cc-corrections-card {
+    overflow-wrap: anywhere;
+  }
+
+  .app .table-wrap {
+    max-width: 100%;
+    overscroll-behavior-inline: contain;
+  }
+
+  .app .table-wrap:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .app .page-header-copy,
+  .app .card,
+  .app .dashboard-body,
+  .app .settings-layout,
+  .app .settings-diagnostics {
+    min-width: 0;
+  }
+
+  .app .form-error,
+  .app .ok-panel,
+  .app .empty-state-card,
+  .app .report-status-card,
+  .app [role='alert'] {
+    overflow-wrap: anywhere;
+  }
+
+  .app [aria-busy='true'] {
+    cursor: progress;
+  }
+
+  .app button:disabled,
+  .app input:disabled,
+  .app select:disabled,
+  .app textarea:disabled {
+    cursor: not-allowed;
+  }
+
+  @media (max-width: 1000px) {
+    .cc-controls > .filters {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cc-corrections-card .cc-correction-form {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 640px) {
+    .cc-controls > .filters {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .cc-controls > .filters .btn,
+    .cc-corrections-card .cc-correction-form .btn {
+      width: 100%;
+    }
+
+    .cc-report-heading {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+
+    .bulk-review-panel {
+      padding: 14px;
+    }
+
+    .bulk-review-summary {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .bulk-duplicate-option {
+      margin: 8px 0 0;
+    }
+
+    .cc-controls,
+    .cc-corrections-card,
+    .cc-preview,
+    .cc-report,
+    .cc-history {
+      padding: 14px;
+    }
+  }
+
+  @media (max-width: 440px) {
+    .bulk-import-panel .actions > .btn,
+    .bulk-import-panel .bulk-file-label {
+      width: 100%;
+      justify-content: center;
+    }
+
+    .cc-count > .filters .btn {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app *,
+    .app *::before,
+    .app *::after,
+    .studio-body *,
+    .studio-body *::before,
+    .studio-body *::after {
+      scroll-behavior: auto !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+
+    .app .btn:active:not(:disabled) {
+      transform: none !important;
+    }
+  }
+
+  @media (forced-colors: active) {
+    .app :focus-visible,
+    .studio-body :focus-visible {
+      outline: 3px solid Highlight !important;
+      outline-offset: 2px;
+    }
+
+    .app .btn,
+    .app input,
+    .app select,
+    .app textarea,
+    .app .card {
+      border-color: ButtonText;
+    }
+
+    .app .btn.primary,
+    .app .side nav button.on {
+      border: 2px solid Highlight;
+    }
+
+    .app .needs-item,
+    .app .cc-blockers {
+      border: 1px solid ButtonText;
+    }
+  }
+}
