@@ -109,14 +109,14 @@ Do not run `clasp deploy` without the verified ID; do not create a parallel depl
 
 Run `setup()` only when the owner has verified that this is the intended new/empty project, confirmed its Sheet binding/ID, reviewed required Script Properties and deliberately authorized initialization. If the project already has production data or users, do not rerun setup.
 
-Required Script Properties and sensitive values must be configured in Apps Script Project Settings, never committed to Git or pasted into a PR: `OWNER_EMAIL`, temporary `OWNER_PIN` only for first initialization, `PEPPER`, `SS_ID`, `RECEIPT_FOLDER_ID`, `BACKUP_FOLDER_ID`. Do not expose PINs, tokens, IDs or private account data in logs or chat.
+Required Script Properties and sensitive values must be configured in Apps Script Project Settings, never committed to Git or pasted into a PR: `OWNER_EMAIL`, temporary `OWNER_PASSWORD` only for first initialization, `PEPPER`, `SS_ID`, `RECEIPT_FOLDER_ID`, `BACKUP_FOLDER_ID`. Do not expose passwords, tokens, IDs or private account data in logs or chat.
 
 ## Gate D — live smoke test and recovery
 
 After the intended deployment is updated:
 
 - Open the exact `config.js` Web App URL and verify the expected API response.
-- Sign in with the intended owner account and complete any required first-login PIN change.
+- Sign in with the intended owner account and complete any required first-login password change.
 - Verify staff/manager/owner permissions using dedicated test accounts; never use direct Sheet sharing as a workaround.
 - In a controlled test window, create a clearly identified test voucher and cash receipt, verify numbering and source rows, then cancel/clean up only according to the owner's approved data-handling policy. Do not mutate real financial records merely to test deployment.
 - Verify receipt upload/read authorization and that production Sheet/Drive folders remain private.
@@ -191,14 +191,14 @@ The repository now provides a manually dispatched staging workflow at `.github/w
 
 1. Create a **dedicated staging Apps Script project**, staging Spreadsheet, staging receipt folder and staging backup folder. None may be the production resource. Set the staging project's Web App execution/access settings deliberately to support the UAT accounts while using synthetic data only.
 2. In the staging Apps Script editor, set the required initial Script Properties for the staging owner and run `setup()` **once only on this verified empty staging project**. This initializes its tabs, folders and backup trigger. Do not run `setup()` from GitHub Actions and never use it as a production release step.
-3. Create a dedicated staging manager account in the staging app. Manually complete first-login PIN changes for both staging owner and manager before workflow UAT; their emails and PINs must be distinct and must not be shared with production.
+3. Create a dedicated staging manager account in the staging app. Manually complete first-login password changes for both staging owner and manager before workflow UAT; their emails and passwords must be distinct and must not be shared with production.
 4. Create the first versioned staging Web App deployment manually, confirm its Web App URL identifies that staging deployment, and record the deployment ID and URL. The automated deploy step deliberately refuses to create a new/unknown deployment; it updates only this pre-existing staging deployment.
 
 ### GitHub Environment configuration
 
 Create a GitHub Environment named `staging`, restrict its deployment branch to `main`, and require reviewer approval where available. Configure these environment **variables**: `CV_STAGING_SCRIPT_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_API_URL`, `CV_STAGING_SPREADSHEET_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_PRODUCTION_SCRIPT_ID`, `CV_PRODUCTION_SPREADSHEET_ID`, `CV_PRODUCTION_RECEIPT_FOLDER_ID`, and `CV_PRODUCTION_BACKUP_FOLDER_ID`. The production Web App deployment ID is extracted from the existing production `config.js` URL.
 
-Configure these environment **secrets**: `CLASPRC_JSON` (valid Clasp OAuth credential document), `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PIN`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PIN`. Keep credential material out of repository files and logs. The deployer's diagnostic sanitizer must redact both the complete `CLASPRC_JSON` value and individual nested OAuth token/client credential strings if they appear in tool output. If resources/credentials are not configured, staging preflight must fail closed rather than inventing target values.
+Configure these environment **secrets**: `CLASPRC_JSON` (valid Clasp OAuth credential document), `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PASSWORD`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PASSWORD`. Keep credential material out of repository files and logs. The deployer's diagnostic sanitizer must redact both the complete `CLASPRC_JSON` value and individual nested OAuth token/client credential strings if they appear in tool output. If resources/credentials are not configured, staging preflight must fail closed rather than inventing target values.
 
 ### Running the phases
 

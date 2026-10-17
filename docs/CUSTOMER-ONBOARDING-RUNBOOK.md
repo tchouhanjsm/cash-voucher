@@ -33,7 +33,7 @@ Do not share a customer's Sheet, receipt folder or backup folder with another cu
 ## A. Protect the source and operator account
 
 - [ ] Use a business-managed Google account that will remain under the product owner's control for Apps Script execution, Sheets, Drive, receipts and backups. Enable two-step verification and verify recovery access.
-- [ ] Keep Clasp authentication and `.clasp.json` local or in a protected deployment environment. Never commit `.clasprc.json`, OAuth tokens, PINs or live Script/Sheet/Drive identifiers.
+- [ ] Keep Clasp authentication and `.clasp.json` local or in a protected deployment environment. Never commit `.clasprc.json`, OAuth tokens, passwords or live Script/Sheet/Drive identifiers.
 - [ ] Move static hosting to a provider that can build from the source repository and publish only the generated `dist/` artifact. Ensure that provider has read access to the repository before changing GitHub visibility.
 - [ ] Once the new host is verified and no service depends on root-level GitHub Pages, change the repository to private through GitHub Settings if the plan and deployment integration support it. This manual account-administration step cannot be performed by this repository-only workflow. Public repository copies already made by others cannot be recalled.
 
@@ -57,9 +57,9 @@ Use a new empty customer instance only. Never run `setup()` against an existing 
 5. Run `npx clasp status` and `npx clasp deployments`. Verify the bound project identity before writing. On the newly created empty project only, intentionally run `npx clasp push` to upload the **whole split backend source** from `backend/*.gs` plus `appsscript.json`. Do not manually copy only a hypothetical `Code.gs`; the production source is split across numbered files.
 6. In Apps Script **Project Settings → Script properties**, set:
    - `OWNER_EMAIL`: the customer's nominated owner/admin login email.
-   - `OWNER_PIN`: a temporary six-digit PIN that satisfies the code's PIN policy. Generate it privately; do not put it in this repository or this chat.
+   - `OWNER_PASSWORD`: a temporary password of at least 8 characters that satisfies the code's password policy. Generate it privately; do not put it in this repository or this chat.
    - `OWNER_NAME`: optional display name.
-7. From the editor, select and run `setup()` once. Review and approve the requested Google permissions. On a new instance it creates the application tabs, internal receipt/backup folders, defaults and the daily backup trigger. After initial owner creation the temporary `OWNER_PIN` property is removed; the customer owner must change their PIN on first sign-in.
+7. From the editor, select and run `setup()` once. Review and approve the requested Google permissions. On a new instance it creates the application tabs, internal receipt/backup folders, defaults and the daily backup trigger. After initial owner creation the temporary `OWNER_PASSWORD` property is removed; the customer owner must change their password on first sign-in.
 8. Inspect **Project Settings → Script properties** and the Sheet tabs. Verify the active spreadsheet identity, expected headers/tabs, private folder permissions and backup trigger before proceeding. If anything points at another customer's resources, stop.
 9. In **Deploy → New deployment → Web app**, execute as the deploying/product-owner account and allow anonymous HTTP access because the static client cannot rely on the customer's Google login. The API must still authenticate and authorize every application request. Record the exact deployed `/exec` URL and deployment identity in the private register. Do not grant direct data-folder or Sheet access to the customer unless a separate, explicitly agreed data-export requirement needs it.
 
@@ -81,8 +81,8 @@ The root website must not be deployed as-is for a new customer. It contains deve
 
 Do not issue the customer link as “ready” until each gate is complete against the actual Google instance.
 
-- [ ] Verify initial owner login, mandatory PIN change and sign-out/re-login.
-- [ ] Create individual Manager/Staff accounts using distinct emails and non-shared PINs; verify server-side roles by testing allowed and denied operations.
+- [ ] Verify initial owner login, mandatory password change and sign-out/re-login.
+- [ ] Create individual Manager/Staff accounts using distinct emails and non-shared passwords; verify server-side roles by testing allowed and denied operations.
 - [ ] Create a clearly marked synthetic test voucher and receipt, confirm server persistence, receipt preview/access, register/report totals and audit entry, then cancel/clean up only according to the application's supported workflow. No real customer money or sensitive personal data belongs in this test.
 - [ ] Confirm the Dashboard/Settings reports the correct customer data source and backup configuration. Manually run `backupData_()` in this new instance to create a first backup now instead of waiting for the daily trigger. Authorize any required email notification scope if requested.
 - [ ] Open the backup root in Drive and verify a timestamped snapshot exists, its spreadsheet copy opens, its `receipts/` folder and `receipt-manifest.csv` are present, and the snapshot belongs to this instance.
@@ -98,8 +98,8 @@ If the backup is incomplete, a restore cannot be demonstrated, any role test is 
 
 1. Confirm the signed contract and first month's payment status according to the contract. Do not change contract terms in this technical runbook.
 2. Give the customer the URL from the verified host—not the repository URL or Apps Script editor URL.
-3. Share the initial owner email and temporary PIN through separate channels. Do not send reusable credentials in a public README, GitHub issue, pull request or source commit.
-4. Ask the customer owner to sign in, change the temporary PIN, confirm access, and create individual operator accounts. Never share a common staff PIN.
+3. Share the initial owner email and temporary password through separate channels. Do not send reusable credentials in a public README, GitHub issue, pull request or source commit.
+4. Ask the customer owner to sign in, change the temporary password, confirm access, and create individual operator accounts. Never share a common staff password.
 5. Give them `docs/CUSTOMER-QUICK-START-TEMPLATE.md` populated with their actual link and support contact.
 6. Explain that the app is a voucher record system, that unsynchronized offline items exist only on the originating device until uploaded, and that they should not clear browser storage or switch devices while pending entries remain.
 7. Record the live link, deployed version/source SHA, account-owner email, billing start, backup evidence, restore evidence and customer acceptance in the private register.
@@ -116,4 +116,4 @@ If the backup is incomplete, a restore cannot be demonstrated, any role test is 
 
 The private instance register must include the customer code, customer/admin email, new Script/project/deployment identity, Sheet and folder identities, unique host origin and URL, source SHA, build/release date, test evidence, backup/restore evidence, support channel, subscription start, next renewal and acceptance status.
 
-**Never store** PINs, OAuth credential JSON, access/refresh tokens, `.clasprc.json` content or any reusable credential in the register or this repository. Store the register in a private operator-controlled location outside the public repository.
+**Never store** passwords, OAuth credential JSON, access/refresh tokens, `.clasprc.json` content or any reusable credential in the register or this repository. Store the register in a private operator-controlled location outside the public repository.

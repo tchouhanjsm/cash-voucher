@@ -172,8 +172,8 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   const managerEmail = String(env.CV_STAGING_UAT_MANAGER_EMAIL || '')
     .trim()
     .toLowerCase();
-  const ownerPin = String(env.CV_STAGING_UAT_OWNER_PIN || '').trim();
-  const managerPin = String(env.CV_STAGING_UAT_MANAGER_PIN || '').trim();
+  const ownerPin = String(env.CV_STAGING_UAT_OWNER_PASSWORD || '').trim();
+  const managerPin = String(env.CV_STAGING_UAT_MANAGER_PASSWORD || '').trim();
 
   if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
     errors.push('A valid dedicated staging owner email is required.');
@@ -185,9 +185,9 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     errors.push('The staging owner and manager UAT accounts must be different accounts.');
   }
   if (!isStrongPin(ownerPin))
-    errors.push('The staging owner UAT PIN must be six digits and non-trivial.');
+    errors.push('The staging owner UAT password must be six digits and non-trivial.');
   if (!isStrongPin(managerPin))
-    errors.push('The staging manager UAT PIN must be six digits and non-trivial.');
+    errors.push('The staging manager UAT password must be six digits and non-trivial.');
   if (ownerPin && managerPin && ownerPin === managerPin) {
     errors.push('Use different PINs for the staging owner and manager UAT accounts.');
   }

@@ -5,15 +5,15 @@ const { create } = require('./mock-gas');
 
 const g = create();
 g.props.OWNER_EMAIL = 'owner@auth-matrix.test';
-g.props.OWNER_PIN = '483921';
+g.props.OWNER_PASSWORD = 'OwnerPass2036';
 g.setup();
 
 const DATE = '2026-10-15';
 const accountSpecs = {
   owner: {
     email: 'owner@auth-matrix.test',
-    temporaryPin: '483921',
-    firstPin: '579246',
+    temporaryPin: 'OwnerPass2036',
+    firstPin: 'UpdatedOwnerPass7',
     rotatePin: '625193',
     name: 'Test Owner',
     role: 'owner',
@@ -60,33 +60,33 @@ function assertNotForbidden(result, message) {
   assert.notEqual(result.code, 'FORBIDDEN', message);
 }
 function loginAndChange(spec) {
-  const login = g.call('login', { email: spec.email, pin: spec.temporaryPin });
-  assert.ok(login.ok, spec.role + ' login with temporary PIN succeeds');
-  const changed = g.call('changePin', {
+  const login = g.call('login', { email: spec.email, password: spec.temporaryPin });
+  assert.ok(login.ok, spec.role + ' login with temporary PASSWORD succeeds');
+  const changed = g.call('changePassword', {
     token: login.data.token,
-    oldPin: spec.temporaryPin,
-    newPin: spec.firstPin,
+    oldPassword: spec.temporaryPin,
+    newPassword: spec.firstPin,
   });
-  assert.ok(changed.ok, spec.role + ' can complete first-login PIN change');
-  return { ...spec, token: changed.data.token, pin: spec.firstPin };
+  assert.ok(changed.ok, spec.role + ' can complete first-login PASSWORD change');
+  return { ...spec, token: changed.data.token, password: spec.firstPin };
 }
 
 const ownerLogin = g.call('login', {
   email: accountSpecs.owner.email,
-  pin: accountSpecs.owner.temporaryPin,
+  password: accountSpecs.owner.temporaryPin,
 });
 assert.ok(ownerLogin.ok, 'initial owner login succeeds');
-const ownerChanged = g.call('changePin', {
+const ownerChanged = g.call('changePassword', {
   token: ownerLogin.data.token,
-  oldPin: accountSpecs.owner.temporaryPin,
-  newPin: accountSpecs.owner.firstPin,
+  oldPassword: accountSpecs.owner.temporaryPin,
+  newPassword: accountSpecs.owner.firstPin,
 });
-assert.ok(ownerChanged.ok, 'initial owner PIN change succeeds');
+assert.ok(ownerChanged.ok, 'initial owner PASSWORD change succeeds');
 const users = {
   owner: {
     ...accountSpecs.owner,
     token: ownerChanged.data.token,
-    pin: accountSpecs.owner.firstPin,
+    password: accountSpecs.owner.firstPin,
   },
 };
 
@@ -96,7 +96,7 @@ for (const key of ['manager', 'staff', 'staff2', 'accountant']) {
     name: spec.name,
     email: spec.email,
     role: spec.role,
-    pin: spec.temporaryPin,
+    password: spec.temporaryPin,
   });
   assert.ok(created.ok, 'owner can provision the ' + key + ' fixture');
   users[key] = loginAndChange(spec);
@@ -207,7 +207,7 @@ const permissionCases = [
   { action: 'toggleVendor', allowed: ['manager', 'owner'], payload: { id: 'missing-vendor' } },
   { action: 'listUsers', allowed: ['owner'], payload: {} },
   { action: 'saveUser', allowed: ['owner'], payload: {} },
-  { action: 'resetPin', allowed: ['owner'], payload: {} },
+  { action: 'resetPassword', allowed: ['owner'], payload: {} },
   { action: 'saveSettings', allowed: ['owner'], payload: {} },
   { action: 'auditLog', allowed: ['owner'], payload: {} },
   { action: 'dataQualityReport', allowed: ['owner'], payload: {} },
@@ -397,12 +397,12 @@ checkAddReceiptRole('accountant', staffVoucher, false, 'accountant cannot attach
 
 for (const role of ['staff', 'manager', 'owner', 'accountant']) {
   const account = users[role];
-  const result = call('changePin', account, {
-    oldPin: account.pin,
-    newPin: accountSpecs[role].rotatePin,
+  const result = call('changePassword', account, {
+    oldPassword: account.password,
+    newPassword: accountSpecs[role].rotatePin,
   });
-  assert.ok(result.ok, role + ' may change their own PIN without owner-level permission');
-  account.pin = accountSpecs[role].rotatePin;
+  assert.ok(result.ok, role + ' may change their own PASSWORD without owner-level permission');
+  account.password = accountSpecs[role].rotatePin;
   account.token = result.data.token;
 }
 
@@ -414,5 +414,5 @@ for (const [role, account] of Object.entries(users)) {
 console.log(
   'Authorization matrix OK — ' +
     actionRoleChecks +
-    ' role/action assertions plus bootstrap data isolation, report access, own/foreign receipt access, PIN self-service and logout.',
+    ' role/action assertions plus bootstrap data isolation, report access, own/foreign receipt access, PASSWORD self-service and logout.',
 );

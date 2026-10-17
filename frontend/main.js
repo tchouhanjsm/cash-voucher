@@ -183,7 +183,7 @@ registerActions({
 
   vtog: ({ id }) => administration.toggleVendor(id),
 
-  upin: ({ id }) => administration.resetPin(id),
+  upassword: ({ id }) => administration.resetPassword(id),
 
   usersRetry: () => administration.users(),
 

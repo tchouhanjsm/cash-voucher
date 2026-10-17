@@ -46,7 +46,7 @@ function decodeBase64(value, expectedLength) {
   }
 }
 
-async function deriveVerifier(pin, salt, email, endpoint, createdAt, expiresAt) {
+async function deriveVerifier(password, salt, email, endpoint, createdAt, expiresAt) {
   const cryptoApi = globalThis.crypto;
   if (!cryptoApi?.subtle) throw new Error('Secure offline verification is unavailable.');
 
@@ -54,7 +54,7 @@ async function deriveVerifier(pin, salt, email, endpoint, createdAt, expiresAt) 
   // Editing those metadata fields in local storage invalidates the verifier.
   const material = [
     'cash-voucher-offline-v1',
-    pin,
+    password,
     email,
     endpoint,
     String(createdAt),
@@ -91,14 +91,14 @@ function equalBytes(left, right) {
   return difference === 0;
 }
 
-export async function saveOfflineCredential({ email, endpoint, pin, storage, now = Date.now() }) {
+export async function saveOfflineCredential({ email, endpoint, password, storage, now = Date.now() }) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedEndpoint = normalizeEndpoint(endpoint);
   if (
     !normalizedEmail ||
     !normalizedEndpoint ||
-    typeof pin !== 'string' ||
-    !/^[0-9]{6}$/.test(pin) ||
+    typeof password !== 'string' ||
+    (password.length < 8 || password.length > 128) ||
     !storage ||
     typeof storage.set !== 'function' ||
     !Number.isFinite(now)
@@ -113,7 +113,7 @@ export async function saveOfflineCredential({ email, endpoint, pin, storage, now
     const salt = cryptoApi.getRandomValues(new Uint8Array(SALT_BYTES));
     const expiresAt = now + OFFLINE_AUTH_TTL_MS;
     const verifier = await deriveVerifier(
-      pin,
+      password,
       salt,
       normalizedEmail,
       normalizedEndpoint,
@@ -137,14 +137,14 @@ export async function saveOfflineCredential({ email, endpoint, pin, storage, now
   }
 }
 
-export async function verifyOfflineCredential({ email, endpoint, pin, storage, now = Date.now() }) {
+export async function verifyOfflineCredential({ email, endpoint, password, storage, now = Date.now() }) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedEndpoint = normalizeEndpoint(endpoint);
   if (
     !normalizedEmail ||
     !normalizedEndpoint ||
-    typeof pin !== 'string' ||
-    !/^[0-9]{6}$/.test(pin) ||
+    typeof password !== 'string' ||
+    (password.length < 8 || password.length > 128) ||
     !storage ||
     typeof storage.get !== 'function' ||
     !Number.isFinite(now)
@@ -177,7 +177,7 @@ export async function verifyOfflineCredential({ email, endpoint, pin, storage, n
     if (!salt || !expected) return false;
 
     const actual = await deriveVerifier(
-      pin,
+      password,
       salt,
       normalizedEmail,
       normalizedEndpoint,

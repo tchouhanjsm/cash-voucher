@@ -5,7 +5,7 @@ const { create } = require('./mock-gas');
 
 const g = create();
 g.props.OWNER_EMAIL = 'route-owner@test.com';
-g.props.OWNER_PIN = '483921';
+g.props.OWNER_PASSWORD = 'OwnerPass2036';
 g.setup();
 
 const actions = g.registeredActions();
@@ -30,7 +30,7 @@ const requiredFinancialWrites = [
   'recordCashCloseCorrection',
   'saveSettings',
   'saveUser',
-  'resetPin',
+  'resetPassword',
   'toggleVendor',
 ];
 

@@ -56,15 +56,15 @@ function route_(req) {
 
   if (!Object.prototype.hasOwnProperty.call(WRITES, req.action)) {
     const user = auth_(req.token);
-    if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
-      throw err_('Please change your PIN first.', 'PIN_CHANGE');
+    if (user.mustChange && req.action !== 'changePassword' && req.action !== 'logout')
+      throw err_('Please change your password first.', 'PASSWORD_CHANGE');
     return fn(user, req);
   }
 
   return withScriptLock_(function () {
     const user = auth_(req.token);
-    if (user.mustChange && req.action !== 'changePin' && req.action !== 'logout')
-      throw err_('Please change your PIN first.', 'PIN_CHANGE');
+    if (user.mustChange && req.action !== 'changePassword' && req.action !== 'logout')
+      throw err_('Please change your password first.', 'PASSWORD_CHANGE');
     return fn(user, req);
   }, 'The service is busy. No changes were made. Please retry shortly.');
 }

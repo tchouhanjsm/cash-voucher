@@ -21,9 +21,9 @@ const fixture = {
   CV_STAGING_BACKUP_FOLDER_ID: 'staging-backups-fixture',
   CV_PRODUCTION_BACKUP_FOLDER_ID: 'production-backups-fixture',
   CV_STAGING_UAT_OWNER_EMAIL: 'uat-owner@example.test',
-  CV_STAGING_UAT_OWNER_PIN: '482631',
+  CV_STAGING_UAT_OWNER_PASSWORD: 'TestPass482631',
   CV_STAGING_UAT_MANAGER_EMAIL: 'uat-manager@example.test',
-  CV_STAGING_UAT_MANAGER_PIN: '739284',
+  CV_STAGING_UAT_MANAGER_PASSWORD: 'TestPass739284',
   CV_STAGING_DEPLOY_CONFIRMATION: 'STAGING-ONLY',
   CLASPRC_JSON: JSON.stringify({
     token: { access_token: 'fixture-only' },
@@ -171,12 +171,12 @@ const sharedAccount = validateStagingConfiguration({
 assert.equal(sharedAccount.ok, false);
 assert.ok(sharedAccount.errors.some((message) => message.includes('different accounts')));
 
-const weakPin = validateStagingConfiguration({
+const weakPassword = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_UAT_OWNER_PIN: '123456',
+  CV_STAGING_UAT_OWNER_PASSWORD: '123456',
 });
-assert.equal(weakPin.ok, false);
-assert.ok(weakPin.errors.some((message) => message.includes('non-trivial')));
+assert.equal(weakPassword.ok, false);
+assert.ok(weakPassword.errors.some((message) => message.includes('non-trivial')));
 
 const failures = validateStagingConfiguration({
   ...fixture,
@@ -184,9 +184,9 @@ const failures = validateStagingConfiguration({
   CV_STAGING_API_URL: productionApiUrl,
 });
 assert.equal(
-  JSON.stringify(failures.errors).includes(fixture.CV_STAGING_UAT_OWNER_PIN),
+  JSON.stringify(failures.errors).includes(fixture.CV_STAGING_UAT_OWNER_PASSWORD),
   false,
-  'preflight diagnostics never echo a UAT PIN',
+  'preflight diagnostics never echo a UAT PASSWORD',
 );
 assert.equal(
   JSON.stringify(failures.errors).includes(fixture.CLASPRC_JSON),

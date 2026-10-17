@@ -228,15 +228,15 @@ with sync_playwright() as p:
     )
     page.set_viewport_size({'width': 1280, 'height': 800})
     login_style = page.evaluate("""() => ({
-      background: getComputedStyle(document.querySelector('#login')).backgroundImage,
-      cardPadding: Number.parseFloat(getComputedStyle(document.querySelector('#loginForm')).paddingTop),
+      background: getComputedStyle(document.querySelector('.cv-login-story')).backgroundColor,
+      cardPadding: Number.parseFloat(getComputedStyle(document.querySelector('.cv-login-form-side')).paddingTop),
       emailHeight: document.querySelector('#lEmail').getBoundingClientRect().height,
       buttonHeight: document.querySelector('#lBtn').getBoundingClientRect().height,
       viewportWidth: document.documentElement.clientWidth,
       pageWidth: document.documentElement.scrollWidth
     })""")
     check(
-        'radial-gradient' in login_style['background']
+        'rgb(' in login_style['background']
         and login_style['cardPadding'] >= 24
         and login_style['emailHeight'] >= 48
         and login_style['buttonHeight'] >= 48
@@ -246,31 +246,31 @@ with sync_playwright() as p:
     page.set_viewport_size({'width': 390, 'height': 800})
 
     page.fill('#lEmail', 'owner@test.com')
-    page.fill('#lPin', '000000')
+    page.fill('#lPassword', 'WrongPass123')
     page.click('#lBtn')
     page.wait_for_selector('#lErr:not(:empty)')
-    check('Invalid' in page.inner_text('#lErr'), 'wrong pin message')
+    check('Invalid' in page.inner_text('#lErr'), 'wrong password message')
 
-    page.fill('#lPin', '483921')
+    page.fill('#lPassword', 'OwnerPass2036')
     page.click('#lBtn')
     page.wait_for_selector('#mErr')
     check(
-        page.get_by_role('dialog', name='Choose a new PIN').count() == 1,
-        'PIN dialog has an accessible name',
+        page.get_by_role('dialog', name='Choose a new password').count() == 1,
+        'password dialog has an accessible name',
     )
     check(
         page.evaluate("document.activeElement?.id === 'op'"),
         'dialog moves keyboard focus to the first field',
     )
     check(
-        page.locator('#op').get_attribute('aria-label') == 'Current temporary PIN'
-        and page.locator('#np').get_attribute('aria-label') == 'New PIN',
-        'forced PIN change fields have explicit accessible names',
+        page.locator('#currentPassword').get_attribute('aria-label') == 'Current temporary password'
+        and page.locator('#newPassword').get_attribute('aria-label') == 'New password',
+        'forced password change fields have explicit accessible names',
     )
     check(
-        page.locator('#op').get_attribute('pattern') == '[0-9]{6}'
-        and page.locator('#np').get_attribute('pattern') == '[0-9]{6}',
-        'forced PIN change fields require six numeric digits',
+        page.locator('#currentPassword').get_attribute('minlength') == '8' and page.locator('#newPassword').get_attribute('minlength') == '8'
+        and page.locator('#newPassword').get_attribute('pattern') == '.{8,128}',
+        'forced password change fields require 8–128 characters',
     )
     page.locator('.mcard .primary').focus()
     page.keyboard.press('Tab')
@@ -278,14 +278,14 @@ with sync_playwright() as p:
         page.evaluate("document.activeElement?.id === 'op'"),
         'Tab wraps from the last dialog control to the first',
     )
-    page.locator('#op').focus()
+    page.locator('#currentPassword').focus()
     page.keyboard.press('Shift+Tab')
     check(
         page.evaluate("document.activeElement?.matches('.mcard .primary')"),
         'Shift+Tab wraps from the first dialog control to the last',
     )
-    page.fill('#op', '483921')
-    page.fill('#np', '579246')
+    page.fill('#currentPassword', 'OwnerPass2036')
+    page.fill('#newPassword', 'UpdatedOwnerPass7')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 10, 'owner sees 10 nav items including Cash Close; Account moved to the user menu')
@@ -332,21 +332,21 @@ with sync_playwright() as p:
         account_header.locator('.page-eyebrow').text_content().strip() == 'Account'
         and account_header.locator('.page-description').count() == 1
         and page.locator('.profile-account-card').count() == 1
-        and page.locator('.account-pin-form#pf').count() == 1,
-        'My Account uses shared page context and a dedicated profile/PIN layout',
+        and page.locator('.account-password-form#pf').count() == 1,
+        'My Account uses shared page context and a dedicated profile/password layout',
     )
     page.set_viewport_size({'width': 1280, 'height': 800})
-    account_columns = page.locator('.account-pin-controls').evaluate(
+    account_columns = page.locator('.account-password-controls').evaluate(
         "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
     )
-    check(account_columns >= 3, 'Account PIN controls align into a clear three-column desktop form')
+    check(account_columns >= 3, 'Account password controls align into a clear three-column desktop form')
     page.set_viewport_size({'width': 390, 'height': 800})
     check(
-        page.locator('.account-pin-controls').evaluate(
+        page.locator('.account-password-controls').evaluate(
             "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
         ) == 1
         and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
-        'Account PIN controls stack cleanly without page-level overflow on mobile',
+        'Account password controls stack cleanly without page-level overflow on mobile',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
     # Phase 28–30: cross-workflow visual matrix. Store same-browser screenshots as a
@@ -920,8 +920,8 @@ with sync_playwright() as p:
     )
     check(
         page.locator('#up').get_attribute('type') == 'password'
-        and page.locator('#up').get_attribute('pattern') == '[0-9]{6}',
-        'temporary user PIN is masked and constrained to six digits',
+        and page.locator('#up').get_attribute('pattern') == '.{8,128}',
+        'temporary user password is masked and constrained to 8–128 characters',
     )
     check(
         page.locator('#uf').evaluate("(form) => form.parentElement.classList.contains('form-panel')")
@@ -935,16 +935,16 @@ with sync_playwright() as p:
         and page.locator('[data-v=dash]').get_attribute('aria-current') is None,
         'active route state stays synchronized across primary and More navigation',
     )
-    for name, email, role, pin in [
-        ('Mona', 'm@test.com', 'manager', '246810'),
-        ('Sam', 's@test.com', 'staff', '135790'),
-        ('Nina Accountant', 'accountant@test.com', 'accountant', '753951'),
-        ('Approval Manager', 'approval-manager@test.com', 'manager', '314159'),
+    for name, email, role, password in [
+        ('Mona', 'm@test.com', 'manager', 'ManagerPass123'),
+        ('Sam', 's@test.com', 'staff', 'StaffPass1234'),
+        ('Nina Accountant', 'accountant@test.com', 'accountant', 'Accountant12'),
+        ('Approval Manager', 'approval-manager@test.com', 'manager', 'LockoutPass123'),
     ]:
         page.fill('#un', name)
         page.fill('#ue', email)
         page.select_option('#ur', role)
-        page.fill('#up', pin)
+        page.fill('#up', password)
         page.click('#uf .primary')
         page.wait_for_timeout(300)
     check(page.locator('tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
@@ -992,11 +992,11 @@ with sync_playwright() as p:
     manager_page = manager_context.new_page()
     manager_page.goto(URL)
     manager_page.fill('#lEmail', 'approval-manager@test.com')
-    manager_page.fill('#lPin', '314159')
+    manager_page.fill('#lPassword', 'LockoutPass123')
     manager_page.click('#lBtn')
-    manager_page.wait_for_selector('#op')
-    manager_page.fill('#op', '314159')
-    manager_page.fill('#np', '271828')
+    manager_page.wait_for_selector('#currentPassword')
+    manager_page.fill('#currentPassword', 'LockoutPass123')
+    manager_page.fill('#newPassword', '271828')
     manager_page.click('.mcard .primary')
     manager_page.wait_for_selector('#nav button')
     go_view(manager_page, 'reg')
@@ -1153,11 +1153,11 @@ with sync_playwright() as p:
     accountant_page = accountant_context.new_page()
     accountant_page.goto(URL)
     accountant_page.fill('#lEmail', 'accountant@test.com')
-    accountant_page.fill('#lPin', '753951')
+    accountant_page.fill('#lPassword', 'Accountant12')
     accountant_page.click('#lBtn')
-    accountant_page.wait_for_selector('#op')
-    accountant_page.fill('#op', '753951')
-    accountant_page.fill('#np', '357951')
+    accountant_page.wait_for_selector('#currentPassword')
+    accountant_page.fill('#currentPassword', 'Accountant12')
+    accountant_page.fill('#newPassword', '357951')
     accountant_page.locator('.mcard .primary').click()
     accountant_page.wait_for_selector('[data-v=reports][aria-current=page]')
     check(
@@ -1368,7 +1368,7 @@ with sync_playwright() as p:
     page.fill('#un', xss_payload)
     page.fill('#ue', 'stored-xss@test.com')
     page.select_option('#ur', 'staff')
-    page.fill('#up', '258369')
+    page.fill('#up', 'XssTestPass123')
     page.click('#uf .primary')
     page.wait_for_function(
         "document.querySelector('#view').innerText.includes('stored-xss@test.com')"
@@ -2023,9 +2023,9 @@ with sync_playwright() as p:
     stored_offline_credential = page.evaluate("localStorage.getItem('cv.offlineAuth')")
     check(
         stored_offline_credential is not None
-        and '579246' not in stored_offline_credential
+        and 'UpdatedOwnerPass7' not in stored_offline_credential
         and json.loads(stored_offline_credential).get('version') == 1,
-        'successful online sign-in stores only a versioned PIN verifier, never the raw PIN',
+        'successful online sign-in stores only a versioned password verifier, never the raw password',
     )
     page.evaluate("localStorage.removeItem('cv.token')")
     page.evaluate("navigator.serviceWorker.ready.then(() => true)")
@@ -2034,17 +2034,17 @@ with sync_playwright() as p:
     page.wait_for_selector('#loginForm', timeout=10000)
 
     page.fill('#lEmail', 'owner@test.com')
-    page.fill('#lPin', '000000')
+    page.fill('#lPassword', 'WrongPass123')
     page.click('#lBtn')
     page.wait_for_selector('#lErr:not(:empty)', timeout=8000)
     check(
         'Connect and sign in to verify this account.' in page.locator('#lErr').inner_text()
         and page.locator('#nav button').count() == 0,
-        'offline unlock rejects an incorrect PIN without opening the application',
+        'offline unlock rejects an incorrect password without opening the application',
     )
 
     page.fill('#lEmail', 'owner@test.com')
-    page.fill('#lPin', '579246')
+    page.fill('#lPassword', 'UpdatedOwnerPass7')
     page.click('#lBtn')
     page.wait_for_selector('#nav button', timeout=10000)
     page.wait_for_function(
@@ -2058,7 +2058,7 @@ with sync_playwright() as p:
         and page.locator('#userBtn').count() == 1
         and page.locator('[data-v=users], [data-v=set], [data-v=audit], [data-v=vend], [data-v=reports], [data-v=bulk]').count() == 0
         and page.evaluate("!localStorage.getItem('cv.token')"),
-        'correct offline PIN opens a local workspace, hides privileged routes and issues no server token',
+        'correct offline password opens a local workspace, hides privileged routes and issues no server token',
     )
     check(
         'server vouchers are unavailable' in page.locator('#banner').inner_text().lower()
@@ -2149,7 +2149,7 @@ with sync_playwright() as p:
     def unlock_offline_owner():
         page.wait_for_selector('#loginForm', timeout=10000)
         page.fill('#lEmail', 'owner@test.com')
-        page.fill('#lPin', '579246')
+        page.fill('#lPassword', 'UpdatedOwnerPass7')
         page.click('#lBtn')
 
     page.evaluate(
@@ -2269,7 +2269,7 @@ with sync_playwright() as p:
     page.click('#banner [data-act=reconnect-signin]')
     page.wait_for_selector('#loginForm', timeout=8000)
     page.fill('#lEmail', 'owner@test.com')
-    page.fill('#lPin', '579246')
+    page.fill('#lPassword', 'UpdatedOwnerPass7')
     page.click('#lBtn')
     page.wait_for_function("document.querySelectorAll('#nav button').length === 10", timeout=10000)
     page.wait_for_function(
@@ -2320,15 +2320,15 @@ with sync_playwright() as p:
     page.click('#view [data-act=signout]')
     page.wait_for_selector('#loginForm')
 
-    def login(email, pin):
+    def login(email, password):
         page.fill('#lEmail', email)
-        page.fill('#lPin', pin)
+        page.fill('#lPassword', password)
         page.click('#lBtn')
 
-    login('stored-xss@test.com', '258369')
-    page.wait_for_selector('#op')
-    page.fill('#op', '258369')
-    page.fill('#np', '852741')
+    login('stored-xss@test.com', 'XssTestPass123')
+    page.wait_for_selector('#currentPassword')
+    page.fill('#currentPassword', 'XssTestPass123')
+    page.fill('#newPassword', '852741')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(
@@ -2342,10 +2342,10 @@ with sync_playwright() as p:
     page.click('#view [data-act=signout]')
     page.wait_for_selector('#loginForm')
 
-    login('s@test.com', '135790')
-    page.wait_for_selector('#op')
-    page.fill('#op', '135790')
-    page.fill('#np', '975310')
+    login('s@test.com', 'StaffPass1234')
+    page.wait_for_selector('#currentPassword')
+    page.fill('#currentPassword', 'StaffPass1234')
+    page.fill('#newPassword', 'UpdatedStaffPass6')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 3, 'staff sees 3 nav items (dash,new,reg); Account is in the user menu')
@@ -3428,10 +3428,10 @@ with sync_playwright() as p:
     page.click('#view [data-act=signout]')
     page.wait_for_selector('#loginForm')
 
-    login('m@test.com', '246810')
-    page.wait_for_selector('#op')
-    page.fill('#op', '246810')
-    page.fill('#np', '864209')
+    login('m@test.com', 'ManagerPass123')
+    page.wait_for_selector('#currentPassword')
+    page.fill('#currentPassword', 'ManagerPass123')
+    page.fill('#newPassword', 'UpdatedManager1')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
@@ -4293,7 +4293,7 @@ with sync_playwright() as p:
     audit_page.route('**/api?*', inject_legacy_update_audit)
     audit_page.goto(URL)
     audit_page.fill('#lEmail', 'owner@test.com')
-    audit_page.fill('#lPin', '579246')
+    audit_page.fill('#lPassword', 'UpdatedOwnerPass7')
     audit_page.click('#lBtn')
     audit_page.wait_for_selector('[data-v=audit]')
     go_view(audit_page, 'audit')
@@ -5394,7 +5394,7 @@ with sync_playwright() as p:
     audit_page.route('**/api?*', inject_malformed_audit_rows)
     audit_page.goto(URL)
     audit_page.fill('#lEmail', 'owner@test.com')
-    audit_page.fill('#lPin', '579246')
+    audit_page.fill('#lPassword', 'UpdatedOwnerPass7')
     audit_page.click('#lBtn')
     audit_page.wait_for_selector('[data-v=audit]')
     go_view(audit_page, 'audit')
@@ -5805,7 +5805,7 @@ with sync_playwright() as p:
         'stale-session queue remains bound to the manager identity that created it',
     )
     page.fill('#lEmail', 'm@test.com')
-    page.fill('#lPin', '864209')
+    page.fill('#lPassword', 'UpdatedManager1')
     page.click('#lBtn')
     page.wait_for_selector('#nav button', timeout=10000)
     page.evaluate("window.dispatchEvent(new Event('online'))")
@@ -6141,9 +6141,9 @@ with sync_playwright() as p:
               property: view.querySelector('.profile-main .muted')?.textContent || '',
               hasActiveMarkup: Boolean(view.querySelector('img, svg')),
               hasSignOut: view.querySelector('[data-act=signout]')?.textContent === 'Sign out',
-              hasCurrentPin: Boolean(view.querySelector('#pf #po[aria-label="Current PIN"][autocomplete="current-password"]')),
-              hasNewPin: Boolean(view.querySelector('#pf #pn[aria-label="New PIN"][autocomplete="new-password"]')),
-              hasSubmit: view.querySelector('#pf button[type=submit]')?.textContent === 'Change PIN',
+              hasCurrentPin: Boolean(view.querySelector('#pf #po[aria-label="Current password"][autocomplete="current-password"]')),
+              hasNewPin: Boolean(view.querySelector('#pf #pn[aria-label="New password"][autocomplete="new-password"]')),
+              hasSubmit: view.querySelector('#pf button[type=submit]')?.textContent === 'Change password',
               scriptEffect: window.__xssFired === true
             };
           } finally {
@@ -6166,7 +6166,7 @@ with sync_playwright() as p:
         and account_dom_result['hasCurrentPin']
         and account_dom_result['hasNewPin']
         and account_dom_result['hasSubmit'],
-        'My Account preserves sign-out and Change PIN controls after DOM rendering',
+        'My Account preserves sign-out and Change password controls after DOM rendering',
     )
     go_view(page, 'dash')
 

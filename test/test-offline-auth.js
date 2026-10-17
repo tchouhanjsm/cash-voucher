@@ -28,33 +28,33 @@ async function run() {
   };
   const email = 'Staff@Test.com';
   const endpoint = 'http://127.0.0.1:8765/api?test=1';
-  const pin = '975310';
+  const password = 'UpdatedStaffPass6';
   const now = 1_800_000_000_000;
 
   assert.equal(
-    await saveOfflineCredential({ email, endpoint, pin, storage, now }),
+    await saveOfflineCredential({ email, endpoint, password, storage, now }),
     true,
-    'online-verified six-digit PIN creates a local verifier',
+    'online-verified 8+ character PASSWORD creates a local verifier',
   );
   const raw = storage.get(OFFLINE_AUTH_KEY);
   const record = JSON.parse(raw);
   assert.equal(record.email, 'staff@test.com');
   assert.equal(record.endpoint, 'http://127.0.0.1:8765/api');
   assert.equal(record.expiresAt - record.createdAt, OFFLINE_AUTH_TTL_MS);
-  assert.equal(raw.includes(pin), false, 'raw PIN is not persisted');
+  assert.equal(raw.includes(password), false, 'raw PASSWORD is not persisted');
 
   assert.equal(
-    await verifyOfflineCredential({ email: ' staff@test.com ', endpoint, pin, storage, now }),
+    await verifyOfflineCredential({ email: ' staff@test.com ', endpoint, password, storage, now }),
     true,
-    'normalized account and endpoint verify the PIN',
+    'normalized account and endpoint verify the PASSWORD',
   );
   assert.equal(
-    await verifyOfflineCredential({ email, endpoint, pin: '000000', storage, now }),
+    await verifyOfflineCredential({ email, endpoint, password: 'WrongPass123', storage, now }),
     false,
-    'incorrect PIN fails',
+    'incorrect PASSWORD fails',
   );
   assert.equal(
-    await verifyOfflineCredential({ email: 'other@test.com', endpoint, pin, storage, now }),
+    await verifyOfflineCredential({ email: 'other@test.com', endpoint, password, storage, now }),
     false,
     'verifier cannot be reused for another account',
   );
@@ -62,7 +62,7 @@ async function run() {
     await verifyOfflineCredential({
       email,
       endpoint: 'http://127.0.0.1:8765/other',
-      pin,
+      password,
       storage,
       now,
     }),
@@ -73,7 +73,7 @@ async function run() {
     await verifyOfflineCredential({
       email,
       endpoint,
-      pin,
+      password,
       storage,
       now: now + OFFLINE_AUTH_TTL_MS,
     }),
@@ -84,25 +84,25 @@ async function run() {
   const tampered = { ...record, expiresAt: record.expiresAt + 1000 };
   storage.set(OFFLINE_AUTH_KEY, JSON.stringify(tampered));
   assert.equal(
-    await verifyOfflineCredential({ email, endpoint, pin, storage, now }),
+    await verifyOfflineCredential({ email, endpoint, password, storage, now }),
     false,
     'edited validity metadata invalidates the verifier',
   );
 
   storage.set(OFFLINE_AUTH_KEY, '{');
   assert.equal(
-    await verifyOfflineCredential({ email, endpoint, pin, storage, now }),
+    await verifyOfflineCredential({ email, endpoint, password, storage, now }),
     false,
     'malformed local verifier fails closed',
   );
 
   assert.equal(
-    await saveOfflineCredential({ email, endpoint, pin: '12345', storage, now }),
+    await saveOfflineCredential({ email, endpoint, password: '12345', storage, now }),
     false,
-    'invalid PIN shape does not create a verifier',
+    'invalid PASSWORD shape does not create a verifier',
   );
   assert.equal(
-    await saveOfflineCredential({ email, endpoint, pin, storage: { set: () => false }, now }),
+    await saveOfflineCredential({ email, endpoint, password, storage: { set: () => false }, now }),
     false,
     'blocked local storage disables offline unlock without breaking online sign-in',
   );
@@ -110,7 +110,7 @@ async function run() {
   clearOfflineCredential(storage);
   assert.equal(storage.get(OFFLINE_AUTH_KEY), null, 'explicit sign-out can remove offline unlock');
   assert.equal(
-    await verifyOfflineCredential({ email, endpoint, pin, storage, now }),
+    await verifyOfflineCredential({ email, endpoint, password, storage, now }),
     false,
     'removed verifier no longer unlocks the workspace',
   );

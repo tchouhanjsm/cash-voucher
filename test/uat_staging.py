@@ -54,20 +54,20 @@ def go(page, view):
     overflow.click()
 
 
-def sign_in(page, email, pin, role):
+def sign_in(page, email, password, role):
     page.goto(BASE, wait_until="domcontentloaded")
     configured = page.evaluate("() => window.CV_CONFIG && window.CV_CONFIG.API_URL")
     check(configured == API_URL, role + " browser targets the configured staging endpoint")
     page.locator("#lEmail").fill(email)
-    page.locator("#lPin").fill(pin)
+    page.locator("#lPin").fill(password)
     page.locator("#lBtn").click()
     try:
         page.locator("#app:not(.hidden)").wait_for(state="visible", timeout=20000)
     except PlaywrightTimeoutError as exc:
         raise AssertionError(
-            role + " sign-in failed; confirm the dedicated staging account is active and its initial PIN change was completed manually."
+            role + " sign-in failed; confirm the dedicated staging account is active and its initial password change was completed manually."
         ) from exc
-    check(page.locator("#op").count() == 0, role + " account has completed first-login PIN setup")
+    check(page.locator("#op").count() == 0, role + " account has completed first-login password setup")
     token = page.evaluate("() => localStorage.getItem('cv.token')")
     check(isinstance(token, str) and len(token) >= 20, role + " receives an authenticated session")
     return token
@@ -137,9 +137,9 @@ def run():
         raise AssertionError("CV_STAGING_API_URL is missing.")
 
     owner_email = os.environ["CV_STAGING_UAT_OWNER_EMAIL"].strip()
-    owner_pin = os.environ["CV_STAGING_UAT_OWNER_PIN"].strip()
+    owner_pin = os.environ["CV_STAGING_UAT_OWNER_PASSWORD"].strip()
     manager_email = os.environ["CV_STAGING_UAT_MANAGER_EMAIL"].strip()
-    manager_pin = os.environ["CV_STAGING_UAT_MANAGER_PIN"].strip()
+    manager_pin = os.environ["CV_STAGING_UAT_MANAGER_PASSWORD"].strip()
     if owner_email.lower() == manager_email.lower() or owner_pin == manager_pin:
         raise AssertionError("Staging owner and manager UAT accounts must be distinct.")
 

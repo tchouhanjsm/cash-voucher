@@ -5,7 +5,7 @@ const { create } = require('./mock-gas');
 
 const g = create();
 g.props.OWNER_EMAIL = 'readiness-owner@test.com';
-g.props.OWNER_PIN = '483921';
+g.props.OWNER_PASSWORD = 'OwnerPass2036';
 g.setup();
 
 const anonymous = g.call('deploymentReadiness');
@@ -14,13 +14,13 @@ assert.equal(anonymous.code, 'SESSION');
 
 const login = g.call('login', {
   email: 'readiness-owner@test.com',
-  pin: '483921',
+  password: 'OwnerPass2036',
 });
 assert.equal(login.ok, true);
-const changedPin = g.call('changePin', {
+const changedPin = g.call('changePassword', {
   token: login.data.token,
-  oldPin: '483921',
-  newPin: '579246',
+  oldPassword: 'OwnerPass2036',
+  newPassword: 'UpdatedOwnerPass7',
 });
 assert.equal(changedPin.ok, true);
 
@@ -42,18 +42,18 @@ const createStaff = g.call('saveUser', {
   name: 'Readiness Staff',
   email: 'readiness-staff@test.com',
   role: 'staff',
-  pin: '628491',
+  password: '628491',
 });
 assert.equal(createStaff.ok, true);
 const staffLogin = g.call('login', {
   email: 'readiness-staff@test.com',
-  pin: '628491',
+  password: '628491',
 });
 assert.equal(staffLogin.ok, true);
-const staffPinChange = g.call('changePin', {
+const staffPinChange = g.call('changePassword', {
   token: staffLogin.data.token,
-  oldPin: '628491',
-  newPin: '739284',
+  oldPassword: '628491',
+  newPassword: '739284',
 });
 assert.equal(staffPinChange.ok, true);
 const denied = g.call('deploymentReadiness', { token: staffPinChange.data.token });
