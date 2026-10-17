@@ -38,8 +38,7 @@ assert.throws(
   'build must never remove the parent directory containing the repository',
 );
 assert.throws(
-  () =>
-    buildWebSite({ rootDir, outDir: path.join(rootDir, 'scripts'), apiUrl: customerApiUrl }),
+  () => buildWebSite({ rootDir, outDir: path.join(rootDir, 'scripts'), apiUrl: customerApiUrl }),
   /Output must be outside the repository or use the dedicated repository dist/,
   'build must never remove a tracked repository subdirectory',
 );
@@ -66,14 +65,7 @@ try {
     assert.ok(fs.existsSync(path.join(outDir, file)), 'customer build includes ' + file);
   }
 
-  for (const forbidden of [
-    'backend',
-    'docs',
-    'scripts',
-    'test',
-    'package.json',
-    'README.md',
-  ]) {
+  for (const forbidden of ['backend', 'docs', 'scripts', 'test', 'package.json', 'README.md']) {
     assert.equal(
       fs.existsSync(path.join(outDir, forbidden)),
       false,
