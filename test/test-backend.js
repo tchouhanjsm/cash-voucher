@@ -209,6 +209,15 @@ const shortPasswordLogin = g.call('login', { email: 'owner@test.com', password: 
 ok(!shortPasswordLogin.ok, 'server rejects passwords shorter than eight characters');
 let r = g.call('login', { email: 'OWNER@test.com', password: 'Owner#Start2026' });
 ok(r.ok && r.data.user.role === 'owner', 'owner login');
+const successfulOwnerLoginAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[1] === 'owner@test.com' && row[2] === 'LOGIN_SUCCESS');
+ok(
+  Boolean(successfulOwnerLoginAudit) &&
+    successfulOwnerLoginAudit[4].includes('role=owner') &&
+    Boolean(g.sheets.Users.rows[1][9]),
+  'successful login records role, audit outcome, and LastLogin timestamp',
+);
 const as = (t, a, p = {}) => {
   const payload = { ...p };
   if (a === 'createVouchers' && Array.isArray(payload.entries)) {
