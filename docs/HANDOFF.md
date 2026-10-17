@@ -5,6 +5,7 @@ Repository: tchouhanjsm/cash-voucher
 Last verified main SHA: `525f8d0a8af73194ca73c83d05b02d38c02d1b8c` (PR #161 merge commit)  
 Current engineering batch: Phases 28–30 — cross-workflow visual regression and accessibility states  
 Current working branch: `phase-28-30-frontui-regression-matrix-2026-10-17`  
+Current pull request: [#162](https://github.com/tchouhanjsm/cash-voucher/pull/162) — exact-head CI, Browser E2E and Full Flight Test must pass before merge  
 Current candidate: exercise all owner-authorized workflow screens across narrow, tablet and desktop widths in light/dark themes; publish screenshot artifacts; verify reduced-motion, high-contrast and forced-colors treatment; no business-rule or deployment changes
 
 ## Verified repository state
