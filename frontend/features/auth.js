@@ -51,7 +51,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     const password = passwordInput.value;
     let valid = true;
 
-    if (!/^\\S+@\\S+\\.\\S+$/.test(email)) {
+    if (!/^\S+@\S+\.\S+$/.test(email)) {
       emailError.textContent = 'Enter a valid work email address.';
       emailInput.setAttribute('aria-invalid', 'true');
       valid = false;
