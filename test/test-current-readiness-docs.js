@@ -23,7 +23,10 @@ assert.doesNotMatch(project, /Repository status:\*\* updated 9 October 2026/i);
 assert.doesNotMatch(project, /backend\/Code\.gs \(Apps Script JSON API\)/);
 assert.doesNotMatch(project, /after Phase 22 is reviewed and merged/i);
 assert.match(project, /not live-staging-verified/i);
-assert.doesNotMatch(project, /temporary PIN is removed|PIN\/session changes rotate|current-PIN attempts|Phase 22 regression batch/i);
+assert.doesNotMatch(
+  project,
+  /temporary PIN is removed|PIN\/session changes rotate|current-PIN attempts|Phase 22 regression batch/i,
+);
 assert.match(roadmap, /^Last verified main baseline: `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`/m);
 assert.match(roadmap, /PR #169/);
 assert.match(release, /Verified main baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/);
