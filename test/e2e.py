@@ -418,6 +418,9 @@ with sync_playwright() as p:
                         dashboardIconPosition: view.querySelector('.dashboard-view .stat .stat-ic')
                             ? getComputedStyle(view.querySelector('.dashboard-view .stat .stat-ic')).position
                             : '',
+                        dashboardIconAlignment: view.querySelector('.dashboard-view .stat .stat-ic')
+                            ? getComputedStyle(view.querySelector('.dashboard-view .stat .stat-ic')).alignSelf
+                            : '',
                         tooShortControls
                     };
                 }""")
@@ -433,8 +436,9 @@ with sync_playwright() as p:
                 )
                 if route_id == 'dash':
                     check(
-                        layout['dashboardIconPosition'] == 'static',
-                        f'dashboard: KPI icons stay in grid flow and cannot cover labels/values at {width}px in {theme_name} theme',
+                        layout['dashboardIconPosition'] == 'static'
+                        and layout['dashboardIconAlignment'] == 'start',
+                        f'dashboard: KPI icons stay in grid flow and align with labels on tall cards at {width}px in {theme_name} theme',
                     )
                 check(
                     not layout['tooShortControls'],
