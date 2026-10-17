@@ -29,16 +29,17 @@ for (const invalidUrl of [
 
 assert.throws(
   () => buildWebSite({ rootDir, outDir: rootDir, apiUrl: customerApiUrl }),
-  /Output directory must not be the repository root/,
+  /Output must be outside the repository/,
   'build must never remove the repository root',
 );
 assert.throws(
   () => buildWebSite({ rootDir, outDir: path.dirname(rootDir), apiUrl: customerApiUrl }),
-  /Output directory must not be the repository root/,
+  /Output must be outside the repository/,
   'build must never remove the parent directory containing the repository',
 );
 assert.throws(
-  () => buildWebSite({ rootDir, outDir: path.join(rootDir, 'scripts'), apiUrl: customerApiUrl }),
+  () =>
+    buildWebSite({ rootDir, outDir: path.join(rootDir, 'scripts'), apiUrl: customerApiUrl }),
   /Output must be outside the repository or use the dedicated repository dist/,
   'build must never remove a tracked repository subdirectory',
 );
@@ -65,7 +66,14 @@ try {
     assert.ok(fs.existsSync(path.join(outDir, file)), 'customer build includes ' + file);
   }
 
-  for (const forbidden of ['backend', 'docs', 'scripts', 'test', 'package.json', 'README.md']) {
+  for (const forbidden of [
+    'backend',
+    'docs',
+    'scripts',
+    'test',
+    'package.json',
+    'README.md',
+  ]) {
     assert.equal(
       fs.existsSync(path.join(outDir, forbidden)),
       false,
@@ -74,7 +82,10 @@ try {
   }
 
   const generatedConfig = fs.readFileSync(path.join(outDir, 'config.js'), 'utf8');
-  assert.ok(generatedConfig.includes(customerApiUrl), 'generated config uses this customer endpoint');
+  assert.ok(
+    generatedConfig.includes(customerApiUrl),
+    'generated config uses this customer endpoint',
+  );
   assert.ok(
     !generatedConfig.includes('https://script.google.com/macros/s/LEGACY_ENDPOINT/exec'),
     'generated config does not reuse an unrelated legacy endpoint',
