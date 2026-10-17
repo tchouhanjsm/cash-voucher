@@ -184,8 +184,8 @@ function migrateDailyCashCloseSchema() {
 /**
  * Explicitly opt-in migration for a populated legacy instance moving from PIN to passwords.
  * Complete and verify a backup before running. This preserves existing hash material and forces
- * users to change credentials; the compatibility login permits a short legacy credential only
- * when the migration marker is set and the authenticated user is restricted to changePassword.
+ * users to change credentials; the application login compatibility path is enabled only by the
+ * explicit migration marker and route guards restrict migrated accounts to changePassword/logout.
  * Never run this against production without a separately reviewed recovery plan.
  */
 function migratePinAuthToPasswordSchema() {
