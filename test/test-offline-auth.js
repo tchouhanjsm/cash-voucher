@@ -49,7 +49,13 @@ async function run() {
     'normalized account and endpoint verify the password',
   );
   assert.equal(
-    await verifyOfflineCredential({ email, endpoint, password: 'Wrong#Password2026', storage, now }),
+    await verifyOfflineCredential({
+      email,
+      endpoint,
+      password: 'Wrong#Password2026',
+      storage,
+      now,
+    }),
     false,
     'incorrect password fails',
   );

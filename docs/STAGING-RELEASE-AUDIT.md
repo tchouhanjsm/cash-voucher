@@ -76,7 +76,6 @@ Owner actions are documented in [the Apps Script Release Runbook](APPS-SCRIPT-RE
 
 The only supported next action is to provision the separate staging resources and protected GitHub Environment, run the owner-authorized manual staging workflow, and review the result. Do not replace that action with another code-only PR or a production deployment.
 
-
 ## Authentication update required before staging deployment
 
 The password-authentication release replaces the PIN sign-in UI with password entry (8–128 characters for new and changed passwords), updates temporary-password administration, and records failed login attempts for unknown emails and rate-limited lockouts in AuditLog. Update protected GitHub staging secrets to `CV_STAGING_UAT_OWNER_PASSWORD` and `CV_STAGING_UAT_MANAGER_PASSWORD` after each UAT account has completed its forced password change. Do not reuse the old PIN secret names. Production remains untouched; a populated legacy production Sheet requires the verified-backup procedure for `migratePinAuthToPasswordSchema()` before its Web App is updated.

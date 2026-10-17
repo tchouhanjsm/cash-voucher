@@ -41,4 +41,3 @@ const WRITES = {
   recordCashCloseCorrection: 1,
   saveSettings: 1,
 };
-

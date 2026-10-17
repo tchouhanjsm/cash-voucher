@@ -24,7 +24,9 @@ function saveUser_(user, req) {
     })[0];
   if (dup) throw err_('That email is already a user.');
   if (!req.id) {
-    if (!passwordOk_(String(req.password === undefined || req.password === null ? '' : req.password)))
+    if (
+      !passwordOk_(String(req.password === undefined || req.password === null ? '' : req.password))
+    )
       throw err_('Temporary password must be 8–128 characters.');
     const created = addUser_(name, email, role, String(req.password), true);
     auditEvent_(
@@ -86,7 +88,7 @@ function resetPassword_(user, req) {
   })[0];
   if (!t) throw err_('User not found.');
   if (!passwordOk_(String(req.password === undefined || req.password === null ? '' : req.password)))
-      throw err_('Temporary password must be 8–128 characters.');
+    throw err_('Temporary password must be 8–128 characters.');
   const salt = Utilities.getUuid();
   const previouslyRequiredChange = t.MustChangePassword === true || t.MustChangePassword === 'TRUE';
   updateRow_('Users', t._row, {
@@ -113,8 +115,12 @@ function resetPassword_(user, req) {
 function changePassword_(user, req) {
   // route_ authenticates this session after acquiring the shared ScriptLock.
   const u = user._u,
-    oldPassword = String(req.oldPassword === undefined || req.oldPassword === null ? '' : req.oldPassword),
-    newPassword = String(req.newPassword === undefined || req.newPassword === null ? '' : req.newPassword),
+    oldPassword = String(
+      req.oldPassword === undefined || req.oldPassword === null ? '' : req.oldPassword,
+    ),
+    newPassword = String(
+      req.newPassword === undefined || req.newPassword === null ? '' : req.newPassword,
+    ),
     cache = CacheService.getScriptCache(),
     fk = 'pf:' + u.UserID;
   const fails = Number(cache.get(fk) || 0);
@@ -122,12 +128,16 @@ function changePassword_(user, req) {
     throw err_('Too many password-change attempts. Try again in 15 minutes.', 'LOCKED');
   if (!same_(hashPassword_(u.Salt, oldPassword), u.PasswordHash)) {
     cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
-    audit_(user, 'PASSWORD_CHANGE_FAILED', '', 'Invalid current credential; value intentionally excluded.');
+    audit_(
+      user,
+      'PASSWORD_CHANGE_FAILED',
+      '',
+      'Invalid current credential; value intentionally excluded.',
+    );
     throw err_('Current password is wrong.');
   }
   cache.remove(fk);
-  if (!passwordOk_(newPassword))
-    throw err_('New password must be between 8 and 128 characters.');
+  if (!passwordOk_(newPassword)) throw err_('New password must be between 8 and 128 characters.');
   if (newPassword === oldPassword) throw err_('New password must be different.');
   const salt = Utilities.getUuid();
   updateRow_('Users', u._row, {

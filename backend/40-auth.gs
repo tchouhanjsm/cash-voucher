@@ -23,13 +23,23 @@ function withScriptLock_(work, busyMessage) {
 }
 function login_(req) {
   return withScriptLock_(function () {
-    const email = String(req.email || '').trim().toLowerCase().slice(0, 254);
-    const password = String(req.password === undefined || req.password === null ? '' : req.password);
+    const email = String(req.email || '')
+      .trim()
+      .toLowerCase()
+      .slice(0, 254);
+    const password = String(
+      req.password === undefined || req.password === null ? '' : req.password,
+    );
     const cache = CacheService.getScriptCache();
     const fk = 'f:' + email;
     const fails = Number(cache.get(fk) || 0);
     if (fails >= CFG.MAX_FAILS) {
-      audit_({ email: clean_(email || '(empty)', 254) }, 'LOGIN_LOCKED', '', 'Attempt refused by temporary lockout');
+      audit_(
+        { email: clean_(email || '(empty)', 254) },
+        'LOGIN_LOCKED',
+        '',
+        'Attempt refused by temporary lockout',
+      );
       throw err_('Too many attempts. Try again in 15 minutes.', 'LOCKED');
     }
 

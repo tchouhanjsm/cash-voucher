@@ -190,10 +190,21 @@ ok(
   'failed login is rejected while holding and releasing the script lock',
 );
 const unknownAccountPassword = 'Unknown#Attempt2026';
-const unknownAccountLogin = g.call('login', { email: 'unknown@test.com', password: unknownAccountPassword });
-ok(!unknownAccountLogin.ok && g.sheets.AuditLog.rows.some((row) => row[1] === 'unknown@test.com' && row[2] === 'LOGIN_FAILED'),
-  'failed login attempts for unknown email addresses are recorded in the audit log');
-ok(!JSON.stringify(g.sheets.AuditLog.rows).includes(unknownAccountPassword), 'audit log never stores an attempted password');
+const unknownAccountLogin = g.call('login', {
+  email: 'unknown@test.com',
+  password: unknownAccountPassword,
+});
+ok(
+  !unknownAccountLogin.ok &&
+    g.sheets.AuditLog.rows.some(
+      (row) => row[1] === 'unknown@test.com' && row[2] === 'LOGIN_FAILED',
+    ),
+  'failed login attempts for unknown email addresses are recorded in the audit log',
+);
+ok(
+  !JSON.stringify(g.sheets.AuditLog.rows).includes(unknownAccountPassword),
+  'audit log never stores an attempted password',
+);
 let r = g.call('login', { email: 'OWNER@test.com', password: 'Owner#Start2026' });
 ok(r.ok && r.data.user.role === 'owner', 'owner login');
 const as = (t, a, p = {}) => {
@@ -207,7 +218,10 @@ const as = (t, a, p = {}) => {
   return g.call(a, { token: t, ...payload });
 };
 ok(as(r.data.token, 'bootstrap').code === 'PASSWORD_CHANGE', 'owner must change setup password');
-let T = as(r.data.token, 'changePassword', { oldPassword: 'Owner#Start2026', newPassword: 'Owner#Final2026' }).data.token;
+let T = as(r.data.token, 'changePassword', {
+  oldPassword: 'Owner#Start2026',
+  newPassword: 'Owner#Final2026',
+}).data.token;
 
 // Revalidate write sessions after acquiring the ScriptLock. Simulate a session being
 // invalidated while a write request waits for the lock; no voucher may be written.
@@ -264,7 +278,8 @@ ok(
 );
 // create users
 ok(
-  !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', password: 'Test#111111Pass' }).ok,
+  !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', password: 'Test#111111Pass' })
+    .ok,
   'weak password rejected',
 );
 const inheritedRoleResults = ['constructor', 'toString', '__proto__', 'hasOwnProperty'].map(
@@ -282,26 +297,44 @@ ok(
 );
 
 ok(
-  as(T, 'saveUser', { name: 'Mona Manager', email: 'm@test.com', role: 'manager', password: 'Manager#Start2026' })
-    .ok,
+  as(T, 'saveUser', {
+    name: 'Mona Manager',
+    email: 'm@test.com',
+    role: 'manager',
+    password: 'Manager#Start2026',
+  }).ok,
   'manager created',
 );
 ok(
-  as(T, 'saveUser', { name: 'Sam Staff', email: 's@test.com', role: 'staff', password: 'Staff#Start2026' }).ok,
+  as(T, 'saveUser', {
+    name: 'Sam Staff',
+    email: 's@test.com',
+    role: 'staff',
+    password: 'Staff#Start2026',
+  }).ok,
   'staff created',
 );
 ok(
-  as(T, 'saveUser', { name: 'Alex Staff', email: 'a@test.com', role: 'staff', password: 'Staff#Other2026' }).ok,
+  as(T, 'saveUser', {
+    name: 'Alex Staff',
+    email: 'a@test.com',
+    role: 'staff',
+    password: 'Staff#Other2026',
+  }).ok,
   'second staff created',
 );
 ok(
-  !as(T, 'saveUser', { name: 'X', email: 'M@test.com', role: 'staff', password: 'Test#135791Pass' }).ok,
+  !as(T, 'saveUser', { name: 'X', email: 'M@test.com', role: 'staff', password: 'Test#135791Pass' })
+    .ok,
   'dup email rejected',
 );
 // forced password change
 const M0 = g.call('login', { email: 'm@test.com', password: 'Manager#Start2026' }).data.token;
 ok(as(M0, 'bootstrap').code === 'PASSWORD_CHANGE', 'must change password first');
-const cp = as(M0, 'changePassword', { oldPassword: 'Manager#Start2026', newPassword: 'Manager#Final2026' });
+const cp = as(M0, 'changePassword', {
+  oldPassword: 'Manager#Start2026',
+  newPassword: 'Manager#Final2026',
+});
 ok(cp.ok, 'password changed');
 ok(as(M0, 'bootstrap').code === 'SESSION', 'old token invalid after password change');
 const M = cp.data.token;
@@ -330,7 +363,10 @@ const busyPinAttempts = g.lockStats.attempts;
 const busyPinWaits = g.lockStats.waits;
 const busyPinReleases = g.lockStats.releases;
 g.lockStats.failNextWait = true;
-const busyPinChange = as(L, 'changePassword', { oldPassword: 'Wrong#Password2026', newPassword: 'Lock#Final2026' });
+const busyPinChange = as(L, 'changePassword', {
+  oldPassword: 'Wrong#Password2026',
+  newPassword: 'Lock#Final2026',
+});
 ok(
   !busyPinChange.ok &&
     busyPinChange.code === 'BUSY' &&
@@ -347,20 +383,24 @@ const changePasswordWaits = g.lockStats.waits;
 const changePasswordReleases = g.lockStats.releases;
 const failedPinChanges = [];
 for (let i = 0; i < 5; i++) {
-  failedPinChanges.push(as(L, 'changePassword', { oldPassword: 'Wrong#Password2026', newPassword: 'Lock#Final2026' }));
+  failedPinChanges.push(
+    as(L, 'changePassword', { oldPassword: 'Wrong#Password2026', newPassword: 'Lock#Final2026' }),
+  );
 }
 ok(
   failedPinChanges.every((result) => !result.ok && result.code !== 'LOCKED'),
   'wrong current password attempts are counted before lockout',
 );
 ok(
-  g.lockStats.waits === changePasswordWaits + 5 && g.lockStats.releases === changePasswordReleases + 5,
+  g.lockStats.waits === changePasswordWaits + 5 &&
+    g.lockStats.releases === changePasswordReleases + 5,
   'each password-change counter update runs under the shared script lock',
 );
 const changePasswordLockoutWaits = g.lockStats.waits;
 const changePasswordLockoutReleases = g.lockStats.releases;
 ok(
-  as(L, 'changePassword', { oldPassword: 'Lock#Final2026', newPassword: 'New#Password2026' }).code === 'LOCKED',
+  as(L, 'changePassword', { oldPassword: 'Lock#Final2026', newPassword: 'New#Password2026' })
+    .code === 'LOCKED',
   'password change is locked after five incorrect current password attempts',
 );
 ok(
@@ -369,9 +409,15 @@ ok(
   'locked password-change attempts release the acquired script lock',
 );
 const S0 = g.call('login', { email: 's@test.com', password: 'Staff#Start2026' }).data.token;
-const S = as(S0, 'changePassword', { oldPassword: 'Staff#Start2026', newPassword: 'Staff#Final2026' }).data.token;
+const S = as(S0, 'changePassword', {
+  oldPassword: 'Staff#Start2026',
+  newPassword: 'Staff#Final2026',
+}).data.token;
 const A0 = g.call('login', { email: 'a@test.com', password: 'Staff#Other2026' }).data.token;
-const A = as(A0, 'changePassword', { oldPassword: 'Staff#Other2026', newPassword: 'Account#Pass2026' }).data.token;
+const A = as(A0, 'changePassword', {
+  oldPassword: 'Staff#Other2026',
+  newPassword: 'Account#Pass2026',
+}).data.token;
 ok(as(S, 'backupStatus').code === 'FORBIDDEN', 'staff cannot read owner backup status');
 ok(as(M, 'backupStatus').code === 'FORBIDDEN', 'manager cannot read owner backup status');
 let backupStatus = as(T, 'backupStatus').data;
@@ -1689,7 +1735,8 @@ ok(
   'Date object in CreatedAt is normalised to a string',
 );
 // lockout
-for (let i = 0; i < 5; i++) g.call('login', { email: 'm@test.com', password: 'Wrong#Password2026' });
+for (let i = 0; i < 5; i++)
+  g.call('login', { email: 'm@test.com', password: 'Wrong#Password2026' });
 ok(
   g.call('login', { email: 'm@test.com', password: 'Manager#Final2026' }).code === 'LOCKED',
   'lockout after 5 fails',
@@ -1717,7 +1764,8 @@ ok(
   'password reset audit records account state without logging credential material',
 );
 ok(
-  g.lockStats.waits === resetPasswordWaits + 1 && g.lockStats.releases === resetPasswordReleases + 1,
+  g.lockStats.waits === resetPasswordWaits + 1 &&
+    g.lockStats.releases === resetPasswordReleases + 1,
   'password reset and throttle clearing run under the shared script lock',
 );
 const resetLogin = g.call('login', { email: 'm@test.com', password: 'Lock#Start2026' });

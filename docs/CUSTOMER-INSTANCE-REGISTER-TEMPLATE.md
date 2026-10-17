@@ -23,7 +23,7 @@ Use this as a field checklist only. Keep the completed register in a private ope
 | Source commit SHA used                                    | [FILL PRIVATELY]                               |
 | Frontend build/deploy timestamp                           | [FILL PRIVATELY]                               |
 | Apps Script version/deployed timestamp                    | [FILL PRIVATELY]                               |
-| Initial owner login/password changed                           | [YES/NO + date; never record password]              |
+| Initial owner login/password changed                      | [YES/NO + date; never record password]         |
 | Owner/Manager/Staff authorization smoke tests             | [PASS/FAIL + evidence link]                    |
 | First real backup snapshot verified                       | [PASS/FAIL + date/evidence]                    |
 | Restore drill to separate recovery resources              | [PASS/FAIL + date/evidence]                    |

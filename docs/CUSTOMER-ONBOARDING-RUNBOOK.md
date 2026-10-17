@@ -118,7 +118,6 @@ The private instance register must include the customer code, customer/admin ema
 
 **Never store** PINs, OAuth credential JSON, access/refresh tokens, `.clasprc.json` content or any reusable credential in the register or this repository. Store the register in a private operator-controlled location outside the public repository.
 
-
 ### Password authentication and audit logging
 
 Use a temporary password of 8–128 characters for first setup and temporary user credentials. Each user must choose their own password before normal app access. Never share a permanent password between users and never put a password in the instance register. The owner-only Audit Log records successful sign-ins, failed attempts (including unknown email addresses), temporary lockout events, password changes/resets and sign-outs when recorded; it never intentionally stores password values. Treat audit-write health warnings as an unresolved release issue, not as a guarantee that every event was persisted.

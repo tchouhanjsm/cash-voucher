@@ -91,14 +91,21 @@ function equalBytes(left, right) {
   return difference === 0;
 }
 
-export async function saveOfflineCredential({ email, endpoint, password, storage, now = Date.now() }) {
+export async function saveOfflineCredential({
+  email,
+  endpoint,
+  password,
+  storage,
+  now = Date.now(),
+}) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedEndpoint = normalizeEndpoint(endpoint);
   if (
     !normalizedEmail ||
     !normalizedEndpoint ||
     typeof password !== 'string' ||
-    (password.length < 8 || password.length > 128) ||
+    password.length < 8 ||
+    password.length > 128 ||
     !storage ||
     typeof storage.set !== 'function' ||
     !Number.isFinite(now)
@@ -137,14 +144,21 @@ export async function saveOfflineCredential({ email, endpoint, password, storage
   }
 }
 
-export async function verifyOfflineCredential({ email, endpoint, password, storage, now = Date.now() }) {
+export async function verifyOfflineCredential({
+  email,
+  endpoint,
+  password,
+  storage,
+  now = Date.now(),
+}) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedEndpoint = normalizeEndpoint(endpoint);
   if (
     !normalizedEmail ||
     !normalizedEndpoint ||
     typeof password !== 'string' ||
-    (password.length < 8 || password.length > 128) ||
+    password.length < 8 ||
+    password.length > 128 ||
     !storage ||
     typeof storage.get !== 'function' ||
     !Number.isFinite(now)
