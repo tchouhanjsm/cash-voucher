@@ -179,16 +179,6 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       'Change password',
     );
 
-    $('[data-x]').onclick = () => signOut();
-    const dialogNode = document.querySelector('#modal .mcard');
-    if (dialogNode) {
-      dialogNode.setAttribute('aria-labelledby', 'passwordChangeTitle');
-      const title = dialogNode.querySelector('h2, h3, .mtitle, .modal-title');
-      if (title) {
-        title.id = 'passwordChangeTitle';
-        title.tabIndex = -1;
-      }
-    }
     currentPassword.focus();
   }
 
