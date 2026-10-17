@@ -61,7 +61,7 @@ export CV_API_URL='https://script.google.com/macros/s/<deployment-id>/exec'
 npm run build:web
 ```
 
-The command validates the URL and creates `dist/` containing only the static app shell, styles, frontend modules, icons, manifest, service worker and generated per-customer `config.js`. It excludes the Apps Script backend, source docs, scripts and tests. The build fails if `CV_API_URL` is missing or does not match the expected HTTPS Apps Script Web App URL shape. The endpoint is not a password; the backend must authenticate every action.
+The command validates the URL and creates `dist/` containing only the static app shell, styles, frontend modules, icons, manifest, service worker, generated per-customer `config.js` and Cloudflare Pages `_headers` security-header file. It excludes the Apps Script backend, source docs, scripts and tests. The build fails if `CV_API_URL` is missing or does not match the expected HTTPS Apps Script Web App URL shape. The endpoint is not a password; the backend must authenticate every action.
 
 Publish **only `dist/`** from the static host. Configure the build command as `npm ci && npm run build:web`, output directory as `dist`, and set `CV_API_URL` separately for each customer hosting project. Use one distinct host origin/hostname per customer so browser offline queues and local login state are not shared. Do not publish the repository root or reuse the existing root GitHub Pages origin as an isolation boundary.
 
@@ -99,7 +99,7 @@ See `docs/DATA-DURABILITY.md`.
 
 ## Product direction
 
-The app is currently a single-property cash-voucher tool, not a hosted multi-tenant fintech platform. The Daily Cash Close MVP, approval controls and generic reporting capabilities are represented in source; the exact current feature/PR status must be verified against GitHub rather than inferred from historical notes. Live deployment, authorization and restore readiness remain operational gates. Pending/rejected or malformed approval-state payments must stay out of approved totals and block final cash close until resolved under the approved policy. The export is not destination-certified or tax-ready; target-specific mappings remain open. Do not start multi-property, digital-payout, or AI/network work before users, controls, regulatory requirements, and economics are validated.
+The app is a single-property cash-voucher tool, not a shared multi-tenant platform. PR #165 (route-safe workflows) and PR #166 (customer-specific static packaging and handover foundation) are merged. The source is prepared for an owner-provisioned staging release, but the live staging resources, protected GitHub Environment, customer host, deployment target, backup/restore, real-device acceptance and first customer URL remain unverified. See `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`. Pending/rejected or malformed approval-state payments stay out of approved totals and block final cash close until resolved under the approved policy. The accountant export is generic and destination-neutral, not tax-ready. Do not start multi-property, digital-payout or AI/network work before first-customer controls, recovery and economics are validated.
 
 - Product gap register: `docs/PRODUCT-ROADMAP.md`
 - UI/UX source review and next design criteria: `docs/UI-UX-REVIEW.md`

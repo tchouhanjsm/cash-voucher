@@ -1,8 +1,8 @@
 # Product Requirements Baseline
 
-**Status:** Proposed baseline for owner review  
-**Updated:** 15 October 2026  
-**Product today:** Single-property cash-voucher PWA using a static frontend, Google Apps Script API, Google Sheets, and Google Drive.
+**Status:** Current product/requirements baseline; source capability and live operational guarantees are tracked separately.  
+**Updated:** 17 October 2026  
+**Product today:** Single-property cash-voucher PWA using a static frontend, Google Apps Script API, Google Sheets, and Google Drive. Phases 37–39 and customer delivery packaging are merged; the active queue is owner-provisioned staging, live backup/restore and first-customer acceptance.
 
 ## 1. Purpose and decision boundary
 
@@ -169,19 +169,20 @@ Treat these as measurement candidates, not approved service-level objectives or 
 
 Do not adopt numeric targets such as sub-300 ms latency, under-one-second usability, or a specific fraud false-positive rate until the measurement environment, sample, and business acceptance criteria are defined.
 
-## 9. Owner decisions required
+## 9. Remaining owner/accountant decisions
 
-Before turning this proposal into a committed product backlog, decide:
+The current release target is one property per isolated instance. Do not imply that the existing product provides multi-property tenancy or chain-wide data isolation. For this first project, the immediate gate is deployment, role/receipt proof, backup/restore and device recovery—not adding new financial or tax semantics.
 
-- Is the primary buyer the owner of one property, a small chain, or both?
-- Which operational pain should be addressed immediately: cash reconciliation, backup confidence, evidence, approvals, or accountant export?
-- Which role is accountable for each exception and correction?
-- What is the first accounting export destination, if any?
-- What does the owner consider acceptable evidence of a successful backup and restore?
-- Which metrics are meaningful enough to review monthly?
-- Which strategic options are explicitly out of scope for the next release?
+The following choices remain unresolved for future scope:
 
-For daily cash close, the detailed decisions remain in `docs/DAILY-CASH-CLOSE-DESIGN.md`. This requirements document does not override that owner gate.
+- Which accounting package/version and import route does the receiving accountant use, and what anonymized fixture/mapping will they approve?
+- Which entity/tax facts, mandatory source documents and tax treatments should be encoded, if any? A qualified Indian CA must validate tax requirements before implementation.
+- Which business exceptions beyond the already owner-approved payment-approval and cash-close policies require explicit responsibility/retention/escalation rules?
+- Which metrics should be reviewed monthly, and what representative samples/measurement method will make targets meaningful?
+- Should optional denomination rows be added to Daily Cash Close? Do not change the current schema or make the breakdown mandatory without an explicit owner decision.
+- Which multi-property, chain, digital-payout or AI/network options should remain out of scope until first-customer and support economics are measured?
+
+For the approved cash-close and payment-approval policies, the detailed current decisions remain in `docs/DAILY-CASH-CLOSE-DESIGN.md`. Current staging and operational blockers are tracked in `docs/STAGING-RELEASE-AUDIT.md`; this document does not authorize migrations or deployment.
 
 ## 10. Acceptance criteria for this requirements baseline
 

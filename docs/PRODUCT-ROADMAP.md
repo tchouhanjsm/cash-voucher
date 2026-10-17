@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `dd901910531da2c060539baad44949fe2cb54b30` (PR #164 merge; post-merge main CI passed)  
-Current engineering batch: Phases 37–39 — route-safe asynchronous workflow updates  
-Current candidate branch: `phase-37-39-route-safe-async-views-2026-10-17`
+Last verified main baseline: `4a759b7513a925aee796949d8f6e79085f096314` (PR #166 merge; post-merge main CI passed)  
+Current source phases: Phases 37–39 merged in PR #165; customer delivery packaging/handover foundation merged in PR #166.  
+Current release state: source is prepared for owner-provisioned staging; live staging, customer resources, backup/restore and first-customer acceptance are not verified. See `docs/STAGING-RELEASE-AUDIT.md`.
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -51,17 +51,18 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Active priorities after Phase 21 (updated 16 October 2026)
+## Active priorities after Phase 39 and PR #166 (updated 17 October 2026)
 
-1. **P0 — staging operational readiness (owner-controlled):** provision a dedicated staging Apps Script project, Spreadsheet and receipt/backup Drive folders; create its first versioned deployment; configure the protected GitHub `staging` Environment and its variables/secrets; then run the manual workflow from `main` with explicit staging/write consent. No credentials or target IDs may be guessed, and no production resource may be mutated.
-2. **P0 — operational release proof remains separate:** witness a real scheduled backup and restore into an isolated recovery Sheet/folder, reconcile row counts and voucher numbering, and verify deployment identity, role/receipt permissions and production settings only with owner authorization.
-3. **P1 — physical-device and accessibility validation:** test PWA install/update/offline recovery, zoom/reflow, keyboard, focus and assistive technology on representative devices.
-4. **P1 — real-service capacity:** measure live Google Sheets latency, quotas and voucher-numbering contention in an explicitly authorized staging/recovery environment before setting production SLOs.
-5. **P2 — audit durability and dependency exception:** the simultaneous AuditLog append/marker-store failure remains unresolved and needs an owner-approved durable fallback; reassess the documented `braces` dependency exception by 9 November 2026.
+1. **P0 — staging/UAT provisioning:** create separate staging Apps Script/Sheet/receipt/backup resources; verify the first versioned Web App deployment; configure a protected GitHub `staging` Environment, its variables and secrets; then run the guarded workflow from `main` with exact `STAGING-ONLY` confirmation and explicit staging-write consent. No IDs or credentials may be guessed.
+2. **P0 — first-customer instance and source privacy:** the repository is still public. Protect source access only after verifying the static host can use the private repository without interrupting service. Create a separate customer Script/Sheet/Drive set and distinct static-site origin; never reuse the staging or unverified root `config.js` endpoint.
+3. **P0 — live recovery and access proof:** verify actual owner/manager/staff/receipt authorization, inspect a real backup and manifest, restore to a separate recovery destination, reconcile row counts/voucher numbers, and record a working customer URL and acceptance. Source CI is not this evidence.
+4. **P1 — device/accessibility and controlled pilot:** test install/update, cross-device offline queue recovery, keyboard/focus, zoom/reflow, screen reader, printing/export and then complete the 14-day controlled pilot with daily reconciliation and fallback evidence.
+5. **P1 — real-service capacity and remaining rendering review:** measure Apps Script/Sheets latency, quotas and voucher-numbering contention in authorized staging; review the 17 active `innerHTML` assignment sites contextually. Inventory/fingerprint checks are drift guards, not full XSS certification.
+6. **P2 — audit durability:** decide and test a durable fallback for simultaneous AuditLog append and marker-store failure; do not fabricate missing historical events.
+7. **P2 — dependency exception:** reassess the `braces@3.0.3` Clasp/micromatch chain by 9 November 2026; CI is expected to reject the exception from 10 November unless an explicit reviewed renewal is made.
+8. **P2 — product decisions after pilot:** obtain accountant-approved destination/mapping before claiming target-specific export compatibility; decide whether optional denomination rows have operational value; set performance/usability targets only from measured pilot evidence.
 
-The Phase 22 race regression and Phase 21 frontend redesign are source/test-only. Neither passing automation nor visual polish can provision protected environments, prove live Google identities, witness recovery, or substitute for the owner's explicit release decision.
-
-6. **Next product decision — physical denomination rows for Daily Cash Close:** the existing one-drawer/day close workflow is implemented, but denomination-level counts are not. The design record makes denomination rows optional only if the owner confirms they help operations. Do not add denominations, alter the cash-close schema, or change close policy until this decision is explicit.
+Phases 37–39 and PR #166 are source-complete and have passed their exact-head automation. The remaining P0 items are owner/account operations and witnessed evidence, not unmerged feature phases. Use `docs/STAGING-RELEASE-AUDIT.md` as the detailed queue and `docs/RELEASE-READINESS.md` for acceptance gates.
 
 ## Financial integrity invariants
 
@@ -93,7 +94,7 @@ The detailed historical review register follows. Its PR-by-PR notes are retained
 | No real tests / empty README                                                               | Current repository has backend service mocks, Playwright E2E, CI, README and project/docs guides.                                                                                                                                                  | Resolved; documentation drift is addressed in Phase 22.                                                                                                                                                                                                                                                            |
 | No cash-received entries, receipt evidence, dashboard/export, offline support or audit log | All exist in current source: payment/receipt type, Drive receipt images, dashboard/register CSV, IndexedDB outbox/recovery, owner audit API/table.                                                                                                 | Already implemented. Gaps remain in richer reconciliation, reporting/export formats and discoverability.                                                                                                                                                                                                           |
 | Audit traceability and discoverability                                                     | Owner-only Audit log view has filters and CSV export; transaction updates already carry field deltas. This slice adds structured creation/cancellation/receipt/cash-close events and cursor-based older-page loading.                              | **Improved in Slice 3 audit PR.** Structured event IDs, actor/time/action/target, old/new values where meaningful, and reason are available; CSV exports loaded pages. Audit writes remain best-effort; retention and tamper-evidence are not guaranteed.                                                          |
-| No approvals, day close, physical cash count, budget controls or accountant role           | These are not present in the current module/API/role set reviewed.                                                                                                                                                                                 | **Open product gaps**, prioritized below.                                                                                                                                                                                                                                                                          |
+| No approvals, day close, physical cash count, budget controls or accountant role           | Payment approval, CashImpact classification, Daily Cash Close and a report-only accountant role with generic CSV/VendorID export are implemented in source through merged PRs #110, #111 and #114.                                                 | **Implemented in source; live migrations/deployment/reconciliation remain unverified.** Denomination rows are optional and require an owner decision; budget controls and additional scoring/automation remain future product decisions.                                                                           |
 | Multi-property, vendor price network, digital payouts, OCR/AI                              | Not present; would require material tenancy, finance, compliance and operations decisions.                                                                                                                                                         | Strategic options only. Do not build before buyer/problem validation.                                                                                                                                                                                                                                              |
 
 ### Security follow-up note
@@ -126,9 +127,11 @@ The repository is public. This review did not perform a general Git object/secre
 - No real latency/load benchmark, formal contrast audit, assisted-technology test, external pen test or full dynamic-HTML sink audit.
 - No multi-property tenant separation, digital movement of funds, GST/TDS compliance rules or accountant-specific exports.
 
-## 3. Prioritized owner-value roadmap
+## 3. Historical prioritized owner-value roadmap — superseded for current execution
 
-### P0 — Phase 22: authentication race evidence and trustworthy project records
+This older risk-priority plan is retained for traceability. Phase 22 and the feature increments described below have progressed through later merged PRs; do not use their historical “current PR” or “next batch” wording as the current queue. The current execution order is the active-priorities section at the top of this file and `docs/STAGING-RELEASE-AUDIT.md`.
+
+### Historical P0 — Phase 22: authentication race evidence and trustworthy project records
 
 **Verified in current source:** login failure counter updates run under ScriptLock; incorrect current-PIN attempts are throttled for 15 minutes; owner PIN reset clears login and PIN-change counters; write routes acquire the lock and authenticate the session inside the lock before invoking a write handler. These controls are already implemented; do not duplicate them.
 
@@ -136,7 +139,7 @@ The repository is public. This review did not perform a general Git object/secre
 
 **Exit gate:** CI/quality, Browser E2E and Full Flight Test pass on the exact same final PR head; no production deploy. Owner review and merge remain required before the next implementation phase.
 
-### P1 — Daily cash close and physical reconciliation
+### Historical P1 — Daily cash close and physical reconciliation
 
 **Status:** implementation merged in PRs #110 and #111; operational release gates remain open. PR #110 added the explicit voucher-level `CashImpact` field and preserved historical blanks as `UNCLASSIFIED`. PR #111 added the one-property / MAIN drawer / Asia-Kolkata calendar-day close, carry-forward/manual opening rules, immutable close snapshots, correction notes, chronological finalization, and closed-period mutation guards.
 
@@ -144,23 +147,23 @@ Expected physical cash uses explicit `CASH_IN` and `CASH_OUT` values only; `NO_C
 
 **Operational exit gates remain:** verify the intended Apps Script project and permissions, take a verified backup, run the reviewed additive migrations in order only when explicitly authorized, inspect real Sheet/Drive state, witness restore to a separate destination, verify local queues on every operating device, and complete the controlled hotel pilot. Do not run `setup()` as a migration shortcut.
 
-### P2 — Approval and exception controls
+### Historical P2 — Approval and exception controls
 
 **Owner-approved policy (13 October 2026):** new `PAYMENT` vouchers at or above **₹10,000** require approval. Receipts are outside this rule. Only existing owner/manager roles may approve, and the creator cannot approve their own voucher. Rejection requires a reason and is audited. No configurable threshold or new role is introduced.
 
 Pending, rejected, or malformed approval-state payments stay visible but are excluded from approved payment totals. They block a final cash close until they are approved or cancelled/resolved; they must not be silently omitted from a purported reconciliation. Editing a voucher already governed by approval sends it back for independent review. Blank approval fields on historical records mean `NOT_REQUIRED`; the migration adds fields without backfilling old vouchers.
 
-The current feature batch implements backend authorization, approval/rejection audit events, Register actions and filters, Dashboard/Reports disclosures and total treatment, cash-close blockers, additive schema migration guidance, and end-to-end regression coverage in one PR. It remains unmerged until owner review.
+PR #114 merged the payment-approval/reporting increment into source, including backend authorization, approval/rejection audit events, Register actions/filters, Dashboard/Reports disclosures and totals, cash-close blockers, additive schema guidance and end-to-end regression coverage. This merged source state is not evidence that migrations or the live Apps Script deployment were performed; those remain owner-controlled release gates.
 
 Other rule-based exception flags—duplicates, unusual first payments, off-hours entries and possible split payments—remain candidates for separate validation. Each must explain why it fired, link to source records, and have a review/override owner before implementation. Do not add speculative fraud scores.
 
-### P3 — Finance and accountant workflow
+### Historical P3 — Finance and accountant workflow
 
 **Status corrected against live PR history:** PR #114 is merged at `95cd5e0e733d07354e1a2e0b9291a65dee19d126`. It adds a least-privilege `accountant` role with server-authorized read-only access to the generic Recorded Movement Report and CSV, and VendorID storage/export with exact, unambiguous name fallback for legacy blank IDs. Historical rows are not backfilled; unresolved rows remain disclosed. This is an operational source-voucher export, not a destination-certified Tally/Zoho import or tax report; do not add fuzzy matching, backfill, tax rules, or destination-specific accounting semantics without approval.
 
 This is an operational source-voucher export, **not** a destination-certified Tally/Zoho import, general ledger, tax report, or reconciliation certificate. The actual accounting product/version, import mapping, required tax fields, and accountant-approved sample remain unresolved. Do not add GSTIN/GST, HSN/SAC or TDS behavior until the owner and qualified accountant define those requirements.
 
-### P4 — Product UI/UX quality pass
+### Historical P4 — Product UI/UX quality pass
 
 **PR #49 implementation:** broaden responsive overflow coverage across Dashboard and Register at 320–1280px, assert mobile navigation touch-target height, and verify visible keyboard focus. This improves regression detection but does not complete the formal accessibility or usability review.
 
@@ -178,18 +181,18 @@ This is an operational source-voucher export, **not** a destination-certified Ta
 
 The static review is recorded in `docs/UI-UX-REVIEW.md`. This PR does not redesign the screens, so the security and documentation changes can be reviewed independently.
 
-### P5 — Operational automation
+### Historical P5 — Operational automation
 
 - Complete a live backup/restore drill and verify Drive permissions and snapshot integrity. The owner-only recorded-status panel is implemented; it is not a substitute for a restore drill.
 - Owner daily close summary after close workflow semantics are agreed.
 - Recurring vouchers, petty-cash floats and vendor ledger only after observing actual repetitive tasks.
 - User-facing version/help/report-problem affordance, support/runbook and volume thresholds.
 
-### P6 — Scale/business bets (validate before building)
+### Historical P6 — Scale/business bets (validate before building)
 
 Multi-property tenancy, relational database migration, shared vendor/price benchmarks, OCR, language/voice entry, UPI/digital payouts and hosted SaaS operations are not current requirements. First validate buyer segment, willingness to pay, data separation, legal/compliance responsibility, payment-rail partner and support economics. Keep current Google Sheet self-hosting path viable until there is evidence to change it.
 
-## 4. Phase governance
+## 4. Phase governance and historical implementation log
 
 Each phase has one focused PR, actual test evidence, a two-pass review (product/workflow then security/failure/recovery), and explicit residual risks. The owner reviews and merges the PR. Do not merge or proceed to the next phase on behalf of the owner. No branch deletion, forced update, history rewrite or live deployment without explicit permission.
 
@@ -207,7 +210,7 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **Historical batch (completed by PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
 
-## Current phase status — PR #62 merged, PR #63 Apps Script release readiness
+## Historical phase status — PR #62 and PR #63
 
 **PR #62 merged:** offline sync/idempotency assurance is integrated at merge commit `49f2a3db297f84093d46b247a54c93c9372f3684`. Its reviewed PR head passed CI and Browser E2E (126 checks, 0 failures), but mock tests do not establish live Google behavior.
 
@@ -219,7 +222,7 @@ Do not rerun `setup()` during a normal release. Do not push a new backend versio
 
 **Next product phase after deployment/recovery evidence:** source-traceable data-quality exception reports and daily/monthly recorded-voucher movement reports. Keep GST/TDS, general-ledger claims, daily cash close and destination-specific accountant export behind existing owner/accountant/CA decision gates.
 
-## Current implementation status — PR #65 merged
+## Historical implementation status — PR #65
 
 PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. Its exact PR head `09eaac429307e4243d7a7d2fce1f16ef3402b029` passed CI and Browser E2E. The feature adds manager/owner-only recorded voucher movement reporting with source rows, validated filters, active/cancelled totals and CSV safety. It does not classify physical cash, calculate tax, or establish profit/bank balance.
 
@@ -243,17 +246,17 @@ PR #66 is merged at `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`. This is structur
 - Live authorization, scheduled backup execution, Drive permissions, restoreability, real-device PWA update/install, accessibility and hotel pilot remain unverified.
 - Node v24 is outside the declared Node 20–22 range; npm previously reported three high-severity dependency findings that still need triage.
 
-## Current engineering phase — PR #67: inspection UI regression coverage
+## Historical engineering phase — PR #67
 
 Before adding another product feature, extend browser regression coverage around the existing owner-only data-quality and backup-integrity inspection surfaces. Verify the data-quality results and its explicit accounting/tax limitation; verify backup-integrity failure messaging and retry restoration in the browser mock. This is UI failure-path coverage only, not live Drive or recovery evidence.
 
 **Operational P0 remains independent of this PR:** verify the intended Apps Script deployment and live role boundaries, observe a real scheduled backup, and complete a witnessed restore into a separate recovery Sheet/folder. Do not declare production readiness or claim restoreability from mock tests.
 
-## Current phase — P0 Apps Script release and recovery verification (after PR #67)
+## Persistent operational blocker — live Apps Script deployment and recovery
 
-PR #67 is merged at `628f691fe9e4353cc6b701bd57c95c3e169aa495`. The owner-provided local quality gate passes on Node `v20.20.2`, and Browser E2E passes 128 checks / 0 failures. The local Clasp inventory shows four numbered versions; the configured URL matches version 4's deployment ID, with a separate `@HEAD` deployment also present. This does not establish that current `main` is deployed.
+PR #67 and its local Clasp observations are historical evidence only. Source has since advanced through PR #166. The earlier report that the configured URL matched deployment version 4 must not be treated as current: independently map the root `config.js` `/exec` URL to the actual Apps Script project, active deployment ID, bound Sheet and Drive folders before touching any live resource.
 
-Before feature expansion, confirm the intended project, active deployment, Sheet binding and Script Properties in the Apps Script editor. Then complete live role/receipt authorization checks, observe a real scheduled backup, and witness a restore into a separate recovery Sheet/folder. No upload, deployment, `setup()`, or production mutation is authorized by this code phase. These live gates remain release blockers; targeted source-level rendering-security work may continue independently but does not substitute for live operational evidence.
+Before handover, the owner must provision the separate staging resources and protected GitHub `staging` Environment, then run the guarded staging/UAT workflow. For the actual customer instance, confirm its own project, deployment, Sheet binding, Script Properties and private Drive folders. Complete live role/receipt authorization checks, observe a real backup and witness restore into a separate recovery Sheet/folder. The current queue and exact required steps are recorded in `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`. No upload, migration, deployment, `setup()` or production mutation is authorized by this documentation phase.
 
 ## Completed phase — PR #69: DOM-only modal rendering
 
@@ -283,15 +286,15 @@ PR #73 merged at `71033675cc9f52ad391f8b2d06a362551a224be6`. Its tested head pas
 
 PR #74 merged to `main` as `970475dc440a3dc84b788087e60a73836d3d8814`. Its exact tested head `96fcc2b62e126c92318b97b3d8678302ef6dec11` passed Full Flight Test, normal CI and Browser E2E (110 backend checks; 142 browser checks, zero failures). It escaped the server-returned voucher number in the success panel and added hostile-response browser coverage. This remains a targeted fix, not complete XSS certification.
 
-## Current engineering phase — PR #75: bulk import completion feedback
+## Historical engineering phase — PR #75: bulk import completion feedback
 
 Improve the bulk-import completion panel so assistive technology receives a polite status announcement and the copy accurately distinguishes cash receipts from payments. Keep the change limited to the existing completion panel, focused Browser E2E coverage and synchronized handoff docs; no import contract, data semantics, or backend behavior changes.
 
 **Exit gate:** Full Flight Test, normal CI and Browser E2E pass on the exact same final PR head. No deployment or production mutation.
 
-## Product priorities after the October 2026 deep-dive review
+## Historical priorities from the October 2026 deep-dive review
 
-Adopt the report's risk-first direction, but verify each finding against current source and tests before treating it as a defect. Performance projections are hypotheses until measured; keep product policy and accounting semantics behind owner/accountant decisions.
+**Historical status note (17 October 2026):** the priority record below is retained for decision/history context. Its early “current phase” and candidate-PR references predate later merges through PR #166 and are not the current work queue. For current execution order, use the active priorities near the top and `docs/STAGING-RELEASE-AUDIT.md`. Performance projections remain hypotheses until measured; product policy and accounting semantics remain behind owner/accountant decisions.
 
 1. **P0 — Operational assurance:** owner confirms the live Apps Script target/settings, verifies live role and receipt permissions, observes a real scheduled backup and witnesses restore into a separate recovery destination. Code/CI does not replace these operations.
 2. **P0 — Stabilise runtime integrity before expanding financial workflows:**
@@ -411,11 +414,17 @@ PR #164 merged at `dd901910531da2c060539baad44949fe2cb54b30`; tested head `b3ada
 - **Phase 36 — proof and design parity:** add source-level design-system assertions, Browser E2E coverage for field/help/error relationships and busy/settled reports, visible styling for invalid report date inputs, bump the app-shell cache to `cv2-v22`, and update this roadmap and handoff together.
 - **Acceptance boundary:** tests verify DOM state and announcements primitives, not assistive-technology output. Manual keyboard/screen-reader review, zoom/reflow, operator usability and live Apps Script release proof remain separate gates. No approval policy, cash calculations, API, permissions, schema or production data may change.
 
-## Phases 37–39 — route-safe asynchronous workflow updates (PR #165 candidate)
+## Phases 37–39 — route-safe asynchronous workflow updates (merged PR #165)
 
-**Evidence-led defect:** an in-flight Recorded Movement Report read called `render()` after completion regardless of the active route, while concurrent reads lacked a latest-request guard. Users-list completion and some administration mutation callbacks could similarly replace the DOM after the operator navigated elsewhere.
+**Finding:** an in-flight Recorded Movement Report read could rerender over a route selected after the request began; overlapping report requests and asynchronous Users/Vendor/Settings operations also lacked sufficient stale-response/route-ownership protection.
 
-- **Phase 37 — Report result ownership:** snapshot submitted filters, sequence requests, ignore stale completions, and rerender only if Reports remains the active route.
-- **Phase 38 — administration route ownership:** sequence Users loads; ignore stale/route-inactive responses; guard Vendors and Settings redraws after awaited mutations.
-- **Phase 39 — regression and PWA integrity:** browser-gate tests hold Reports/Users reads and a Vendor save through navigation, assert the selected Dashboard remains visible, add source-level route ownership assertions, and bump the shell cache to `cv2-v23`.
-- **Acceptance boundary:** no changes to accounting math, approval, permission policy, API/schema, dependencies or production data. CI/quality, Browser E2E and Full Flight Test must all pass on the same final PR head. Do not treat tests as live Google Sheets/Apps Script evidence.
+- **Phase 37:** sequence Reports requests, bind the result to its submitted filters, ignore stale completions and only rerender while Reports remains active.
+- **Phase 38:** sequence Users reads and guard asynchronous administration callbacks against stale data or a different active route.
+- **Phase 39:** add held-request browser regressions for Reports/Users navigation and Vendor save; source checks protect the route ownership contract and the shell cache advances to `cv2-v23`.
+- **Merge/evidence:** PR #165 merged at `4b729f33d9caff13e01ed56acbc231375c5beec0`. Exact PR head `26a92a70513a088cddc994d1a398d63d908ec8e0` passed CI/quality, Browser E2E and Full Flight Test. No accounting, approval, permission, API/schema, dependency or production-data change.
+
+## Customer delivery packaging and handover foundation — merged PR #166
+
+PR #166 adds a guarded per-customer static-site builder requiring the verified Apps Script Web App `CV_API_URL`, emits only the static runtime into `dist/`, generates the Cloudflare Pages response-header file and adds onboarding, quick-start and private instance-register documents. Its exact tested head `13f12d314687ec88d9044ccae7e8fb3c202743fb` passed CI, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks). Post-merge CI also passed on current main.
+
+This is source/build/documentation readiness only: it did not provision staging/customer Google resources or a static host, run the live staging workflow, prove a real restore, or issue a customer URL. The active release queue is now the owner-controlled operational work in `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`.

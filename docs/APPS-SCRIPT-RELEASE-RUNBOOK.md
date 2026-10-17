@@ -4,10 +4,11 @@
 
 ## Current release boundary
 
-PR #157 is merged; the verified source baseline is `ec5f76c215b8d8986d7dd38e265cc4d1b50e36ee`. Its exact tested PR head passed CI/quality, Browser E2E (402 checks) and Full Flight Test (281 backend + 402 browser checks), but a separate post-merge workflow result on the merge commit was not established during this review. A merge is still separate from a Clasp upload or Web App deployment. The staging/UAT workflow exists in source, but its dedicated Google resources, protected GitHub Environment and OAuth/UAT credentials must be provisioned and live-tested by the owner before it can be considered operational. The version of Apps Script actually serving the configured production `/exec` URL must be verified independently. Local quality checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
+**Verified source baseline:** main SHA `4a759b7513a925aee796949d8f6e79085f096314` (PR #166 merge); post-merge main CI passed. PR #165 route-safe views and PR #166 customer static packaging/onboarding are merged. Exact-head CI/quality, Browser E2E and Full Flight Test passed for both PRs. A merge is still separate from a Clasp upload or Web App deployment. The staging/UAT workflow exists in source, but its dedicated Google resources, protected GitHub Environment, deployment identity and OAuth/UAT credentials must be provisioned and live-tested by the owner before staging is operational. The version of Apps Script actually serving the configured root `/exec` URL must be verified independently. Local quality checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
 
 The frontend `config.js` already contains a Web App `/exec` URL. Do not replace it or create a different URL until the local Clasp deployment list proves which Apps Script project and deployment serve that URL.
 
+**Current staging boundary (17 October 2026):** PR #155's manual workflow and PR #156's credential redaction are source-complete. The current owner action is to provision the isolated environment described below and execute it; do not create follow-on source PRs merely to restate these manual setup steps. The customer instance is separate from staging and must be provisioned through `docs/CUSTOMER-ONBOARDING-RUNBOOK.md`.
 The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. The local Clasp configuration/authentication must remain local and must not be committed.
 
 ## Frontend CSP release gate

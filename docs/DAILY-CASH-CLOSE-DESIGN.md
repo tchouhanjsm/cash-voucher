@@ -2,8 +2,10 @@
 
 **Phase:** 23 design record; the MVP implementation is merged in PR #111.  
 **Status:** close rules and the one-drawer/day MVP are implemented in source; live deployment, schema migration, real backup/restore and hotel-pilot evidence remain unverified. The payment-approval policy, report-only accountant role and VendorID export merged in PR #114 at `95cd5e0e733d07354e1a2e0b9291a65dee19d126`; they are not an active PR. Denomination-level cash counts remain optional and require an explicit owner decision before implementation.
-**Historical source baseline:** `main` at `f0377937b260d9e873360ae3f726258e0ae8c272`  
+**Current source baseline:** `main` at `4a759b7513a925aee796949d8f6e79085f096314` (17 October 2026; PR #166 merge)  
 **Scope:** preserve the original design reasoning and owner-approved rules for the single-property Apps Script/Sheets product. Editing this record does not run migrations or release code.
+
+**Decision-precedence note (17 October 2026):** Sections 1–12 preserve the original design-time baseline/proposal and early unresolved questions; statements there describing the absence of Daily Cash Close represent the pre-MVP state. The owner-approved MVP policy in section 13 and the payment-approval decisions recorded after it supersede those earlier statements where they conflict. CashImpact, one-drawer/day Daily Cash Close, correction history, payment approval and VendorID changes are implemented in source through merged PRs; they are **not** evidence that live migrations/deployment, backup/restore or a physical-cash pilot have been completed. Current gates are in `docs/RELEASE-READINESS.md` and `docs/STAGING-RELEASE-AUDIT.md`.
 
 ## 1. Problem and evidence
 
@@ -204,15 +206,18 @@ Before implementation, choose a policy for active historical vouchers without a 
 - Existing vouchers are not backfilled. Missing values remain `UNCLASSIFIED`; a future final close must block while active in-period vouchers remain unclassified.
 - `NO_CASH` means no physical drawer movement; it does not mean no financial or bank-account impact.
 
-### Still unresolved for the daily-close implementation
+### Outstanding operational rollout and non-blocking decisions
 
-- Business period and opening-cash source, including gaps and missing prior closes.
-- Drawer/shift uniqueness and treatment of backdated vouchers and post-close edits/cancellations.
-- Whether pending offline entries block close or allow an explicitly provisional close.
-- Close-record durability, idempotency, and failure policy if its required audit/close write fails.
-- Which existing roles may finalize a close, variance-reason policy, and report contents.
+The original design-time questions below were resolved in source/policy for the owner-approved single-property, one-drawer/calendar-day MVP. The remaining rollout work is operational, not another unapproved close implementation:
 
-### Future implementation acceptance criteria
+- **Live deployment/schema:** verify the target Script, Sheet binding, execution identity and current headers; after an owner-authorized backup, run only the applicable guarded migrations in the order recorded in section 13 and verify unchanged historical rows/columns. No migration or deployment is evidenced by this source review.
+- **Backup and recovery:** inspect a real scheduled backup, receipt manifest and copied Sheet; restore to a separate recovery destination and reconcile counts and voucher numbering.
+- **Real-service behavior:** exercise retries, duplicate/concurrent close requests and lock contention against authorized staging resources. Mock tests do not prove real Apps Script concurrency.
+- **Device-local records:** review pending/rejected/recovery entries on every operating device before accepting a close. This browser cannot certify that other devices are synchronized.
+- **Pilot proof:** compare book balance with physical count, ensure discrepancies have attributed reasons, retain the fallback process, and complete the controlled 14-day pilot.
+- **Optional denomination rows:** still require an explicit owner decision and are not part of the current MVP.
+
+### Implemented-source contracts to retain through staging validation
 
 - Server-authoritative totals use explicit cash-impact values, not category heuristics or client-submitted totals.
 - UI copy explains that `NO_CASH` means no drawer movement, not “no financial impact”.

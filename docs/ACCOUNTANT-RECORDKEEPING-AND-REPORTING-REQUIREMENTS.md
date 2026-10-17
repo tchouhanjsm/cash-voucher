@@ -1,8 +1,8 @@
 # Accountant Recordkeeping, Tax Preparation and Reporting Blueprint
 
-**Phase:** PR #61 — accountant / finance-officer review  
-**Status:** source-voucher requirements audit; active PR #114 adds a generic read-only accountant report/CSV and stable VendorID links. The destination-specific accounting and tax policy remains unapproved.  
-**Repository baseline:** `main` at `d4742a34d57bc973d0fda849b65ae6d35259bf22` (PR #60 merge)  
+**Phase:** PR #61 requirements review; implementation increment merged in PR #114  
+**Status:** source now includes a report-only accountant role, generic source-voucher CSV and VendorID support. Production migration/deployment, receiving-accountant acceptance and destination-specific accounting/tax policy remain unverified/unapproved.  
+**Current repository baseline:** main at `4a759b7513a925aee796949d8f6e79085f096314` (PR #166 merge)  
 **Product scope:** one-property cash-voucher PWA; Google Apps Script, Sheets and Drive  
 **Currency/timezone:** currently INR is implied by the operating context, and backend business dates use `Asia/Kolkata`; confirm currency and tax registrations with the owner before adding tax or accounting rules.
 
@@ -12,7 +12,7 @@ Reviewing this product as a finance record keeper changes the definition of “d
 
 The current app has a useful operational base: payment and receipt vouchers, separate numbering series, date/vendor/category/amount/notes, active/cancelled status, creator/update metadata, receipt image references, client IDs, user/role controls, an audit log, register/dashboard surfaces, CSV/print paths, offline queue/recovery and backup mechanisms. These fields are not yet a complete general ledger or tax subledger.
 
-## Current source status — PR #114 (not yet merged)
+## Current source status — PR #114 merged; live use and destination acceptance still open
 
 The in-progress feature batch adds an `accountant` role with server-authorized **read-only** access to the Recorded Movement Report and a generic CSV download. It removes that role's access to voucher entry/Register, vendor-contact listing, cash close, user administration, settings and audit log. The report includes the source voucher identifiers and an optional stable `VendorID`; CSV values remain raw source values and the export is **not** certified for any accounting package.
 
@@ -20,7 +20,7 @@ The existing vendor master already has a generated stable `VendorID`. The batch 
 
 Report identity-exception counts are scoped to the selected date/type/status rows. A row with no VendorID is counted as **ambiguous** only when its counterparty name matches duplicate vendor-master names; otherwise it is **unmatched**. Duplicate names in the master with no selected source row do not inflate the report, and a persisted VendorID takes precedence over name-based fallback. Rows with a blank or unresolvable counterparty name remain unmatched; the report never guesses a party identity.
 
-The first accounting product/version, import mapping, accountant-approved sample, entity/tax registration, source-evidence requirements and tax calculations remain open. Do not describe the generic CSV as Tally/Zoho-compatible, a general ledger, a GST/TDS report, a statutory book or a reconciliation certificate. PR #114 has not merged, migrated a live Sheet or deployed any source.
+The first accounting product/version, import mapping, accountant-approved sample, entity/tax registration, source-evidence requirements and tax calculations remain open. PR #114 is merged in source, but this audit found no evidence that its guarded schema migrations or Apps Script deployment have been executed against the live customer/production Sheet. Do not describe the generic CSV as Tally/Zoho-compatible, a general ledger, a GST/TDS report, a statutory book or a reconciliation certificate.
 
 **Do not treat the current voucher register or Audit CSV as a statutory book, a GST return, a TDS statement, a profit-and-loss account, or a complete accounting ledger.** The product lacks several fields and accounting controls needed to make those claims. This phase defines the gaps and sequence; it does not invent tax classifications, alter production records, or add tax calculations.
 
@@ -189,7 +189,7 @@ Generic export and destination-specific import are different products. First des
 - Source-field inventory, report catalog, workflow candidates, tax-data boundaries and export acceptance contract are documented above.
 - The requirements-only review did not alter runtime/schema/tax calculations.
 
-### Current implementation increment — generic report access and stable VendorID (active PR #114)
+### Merged implementation increment — generic report access and stable VendorID (PR #114)
 
 - Add least-privilege accountant role with report permission enforced in the backend.
 - Export generic recorded movements with current approval state and VendorID, preserving CSV formula-injection protection and amount/date source semantics.
@@ -242,6 +242,6 @@ This document is an engineering and recordkeeping requirements review, not legal
 - Reports distinguish operational cash-voucher movement from accounting profit, cash-in-hand and tax liability.
 - Every aggregate has source drill-through, date-range rules, record counts, totals and exception disclosure.
 - Tax fields and calculations remain proposed until CA/owner validation.
-- The generic read-only report and source-voucher CSV in PR #114 remain destination-neutral; destination-specific export stays blocked until the receiving accountant approves target/version, mapping and an anonymized fixture.
+- The generic read-only report and source-voucher CSV merged in PR #114 remain destination-neutral; destination-specific export stays blocked until the receiving accountant approves target/version, mapping and an anonymized fixture.
 - VendorID is additive, generated/linked only for unique exact matches, and never backfilled for historical rows by migration.
 - This requirements document itself makes no runtime/schema change. PR #114 intentionally contains backend/API/UI/schema migration and test changes, but no production migration, Clasp push, deployment, tax calculation or production-data mutation.

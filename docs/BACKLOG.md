@@ -22,7 +22,7 @@ One line per item: date | priority | area | outcome / finding | evidence / depen
 2026-10-15 | P2 | Audit observability | Dual audit-append/marker-store failure still has no durable owner marker; current Phase 17 clarifies this limitation and exports the observed monitor state, but does not fix the missing durable fallback | Owner-approved fallback design remains unresolved; do not fabricate historical events
 2026-10-15 | P2 | Dependency exception | Reassess clasp → micromatch → braces advisory by 9 November 2026 | docs/DEPENDENCY-SECURITY-EXCEPTIONS.md
 
-2026-10-16 | P2 | Phase 16 — performance/repository hygiene | Seeded performance baseline and canonical-document reconciliation; review dependency exception by 9 Nov 2026 | No speculative optimization before a measurable baseline
+2026-10-16 | DONE | Phase 16 — performance/repository hygiene | Seeded mock performance baseline and canonical-document reconciliation; the dependency exception remains a separate due-dated item | PR #152 merged; mock timings are diagnostics, not production SLOs
 
 2026-10-16 | DONE | Phase 19 — isolated staging deployment and owner/manager UAT pipeline | Added target identity/read-only readiness probe, isolated Clasp deployment, no-cache staging frontend host, manual protected workflow and INR 10,000 payment approval UAT | [PR #155](https://github.com/tchouhanjsm/cash-voucher/pull/155) merged at `4b15ce7e05d3a524b727f40edbc06e19295beef4`; exact tested PR head passed CI, Browser E2E (402) and Full Flight Test (281 backend + 402 browser); live staging remains unverified
 2026-10-16 | DONE | Phase 20 — nested Clasp OAuth diagnostic redaction | Ensure separate OAuth token/client credential values cannot leak through Clasp stderr/stdout sanitization; add regression coverage | [PR #156](https://github.com/tchouhanjsm/cash-voucher/pull/156) merged at `0b6f89a393dd47edb8a33a5fb9fe0653ea6b6ab2`; exact tested head passed CI, Browser E2E (402) and Full Flight Test (281 backend + 402 browser); no deployment or production-data changes
@@ -31,4 +31,32 @@ One line per item: date | priority | area | outcome / finding | evidence / depen
 
 2026-10-16 | HISTORICAL / RECONCILE | Phase 22 — authentication race regression and project-record reconciliation | Older candidate status predates merged PRs #155–#164 and must not be treated as an active PR; re-check source/tests before reopening as work | Live repository check on 2026-10-17 found no open pull requests
 2026-10-17 | DONE | Phases 34–36 — form validation guidance and report async state | Connected cash-impact help/errors, invalid report range inputs and report busy/settled state; no accounting or authorization changes | [PR #164](https://github.com/tchouhanjsm/cash-voucher/pull/164) merged at `dd901910531da2c060539baad44949fe2cb54b30`; exact-head CI, Browser E2E (943) and Full Flight Test (285 backend + 943 browser) passed; post-merge main CI passed
-2026-10-17 | IN REVIEW | Phases 37–39 — route-safe asynchronous views | Guard Report and Users request sequencing, prevent late admin mutation callbacks from rerendering a different active route, and add held-request browser regressions; no finance/permission/API/schema changes | [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165); all required workflows must pass on its exact final head
+2026-10-17 | DONE | Phases 37–39 — route-safe asynchronous views | Guard Report and Users request sequencing, prevent late admin mutation callbacks from rerendering a different active route, and add held-request browser regressions; no finance/permission/API/schema changes | [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165) merged at `4b729f33d9caff13e01ed56acbc231375c5beec0`; exact head `26a92a70513a088cddc994d1a398d63d908ec8e0` passed CI, Browser E2E and Full Flight Test
+
+2026-10-17 | DONE | Customer delivery packaging and handover foundation | Customer-specific static build via `CV_API_URL`, generated `dist/` and Cloudflare Pages security headers; onboarding and backup/restore handover runbooks | [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166) merged at `4a759b7513a925aee796949d8f6e79085f096314`; CI, Browser E2E (947) and Full Flight Test (285 backend + 947 browser) passed on exact tested head. Live staging/customer resources remain unprovisioned.
+
+## Active queue — reviewed 17 October 2026
+
+2026-10-17 | P0 | Staging/UAT provisioning | Create dedicated staging Apps Script/Sheet/receipt/backup resources, first versioned deployment, protected GitHub `staging` Environment and isolated credentials; run the guarded workflow | Owner action required; see `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md` and `docs/STAGING-RELEASE-AUDIT.md`
+
+2026-10-17 | P0 | First customer instance and link | Protect the source repository and hosting access; provision a separate customer Google instance and unique static-site origin; verify roles, receipts, backups and restore before issuing the URL | Owner Google/GitHub/hosting account operations; not verified
+
+2026-10-17 | P0 | Live recovery proof | Verify scheduled backup contents/manifests and restore to a separate destination; reconcile voucher rows and numbering; never use mock evidence as a restore test | Owner-authorized real-resource operation; not verified
+
+2026-10-17 | P1 | Device and accessibility acceptance | Test PWA install/update/offline recovery across operating devices, keyboard/focus, zoom/reflow, screen reader and print/export acceptance | Human/device validation; not verified
+
+2026-10-17 | P1 | Real-service capacity | Measure Apps Script/Sheets latency, quotas and voucher-number contention in authorized staging before setting SLOs | Staging account/resources required
+
+2026-10-17 | P1 | Contextual frontend rendering review | Complete contextual review of the 17 active `innerHTML` assignments across eight frontend modules; retain hostile-data tests and do not claim full XSS certification from count/fingerprint gates | Remaining review; no confirmed exploitable defect asserted
+
+2026-10-17 | P1 | Controlled 14-day pilot | Track daily voucher reconciliation, all-device pending queues, book balance versus physical count, exceptions, fallback and owner/manager sign-off | Start only after live role, backup/restore and device gates pass
+
+2026-10-17 | P2 | Audit durability fallback | Decide durability, retention, access and failure semantics for simultaneous AuditLog append and marker-store failure, then implement/test only after owner approval | Design decision unresolved
+
+2026-10-17 | P2 | Dependency exception review | Verify whether a compatible patched `braces`/Clasp chain is available and safely removable; current exception review deadline is 9 November 2026 | `docs/DEPENDENCY-SECURITY-EXCEPTIONS.md`
+
+2026-10-17 | P2 | Accountant export acceptance | PR #114 is merged: generic report-only accountant role/CSV and VendorID are in source. Select destination/version, approved mapping and anonymized fixture before claiming compatibility; CA/owner must approve tax semantics | Destination-specific export remains blocked
+
+2026-10-17 | P2 | Denomination-level cash count | Decide whether optional denomination rows are useful; do not change schema or make the breakdown mandatory before explicit owner approval | `docs/DAILY-CASH-CLOSE-DESIGN.md`
+
+2026-10-17 | P2 | Product success measures and scale scope | Use pilot measurements before numeric SLO/usability targets or multi-property/chain expansion | Product decision after pilot evidence

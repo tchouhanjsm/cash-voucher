@@ -1,7 +1,7 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `91b8b46f4a09b868db0157d6f89dcebd0d14eae0` (main after PR #151; active source baseline remains 17 assignments).  
-**PR #149 UI refresh / PR #151 design kit:** the Payments template fingerprint remains `847d68e0`; PR #151 changed only CSS/static studio markup and did not change active JavaScript assignment sites. The count remains 17 across eight modules. CI is the executable gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `4a759b7513a925aee796949d8f6e79085f096314` (main after PR #166; 17 active assignment sites remain).  
+**Latest changes:** PRs #165–#166 do not change the active JavaScript rendering-sink inventory; the Payments template fingerprint remains `847d68e0`. CI is the executable drift gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
