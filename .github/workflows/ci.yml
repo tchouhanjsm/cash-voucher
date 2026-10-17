@@ -51,6 +51,9 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
+      - name: Temporary diagnose FrontUI CSS formatting
+        run: npx prettier frontend-ui-kit.css | diff -u frontend-ui-kit.css - || true
+
       - name: Run quality gate
         run: npm run check
 
