@@ -1,151 +1,32 @@
 # Engineering Handoff
 
 Updated: 17 October 2026  
-Repository: tchouhanjsm/cash-voucher  
-Verified `main` SHA: `4b729f33d9caff13e01ed56acbc231375c5beec0` (PR #165 merge commit)  
-Current mainline: route-safe asynchronous workflow updates from PR #165; this commit's existence/ancestry was verified from GitHub refs and commit metadata.  
-Current working branch: `ops/first-customer-managed-delivery-2026-10-17`  
-Current pull request: [#166](https://github.com/tchouhanjsm/cash-voucher/pull/166) — open for owner review; exact-head checks must pass before merge.  
-Current work: first-customer managed delivery readiness; build a per-customer static artifact, document isolated Apps Script/Sheets/Drive provisioning, production backups/restores and handover gates.  
-Release boundary: source/docs/tests only. No customer Google resources, static host project, customer endpoint, actual app link, live backup/restore or customer credentials have been provisioned by this batch. Repository visibility is currently public; review the source-privacy/hosting cutover before proprietary onboarding.  
-Owner authority: the repository owner retains review, merge, Google-account administration and production deployment authority. Do not merge or deploy this batch without the owner's explicit authorization.
+Repository: `tchouhanjsm/cash-voucher`  
+Verified `main` SHA: `4a759b7513a925aee796949d8f6e79085f096314` (PR #166 merge; post-merge CI passed)  
+Current work branch: `docs/staging-release-readiness-audit-2026-10-17`  
+Current work: deep documentation reconciliation and a single authoritative first-customer staging-readiness audit.  
+Owner authority: the repository owner retains approval to merge, provision Google resources, change repository visibility, run manual staging deployment/UAT, perform schema migrations and deploy production. This branch does not do those things.
 
-## Verified repository state
+## Verified source state
 
-- Live `main` is `dd901910531da2c060539baad44949fe2cb54b30`, merged PR #164. Post-merge [CI on main](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186) passed. PR #164 exact tested head `b3adad0a8c089c0c42614ea2fffd6724664d9106` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398991), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398889) (943 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398930) (285 backend + 943 browser checks), all with zero failures. The Studio is a static reference; integrated screen coverage is not live-production or human accessibility sign-off.
-- The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
-- The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
-- Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
-- Preserve the plain JS/no-build architecture and no-external-runtime-assets policy. No React/UI package, remote font/icon service or dependency is added; app CSP remains strict and studio HTML uses no inline scripts, handlers or styles.
-- `scripts/verify-frontend-release.js` now checks the kit CSS is linked by `index.html` and present in the service-worker shell. Browser E2E should verify static gallery loading/CSP, component tokens and no page-level overflow across narrow through desktop widths.
-- Phase 13 operational release proof remains an owner-controlled P0 gate: live Apps Script project/version, execution identity, Sheet/Drive permissions, role/receipt access, scheduled backup, isolated restore and production reconciliation cannot be established by source/mock tests. Do not deploy or mutate production.
-- The repository declares Node `>=20 <23`; verify local Node version before running checks.
-- Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md` if present; never stage, overwrite or delete it.
-- Real-device recovery, zoom/reflow, manual keyboard traversal, screen-reader checks and role-based operator review remain open even if automation passes.
+- [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165), Phases 37–39, merged at `4b729f33d9caff13e01ed56acbc231375c5beec0`. Exact tested head `26a92a70513a088cddc994d1a398d63d908ec8e0` passed CI/quality, Browser E2E and Full Flight Test.
+- [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166), customer static build, response-header artifact and onboarding/handover documents, merged at `4a759b7513a925aee796949d8f6e79085f096314`. Exact tested head `13f12d314687ec88d9044ccae7e8fb3c202743fb` passed CI, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks). [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776051) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776133) · [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776075).
+- [Post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39003040102) passed on the current main SHA.
+- No open PRs were returned by the live repository query before this audit branch/PR.
 
-## Phase 10 — UI refresh integration and dashboard trust states
+## Product and release boundary
 
-**Completed and merged in PR #141** at `42ff7708535d04c15510caf90c5f93738109669e`. The implementation adds a local inline SVG sprite, allowlisted icon helper, DOM-created navigation icons, Dashboard KPI icons and a needs-attention panel, removes breadcrumbs, bumps the app-shell cache version to `cv2-v16`, and adds focused browser coverage.
+Cash Voucher remains a single-property static PWA backed by Google Apps Script, Sheets and Drive. Each staging/customer instance needs its own Script/Web App deployment, Sheet, receipt/backup folders and distinct static origin. The customer build command is `npm run build:web`; set the verified instance URL through `CV_API_URL` and publish only `dist/`.
 
-- The panel inspects only approval/review exceptions, offline state, malformed records and invalid monetary values. Its empty state says no known dashboard exceptions were found in those checks and explicitly does not verify backups, the full recovery queue or release readiness.
-- Icon names are constrained to app-authored values, and Dashboard route actions are restricted to the Register action. No external icon package/runtime request is added.
-- The Dashboard statement fingerprint was reviewed and updated to `2977910e`; independent sink-count/API and source-fingerprint gates remain active.
-- CI, Browser E2E and Full Flight Test passed on the same exact pre-merge head `d2b354474fb6b4ad67ad055bd33ff75925bee7d8`. The PR reports post-merge main CI passed; check the live Actions page before any release decision.
-- No backend approval-policy change, schema migration, historical backfill, `clasp push`, Apps Script deployment or production-data mutation was performed. The repository owner retains merge/release authority.
+PR #166 prepares packaging and instructions; it did **not** provision a staging/customer Google project, GitHub staging Environment, Cloudflare Pages project, real URL, account or credentials. The repository is still public. Live target identity, roles/receipt access, real scheduled backup, isolated restore, real-device/offline recovery, human accessibility checks, service capacity and the controlled pilot remain unverified.
 
-## Phase acceptance criteria
+## Current priority order
 
-- Merge target and ancestry are accurately described; a feature-only PR is not treated as a mainline release.
-- Dashboard has no universal safety/all-clear claim while backup, all queue states and release controls are not checked.
-- SVG renderer inputs and navigation action keys are allowlisted.
-- Service-worker cache/precache, CSP and offline shell behavior are checked.
-- Changed sink fingerprint matches exact source and hostile-data browser coverage.
-- CI, Browser E2E and Full Flight Test pass on one final SHA; post-merge CI is checked separately.
-- No live-service, device, assistive-technology or deployment test is claimed without evidence.
+1. **P0 — owner-provisioned staging:** create separate staging Google resources and first versioned deployment; configure protected GitHub `staging` Environment variables/secrets; run the guarded `deploy-and-uat` workflow from `main` with exact `STAGING-ONLY` confirmation and staging-write consent; review the exact result.
+2. **P0 — privacy and first-customer isolation:** move the source repository to private only after the static host can access it and continuity is verified; provision a new customer instance and unique Cloudflare Pages origin; never reuse the staging Sheet or current unverified root `config.js` endpoint.
+3. **P0 — operational trust:** verify live owner/manager/staff permissions and receipt access, inspect a real backup, restore into a separate recovery destination, reconcile row counts and voucher numbers, and test the actual customer link.
+4. **P1 — real-device verification and 14-day pilot:** PWA installation/update, offline queue/recovery across every operating device, keyboard/focus, zoom/reflow, screen reader, print/export, end-of-day book-vs-physical-cash reconciliation and daily incident/fallback evidence.
+5. **P1 — authorized real-service measurements and contextual review of the 17 active DOM assignment sites.**
+6. **P2 — resolve the owner-approved design for dual audit append/marker-store failure; review the `braces@3.0.3` dependency exception by 9 November 2026; obtain accountant-approved destination/mapping before claiming target-specific exports; decide whether denomination-level counts add operational value.**
 
-## Remaining risks and owner-controlled operational gates
-
-- Main after PR #152 retains 17 active HTML assignment sites across eight frontend modules. Phase 17 is limited to the Audit Log UI/action mapping and browser regression coverage; no backend/audit data contract changes are proposed.
-- Live Apps Script deployment identity/version, Sheet/Drive permissions, role/receipt authorization, scheduled backup, isolated restore, device/offline/accessibility and real-service quotas/concurrency remain unverified.
-- Investigate the documented audit-write dual-failure observability limit without fabricating missing events.
-- Reassess the `@google/clasp -> micromatch -> braces` dependency exception by 9 November 2026.
-- Preserve the protected local untracked `docs/AI-ENGINEERING-PROTOCOL.md`; never stage, overwrite or delete it.
-- `docs/HANDOFF.md` is the single canonical handoff. Do not create per-PR handoff documents.
-
-## Phase 11 — contextual rendering-security review and sink retirement
-
-**Batches 1–3 — merged in PRs #143–#145:** Users loading/error, payment-save/bulk completion, Reports/Cash Close access denied and Register totals/status templates were moved to DOM APIs. Inventory reduced from 27 to 19; each merged batch passed its recorded exact-head gates.
-
-**Batch 4 — merged in PR #146:** the My Account profile/PIN page and offline outbox banner/review details now use DOM construction. The sink count is 19 → 17 across eight modules, hostile stored profile/queue content is tested as inert, and existing queue action keys and account controls are preserved. However, the full Browser E2E and Full Flight Test on exact PR head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` each report one failing check: `My Account preserves sign-out and Change PIN controls after DOM rendering`. Do not describe Batch 4 as fully verified until the fix below passes all required workflows.
-
-**Batch 4 follow-up — PR #147, merged into main at `61e46989032985fba54ceb48d768ab57430aa48a`:** explicitly assigns `type='submit'` to the Change PIN submit control. The previous DOM renderer relied on the browser's default button type without setting the attribute, while Browser E2E looks for `button[type=submit]`. CI/quality, Browser E2E (358 checks, 0 failures) and Full Flight Test (281 backend checks plus 358 browser checks, 0 failures) passed on exact PR head `bfdbbb401c397730b12480fec5ac9fd1e57072d9`. This is a focused correction, not a financial/authorization policy or sink-count change.
-
-**Acceptance boundary:** frontend rendering and focused Browser E2E only. No `clasp push`, Apps Script deployment, production-data mutation, schema change, merge or release is performed by this follow-up. It is incremental risk reduction, not XSS certification.
-
-## Next phases — grouped outcome plan
-
-**Phase 12 — Cross-workflow integrity and recovery: complete.** PR #148 merged; endpoint-bound outbox isolation regression and canonical evidence reconciliation passed all required exact-head workflows.
-
-**Phase 13 — Operational release proof: P0 owner-controlled blocker.** Verify Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, a real scheduled backup, isolated restore and voucher/receipt reconciliation only with explicit owner authorization. Mock CI cannot satisfy this phase.
-
-**Phase 14 — Whole-product UX completion: Batch 1 complete in PR #150.** Register keyboard table scrolling and Reports responsive/focus regression guardrails are merged. Manual device, zoom and assistive-technology checks remain open.
-
-**Phase 15 — FrontUI Studio + shared component kit: complete in PR #151.** Static gallery, shared CSS tokens/components and offline/release-integrity coverage are merged. Manual device/accessibility and owner-controlled release gates remain open.
-
-**Phase 16 — Evidence-led performance and repository hygiene: complete in PR #152.** Repeated seeded mock measurements are captured as a versioned JSON workflow artifact; the dependency exception was rechecked with its original deadline preserved.
-
-**Phase 17 — Audit monitoring clarity and portable health snapshot: completed in PR #153.** The owner-facing UI explicitly explains the dual-store blind spot, keeps health request/invalid-response states visibly unknown, and downloads a JSON snapshot of status and coverage metadata. It does not persist a second audit log, claim history completeness, or reconstruct missing events. Phase 13 live release proof remains an owner-controlled P0 gate.
-
-**Phase 18 — Actionable diagnostic exports: complete in PR #154**, merged at `17665e82c3acd26d717c796d1eecd79c42a963b7`. Settings offers schema-versioned JSON exports for validated data-quality and backup-integrity reports; failed/invalid refreshes do not leave stale export actions.
-
-## Phase 19 — staging and UAT implementation status
-
-- Added a read-only owner/settings-authorized backend readiness probe that reports Script ID, bound Sheet/Drive targets, expected sheet headers and backup-trigger presence without returning voucher rows or credentials.
-- Added fail-closed staging target validation, an isolated temporary Clasp workspace/HOME, a no-cache local staging web server, a separate staging Playwright UAT script and a manually dispatched GitHub staging workflow.
-- The transactional UAT is configured to create, approve and cancel one unique INR 10,000 staging payment after target isolation is verified; it asserts the approved-payment total remains unchanged while pending, rises only after independent approval, and returns to baseline after cancellation.
-- **Not yet provisioned or executed against real Google resources:** GitHub Environment `staging`, staging Apps Script/Sheet/Drive resources, first versioned staging deployment, Clasp OAuth secret, and separate UAT account secrets. The automated pipeline cannot deploy or perform live UAT until the owner provides these. No production deployment or live Google data mutation has been performed by this change.
-- Remaining non-automated UAT gates: real scheduled backup and witnessed restore/reconciliation, device/offline/assistive-technology validation and Google quota/lock-contention testing in an authorized environment.
-
-## Phase 20 — harden staging OAuth diagnostic redaction
-
-- Code review found that the staging deployer's `sanitized()` function redacted the complete `CLASPRC_JSON` string but did not independently redact nested access tokens, refresh tokens, ID tokens, OAuth client IDs/secrets, or other strings stored inside the credential document if a Clasp diagnostic echoed one field separately.
-- The candidate adds recursive extraction of sensitive scalar values from the parsed Clasp credential document and redacts those values before any Clasp output is printed.
-- Regression coverage injects representative nested OAuth fields into simulated diagnostics and asserts that no credential value survives sanitization. The existing `test/test-staging-pipeline.js` command is part of `npm test`.
-- The change is source/test-only. It does not execute Clasp, access Google credentials, deploy staging or production, or mutate voucher data.
-- Live staging provisioning and owner-authorized UAT remain blocked on separate Google resources, the protected GitHub `staging` environment, isolated Clasp OAuth credentials and dedicated Owner/Manager test accounts. Do not infer that these are provisioned from CI.
-
-## Phase 21 — premium light frontend redesign (completed in PR #157)
-
-- Art direction: warm ivory canvas, near-white surfaces, soft blue-grey secondary information, restrained gold-brown primary actions, and pale beige selected navigation. Keep the dashboard light-first while preserving an explicit, user-selectable dark theme.
-- Bulk scope: shared application shell/navigation, top bar/account states, typography, cards and KPI composition, segmented filters, forms/buttons, status badges, tables, charts, modals, notifications and responsive mobile navigation.
-- Dashboard presentation is reorganized around a scoped overview, compact horizontal KPI cards, a clearly separated date-range control, trend panel and vendor/category breakdowns. No financial calculation, approval state, voucher schema, authorization, audit or offline queue semantics should change.
-- Add a design-system regression gate and update contrast verification to measure the new navigation surfaces and active-state text. Existing DOM-sink source/fingerprint gates remain unchanged.
-- Default first-use theme is light; a previously saved explicit theme preference remains respected. No framework, external font/icon service, dependency, API or production integration is introduced.
-- Operational release proof remains P0 and owner-controlled. The visual batch is not staging/production verification.
-
-## Phase 22 — authentication race regression and project-record reconciliation (PR #158)
-
-- Source review confirms login failure counters are updated inside `withScriptLock_`; current-PIN failures are throttled for 15 minutes; owner PIN reset clears both lockout counters; write routes acquire the shared lock and authenticate the session inside the lock before invoking a write handler.
-- [PR #158](https://github.com/tchouhanjsm/cash-voucher/pull/158) is the active review candidate. Its regression invalidates a cached session after lock acquisition but before route authentication; the route must return `SESSION`, append no voucher, and release the acquired lock. The live PR page remains authoritative for the exact final head and workflow evidence.
-- The test hook is one-shot and exists only in the in-memory mock. It does not simulate real simultaneous Apps Script executions or prove live authorization.
-- Reconcile the current main/PR state in the handoff, roadmap, backlog, project guide and release-readiness status. Do not modify financial policy or run migrations/deployments.
-- Next cash-close enhancement requiring an owner decision: denomination rows remain optional and must not be assumed useful or made mandatory without approval; the existing close MVP is already implemented.
-
-## Phase 23 — FrontUI adoption across real workflows (merged PR #159)
-
-Merged main SHA: `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`; tested PR head: `41b25f42c39a033585128ddf8c7e89f247e1fc61`. CI/quality passed 285 backend checks; Browser E2E passed 409 checks; Full Flight Test passed 285 backend + 409 browser checks. The work integrates shared page context and responsive layout hooks into New Entry, Register, Cash Close, Bulk Upload and Settings. No live deployment or production-data operation occurred.
-
-## Phase 24 — responsive reporting and administration workflows (merged PR #160)
-
-Merged main SHA: `0d900235f9230ab05db940bb57881a171737ae0c`; tested PR head: `e68abec5c26c1e699639428982edb48d452cd3ba`. CI/quality passed 285 backend checks, Browser E2E passed 418 checks, Full Flight Test passed 285 backend plus 418 browser checks, and post-merge main CI passed. No live deployment or production-data operation occurred.
-
-## Phases 25–27 — Fresh Design Studio workflow completion (merged PR #161)
-
-Merged main SHA: `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`; tested head: `27ceda070f38fe2a445e4e165fbbde20ee6377c9`. CI, Browser E2E and Full Flight Test all passed. Bulk Upload and Cash Close layouts, keyboard-reachable file selection, internal preview scrolling, reduced-motion and forced-colors behavior are now implemented. No production deployment or data mutation occurred.
-
-## Phases 28–30 — cross-workflow visual regression and accessibility states (merged PR #162)
-
-Merged main SHA: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; tested head `6f103e863cd0e7fe5c2f2ae12196e594134faec0`. CI/quality, Browser E2E (898 checks) and Full Flight Test (285 backend + 898 browser checks) passed. Screenshot artifacts cover all 11 owner-visible screens at 390px and 1280px in both themes.
-
-## Phases 31–33 — route focus and accessible interaction contract (merged PR #163)
-
-Merged main SHA: `ae8eb594a33f7e33338009d75c52d0b010cea678`; tested head `a6b1eff7593bb7a58f4e6063fb31befd2a646773`. CI/quality, Browser E2E (936 checks) and Full Flight Test (285 backend + 936 browser checks) passed. User-triggered navigation focuses the rendered heading, the app menu restores focus after Escape, and visible controls across 11 workflows receive a name-presence regression check. This is not a full WCAG audit or real-screen-reader proof.
-
-## Phases 34–36 — validation guidance and async-state consistency (merged PR #164)
-
-Merged main SHA: `dd901910531da2c060539baad44949fe2cb54b30`; tested PR head `b3adad0a8c089c0c42614ea2fffd6724664d9106`. Exact-head CI/quality, Browser E2E (943 checks) and Full Flight Test (285 backend + 943 browser checks) passed. Post-merge main CI passed in [run 38998817186](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186).
-
-The batch links each New Entry settlement selector to its existing cash-impact hint, preserves that hint when error descriptions are attached/cleared, links both Report date fields to the date-range error alert, and groups report output under a stable `aria-busy` wrapper. E2E exercises successful and invalid date ranges, accessible descriptions, error recovery and settled reporting. No financial calculation, API/schema, role, approval-policy or production-data change is in scope.
-
-Do not run `clasp push`, staging deploy, Apps Script deployment, migration or production data mutations. Manual keyboard and screen-reader review, real device/PWA update and offline recovery, 200–400% zoom/reflow, live identity/role checks and witnessed backup/restore remain separate release gates.
-
-## Phases 37–39 — route-safe asynchronous workflow updates (PR #165 candidate)
-
-Source inspection of merged main found that an in-flight Recorded Movement Report request unconditionally rerendered the active workspace in `finally`. Navigating elsewhere during the request could therefore replace the destination screen; overlapping report submissions could also allow an older response to overwrite newer state. The Users loader and several post-mutation administration callbacks had the same whole-view redraw risk.
-
-- **Phase 37 — request sequencing:** Reports captures submitted filters and uses a monotonic request identity. Stale responses/errors cannot publish state over newer requests, and completion rerenders only when Reports is the active route.
-- **Phase 38 — administration route ownership:** Users responses are ignored when stale or when Users is no longer active. Vendor save/toggle and Settings-save completions redraw only their own route.
-- **Phase 39 — deterministic regression proof:** Browser E2E holds Reports and Users requests while navigating to Dashboard, then releases them and checks Dashboard remains intact. It also holds a vendor save across navigation and verifies the follow-up bootstrap does not redraw Vendors over Dashboard. Source contract tests are extended and the app-shell cache advances to `cv2-v23`.
-- **Scope boundary:** frontend state/rendering and regression tests only. No financial calculation, approval policy, authorization rule, API, schema or dependency change. No Apps Script deployment or production-data mutation. See the open PR's exact-head workflow results for merge readiness.
-
-Manual keyboard/screen-reader checks, physical-device PWA update/offline recovery, 200–400% zoom/reflow, owner-authorized live role/receipt tests, scheduled backup observation and a witnessed isolated restore remain separate release gates.
+See [Staging Release Audit](STAGING-RELEASE-AUDIT.md) for the evidence, detailed setup sequence and queue. See [Release Readiness](RELEASE-READINESS.md) for the acceptance gates. Do not treat a green mock suite, a merged PR or generated `dist/` as live deployment/restore proof.
