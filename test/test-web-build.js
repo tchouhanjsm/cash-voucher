@@ -57,6 +57,7 @@ try {
     'manifest.webmanifest',
     'sw.js',
     'config.js',
+    '_headers',
     '.nojekyll',
     'frontend/main.js',
     'frontend/core/offline-queue.js',
@@ -72,6 +73,12 @@ try {
       'customer static artifact excludes ' + forbidden,
     );
   }
+
+  const headers = fs.readFileSync(path.join(outDir, '_headers'), 'utf8');
+  assert.ok(headers.includes('X-Content-Type-Options: nosniff'));
+  assert.ok(headers.includes('X-Frame-Options: DENY'));
+  assert.ok(headers.includes("frame-ancestors 'none'"));
+  assert.ok(headers.includes('https://script.google.com'));
 
   const generatedConfig = fs.readFileSync(path.join(outDir, 'config.js'), 'utf8');
   assert.ok(
