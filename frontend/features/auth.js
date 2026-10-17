@@ -122,19 +122,17 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       'Your temporary credential was set by an administrator. Choose your own password with at least 8 characters.';
 
     const currentPassword = document.createElement('input');
-    currentPassword.id = 'op';
-    currentPassword.setAttribute('aria-label', 'Current password');
+    currentPassword.id = 'currentPassword';
+    currentPassword.setAttribute('aria-label', 'Current temporary password');
     currentPassword.type = 'password';
     currentPassword.inputMode = 'text';
-    // Existing PIN-based accounts can use their legacy credential once after the
-    // explicit schema migration. Fresh accounts use an 8+ character temporary password.
     currentPassword.maxLength = 128;
     currentPassword.autocomplete = 'current-password';
     currentPassword.placeholder = 'Current password or legacy PIN';
     currentPassword.required = true;
 
     const newPassword = document.createElement('input');
-    newPassword.id = 'np';
+    newPassword.id = 'newPassword';
     newPassword.setAttribute('aria-label', 'New password');
     newPassword.type = 'password';
     newPassword.inputMode = 'text';
@@ -151,9 +149,9 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       'Choose a new password',
       body,
       async () => {
-        const newPasswordValue = $('#np').value;
+        const newPasswordValue = $('#newPassword').value;
         const data = await api('changePassword', {
-          oldPassword: $('#op').value,
+          oldPassword: $('#currentPassword').value,
           newPassword: newPasswordValue,
         });
 
@@ -182,6 +180,16 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     );
 
     $('[data-x]').onclick = () => signOut();
+    const dialogNode = document.querySelector('#modal .mcard');
+    if (dialogNode) {
+      dialogNode.setAttribute('aria-labelledby', 'passwordChangeTitle');
+      const title = dialogNode.querySelector('h2, h3, .mtitle, .modal-title');
+      if (title) {
+        title.id = 'passwordChangeTitle';
+        title.tabIndex = -1;
+      }
+    }
+    currentPassword.focus();
   }
 
   function signInOnline() {
