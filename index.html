@@ -288,6 +288,7 @@
             class="auth-login__form"
             autocomplete="on"
             aria-describedby="loginHelp"
+            novalidate
           >
             <input
               id="lUrl"
@@ -310,9 +311,10 @@
                   autocomplete="username"
                   required
                   maxlength="254"
+                  aria-describedby="lEmailErr"
                 />
               </div>
-              <div class="auth-login__field-error" id="ue"></div>
+              <div id="lEmailErr" class="auth-login__field-error" role="alert" aria-live="polite"></div>
             </div>
             <div class="auth-login__field">
               <label for="lPassword">Password</label>
@@ -328,6 +330,7 @@
                   autocomplete="current-password"
                   required
                   maxlength="128"
+                  aria-describedby="lPasswordErr"
                 />
                 <button
                   type="button"
@@ -339,7 +342,7 @@
                   Show
                 </button>
               </div>
-              <div class="auth-login__field-error" id="pe"></div>
+              <div id="lPasswordErr" class="auth-login__field-error" role="alert" aria-live="polite"></div>
             </div>
             <p id="loginHelp" class="auth-login__help">
               New and changed passwords must contain at least 8 characters. If you are moving from
