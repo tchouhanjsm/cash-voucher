@@ -327,7 +327,7 @@ assert.match(
 );
 assert.match(
   navigation,
-  /if \(focusHeading\) focusPageHeading\(\)/,
+  /if \(focusHeading\) \{[\s\S]*?focusPageHeading\(\)/,
   'heading focus is opt-in so background refresh does not deliberately refocus the page',
 );
 assert.match(
