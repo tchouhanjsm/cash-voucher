@@ -5,7 +5,6 @@
 **Current source baseline:** `main` at `4a759b7513a925aee796949d8f6e79085f096314` (17 October 2026; PR #166 merge)  
 **Scope:** preserve the original design reasoning and owner-approved rules for the single-property Apps Script/Sheets product. Editing this record does not run migrations or release code.
 
-
 **Decision-precedence note (17 October 2026):** Sections 4–12 preserve the original design proposal and early unresolved questions. The owner-approved MVP policy in section 13 and the payment-approval decisions recorded after it supersede those earlier proposal statements where they conflict. CashImpact, one-drawer/day Daily Cash Close, correction history, payment approval and VendorID changes are implemented in source through merged PRs; they are **not** evidence that live migrations/deployment, backup/restore or a physical-cash pilot have been completed. Current gates are in `docs/RELEASE-READINESS.md` and `docs/STAGING-RELEASE-AUDIT.md`.
 ## 1. Problem and evidence
 
