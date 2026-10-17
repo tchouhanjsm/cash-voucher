@@ -349,6 +349,138 @@ with sync_playwright() as p:
         'Account PIN controls stack cleanly without page-level overflow on mobile',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
+    # Phase 28–30: cross-workflow visual matrix. Store same-browser screenshots as a
+    # review artifact in both light and dark themes; geometry checks run at every width.
+    visual_matrix_dir = '/tmp/cash-voucher-visual-matrix'
+    os.makedirs(visual_matrix_dir, exist_ok=True)
+    visual_routes = [
+        ('dashboard', 'dash', '#view .dashboard-view'),
+        ('new-entry', 'new', '#nf.entry-form'),
+        ('register', 'reg', '#rf'),
+        ('reports', 'reports', '#movementFilters'),
+        ('cash-close', 'cashClose', '.cc-controls'),
+        ('bulk-upload', 'bulk', '#bt'),
+        ('vendors', 'vend', '#vf'),
+        ('users', 'users', '#uf'),
+        ('settings', 'set', '#sf'),
+        ('audit', 'audit', '.audit-panel'),
+        ('account', 'acct', '#pf'),
+    ]
+    visual_widths = [320, 360, 390, 768, 1024, 1280, 1440]
+    for route_name, route_id, ready_selector in visual_routes:
+        if route_id == 'acct':
+            page.click('#userBtn')
+            page.locator('#userPop button[data-go="acct"]').first.click()
+        else:
+            go_view(page, route_id)
+        page.wait_for_selector(ready_selector, state='visible', timeout=10000)
+        page.wait_for_selector('#view .page-header h1', state='visible', timeout=10000)
+        check(
+            page.locator('#view .page-header h1').count() == 1
+            and page.locator('#view .page-header h1').inner_text().strip() != '',
+            f'{route_name}: one non-empty shared page heading is rendered',
+        )
+
+        for theme_name in ['light', 'dark']:
+            page.evaluate(
+                "theme => document.documentElement.setAttribute('data-theme', theme)",
+                theme_name,
+            )
+            for width in visual_widths:
+                page.set_viewport_size({'width': width, 'height': 900 if width >= 768 else 844})
+                page.wait_for_timeout(25)
+                layout = page.evaluate("""() => {
+                    const root = document.documentElement;
+                    const body = document.body;
+                    const main = document.querySelector('.main');
+                    const view = document.querySelector('#view');
+                    const tooShortControls = Array.from(view.querySelectorAll(
+                        'input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=file]), select, textarea, button.btn'
+                    )).filter((element) => {
+                        if (element.closest('.table-wrap')) return false;
+                        const style = getComputedStyle(element);
+                        const rect = element.getBoundingClientRect();
+                        return style.display !== 'none' && style.visibility !== 'hidden'
+                            && rect.width > 0 && rect.height > 0 && rect.height < 40;
+                    }).map((element) => ({
+                        tag: element.tagName,
+                        id: element.id || '',
+                        className: typeof element.className === 'string' ? element.className : ''
+                    })).slice(0, 6);
+                    return {
+                        viewportWidth: root.clientWidth,
+                        documentWidth: Math.max(root.scrollWidth, body.scrollWidth),
+                        mainWidth: main ? main.clientWidth : root.clientWidth,
+                        mainScrollWidth: main ? main.scrollWidth : root.scrollWidth,
+                        viewWidth: view ? view.clientWidth : root.clientWidth,
+                        viewScrollWidth: view ? view.scrollWidth : root.scrollWidth,
+                        headingCount: view.querySelectorAll('.page-header h1').length,
+                        tooShortControls
+                    };
+                }""")
+                check(
+                    layout['documentWidth'] <= layout['viewportWidth'] + 1
+                    and layout['mainScrollWidth'] <= layout['mainWidth'] + 1
+                    and layout['viewScrollWidth'] <= layout['viewWidth'] + 1,
+                    f'{route_name}: no document/main/workspace horizontal overflow at {width}px in {theme_name} theme',
+                )
+                check(
+                    layout['headingCount'] == 1,
+                    f'{route_name}: exactly one page heading remains at {width}px in {theme_name} theme',
+                )
+                check(
+                    not layout['tooShortControls'],
+                    f'{route_name}: visible form controls remain at least 40px high at {width}px in {theme_name} theme; found {layout["tooShortControls"]}',
+                )
+                if width in (390, 1280):
+                    screenshot_name = f'{route_name}-{theme_name}-{width}.png'
+                    page.screenshot(
+                        path=os.path.join(visual_matrix_dir, screenshot_name),
+                        full_page=True,
+                        animations='disabled',
+                    )
+
+    # Verify user-preference states against the running app stylesheet, not only source regexes.
+    page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+    go_view(page, 'dash')
+    page.emulate_media(reduced_motion='reduce')
+    reduced_motion_metrics = page.evaluate("""() => {
+        const target = document.querySelector('#view .page-header-actions .btn');
+        const durations = (target ? getComputedStyle(target).transitionDuration : '1s')
+            .split(',').map((duration) => Number.parseFloat(duration) * (duration.includes('ms') ? 1 : 1000));
+        return {matches: matchMedia('(prefers-reduced-motion: reduce)').matches, maxTransitionMs: Math.max(...durations)};
+    }""")
+    check(
+        reduced_motion_metrics['matches'] and reduced_motion_metrics['maxTransitionMs'] <= 1,
+        'reduced-motion preference disables perceptible transition motion on live workflow controls',
+    )
+    page.emulate_media(reduced_motion='no-preference', contrast='more')
+    contrast_metrics = page.evaluate("""() => ({
+        matches: matchMedia('(prefers-contrast: more)').matches,
+        cardBorderWidth: Number.parseFloat(getComputedStyle(document.querySelector('#view .card')).borderTopWidth),
+        focusOutlineWidth: Number.parseFloat(getComputedStyle(document.querySelector('#view .page-header-actions .btn')).outlineWidth)
+    })""")
+    check(
+        contrast_metrics['matches'] and contrast_metrics['cardBorderWidth'] >= 2,
+        'higher-contrast preference strengthens production card boundaries',
+    )
+    page.emulate_media(contrast='no-preference', forced_colors='active')
+    forced_color_metrics = page.evaluate("""() => ({
+        matches: matchMedia('(forced-colors: active)').matches,
+        focusOutlineWidth: Number.parseFloat(getComputedStyle(document.querySelector('#view .page-header-actions .btn')).outlineWidth),
+        cardBorderWidth: Number.parseFloat(getComputedStyle(document.querySelector('#view .card')).borderTopWidth),
+        pageOverflow: Math.max(document.documentElement.scrollWidth, document.body.scrollWidth) > document.documentElement.clientWidth
+    })""")
+    check(
+        forced_color_metrics['matches']
+        and forced_color_metrics['cardBorderWidth'] >= 1
+        and not forced_color_metrics['pageOverflow'],
+        'forced-colors preference retains visible component boundaries without page overflow',
+    )
+    page.emulate_media(forced_colors='none')
+    page.set_viewport_size({'width': 390, 'height': 800})
+    page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+
     go_view(page, 'dash')
     go_view(page, 'new')
     check(
