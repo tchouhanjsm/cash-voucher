@@ -437,7 +437,6 @@ assert.match(
   'saving Settings does not redraw over a route opened while the save was pending',
 );
 
-
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',
 );

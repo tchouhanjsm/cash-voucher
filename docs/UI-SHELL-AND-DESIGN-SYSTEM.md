@@ -2,8 +2,6 @@
 
 Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), cross-workflow visual matrix (PR #162), navigation/accessibility contract (PR #163), and validation/async-state work (PR #164) are merged. The current PR #165 candidate adds route-safe asynchronous updates to Reports and administration views, backed by deterministic navigation-race tests; it does not certify manual assistive-technology or production operational readiness.
 
-Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), cross-workflow visual matrix (PR #162), and navigation/accessibility contract (PR #163) are merged. Phases 34–36 connect form help and validation errors, make invalid report date ranges programmatically identifiable, and normalize report busy/settled state. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
-
 ## Approach
 
 No Figma file is imported. The app is vanilla JS with no build step, so the design system is implemented as CSS tokens and small modules. The selected source palette is the reviewed warm-neutral surface, restrained navy identity and gold accent; it remains compatible with replacing color, radius, spacing and type-scale tokens from a chosen kit without changing markup.
