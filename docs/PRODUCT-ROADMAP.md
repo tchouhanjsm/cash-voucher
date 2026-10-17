@@ -208,7 +208,7 @@ Each phase has one focused PR, actual test evidence, a two-pass review (product/
 
 **Historical batch (completed by PR #58): owner audit discoverability.** Give the owner a dedicated Audit log route, local filters across the server-returned latest 200 events, and CSV export for the filtered loaded set. Preserve the existing server authorization and audit API; do not imply this export covers the full history. No new backend query, schema, role, or production behavior is introduced.
 
-## Current phase status — PR #62 merged, PR #63 Apps Script release readiness
+## Historical phase status — PR #62 and PR #63
 
 **PR #62 merged:** offline sync/idempotency assurance is integrated at merge commit `49f2a3db297f84093d46b247a54c93c9372f3684`. Its reviewed PR head passed CI and Browser E2E (126 checks, 0 failures), but mock tests do not establish live Google behavior.
 
@@ -220,7 +220,7 @@ Do not rerun `setup()` during a normal release. Do not push a new backend versio
 
 **Next product phase after deployment/recovery evidence:** source-traceable data-quality exception reports and daily/monthly recorded-voucher movement reports. Keep GST/TDS, general-ledger claims, daily cash close and destination-specific accountant export behind existing owner/accountant/CA decision gates.
 
-## Current implementation status — PR #65 merged
+## Historical implementation status — PR #65
 
 PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`. Its exact PR head `09eaac429307e4243d7a7d2fce1f16ef3402b029` passed CI and Browser E2E. The feature adds manager/owner-only recorded voucher movement reporting with source rows, validated filters, active/cancelled totals and CSV safety. It does not classify physical cash, calculate tax, or establish profit/bank balance.
 
@@ -244,17 +244,17 @@ PR #66 is merged at `3c93ddd6d45052f2e53e04c713060f0da72ccdd6`. This is structur
 - Live authorization, scheduled backup execution, Drive permissions, restoreability, real-device PWA update/install, accessibility and hotel pilot remain unverified.
 - Node v24 is outside the declared Node 20–22 range; npm previously reported three high-severity dependency findings that still need triage.
 
-## Current engineering phase — PR #67: inspection UI regression coverage
+## Historical engineering phase — PR #67
 
 Before adding another product feature, extend browser regression coverage around the existing owner-only data-quality and backup-integrity inspection surfaces. Verify the data-quality results and its explicit accounting/tax limitation; verify backup-integrity failure messaging and retry restoration in the browser mock. This is UI failure-path coverage only, not live Drive or recovery evidence.
 
 **Operational P0 remains independent of this PR:** verify the intended Apps Script deployment and live role boundaries, observe a real scheduled backup, and complete a witnessed restore into a separate recovery Sheet/folder. Do not declare production readiness or claim restoreability from mock tests.
 
-## Current phase — P0 Apps Script release and recovery verification (after PR #67)
+## Persistent operational blocker — live Apps Script deployment and recovery
 
-PR #67 is merged at `628f691fe9e4353cc6b701bd57c95c3e169aa495`. The owner-provided local quality gate passes on Node `v20.20.2`, and Browser E2E passes 128 checks / 0 failures. The local Clasp inventory shows four numbered versions; the configured URL matches version 4's deployment ID, with a separate `@HEAD` deployment also present. This does not establish that current `main` is deployed.
+PR #67 and its local Clasp observations are historical evidence only. Source has since advanced through PR #166. The earlier report that the configured URL matched deployment version 4 must not be treated as current: independently map the root `config.js` `/exec` URL to the actual Apps Script project, active deployment ID, bound Sheet and Drive folders before touching any live resource.
 
-Before feature expansion, confirm the intended project, active deployment, Sheet binding and Script Properties in the Apps Script editor. Then complete live role/receipt authorization checks, observe a real scheduled backup, and witness a restore into a separate recovery Sheet/folder. No upload, deployment, `setup()`, or production mutation is authorized by this code phase. These live gates remain release blockers; targeted source-level rendering-security work may continue independently but does not substitute for live operational evidence.
+Before handover, the owner must provision the separate staging resources and protected GitHub `staging` Environment, then run the guarded staging/UAT workflow. For the actual customer instance, confirm its own project, deployment, Sheet binding, Script Properties and private Drive folders. Complete live role/receipt authorization checks, observe a real backup and witness restore into a separate recovery Sheet/folder. The current queue and exact required steps are recorded in `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`. No upload, migration, deployment, `setup()` or production mutation is authorized by this documentation phase.
 
 ## Completed phase — PR #69: DOM-only modal rendering
 
@@ -284,7 +284,7 @@ PR #73 merged at `71033675cc9f52ad391f8b2d06a362551a224be6`. Its tested head pas
 
 PR #74 merged to `main` as `970475dc440a3dc84b788087e60a73836d3d8814`. Its exact tested head `96fcc2b62e126c92318b97b3d8678302ef6dec11` passed Full Flight Test, normal CI and Browser E2E (110 backend checks; 142 browser checks, zero failures). It escaped the server-returned voucher number in the success panel and added hostile-response browser coverage. This remains a targeted fix, not complete XSS certification.
 
-## Current engineering phase — PR #75: bulk import completion feedback
+## Historical engineering phase — PR #75: bulk import completion feedback
 
 Improve the bulk-import completion panel so assistive technology receives a polite status announcement and the copy accurately distinguishes cash receipts from payments. Keep the change limited to the existing completion panel, focused Browser E2E coverage and synchronized handoff docs; no import contract, data semantics, or backend behavior changes.
 
