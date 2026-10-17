@@ -194,11 +194,16 @@ const unknownLoginAudit = g.sheets.AuditLog.rows.find(
   (row) => row[2] === 'LOGIN_FAILED' && row[3] === 'missing-user@test.com',
 );
 ok(
-  !unknownLogin.ok && Boolean(unknownLoginAudit) && !String(unknownLoginAudit[4]).includes('WrongPass123'),
+  !unknownLogin.ok &&
+    Boolean(unknownLoginAudit) &&
+    !String(unknownLoginAudit[4]).includes('WrongPass123'),
   'failed login for an unknown email is audited without storing the password',
 );
 const shortPasswordLogin = g.call('login', { email: 'owner@test.com', password: 'short' });
-ok(!shortPasswordLogin.ok && shortPasswordLogin.code === 'AUTH', 'server rejects passwords shorter than eight characters');
+ok(
+  !shortPasswordLogin.ok && shortPasswordLogin.code === 'AUTH',
+  'server rejects passwords shorter than eight characters',
+);
 let r = g.call('login', { email: 'OWNER@test.com', password: 'OwnerPass2036' });
 ok(r.ok && r.data.user.role === 'owner', 'owner login');
 const as = (t, a, p = {}) => {
@@ -212,7 +217,10 @@ const as = (t, a, p = {}) => {
   return g.call(a, { token: t, ...payload });
 };
 ok(as(r.data.token, 'bootstrap').code === 'PASSWORD_CHANGE', 'owner must change setup password');
-let T = as(r.data.token, 'changePassword', { oldPassword: 'OwnerPass2036', newPassword: 'UpdatedOwnerPass7' }).data.token;
+let T = as(r.data.token, 'changePassword', {
+  oldPassword: 'OwnerPass2036',
+  newPassword: 'UpdatedOwnerPass7',
+}).data.token;
 
 // Revalidate write sessions after acquiring the ScriptLock. Simulate a session being
 // invalidated while a write request waits for the lock; no voucher may be written.
@@ -287,26 +295,49 @@ ok(
 );
 
 ok(
-  as(T, 'saveUser', { name: 'Mona Manager', email: 'm@test.com', role: 'manager', password: 'ManagerPass123' })
+  as(T, 'saveUser', {
+    name: 'Mona Manager',
+    email: 'm@test.com',
+    role: 'manager',
+    password: 'ManagerPass123',
+  })
     .ok,
   'manager created',
 );
 ok(
-  as(T, 'saveUser', { name: 'Sam Staff', email: 's@test.com', role: 'staff', password: 'StaffPass1234' }).ok,
+  as(T, 'saveUser', {
+    name: 'Sam Staff',
+    email: 's@test.com',
+    role: 'staff',
+    password: 'StaffPass1234',
+  }).ok,
   'staff created',
 );
 ok(
-  as(T, 'saveUser', { name: 'Alex Staff', email: 'a@test.com', role: 'staff', password: 'OtherStaffPass9' }).ok,
+  as(T, 'saveUser', {
+    name: 'Alex Staff',
+    email: 'a@test.com',
+    role: 'staff',
+    password: 'OtherStaffPass9',
+  }).ok,
   'second staff created',
 );
 ok(
-  !as(T, 'saveUser', { name: 'X', email: 'M@test.com', role: 'staff', password: 'NewStaffPass12' }).ok,
+  !as(T, 'saveUser', {
+    name: 'X',
+    email: 'M@test.com',
+    role: 'staff',
+    password: 'NewStaffPass12',
+  }).ok,
   'dup email rejected',
 );
 // forced password change
 const M0 = g.call('login', { email: 'm@test.com', password: 'ManagerPass123' }).data.token;
 ok(as(M0, 'bootstrap').code === 'PASSWORD_CHANGE', 'must change password first');
-const cp = as(M0, 'changePassword', { oldPassword: 'ManagerPass123', newPassword: 'UpdatedManager1' });
+const cp = as(M0, 'changePassword', {
+  oldPassword: 'ManagerPass123',
+  newPassword: 'UpdatedManager1',
+});
 ok(cp.ok, 'password changed');
 ok(as(M0, 'bootstrap').code === 'SESSION', 'old token invalid after password change');
 const M = cp.data.token;
@@ -335,7 +366,10 @@ const busyPinAttempts = g.lockStats.attempts;
 const busyPinWaits = g.lockStats.waits;
 const busyPinReleases = g.lockStats.releases;
 g.lockStats.failNextWait = true;
-const busyPinChange = as(L, 'changePassword', { oldPassword: 'WrongPass123', newPassword: 'UpdatedLockout9' });
+const busyPinChange = as(L, 'changePassword', {
+  oldPassword: 'WrongPass123',
+  newPassword: 'UpdatedLockout9',
+});
 ok(
   !busyPinChange.ok &&
     busyPinChange.code === 'BUSY' &&
@@ -352,20 +386,29 @@ const changePasswordWaits = g.lockStats.waits;
 const changePasswordReleases = g.lockStats.releases;
 const failedPinChanges = [];
 for (let i = 0; i < 5; i++) {
-  failedPinChanges.push(as(L, 'changePassword', { oldPassword: 'WrongPass123', newPassword: 'UpdatedLockout9' }));
+  failedPinChanges.push(
+    as(L, 'changePassword', {
+      oldPassword: 'WrongPass123',
+      newPassword: 'UpdatedLockout9',
+    }),
+  );
 }
 ok(
   failedPinChanges.every((result) => !result.ok && result.code !== 'LOCKED'),
   'wrong current password attempts are counted before lockout',
 );
 ok(
-  g.lockStats.waits === changePasswordWaits + 5 && g.lockStats.releases === changePasswordReleases + 5,
+  g.lockStats.waits === changePasswordWaits + 5 &&
+    g.lockStats.releases === changePasswordReleases + 5,
   'each password-change counter update runs under the shared script lock',
 );
 const changePasswordLockoutWaits = g.lockStats.waits;
 const changePasswordLockoutReleases = g.lockStats.releases;
 ok(
-  as(L, 'changePassword', { oldPassword: 'UpdatedLockout9', newPassword: '112244' }).code === 'LOCKED',
+  as(L, 'changePassword', {
+    oldPassword: 'UpdatedLockout9',
+    newPassword: '112244',
+  }).code === 'LOCKED',
   'password change is locked after five incorrect current password attempts',
 );
 ok(
@@ -374,9 +417,15 @@ ok(
   'locked password-change attempts release the acquired script lock',
 );
 const S0 = g.call('login', { email: 's@test.com', password: 'StaffPass1234' }).data.token;
-const S = as(S0, 'changePassword', { oldPassword: 'StaffPass1234', newPassword: 'UpdatedStaffPass6' }).data.token;
+const S = as(S0, 'changePassword', {
+  oldPassword: 'StaffPass1234',
+  newPassword: 'UpdatedStaffPass6',
+}).data.token;
 const A0 = g.call('login', { email: 'a@test.com', password: 'OtherStaffPass9' }).data.token;
-const A = as(A0, 'changePassword', { oldPassword: 'OtherStaffPass9', newPassword: 'NextPassword123' }).data.token;
+const A = as(A0, 'changePassword', {
+  oldPassword: 'OtherStaffPass9',
+  newPassword: 'NextPassword123',
+}).data.token;
 ok(as(S, 'backupStatus').code === 'FORBIDDEN', 'staff cannot read owner backup status');
 ok(as(M, 'backupStatus').code === 'FORBIDDEN', 'manager cannot read owner backup status');
 let backupStatus = as(T, 'backupStatus').data;
@@ -1722,7 +1771,8 @@ ok(
   'password reset audit records account state without logging credential material',
 );
 ok(
-  g.lockStats.waits === resetPasswordWaits + 1 && g.lockStats.releases === resetPasswordReleases + 1,
+  g.lockStats.waits === resetPasswordWaits + 1 &&
+    g.lockStats.releases === resetPasswordReleases + 1,
   'password reset and throttle clearing run under the shared script lock',
 );
 const resetLogin = g.call('login', { email: 'm@test.com', password: 'LockoutPass123' });

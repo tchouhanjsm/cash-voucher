@@ -28,6 +28,7 @@
 
     <link rel="stylesheet" href="style.css" />
     <link rel="stylesheet" href="frontend-ui-kit.css" />
+  <!-- prettier-ignore -->
   <style id="cv-login-styles">
 #login.lock{width:100%;min-height:100dvh;display:flex;align-items:center;justify-content:center;padding:28px;background:#f3f5f9;color:#1F2A44;box-sizing:border-box}
 #login.lock.hidden{display:none!important}
@@ -183,92 +184,93 @@
     </div>
 
     
-<section id="login" class="lock hidden" aria-labelledby="loginTitle">
-  <div id="cvLogin">
-    <section class="cv-login-story" aria-label="Cash Voucher overview">
-      <div class="cv-login-brand">
-        <svg width="36" height="36" viewBox="0 0 36 36" role="img" aria-label="Cash Voucher logo">
-          <rect x="2" y="6" width="32" height="24" rx="5" fill="#1F2A44"/>
-          <circle cx="2" cy="18" r="4" fill="#DCEBFA"/><circle cx="34" cy="18" r="4" fill="#DCEBFA"/>
-          <path d="M12 12h12M12 16h12M14 12c4 0 4 6 0 6l6 6" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        <span>Cash Voucher</span>
-      </div>
-      <div class="cv-login-copy">
-        <h1 class="cv-serif">Every rupee out, on paper and on record.</h1>
-        <p>Raise numbered vouchers, route them for approval, and keep a cash book that matches the drawer.</p>
-      </div>
-      <svg class="cv-login-illustration" viewBox="0 0 320 190" role="img" aria-label="Illustration of a cash voucher ready for approval">
-        <rect x="26" y="23" width="270" height="145" rx="10" fill="#CFEBDA" transform="rotate(-5 160 95)"/>
-        <rect x="22" y="18" width="276" height="154" rx="10" fill="#F9D9E5" transform="rotate(3 160 95)"/>
-        <rect x="18" y="18" width="284" height="154" rx="10" fill="#fff" stroke="#1F2A44" stroke-width="1.2"/>
-        <line x1="222" y1="31" x2="222" y2="158" stroke="#D9DEE8" stroke-dasharray="3 4"/>
-        <text x="34" y="43" font-size="12" font-weight="600" fill="#1F2A44">CASH VOUCHER</text>
-        <text x="34" y="68" font-size="10" fill="#6B7690">Paid to</text>
-        <line x1="34" y1="83" x2="190" y2="83" stroke="#D9DEE8"/>
-        <text x="34" y="103" font-size="10" fill="#6B7690">Description</text>
-        <line x1="34" y1="117" x2="190" y2="117" stroke="#D9DEE8"/>
-        <text x="34" y="148" font-size="19" font-family="Georgia,serif" fill="#1F2A44">₹ ———</text>
-        <circle cx="259" cy="115" r="22" fill="#CFEBDA" stroke="#1F2A44"/>
-        <circle cx="259" cy="115" r="16" fill="none" stroke="#1F2A44" stroke-dasharray="2 3"/>
-        <path d="m249 115 7 7 13-15" fill="none" stroke="#1F2A44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      <div class="cv-login-benefits">
-        <div><span aria-hidden="true">✓</span> Auto-numbered vouchers</div>
-        <div><span aria-hidden="true">✓</span> Approval trail on every entry</div>
-        <div><span aria-hidden="true">✓</span> Daily and monthly cash book</div>
-      </div>
-      <div class="cv-login-theme" role="group" aria-label="Choose login accent theme">
-        <span>Appearance</span>
-        <button type="button" class="cv-theme" data-login-theme="sky" aria-pressed="true" aria-label="Sky blue theme" style="background:#DCEBFA"></button>
-        <button type="button" class="cv-theme" data-login-theme="blush" aria-pressed="false" aria-label="Blush pink theme" style="background:#FBE1EA"></button>
-        <button type="button" class="cv-theme" data-login-theme="mint" aria-pressed="false" aria-label="Mint green theme" style="background:#DDF1E5"></button>
-      </div>
-    </section>
-    <section class="cv-login-form-side" aria-label="Sign in">
-      <div class="cv-login-welcome">
-        <span class="cv-eyebrow">YOUR CASH BOOK, IN ONE PLACE</span>
-        <h2 id="loginTitle" class="cv-serif">Welcome back</h2>
-        <p>Sign in to open your voucher book.</p>
-      </div>
-      <form id="loginForm" autocomplete="on" aria-describedby="loginHelp" novalidate>
-        <input id="lUrl" type="url" autocomplete="url" class="hidden" aria-label="Server URL"/>
-        <div class="cv-field">
-          <label for="lEmail">Work email</label>
-          <div class="cv-input-wrap">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
-            <input id="lEmail" type="email" placeholder="you@company.com" autocomplete="username" required maxlength="254"/>
+    <!-- prettier-ignore -->
+    <section id="login" class="lock hidden" aria-labelledby="loginTitle">
+      <div id="cvLogin">
+        <section class="cv-login-story" aria-label="Cash Voucher overview">
+          <div class="cv-login-brand">
+            <svg width="36" height="36" viewBox="0 0 36 36" role="img" aria-label="Cash Voucher logo">
+              <rect x="2" y="6" width="32" height="24" rx="5" fill="#1F2A44"/>
+              <circle cx="2" cy="18" r="4" fill="#DCEBFA"/><circle cx="34" cy="18" r="4" fill="#DCEBFA"/>
+              <path d="M12 12h12M12 16h12M14 12c4 0 4 6 0 6l6 6" fill="none" stroke="#fff" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Cash Voucher</span>
           </div>
-          <p class="cv-field-error" id="lEmailErr"></p>
-        </div>
-        <div class="cv-field">
-          <label for="lPassword">Password</label>
-          <div class="cv-input-wrap">
-            <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
-            <input id="lPassword" type="password" placeholder="Enter your password" autocomplete="current-password" minlength="8" maxlength="128" required/>
-            <button type="button" class="cv-password-toggle" id="lPasswordToggle" aria-label="Show password" aria-pressed="false">
-              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+          <div class="cv-login-copy">
+            <h1 class="cv-serif">Every rupee out, on paper and on record.</h1>
+            <p>Raise numbered vouchers, route them for approval, and keep a cash book that matches the drawer.</p>
+          </div>
+          <svg class="cv-login-illustration" viewBox="0 0 320 190" role="img" aria-label="Illustration of a cash voucher ready for approval">
+            <rect x="26" y="23" width="270" height="145" rx="10" fill="#CFEBDA" transform="rotate(-5 160 95)"/>
+            <rect x="22" y="18" width="276" height="154" rx="10" fill="#F9D9E5" transform="rotate(3 160 95)"/>
+            <rect x="18" y="18" width="284" height="154" rx="10" fill="#fff" stroke="#1F2A44" stroke-width="1.2"/>
+            <line x1="222" y1="31" x2="222" y2="158" stroke="#D9DEE8" stroke-dasharray="3 4"/>
+            <text x="34" y="43" font-size="12" font-weight="600" fill="#1F2A44">CASH VOUCHER</text>
+            <text x="34" y="68" font-size="10" fill="#6B7690">Paid to</text>
+            <line x1="34" y1="83" x2="190" y2="83" stroke="#D9DEE8"/>
+            <text x="34" y="103" font-size="10" fill="#6B7690">Description</text>
+            <line x1="34" y1="117" x2="190" y2="117" stroke="#D9DEE8"/>
+            <text x="34" y="148" font-size="19" font-family="Georgia,serif" fill="#1F2A44">₹ ———</text>
+            <circle cx="259" cy="115" r="22" fill="#CFEBDA" stroke="#1F2A44"/>
+            <circle cx="259" cy="115" r="16" fill="none" stroke="#1F2A44" stroke-dasharray="2 3"/>
+            <path d="m249 115 7 7 13-15" fill="none" stroke="#1F2A44" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <div class="cv-login-benefits">
+            <div><span aria-hidden="true">✓</span> Auto-numbered vouchers</div>
+            <div><span aria-hidden="true">✓</span> Approval trail on every entry</div>
+            <div><span aria-hidden="true">✓</span> Daily and monthly cash book</div>
+          </div>
+          <div class="cv-login-theme" role="group" aria-label="Choose login accent theme">
+            <span>Appearance</span>
+            <button type="button" class="cv-theme" data-login-theme="sky" aria-pressed="true" aria-label="Sky blue theme" style="background:#DCEBFA"></button>
+            <button type="button" class="cv-theme" data-login-theme="blush" aria-pressed="false" aria-label="Blush pink theme" style="background:#FBE1EA"></button>
+            <button type="button" class="cv-theme" data-login-theme="mint" aria-pressed="false" aria-label="Mint green theme" style="background:#DDF1E5"></button>
+          </div>
+        </section>
+        <section class="cv-login-form-side" aria-label="Sign in">
+          <div class="cv-login-welcome">
+            <span class="cv-eyebrow">YOUR CASH BOOK, IN ONE PLACE</span>
+            <h2 id="loginTitle" class="cv-serif">Welcome back</h2>
+            <p>Sign in to open your voucher book.</p>
+          </div>
+          <form id="loginForm" autocomplete="on" aria-describedby="loginHelp" novalidate>
+            <input id="lUrl" type="url" autocomplete="url" class="hidden" aria-label="Server URL"/>
+            <div class="cv-field">
+              <label for="lEmail">Work email</label>
+              <div class="cv-input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+                <input id="lEmail" type="email" placeholder="you@company.com" autocomplete="username" required maxlength="254"/>
+              </div>
+              <p class="cv-field-error" id="lEmailErr"></p>
+            </div>
+            <div class="cv-field">
+              <label for="lPassword">Password</label>
+              <div class="cv-input-wrap">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+                <input id="lPassword" type="password" placeholder="Enter your password" autocomplete="current-password" minlength="8" maxlength="128" required/>
+                <button type="button" class="cv-password-toggle" id="lPasswordToggle" aria-label="Show password" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <p class="cv-field-hint">Use at least 8 characters.</p>
+              <p class="cv-field-error" id="lPasswordErr"></p>
+            </div>
+            <div id="lErr" class="cv-login-error" role="alert" aria-live="assertive"></div>
+            <button class="cv-login-submit" type="submit" id="lBtn">
+              <span id="lBtnLabel">Sign in securely</span>
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
             </button>
+            <p id="loginHelp" class="cv-login-help">Your account is managed by your administrator. Never share your password.</p>
+          </form>
+          <div class="cv-login-footer">
+            <span class="cv-lock-mark" aria-hidden="true">▣</span>
+            <span>Private account access</span>
+            <span aria-hidden="true">·</span>
+            <span>Session protected</span>
           </div>
-          <p class="cv-field-hint">Use at least 8 characters.</p>
-          <p class="cv-field-error" id="lPasswordErr"></p>
-        </div>
-        <div id="lErr" class="cv-login-error" role="alert" aria-live="assertive"></div>
-        <button class="cv-login-submit" type="submit" id="lBtn">
-          <span id="lBtnLabel">Sign in securely</span>
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-        </button>
-        <p id="loginHelp" class="cv-login-help">Your account is managed by your administrator. Never share your password.</p>
-      </form>
-      <div class="cv-login-footer">
-        <span class="cv-lock-mark" aria-hidden="true">▣</span>
-        <span>Private account access</span>
-        <span aria-hidden="true">·</span>
-        <span>Session protected</span>
+        </section>
       </div>
     </section>
-  </div>
-</section>
 
     <div id="app" class="app hidden">
       <aside class="side" aria-label="Application navigation">

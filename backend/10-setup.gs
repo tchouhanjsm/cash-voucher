@@ -1,5 +1,8 @@
 /* ============ one-time setup (run from the editor) ============ */
-/** Script Properties needed once: OWNER_EMAIL, OWNER_PASSWORD (8–128 characters), optional OWNER_NAME. */
+/**
+ * Script properties needed once: OWNER_EMAIL, OWNER_PASSWORD (8–128 characters),
+ * and optional OWNER_NAME.
+ */
 // eslint-disable-next-line no-unused-vars
 function setup() {
   const p = PropertiesService.getScriptProperties();
@@ -32,8 +35,11 @@ function setup() {
       .toLowerCase();
     const password = String(p.getProperty('OWNER_PASSWORD') || '');
     if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Set Script Property OWNER_EMAIL first.');
-    if (!passwordOk_(password))
-      throw new Error('Set Script Property OWNER_PASSWORD to a password containing 8–128 characters.');
+    if (!passwordOk_(password)) {
+      throw new Error(
+        'Set Script Property OWNER_PASSWORD to a password containing 8–128 characters.',
+      );
+    }
     addUser_(p.getProperty('OWNER_NAME') || 'Owner', email, 'owner', password, true);
     p.deleteProperty('OWNER_PASSWORD');
     audit_({ email: 'system' }, 'SETUP', '', 'Owner created: ' + email);

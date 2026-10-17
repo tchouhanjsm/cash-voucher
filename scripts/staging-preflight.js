@@ -212,7 +212,9 @@ function validateStagingConfiguration(env = process.env, options = {}) {
         stagingUrl.hostname === 'script.google.com' &&
         stagingUrl.pathname ===
           '/macros/s/' + String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec',
-      dedicatedUatAccountsPresent: Boolean(ownerEmail && managerEmail && ownerPassword && managerPassword),
+      dedicatedUatAccountsPresent: Boolean(
+        ownerEmail && managerEmail && ownerPassword && managerPassword,
+      ),
     },
   };
 }
@@ -240,4 +242,9 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { isStrongPassword, normalizeUrl, readProductionApiUrl, validateStagingConfiguration };
+module.exports = {
+  isStrongPassword,
+  normalizeUrl,
+  readProductionApiUrl,
+  validateStagingConfiguration,
+};

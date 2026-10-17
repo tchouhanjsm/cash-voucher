@@ -36,7 +36,8 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
 
     S.url = (window.CV_CONFIG && CV_CONFIG.API_URL) || $('#lUrl').value.trim();
     if (!/^(https:\/\/|http:\/\/(localhost|127\.0\.0\.1))/.test(S.url)) {
-      err.textContent = 'The application server URL is missing or invalid. Contact your administrator.';
+      err.textContent =
+        'The application server URL is missing or invalid. Contact your administrator.';
       return;
     }
 
@@ -59,7 +60,12 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     ls.del('cv.token');
 
     const tryOfflineUnlock = async () => {
-      const verified = await verifyOfflineCredential({ email, endpoint: S.url, password, storage: ls });
+      const verified = await verifyOfflineCredential({
+        email,
+        endpoint: S.url,
+        password,
+        storage: ls,
+      });
       if (!verified) return false;
       const resumed = await start(false, email);
       if (resumed) return true;
@@ -71,7 +77,8 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     await busy($('#lBtn'), async () => {
       if (!navigator.onLine) {
         if (await tryOfflineUnlock()) return;
-        err.textContent = 'Offline access is unavailable or this password does not match this device. Connect and sign in to verify your account.';
+        err.textContent =
+          'Offline access is unavailable or this password does not match this device. Connect and sign in to verify this account.';
         return;
       }
       try {
@@ -96,7 +103,8 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
           if (await tryOfflineUnlock()) return;
           err.textContent = 'Unable to reach the server. Connect to the internet and try again.';
         } else {
-          err.textContent = error.message || 'Unable to sign in. Check your credentials and try again.';
+          err.textContent =
+            error.message || 'Unable to sign in. Check your credentials and try again.';
         }
       }
     });
@@ -113,14 +121,15 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       ls.del('cv.cache');
     }
     closeModal();
-    showLogin(expired ? 'Your session expired. Please sign in again.' : '');
+    showLogin(expired ? 'Session expired. Please sign in again.' : '');
   }
 
   function forcePasswordChange() {
     const body = document.createDocumentFragment();
     const help = document.createElement('p');
     help.className = 'muted';
-    help.textContent = 'Your administrator issued a temporary password. Choose a new password with at least 8 characters.';
+    help.textContent =
+      'Your administrator issued a temporary password. Choose a new password with at least 8 characters.';
 
     const currentPassword = document.createElement('input');
     currentPassword.id = 'currentPassword';
@@ -169,7 +178,12 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
         const activeEmail = typeof S.me?.email === 'string' ? S.me.email.trim().toLowerCase() : '';
         const expectedEmail = (ls.get('cv.email') || '').trim().toLowerCase();
         if (started && activeEmail && (!expectedEmail || activeEmail === expectedEmail)) {
-          await saveOfflineCredential({ email: activeEmail, endpoint: S.url, password, storage: ls });
+          await saveOfflineCredential({
+            email: activeEmail,
+            endpoint: S.url,
+            password,
+            storage: ls,
+          });
         } else if (!started) {
           S.token = '';
           ls.del('cv.token');
@@ -186,7 +200,9 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     S.offlineMode = false;
     ls.del('cv.token');
     closeModal();
-    showLogin('Sign in while connected to synchronize pending entries. Your local queue will be preserved.');
+    showLogin(
+      'Sign in while connected to synchronize pending entries. Your local queue will be preserved.',
+    );
   }
 
   function handleApiError(error) {

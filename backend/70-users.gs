@@ -49,7 +49,8 @@ function saveUser_(user, req) {
     return u.UserID === req.id;
   })[0];
   if (!t) throw err_('User not found.');
-  const active = req.active === undefined ? t.Active === true || t.Active === 'TRUE' : !!req.active;
+  const active =
+    req.active === undefined ? t.Active === true || t.Active === 'TRUE' : !!req.active;
   const owners = activeOwners_();
   if (t.Role === 'owner' && (role !== 'owner' || !active) && owners.length <= 1)
     throw err_('There must be at least one active owner.');
@@ -88,7 +89,8 @@ function resetPassword_(user, req) {
   if (!passwordOk_(String(req.password || '')))
     throw err_('Temporary password must contain 8–128 characters.');
   const salt = Utilities.getUuid();
-  const previouslyRequiredChange = t.MustChangePassword === true || t.MustChangePassword === 'TRUE';
+  const previouslyRequiredChange =
+    t.MustChangePassword === true || t.MustChangePassword === 'TRUE';
   updateRow_('Users', t._row, {
     Salt: salt,
     PasswordHash: hashPassword_(salt, String(req.password)),

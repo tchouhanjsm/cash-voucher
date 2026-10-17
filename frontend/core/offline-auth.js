@@ -91,7 +91,13 @@ function equalBytes(left, right) {
   return difference === 0;
 }
 
-export async function saveOfflineCredential({ email, endpoint, password, storage, now = Date.now() }) {
+export async function saveOfflineCredential({
+  email,
+  endpoint,
+  password,
+  storage,
+  now = Date.now(),
+}) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedEndpoint = normalizeEndpoint(endpoint);
   if (
@@ -137,7 +143,13 @@ export async function saveOfflineCredential({ email, endpoint, password, storage
   }
 }
 
-export async function verifyOfflineCredential({ email, endpoint, password, storage, now = Date.now() }) {
+export async function verifyOfflineCredential({
+  email,
+  endpoint,
+  password,
+  storage,
+  now = Date.now(),
+}) {
   const normalizedEmail = normalizeEmail(email);
   const normalizedEndpoint = normalizeEndpoint(endpoint);
   if (
