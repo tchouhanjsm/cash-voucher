@@ -51,7 +51,7 @@ export function createShell({ go }) {
       closeMenu();
 
       if (item.dataset.go) {
-        go(item.dataset.go);
+        go(item.dataset.go, { focusHeading: true });
         const focusId = item.dataset.focus;
         if (focusId) setTimeout(() => document.getElementById(focusId)?.focus(), 0);
       }
