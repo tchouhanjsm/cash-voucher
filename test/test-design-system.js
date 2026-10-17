@@ -357,8 +357,8 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v21'/,
-  'PWA cache revision advances with navigation focus styling',
+  /const C = 'cv2-v22'/,
+  'PWA cache revision advances with validation and interaction styles',
 );
 assert.match(
   payments,
