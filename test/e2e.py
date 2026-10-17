@@ -2283,6 +2283,14 @@ with sync_playwright() as p:
         and page.locator('.rci').first.get_attribute('aria-label') == 'How it was settled, row 1',
         'payment row fields have explicit accessible names',
     )
+    cash_impact_help = page.locator('.rci').first.evaluate("""element => {
+        const ids = (element.getAttribute('aria-describedby') || '').split(/\\s+/).filter(Boolean);
+        return ids.map(id => document.getElementById(id)?.innerText || '').join(' ');
+    }""")
+    check(
+        'notes or coins moved' in cash_impact_help and 'UPI' in cash_impact_help,
+        'cash-impact selector is persistently associated with its explanatory settlement guidance',
+    )
     choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('#nres .form-error')
@@ -2301,11 +2309,49 @@ with sync_playwright() as p:
         and page.evaluate("document.activeElement === document.querySelector('.ra')"),
         'invalid payment amount is announced and focused for correction',
     )
+    amount_error_relationship = page.locator('.ra').first.evaluate("""element => {
+        const id = element.getAttribute('aria-describedby');
+        return {invalid: element.getAttribute('aria-invalid'), message: document.getElementById(id)?.innerText || ''};
+    }""")
+    check(
+        amount_error_relationship['invalid'] == 'true'
+        and 'valid amount' in amount_error_relationship['message'],
+        'invalid amount references its concrete, announced validation message',
+    )
     page.fill('.ra', '1,250.50')
     page.wait_for_function("document.querySelector('.row-error') === null")
     check(
         page.locator('.ra').first.get_attribute('aria-invalid') is None,
         'payment validation state clears when the amount is corrected',
+    )
+    page.select_option('.rci', '')
+    page.click('#nsave')
+    page.wait_for_function(
+        "document.querySelector('.row-error')?.innerText.includes('Choose how this was settled')"
+    )
+    impact_error_relationship = page.locator('.rci').first.evaluate("""element => {
+        const ids = (element.getAttribute('aria-describedby') || '').split(/\\s+/).filter(Boolean);
+        return {
+            invalid: element.getAttribute('aria-invalid'),
+            helpId: document.querySelector('.ci-hint')?.id || '',
+            descriptions: ids,
+            messages: ids.map(id => document.getElementById(id)?.innerText || '').join(' ')
+        };
+    }""")
+    check(
+        impact_error_relationship['invalid'] == 'true'
+        and impact_error_relationship['helpId'] in impact_error_relationship['descriptions']
+        and 'notes or coins moved' in impact_error_relationship['messages']
+        and 'Choose how this was settled' in impact_error_relationship['messages'],
+        'cash-impact validation references both the persistent hint and the current error',
+    )
+    choose_cash_impact_for_current_rows()
+    page.wait_for_function("document.querySelector('.row-error') === null")
+    impact_help_after_correction = page.locator('.rci').first.get_attribute('aria-describedby')
+    check(
+        page.locator('.rci').first.get_attribute('aria-invalid') is None
+        and impact_help_after_correction == page.locator('.ci-hint').first.get_attribute('id'),
+        'clearing a cash-impact error preserves its persistent help-text relationship',
     )
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
@@ -4366,6 +4412,11 @@ with sync_playwright() as p:
         'movement report uses the accessible shared table component',
     )
     check(
+        page.locator('#report-output').get_attribute('aria-busy') == 'false'
+        and page.locator('#report-output .report-results-card').count() == 1,
+        'report output exposes a settled, non-busy state after successful loading',
+    )
+    check(
         'SELECTED PAYMENT TOTAL' in report_text.upper() and 'SELECTED RECEIPT TOTAL' in report_text.upper(),
         'movement report exposes payment and receipt totals',
     )
@@ -4651,6 +4702,30 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'malformed report date-range value is rejected without reflecting hostile input',
     )
+    date_range_a11y = page.evaluate("""() => {
+        const from = document.querySelector('#movementFrom');
+        const to = document.querySelector('#movementTo');
+        const error = document.querySelector('#report-date-range-error');
+        return {
+            fromInvalid: from?.getAttribute('aria-invalid'),
+            toInvalid: to?.getAttribute('aria-invalid'),
+            fromDescription: from?.getAttribute('aria-describedby'),
+            toDescription: to?.getAttribute('aria-describedby'),
+            errorRole: error?.getAttribute('role'),
+            errorText: error?.innerText || '',
+            busy: document.querySelector('#report-output')?.getAttribute('aria-busy')
+        };
+    }""")
+    check(
+        date_range_a11y['fromInvalid'] == 'true'
+        and date_range_a11y['toInvalid'] == 'true'
+        and date_range_a11y['fromDescription'] == 'report-date-range-error'
+        and date_range_a11y['toDescription'] == 'report-date-range-error'
+        and date_range_a11y['errorRole'] == 'alert'
+        and 'Choose a valid date range' in date_range_a11y['errorText']
+        and date_range_a11y['busy'] == 'false',
+        'invalid date range marks both fields and programmatically links them to one alert',
+    )
     # Restore a valid month-to-date filter before continuing the report workflow.
     page.locator('#movementFrom').fill(datetime.date.today().replace(day=1).isoformat())
     page.locator('#movementFilters button[type=submit]').click()
@@ -4659,6 +4734,12 @@ with sync_playwright() as p:
     )
     page.wait_for_function(
         "document.querySelector('#view').innerText.includes('Type: ALL · Status: ACTIVE')"
+    )
+    check(
+        page.locator('#movementFrom').get_attribute('aria-invalid') is None
+        and page.locator('#movementTo').get_attribute('aria-invalid') is None
+        and page.locator('#report-output').get_attribute('aria-busy') == 'false',
+        'valid report retry clears field-level invalid state and settles the output region',
     )
 
     page.select_option('#movementStatus', 'CANCELLED')
