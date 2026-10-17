@@ -332,6 +332,11 @@ assert.match(
 );
 assert.match(
   navigation,
+  /Promise\.resolve\(renderResult\)[\s\S]*?renderId !== activeViewRenderId[\s\S]*?active === document\.body/,
+  'asynchronous screen rendering restores lost focus only for the current route render',
+);
+assert.match(
+  navigation,
   /go\(button\.dataset\.v, \{ focusHeading: true \}\)/,
   'primary navigation requests destination-heading focus',
 );
