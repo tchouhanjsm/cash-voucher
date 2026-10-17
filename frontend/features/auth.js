@@ -15,6 +15,10 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     $('#lUrl').classList.toggle('hidden', !!(window.CV_CONFIG && CV_CONFIG.API_URL));
     $('#lUrl').value = ls.get('cv.url') || '';
     $('#lPassword').value = '';
+    $('#lEmailErr').textContent = '';
+    $('#lPasswordErr').textContent = '';
+    $('#lEmail').removeAttribute('aria-invalid');
+    $('#lPassword').removeAttribute('aria-invalid');
     $('#lErr').textContent = msg || '';
     $('#loginBrandTitle').textContent = ls.get('cv.name') || 'Cash Voucher';
 
@@ -26,7 +30,15 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     e.preventDefault();
 
     const err = $('#lErr');
+    const emailInput = $('#lEmail');
+    const passwordInput = $('#lPassword');
+    const emailError = $('#lEmailErr');
+    const passwordError = $('#lPasswordErr');
     err.textContent = '';
+    emailError.textContent = '';
+    passwordError.textContent = '';
+    emailInput.removeAttribute('aria-invalid');
+    passwordInput.removeAttribute('aria-invalid');
 
     S.url = (window.CV_CONFIG && CV_CONFIG.API_URL) || $('#lUrl').value.trim();
 
@@ -35,8 +47,29 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       return;
     }
 
-    const email = $('#lEmail').value.trim();
-    const password = $('#lPassword').value;
+    const email = emailInput.value.trim().toLowerCase();
+    const password = passwordInput.value;
+    let valid = true;
+
+    if (!/^\\S+@\\S+\\.\\S+$/.test(email)) {
+      emailError.textContent = 'Enter a valid work email address.';
+      emailInput.setAttribute('aria-invalid', 'true');
+      valid = false;
+    }
+
+    // Keep legacy credentials eligible for the explicit migration path; the server
+    // enforces the 8–128-character policy for new and changed passwords.
+    if (!password.length) {
+      passwordError.textContent = 'Enter your password.';
+      passwordInput.setAttribute('aria-invalid', 'true');
+      valid = false;
+    }
+
+    if (!valid) {
+      (emailError.textContent ? emailInput : passwordInput).focus({ preventScroll: true });
+      return;
+    }
+
     S.token = '';
     ls.del('cv.token');
 
