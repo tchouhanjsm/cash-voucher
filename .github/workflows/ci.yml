@@ -33,15 +33,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Temporary format diagnostic for customer delivery files
-        run: |
-          npx prettier --write docs/CUSTOMER-INSTANCE-REGISTER-TEMPLATE.md scripts/build-web.js test/test-web-build.js
-          for file in docs/CUSTOMER-INSTANCE-REGISTER-TEMPLATE.md scripts/build-web.js test/test-web-build.js; do
-            echo "FORMAT_BEGIN:$file"
-            cat "$file"
-            echo "FORMAT_END:$file"
-          done
-
       - name: Scan current files and reachable Git history for credential patterns
         run: npm run audit:secrets
 
