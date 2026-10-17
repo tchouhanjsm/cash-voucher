@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), and cross-workflow visual matrix (PR #162) are merged. Phases 31–33 make SPA route focus predictable, audit accessible names across all owner-visible workflows and refresh the app-shell cache for the focus treatment. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
+Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), cross-workflow visual matrix (PR #162), and navigation/accessibility contract (PR #163) are merged. Phases 34–36 connect form help and validation errors, make invalid report date ranges programmatically identifiable, and normalize report busy/settled state. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
 
 ## Approach
 
@@ -109,13 +109,15 @@ PR #161 integrated shared presentation and accessibility states into Bulk Upload
 
 PR #162 merged at `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; exact tested head `6f103e863cd0e7fe5c2f2ae12196e594134faec0` passed CI/quality, Browser E2E (898 checks) and Full Flight Test (285 backend + 898 browser checks). It adds a cross-screen responsive/theme matrix, higher-contrast and forced-colors coverage, and screenshot artifacts for human review; it does not claim visual or WCAG sign-off.
 
-## Phases 31–33 — route focus and accessible interaction contract (candidate)
+## Phases 31–33 — route focus and accessible interaction contract (merged PR #163)
 
-Branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`, based on merged main SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`.
+PR #163 merged at `ae8eb594a33f7e33338009d75c52d0b010cea678`; exact tested head `a6b1eff7593bb7a58f4e6063fb31befd2a646773` passed CI/quality, Browser E2E (936 checks) and Full Flight Test (285 backend + 936 browser checks). It introduces opt-in page-heading focus, an accessible-name regression heuristic for 11 workflows, account-menu Escape/focus restoration and cache `cv2-v21`. These tests do not replace manual WCAG review.
 
-- **Route announcements:** focus the rendered page heading after user navigation through the main navigation, More sheet or account menu; do not focus-steal on refresh or bootstrap; keep Change PIN field focus behavior intact.
-- **Accessible naming:** audit all visible interactive controls on the 11 owner-visible screens for an explicit or programmatic name. The browser rule is a regression heuristic, not a replacement for the platform's full accessible-name computation.
-- **Focus/dismissal:** preserve visible focus on a programmatically focused page heading, test account-menu Escape/focus restoration, and retain the existing dialog and More-sheet traps.
-- **Cache/release:** advance the app-shell cache revision for the updated focus style and run CI/quality, Browser E2E and Full Flight Test on one final head.
+## Phases 34–36 — form guidance and async-state consistency (candidate)
 
-No third-party dependency or remote runtime asset is added. Financial calculations, role permissions, API/schema and production data remain unchanged. Human keyboard/screen-reader/device validation, zoom/reflow, live Apps Script identity and backup/restore remain independent release gates.
+Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on merged main SHA `ae8eb594a33f7e33338009d75c52d0b010cea678`.
+
+- **Form guidance:** associate each dynamic cash-impact selector with its explanatory hint. Attach field error IDs in addition to, not instead of, persistent help; clearing an error removes only its own description token.
+- **Report validation:** both date inputs are marked invalid when the range is rejected and reference the same alert. A valid request clears the invalid relationship; a stable results wrapper exposes the loading state with `aria-busy`.
+- **Regression:** source assertions and browser tests check IDs, resolved descriptions, error state, recovery and the busy/settled wrapper. Styling makes invalid date fields visible while retaining existing contrast/forced-colors rules.
+- **Boundary:** no accounting calculation, approval policy, permission, API, schema, dependency or production data change. Human keyboard traversal, screen-reader output, real devices, zoom/reflow and live operational checks remain separate release gates.
