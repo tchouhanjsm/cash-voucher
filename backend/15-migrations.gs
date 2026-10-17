@@ -182,10 +182,11 @@ function migrateDailyCashCloseSchema() {
 
 
 /**
- * One-time migration for a populated instance moving from PIN to password authentication.
- * Take and verify a complete backup first. The migration preserves existing salted HMAC values,
- * renames the two Users headers, and forces every existing account to change its credential.
- * Update the matching Web App deployment immediately after running this function.
+ * Explicitly opt-in migration for a populated legacy instance moving from PIN to passwords.
+ * Complete and verify a backup before running. This preserves existing hash material and forces
+ * users to change credentials; the compatibility login permits a short legacy credential only
+ * when the migration marker is set and the authenticated user is restricted to changePassword.
+ * Never run this against production without a separately reviewed recovery plan.
  */
 function migratePinAuthToPasswordSchema() {
   const spreadsheetId = props_().getProperty('SS_ID');
@@ -205,6 +206,11 @@ function migratePinAuthToPasswordSchema() {
   if (!current.every(function (header, index) { return header === oldHeaders[index]; })) {
     throw new Error('Users headers do not match the expected legacy schema; no migration was performed.');
   }
+
+  // Persist a migration marker before changing row data. If a later write fails, the
+  // application stays in compatibility mode and continues to enforce forced password change.
+  const properties = props_();
+  properties.setProperty('AUTH_SCHEMA_PASSWORD_MIGRATION', 'PIN_TO_PASSWORD_V1');
 
   const lastRow = sheet.getLastRow();
   let affectedUsers = 0;
