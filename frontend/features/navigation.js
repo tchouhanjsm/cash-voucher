@@ -54,6 +54,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
   // bootstrap concurrently. Share same-session work and ignore stale-session responses
   // so a late request cannot overwrite the current user's data or diagnostics.
   let activeBootstrapLoad = null;
+  let activeViewRenderId = 0;
 
   async function load() {
     const requestToken = S.token;
@@ -328,9 +329,28 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     const render = renderers[view];
     if (!render) return;
 
-    render();
+    const renderId = ++activeViewRenderId;
+    const renderResult = render();
     window.scrollTo(0, 0);
-    if (focusHeading) focusPageHeading();
+
+    if (focusHeading) {
+      focusPageHeading();
+
+      // Async screens can replace their loading surface after the initial focus
+      // operation. Restore focus only if rendering detached/lost it and this is
+      // still the active route/render; never interrupt a user who moved elsewhere.
+      if (renderResult && typeof renderResult.then === 'function') {
+        Promise.resolve(renderResult)
+          .then(() => {
+            if (renderId !== activeViewRenderId || S.view !== view) return;
+            const active = document.activeElement;
+            if (!active || active === document.body || !active.isConnected) {
+              focusPageHeading();
+            }
+          })
+          .catch(() => {});
+      }
+    }
   }
 
   async function refresh(quiet) {
