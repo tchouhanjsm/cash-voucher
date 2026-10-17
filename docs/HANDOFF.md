@@ -6,7 +6,7 @@ Last verified main SHA: `dd901910531da2c060539baad44949fe2cb54b30` (PR #164 merg
 Latest post-merge main CI: [run 38998817186](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186) — passed  
 Current engineering batch: Phases 37–39 — route-safe asynchronous workflow updates  
 Current working branch: `phase-37-39-route-safe-async-views-2026-10-17`  
-Current pull request: [#165](https://github.com/tchouhanjsm/cash-voucher/pull/165) — review candidate; use exact-head CI, Browser E2E and Full Flight Test as the merge gate  
+Current pull request: [#165](https://github.com/tchouhanjsm/cash-voucher/pull/165) — review candidate; the required PR-quality handoff sections are populated, and the exact final head still needs passing CI, Browser E2E and Full Flight Test before merge  
 Current candidate: prevent delayed or out-of-order Reports and administration requests from replacing a route selected by the operator; preserve financial, permission, API and schema contracts
 
 ## Verified repository state
