@@ -36,9 +36,13 @@ function login_(req) {
     const u = email ? findUserByEmail_(email) : null;
     const active = u && (u.Active === true || u.Active === 'TRUE');
     const mustChange = u && (u.MustChangePassword === true || u.MustChangePassword === 'TRUE');
-    // A legacy short credential is accepted only after explicit migration has marked
-    // the account for mandatory password change. All other actions remain blocked.
-    const legacyShortCredential = Boolean(mustChange && password.length > 0 && password.length < 8);
+    const migrationEnabled =
+      props_().getProperty('AUTH_SCHEMA_PASSWORD_MIGRATION') === 'PIN_TO_PASSWORD_V1';
+    // Legacy credentials shorter than eight characters are accepted only while the explicit
+    // migration marker is present and the account is marked for mandatory password change.
+    const legacyShortCredential = Boolean(
+      migrationEnabled && mustChange && password.length > 0 && password.length < 8,
+    );
     const acceptableLength = passwordOk_(password) || legacyShortCredential;
     const passwordMatches = Boolean(
       u && active && acceptableLength && same_(hashPassword_(u.Salt, password), u.PasswordHash),
@@ -46,7 +50,12 @@ function login_(req) {
 
     if (!u || !active || !acceptableLength || !passwordMatches) {
       cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
-      audit_({ email: clean_(email || '(empty)', 254) }, 'LOGIN_FAILED', '', 'Invalid credentials');
+      audit_(
+        { email: clean_(email || '(empty)', 254) },
+        'LOGIN_FAILED',
+        '',
+        'Invalid credentials; password value intentionally excluded.',
+      );
       throw err_('Invalid email or password.');
     }
 
