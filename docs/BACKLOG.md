@@ -33,7 +33,6 @@ One line per item: date | priority | area | outcome / finding | evidence / depen
 2026-10-17 | DONE | Phases 34–36 — form validation guidance and report async state | Connected cash-impact help/errors, invalid report range inputs and report busy/settled state; no accounting or authorization changes | [PR #164](https://github.com/tchouhanjsm/cash-voucher/pull/164) merged at `dd901910531da2c060539baad44949fe2cb54b30`; exact-head CI, Browser E2E (943) and Full Flight Test (285 backend + 943 browser) passed; post-merge main CI passed
 2026-10-17 | DONE | Phases 37–39 — route-safe asynchronous views | Guard Report and Users request sequencing, prevent late admin mutation callbacks from rerendering a different active route, and add held-request browser regressions; no finance/permission/API/schema changes | [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165) merged at `4b729f33d9caff13e01ed56acbc231375c5beec0`; exact head `26a92a70513a088cddc994d1a398d63d908ec8e0` passed CI, Browser E2E and Full Flight Test
 
-
 2026-10-17 | DONE | Customer delivery packaging and handover foundation | Customer-specific static build via `CV_API_URL`, generated `dist/` and Cloudflare Pages security headers; onboarding and backup/restore handover runbooks | [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166) merged at `4a759b7513a925aee796949d8f6e79085f096314`; CI, Browser E2E (947) and Full Flight Test (285 backend + 947 browser) passed on exact tested head. Live staging/customer resources remain unprovisioned.
 
 ## Active queue — reviewed 17 October 2026
