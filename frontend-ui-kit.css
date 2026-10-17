@@ -2968,7 +2968,6 @@ here and in the production app. It requires no JS or remote assets. */
   }
 }
 
-
 /* Phase 31–33 — visible destination focus for single-page navigation. */
 @media screen {
   .app #view .page-header h1:focus-visible {
