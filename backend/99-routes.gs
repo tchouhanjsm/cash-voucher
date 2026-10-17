@@ -41,3 +41,25 @@ const WRITES = {
   recordCashCloseCorrection: 1,
   saveSettings: 1,
 };
+
+function route_(req) {
+  const action = req && req.action;
+  const fn = ACTIONS[action];
+  if (!fn) throw err_('Unknown action.', 'VALIDATION');
+
+  if (!Object.prototype.hasOwnProperty.call(WRITES, action)) {
+    const user = auth_(req.token);
+    if (user.mustChange && action !== 'changePassword' && action !== 'logout') {
+      throw err_('Please change your password first.', 'PASSWORD_CHANGE');
+    }
+    return fn(user, req);
+  }
+
+  return withScriptLock_(function () {
+    const user = auth_(req.token);
+    if (user.mustChange && action !== 'changePassword' && action !== 'logout') {
+      throw err_('Please change your password first.', 'PASSWORD_CHANGE');
+    }
+    return fn(user, req);
+  }, 'The service is busy. No changes were made. Please retry shortly.');
+}
