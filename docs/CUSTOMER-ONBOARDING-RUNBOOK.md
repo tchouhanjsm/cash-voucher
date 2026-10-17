@@ -4,7 +4,7 @@
 
 **Commercial model:** the current customer arrangement is ₹500 per month under the separately signed contract. The customer operates the application; the product owner provisions, hosts, maintains, backs up and releases it.
 
-**Status:** this is an operational runbook, not evidence that a customer instance has already been provisioned. Do not mark a gate complete until its live evidence has been recorded in the private instance register.
+**Status:** this is an operational runbook, not evidence that a customer instance has already been provisioned. PR #169 (password authentication/staging readiness) is merged at `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`, but live staging/customer provisioning, backup/restore and acceptance remain unverified. Do not mark a gate complete until its live evidence has been recorded in the private instance register.
 
 ## Current verified starting point
 
@@ -33,7 +33,7 @@ Do not share a customer's Sheet, receipt folder or backup folder with another cu
 ## A. Protect the source and operator account
 
 - [ ] Use a business-managed Google account that will remain under the product owner's control for Apps Script execution, Sheets, Drive, receipts and backups. Enable two-step verification and verify recovery access.
-- [ ] Keep Clasp authentication and `.clasp.json` local or in a protected deployment environment. Never commit `.clasprc.json`, OAuth tokens, PINs or live Script/Sheet/Drive identifiers.
+- [ ] Keep Clasp authentication and `.clasp.json` local or in a protected deployment environment. Never commit `.clasprc.json`, OAuth tokens, passwords/temporary credentials or live Script/Sheet/Drive identifiers.
 - [ ] Move static hosting to a provider that can build from the source repository and publish only the generated `dist/` artifact. Ensure that provider has read access to the repository before changing GitHub visibility.
 - [ ] Once the new host is verified and no service depends on root-level GitHub Pages, change the repository to private through GitHub Settings if the plan and deployment integration support it. This manual account-administration step cannot be performed by this repository-only workflow. Public repository copies already made by others cannot be recalled.
 
@@ -82,7 +82,7 @@ The root website must not be deployed as-is for a new customer. It contains deve
 Do not issue the customer link as “ready” until each gate is complete against the actual Google instance.
 
 - [ ] Verify initial owner login, mandatory password change and sign-out/re-login.
-- [ ] Create individual Manager/Staff accounts using distinct emails and non-shared PINs; verify server-side roles by testing allowed and denied operations.
+- [ ] Create individual Manager/Staff accounts using distinct emails and non-shared passwords; verify server-side roles by testing allowed and denied operations.
 - [ ] Create a clearly marked synthetic test voucher and receipt, confirm server persistence, receipt preview/access, register/report totals and audit entry, then cancel/clean up only according to the application's supported workflow. No real customer money or sensitive personal data belongs in this test.
 - [ ] Confirm the Dashboard/Settings reports the correct customer data source and backup configuration. Manually run `backupData_()` in this new instance to create a first backup now instead of waiting for the daily trigger. Authorize any required email notification scope if requested.
 - [ ] Open the backup root in Drive and verify a timestamped snapshot exists, its spreadsheet copy opens, its `receipts/` folder and `receipt-manifest.csv` are present, and the snapshot belongs to this instance.

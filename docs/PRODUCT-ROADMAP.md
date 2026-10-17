@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `4a759b7513a925aee796949d8f6e79085f096314` (PR #166 merge; post-merge main CI passed)  
-Current source phases: Phases 37–39 merged in PR #165; customer delivery packaging/handover foundation merged in PR #166.  
-Current release state: source is prepared for owner-provisioned staging; live staging, customer resources, backup/restore and first-customer acceptance are not verified. See `docs/STAGING-RELEASE-AUDIT.md`.
+Last verified main baseline: `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b` (PR #169 merge); post-merge main CI run [39049788835](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed. PR #169's exact pre-merge head also passed CI/quality, Browser E2E and Full Flight Test.  
+Current source phases: Phases 37–39 and customer delivery packaging/handover foundation (PR #166) are merged; PR #169's password-authentication/staging-readiness consolidation is also merged.  
+Current release state: source is prepared for owner-provisioned staging; live staging, customer resources, backup/restore and first-customer acceptance are not verified. See `docs/STAGING-RELEASE-AUDIT.md` and `docs/FINAL-REPOSITORY-AUDIT-2026-10-17.md`.
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -51,7 +51,11 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 
 These checks catch drift and validate tested paths. They do not claim that every HTML interpolation is safe, every role/action combination has been penetration-tested, or production has been verified.
 
-## Active priorities after Phase 39 and PR #166 (updated 17 October 2026)
+## Latest source milestone — PR #169
+
+PR #169 consolidated password authentication, credential-free authentication audit events, the supplied login redesign, migration safeguards and password-based staging/UAT guidance. It merged at `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b` on 17 October 2026. Its exact tested pre-merge head `b82b8f38b891f01b7cba2a1c421a920ceabd14fc` passed CI/quality, Browser E2E and Full Flight Test; post-merge main CI run [39049788835](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed. This remains source/mock evidence only; no live staging deployment or UAT is claimed.
+
+## Active priorities after Phase 39, PR #166 and PR #169 (updated 17 October 2026)
 
 1. **P0 — staging/UAT provisioning:** create separate staging Apps Script/Sheet/receipt/backup resources; verify the first versioned Web App deployment; configure a protected GitHub `staging` Environment, its variables and secrets; then run the guarded workflow from `main` with exact `STAGING-ONLY` confirmation and explicit staging-write consent. No IDs or credentials may be guessed.
 2. **P0 — first-customer instance and source privacy:** the repository is still public. Protect source access only after verifying the static host can use the private repository without interrupting service. Create a separate customer Script/Sheet/Drive set and distinct static-site origin; never reuse the staging or unverified root `config.js` endpoint.
@@ -62,7 +66,7 @@ These checks catch drift and validate tested paths. They do not claim that every
 7. **P2 — dependency exception:** reassess the `braces@3.0.3` Clasp/micromatch chain by 9 November 2026; CI is expected to reject the exception from 10 November unless an explicit reviewed renewal is made.
 8. **P2 — product decisions after pilot:** obtain accountant-approved destination/mapping before claiming target-specific export compatibility; decide whether optional denomination rows have operational value; set performance/usability targets only from measured pilot evidence.
 
-Phases 37–39 and PR #166 are source-complete and have passed their exact-head automation. The remaining P0 items are owner/account operations and witnessed evidence, not unmerged feature phases. Use `docs/STAGING-RELEASE-AUDIT.md` as the detailed queue and `docs/RELEASE-READINESS.md` for acceptance gates.
+Phases 37–39, PR #166's static customer packaging and PR #169's password authentication/staging consolidation are source-complete. PR #169 passed exact-head CI, Browser E2E and Full Flight Test; post-merge CI passed on `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`. The remaining P0 items are owner/account operations and witnessed evidence, not unmerged feature phases. Use `docs/STAGING-RELEASE-AUDIT.md` as the detailed queue and `docs/RELEASE-READINESS.md` for acceptance gates.
 
 ## Financial integrity invariants
 

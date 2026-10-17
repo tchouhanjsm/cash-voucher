@@ -9,7 +9,7 @@ No Figma file is imported. The app is vanilla JS with no build step, so the desi
 ## Phase 1 — app shell (PR #117)
 
 - Top bar: logo, property name, connection pill (Online or Offline), user menu with avatar initials, name and role.
-- User menu: My profile, Change PIN, Sign out. Keyboard: Esc closes and returns focus.
+- User menu: My profile, Change password, Sign out. Keyboard: Esc closes and returns focus.
 - Sidebar: grouped as Work, Money, Manage. Sign out is always visible on desktop.
 - Profile page: avatar, name, email, role, property, Install app, Sign out, Change PIN.
 - Logo: `icons/logo.svg`, original mark, used in the sidebar, the top bar and the service-worker cache.
@@ -122,7 +122,7 @@ Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on merged 
 - **Regression:** source assertions and browser tests check IDs, resolved descriptions, error state, recovery and the busy/settled wrapper. Styling makes invalid date fields visible while retaining existing contrast/forced-colors rules; app-shell cache advances to `cv2-v22`.
 - **Boundary:** no accounting calculation, approval policy, permission, API, schema, dependency or production data change. Human keyboard traversal, screen-reader output, real devices, zoom/reflow and live operational checks remain separate release gates.
 
-## Phases 37–39 — route-safe asynchronous view state (PR #165 candidate)
+## Phases 37–39 — route-safe asynchronous view state (PR #165 merged)
 
 The current source review found a late Report response rerendering the active workspace, plus stale/out-of-order Report requests and an equivalent risk in Users and post-save administration redraws. The batch sequences Report and Users requests, protects the destination route during async completion, and updates the shell cache to `cv2-v23`. E2E tests hold requests/save operations across navigation so route correctness is exercised against the browser and mock API, not inferred from CSS presence.
 

@@ -2,7 +2,7 @@
 
 **Status:** Current product/requirements baseline; source capability and live operational guarantees are tracked separately.  
 **Updated:** 17 October 2026  
-**Product today:** Single-property cash-voucher PWA using a static frontend, Google Apps Script API, Google Sheets, and Google Drive. Phases 37–39 and customer delivery packaging are merged; the active queue is owner-provisioned staging, live backup/restore and first-customer acceptance.
+**Product today:** Single-property cash-voucher PWA using a static frontend, Google Apps Script API, Google Sheets, and Google Drive. Phases 37–39, customer static packaging and password-authentication/staging-readiness PR #169 are merged at main SHA `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`. The active queue is owner-provisioned staging, live backup/restore and first-customer acceptance.
 
 ## 1. Purpose and decision boundary
 
