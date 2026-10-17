@@ -48,7 +48,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     audit: 'Manage',
   };
   const MOBILE_SHORTCUTS = new Set(['dash', 'new', 'reg', 'reports']);
-  const shell = createShell({ go: (view) => go(view) });
+  const shell = createShell({ go: (view, options) => go(view, options) });
 
   // A visibility restore, manual refresh, and background outbox sync can request
   // bootstrap concurrently. Share same-session work and ignore stale-session responses
@@ -300,7 +300,20 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     $('#navMorePanel').focus();
   }
 
-  function go(view) {
+  function focusPageHeading() {
+    const heading = $('#view .page-header h1');
+    if (!heading) {
+      $('#main-content').focus({ preventScroll: true });
+      return false;
+    }
+
+    if (!heading.hasAttribute('tabindex')) heading.setAttribute('tabindex', '-1');
+    heading.focus({ preventScroll: true });
+    return document.activeElement === heading;
+  }
+
+  function go(view, options = {}) {
+    const focusHeading = options?.focusHeading === true;
     const requestedView = NAV.find((item) => item[0] === view);
     if (!requestedView || !requestedView[3]()) {
       view = can('reports') ? 'reports' : can('create') ? 'new' : 'dash';
@@ -317,6 +330,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
 
     render();
     window.scrollTo(0, 0);
+    if (focusHeading) focusPageHeading();
   }
 
   async function refresh(quiet) {
@@ -351,7 +365,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     shell.bind();
     $('#nav').addEventListener('click', (event) => {
       const button = event.target.closest('[data-v]');
-      if (button) go(button.dataset.v);
+      if (button) go(button.dataset.v, { focusHeading: true });
     });
 
     $('#mobileMoreBtn').addEventListener('click', () => {
@@ -371,8 +385,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       if (!button) return;
       const view = button.dataset.v;
       closeMore();
-      go(view);
-      $('#main-content').focus();
+      go(view, { focusHeading: true });
     });
 
     document.addEventListener('keydown', (event) => {
