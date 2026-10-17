@@ -156,8 +156,8 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   const managerEmail = String(env.CV_STAGING_UAT_MANAGER_EMAIL || '')
     .trim()
     .toLowerCase();
-  const ownerPassword = String(env.CV_STAGING_UAT_OWNER_PASSWORD || '').trim();
-  const managerPassword = String(env.CV_STAGING_UAT_MANAGER_PASSWORD || '').trim();
+  const ownerPassword = String(env.CV_STAGING_UAT_OWNER_PASSWORD || '');
+  const managerPassword = String(env.CV_STAGING_UAT_MANAGER_PASSWORD || '');
 
   if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
     errors.push('A valid dedicated staging owner email is required.');

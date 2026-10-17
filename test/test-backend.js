@@ -183,6 +183,12 @@ ok(
 const loginLockWaits = g.lockStats.waits;
 const loginLockReleases = g.lockStats.releases;
 const badOwnerLogin = g.call('login', { email: 'owner@test.com', password: 'WrongPass123' });
+ok(
+  !badOwnerLogin.ok &&
+    g.lockStats.waits === loginLockWaits + 1 &&
+    g.lockStats.releases === loginLockReleases + 1,
+  'failed login is rejected while holding and releasing the script lock',
+);
 const unknownLogin = g.call('login', { email: 'missing-user@test.com', password: 'WrongPass123' });
 const unknownLoginAudit = g.sheets.AuditLog.rows.find(
   (row) => row[2] === 'LOGIN_FAILED' && row[3] === 'missing-user@test.com',
@@ -193,12 +199,6 @@ ok(
 );
 const shortPasswordLogin = g.call('login', { email: 'owner@test.com', password: 'short' });
 ok(!shortPasswordLogin.ok && shortPasswordLogin.code === 'AUTH', 'server rejects passwords shorter than eight characters');
-ok(
-  !badOwnerLogin.ok &&
-    g.lockStats.waits === loginLockWaits + 1 &&
-    g.lockStats.releases === loginLockReleases + 1,
-  'failed login is rejected while holding and releasing the script lock',
-);
 let r = g.call('login', { email: 'OWNER@test.com', password: 'OwnerPass2036' });
 ok(r.ok && r.data.user.role === 'owner', 'owner login');
 const as = (t, a, p = {}) => {

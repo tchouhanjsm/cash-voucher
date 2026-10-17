@@ -137,10 +137,10 @@ def run():
         raise AssertionError("CV_STAGING_API_URL is missing.")
 
     owner_email = os.environ["CV_STAGING_UAT_OWNER_EMAIL"].strip()
-    owner_pin = os.environ["CV_STAGING_UAT_OWNER_PASSWORD"].strip()
+    owner_password = os.environ["CV_STAGING_UAT_OWNER_PASSWORD"]
     manager_email = os.environ["CV_STAGING_UAT_MANAGER_EMAIL"].strip()
-    manager_pin = os.environ["CV_STAGING_UAT_MANAGER_PASSWORD"].strip()
-    if owner_email.lower() == manager_email.lower() or owner_pin == manager_pin:
+    manager_password = os.environ["CV_STAGING_UAT_MANAGER_PASSWORD"]
+    if owner_email.lower() == manager_email.lower() or owner_password == manager_password:
         raise AssertionError("Staging owner and manager UAT accounts must be distinct.")
 
     unique_vendor = "UAT-P19-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
@@ -157,7 +157,7 @@ def run():
         browser = playwright.chromium.launch()
         owner_context = browser.new_context(viewport={"width": 1280, "height": 800})
         owner_page = owner_context.new_page()
-        owner_token = sign_in(owner_page, owner_email, owner_pin, "staging owner")
+        owner_token = sign_in(owner_page, owner_email, owner_password, "staging owner")
         staging_target_check(owner_page)
         target_verified = True
 
@@ -257,7 +257,7 @@ def run():
 
             manager_context = browser.new_context(viewport={"width": 1280, "height": 800})
             manager_page = manager_context.new_page()
-            manager_token = sign_in(manager_page, manager_email, manager_pin, "staging manager")
+            manager_token = sign_in(manager_page, manager_email, manager_password, "staging manager")
             go(manager_page, "reg")
             manager_page.locator("#rq").fill(unique_vendor)
             manager_row = manager_page.locator("#rbody tr").filter(has_text=unique_vendor)
