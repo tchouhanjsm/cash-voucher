@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `525f8d0a8af73194ca73c83d05b02d38c02d1b8c` (PR #161 merge; responsive and accessibility completion for core workflows)  
-Current engineering batch: Phases 28–30 — cross-workflow visual regression and accessibility states  
-Current candidate branch: `phase-28-30-frontui-regression-matrix-2026-10-17`
+Last verified main baseline: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1` (PR #162 merge; cross-workflow visual matrix and accessibility preference coverage)  
+Current engineering batch: Phases 31–33 — route focus, accessible naming and interaction contract  
+Current candidate branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -40,7 +40,6 @@ This is a single-property cash-voucher PWA. Prioritize accuracy of money movemen
 - Phase 23 — FrontUI production-screen adoption is complete in merged PR #159 at main SHA `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`. It adds a shared section eyebrow, standardized New Entry layout, responsive Register filters, Settings diagnostic composition, Bulk Upload and Cash Close presentation, and bumps the PWA shell cache to `cv2-v18`. Exact head `41b25f42c39a033585128ddf8c7e89f247e1fc61` passed CI/quality (285 backend checks), Browser E2E (409 checks) and Full Flight Test (285 backend + 409 browser checks); post-merge CI passed on main. Manual device/zoom/screen-reader verification and live operational release gates remain open.
 - Phase 24 — responsive reporting and administration UI adoption is complete in merged PR #160 at main SHA `0d900235f9230ab05db940bb57881a171737ae0c`. The exact tested head passed CI/quality (285 backend checks), Browser E2E (418 checks) and Full Flight Test (285 backend + 418 browser checks); post-merge main CI passed. Source and mock checks do not certify real-device layout, live roles, backup/restore or production deployment.
 - Phases 25–27 — Fresh Design Studio workflow completion is complete in merged PR #161 at main SHA `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`. The tested head `27ceda070f38fe2a445e4e165fbbde20ee6377c9` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943524970), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943525175) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943524910). It styles Bulk Upload and Cash Close, improves keyboard-reachable/scrollable controls, adds reduced-motion and forced-colors handling and advances the shell cache. Manual device, zoom and assistive-technology review remain release gates.
-- Phases 25–27 — consolidated Fresh Design Studio completion is proposed in branch `phase-25-frontui-completion-bulk-2026-10-16`. This outcome-based batch finishes shared responsive/error/loading/interaction states across Bulk Upload and Daily Cash Close; removes remaining workflow-level inline presentation where a semantic class is clearer; makes the bulk preview keyboard-scrollable and the file picker keyboard reachable; adds reduced-motion and forced-colors safeguards; and expands real-browser responsive assertions. Financial rules, permissions, API contracts and production data remain out of scope pending exact-head CI and owner review.
 
 ## Phase 4 batch outcomes
 
@@ -395,11 +394,15 @@ The live audit supersedes stale “current sprint” and “active PR” wording
 
 PR #161 merged at main SHA `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`; exact tested head `27ceda070f38fe2a445e4e165fbbde20ee6377c9` passed CI, Browser E2E and Full Flight Test. The implementation completes Bulk Upload/Cash Close responsive surfaces, keyboard-reachable file selection and internal preview scrolling, semantic workflow styling, reduced-motion/forced-colors handling and shell cache refresh. There was no Apps Script deployment or production-data operation.
 
-## Phases 28–30 — cross-workflow visual regression and accessibility states (candidate)
+## Phases 28–30 — cross-workflow visual regression and accessibility states (merged PR #162)
 
-Branch: `phase-28-30-frontui-regression-matrix-2026-10-17`, based on merged PR #161 SHA `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`.
+PR #162 merged at main SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; tested head `6f103e863cd0e7fe5c2f2ae12196e594134faec0`. [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213796), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213795) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213808) all passed. Browser E2E passed 898 checks; Full Flight Test passed 285 backend plus 898 browser checks. The runs publish 390px and 1280px screenshots for all 11 owner-visible screens in light/dark themes. Screenshots are repeatable review artifacts, not pixel-diff tests or human visual sign-off.
 
-- **Phase 28 — layout matrix:** visit every owner-authorized workflow at 320, 360, 390, 768, 1024, 1280 and 1440 CSS pixels; check page/main/workspace overflow, one shared page heading and a minimum interactive-control height. Repeat the responsive checks in both light and dark themes.
-- **Phase 29 — theme and accessibility preference coverage:** assert reduced-motion behavior, explicit high-contrast styling and forced-colors rendering; strengthen shared layout boundaries and local table scrolling without suppressing page overflow globally.
-- **Phase 30 — visual review artifacts:** save 390px and 1280px screenshots for every workflow in both themes and publish them as successful-run CI artifacts in Browser E2E and Full Flight Test. Keep source/token assertions alongside rendered-browser regressions.
-- **Acceptance boundary:** automated browser checks and screenshots make visual review repeatable but do not replace human screenshot inspection, physical-device behavior, 200–400% zoom/reflow, keyboard traversal, screen-reader review or live-service validation. No accounting semantics, approval policy, permissions, APIs, schema or production data may change in this batch.
+## Phases 31–33 — navigation focus and accessible interaction contract (candidate)
+
+Branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`, based on merged PR #162 SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`.
+
+- **Phase 31 — route announcement:** on user-initiated navigation from primary navigation, the mobile More sheet or account menu, move focus to the destination page heading without scrolling again. Keep refresh/bootstrap navigation non-focus-stealing; allow secondary actions such as Change PIN to take final field focus.
+- **Phase 32 — naming and dismissal contract:** audit visible interactive controls for accessible names across every owner-visible workflow; verify account-menu expanded state, Escape dismissal and focus restoration. Fix real markup gaps rather than weakening the audit.
+- **Phase 33 — offline shell/release integrity:** give the new heading-focus treatment an explicit visible focus style, bump the app-shell cache revision for the shared CSS, and keep source and browser regressions in one batch.
+- **Acceptance boundary:** test results measure name-presence and focus-management regressions, not a complete WCAG conformance audit. Human keyboard traversal, zoom/reflow, screen-reader/device review, operator usability and live Apps Script release checks remain separate gates. No approval policy, cash calculation, API, permission, schema or production-data behavior may change.
