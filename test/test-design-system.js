@@ -40,6 +40,16 @@ assert.match(
 );
 assert.match(
   components,
+  /\.dashboard-view \.stat > \.stat-ic\s*\{/,
+  'dashboard KPI icons have a dedicated positioning hook',
+);
+assert.match(
+  components,
+  /\.dashboard-view \.stat > \.stat-ic\s*\{[^}]*position:\s*static/,
+  'dashboard KPI icons stay in grid flow and cannot overlap labels or values',
+);
+assert.match(
+  components,
   /\.dashboard-view \.dashboard-trend/,
   'dashboard trend has a dedicated chart treatment',
 );
