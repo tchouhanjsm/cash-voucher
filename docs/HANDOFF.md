@@ -5,6 +5,7 @@ Repository: tchouhanjsm/cash-voucher
 Last verified main SHA: `ae8eb594a33f7e33338009d75c52d0b010cea678` (PR #163 merge commit)  
 Current engineering batch: Phases 34–36 — validation guidance and async-state consistency  
 Current working branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`  
+Current pull request: [#164](https://github.com/tchouhanjsm/cash-voucher/pull/164) — all required checks passed on the initial review head; verify the latest head before merge  
 Current candidate: connect New Entry settlement hints and validation errors, link report date-range alerts to invalid fields, provide a stable report `aria-busy` state and prove the behavior through source/browser regressions; no financial or API changes
 
 ## Verified repository state
