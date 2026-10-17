@@ -257,7 +257,24 @@ with sync_playwright() as p:
     )
     page.set_viewport_size({'width': 390, 'height': 800})
 
+    page.fill('#lEmail', 'not-an-email')
+    page.fill('#lPassword', '')
+    page.click('#lBtn')
+    check(
+        'valid work email' in page.inner_text('#lEmailErr')
+        and page.locator('#lEmail').get_attribute('aria-invalid') == 'true',
+        'invalid email receives an inline error and accessible invalid state',
+    )
+
     page.fill('#lEmail', 'owner@test.com')
+    page.fill('#lPassword', '')
+    page.click('#lBtn')
+    check(
+        page.inner_text('#lPasswordErr') == 'Enter your password.'
+        and page.locator('#lPassword').get_attribute('aria-invalid') == 'true',
+        'empty password receives an inline error and accessible invalid state',
+    )
+
     page.fill('#lPassword', 'Wrong#Password2026')
     page.click('#lBtn')
     page.wait_for_selector('#lErr:not(:empty)')
