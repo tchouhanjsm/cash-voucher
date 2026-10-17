@@ -45,8 +45,18 @@ assert.doesNotMatch(ux, /forced-PIN dialog/i);
 assert.match(uiSystem, /PR #169/);
 assert.doesNotMatch(uiSystem, /current PR #165 candidate/i);
 assert.match(audit, /Operational gates are not marked complete by mock CI/i);
-assert.match(sinkInventory, /^\*\*Last merged source baseline:\*\* `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`/m);
-assert.match(securityAudit, /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/);
+assert.match(
+  sinkInventory,
+  /^\*\*Last merged source baseline:/m,
+);
+assert.match(
+  sinkInventory,
+  /Last merged source baseline:.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
+);
+assert.match(
+  securityAudit,
+  /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
+);
 
 console.log(
   'Current-readiness documentation: latest merge, password terminology, active architecture and live-release boundaries are aligned.',
