@@ -350,7 +350,11 @@ assert.match(
   /\.app #view \.page-header h1:focus-visible\s*\{[\s\S]*?outline:\s*3px solid var\(--focus\)/,
   'keyboard focus on a page heading is visibly identified',
 );
-assert.match(serviceWorker, /const C = 'cv2-v21'/, 'PWA cache revision advances with navigation focus styling');
+assert.match(
+  serviceWorker,
+  /const C = 'cv2-v21'/,
+  'PWA cache revision advances with navigation focus styling',
+);
 
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',
