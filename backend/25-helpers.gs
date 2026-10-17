@@ -224,7 +224,7 @@ function addUser_(name, email, role, password, must) {
     Role: role,
     Active: true,
     Salt: salt,
-    PasswordHash: hashPin_(salt, password),
+    PasswordHash: hashPassword_(salt, password),
     MustChangePassword: !!must,
     CreatedAt: nowIso_(),
     LastLogin: '',

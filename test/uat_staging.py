@@ -59,7 +59,7 @@ def sign_in(page, email, password, role):
     configured = page.evaluate("() => window.CV_CONFIG && window.CV_CONFIG.API_URL")
     check(configured == API_URL, role + " browser targets the configured staging endpoint")
     page.locator("#lEmail").fill(email)
-    page.locator("#lPin").fill(password)
+    page.locator("#lPassword").fill(password)
     page.locator("#lBtn").click()
     try:
         page.locator("#app:not(.hidden)").wait_for(state="visible", timeout=20000)
@@ -67,7 +67,7 @@ def sign_in(page, email, password, role):
         raise AssertionError(
             role + " sign-in failed; confirm the dedicated staging account is active and its initial password change was completed manually."
         ) from exc
-    check(page.locator("#op").count() == 0, role + " account has completed first-login password setup")
+    check(page.locator("#currentPassword").count() == 0, role + " account has completed first-login password setup")
     token = page.evaluate("() => localStorage.getItem('cv.token')")
     check(isinstance(token, str) and len(token) >= 20, role + " receives an authenticated session")
     return token

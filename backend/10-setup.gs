@@ -30,10 +30,10 @@ function setup() {
     const email = String(p.getProperty('OWNER_EMAIL') || '')
       .trim()
       .toLowerCase();
-    const password = String(p.getProperty('OWNER_PASSWORD') || '').trim();
+    const password = String(p.getProperty('OWNER_PASSWORD') || '');
     if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Set Script Property OWNER_EMAIL first.');
     if (!passwordOk_(password))
-      throw new Error('Set Script Property OWNER_PASSWORD to a 8+ character password (not 123456 / 111111 etc.).');
+      throw new Error('Set Script Property OWNER_PASSWORD to a password containing 8–128 characters.');
     addUser_(p.getProperty('OWNER_NAME') || 'Owner', email, 'owner', password, true);
     p.deleteProperty('OWNER_PASSWORD');
     audit_({ email: 'system' }, 'SETUP', '', 'Owner created: ' + email);

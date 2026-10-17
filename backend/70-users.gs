@@ -25,7 +25,7 @@ function saveUser_(user, req) {
   if (dup) throw err_('That email is already a user.');
   if (!req.id) {
     if (!passwordOk_(String(req.password || '')))
-      throw err_('Temporary password must be 8–128 characters and not too simple.');
+      throw err_('Temporary password must contain 8–128 characters.');
     const created = addUser_(name, email, role, String(req.password), true);
     auditEvent_(
       user,
@@ -86,7 +86,7 @@ function resetPassword_(user, req) {
   })[0];
   if (!t) throw err_('User not found.');
   if (!passwordOk_(String(req.password || '')))
-    throw err_('Temporary password must be 8–128 characters and not too simple.');
+    throw err_('Temporary password must contain 8–128 characters.');
   const salt = Utilities.getUuid();
   const previouslyRequiredChange = t.MustChangePassword === true || t.MustChangePassword === 'TRUE';
   updateRow_('Users', t._row, {
@@ -127,7 +127,7 @@ function changePassword_(user, req) {
   }
   cache.remove(fk);
   if (!passwordOk_(newPassword))
-    throw err_('New password must be 8–128 characters and not too simple (e.g. 123456, 111111).');
+    throw err_('New password must contain 8–128 characters.');
   if (newPassword === oldPassword) throw err_('New password must be different.');
   const salt = Utilities.getUuid();
   updateRow_('Users', u._row, {

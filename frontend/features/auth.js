@@ -128,6 +128,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     currentPassword.type = 'password';
     currentPassword.minLength = 8;
     currentPassword.maxLength = 128;
+    currentPassword.pattern = '.{8,128}';
     currentPassword.autocomplete = 'current-password';
     currentPassword.placeholder = 'Current temporary password';
     currentPassword.required = true;
@@ -138,6 +139,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     newPassword.type = 'password';
     newPassword.minLength = 8;
     newPassword.maxLength = 128;
+    newPassword.pattern = '.{8,128}';
     newPassword.autocomplete = 'new-password';
     newPassword.placeholder = 'New password (8+ characters)';
     newPassword.required = true;
@@ -149,6 +151,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       body,
       async () => {
         const password = $('#newPassword').value;
+        $('#newPassword').setCustomValidity('');
         if (password.length < 8 || password.length > 128) {
           $('#newPassword').setCustomValidity('Password must contain 8–128 characters.');
           $('#newPassword').reportValidity();

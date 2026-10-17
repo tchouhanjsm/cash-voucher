@@ -91,6 +91,12 @@ After the reviewed backend source has been uploaded to the verified Apps Script 
 
 This is a future release procedure only. A code merge does not execute it, and this PR does not upload source, run the migration, or deploy.
 
+## Password authentication migration boundary
+
+The password-login release changes the Users header names from `PinHash` / `MustChangePin` to `PasswordHash` / `MustChangePassword`. It is safe for a newly provisioned, empty staging/customer Sheet initialized from this source. It is **not** a drop-in backend upgrade for an existing populated Sheet with the prior PIN schema.
+
+Until a separately reviewed, data-preserving migration and account-reset/recovery procedure exists, do not upload or deploy this version to an existing production/customer Apps Script project. Do not rename headers or clear credential cells manually. Keep the existing deployed production version untouched while staging is verified.
+
 ## Gate C — publish a version while preserving the intended URL
 
 In the Apps Script editor, inspect the project and existing deployments. Create a new version and update the existing Web App deployment that corresponds to the current `config.js` URL. Preserve its deployment ID/URL unless the owner explicitly approves a URL change.

@@ -259,7 +259,7 @@ with sync_playwright() as p:
         'password dialog has an accessible name',
     )
     check(
-        page.evaluate("document.activeElement?.id === 'op'"),
+        page.evaluate("document.activeElement?.id === 'currentPassword'"),
         'dialog moves keyboard focus to the first field',
     )
     check(
@@ -275,7 +275,7 @@ with sync_playwright() as p:
     page.locator('.mcard .primary').focus()
     page.keyboard.press('Tab')
     check(
-        page.evaluate("document.activeElement?.id === 'op'"),
+        page.evaluate("document.activeElement?.id === 'currentPassword'"),
         'Tab wraps from the last dialog control to the first',
     )
     page.locator('#currentPassword').focus()

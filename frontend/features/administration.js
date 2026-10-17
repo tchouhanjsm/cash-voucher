@@ -282,7 +282,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       '<select id="ur" aria-label="New user role">',
       roles.map((role) => '<option>' + esc(role) + '</option>').join(''),
       '</select>',
-      '<input id="up" aria-label="Temporary password (8+ characters)" type="password" inputmode="numeric" pattern=".{8,128}" title="Enter exactly 8–128 characters" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit password" required>',
+      '<input id="up" aria-label="Temporary password (8+ characters)" type="password" inputmode="text" pattern=".{8,128}" title="Enter 8–128 characters" maxlength="128" autocomplete="new-password" placeholder="Temporary password (8+ characters)" required>',
       '<button class="btn primary">Add</button>',
     ].join('');
 
@@ -376,7 +376,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     password.title = 'Enter exactly 8–128 characters';
     password.maxLength = 128;
     password.autocomplete = 'new-password';
-    password.placeholder = 'Temporary 6-digit password';
+    password.placeholder = 'Temporary password (8+ characters)';
     password.required = true;
 
     body.append(help, password);
@@ -386,7 +386,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       async () => {
         await api('resetPassword', { id, password: $('#tp').value });
         closeModal();
-        toast('password reset.', 'ok');
+        toast('Password reset.', 'ok');
       },
       'Reset',
     );
