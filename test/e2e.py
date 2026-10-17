@@ -227,21 +227,33 @@ with sync_playwright() as p:
         'local E2E API override is active',
     )
     page.set_viewport_size({'width': 1280, 'height': 800})
-    login_style = page.evaluate("""() => ({
-      background: getComputedStyle(document.querySelector('#login')).backgroundImage,
-      cardPadding: Number.parseFloat(getComputedStyle(document.querySelector('#loginForm')).paddingTop),
-      emailHeight: document.querySelector('#lEmail').getBoundingClientRect().height,
-      buttonHeight: document.querySelector('#lBtn').getBoundingClientRect().height,
-      viewportWidth: document.documentElement.clientWidth,
-      pageWidth: document.documentElement.scrollWidth
-    })""")
+    login_style = page.evaluate("""() => {
+      const root = document.querySelector('#login');
+      const shell = root.querySelector('.auth-login__shell');
+      const panel = root.querySelector('.auth-login__panel');
+      const control = root.querySelector('.auth-login__control');
+      const submit = root.querySelector('.auth-login__submit');
+      const bounds = shell.getBoundingClientRect();
+      return {
+        theme: root.dataset.theme,
+        columns: getComputedStyle(shell).gridTemplateColumns,
+        panelPadding: Number.parseFloat(getComputedStyle(panel).paddingTop),
+        controlHeight: control.getBoundingClientRect().height,
+        submitHeight: submit.getBoundingClientRect().height,
+        viewportWidth: document.documentElement.clientWidth,
+        pageWidth: document.documentElement.scrollWidth,
+        shellWithinViewport: bounds.left >= 0 && bounds.right <= document.documentElement.clientWidth
+      };
+    }""")
     check(
-        'radial-gradient' in login_style['background']
-        and login_style['cardPadding'] >= 24
-        and login_style['emailHeight'] >= 48
-        and login_style['buttonHeight'] >= 48
+        login_style['theme'] == 'sky'
+        and len(login_style['columns'].split()) == 2
+        and login_style['panelPadding'] >= 24
+        and login_style['controlHeight'] >= 48
+        and login_style['submitHeight'] >= 48
+        and login_style['shellWithinViewport']
         and login_style['pageWidth'] <= login_style['viewportWidth'],
-        'sign-in surface uses light-theme tokens, generous card spacing and touch-friendly controls',
+        'sign-in surface uses the new two-panel login design with generous spacing and touch-friendly controls',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
 
@@ -253,7 +265,7 @@ with sync_playwright() as p:
 
     page.fill('#lPassword', 'Owner#Start2026')
     page.click('#lBtn')
-    page.wait_for_selector('#mErr')
+    page.get_by_role('dialog', name='Choose a new password').wait_for(state='visible', timeout=10000)
     check(
         page.get_by_role('dialog', name='Choose a new password').count() == 1,
         'password dialog has an accessible name',
