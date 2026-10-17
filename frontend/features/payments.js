@@ -109,7 +109,7 @@ export function createPayments({ api, refresh }) {
       const field = $(selector, row);
       field.removeAttribute('aria-invalid');
       const descriptions = (field.getAttribute('aria-describedby') || '')
-        .split(/\\s+/)
+        .split(/\s+/)
         .filter((id) => id && id !== errorId);
       if (descriptions.length) field.setAttribute('aria-describedby', descriptions.join(' '));
       else field.removeAttribute('aria-describedby');
@@ -126,7 +126,7 @@ export function createPayments({ api, refresh }) {
     row.appendChild(error);
     field.setAttribute('aria-invalid', 'true');
     const descriptions = (field.getAttribute('aria-describedby') || '')
-      .split(/\\s+/)
+      .split(/\s+/)
       .filter(Boolean);
     if (!descriptions.includes(error.id)) descriptions.push(error.id);
     field.setAttribute('aria-describedby', descriptions.join(' '));
