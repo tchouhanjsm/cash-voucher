@@ -380,6 +380,79 @@ with sync_playwright() as p:
             and page.locator('#view .page-header h1').inner_text().strip() != '',
             f'{route_name}: one non-empty shared page heading is rendered',
         )
+        check(
+            page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
+            f'{route_name}: route navigation places focus on the destination heading',
+        )
+        unnamed_controls = page.evaluate("""() => {
+            const selector = [
+                'button',
+                'input:not([type="hidden"])',
+                'select',
+                'textarea',
+                'a[href]',
+                '[role="button"]',
+                '[role="link"]',
+                '[role="checkbox"]',
+                '[role="switch"]',
+                '[role="tab"]',
+                '[role="menuitem"]',
+                '[tabindex]:not([tabindex="-1"])'
+            ].join(', ');
+            const visible = (element) => {
+                const style = getComputedStyle(element);
+                const rect = element.getBoundingClientRect();
+                return element.getClientRects().length > 0
+                    && style.display !== 'none'
+                    && style.visibility !== 'hidden'
+                    && rect.width > 0
+                    && rect.height > 0;
+            };
+            const textWithoutHiddenContent = (element) => {
+                const clone = element.cloneNode(true);
+                clone.querySelectorAll('[aria-hidden="true"]').forEach((hidden) => hidden.remove());
+                return (clone.innerText || clone.textContent || '').replace(/\\s+/g, ' ').trim();
+            };
+            const accessibleName = (element) => {
+                const ariaLabel = element.getAttribute('aria-label') || '';
+                if (ariaLabel.trim()) return ariaLabel.trim();
+                const labelledBy = (element.getAttribute('aria-labelledby') || '')
+                    .split(/\\s+/).filter(Boolean)
+                    .map((id) => document.getElementById(id)?.innerText || document.getElementById(id)?.textContent || '')
+                    .join(' ').trim();
+                if (labelledBy) return labelledBy;
+                const labelText = element.labels
+                    ? Array.from(element.labels).map((label) => textWithoutHiddenContent(label)).join(' ').trim()
+                    : '';
+                if (labelText) return labelText;
+                if (element.matches('input[type="submit"], input[type="button"], input[type="reset"]')) {
+                    const value = element.value || '';
+                    if (value.trim()) return value.trim();
+                }
+                const alt = element.getAttribute('alt')
+                    || element.querySelector('img[alt]')?.getAttribute('alt')
+                    || '';
+                if (alt.trim()) return alt.trim();
+                const text = textWithoutHiddenContent(element);
+                if (text) return text;
+                const title = element.getAttribute('title') || '';
+                return title.trim();
+            };
+            return Array.from(document.querySelectorAll(selector))
+                .filter(visible)
+                .filter((element) => !accessibleName(element))
+                .map((element) => ({
+                    tag: element.tagName.toLowerCase(),
+                    id: element.id || '',
+                    type: element.getAttribute('type') || '',
+                    role: element.getAttribute('role') || '',
+                    className: typeof element.className === 'string' ? element.className : ''
+                })).slice(0, 12);
+        }""")
+        check(
+            not unnamed_controls,
+            f'{route_name}: visible interactive controls have accessible names; unnamed={unnamed_controls}',
+        )
 
         for theme_name in ['light', 'dark']:
             page.evaluate(
@@ -494,6 +567,20 @@ with sync_playwright() as p:
     page.emulate_media(forced_colors='none')
     page.set_viewport_size({'width': 390, 'height': 800})
     page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+
+    page.click('#userBtn')
+    check(
+        page.locator('#userBtn').get_attribute('aria-expanded') == 'true'
+        and page.locator('#userPop').is_visible(),
+        'account menu opens with an accurate expanded state',
+    )
+    page.keyboard.press('Escape')
+    check(
+        page.locator('#userBtn').get_attribute('aria-expanded') == 'false'
+        and page.locator('#userPop').is_hidden()
+        and page.evaluate("document.activeElement?.id === 'userBtn'"),
+        'Escape dismisses the account menu and restores trigger focus',
+    )
 
     go_view(page, 'dash')
     go_view(page, 'new')
