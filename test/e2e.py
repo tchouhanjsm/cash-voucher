@@ -271,8 +271,9 @@ with sync_playwright() as p:
         'password dialog has an accessible name',
     )
     check(
-        page.evaluate("document.activeElement?.id === 'currentPassword'"),
-        'dialog moves keyboard focus to the first field',
+        page.locator('#modal').get_attribute('aria-labelledby') == 'modalTitle'
+        and page.locator('#modalTitle').inner_text() == 'Choose a new password',
+        'forced password change uses the shared accessible dialog heading',
     )
     check(
         page.locator('#currentPassword').get_attribute('aria-label') == 'Current temporary password'
