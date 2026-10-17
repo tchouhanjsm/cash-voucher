@@ -5,6 +5,7 @@
 **Status: not verified as production-ready, and no first-customer handover has been completed.** PR #165 merged route-safe asynchronous view updates; it does not verify live Google infrastructure. The current `config.js` endpoint has not been independently mapped to its Script, deployment version, Sheet and Drive resources. Repository visibility is currently public. The new customer delivery workflow is documented in `docs/CUSTOMER-ONBOARDING-RUNBOOK.md`; a customer static-artifact build path is being added so only frontend assets are published and each customer can have a distinct origin.
 
 Still unverified: real customer Apps Script project/version and execution identity, Sheet/Drive permissions, role and receipt access, static host/origin and URL, a completed daily backup, isolated restore/reconciliation, real-service quotas/concurrency, real-device offline recovery, and operator/accessibility readiness. Owner-controlled operational gates remain open until witnessed evidence is recorded. Do not hand over a live link as ready before those gates pass.
+
 ## Staging pipeline — code implemented, live environment not verified
 
 PR #155 merged the manual `.github/workflows/staging-uat.yml` pipeline. The workflow requires `main`, the exact `STAGING-ONLY` confirmation, explicit staging-write consent, and the protected GitHub `staging` Environment for deploy/UAT jobs. The workflow is not a live deployment record.
