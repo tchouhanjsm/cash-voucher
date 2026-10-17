@@ -4,6 +4,7 @@ Updated: 17 October 2026
 Repository: `tchouhanjsm/cash-voucher`  
 Verified `main` SHA: `4a759b7513a925aee796949d8f6e79085f096314` (PR #166 merge; post-merge CI passed)  
 Current work branch: `docs/staging-release-readiness-audit-2026-10-17`  
+Current pull request: [#167 — Reconcile staging release readiness and pending work](https://github.com/tchouhanjsm/cash-voucher/pull/167) — documentation batch; exact-head checks must pass before merge.  
 Current work: deep documentation reconciliation and a single authoritative first-customer staging-readiness audit.  
 Owner authority: the repository owner retains approval to merge, provision Google resources, change repository visibility, run manual staging deployment/UAT, perform schema migrations and deploy production. This branch does not do those things.
 
