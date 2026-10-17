@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), cross-workflow visual matrix (PR #162), navigation/accessibility contract (PR #163), and validation/async-state work (PR #164) are merged. The current PR #165 candidate adds route-safe asynchronous updates to Reports and administration views, backed by deterministic navigation-race tests; it does not certify manual assistive-technology or production operational readiness.
+Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), cross-workflow visual matrix (PR #162), navigation/accessibility contract (PR #163), validation/async-state work (PR #164), route-safe asynchronous views (PR #165), customer static packaging (PR #166) and password authentication/staging-readiness consolidation (PR #169) are merged. The verified main baseline is `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`; main CI passed. None of this certifies manual assistive-technology or live operational readiness.
 
 ## Approach
 
