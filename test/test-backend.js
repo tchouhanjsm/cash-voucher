@@ -205,6 +205,8 @@ ok(
   !JSON.stringify(g.sheets.AuditLog.rows).includes(unknownAccountPassword),
   'audit log never stores an attempted password',
 );
+const shortPasswordLogin = g.call('login', { email: 'owner@test.com', password: 'short' });
+ok(!shortPasswordLogin.ok, 'server rejects passwords shorter than eight characters');
 let r = g.call('login', { email: 'OWNER@test.com', password: 'Owner#Start2026' });
 ok(r.ok && r.data.user.role === 'owner', 'owner login');
 const as = (t, a, p = {}) => {
