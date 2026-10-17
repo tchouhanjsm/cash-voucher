@@ -3,8 +3,7 @@
 Use this as a field checklist only. Keep the completed register in a private operator-controlled location outside this repository. Do not commit the populated register.
 
 | Field                                                     | Value                                          |
-|-----------------------------------------------------------|------------------------------------------------|
-| Customer code (non-sensitive short ID)                    | [FILL PRIVATELY]                               |
+| --------------------------------------------------------- | ---------------------------------------------- |
 | Customer/business display name                            | [FILL PRIVATELY]                               |
 | Contract signed date / reference                          | [FILL PRIVATELY]                               |
 | Subscription amount / billing cadence                     | ₹500 / month (confirm against signed contract) |
@@ -36,16 +35,6 @@ Use this as a field checklist only. Keep the completed register in a private ope
 | Last backup/error review                                  | [FILL PRIVATELY]                               |
 | Next monthly service review                               | [FILL PRIVATELY]                               |
 | Cancellation/export/retention instruction (if applicable) | [FILL PRIVATELY]                               |
-
-## Never place these in this register
-
-- Any user's PIN (temporary or permanent).
-- OAuth JSON, `.clasprc.json`, access/refresh tokens, passwords or recovery codes.
-- Bank/payment credentials unrelated to the application.
-- Real voucher amounts, guest details or receipts as example values.
-- Public links to private Drive folders or editor projects when this register is shared beyond the operator.
-
-Store evidence links only in the private register, with permissions limited to the product operator and people explicitly authorized to audit operations.|  |
 
 ## Never place these in this register
 
