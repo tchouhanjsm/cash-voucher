@@ -415,6 +415,9 @@ with sync_playwright() as p:
                         viewWidth: view ? view.clientWidth : root.clientWidth,
                         viewScrollWidth: view ? view.scrollWidth : root.scrollWidth,
                         headingCount: view.querySelectorAll('.page-header h1').length,
+                        dashboardIconPosition: view.querySelector('.dashboard-view .stat .stat-ic')
+                            ? getComputedStyle(view.querySelector('.dashboard-view .stat .stat-ic')).position
+                            : '',
                         tooShortControls
                     };
                 }""")
@@ -428,15 +431,22 @@ with sync_playwright() as p:
                     layout['headingCount'] == 1,
                     f'{route_name}: exactly one page heading remains at {width}px in {theme_name} theme',
                 )
+                if route_id == 'dash':
+                    check(
+                        layout['dashboardIconPosition'] == 'static',
+                        f'dashboard: KPI icons stay in grid flow and cannot cover labels/values at {width}px in {theme_name} theme',
+                    )
                 check(
                     not layout['tooShortControls'],
                     f'{route_name}: visible form controls remain at least 40px high at {width}px in {theme_name} theme; found {layout["tooShortControls"]}',
                 )
                 if width in (390, 1280):
                     screenshot_name = f'{route_name}-{theme_name}-{width}.png'
+                    # A previous transient toast should not obscure the review artifact.
+                    page.locator('#toast').evaluate("element => element.classList.add('hidden')")
                     page.screenshot(
                         path=os.path.join(visual_matrix_dir, screenshot_name),
-                        full_page=True,
+                        full_page=width == 1280,
                         animations='disabled',
                     )
 
