@@ -75,7 +75,7 @@ The root website must not be deployed as-is for a new customer. It contains deve
 4. Confirm that the static host can clone/build the repository after the repository is made private. Do not grant the customer GitHub, Cloudflare or Google administrator access. If you switch repository visibility, first ensure the host's private-repository integration is authorized and the existing site is not the only functioning deployment.
 5. Verify the published artifact contains the static application assets, generated `config.js`, manifest, service worker, frontend modules and icons—but not `backend/`, `docs/`, `scripts/`, `test/` or development metadata.
 6. Record the final HTTPS application URL. Open it in a clean browser/device and confirm that the generated configuration targets this customer's new deployment, not the existing root endpoint.
-7. Confirm the host publishes only `dist/`; do not publish the repository root. Configure security headers supported by the host. The HTML meta CSP is not enough to enforce `frame-ancestors`; use a response header with `frame-ancestors 'none'` where supported and verify it in DevTools.
+7. Confirm the host publishes only `dist/`; do not publish the repository root. The customer build generates a Cloudflare Pages `_headers` file with a matching restrictive CSP response header, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, a referrer policy and a restrictive permissions policy. After deploy, inspect the actual document response in DevTools and verify these headers are present; a file in `dist/` is not proof the host applied it.
 
 ## D. Live acceptance and data recovery proof
 
