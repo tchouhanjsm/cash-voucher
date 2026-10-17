@@ -1561,6 +1561,9 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   .dashboard-view .stat > .stat-ic {
+    position: static;
+    top: auto;
+    right: auto;
     grid-column: 1;
     grid-row: 1 / span 3;
     align-self: center;
