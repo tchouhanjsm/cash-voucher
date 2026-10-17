@@ -67,13 +67,13 @@ Dates are normalized by the API. Monetary inputs are validated and rounded to tw
 
 - `backend/appsscript.json` sets `executeAs: USER_DEPLOYING` with anonymous Web App access for the static frontend. Access is anonymous at the HTTP deployment layer only; all non-login actions require a valid app session and server-side permission checks.
 - Keep the Sheet, receipt folder and backup folder private. Staff must not receive direct Sheet/Drive edit access.
-- Passwords are hashed using HMAC-SHA256 with per-user salt and a Script Properties pepper; this is the current algorithm, not a memory-hard password KDF. The temporary PIN is removed after initial owner setup.
+- Passwords are hashed using HMAC-SHA256 with per-user salt and a Script Properties pepper; this is the current algorithm, not a memory-hard password KDF. The temporary `OWNER_PASSWORD` Script Property is deleted after initial owner creation.
 - Server writes use Apps Script ScriptLock; idempotency keys prevent duplicate vouchers after retry.
 - PIN/session changes rotate the user's salt so cached sessions tied to the old salt are rejected.
 - Audit records are appended best-effort by `audit_`; this is not yet a tamper-evident/append-only financial ledger.
-- Current v2 tree does not contain the old review's cited `src/01_Config.js` or `03_Auth.js` files. This does not prove that reported values never existed elsewhere; if those reported credentials were ever used, rotate the deployed owner PIN. No Git history rewrite has been performed.
+- Current v2 tree does not contain the old review's cited `src/01_Config.js` or `03_Auth.js` files. This does not prove that reported values never existed elsewhere; if those reported credentials were ever used, rotate the affected deployed owner credentials after verifying the actual target. No Git history rewrite has been performed.
 
-Authentication controls already present in source serialize login failure counting under ScriptLock, throttle incorrect current-PIN attempts for 15 minutes, clear login/PIN-change counters on owner PIN reset, and authenticate write sessions after lock acquisition. This mock suite does not simulate real concurrent Apps Script requests; the current Phase 22 regression batch injects session invalidation at that boundary to verify fail-closed behavior without writing a voucher.
+Authentication controls serialize login failure counting under ScriptLock, throttle incorrect current-password attempts for 15 minutes, clear login/password-change counters on owner password reset, and authenticate write sessions after lock acquisition. Mock tests inject session invalidation at the post-lock boundary to verify fail-closed behavior without creating a voucher; they do not simulate truly concurrent Apps Script requests.
 
 ## 5. Develop, test, release
 

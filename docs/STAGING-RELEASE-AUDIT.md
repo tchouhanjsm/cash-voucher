@@ -1,7 +1,7 @@
 # Staging Release Audit and Pending Queue
 
 **Audit date:** 17 October 2026  
-**Verified main baseline:** `4a759b7513a925aee796949d8f6e79085f096314`  
+**Verified main baseline:** `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b` (PR #169 merge)  
 **Scope:** review the current product documentation, source workflow, release controls and first-customer delivery requirements. This audit is evidence of a repository review—not a live staging deployment or production acceptance.
 
 ## Executive status
@@ -10,7 +10,7 @@
 
 - [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165): CI/quality, Browser E2E and Full Flight Test passed on exact head `26a92a70513a088cddc994d1a398d63d908ec8e0`.
 - [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166): CI/quality, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks) passed on exact head `13f12d314687ec88d9044ccae7e8fb3c202743fb`.
-- [Post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39003040102) passed on the verified main baseline.
+- [Post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed on the verified main baseline; PR #169's pre-merge head also passed CI, Browser E2E and Full Flight Test.
 - The static customer builder creates `dist/`, validates `CV_API_URL`, excludes developer/backend files and emits a Cloudflare Pages `_headers` file. This produces a publishable artifact; it does not create a host, a Google deployment, a customer instance or a live URL. Password-based sign-in and owner/manager password UAT secret names are now in source; the protected staging Environment still needs owner provisioning.
 - The repository is **public**. Proprietary customer handover requires an owner-controlled repository-privacy/hosting cutover. Copies already cloned from a public repository cannot be recalled by later changing visibility.
 - No staging Apps Script project, customer Sheet, Drive receipt/backup folders, GitHub `staging` Environment, Cloudflare Pages project or customer URL is evidenced as provisioned. No live backup/restore drill or customer acceptance is recorded.

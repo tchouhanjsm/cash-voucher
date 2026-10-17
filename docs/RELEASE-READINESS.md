@@ -2,7 +2,7 @@
 
 **Reviewed:** 17 October 2026. **Verified main baseline:** `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b` (PR #169 merge). [Post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed. PR #169's exact pre-merge head `b82b8f38b891f01b7cba2a1c421a920ceabd14fc` passed CI/quality, Browser E2E and Full Flight Test. See [roadmap](PRODUCT-ROADMAP.md), [staging release audit](STAGING-RELEASE-AUDIT.md) and [final repository audit](FINAL-REPOSITORY-AUDIT-2026-10-17.md). Older snapshots are historical, not a live status feed.
 
-**Status: source packaging is ready for owner-provisioned staging input; live staging and first-customer handover are not verified.** PR #165 merged route-safe asynchronous workflow updates. PR #166 merged the per-customer static artifact builder, Cloudflare Pages response-header artifact and onboarding/handover runbooks. Neither merge creates Google resources, a hosting project or customer URL. The current root `config.js` endpoint has not been independently mapped to its Script/deployment/Sheet/Drive resources. The repository remains public pending an owner-controlled hosting/privacy cutover.
+**Status: source packaging and password-authentication consolidation are merged; live staging and first-customer handover are not verified.** PR #165 merged route-safe asynchronous workflow updates, PR #166 merged the per-customer static artifact builder/headers/runbooks, and PR #169 merged password authentication and staging-readiness consolidation. Neither merge creates Google resources, a hosting project or customer URL. The current root `config.js` endpoint has not been independently mapped to its Script/deployment/Sheet/Drive resources. The repository remains public pending an owner-controlled hosting/privacy cutover.
 
 Still unverified: separate staging/customer Apps Script projects and Sheets, deployment/execution identity, protected GitHub staging Environment and secrets, real role/receipt authorization, live host response headers and unique customer origin, real backup/restore/reconciliation, real-device offline recovery/accessibility, real-service quotas/concurrency, and the controlled 14-day pilot. Do not hand over a live link as ready until the relevant gates have witnessed evidence in the private instance register.
 
@@ -60,8 +60,8 @@ Do not begin the pilot until the owner confirms the release target, required mig
 ## Evidence-based baseline
 
 - **Backend validation, schema checks and number reconciliation — Implemented in source.** Current `backend/*.gs` and mock backend suite; not a live Google-account test.
-- **PIN hash and session protection — Implemented in source.** HMAC-SHA256 with per-user salt and a Script Properties pepper; salt rotation invalidates old session tokens.
-- **Login/PIN-change attempt throttling — Implemented in source.** PR #32 is merged; this does not establish deployment to Apps Script.
+- **Password hash and session protection — Implemented in source.** HMAC-SHA256 with per-user salt and a Script Properties pepper; password-change/reset salt rotation invalidates old session tokens. The password-KDF choice remains a security review item.
+- **Login/password-change attempt throttling — Implemented in source.** Failed-login counting is serialized under ScriptLock, with temporary lockout; password-change failures are throttled. PR #169 moves the interactive workflow to passwords. This does not establish live Apps Script deployment.
 - **Server-side role enforcement — Implemented in source.** `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary.
 - **Active frontend architecture — Verified in source.** `index.html` loads `frontend/main.js`; the source graph is modular.
 - **PWA/outbox recovery — Implemented in source.** Existing browser regressions cover recovery paths; device/storage durability is not a server backup.
@@ -92,7 +92,7 @@ PR #65 merged at `eef7a8d46dd41b86a7ebaab4fadbf64be42e5922`; exact-head CI and B
 - [ ] Verify a clean install/start and update after service-worker cache version changes.
 - [ ] Test a narrow phone viewport and desktop/tablet layouts.
 - [ ] Test screen-reader/status announcements, keyboard focus and contrast on key screens.
-- [ ] Verify login, PIN change, payment, cash receipt, receipt photo, register, bulk upload, audit view, printing, offline queue and recovery.
+- [ ] Verify password login/change/logout, payment, cash receipt, receipt photo, register, bulk upload, audit view, printing, offline queue and recovery.
 
 ## Gate 3 — live Apps Script and data
 
@@ -100,9 +100,9 @@ Before upload, follow [`Apps Script Release Runbook`](APPS-SCRIPT-RELEASE-RUNBOO
 
 - [ ] Keep production Sheet and Drive folders private; verify staff have no direct spreadsheet edit access.
 - [ ] Confirm deployment executes as the intended owner/deployer and points at the intended Sheet.
-- [ ] Verify Script Properties and the owner account; rotate the owner PIN if a reported legacy setup value was ever used.
+- [ ] Verify Script Properties and the owner account; rotate affected deployed credentials if a reported legacy setup value was ever used.
 - [ ] Deploy reviewed backend source intentionally, creating a new Web App version while preserving the intended URL.
-- [ ] Verify lockout, PIN change, session invalidation, role restrictions, voucher numbering/idempotency and receipt access against the actual deployment.
+- [ ] Verify lockout, password change, session invalidation, role restrictions, voucher numbering/idempotency and receipt access against the actual deployment.
 - [ ] Observe at least one scheduled backup run; compare status-panel timestamps with Drive; open its Sheet copy and verify copied receipts/manifest.
 - [ ] Perform restore into a separate Sheet/folder and validate record counts and voucher numbering.
 
