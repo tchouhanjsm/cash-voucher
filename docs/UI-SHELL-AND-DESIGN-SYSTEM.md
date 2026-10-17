@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), and Bulk Upload/Cash Close/accessibility completion (PR #161) are merged. Phases 28–30 add a full owner-workflow responsive/theme matrix, higher-contrast styling, preference-state assertions and published visual-review screenshots. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
+Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), and cross-workflow visual matrix (PR #162) are merged. Phases 31–33 make SPA route focus predictable, audit accessible names across all owner-visible workflows and refresh the app-shell cache for the focus treatment. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
 
 ## Approach
 
@@ -105,12 +105,17 @@ PR #160 completed responsive Report filters/results, Register totals, Vendor/Use
 
 PR #161 integrated shared presentation and accessibility states into Bulk Upload and Daily Cash Close, removed one-off inline style declarations from workflow surfaces, refreshed the app-shell cache, and added responsive/browser regressions. Tested head `27ceda070f38fe2a445e4e165fbbde20ee6377c9` passed CI, Browser E2E and Full Flight Test; merge SHA is `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`.
 
-## Phases 28–30 — cross-workflow visual regression and accessibility states (candidate)
+## Phases 28–30 — cross-workflow visual regression and accessibility states (merged PR #162)
 
-Branch: `phase-28-30-frontui-regression-matrix-2026-10-17`, based on merged main SHA `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`.
+PR #162 merged at `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; exact tested head `6f103e863cd0e7fe5c2f2ae12196e594134faec0` passed CI/quality, Browser E2E (898 checks) and Full Flight Test (285 backend + 898 browser checks). It adds a cross-screen responsive/theme matrix, higher-contrast and forced-colors coverage, and screenshot artifacts for human review; it does not claim visual or WCAG sign-off.
 
-- **Phase 28 — responsive matrix:** navigate every owner-authorized screen across seven widths from 320px to 1440px in both light and dark themes. Check document, main-workspace and view overflow, one shared heading, and visible form-control geometry.
-- **Phase 29 — preference states:** apply the same browser test harness to reduced-motion, prefers-contrast: more, and forced-colors. Contrast should be improved with borders/focus/state indicators, not by hiding overflow.
-- **Phase 30 — reviewable screenshots:** export 390px and 1280px full-page images for each tested screen and theme as successful-run Browser E2E and Flight Test artifacts.
+## Phases 31–33 — route focus and accessible interaction contract (candidate)
 
-No third-party frontend dependencies or remote runtime assets are needed. The Studio stays a static gallery rather than a financial workflow or production route. CI snapshots and mocked APIs are regression evidence only; they cannot certify device use, zoom/reflow, real assistive technology or live Apps Script identity/data behavior.
+Branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`, based on merged main SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`.
+
+- **Route announcements:** focus the rendered page heading after user navigation through the main navigation, More sheet or account menu; do not focus-steal on refresh or bootstrap; keep Change PIN field focus behavior intact.
+- **Accessible naming:** audit all visible interactive controls on the 11 owner-visible screens for an explicit or programmatic name. The browser rule is a regression heuristic, not a replacement for the platform's full accessible-name computation.
+- **Focus/dismissal:** preserve visible focus on a programmatically focused page heading, test account-menu Escape/focus restoration, and retain the existing dialog and More-sheet traps.
+- **Cache/release:** advance the app-shell cache revision for the updated focus style and run CI/quality, Browser E2E and Full Flight Test on one final head.
+
+No third-party dependency or remote runtime asset is added. Financial calculations, role permissions, API/schema and production data remain unchanged. Human keyboard/screen-reader/device validation, zoom/reflow, live Apps Script identity and backup/restore remain independent release gates.

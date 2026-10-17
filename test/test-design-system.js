@@ -17,6 +17,9 @@ const reports = read('frontend/features/reports.js');
 const register = read('frontend/features/register.js');
 const authHtml = read('index.html');
 const cashClose = read('frontend/features/cash-close.js');
+const navigation = read('frontend/features/navigation.js');
+const shell = read('frontend/features/shell.js');
+const serviceWorker = read('sw.js');
 
 assert.match(palette, /--bg:\s*#f7f5f0;/, 'main canvas stays warm and light');
 assert.match(palette, /--card:\s*#fffefc;/, 'cards stay close to warm white');
@@ -316,6 +319,46 @@ assert.match(
   components,
   /\.app #view \.page-header-actions\s*\{[\s\S]*?flex-wrap:\s*wrap/,
   'page-header actions wrap instead of widening narrow screens',
+);
+assert.match(
+  navigation,
+  /function focusPageHeading\(\)[\s\S]*?heading\.focus\(\{ preventScroll: true \}\)/,
+  'the navigation module focuses a real destination heading without another scroll',
+);
+assert.match(
+  navigation,
+  /if \(focusHeading\) \{[\s\S]*?focusPageHeading\(\)/,
+  'heading focus is opt-in so background refresh does not deliberately refocus the page',
+);
+assert.match(
+  navigation,
+  /Promise\.resolve\(renderResult\)[\s\S]*?renderId !== activeViewRenderId[\s\S]*?active === document\.body/,
+  'asynchronous screen rendering restores lost focus only for the current route render',
+);
+assert.match(
+  navigation,
+  /go\(button\.dataset\.v, \{ focusHeading: true \}\)/,
+  'primary navigation requests destination-heading focus',
+);
+assert.match(
+  navigation,
+  /go\(view, \{ focusHeading: true \}\)/,
+  'the More sheet requests destination-heading focus',
+);
+assert.match(
+  shell,
+  /go\(item\.dataset\.go, \{ focusHeading: true \}\)/,
+  'user-menu page navigation requests destination-heading focus',
+);
+assert.match(
+  components,
+  /\.app #view \.page-header h1:focus-visible\s*\{[\s\S]*?outline:\s*3px solid var\(--focus\)/,
+  'keyboard focus on a page heading is visibly identified',
+);
+assert.match(
+  serviceWorker,
+  /const C = 'cv2-v21'/,
+  'PWA cache revision advances with navigation focus styling',
 );
 
 console.log(

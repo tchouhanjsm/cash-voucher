@@ -1,16 +1,16 @@
 # Engineering Handoff
 
-Updated: 16 October 2026  
+Updated: 17 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `525f8d0a8af73194ca73c83d05b02d38c02d1b8c` (PR #161 merge commit)  
-Current engineering batch: Phases 28–30 — cross-workflow visual regression and accessibility states  
-Current working branch: `phase-28-30-frontui-regression-matrix-2026-10-17`  
-Current pull request: [#162](https://github.com/tchouhanjsm/cash-voucher/pull/162) — exact-head CI, Browser E2E and Full Flight Test must pass before merge  
-Current candidate: exercise all owner-authorized workflow screens across narrow, tablet and desktop widths in light/dark themes; publish screenshot artifacts; verify reduced-motion, high-contrast and forced-colors treatment; no business-rule or deployment changes
+Last verified main SHA: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1` (PR #162 merge commit)  
+Current engineering batch: Phases 31–33 — route focus, accessible naming and interaction contract  
+Current working branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`  
+Current pull request: [#163](https://github.com/tchouhanjsm/cash-voucher/pull/163) — exact-head CI, Browser E2E and Full Flight Test are the merge gate  
+Current candidate: focus destination headings on explicit user navigation, audit accessible names across all owner-visible workflow screens, test account-menu Escape/focus restoration, and refresh the PWA shell cache; no money, authorization or deployment changes
 
 ## Verified repository state
 
-- Live `main` is `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`, merged PR #161. Exact tested head `27ceda070f38fe2a445e4e165fbbde20ee6377c9` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943524970), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943525175) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943524910). The Studio is a static reference gallery; its shared system now styles the live workflow screens. Human device, zoom/reflow and assistive-technology validation remain open.
+- Live `main` is `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`, merged PR #162. Exact tested head `6f103e863cd0e7fe5c2f2ae12196e594134faec0` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213796), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213795) (898 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213808) (285 backend + 898 browser checks). Screenshot artifacts cover all 11 owner-visible screens at phone and desktop widths in light/dark themes; they support human review but are not pixel-diff or accessibility certification.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
 - Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
@@ -121,10 +121,14 @@ Merged main SHA: `0d900235f9230ab05db940bb57881a171737ae0c`; tested PR head: `e6
 
 Merged main SHA: `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`; tested head: `27ceda070f38fe2a445e4e165fbbde20ee6377c9`. CI, Browser E2E and Full Flight Test all passed. Bulk Upload and Cash Close layouts, keyboard-reachable file selection, internal preview scrolling, reduced-motion and forced-colors behavior are now implemented. No production deployment or data mutation occurred.
 
-## Phases 28–30 — cross-workflow visual regression and accessibility states (active candidate)
+## Phases 28–30 — cross-workflow visual regression and accessibility states (merged PR #162)
 
-Branch: `phase-28-30-frontui-regression-matrix-2026-10-17`, based on main `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`.
+Merged main SHA: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; tested head `6f103e863cd0e7fe5c2f2ae12196e594134faec0`. CI/quality, Browser E2E (898 checks) and Full Flight Test (285 backend + 898 browser checks) passed. Screenshot artifacts cover all 11 owner-visible screens at 390px and 1280px in both themes.
 
-This batch extends real-browser checks to every owner-authorized page at 320/360/390/768/1024/1280/1440 widths in both light and dark themes, checks common page overflow/control geometry, verifies reduced-motion/high-contrast/forced-colors preferences, and generates screenshot artifacts at 390px and 1280px for each page/theme. The test artifacts are evidence for human visual review, not visual approval by themselves.
+## Phases 31–33 — route focus and accessible interaction contract (active candidate)
 
-Do not run `clasp push`, staging deploy, Apps Script deployment, migrations or production-data mutations. Real-device install/update/offline recovery, 200–400% zoom/reflow, manual keyboard traversal, screen-reader review, role-based operator review and live identity/backup/restore verification remain release gates.
+Branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`, based on merged PR #162 SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`.
+
+On explicit user navigation, focus the newly rendered page heading and give keyboard focus a clear outline. Do not request heading focus during bootstrap/background refresh; account-menu navigation still permits the Change PIN field to receive final focus. E2E checks the focus result and accessible-name presence for visible controls across the 11 owner-visible screens, plus Escape dismissal/focus return for the account menu. The name audit is a source/browser regression heuristic, not complete WCAG validation.
+
+No `clasp push`, staging deploy, Apps Script deployment, migration or production-data mutation is permitted. Physical devices, 200–400% zoom/reflow, manual keyboard traversal, screen-reader/assistive-technology review, operator usability, live identity/role checks and witnessed backup/restore remain independent release gates.
