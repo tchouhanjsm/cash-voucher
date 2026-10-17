@@ -6,6 +6,7 @@
 **Scope:** preserve the original design reasoning and owner-approved rules for the single-property Apps Script/Sheets product. Editing this record does not run migrations or release code.
 
 **Decision-precedence note (17 October 2026):** Sections 1–12 preserve the original design-time baseline/proposal and early unresolved questions; statements there describing the absence of Daily Cash Close represent the pre-MVP state. The owner-approved MVP policy in section 13 and the payment-approval decisions recorded after it supersede those earlier statements where they conflict. CashImpact, one-drawer/day Daily Cash Close, correction history, payment approval and VendorID changes are implemented in source through merged PRs; they are **not** evidence that live migrations/deployment, backup/restore or a physical-cash pilot have been completed. Current gates are in `docs/RELEASE-READINESS.md` and `docs/STAGING-RELEASE-AUDIT.md`.
+
 ## 1. Problem and evidence
 
 A dashboard cash-in-hand number is not evidence that physical cash matches the records. The current application has payment and cash-received vouchers, an owner-configurable `Settings.openingBalance`, active/cancelled statuses, voucher edit/cancel operations and a best-effort audit log. It has no dated opening-balance history, daily close record, closed-period state or dedicated post-close correction record.
