@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1` (PR #162 merge; cross-workflow visual matrix and accessibility preference coverage)  
-Current engineering batch: Phases 31–33 — route focus, accessible naming and interaction contract  
-Current candidate branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`
+Last verified main baseline: `ae8eb594a33f7e33338009d75c52d0b010cea678` (PR #163 merge; route focus and accessible interaction contract)  
+Current engineering batch: Phases 34–36 — validation guidance and async-state consistency  
+Current candidate branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -398,11 +398,15 @@ PR #161 merged at main SHA `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`; exact tes
 
 PR #162 merged at main SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; tested head `6f103e863cd0e7fe5c2f2ae12196e594134faec0`. [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213796), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213795) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38986213808) all passed. Browser E2E passed 898 checks; Full Flight Test passed 285 backend plus 898 browser checks. The runs publish 390px and 1280px screenshots for all 11 owner-visible screens in light/dark themes. Screenshots are repeatable review artifacts, not pixel-diff tests or human visual sign-off.
 
-## Phases 31–33 — navigation focus and accessible interaction contract (candidate)
+## Phases 31–33 — navigation focus and accessible interaction contract (merged PR #163)
 
-Branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`, based on merged PR #162 SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`.
+PR #163 merged at main SHA `ae8eb594a33f7e33338009d75c52d0b010cea678`; exact tested head `a6b1eff7593bb7a58f4e6063fb31befd2a646773` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477109), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477094) (936 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477080) (285 backend + 936 browser checks). It adds opt-in destination-heading focus for user navigation, an accessible-name regression heuristic over 11 workflows, account-menu dismissal/focus-return checks, visible heading focus and cache revision `cv2-v21`. These checks are not a full WCAG or screen-reader certification.
 
-- **Phase 31 — route announcement:** on user-initiated navigation from primary navigation, the mobile More sheet or account menu, move focus to the destination page heading without scrolling again. Keep refresh/bootstrap navigation non-focus-stealing; allow secondary actions such as Change PIN to take final field focus.
-- **Phase 32 — naming and dismissal contract:** audit visible interactive controls for accessible names across every owner-visible workflow; verify account-menu expanded state, Escape dismissal and focus restoration. Fix real markup gaps rather than weakening the audit.
-- **Phase 33 — offline shell/release integrity:** give the new heading-focus treatment an explicit visible focus style, bump the app-shell cache revision for the shared CSS, and keep source and browser regressions in one batch.
-- **Acceptance boundary:** test results measure name-presence and focus-management regressions, not a complete WCAG conformance audit. Human keyboard traversal, zoom/reflow, screen-reader/device review, operator usability and live Apps Script release checks remain separate gates. No approval policy, cash calculation, API, permission, schema or production-data behavior may change.
+## Phases 34–36 — validation guidance and asynchronous state consistency (bulk candidate)
+
+Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on merged PR #163 SHA `ae8eb594a33f7e33338009d75c52d0b010cea678`.
+
+- **Phase 34 — persistent form help:** associate each New Entry cash-impact selector with its settlement explanation. When validation adds an error, keep both the long-lived help and current error in `aria-describedby`; clearing the error removes only the error reference.
+- **Phase 35 — recoverable report validation:** expose invalid date-range state on both report date fields, connect each to the same assertive alert, and clear those attributes when a valid report request begins. Place report loading/results under one stable `aria-busy` region without changing response validation or accounting semantics.
+- **Phase 36 — proof and design parity:** add source-level design-system assertions, Browser E2E coverage for field/help/error relationships and busy/settled reports, visible styling for invalid report date inputs, and update this roadmap and handoff together.
+- **Acceptance boundary:** tests verify DOM state and announcements primitives, not assistive-technology output. Manual keyboard/screen-reader review, zoom/reflow, operator usability and live Apps Script release proof remain separate gates. No approval policy, cash calculations, API, permissions, schema or production data may change.
