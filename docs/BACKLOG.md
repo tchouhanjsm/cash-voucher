@@ -1,6 +1,21 @@
 # Backlog
 
-One line per item: date | priority | area | outcome / finding | evidence / dependency.
+**Current main baseline (17 October 2026):** `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`, PR #169 merged. Post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed; CI, Browser E2E and Full Flight Test passed on the PR's exact pre-merge head. Source changes are not live staging or customer acceptance evidence.
+
+## Current P0/P1/P2 queue
+
+- **P0 — isolated staging:** owner must provision a dedicated staging Apps Script project, Sheet, receipt folder, backup folder and first versioned Web App deployment; verify target identities are disjoint from production; configure protected GitHub `staging` Environment variables/secrets/reviewers; run guarded UAT from main with explicit staging-write consent; retain sanitized run and identity evidence.
+- **P0 — first customer:** create customer-specific Google resources and a unique static hostname/origin; do not reuse the unverified root `config.js` endpoint or staging resources. Keep the instance register and credentials private.
+- **P0 — recovery and authorization proof:** test real owner/manager/staff/accountant permissions and receipt access; produce a real backup/manifest; restore into a separate recovery destination; reconcile row counts, receipt mapping and voucher numbers before issuing a customer-ready URL.
+- **P1 — human QA/pilot:** validate real phone/tablet PWA install/update, all-device offline queue recovery, keyboard traversal, zoom/reflow, screen-reader output, print/export and live CSP/security headers; then complete the 14-day controlled pilot with daily reconciliation and owner/manager sign-off.
+- **P1 — residual hardening:** contextually review the 17 active `innerHTML` assignment sites across eight modules; exercise live Apps Script/Sheets latency, quotas and voucher-numbering contention in authorized staging. Inventory/fingerprint gates are not XSS certification or production SLOs.
+- **P2 — audit durability:** decide and test a durable fallback for simultaneous AuditLog append and Script Properties marker-store failure. Do not fabricate missing history.
+- **P2 — dependency exception:** reassess `braces@3.0.3` in the Clasp/micromatch chain by 9 November 2026; CI is expected to reject the exception from 10 November unless formally reviewed and renewed.
+- **P2 — product decisions after pilot:** get accountant-approved mapping before claiming Tally/Zoho/destination import compatibility; decide whether denomination-level cash counting adds value; set latency/usability targets from measured evidence.
+
+## Recently completed source milestones
+
+2026-10-17 | DONE | Password authentication, audit and staging-readiness consolidation | PR #169 merged at `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`; CI passed on exact merge SHA; PR exact head CI/Browser E2E/Full Flight Test passed. Live staging/customer release remains blocked by the operational queue above.
 
 2026-10-15 | DONE | UI branch integration + dashboard trust | Phase 10 integrated truthful attention copy, allowlisted icon/action inputs, local SVG sprite, shell cache v16, dashboard source fingerprint and focused Browser E2E | PR #141 merged at 42ff7708535d04c15510caf90c5f93738109669e; exact-head CI/E2E/Flight Test passed; PR reports post-merge CI passed
 2026-10-16 | DONE | UI refresh follow-up | Dashboard needs-attention hierarchy, icon KPI tiles, inline SVG navigation/New Entry/receipt icons, spacing and breadcrumb removal; no API/schema/dependency changes | PR #149 merged at `a478c52c68c520b8eddbf80692d101dc20210c58`; CI/quality, Browser E2E and Full Flight Test passed on exact head `2c1a25c144fe27ed959cd7aae6793b9c3c75bddf`; post-merge CI/quality passed

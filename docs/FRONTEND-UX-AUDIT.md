@@ -21,7 +21,7 @@ The workflows in this batch also move checkout, Node setup, Python setup and fai
 ## Browser verification added
 
 - Dialog has a discoverable accessible name.
-- Opening the forced-PIN dialog places focus on its first field.
+- Opening the forced-password-change dialog places focus on its first field.
 - Tab and Shift+Tab wrap around the first and last dialog controls.
 - The selected navigation button exposes `aria-current="page"`; switching views moves that state.
 - Decorative navigation glyphs are hidden from assistive technology.

@@ -1,12 +1,12 @@
 # Active DOM Sink Inventory
 
-**Last merged source baseline:** `4a759b7513a925aee796949d8f6e79085f096314` (main after PR #166; 17 active assignment sites remain).  
-**Latest changes:** PRs #165–#166 do not change the active JavaScript rendering-sink inventory; the Payments template fingerprint remains `847d68e0`. CI is the executable drift gate; re-run it on every implementation candidate.  
+**Last merged source baseline:** `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b` (main after PR #169; 17 active assignment sites remain).  
+**Latest changes:** PR #169 changes the authentication flow to passwords but does not change the active JavaScript rendering-sink inventory; the Payments template fingerprint remains `847d68e0`. CI is the executable drift gate; re-run it on every implementation candidate.  
 **Status:** inventory drift is automatically checked; each use still requires context-specific review. This is not XSS certification.
 
 ## Reviewed HTML assignment sites
 
-Merged main after PR #151 still has 17 `innerHTML =` assignment sites across eight JavaScript modules. PR #146 retired the My Account profile/PIN page and outbox banner/review-list assignment. The Phase 11 Batch 4 follow-up PR #147 adds explicit submit semantics for the PIN form without changing the sink count. Future sink changes still require contextual review and focused hostile-data regression before baseline updates.
+Current main still has 17 `innerHTML =` assignment sites across eight JavaScript modules. PR #146 retired the My Account profile/PIN page and outbox banner/review-list assignment. The Phase 11 Batch 4 follow-up PR #147 adds explicit submit semantics for the PIN form without changing the sink count. Future sink changes still require contextual review and focused hostile-data regression before baseline updates.
 
 **Current module counts:**
 
