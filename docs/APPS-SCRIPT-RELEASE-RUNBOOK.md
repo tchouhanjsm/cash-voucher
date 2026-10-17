@@ -8,7 +8,6 @@
 
 The frontend `config.js` already contains a Web App `/exec` URL. Do not replace it or create a different URL until the local Clasp deployment list proves which Apps Script project and deployment serve that URL.
 
-
 **Current staging boundary (17 October 2026):** PR #155's manual workflow and PR #156's credential redaction are source-complete. The current owner action is to provision the isolated environment described below and execute it; do not create follow-on source PRs merely to restate these manual setup steps. The customer instance is separate from staging and must be provisioned through `docs/CUSTOMER-ONBOARDING-RUNBOOK.md`.
 The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. The local Clasp configuration/authentication must remain local and must not be committed.
 
