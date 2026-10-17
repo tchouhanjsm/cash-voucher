@@ -10,7 +10,6 @@ Current work: first-customer managed delivery readiness; build a per-customer st
 Release boundary: source/docs/tests only. No customer Google resources, static host project, customer endpoint, actual app link, live backup/restore or customer credentials have been provisioned by this batch. Repository visibility is currently public; review the source-privacy/hosting cutover before proprietary onboarding.  
 Owner authority: the repository owner retains review, merge, Google-account administration and production deployment authority. Do not merge or deploy this batch without the owner's explicit authorization.
 
-
 ## Verified repository state
 
 - Live `main` is `dd901910531da2c060539baad44949fe2cb54b30`, merged PR #164. Post-merge [CI on main](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186) passed. PR #164 exact tested head `b3adad0a8c089c0c42614ea2fffd6724664d9106` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398991), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398889) (943 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398930) (285 backend + 943 browser checks), all with zero failures. The Studio is a static reference; integrated screen coverage is not live-production or human accessibility sign-off.
