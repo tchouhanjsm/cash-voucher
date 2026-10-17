@@ -929,7 +929,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#uf')
     check(
         page.locator('#un').get_attribute('aria-label') == 'User name'
-        and page.locator('#ue').get_attribute('aria-label') == 'Email address'
+        and page.locator('#uf #ue').get_attribute('aria-label') == 'Email address'
         and page.locator('#ur').get_attribute('aria-label') == 'New user role',
         'add-user form fields have explicit accessible names',
     )
