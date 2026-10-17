@@ -46,13 +46,19 @@ function buildWebSite(options = {}) {
   const outDir = path.resolve(options.outDir || path.join(rootDir, 'dist'));
   const apiUrl = validateApiUrl(options.apiUrl ?? process.env.CV_API_URL);
   const rootFromOutput = path.relative(outDir, rootDir);
+  const outputRelativeToRoot = path.relative(rootDir, outDir);
+  const outputIsInsideRoot =
+    outputRelativeToRoot !== '' &&
+    !outputRelativeToRoot.startsWith('..') &&
+    !path.isAbsolute(outputRelativeToRoot);
 
   if (
     rootFromOutput === '' ||
-    (!rootFromOutput.startsWith('..') && !path.isAbsolute(rootFromOutput))
+    (!rootFromOutput.startsWith('..') && !path.isAbsolute(rootFromOutput)) ||
+    (outputIsInsideRoot && outputRelativeToRoot !== 'dist')
   ) {
     throw new Error(
-      'Output directory must not be the repository root or one of its parent directories.',
+      'Output must be outside the repository or use the dedicated repository dist/ directory.',
     );
   }
 
