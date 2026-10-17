@@ -125,7 +125,11 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       const loaded = await load();
       if (!loaded) return false;
     } catch (error) {
-      if (error.code === 'PASSWORD_CHANGE' || error.code === 'SESSION') return false;
+      if (error.code === 'PASSWORD_CHANGE') {
+        getAuth().forcePasswordChange();
+        return false;
+      }
+      if (error.code === 'SESSION') return false;
 
       let cache = null;
       try {
