@@ -1,6 +1,6 @@
 # UI shell and design system
 
-Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), and responsive reporting/admin adoption (PR #160) are merged. The consolidated Phases 25–27 batch finishes Bulk Upload/Cash Close parity, focusable preview scrolling, keyboard-reachable file selection, and reduced-motion/forced-colors states. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
+Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), and Bulk Upload/Cash Close/accessibility completion (PR #161) are merged. Phases 28–30 add a full owner-workflow responsive/theme matrix, higher-contrast styling, preference-state assertions and published visual-review screenshots. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
 
 ## Approach
 
@@ -101,12 +101,16 @@ The batch made no financial-rule, API, role-permission or schema changes. Screen
 
 PR #160 completed responsive Report filters/results, Register totals, Vendor/User forms, Audit filters, Account/PIN layout and sign-in styling. Exact-head CI/quality, Browser E2E (418 checks) and Full Flight Test (285 backend + 418 browser checks) passed; post-merge main CI passed. It made no live deployment.
 
-## Phases 25–27 — Fresh Design Studio completion (consolidated candidate)
+## Phases 25–27 — Fresh Design Studio workflow completion (merged PR #161)
 
-Branch: `phase-25-frontui-completion-bulk-2026-10-16`, based on main `0d900235f9230ab05db940bb57881a171737ae0c`.
+PR #161 integrated shared presentation and accessibility states into Bulk Upload and Daily Cash Close, removed one-off inline style declarations from workflow surfaces, refreshed the app-shell cache, and added responsive/browser regressions. Tested head `27ceda070f38fe2a445e4e165fbbde20ee6377c9` passed CI, Browser E2E and Full Flight Test; merge SHA is `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`.
 
-- **Workflow parity:** bring Bulk Upload review and Daily Cash Close setup/report/blockers into the same intentional surface, spacing, wrapping and internal table-scroll system as the rest of the design kit. Use semantic CSS classes instead of ad hoc inline styles.
-- **Interaction states:** preserve keyboard focus on the bulk file chooser and review table, keep controls touch-sized, and support reduced-motion plus forced-colors/high-contrast preferences.
-- **Regression protection:** extend source-level design-system assertions and real-browser checks at 320px and desktop/mobile Cash Close widths. Keep the service-worker cache revision aligned with shared CSS.
+## Phases 28–30 — cross-workflow visual regression and accessibility states (candidate)
 
-This batch does not turn the static Studio gallery into a production route and does not change money movement, approval policy, role permissions, API contracts or data schema. CI and mocked E2E can establish regression coverage, not device/zoom certification. Manual keyboard traversal, assistive-technology review, physical-device PWA install/update recovery and live-service validation remain release gates.
+Branch: `phase-28-30-frontui-regression-matrix-2026-10-17`, based on merged main SHA `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`.
+
+- **Phase 28 — responsive matrix:** navigate every owner-authorized screen across seven widths from 320px to 1440px in both light and dark themes. Check document, main-workspace and view overflow, one shared heading, and visible form-control geometry.
+- **Phase 29 — preference states:** apply the same browser test harness to reduced-motion, prefers-contrast: more, and forced-colors. Contrast should be improved with borders/focus/state indicators, not by hiding overflow.
+- **Phase 30 — reviewable screenshots:** export 390px and 1280px full-page images for each tested screen and theme as successful-run Browser E2E and Flight Test artifacts.
+
+No third-party frontend dependencies or remote runtime assets are needed. The Studio stays a static gallery rather than a financial workflow or production route. CI snapshots and mocked APIs are regression evidence only; they cannot certify device use, zoom/reflow, real assistive technology or live Apps Script identity/data behavior.

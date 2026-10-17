@@ -40,6 +40,16 @@ assert.match(
 );
 assert.match(
   components,
+  /\.dashboard-view \.stat > \.stat-ic\s*\{/,
+  'dashboard KPI icons have a dedicated positioning hook',
+);
+assert.match(
+  components,
+  /\.dashboard-view \.stat > \.stat-ic\s*\{[^}]*position:\s*static;[^}]*align-self:\s*start/,
+  'dashboard KPI icons stay in grid flow and cannot overlap labels or values',
+);
+assert.match(
+  components,
   /\.dashboard-view \.dashboard-trend/,
   'dashboard trend has a dedicated chart treatment',
 );
@@ -286,6 +296,26 @@ assert.match(
   components,
   /\.app \.table-wrap:focus-visible/,
   'scrollable work tables share a visible keyboard focus treatment',
+);
+assert.match(
+  components,
+  /@media \(prefers-contrast:\s*more\)/,
+  'high-contrast preference receives an explicit component treatment',
+);
+assert.match(
+  components,
+  /\.app #view > \*\s*\{[\s\S]*?min-width:\s*0/,
+  'all top-level workflow panels can shrink inside narrow app viewports',
+);
+assert.match(
+  components,
+  /\.app #view \.table-wrap\s*\{[\s\S]*?overflow-x:\s*auto/,
+  'all workflow tables remain in horizontally scrollable local regions',
+);
+assert.match(
+  components,
+  /\.app #view \.page-header-actions\s*\{[\s\S]*?flex-wrap:\s*wrap/,
+  'page-header actions wrap instead of widening narrow screens',
 );
 
 console.log(

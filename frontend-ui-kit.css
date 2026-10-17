@@ -1561,9 +1561,13 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   .dashboard-view .stat > .stat-ic {
+    position: static;
+    top: auto;
+    right: auto;
     grid-column: 1;
     grid-row: 1 / span 3;
-    align-self: center;
+    align-self: start;
+    margin-top: 3px;
     width: 42px;
     height: 42px;
     margin: 0;
@@ -2876,6 +2880,90 @@ here and in the production app. It requires no JS or remote assets. */
     .app .needs-item,
     .app .cc-blockers {
       border: 1px solid ButtonText;
+    }
+  }
+}
+
+/* Phases 28–30 — robust high-contrast presentation and shared viewport constraints. */
+@media screen {
+  .app #view,
+  .app .main,
+  .app .page-header-copy,
+  .app .settings-layout,
+  .app .settings-diagnostics,
+  .app .table-wrap,
+  .app .card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app #view > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .app #view h1,
+  .app #view h2,
+  .app #view h3,
+  .app #view p,
+  .app #view label,
+  .app #view .badge,
+  .app #view .muted,
+  .app #view code {
+    overflow-wrap: anywhere;
+  }
+
+  .app #view .table-wrap {
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app #view .page-header-actions {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  @media (prefers-contrast: more) {
+    .app .card,
+    .app .table-wrap,
+    .app .needs-item,
+    .app .cc-blockers,
+    .studio-body .studio-card,
+    .studio-body .studio-sample {
+      border-width: 2px;
+      border-color: currentColor;
+      box-shadow: none;
+    }
+
+    .app input:not([type='hidden']):not([type='checkbox']):not([type='radio']),
+    .app select,
+    .app textarea,
+    .app .btn,
+    .studio-body input,
+    .studio-body select,
+    .studio-body textarea,
+    .studio-body .btn {
+      border-width: 2px;
+    }
+
+    .app :focus-visible,
+    .studio-body :focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 3px;
+    }
+
+    .app .muted,
+    .studio-body .muted {
+      color: var(--ink);
+    }
+
+    .app .badge,
+    .app .count-pill {
+      outline: 1px solid currentColor;
+      outline-offset: -1px;
     }
   }
 }

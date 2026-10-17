@@ -2,15 +2,15 @@
 
 Updated: 16 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `0d900235f9230ab05db940bb57881a171737ae0c` (PR #160 merge commit)  
-Current engineering batch: Phases 25–27 — Fresh Design Studio completion in one implementation batch  
-Current working branch: `phase-25-frontui-completion-bulk-2026-10-16`  
-Current pull request: [#161](https://github.com/tchouhanjsm/cash-voucher/pull/161) — exact-head CI, Browser E2E and Full Flight Test are required before merge  
-Current candidate: finish responsive and accessibility parity for Bulk Upload and Daily Cash Close, expand cross-workflow regression coverage, and remove remaining one-off presentation styles; no accounting-policy, authorization or deployment changes
+Last verified main SHA: `525f8d0a8af73194ca73c83d05b02d38c02d1b8c` (PR #161 merge commit)  
+Current engineering batch: Phases 28–30 — cross-workflow visual regression and accessibility states  
+Current working branch: `phase-28-30-frontui-regression-matrix-2026-10-17`  
+Current pull request: [#162](https://github.com/tchouhanjsm/cash-voucher/pull/162) — exact-head CI, Browser E2E and Full Flight Test must pass before merge  
+Current candidate: exercise all owner-authorized workflow screens across narrow, tablet and desktop widths in light/dark themes; publish screenshot artifacts; verify reduced-motion, high-contrast and forced-colors treatment; no business-rule or deployment changes
 
 ## Verified repository state
 
-- Live `main` is `0d900235f9230ab05db940bb57881a171737ae0c`, the PR #160 merge commit. PR #160's exact tested head `e68abec5c26c1e699639428982edb48d452cd3ba` passed CI/quality (285 backend checks), Browser E2E (418 checks) and Full Flight Test (285 backend + 418 browser checks); post-merge main CI passed. PR #160 completes responsive reporting and administration composition on top of PR #159. The static FrontUI Studio remains a reference gallery; the design kit is applied across the live screen families, with device and assistive-technology verification still open.
+- Live `main` is `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`, merged PR #161. Exact tested head `27ceda070f38fe2a445e4e165fbbde20ee6377c9` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943524970), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943525175) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38943524910). The Studio is a static reference gallery; its shared system now styles the live workflow screens. Human device, zoom/reflow and assistive-technology validation remain open.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
 - Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
@@ -117,8 +117,14 @@ Merged main SHA: `dabd39b2b70d516d714e08ac0cf6ed57fa806eee`; tested PR head: `41
 
 Merged main SHA: `0d900235f9230ab05db940bb57881a171737ae0c`; tested PR head: `e68abec5c26c1e699639428982edb48d452cd3ba`. CI/quality passed 285 backend checks, Browser E2E passed 418 checks, Full Flight Test passed 285 backend plus 418 browser checks, and post-merge main CI passed. No live deployment or production-data operation occurred.
 
-## Phases 25–27 — Fresh Design Studio completion (bulk candidate)
+## Phases 25–27 — Fresh Design Studio workflow completion (merged PR #161)
 
-Branch: `phase-25-frontui-completion-bulk-2026-10-16`; base main SHA: `0d900235f9230ab05db940bb57881a171737ae0c`. The implementation finishes Bulk Upload and Daily Cash Close layout parity, replaces workflow-level inline visual styles with semantic classes, provides keyboard focus for bulk file selection and the preview table, extends reduced-motion/forced-colors behavior, and expands browser responsive regressions. Preserve the plain JS/no-build architecture and production safety boundary. Do not run clasp push, staging deploy, Apps Script deployment or production mutations.
+Merged main SHA: `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`; tested head: `27ceda070f38fe2a445e4e165fbbde20ee6377c9`. CI, Browser E2E and Full Flight Test all passed. Bulk Upload and Cash Close layouts, keyboard-reachable file selection, internal preview scrolling, reduced-motion and forced-colors behavior are now implemented. No production deployment or data mutation occurred.
 
-Manual release gates remain: actual device install/update/offline recovery, 200–400% zoom and reflow, keyboard traversal, screen-reader checks, role-based user review and live identity/backup/restore verification. Automated mocked E2E does not close those gates.
+## Phases 28–30 — cross-workflow visual regression and accessibility states (active candidate)
+
+Branch: `phase-28-30-frontui-regression-matrix-2026-10-17`, based on main `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`.
+
+This batch extends real-browser checks to every owner-authorized page at 320/360/390/768/1024/1280/1440 widths in both light and dark themes, checks common page overflow/control geometry, verifies reduced-motion/high-contrast/forced-colors preferences, and generates screenshot artifacts at 390px and 1280px for each page/theme. The test artifacts are evidence for human visual review, not visual approval by themselves.
+
+Do not run `clasp push`, staging deploy, Apps Script deployment, migrations or production-data mutations. Real-device install/update/offline recovery, 200–400% zoom/reflow, manual keyboard traversal, screen-reader review, role-based operator review and live identity/backup/restore verification remain release gates.
