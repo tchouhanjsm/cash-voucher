@@ -1,0 +1,81 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { buildWebSite, validateApiUrl } = require('../scripts/build-web');
+
+const rootDir = path.resolve(__dirname, '..');
+const customerApiUrl = 'https://script.google.com/macros/s/TEST_CUSTOMER_DEPLOYMENT_ID/exec';
+
+assert.equal(validateApiUrl(customerApiUrl), customerApiUrl);
+for (const invalidUrl of [
+  '',
+  'not-a-url',
+  'http://script.google.com/macros/s/TEST_ID/exec',
+  'https://example.com/macros/s/TEST_ID/exec',
+  'https://script.google.com/macros/s/TEST_ID/exec?debug=true',
+  'https://script.google.com/macros/s/TEST_ID/exec#fragment',
+  'https://user:pass@script.google.com/macros/s/TEST_ID/exec',
+  'https://script.google.com/macros/s/TEST_ID/dev',
+]) {
+  assert.throws(
+    () => validateApiUrl(invalidUrl),
+    undefined,
+    'invalid customer API URL must be rejected: ' + invalidUrl,
+  );
+}
+
+assert.throws(
+  () => buildWebSite({ rootDir, outDir: rootDir, apiUrl: customerApiUrl }),
+  /Output directory must not be the repository root/,
+  'build must never remove the repository root',
+);
+assert.throws(
+  () => buildWebSite({ rootDir, outDir: path.dirname(rootDir), apiUrl: customerApiUrl }),
+  /Output directory must not be the repository root/,
+  'build must never remove the parent directory containing the repository',
+);
+
+const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-web-build-'));
+try {
+  const outDir = path.join(temporaryDirectory, 'dist');
+  const result = buildWebSite({ rootDir, outDir, apiUrl: customerApiUrl });
+
+  assert.equal(result.outDir, outDir);
+  assert.equal(result.apiUrl, customerApiUrl);
+  for (const file of [
+    'index.html',
+    'style.css',
+    'frontend-ui-kit.css',
+    'manifest.webmanifest',
+    'sw.js',
+    'config.js',
+    '.nojekyll',
+    'frontend/main.js',
+    'frontend/core/offline-queue.js',
+    'icons/icon-192.png',
+  ]) {
+    assert.ok(fs.existsSync(path.join(outDir, file)), 'customer build includes ' + file);
+  }
+
+  for (const forbidden of ['backend', 'docs', 'scripts', 'test', 'package.json', 'README.md']) {
+    assert.equal(
+      fs.existsSync(path.join(outDir, forbidden)),
+      false,
+      'customer static artifact excludes ' + forbidden,
+    );
+  }
+
+  const generatedConfig = fs.readFileSync(path.join(outDir, 'config.js'), 'utf8');
+  assert.ok(generatedConfig.includes(customerApiUrl), 'generated config uses this customer endpoint');
+  assert.ok(
+    !generatedConfig.includes('AKfycbys21L1jrEYXmdjN5lf1dYlAQJnqGRU3WjGQrvpPwjW7_zVJNb7w6ExRDnmbrkkFdM'),
+    'generated config does not leak or reuse the existing root config endpoint',
+  );
+} finally {
+  fs.rmSync(temporaryDirectory, { recursive: true, force: true });
+}
+
+console.log('Customer web build OK — validates API target, isolates published assets, and generates per-client config.');
