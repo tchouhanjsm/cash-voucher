@@ -2880,7 +2880,6 @@ here and in the production app. It requires no JS or remote assets. */
   }
 }
 
-
 /* Phases 28–30 — robust high-contrast presentation and shared viewport constraints. */
 @media screen {
   .app #view,
