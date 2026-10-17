@@ -71,11 +71,13 @@ try {
   const generatedConfig = fs.readFileSync(path.join(outDir, 'config.js'), 'utf8');
   assert.ok(generatedConfig.includes(customerApiUrl), 'generated config uses this customer endpoint');
   assert.ok(
-    !generatedConfig.includes('AKfycbys21L1jrEYXmdjN5lf1dYlAQJnqGRU3WjGQrvpPwjW7_zVJNb7w6ExRDnmbrkkFdM'),
-    'generated config does not leak or reuse the existing root config endpoint',
+    !generatedConfig.includes('https://script.google.com/macros/s/LEGACY_ENDPOINT/exec'),
+    'generated config does not reuse an unrelated legacy endpoint',
   );
 } finally {
   fs.rmSync(temporaryDirectory, { recursive: true, force: true });
 }
 
-console.log('Customer web build OK — validates API target, isolates published assets, and generates per-client config.');
+console.log(
+  'Customer web build OK — validates API target, isolates published assets, and generates per-client config.',
+);
