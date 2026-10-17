@@ -17,14 +17,14 @@ const login = g.call('login', {
   password: 'OwnerPass2036',
 });
 assert.equal(login.ok, true);
-const changedPin = g.call('changePassword', {
+const changedPassword = g.call('changePassword', {
   token: login.data.token,
   oldPassword: 'OwnerPass2036',
   newPassword: 'UpdatedOwnerPass7',
 });
-assert.equal(changedPin.ok, true);
+assert.equal(changedPassword.ok, true);
 
-const readiness = g.call('deploymentReadiness', { token: changedPin.data.token });
+const readiness = g.call('deploymentReadiness', { token: changedPassword.data.token });
 assert.equal(readiness.ok, true);
 assert.equal(readiness.data.scriptId, 'MOCK_SCRIPT_ID');
 assert.equal(readiness.data.spreadsheetId, 'SS1');
@@ -38,11 +38,11 @@ assert.equal(readiness.data.checks.backupFolderReadable, true);
 assert.equal(readiness.data.checks.backupTriggerInstalled, true);
 
 const createStaff = g.call('saveUser', {
-  token: changedPin.data.token,
+  token: changedPassword.data.token,
   name: 'Readiness Staff',
   email: 'readiness-staff@test.com',
   role: 'staff',
-  password: '628491',
+  password: 'ReadinessStaff12',
 });
 assert.equal(createStaff.ok, true);
 const staffLogin = g.call('login', {
@@ -50,13 +50,13 @@ const staffLogin = g.call('login', {
   password: '628491',
 });
 assert.equal(staffLogin.ok, true);
-const staffPinChange = g.call('changePassword', {
+const staffPasswordChange = g.call('changePassword', {
   token: staffLogin.data.token,
-  oldPassword: '628491',
-  newPassword: '739284',
+  oldPassword: 'ReadinessStaff12',
+  newPassword: 'ChangedStaffPass9',
 });
-assert.equal(staffPinChange.ok, true);
-const denied = g.call('deploymentReadiness', { token: staffPinChange.data.token });
+assert.equal(staffPasswordChange.ok, true);
+const denied = g.call('deploymentReadiness', { token: staffPasswordChange.data.token });
 assert.equal(denied.ok, false);
 assert.equal(denied.code, 'FORBIDDEN', 'staging target identifiers are owner/settings-only');
 

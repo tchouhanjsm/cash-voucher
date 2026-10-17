@@ -996,7 +996,7 @@ with sync_playwright() as p:
     manager_page.click('#lBtn')
     manager_page.wait_for_selector('#currentPassword')
     manager_page.fill('#currentPassword', 'LockoutPass123')
-    manager_page.fill('#newPassword', '271828')
+    manager_page.fill('#newPassword', 'ChangedManagerPass9')
     manager_page.click('.mcard .primary')
     manager_page.wait_for_selector('#nav button')
     go_view(manager_page, 'reg')
@@ -1157,7 +1157,7 @@ with sync_playwright() as p:
     accountant_page.click('#lBtn')
     accountant_page.wait_for_selector('#currentPassword')
     accountant_page.fill('#currentPassword', 'Accountant12')
-    accountant_page.fill('#newPassword', '357951')
+    accountant_page.fill('#newPassword', 'AccountantNewPass7')
     accountant_page.locator('.mcard .primary').click()
     accountant_page.wait_for_selector('[data-v=reports][aria-current=page]')
     check(
@@ -2328,7 +2328,7 @@ with sync_playwright() as p:
     login('stored-xss@test.com', 'XssTestPass123')
     page.wait_for_selector('#currentPassword')
     page.fill('#currentPassword', 'XssTestPass123')
-    page.fill('#newPassword', '852741')
+    page.fill('#newPassword', 'XssNewPassword12')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(

@@ -12,42 +12,42 @@ const DATE = '2026-10-15';
 const accountSpecs = {
   owner: {
     email: 'owner@auth-matrix.test',
-    temporaryPin: 'OwnerPass2036',
-    firstPin: 'UpdatedOwnerPass7',
-    rotatePin: '625193',
+    temporaryPassword: 'OwnerPass2036',
+    firstPassword: 'UpdatedOwnerPass7',
+    rotatePassword: 'RotatedOwnerPass8',
     name: 'Test Owner',
     role: 'owner',
     existing: true,
   },
   manager: {
     email: 'manager@auth-matrix.test',
-    temporaryPin: '724681',
-    firstPin: '681529',
-    rotatePin: '259681',
+    temporaryPassword: 'ManagerTempPass8',
+    firstPassword: 'ManagerFinalPass8',
+    rotatePassword: 'ManagerRotatedPass8',
     name: 'Test Manager',
     role: 'manager',
   },
   staff: {
     email: 'staff@auth-matrix.test',
-    temporaryPin: '835274',
-    firstPin: '731946',
-    rotatePin: '946281',
+    temporaryPassword: 'StaffTempPass8',
+    firstPassword: 'StaffFinalPass8',
+    rotatePassword: 'StaffRotatedPass8',
     name: 'Test Staff',
     role: 'staff',
   },
   staff2: {
     email: 'staff2@auth-matrix.test',
-    temporaryPin: '926481',
-    firstPin: '594827',
-    rotatePin: '817264',
+    temporaryPassword: 'StaffTwoTempPass8',
+    firstPassword: 'StaffTwoFinalPass8',
+    rotatePassword: 'StaffTwoRotatedPass8',
     name: 'Second Test Staff',
     role: 'staff',
   },
   accountant: {
     email: 'accountant@auth-matrix.test',
-    temporaryPin: '592743',
-    firstPin: '384715',
-    rotatePin: '726195',
+    temporaryPassword: 'AccountantTemp8',
+    firstPassword: 'AccountantFinal8',
+    rotatePassword: 'AccountantRotated8',
     name: 'Test Accountant',
     role: 'accountant',
   },
@@ -60,33 +60,33 @@ function assertNotForbidden(result, message) {
   assert.notEqual(result.code, 'FORBIDDEN', message);
 }
 function loginAndChange(spec) {
-  const login = g.call('login', { email: spec.email, password: spec.temporaryPin });
+  const login = g.call('login', { email: spec.email, password: spec.temporaryPassword });
   assert.ok(login.ok, spec.role + ' login with temporary PASSWORD succeeds');
   const changed = g.call('changePassword', {
     token: login.data.token,
-    oldPassword: spec.temporaryPin,
-    newPassword: spec.firstPin,
+    oldPassword: spec.temporaryPassword,
+    newPassword: spec.firstPassword,
   });
   assert.ok(changed.ok, spec.role + ' can complete first-login PASSWORD change');
-  return { ...spec, token: changed.data.token, password: spec.firstPin };
+  return { ...spec, token: changed.data.token, password: spec.firstPassword };
 }
 
 const ownerLogin = g.call('login', {
   email: accountSpecs.owner.email,
-  password: accountSpecs.owner.temporaryPin,
+  password: accountSpecs.owner.temporaryPassword,
 });
 assert.ok(ownerLogin.ok, 'initial owner login succeeds');
 const ownerChanged = g.call('changePassword', {
   token: ownerLogin.data.token,
-  oldPassword: accountSpecs.owner.temporaryPin,
-  newPassword: accountSpecs.owner.firstPin,
+  oldPassword: accountSpecs.owner.temporaryPassword,
+  newPassword: accountSpecs.owner.firstPassword,
 });
 assert.ok(ownerChanged.ok, 'initial owner PASSWORD change succeeds');
 const users = {
   owner: {
     ...accountSpecs.owner,
     token: ownerChanged.data.token,
-    password: accountSpecs.owner.firstPin,
+    password: accountSpecs.owner.firstPassword,
   },
 };
 
@@ -96,7 +96,7 @@ for (const key of ['manager', 'staff', 'staff2', 'accountant']) {
     name: spec.name,
     email: spec.email,
     role: spec.role,
-    password: spec.temporaryPin,
+    password: spec.temporaryPassword,
   });
   assert.ok(created.ok, 'owner can provision the ' + key + ' fixture');
   users[key] = loginAndChange(spec);
@@ -399,10 +399,10 @@ for (const role of ['staff', 'manager', 'owner', 'accountant']) {
   const account = users[role];
   const result = call('changePassword', account, {
     oldPassword: account.password,
-    newPassword: accountSpecs[role].rotatePin,
+    newPassword: accountSpecs[role].rotatePassword,
   });
   assert.ok(result.ok, role + ' may change their own PASSWORD without owner-level permission');
-  account.password = accountSpecs[role].rotatePin;
+  account.password = accountSpecs[role].rotatePassword;
   account.token = result.data.token;
 }
 

@@ -278,7 +278,7 @@ const inheritedRoleResults = ['constructor', 'toString', '__proto__', 'hasOwnPro
       name: 'Invalid role user',
       email: 'invalid-role-' + index + '@test.com',
       role,
-      password: '135792',
+      password: 'InvalidRolePassword1',
     }),
 );
 ok(
@@ -1729,7 +1729,7 @@ const resetLogin = g.call('login', { email: 'm@test.com', password: 'LockoutPass
 ok(resetLogin.ok, 'owner reset password clears login lockout');
 const resetChange = as(resetLogin.data.token, 'changePassword', {
   oldPassword: 'LockoutPass123',
-  newPassword: '417258',
+  newPassword: 'ManagerResetPass9',
 });
 ok(
   resetChange.ok && as(resetChange.data.token, 'bootstrap').ok,
@@ -2180,7 +2180,7 @@ ok(
 );
 const accountantPinChange = as(accountantLogin.data.token, 'changePassword', {
   oldPassword: 'UpdatedManager1',
-  newPassword: '975318',
+  newPassword: 'AccountantNewPass7',
 });
 const accountantToken = accountantPinChange.data.token;
 const accountantBootstrap = as(accountantToken, 'bootstrap').data;
