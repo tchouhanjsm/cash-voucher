@@ -16,6 +16,8 @@ const onboarding = read('docs/CUSTOMER-ONBOARDING-RUNBOOK.md');
 const ux = read('docs/FRONTEND-UX-AUDIT.md');
 const uiSystem = read('docs/UI-SHELL-AND-DESIGN-SYSTEM.md');
 const audit = read('docs/FINAL-REPOSITORY-AUDIT-2026-10-17.md');
+const sinkInventory = read('docs/ACTIVE-DOM-SINK-INVENTORY.md');
+const securityAudit = read('docs/SECURITY-RENDERING-AUDIT.md');
 
 assert.match(project, /password authentication/i);
 assert.match(project, /backend\/\*\.gs/);
@@ -43,6 +45,8 @@ assert.doesNotMatch(ux, /forced-PIN dialog/i);
 assert.match(uiSystem, /PR #169/);
 assert.doesNotMatch(uiSystem, /current PR #165 candidate/i);
 assert.match(audit, /Operational gates are not marked complete by mock CI/i);
+assert.match(sinkInventory, /^\*\*Last merged source baseline:\*\* `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`/m);
+assert.match(securityAudit, /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/);
 
 console.log(
   'Current-readiness documentation: latest merge, password terminology, active architecture and live-release boundaries are aligned.',
