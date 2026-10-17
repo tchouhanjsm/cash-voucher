@@ -108,12 +108,10 @@ window.CV_CONFIG = {
 }
 
 function countFiles(directory) {
-  return fs
-    .readdirSync(directory, { withFileTypes: true })
-    .reduce((count, entry) => {
-      const absolutePath = path.join(directory, entry.name);
-      return count + (entry.isDirectory() ? countFiles(absolutePath) : 1);
-    }, 0);
+  return fs.readdirSync(directory, { withFileTypes: true }).reduce((count, entry) => {
+    const absolutePath = path.join(directory, entry.name);
+    return count + (entry.isDirectory() ? countFiles(absolutePath) : 1);
+  }, 0);
 }
 
 if (require.main === module) {
