@@ -2,12 +2,13 @@
 
 Updated: 17 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `dd901910531da2c060539baad44949fe2cb54b30` (PR #164 merge commit)  
-Latest post-merge main CI: [run 38998817186](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186) — passed  
-Current engineering batch: Phases 37–39 — route-safe asynchronous workflow updates  
-Current working branch: `phase-37-39-route-safe-async-views-2026-10-17`  
-Current pull request: [#165](https://github.com/tchouhanjsm/cash-voucher/pull/165) — review candidate; the required PR-quality handoff sections are populated, and the exact final head still needs passing CI, Browser E2E and Full Flight Test before merge  
-Current candidate: prevent delayed or out-of-order Reports and administration requests from replacing a route selected by the operator; preserve financial, permission, API and schema contracts
+Verified `main` SHA: `4b729f33d9caff13e01ed56acbc231375c5beec0` (PR #165 merge commit)  
+Current mainline: route-safe asynchronous workflow updates from PR #165; this commit's existence/ancestry was verified from GitHub refs and commit metadata.  
+Current working branch: `ops/first-customer-managed-delivery-2026-10-17`  
+Current pull request: [#166](https://github.com/tchouhanjsm/cash-voucher/pull/166) — open for owner review; exact-head checks must pass before merge.  
+Current work: first-customer managed delivery readiness; build a per-customer static artifact, document isolated Apps Script/Sheets/Drive provisioning, production backups/restores and handover gates.  
+Release boundary: source/docs/tests only. No customer Google resources, static host project, customer endpoint, actual app link, live backup/restore or customer credentials have been provisioned by this batch. Repository visibility is currently public; review the source-privacy/hosting cutover before proprietary onboarding.  
+Owner authority: the repository owner retains review, merge, Google-account administration and production deployment authority. Do not merge or deploy this batch without the owner's explicit authorization.
 
 ## Verified repository state
 

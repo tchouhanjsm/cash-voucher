@@ -11,7 +11,7 @@ index.html
        └── frontend/features/            auth, payments, dashboard, register, bulk,
                                          administration, navigation, printing
 style.css · frontend-ui-kit.css · config.js · sw.js · manifest.webmanifest · icons/
-backend/Code.gs · backend/appsscript.json
+backend/*.gs · backend/appsscript.json (split Apps Script source)
 test/ · scripts/ · docs/
 ```
 
@@ -33,24 +33,39 @@ The existence of code and green mock/browser tests does not prove the real prope
 
 [FrontUI Studio](ui-studio.html) is a static component gallery for the shared palette, spacing/type/radius tokens, buttons, form fields, status treatments, KPI cards and data tables. It loads local CSS only and uses safe sample data; it is a design reference, not an authenticated application route or production data source.
 
-## One-time backend setup
+## Customer instance provisioning
 
-1. Create a dedicated Google Sheet and open **Extensions → Apps Script**.
-2. Add the backend source from `backend/Code.gs` and set the manifest from `backend/appsscript.json` if needed.
-3. In **Project Settings → Script properties**, set `OWNER_EMAIL` and a temporary, non-trivial six-digit `OWNER_PIN`; optionally set `OWNER_NAME`.
-4. Run `setup` and approve the required Sheets/Drive permissions. Setup creates the data tabs, receipt/backup folders, backup trigger and initial owner. On successful owner creation, the temporary `OWNER_PIN` property is removed; the user must change the PIN at first sign-in.
-5. Deploy a Web App that executes as the deploying account. Anonymous HTTP access is needed for the static GitHub Pages client, but the app must authenticate each action itself. **Keep the underlying Sheet and Drive folders private; do not grant staff direct access.**
-6. Record the Web App URL for the frontend.
+Cash Voucher is a single-property application, not a shared multi-tenant database. Every paying customer must receive a distinct Apps Script project/Web App deployment, a dedicated Sheet, private receipt/backup folders, and a static site on its own origin. Do not share one instance or rely on different paths/query strings on the same site to isolate customers: the offline IndexedDB outbox and local storage are origin-wide.
 
-When a backend change is merged, it is still only source code: production changes require an intentional `clasp push` and new Apps Script deployment version. Do not deploy automatically just because a frontend PR merged.
+Use the full [Customer Onboarding Runbook](docs/CUSTOMER-ONBOARDING-RUNBOOK.md), [Customer Quick Start Template](docs/CUSTOMER-QUICK-START-TEMPLATE.md), and [Customer Instance Register Template](docs/CUSTOMER-INSTANCE-REGISTER-TEMPLATE.md). The completed register must remain private and outside this repository.
 
-## Website setup
+### Provision a new customer backend
 
-1. Push this repository to GitHub.
-2. In repository **Settings → Pages**, publish from `main` / repository root.
-3. Set the Apps Script Web App URL in `config.js` (`API_URL`), commit, and wait for Pages to publish.
-4. Open the Pages URL, sign in as owner, change the temporary PIN, and add individual manager/staff accounts.
-5. Verify the deployed version using a clean browser before using real financial records.
+1. Create a new dedicated Google Sheet and open **Extensions → Apps Script** from that Sheet so the script is bound to the correct spreadsheet.
+2. In a clean checkout, create a local ignored `.clasp.json` using the actual customer Script ID and `rootDir: "backend"`. Keep `.clasp.json` and `.clasprc.json` out of Git.
+3. Confirm the target with `npx clasp status` and `npx clasp deployments`. Run `npx clasp push` only after confirming that the target is the new empty customer project. The current backend is split across numbered `backend/*.gs` files; do not copy only an old/single `Code.gs` file.
+4. In Apps Script **Project Settings → Script properties**, set `OWNER_EMAIL` to the customer's nominated app-owner email, `OWNER_PIN` to a private temporary non-trivial six-digit PIN, and optionally `OWNER_NAME`.
+5. Run `setup()` once on that new empty instance and approve required permissions. It creates the expected tabs, receipt/backup folders and daily backup trigger. The temporary `OWNER_PIN` property is removed after the initial owner is created.
+6. Deploy the Web App as the product/operator account with the access setting required for the static app (anonymous HTTP access). App-level login and server-side authorization must remain mandatory; never share the raw Sheet or Drive folders with staff.
+
+Do not run `setup()` as a routine upgrade or against an existing populated instance. Follow `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md` for subsequent backend releases and approved migrations.
+
+### Build the static client
+
+The root `config.js` contains the endpoint of an existing instance and is **not a customer template**. Do not point a new customer at that endpoint without independent verification.
+
+Set the customer's exact Apps Script Web App URL as the build environment variable, then run:
+
+```bash
+export CV_API_URL='https://script.google.com/macros/s/<deployment-id>/exec'
+npm run build:web
+```
+
+The command validates the URL and creates `dist/` containing only the static app shell, styles, frontend modules, icons, manifest, service worker and generated per-customer `config.js`. It excludes the Apps Script backend, source docs, scripts and tests. The build fails if `CV_API_URL` is missing or does not match the expected HTTPS Apps Script Web App URL shape. The endpoint is not a password; the backend must authenticate every action.
+
+Publish **only `dist/`** from the static host. Configure the build command as `npm ci && npm run build:web`, output directory as `dist`, and set `CV_API_URL` separately for each customer hosting project. Use one distinct host origin/hostname per customer so browser offline queues and local login state are not shared. Do not publish the repository root or reuse the existing root GitHub Pages origin as an isolation boundary.
+
+Before creating a customer login or using real financial data, complete the live authentication/role checks, run a real backup, inspect its Sheet/receipt manifest, restore it to a separate recovery destination, and test the actual customer link and offline path. Source tests and GitHub Actions do not replace those live release gates; see `docs/RELEASE-READINESS.md`.
 
 ## Development and checks
 
