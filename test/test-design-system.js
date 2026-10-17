@@ -45,7 +45,7 @@ assert.match(
 );
 assert.match(
   components,
-  /\.dashboard-view \.stat > \.stat-ic\s*\{[^}]*position:\s*static/,
+  /\.dashboard-view \.stat > \.stat-ic\s*\{[^}]*position:\s*static;[^}]*align-self:\s*start/,
   'dashboard KPI icons stay in grid flow and cannot overlap labels or values',
 );
 assert.match(
