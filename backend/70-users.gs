@@ -113,8 +113,8 @@ function resetPassword_(user, req) {
 function changePassword_(user, req) {
   // route_ authenticates this session after acquiring the shared ScriptLock.
   const u = user._u,
-    oldPassword = String(req.oldPassword || ''),
-    newPassword = String(req.newPassword || ''),
+    oldPassword = String(req.oldPassword === undefined || req.oldPassword === null ? '' : req.oldPassword),
+    newPassword = String(req.newPassword === undefined || req.newPassword === null ? '' : req.newPassword),
     cache = CacheService.getScriptCache(),
     fk = 'pf:' + u.UserID;
   const fails = Number(cache.get(fk) || 0);
@@ -122,7 +122,7 @@ function changePassword_(user, req) {
     throw err_('Too many password-change attempts. Try again in 15 minutes.', 'LOCKED');
   if (!same_(hashPassword_(u.Salt, oldPassword), u.PasswordHash)) {
     cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
-    audit_(user, 'PASSWORD_CHANGE_FAILED', '', '');
+    audit_(user, 'PASSWORD_CHANGE_FAILED', '', 'Invalid current credential; value intentionally excluded.');
     throw err_('Current password is wrong.');
   }
   cache.remove(fk);
