@@ -2982,3 +2982,24 @@ here and in the production app. It requires no JS or remote assets. */
     }
   }
 }
+
+
+/* Phase 34–36 — validation guidance and asynchronous report state. */
+@media screen {
+  .report-output {
+    min-width: 0;
+  }
+
+  .report-filters [aria-invalid='true'] {
+    border-color: var(--bad);
+    box-shadow: 0 0 0 1px var(--bad);
+  }
+
+  .report-error {
+    overflow-wrap: anywhere;
+  }
+
+  .report-output[aria-busy='true'] {
+    cursor: progress;
+  }
+}
