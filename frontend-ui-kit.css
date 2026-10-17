@@ -2398,27 +2398,27 @@ here and in the production app. It requires no JS or remote assets. */
     flex: 1 1 260px;
   }
 
-  .account-pin-form {
+  .account-password-form {
     padding: clamp(18px, 2.5vw, 26px);
   }
 
-  .account-pin-form > h2 {
+  .account-password-form > h2 {
     margin: 0 0 14px;
   }
 
-  .account-pin-controls {
+  .account-password-controls {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     align-items: end;
     gap: 12px;
   }
 
-  .account-pin-controls > input {
+  .account-password-controls > input {
     min-width: 0;
     width: 100%;
   }
 
-  .account-pin-controls > .btn {
+  .account-password-controls > .btn {
     min-height: 44px;
   }
 
@@ -2505,11 +2505,11 @@ here and in the production app. It requires no JS or remote assets. */
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .account-pin-controls {
+    .account-password-controls {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    .account-pin-controls > .btn {
+    .account-password-controls > .btn {
       width: 100%;
     }
   }
@@ -2519,7 +2519,7 @@ here and in the production app. It requires no JS or remote assets. */
     .vendor-form-fields,
     .user-form-fields,
     .audit-panel > .audit-filters,
-    .account-pin-controls {
+    .account-password-controls {
       grid-template-columns: minmax(0, 1fr);
     }
 

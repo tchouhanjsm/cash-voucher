@@ -213,7 +213,7 @@ function create() {
   vm.createContext(ctx);
   vm.runInContext(
     backendSource() +
-      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
+      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
     ctx,
   );
   return {

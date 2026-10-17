@@ -18,7 +18,7 @@ function extractCredentialValues(raw) {
 
   const values = [];
   const sensitiveKey =
-    /token|secret|client.?id|authorization|credential|password|pin|email|private.?key|api.?key/i;
+    /token|secret|client.?id|authorization|credential|password|password|email|private.?key|api.?key/i;
   const sensitiveContainer = /^(token|tokens|oauth2ClientSettings|credentials?)$/i;
 
   function visit(value, key = '', insideSensitiveContainer = false) {
@@ -46,8 +46,8 @@ function sanitized(value, env = process.env) {
   const hidden = [
     env.CLASPRC_JSON,
     ...extractCredentialValues(env.CLASPRC_JSON),
-    env.CV_STAGING_UAT_OWNER_PIN,
-    env.CV_STAGING_UAT_MANAGER_PIN,
+    env.CV_STAGING_UAT_OWNER_PASSWORD,
+    env.CV_STAGING_UAT_MANAGER_PASSWORD,
     env.CV_STAGING_UAT_OWNER_EMAIL,
     env.CV_STAGING_UAT_MANAGER_EMAIL,
     env.CV_STAGING_API_URL,

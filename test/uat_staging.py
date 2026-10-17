@@ -54,20 +54,20 @@ def go(page, view):
     overflow.click()
 
 
-def sign_in(page, email, pin, role):
+def sign_in(page, email, password, role):
     page.goto(BASE, wait_until="domcontentloaded")
     configured = page.evaluate("() => window.CV_CONFIG && window.CV_CONFIG.API_URL")
     check(configured == API_URL, role + " browser targets the configured staging endpoint")
     page.locator("#lEmail").fill(email)
-    page.locator("#lPin").fill(pin)
+    page.locator("#lPassword").fill(password)
     page.locator("#lBtn").click()
     try:
         page.locator("#app:not(.hidden)").wait_for(state="visible", timeout=20000)
     except PlaywrightTimeoutError as exc:
         raise AssertionError(
-            role + " sign-in failed; confirm the dedicated staging account is active and its initial PIN change was completed manually."
+            role + " sign-in failed; confirm the dedicated staging account is active and its initial password change was completed manually."
         ) from exc
-    check(page.locator("#op").count() == 0, role + " account has completed first-login PIN setup")
+    check(page.locator("#op").count() == 0, role + " account has completed first-login password setup")
     token = page.evaluate("() => localStorage.getItem('cv.token')")
     check(isinstance(token, str) and len(token) >= 20, role + " receives an authenticated session")
     return token
@@ -137,10 +137,10 @@ def run():
         raise AssertionError("CV_STAGING_API_URL is missing.")
 
     owner_email = os.environ["CV_STAGING_UAT_OWNER_EMAIL"].strip()
-    owner_pin = os.environ["CV_STAGING_UAT_OWNER_PIN"].strip()
+    owner_password = os.environ["CV_STAGING_UAT_OWNER_PASSWORD"]
     manager_email = os.environ["CV_STAGING_UAT_MANAGER_EMAIL"].strip()
-    manager_pin = os.environ["CV_STAGING_UAT_MANAGER_PIN"].strip()
-    if owner_email.lower() == manager_email.lower() or owner_pin == manager_pin:
+    manager_password = os.environ["CV_STAGING_UAT_MANAGER_PASSWORD"]
+    if owner_email.lower() == manager_email.lower() or owner_password == manager_password:
         raise AssertionError("Staging owner and manager UAT accounts must be distinct.")
 
     unique_vendor = "UAT-P19-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
@@ -157,7 +157,7 @@ def run():
         browser = playwright.chromium.launch()
         owner_context = browser.new_context(viewport={"width": 1280, "height": 800})
         owner_page = owner_context.new_page()
-        owner_token = sign_in(owner_page, owner_email, owner_pin, "staging owner")
+        owner_token = sign_in(owner_page, owner_email, owner_password, "staging owner")
         staging_target_check(owner_page)
         target_verified = True
 
@@ -257,7 +257,7 @@ def run():
 
             manager_context = browser.new_context(viewport={"width": 1280, "height": 800})
             manager_page = manager_context.new_page()
-            manager_token = sign_in(manager_page, manager_email, manager_pin, "staging manager")
+            manager_token = sign_in(manager_page, manager_email, manager_password, "staging manager")
             go(manager_page, "reg")
             manager_page.locator("#rq").fill(unique_vendor)
             manager_row = manager_page.locator("#rbody tr").filter(has_text=unique_vendor)

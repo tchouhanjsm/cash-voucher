@@ -5,7 +5,7 @@ const { create } = require('./mock-gas');
 
 const g = create();
 g.props.OWNER_EMAIL = 'readiness-owner@test.com';
-g.props.OWNER_PIN = '483921';
+g.props.OWNER_PASSWORD = 'Owner#Start2026';
 g.setup();
 
 const anonymous = g.call('deploymentReadiness');
@@ -14,17 +14,17 @@ assert.equal(anonymous.code, 'SESSION');
 
 const login = g.call('login', {
   email: 'readiness-owner@test.com',
-  pin: '483921',
+  password: 'Owner#Start2026',
 });
 assert.equal(login.ok, true);
-const changedPin = g.call('changePin', {
+const changedPassword = g.call('changePassword', {
   token: login.data.token,
-  oldPin: '483921',
-  newPin: '579246',
+  oldPassword: 'Owner#Start2026',
+  newPassword: 'Owner#Final2026',
 });
-assert.equal(changedPin.ok, true);
+assert.equal(changedPassword.ok, true);
 
-const readiness = g.call('deploymentReadiness', { token: changedPin.data.token });
+const readiness = g.call('deploymentReadiness', { token: changedPassword.data.token });
 assert.equal(readiness.ok, true);
 assert.equal(readiness.data.scriptId, 'MOCK_SCRIPT_ID');
 assert.equal(readiness.data.spreadsheetId, 'SS1');
@@ -38,25 +38,25 @@ assert.equal(readiness.data.checks.backupFolderReadable, true);
 assert.equal(readiness.data.checks.backupTriggerInstalled, true);
 
 const createStaff = g.call('saveUser', {
-  token: changedPin.data.token,
+  token: changedPassword.data.token,
   name: 'Readiness Staff',
   email: 'readiness-staff@test.com',
   role: 'staff',
-  pin: '628491',
+  password: 'Temp#OtherPass2026',
 });
 assert.equal(createStaff.ok, true);
 const staffLogin = g.call('login', {
   email: 'readiness-staff@test.com',
-  pin: '628491',
+  password: 'Temp#OtherPass2026',
 });
 assert.equal(staffLogin.ok, true);
-const staffPinChange = g.call('changePin', {
+const staffPasswordChange = g.call('changePassword', {
   token: staffLogin.data.token,
-  oldPin: '628491',
-  newPin: '739284',
+  oldPassword: 'Temp#OtherPass2026',
+  newPassword: 'Manager#Final2026',
 });
-assert.equal(staffPinChange.ok, true);
-const denied = g.call('deploymentReadiness', { token: staffPinChange.data.token });
+assert.equal(staffPasswordChange.ok, true);
+const denied = g.call('deploymentReadiness', { token: staffPasswordChange.data.token });
 assert.equal(denied.ok, false);
 assert.equal(denied.code, 'FORBIDDEN', 'staging target identifiers are owner/settings-only');
 

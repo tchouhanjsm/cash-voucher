@@ -7,7 +7,7 @@ const ok = (c, m) => {
   n++;
 };
 g.props.OWNER_EMAIL = 'Owner@Test.com';
-g.props.OWNER_PIN = '483921';
+g.props.OWNER_PASSWORD = 'Owner#Start2026';
 g.setup();
 g.setup(); // idempotent
 ok(!!g.props.BACKUP_FOLDER_ID, 'backup folder configured');
@@ -26,7 +26,7 @@ const nextReceiptNumber = () =>
 // Approval migration adds R:U only, preserves prior cells, and stops on occupied columns.
 const approvalMigrationMock = create();
 approvalMigrationMock.props.OWNER_EMAIL = 'Owner@Test.com';
-approvalMigrationMock.props.OWNER_PIN = '483921';
+approvalMigrationMock.props.OWNER_PASSWORD = 'Owner#Start2026';
 approvalMigrationMock.setup();
 const approvalMigrationSheet = approvalMigrationMock.sheets.Vouchers;
 approvalMigrationSheet.rows[0] = approvalMigrationSheet.rows[0].slice(0, 17);
@@ -75,7 +75,7 @@ ok(
 );
 const approvalMigrationConflict = create();
 approvalMigrationConflict.props.OWNER_EMAIL = 'Owner@Test.com';
-approvalMigrationConflict.props.OWNER_PIN = '483921';
+approvalMigrationConflict.props.OWNER_PASSWORD = 'Owner#Start2026';
 approvalMigrationConflict.setup();
 approvalMigrationConflict.sheets.Vouchers.rows[0] =
   approvalMigrationConflict.sheets.Vouchers.rows[0].slice(0, 17);
@@ -87,7 +87,7 @@ assert.throws(
 ok(true, 'approval migration refuses to overwrite occupied columns');
 const vendorIdMigrationConflict = create();
 vendorIdMigrationConflict.props.OWNER_EMAIL = 'Owner@Test.com';
-vendorIdMigrationConflict.props.OWNER_PIN = '483921';
+vendorIdMigrationConflict.props.OWNER_PASSWORD = 'Owner#Start2026';
 vendorIdMigrationConflict.setup();
 vendorIdMigrationConflict.sheets.Vouchers.rows[0] =
   vendorIdMigrationConflict.sheets.Vouchers.rows[0].slice(0, 21);
@@ -158,13 +158,13 @@ ok(malformedJson.ok === false && malformedJson.code === 'VALIDATION', 'malformed
 const arrayRequest = g.raw('[]');
 ok(arrayRequest.code === 'VALIDATION', 'array request rejected');
 
-ok(!g.props.OWNER_PIN, 'owner PIN property removed after setup');
+ok(!g.props.OWNER_PASSWORD, 'owner password property removed after setup');
 // Login lock contention: timeout must fail closed without counting an attempt or releasing an unacquired lock.
 const contentionAttempts = g.lockStats.attempts;
 const contentionWaits = g.lockStats.waits;
 const contentionReleases = g.lockStats.releases;
 g.lockStats.failNextWait = true;
-const busyLogin = g.call('login', { email: 'busy@test.com', pin: '000000' });
+const busyLogin = g.call('login', { email: 'busy@test.com', password: 'Wrong#Password2026' });
 ok(
   !busyLogin.ok && busyLogin.code === 'BUSY' && /retry shortly/i.test(busyLogin.error),
   'login lock timeout returns actionable BUSY feedback',
@@ -182,15 +182,42 @@ ok(
 // login
 const loginLockWaits = g.lockStats.waits;
 const loginLockReleases = g.lockStats.releases;
-const badOwnerLogin = g.call('login', { email: 'owner@test.com', pin: '000000' });
+const badOwnerLogin = g.call('login', { email: 'owner@test.com', password: 'Wrong#Password2026' });
 ok(
   !badOwnerLogin.ok &&
     g.lockStats.waits === loginLockWaits + 1 &&
     g.lockStats.releases === loginLockReleases + 1,
   'failed login is rejected while holding and releasing the script lock',
 );
-let r = g.call('login', { email: 'OWNER@test.com', pin: '483921' });
+const unknownAccountPassword = 'Unknown#Attempt2026';
+const unknownAccountLogin = g.call('login', {
+  email: 'unknown@test.com',
+  password: unknownAccountPassword,
+});
+ok(
+  !unknownAccountLogin.ok &&
+    g.sheets.AuditLog.rows.some(
+      (row) => row[1] === 'unknown@test.com' && row[2] === 'LOGIN_FAILED',
+    ),
+  'failed login attempts for unknown email addresses are recorded in the audit log',
+);
+ok(
+  !JSON.stringify(g.sheets.AuditLog.rows).includes(unknownAccountPassword),
+  'audit log never stores an attempted password',
+);
+const shortPasswordLogin = g.call('login', { email: 'owner@test.com', password: 'short' });
+ok(!shortPasswordLogin.ok, 'server rejects passwords shorter than eight characters');
+let r = g.call('login', { email: 'OWNER@test.com', password: 'Owner#Start2026' });
 ok(r.ok && r.data.user.role === 'owner', 'owner login');
+const successfulOwnerLoginAudit = [...g.sheets.AuditLog.rows]
+  .reverse()
+  .find((row) => row[1] === 'owner@test.com' && row[2] === 'LOGIN_SUCCESS');
+ok(
+  Boolean(successfulOwnerLoginAudit) &&
+    successfulOwnerLoginAudit[4].includes('role=owner') &&
+    Boolean(g.sheets.Users.rows[1][9]),
+  'successful login records role, audit outcome, and LastLogin timestamp',
+);
 const as = (t, a, p = {}) => {
   const payload = { ...p };
   if (a === 'createVouchers' && Array.isArray(payload.entries)) {
@@ -201,12 +228,15 @@ const as = (t, a, p = {}) => {
   }
   return g.call(a, { token: t, ...payload });
 };
-ok(as(r.data.token, 'bootstrap').code === 'PIN_CHANGE', 'owner must change setup PIN');
-let T = as(r.data.token, 'changePin', { oldPin: '483921', newPin: '579246' }).data.token;
+ok(as(r.data.token, 'bootstrap').code === 'PASSWORD_CHANGE', 'owner must change setup password');
+let T = as(r.data.token, 'changePassword', {
+  oldPassword: 'Owner#Start2026',
+  newPassword: 'Owner#Final2026',
+}).data.token;
 
 // Revalidate write sessions after acquiring the ScriptLock. Simulate a session being
 // invalidated while a write request waits for the lock; no voucher may be written.
-const raceLogin = g.call('login', { email: 'OWNER@test.com', pin: '579246' });
+const raceLogin = g.call('login', { email: 'OWNER@test.com', password: 'Owner#Final2026' });
 ok(raceLogin.ok, 'dedicated login succeeds for write-lock session race test');
 const raceToken = raceLogin.data.token;
 const raceSessionKey = 's:' + raceToken;
@@ -259,8 +289,8 @@ ok(
 );
 // create users
 ok(
-  !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', pin: '111111' }).ok,
-  'weak PIN rejected',
+  !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', password: 'short' }).ok,
+  'weak password rejected',
 );
 const inheritedRoleResults = ['constructor', 'toString', '__proto__', 'hasOwnProperty'].map(
   (role, index) =>
@@ -268,7 +298,7 @@ const inheritedRoleResults = ['constructor', 'toString', '__proto__', 'hasOwnPro
       name: 'Invalid role user',
       email: 'invalid-role-' + index + '@test.com',
       role,
-      pin: '135792',
+      password: 'Mona#Temp2026',
     }),
 );
 ok(
@@ -277,47 +307,65 @@ ok(
 );
 
 ok(
-  as(T, 'saveUser', { name: 'Mona Manager', email: 'm@test.com', role: 'manager', pin: '246810' })
-    .ok,
+  as(T, 'saveUser', {
+    name: 'Mona Manager',
+    email: 'm@test.com',
+    role: 'manager',
+    password: 'Manager#Start2026',
+  }).ok,
   'manager created',
 );
 ok(
-  as(T, 'saveUser', { name: 'Sam Staff', email: 's@test.com', role: 'staff', pin: '135790' }).ok,
+  as(T, 'saveUser', {
+    name: 'Sam Staff',
+    email: 's@test.com',
+    role: 'staff',
+    password: 'Staff#Start2026',
+  }).ok,
   'staff created',
 );
 ok(
-  as(T, 'saveUser', { name: 'Alex Staff', email: 'a@test.com', role: 'staff', pin: '112233' }).ok,
+  as(T, 'saveUser', {
+    name: 'Alex Staff',
+    email: 'a@test.com',
+    role: 'staff',
+    password: 'Staff#Other2026',
+  }).ok,
   'second staff created',
 );
 ok(
-  !as(T, 'saveUser', { name: 'X', email: 'M@test.com', role: 'staff', pin: '135791' }).ok,
+  !as(T, 'saveUser', { name: 'X', email: 'M@test.com', role: 'staff', password: 'Test#135791Pass' })
+    .ok,
   'dup email rejected',
 );
-// forced PIN change
-const M0 = g.call('login', { email: 'm@test.com', pin: '246810' }).data.token;
-ok(as(M0, 'bootstrap').code === 'PIN_CHANGE', 'must change pin first');
-const cp = as(M0, 'changePin', { oldPin: '246810', newPin: '864209' });
-ok(cp.ok, 'pin changed');
-ok(as(M0, 'bootstrap').code === 'SESSION', 'old token invalid after pin change');
+// forced password change
+const M0 = g.call('login', { email: 'm@test.com', password: 'Manager#Start2026' }).data.token;
+ok(as(M0, 'bootstrap').code === 'PASSWORD_CHANGE', 'must change password first');
+const cp = as(M0, 'changePassword', {
+  oldPassword: 'Manager#Start2026',
+  newPassword: 'Manager#Final2026',
+});
+ok(cp.ok, 'password changed');
+ok(as(M0, 'bootstrap').code === 'SESSION', 'old token invalid after password change');
 const M = cp.data.token;
 ok(as(M, 'bootstrap').ok, 'new token works');
 const managerUserId = as(T, 'listUsers').data.find((u) => u.email === 'm@test.com').id;
 
-// Use a dedicated disposable account for PIN lockout tests so those intentionally
+// Use a dedicated disposable account for password lockout tests so those intentionally
 // failed attempts cannot invalidate the manager session used by later approval tests.
 ok(
   as(T, 'saveUser', {
     name: 'Lockout Test User',
     email: 'lockout@test.com',
     role: 'staff',
-    pin: '314159',
+    password: 'Lock#Start2026',
   }).ok,
-  'dedicated account created for PIN lockout tests',
+  'dedicated account created for password lockout tests',
 );
-const lockoutLogin = g.call('login', { email: 'lockout@test.com', pin: '314159' });
-const lockoutPinChange = as(lockoutLogin.data.token, 'changePin', {
-  oldPin: '314159',
-  newPin: '625814',
+const lockoutLogin = g.call('login', { email: 'lockout@test.com', password: 'Lock#Start2026' });
+const lockoutPinChange = as(lockoutLogin.data.token, 'changePassword', {
+  oldPassword: 'Lock#Start2026',
+  newPassword: 'Lock#Final2026',
 });
 const L = lockoutPinChange.data.token;
 const lockoutUserId = as(T, 'listUsers').data.find((u) => u.email === 'lockout@test.com').id;
@@ -325,48 +373,61 @@ const busyPinAttempts = g.lockStats.attempts;
 const busyPinWaits = g.lockStats.waits;
 const busyPinReleases = g.lockStats.releases;
 g.lockStats.failNextWait = true;
-const busyPinChange = as(L, 'changePin', { oldPin: '000000', newPin: '625814' });
+const busyPinChange = as(L, 'changePassword', {
+  oldPassword: 'Wrong#Password2026',
+  newPassword: 'Lock#Final2026',
+});
 ok(
   !busyPinChange.ok &&
     busyPinChange.code === 'BUSY' &&
     !Object.prototype.hasOwnProperty.call(g.cache, 'pf:' + lockoutUserId),
-  'PIN-change lock timeout does not record a failed current-PIN attempt',
+  'password-change lock timeout does not record a failed current-password attempt',
 );
 ok(
   g.lockStats.attempts === busyPinAttempts + 1 &&
     g.lockStats.waits === busyPinWaits &&
     g.lockStats.releases === busyPinReleases,
-  'PIN-change timeout does not release an unacquired lock',
+  'password-change timeout does not release an unacquired lock',
 );
-const changePinWaits = g.lockStats.waits;
-const changePinReleases = g.lockStats.releases;
+const changePasswordWaits = g.lockStats.waits;
+const changePasswordReleases = g.lockStats.releases;
 const failedPinChanges = [];
 for (let i = 0; i < 5; i++) {
-  failedPinChanges.push(as(L, 'changePin', { oldPin: '000000', newPin: '625814' }));
+  failedPinChanges.push(
+    as(L, 'changePassword', { oldPassword: 'Wrong#Password2026', newPassword: 'Lock#Final2026' }),
+  );
 }
 ok(
   failedPinChanges.every((result) => !result.ok && result.code !== 'LOCKED'),
-  'wrong current PIN attempts are counted before lockout',
+  'wrong current password attempts are counted before lockout',
 );
 ok(
-  g.lockStats.waits === changePinWaits + 5 && g.lockStats.releases === changePinReleases + 5,
-  'each PIN-change counter update runs under the shared script lock',
+  g.lockStats.waits === changePasswordWaits + 5 &&
+    g.lockStats.releases === changePasswordReleases + 5,
+  'each password-change counter update runs under the shared script lock',
 );
-const changePinLockoutWaits = g.lockStats.waits;
-const changePinLockoutReleases = g.lockStats.releases;
+const changePasswordLockoutWaits = g.lockStats.waits;
+const changePasswordLockoutReleases = g.lockStats.releases;
 ok(
-  as(L, 'changePin', { oldPin: '625814', newPin: '112244' }).code === 'LOCKED',
-  'PIN change is locked after five incorrect current PIN attempts',
+  as(L, 'changePassword', { oldPassword: 'Lock#Final2026', newPassword: 'New#Password2026' })
+    .code === 'LOCKED',
+  'password change is locked after five incorrect current password attempts',
 );
 ok(
-  g.lockStats.waits === changePinLockoutWaits + 1 &&
-    g.lockStats.releases === changePinLockoutReleases + 1,
-  'locked PIN-change attempts release the acquired script lock',
+  g.lockStats.waits === changePasswordLockoutWaits + 1 &&
+    g.lockStats.releases === changePasswordLockoutReleases + 1,
+  'locked password-change attempts release the acquired script lock',
 );
-const S0 = g.call('login', { email: 's@test.com', pin: '135790' }).data.token;
-const S = as(S0, 'changePin', { oldPin: '135790', newPin: '975310' }).data.token;
-const A0 = g.call('login', { email: 'a@test.com', pin: '112233' }).data.token;
-const A = as(A0, 'changePin', { oldPin: '112233', newPin: '224466' }).data.token;
+const S0 = g.call('login', { email: 's@test.com', password: 'Staff#Start2026' }).data.token;
+const S = as(S0, 'changePassword', {
+  oldPassword: 'Staff#Start2026',
+  newPassword: 'Staff#Final2026',
+}).data.token;
+const A0 = g.call('login', { email: 'a@test.com', password: 'Staff#Other2026' }).data.token;
+const A = as(A0, 'changePassword', {
+  oldPassword: 'Staff#Other2026',
+  newPassword: 'Account#Pass2026',
+}).data.token;
 ok(as(S, 'backupStatus').code === 'FORBIDDEN', 'staff cannot read owner backup status');
 ok(as(M, 'backupStatus').code === 'FORBIDDEN', 'manager cannot read owner backup status');
 let backupStatus = as(T, 'backupStatus').data;
@@ -1549,9 +1610,9 @@ const newAuditUser = as(T, 'saveUser', {
   name: 'Audit Agent',
   email: 'audit-agent@test.com',
   role: 'staff',
-  pin: '258369',
+  password: 'Xss#TestPass2026',
 });
-ok(newAuditUser.ok, 'owner can create a user with a temporary PIN');
+ok(newAuditUser.ok, 'owner can create a user with a temporary password');
 const userCreateAudit = [...g.sheets.AuditLog.rows]
   .reverse()
   .find((row) => row[2] === 'USER_CREATE' && row[3] === 'audit-agent@test.com');
@@ -1561,8 +1622,8 @@ ok(
     userCreateDetails.changes.some(
       (change) => change.field === 'role' && change.before === null && change.after === 'staff',
     ) &&
-    !userCreateAudit[4].includes('258369'),
-  'user creation audit records role without exposing temporary PIN',
+    !userCreateAudit[4].includes('Xss#TestPass2026'),
+  'user creation audit records role without exposing temporary password',
 );
 // disable user kills session
 const sm = as(T, 'listUsers').data.find((u) => u.email === 's@test.com');
@@ -1684,46 +1745,48 @@ ok(
   'Date object in CreatedAt is normalised to a string',
 );
 // lockout
-for (let i = 0; i < 5; i++) g.call('login', { email: 'm@test.com', pin: '000000' });
+for (let i = 0; i < 5; i++)
+  g.call('login', { email: 'm@test.com', password: 'Wrong#Password2026' });
 ok(
-  g.call('login', { email: 'm@test.com', pin: '864209' }).code === 'LOCKED',
+  g.call('login', { email: 'm@test.com', password: 'Manager#Final2026' }).code === 'LOCKED',
   'lockout after 5 fails',
 );
-const resetPinWaits = g.lockStats.waits;
-const resetPinReleases = g.lockStats.releases;
+const resetPasswordWaits = g.lockStats.waits;
+const resetPasswordReleases = g.lockStats.releases;
 ok(
-  as(T, 'resetPin', {
+  as(T, 'resetPassword', {
     id: managerUserId,
-    pin: '314159',
+    password: 'Lock#Start2026',
   }).ok,
-  'owner reset pin succeeds',
+  'owner reset password succeeds',
 );
 const pinResetAudit = [...g.sheets.AuditLog.rows]
   .reverse()
-  .find((row) => row[2] === 'PIN_RESET' && row[3] === 'm@test.com');
+  .find((row) => row[2] === 'PASSWORD_RESET' && row[3] === 'm@test.com');
 const pinResetDetails = pinResetAudit ? JSON.parse(pinResetAudit[4]) : null;
 ok(
-  pinResetDetails?.eventType === 'USER_PIN_RESET' &&
+  pinResetDetails?.eventType === 'USER_PASSWORD_RESET' &&
     pinResetDetails.changes.some(
       (change) =>
-        change.field === 'mustChangePin' && change.before === false && change.after === true,
+        change.field === 'mustChangePassword' && change.before === false && change.after === true,
     ) &&
-    !pinResetAudit[4].includes('314159'),
-  'PIN reset audit records account state without logging credential material',
+    !pinResetAudit[4].includes('Lock#Start2026'),
+  'password reset audit records account state without logging credential material',
 );
 ok(
-  g.lockStats.waits === resetPinWaits + 1 && g.lockStats.releases === resetPinReleases + 1,
-  'PIN reset and throttle clearing run under the shared script lock',
+  g.lockStats.waits === resetPasswordWaits + 1 &&
+    g.lockStats.releases === resetPasswordReleases + 1,
+  'password reset and throttle clearing run under the shared script lock',
 );
-const resetLogin = g.call('login', { email: 'm@test.com', pin: '314159' });
-ok(resetLogin.ok, 'owner reset pin clears login lockout');
-const resetChange = as(resetLogin.data.token, 'changePin', {
-  oldPin: '314159',
-  newPin: '417258',
+const resetLogin = g.call('login', { email: 'm@test.com', password: 'Lock#Start2026' });
+ok(resetLogin.ok, 'owner reset password clears login lockout');
+const resetChange = as(resetLogin.data.token, 'changePassword', {
+  oldPassword: 'Lock#Start2026',
+  newPassword: 'Password#Reset2026',
 });
 ok(
   resetChange.ok && as(resetChange.data.token, 'bootstrap').ok,
-  'owner PIN reset also clears PIN-change throttle',
+  'owner password reset also clears password-change throttle',
 );
 ok(g.lockStats.waits === g.lockStats.releases, 'all acquired script locks are released');
 // owner-only data-quality report: scan source records, do not infer accounting treatment
@@ -2157,20 +2220,20 @@ const savedAccountant = as(T, 'saveUser', {
   name: 'Nina Accountant',
   email: 'accountant@test.com',
   role: 'accountant',
-  pin: '864209',
+  password: 'Manager#Final2026',
 });
 ok(savedAccountant.ok, 'owner can create an accountant role');
 const accountantLogin = g.call('login', {
   email: 'accountant@test.com',
-  pin: '864209',
+  password: 'Manager#Final2026',
 });
 ok(
-  accountantLogin.ok && accountantLogin.data.user.mustChangePin,
-  'new accountant account requires a PIN change at first login',
+  accountantLogin.ok && accountantLogin.data.user.mustChangePassword,
+  'new accountant account requires a password change at first login',
 );
-const accountantPinChange = as(accountantLogin.data.token, 'changePin', {
-  oldPin: '864209',
-  newPin: '975318',
+const accountantPinChange = as(accountantLogin.data.token, 'changePassword', {
+  oldPassword: 'Manager#Final2026',
+  newPassword: 'Account#Final2026',
 });
 const accountantToken = accountantPinChange.data.token;
 const accountantBootstrap = as(accountantToken, 'bootstrap').data;
@@ -2380,7 +2443,7 @@ ok(
 // Phase 2 integration: one high-value payment must remain consistent from entry
 // through independent approval, report totals, final cash-close snapshot and audit.
 const workflowDate = '2020-02-04';
-// PIN reset rotates session salt; use the freshly authenticated manager token, not the pre-reset token.
+// password reset rotates session salt; use the freshly authenticated manager token, not the pre-reset token.
 const workflowManagerToken = resetChange.data.token;
 const workflowEntry = as(workflowManagerToken, 'createVouchers', {
   entries: [
@@ -2533,19 +2596,19 @@ ok(
 // marker fail, the financial write is still successful and the owner status cannot detect the gap.
 const auditMarkerOutageMock = create();
 auditMarkerOutageMock.props.OWNER_EMAIL = 'marker-owner@test.com';
-auditMarkerOutageMock.props.OWNER_PIN = '483921';
+auditMarkerOutageMock.props.OWNER_PASSWORD = 'Owner#Start2026';
 auditMarkerOutageMock.setup();
 const markerLogin = auditMarkerOutageMock.call('login', {
   email: 'marker-owner@test.com',
-  pin: '483921',
+  password: 'Owner#Start2026',
 });
 assert(markerLogin.ok, 'audit-marker outage fixture owner login succeeds');
-const markerPinChange = auditMarkerOutageMock.call('changePin', {
+const markerPinChange = auditMarkerOutageMock.call('changePassword', {
   token: markerLogin.data.token,
-  oldPin: '483921',
-  newPin: '579246',
+  oldPassword: 'Owner#Start2026',
+  newPassword: 'Owner#Final2026',
 });
-assert(markerPinChange.ok, 'audit-marker outage fixture completes required first PIN change');
+assert(markerPinChange.ok, 'audit-marker outage fixture completes required first password change');
 auditMarkerOutageMock.failNextAuditWrite();
 auditMarkerOutageMock.failNextAuditMarkerWrite();
 const markerOutageVoucher = auditMarkerOutageMock.call('createVouchers', {

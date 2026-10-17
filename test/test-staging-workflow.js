@@ -26,6 +26,15 @@ assert.match(workflow, /needs: \[validate, guard\]/);
 assert.match(workflow, /confirm_staging_writes/);
 assert.match(workflow, /CV_STAGING_DEPLOY_CONFIRMATION/);
 assert.match(workflow, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
+assert.match(
+  workflow,
+  /CV_STAGING_UAT_OWNER_PASSWORD: \$\{\{ secrets\.CV_STAGING_UAT_OWNER_PASSWORD \}\}/,
+);
+assert.match(
+  workflow,
+  /CV_STAGING_UAT_MANAGER_PASSWORD: \$\{\{ secrets\.CV_STAGING_UAT_MANAGER_PASSWORD \}\}/,
+);
+assert.doesNotMatch(workflow, /CV_STAGING_UAT_(OWNER|MANAGER)_PIN/);
 
 const validationJob = workflow.split('  guard:\n')[0];
 assert.doesNotMatch(

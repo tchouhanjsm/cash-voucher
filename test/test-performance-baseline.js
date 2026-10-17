@@ -10,17 +10,17 @@ const WARMUP_RUNS = 1;
 const SAMPLE_COUNT = 5;
 const g = create();
 g.props.OWNER_EMAIL = 'perf-owner@test.com';
-g.props.OWNER_PIN = '483921';
+g.props.OWNER_PASSWORD = 'Perf#OwnerStart2026';
 g.setup();
 
-const login = g.call('login', { email: 'perf-owner@test.com', pin: '483921' });
+const login = g.call('login', { email: 'perf-owner@test.com', password: 'Perf#OwnerStart2026' });
 assert.ok(login.ok, 'performance fixture owner login succeeds');
-const change = g.call('changePin', {
+const change = g.call('changePassword', {
   token: login.data.token,
-  oldPin: '483921',
-  newPin: '579246',
+  oldPassword: 'Perf#OwnerStart2026',
+  newPassword: 'Perf#OwnerFinal2026',
 });
-assert.ok(change.ok, 'performance fixture completes required first PIN change');
+assert.ok(change.ok, 'performance fixture completes required first password change');
 const token = change.data.token;
 const voucherSheet = g.sheets.Vouchers;
 const headers = voucherSheet.rows[0];

@@ -31,7 +31,7 @@ for (const secret of syntheticSecrets) {
 
 assert.deepEqual(
   findSecretKinds(
-    'Owner PIN is entered by a user; GHSA-vfj7-8cjw-p6xm is a public advisory; ' +
+    'Owner password is entered by a user; GHSA-vfj7-8cjw-p6xm is a public advisory; ' +
       'example URL https://example.test/api has no credential value.',
   ),
   [],

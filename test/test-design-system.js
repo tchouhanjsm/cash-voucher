@@ -190,8 +190,8 @@ assert.match(
 );
 assert.match(
   administration,
-  /className = 'card account-pin-form'/,
-  'account PIN form uses the shared workflow styling',
+  /className = 'card account-password-form'/,
+  'account password form uses the shared workflow styling',
 );
 assert.match(
   components,
@@ -204,9 +204,9 @@ assert.match(
   'vendor fields use a deliberate desktop grid',
 );
 assert.match(
-  components,
-  /#login \.lock-card input:not\(\.hidden\)/,
-  'sign-in controls use consistent full-width touch-friendly dimensions',
+  palette,
+  /\.auth-login \.auth-login__control input\s*\{[^}]*min-height:\s*48px/,
+  'new sign-in controls use consistent full-width touch-friendly dimensions',
 );
 assert.doesNotMatch(
   administration,
@@ -215,8 +215,18 @@ assert.doesNotMatch(
 );
 assert.match(
   authHtml,
-  /class="card lock-card"/,
-  'the refined sign-in composition is wired into the real application page',
+  /class="auth-login__shell"/,
+  'the refined sign-in shell is wired into the real application page',
+);
+assert.match(
+  authHtml,
+  /class="auth-login__story"/,
+  'the sign-in story panel is wired into the real application page',
+);
+assert.match(
+  authHtml,
+  /class="auth-login__panel"/,
+  'the sign-in form panel is wired into the real application page',
 );
 
 assert.match(

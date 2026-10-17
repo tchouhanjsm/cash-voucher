@@ -179,3 +179,83 @@ function migrateDailyCashCloseSchema() {
   });
   return 'Daily Cash Close tabs are ready. Existing voucher and settings rows were not rewritten.';
 }
+
+/**
+ * Explicitly opt-in migration for a populated legacy instance moving from PIN to passwords.
+ * Complete and verify a backup before running. This preserves existing hash material and forces
+ * users to change credentials; the application login compatibility path is enabled only by the
+ * explicit migration marker and route guards restrict migrated accounts to changePassword/logout.
+ * Never run this against production without a separately reviewed recovery plan.
+ */
+function migratePinAuthToPasswordSchema() {
+  const spreadsheetId = props_().getProperty('SS_ID');
+  if (!spreadsheetId) throw new Error('SS_ID is missing; confirm the intended bound spreadsheet.');
+  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  const sheet = spreadsheet.getSheetByName('Users');
+  if (!sheet) throw new Error('Users sheet is missing; no migration was performed.');
+
+  const oldHeaders = [
+    'UserID',
+    'Name',
+    'Email',
+    'Role',
+    'Active',
+    'Salt',
+    'PinHash',
+    'MustChangePin',
+    'CreatedAt',
+    'LastLogin',
+  ];
+  const newHeaders = CFG.H.Users;
+  const width = oldHeaders.length;
+  if (sheet.getLastColumn() < width)
+    throw new Error('Users sheet is incomplete; no migration was performed.');
+  const current = sheet.getRange(1, 1, 1, width).getValues()[0].map(String);
+  if (
+    current.every(function (header, index) {
+      return header === newHeaders[index];
+    })
+  ) {
+    return {
+      ok: true,
+      migrated: false,
+      affectedUsers: 0,
+      note: 'Password schema is already present.',
+    };
+  }
+  if (
+    !current.every(function (header, index) {
+      return header === oldHeaders[index];
+    })
+  ) {
+    throw new Error(
+      'Users headers do not match the expected legacy schema; no migration was performed.',
+    );
+  }
+
+  // Persist a migration marker before changing row data. If a later write fails, the
+  // application stays in compatibility mode and continues to enforce forced password change.
+  const properties = props_();
+  properties.setProperty('AUTH_SCHEMA_PASSWORD_MIGRATION', 'PIN_TO_PASSWORD_V1');
+
+  const lastRow = sheet.getLastRow();
+  let affectedUsers = 0;
+  if (lastRow >= 2) {
+    const rows = sheet.getRange(2, 1, lastRow - 1, width).getValues();
+    rows.forEach(function (row) {
+      if (row[0] !== '' && row[0] !== null) {
+        row[7] = true;
+        affectedUsers++;
+      }
+    });
+    sheet.getRange(2, 1, rows.length, width).setValues(rows);
+  }
+  sheet.getRange(1, 1, 1, width).setValues([newHeaders]);
+  audit_(
+    { email: 'system' },
+    'AUTH_SCHEMA_MIGRATION',
+    '',
+    'Password schema migrated; existing accounts require password change',
+  );
+  return { ok: true, migrated: true, affectedUsers: affectedUsers };
+}
