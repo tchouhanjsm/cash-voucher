@@ -69,7 +69,7 @@ Dates are normalized by the API. Monetary inputs are validated and rounded to tw
 - Keep the Sheet, receipt folder and backup folder private. Staff must not receive direct Sheet/Drive edit access.
 - Passwords are hashed using HMAC-SHA256 with per-user salt and a Script Properties pepper; this is the current algorithm, not a memory-hard password KDF. The temporary `OWNER_PASSWORD` Script Property is deleted after initial owner creation.
 - Server writes use Apps Script ScriptLock; idempotency keys prevent duplicate vouchers after retry.
-- PIN/session changes rotate the user's salt so cached sessions tied to the old salt are rejected.
+- Password changes/resets rotate the user's salt so cached session tokens tied to the old salt are rejected.
 - Audit records are appended best-effort by `audit_`; this is not yet a tamper-evident/append-only financial ledger.
 - Current v2 tree does not contain the old review's cited `src/01_Config.js` or `03_Auth.js` files. This does not prove that reported values never existed elsewhere; if those reported credentials were ever used, rotate the affected deployed owner credentials after verifying the actual target. No Git history rewrite has been performed.
 
