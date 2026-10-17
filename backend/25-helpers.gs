@@ -193,12 +193,12 @@ function clientId_(v) {
 
   return text;
 }
-function pinOk_(p) {
-  return /^\d{6}$/.test(p) && !/^(\d)\1{5}$/.test(p) && p !== '123456' && p !== '654321';
+function passwordOk_(password) {
+  return typeof password === 'string' && password.length >= 8 && password.length <= 128;
 }
-function hashPin_(salt, pin) {
+function hashPassword_(salt, password) {
   const sig = Utilities.computeHmacSha256Signature(
-    salt + ':' + pin,
+    salt + ':' + password,
     props_().getProperty('PEPPER'),
   );
   return sig
@@ -215,7 +215,7 @@ function same_(a, b) {
   for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
   return d === 0;
 }
-function addUser_(name, email, role, pin, must) {
+function addUser_(name, email, role, password, must) {
   const salt = Utilities.getUuid();
   const u = {
     UserID: Utilities.getUuid(),
@@ -224,8 +224,8 @@ function addUser_(name, email, role, pin, must) {
     Role: role,
     Active: true,
     Salt: salt,
-    PinHash: hashPin_(salt, pin),
-    MustChangePin: !!must,
+    PasswordHash: hashPassword_(salt, password),
+    MustChangePassword: !!must,
     CreatedAt: nowIso_(),
     LastLogin: '',
   };
@@ -239,7 +239,7 @@ function pubUser_(u) {
     email: u.Email,
     role: u.Role,
     active: u.Active === true || u.Active === 'TRUE',
-    mustChangePin: u.MustChangePin === true || u.MustChangePin === 'TRUE',
+    mustChangePassword: u.MustChangePassword === true || u.MustChangePassword === 'TRUE',
   };
 }
 function recordAuditWriteFailure_(kind, error) {

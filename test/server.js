@@ -5,7 +5,7 @@ const http = require('http'),
   { create } = require('./mock-gas');
 const g = create();
 g.props.OWNER_EMAIL = 'owner@test.com';
-g.props.OWNER_PIN = '483921';
+g.props.OWNER_PASSWORD = 'Owner#Start2026';
 g.setup();
 let droppedClientResponse = false,
   droppedClientResponses = 0,

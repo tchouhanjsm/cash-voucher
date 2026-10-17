@@ -40,24 +40,8 @@ function isPlaceholder(value) {
   return !value || /<|>|PASTE|REPLACE|YOUR_|EXAMPLE|PLACEHOLDER/i.test(value);
 }
 
-function isStrongPin(value) {
-  if (!/^\d{6}$/.test(value)) return false;
-  if (new Set(value).size === 1) return false;
-  return ![
-    '012345',
-    '123456',
-    '654321',
-    '000000',
-    '111111',
-    '222222',
-    '333333',
-    '444444',
-    '555555',
-    '666666',
-    '777777',
-    '888888',
-    '999999',
-  ].includes(value);
+function isStrongPassword(value) {
+  return typeof value === 'string' && value.length >= 8 && value.length <= 128;
 }
 
 function validateStagingConfiguration(env = process.env, options = {}) {
@@ -172,8 +156,8 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   const managerEmail = String(env.CV_STAGING_UAT_MANAGER_EMAIL || '')
     .trim()
     .toLowerCase();
-  const ownerPin = String(env.CV_STAGING_UAT_OWNER_PIN || '').trim();
-  const managerPin = String(env.CV_STAGING_UAT_MANAGER_PIN || '').trim();
+  const ownerPassword = String(env.CV_STAGING_UAT_OWNER_PASSWORD || '');
+  const managerPassword = String(env.CV_STAGING_UAT_MANAGER_PASSWORD || '');
 
   if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
     errors.push('A valid dedicated staging owner email is required.');
@@ -184,11 +168,11 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   if (ownerEmail && managerEmail && ownerEmail === managerEmail) {
     errors.push('The staging owner and manager UAT accounts must be different accounts.');
   }
-  if (!isStrongPin(ownerPin))
-    errors.push('The staging owner UAT PIN must be six digits and non-trivial.');
-  if (!isStrongPin(managerPin))
-    errors.push('The staging manager UAT PIN must be six digits and non-trivial.');
-  if (ownerPin && managerPin && ownerPin === managerPin) {
+  if (!isStrongPassword(ownerPassword))
+    errors.push('The staging owner UAT password must be 8–128 characters.');
+  if (!isStrongPassword(managerPassword))
+    errors.push('The staging manager UAT password must be 8–128 characters.');
+  if (ownerPassword && managerPassword && ownerPassword === managerPassword) {
     errors.push('Use different PINs for the staging owner and manager UAT accounts.');
   }
 
@@ -228,7 +212,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
         stagingUrl.hostname === 'script.google.com' &&
         stagingUrl.pathname ===
           '/macros/s/' + String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec',
-      dedicatedUatAccountsPresent: Boolean(ownerEmail && managerEmail && ownerPin && managerPin),
+      dedicatedUatAccountsPresent: Boolean(ownerEmail && managerEmail && ownerPassword && managerPassword),
     },
   };
 }
@@ -256,4 +240,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { isStrongPin, normalizeUrl, readProductionApiUrl, validateStagingConfiguration };
+module.exports = { isStrongPassword, normalizeUrl, readProductionApiUrl, validateStagingConfiguration };

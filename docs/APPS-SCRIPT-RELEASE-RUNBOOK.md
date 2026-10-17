@@ -109,14 +109,14 @@ Do not run `clasp deploy` without the verified ID; do not create a parallel depl
 
 Run `setup()` only when the owner has verified that this is the intended new/empty project, confirmed its Sheet binding/ID, reviewed required Script Properties and deliberately authorized initialization. If the project already has production data or users, do not rerun setup.
 
-Required Script Properties and sensitive values must be configured in Apps Script Project Settings, never committed to Git or pasted into a PR: `OWNER_EMAIL`, temporary `OWNER_PIN` only for first initialization, `PEPPER`, `SS_ID`, `RECEIPT_FOLDER_ID`, `BACKUP_FOLDER_ID`. Do not expose PINs, tokens, IDs or private account data in logs or chat.
+Required Script Properties and sensitive values must be configured in Apps Script Project Settings, never committed to Git or pasted into a PR: `OWNER_EMAIL`, temporary `OWNER_PASSWORD` only for first initialization, `PEPPER`, `SS_ID`, `RECEIPT_FOLDER_ID`, `BACKUP_FOLDER_ID`. Do not expose PINs, tokens, IDs or private account data in logs or chat.
 
 ## Gate D — live smoke test and recovery
 
 After the intended deployment is updated:
 
 - Open the exact `config.js` Web App URL and verify the expected API response.
-- Sign in with the intended owner account and complete any required first-login PIN change.
+- Sign in with the intended owner account and complete any required first-login password change.
 - Verify staff/manager/owner permissions using dedicated test accounts; never use direct Sheet sharing as a workaround.
 - In a controlled test window, create a clearly identified test voucher and cash receipt, verify numbering and source rows, then cancel/clean up only according to the owner's approved data-handling policy. Do not mutate real financial records merely to test deployment.
 - Verify receipt upload/read authorization and that production Sheet/Drive folders remain private.
@@ -191,14 +191,14 @@ The repository now provides a manually dispatched staging workflow at `.github/w
 
 1. Create a **dedicated staging Apps Script project**, staging Spreadsheet, staging receipt folder and staging backup folder. None may be the production resource. Set the staging project's Web App execution/access settings deliberately to support the UAT accounts while using synthetic data only.
 2. In the staging Apps Script editor, set the required initial Script Properties for the staging owner and run `setup()` **once only on this verified empty staging project**. This initializes its tabs, folders and backup trigger. Do not run `setup()` from GitHub Actions and never use it as a production release step.
-3. Create a dedicated staging manager account in the staging app. Manually complete first-login PIN changes for both staging owner and manager before workflow UAT; their emails and PINs must be distinct and must not be shared with production.
+3. Create a dedicated staging manager account in the staging app. Manually complete first-login password changes for both staging owner and manager before workflow UAT; their emails and PINs must be distinct and must not be shared with production.
 4. Create the first versioned staging Web App deployment manually, confirm its Web App URL identifies that staging deployment, and record the deployment ID and URL. The automated deploy step deliberately refuses to create a new/unknown deployment; it updates only this pre-existing staging deployment.
 
 ### GitHub Environment configuration
 
 Create a GitHub Environment named `staging`, restrict its deployment branch to `main`, and require reviewer approval where available. Configure these environment **variables**: `CV_STAGING_SCRIPT_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_API_URL`, `CV_STAGING_SPREADSHEET_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_PRODUCTION_SCRIPT_ID`, `CV_PRODUCTION_SPREADSHEET_ID`, `CV_PRODUCTION_RECEIPT_FOLDER_ID`, and `CV_PRODUCTION_BACKUP_FOLDER_ID`. The production Web App deployment ID is extracted from the existing production `config.js` URL.
 
-Configure these environment **secrets**: `CLASPRC_JSON` (valid Clasp OAuth credential document), `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PIN`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PIN`. Keep credential material out of repository files and logs. The deployer's diagnostic sanitizer must redact both the complete `CLASPRC_JSON` value and individual nested OAuth token/client credential strings if they appear in tool output. If resources/credentials are not configured, staging preflight must fail closed rather than inventing target values.
+Configure these environment **secrets**: `CLASPRC_JSON` (valid Clasp OAuth credential document), `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PASSWORD`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PASSWORD`. Keep credential material out of repository files and logs. The deployer's diagnostic sanitizer must redact both the complete `CLASPRC_JSON` value and individual nested OAuth token/client credential strings if they appear in tool output. If resources/credentials are not configured, staging preflight must fail closed rather than inventing target values.
 
 ### Running the phases
 
@@ -209,3 +209,8 @@ Configure these environment **secrets**: `CLASPRC_JSON` (valid Clasp OAuth crede
 The automated transactional UAT creates one uniquely marked INR 10,000 PAYMENT, verifies that the creator cannot self-approve, verifies independent manager approval affects active totals correctly, and cancels the test voucher with a reason. The cancelled voucher and audit trail remain in the staging data; the UAT never deletes audit history, creates a Daily Cash Close, writes receipt payloads, or targets a production ID.
 
 **UAT boundaries:** a green workflow is not a complete production-release sign-off. After automated UAT, the owner must separately review the Apps Script execution identity/access settings, verify a real scheduled staging backup, witness restore into a separate recovery Sheet/folder and reconcile row counts/voucher numbering, and complete device/offline/accessibility checks. The automated backup-integrity scan is structural only and does not prove restoreability.
+
+
+## Password-authentication migration — populated legacy instance only
+
+For an already populated instance that still has legacy `PinHash` / `MustChangePin` Users headers, do not run `setup()` to repair the schema. First take and verify a complete backup. Upload the reviewed backend source, run `migratePinAuthToPasswordSchema()` once from the intended Apps Script editor, and then immediately update the matching Web App deployment to this source version. The migration renames the two Users headers, preserves existing salted HMAC values, and marks every existing user for mandatory password change. During that forced-change-only state, the old shorter credential may be used to reach the change-password screen; the backend denies all other application actions until a new password of 8–128 characters is set. Test Owner, Manager, and Staff accounts after deployment. Do not point the old deployment at the migrated Sheet, and do not roll back old source onto the new headers. New staging projects do not require this migration.

@@ -23,26 +23,38 @@ function withScriptLock_(work, busyMessage) {
 }
 function login_(req) {
   return withScriptLock_(function () {
-    const email = String(req.email || '')
-        .trim()
-        .toLowerCase(),
-      pin = String(req.pin || '').trim();
-    const cache = CacheService.getScriptCache(),
-      fk = 'f:' + email;
+    const email = String(req.email || '').trim().toLowerCase().slice(0, 254);
+    const password = String(req.password === undefined || req.password === null ? '' : req.password);
+    const cache = CacheService.getScriptCache();
+    const fk = 'f:' + email;
     const fails = Number(cache.get(fk) || 0);
-    if (fails >= CFG.MAX_FAILS) throw err_('Too many attempts. Try again in 15 minutes.', 'LOCKED');
-    const u = findUserByEmail_(email);
-    const active = u && (u.Active === true || u.Active === 'TRUE');
-    if (!u || !active || !same_(hashPin_(u.Salt, pin), u.PinHash)) {
-      cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
-      if (u) audit_({ email: email }, 'LOGIN_FAILED', '', '');
-      throw err_('Invalid email or PIN.');
+    if (fails >= CFG.MAX_FAILS) {
+      audit_({ email: clean_(email || '(empty)', 254) }, 'LOGIN_LOCKED', '', 'Attempt refused by temporary lockout');
+      throw err_('Too many attempts. Try again in 15 minutes.', 'LOCKED');
     }
+
+    const u = email ? findUserByEmail_(email) : null;
+    const active = u && (u.Active === true || u.Active === 'TRUE');
+    const mustChange = u && (u.MustChangePassword === true || u.MustChangePassword === 'TRUE');
+    // A legacy short credential is accepted only after explicit migration has marked
+    // the account for mandatory password change. All other actions remain blocked.
+    const legacyShortCredential = Boolean(mustChange && password.length > 0 && password.length < 8);
+    const acceptableLength = passwordOk_(password) || legacyShortCredential;
+    const passwordMatches = Boolean(
+      u && active && acceptableLength && same_(hashPassword_(u.Salt, password), u.PasswordHash),
+    );
+
+    if (!u || !active || !acceptableLength || !passwordMatches) {
+      cache.put(fk, String(fails + 1), CFG.LOCK_SECONDS);
+      audit_({ email: clean_(email || '(empty)', 254) }, 'LOGIN_FAILED', '', 'Invalid credentials');
+      throw err_('Invalid email or password.');
+    }
+
     cache.remove(fk);
     const token = Utilities.getUuid() + Utilities.getUuid();
     cache.put('s:' + token, JSON.stringify({ email: email, salt: u.Salt }), CFG.SESSION_TTL);
     updateRow_('Users', u._row, { LastLogin: nowIso_() });
-    audit_({ email: email }, 'LOGIN', '', '');
+    audit_({ email: email }, 'LOGIN_SUCCESS', '', 'role=' + String(u.Role || 'unknown'));
     return { token: token, user: pubUser_(u) };
   }, 'Authentication is busy. No login attempt was recorded. Please retry shortly.');
 }
@@ -59,12 +71,13 @@ function auth_(token) {
     name: p.name,
     email: p.email,
     role: p.role,
-    mustChange: p.mustChangePin,
+    mustChange: p.mustChangePassword,
     _row: u._row,
     _u: u,
   };
 }
 function logout_(user, req) {
   CacheService.getScriptCache().remove('s:' + req.token);
+  audit_({ email: user.email }, 'LOGOUT', '', '');
   return { ok: true };
 }

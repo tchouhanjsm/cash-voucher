@@ -15,8 +15,8 @@ Bookmark the application link. On a supported phone or tablet, use the browser's
 ## First sign-in
 
 1. Open the application link supplied by the product owner.
-2. Sign in with your registered email address and the temporary PIN delivered to you separately.
-3. Change the temporary PIN as soon as the application asks you to, then sign out and sign in again to confirm access.
+2. Sign in with your registered email address and the temporary password delivered to you separately.
+3. Change the temporary password as soon as the application asks you to, then sign out and sign in again to confirm access.
 4. Ask the product owner to create a separate account for every staff member. Do not share user accounts or PINs.
 
 ## Daily use
@@ -36,7 +36,7 @@ Keep the same browser/device available, watch for the pending queue to clear aft
 
 The product owner manages hosting, backend deployment and backups. The product owner may release tested updates; the application link normally remains the same unless you are told otherwise. A visible backup status is not a substitute for reporting an issue or reconciling any missing voucher.
 
-When contacting support, include the time, page/workflow, device/browser and non-sensitive error text. **Never send your PIN or another user's credentials.**
+When contacting support, include the time, page/workflow, device/browser and non-sensitive error text. **Never send your password or another user's credentials.**
 
 ## Service boundaries
 

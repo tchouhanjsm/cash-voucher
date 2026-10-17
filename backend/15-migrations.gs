@@ -179,3 +179,46 @@ function migrateDailyCashCloseSchema() {
   });
   return 'Daily Cash Close tabs are ready. Existing voucher and settings rows were not rewritten.';
 }
+
+
+/**
+ * One-time migration for a populated instance moving from PIN to password authentication.
+ * Take and verify a complete backup first. The migration preserves existing salted HMAC values,
+ * renames the two Users headers, and forces every existing account to change its credential.
+ * Update the matching Web App deployment immediately after running this function.
+ */
+function migratePinAuthToPasswordSchema() {
+  const spreadsheetId = props_().getProperty('SS_ID');
+  if (!spreadsheetId) throw new Error('SS_ID is missing; confirm the intended bound spreadsheet.');
+  const spreadsheet = SpreadsheetApp.openById(spreadsheetId);
+  const sheet = spreadsheet.getSheetByName('Users');
+  if (!sheet) throw new Error('Users sheet is missing; no migration was performed.');
+
+  const oldHeaders = ['UserID', 'Name', 'Email', 'Role', 'Active', 'Salt', 'PinHash', 'MustChangePin', 'CreatedAt', 'LastLogin'];
+  const newHeaders = CFG.H.Users;
+  const width = oldHeaders.length;
+  if (sheet.getLastColumn() < width) throw new Error('Users sheet is incomplete; no migration was performed.');
+  const current = sheet.getRange(1, 1, 1, width).getValues()[0].map(String);
+  if (current.every(function (header, index) { return header === newHeaders[index]; })) {
+    return { ok: true, migrated: false, affectedUsers: 0, note: 'Password schema is already present.' };
+  }
+  if (!current.every(function (header, index) { return header === oldHeaders[index]; })) {
+    throw new Error('Users headers do not match the expected legacy schema; no migration was performed.');
+  }
+
+  const lastRow = sheet.getLastRow();
+  let affectedUsers = 0;
+  if (lastRow >= 2) {
+    const rows = sheet.getRange(2, 1, lastRow - 1, width).getValues();
+    rows.forEach(function (row) {
+      if (row[0] !== '' && row[0] !== null) {
+        row[7] = true;
+        affectedUsers++;
+      }
+    });
+    sheet.getRange(2, 1, rows.length, width).setValues(rows);
+  }
+  sheet.getRange(1, 1, 1, width).setValues([newHeaders]);
+  audit_({ email: 'system' }, 'AUTH_SCHEMA_MIGRATION', '', 'Password schema migrated; existing accounts require password change');
+  return { ok: true, migrated: true, affectedUsers: affectedUsers };
+}

@@ -260,7 +260,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       .map(
         (user) =>
           `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option${role === user.role ? ' selected' : ''}>${role}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
-     <td class="r nw"><button class="btn sm" data-act="upin" data-id="${esc(user.id)}">Reset PIN</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
+     <td class="r nw"><button class="btn sm" data-act="upassword" data-id="${esc(user.id)}">Reset password</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
       )
       .join('');
 
@@ -282,7 +282,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       '<select id="ur" aria-label="New user role">',
       roles.map((role) => '<option>' + esc(role) + '</option>').join(''),
       '</select>',
-      '<input id="up" aria-label="Temporary six-digit PIN" type="password" inputmode="numeric" pattern="[0-9]{6}" title="Enter exactly 6 digits" maxlength="6" autocomplete="new-password" placeholder="Temporary 6-digit PIN" required>',
+      '<input id="up" aria-label="Temporary password (8–128 characters)" type="password" inputmode="text" minlength="8" maxlength="128" title="Use 8 to 128 characters" autocomplete="new-password" placeholder="Temporary password (8–128 characters)" required>',
       '<button class="btn primary">Add</button>',
     ].join('');
 
@@ -310,9 +310,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
         name: $('#un').value,
         email: $('#ue').value,
         role: $('#ur').value,
-        pin: $('#up').value,
+        password: $('#up').value,
       });
-      toast('User added. They must change the PIN at first login.', 'ok');
+      toast('User added. They must change the password at first login.', 'ok');
       usersView();
     } catch (error) {
       fail(error);
@@ -361,32 +361,32 @@ export function createAdministration({ api, getNavigation, signOut }) {
     }
   }
 
-  function resetPin(id) {
+  function resetPassword(id) {
     const body = document.createDocumentFragment();
     const help = document.createElement('p');
     help.className = 'muted';
-    help.textContent = 'Set a temporary PIN. The user must change it at next sign-in.';
+    help.textContent = 'Set a temporary password. The user must change it at next sign-in.';
 
-    const pin = document.createElement('input');
-    pin.id = 'tp';
-    pin.setAttribute('aria-label', 'Temporary six-digit PIN');
-    pin.type = 'password';
-    pin.inputMode = 'numeric';
-    pin.pattern = '[0-9]{6}';
-    pin.title = 'Enter exactly 6 digits';
-    pin.maxLength = 6;
-    pin.autocomplete = 'new-password';
-    pin.placeholder = 'Temporary 6-digit PIN';
-    pin.required = true;
+    const password = document.createElement('input');
+    password.id = 'tp';
+    password.setAttribute('aria-label', 'Temporary password (8–128 characters)');
+    password.type = 'password';
+    password.inputMode = 'text';
+    password.minLength = 8;
+    password.title = 'Use 8 to 128 characters';
+    password.maxLength = 128;
+    password.autocomplete = 'new-password';
+    password.placeholder = 'Temporary password (8–128 characters)';
+    password.required = true;
 
-    body.append(help, pin);
+    body.append(help, password);
     dialog(
-      'Reset PIN',
+      'Reset password',
       body,
       async () => {
-        await api('resetPin', { id, pin: $('#tp').value });
+        await api('resetPassword', { id, password: $('#tp').value });
         closeModal();
-        toast('PIN reset.', 'ok');
+        toast('Password reset.', 'ok');
       },
       'Reset',
     );
@@ -846,7 +846,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         email: 'Email',
         role: 'Role',
         active: 'Active',
-        mustChangePin: 'PIN change required',
+        mustChangePassword: 'password change required',
         propertyName: 'Property name',
         propertyAddress: 'Property address',
         categories: 'Payment categories',
@@ -1542,7 +1542,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       const description = document.createElement('p');
       description.className = 'page-description';
       description.textContent =
-        'Review your signed-in profile, installation options, and PIN settings.';
+        'Review your signed-in profile, installation options, and password settings.';
       headerCopy.append(eyebrow, heading, description);
       const headerActions = document.createElement('div');
       headerActions.className = 'page-header-actions';
@@ -1597,20 +1597,20 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
       const form = document.createElement('form');
       form.id = 'pf';
-      form.className = 'card account-pin-form';
+      form.className = 'card account-password-form';
       form.autocomplete = 'off';
       const formHeading = document.createElement('h2');
-      formHeading.textContent = 'Change PIN';
+      formHeading.textContent = 'Change password';
       const controls = document.createElement('div');
-      controls.className = 'filters account-pin-controls';
-      const makePinInput = (id, label, autocomplete, placeholder) => {
+      controls.className = 'filters account-password-controls';
+      const makePasswordInput = (id, label, autocomplete, placeholder) => {
         const input = document.createElement('input');
         input.id = id;
         input.type = 'password';
-        input.inputMode = 'numeric';
-        input.pattern = '[0-9]{6}';
-        input.title = 'Enter exactly 6 digits';
-        input.maxLength = 6;
+        input.inputMode = 'text';
+        input.minLength = 8;
+        input.title = 'Use 8 to 128 characters';
+        input.maxLength = 128;
         input.autocomplete = autocomplete;
         input.placeholder = placeholder;
         input.setAttribute('aria-label', label);
@@ -1618,13 +1618,13 @@ export function createAdministration({ api, getNavigation, signOut }) {
         return input;
       };
       controls.append(
-        makePinInput('po', 'Current PIN', 'current-password', 'Current PIN'),
-        makePinInput('pn', 'New PIN', 'new-password', 'New PIN'),
+        makePasswordInput('po', 'Current password', 'current-password', 'Current password'),
+        makePasswordInput('pn', 'New password', 'new-password', 'New password'),
       );
       const submit = document.createElement('button');
       submit.type = 'submit';
       submit.className = 'btn primary';
-      submit.textContent = 'Change PIN';
+      submit.textContent = 'Change password';
       controls.appendChild(submit);
       form.append(formHeading, controls);
       fragment.appendChild(form);
@@ -1632,16 +1632,16 @@ export function createAdministration({ api, getNavigation, signOut }) {
     })();
   }
 
-  async function changePin(event) {
+  async function changePassword(event) {
     try {
-      const data = await api('changePin', {
-        oldPin: $('#po').value,
-        newPin: $('#pn').value,
+      const data = await api('changePassword', {
+        oldPassword: $('#po').value,
+        newPassword: $('#pn').value,
       });
       S.token = data.token;
       ls.set('cv.token', data.token);
       event.target.reset();
-      toast('PIN changed.', 'ok');
+      toast('password changed.', 'ok');
     } catch (error) {
       fail(error);
     }
@@ -1665,7 +1665,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     if (event.target.id === 'pf') {
       event.preventDefault();
-      return changePin(event);
+      return changePassword(event);
     }
   }
 
@@ -1701,7 +1701,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     toggleVendor,
     toggleUser,
     updateRole,
-    resetPin,
+    resetPassword,
     install: () => {
       if (deferredInstall) {
         deferredInstall.prompt();

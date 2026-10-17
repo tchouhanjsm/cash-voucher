@@ -19,7 +19,7 @@ test/ · scripts/ · docs/
 
 ## What exists today
 
-- Email + PIN login, first-login PIN change, lockout, six-hour session TTL, and server-side role checks.
+- Email + password login, first-login password change, lockout, six-hour session TTL, and server-side role checks.
 - Staff can create entries and see their own; managers can view all entries, edit/cancel, bulk import, and manage vendors; owners can manage users/settings and view the audit log.
 - Cash payments and cash receipts with separate number series and categories.
 - Receipt images stored in Drive, with access checked by the API.
@@ -44,8 +44,8 @@ Use the full [Customer Onboarding Runbook](docs/CUSTOMER-ONBOARDING-RUNBOOK.md),
 1. Create a new dedicated Google Sheet and open **Extensions → Apps Script** from that Sheet so the script is bound to the correct spreadsheet.
 2. In a clean checkout, create a local ignored `.clasp.json` using the actual customer Script ID and `rootDir: "backend"`. Keep `.clasp.json` and `.clasprc.json` out of Git.
 3. Confirm the target with `npx clasp status` and `npx clasp deployments`. Run `npx clasp push` only after confirming that the target is the new empty customer project. The current backend is split across numbered `backend/*.gs` files; do not copy only an old/single `Code.gs` file.
-4. In Apps Script **Project Settings → Script properties**, set `OWNER_EMAIL` to the customer's nominated app-owner email, `OWNER_PIN` to a private temporary non-trivial six-digit PIN, and optionally `OWNER_NAME`.
-5. Run `setup()` once on that new empty instance and approve required permissions. It creates the expected tabs, receipt/backup folders and daily backup trigger. The temporary `OWNER_PIN` property is removed after the initial owner is created.
+4. In Apps Script **Project Settings → Script properties**, set `OWNER_EMAIL` to the customer's nominated app-owner email, `OWNER_PASSWORD` to a private temporary non-trivial password of at least 8 characters, and optionally `OWNER_NAME`.
+5. Run `setup()` once on that new empty instance and approve required permissions. It creates the expected tabs, receipt/backup folders and daily backup trigger. The temporary `OWNER_PASSWORD` property is removed after the initial owner is created.
 6. Deploy the Web App as the product/operator account with the access setting required for the static app (anonymous HTTP access). App-level login and server-side authorization must remain mandatory; never share the raw Sheet or Drive folders with staff.
 
 Do not run `setup()` as a routine upgrade or against an existing populated instance. Follow `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md` for subsequent backend releases and approved migrations.

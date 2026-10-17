@@ -1,5 +1,5 @@
 /* ============ one-time setup (run from the editor) ============ */
-/** Script Properties needed once: OWNER_EMAIL, OWNER_PIN (6 digits), optional OWNER_NAME. */
+/** Script Properties needed once: OWNER_EMAIL, OWNER_PASSWORD (8–128 characters), optional OWNER_NAME. */
 // eslint-disable-next-line no-unused-vars
 function setup() {
   const p = PropertiesService.getScriptProperties();
@@ -30,12 +30,12 @@ function setup() {
     const email = String(p.getProperty('OWNER_EMAIL') || '')
       .trim()
       .toLowerCase();
-    const pin = String(p.getProperty('OWNER_PIN') || '').trim();
+    const password = String(p.getProperty('OWNER_PASSWORD') || '');
     if (!/^\S+@\S+\.\S+$/.test(email)) throw new Error('Set Script Property OWNER_EMAIL first.');
-    if (!pinOk_(pin))
-      throw new Error('Set Script Property OWNER_PIN to a 6-digit PIN (not 123456 / 111111 etc.).');
-    addUser_(p.getProperty('OWNER_NAME') || 'Owner', email, 'owner', pin, true);
-    p.deleteProperty('OWNER_PIN');
+    if (!passwordOk_(password))
+      throw new Error('Set Script Property OWNER_PASSWORD to a password of 8–128 characters.');
+    addUser_(p.getProperty('OWNER_NAME') || 'Owner', email, 'owner', password, true);
+    p.deleteProperty('OWNER_PASSWORD');
     audit_({ email: 'system' }, 'SETUP', '', 'Owner created: ' + email);
   }
   Logger.log('Setup complete. Now deploy as a Web app.');
