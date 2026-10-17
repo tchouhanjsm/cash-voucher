@@ -271,19 +271,19 @@ with sync_playwright() as p:
         'password dialog has an accessible name',
     )
     check(
-        page.evaluate("document.activeElement?.id === 'op'"),
+        page.evaluate("document.activeElement?.id === 'currentPassword'"),
         'dialog moves keyboard focus to the first field',
     )
     check(
-        page.locator('#op').get_attribute('aria-label') == 'Current password'
-        and page.locator('#np').get_attribute('aria-label') == 'New password',
+        page.locator('#currentPassword').get_attribute('aria-label') == 'Current temporary password'
+        and page.locator('#newPassword').get_attribute('aria-label') == 'New password',
         'forced password change fields have explicit accessible names',
     )
     check(
-        page.locator('#op').get_attribute('type') == 'password'
-        and page.locator('#np').get_attribute('type') == 'password'
-        and page.locator('#np').get_attribute('minlength') == '8'
-        and page.locator('#np').get_attribute('maxlength') == '128',
+        page.locator('#currentPassword').get_attribute('type') == 'password'
+        and page.locator('#newPassword').get_attribute('type') == 'password'
+        and page.locator('#newPassword').get_attribute('minlength') == '8'
+        and page.locator('#newPassword').get_attribute('maxlength') == '128',
         'forced password change fields are masked and enforce an 8–128 character new password',
     )
     page.locator('.mcard .primary').focus()
@@ -298,8 +298,8 @@ with sync_playwright() as p:
         page.evaluate("document.activeElement?.matches('.mcard .primary')"),
         'Shift+Tab wraps from the first dialog control to the last',
     )
-    page.fill('#op', 'Owner#Start2026')
-    page.fill('#np', 'Owner#Final2026')
+    page.fill('#currentPassword', 'Owner#Start2026')
+    page.fill('#newPassword', 'Owner#Final2026')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 10, 'owner sees 10 nav items including Cash Close; Account moved to the user menu')
