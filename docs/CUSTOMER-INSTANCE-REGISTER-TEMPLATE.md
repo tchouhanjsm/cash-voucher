@@ -45,4 +45,14 @@ Use this as a field checklist only. Keep the completed register in a private ope
 - Real voucher amounts, guest details or receipts as example values.
 - Public links to private Drive folders or editor projects when this register is shared beyond the operator.
 
+Store evidence links only in the private register, with permissions limited to the product operator and people explicitly authorized to audit operations.|  |
+
+## Never place these in this register
+
+- Any user's PIN (temporary or permanent).
+- OAuth JSON, `.clasprc.json`, access/refresh tokens, passwords or recovery codes.
+- Bank/payment credentials unrelated to the application.
+- Real voucher amounts, guest details or receipts as example values.
+- Public links to private Drive folders or editor projects when this register is shared beyond the operator.
+
 Store evidence links only in the private register, with permissions limited to the product operator and people explicitly authorized to audit operations.
