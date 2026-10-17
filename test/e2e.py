@@ -263,7 +263,7 @@ with sync_playwright() as p:
         'dialog moves keyboard focus to the first field',
     )
     check(
-        page.locator('#op').get_attribute('aria-label') == 'Current temporary password'
+        page.locator('#op').get_attribute('aria-label') == 'Current password'
         and page.locator('#np').get_attribute('aria-label') == 'New password',
         'forced password change fields have explicit accessible names',
     )

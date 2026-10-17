@@ -173,7 +173,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   if (!isStrongPassword(managerPassword))
     errors.push('The staging manager UAT password must be 8–128 characters.');
   if (ownerPassword && managerPassword && ownerPassword === managerPassword) {
-    errors.push('Use different PINs for the staging owner and manager UAT accounts.');
+    errors.push('Use different passwords for the staging owner and manager UAT accounts.');
   }
 
   if (mode === 'deploy') {
