@@ -357,7 +357,7 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v22'/,
+  /const C = 'cv2-v23'/,
   'PWA cache revision advances with validation and interaction styles',
 );
 assert.match(
@@ -399,6 +399,42 @@ assert.match(
   components,
   /\.report-filters \[aria-invalid='true'\]/,
   'invalid date filters have a visible design-system treatment',
+);
+
+assert.match(
+  reports,
+  /let activeReportRequestId = 0;/,
+  'report loads have a monotonically increasing request identity',
+);
+assert.match(
+  reports,
+  /requestId !== activeReportRequestId/,
+  'out-of-order report responses cannot replace a newer result or error',
+);
+assert.match(
+  reports,
+  /if \(S\.view === 'reports'\) render\(\);/,
+  'report completion only renders into the active Reports route',
+);
+assert.match(
+  administration,
+  /if \(S\.view !== 'users'\) return;/,
+  'a Users request begins only for the active Users route',
+);
+assert.match(
+  administration,
+  /requestId !== usersRequestId \|\| S\.view !== 'users'/,
+  'stale Users responses cannot replace another route or a newer Users result',
+);
+assert.match(
+  administration,
+  /if \(S\.view === 'vend'\) vendors\(\);/,
+  'vendor mutations refresh only the still-active Vendors route',
+);
+assert.match(
+  administration,
+  /if \(S\.view === 'set'\) settings\(\);/,
+  'saving Settings does not redraw over a route opened while the save was pending',
 );
 
 console.log(

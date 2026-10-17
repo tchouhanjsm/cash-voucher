@@ -2,15 +2,16 @@
 
 Updated: 17 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `ae8eb594a33f7e33338009d75c52d0b010cea678` (PR #163 merge commit)  
-Current engineering batch: Phases 34–36 — validation guidance and async-state consistency  
-Current working branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`  
-Current pull request: [#164](https://github.com/tchouhanjsm/cash-voucher/pull/164) — all required checks passed on the initial review head; verify the latest head before merge  
-Current candidate: connect New Entry settlement hints and validation errors, link report date-range alerts to invalid fields, provide a stable report `aria-busy` state and prove the behavior through source/browser regressions; no financial or API changes
+Last verified main SHA: `dd901910531da2c060539baad44949fe2cb54b30` (PR #164 merge commit)  
+Latest post-merge main CI: [run 38998817186](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186) — passed  
+Current engineering batch: Phases 37–39 — route-safe asynchronous workflow updates  
+Current working branch: `phase-37-39-route-safe-async-views-2026-10-17`  
+Current pull request: [#165](https://github.com/tchouhanjsm/cash-voucher/pull/165) — review candidate; the required PR-quality handoff sections are populated, and the exact final head still needs passing CI, Browser E2E and Full Flight Test before merge  
+Current candidate: prevent delayed or out-of-order Reports and administration requests from replacing a route selected by the operator; preserve financial, permission, API and schema contracts
 
 ## Verified repository state
 
-- Live `main` is `ae8eb594a33f7e33338009d75c52d0b010cea678`, merged PR #163. Exact tested head `a6b1eff7593bb7a58f4e6063fb31befd2a646773` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477109), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477094) (936 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477080) (285 backend + 936 browser checks). This batch closes route-heading focus and account-menu keyboard restoration while adding an 11-screen accessible-name regression heuristic; it is not a full WCAG or real-screen-reader certification.
+- Live `main` is `dd901910531da2c060539baad44949fe2cb54b30`, merged PR #164. Post-merge [CI on main](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186) passed. PR #164 exact tested head `b3adad0a8c089c0c42614ea2fffd6724664d9106` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398991), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398889) (943 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998398930) (285 backend + 943 browser checks), all with zero failures. The Studio is a static reference; integrated screen coverage is not live-production or human accessibility sign-off.
 - The Phase 15 studio remains a static design reference, not a production route. Its release-integrity guard requires `frontend-ui-kit.css` in both the index link list and offline shell; no API, schema, dependency or financial/authorization semantics changed.
 - The active DOM sink inventory remains 17 assignments across eight frontend modules. Counts/fingerprints are drift controls, not XSS certification.
 - Phase 16 performance/repository-hygiene work is complete in PR #152. Phase 17 is merged in PR #153 and changed owner-facing Audit Log behavior: clearer language for the `NO_KNOWN_FAILURE` state, explicit unknown/degraded states when the health read fails or is invalid, and a JSON health snapshot export that contains monitoring/coverage metadata but no audit event contents. It does not add a new durable audit store or reconstruct missing events.
@@ -129,10 +130,21 @@ Merged main SHA: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; tested head `6f103e
 
 Merged main SHA: `ae8eb594a33f7e33338009d75c52d0b010cea678`; tested head `a6b1eff7593bb7a58f4e6063fb31befd2a646773`. CI/quality, Browser E2E (936 checks) and Full Flight Test (285 backend + 936 browser checks) passed. User-triggered navigation focuses the rendered heading, the app menu restores focus after Escape, and visible controls across 11 workflows receive a name-presence regression check. This is not a full WCAG audit or real-screen-reader proof.
 
-## Phases 34–36 — validation guidance and async-state consistency (active candidate)
+## Phases 34–36 — validation guidance and async-state consistency (merged PR #164)
 
-Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on PR #163 merge SHA `ae8eb594a33f7e33338009d75c52d0b010cea678`.
+Merged main SHA: `dd901910531da2c060539baad44949fe2cb54b30`; tested PR head `b3adad0a8c089c0c42614ea2fffd6724664d9106`. Exact-head CI/quality, Browser E2E (943 checks) and Full Flight Test (285 backend + 943 browser checks) passed. Post-merge main CI passed in [run 38998817186](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186).
 
 The batch links each New Entry settlement selector to its existing cash-impact hint, preserves that hint when error descriptions are attached/cleared, links both Report date fields to the date-range error alert, and groups report output under a stable `aria-busy` wrapper. E2E exercises successful and invalid date ranges, accessible descriptions, error recovery and settled reporting. No financial calculation, API/schema, role, approval-policy or production-data change is in scope.
 
 Do not run `clasp push`, staging deploy, Apps Script deployment, migration or production data mutations. Manual keyboard and screen-reader review, real device/PWA update and offline recovery, 200–400% zoom/reflow, live identity/role checks and witnessed backup/restore remain separate release gates.
+
+## Phases 37–39 — route-safe asynchronous workflow updates (PR #165 candidate)
+
+Source inspection of merged main found that an in-flight Recorded Movement Report request unconditionally rerendered the active workspace in `finally`. Navigating elsewhere during the request could therefore replace the destination screen; overlapping report submissions could also allow an older response to overwrite newer state. The Users loader and several post-mutation administration callbacks had the same whole-view redraw risk.
+
+- **Phase 37 — request sequencing:** Reports captures submitted filters and uses a monotonic request identity. Stale responses/errors cannot publish state over newer requests, and completion rerenders only when Reports is the active route.
+- **Phase 38 — administration route ownership:** Users responses are ignored when stale or when Users is no longer active. Vendor save/toggle and Settings-save completions redraw only their own route.
+- **Phase 39 — deterministic regression proof:** Browser E2E holds Reports and Users requests while navigating to Dashboard, then releases them and checks Dashboard remains intact. It also holds a vendor save across navigation and verifies the follow-up bootstrap does not redraw Vendors over Dashboard. Source contract tests are extended and the app-shell cache advances to `cv2-v23`.
+- **Scope boundary:** frontend state/rendering and regression tests only. No financial calculation, approval policy, authorization rule, API, schema or dependency change. No Apps Script deployment or production-data mutation. See the open PR's exact-head workflow results for merge readiness.
+
+Manual keyboard/screen-reader checks, physical-device PWA update/offline recovery, 200–400% zoom/reflow, owner-authorized live role/receipt tests, scheduled backup observation and a witnessed isolated restore remain separate release gates.

@@ -1514,6 +1514,90 @@ with sync_playwright() as p:
         'owner Users view recovers after a valid list response returns',
     )
 
+    # A late user-list response must not replace a route selected while loading.
+    go_view(page, 'dash')
+    page.evaluate("""() => {
+        const nativeFetch = window.fetch.bind(window);
+        const gate = {used: false, pending: false, finished: false, release: null};
+        window.__usersRouteGate = gate;
+        window.fetch = async (input, init = {}) => {
+            let action = '';
+            try { action = JSON.parse(init.body || '{}').action || ''; } catch {}
+            if (action !== 'listUsers' || gate.used) return nativeFetch(input, init);
+            gate.used = true;
+            gate.pending = true;
+            await new Promise((resolve) => { gate.release = resolve; });
+            gate.pending = false;
+            try { return await nativeFetch(input, init); }
+            finally { gate.finished = true; }
+        };
+    }""")
+    go_view(page, 'users')
+    page.wait_for_function(
+        "window.__usersRouteGate?.pending === true && typeof window.__usersRouteGate.release === 'function'"
+    )
+    go_view(page, 'dash')
+    page.evaluate("window.__usersRouteGate.release()")
+    page.wait_for_function("window.__usersRouteGate?.finished === true")
+    check(
+        page.locator('#view .page-header h1').inner_text() == 'Dashboard'
+        and page.locator('#view #uf').count() == 0,
+        'a late Users response cannot replace the destination dashboard',
+    )
+
+    # A successful vendor save also spans multiple requests; refresh only if Vendors stays active.
+    go_view(page, 'vend')
+    page.wait_for_selector('#vf')
+    page.evaluate("""() => {
+        const nativeFetch = window.fetch.bind(window);
+        const gate = {
+            used: false,
+            pending: false,
+            saveFinished: false,
+            bootstrapFinished: false,
+            release: null
+        };
+        window.__vendorRouteGate = gate;
+        window.fetch = async (input, init = {}) => {
+            let action = '';
+            try { action = JSON.parse(init.body || '{}').action || ''; } catch {}
+            if (action === 'saveVendor' && !gate.used) {
+                gate.used = true;
+                gate.pending = true;
+                await new Promise((resolve) => { gate.release = resolve; });
+                gate.pending = false;
+                const response = await nativeFetch(input, init);
+                gate.saveFinished = true;
+                return response;
+            }
+            if (action === 'bootstrap' && gate.saveFinished && !gate.bootstrapFinished) {
+                const response = await nativeFetch(input, init);
+                gate.bootstrapFinished = true;
+                return response;
+            }
+            return nativeFetch(input, init);
+        };
+    }""")
+    page.fill('#vn', 'Route Race Vendor')
+    page.fill('#vc', 'Route Race Company')
+    page.fill('#vm', '9123456780')
+    page.click('#vf .primary')
+    page.wait_for_function(
+        "window.__vendorRouteGate?.pending === true && typeof window.__vendorRouteGate.release === 'function'"
+    )
+    go_view(page, 'dash')
+    page.evaluate("window.__vendorRouteGate.release()")
+    page.wait_for_function("window.__vendorRouteGate?.bootstrapFinished === true")
+    check(
+        page.locator('#view .page-header h1').inner_text() == 'Dashboard'
+        and page.locator('#view #vf').count() == 0,
+        'a completed vendor save cannot redraw the dashboard as Vendors',
+    )
+    go_view(page, 'vend')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('Route Race Vendor')"
+    )
+
     xss_vendor = '<svg onload=window.__xssFired=true></svg>'
     xss_company = '<img src=x onerror=window.__xssFired=true>'
     go_view(page, 'vend')
@@ -4427,6 +4511,47 @@ with sync_playwright() as p:
         and report_rows.count() >= 1
         and all(row.locator('td').nth(6).inner_text() == 'ACTIVE' for row in report_rows.all()),
         'default active report lists active source vouchers and excludes cancelled records',
+    )
+
+    # Hold a report request while navigating away. Its late response must not steal the route.
+    page.evaluate("""() => {
+        const nativeFetch = window.fetch.bind(window);
+        const gate = {used: false, pending: false, finished: false, release: null};
+        window.__reportRouteGate = gate;
+        window.fetch = async (input, init = {}) => {
+            let action = '';
+            try { action = JSON.parse(init.body || '{}').action || ''; } catch {}
+            if (action !== 'recordedMovementReport' || gate.used) {
+                return nativeFetch(input, init);
+            }
+            gate.used = true;
+            gate.pending = true;
+            await new Promise((resolve) => { gate.release = resolve; });
+            gate.pending = false;
+            try { return await nativeFetch(input, init); }
+            finally { gate.finished = true; }
+        };
+    }""")
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "window.__reportRouteGate?.pending === true && typeof window.__reportRouteGate.release === 'function'"
+    )
+    go_view(page, 'dash')
+    check(
+        page.locator('#view .page-header h1').inner_text() == 'Dashboard',
+        'dashboard remains visible while a Recorded Movement Report request is pending',
+    )
+    page.evaluate("window.__reportRouteGate.release()")
+    page.wait_for_function("window.__reportRouteGate?.finished === true")
+    check(
+        page.locator('#view .page-header h1').inner_text() == 'Dashboard'
+        and page.locator('#view #movementFilters').count() == 0,
+        'a late report response cannot replace the destination dashboard',
+    )
+    go_view(page, 'reports')
+    page.wait_for_selector('#movementFilters')
+    page.wait_for_function(
+        "document.querySelector('#report-output')?.getAttribute('aria-busy') === 'false'"
     )
 
     # Malformed row entries and object-valued fields must not crash the report renderer.

@@ -16,6 +16,7 @@ import {
 export function createAdministration({ api, getNavigation, signOut }) {
   let deferredInstall;
   let users = [];
+  let usersRequestId = 0;
   let auditRows = [];
   const auditFilters = { query: '', user: '', action: '', from: '', to: '' };
   let malformedAuditCount = 0;
@@ -126,7 +127,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       });
       await getNavigation().load();
       toast('Vendor saved.', 'ok');
-      vendors();
+      if (S.view === 'vend') vendors();
     } catch (error) {
       fail(error);
     }
@@ -149,7 +150,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     try {
       await api('toggleVendor', { id });
       await getNavigation().load();
-      vendors();
+      if (S.view === 'vend') vendors();
     } catch (error) {
       fail(error);
     }
@@ -212,17 +213,21 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   async function usersView() {
+    if (S.view !== 'users') return;
+    const requestId = ++usersRequestId;
     renderUsersLoadState();
 
     let response;
     try {
       response = await api('listUsers');
     } catch (error) {
+      if (requestId !== usersRequestId || S.view !== 'users') return;
       console.warn('Users list could not be loaded:', error);
       renderUsersLoadState(true);
       return;
     }
 
+    if (requestId !== usersRequestId || S.view !== 'users') return;
     const roles = ['staff', 'manager', 'accountant', 'owner'];
     const envelopeValid = Array.isArray(response);
     const receivedUsers = envelopeValid ? response : [];
@@ -1515,7 +1520,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       await getNavigation().load();
       $('#brand').textContent = scalarText(S.settings?.propertyName) || 'Cash Vouchers';
       toast('Settings saved.', 'ok');
-      settings();
+      if (S.view === 'set') settings();
     } catch (error) {
       fail(error);
     }
