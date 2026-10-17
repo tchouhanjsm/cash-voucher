@@ -55,7 +55,7 @@ index.html ──loads──> frontend/main.js
 
 | Sheet      | Purpose                                                                                                                       |
 | ---------- | ----------------------------------------------------------------------------------------------------------------------------- |
-| `Users`    | User ID, name, email, role, active flag, per-user salt/hash, mandatory password change, timestamps                                    |
+| `Users`    | User ID, name, email, role, active flag, per-user salt/hash, mandatory password change, timestamps                            |
 | `Vouchers` | Payments/receipts, separate type and number series, notes, status, actor/timestamps, receipts, cancellation reason, client ID |
 | `Vendors`  | Vendor identity/contact and active status                                                                                     |
 | `Settings` | Property details, categories, numbering counters, opening balance                                                             |

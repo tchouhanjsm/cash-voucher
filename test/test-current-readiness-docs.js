@@ -37,4 +37,6 @@ assert.match(uiSystem, /PR #169/);
 assert.doesNotMatch(uiSystem, /current PR #165 candidate/i);
 assert.match(audit, /Operational gates are not marked complete by mock CI/i);
 
-console.log('Current-readiness documentation: latest merge, password terminology, active architecture and live-release boundaries are aligned.');
+console.log(
+  'Current-readiness documentation: latest merge, password terminology, active architecture and live-release boundaries are aligned.',
+);

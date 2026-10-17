@@ -17,7 +17,6 @@
 
 2026-10-17 | DONE | Password authentication, audit and staging-readiness consolidation | PR #169 merged at `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`; CI passed on exact merge SHA; PR exact head CI/Browser E2E/Full Flight Test passed. Live staging/customer release remains blocked by the operational queue above.
 
-
 2026-10-15 | DONE | UI branch integration + dashboard trust | Phase 10 integrated truthful attention copy, allowlisted icon/action inputs, local SVG sprite, shell cache v16, dashboard source fingerprint and focused Browser E2E | PR #141 merged at 42ff7708535d04c15510caf90c5f93738109669e; exact-head CI/E2E/Flight Test passed; PR reports post-merge CI passed
 2026-10-16 | DONE | UI refresh follow-up | Dashboard needs-attention hierarchy, icon KPI tiles, inline SVG navigation/New Entry/receipt icons, spacing and breadcrumb removal; no API/schema/dependency changes | PR #149 merged at `a478c52c68c520b8eddbf80692d101dc20210c58`; CI/quality, Browser E2E and Full Flight Test passed on exact head `2c1a25c144fe27ed959cd7aae6793b9c3c75bddf`; post-merge CI/quality passed
 2026-10-15 | P0 | Operational release proof | Verify Apps Script project/version, execution identity, Sheet binding, live role/receipt permissions, scheduled backup and isolated restore only with owner authorization | docs/RELEASE-READINESS.md; not verified
