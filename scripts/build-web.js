@@ -14,7 +14,7 @@ const STATIC_FILES = [
 function validateApiUrl(value) {
   const raw = typeof value === 'string' ? value.trim() : '';
   if (!raw) {
-    throw new Error('CV_API_URL is required. Refusing to build a client without an API target.');
+    throw new Error('CV_API_URL is required to build a customer client.');
   }
 
   let url;
@@ -34,7 +34,7 @@ function validateApiUrl(value) {
     !/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(url.pathname)
   ) {
     throw new Error(
-      'CV_API_URL must be an HTTPS https://script.google.com/macros/s/<deployment-id>/exec URL without credentials, query strings, or fragments.',
+      'CV_API_URL must be an HTTPS Apps Script /exec URL without credentials or query parameters.',
     );
   }
 
@@ -83,7 +83,7 @@ function buildWebSite(options = {}) {
     });
   }
 
-  const config = `// Generated for this customer deployment. Do not commit customer-specific output.
+  const config = `// Generated customer config; do not commit this file.
 const localApiOverride = ['localhost', '127.0.0.1'].includes(location.hostname)
   ? new URLSearchParams(location.search).get('api')
   : '';
@@ -108,10 +108,12 @@ window.CV_CONFIG = {
 }
 
 function countFiles(directory) {
-  return fs.readdirSync(directory, { withFileTypes: true }).reduce((count, entry) => {
-    const absolutePath = path.join(directory, entry.name);
-    return count + (entry.isDirectory() ? countFiles(absolutePath) : 1);
-  }, 0);
+  return fs
+    .readdirSync(directory, { withFileTypes: true })
+    .reduce((count, entry) => {
+      const absolutePath = path.join(directory, entry.name);
+      return count + (entry.isDirectory() ? countFiles(absolutePath) : 1);
+    }, 0);
 }
 
 if (require.main === module) {
