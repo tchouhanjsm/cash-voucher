@@ -43,6 +43,14 @@ jobs:
       - name: Run full flight test
         run: npm run test:flight
 
+      - name: Upload responsive visual review matrix
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cash-voucher-flight-responsive-visual-matrix
+          path: /tmp/cash-voucher-visual-matrix/
+          if-no-files-found: ignore
+
       - name: Upload browser diagnostics
         if: failure()
         uses: actions/upload-artifact@v7
