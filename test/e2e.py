@@ -289,10 +289,10 @@ with sync_playwright() as p:
     page.locator('.mcard .primary').focus()
     page.keyboard.press('Tab')
     check(
-        page.evaluate("document.activeElement?.id === 'op'"),
+        page.evaluate("document.activeElement?.id === 'currentPassword'"),
         'Tab wraps from the last dialog control to the first',
     )
-    page.locator('#op').focus()
+    page.locator('#currentPassword').focus()
     page.keyboard.press('Shift+Tab')
     check(
         page.evaluate("document.activeElement?.matches('.mcard .primary')"),
