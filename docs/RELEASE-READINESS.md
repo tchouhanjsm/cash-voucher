@@ -1,10 +1,10 @@
 # Release Readiness
 
-**Reviewed:** 17 October 2026. **Verified main baseline:** `4b729f33d9caff13e01ed56acbc231375c5beec0` (PR #165 merge, verified from the live main ref and commit metadata). A combined commit-status record was not returned for this SHA during this review; inspect the current Actions page before any source release. Historical checks recorded for PR #164 are not proof that PR #165 or a customer deployment passed. See `docs/PHASE-1-REPOSITORY-AUDIT.md` for historical evidence; older snapshots are not a live status feed.
+**Reviewed:** 17 October 2026. **Verified main baseline:** `4a759b7513a925aee796949d8f6e79085f096314` (PR #166 merge). [Post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39003040102) passed. PR #165 and PR #166 each passed CI/quality, Browser E2E and Full Flight Test on their exact final PR heads; see the current [roadmap](PRODUCT-ROADMAP.md) and [staging release audit](STAGING-RELEASE-AUDIT.md) for evidence. Older snapshots are historical, not a live status feed.
 
-**Status: not verified as production-ready, and no first-customer handover has been completed.** PR #165 merged route-safe asynchronous view updates; it does not verify live Google infrastructure. The current `config.js` endpoint has not been independently mapped to its Script, deployment version, Sheet and Drive resources. Repository visibility is currently public. The new customer delivery workflow is documented in `docs/CUSTOMER-ONBOARDING-RUNBOOK.md`; a customer static-artifact build path is being added so only frontend assets are published and each customer can have a distinct origin.
+**Status: source packaging is ready for owner-provisioned staging input; live staging and first-customer handover are not verified.** PR #165 merged route-safe asynchronous workflow updates. PR #166 merged the per-customer static artifact builder, Cloudflare Pages response-header artifact and onboarding/handover runbooks. Neither merge creates Google resources, a hosting project or customer URL. The current root `config.js` endpoint has not been independently mapped to its Script/deployment/Sheet/Drive resources. The repository remains public pending an owner-controlled hosting/privacy cutover.
 
-Still unverified: real customer Apps Script project/version and execution identity, Sheet/Drive permissions, role and receipt access, static host/origin and URL, a completed daily backup, isolated restore/reconciliation, real-service quotas/concurrency, real-device offline recovery, and operator/accessibility readiness. Owner-controlled operational gates remain open until witnessed evidence is recorded. Do not hand over a live link as ready before those gates pass.
+Still unverified: separate staging/customer Apps Script projects and Sheets, deployment/execution identity, protected GitHub staging Environment and secrets, real role/receipt authorization, live host response headers and unique customer origin, real backup/restore/reconciliation, real-device offline recovery/accessibility, real-service quotas/concurrency, and the controlled 14-day pilot. Do not hand over a live link as ready until the relevant gates have witnessed evidence in the private instance register.
 
 ## Staging pipeline — code implemented, live environment not verified
 
@@ -20,21 +20,21 @@ Owner provisioning/execution remains outstanding until independently evidenced:
 
 Do not run `setup()` against an existing production property, use the staging workflow to target production, expose secret values, or treat mock checks as live evidence. No provisioning/deployment/UAT is claimed by this source review.
 
-## Current go-live gates — reviewed 16 October 2026
+## Current go-live gates — reviewed 17 October 2026
 
 PR #111 is merged to source at `6092152c64adff084abfda5407056dac9401b5e9`; PR #126 is also merged on current main. Daily Cash Close source is **not proof of live deployment**; after a verified backup and owner-authorized release, the guarded schema steps remain `migrateCashImpactField()` if needed, then `migrateDailyCashCloseSchema()`. Verify both new tabs and unchanged voucher row counts before publishing.
 
 The Dashboard already displays **Book balance**. It is a recorded-voucher projection (global Settings opening balance + active receipts − active payments), not a physical drawer count, bank balance, or general ledger. Daily Cash Close is a separate, immutable physical-cash reconciliation.
 
 - **Browser CSP baseline — added in this source batch:** the static release check validates the production-source policy. The mock E2E server adds a test-only `'unsafe-eval'` exception for Playwright polling, so its run is functional regression evidence, not proof of the exact production CSP.
-- **Header-level framing protection — not verified:** if the host supports response headers, set a CSP response header with `frame-ancestors 'none'`; the HTML meta policy cannot enforce that directive.
+- **Header-level framing protection — artifact implemented, live response not verified:** customer builds generate a Cloudflare Pages `_headers` file with a CSP response header including `frame-ancestors 'none'` and `X-Frame-Options: DENY`. Verify the actual document response after the host is deployed; the HTML meta policy cannot enforce `frame-ancestors`.
 - **Live Apps Script project/version — not verified:** the owner must confirm the intended project, Sheet binding, Script Properties and deployment ID matching `config.js`.
 - **Authorization and receipt access — not verified live:** perform owner/manager/staff smoke tests against the actual deployed endpoint.
 - **Real scheduled backup and isolated restore — not verified:** inspect a completed Drive snapshot and witness restore into a separate recovery Sheet/folder; validate row counts and voucher numbering.
 - **PWA, offline recovery and accessibility — not verified on devices:** test actual operating phones/tablets, queued/rejected entries, receipt photos, service-worker update, keyboard and assistive technology.
 - **14-day hotel pilot — not started:** start only after release, restore and device gates pass; maintain daily evidence below.
 
-The meta CSP allowlist intentionally covers same-origin PWA assets, data/blob receipt previews and the Apps Script ContentService origins. Script execution is restricted to same-origin external files; inline event handlers, object plugins, `unsafe-eval`, and child frames are disallowed. Inline styles remain allowed because the current dashboard renders variable chart-bar widths through style attributes. This is **not a complete host-header security configuration**: a meta policy cannot enforce `frame-ancestors`, and CI cannot verify the policy actually served by production.
+The meta CSP allowlist covers same-origin PWA assets, data/blob receipt previews and the Apps Script ContentService origins. Script execution is restricted to same-origin external files; inline event handlers, object plugins, `unsafe-eval` and child frames are disallowed. Inline styles remain allowed because the dashboard renders variable chart-bar widths through style attributes. The customer build generates a Cloudflare Pages `_headers` file for the corresponding CSP response header, anti-framing, MIME-sniffing, referrer and permissions policies. **No live host response has been checked yet**: CI proves the generated file, not that a configured production host applies it.
 
 ## 14-day controlled pilot — NOT STARTED
 
