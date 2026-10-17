@@ -94,7 +94,7 @@ The detailed historical review register follows. Its PR-by-PR notes are retained
 | No real tests / empty README                                                               | Current repository has backend service mocks, Playwright E2E, CI, README and project/docs guides.                                                                                                                                                  | Resolved; documentation drift is addressed in Phase 22.                                                                                                                                                                                                                                                            |
 | No cash-received entries, receipt evidence, dashboard/export, offline support or audit log | All exist in current source: payment/receipt type, Drive receipt images, dashboard/register CSV, IndexedDB outbox/recovery, owner audit API/table.                                                                                                 | Already implemented. Gaps remain in richer reconciliation, reporting/export formats and discoverability.                                                                                                                                                                                                           |
 | Audit traceability and discoverability                                                     | Owner-only Audit log view has filters and CSV export; transaction updates already carry field deltas. This slice adds structured creation/cancellation/receipt/cash-close events and cursor-based older-page loading.                              | **Improved in Slice 3 audit PR.** Structured event IDs, actor/time/action/target, old/new values where meaningful, and reason are available; CSV exports loaded pages. Audit writes remain best-effort; retention and tamper-evidence are not guaranteed.                                                          |
-| No approvals, day close, physical cash count, budget controls or accountant role           | These are not present in the current module/API/role set reviewed.                                                                                                                                                                                 | **Open product gaps**, prioritized below.                                                                                                                                                                                                                                                                          |
+| No approvals, day close, physical cash count, budget controls or accountant role           | Payment approval, CashImpact classification, Daily Cash Close and a report-only accountant role with generic CSV/VendorID export are implemented in source through merged PRs #110, #111 and #114.                                                                                                                                                                                 | **Implemented in source; live migrations/deployment/reconciliation remain unverified.** Denomination rows are optional and require an owner decision; budget controls and additional scoring/automation remain future product decisions.                                                                                                                                          |
 | Multi-property, vendor price network, digital payouts, OCR/AI                              | Not present; would require material tenancy, finance, compliance and operations decisions.                                                                                                                                                         | Strategic options only. Do not build before buyer/problem validation.                                                                                                                                                                                                                                              |
 
 ### Security follow-up note
@@ -127,9 +127,11 @@ The repository is public. This review did not perform a general Git object/secre
 - No real latency/load benchmark, formal contrast audit, assisted-technology test, external pen test or full dynamic-HTML sink audit.
 - No multi-property tenant separation, digital movement of funds, GST/TDS compliance rules or accountant-specific exports.
 
-## 3. Prioritized owner-value roadmap
+## 3. Historical prioritized owner-value roadmap — superseded for current execution
 
-### P0 — Phase 22: authentication race evidence and trustworthy project records
+This older risk-priority plan is retained for traceability. Phase 22 and the feature increments described below have progressed through later merged PRs; do not use their historical “current PR” or “next batch” wording as the current queue. The current execution order is the active-priorities section at the top of this file and `docs/STAGING-RELEASE-AUDIT.md`.
+
+### Historical P0 — Phase 22: authentication race evidence and trustworthy project records
 
 **Verified in current source:** login failure counter updates run under ScriptLock; incorrect current-PIN attempts are throttled for 15 minutes; owner PIN reset clears login and PIN-change counters; write routes acquire the lock and authenticate the session inside the lock before invoking a write handler. These controls are already implemented; do not duplicate them.
 
@@ -137,7 +139,7 @@ The repository is public. This review did not perform a general Git object/secre
 
 **Exit gate:** CI/quality, Browser E2E and Full Flight Test pass on the exact same final PR head; no production deploy. Owner review and merge remain required before the next implementation phase.
 
-### P1 — Daily cash close and physical reconciliation
+### Historical P1 — Daily cash close and physical reconciliation
 
 **Status:** implementation merged in PRs #110 and #111; operational release gates remain open. PR #110 added the explicit voucher-level `CashImpact` field and preserved historical blanks as `UNCLASSIFIED`. PR #111 added the one-property / MAIN drawer / Asia-Kolkata calendar-day close, carry-forward/manual opening rules, immutable close snapshots, correction notes, chronological finalization, and closed-period mutation guards.
 
@@ -145,23 +147,23 @@ Expected physical cash uses explicit `CASH_IN` and `CASH_OUT` values only; `NO_C
 
 **Operational exit gates remain:** verify the intended Apps Script project and permissions, take a verified backup, run the reviewed additive migrations in order only when explicitly authorized, inspect real Sheet/Drive state, witness restore to a separate destination, verify local queues on every operating device, and complete the controlled hotel pilot. Do not run `setup()` as a migration shortcut.
 
-### P2 — Approval and exception controls
+### Historical P2 — Approval and exception controls
 
 **Owner-approved policy (13 October 2026):** new `PAYMENT` vouchers at or above **₹10,000** require approval. Receipts are outside this rule. Only existing owner/manager roles may approve, and the creator cannot approve their own voucher. Rejection requires a reason and is audited. No configurable threshold or new role is introduced.
 
 Pending, rejected, or malformed approval-state payments stay visible but are excluded from approved payment totals. They block a final cash close until they are approved or cancelled/resolved; they must not be silently omitted from a purported reconciliation. Editing a voucher already governed by approval sends it back for independent review. Blank approval fields on historical records mean `NOT_REQUIRED`; the migration adds fields without backfilling old vouchers.
 
-The current feature batch implements backend authorization, approval/rejection audit events, Register actions and filters, Dashboard/Reports disclosures and total treatment, cash-close blockers, additive schema migration guidance, and end-to-end regression coverage in one PR. It remains unmerged until owner review.
+PR #114 merged the payment-approval/reporting increment into source, including backend authorization, approval/rejection audit events, Register actions/filters, Dashboard/Reports disclosures and totals, cash-close blockers, additive schema guidance and end-to-end regression coverage. This merged source state is not evidence that migrations or the live Apps Script deployment were performed; those remain owner-controlled release gates.
 
 Other rule-based exception flags—duplicates, unusual first payments, off-hours entries and possible split payments—remain candidates for separate validation. Each must explain why it fired, link to source records, and have a review/override owner before implementation. Do not add speculative fraud scores.
 
-### P3 — Finance and accountant workflow
+### Historical P3 — Finance and accountant workflow
 
 **Status corrected against live PR history:** PR #114 is merged at `95cd5e0e733d07354e1a2e0b9291a65dee19d126`. It adds a least-privilege `accountant` role with server-authorized read-only access to the generic Recorded Movement Report and CSV, and VendorID storage/export with exact, unambiguous name fallback for legacy blank IDs. Historical rows are not backfilled; unresolved rows remain disclosed. This is an operational source-voucher export, not a destination-certified Tally/Zoho import or tax report; do not add fuzzy matching, backfill, tax rules, or destination-specific accounting semantics without approval.
 
 This is an operational source-voucher export, **not** a destination-certified Tally/Zoho import, general ledger, tax report, or reconciliation certificate. The actual accounting product/version, import mapping, required tax fields, and accountant-approved sample remain unresolved. Do not add GSTIN/GST, HSN/SAC or TDS behavior until the owner and qualified accountant define those requirements.
 
-### P4 — Product UI/UX quality pass
+### Historical P4 — Product UI/UX quality pass
 
 **PR #49 implementation:** broaden responsive overflow coverage across Dashboard and Register at 320–1280px, assert mobile navigation touch-target height, and verify visible keyboard focus. This improves regression detection but does not complete the formal accessibility or usability review.
 
@@ -179,18 +181,18 @@ This is an operational source-voucher export, **not** a destination-certified Ta
 
 The static review is recorded in `docs/UI-UX-REVIEW.md`. This PR does not redesign the screens, so the security and documentation changes can be reviewed independently.
 
-### P5 — Operational automation
+### Historical P5 — Operational automation
 
 - Complete a live backup/restore drill and verify Drive permissions and snapshot integrity. The owner-only recorded-status panel is implemented; it is not a substitute for a restore drill.
 - Owner daily close summary after close workflow semantics are agreed.
 - Recurring vouchers, petty-cash floats and vendor ledger only after observing actual repetitive tasks.
 - User-facing version/help/report-problem affordance, support/runbook and volume thresholds.
 
-### P6 — Scale/business bets (validate before building)
+### Historical P6 — Scale/business bets (validate before building)
 
 Multi-property tenancy, relational database migration, shared vendor/price benchmarks, OCR, language/voice entry, UPI/digital payouts and hosted SaaS operations are not current requirements. First validate buyer segment, willingness to pay, data separation, legal/compliance responsibility, payment-rail partner and support economics. Keep current Google Sheet self-hosting path viable until there is evidence to change it.
 
-## 4. Phase governance
+## 4. Phase governance and historical implementation log
 
 Each phase has one focused PR, actual test evidence, a two-pass review (product/workflow then security/failure/recovery), and explicit residual risks. The owner reviews and merges the PR. Do not merge or proceed to the next phase on behalf of the owner. No branch deletion, forced update, history rewrite or live deployment without explicit permission.
 
