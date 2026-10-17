@@ -2,11 +2,10 @@
 
 Updated: 17 October 2026  
 Repository: tchouhanjsm/cash-voucher  
-Last verified main SHA: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1` (PR #162 merge commit)  
-Current engineering batch: Phases 31–33 — route focus, accessible naming and interaction contract  
-Current working branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`  
-Current pull request: [#163](https://github.com/tchouhanjsm/cash-voucher/pull/163) — exact-head CI, Browser E2E and Full Flight Test are the merge gate  
-Current candidate: focus destination headings on explicit user navigation, audit accessible names across all owner-visible workflow screens, test account-menu Escape/focus restoration, and refresh the PWA shell cache; no money, authorization or deployment changes
+Last verified main SHA: `ae8eb594a33f7e33338009d75c52d0b010cea678` (PR #163 merge commit)  
+Current engineering batch: Phases 34–36 — validation guidance and async-state consistency  
+Current working branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`  
+Current candidate: connect New Entry settlement hints and validation errors, link report date-range alerts to invalid fields, provide a stable report `aria-busy` state and prove the behavior through source/browser regressions; no financial or API changes
 
 ## Verified repository state
 
@@ -125,10 +124,14 @@ Merged main SHA: `525f8d0a8af73194ca73c83d05b02d38c02d1b8c`; tested head: `27ced
 
 Merged main SHA: `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; tested head `6f103e863cd0e7fe5c2f2ae12196e594134faec0`. CI/quality, Browser E2E (898 checks) and Full Flight Test (285 backend + 898 browser checks) passed. Screenshot artifacts cover all 11 owner-visible screens at 390px and 1280px in both themes.
 
-## Phases 31–33 — route focus and accessible interaction contract (active candidate)
+## Phases 31–33 — route focus and accessible interaction contract (merged PR #163)
 
-Branch: `phase-31-33-interaction-accessibility-contract-2026-10-17`, based on merged PR #162 SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`.
+Merged main SHA: `ae8eb594a33f7e33338009d75c52d0b010cea678`; tested head `a6b1eff7593bb7a58f4e6063fb31befd2a646773`. CI/quality, Browser E2E (936 checks) and Full Flight Test (285 backend + 936 browser checks) passed. User-triggered navigation focuses the rendered heading, the app menu restores focus after Escape, and visible controls across 11 workflows receive a name-presence regression check. This is not a full WCAG audit or real-screen-reader proof.
 
-On explicit user navigation, focus the newly rendered page heading and give keyboard focus a clear outline. Do not request heading focus during bootstrap/background refresh; account-menu navigation still permits the Change PIN field to receive final focus. E2E checks the focus result and accessible-name presence for visible controls across the 11 owner-visible screens, plus Escape dismissal/focus return for the account menu. The name audit is a source/browser regression heuristic, not complete WCAG validation.
+## Phases 34–36 — validation guidance and async-state consistency (active candidate)
 
-No `clasp push`, staging deploy, Apps Script deployment, migration or production-data mutation is permitted. Physical devices, 200–400% zoom/reflow, manual keyboard traversal, screen-reader/assistive-technology review, operator usability, live identity/role checks and witnessed backup/restore remain independent release gates.
+Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on PR #163 merge SHA `ae8eb594a33f7e33338009d75c52d0b010cea678`.
+
+The batch links each New Entry settlement selector to its existing cash-impact hint, preserves that hint when error descriptions are attached/cleared, links both Report date fields to the date-range error alert, and groups report output under a stable `aria-busy` wrapper. E2E exercises successful and invalid date ranges, accessible descriptions, error recovery and settled reporting. No financial calculation, API/schema, role, approval-policy or production-data change is in scope.
+
+Do not run `clasp push`, staging deploy, Apps Script deployment, migration or production data mutations. Manual keyboard and screen-reader review, real device/PWA update and offline recovery, 200–400% zoom/reflow, live identity/role checks and witnessed backup/restore remain separate release gates.
