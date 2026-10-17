@@ -280,8 +280,7 @@ ok(
 );
 // create users
 ok(
-  !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', password: 'short' })
-    .ok,
+  !as(T, 'saveUser', { name: 'Bad', email: 'a@b.com', role: 'staff', password: 'short' }).ok,
   'weak password rejected',
 );
 const inheritedRoleResults = ['constructor', 'toString', '__proto__', 'hasOwnProperty'].map(
