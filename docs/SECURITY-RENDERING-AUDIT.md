@@ -2,7 +2,7 @@
 
 **Status:** incremental; not a full security certification  
 **Historical baseline:** merged source at `b1f2a3234577301e4e9536dd424695976f1d8fca` (PR #76 merge)  
-**Latest merged review baseline:** `a478c52c68c520b8eddbf80692d101dc20210c58` (main after PR #149; 17 assignment sites across eight modules; Dashboard fingerprint `2977910e`, Payments template fingerprint `847d68e0`).
+**Latest merged review baseline:** `4a759b7513a925aee796949d8f6e79085f096314` (main after PR #166; 17 active assignment sites across eight modules; Dashboard fingerprint `2977910e`, Payments template fingerprint `847d68e0`). PRs #165–#166 did not change active JavaScript assignment sites. The inventory gate passes in current main CI; contextual safety review and live-host verification are still distinct.
 **Active frontend:** `index.html` loads `frontend/main.js`; root `app.js` is a legacy artifact and is not the active entry point.
 
 ## Objective and rule
