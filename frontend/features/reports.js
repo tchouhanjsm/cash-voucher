@@ -1,5 +1,5 @@
 import { $ } from '../core/dom.js';
-import { can } from '../core/state.js';
+import { can, S } from '../core/state.js';
 import { csvCell, dmy, download, esc, finiteAmount, money, today } from '../core/utils.js';
 import { emptyState, head, pageNotice, tableView, toast } from '../core/ui.js';
 
@@ -16,6 +16,7 @@ export function createReports({ api }) {
     dateRangeInvalid: false,
     loading: false,
   };
+  let activeReportRequestId = 0;
 
   const scalarText = (value) =>
     typeof value === 'string' ||
@@ -218,33 +219,39 @@ export function createReports({ api }) {
   }
 
   async function load() {
-    if (!can('reports')) return render();
+    const requestId = ++activeReportRequestId;
+    if (!can('reports')) {
+      if (S.view === 'reports') render();
+      return;
+    }
 
     if (!R.from || !R.to || R.from > R.to) {
       R.summary = null;
       R.rows = [];
       R.invalidRowCount = 0;
+      R.loading = false;
       R.dateRangeInvalid = true;
       R.error = 'Choose a valid date range (From must not be after To).';
-      render();
+      if (S.view === 'reports') render();
       return;
     }
 
+    const requestFilters = {
+      from: R.from,
+      to: R.to,
+      type: R.type,
+      status: R.status,
+    };
     R.dateRangeInvalid = false;
     R.loading = true;
     R.error = '';
     R.summary = null;
     R.rows = [];
     R.invalidRowCount = 0;
-    render();
+    if (S.view === 'reports') render();
 
     try {
-      const summary = await api('recordedMovementReport', {
-        from: R.from,
-        to: R.to,
-        type: R.type,
-        status: R.status,
-      });
+      const summary = await api('recordedMovementReport', requestFilters);
       if (
         !summary ||
         typeof summary !== 'object' ||
@@ -291,10 +298,14 @@ export function createReports({ api }) {
         Number.isFinite(item.amount) &&
         item.amount >= 0;
       const validRows = summary.items.filter(isValidReportRow);
+
+      // Only the newest report submission may publish a result or error.
+      if (requestId !== activeReportRequestId) return;
       R.summary = summary;
       R.rows = validRows.map(normalizeRow);
       R.invalidRowCount = summary.items.length - validRows.length;
     } catch (error) {
+      if (requestId !== activeReportRequestId) return;
       R.summary = null;
       R.rows = [];
       R.invalidRowCount = 0;
@@ -303,11 +314,13 @@ export function createReports({ api }) {
           ? error.message
           : 'The report could not be loaded.';
     } finally {
-      R.loading = false;
-      render();
+      if (requestId === activeReportRequestId) {
+        R.loading = false;
+        // An in-flight read may finish after the operator has opened another view.
+        if (S.view === 'reports') render();
+      }
     }
   }
-
   function exportCsv() {
     if (!R.summary) {
       toast('Run a successful report before exporting.', 'err');

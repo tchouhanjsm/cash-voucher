@@ -1,5 +1,7 @@
 # UI shell and design system
 
+Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), cross-workflow visual matrix (PR #162), navigation/accessibility contract (PR #163), and validation/async-state work (PR #164) are merged. The current PR #165 candidate adds route-safe asynchronous updates to Reports and administration views, backed by deterministic navigation-race tests; it does not certify manual assistive-technology or production operational readiness.
+
 Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), cross-workflow visual matrix (PR #162), and navigation/accessibility contract (PR #163) are merged. Phases 34–36 connect form help and validation errors, make invalid report date ranges programmatically identifiable, and normalize report busy/settled state. Physical-device, zoom/reflow and assistive-technology validation remain release gates.
 
 ## Approach
@@ -121,3 +123,9 @@ Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on merged 
 - **Report validation:** both date inputs are marked invalid when the range is rejected and reference the same alert. A valid request clears the invalid relationship; a stable results wrapper exposes the loading state with `aria-busy`.
 - **Regression:** source assertions and browser tests check IDs, resolved descriptions, error state, recovery and the busy/settled wrapper. Styling makes invalid date fields visible while retaining existing contrast/forced-colors rules; app-shell cache advances to `cv2-v22`.
 - **Boundary:** no accounting calculation, approval policy, permission, API, schema, dependency or production data change. Human keyboard traversal, screen-reader output, real devices, zoom/reflow and live operational checks remain separate release gates.
+
+## Phases 37–39 — route-safe asynchronous view state (PR #165 candidate)
+
+The current source review found a late Report response rerendering the active workspace, plus stale/out-of-order Report requests and an equivalent risk in Users and post-save administration redraws. The batch sequences Report and Users requests, protects the destination route during async completion, and updates the shell cache to `cv2-v23`. E2E tests hold requests/save operations across navigation so route correctness is exercised against the browser and mock API, not inferred from CSS presence.
+
+No shared component framework, external runtime resources, APIs, schemas or financial/authorization behavior are changed. Existing screenshot coverage supports visual review but does not replace manual review at real device sizes, zoom/reflow and assistive technology.

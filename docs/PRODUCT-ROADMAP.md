@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `ae8eb594a33f7e33338009d75c52d0b010cea678` (PR #163 merge; route focus and accessible interaction contract)  
-Current engineering batch: Phases 34–36 — validation guidance and async-state consistency  
-Current candidate branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`
+Last verified main baseline: `dd901910531da2c060539baad44949fe2cb54b30` (PR #164 merge; post-merge main CI passed)  
+Current engineering batch: Phases 37–39 — route-safe asynchronous workflow updates  
+Current candidate branch: `phase-37-39-route-safe-async-views-2026-10-17`
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
@@ -402,11 +402,20 @@ PR #162 merged at main SHA `754df59cf62ab228ec0d66f9d3f90dfae5eea3d1`; tested he
 
 PR #163 merged at main SHA `ae8eb594a33f7e33338009d75c52d0b010cea678`; exact tested head `a6b1eff7593bb7a58f4e6063fb31befd2a646773` passed [CI/quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477109), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477094) (936 checks) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38993477080) (285 backend + 936 browser checks). It adds opt-in destination-heading focus for user navigation, an accessible-name regression heuristic over 11 workflows, account-menu dismissal/focus-return checks, visible heading focus and cache revision `cv2-v21`. These checks are not a full WCAG or screen-reader certification.
 
-## Phases 34–36 — validation guidance and asynchronous state consistency (bulk candidate)
+## Phases 34–36 — validation guidance and asynchronous state consistency (merged PR #164)
 
-Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on merged PR #163 SHA `ae8eb594a33f7e33338009d75c52d0b010cea678`.
+PR #164 merged at `dd901910531da2c060539baad44949fe2cb54b30`; tested head `b3adad0a8c089c0c42614ea2fffd6724664d9106`. CI/quality, Browser E2E (943 checks) and Full Flight Test (285 backend + 943 browser checks) passed on that head. Post-merge main CI: [run 38998817186](https://github.com/tchouhanjsm/cash-voucher/actions/runs/38998817186).
 
 - **Phase 34 — persistent form help:** associate each New Entry cash-impact selector with its settlement explanation. When validation adds an error, keep both the long-lived help and current error in `aria-describedby`; clearing the error removes only the error reference.
 - **Phase 35 — recoverable report validation:** expose invalid date-range state on both report date fields, connect each to the same assertive alert, and clear those attributes when a valid report request begins. Place report loading/results under one stable `aria-busy` region without changing response validation or accounting semantics.
 - **Phase 36 — proof and design parity:** add source-level design-system assertions, Browser E2E coverage for field/help/error relationships and busy/settled reports, visible styling for invalid report date inputs, bump the app-shell cache to `cv2-v22`, and update this roadmap and handoff together.
 - **Acceptance boundary:** tests verify DOM state and announcements primitives, not assistive-technology output. Manual keyboard/screen-reader review, zoom/reflow, operator usability and live Apps Script release proof remain separate gates. No approval policy, cash calculations, API, permissions, schema or production data may change.
+
+## Phases 37–39 — route-safe asynchronous workflow updates (PR #165 candidate)
+
+**Evidence-led defect:** an in-flight Recorded Movement Report read called `render()` after completion regardless of the active route, while concurrent reads lacked a latest-request guard. Users-list completion and some administration mutation callbacks could similarly replace the DOM after the operator navigated elsewhere.
+
+- **Phase 37 — Report result ownership:** snapshot submitted filters, sequence requests, ignore stale completions, and rerender only if Reports remains the active route.
+- **Phase 38 — administration route ownership:** sequence Users loads; ignore stale/route-inactive responses; guard Vendors and Settings redraws after awaited mutations.
+- **Phase 39 — regression and PWA integrity:** browser-gate tests hold Reports/Users reads and a Vendor save through navigation, assert the selected Dashboard remains visible, add source-level route ownership assertions, and bump the shell cache to `cv2-v23`.
+- **Acceptance boundary:** no changes to accounting math, approval, permission policy, API/schema, dependencies or production data. CI/quality, Browser E2E and Full Flight Test must all pass on the same final PR head. Do not treat tests as live Google Sheets/Apps Script evidence.
