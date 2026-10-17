@@ -200,7 +200,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       signOut(true);
     }
 
-    if (error.code === 'PIN_CHANGE') {
+    if (error.code === 'PASSWORD_CHANGE') {
       forcePasswordChange();
     }
   }
