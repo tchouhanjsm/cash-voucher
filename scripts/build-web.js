@@ -119,9 +119,7 @@ if (require.main === module) {
     const result = buildWebSite();
     console.log('Static customer client built at ' + result.outDir);
     console.log(
-      'API target origin validated: ' +
-        new URL(result.apiUrl).origin +
-        ' (deployment ID omitted).',
+      'API target origin validated: ' + new URL(result.apiUrl).origin + ' (deployment ID omitted).',
     );
     console.log('Published asset files: ' + result.files);
   } catch (error) {
