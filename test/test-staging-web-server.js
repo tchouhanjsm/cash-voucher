@@ -22,9 +22,9 @@ const fixture = {
   CV_STAGING_BACKUP_FOLDER_ID: 'staging-backups-fixture',
   CV_PRODUCTION_BACKUP_FOLDER_ID: 'production-backups-fixture',
   CV_STAGING_UAT_OWNER_EMAIL: 'uat-owner@example.test',
-  CV_STAGING_UAT_OWNER_PASSWORD: '482631',
+  CV_STAGING_UAT_OWNER_PASSWORD: 'WebServerOwnerPass8',
   CV_STAGING_UAT_MANAGER_EMAIL: 'uat-manager@example.test',
-  CV_STAGING_UAT_MANAGER_PASSWORD: '739284',
+  CV_STAGING_UAT_MANAGER_PASSWORD: 'WebServerManagerPass8',
 };
 
 async function run() {

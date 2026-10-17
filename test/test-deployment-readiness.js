@@ -47,7 +47,7 @@ const createStaff = g.call('saveUser', {
 assert.equal(createStaff.ok, true);
 const staffLogin = g.call('login', {
   email: 'readiness-staff@test.com',
-  password: '628491',
+  password: 'ReadinessStaff12',
 });
 assert.equal(staffLogin.ok, true);
 const staffPasswordChange = g.call('changePassword', {

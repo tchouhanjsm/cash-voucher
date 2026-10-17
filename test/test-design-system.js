@@ -190,8 +190,8 @@ assert.match(
 );
 assert.match(
   administration,
-  /className = 'card account-pin-form'/,
-  'account PIN form uses the shared workflow styling',
+  /className = 'card account-password-form'/,
+  'account password form uses the shared workflow styling',
 );
 assert.match(
   components,

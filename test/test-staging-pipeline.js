@@ -176,7 +176,7 @@ const weakPassword = validateStagingConfiguration({
   CV_STAGING_UAT_OWNER_PASSWORD: '123456',
 });
 assert.equal(weakPassword.ok, false);
-assert.ok(weakPassword.errors.some((message) => message.includes('non-trivial')));
+assert.ok(weakPassword.errors.some((message) => message.includes('8–128 characters')));
 
 const failures = validateStagingConfiguration({
   ...fixture,
