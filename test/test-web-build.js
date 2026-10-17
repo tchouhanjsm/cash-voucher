@@ -37,6 +37,11 @@ assert.throws(
   /Output directory must not be the repository root/,
   'build must never remove the parent directory containing the repository',
 );
+assert.throws(
+  () => buildWebSite({ rootDir, outDir: path.join(rootDir, 'scripts'), apiUrl: customerApiUrl }),
+  /Output must be outside the repository or use the dedicated repository dist/,
+  'build must never remove a tracked repository subdirectory',
+);
 
 const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-web-build-'));
 try {
