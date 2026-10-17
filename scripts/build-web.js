@@ -11,6 +11,14 @@ const STATIC_FILES = [
   'sw.js',
 ];
 
+const SECURITY_HEADERS = `/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()
+  Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; worker-src 'self'; form-action 'self'; frame-src 'none'; frame-ancestors 'none'
+`;
+
 function validateApiUrl(value) {
   const raw = typeof value === 'string' ? value.trim() : '';
   if (!raw) {
@@ -94,6 +102,7 @@ window.CV_CONFIG = {
 `;
 
   fs.writeFileSync(path.join(outDir, 'config.js'), config, 'utf8');
+  fs.writeFileSync(path.join(outDir, '_headers'), SECURITY_HEADERS, 'utf8');
   fs.writeFileSync(path.join(outDir, '.nojekyll'), '', 'utf8');
 
   return {
@@ -101,7 +110,7 @@ window.CV_CONFIG = {
     apiUrl,
     files:
       STATIC_FILES.length +
-      2 +
+      3 +
       countFiles(path.join(outDir, 'frontend')) +
       countFiles(path.join(outDir, 'icons')),
   };
