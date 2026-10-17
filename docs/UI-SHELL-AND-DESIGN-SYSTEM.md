@@ -119,5 +119,5 @@ Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on merged 
 
 - **Form guidance:** associate each dynamic cash-impact selector with its explanatory hint. Attach field error IDs in addition to, not instead of, persistent help; clearing an error removes only its own description token.
 - **Report validation:** both date inputs are marked invalid when the range is rejected and reference the same alert. A valid request clears the invalid relationship; a stable results wrapper exposes the loading state with `aria-busy`.
-- **Regression:** source assertions and browser tests check IDs, resolved descriptions, error state, recovery and the busy/settled wrapper. Styling makes invalid date fields visible while retaining existing contrast/forced-colors rules.
+- **Regression:** source assertions and browser tests check IDs, resolved descriptions, error state, recovery and the busy/settled wrapper. Styling makes invalid date fields visible while retaining existing contrast/forced-colors rules; app-shell cache advances to `cv2-v22`.
 - **Boundary:** no accounting calculation, approval policy, permission, API, schema, dependency or production data change. Human keyboard traversal, screen-reader output, real devices, zoom/reflow and live operational checks remain separate release gates.
