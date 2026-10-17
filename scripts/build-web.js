@@ -95,7 +95,7 @@ window.CV_CONFIG = {
   return {
     outDir,
     apiUrl,
-    files: STATIC_FILES.length + 1 + countFiles(path.join(outDir, 'frontend')) + countFiles(path.join(outDir, 'icons')),
+    files: STATIC_FILES.length + 2 + countFiles(path.join(outDir, 'frontend')) + countFiles(path.join(outDir, 'icons')),
   };
 }
 
@@ -110,7 +110,7 @@ if (require.main === module) {
   try {
     const result = buildWebSite();
     console.log('Static customer client built at ' + result.outDir);
-    console.log('API target validated: ' + new URL(result.apiUrl).origin + new URL(result.apiUrl).pathname);
+    console.log('API target origin validated: ' + new URL(result.apiUrl).origin + ' (deployment ID omitted).');
     console.log('Published asset files: ' + result.files);
   } catch (error) {
     console.error('Static customer client build failed: ' + error.message);
