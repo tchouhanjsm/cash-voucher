@@ -18,6 +18,13 @@ g.props.CV_STAGING_RECEIPT_FOLDER_ID = g.props.RECEIPT_FOLDER_ID;
 g.props.CV_STAGING_BACKUP_FOLDER_ID = g.props.BACKUP_FOLDER_ID;
 g.props.BACKUP_LAST_SUCCESS = new Date().toISOString();
 g.props.BACKUP_LAST_ATTEMPT = g.props.BACKUP_LAST_SUCCESS;
+g.props.ONBOARDING_STATE_V1_STAGING = JSON.stringify({
+  schemaVersion: 1,
+  stage: 'preflight',
+  confirmations: {},
+  initializedAt: '',
+  updatedAt: '',
+});
 
 function loginAndChange(email, password, next) {
   const login = g.call('login', { email, password });
@@ -127,7 +134,7 @@ const shortEvidence = request('onboardingConfirm', {
 assert.equal(shortEvidence.ok, false);
 assert.equal(shortEvidence.code, 'VALIDATION');
 
-const unset = create();
+const unset = create({ onboardingEnvironment: false });
 unset.props.OWNER_EMAIL = 'unset-env@example.test';
 unset.props.OWNER_PASSWORD = 'Owner#Start2026';
 unset.setup();
