@@ -2649,6 +2649,76 @@ assert(
   'owner audit status makes the simultaneous marker-store failure limitation explicit in regression evidence',
 );
 
-n += 5;
+
+const supportMock = create();
+supportMock.props.OWNER_EMAIL = 'Owner@Test.com';
+supportMock.props.OWNER_PASSWORD = 'Owner#Start2026';
+supportMock.setup();
+supportMock.props.SUPPORT_EMAIL = 'support@example.test';
+const supportLogin = supportMock.call('login', {
+  email: 'owner@test.com',
+  password: 'Owner#Start2026',
+});
+assert(supportLogin.ok, 'owner login succeeds for support-form testing');
+const supportPayload = {
+  token: supportLogin.data.token,
+  topic: 'Bug report',
+  message: 'The report screen shows an unexpected total after refresh.',
+  currentUrl: 'https://client-staging.example.test/',
+};
+const supportResult = supportMock.call('supportSubmit', supportPayload);
+assert(
+  supportResult.ok &&
+    supportResult.data.ok &&
+    supportMock.supportEmails.length === 1 &&
+    supportMock.supportEmails[0].to === 'support@example.test',
+  'authenticated support form emails the server-configured operator recipient',
+);
+assert(
+  supportMock.supportEmails[0].subject.includes('[Cash Voucher][staging] Bug report') &&
+    supportMock.supportEmails[0].body.includes('owner@test.com') &&
+    supportMock.supportEmails[0].body.includes('The report screen shows an unexpected total'),
+  'support email includes customer account, environment, category and issue description',
+);
+assert(
+  supportMock.sheets.AuditLog.rows.some((row) => row[2] === 'SUPPORT_SUBMITTED'),
+  'successful support submission is audited',
+);
+assert(
+  !supportMock.call('supportSubmit', { ...supportPayload, topic: 'attacker recipient' }).ok,
+  'support route rejects unapproved categories instead of accepting arbitrary email metadata',
+);
+for (let index = 0; index < 4; index++) {
+  assert(
+    supportMock.call('supportSubmit', supportPayload).ok,
+    'support requests below the per-user hourly limit are accepted',
+  );
+}
+const supportRateLimit = supportMock.call('supportSubmit', supportPayload);
+assert(
+  !supportRateLimit.ok &&
+    supportRateLimit.code === 'RATE_LIMIT' &&
+    supportMock.supportEmails.length === 5,
+  'support route limits a user to five emails per hour',
+);
+const missingSupportConfig = create();
+missingSupportConfig.props.OWNER_EMAIL = 'Owner@Test.com';
+missingSupportConfig.props.OWNER_PASSWORD = 'Owner#Start2026';
+missingSupportConfig.setup();
+const noSupportEmailLogin = missingSupportConfig.call('login', {
+  email: 'owner@test.com',
+  password: 'Owner#Start2026',
+});
+const noSupportEmail = missingSupportConfig.call('supportSubmit', {
+  token: noSupportEmailLogin.data.token,
+  topic: 'Bug report',
+  message: 'The application fails to render my latest report.',
+});
+assert(
+  !noSupportEmail.ok && noSupportEmail.code === 'SUPPORT_UNAVAILABLE',
+  'support route fails closed when SUPPORT_EMAIL is not configured',
+);
+
+n += 11;
 
 console.log('backend OK — ' + n + ' checks passed');
