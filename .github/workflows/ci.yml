@@ -51,10 +51,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary Prettier output for presentation normalization
-        run: |
-          node -e 'const fs = require("node:fs"); const prettier = require("prettier"); (async () => { const file = "docs/CLIENT-ONBOARDING-PRESENTATION.html"; const formatted = await prettier.format(fs.readFileSync(file, "utf8"), { filepath: file }); const encoded = Buffer.from(formatted, "utf8").toString("base64"); console.log("PRETTIER_FORMATTED_BEGIN"); for (let offset = 0; offset < encoded.length; offset += 3000) console.log("PRETTIER_CHUNK:" + encoded.slice(offset, offset + 3000)); console.log("PRETTIER_FORMATTED_END"); })().catch((error) => { console.error(error); process.exitCode = 1; });'
-
       - name: Run quality gate
         run: npm run check
 
