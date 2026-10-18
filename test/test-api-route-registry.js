@@ -32,6 +32,8 @@ const requiredFinancialWrites = [
   'saveUser',
   'resetPassword',
   'toggleVendor',
+  'onboardingConfirm',
+  'onboardingAdvance',
 ];
 
 assert.ok(
@@ -59,6 +61,7 @@ for (const readAction of [
   'backupStatus',
   'backupIntegrityReport',
   'deploymentReadiness',
+  'onboardingState',
 ]) {
   assert.ok(actions.includes(readAction), readAction + ' must remain explicitly registered');
   assert.ok(!writes.includes(readAction), readAction + ' must not be classified as a write');

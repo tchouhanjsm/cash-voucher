@@ -58,6 +58,7 @@ function route_(req) {
     const user = auth_(req.token);
     if (user.mustChange && req.action !== 'changePassword' && req.action !== 'logout')
       throw err_('Please change your password first.', 'PASSWORD_CHANGE');
+    if (typeof enforceOnboardingFinancialGate_ === 'function') enforceOnboardingFinancialGate_(user, req.action, req);
     return fn(user, req);
   }
 
