@@ -353,6 +353,8 @@ with sync_playwright() as p:
         and page.locator('#themeToggle').get_attribute('aria-pressed') == 'false',
         'light theme can be restored and the explicit choice is retained',
     )
+    go_view(page, 'dash')
+    page.wait_for_selector('#view .page-header h1')
     check(
         page.locator('#view .breadcrumbs').count() == 0
         and page.locator('#view .page-header h1').inner_text() == 'Dashboard',
