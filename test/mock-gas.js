@@ -20,7 +20,8 @@ function create(options = {}) {
     propsStore = {},
     cacheStore = {},
     files = {},
-    faults = { failNextAuditWrite: false, failNextAuditMarkerWrite: false },
+    faults = { failNextAuditWrite: false, failNextAuditMarkerWrite: false, failNextMail: false },
+    mailLog = [],
     auditDiagnostics = [],
     lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false, afterAcquire: null },
     scriptTriggers = [];
@@ -209,6 +210,19 @@ function create(options = {}) {
           : `${p.year}-${p.month}-${p.day}`;
       },
     },
+    MailApp: {
+      sendEmail: (message) => {
+        if (faults.failNextMail) {
+          faults.failNextMail = false;
+          throw new Error('Simulated mail quota failure');
+        }
+        mailLog.push(message);
+      },
+    },
+    Session: {
+      getEffectiveUser: () => ({ getEmail: () => 'owner-google@test.com' }),
+      getScriptTimeZone: () => 'Asia/Kolkata',
+    },
     Logger: { log() {} },
   };
   vm.createContext(ctx);
@@ -230,6 +244,10 @@ function create(options = {}) {
       faults.failNextAuditMarkerWrite = true;
     },
     auditDiagnostics,
+    mailLog,
+    failNextMail: () => {
+      faults.failNextMail = true;
+    },
     registeredActions: () => Object.keys(ctx.__api.ACTIONS),
     writeActions: () => Object.keys(ctx.__api.WRITES),
     permissionMap: () => JSON.parse(JSON.stringify(ctx.__api.PERMS)),

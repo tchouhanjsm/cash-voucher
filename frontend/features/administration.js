@@ -1628,6 +1628,56 @@ export function createAdministration({ api, getNavigation, signOut }) {
       controls.appendChild(submit);
       form.append(formHeading, controls);
       fragment.appendChild(form);
+
+      const report = document.createElement('form');
+      report.id = 'rf';
+      report.className = 'card account-report-form';
+      report.autocomplete = 'off';
+      const reportHeading = document.createElement('h2');
+      reportHeading.textContent = 'Report a problem or ask for help';
+      const reportIntro = document.createElement('p');
+      reportIntro.className = 'muted';
+      reportIntro.textContent =
+        'Your message is emailed to support with your name and email so they can reply. Never type a password.';
+      const reportControls = document.createElement('div');
+      reportControls.className = 'filters account-report-controls';
+      const category = document.createElement('select');
+      category.id = 'rc';
+      category.setAttribute('aria-label', 'Type of report');
+      [
+        ['bug', 'Something is not working'],
+        ['question', 'I have a question'],
+        ['feature', 'Suggestion'],
+        ['other', 'Other'],
+      ].forEach(([value, label]) => {
+        const option = document.createElement('option');
+        option.value = value;
+        option.textContent = label;
+        category.appendChild(option);
+      });
+      const subject = document.createElement('input');
+      subject.id = 'rs';
+      subject.type = 'text';
+      subject.maxLength = 100;
+      subject.minLength = 3;
+      subject.required = true;
+      subject.placeholder = 'Short subject';
+      subject.setAttribute('aria-label', 'Subject');
+      const message = document.createElement('textarea');
+      message.id = 'rm';
+      message.maxLength = 2000;
+      message.minLength = 10;
+      message.required = true;
+      message.rows = 5;
+      message.placeholder = 'What were you doing, what did you expect, and what happened instead?';
+      message.setAttribute('aria-label', 'Describe the problem');
+      const reportSubmit = document.createElement('button');
+      reportSubmit.type = 'submit';
+      reportSubmit.className = 'btn primary';
+      reportSubmit.textContent = 'Send to support';
+      reportControls.append(category, subject, message, reportSubmit);
+      report.append(reportHeading, reportIntro, reportControls);
+      fragment.appendChild(report);
       view.replaceChildren(fragment);
     })();
   }
@@ -1644,6 +1694,32 @@ export function createAdministration({ api, getNavigation, signOut }) {
       toast('password changed.', 'ok');
     } catch (error) {
       fail(error);
+    }
+  }
+
+  async function reportProblem(event) {
+    const form = event.target;
+    const button = form.querySelector('button[type="submit"]');
+    if (button) button.disabled = true;
+    try {
+      const data = await api('reportIssue', {
+        category: $('#rc').value,
+        subject: $('#rs').value,
+        message: $('#rm').value,
+        context:
+          'view=' +
+          (S.view || '') +
+          '; online=' +
+          String(navigator.onLine) +
+          '; ' +
+          String(navigator.userAgent || ''),
+      });
+      form.reset();
+      toast('Sent to support. Reference ' + data.ref + '.', 'ok');
+    } catch (error) {
+      fail(error);
+    } finally {
+      if (button) button.disabled = false;
     }
   }
 
@@ -1666,6 +1742,11 @@ export function createAdministration({ api, getNavigation, signOut }) {
     if (event.target.id === 'pf') {
       event.preventDefault();
       return changePassword(event);
+    }
+
+    if (event.target.id === 'rf') {
+      event.preventDefault();
+      return reportProblem(event);
     }
   }
 

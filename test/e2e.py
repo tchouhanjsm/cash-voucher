@@ -376,6 +376,14 @@ with sync_playwright() as p:
         and page.locator('.account-password-form#pf').count() == 1,
         'My Account uses shared page context and a dedicated profile/password layout',
     )
+    page.fill('#rs', 'E2E problem report')
+    page.fill('#rm', 'Synthetic report from the browser test; please ignore.')
+    page.click('#rf button[type=submit]')
+    page.wait_for_function("document.body.innerText.includes('Sent to support. Reference')")
+    check(
+        page.locator('#rs').input_value() == '' and page.locator('#rm').input_value() == '',
+        'Report a problem form sends to support and clears itself',
+    )
     page.set_viewport_size({'width': 1280, 'height': 800})
     account_columns = page.locator('.account-password-controls').evaluate(
         "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"

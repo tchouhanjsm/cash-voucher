@@ -2528,3 +2528,13 @@ nav .ic {
     width: 100%;
   }
 }
+
+.account-report-form textarea {
+  width: 100%;
+  min-height: 112px;
+  resize: vertical;
+}
+.account-report-controls {
+  display: grid;
+  gap: 12px;
+}

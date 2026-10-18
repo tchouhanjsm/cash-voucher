@@ -8,6 +8,7 @@ g.props.OWNER_EMAIL = 'owner@test.com';
 g.props.OWNER_PASSWORD = 'Owner#Start2026';
 g.setup();
 g.props.CV_ENVIRONMENT = 'staging';
+g.props.SUPPORT_EMAIL = 'support@test.example';
 g.props.CV_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
 g.props.CV_STAGING_SCRIPT_ID = 'MOCK_SCRIPT_ID';
 g.props.CV_STAGING_SPREADSHEET_ID = 'SS1';
