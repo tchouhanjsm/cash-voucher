@@ -11,7 +11,7 @@ npm run check
 
 Before editing, verify the live GitHub PR state, target branch SHA, active branch head, changed-file list and latest CI/E2E runs. Compare hashes rather than inferring state from chat. If someone reports a merge while GitHub still reports the PR open or `main` unchanged, reconcile that conflict before basing dependent work on the expected merge. Do not claim a branch contains a change until its SHA proves it.
 
-**Hard safety rules:** do not delete a repository or branch, rename a branch, or force-update a ref without explicit permission. Do not merge a PR or deploy to production on the owner's behalf.
+**Hard safety rules:** do not commit or push directly to `main`; use a short-lived feature/fix/docs branch in the same repository and a reviewed PR. Do not delete a repository or branch, rename a branch, or force-update a ref without explicit permission. Do not merge a PR, initialize external Google resources, run `clasp push`, publish a frontend or deploy to production on the owner's behalf. Pushing a feature branch updates source control only; it is not permission to mutate Apps Script or hosting.
 
 ## Branch lifecycle
 
