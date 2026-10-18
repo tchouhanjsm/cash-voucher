@@ -65,7 +65,28 @@ function onboardingTechnicalChecks_(user, environment) {
     backupTriggerReady: { status: triggerReady ? 'pass' : 'blocked', message: triggerReady ? 'A scheduled backup trigger exists.' : 'The scheduled trigger is missing. Arrange a reviewed repair; do not rerun setup() on populated data.' },
     recentBackup: { status: backup.ready ? 'pass' : 'blocked', message: backup.ready ? 'A recent successful backup is recorded with no later attempt or recorded failure.' : 'A recent successful backup with no later attempt or recorded failure is required. A timestamp is not restore proof.', details: backup },
     productionTargetMatch: { status: env === 'production' && identityMatched ? 'pass' : 'blocked', message: env === 'production' && identityMatched ? 'Production resource identity matches.' : 'Production target identity must be verified in the production instance.' },
-    serverReadiness: { status: env === 'production' && schemaReady && foldersReady && triggerReady && backup.ready ? 'pass' : 'blocked', message: env === 'production' && schemaReady && foldersReady && triggerReady && backup.ready ? 'Production server readiness checks passed.' : 'Production readiness is incomplete or this is not production.' }
+    serverReadiness: {
+      status:
+        env === 'production' &&
+        schemaReady &&
+        foldersReady &&
+        triggerReady &&
+        backup.ready &&
+        propertyReady &&
+        accountsReady
+          ? 'pass'
+          : 'blocked',
+      message:
+        env === 'production' &&
+        schemaReady &&
+        foldersReady &&
+        triggerReady &&
+        backup.ready &&
+        propertyReady &&
+        accountsReady
+          ? 'Production server readiness checks passed.'
+          : 'Production readiness is incomplete or this is not production.',
+    }
   };
 }
 function onboardingVisibleState_(user, environment) {
