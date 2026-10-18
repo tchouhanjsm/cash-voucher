@@ -19,6 +19,8 @@ export function createApi({ getUrl, getToken }) {
         body: JSON.stringify({
           action,
           token: getToken(),
+          environment: (window.CV_CONFIG && window.CV_CONFIG.ENVIRONMENT) || '',
+          deploymentId: (window.CV_CONFIG && window.CV_CONFIG.DEPLOYMENT_ID) || '',
           ...payload,
         }),
         signal: controller.signal,

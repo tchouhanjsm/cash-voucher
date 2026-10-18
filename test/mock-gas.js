@@ -14,7 +14,8 @@ function backendSource() {
     .map((name) => fs.readFileSync(path.join(dir, name), 'utf8'))
     .join('\n');
 }
-function create() {
+function create(options = {}) {
+  const withOnboardingEnvironment = options.onboardingEnvironment !== false;
   const sheets = {},
     propsStore = {},
     cacheStore = {},
@@ -232,15 +233,49 @@ function create() {
     registeredActions: () => Object.keys(ctx.__api.ACTIONS),
     writeActions: () => Object.keys(ctx.__api.WRITES),
     permissionMap: () => JSON.parse(JSON.stringify(ctx.__api.PERMS)),
-    setup: () => ctx.__api.setup(),
+    setup: () => {
+      const result = ctx.__api.setup();
+      if (withOnboardingEnvironment) {
+        const defaults = {
+          CV_ENVIRONMENT: 'staging',
+          CV_DEPLOYMENT_ID: 'MOCK_DEPLOYMENT',
+          CV_STAGING_SCRIPT_ID: 'MOCK_SCRIPT_ID',
+          CV_STAGING_SPREADSHEET_ID: 'SS1',
+          CV_STAGING_DEPLOYMENT_ID: 'MOCK_DEPLOYMENT',
+          CV_STAGING_RECEIPT_FOLDER_ID: propsStore.RECEIPT_FOLDER_ID,
+          CV_STAGING_BACKUP_FOLDER_ID: propsStore.BACKUP_FOLDER_ID,
+        };
+        Object.entries(defaults).forEach(([key, value]) => {
+          if (!Object.prototype.hasOwnProperty.call(propsStore, key)) {
+            propsStore[key] = value;
+          }
+        });
+        if (!Object.prototype.hasOwnProperty.call(propsStore, 'ONBOARDING_STATE_V1_STAGING')) {
+          propsStore.ONBOARDING_STATE_V1_STAGING = JSON.stringify({
+            schemaVersion: 1,
+            stage: 'stagingUat',
+            confirmations: {},
+            initializedAt: '',
+            updatedAt: '',
+          });
+        }
+      }
+      return result;
+    },
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),
-    call: (action, payload = {}) =>
-      JSON.parse(
+    call: (action, payload = {}) => {
+      const defaults = withOnboardingEnvironment
+        ? { environment: 'staging', deploymentId: 'MOCK_DEPLOYMENT' }
+        : {};
+      return JSON.parse(
         ctx.__api
-          .doPost({ postData: { contents: JSON.stringify({ action, ...payload }) } })
+          .doPost({
+            postData: { contents: JSON.stringify({ action, ...defaults, ...payload }) },
+          })
           .getContent(),
-      ),
+      );
+    },
     raw: (contents) => JSON.parse(ctx.__api.doPost({ postData: { contents } }).getContent()),
     pruneBackups: (root) => ctx.__api.pruneBackups_(root),
     backupManifestCsv: (rows) => ctx.__api.backupManifestCsv_(rows),

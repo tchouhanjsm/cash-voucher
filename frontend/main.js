@@ -15,6 +15,7 @@ import { createRegister } from './features/register.js';
 import { createBulk } from './features/bulk.js';
 import { createAdministration } from './features/administration.js';
 import { createNavigation } from './features/navigation.js';
+import { createOnboarding } from './features/onboarding.js';
 import { printVoucher } from './features/printing.js';
 
 let auth;
@@ -38,6 +39,7 @@ async function api(action, payload = {}) {
 const dashboard = createDashboard();
 const reports = createReports({ api });
 const cashClose = createCashClose({ api });
+const onboarding = createOnboarding({ api });
 
 const authStart = (...args) => navigation.start(...args);
 const paymentRefresh = (...args) => navigation.refresh(...args);
@@ -91,6 +93,7 @@ navigation = createNavigation({
     set: administration.settings,
     audit: administration.audit,
     acct: administration.account,
+    onboarding: onboarding.render,
   },
 });
 

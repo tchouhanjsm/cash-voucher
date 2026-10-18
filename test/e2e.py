@@ -320,7 +320,14 @@ with sync_playwright() as p:
     page.fill('#newPassword', 'Owner#Final2026')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
-    check(page.locator('#nav button').count() == 10, 'owner sees 10 nav items including Cash Close; Account moved to the user menu')
+    check(
+        page.locator('#nav button').count() == 11,
+        'owner sees Onboarding and Cash Close navigation; Account moved to the user menu',
+    )
+    check(
+        page.locator('#main-content h1').inner_text() == 'Get Cash Voucher ready',
+        'owner first login opens the onboarding dashboard',
+    )
     page.click('#userBtn')
     check(
         page.locator('#themeToggle').is_visible()
@@ -346,6 +353,8 @@ with sync_playwright() as p:
         and page.locator('#themeToggle').get_attribute('aria-pressed') == 'false',
         'light theme can be restored and the explicit choice is retained',
     )
+    go_view(page, 'dash')
+    page.wait_for_selector('#view .page-header h1')
     check(
         page.locator('#view .breadcrumbs').count() == 0
         and page.locator('#view .page-header h1').inner_text() == 'Dashboard',
@@ -2304,7 +2313,7 @@ with sync_playwright() as p:
     page.fill('#lEmail', 'owner@test.com')
     page.fill('#lPassword', 'Owner#Final2026')
     page.click('#lBtn')
-    page.wait_for_function("document.querySelectorAll('#nav button').length === 10", timeout=10000)
+    page.wait_for_function("document.querySelectorAll('#nav button').length === 11", timeout=10000)
     page.wait_for_function(
         """async () => {
           const db = await new Promise((resolve, reject) => {

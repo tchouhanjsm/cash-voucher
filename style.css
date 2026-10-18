@@ -2387,3 +2387,144 @@ nav .ic {
     font-size: 10px;
   }
 }
+
+/* Server-backed onboarding workflow */
+.onboarding-page {
+  max-width: 1060px;
+  margin-inline: auto;
+  padding: clamp(16px, 3vw, 30px);
+}
+.onboarding-header {
+  max-width: 760px;
+  margin-bottom: 22px;
+}
+.onboarding-header h1 {
+  font-size: clamp(24px, 3vw, 34px);
+  line-height: 1.15;
+  margin: 8px 0 12px;
+}
+.onboarding-lede {
+  font-size: 16px;
+  color: var(--muted);
+}
+.onboarding-stage {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px 14px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+  background: var(--surface-subtle);
+}
+.onboarding-stage > p {
+  grid-column: 2;
+  margin: 0;
+}
+.onboarding-stage__number {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  font-weight: 700;
+  background: var(--nav-active);
+  color: var(--nav-active-ink);
+}
+.onboarding-stage__title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.onboarding-progress {
+  margin: 22px 0;
+}
+.onboarding-progress p {
+  margin-bottom: 8px;
+}
+.onboarding-progress progress {
+  width: 100%;
+  height: 12px;
+  accent-color: var(--ok);
+}
+.onboarding-steps {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+  gap: 14px;
+}
+.onboarding-step {
+  min-width: 0;
+  border: 1px solid var(--line);
+  background: var(--card);
+  border-radius: 12px;
+  padding: 16px;
+}
+.onboarding-step h2 {
+  margin: 12px 0 8px;
+  line-height: 1.35;
+}
+.onboarding-message {
+  color: var(--muted);
+}
+.onboarding-status {
+  display: inline-flex;
+  align-items: center;
+  min-height: 25px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  font-size: 12px;
+  font-weight: 700;
+}
+.onboarding-status--pass {
+  background: var(--surface-success);
+  border-color: var(--border-success);
+  color: var(--ok);
+}
+.onboarding-status--blocked,
+.onboarding-status--fail {
+  background: var(--surface-danger);
+  border-color: var(--border-danger);
+  color: var(--bad);
+}
+.onboarding-status--pending {
+  background: var(--surface-warning);
+  border-color: var(--border-warning);
+  color: var(--warning-ink);
+}
+.onboarding-evidence {
+  width: 100%;
+  min-height: 88px;
+  resize: vertical;
+}
+.onboarding-help {
+  margin: 10px 0;
+  color: var(--muted);
+}
+.onboarding-help summary {
+  cursor: pointer;
+  font-weight: 650;
+}
+.onboarding-footer {
+  margin-top: 22px;
+  align-items: center;
+}
+.onboarding-gate {
+  flex-basis: 100%;
+  border-top: 1px solid var(--line);
+  padding-top: 12px;
+  color: var(--muted);
+}
+@media (max-width: 560px) {
+  .onboarding-page {
+    padding: 14px;
+  }
+  .onboarding-stage {
+    padding: 12px;
+  }
+  .onboarding-step {
+    padding: 13px;
+  }
+  .onboarding-footer .btn {
+    width: 100%;
+  }
+}

@@ -28,17 +28,35 @@ for (const invalidUrl of [
 }
 
 assert.throws(
-  () => buildWebSite({ rootDir, outDir: rootDir, apiUrl: customerApiUrl }),
+  () =>
+    buildWebSite({
+      rootDir,
+      outDir: rootDir,
+      apiUrl: customerApiUrl,
+      environment: 'production',
+    }),
   /Output must be outside the repository/,
   'build must never remove the repository root',
 );
 assert.throws(
-  () => buildWebSite({ rootDir, outDir: path.dirname(rootDir), apiUrl: customerApiUrl }),
+  () =>
+    buildWebSite({
+      rootDir,
+      outDir: path.dirname(rootDir),
+      apiUrl: customerApiUrl,
+      environment: 'production',
+    }),
   /Output must be outside the repository/,
   'build must never remove the parent directory containing the repository',
 );
 assert.throws(
-  () => buildWebSite({ rootDir, outDir: path.join(rootDir, 'scripts'), apiUrl: customerApiUrl }),
+  () =>
+    buildWebSite({
+      rootDir,
+      outDir: path.join(rootDir, 'scripts'),
+      apiUrl: customerApiUrl,
+      environment: 'production',
+    }),
   /Output must be outside the repository or use the dedicated repository dist/,
   'build must never remove a tracked repository subdirectory',
 );
@@ -46,10 +64,17 @@ assert.throws(
 const temporaryDirectory = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-web-build-'));
 try {
   const outDir = path.join(temporaryDirectory, 'dist');
-  const result = buildWebSite({ rootDir, outDir, apiUrl: customerApiUrl });
+  const result = buildWebSite({
+    rootDir,
+    outDir,
+    apiUrl: customerApiUrl,
+    environment: 'production',
+  });
 
   assert.equal(result.outDir, outDir);
   assert.equal(result.apiUrl, customerApiUrl);
+  assert.equal(result.environment, 'production');
+  assert.equal(result.deploymentId, 'TEST_CUSTOMER_DEPLOYMENT_ID');
   for (const file of [
     'index.html',
     'style.css',
@@ -81,6 +106,14 @@ try {
   assert.ok(headers.includes('https://script.google.com'));
 
   const generatedConfig = fs.readFileSync(path.join(outDir, 'config.js'), 'utf8');
+  assert.ok(
+    generatedConfig.includes('ENVIRONMENT: "production"'),
+    'generated config binds the environment',
+  );
+  assert.ok(
+    generatedConfig.includes('DEPLOYMENT_ID: "TEST_CUSTOMER_DEPLOYMENT_ID"'),
+    'generated config binds deployment identity',
+  );
   assert.ok(
     generatedConfig.includes(customerApiUrl),
     'generated config uses this customer endpoint',

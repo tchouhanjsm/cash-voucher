@@ -18,6 +18,9 @@ const ACTIONS = {
   backupStatus: backupStatus_,
   backupIntegrityReport: backupIntegrityReport_,
   deploymentReadiness: deploymentReadiness_,
+  onboardingState: onboardingState_,
+  onboardingConfirm: onboardingConfirm_,
+  onboardingAdvance: onboardingAdvance_,
   dataQualityReport: dataQualityReport_,
   recordedMovementReport: recordedMovementReport_,
   cashClosePreview: cashClosePreview_,
@@ -40,4 +43,6 @@ const WRITES = {
   createCashClose: 1,
   recordCashCloseCorrection: 1,
   saveSettings: 1,
+  onboardingConfirm: 1,
+  onboardingAdvance: 1,
 };

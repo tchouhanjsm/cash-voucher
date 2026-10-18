@@ -3,6 +3,7 @@
 function doGet() {
   return ContentService.createTextOutput('Cash Vouchers API is running.');
 }
+
 // eslint-disable-next-line no-unused-vars
 function doPost(e) {
   let out;
@@ -28,6 +29,7 @@ function doPost(e) {
     };
     if (!err.userMessage) console.error((err && err.stack) || err);
   }
+
   return ContentService.createTextOutput(JSON.stringify(out)).setMimeType(
     ContentService.MimeType.JSON,
   );
@@ -52,19 +54,25 @@ function route_(req) {
   if (!Object.prototype.hasOwnProperty.call(ACTIONS, req.action)) {
     throw err_('Unknown action.', 'NOT_FOUND');
   }
+
   const fn = ACTIONS[req.action];
+  const execute = function () {
+    const user = auth_(req.token);
+    if (user.mustChange && req.action !== 'changePassword' && req.action !== 'logout') {
+      throw err_('Please change your password first.', 'PASSWORD_CHANGE');
+    }
+    if (typeof enforceOnboardingFinancialGate_ === 'function') {
+      enforceOnboardingFinancialGate_(user, req.action, req);
+    }
+    return fn(user, req);
+  };
 
   if (!Object.prototype.hasOwnProperty.call(WRITES, req.action)) {
-    const user = auth_(req.token);
-    if (user.mustChange && req.action !== 'changePassword' && req.action !== 'logout')
-      throw err_('Please change your password first.', 'PASSWORD_CHANGE');
-    return fn(user, req);
+    return execute();
   }
 
-  return withScriptLock_(function () {
-    const user = auth_(req.token);
-    if (user.mustChange && req.action !== 'changePassword' && req.action !== 'logout')
-      throw err_('Please change your password first.', 'PASSWORD_CHANGE');
-    return fn(user, req);
-  }, 'The service is busy. No changes were made. Please retry shortly.');
+  return withScriptLock_(
+    execute,
+    'The service is busy. No changes were made. Please retry shortly.',
+  );
 }
