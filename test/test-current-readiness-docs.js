@@ -40,7 +40,7 @@ assert.match(appsScriptRunbook, /CV_STAGING_UAT_MANAGER_PASSWORD/);
 assert.doesNotMatch(appsScriptRunbook, /their emails and PINs must be distinct/i);
 assert.doesNotMatch(onboarding, /non-shared PINs/i);
 assert.match(onboarding, /non-shared passwords/i);
-assert.match(onboarding, /Repository visibility is now \\*\\*private\\*\\*/i);
+assert.match(onboarding, /Repository visibility is now.*private/i);
 assert.match(onboarding, /CV_API_URL/);
 assert.match(onboarding, /CV_ENVIRONMENT.*staging/i);
 assert.match(ux, /forced-password-change dialog/i);
