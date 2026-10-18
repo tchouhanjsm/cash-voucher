@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b` (PR #169 merge); post-merge main CI run [39049788835](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed. PR #169's exact pre-merge head also passed CI/quality, Browser E2E and Full Flight Test.  
-Current source phases: Phases 37–39 and customer delivery packaging/handover foundation (PR #166) are merged; PR #169's password-authentication/staging-readiness consolidation is also merged.  
-Current release state: source is prepared for owner-provisioned staging; live staging, customer resources, backup/restore and first-customer acceptance are not verified. See `docs/STAGING-RELEASE-AUDIT.md` and `docs/FINAL-REPOSITORY-AUDIT-2026-10-17.md`.
+Last verified main baseline: `9335018b5b9edf1109839f5f9aa2216e4128fbdc` (PR #173 merge); post-merge main CI [39111329035](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. PR #173's exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed CI, Browser E2E and Full Flight Test.  
+Current source phases: Phases 37–39, customer static packaging/handover (PR #166), password authentication/staging safeguards (PR #169), and server-backed onboarding/release gates (PR #173) are merged.  
+Current release state: source is ready for owner-provisioned staging; staging Google resources, static host/subdomain, protected GitHub Environment, live UAT, backup/restore and first-customer acceptance are not verified. The staging frontend build requires the verified staging `CV_API_URL` and explicit `CV_ENVIRONMENT=staging`. See `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`.
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
