@@ -1,0 +1,1481 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#10182b">
+  <meta name="description" content="A guided, reusable Cash Voucher client onboarding and UAT runbook from domain setup to first login and customer acceptance.">
+  <title>Cash Voucher | Client Launch Runbook</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172238;
+      --muted: #64718a;
+      --paper: #f4f6fb;
+      --surface: #ffffff;
+      --line: #dfe5ef;
+      --navy: #10182b;
+      --navy-soft: #1b2944;
+      --teal: #157d78;
+      --teal-soft: #e2f5f1;
+      --amber: #936313;
+      --amber-soft: #fff3d8;
+      --red: #a63838;
+      --red-soft: #fff0ee;
+      --blue-soft: #edf3ff;
+      --radius: 18px;
+      --shadow: 0 18px 48px rgba(16, 24, 43, .09);
+    }
+
+    * { box-sizing: border-box; }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      margin: 0;
+      background: var(--paper);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      line-height: 1.55;
+    }
+
+    button, a { font: inherit; }
+
+    a { color: #145f81; text-underline-offset: 3px; }
+
+    a:focus-visible, button:focus-visible, [tabindex]:focus-visible {
+      outline: 3px solid #5fd8c4;
+      outline-offset: 3px;
+    }
+
+    .topbar {
+      position: sticky;
+      inset: 0 0 auto;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      min-height: 66px;
+      padding: 12px clamp(16px, 4vw, 44px);
+      color: #f7f9ff;
+      background: rgba(16, 24, 43, .97);
+      border-bottom: 1px solid rgba(255, 255, 255, .1);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 11px;
+      font-weight: 760;
+      letter-spacing: -.02em;
+    }
+
+    .brand-mark {
+      display: grid;
+      width: 36px;
+      height: 36px;
+      place-items: center;
+      border-radius: 11px;
+      color: #0f1d2e;
+      background: #75e0c9;
+      font-size: 19px;
+      font-weight: 900;
+    }
+
+    .brand small {
+      display: block;
+      color: #a8b6ce;
+      font-size: 11px;
+      font-weight: 550;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      min-height: 39px;
+      padding: 8px 14px;
+      border: 1px solid rgba(255, 255, 255, .2);
+      border-radius: 11px;
+      color: #f7f9ff;
+      background: #1b2944;
+      cursor: pointer;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 720;
+    }
+
+    .btn.primary {
+      color: #10252b;
+      background: #75e0c9;
+      border-color: #75e0c9;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 270px minmax(0, 1fr);
+      gap: 24px;
+      width: min(1500px, 100%);
+      margin: 0 auto;
+      padding: 28px clamp(14px, 3vw, 34px) 40px;
+    }
+
+    .rail {
+      align-self: start;
+      position: sticky;
+      top: 88px;
+      padding: 19px 14px;
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      background: var(--surface);
+      box-shadow: 0 8px 24px rgba(16, 24, 43, .04);
+    }
+
+    .rail-kicker {
+      padding: 0 10px 13px;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .nav-list { display: grid; gap: 4px; }
+
+    .nav-step {
+      display: grid;
+      grid-template-columns: 29px minmax(0, 1fr);
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 9px 10px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      color: #536078;
+      background: transparent;
+      cursor: pointer;
+      text-align: left;
+      font-size: 12px;
+      font-weight: 690;
+    }
+
+    .nav-step .num {
+      display: grid;
+      width: 28px;
+      height: 28px;
+      place-items: center;
+      border-radius: 9px;
+      background: #f0f3f8;
+      color: #62708a;
+      font-size: 11px;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .nav-step[aria-current="step"] {
+      color: #0d5e59;
+      border-color: #b9e9df;
+      background: #edfbf7;
+    }
+
+    .nav-step[aria-current="step"] .num {
+      color: #062f2d;
+      background: #75e0c9;
+    }
+
+    .nav-step .nav-label { display: block; }
+    .nav-step .nav-sub { display: block; color: #8b96a9; font-size: 10px; font-weight: 550; }
+
+    .rail-note {
+      margin: 16px 4px 0;
+      padding: 12px;
+      border-radius: 12px;
+      background: #f6f8fc;
+      color: #69758c;
+      font-size: 11px;
+    }
+
+    .rail-note strong { color: var(--ink); }
+
+    .main { min-width: 0; }
+
+    .deck-meta {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      margin: 1px 2px 15px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .progress-wrap {
+      height: 5px;
+      overflow: hidden;
+      flex: 1 1 100%;
+      border-radius: 9px;
+      background: #e0e6f0;
+    }
+
+    .progress-bar {
+      width: 8.333%;
+      height: 100%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, #157d78, #75e0c9);
+      transition: width .2s ease;
+    }
+
+    .slide {
+      display: none;
+      min-height: min(750px, calc(100vh - 180px));
+      padding: clamp(23px, 4vw, 48px);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      animation: appear .18s ease-out;
+    }
+
+    .slide.active { display: block; }
+
+    @keyframes appear {
+      from { opacity: .35; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .hero {
+      position: relative;
+      overflow: hidden;
+      color: #f4f7ff;
+      background:
+        radial-gradient(circle at 90% 11%, rgba(117, 224, 201, .2), transparent 27%),
+        radial-gradient(circle at 82% 78%, rgba(108, 143, 226, .16), transparent 25%),
+        linear-gradient(135deg, #10182b 3%, #1b2944 100%);
+      border-color: #263655;
+    }
+
+    .hero::after {
+      position: absolute;
+      right: -54px;
+      bottom: -140px;
+      width: 340px;
+      height: 340px;
+      border: 1px solid rgba(117, 224, 201, .23);
+      border-radius: 50%;
+      box-shadow: 0 0 0 35px rgba(117, 224, 201, .035), 0 0 0 72px rgba(117, 224, 201, .025);
+      content: "";
+      pointer-events: none;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 18px;
+      color: var(--teal);
+      font-size: 11px;
+      font-weight: 850;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+    }
+
+    .hero .eyebrow { color: #8be8d4; }
+
+    .eyebrow .dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      max-width: 760px;
+      margin-bottom: 19px;
+      font-size: clamp(38px, 5.4vw, 70px);
+      line-height: .99;
+      letter-spacing: -.055em;
+    }
+
+    h2 {
+      max-width: 900px;
+      margin-bottom: 15px;
+      font-size: clamp(29px, 3.2vw, 43px);
+      line-height: 1.05;
+      letter-spacing: -.04em;
+    }
+
+    h3 {
+      margin-bottom: 8px;
+      font-size: 16px;
+      line-height: 1.25;
+      letter-spacing: -.02em;
+    }
+
+    .lead {
+      max-width: 760px;
+      color: #d0d9eb;
+      font-size: clamp(16px, 1.6vw, 19px);
+    }
+
+    .slide:not(.hero) .lead { color: var(--muted); }
+
+    .hero .hero-note {
+      max-width: 620px;
+      margin-top: 24px;
+      color: #b8c7dd;
+      font-size: 13px;
+    }
+
+    .pill-row { display: flex; flex-wrap: wrap; gap: 8px; margin: 23px 0; }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #f8faff;
+      color: #4c5a74;
+      font-size: 11px;
+      font-weight: 760;
+    }
+
+    .hero .pill {
+      color: #deedfa;
+      border-color: rgba(255, 255, 255, .16);
+      background: rgba(255, 255, 255, .07);
+    }
+
+    .slide-heading {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+
+    .step-number {
+      flex-shrink: 0;
+      display: grid;
+      width: 48px;
+      height: 48px;
+      place-items: center;
+      border: 1px solid #bce9df;
+      border-radius: 15px;
+      background: var(--teal-soft);
+      color: #116d66;
+      font-size: 14px;
+      font-weight: 850;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .audience {
+      display: inline-flex;
+      padding: 5px 9px;
+      margin-bottom: 10px;
+      border-radius: 7px;
+      background: var(--blue-soft);
+      color: #425b94;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+
+    .audience.operator { color: #75500e; background: #fff2d4; }
+    .audience.joint { color: #0d6c62; background: var(--teal-soft); }
+
+    .grid-2, .grid-3, .grid-4 {
+      display: grid;
+      gap: 13px;
+      align-items: stretch;
+    }
+
+    .grid-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .grid-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+
+    .card {
+      min-width: 0;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: #fff;
+    }
+
+    .card.tint { background: #f8faff; }
+    .card.teal { background: #effaf7; border-color: #c6ede4; }
+    .card.amber { background: #fff9eb; border-color: #f2dfb4; }
+
+    .card p, .card li { color: #5e6b82; font-size: 13px; }
+    .card p:last-child { margin-bottom: 0; }
+    .card ul, .card ol { margin: 8px 0 0; padding-left: 19px; }
+    .card li + li { margin-top: 6px; }
+
+    .icon-box {
+      display: grid;
+      width: 35px;
+      height: 35px;
+      margin-bottom: 12px;
+      place-items: center;
+      border-radius: 10px;
+      color: #126e67;
+      background: #e2f5f1;
+      font-size: 17px;
+      font-weight: 900;
+    }
+
+    .callout {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin: 17px 0;
+      padding: 15px 16px;
+      border: 1px solid #c6ede4;
+      border-radius: 14px;
+      background: #f0faf7;
+      color: #315c59;
+      font-size: 13px;
+    }
+
+    .callout strong { color: #124d48; }
+    .callout.warning { border-color: #f0d8a5; background: var(--amber-soft); color: #72561f; }
+    .callout.warning strong { color: #60420b; }
+    .callout.danger { border-color: #efc0ba; background: var(--red-soft); color: #833a35; }
+    .callout.danger strong { color: #752824; }
+    .callout .symbol { flex-shrink: 0; font-weight: 900; }
+
+    .checklist { display: grid; gap: 9px; margin: 12px 0 0; padding: 0; list-style: none; }
+
+    .checklist li {
+      display: grid;
+      grid-template-columns: 18px minmax(0, 1fr);
+      gap: 9px;
+      align-items: start;
+      color: #4e5b72;
+      font-size: 13px;
+    }
+
+    .checklist li::before {
+      display: grid;
+      width: 17px;
+      height: 17px;
+      margin-top: 2px;
+      place-items: center;
+      border: 1px solid #a9d9cd;
+      border-radius: 5px;
+      background: #edf9f5;
+      color: #137c71;
+      content: "✓";
+      font-size: 11px;
+      font-weight: 900;
+    }
+
+    .sequence { display: grid; gap: 0; margin-top: 14px; }
+
+    .sequence-item {
+      display: grid;
+      grid-template-columns: 38px minmax(0, 1fr);
+      gap: 12px;
+      padding: 0 0 20px;
+    }
+
+    .sequence-item:last-child { padding-bottom: 0; }
+
+    .sequence-no {
+      display: grid;
+      width: 34px;
+      height: 34px;
+      place-items: center;
+      border: 1px solid #cfe0e9;
+      border-radius: 10px;
+      background: #f1f7fb;
+      color: #365f75;
+      font-size: 12px;
+      font-weight: 850;
+    }
+
+    .sequence-body {
+      padding: 3px 0 14px;
+      border-bottom: 1px solid #e8edf4;
+    }
+
+    .sequence-item:last-child .sequence-body { border-bottom: 0; }
+    .sequence-body p { margin-bottom: 0; color: #5e6b82; font-size: 13px; }
+    .sequence-body ul { margin: 8px 0 0; padding-left: 18px; color: #5e6b82; font-size: 13px; }
+    .sequence-body li + li { margin-top: 5px; }
+
+    code, .code {
+      overflow-wrap: anywhere;
+      padding: 2px 5px;
+      border: 1px solid #e1e7f0;
+      border-radius: 5px;
+      background: #f3f6fa;
+      color: #29415e;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+      font-size: .92em;
+    }
+
+    pre {
+      overflow-x: auto;
+      padding: 15px 17px;
+      border: 1px solid #263b5a;
+      border-radius: 13px;
+      background: #10182b;
+      color: #e1effe;
+      font-size: 12px;
+      line-height: 1.65;
+      white-space: pre-wrap;
+    }
+
+    pre code { padding: 0; border: 0; background: transparent; color: inherit; font-size: inherit; }
+
+    .mini-label {
+      display: block;
+      margin-bottom: 8px;
+      color: #8a95aa;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+      text-align: left;
+    }
+
+    th {
+      padding: 11px 12px;
+      background: #f1f5fa;
+      color: #45536e;
+      font-size: 10px;
+      font-weight: 850;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    td {
+      padding: 11px 12px;
+      border-top: 1px solid #e6ebf3;
+      color: #58657a;
+      vertical-align: top;
+    }
+
+    td strong { color: #22314a; }
+    .status-cell { min-width: 100px; color: #7d899d; }
+    .status-line { display: inline-block; width: 76px; border-bottom: 1px solid #aeb8c9; }
+    .case-id { white-space: nowrap; color: #17746d; font-weight: 850; }
+
+    .gate-list { display: grid; gap: 10px; margin-top: 12px; }
+
+    .gate {
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: start;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: #fff;
+    }
+
+    .gate-n {
+      display: grid;
+      width: 26px;
+      height: 26px;
+      place-items: center;
+      border-radius: 8px;
+      background: #edf5f4;
+      color: #236d65;
+      font-size: 11px;
+      font-weight: 850;
+    }
+
+    .gate p { margin: 3px 0 0; color: #64718a; font-size: 12px; }
+    .gate-status { align-self: center; white-space: nowrap; color: #7f8aa0; font-size: 10px; font-weight: 850; text-transform: uppercase; }
+
+    .split-box {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+    }
+
+    .split-box > div { padding: 18px; }
+    .split-box > div + div { border-left: 1px solid var(--line); }
+    .split-box p, .split-box li { color: #5e6b82; font-size: 13px; }
+    .split-box ul { margin: 8px 0 0; padding-left: 18px; }
+    .split-box li + li { margin-top: 5px; }
+
+    .footer-nav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-top: 16px;
+    }
+
+    .footer-nav .btn {
+      color: #35425b;
+      border-color: #d9e0eb;
+      background: #fff;
+    }
+
+    .footer-nav .btn.next {
+      color: #f6fffc;
+      border-color: #136e67;
+      background: #136e67;
+    }
+
+    .footer-nav .btn:disabled { opacity: .38; cursor: not-allowed; }
+
+    .source-list { display: grid; gap: 10px; margin-top: 14px; }
+    .source-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 15px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      color: #31536f;
+      background: #fbfcff;
+      font-size: 12px;
+      font-weight: 740;
+      text-decoration: none;
+    }
+
+    .source-link span { color: #8490a4; font-size: 11px; font-weight: 550; }
+
+    .small-note { color: #7a879d; font-size: 11px; }
+    .muted { color: var(--muted); }
+    .nowrap { white-space: nowrap; }
+
+    .end-banner {
+      margin-top: 24px;
+      padding: 20px;
+      border-radius: 16px;
+      background: var(--navy);
+      color: #e9effb;
+    }
+
+    .end-banner strong { display: block; margin-bottom: 5px; color: #86e8d5; font-size: 15px; }
+    .end-banner p { margin-bottom: 0; color: #c0cce1; font-size: 13px; }
+
+    @media (max-width: 1100px) {
+      .layout { grid-template-columns: 215px minmax(0, 1fr); gap: 14px; }
+      .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .slide { padding: 26px; }
+    }
+
+    @media (max-width: 760px) {
+      .topbar { align-items: flex-start; }
+      .top-actions .btn { min-height: 34px; padding: 6px 9px; font-size: 11px; }
+      .layout { display: block; padding: 14px; }
+      .rail { position: static; margin-bottom: 13px; padding: 11px; }
+      .rail-kicker, .rail-note { display: none; }
+      .nav-list { display: flex; overflow-x: auto; gap: 5px; padding-bottom: 1px; }
+      .nav-step { flex: 0 0 auto; grid-template-columns: 25px auto; width: auto; padding: 6px; }
+      .nav-step .num { width: 25px; height: 25px; }
+      .nav-step .nav-label { max-width: 100px; white-space: nowrap; }
+      .nav-step .nav-sub { display: none; }
+      .slide { min-height: auto; padding: 22px 18px; border-radius: 18px; }
+      .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+      .split-box { grid-template-columns: 1fr; }
+      .split-box > div + div { border-top: 1px solid var(--line); border-left: 0; }
+      .slide-heading { gap: 10px; }
+      .step-number { width: 39px; height: 39px; }
+      h2 { font-size: 32px; }
+      .deck-meta { font-size: 11px; }
+      .gate { grid-template-columns: 25px minmax(0, 1fr); }
+      .gate-status { grid-column: 2; }
+    }
+
+    @media (max-width: 420px) {
+      .brand { font-size: 13px; }
+      .brand small { font-size: 9px; }
+      .brand-mark { width: 31px; height: 31px; }
+      .topbar { padding: 10px 12px; }
+      .top-actions { max-width: 145px; }
+      .top-actions .btn { white-space: nowrap; }
+      .footer-nav .btn { padding: 8px 11px; font-size: 12px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    }
+
+    @media print {
+      @page { size: A4; margin: 13mm; }
+      body { background: white; color: #172238; font-size: 10pt; }
+      .topbar, .rail, .deck-meta, .footer-nav { display: none !important; }
+      .layout { display: block; width: 100%; margin: 0; padding: 0; }
+      .slide, .slide.active {
+        display: block !important;
+        min-height: 0;
+        margin: 0;
+        padding: 12mm 8mm;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
+        page-break-after: always;
+        break-after: page;
+        animation: none;
+      }
+      .slide:last-of-type { page-break-after: auto; break-after: auto; }
+      .hero { color: #172238; background: #f1f5fa !important; print-color-adjust: exact; }
+      .hero .lead, .hero .hero-note, .hero .pill { color: #283954; }
+      .hero .pill { border-color: #bfcbdc; background: white; }
+      .hero .eyebrow { color: #126e67; }
+      .hero::after { display: none; }
+      .grid-3, .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .card, .callout, .gate, .table-wrap { break-inside: avoid; }
+      a { color: #174a70; text-decoration: underline; }
+      pre { white-space: pre-wrap; overflow: visible; }
+      .source-link { color: #174a70; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark" aria-hidden="true">CV</div>
+      <div>Cash Voucher <small>Client launch runbook</small></div>
+    </div>
+    <div class="top-actions">
+      <button class="btn" type="button" id="printBtn" aria-label="Print or save this runbook as PDF">Print / PDF</button>
+      <button class="btn primary" type="button" id="startBtn">Start guide <span aria-hidden="true">→</span></button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <aside class="rail" aria-label="Runbook sections">
+      <div class="rail-kicker">Launch journey · 12 sections</div>
+      <nav class="nav-list" id="slideNav" aria-label="Choose a runbook section">
+        <button class="nav-step" type="button" data-slide="0"><span class="num">00</span><span><span class="nav-label">Overview</span><span class="nav-sub">Outcome & guardrails</span></span></button>
+        <button class="nav-step" type="button" data-slide="1"><span class="num">01</span><span><span class="nav-label">Prepare</span><span class="nav-sub">People & access</span></span></button>
+        <button class="nav-step" type="button" data-slide="2"><span class="num">02</span><span><span class="nav-label">Subdomain</span><span class="nav-sub">Domain & DNS</span></span></button>
+        <button class="nav-step" type="button" data-slide="3"><span class="num">03</span><span><span class="nav-label">Google backend</span><span class="nav-sub">Sheet & Apps Script</span></span></button>
+        <button class="nav-step" type="button" data-slide="4"><span class="num">04</span><span><span class="nav-label">Publish app</span><span class="nav-sub">Pages & build</span></span></button>
+        <button class="nav-step" type="button" data-slide="5"><span class="num">05</span><span><span class="nav-label">Verify link</span><span class="nav-sub">DNS, HTTPS, API</span></span></button>
+        <button class="nav-step" type="button" data-slide="6"><span class="num">06</span><span><span class="nav-label">First login</span><span class="nav-sub">Owner password</span></span></button>
+        <button class="nav-step" type="button" data-slide="7"><span class="num">07</span><span><span class="nav-label">User access</span><span class="nav-sub">Roles & permissions</span></span></button>
+        <button class="nav-step" type="button" data-slide="8"><span class="num">08</span><span><span class="nav-label">UAT kickoff</span><span class="nav-sub">Scope & safety</span></span></button>
+        <button class="nav-step" type="button" data-slide="9"><span class="num">09</span><span><span class="nav-label">UAT scenarios</span><span class="nav-sub">Test matrix</span></span></button>
+        <button class="nav-step" type="button" data-slide="10"><span class="num">10</span><span><span class="nav-label">Go / no-go</span><span class="nav-sub">Acceptance gates</span></span></button>
+        <button class="nav-step" type="button" data-slide="11"><span class="num">11</span><span><span class="nav-label">Help & references</span><span class="nav-sub">Troubleshooting</span></span></button>
+      </nav>
+      <div class="rail-note"><strong>Important:</strong> this guide is reusable. Replace the example domain with the client's real domain. Never enter passwords or tokens into this page.</div>
+    </aside>
+
+    <main class="main">
+      <div class="deck-meta">
+        <span id="sectionName">Launch overview</span>
+        <span id="slideCounter" aria-live="polite">01 / 12</span>
+        <div class="progress-wrap" role="progressbar" aria-label="Presentation progress" aria-valuemin="1" aria-valuemax="12" aria-valuenow="1" id="progress">
+          <div class="progress-bar" id="progressBar"></div>
+        </div>
+      </div>
+
+      <section class="slide hero active" data-title="Launch overview" aria-labelledby="title-main" tabindex="-1">
+        <div class="eyebrow"><span class="dot"></span> Customer onboarding · standard operating procedure</div>
+        <h1 id="title-main">From a domain name to your first successful login.</h1>
+        <p class="lead">A guided launch for a single-property Cash Voucher workspace—then a structured User Acceptance Test (UAT) before the client relies on it for daily cash operations.</p>
+        <div class="pill-row">
+          <span class="pill">01 · Domain & subdomain</span>
+          <span class="pill">02 · Isolated Google backend</span>
+          <span class="pill">03 · Publish & first login</span>
+          <span class="pill">04 · UAT & acceptance</span>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="icon-box" aria-hidden="true">01</div>
+            <h3>Set up safely</h3>
+            <p>Give this customer their own hostname, Apps Script project, Sheet and receipt/backup folders.</p>
+          </div>
+          <div class="card">
+            <div class="icon-box" aria-hidden="true">02</div>
+            <h3>Prove first access</h3>
+            <p>Open the real HTTPS link, sign in with a temporary password, change it, then sign in again.</p>
+          </div>
+          <div class="card">
+            <div class="icon-box" aria-hidden="true">03</div>
+            <h3>Test before handover</h3>
+            <p>Run agreed UAT cases with synthetic data. A green source test is not a live acceptance sign-off.</p>
+          </div>
+        </div>
+        <p class="hero-note">Use this as a shared walkthrough. “Operator” means the person provisioning and maintaining the service; “Client owner” means the client's nominated administrator. Do not ask the client to access GitHub, Apps Script Editor, raw Sheets or private backup folders.</p>
+      </section>
+
+      <section class="slide" data-title="Prepare people, access and decisions" aria-labelledby="title-prepare" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience joint">Joint preparation</span>
+            <h2 id="title-prepare">01. Prepare before opening any dashboards.</h2>
+            <p class="lead">Collect the non-secret facts first. This prevents setup against the wrong domain, Google account or existing customer's data.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">01</div>
+        </div>
+        <div class="grid-2">
+          <div class="card tint">
+            <h3>Ask the client owner for</h3>
+            <ul>
+              <li>Business/property display name and a short customer code.</li>
+              <li>Domain name (for example, <code>example.com</code>) and who controls its DNS.</li>
+              <li>Nominated owner email and list of initial Manager/Staff users.</li>
+              <li>Who can approve test vouchers and who will sign off UAT.</li>
+              <li>Support contact, working hours and preferred onboarding slot.</li>
+            </ul>
+          </div>
+          <div class="card tint">
+            <h3>The operator must prepare</h3>
+            <ul>
+              <li>Owner-controlled Google account with two-step verification and recovery access.</li>
+              <li>Access to the approved source and static host; only publish the generated <code>dist/</code> folder.</li>
+              <li>A unique customer Sheet, Apps Script deployment, Drive receipt/backup folders and site origin.</li>
+              <li>A private instance register for IDs, build SHA, links and test evidence.</li>
+              <li>A plan for synthetic UAT data, rollback/fallback and support escalation.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout warning">
+          <span class="symbol" aria-hidden="true">!</span>
+          <div><strong>Readiness gate:</strong> the repository currently is public. Before a proprietary customer handover, the operator must confirm an approved source-hosting/privacy arrangement and ensure the hosting integration will still build. Do not give a client source-repository access, and do not assume a later visibility change can recall existing public clones.</div>
+        </div>
+        <div class="callout danger">
+          <span class="symbol" aria-hidden="true">×</span>
+          <div><strong>Never reuse:</strong> the root <code>config.js</code> endpoint, another customer's Sheet, Apps Script project, Drive folders, host origin, owner password or user accounts.</div>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Create the customer subdomain" aria-labelledby="title-subdomain" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience joint">Operator + domain owner</span>
+            <h2 id="title-subdomain">02. Give this customer a dedicated subdomain.</h2>
+            <p class="lead">Example: the client's existing website stays at <code>example.com</code>; the Cash Voucher app lives at <code>vouchers.example.com</code>.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">02</div>
+        </div>
+        <div class="grid-3">
+          <div class="card teal">
+            <div class="icon-box" aria-hidden="true">A</div>
+            <h3>Choose a hostname</h3>
+            <p>Agree the exact subdomain, such as <code>vouchers.example.com</code>. Use a distinct hostname for each customer. Record who owns and renews the domain.</p>
+          </div>
+          <div class="card">
+            <div class="icon-box" aria-hidden="true">B</div>
+            <h3>Create the Pages project first</h3>
+            <p>Operator creates a dedicated Cloudflare Pages project and makes its first successful deployment. Note the project's generated <code>project-name.pages.dev</code> hostname.</p>
+          </div>
+          <div class="card">
+            <div class="icon-box" aria-hidden="true">C</div>
+            <h3>Associate the custom domain</h3>
+            <p>Pages → customer's project → <strong>Custom domains</strong> → <strong>Set up a domain</strong>. Enter the agreed hostname and follow the dashboard's verification flow.</p>
+          </div>
+        </div>
+        <h3 style="margin-top:22px">Then create the DNS record at the authoritative DNS provider</h3>
+        <div class="split-box">
+          <div>
+            <span class="mini-label">If DNS is in cPanel / GoDaddy / another DNS host</span>
+            <ol>
+              <li>Sign in to the system that actually manages the domain's DNS zone.</li>
+              <li>Open DNS Zone Editor / Manage DNS / DNS Records.</li>
+              <li>Add a <strong>CNAME</strong> record. Host/Name: <code>vouchers</code> (or the exact format the provider asks for).</li>
+              <li>Target/Value: the exact <code>project-name.pages.dev</code> target confirmed in Pages. TTL: Auto/Default.</li>
+              <li>Save. Do not add an A record to an invented IP address.</li>
+            </ol>
+          </div>
+          <div>
+            <span class="mini-label">If Cloudflare manages the DNS zone</span>
+            <ol>
+              <li>Complete the Pages custom-domain setup above.</li>
+              <li>Follow the dashboard's DNS instructions; the CNAME may be added automatically.</li>
+              <li>Wait for DNS and certificate activation.</li>
+              <li>Test <code>https://vouchers.example.com</code> in a private browser window.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="callout warning">
+          <span class="symbol" aria-hidden="true">!</span>
+          <div><strong>Beginner pitfall:</strong> a DNS subdomain is not necessarily a folder or website created in cPanel. Change records at the authoritative DNS provider. For a Pages custom domain, associate the domain in Pages before relying on the CNAME. Do not change the root domain's nameservers just to add one subdomain.</div>
+        </div>
+        <p class="small-note">If the client does not own a domain or cannot change DNS, use the dedicated Pages hostname as the agreed client URL until a custom domain is approved. The project/origin must still be unique to that customer.</p>
+      </section>
+
+      <section class="slide" data-title="Provision the Google backend" aria-labelledby="title-backend" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience operator">Operator only · never share credentials</span>
+            <h2 id="title-backend">03. Create the customer's private data backend.</h2>
+            <p class="lead">Every client gets a fresh Google Sheet and a bound Apps Script project. This is a separate task from publishing the website.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">03</div>
+        </div>
+        <div class="sequence">
+          <div class="sequence-item">
+            <div class="sequence-no">1</div>
+            <div class="sequence-body">
+              <h3>Use the operator-controlled Google account</h3>
+              <p>Confirm two-step verification and recovery access. Create a new Sheet named for the customer. From that Sheet choose <strong>Extensions → Apps Script</strong> so the script is bound to the correct spreadsheet.</p>
+            </div>
+          </div>
+          <div class="sequence-item">
+            <div class="sequence-no">2</div>
+            <div class="sequence-body">
+              <h3>Prepare the approved code locally</h3>
+              <p>Use a clean checkout of the approved commit. The repository expects Node 20 from <code>.nvmrc</code>.</p>
+              <pre><code>npm ci
+npm run check
+npm run test:e2e</code></pre>
+            </div>
+          </div>
+          <div class="sequence-item">
+            <div class="sequence-no">3</div>
+            <div class="sequence-body">
+              <h3>Bind Clasp to the new Script ID</h3>
+              <p>Prepare a local, ignored <code>.clasp.json</code> with the actual project ID from Apps Script. Never commit this file or OAuth credentials.</p>
+              <pre><code>{
+  "scriptId": "&lt;confirmed-new-customer-script-id&gt;",
+  "rootDir": "backend",
+  "fileExtension": "gs"
+}</code></pre>
+              <p>Run <code>npx clasp status</code> and <code>npx clasp deployments</code>. Independently confirm the identity before <code>npx clasp push</code>. The backend is split across <code>backend/*.gs</code>; do not upload only a guessed <code>Code.gs</code>.</p>
+            </div>
+          </div>
+          <div class="sequence-item">
+            <div class="sequence-no">4</div>
+            <div class="sequence-body">
+              <h3>Set the temporary owner properties</h3>
+              <p>Apps Script → <strong>Project Settings → Script properties</strong>: set <code>OWNER_EMAIL</code> to the nominated client owner, <code>OWNER_PASSWORD</code> to a privately generated temporary password, and optionally <code>OWNER_NAME</code>. Never paste a password into this runbook, a source file or a public issue.</p>
+            </div>
+          </div>
+          <div class="sequence-item">
+            <div class="sequence-no">5</div>
+            <div class="sequence-body">
+              <h3>Initialize this empty customer project once</h3>
+              <p>Run <code>setup()</code> one time only against the verified new, empty Sheet-bound project. Approve the requested scopes. Confirm expected tabs, private receipt/backup folders and the scheduled backup trigger exist. Confirm every resource belongs to this instance.</p>
+            </div>
+          </div>
+          <div class="sequence-item">
+            <div class="sequence-no">6</div>
+            <div class="sequence-body">
+              <h3>Create a versioned Web App deployment</h3>
+              <p>Apps Script → <strong>Deploy → New deployment → Web app</strong>. Use the intended operator execution identity and the access setting required by the static app (the client shell cannot rely on the visitor's Google sign-in). App login and server-side authorization must still protect every action. Record the exact <code>/exec</code> URL privately.</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout danger">
+          <span class="symbol" aria-hidden="true">×</span>
+          <div><strong>Stop immediately</strong> if any Script, Sheet or Drive ID matches another client or production unexpectedly. Never run <code>setup()</code> as a routine repair on a populated instance. This guide does not authorize a production migration or deployment.</div>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Build and publish the frontend" aria-labelledby="title-publish" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience operator">Operator only</span>
+            <h2 id="title-publish">04. Build a separate frontend for this client.</h2>
+            <p class="lead">The browser stores offline queues and local state by origin. Different URL paths on the same hostname do not provide customer isolation.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">04</div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <span class="mini-label">Cloudflare Pages · one project per customer</span>
+            <h3>Connect the approved source</h3>
+            <ol>
+              <li>In Cloudflare, open <strong>Workers & Pages → Create → Pages</strong>, then connect the approved Git repository.</li>
+              <li>Use the approved production branch, normally <code>main</code>.</li>
+              <li>Set the project to use Node <code>20</code>, matching repository <code>.nvmrc</code>.</li>
+              <li>Ensure the hosting integration can access the source after the repository's privacy cutover. Do not enable client access to the repository.</li>
+            </ol>
+          </div>
+          <div class="card teal">
+            <span class="mini-label">Build configuration</span>
+            <h3>Enter these exact values</h3>
+            <p><strong>Build command</strong></p>
+            <pre><code>npm ci && npm run build:web</code></pre>
+            <p><strong>Build output directory</strong></p>
+            <pre><code>dist</code></pre>
+            <p><strong>Production environment variable</strong></p>
+            <pre><code>CV_API_URL=https://script.google.com/macros/s/&lt;this-customer-deployment-id&gt;/exec</code></pre>
+          </div>
+        </div>
+        <ul class="checklist">
+          <li>Paste the exact HTTPS Web App URL created for this customer. It must match the expected Apps Script <code>/macros/s/.../exec</code> format.</li>
+          <li>Save production build settings and deploy. The builder fails closed if <code>CV_API_URL</code> is missing or malformed.</li>
+          <li>Publish only <code>dist/</code>; never publish the repository root, <code>backend/</code>, tests, docs or developer metadata.</li>
+          <li>Confirm the generated frontend config points to this customer's API, not the existing root <code>config.js</code> endpoint.</li>
+          <li>Check the deployed commit and build logs; keep the source SHA and release date in the private instance register.</li>
+        </ul>
+        <div class="callout warning">
+          <span class="symbol" aria-hidden="true">!</span>
+          <div><strong>Separate is separate:</strong> each customer requires a new Apps Script project/deployment, Sheet, receipt folder, backup folder and distinct static hostname/origin. Do not use one Pages hostname with customer paths or query parameters as a tenant boundary.</div>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Verify DNS, HTTPS and API target" aria-labelledby="title-verify" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience operator">Operator verification</span>
+            <h2 id="title-verify">05. Verify the real link—not just the build status.</h2>
+            <p class="lead">A successful build proves only that files were produced. It does not prove that DNS, security headers or the correct live backend are in use.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">05</div>
+        </div>
+        <div class="grid-2">
+          <div class="card">
+            <h3>Domain and browser check</h3>
+            <ul>
+              <li>Open the agreed <code>https://...</code> client URL on a clean browser/device.</li>
+              <li>Confirm the certificate is valid and there is no DNS, redirect or mixed-content warning.</li>
+              <li>Confirm the Pages dashboard lists the custom domain as active.</li>
+              <li>Check a second network/device if DNS propagation is still in progress.</li>
+            </ul>
+          </div>
+          <div class="card">
+            <h3>Network and security check</h3>
+            <ul>
+              <li>Open browser Developer Tools → Network. Confirm API requests use this customer's Apps Script deployment.</li>
+              <li>Inspect the main document's response headers: Content-Security-Policy including <code>frame-ancestors 'none'</code>, <code>X-Frame-Options: DENY</code>, <code>X-Content-Type-Options: nosniff</code>, Referrer-Policy and Permissions-Policy.</li>
+              <li>Check Console for failed requests, blocked resources and CSP violations.</li>
+              <li>Confirm no private source/backend files are exposed by the host.</li>
+            </ul>
+          </div>
+        </div>
+        <div class="callout danger">
+          <span class="symbol" aria-hidden="true">×</span>
+          <div><strong>No first-login invitation yet</strong> if the app targets the wrong API URL, headers are missing, authentication bypass is possible, or the selected Sheet/deployment identity has not been checked. A generated <code>_headers</code> file alone does not prove the host applied those headers.</div>
+        </div>
+        <div class="card tint">
+          <h3>Record privately before moving on</h3>
+          <p>Customer code · final HTTPS URL · Apps Script project/deployment identity · Sheet and Drive folder identities · deployed source SHA · build/deploy time · evidence link for the header and API checks.</p>
+          <p class="small-note">Record links/IDs in the private operator register only. Never put passwords, OAuth JSON or reusable credentials in the register.</p>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Complete the first owner login" aria-labelledby="title-login" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience joint">Operator + client owner</span>
+            <h2 id="title-login">06. First login: use the actual client URL.</h2>
+            <p class="lead">Do this together during the handover. The account is not ready until the owner replaces the temporary password and confirms a fresh login.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">06</div>
+        </div>
+        <div class="sequence">
+          <div class="sequence-item">
+            <div class="sequence-no">1</div>
+            <div class="sequence-body">
+              <h3>Deliver the access details safely</h3>
+              <p>Operator gives the owner the final HTTPS application URL and registered email address. Send the temporary password through a separate approved channel. Do not put it in this page, email thread, shared spreadsheet or GitHub.</p>
+            </div>
+          </div>
+          <div class="sequence-item">
+            <div class="sequence-no">2</div>
+            <div class="sequence-body">
+              <h3>Open and sign in</h3>
+              <p>Client owner opens the application link, verifies the hostname and enters the registered email plus temporary password. A login prompt is expected; the browser should not need direct access to the underlying Sheet or Apps Script editor.</p>
+            </div>
+          </div>
+          <div class="sequence-item">
+            <div class="sequence-no">3</div>
+            <div class="sequence-body">
+              <h3>Complete the forced password change</h3>
+              <p>Follow the in-app change-password screen and choose a private password between 8 and 128 characters that meets the app's current validation. Do not reuse another staff member's password. The operator must not ask to see or retain the new password.</p>
+            </div>
+          </div>
+          <div class="sequence-item">
+            <div class="sequence-no">4</div>
+            <div class="sequence-body">
+              <h3>Sign out and sign in again</h3>
+              <p>Confirm that the new password works in a fresh sign-in. Verify the expected landing screen loads and the owner can access only owner-authorized functions. Record only pass/fail, date and evidence reference—not the password.</p>
+            </div>
+          </div>
+        </div>
+        <div class="callout">
+          <span class="symbol" aria-hidden="true">✓</span>
+          <div><strong>First-login exit criteria:</strong> owner successfully signs in, completes password change, signs out and back in, reaches the correct customer workspace, and the operator can prove the site is talking to the correct customer backend.</div>
+        </div>
+        <div class="callout warning">
+          <span class="symbol" aria-hidden="true">!</span>
+          <div><strong>Do not work around an error</strong> by changing the root API URL, sharing an administrator account, disabling authentication or granting direct Sheet access. Stop and correct the target/credential setup privately.</div>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Create users and verify roles" aria-labelledby="title-roles" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience joint">Client owner + operator</span>
+            <h2 id="title-roles">07. Create individual users; verify the boundaries.</h2>
+            <p class="lead">Never use a shared staff login. The interface may hide actions, but backend authorization must enforce the same permissions.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">07</div>
+        </div>
+        <div class="grid-3">
+          <div class="card">
+            <div class="icon-box" aria-hidden="true">O</div>
+            <h3>Owner</h3>
+            <p>Manages users and application settings, and can review the owner-only audit log. Keep this access limited to the nominated owner.</p>
+          </div>
+          <div class="card">
+            <div class="icon-box" aria-hidden="true">M</div>
+            <h3>Manager</h3>
+            <p>Handles operational workflows such as viewing property entries, editing/cancelling within policy, approvals and vendor administration.</p>
+          </div>
+          <div class="card">
+            <div class="icon-box" aria-hidden="true">S</div>
+            <h3>Staff / Accountant</h3>
+            <p>Staff access should be limited to the permitted entry/workflow scope. If the Accountant role is enabled, confirm its report-only boundary in the live permission matrix.</p>
+          </div>
+        </div>
+        <ul class="checklist">
+          <li>Create each account with the user's unique email and a separate temporary password; deliver each person's credential privately.</li>
+          <li>Have each user complete their own password change and first sign-in.</li>
+          <li>Test one allowed action and one denied action for every role against the real deployment.</li>
+          <li>Confirm staff cannot manage users/settings, read the owner-only audit log, or perform manager/owner actions through direct requests.</li>
+          <li>Confirm one user cannot access another customer's records or receipt assets. Never test isolation by putting two clients on the same origin.</li>
+        </ul>
+        <div class="callout warning">
+          <span class="symbol" aria-hidden="true">!</span>
+          <div><strong>High-value payment rule:</strong> a new PAYMENT of INR 10,000 or more requires separate approval; the creator cannot approve their own payment. Pending approval must remain outside approved totals and cash close until an authorized second person approves it.</div>
+        </div>
+        <p class="small-note">Use the current product's implemented permissions and approved policy. Do not invent a role or give broader access merely to make a test pass.</p>
+      </section>
+
+      <section class="slide" data-title="Plan the UAT kickoff" aria-labelledby="title-uat-kickoff" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience joint">UAT kickoff · client sign-off required</span>
+            <h2 id="title-uat-kickoff">08. Define UAT before testing business workflows.</h2>
+            <p class="lead">User Acceptance Testing answers: “Can the intended people complete the agreed work, with the right numbers, permissions and recovery behavior?”</p>
+          </div>
+          <div class="step-number" aria-hidden="true">08</div>
+        </div>
+        <div class="grid-2">
+          <div class="card tint">
+            <h3>Agree at the kickoff meeting</h3>
+            <ul>
+              <li>Client/property name, UAT dates and session owners.</li>
+              <li>Named testers for Owner, Manager and Staff roles.</li>
+              <li>Browser, phone/tablet models, printer and connectivity to test.</li>
+              <li>Whether an isolated staging workspace is used; confirm its URL and resource identity.</li>
+              <li>Who records defects, severity, retest evidence and final approval.</li>
+            </ul>
+          </div>
+          <div class="card tint">
+            <h3>Set up safe test data</h3>
+            <ul>
+              <li>Use only synthetic names, vendors, notes, receipts and amounts in staging/UAT.</li>
+              <li>Agree a test prefix such as <code>UAT-CLIENTCODE-</code> in notes/reference fields where supported.</li>
+              <li>Record expected totals before creating vouchers.</li>
+              <li>Mark which test entries will be approved, cancelled and reconciled.</li>
+              <li>Keep a controlled fallback process and preserve test evidence.</li>
+            </ul>
+          </div>
+        </div>
+        <h3 style="margin-top:22px">What counts as a defect?</h3>
+        <div class="grid-3">
+          <div class="card">
+            <h3>Critical / stop</h3>
+            <p>Cross-customer data exposure, unauthorized write/approval, incorrect financial totals, missing/duplicate voucher, lost offline entry or no recoverable backup.</p>
+          </div>
+          <div class="card">
+            <h3>Major</h3>
+            <p>A core workflow, role restriction, report, receipt, or cash-close check cannot be completed and no approved safe workaround exists.</p>
+          </div>
+          <div class="card">
+            <h3>Minor</h3>
+            <p>Non-blocking copy, spacing or usability issue that does not change data, access, amounts or control outcomes. Record an owner and due date.</p>
+          </div>
+        </div>
+        <div class="callout danger">
+          <span class="symbol" aria-hidden="true">×</span>
+          <div><strong>Test in staging, not a live cash book.</strong> Do not create or cancel synthetic vouchers in production merely to satisfy UAT. Do not run <code>setup()</code> on an existing populated Sheet. If a dedicated staging environment is not available, pause transactional UAT and provision one first.</div>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Execute the UAT test matrix" aria-labelledby="title-uat-matrix" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience joint">UAT execution worksheet</span>
+            <h2 id="title-uat-matrix">09. Run each scenario and attach evidence.</h2>
+            <p class="lead">Use one row per scenario. Record actual outcome, evidence reference and defect ID in the private UAT tracker. This presentation itself does not store test results.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">09</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>ID</th><th>Who</th><th>Test / action</th><th>Expected result</th><th>Result / evidence</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="case-id">UAT-01</td><td>Owner</td><td>Temporary-password login → change password → sign out → sign in again.</td><td>Forced change completes; fresh login works; password is not logged or written into evidence.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-02</td><td>All roles</td><td>Sign in, sign out, wrong password and a designated test account lockout check.</td><td>Correct status feedback; no account/session sharing; audit events are reviewed without recording secrets.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-03</td><td>Staff</td><td>Create a synthetic cash PAYMENT below the approval threshold, e.g. INR 2,500.</td><td>Validation is clear; unique voucher number; server confirms save; only allowed records/actions are visible.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-04</td><td>Staff</td><td>Create a synthetic cash RECEIPT and attach a test receipt image if agreed.</td><td>Receipt has its separate series, amount/category/date are correct, file opens for authorized users.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-05</td><td>Manager</td><td>View register, filter by date/category/vendor, open voucher details and export/print.</td><td>Rows, labels, filters and totals match the agreed synthetic fixture; export is readable.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-06</td><td>Staff + Manager</td><td>Create a new synthetic PAYMENT of INR 10,000 in staging.</td><td>Creator cannot self-approve. Pending item stays outside approved totals and cash close; independent manager approval changes state/totals correctly.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-07</td><td>Staff + Owner</td><td>Attempt an action not permitted for the staff role, including a direct request if the test harness supports it.</td><td>Server denies it; hiding a button alone is not considered proof of authorization.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-08</td><td>Manager</td><td>Cancel a tagged test voucher with a reason; inspect the register and audit trail.</td><td>Reason/status are visible, approved totals remain correct and audit history is not silently erased.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-09</td><td>Manager + Owner</td><td>Review Daily Cash Close with agreed synthetic opening balance, receipts, payments and physical count.</td><td>Book balance and variance calculations match a manually checked worksheet; unresolved required approvals block close.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-10</td><td>Staff / Manager</td><td>Import one valid and one invalid small synthetic CSV/TSV fixture.</td><td>Preview/validation is clear; bad rows are reported; successful records are not silently duplicated.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-11</td><td>Device operator</td><td>Go offline, create a tagged test entry, reconnect and watch the queue sync.</td><td>Pending status is visible; after reconnect, exactly one server record exists. Export/recovery path is understood.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-12</td><td>Operator</td><td>Run a backup, inspect the Sheet copy/receipt manifest, restore into separate recovery resources.</td><td>Restored tabs/headers, row counts, voucher counters and receipt mappings reconcile. Never restore over the only copy.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-13</td><td>All users</td><td>Use the intended phone/tablet and desktop; test viewport, keyboard focus, zoom, receipt preview, PWA update.</td><td>Core tasks remain understandable, visible and usable; no keyboard trap or blocking layout failure.</td><td class="status-cell">_____</td></tr>
+              <tr><td class="case-id">UAT-14</td><td>Owner + operator</td><td>Verify target hostname, API target, security headers, role boundaries and customer resource identities.</td><td>Every identifier belongs to this customer; HTTPS and expected response headers are present; no cross-customer access.</td><td class="status-cell">_____</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="callout warning">
+          <span class="symbol" aria-hidden="true">!</span>
+          <div><strong>Evidence examples:</strong> private test tracker row ID, sanitized screenshot, workflow run link, test fixture name or restore-validation note. Do not attach passwords, OAuth JSON, public links to private Drive resources, customer-sensitive records or session tokens.</div>
+        </div>
+        <p class="small-note">Adapt cases to the signed scope. If a feature/role is not enabled for this client, mark it “Out of scope” with the owner's written agreement rather than marking an untested case as passed.</p>
+      </section>
+
+      <section class="slide" data-title="Acceptance gates and sign-off" aria-labelledby="title-gates" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience joint">Release decision</span>
+            <h2 id="title-gates">10. Decide pass, pause or reject with evidence.</h2>
+            <p class="lead">The launch is accepted only when the live checks prove correct isolation, access, financial behavior and recovery. Never use “CI passed” as client sign-off.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">10</div>
+        </div>
+        <div class="gate-list">
+          <div class="gate">
+            <div class="gate-n">1</div>
+            <div><h3>URL and resource identity verified</h3><p>Unique customer hostname, correct HTTPS certificate, correct API/deployment/Sheet/folders, security response headers observed on the live host.</p></div>
+            <div class="gate-status">Pass / Fail</div>
+          </div>
+          <div class="gate">
+            <div class="gate-n">2</div>
+            <div><h3>Login and permissions verified</h3><p>Owner changed the temporary password; fresh login works; each role's allowed and denied actions passed against the real backend.</p></div>
+            <div class="gate-status">Pass / Fail</div>
+          </div>
+          <div class="gate">
+            <div class="gate-n">3</div>
+            <div><h3>Financial flows and reports reconciled</h3><p>Payment/receipt records, numbering, approval thresholds, register/report totals, cancellation reason and cash-close calculations match a manual fixture.</p></div>
+            <div class="gate-status">Pass / Fail</div>
+          </div>
+          <div class="gate">
+            <div class="gate-n">4</div>
+            <div><h3>Backup and restore proven</h3><p>A real snapshot and receipt manifest exist; restoration into a separate recovery destination is witnessed and reconciled. Trigger configuration is checked.</p></div>
+            <div class="gate-status">Pass / Fail</div>
+          </div>
+          <div class="gate">
+            <div class="gate-n">5</div>
+            <div><h3>Client workflow and device checks passed</h3><p>Offline queue/reconnect, recovery, PWA update, printing/export and agreed accessibility/usability checks have evidence for intended devices.</p></div>
+            <div class="gate-status">Pass / Fail</div>
+          </div>
+          <div class="gate">
+            <div class="gate-n">6</div>
+            <div><h3>Open issues accepted explicitly</h3><p>No unresolved critical/major defects unless an authorized owner signs an agreed safe workaround and written follow-up. Record the decision and owner.</p></div>
+            <div class="gate-status">Pass / Fail</div>
+          </div>
+        </div>
+        <div class="callout danger">
+          <span class="symbol" aria-hidden="true">×</span>
+          <div><strong>Immediate stop / no-go:</strong> wrong customer data target; unauthorized access succeeds; missing or duplicate voucher; incorrect approved totals; failed/incomplete backup or restore; a pending offline entry is unaccounted for; an unexplained cash variance; or a critical security/header issue. Preserve evidence and queued data, use the agreed fallback process, and do not continue with real financial records.</div>
+        </div>
+        <div class="split-box">
+          <div>
+            <h3>Client acceptance</h3>
+            <p>Client owner: __________________________</p>
+            <p>Date: _________________________________</p>
+            <p>UAT tracker / sign-off reference: __________</p>
+          </div>
+          <div>
+            <h3>Operator acceptance</h3>
+            <p>Operator: ______________________________</p>
+            <p>Source SHA / release date: _______________</p>
+            <p>Backup + restore evidence: _______________</p>
+          </div>
+        </div>
+        <div class="end-banner">
+          <strong>Only after the gates pass</strong>
+          <p>Send the client quick-start guide, confirm support and billing arrangements, record acceptance privately, and agree when any controlled pilot starts. Keep daily reconciliation and all-device pending-queue checks active during the pilot.</p>
+        </div>
+      </section>
+
+      <section class="slide" data-title="Troubleshooting and canonical guides" aria-labelledby="title-help" tabindex="-1">
+        <div class="slide-heading">
+          <div>
+            <span class="audience">Reference desk</span>
+            <h2 id="title-help">11. Troubleshoot without weakening security.</h2>
+            <p class="lead">Identify the failed layer first. Never fix a setup issue by disabling authentication, reusing another endpoint or giving direct access to the data store.</p>
+          </div>
+          <div class="step-number" aria-hidden="true">11</div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>Symptom</th><th>Check first</th><th>Safe next action</th></tr></thead>
+            <tbody>
+              <tr><td><strong>Subdomain does not load</strong></td><td>Is this the authoritative DNS provider? Is Pages custom domain associated? Is the CNAME target exact?</td><td>Correct the DNS record at its owner; allow propagation and certificate activation. Do not invent an A-record IP.</td></tr>
+              <tr><td><strong>Pages shows an error / 522</strong></td><td>Was the hostname added under Pages → Custom domains before the DNS record? Does the CNAME point at the intended project?</td><td>Complete domain association and follow the platform's current DNS instructions.</td></tr>
+              <tr><td><strong>Build fails</strong></td><td>Node version, build logs, output directory, missing/invalid <code>CV_API_URL</code>.</td><td>Use repository <code>.nvmrc</code> (Node 20), <code>npm ci && npm run build:web</code>, output <code>dist</code> and the exact customer API URL.</td></tr>
+              <tr><td><strong>Login fails</strong></td><td>Correct hostname, owner email, temporary credentials delivered privately, first setup completed.</td><td>Operator checks Script Properties and live target privately; issue a controlled reset if authorized. Never send credentials in an issue or disable login.</td></tr>
+              <tr><td><strong>App loads but saves fail</strong></td><td>Network request target, Apps Script deployment identity/version, authorization response and browser console.</td><td>Correct the customer's build environment/deployment and redeploy through the approved release process.</td></tr>
+              <tr><td><strong>Offline item remains pending</strong></td><td>Current device/browser, queue status and connection. Has a server record actually appeared?</td><td>Keep the device/browser and pending data intact; export recovery data if appropriate. Check for a duplicate before retrying manually.</td></tr>
+              <tr><td><strong>Backup status appears green</strong></td><td>Actual Drive snapshot, receipt manifest, openable copied Sheet, timestamp and contents.</td><td>Perform and document a restore to separate resources. A UI status or structural scan is not restore proof.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <h3 style="margin-top:24px">Canonical documents and official setup references</h3>
+        <div class="source-list">
+          <a class="source-link" href="CUSTOMER-ONBOARDING-RUNBOOK.md" target="_blank" rel="noopener noreferrer">Customer onboarding and production handover <span>Repository runbook ↗</span></a>
+          <a class="source-link" href="APPS-SCRIPT-RELEASE-RUNBOOK.md" target="_blank" rel="noopener noreferrer">Apps Script release, migration and staging <span>Operator release procedure ↗</span></a>
+          <a class="source-link" href="CUSTOMER-QUICK-START-TEMPLATE.md" target="_blank" rel="noopener noreferrer">Customer quick-start template <span>Send after acceptance ↗</span></a>
+          <a class="source-link" href="CUSTOMER-INSTANCE-REGISTER-TEMPLATE.md" target="_blank" rel="noopener noreferrer">Customer instance register template <span>Store privately only ↗</span></a>
+          <a class="source-link" href="https://developers.cloudflare.com/pages/configuration/custom-domains/" target="_blank" rel="noopener noreferrer">Cloudflare Pages custom domains <span>Official guide ↗</span></a>
+          <a class="source-link" href="https://developers.cloudflare.com/pages/get-started/git-integration/" target="_blank" rel="noopener noreferrer">Cloudflare Pages Git integration <span>Official guide ↗</span></a>
+          <a class="source-link" href="https://developers.google.com/apps-script/guides/web" target="_blank" rel="noopener noreferrer">Google Apps Script web app deployment <span>Official guide ↗</span></a>
+        </div>
+        <p class="small-note" style="margin-top:18px">This is an operational guide, not a credential store or proof of a live release. Record completed steps and evidence in the private instance register. The page does not transmit or save UAT results.</p>
+      </section>
+
+      <div class="footer-nav" aria-label="Presentation navigation">
+        <button class="btn" id="prevBtn" type="button" disabled><span aria-hidden="true">←</span> Previous</button>
+        <span class="small-note" id="navHint">Use ← / → keys to move between sections</span>
+        <button class="btn next" id="nextBtn" type="button">Next section <span aria-hidden="true">→</span></button>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const slides = Array.from(document.querySelectorAll('.slide'));
+      const navButtons = Array.from(document.querySelectorAll('.nav-step'));
+      const prevButton = document.getElementById('prevBtn');
+      const nextButton = document.getElementById('nextBtn');
+      const startButton = document.getElementById('startBtn');
+      const printButton = document.getElementById('printBtn');
+      const counter = document.getElementById('slideCounter');
+      const sectionName = document.getElementById('sectionName');
+      const progress = document.getElementById('progress');
+      const progressBar = document.getElementById('progressBar');
+      let current = 0;
+
+      function showSlide(index, moveFocus) {
+        current = Math.max(0, Math.min(slides.length - 1, index));
+
+        slides.forEach(function (slide, slideIndex) {
+          const active = slideIndex === current;
+          slide.classList.toggle('active', active);
+          slide.setAttribute('aria-hidden', active ? 'false' : 'true');
+          if (active) {
+            slide.removeAttribute('inert');
+          } else {
+            slide.setAttribute('inert', '');
+          }
+        });
+
+        navButtons.forEach(function (button, buttonIndex) {
+          if (buttonIndex === current) {
+            button.setAttribute('aria-current', 'step');
+          } else {
+            button.removeAttribute('aria-current');
+          }
+        });
+
+        const number = String(current + 1).padStart(2, '0');
+        counter.textContent = number + ' / ' + String(slides.length).padStart(2, '0');
+        sectionName.textContent = slides[current].dataset.title || 'Runbook section';
+        progress.setAttribute('aria-valuenow', String(current + 1));
+        progressBar.style.width = (((current + 1) / slides.length) * 100) + '%';
+        prevButton.disabled = current === 0;
+        nextButton.disabled = current === slides.length - 1;
+        nextButton.innerHTML = current === slides.length - 1
+          ? 'End of guide <span aria-hidden="true">✓</span>'
+          : 'Next section <span aria-hidden="true">→</span>';
+        startButton.innerHTML = current === 0
+          ? 'Start guide <span aria-hidden="true">→</span>'
+          : 'Restart guide <span aria-hidden="true">↺</span>';
+
+        if (moveFocus) {
+          slides[current].focus({ preventScroll: true });
+        }
+        window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }
+
+      navButtons.forEach(function (button) {
+        button.addEventListener('click', function () {
+          showSlide(Number(button.dataset.slide), true);
+        });
+      });
+
+      prevButton.addEventListener('click', function () {
+        showSlide(current - 1, true);
+      });
+
+      nextButton.addEventListener('click', function () {
+        showSlide(Math.min(current + 1, slides.length - 1), true);
+      });
+
+      startButton.addEventListener('click', function () {
+        showSlide(current === 0 ? 1 : 0, true);
+      });
+
+      printButton.addEventListener('click', function () {
+        window.print();
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.altKey || event.ctrlKey || event.metaKey) {
+          return;
+        }
+        const target = event.target;
+        if (target && /INPUT|TEXTAREA|SELECT/.test(target.tagName)) {
+          return;
+        }
+        if (event.key === 'ArrowRight' && current < slides.length - 1) {
+          event.preventDefault();
+          showSlide(current + 1, false);
+        } else if (event.key === 'ArrowLeft' && current > 0) {
+          event.preventDefault();
+          showSlide(current - 1, false);
+        } else if (event.key === 'Home') {
+          event.preventDefault();
+          showSlide(0, false);
+        } else if (event.key === 'End') {
+          event.preventDefault();
+          showSlide(slides.length - 1, false);
+        }
+      });
+
+      showSlide(0, false);
+    })();
+  </script>
+</body>
+</html>
