@@ -81,6 +81,7 @@ Do not publish the repository root for a customer site. The repository contains 
    ```
 
    For an owner-approved production build, use the independently verified production `CV_API_URL` and `CV_ENVIRONMENT=production`. Never put a client's endpoint or credentials into the shared root configuration.
+
 4. Inspect `dist/` before upload. It should contain the generated application assets and instance configuration, but not `backend/`, `docs/`, `scripts/`, `test/`, Clasp configuration, or repository metadata.
 5. In cPanel, upload only the **contents** of `dist/` to the intended subdomain document root. Do not upload the repository root, and do not delete or overwrite the other environment's files.
 6. Verify the published `config.js` uses the expected endpoint/environment. Inspect the actual HTML response headers and browser Console/Network. The generated `.htaccess` is not proof that Apache applied the CSP, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, referrer and permissions policies. Apache must allow `mod_headers` and overrides; configure the host explicitly if the expected headers are absent.
