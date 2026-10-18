@@ -94,6 +94,7 @@ navigation = createNavigation({
     audit: administration.audit,
     acct: administration.account,
     onboarding: onboarding.render,
+    support: () => navigation.renderSupport(),
   },
 });
 
