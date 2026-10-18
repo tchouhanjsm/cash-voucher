@@ -35,6 +35,8 @@ The existence of code and green mock/browser tests does not prove the real prope
 
 ## Customer instance provisioning
 
+New customers receive their backend as a copy of a blank master template Sheet; see `docs/MASTER-TEMPLATE-RUNBOOK.md` and `npm run build:template`.
+
 Cash Voucher is a single-property application, not a shared multi-tenant database. Every paying customer must receive a distinct Apps Script project/Web App deployment, a dedicated Sheet, private receipt/backup folders, and a static site on its own origin. Do not share one instance or rely on different paths/query strings on the same site to isolate customers: the offline IndexedDB outbox and local storage are origin-wide.
 
 Use the full [Customer Onboarding Runbook](docs/CUSTOMER-ONBOARDING-RUNBOOK.md), [Customer Quick Start Template](docs/CUSTOMER-QUICK-START-TEMPLATE.md), and [Customer Instance Register Template](docs/CUSTOMER-INSTANCE-REGISTER-TEMPLATE.md). The completed register must remain private and outside this repository.
