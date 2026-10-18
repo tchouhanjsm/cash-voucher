@@ -26,6 +26,7 @@ const ACTIONS = {
   cashClosePreview: cashClosePreview_,
   createCashClose: createCashClose_,
   recordCashCloseCorrection: recordCashCloseCorrection_,
+  supportSubmit: supportSubmit_,
   logout: logout_,
 };
 const WRITES = {
