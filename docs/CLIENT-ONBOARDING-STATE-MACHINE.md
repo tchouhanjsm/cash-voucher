@@ -14,9 +14,9 @@ A customer build requires `CV_API_URL` and `CV_ENVIRONMENT`; it derives `DEPLOYM
 
 ## Installation setup preflight
 
-The one-time Apps Script `setup()` operation is separate from the in-app onboarding state machine. Before its first write, the operator must verify the target spreadsheet, validate initial Owner credentials when the Users sheet is empty, and inspect any existing Users header/rows. The script must fail closed on an unexpected header, data rows without a `UserID`, or incomplete user rows. Do not use `setup()` as a schema migration tool.
+The one-time Apps Script `setup()` operation is separate from the in-app onboarding state machine. Before its first write, the operator must verify the target spreadsheet, validate initial Owner credentials for a genuinely new instance, and inspect every existing application tab/header/row. A completely initialized instance is a read-only no-op; partial app tabs, setup markers without tabs, malformed/legacy headers, rows without a `UserID`, incomplete/invalid account rows, or no active Owner fail closed. Do not use `setup()` as a schema migration or account-recovery tool.
 
-A failed preflight should not initialize tabs, default settings, folders, triggers, or an inferred `SS_ID`. Failures after initialization writes begin may leave partial resources; record what exists and use a reviewed recovery procedure. Never retry blindly or claim a failed run rolled back automatically.
+A rejected preflight should not initialize tabs, default settings, folders, triggers, or an inferred `SS_ID`. Failures after initialization writes begin may leave partial resources; record what exists and use a reviewed recovery procedure. Never retry blindly or claim a failed run rolled back automatically.
 
 ## Staging
 
