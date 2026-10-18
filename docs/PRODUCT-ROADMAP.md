@@ -109,7 +109,7 @@ The detailed historical review register follows. Its PR-by-PR notes are retained
 
 **PR #91 — Register/report malformed-data resilience:** target the concrete client failure modes where malformed bootstrap rows or non-string vendor/note fields can break register search, bootstrap's local vendor-cache projection can abort refresh, receipt metadata can break receipt access, or an invalid report `items` envelope can crash rendering. The implementation keeps these as client-boundary safeguards with visible recovery feedback; mock-backed tests do not prove live API/Sheet data integrity or close the complete sink audit. No schema, authorization, cash-close or deployment change is approved by this work.
 
-The repository is public. This review did not perform a general Git object/secret scan and cannot certify that all past commits are clean. The cited old paths returned no path-history records in this repository. A history purge could disrupt consumers and requires a deliberate owner-approved migration; no force push or history rewrite is part of Phase 22.
+The repository is now private. This review did not perform a general Git object/secret scan and cannot certify that all historical commits are clean. Public repository copies made before the visibility change cannot be recalled. A history purge could disrupt consumers and requires a deliberate owner-approved migration; no force push or history rewrite is part of this handoff.
 
 ## 2. What the owner can rely on—and what still needs proof
 
