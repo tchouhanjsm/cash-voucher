@@ -6,6 +6,7 @@
 const CFG = {
   TZ: 'Asia/Kolkata',
   SESSION_TTL: 21600, // 6 h
+  SUPPORT_MAX_PER_HOUR: 5,
   MAX_FAILS: 5,
   LOCK_SECONDS: 900, // 15 min
   MAX_BULK: 500,
