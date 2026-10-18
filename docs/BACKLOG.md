@@ -1,6 +1,6 @@
 # Backlog
 
-**Current main baseline (17 October 2026):** `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`, PR #169 merged. Post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed; CI, Browser E2E and Full Flight Test passed on the PR's exact pre-merge head. Source changes are not live staging or customer acceptance evidence.
+**Current main baseline (18 October 2026):** `9335018b5b9edf1109839f5f9aa2216e4128fbdc`, PR #173 merged. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787); post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. These are source/mock results; live staging and customer acceptance remain unverified.
 
 ## Current P0/P1/P2 queue
 
@@ -14,6 +14,8 @@
 - **P2 — product decisions after pilot:** get accountant-approved mapping before claiming Tally/Zoho/destination import compatibility; decide whether denomination-level cash counting adds value; set latency/usability targets from measured evidence.
 
 ## Recently completed source milestones
+
+2026-10-18 | DONE | Server-backed customer onboarding and release gates | Per-environment server state, owner-only ordered confirmations, identity checks and centralized financial-write gates | [PR #173](https://github.com/tchouhanjsm/cash-voucher/pull/173) merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`; exact tested head passed CI, Browser E2E and Full Flight Test; post-merge main CI passed. Live resource provisioning/UAT remain open.
 
 2026-10-17 | DONE | Password authentication, audit and staging-readiness consolidation | PR #169 merged at `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`; CI passed on exact merge SHA; PR exact head CI/Browser E2E/Full Flight Test passed. Live staging/customer release remains blocked by the operational queue above.
 
@@ -50,7 +52,7 @@
 
 2026-10-17 | DONE | Customer delivery packaging and handover foundation | Customer-specific static build via `CV_API_URL`, generated `dist/` and Cloudflare Pages security headers; onboarding and backup/restore handover runbooks | [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166) merged at `4a759b7513a925aee796949d8f6e79085f096314`; CI, Browser E2E (947) and Full Flight Test (285 backend + 947 browser) passed on exact tested head. Live staging/customer resources remain unprovisioned.
 
-## Active queue — reviewed 17 October 2026
+## Active queue — reviewed 18 October 2026
 
 2026-10-17 | P0 | Staging/UAT provisioning | Create dedicated staging Apps Script/Sheet/receipt/backup resources, first versioned deployment, protected GitHub `staging` Environment and isolated credentials; run the guarded workflow | Owner action required; see `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md` and `docs/STAGING-RELEASE-AUDIT.md`
 
