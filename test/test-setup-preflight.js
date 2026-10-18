@@ -160,7 +160,18 @@ function assertPreflightDidNotInitialize(g, expectedSheetNames = []) {
   g.props.OWNER_PASSWORD = 'Unique#TempPass2026';
   g.sheets.Users = seededUsersSheet([
     USER_HEADERS,
-    ['user-1', 'Current Owner', 'owner@test.com', 'owner', true, 'salt', 'hash', true, '2026-10-18', ''],
+    [
+      'user-1',
+      'Current Owner',
+      'owner@test.com',
+      'owner',
+      true,
+      'salt',
+      'hash',
+      true,
+      '2026-10-18',
+      '',
+    ],
   ]);
   const before = { ...g.props };
   assert.throws(() => g.setup(), /partial application schema/i);
@@ -178,7 +189,8 @@ function assertPreflightDidNotInitialize(g, expectedSheetNames = []) {
   const before = { ...g.props };
   assert.throws(() => g.setup(), /partial initialization/i);
   assert.deepEqual(g.props, before);
-  assertPreflightDidNotInitialize(g);
+  assert.deepEqual(Object.keys(g.sheets), []);
+  assert.equal(g.triggerCount(), 0);
 }
 
 // A partial app schema with a pre-existing malformed Vouchers tab fails before other writes.
