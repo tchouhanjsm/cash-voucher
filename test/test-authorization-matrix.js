@@ -205,6 +205,11 @@ const permissionCases = [
   { action: 'rejectVoucher', allowed: ['manager', 'owner'], payload: { id: 'missing-voucher' } },
   { action: 'saveVendor', allowed: ['manager', 'owner'], payload: {} },
   { action: 'toggleVendor', allowed: ['manager', 'owner'], payload: { id: 'missing-vendor' } },
+  {
+    action: 'reportIssue',
+    allowed: ['staff', 'manager', 'owner', 'accountant'],
+    payload: {},
+  },
   { action: 'listUsers', allowed: ['owner'], payload: {} },
   { action: 'saveUser', allowed: ['owner'], payload: {} },
   { action: 'resetPassword', allowed: ['owner'], payload: {} },
