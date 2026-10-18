@@ -29,12 +29,12 @@ assert.doesNotMatch(
   project,
   /temporary PIN is removed|PIN\/session changes rotate|current-PIN attempts|Phase 22 regression batch/i,
 );
-assert.match(roadmap, /^Last verified main baseline: `8b14adc72c146589149a33d793ca9e55af5da13a`/m);
+assert.match(roadmap, /^Last observed main baseline for this follow-up: `8b14adc72c146589149a33d793ca9e55af5da13a`/m);
 assert.match(roadmap, /PR #169/);
 assert.match(release, /Verified main baseline.*8b14adc72c146589149a33d793ca9e55af5da13a/);
 assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
-assert.match(staging, /Verified main baseline.*8b14adc72c146589149a33d793ca9e55af5da13a/);
+assert.match(staging, /Main baseline observed before this follow-up.*8b14adc72c146589149a33d793ca9e55af5da13a/);
 assert.match(staging, /CV_STAGING_UAT_OWNER_PASSWORD/);
 assert.match(appsScriptRunbook, /CV_STAGING_UAT_MANAGER_PASSWORD/);\nassert.match(appsScriptRunbook, /Setup preflight and safe recovery/);\nassert.match(staging, /STAGING-ONLY/);\nassert.match(onboarding, /If setup fails after writes begin/);
 assert.doesNotMatch(appsScriptRunbook, /their emails and PINs must be distinct/i);
