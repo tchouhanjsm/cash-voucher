@@ -2,10 +2,14 @@
 
 Updated: 18 October 2026  
 Repository: `tchouhanjsm/cash-voucher`  
-Verified `main` SHA: `df641e06088910281e0940450bb91b5b82e6d6dc`  
-Current work branch: `docs/final-release-handoff-20261018`  
-Current work: final release handoff after PR #175; live staging provisioning and customer acceptance remain pending.  
-Owner authority: the repository owner retains approval to merge, provision Google resources, perform manual UAT and restore drills, and deploy. PR #173 is merged; no Apps Script or website deployment or production mutation was performed.
+Base `main` SHA for this follow-up: `8b14adc72c146589149a33d793ca9e55af5da13a` (PR #180 merge)  
+Current work branch: `fix/staging-setup-preflight-20261018`  
+Current work: setup preflight hardening, regression tests, staging login checklist, and operator/client runbook alignment. Branch remains unmerged; live setup, deployment, login, UAT and customer acceptance remain pending.  
+Owner authority: the repository owner retains approval to merge, initialize Google resources, create/update a Web App deployment, publish frontend files, perform UAT/restore drills and deploy production. This source batch makes no Google-resource or hosting changes.
+
+## This staging setup follow-up
+
+The base `8b14adc72c146589149a33d793ca9e55af5da13a` revision is the PR #180 merge observed before this follow-up. The operator-provided local test log after replacing `getDisplayValues()` with `getValues()` shows the listed `npm run check` suites completing, backend tests reporting 289 checks, and Browser E2E reporting 951 checks passed. This is not GitHub CI evidence for the current branch and is not live Google/hosting proof. Confirm the exact branch head and required CI before merge. `setup()`, `clasp push`, versioned deployment, frontend publication and production changes remain separately authorized operations.
 
 ## Verified source state
 
