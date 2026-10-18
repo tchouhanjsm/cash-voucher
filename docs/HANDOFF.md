@@ -17,7 +17,7 @@ Owner authority: the repository owner retains approval to merge, provision Googl
 
 ## Product and release boundary
 
-Cash Voucher remains a single-property static PWA backed by Google Apps Script, Sheets and Drive. Each staging/customer instance needs its own Script/Web App deployment, Sheet, receipt/backup folders and distinct static origin. The customer build command is `npm run build:web`; set the verified instance URL through `CV_API_URL` and explicitly set `CV_ENVIRONMENT=staging` or `production`. Publish only `dist/`.
+Cash Voucher remains a single-property static PWA backed by Google Apps Script, Sheets and Drive. Each staging/customer instance needs its own Script/Web App deployment, Sheet, receipt/backup folders and distinct static origin. The customer build command is `npm run build:web`; set the verified instance URL through `CV_API_URL` and explicitly set `CV_ENVIRONMENT=staging` or `production`. Publish only `dist/`, which emits `_headers` for Cloudflare Pages and `.htaccess` for Apache; verify the live HTTP response headers.
 
 PR #166 prepares packaging and instructions; it did **not** provision a staging/customer Google project, GitHub staging Environment, Cloudflare Pages project, real URL, account or credentials. The repository is still public. Live target identity, roles/receipt access, real scheduled backup, isolated restore, real-device/offline recovery, human accessibility checks, service capacity and the controlled pilot remain unverified.
 
