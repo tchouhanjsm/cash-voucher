@@ -64,7 +64,7 @@ npm run build:web
 
 For an owner-approved production build, use that customer's independently verified endpoint and set `CV_ENVIRONMENT='production'` in a separate build. The build requires both variables, validates the Apps Script `/exec` URL and emits the corresponding environment/deployment identity in generated `dist/config.js`.
 
-The command creates `dist/` containing only the static app shell, styles, frontend modules, icons, manifest, service worker, generated per-instance `config.js` and Cloudflare Pages `_headers` security-header file. It excludes the Apps Script backend, source docs, scripts and tests. The endpoint is not a password; the backend must authenticate every action.
+The command creates `dist/` containing only the static app shell, styles, frontend modules, icons, manifest, service worker, generated per-instance `config.js`, Cloudflare Pages `_headers` and Apache `.htaccess` security-header files. It excludes the Apps Script backend, source docs, scripts and tests. The endpoint is not a password; the backend must authenticate every action.
 
 Publish **only `dist/`** from the static host. Configure the build command as `npm ci && npm run build:web`, output directory as `dist`, and set both `CV_API_URL` and `CV_ENVIRONMENT` separately for each instance. Use a staging origin distinct from production so browser offline queues and local login state are not shared. Do not publish the repository root or reuse the existing root GitHub Pages origin as an isolation boundary. Cloudflare Pages consumes `_headers`; Apache can use generated `.htaccess` when `mod_headers` and overrides are enabled. Verify actual response headers and configure equivalent host-level settings if needed.
 
