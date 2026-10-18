@@ -29,12 +29,12 @@ assert.doesNotMatch(
   project,
   /temporary PIN is removed|PIN\/session changes rotate|current-PIN attempts|Phase 22 regression batch/i,
 );
-assert.match(roadmap, /^Last verified main baseline: `9335018b5b9edf1109839f5f9aa2216e4128fbdc`/m);
+assert.match(roadmap, /^Last verified main baseline: `449f47d994be3a918f883abc2ab7023043e4cc1b`/m);
 assert.match(roadmap, /PR #169/);
-assert.match(release, /Verified main baseline.*9335018b5b9edf1109839f5f9aa2216e4128fbdc/);
+assert.match(release, /Verified main baseline.*449f47d994be3a918f883abc2ab7023043e4cc1b/);
 assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
-assert.match(staging, /Verified main baseline.*9335018b5b9edf1109839f5f9aa2216e4128fbdc/);
+assert.match(staging, /Verified main baseline.*449f47d994be3a918f883abc2ab7023043e4cc1b/);
 assert.match(staging, /CV_STAGING_UAT_OWNER_PASSWORD/);
 assert.match(appsScriptRunbook, /CV_STAGING_UAT_MANAGER_PASSWORD/);
 assert.doesNotMatch(appsScriptRunbook, /their emails and PINs must be distinct/i);
