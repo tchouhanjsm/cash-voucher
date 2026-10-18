@@ -22,6 +22,7 @@ function create(options = {}) {
     files = {},
     faults = { failNextAuditWrite: false, failNextAuditMarkerWrite: false },
     auditDiagnostics = [],
+    supportEmails = [],
     lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false, afterAcquire: null },
     scriptTriggers = [];
   const mockConsole = Object.create(console);
@@ -123,6 +124,9 @@ function create(options = {}) {
         },
         deleteProperty: (k) => delete propsStore[k],
       }),
+    },
+    MailApp: {
+      sendEmail: (message) => supportEmails.push({ ...message }),
     },
     CacheService: {
       getScriptCache: () => ({
@@ -230,6 +234,7 @@ function create(options = {}) {
       faults.failNextAuditMarkerWrite = true;
     },
     auditDiagnostics,
+    supportEmails,
     registeredActions: () => Object.keys(ctx.__api.ACTIONS),
     writeActions: () => Object.keys(ctx.__api.WRITES),
     permissionMap: () => JSON.parse(JSON.stringify(ctx.__api.PERMS)),
