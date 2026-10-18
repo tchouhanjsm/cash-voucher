@@ -2,6 +2,10 @@
 
 **Purpose:** release the reviewed backend source intentionally without confusing Git merge, source upload, Web App deployment, and production verification.
 
+## Customer support email configuration
+
+For the authenticated in-app support form, set Script Property `SUPPORT_EMAIL` in each customer Apps Script project to the operator-owned support inbox. The recipient is selected server-side; never hardcode it in frontend assets or accept a client-selected recipient. A reviewed backend push and Web App version update are required. In a non-production project, verify one message arrives with the correct instance/environment/topic, then verify the per-user cap (5/hour) and global cap (60/hour). Authorize MailApp when Google requests the scope. Configure each client instance independently.
+
 ## Current release boundary
 
 **Verified source baseline:** main SHA `9335018b5b9edf1109839f5f9aa2216e4128fbdc` (PR #173 merge); [post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. PR #173's exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787).
