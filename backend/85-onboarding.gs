@@ -355,29 +355,28 @@ function onboardingVisibleState_(user, environment) {
     const automatic = !ONBOARDING_MANUAL_STEPS.has(id);
     const record = state.confirmations[id] || null;
     const check = checks[id];
-    const status = automatic
-      ? check
-        ? check.status
-        : 'blocked'
-      : record && record.status === 'pass'
-        ? 'pass'
-        : record && record.status === 'fail'
-          ? 'fail'
-          : 'pending';
+    let status;
+    let message;
+    if (automatic) {
+      status = check ? check.status : 'blocked';
+      message = check ? check.message : 'No reliable automated check is available.';
+    } else if (record && record.status === 'pass') {
+      status = 'pass';
+      message =
+        'Owner confirmation is saved. This is not automated proof of a device test or successful restore.';
+    } else if (record && record.status === 'fail') {
+      status = 'fail';
+      message = 'Owner marked this test failed. Resolve it and record fresh evidence.';
+    } else {
+      status = 'pending';
+      message = 'Run this test, then record an evidence note (12–500 characters).';
+    }
 
     return {
       id: id,
       automatic: automatic,
       status: status,
-      message: automatic
-        ? check
-          ? check.message
-          : 'No reliable automated check is available.'
-        : record && record.status === 'pass'
-          ? 'Owner confirmation is saved. This is not automated proof of a device test or successful restore.'
-          : record && record.status === 'fail'
-            ? 'Owner marked this test failed. Resolve it and record fresh evidence.'
-            : 'Run this test, then record an evidence note (12–500 characters).',
+      message: message,
       evidence: record ? record.evidence : '',
       actorEmail: record ? record.actorEmail : '',
       completedAt: record ? record.completedAt : '',
@@ -504,7 +503,12 @@ function onboardingConfirm_(user, req) {
   latest.updatedAt = now;
   if (!latest.initializedAt) latest.initializedAt = now;
   props_().setProperty(onboardingStateKey_(environment), JSON.stringify(latest));
-  audit_({ email: user.email }, 'ONBOARDING_CONFIRM', stepId, status + ': ' + evidence.slice(0, 240));
+  audit_(
+    { email: user.email },
+    'ONBOARDING_CONFIRM',
+    stepId,
+    status + ': ' + evidence.slice(0, 240),
+  );
   return onboardingVisibleState_(user, environment);
 }
 
@@ -519,7 +523,10 @@ function onboardingAdvance_(user, req) {
   const state = onboardingReadState_(environment);
   const visible = onboardingVisibleState_(user, environment);
   if (!visible.stageReady) {
-    throw err_('This stage still has blockers. Complete every requirement before advancing.', 'ONBOARDING_BLOCKED');
+    throw err_(
+      'This stage still has blockers. Complete every requirement before advancing.',
+      'ONBOARDING_BLOCKED',
+    );
   }
 
   if (state.stage === 'preflight') {
@@ -532,7 +539,12 @@ function onboardingAdvance_(user, req) {
 
   state.updatedAt = nowIso_();
   props_().setProperty(onboardingStateKey_(environment), JSON.stringify(state));
-  audit_({ email: user.email }, 'ONBOARDING_ADVANCE', environment, 'Stage advanced to ' + state.stage);
+  audit_(
+    { email: user.email },
+    'ONBOARDING_ADVANCE',
+    environment,
+    'Stage advanced to ' + state.stage,
+  );
   return onboardingVisibleState_(user, environment);
 }
 
@@ -552,7 +564,10 @@ function enforceOnboardingFinancialGate_(user, action, req) {
   }
 
   if (state.stage !== 'complete') {
-    throw err_('Production financial writes remain blocked until final owner production acceptance.', 'ONBOARDING_GATE');
+    throw err_(
+      'Production financial writes remain blocked until final owner production acceptance.',
+      'ONBOARDING_GATE',
+    );
   }
 
   const visible = onboardingVisibleState_(user, 'production');

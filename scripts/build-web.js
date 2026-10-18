@@ -53,9 +53,7 @@ function buildWebSite(options = {}) {
   const rootDir = path.resolve(options.rootDir || path.join(__dirname, '..'));
   const outDir = path.resolve(options.outDir || path.join(rootDir, 'dist'));
   const apiUrl = validateApiUrl(options.apiUrl ?? process.env.CV_API_URL);
-  const environment = String(
-    options.environment ?? process.env.CV_ENVIRONMENT ?? '',
-  )
+  const environment = String(options.environment ?? process.env.CV_ENVIRONMENT ?? '')
     .trim()
     .toLowerCase();
   if (!['staging', 'production'].includes(environment)) {

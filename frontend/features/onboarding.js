@@ -16,7 +16,8 @@ const STAGES = {
   productionAcceptance: {
     number: '03',
     title: 'Production acceptance',
-    description: 'Verify production separately and record operator evidence before enabling financial writes.',
+    description:
+      'Verify production separately and record operator evidence before enabling financial writes.',
   },
   complete: {
     number: '✓',
