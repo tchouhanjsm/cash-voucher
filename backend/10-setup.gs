@@ -146,13 +146,9 @@ function setupPreflight_(p) {
     valuesByName[name] = rows;
   });
 
-  if (existingNames.length !== names.length) {
+  if (!valuesByName.Users) {
     throw new Error(
-      'A partial application schema was found (' +
-        existingNames.length +
-        ' of ' +
-        names.length +
-        ' expected tabs). No setup changes were made; inspect existing tabs, settings, folders and triggers before a reviewed recovery.',
+      'A partial application schema was found without a Users tab. No setup changes were made; inspect existing tabs, settings, folders and triggers before a reviewed recovery.',
     );
   }
 
@@ -207,6 +203,16 @@ function setupPreflight_(p) {
       'The existing application has no active Owner account. No setup changes were made; recover Owner access through the reviewed account-recovery procedure.',
     );
   }
+  if (existingNames.length !== names.length) {
+    throw new Error(
+      'A partial application schema was found (' +
+        existingNames.length +
+        ' of ' +
+        names.length +
+        ' expected tabs). No setup changes were made; inspect existing tabs, settings, folders and triggers before a reviewed recovery.',
+    );
+  }
+
 
   if (!configuredSsId) {
     throw new Error(
