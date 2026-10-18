@@ -126,7 +126,9 @@ function onboardingRequestIdentity_(req) {
   if (
     !env.valid ||
     !req ||
-    String(req.environment || '').trim().toLowerCase() !== env.name
+    String(req.environment || '')
+      .trim()
+      .toLowerCase() !== env.name
   ) {
     throw err_(
       'Configured server environment does not match the client environment. Verify the customer build configuration.',
@@ -138,16 +140,16 @@ function onboardingRequestIdentity_(req) {
   const suppliedDeploymentId = String(req.deploymentId || '').trim();
   const matched = Boolean(
     target.expectedScriptId &&
-      target.scriptId === target.expectedScriptId &&
-      target.expectedSpreadsheetId &&
-      target.spreadsheetId === target.expectedSpreadsheetId &&
-      target.expectedDeploymentId &&
-      target.deploymentId === target.expectedDeploymentId &&
-      target.deploymentId === suppliedDeploymentId &&
-      target.expectedReceiptFolderId &&
-      target.receiptFolderId === target.expectedReceiptFolderId &&
-      target.expectedBackupFolderId &&
-      target.backupFolderId === target.expectedBackupFolderId,
+    target.scriptId === target.expectedScriptId &&
+    target.expectedSpreadsheetId &&
+    target.spreadsheetId === target.expectedSpreadsheetId &&
+    target.expectedDeploymentId &&
+    target.deploymentId === target.expectedDeploymentId &&
+    target.deploymentId === suppliedDeploymentId &&
+    target.expectedReceiptFolderId &&
+    target.receiptFolderId === target.expectedReceiptFolderId &&
+    target.expectedBackupFolderId &&
+    target.backupFolderId === target.expectedBackupFolderId,
   );
 
   if (!matched) {
@@ -192,8 +194,7 @@ function onboardingBackupCheck_() {
     Number.isFinite(successMs) &&
     Date.now() >= successMs &&
     Date.now() - successMs <= 36 * 60 * 60 * 1000;
-  const noLaterAttempt =
-    !lastAttempt || (Number.isFinite(attemptMs) && attemptMs <= successMs);
+  const noLaterAttempt = !lastAttempt || (Number.isFinite(attemptMs) && attemptMs <= successMs);
 
   return {
     lastSuccess: lastSuccess,
@@ -248,19 +249,18 @@ function onboardingTechnicalChecks_(user, environment) {
         ),
         sheetMatched: Boolean(
           identity.expectedSpreadsheetId &&
-            identity.spreadsheetId === identity.expectedSpreadsheetId,
+          identity.spreadsheetId === identity.expectedSpreadsheetId,
         ),
         deploymentMatched: Boolean(
-          identity.expectedDeploymentId &&
-            identity.deploymentId === identity.expectedDeploymentId,
+          identity.expectedDeploymentId && identity.deploymentId === identity.expectedDeploymentId,
         ),
         receiptFolderMatched: Boolean(
           identity.expectedReceiptFolderId &&
-            identity.receiptFolderId === identity.expectedReceiptFolderId,
+          identity.receiptFolderId === identity.expectedReceiptFolderId,
         ),
         backupFolderMatched: Boolean(
           identity.expectedBackupFolderId &&
-            identity.backupFolderId === identity.expectedBackupFolderId,
+          identity.backupFolderId === identity.expectedBackupFolderId,
         ),
       },
     },
@@ -388,9 +388,9 @@ function onboardingVisibleState_(user, environment) {
       const record = state.confirmations[id];
       return Boolean(
         record &&
-          record.status === 'pass' &&
-          record.actorEmail &&
-          String(record.evidence || '').trim().length >= 12,
+        record.status === 'pass' &&
+        record.actorEmail &&
+        String(record.evidence || '').trim().length >= 12,
       );
     }
     return Boolean(checks[id] && checks[id].status === 'pass');
@@ -401,11 +401,11 @@ function onboardingVisibleState_(user, environment) {
       const record = state.confirmations[id];
       return Boolean(
         record &&
-          record.status === 'pass' &&
-          record.actorEmail &&
-          record.actorRole === 'owner' &&
-          String(record.evidence || '').trim().length >= 12 &&
-          record.completedAt,
+        record.status === 'pass' &&
+        record.actorEmail &&
+        record.actorRole === 'owner' &&
+        String(record.evidence || '').trim().length >= 12 &&
+        record.completedAt,
       );
     });
   const liveProductionChecks =

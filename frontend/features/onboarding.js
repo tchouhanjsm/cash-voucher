@@ -127,8 +127,7 @@ export function createOnboarding({ api }) {
       el('div', stage.title, 'onboarding-stage__title'),
       el(
         'p',
-        String(current.environment || '').toUpperCase() +
-          ' environment · progress saved on server',
+        String(current.environment || '').toUpperCase() + ' environment · progress saved on server',
         'muted',
       ),
     );
