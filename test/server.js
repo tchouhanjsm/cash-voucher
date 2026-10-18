@@ -14,8 +14,6 @@ g.props.CV_STAGING_SPREADSHEET_ID = 'SS1';
 g.props.CV_STAGING_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
 g.props.CV_STAGING_RECEIPT_FOLDER_ID = g.props.RECEIPT_FOLDER_ID;
 g.props.CV_STAGING_BACKUP_FOLDER_ID = g.props.BACKUP_FOLDER_ID;
-g.props.BACKUP_LAST_SUCCESS = new Date().toISOString();
-g.props.BACKUP_LAST_ATTEMPT = g.props.BACKUP_LAST_SUCCESS;
 g.props.ONBOARDING_STATE_V1_STAGING = JSON.stringify({
   schemaVersion: 1,
   stage: 'stagingUat',
