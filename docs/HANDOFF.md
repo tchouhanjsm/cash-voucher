@@ -2,7 +2,7 @@
 
 Updated: 18 October 2026  
 Repository: `tchouhanjsm/cash-voucher`  
-Verified `main` SHA: `449f47d994be3a918f883abc2ab7023043e4cc1b`  
+Verified `main` SHA: `df641e06088910281e0940450bb91b5b82e6d6dc`  
 Current work branch: `docs/final-release-handoff-20261018`  
 Current work: final release handoff after PR #175; live staging provisioning and customer acceptance remain pending.  
 Owner authority: the repository owner retains approval to merge, provision Google resources, perform manual UAT and restore drills, and deploy. PR #173 is merged; no Apps Script or website deployment or production mutation was performed.
@@ -30,7 +30,7 @@ PR #175 adds an authenticated Account → Report a problem form. It calls Apps S
 
 1. **P0 — verify private-host continuity:** confirm the static host can access the now-private repository, build successfully, and publishes only `dist/`. Do not change DNS or remove an existing host until continuity is proven.
 2. **P0 — provision staging:** create isolated Google resources and a first versioned Web App deployment; verify all target IDs; protect the GitHub `staging` Environment and secrets; build the static client with the verified staging URL and `CV_ENVIRONMENT=staging`; publish only `dist/`; run owner-authorized UAT.
-3. **P0 — privacy and first-customer isolation:** move the source repository to private only after the static host can access it and continuity is verified; provision a new customer instance and unique Cloudflare Pages origin; never reuse the staging Sheet or current unverified root `config.js` endpoint.
+3. **P0 — private-host continuity and first-customer isolation:** the source repository is private; prove the host integration still has access before DNS changes. Provision a new customer instance and unique Cloudflare Pages origin; never reuse the staging Sheet or current unverified root `config.js` endpoint.
 4. **P0 — operational trust:** verify live owner/manager/staff permissions and receipt access, inspect a real backup, restore into a separate recovery destination, reconcile row counts and voucher numbers, and test the actual customer link.
 5. **P1 — real-device verification and 14-day pilot:** PWA installation/update, offline queue/recovery across every operating device, keyboard/focus, zoom/reflow, screen reader, print/export, end-of-day book-vs-physical-cash reconciliation and daily incident/fallback evidence.
 6. **P1 — authorized real-service measurements and contextual review of the 17 active DOM assignment sites.**
