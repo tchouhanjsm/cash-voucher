@@ -62,13 +62,11 @@ function setupPreflight_(p) {
   const existingNames = names.filter(function (name) {
     return Boolean(ss.getSheetByName(name));
   });
-  const hasInitializationMarkers = [
-    'PEPPER',
-    'RECEIPT_FOLDER_ID',
-    'BACKUP_FOLDER_ID',
-  ].some(function (key) {
-    return Boolean(p.getProperty(key));
-  });
+  const hasInitializationMarkers = ['PEPPER', 'RECEIPT_FOLDER_ID', 'BACKUP_FOLDER_ID'].some(
+    function (key) {
+      return Boolean(p.getProperty(key));
+    },
+  );
 
   if (!existingNames.length) {
     if (hasInitializationMarkers) {
@@ -177,7 +175,11 @@ function setupPreflight_(p) {
         return row[column] === '' || row[column] === null || row[column] === undefined;
       }) ||
       !/^\S+@\S+\.\S+$/.test(String(row[2] || '').trim()) ||
-      validRoles.indexOf(String(row[3] || '').trim().toLowerCase()) < 0 ||
+      validRoles.indexOf(
+        String(row[3] || '')
+          .trim()
+          .toLowerCase(),
+      ) < 0 ||
       ![true, false, 'TRUE', 'FALSE'].includes(row[4]) ||
       ![true, false, 'TRUE', 'FALSE'].includes(row[7])
     ) {
