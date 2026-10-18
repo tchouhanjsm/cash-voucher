@@ -3,9 +3,8 @@
 Updated: 18 October 2026  
 Repository: `tchouhanjsm/cash-voucher`  
 Verified `main` SHA: `9335018b5b9edf1109839f5f9aa2216e4128fbdc`  
-Current work branch: `docs/staging-readiness-batch-20261018`  
-Current pull request: [#174 — Staging readiness documentation sync](https://github.com/tchouhanjsm/cash-voucher/pull/174)  
-Current work: reconcile release handoff docs and prepare a verified staging build; live target provisioning and staging acceptance remain pending.  
+Current work branch: `feat/support-contact-form-20261018`  
+Current work: add authenticated support email form and prepare controlled multi-client release; live target provisioning and staging acceptance remain pending.  
 Owner authority: the repository owner retains approval to merge, provision Google resources, perform manual UAT and restore drills, and deploy. PR #173 is merged; no Apps Script or website deployment or production mutation was performed.
 
 ## Verified source state
@@ -20,6 +19,10 @@ Owner authority: the repository owner retains approval to merge, provision Googl
 Cash Voucher remains a single-property static PWA backed by Google Apps Script, Sheets and Drive. Each staging/customer instance needs its own Script/Web App deployment, Sheet, receipt/backup folders and distinct static origin. The customer build command is `npm run build:web`; set the verified instance URL through `CV_API_URL` and explicitly set `CV_ENVIRONMENT=staging` or `production`. Publish only `dist/`, which emits `_headers` for Cloudflare Pages and `.htaccess` for Apache; verify the live HTTP response headers.
 
 PR #166 prepares packaging and instructions; it did **not** provision a staging/customer Google project, GitHub staging Environment, Cloudflare Pages project, real URL, account or credentials. The repository is still public. Live target identity, roles/receipt access, real scheduled backup, isolated restore, real-device/offline recovery, human accessibility checks, service capacity and the controlled pilot remain unverified.
+
+## Support request email
+
+The authenticated in-app form routes to Apps Script action `supportSubmit` and emails only the operator-configured `SUPPORT_EMAIL` Script Property; the client cannot choose the recipient. Server validation caps the description at 4,000 characters, limits submissions to five per user per hour and 60 total per hour, and records a support audit event. Configure `SUPPORT_EMAIL` separately in every customer Script project and authorize MailApp during the reviewed backend deployment. Login-failure support remains the administrator-supplied contact channel; no anonymous email-submit endpoint is exposed.
 
 ## Current priority order
 
