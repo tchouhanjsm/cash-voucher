@@ -280,6 +280,7 @@ function create(options = {}) {
       }
       return result;
     },
+    triggerCount: () => scriptTriggers.length,
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),
     call: (action, payload = {}) => {
