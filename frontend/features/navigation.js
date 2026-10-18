@@ -198,7 +198,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
         const onboarding = await api('onboardingState');
         S.onboardingStage = onboarding.stage;
         S.onboardingEnvironment = onboarding.environment;
-      } catch (_) {
+      } catch {
         S.onboardingStage = 'unverified';
       }
     }

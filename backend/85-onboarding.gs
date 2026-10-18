@@ -44,7 +44,13 @@ function onboardingBackupCheck_() {
 function onboardingTechnicalChecks_(user, environment) {
   need_(user, 'settings');
   const env = environment || onboardingEnvironment_().name, identity = onboardingTargetIdentity_(env);
-  let identityMatched = false; try { onboardingRequestIdentity_({ environment: env, deploymentId: identity.deploymentId }); identityMatched = true; } catch (_) {}
+  let identityMatched = false;
+  try {
+    onboardingRequestIdentity_({ environment: env, deploymentId: identity.deploymentId });
+    identityMatched = true;
+  } catch {
+    identityMatched = false;
+  }
   const readiness = deploymentReadiness_(user), currentSettings = settings_(), accounts = onboardingAccountCheck_(), backup = onboardingBackupCheck_();
   const schemaReady = readiness.checks.spreadsheetReadable && readiness.checks.missingSheets.length === 0 && readiness.checks.invalidHeaders.length === 0;
   const foldersReady = readiness.checks.receiptFolderReadable && readiness.checks.backupFolderReadable, triggerReady = readiness.checks.backupTriggerInstalled;
