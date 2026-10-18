@@ -14,10 +14,11 @@ Bookmark the application link. On a supported phone or tablet, use the browser's
 
 ## First sign-in
 
-1. Open the application link supplied by the product owner.
+1. Open the application link supplied by the product owner and confirm it is the address for your property.
 2. Sign in with your registered email address and the temporary password delivered to you separately.
-3. Change the temporary password as soon as the application asks you to, then sign out and sign in again to confirm access.
-4. Ask the product owner to create a separate account for every staff member. Do not share user accounts or PINs.
+3. Change the temporary password when prompted, then sign out and sign in again to confirm access.
+4. Follow the in-app onboarding checklist shown on first sign-in. Technical setup checks are handled by the product owner; do not change Google settings or enter financial data while the app reports a required check as blocked. Contact support and share the visible non-sensitive message.
+5. Ask the product owner to create a separate account for every staff member. Do not share user accounts or passwords.
 
 ## Daily use
 
