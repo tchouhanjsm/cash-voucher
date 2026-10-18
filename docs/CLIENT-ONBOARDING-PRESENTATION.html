@@ -1113,33 +1113,149 @@
           color: #174a70;
         }
       }
-    
-      .task-list { display: grid; gap: 12px; margin: 14px 0 0; }
-      .task-check { display: flex; align-items: flex-start; gap: 11px; padding: 11px 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); line-height: 1.55; cursor: pointer; }
-      .task-check input[type="checkbox"] { flex: 0 0 auto; width: 18px; height: 18px; margin: 3px 0 0; accent-color: var(--teal); }
-      .task-check span { min-width: 0; }
-      .task-check:has(input:checked) { border-color: #99cfc3; background: var(--teal-soft); }
-      .saved-summary { margin: 10px 0 0; color: var(--muted); font-size: 0.84rem; }
-      .field-label { display: block; margin: 12px 0 6px; font-weight: 700; }
-      .field-control, .uat-status, .uat-notes { display: block; width: 100%; min-width: 0; border: 1px solid #bdc8d9; border-radius: 9px; background: #fff; color: var(--ink); font: inherit; padding: 9px 10px; }
-      .field-control:focus-visible, .uat-status:focus-visible, .uat-notes:focus-visible, .task-check input:focus-visible { outline: 3px solid rgba(21, 125, 120, 0.3); outline-offset: 2px; }
-      .uat-table { min-width: 1120px; }
-      .uat-table th, .uat-table td { vertical-align: top; }
-      .uat-case { white-space: nowrap; font-weight: 800; color: var(--navy-soft); }
-      .priority { display: inline-block; margin-top: 5px; padding: 3px 7px; border-radius: 999px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.03em; }
-      .priority.p0 { color: #8e2828; background: var(--red-soft); }
-      .priority.p1 { color: #78520d; background: var(--amber-soft); }
-      .uat-done { display: flex; align-items: center; gap: 7px; white-space: nowrap; }
-      .uat-done input { width: 17px; height: 17px; accent-color: var(--teal); }
-      .uat-status { min-width: 125px; }
-      .uat-notes { min-width: 190px; min-height: 70px; resize: vertical; }
-      .uat-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 16px; }
-      .uat-summary { padding: 12px 14px; border-radius: 12px; background: var(--blue-soft); color: var(--ink); font-weight: 650; }
-      .signoff-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; }
-      .signoff-grid .card { min-width: 0; }
-      .support-hours { font-weight: 700; color: var(--navy-soft); }
-      @media (max-width: 760px) { .signoff-grid { grid-template-columns: 1fr; } .uat-actions .btn { width: 100%; } }
 
+      .task-list {
+        display: grid;
+        gap: 12px;
+        margin: 14px 0 0;
+      }
+      .task-check {
+        display: flex;
+        align-items: flex-start;
+        gap: 11px;
+        padding: 11px 12px;
+        border: 1px solid var(--line);
+        border-radius: 12px;
+        background: var(--surface);
+        line-height: 1.55;
+        cursor: pointer;
+      }
+      .task-check input[type='checkbox'] {
+        flex: 0 0 auto;
+        width: 18px;
+        height: 18px;
+        margin: 3px 0 0;
+        accent-color: var(--teal);
+      }
+      .task-check span {
+        min-width: 0;
+      }
+      .task-check:has(input:checked) {
+        border-color: #99cfc3;
+        background: var(--teal-soft);
+      }
+      .saved-summary {
+        margin: 10px 0 0;
+        color: var(--muted);
+        font-size: 0.84rem;
+      }
+      .field-label {
+        display: block;
+        margin: 12px 0 6px;
+        font-weight: 700;
+      }
+      .field-control,
+      .uat-status,
+      .uat-notes {
+        display: block;
+        width: 100%;
+        min-width: 0;
+        border: 1px solid #bdc8d9;
+        border-radius: 9px;
+        background: #fff;
+        color: var(--ink);
+        font: inherit;
+        padding: 9px 10px;
+      }
+      .field-control:focus-visible,
+      .uat-status:focus-visible,
+      .uat-notes:focus-visible,
+      .task-check input:focus-visible {
+        outline: 3px solid rgba(21, 125, 120, 0.3);
+        outline-offset: 2px;
+      }
+      .uat-table {
+        min-width: 1120px;
+      }
+      .uat-table th,
+      .uat-table td {
+        vertical-align: top;
+      }
+      .uat-case {
+        white-space: nowrap;
+        font-weight: 800;
+        color: var(--navy-soft);
+      }
+      .priority {
+        display: inline-block;
+        margin-top: 5px;
+        padding: 3px 7px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.03em;
+      }
+      .priority.p0 {
+        color: #8e2828;
+        background: var(--red-soft);
+      }
+      .priority.p1 {
+        color: #78520d;
+        background: var(--amber-soft);
+      }
+      .uat-done {
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        white-space: nowrap;
+      }
+      .uat-done input {
+        width: 17px;
+        height: 17px;
+        accent-color: var(--teal);
+      }
+      .uat-status {
+        min-width: 125px;
+      }
+      .uat-notes {
+        min-width: 190px;
+        min-height: 70px;
+        resize: vertical;
+      }
+      .uat-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .uat-summary {
+        padding: 12px 14px;
+        border-radius: 12px;
+        background: var(--blue-soft);
+        color: var(--ink);
+        font-weight: 650;
+      }
+      .signoff-grid {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 14px;
+      }
+      .signoff-grid .card {
+        min-width: 0;
+      }
+      .support-hours {
+        font-weight: 700;
+        color: var(--navy-soft);
+      }
+      @media (max-width: 760px) {
+        .signoff-grid {
+          grid-template-columns: 1fr;
+        }
+        .uat-actions .btn {
+          width: 100%;
+        }
+      }
     </style>
   </head>
   <body>
@@ -1159,20 +1275,98 @@
       <aside class="rail" aria-label="Runbook sections">
         <div class="rail-kicker">Owner setup · 12 sections</div>
         <nav class="nav-list" id="slideNav" aria-label="Choose a runbook section">
-<button class="nav-step" type="button" data-slide="0"><span class="num">00</span><span><span class="nav-label">Overview</span><span class="nav-sub">What happens and who does it</span></span></button>
-<button class="nav-step" type="button" data-slide="1"><span class="num">01</span><span><span class="nav-label">Before the call</span><span class="nav-sub">Owner account checklist</span></span></button>
-<button class="nav-step" type="button" data-slide="2"><span class="num">02</span><span><span class="nav-label">Make your copy</span><span class="nav-sub">Your own Sheet and script</span></span></button>
-<button class="nav-step" type="button" data-slide="3"><span class="num">03</span><span><span class="nav-label">Owner login</span><span class="nav-sub">Script properties</span></span></button>
-<button class="nav-step" type="button" data-slide="4"><span class="num">04</span><span><span class="nav-label">Initialize once</span><span class="nav-sub">Tabs, folders and backup</span></span></button>
-<button class="nav-step" type="button" data-slide="5"><span class="num">05</span><span><span class="nav-label">Publish & backup</span><span class="nav-sub">Web app address</span></span></button>
-<button class="nav-step" type="button" data-slide="6"><span class="num">06</span><span><span class="nav-label">Production handover</span><span class="nav-sub">First owner sign-in</span></span></button>
-<button class="nav-step" type="button" data-slide="7"><span class="num">07</span><span><span class="nav-label">People & phones</span><span class="nav-sub">App users and install</span></span></button>
-<button class="nav-step" type="button" data-slide="8"><span class="num">08</span><span><span class="nav-label">Owner safety</span><span class="nav-sub">Access and test preparation</span></span></button>
-<button class="nav-step" type="button" data-slide="9"><span class="num">09</span><span><span class="nav-label">UAT results</span><span class="nav-sub">Fake-data test matrix</span></span></button>
-<button class="nav-step" type="button" data-slide="10"><span class="num">10</span><span><span class="nav-label">Go / no-go</span><span class="nav-sub">Acceptance and sign-off</span></span></button>
-<button class="nav-step" type="button" data-slide="11"><span class="num">11</span><span><span class="nav-label">Support</span><span class="nav-sub">Issues, exports and service end</span></span></button>
-</nav>
-        <div class="rail-note"><p id="stepCompletionSummary" class="saved-summary">0 setup actions ticked off</p><strong>For your safety:</strong> only the owner uses a Google account for setup. Everyone else uses an individual Cash Voucher login. Never write passwords or recovery codes in this guide.</div></aside>
+          <button class="nav-step" type="button" data-slide="0">
+            <span class="num">00</span
+            ><span
+              ><span class="nav-label">Overview</span
+              ><span class="nav-sub">What happens and who does it</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="1">
+            <span class="num">01</span
+            ><span
+              ><span class="nav-label">Before the call</span
+              ><span class="nav-sub">Owner account checklist</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="2">
+            <span class="num">02</span
+            ><span
+              ><span class="nav-label">Make your copy</span
+              ><span class="nav-sub">Your own Sheet and script</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="3">
+            <span class="num">03</span
+            ><span
+              ><span class="nav-label">Owner login</span
+              ><span class="nav-sub">Script properties</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="4">
+            <span class="num">04</span
+            ><span
+              ><span class="nav-label">Initialize once</span
+              ><span class="nav-sub">Tabs, folders and backup</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="5">
+            <span class="num">05</span
+            ><span
+              ><span class="nav-label">Publish & backup</span
+              ><span class="nav-sub">Web app address</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="6">
+            <span class="num">06</span
+            ><span
+              ><span class="nav-label">Production handover</span
+              ><span class="nav-sub">First owner sign-in</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="7">
+            <span class="num">07</span
+            ><span
+              ><span class="nav-label">People & phones</span
+              ><span class="nav-sub">App users and install</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="8">
+            <span class="num">08</span
+            ><span
+              ><span class="nav-label">Owner safety</span
+              ><span class="nav-sub">Access and test preparation</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="9">
+            <span class="num">09</span
+            ><span
+              ><span class="nav-label">UAT results</span
+              ><span class="nav-sub">Fake-data test matrix</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="10">
+            <span class="num">10</span
+            ><span
+              ><span class="nav-label">Go / no-go</span
+              ><span class="nav-sub">Acceptance and sign-off</span></span
+            >
+          </button>
+          <button class="nav-step" type="button" data-slide="11">
+            <span class="num">11</span
+            ><span
+              ><span class="nav-label">Support</span
+              ><span class="nav-sub">Issues, exports and service end</span></span
+            >
+          </button>
+        </nav>
+        <div class="rail-note">
+          <p id="stepCompletionSummary" class="saved-summary">0 setup actions ticked off</p>
+          <strong>For your safety:</strong> only the owner uses a Google account for setup. Everyone
+          else uses an individual Cash Voucher login. Never write passwords or recovery codes in
+          this guide.
+        </div>
+      </aside>
 
       <main class="main">
         <div class="deck-meta">
@@ -1191,87 +1385,1804 @@
           </div>
         </div>
 
-        <section class="slide hero active" data-title="Welcome and guardrails" aria-labelledby="title-main" tabindex="-1"><div class="eyebrow"><span class="dot"></span> Owner-led setup · one Google account</div><h1 id="title-main">Your business owns its data. We take care of the website.</h1><p class="hero-copy">Welcome to Cash Voucher, {{CLIENT_NAME}}. We set up the system together on a screen share. You click inside your own Google account. We host and maintain the website and give you one production link. You never need to download, build or run code.</p><div class="pill-row"><span class="pill">01 · Owner account</span><span class="pill">02 · Individual app logins</span><span class="pill">03 · Fake-data acceptance tests</span></div><div class="grid-3" style="margin-top:22px"><div class="card tint"><h3>You click</h3><p>Google setup and permissions happen in your own account during our screen-share call. We never ask for or keep your Google password.</p></div><div class="card teal"><h3>We operate</h3><p>We prepare and host the website, connect it to your new backend, check the production link and provide support.</p></div><div class="card amber"><h3>Your team signs in</h3><p>Manager, Accountant and Staff each get an individual Cash Voucher login made by the owner. They do not need Google accounts and never access the Sheet or Drive.</p></div></div><div class="callout warning" style="margin-top:20px"><span class="symbol" aria-hidden="true">!</span><div><strong>Do not start real work yet.</strong> Complete the setup and UAT with fake data first. Real work starts only after every P0 test passes and the owner and operator sign off.</div></div><div class="card" style="margin-top:18px"><h3>Customer details for this launch</h3><p><strong>Business:</strong> {{CLIENT_NAME}}</p><p><strong>Owner email:</strong> {{OWNER_EMAIL}}</p><p><strong>Production app link:</strong> {{APP_LINK}}</p></div><p class="saved-summary" id="saveStatus" role="status" aria-live="polite">Checklist progress saves in this browser only. It is not sent to the operator.</p></section>
+        <section
+          class="slide hero active"
+          data-title="Welcome and guardrails"
+          aria-labelledby="title-main"
+          tabindex="-1"
+        >
+          <div class="eyebrow"><span class="dot"></span> Owner-led setup · one Google account</div>
+          <h1 id="title-main">Your business owns its data. We take care of the website.</h1>
+          <p class="hero-copy">
+            Welcome to Cash Voucher, {{CLIENT_NAME}}. We set up the system together on a screen
+            share. You click inside your own Google account. We host and maintain the website and
+            give you one production link. You never need to download, build or run code.
+          </p>
+          <div class="pill-row">
+            <span class="pill">01 · Owner account</span
+            ><span class="pill">02 · Individual app logins</span
+            ><span class="pill">03 · Fake-data acceptance tests</span>
+          </div>
+          <div class="grid-3" style="margin-top: 22px">
+            <div class="card tint">
+              <h3>You click</h3>
+              <p>
+                Google setup and permissions happen in your own account during our screen-share
+                call. We never ask for or keep your Google password.
+              </p>
+            </div>
+            <div class="card teal">
+              <h3>We operate</h3>
+              <p>
+                We prepare and host the website, connect it to your new backend, check the
+                production link and provide support.
+              </p>
+            </div>
+            <div class="card amber">
+              <h3>Your team signs in</h3>
+              <p>
+                Manager, Accountant and Staff each get an individual Cash Voucher login made by the
+                owner. They do not need Google accounts and never access the Sheet or Drive.
+              </p>
+            </div>
+          </div>
+          <div class="callout warning" style="margin-top: 20px">
+            <span class="symbol" aria-hidden="true">!</span>
+            <div>
+              <strong>Do not start real work yet.</strong> Complete the setup and UAT with fake data
+              first. Real work starts only after every P0 test passes and the owner and operator
+              sign off.
+            </div>
+          </div>
+          <div class="card" style="margin-top: 18px">
+            <h3>Customer details for this launch</h3>
+            <p><strong>Business:</strong> {{CLIENT_NAME}}</p>
+            <p><strong>Owner email:</strong> {{OWNER_EMAIL}}</p>
+            <p><strong>Production app link:</strong> {{APP_LINK}}</p>
+          </div>
+          <p class="saved-summary" id="saveStatus" role="status" aria-live="polite">
+            Checklist progress saves in this browser only. It is not sent to the operator.
+          </p>
+        </section>
 
-<section class="slide" data-title="Prepare before the call" aria-labelledby="title-prepare" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Step 1 · before the call</span><h2 id="title-prepare">01. Prepare the owner's account before our call.</h2><p class="lead">Only the owner needs a Google account for the backend. Choose one account that your business will keep and recover long term.</p></div><div class="step-number" aria-hidden="true">01</div></div><div class="grid-2"><div class="card tint"><h3>Operator says</h3><p>Use a dedicated business Gmail where possible. We will guide you through the clicks, but the account remains yours.</p><ul><li>We will not ask you to read out, send, type into chat or share your Google password.</li><li>Please have the account ready to sign in and complete any Google security prompt.</li></ul></div><div class="card teal"><h3>Client clicks</h3><div class="task-list"><label class="task-check"><input type="checkbox" data-progress-id="s1a" aria-label="Mark complete: Prepare one Google account for the business: {{OWNER_EMAIL}}."><span>Prepare one Google account for the business: {{OWNER_EMAIL}}.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s1b" aria-label="Mark complete: Turn on Google's 2-step verification for this account."><span>Turn on Google's 2-step verification for this account.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s1c" aria-label="Mark complete: Set and test a recovery phone number and recovery email."><span>Set and test a recovery phone number and recovery email.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s1d" aria-label="Mark complete: Name a second trusted contact who can help the business recover the account."><span>Name a second trusted contact who can help the business recover the account.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s1e" aria-label="Mark complete: Have the owner available throughout the screen-share setup call."><span>Have the owner available throughout the screen-share setup call.</span></label></div></div></div><div class="callout danger"><span class="symbol" aria-hidden="true">!</span><div><strong>Keep control of the account.</strong> If this Google account is lost and cannot be recovered, your backend and its data may become inaccessible. Record recovery details securely outside this guide.</div></div></section>
+        <section
+          class="slide"
+          data-title="Prepare before the call"
+          aria-labelledby="title-prepare"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Step 1 · before the call</span>
+              <h2 id="title-prepare">01. Prepare the owner's account before our call.</h2>
+              <p class="lead">
+                Only the owner needs a Google account for the backend. Choose one account that your
+                business will keep and recover long term.
+              </p>
+            </div>
+            <div class="step-number" aria-hidden="true">01</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Operator says</h3>
+              <p>
+                Use a dedicated business Gmail where possible. We will guide you through the clicks,
+                but the account remains yours.
+              </p>
+              <ul>
+                <li>
+                  We will not ask you to read out, send, type into chat or share your Google
+                  password.
+                </li>
+                <li>
+                  Please have the account ready to sign in and complete any Google security prompt.
+                </li>
+              </ul>
+            </div>
+            <div class="card teal">
+              <h3>Client clicks</h3>
+              <div class="task-list">
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s1a"
+                    aria-label="Mark complete: Prepare one Google account for the business: {{OWNER_EMAIL}}."
+                  /><span
+                    >Prepare one Google account for the business: {{OWNER_EMAIL}}.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s1b"
+                    aria-label="Mark complete: Turn on Google's 2-step verification for this account."
+                  /><span>Turn on Google's 2-step verification for this account.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s1c"
+                    aria-label="Mark complete: Set and test a recovery phone number and recovery email."
+                  /><span>Set and test a recovery phone number and recovery email.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s1d"
+                    aria-label="Mark complete: Name a second trusted contact who can help the business recover the account."
+                  /><span
+                    >Name a second trusted contact who can help the business recover the
+                    account.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s1e"
+                    aria-label="Mark complete: Have the owner available throughout the screen-share setup call."
+                  /><span
+                    >Have the owner available throughout the screen-share setup call.</span
+                  ></label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="callout danger">
+            <span class="symbol" aria-hidden="true">!</span>
+            <div>
+              <strong>Keep control of the account.</strong> If this Google account is lost and
+              cannot be recovered, your backend and its data may become inaccessible. Record
+              recovery details securely outside this guide.
+            </div>
+          </div>
+        </section>
 
-<section class="slide" data-title="Create your own backend copy" aria-labelledby="title-copy" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Step 2 · Google Sheet</span><h2 id="title-copy">02. Make a copy in your own Google account.</h2><p class="lead">The spreadsheet template includes the bound Apps Script project. You will create your own copy in your own Google account; you do not paste or write code.</p></div><div class="step-number" aria-hidden="true">02</div></div><div class="grid-2"><div class="card tint"><h3>Operator says</h3><p>We share the template Sheet with {{OWNER_EMAIL}} as <strong>Viewer</strong> only and send you a separate make-a-copy link. After the copy is verified, we remove your access to our template.</p><p>Each business has its own Sheet and script. Never use another client&#39;s Sheet.</p></div><div class="card teal"><h3>Client clicks</h3><div class="task-list"><label class="task-check"><input type="checkbox" data-progress-id="s2a" aria-label="Mark complete: Open the make-a-copy link we send you while signed into {{OWNER_EMAIL}}."><span>Open the make-a-copy link we send you while signed into {{OWNER_EMAIL}}.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s2b" aria-label="Mark complete: Create your own copy; do not request Editor access to the template."><span>Create your own copy; do not request Editor access to the template.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s2c" aria-label="Mark complete: Rename your copy exactly: Cash Vouchers - {{CLIENT_NAME}}."><span>Rename your copy exactly: Cash Vouchers - {{CLIENT_NAME}}.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s2d" aria-label="Mark complete: Open Extensions → Apps Script and confirm the copied script opens."><span>Open Extensions → Apps Script and confirm the copied script opens.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s2e" aria-label="Mark complete: Confirm the copied spreadsheet is owned by your business Google account."><span>Confirm the copied spreadsheet is owned by your business Google account.</span></label></div></div></div><div class="callout danger"><span class="symbol" aria-hidden="true">×</span><div><strong>Stop if the copy does not contain the script.</strong> Do not create a blank project or paste code. Tell the operator and let us use the single-file fallback with you.</div></div><p class="small-note">You do not need the repository or a downloaded software project. Do not send the Sheet link to staff.</p></section>
+        <section
+          class="slide"
+          data-title="Create your own backend copy"
+          aria-labelledby="title-copy"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Step 2 · Google Sheet</span>
+              <h2 id="title-copy">02. Make a copy in your own Google account.</h2>
+              <p class="lead">
+                The spreadsheet template includes the bound Apps Script project. You will create
+                your own copy in your own Google account; you do not paste or write code.
+              </p>
+            </div>
+            <div class="step-number" aria-hidden="true">02</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Operator says</h3>
+              <p>
+                We share the template Sheet with {{OWNER_EMAIL}} as <strong>Viewer</strong> only and
+                send you a separate make-a-copy link. After the copy is verified, we remove your
+                access to our template.
+              </p>
+              <p>
+                Each business has its own Sheet and script. Never use another client&#39;s Sheet.
+              </p>
+            </div>
+            <div class="card teal">
+              <h3>Client clicks</h3>
+              <div class="task-list">
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s2a"
+                    aria-label="Mark complete: Open the make-a-copy link we send you while signed into {{OWNER_EMAIL}}."
+                  /><span
+                    >Open the make-a-copy link we send you while signed into {{OWNER_EMAIL}}.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s2b"
+                    aria-label="Mark complete: Create your own copy; do not request Editor access to the template."
+                  /><span
+                    >Create your own copy; do not request Editor access to the template.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s2c"
+                    aria-label="Mark complete: Rename your copy exactly: Cash Vouchers - {{CLIENT_NAME}}."
+                  /><span>Rename your copy exactly: Cash Vouchers - {{CLIENT_NAME}}.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s2d"
+                    aria-label="Mark complete: Open Extensions → Apps Script and confirm the copied script opens."
+                  /><span
+                    >Open Extensions → Apps Script and confirm the copied script opens.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s2e"
+                    aria-label="Mark complete: Confirm the copied spreadsheet is owned by your business Google account."
+                  /><span
+                    >Confirm the copied spreadsheet is owned by your business Google account.</span
+                  ></label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="callout danger">
+            <span class="symbol" aria-hidden="true">×</span>
+            <div>
+              <strong>Stop if the copy does not contain the script.</strong> Do not create a blank
+              project or paste code. Tell the operator and let us use the single-file fallback with
+              you.
+            </div>
+          </div>
+          <p class="small-note">
+            You do not need the repository or a downloaded software project. Do not send the Sheet
+            link to staff.
+          </p>
+        </section>
 
-<section class="slide" data-title="Set the initial owner login" aria-labelledby="title-owner-properties" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Step 3 · Apps Script settings</span><h2 id="title-owner-properties">03. Add the owner details in Script properties.</h2><p class="lead">These settings create the first Cash Voucher owner account. They are different from the Google account password.</p></div><div class="step-number" aria-hidden="true">03</div></div><div class="grid-2"><div class="card tint"><h3>Operator says</h3><p>We will point to the right menu on the shared screen. The temporary app password is for the Cash Voucher login only; it is not your Google password.</p><p>Invent a temporary password yourself and keep it private. Do not tell us, put it in chat, or write it in this checklist.</p></div><div class="card teal"><h3>Client clicks</h3><div class="task-list"><label class="task-check"><input type="checkbox" data-progress-id="s3a" aria-label="Mark complete: In the copied Sheet, choose Extensions → Apps Script."><span>In the copied Sheet, choose Extensions → Apps Script.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s3b" aria-label="Mark complete: In the Apps Script editor, open Project Settings → Script properties."><span>In the Apps Script editor, open Project Settings → Script properties.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s3c" aria-label="Mark complete: Add OWNER_EMAIL with value {{OWNER_EMAIL}}."><span>Add OWNER_EMAIL with value {{OWNER_EMAIL}}.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s3d" aria-label="Mark complete: Add OWNER_PASSWORD with a temporary password you invent and keep private; it must be 8–128 characters."><span>Add OWNER_PASSWORD with a temporary password you invent and keep private; it must be 8–128 characters.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s3e" aria-label="Mark complete: Optionally add OWNER_NAME with the owner's display name."><span>Optionally add OWNER_NAME with the owner's display name.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s3f" aria-label="Mark complete: Save the script properties. Do not share a screenshot that shows the temporary password."><span>Save the script properties. Do not share a screenshot that shows the temporary password.</span></label></div></div></div><div class="callout warning"><span class="symbol" aria-hidden="true">!</span><div><strong>Only type the property names shown.</strong> Do not add any other values unless the operator guides you. Never put a password or account recovery code in this page, email, or support ticket.</div></div></section>
+        <section
+          class="slide"
+          data-title="Set the initial owner login"
+          aria-labelledby="title-owner-properties"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Step 3 · Apps Script settings</span>
+              <h2 id="title-owner-properties">03. Add the owner details in Script properties.</h2>
+              <p class="lead">
+                These settings create the first Cash Voucher owner account. They are different from
+                the Google account password.
+              </p>
+            </div>
+            <div class="step-number" aria-hidden="true">03</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Operator says</h3>
+              <p>
+                We will point to the right menu on the shared screen. The temporary app password is
+                for the Cash Voucher login only; it is not your Google password.
+              </p>
+              <p>
+                Invent a temporary password yourself and keep it private. Do not tell us, put it in
+                chat, or write it in this checklist.
+              </p>
+            </div>
+            <div class="card teal">
+              <h3>Client clicks</h3>
+              <div class="task-list">
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s3a"
+                    aria-label="Mark complete: In the copied Sheet, choose Extensions → Apps Script."
+                  /><span>In the copied Sheet, choose Extensions → Apps Script.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s3b"
+                    aria-label="Mark complete: In the Apps Script editor, open Project Settings → Script properties."
+                  /><span
+                    >In the Apps Script editor, open Project Settings → Script properties.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s3c"
+                    aria-label="Mark complete: Add OWNER_EMAIL with value {{OWNER_EMAIL}}."
+                  /><span>Add OWNER_EMAIL with value {{OWNER_EMAIL}}.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s3d"
+                    aria-label="Mark complete: Add OWNER_PASSWORD with a temporary password you invent and keep private; it must be 8–128 characters."
+                  /><span
+                    >Add OWNER_PASSWORD with a temporary password you invent and keep private; it
+                    must be 8–128 characters.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s3e"
+                    aria-label="Mark complete: Optionally add OWNER_NAME with the owner's display name."
+                  /><span>Optionally add OWNER_NAME with the owner's display name.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s3f"
+                    aria-label="Mark complete: Save the script properties. Do not share a screenshot that shows the temporary password."
+                  /><span
+                    >Save the script properties. Do not share a screenshot that shows the temporary
+                    password.</span
+                  ></label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="callout warning">
+            <span class="symbol" aria-hidden="true">!</span>
+            <div>
+              <strong>Only type the property names shown.</strong> Do not add any other values
+              unless the operator guides you. Never put a password or account recovery code in this
+              page, email, or support ticket.
+            </div>
+          </div>
+        </section>
 
-<section class="slide" data-title="Initialize the copied Sheet once" aria-labelledby="title-initialize" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Step 4 · one-time setup</span><h2 id="title-initialize">04. Run setup once and approve the requested access.</h2><p class="lead">This first run creates the application tabs and Drive folders and schedules daily backups. It is for a new, empty copy only.</p></div><div class="step-number" aria-hidden="true">04</div></div><div class="grid-2"><div class="card tint"><h3>Operator says</h3><p>We will visually confirm that the editor belongs to your new copy before you run anything. Google may show an unverified or unsafe-app warning for this privately used script.</p><p>Only continue when the project identity and permissions match what we are doing together. If the screen is different or unexpected, stop and ask us.</p></div><div class="card teal"><h3>Client clicks</h3><div class="task-list"><label class="task-check"><input type="checkbox" data-progress-id="s4a" aria-label="Mark complete: In the Apps Script function list, choose setup."><span>In the Apps Script function list, choose setup.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s4b" aria-label="Mark complete: Click Run once and wait for it to finish."><span>Click Run once and wait for it to finish.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s4c" aria-label="Mark complete: If Google's warning appears, choose Advanced → Go to project → Allow only after confirming with the operator that this is your copied project."><span>If Google's warning appears, choose Advanced → Go to project → Allow only after confirming with the operator that this is your copied project.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s4d" aria-label="Mark complete: Confirm the operator sees successful completion and no unexplained error."><span>Confirm the operator sees successful completion and no unexplained error.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s4e" aria-label="Mark complete: Return to your spreadsheet and confirm the application tabs have appeared."><span>Return to your spreadsheet and confirm the application tabs have appeared.</span></label></div></div></div><div class="grid-2" style="margin-top:18px"><div class="card teal"><h3>Expected result</h3><ul><li>Tabs are created, including Users, Vouchers, Vendors, Settings, AuditLog and cash-close records.</li><li>Cash Voucher Receipts and Cash Voucher Backups folders are created in your Drive.</li><li>A daily backup trigger for backupData_ exists.</li></ul></div><div class="card amber"><h3>Never do this</h3><p><strong>Never run setup again on a Sheet that contains real data.</strong> It is an initialization step, not a repair button. If setup reports an error or the tabs/folders do not appear, stop and tell the operator instead of running it a second time.</p></div></div></section>
+        <section
+          class="slide"
+          data-title="Initialize the copied Sheet once"
+          aria-labelledby="title-initialize"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Step 4 · one-time setup</span>
+              <h2 id="title-initialize">04. Run setup once and approve the requested access.</h2>
+              <p class="lead">
+                This first run creates the application tabs and Drive folders and schedules daily
+                backups. It is for a new, empty copy only.
+              </p>
+            </div>
+            <div class="step-number" aria-hidden="true">04</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Operator says</h3>
+              <p>
+                We will visually confirm that the editor belongs to your new copy before you run
+                anything. Google may show an unverified or unsafe-app warning for this privately
+                used script.
+              </p>
+              <p>
+                Only continue when the project identity and permissions match what we are doing
+                together. If the screen is different or unexpected, stop and ask us.
+              </p>
+            </div>
+            <div class="card teal">
+              <h3>Client clicks</h3>
+              <div class="task-list">
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s4a"
+                    aria-label="Mark complete: In the Apps Script function list, choose setup."
+                  /><span>In the Apps Script function list, choose setup.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s4b"
+                    aria-label="Mark complete: Click Run once and wait for it to finish."
+                  /><span>Click Run once and wait for it to finish.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s4c"
+                    aria-label="Mark complete: If Google's warning appears, choose Advanced → Go to project → Allow only after confirming with the operator that this is your copied project."
+                  /><span
+                    >If Google's warning appears, choose Advanced → Go to project → Allow only after
+                    confirming with the operator that this is your copied project.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s4d"
+                    aria-label="Mark complete: Confirm the operator sees successful completion and no unexplained error."
+                  /><span
+                    >Confirm the operator sees successful completion and no unexplained error.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s4e"
+                    aria-label="Mark complete: Return to your spreadsheet and confirm the application tabs have appeared."
+                  /><span
+                    >Return to your spreadsheet and confirm the application tabs have
+                    appeared.</span
+                  ></label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="grid-2" style="margin-top: 18px">
+            <div class="card teal">
+              <h3>Expected result</h3>
+              <ul>
+                <li>
+                  Tabs are created, including Users, Vouchers, Vendors, Settings, AuditLog and
+                  cash-close records.
+                </li>
+                <li>
+                  Cash Voucher Receipts and Cash Voucher Backups folders are created in your Drive.
+                </li>
+                <li>A daily backup trigger for backupData_ exists.</li>
+              </ul>
+            </div>
+            <div class="card amber">
+              <h3>Never do this</h3>
+              <p>
+                <strong>Never run setup again on a Sheet that contains real data.</strong> It is an
+                initialization step, not a repair button. If setup reports an error or the
+                tabs/folders do not appear, stop and tell the operator instead of running it a
+                second time.
+              </p>
+            </div>
+          </div>
+        </section>
 
-<section class="slide" data-title="Publish and take the first backup" aria-labelledby="title-publish" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Steps 5–6 · publish and backup</span><h2 id="title-publish">05. Publish the web app, then run the first backup.</h2><p class="lead">The web app must be reachable by the hosted website. The application itself requires each person to sign in.</p></div><div class="step-number" aria-hidden="true">05</div></div><div class="grid-2"><div class="card tint"><h3>Operator says</h3><p>We will help confirm the deployment belongs to your copied project. Choose the exact settings below; do not publish a copy owned by anyone else.</p><p>The access choice “Anyone” is correct here because staff use their Cash Voucher login, not Google sign-in. It does not replace the app&#39;s own authentication and permissions.</p></div><div class="card teal"><h3>Client clicks</h3><div class="task-list"><label class="task-check"><input type="checkbox" data-progress-id="s5a" aria-label="Mark complete: In Apps Script, click Deploy → New deployment."><span>In Apps Script, click Deploy → New deployment.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s5b" aria-label="Mark complete: Choose Web app as the deployment type."><span>Choose Web app as the deployment type.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s5c" aria-label="Mark complete: Set Execute as to Me."><span>Set Execute as to Me.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s5d" aria-label="Mark complete: Set Who has access to Anyone."><span>Set Who has access to Anyone.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s5e" aria-label="Mark complete: Click Deploy and approve any requested Google access after checking with the operator."><span>Click Deploy and approve any requested Google access after checking with the operator.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s5f" aria-label="Mark complete: Copy the web app address that ends in /exec and send it to the operator through the agreed private channel."><span>Copy the web app address that ends in /exec and send it to the operator through the agreed private channel.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s5g" aria-label="Mark complete: In Apps Script, select backupData_ and click Run once."><span>In Apps Script, select backupData_ and click Run once.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s5h" aria-label="Mark complete: Open your Drive and confirm a new timestamped backup folder appears; ask the operator to verify the timestamp."><span>Open your Drive and confirm a new timestamped backup folder appears; ask the operator to verify the timestamp.</span></label></div></div></div><div class="callout warning"><span class="symbol" aria-hidden="true">!</span><div><strong>Do not send the /exec address to staff.</strong> Send it only to the operator. Staff receive the production website link after we have configured and checked it.</div></div><p class="small-note">The automated daily trigger is not enough for handover by itself. The first manual backup must finish and the created backup must be visible.</p></section>
+        <section
+          class="slide"
+          data-title="Publish and take the first backup"
+          aria-labelledby="title-publish"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Steps 5–6 · publish and backup</span>
+              <h2 id="title-publish">05. Publish the web app, then run the first backup.</h2>
+              <p class="lead">
+                The web app must be reachable by the hosted website. The application itself requires
+                each person to sign in.
+              </p>
+            </div>
+            <div class="step-number" aria-hidden="true">05</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Operator says</h3>
+              <p>
+                We will help confirm the deployment belongs to your copied project. Choose the exact
+                settings below; do not publish a copy owned by anyone else.
+              </p>
+              <p>
+                The access choice “Anyone” is correct here because staff use their Cash Voucher
+                login, not Google sign-in. It does not replace the app&#39;s own authentication and
+                permissions.
+              </p>
+            </div>
+            <div class="card teal">
+              <h3>Client clicks</h3>
+              <div class="task-list">
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s5a"
+                    aria-label="Mark complete: In Apps Script, click Deploy → New deployment."
+                  /><span>In Apps Script, click Deploy → New deployment.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s5b"
+                    aria-label="Mark complete: Choose Web app as the deployment type."
+                  /><span>Choose Web app as the deployment type.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s5c"
+                    aria-label="Mark complete: Set Execute as to Me."
+                  /><span>Set Execute as to Me.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s5d"
+                    aria-label="Mark complete: Set Who has access to Anyone."
+                  /><span>Set Who has access to Anyone.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s5e"
+                    aria-label="Mark complete: Click Deploy and approve any requested Google access after checking with the operator."
+                  /><span
+                    >Click Deploy and approve any requested Google access after checking with the
+                    operator.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s5f"
+                    aria-label="Mark complete: Copy the web app address that ends in /exec and send it to the operator through the agreed private channel."
+                  /><span
+                    >Copy the web app address that ends in /exec and send it to the operator through
+                    the agreed private channel.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s5g"
+                    aria-label="Mark complete: In Apps Script, select backupData_ and click Run once."
+                  /><span>In Apps Script, select backupData_ and click Run once.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s5h"
+                    aria-label="Mark complete: Open your Drive and confirm a new timestamped backup folder appears; ask the operator to verify the timestamp."
+                  /><span
+                    >Open your Drive and confirm a new timestamped backup folder appears; ask the
+                    operator to verify the timestamp.</span
+                  ></label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="callout warning">
+            <span class="symbol" aria-hidden="true">!</span>
+            <div>
+              <strong>Do not send the /exec address to staff.</strong> Send it only to the operator.
+              Staff receive the production website link after we have configured and checked it.
+            </div>
+          </div>
+          <p class="small-note">
+            The automated daily trigger is not enough for handover by itself. The first manual
+            backup must finish and the created backup must be visible.
+          </p>
+        </section>
 
-<section class="slide" data-title="Receive production link and sign in" aria-labelledby="title-login" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Steps 7–8 · handover and login</span><h2 id="title-login">06. Open the production link and complete first sign-in.</h2><p class="lead">After the operator connects your new backend and checks the site, you receive one production link. You never build, host, or run code.</p></div><div class="step-number" aria-hidden="true">06</div></div><div class="grid-2"><div class="card tint"><h3>Operator says</h3><p>We build and host your website, connect it to the /exec address you provided, and send you only the production link:</p><p><strong>{{APP_LINK}}</strong></p><p>We send the link separately from any temporary app login details. We never need your Google password or your private OWNER_PASSWORD value.</p></div><div class="card teal"><h3>Client clicks</h3><div class="task-list"><label class="task-check"><input type="checkbox" data-progress-id="s6a" aria-label="Mark complete: Open {{APP_LINK}} in a fresh browser window."><span>Open {{APP_LINK}} in a fresh browser window.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s6b" aria-label="Mark complete: Sign in with your owner app email {{OWNER_EMAIL}} and the temporary app password you created during setup."><span>Sign in with your owner app email {{OWNER_EMAIL}} and the temporary app password you created during setup.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s6c" aria-label="Mark complete: When asked, set a new app password between 8 and 128 characters."><span>When asked, set a new app password between 8 and 128 characters.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s6d" aria-label="Mark complete: Sign out fully."><span>Sign out fully.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s6e" aria-label="Mark complete: Sign in again with the new password and confirm the first-login password change is complete."><span>Sign in again with the new password and confirm the first-login password change is complete.</span></label></div></div></div><div class="grid-2" style="margin-top:18px"><div class="card teal"><h3>What you should see</h3><ul><li>The Cash Voucher application opens and the business identity is shown correctly.</li><li>The navigation and pages allowed for the owner are available.</li><li>The new business does not contain another client&#39;s vouchers or records. Before UAT, use fake data only.</li></ul></div><div class="card amber"><h3>If sign-in fails</h3><ul><li>Do not enter real vouchers or keep retrying repeatedly.</li><li>Check that the email is the owner email you configured and that the production link was copied correctly.</li><li>Contact the operator with the time, browser and exact non-sensitive error text. Never include passwords.</li></ul></div></div></section>
+        <section
+          class="slide"
+          data-title="Receive production link and sign in"
+          aria-labelledby="title-login"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Steps 7–8 · handover and login</span>
+              <h2 id="title-login">06. Open the production link and complete first sign-in.</h2>
+              <p class="lead">
+                After the operator connects your new backend and checks the site, you receive one
+                production link. You never build, host, or run code.
+              </p>
+            </div>
+            <div class="step-number" aria-hidden="true">06</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Operator says</h3>
+              <p>
+                We build and host your website, connect it to the /exec address you provided, and
+                send you only the production link:
+              </p>
+              <p><strong>{{APP_LINK}}</strong></p>
+              <p>
+                We send the link separately from any temporary app login details. We never need your
+                Google password or your private OWNER_PASSWORD value.
+              </p>
+            </div>
+            <div class="card teal">
+              <h3>Client clicks</h3>
+              <div class="task-list">
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s6a"
+                    aria-label="Mark complete: Open {{APP_LINK}} in a fresh browser window."
+                  /><span>Open {{APP_LINK}} in a fresh browser window.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s6b"
+                    aria-label="Mark complete: Sign in with your owner app email {{OWNER_EMAIL}} and the temporary app password you created during setup."
+                  /><span
+                    >Sign in with your owner app email {{OWNER_EMAIL}} and the temporary app
+                    password you created during setup.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s6c"
+                    aria-label="Mark complete: When asked, set a new app password between 8 and 128 characters."
+                  /><span
+                    >When asked, set a new app password between 8 and 128 characters.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s6d"
+                    aria-label="Mark complete: Sign out fully."
+                  /><span>Sign out fully.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s6e"
+                    aria-label="Mark complete: Sign in again with the new password and confirm the first-login password change is complete."
+                  /><span
+                    >Sign in again with the new password and confirm the first-login password change
+                    is complete.</span
+                  ></label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="grid-2" style="margin-top: 18px">
+            <div class="card teal">
+              <h3>What you should see</h3>
+              <ul>
+                <li>
+                  The Cash Voucher application opens and the business identity is shown correctly.
+                </li>
+                <li>The navigation and pages allowed for the owner are available.</li>
+                <li>
+                  The new business does not contain another client&#39;s vouchers or records. Before
+                  UAT, use fake data only.
+                </li>
+              </ul>
+            </div>
+            <div class="card amber">
+              <h3>If sign-in fails</h3>
+              <ul>
+                <li>Do not enter real vouchers or keep retrying repeatedly.</li>
+                <li>
+                  Check that the email is the owner email you configured and that the production
+                  link was copied correctly.
+                </li>
+                <li>
+                  Contact the operator with the time, browser and exact non-sensitive error text.
+                  Never include passwords.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
-<section class="slide" data-title="Create app users and install on phones" aria-labelledby="title-users" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Steps 9–10 · people and devices</span><h2 id="title-users">07. Add users and install the app on phones.</h2><p class="lead">Manager, Accountant and Staff are app roles, not Google roles. They use the same production website but only the permissions assigned to their app account.</p></div><div class="step-number" aria-hidden="true">07</div></div><div class="grid-2"><div class="card tint"><h3>Operator says</h3><p>We will review each role with you. Create one account per person. Never share a common username, email or password.</p><p>Staff do not need Gmail or any other Google account. They must not be invited to your Sheet, Drive folders or Apps Script editor.</p></div><div class="card teal"><h3>Client clicks</h3><div class="task-list"><label class="task-check"><input type="checkbox" data-progress-id="s7a" aria-label="Mark complete: In the app, open user administration as the owner."><span>In the app, open user administration as the owner.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s7b" aria-label="Mark complete: For each person, enter their name, their own email, their role and a temporary app password."><span>For each person, enter their name, their own email, their role and a temporary app password.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s7c" aria-label="Mark complete: Tell each person their temporary app password by phone or a separate channel, never in the same message as the app link."><span>Tell each person their temporary app password by phone or a separate channel, never in the same message as the app link.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s7d" aria-label="Mark complete: Ask each person to sign in and change their password at first sign-in."><span>Ask each person to sign in and change their password at first sign-in.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s7e" aria-label="Mark complete: Verify that each person can do allowed work and is denied work outside their role."><span>Verify that each person can do allowed work and is denied work outside their role.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s7f" aria-label="Mark complete: On Android, open the app in Chrome and choose Install app if offered."><span>On Android, open the app in Chrome and choose Install app if offered.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s7g" aria-label="Mark complete: On iPhone, open the app in Safari, choose Share, then Add to Home Screen."><span>On iPhone, open the app in Safari, choose Share, then Add to Home Screen.</span></label></div></div></div><div class="callout danger"><span class="symbol" aria-hidden="true">×</span><div><strong>Staff only use the app.</strong> Do not give staff the Sheet, Drive, Apps Script or Google-account link or permission. If someone says they need Google access to use Cash Voucher, stop and contact the operator.</div></div></section>
+        <section
+          class="slide"
+          data-title="Create app users and install on phones"
+          aria-labelledby="title-users"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Steps 9–10 · people and devices</span>
+              <h2 id="title-users">07. Add users and install the app on phones.</h2>
+              <p class="lead">
+                Manager, Accountant and Staff are app roles, not Google roles. They use the same
+                production website but only the permissions assigned to their app account.
+              </p>
+            </div>
+            <div class="step-number" aria-hidden="true">07</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Operator says</h3>
+              <p>
+                We will review each role with you. Create one account per person. Never share a
+                common username, email or password.
+              </p>
+              <p>
+                Staff do not need Gmail or any other Google account. They must not be invited to
+                your Sheet, Drive folders or Apps Script editor.
+              </p>
+            </div>
+            <div class="card teal">
+              <h3>Client clicks</h3>
+              <div class="task-list">
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s7a"
+                    aria-label="Mark complete: In the app, open user administration as the owner."
+                  /><span>In the app, open user administration as the owner.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s7b"
+                    aria-label="Mark complete: For each person, enter their name, their own email, their role and a temporary app password."
+                  /><span
+                    >For each person, enter their name, their own email, their role and a temporary
+                    app password.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s7c"
+                    aria-label="Mark complete: Tell each person their temporary app password by phone or a separate channel, never in the same message as the app link."
+                  /><span
+                    >Tell each person their temporary app password by phone or a separate channel,
+                    never in the same message as the app link.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s7d"
+                    aria-label="Mark complete: Ask each person to sign in and change their password at first sign-in."
+                  /><span
+                    >Ask each person to sign in and change their password at first sign-in.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s7e"
+                    aria-label="Mark complete: Verify that each person can do allowed work and is denied work outside their role."
+                  /><span
+                    >Verify that each person can do allowed work and is denied work outside their
+                    role.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s7f"
+                    aria-label="Mark complete: On Android, open the app in Chrome and choose Install app if offered."
+                  /><span
+                    >On Android, open the app in Chrome and choose Install app if offered.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s7g"
+                    aria-label="Mark complete: On iPhone, open the app in Safari, choose Share, then Add to Home Screen."
+                  /><span
+                    >On iPhone, open the app in Safari, choose Share, then Add to Home Screen.</span
+                  ></label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="callout danger">
+            <span class="symbol" aria-hidden="true">×</span>
+            <div>
+              <strong>Staff only use the app.</strong> Do not give staff the Sheet, Drive, Apps
+              Script or Google-account link or permission. If someone says they need Google access
+              to use Cash Voucher, stop and contact the operator.
+            </div>
+          </div>
+        </section>
 
-<section class="slide" data-title="Owner safety and UAT preparation" aria-labelledby="title-safety" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Step 11 · owner safety</span><h2 id="title-safety">08. Keep the backend under owner control.</h2><p class="lead">The owner remains responsible for their Google account and source data. The operator helps under the access rules below.</p></div><div class="step-number" aria-hidden="true">08</div></div><div class="grid-2"><div class="card tint"><h3>Operator says</h3><p>Only the owner knows the Google password. We guide setup by screen share but never ask for or keep that password.</p><p>For later troubleshooting, you can temporarily add the operator&#39;s named Google account as an Editor of the Sheet. Remove that access as soon as the work is complete. Editor access may also expose the bound script and its data, so grant it only when needed.</p></div><div class="card teal"><h3>Client clicks</h3><div class="task-list"><label class="task-check"><input type="checkbox" data-progress-id="s8a" aria-label="Mark complete: Keep Google account recovery details in a secure place outside this guide."><span>Keep Google account recovery details in a secure place outside this guide.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s8b" aria-label="Mark complete: Record the second recovery contact and how to reach them."><span>Record the second recovery contact and how to reach them.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s8c" aria-label="Mark complete: At least monthly, export the business records to CSV and save the file somewhere outside Google."><span>At least monthly, export the business records to CSV and save the file somewhere outside Google.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s8d" aria-label="Mark complete: Before support access, confirm the operator's exact Google email with us."><span>Before support access, confirm the operator's exact Google email with us.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s8e" aria-label="Mark complete: Add that account as Sheet Editor only for the agreed support window, then remove it and confirm access is gone."><span>Add that account as Sheet Editor only for the agreed support window, then remove it and confirm access is gone.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s8f" aria-label="Mark complete: Use only fake names, vendors, notes, amounts and receipt pictures during UAT."><span>Use only fake names, vendors, notes, amounts and receipt pictures during UAT.</span></label>
-<label class="task-check"><input type="checkbox" data-progress-id="s8g" aria-label="Mark complete: Do not use this system for real work until every P0 test is marked Pass and both parties sign off."><span>Do not use this system for real work until every P0 test is marked Pass and both parties sign off.</span></label></div></div></div><div class="callout danger"><span class="symbol" aria-hidden="true">!</span><div><strong>Loss of the owner&#39;s Google account can mean loss of access to the entire backend.</strong> Keep recovery options current and keep a monthly CSV copy outside Google. A CSV export may not include receipt files; agree a separate receipt export with support.</div></div><h3 style="margin-top:22px">Before UAT starts</h3><div class="grid-2"><div class="card tint"><h3>Agree the test plan</h3><ul><li>Use fake data only and clearly mark test entries as UAT.</li><li>Choose a person to test each app role and device.</li><li>Keep a short record of expected amounts and totals to compare after each test.</li></ul></div><div class="card tint"><h3>Stop when something is wrong</h3><ul><li>Stop if a user can see data they should not see.</li><li>Stop if a voucher is missing, duplicated, numbered incorrectly or has the wrong amount/date.</li><li>Stop if backup or restore cannot be confirmed. Preserve notes and contact support before continuing.</li></ul></div></div></section>
+        <section
+          class="slide"
+          data-title="Owner safety and UAT preparation"
+          aria-labelledby="title-safety"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Step 11 · owner safety</span>
+              <h2 id="title-safety">08. Keep the backend under owner control.</h2>
+              <p class="lead">
+                The owner remains responsible for their Google account and source data. The operator
+                helps under the access rules below.
+              </p>
+            </div>
+            <div class="step-number" aria-hidden="true">08</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Operator says</h3>
+              <p>
+                Only the owner knows the Google password. We guide setup by screen share but never
+                ask for or keep that password.
+              </p>
+              <p>
+                For later troubleshooting, you can temporarily add the operator&#39;s named Google
+                account as an Editor of the Sheet. Remove that access as soon as the work is
+                complete. Editor access may also expose the bound script and its data, so grant it
+                only when needed.
+              </p>
+            </div>
+            <div class="card teal">
+              <h3>Client clicks</h3>
+              <div class="task-list">
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s8a"
+                    aria-label="Mark complete: Keep Google account recovery details in a secure place outside this guide."
+                  /><span
+                    >Keep Google account recovery details in a secure place outside this
+                    guide.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s8b"
+                    aria-label="Mark complete: Record the second recovery contact and how to reach them."
+                  /><span>Record the second recovery contact and how to reach them.</span></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s8c"
+                    aria-label="Mark complete: At least monthly, export the business records to CSV and save the file somewhere outside Google."
+                  /><span
+                    >At least monthly, export the business records to CSV and save the file
+                    somewhere outside Google.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s8d"
+                    aria-label="Mark complete: Before support access, confirm the operator's exact Google email with us."
+                  /><span
+                    >Before support access, confirm the operator's exact Google email with us.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s8e"
+                    aria-label="Mark complete: Add that account as Sheet Editor only for the agreed support window, then remove it and confirm access is gone."
+                  /><span
+                    >Add that account as Sheet Editor only for the agreed support window, then
+                    remove it and confirm access is gone.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s8f"
+                    aria-label="Mark complete: Use only fake names, vendors, notes, amounts and receipt pictures during UAT."
+                  /><span
+                    >Use only fake names, vendors, notes, amounts and receipt pictures during
+                    UAT.</span
+                  ></label
+                >
+                <label class="task-check"
+                  ><input
+                    type="checkbox"
+                    data-progress-id="s8g"
+                    aria-label="Mark complete: Do not use this system for real work until every P0 test is marked Pass and both parties sign off."
+                  /><span
+                    >Do not use this system for real work until every P0 test is marked Pass and
+                    both parties sign off.</span
+                  ></label
+                >
+              </div>
+            </div>
+          </div>
+          <div class="callout danger">
+            <span class="symbol" aria-hidden="true">!</span>
+            <div>
+              <strong
+                >Loss of the owner&#39;s Google account can mean loss of access to the entire
+                backend.</strong
+              >
+              Keep recovery options current and keep a monthly CSV copy outside Google. A CSV export
+              may not include receipt files; agree a separate receipt export with support.
+            </div>
+          </div>
+          <h3 style="margin-top: 22px">Before UAT starts</h3>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>Agree the test plan</h3>
+              <ul>
+                <li>Use fake data only and clearly mark test entries as UAT.</li>
+                <li>Choose a person to test each app role and device.</li>
+                <li>
+                  Keep a short record of expected amounts and totals to compare after each test.
+                </li>
+              </ul>
+            </div>
+            <div class="card tint">
+              <h3>Stop when something is wrong</h3>
+              <ul>
+                <li>Stop if a user can see data they should not see.</li>
+                <li>
+                  Stop if a voucher is missing, duplicated, numbered incorrectly or has the wrong
+                  amount/date.
+                </li>
+                <li>
+                  Stop if backup or restore cannot be confirmed. Preserve notes and contact support
+                  before continuing.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </section>
 
-<section class="slide" data-title="Execute the UAT matrix" aria-labelledby="title-uat" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Acceptance testing · fake data only</span><h2 id="title-uat">09. Execute the UAT checklist.</h2><p class="lead">Use fake data only. P0 means a critical go-live test.</p></div><div class="step-number" aria-hidden="true">09</div></div><div class="callout danger"><span class="symbol" aria-hidden="true">!</span><div><strong>Real work stays blocked until every P0 case is marked Pass.</strong> A blank result or N/A is not a P0 pass. Do not use real customer money, real personal data or real receipts in this test.</div></div><div class="table-wrap" style="margin-top:18px"><table class="uat-table"><thead><tr><th>ID / priority</th><th>Who</th><th>Test / action</th><th>Expected result</th><th>Tick, result and notes</th></tr></thead><tbody><tr data-uat-row="UAT-01" data-priority="P0"><td class="uat-case">UAT-01<br><span class="priority p0">P0</span></td><td>Owner</td><td>Sign in with the initial temporary app password, set a new password, sign out, and sign in again.</td><td>The forced password change completes. A fresh sign-in works; no password is written into test notes.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-01-done"><span>Tested</span></label><label class="field-label" for="UAT-01-status">Result</label><select class="uat-status" id="UAT-01-status" data-storage-key="UAT-01-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-01-notes">Notes</label><textarea class="uat-notes" id="UAT-01-notes" data-storage-key="UAT-01-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-02" data-priority="P0"><td class="uat-case">UAT-02<br><span class="priority p0">P0</span></td><td>Owner + test user</td><td>Enter an incorrect password repeatedly for a designated fake account and verify lockout behavior.</td><td>Clear safe feedback appears, the account is protected as configured, and no secret is disclosed in the log.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-02-done"><span>Tested</span></label><label class="field-label" for="UAT-02-status">Result</label><select class="uat-status" id="UAT-02-status" data-storage-key="UAT-02-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-02-notes">Notes</label><textarea class="uat-notes" id="UAT-02-notes" data-storage-key="UAT-02-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-03" data-priority="P0"><td class="uat-case">UAT-03<br><span class="priority p0">P0</span></td><td>Owner / Manager / Accountant / Staff</td><td>Test actions each role is allowed and denied, including attempts to open a page/action outside its role.</td><td>Permitted actions work; prohibited actions are denied by the app, not merely hidden on screen.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-03-done"><span>Tested</span></label><label class="field-label" for="UAT-03-status">Result</label><select class="uat-status" id="UAT-03-status" data-storage-key="UAT-03-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-03-notes">Notes</label><textarea class="uat-notes" id="UAT-03-notes" data-storage-key="UAT-03-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-04" data-priority="P0"><td class="uat-case">UAT-04<br><span class="priority p0">P0</span></td><td>Staff + owner</td><td>Check that staff have no Sheet, Drive or Apps Script link and no Google permission; sign in and use only the app.</td><td>Staff can use only their app login. They have no Google permission to the Sheet, Drive folders or script.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-04-done"><span>Tested</span></label><label class="field-label" for="UAT-04-status">Result</label><select class="uat-status" id="UAT-04-status" data-storage-key="UAT-04-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-04-notes">Notes</label><textarea class="uat-notes" id="UAT-04-notes" data-storage-key="UAT-04-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-05" data-priority="P0"><td class="uat-case">UAT-05<br><span class="priority p0">P0</span></td><td>Staff</td><td>Create a fake cash PAYMENT below INR 10,000.</td><td>A unique voucher number is assigned, the amount/date/category are correct, and the saved record appears once.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-05-done"><span>Tested</span></label><label class="field-label" for="UAT-05-status">Result</label><select class="uat-status" id="UAT-05-status" data-storage-key="UAT-05-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-05-notes">Notes</label><textarea class="uat-notes" id="UAT-05-notes" data-storage-key="UAT-05-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-06" data-priority="P0"><td class="uat-case">UAT-06<br><span class="priority p0">P0</span></td><td>Staff</td><td>Create a fake cash RECEIPT and attach a small permitted sample receipt image.</td><td>The receipt uses the right series; amount, date and category are correct; authorized users can open the image.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-06-done"><span>Tested</span></label><label class="field-label" for="UAT-06-status">Result</label><select class="uat-status" id="UAT-06-status" data-storage-key="UAT-06-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-06-notes">Notes</label><textarea class="uat-notes" id="UAT-06-notes" data-storage-key="UAT-06-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-07" data-priority="P0"><td class="uat-case">UAT-07<br><span class="priority p0">P0</span></td><td>Staff</td><td>Try uploading a fake receipt photo that is over the allowed size limit.</td><td>The upload is refused clearly. No broken or partial receipt is saved, and the user is told what to do next.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-07-done"><span>Tested</span></label><label class="field-label" for="UAT-07-status">Result</label><select class="uat-status" id="UAT-07-status" data-storage-key="UAT-07-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-07-notes">Notes</label><textarea class="uat-notes" id="UAT-07-notes" data-storage-key="UAT-07-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-08" data-priority="P0"><td class="uat-case">UAT-08<br><span class="priority p0">P0</span></td><td>Owner + Manager</td><td>Create a fake PAYMENT of INR 10,000 or more and have the creator attempt to approve it.</td><td>The creator cannot self-approve. Pending payment is excluded from approved totals and cash close until another authorized user approves.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-08-done"><span>Tested</span></label><label class="field-label" for="UAT-08-status">Result</label><select class="uat-status" id="UAT-08-status" data-storage-key="UAT-08-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-08-notes">Notes</label><textarea class="uat-notes" id="UAT-08-notes" data-storage-key="UAT-08-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-09" data-priority="P1"><td class="uat-case">UAT-09<br><span class="priority p1">P1</span></td><td>Manager</td><td>Cancel a clearly marked fake voucher and enter a reason.</td><td>The reason is visible in the record/history; cancelled amounts are treated correctly and the audit history remains.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-09-done"><span>Tested</span></label><label class="field-label" for="UAT-09-status">Result</label><select class="uat-status" id="UAT-09-status" data-storage-key="UAT-09-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-09-notes">Notes</label><textarea class="uat-notes" id="UAT-09-notes" data-storage-key="UAT-09-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-10" data-priority="P0"><td class="uat-case">UAT-10<br><span class="priority p0">P0</span></td><td>Manager + owner</td><td>Perform Daily Cash Close using an agreed fake opening balance, fake receipts, payments and a counted amount.</td><td>Expected cash and variance match a manually calculated worksheet. Required unapproved items block closing.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-10-done"><span>Tested</span></label><label class="field-label" for="UAT-10-status">Result</label><select class="uat-status" id="UAT-10-status" data-storage-key="UAT-10-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-10-notes">Notes</label><textarea class="uat-notes" id="UAT-10-notes" data-storage-key="UAT-10-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-11" data-priority="P0"><td class="uat-case">UAT-11<br><span class="priority p0">P0</span></td><td>Owner + Manager</td><td>Compare dashboard, register and report totals against the agreed fake data.</td><td>Every total matches the manually checked numbers; no pending, cancelled or duplicate item is counted incorrectly.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-11-done"><span>Tested</span></label><label class="field-label" for="UAT-11-status">Result</label><select class="uat-status" id="UAT-11-status" data-storage-key="UAT-11-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-11-notes">Notes</label><textarea class="uat-notes" id="UAT-11-notes" data-storage-key="UAT-11-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-12" data-priority="P0"><td class="uat-case">UAT-12<br><span class="priority p0">P0</span></td><td>Two app users</td><td>Have two different users save fake vouchers at the same time.</td><td>Both saves are handled safely and all voucher numbers remain unique; neither record overwrites or duplicates the other.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-12-done"><span>Tested</span></label><label class="field-label" for="UAT-12-status">Result</label><select class="uat-status" id="UAT-12-status" data-storage-key="UAT-12-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-12-notes">Notes</label><textarea class="uat-notes" id="UAT-12-notes" data-storage-key="UAT-12-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-13" data-priority="P0"><td class="uat-case">UAT-13<br><span class="priority p0">P0</span></td><td>Owner</td><td>Enter fake records on a month-end date and immediately before/after a date boundary.</td><td>Each entry appears on the intended business date; month-end totals and day filters include the correct records.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-13-done"><span>Tested</span></label><label class="field-label" for="UAT-13-status">Result</label><select class="uat-status" id="UAT-13-status" data-storage-key="UAT-13-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-13-notes">Notes</label><textarea class="uat-notes" id="UAT-13-notes" data-storage-key="UAT-13-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-14" data-priority="P0"><td class="uat-case">UAT-14<br><span class="priority p0">P0</span></td><td>Staff</td><td>Create a clearly marked fake entry offline, reconnect and let sync finish.</td><td>Pending status is visible. The entry reaches the server once only and its voucher number remains unique.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-14-done"><span>Tested</span></label><label class="field-label" for="UAT-14-status">Result</label><select class="uat-status" id="UAT-14-status" data-storage-key="UAT-14-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-14-notes">Notes</label><textarea class="uat-notes" id="UAT-14-notes" data-storage-key="UAT-14-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-15" data-priority="P0"><td class="uat-case">UAT-15<br><span class="priority p0">P0</span></td><td>All roles</td><td>Sign out or let a test session expire, press browser Back, and try to see the prior page.</td><td>No protected voucher or other page data is revealed after sign-out or expiry; the user must sign in again.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-15-done"><span>Tested</span></label><label class="field-label" for="UAT-15-status">Result</label><select class="uat-status" id="UAT-15-status" data-storage-key="UAT-15-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-15-notes">Notes</label><textarea class="uat-notes" id="UAT-15-notes" data-storage-key="UAT-15-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-16" data-priority="P1"><td class="uat-case">UAT-16<br><span class="priority p1">P1</span></td><td>Owner / Accountant</td><td>Export the fake data to CSV and open the file in a spreadsheet application.</td><td>The file downloads, columns and dates are readable, totals reconcile, and fields that begin with formula characters are safe.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-16-done"><span>Tested</span></label><label class="field-label" for="UAT-16-status">Result</label><select class="uat-status" id="UAT-16-status" data-storage-key="UAT-16-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-16-notes">Notes</label><textarea class="uat-notes" id="UAT-16-notes" data-storage-key="UAT-16-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-17" data-priority="P1"><td class="uat-case">UAT-17<br><span class="priority p1">P1</span></td><td>Owner + staff</td><td>Install the app on an Android phone with Chrome and an iPhone with Safari where available.</td><td>The app opens from the home screen, fits the screen and permits sign-in without granting Google Sheet access.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-17-done"><span>Tested</span></label><label class="field-label" for="UAT-17-status">Result</label><select class="uat-status" id="UAT-17-status" data-storage-key="UAT-17-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-17-notes">Notes</label><textarea class="uat-notes" id="UAT-17-notes" data-storage-key="UAT-17-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-18" data-priority="P0"><td class="uat-case">UAT-18<br><span class="priority p0">P0</span></td><td>Operator + owner</td><td>Run a backup and restore it into a separate recovery Sheet, never over the source Sheet.</td><td>A timestamped backup exists and restored tabs, headers, row counts, voucher numbering and receipt mapping reconcile.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-18-done"><span>Tested</span></label><label class="field-label" for="UAT-18-status">Result</label><select class="uat-status" id="UAT-18-status" data-storage-key="UAT-18-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-18-notes">Notes</label><textarea class="uat-notes" id="UAT-18-notes" data-storage-key="UAT-18-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr>
-<tr data-uat-row="UAT-19" data-priority="P1"><td class="uat-case">UAT-19<br><span class="priority p1">P1</span></td><td>Owner</td><td>Review the first backup folder, expected backup trigger and the most recent successful backup timestamp.</td><td>The daily trigger exists, a timestamped backup is visible, and the owner knows how to request recovery support.</td><td><label class="uat-done"><input type="checkbox" data-storage-key="UAT-19-done"><span>Tested</span></label><label class="field-label" for="UAT-19-status">Result</label><select class="uat-status" id="UAT-19-status" data-storage-key="UAT-19-status"><option value="">Not run</option><option value="Pass">Pass</option><option value="Fail">Fail</option><option value="N-A">N/A</option></select><label class="field-label" for="UAT-19-notes">Notes</label><textarea class="uat-notes" id="UAT-19-notes" data-storage-key="UAT-19-notes" rows="2" placeholder="Fake-data outcome only. Never enter passwords or tokens."></textarea></td></tr></tbody></table></div><div class="uat-actions"><button class="btn primary" type="button" id="copyUatResults">Copy UAT results</button><div class="uat-summary" id="uatSummary" role="status" aria-live="polite">P0 status will update as results are recorded.</div></div><p class="small-note" id="copyStatus" role="status" aria-live="polite">Notes are saved in this browser only. Do not put any passwords, recovery codes, session details or tokens in notes.</p></section>
+        <section
+          class="slide"
+          data-title="Execute the UAT matrix"
+          aria-labelledby="title-uat"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Acceptance testing · fake data only</span>
+              <h2 id="title-uat">09. Execute the UAT checklist.</h2>
+              <p class="lead">Use fake data only. P0 means a critical go-live test.</p>
+            </div>
+            <div class="step-number" aria-hidden="true">09</div>
+          </div>
+          <div class="callout danger">
+            <span class="symbol" aria-hidden="true">!</span>
+            <div>
+              <strong>Real work stays blocked until every P0 case is marked Pass.</strong> A blank
+              result or N/A is not a P0 pass. Do not use real customer money, real personal data or
+              real receipts in this test.
+            </div>
+          </div>
+          <div class="table-wrap" style="margin-top: 18px">
+            <table class="uat-table">
+              <thead>
+                <tr>
+                  <th>ID / priority</th>
+                  <th>Who</th>
+                  <th>Test / action</th>
+                  <th>Expected result</th>
+                  <th>Tick, result and notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr data-uat-row="UAT-01" data-priority="P0">
+                  <td class="uat-case">UAT-01<br /><span class="priority p0">P0</span></td>
+                  <td>Owner</td>
+                  <td>
+                    Sign in with the initial temporary app password, set a new password, sign out,
+                    and sign in again.
+                  </td>
+                  <td>
+                    The forced password change completes. A fresh sign-in works; no password is
+                    written into test notes.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-01-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-01-status">Result</label
+                    ><select class="uat-status" id="UAT-01-status" data-storage-key="UAT-01-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-01-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-01-notes"
+                      data-storage-key="UAT-01-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-02" data-priority="P0">
+                  <td class="uat-case">UAT-02<br /><span class="priority p0">P0</span></td>
+                  <td>Owner + test user</td>
+                  <td>
+                    Enter an incorrect password repeatedly for a designated fake account and verify
+                    lockout behavior.
+                  </td>
+                  <td>
+                    Clear safe feedback appears, the account is protected as configured, and no
+                    secret is disclosed in the log.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-02-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-02-status">Result</label
+                    ><select class="uat-status" id="UAT-02-status" data-storage-key="UAT-02-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-02-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-02-notes"
+                      data-storage-key="UAT-02-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-03" data-priority="P0">
+                  <td class="uat-case">UAT-03<br /><span class="priority p0">P0</span></td>
+                  <td>Owner / Manager / Accountant / Staff</td>
+                  <td>
+                    Test actions each role is allowed and denied, including attempts to open a
+                    page/action outside its role.
+                  </td>
+                  <td>
+                    Permitted actions work; prohibited actions are denied by the app, not merely
+                    hidden on screen.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-03-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-03-status">Result</label
+                    ><select class="uat-status" id="UAT-03-status" data-storage-key="UAT-03-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-03-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-03-notes"
+                      data-storage-key="UAT-03-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-04" data-priority="P0">
+                  <td class="uat-case">UAT-04<br /><span class="priority p0">P0</span></td>
+                  <td>Staff + owner</td>
+                  <td>
+                    Check that staff have no Sheet, Drive or Apps Script link and no Google
+                    permission; sign in and use only the app.
+                  </td>
+                  <td>
+                    Staff can use only their app login. They have no Google permission to the Sheet,
+                    Drive folders or script.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-04-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-04-status">Result</label
+                    ><select class="uat-status" id="UAT-04-status" data-storage-key="UAT-04-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-04-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-04-notes"
+                      data-storage-key="UAT-04-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-05" data-priority="P0">
+                  <td class="uat-case">UAT-05<br /><span class="priority p0">P0</span></td>
+                  <td>Staff</td>
+                  <td>Create a fake cash PAYMENT below INR 10,000.</td>
+                  <td>
+                    A unique voucher number is assigned, the amount/date/category are correct, and
+                    the saved record appears once.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-05-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-05-status">Result</label
+                    ><select class="uat-status" id="UAT-05-status" data-storage-key="UAT-05-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-05-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-05-notes"
+                      data-storage-key="UAT-05-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-06" data-priority="P0">
+                  <td class="uat-case">UAT-06<br /><span class="priority p0">P0</span></td>
+                  <td>Staff</td>
+                  <td>
+                    Create a fake cash RECEIPT and attach a small permitted sample receipt image.
+                  </td>
+                  <td>
+                    The receipt uses the right series; amount, date and category are correct;
+                    authorized users can open the image.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-06-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-06-status">Result</label
+                    ><select class="uat-status" id="UAT-06-status" data-storage-key="UAT-06-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-06-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-06-notes"
+                      data-storage-key="UAT-06-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-07" data-priority="P0">
+                  <td class="uat-case">UAT-07<br /><span class="priority p0">P0</span></td>
+                  <td>Staff</td>
+                  <td>Try uploading a fake receipt photo that is over the allowed size limit.</td>
+                  <td>
+                    The upload is refused clearly. No broken or partial receipt is saved, and the
+                    user is told what to do next.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-07-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-07-status">Result</label
+                    ><select class="uat-status" id="UAT-07-status" data-storage-key="UAT-07-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-07-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-07-notes"
+                      data-storage-key="UAT-07-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-08" data-priority="P0">
+                  <td class="uat-case">UAT-08<br /><span class="priority p0">P0</span></td>
+                  <td>Owner + Manager</td>
+                  <td>
+                    Create a fake PAYMENT of INR 10,000 or more and have the creator attempt to
+                    approve it.
+                  </td>
+                  <td>
+                    The creator cannot self-approve. Pending payment is excluded from approved
+                    totals and cash close until another authorized user approves.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-08-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-08-status">Result</label
+                    ><select class="uat-status" id="UAT-08-status" data-storage-key="UAT-08-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-08-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-08-notes"
+                      data-storage-key="UAT-08-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-09" data-priority="P1">
+                  <td class="uat-case">UAT-09<br /><span class="priority p1">P1</span></td>
+                  <td>Manager</td>
+                  <td>Cancel a clearly marked fake voucher and enter a reason.</td>
+                  <td>
+                    The reason is visible in the record/history; cancelled amounts are treated
+                    correctly and the audit history remains.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-09-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-09-status">Result</label
+                    ><select class="uat-status" id="UAT-09-status" data-storage-key="UAT-09-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-09-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-09-notes"
+                      data-storage-key="UAT-09-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-10" data-priority="P0">
+                  <td class="uat-case">UAT-10<br /><span class="priority p0">P0</span></td>
+                  <td>Manager + owner</td>
+                  <td>
+                    Perform Daily Cash Close using an agreed fake opening balance, fake receipts,
+                    payments and a counted amount.
+                  </td>
+                  <td>
+                    Expected cash and variance match a manually calculated worksheet. Required
+                    unapproved items block closing.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-10-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-10-status">Result</label
+                    ><select class="uat-status" id="UAT-10-status" data-storage-key="UAT-10-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-10-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-10-notes"
+                      data-storage-key="UAT-10-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-11" data-priority="P0">
+                  <td class="uat-case">UAT-11<br /><span class="priority p0">P0</span></td>
+                  <td>Owner + Manager</td>
+                  <td>
+                    Compare dashboard, register and report totals against the agreed fake data.
+                  </td>
+                  <td>
+                    Every total matches the manually checked numbers; no pending, cancelled or
+                    duplicate item is counted incorrectly.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-11-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-11-status">Result</label
+                    ><select class="uat-status" id="UAT-11-status" data-storage-key="UAT-11-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-11-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-11-notes"
+                      data-storage-key="UAT-11-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-12" data-priority="P0">
+                  <td class="uat-case">UAT-12<br /><span class="priority p0">P0</span></td>
+                  <td>Two app users</td>
+                  <td>Have two different users save fake vouchers at the same time.</td>
+                  <td>
+                    Both saves are handled safely and all voucher numbers remain unique; neither
+                    record overwrites or duplicates the other.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-12-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-12-status">Result</label
+                    ><select class="uat-status" id="UAT-12-status" data-storage-key="UAT-12-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-12-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-12-notes"
+                      data-storage-key="UAT-12-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-13" data-priority="P0">
+                  <td class="uat-case">UAT-13<br /><span class="priority p0">P0</span></td>
+                  <td>Owner</td>
+                  <td>
+                    Enter fake records on a month-end date and immediately before/after a date
+                    boundary.
+                  </td>
+                  <td>
+                    Each entry appears on the intended business date; month-end totals and day
+                    filters include the correct records.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-13-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-13-status">Result</label
+                    ><select class="uat-status" id="UAT-13-status" data-storage-key="UAT-13-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-13-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-13-notes"
+                      data-storage-key="UAT-13-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-14" data-priority="P0">
+                  <td class="uat-case">UAT-14<br /><span class="priority p0">P0</span></td>
+                  <td>Staff</td>
+                  <td>
+                    Create a clearly marked fake entry offline, reconnect and let sync finish.
+                  </td>
+                  <td>
+                    Pending status is visible. The entry reaches the server once only and its
+                    voucher number remains unique.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-14-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-14-status">Result</label
+                    ><select class="uat-status" id="UAT-14-status" data-storage-key="UAT-14-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-14-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-14-notes"
+                      data-storage-key="UAT-14-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-15" data-priority="P0">
+                  <td class="uat-case">UAT-15<br /><span class="priority p0">P0</span></td>
+                  <td>All roles</td>
+                  <td>
+                    Sign out or let a test session expire, press browser Back, and try to see the
+                    prior page.
+                  </td>
+                  <td>
+                    No protected voucher or other page data is revealed after sign-out or expiry;
+                    the user must sign in again.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-15-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-15-status">Result</label
+                    ><select class="uat-status" id="UAT-15-status" data-storage-key="UAT-15-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-15-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-15-notes"
+                      data-storage-key="UAT-15-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-16" data-priority="P1">
+                  <td class="uat-case">UAT-16<br /><span class="priority p1">P1</span></td>
+                  <td>Owner / Accountant</td>
+                  <td>
+                    Export the fake data to CSV and open the file in a spreadsheet application.
+                  </td>
+                  <td>
+                    The file downloads, columns and dates are readable, totals reconcile, and fields
+                    that begin with formula characters are safe.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-16-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-16-status">Result</label
+                    ><select class="uat-status" id="UAT-16-status" data-storage-key="UAT-16-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-16-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-16-notes"
+                      data-storage-key="UAT-16-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-17" data-priority="P1">
+                  <td class="uat-case">UAT-17<br /><span class="priority p1">P1</span></td>
+                  <td>Owner + staff</td>
+                  <td>
+                    Install the app on an Android phone with Chrome and an iPhone with Safari where
+                    available.
+                  </td>
+                  <td>
+                    The app opens from the home screen, fits the screen and permits sign-in without
+                    granting Google Sheet access.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-17-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-17-status">Result</label
+                    ><select class="uat-status" id="UAT-17-status" data-storage-key="UAT-17-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-17-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-17-notes"
+                      data-storage-key="UAT-17-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-18" data-priority="P0">
+                  <td class="uat-case">UAT-18<br /><span class="priority p0">P0</span></td>
+                  <td>Operator + owner</td>
+                  <td>
+                    Run a backup and restore it into a separate recovery Sheet, never over the
+                    source Sheet.
+                  </td>
+                  <td>
+                    A timestamped backup exists and restored tabs, headers, row counts, voucher
+                    numbering and receipt mapping reconcile.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-18-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-18-status">Result</label
+                    ><select class="uat-status" id="UAT-18-status" data-storage-key="UAT-18-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-18-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-18-notes"
+                      data-storage-key="UAT-18-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+                <tr data-uat-row="UAT-19" data-priority="P1">
+                  <td class="uat-case">UAT-19<br /><span class="priority p1">P1</span></td>
+                  <td>Owner</td>
+                  <td>
+                    Review the first backup folder, expected backup trigger and the most recent
+                    successful backup timestamp.
+                  </td>
+                  <td>
+                    The daily trigger exists, a timestamped backup is visible, and the owner knows
+                    how to request recovery support.
+                  </td>
+                  <td>
+                    <label class="uat-done"
+                      ><input type="checkbox" data-storage-key="UAT-19-done" /><span
+                        >Tested</span
+                      ></label
+                    ><label class="field-label" for="UAT-19-status">Result</label
+                    ><select class="uat-status" id="UAT-19-status" data-storage-key="UAT-19-status">
+                      <option value="">Not run</option>
+                      <option value="Pass">Pass</option>
+                      <option value="Fail">Fail</option>
+                      <option value="N-A">N/A</option></select
+                    ><label class="field-label" for="UAT-19-notes">Notes</label
+                    ><textarea
+                      class="uat-notes"
+                      id="UAT-19-notes"
+                      data-storage-key="UAT-19-notes"
+                      rows="2"
+                      placeholder="Fake-data outcome only. Never enter passwords or tokens."
+                    ></textarea>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="uat-actions">
+            <button class="btn primary" type="button" id="copyUatResults">Copy UAT results</button>
+            <div class="uat-summary" id="uatSummary" role="status" aria-live="polite">
+              P0 status will update as results are recorded.
+            </div>
+          </div>
+          <p class="small-note" id="copyStatus" role="status" aria-live="polite">
+            Notes are saved in this browser only. Do not put any passwords, recovery codes, session
+            details or tokens in notes.
+          </p>
+        </section>
 
-<section class="slide" data-title="Go or no-go and acceptance" aria-labelledby="title-gates" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Launch decision · owner and operator</span><h2 id="title-gates">10. Go only when all P0 tests pass.</h2><p class="lead">A blank result or N/A for any P0 test means no-go.</p></div><div class="step-number" aria-hidden="true">10</div></div><div class="gate-list"><div class="gate"><div class="gate-n">1</div><div><h3>Correct customer and production link</h3><p>The link shows {{CLIENT_NAME}} and points to this customer&#39;s backend. No other customer&#39;s records are visible.</p></div><div class="gate-status">Pass / Fail</div></div><div class="gate"><div class="gate-n">2</div><div><h3>Owner login and individual user roles</h3><p>The owner changed the temporary password; sign-in, lockout, allowed and denied actions work as expected.</p></div><div class="gate-status">Pass / Fail</div></div><div class="gate"><div class="gate-n">3</div><div><h3>Financial flows and controls</h3><p>Payments, receipts, unique numbering, date boundaries, approvals, cancellations, reports and daily cash close reconcile with fake test totals.</p></div><div class="gate-status">Pass / Fail</div></div><div class="gate"><div class="gate-n">4</div><div><h3>Privacy and Google access boundaries</h3><p>Staff have no Sheet, Drive or Apps Script links or permissions. Staff only use their app account.</p></div><div class="gate-status">Pass / Fail</div></div><div class="gate"><div class="gate-n">5</div><div><h3>Backup and recovery</h3><p>A real backup exists and a restore into a separate Sheet was checked. Never restore over the only copy.</p></div><div class="gate-status">Pass / Fail</div></div><div class="gate"><div class="gate-n">6</div><div><h3>No unresolved P0 issue</h3><p>Every P0 result is Pass. No unexplained missing/duplicate voucher, incorrect total, missing permission barrier or recovery failure remains.</p></div><div class="gate-status">Pass / Fail</div></div></div><div class="callout danger"><span class="symbol" aria-hidden="true">×</span><div><strong>NO-GO conditions:</strong> any P0 test is failed, not run or marked N/A; staff can see Google data; login/session access is unsafe; a voucher is lost or duplicated; financial totals are wrong; or backup/restore is unproven. Stop and contact the operator. Do not start real work.</div></div><div class="card" style="margin-top:20px"><h3>Client and operator sign-off</h3><p>Both parties confirm the tests were completed with fake data and that every P0 test passed before real work is allowed.</p><div class="signoff-grid"><div><label class="field-label" for="signoffOwner">Client owner</label><input class="field-control" id="signoffOwner" data-storage-key="signoff-owner" autocomplete="off" placeholder="{{CLIENT_NAME}} owner"></div><div><label class="field-label" for="signoffOperator">Operator</label><input class="field-control" id="signoffOperator" data-storage-key="signoff-operator" autocomplete="off" placeholder="Operator name"></div><div><label class="field-label" for="signoffDate">Sign-off date</label><input class="field-control" id="signoffDate" data-storage-key="signoff-date" type="date"></div></div><label class="task-check" style="margin-top:14px"><input type="checkbox" data-storage-key="signoff-confirmed"><span>We confirm every P0 test is marked Pass, the recovery test was witnessed, and real work may begin.</span></label></div><p class="saved-summary">The sign-off fields save in this browser only. Copy the UAT results and share them through the agreed business channel. Never record passwords in the sign-off.</p></section>
+        <section
+          class="slide"
+          data-title="Go or no-go and acceptance"
+          aria-labelledby="title-gates"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Launch decision · owner and operator</span>
+              <h2 id="title-gates">10. Go only when all P0 tests pass.</h2>
+              <p class="lead">A blank result or N/A for any P0 test means no-go.</p>
+            </div>
+            <div class="step-number" aria-hidden="true">10</div>
+          </div>
+          <div class="gate-list">
+            <div class="gate">
+              <div class="gate-n">1</div>
+              <div>
+                <h3>Correct customer and production link</h3>
+                <p>
+                  The link shows {{CLIENT_NAME}} and points to this customer&#39;s backend. No other
+                  customer&#39;s records are visible.
+                </p>
+              </div>
+              <div class="gate-status">Pass / Fail</div>
+            </div>
+            <div class="gate">
+              <div class="gate-n">2</div>
+              <div>
+                <h3>Owner login and individual user roles</h3>
+                <p>
+                  The owner changed the temporary password; sign-in, lockout, allowed and denied
+                  actions work as expected.
+                </p>
+              </div>
+              <div class="gate-status">Pass / Fail</div>
+            </div>
+            <div class="gate">
+              <div class="gate-n">3</div>
+              <div>
+                <h3>Financial flows and controls</h3>
+                <p>
+                  Payments, receipts, unique numbering, date boundaries, approvals, cancellations,
+                  reports and daily cash close reconcile with fake test totals.
+                </p>
+              </div>
+              <div class="gate-status">Pass / Fail</div>
+            </div>
+            <div class="gate">
+              <div class="gate-n">4</div>
+              <div>
+                <h3>Privacy and Google access boundaries</h3>
+                <p>
+                  Staff have no Sheet, Drive or Apps Script links or permissions. Staff only use
+                  their app account.
+                </p>
+              </div>
+              <div class="gate-status">Pass / Fail</div>
+            </div>
+            <div class="gate">
+              <div class="gate-n">5</div>
+              <div>
+                <h3>Backup and recovery</h3>
+                <p>
+                  A real backup exists and a restore into a separate Sheet was checked. Never
+                  restore over the only copy.
+                </p>
+              </div>
+              <div class="gate-status">Pass / Fail</div>
+            </div>
+            <div class="gate">
+              <div class="gate-n">6</div>
+              <div>
+                <h3>No unresolved P0 issue</h3>
+                <p>
+                  Every P0 result is Pass. No unexplained missing/duplicate voucher, incorrect
+                  total, missing permission barrier or recovery failure remains.
+                </p>
+              </div>
+              <div class="gate-status">Pass / Fail</div>
+            </div>
+          </div>
+          <div class="callout danger">
+            <span class="symbol" aria-hidden="true">×</span>
+            <div>
+              <strong>NO-GO conditions:</strong> any P0 test is failed, not run or marked N/A; staff
+              can see Google data; login/session access is unsafe; a voucher is lost or duplicated;
+              financial totals are wrong; or backup/restore is unproven. Stop and contact the
+              operator. Do not start real work.
+            </div>
+          </div>
+          <div class="card" style="margin-top: 20px">
+            <h3>Client and operator sign-off</h3>
+            <p>
+              Both parties confirm the tests were completed with fake data and that every P0 test
+              passed before real work is allowed.
+            </p>
+            <div class="signoff-grid">
+              <div>
+                <label class="field-label" for="signoffOwner">Client owner</label
+                ><input
+                  class="field-control"
+                  id="signoffOwner"
+                  data-storage-key="signoff-owner"
+                  autocomplete="off"
+                  placeholder="{{CLIENT_NAME}} owner"
+                />
+              </div>
+              <div>
+                <label class="field-label" for="signoffOperator">Operator</label
+                ><input
+                  class="field-control"
+                  id="signoffOperator"
+                  data-storage-key="signoff-operator"
+                  autocomplete="off"
+                  placeholder="Operator name"
+                />
+              </div>
+              <div>
+                <label class="field-label" for="signoffDate">Sign-off date</label
+                ><input
+                  class="field-control"
+                  id="signoffDate"
+                  data-storage-key="signoff-date"
+                  type="date"
+                />
+              </div>
+            </div>
+            <label class="task-check" style="margin-top: 14px"
+              ><input type="checkbox" data-storage-key="signoff-confirmed" /><span
+                >We confirm every P0 test is marked Pass, the recovery test was witnessed, and real
+                work may begin.</span
+              ></label
+            >
+          </div>
+          <p class="saved-summary">
+            The sign-off fields save in this browser only. Copy the UAT results and share them
+            through the agreed business channel. Never record passwords in the sign-off.
+          </p>
+        </section>
 
-<section class="slide" data-title="Support and service end" aria-labelledby="title-support" tabindex="-1"><div class="slide-heading"><div><span class="audience joint">Support · keep this section</span><h2 id="title-support">11. Support, data exports and service end.</h2><p class="lead">Contact the operator through the agreed support channel.</p></div><div class="step-number" aria-hidden="true">11</div></div><div class="grid-2"><div class="card tint"><h3>How to report an issue</h3><p><strong>Support contact:</strong> [INSERT AGREED SUPPORT EMAIL / PHONE]</p><p><strong>Response hours:</strong> <span class="support-hours">[INSERT AGREED DAYS, HOURS AND TIME ZONE]</span></p><p>Include the business name {{CLIENT_NAME}}, the approximate time and date, page or action, device/browser, what you expected, what happened and the exact non-sensitive error text. Tell us whether a voucher appears saved or still pending.</p><p><strong>Never include passwords, recovery codes, session tokens or private Google account details.</strong> Do not attach a public link to your Sheet or Drive.</p></div><div class="card tint"><h3>How to request a data export</h3><p>Ask the operator in writing for a Cash Voucher data export and name the date range you need. We will confirm the scope and provide the business records as CSV through the agreed secure delivery method.</p><p>Receipt images and backup snapshots are separate from CSV data. Tell support if you also need receipt files or recovery copies.</p><p>Keep your monthly CSV export outside Google so you have a separate copy.</p></div></div><div class="grid-2" style="margin-top:16px"><div class="card teal"><h3>If you stop the service</h3><p>Contact support before the service end date to request your final data export. We will agree how to hand over CSV records and any included receipt files or backup materials.</p><p>Service access ends on the agreed date. We retain or delete operator-held copies according to the signed service terms and applicable requirements. Ask us to confirm the relevant export date and deletion/retention arrangements in writing before termination.</p></div><div class="card amber"><h3>Common safe next steps</h3><ul><li>App link does not open: tell support your device, browser and the time you tried.</li><li>Login fails: stop after the displayed error and use the agreed reset process; do not send passwords.</li><li>A voucher looks missing or duplicated: do not re-enter it immediately. Check pending sync and contact support.</li><li>Backup or restore is uncertain: do not run setup again and do not restore over the source Sheet.</li></ul></div></div><div class="callout danger"><span class="symbol" aria-hidden="true">!</span><div><strong>Never try to repair the backend yourself.</strong> Do not rerun setup on a Sheet with real data, share your Google password, or give staff Google permissions. For a support session, add the operator&#39;s named Google account as Editor only for the agreed window and remove it afterwards.</div></div><p class="small-note">Production application link: <strong>{{APP_LINK}}</strong></p></section>
+        <section
+          class="slide"
+          data-title="Support and service end"
+          aria-labelledby="title-support"
+          tabindex="-1"
+        >
+          <div class="slide-heading">
+            <div>
+              <span class="audience joint">Support · keep this section</span>
+              <h2 id="title-support">11. Support, data exports and service end.</h2>
+              <p class="lead">Contact the operator through the agreed support channel.</p>
+            </div>
+            <div class="step-number" aria-hidden="true">11</div>
+          </div>
+          <div class="grid-2">
+            <div class="card tint">
+              <h3>How to report an issue</h3>
+              <p><strong>Support contact:</strong> [INSERT AGREED SUPPORT EMAIL / PHONE]</p>
+              <p>
+                <strong>Response hours:</strong>
+                <span class="support-hours">[INSERT AGREED DAYS, HOURS AND TIME ZONE]</span>
+              </p>
+              <p>
+                Include the business name {{CLIENT_NAME}}, the approximate time and date, page or
+                action, device/browser, what you expected, what happened and the exact non-sensitive
+                error text. Tell us whether a voucher appears saved or still pending.
+              </p>
+              <p>
+                <strong
+                  >Never include passwords, recovery codes, session tokens or private Google account
+                  details.</strong
+                >
+                Do not attach a public link to your Sheet or Drive.
+              </p>
+            </div>
+            <div class="card tint">
+              <h3>How to request a data export</h3>
+              <p>
+                Ask the operator in writing for a Cash Voucher data export and name the date range
+                you need. We will confirm the scope and provide the business records as CSV through
+                the agreed secure delivery method.
+              </p>
+              <p>
+                Receipt images and backup snapshots are separate from CSV data. Tell support if you
+                also need receipt files or recovery copies.
+              </p>
+              <p>Keep your monthly CSV export outside Google so you have a separate copy.</p>
+            </div>
+          </div>
+          <div class="grid-2" style="margin-top: 16px">
+            <div class="card teal">
+              <h3>If you stop the service</h3>
+              <p>
+                Contact support before the service end date to request your final data export. We
+                will agree how to hand over CSV records and any included receipt files or backup
+                materials.
+              </p>
+              <p>
+                Service access ends on the agreed date. We retain or delete operator-held copies
+                according to the signed service terms and applicable requirements. Ask us to confirm
+                the relevant export date and deletion/retention arrangements in writing before
+                termination.
+              </p>
+            </div>
+            <div class="card amber">
+              <h3>Common safe next steps</h3>
+              <ul>
+                <li>
+                  App link does not open: tell support your device, browser and the time you tried.
+                </li>
+                <li>
+                  Login fails: stop after the displayed error and use the agreed reset process; do
+                  not send passwords.
+                </li>
+                <li>
+                  A voucher looks missing or duplicated: do not re-enter it immediately. Check
+                  pending sync and contact support.
+                </li>
+                <li>
+                  Backup or restore is uncertain: do not run setup again and do not restore over the
+                  source Sheet.
+                </li>
+              </ul>
+            </div>
+          </div>
+          <div class="callout danger">
+            <span class="symbol" aria-hidden="true">!</span>
+            <div>
+              <strong>Never try to repair the backend yourself.</strong> Do not rerun setup on a
+              Sheet with real data, share your Google password, or give staff Google permissions.
+              For a support session, add the operator&#39;s named Google account as Editor only for
+              the agreed window and remove it afterwards.
+            </div>
+          </div>
+          <p class="small-note">Production application link: <strong>{{APP_LINK}}</strong></p>
+        </section>
         <div class="footer-nav" aria-label="Presentation navigation">
           <button class="btn" id="prevBtn" type="button" disabled>
             <span aria-hidden="true">←</span> Previous
@@ -1285,7 +3196,6 @@
     </div>
 
     <script>
-
       (function () {
         'use strict';
         const slides = Array.from(document.querySelectorAll('.slide'));
@@ -1312,7 +3222,10 @@
           try {
             saved = JSON.parse(window.localStorage.getItem(saveKey) || '{}');
             if (!saved || typeof saved !== 'object' || Array.isArray(saved)) saved = {};
-          } catch (error) { storageAvailable = false; saved = {}; }
+          } catch (error) {
+            storageAvailable = false;
+            saved = {};
+          }
           document.querySelectorAll('[data-progress-id]').forEach(function (input) {
             input.checked = saved['progress:' + input.dataset.progressId] === true;
           });
@@ -1328,20 +3241,31 @@
         function persist(key, value) {
           saved[key] = value;
           if (!storageAvailable) {
-            updateSaveStatus('Browser storage is unavailable. Your entries will remain only until you close or reload this page.');
+            updateSaveStatus(
+              'Browser storage is unavailable. Your entries will remain only until you close or reload this page.',
+            );
             return;
           }
           try {
             window.localStorage.setItem(saveKey, JSON.stringify(saved));
-            updateSaveStatus('Saved in this browser only. Nothing from this checklist is sent to the operator.');
+            updateSaveStatus(
+              'Saved in this browser only. Nothing from this checklist is sent to the operator.',
+            );
           } catch (error) {
             storageAvailable = false;
-            updateSaveStatus('Browser storage is unavailable or full. Copy your UAT results before closing this page.');
+            updateSaveStatus(
+              'Browser storage is unavailable or full. Copy your UAT results before closing this page.',
+            );
           }
         }
         function countCompletedSteps() {
           const controls = Array.from(document.querySelectorAll('[data-progress-id]'));
-          return { done: controls.filter(function (input) { return input.checked; }).length, total: controls.length };
+          return {
+            done: controls.filter(function (input) {
+              return input.checked;
+            }).length,
+            total: controls.length,
+          };
         }
         function countP0() {
           const rows = Array.from(document.querySelectorAll('[data-uat-row][data-priority="P0"]'));
@@ -1359,9 +3283,15 @@
           const summary = document.getElementById('uatSummary');
           if (!summary) return;
           const state = countP0();
-          summary.textContent = state.notPass.length === 0
-            ? 'All ' + state.total + ' P0 tests are marked Pass. Keep the signed evidence; do not skip the final sign-off.'
-            : state.pass + ' of ' + state.total + ' P0 tests are Pass. Go-live remains blocked until every P0 test is Pass.';
+          summary.textContent =
+            state.notPass.length === 0
+              ? 'All ' +
+                state.total +
+                ' P0 tests are marked Pass. Keep the signed evidence; do not skip the final sign-off.'
+              : state.pass +
+                ' of ' +
+                state.total +
+                ' P0 tests are Pass. Go-live remains blocked until every P0 test is Pass.';
         }
         function showSlide(index, moveFocus) {
           current = Math.max(0, Math.min(slides.length - 1, index));
@@ -1369,55 +3299,104 @@
             const active = slideIndex === current;
             slide.classList.toggle('active', active);
             slide.setAttribute('aria-hidden', active ? 'false' : 'true');
-            if (active) slide.removeAttribute('inert'); else slide.setAttribute('inert', '');
+            if (active) slide.removeAttribute('inert');
+            else slide.setAttribute('inert', '');
           });
           navButtons.forEach(function (button, buttonIndex) {
-            if (buttonIndex === current) button.setAttribute('aria-current', 'step'); else button.removeAttribute('aria-current');
+            if (buttonIndex === current) button.setAttribute('aria-current', 'step');
+            else button.removeAttribute('aria-current');
           });
           sectionName.textContent = slides[current].dataset.title || 'Client launch';
-          counter.textContent = String(current + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
+          counter.textContent =
+            String(current + 1).padStart(2, '0') + ' / ' + String(slides.length).padStart(2, '0');
           progress.setAttribute('aria-valuemax', String(slides.length));
           progress.setAttribute('aria-valuenow', String(current + 1));
           progressBar.style.width = ((current + 1) / slides.length) * 100 + '%';
           prevButton.disabled = current === 0;
           nextButton.disabled = current === slides.length - 1;
-          nextButton.innerHTML = current === slides.length - 1 ? 'End of guide <span aria-hidden="true">✓</span>' : 'Next section <span aria-hidden="true">→</span>';
-          startButton.innerHTML = current === 0 ? 'Start guide <span aria-hidden="true">→</span>' : 'Restart guide <span aria-hidden="true">↺</span>';
+          nextButton.innerHTML =
+            current === slides.length - 1
+              ? 'End of guide <span aria-hidden="true">✓</span>'
+              : 'Next section <span aria-hidden="true">→</span>';
+          startButton.innerHTML =
+            current === 0
+              ? 'Start guide <span aria-hidden="true">→</span>'
+              : 'Restart guide <span aria-hidden="true">↺</span>';
           const checklist = countCompletedSteps();
           const stepSummary = document.getElementById('stepCompletionSummary');
-          if (stepSummary) stepSummary.textContent = checklist.done + ' of ' + checklist.total + ' setup actions ticked off';
+          if (stepSummary)
+            stepSummary.textContent =
+              checklist.done + ' of ' + checklist.total + ' setup actions ticked off';
           if (moveFocus) slides[current].focus({ preventScroll: true });
-          window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+          window.scrollTo({
+            top: 0,
+            behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+              ? 'auto'
+              : 'smooth',
+          });
           persist('currentSlide', current);
           updateUatSummary();
         }
-        navButtons.forEach(function (button) { button.addEventListener('click', function () { showSlide(Number(button.dataset.slide), true); }); });
-        prevButton.addEventListener('click', function () { showSlide(current - 1, true); });
-        nextButton.addEventListener('click', function () { showSlide(current + 1, true); });
-        startButton.addEventListener('click', function () { showSlide(current === 0 ? 1 : 0, true); });
+        navButtons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            showSlide(Number(button.dataset.slide), true);
+          });
+        });
+        prevButton.addEventListener('click', function () {
+          showSlide(current - 1, true);
+        });
+        nextButton.addEventListener('click', function () {
+          showSlide(current + 1, true);
+        });
+        startButton.addEventListener('click', function () {
+          showSlide(current === 0 ? 1 : 0, true);
+        });
         document.querySelectorAll('[data-progress-id]').forEach(function (input) {
           input.addEventListener('change', function () {
             persist('progress:' + input.dataset.progressId, input.checked);
             const checklist = countCompletedSteps();
             const stepSummary = document.getElementById('stepCompletionSummary');
-            if (stepSummary) stepSummary.textContent = checklist.done + ' of ' + checklist.total + ' setup actions ticked off';
+            if (stepSummary)
+              stepSummary.textContent =
+                checklist.done + ' of ' + checklist.total + ' setup actions ticked off';
           });
         });
         document.querySelectorAll('[data-storage-key]').forEach(function (input) {
           const save = function () {
-            persist(input.dataset.storageKey, input.type === 'checkbox' ? input.checked : input.value);
+            persist(
+              input.dataset.storageKey,
+              input.type === 'checkbox' ? input.checked : input.value,
+            );
             updateUatSummary();
           };
           input.addEventListener('change', save);
-          if (input.tagName === 'TEXTAREA' || input.type === 'text') input.addEventListener('input', save);
+          if (input.tagName === 'TEXTAREA' || input.type === 'text')
+            input.addEventListener('input', save);
         });
         function resultsText() {
-          const lines = ['Cash Voucher UAT results','Business: {{CLIENT_NAME}}','Owner email: {{OWNER_EMAIL}}','Production link: {{APP_LINK}}','P0 tests must all be Pass before real work begins.',''];
+          const lines = [
+            'Cash Voucher UAT results',
+            'Business: {{CLIENT_NAME}}',
+            'Owner email: {{OWNER_EMAIL}}',
+            'Production link: {{APP_LINK}}',
+            'P0 tests must all be Pass before real work begins.',
+            '',
+          ];
           document.querySelectorAll('[data-uat-row]').forEach(function (row) {
             const status = row.querySelector('.uat-status');
             const checked = row.querySelector('input[type="checkbox"]');
             const notes = row.querySelector('.uat-notes');
-            lines.push(row.dataset.uatRow + ' [' + row.dataset.priority + '] — ' + row.cells[1].textContent.trim() + ' — ' + (status.value || 'Not run') + ' — tested: ' + (checked.checked ? 'Yes' : 'No'));
+            lines.push(
+              row.dataset.uatRow +
+                ' [' +
+                row.dataset.priority +
+                '] — ' +
+                row.cells[1].textContent.trim() +
+                ' — ' +
+                (status.value || 'Not run') +
+                ' — tested: ' +
+                (checked.checked ? 'Yes' : 'No'),
+            );
             lines.push('Notes: ' + (notes.value.trim() || '(none)'));
           });
           lines.push('');
@@ -1436,7 +3415,8 @@
         async function copyResults() {
           const textToCopy = resultsText();
           try {
-            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') await navigator.clipboard.writeText(textToCopy);
+            if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function')
+              await navigator.clipboard.writeText(textToCopy);
             else {
               const helper = document.createElement('textarea');
               helper.value = textToCopy;
@@ -1449,9 +3429,13 @@
               helper.remove();
               if (!copied) throw new Error('Clipboard permission was not available.');
             }
-            if (copyStatus) copyStatus.textContent = 'UAT results copied. Review them before sharing through the agreed business channel. No passwords should be included.';
+            if (copyStatus)
+              copyStatus.textContent =
+                'UAT results copied. Review them before sharing through the agreed business channel. No passwords should be included.';
           } catch (error) {
-            if (copyStatus) copyStatus.textContent = 'Copy was blocked by the browser. Select and copy the UAT values manually; do not include passwords or tokens.';
+            if (copyStatus)
+              copyStatus.textContent =
+                'Copy was blocked by the browser. Select and copy the UAT values manually; do not include passwords or tokens.';
           }
         }
         const copyButton = document.getElementById('copyUatResults');
@@ -1460,18 +3444,28 @@
           if (event.altKey || event.ctrlKey || event.metaKey) return;
           const target = event.target;
           if (target && /INPUT|TEXTAREA|SELECT/.test(target.tagName)) return;
-          if (event.key === 'ArrowRight' && current < slides.length - 1) { event.preventDefault(); showSlide(current + 1, false); }
-          else if (event.key === 'ArrowLeft' && current > 0) { event.preventDefault(); showSlide(current - 1, false); }
-          else if (event.key === 'Home') { event.preventDefault(); showSlide(0, false); }
-          else if (event.key === 'End') { event.preventDefault(); showSlide(slides.length - 1, false); }
+          if (event.key === 'ArrowRight' && current < slides.length - 1) {
+            event.preventDefault();
+            showSlide(current + 1, false);
+          } else if (event.key === 'ArrowLeft' && current > 0) {
+            event.preventDefault();
+            showSlide(current - 1, false);
+          } else if (event.key === 'Home') {
+            event.preventDefault();
+            showSlide(0, false);
+          } else if (event.key === 'End') {
+            event.preventDefault();
+            showSlide(slides.length - 1, false);
+          }
         });
         loadSavedState();
         showSlide(current, false);
-        updateSaveStatus(storageAvailable
-          ? 'Checklist progress saves in this browser only. It is not sent to the operator.'
-          : 'Browser storage is blocked. Copy your UAT results before closing this page.');
+        updateSaveStatus(
+          storageAvailable
+            ? 'Checklist progress saves in this browser only. It is not sent to the operator.'
+            : 'Browser storage is blocked. Copy your UAT results before closing this page.',
+        );
       })();
-
     </script>
   </body>
 </html>
