@@ -83,7 +83,7 @@ export function createOnboarding({ api }) {
   }
 
   function renderError(message) {
-    const root = $('#main-content');
+    const root = $('#view');
     root.replaceChildren();
 
     const card = el('section', undefined, 'onboarding-page card');
@@ -101,7 +101,7 @@ export function createOnboarding({ api }) {
   }
 
   function render() {
-    const root = $('#main-content');
+    const root = $('#view');
     root.replaceChildren();
 
     if (!current) {
@@ -297,7 +297,7 @@ export function createOnboarding({ api }) {
   }
 
   function init() {
-    $('#main-content').addEventListener('click', (event) => {
+    $('#view').addEventListener('click', (event) => {
       const button = event.target.closest('button');
       if (!button) return;
       if (button.dataset.confirmStep) {
