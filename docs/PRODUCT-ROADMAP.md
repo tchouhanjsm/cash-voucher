@@ -1,8 +1,8 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `9335018b5b9edf1109839f5f9aa2216e4128fbdc` (PR #173 merge); post-merge main CI [39111329035](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. PR #173's exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed CI, Browser E2E and Full Flight Test.  
-Current source phases: Phases 37–39, customer static packaging/handover (PR #166), password authentication/staging safeguards (PR #169), and server-backed onboarding/release gates (PR #173) are merged.  
-Current release state: source is ready for owner-provisioned staging; staging Google resources, static host/subdomain, protected GitHub Environment, live UAT, backup/restore and first-customer acceptance are not verified. The staging frontend build requires the verified staging `CV_API_URL` and explicit `CV_ENVIRONMENT=staging`. See `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`.
+Last verified main baseline: `449f47d994be3a918f883abc2ab7023043e4cc1b` (PR #175 merge); post-merge main CI [39118761162](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118761162) passed. PR #175's exact tested head `49c672859d86aff4b4c648a0221a57ff3387f8ce` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432725), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432728), and [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432768).  
+Current source phases: Phases 37–39, customer static packaging/handover (PR #166), staging artifact/docs (PR #174), password authentication/staging safeguards (PR #169), server-backed onboarding/release gates (PR #173), and authenticated support reporting (PR #175) are merged.  
+Current release state: repository visibility is now private; confirm Cloudflare or other hosting integration can still build from it. Staging Google resources, static staging deployment, protected GitHub Environment/secrets, live UAT, support email delivery, backup/restore and first-customer acceptance are not verified. The staging frontend build requires verified staging `CV_API_URL` and explicit `CV_ENVIRONMENT=staging`. See `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`.
 
 ## Founder plan — outcome-based work, not PR-count optimization
 
