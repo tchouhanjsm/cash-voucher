@@ -1,6 +1,6 @@
 # Backlog
 
-**Current main baseline (18 October 2026):** `9335018b5b9edf1109839f5f9aa2216e4128fbdc`, PR #173 merged. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787); post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. These are source/mock results; live staging and customer acceptance remain unverified.
+**Current main base observed for this follow-up (18 October 2026):** `8b14adc72c146589149a33d793ca9e55af5da13a` (merge of PR #180, master-template bundle). The setup-preflight follow-up is on `fix/staging-setup-preflight-20261018`; do not mark it merged until its PR and exact-head CI evidence confirm it. Live staging and customer acceptance remain unverified.
 
 ## Current P0/P1/P2 queue
 
@@ -12,6 +12,10 @@
 - **P2 — audit durability:** decide and test a durable fallback for simultaneous AuditLog append and Script Properties marker-store failure. Do not fabricate missing history.
 - **P2 — dependency exception:** reassess `braces@3.0.3` in the Clasp/micromatch chain by 9 November 2026; CI is expected to reject the exception from 10 November unless formally reviewed and renewed.
 - **P2 — product decisions after pilot:** get accountant-approved mapping before claiming Tally/Zoho/destination import compatibility; decide whether denomination-level cash counting adds value; set latency/usability targets from measured evidence.
+
+## Active follow-up — staging initialization safety
+
+2026-10-18 | IN REVIEW | Setup preflight hardening, regression coverage, staging login checklist, and operator/client runbook alignment | Branch `fix/staging-setup-preflight-20261018` from `8b14adc72c146589149a33d793ca9e55af5da13a`; local checks are operator-reported; exact-head GitHub CI and live staging login are pending. No `setup()`, Apps Script deployment or production mutation is authorized by this source change.
 
 ## Recently completed source milestones
 
