@@ -4,7 +4,7 @@
 
 **Commercial model:** the current customer arrangement is ₹500 per month under the separately signed contract. The customer operates the application; the product owner provisions, hosts, maintains, backs up and releases it.
 
-**Status:** this is an operational runbook, not evidence that a customer instance has already been provisioned. PR #173 (server-backed onboarding and financial-write release gates), PR #174 (staging static artifact/handoff) and PR #175 (support reporting) are merged. Current main `df641e06088910281e0940450bb91b5b82e6d6dc` has passing [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39120596949); live staging/customer provisioning, static hosting, backup/restore and acceptance remain unverified. Live staging/customer provisioning, static hosting, backup/restore and acceptance remain unverified. Do not mark a gate complete until live evidence is in the private instance register.
+**Status:** this is an operational runbook, not evidence that a customer instance has already been provisioned. PR #173 (server-backed onboarding and financial-write release gates), PR #174 (staging static artifact/handoff) and PR #175 (support reporting) are merged. Current main `df641e06088910281e0940450bb91b5b82e6d6dc` has passing [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39120596949); live staging/customer provisioning, static hosting, backup/restore and acceptance remain unverified. Do not mark a gate complete until live evidence is in the private instance register.
 
 ## Current verified starting point
 
