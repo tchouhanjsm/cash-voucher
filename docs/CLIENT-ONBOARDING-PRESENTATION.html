@@ -892,13 +892,13 @@
           </div>
           <div class="card">
             <div class="icon-box" aria-hidden="true">B</div>
-            <h3>Create the Pages project first</h3>
-            <p>Operator creates a dedicated Cloudflare Pages project and makes its first successful deployment. Note the project's generated <code>project-name.pages.dev</code> hostname.</p>
+            <h3>Create the dedicated Pages project</h3>
+            <p>Operator creates a separate Cloudflare Pages project for this customer and records its generated <code>project-name.pages.dev</code> hostname. The project can exist before the backend is ready; complete the first successful customer build in Step 04 before activating the custom domain.</p>
           </div>
           <div class="card">
             <div class="icon-box" aria-hidden="true">C</div>
-            <h3>Associate the custom domain</h3>
-            <p>Pages → customer's project → <strong>Custom domains</strong> → <strong>Set up a domain</strong>. Enter the agreed hostname and follow the dashboard's verification flow.</p>
+            <h3>Plan the custom-domain association</h3>
+            <p>After Step 04 produces a successful deployment, return to Pages → customer's project → <strong>Custom domains</strong> → <strong>Set up a domain</strong>. Enter the agreed hostname and follow the dashboard's verification flow before depending on its CNAME.</p>
           </div>
         </div>
         <h3 style="margin-top:22px">Then create the DNS record at the authoritative DNS provider</h3>
@@ -1034,6 +1034,7 @@ npm run test:e2e</code></pre>
           <li>Save production build settings and deploy. The builder fails closed if <code>CV_API_URL</code> is missing or malformed.</li>
           <li>Publish only <code>dist/</code>; never publish the repository root, <code>backend/</code>, tests, docs or developer metadata.</li>
           <li>Confirm the generated frontend config points to this customer's API, not the existing root <code>config.js</code> endpoint.</li>
+          <li>Return to Step 02: associate the custom domain in Pages, then create/verify the CNAME at the authoritative DNS provider. Wait for DNS and HTTPS certificate activation.</li>
           <li>Check the deployed commit and build logs; keep the source SHA and release date in the private instance register.</li>
         </ul>
         <div class="callout warning">
