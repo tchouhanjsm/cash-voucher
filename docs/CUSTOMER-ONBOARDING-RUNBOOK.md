@@ -69,17 +69,26 @@ The deployment endpoint is an address, not an authentication credential; app-lev
 
 ## C. Build and publish the customer frontend
 
-The root website must not be deployed as-is for a new customer. It contains development/backend material and a `config.js` that is already wired to an unverified endpoint. The builder emits `_headers` for Cloudflare Pages and `.htaccess` for Apache. On Apache, `mod_headers` and overrides must be enabled; verify live response headers and configure the host directly if needed.
+Do not publish the repository root for a customer site. The repository contains backend, development, test and operator material. The build command produces the static `dist/` artifact and an environment-specific `config.js`. The current Cash Voucher staging target is the operator-owned GoDaddy/cPanel subdomain `cashvoucher-staging.hotelgarhjaisal.com`; production uses its separate origin. Reverify DNS, SSL and document roots before publishing.
 
-1. **Current staging path: operator-owned GoDaddy/cPanel.** Use the reserved staging subdomain and its separate document root; do not upload the repository root or copy files into the production document root. Build with `npm ci && npm run build:web`, setting a verified `CV_API_URL` and `CV_ENVIRONMENT=staging`, and publish only `dist/`. The generated `.htaccess` is not proof Apache applied the security headers; inspect the actual HTTP response. Cloudflare Pages is an alternative only after the operator explicitly selects and verifies a separate project/origin for the instance.
-2. In that project's build settings, set `CV_API_URL` to the exact URL for this instance's **new** Apps Script Web App and set `CV_ENVIRONMENT` explicitly. Use `staging` for the isolated staging site and `production` only for a separate, owner-approved production build. Do not commit the URL into shared `main/config.js`. The URL is a target identifier, not a password; server-side authentication must still protect every action.
-3. Use the build command `npm ci && npm run build:web` and publish directory `dist`. The build validates that `CV_API_URL` is an HTTPS Apps Script `/macros/s/<deployment-id>/exec` URL and that `CV_ENVIRONMENT` is explicitly `staging` or `production`; it fails closed when either is missing or malformed.
-4. Since the repository is now private, confirm the static host can still clone/build it and only then configure or reconnect host integration if required. Do not grant the customer GitHub, Cloudflare or Google administrator access or publish the repository merely to fix host access.
-5. Verify the published artifact contains the static application assets, generated `config.js`, manifest, service worker, frontend modules and icons—but not `backend/`, `docs/`, `scripts/`, `test/` or development metadata.
-6. Record the final HTTPS application URL. Open it in a clean browser/device and confirm that the generated configuration targets this customer's new deployment, not the existing root endpoint.
-7. Confirm the host publishes only `dist/`; do not publish the repository root. The customer build emits `_headers` for Cloudflare Pages and `.htaccess` for Apache with the restrictive CSP (including `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, referrer and permissions policies. Apache must allow `mod_headers` and overrides. After deployment, inspect the actual document response in DevTools; generated files do not prove the host applied the headers.
+1. Confirm that staging and production use different hostnames and distinct document roots. Never upload staging files to production or vice versa.
+2. Confirm the exact versioned Web App `/exec` URL independently matches the intended instance's Script/deployment ID. The root `config.js` is not a verified staging endpoint and must not be copied over for convenience.
+3. From the operator-owned checkout, use the supported Node version (`>=20 <23`), install dependencies with `npm ci`, then build only after the endpoint and environment are verified:
 
-The first-run owner onboarding checklist is part of the product UI; it does not replace operator-only provisioning. A customer must never be asked to run `setup()`, `clasp`, edit Script Properties, enter the Apps Script editor, or approve an unknown Google scope. If setup fails after writes begin, the operator must diagnose partial resources instead of asking the customer to retry. If the in-app checklist blocks progress, the customer should share the visible non-sensitive message with support; the operator records completion only after required evidence exists.\n\n## D. Live acceptance and data recovery proof
+   ```bash
+   CV_API_URL="https://script.google.com/macros/s/<VERIFIED_STAGING_DEPLOYMENT_ID>/exec" \
+   CV_ENVIRONMENT=staging npm run build:web
+   ```
+
+   For an owner-approved production build, use the independently verified production `CV_API_URL` and `CV_ENVIRONMENT=production`. Never put a client's endpoint or credentials into the shared root configuration.
+4. Inspect `dist/` before upload. It should contain the generated application assets and instance configuration, but not `backend/`, `docs/`, `scripts/`, `test/`, Clasp configuration, or repository metadata.
+5. In cPanel, upload only the **contents** of `dist/` to the intended subdomain document root. Do not upload the repository root, and do not delete or overwrite the other environment's files.
+6. Verify the published `config.js` uses the expected endpoint/environment. Inspect the actual HTML response headers and browser Console/Network. The generated `.htaccess` is not proof that Apache applied the CSP, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, referrer and permissions policies. Apache must allow `mod_headers` and overrides; configure the host explicitly if the expected headers are absent.
+7. Since the repository is private, confirm the operator's local checkout and approved release path can access it. Do not make the repository public to repair a hosting integration, and do not give the customer GitHub, cPanel, Apps Script editor, or Google administrator access as part of ordinary handover.
+
+The first-run owner onboarding checklist is part of the product UI; it does not replace operator-only provisioning. A customer must never be asked to run `setup()`, `clasp`, edit Script Properties, enter the Apps Script editor, or approve an unknown Google scope. If setup fails after writes begin, the operator must diagnose partial resources instead of asking the customer to retry. If the in-app checklist blocks progress, the customer should share the visible non-sensitive message with support; the operator records completion only after required evidence exists.
+
+## D. Live acceptance and data recovery proof
 
 Do not issue the customer link as “ready” until each gate is complete against the actual Google instance.
 
