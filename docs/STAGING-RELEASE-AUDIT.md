@@ -1,18 +1,22 @@
 # Staging Release Audit and Pending Queue
 
 **Audit date:** 18 October 2026  
-**Verified main baseline:** `df641e06088910281e0940450bb91b5b82e6d6dc` (latest main after PR #175 and subsequent merged changes)  
+**Main baseline observed before this follow-up:** `8b14adc72c146589149a33d793ca9e55af5da13a` (merge of PR #180).
 **Scope:** review the current product documentation, source workflow, release controls and first-customer delivery requirements. This audit is evidence of a repository review—not a live staging deployment or production acceptance.
 
 ## Executive status
 
-**Source baseline:** server-backed onboarding/release gates (PR #173), staging artifact/handoff docs (PR #174), and authenticated in-app support reporting (PR #175) are merged. [PR #173](https://github.com/tchouhanjsm/cash-voucher/pull/173) was merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787). Post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed; current main `df641e06088910281e0940450bb91b5b82e6d6dc` also passes [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39120596949).
+**Previously verified source milestones:** server-backed onboarding/release gates (PR #173), staging artifact/handoff docs (PR #174), and authenticated in-app support reporting (PR #175) were merged. Their linked workflow runs apply only to the historical SHAs named in those records. This follow-up branches from `8b14adc72c146589149a33d793ca9e55af5da13a`; verify this branch's exact PR head in GitHub before merge.
 
 - PR #165 (route-safe asynchronous views) and PR #166 (customer-specific static build, response-header artifact and handover docs) remain merged milestones; PR #169 adds password authentication/staging safeguards; PR #173 adds server-backed per-environment onboarding and server-side financial-write gates.
 - The static build emits `dist/` with generated `config.js`, Cloudflare Pages `_headers` and Apache `.htaccess` security-header artifacts. PR #175 adds authenticated `Account → Report a problem` email via the per-instance `SUPPORT_EMAIL` Script Property; live delivery remains to be tested. This does not create a host/subdomain, a Google deployment, customer resources or a live URL.
 - Dedicated staging Google resources, protected GitHub `staging` Environment, Clasp/UAT credentials, static-host configuration and staging hostname are **not evidenced as provisioned** in this audit. The repository is now private; confirm the hosting integration can still build and publish from it. The repo is now private; confirm the hosting integration can still build and publish from it.
 - No successful live staging UAT, real support email delivery, real backup/restore drill, physical-device acceptance or customer acceptance is recorded. A merged PR and green mock-backed checks are not these proofs.
 - Cash Voucher is a **single-property instance**. Staging requires its own Apps Script project/deployment, Sheet, receipt/backup folders and a browser origin distinct from production. Never reuse the unverified root `config.js` endpoint for staging.
+
+## Current setup checkpoint — operator report, not live release proof
+
+At this checkpoint, the operator reports that the staging Sheet is empty/disposable, the Apps Script project and `SS_ID` were rechecked against staging, the owner Script Properties are configured, and no `backupData_` trigger exists. The owner has not run `setup()`. A versioned staging deployment, published staging frontend, first login, successful live UAT, actual backup and restore drill are not evidenced as complete. Local tests and this inspection do not prove live Apps Script, Drive, hosting or browser-origin behavior.
 
 ## Priority 0 — required before the first customer can be called staging-verified
 
