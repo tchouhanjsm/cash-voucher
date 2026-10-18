@@ -180,19 +180,6 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     document.title = propertyName || 'Vouchers';
     shell.render();
 
-    renderNav();
-    go(
-      offline
-        ? 'new'
-        : S.view && NAV.find((item) => item[0] === S.view && item[3]())
-          ? S.view
-          : can('settings') && S.onboardingStage !== 'complete'
-            ? 'onboarding'
-            : can('reports') && !can('viewAll') && !can('viewOwn')
-              ? 'reports'
-              : 'dash',
-    );
-
     if (!offline && can('settings')) {
       try {
         const onboarding = await api('onboardingState');
@@ -202,6 +189,22 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
         S.onboardingStage = 'unverified';
       }
     }
+
+    const ownerNeedsOnboarding = !offline && S.me?.role === 'owner' && S.onboardingStage !== 'complete';
+    const savedView = S.view !== 'onboarding' && NAV.find((item) => item[0] === S.view && item[3]());
+
+    renderNav();
+    go(
+      offline
+        ? 'new'
+        : ownerNeedsOnboarding
+          ? 'onboarding'
+          : savedView
+            ? S.view
+            : can('reports') && !can('viewAll') && !can('viewOwn')
+              ? 'reports'
+              : 'dash',
+    );
 
     await getPayments().showBanner();
 
