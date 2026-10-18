@@ -51,12 +51,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary formatting diagnostic for staging runbook (remove before merge)
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'fix/staging-setup-preflight-')
-        run: |
-          npx prettier docs/CUSTOMER-ONBOARDING-RUNBOOK.md --write
-          git --no-pager diff -- docs/CUSTOMER-ONBOARDING-RUNBOOK.md
-
       - name: Run quality gate
         run: npm run check
 
