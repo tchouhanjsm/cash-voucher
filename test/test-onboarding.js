@@ -88,6 +88,10 @@ assert.equal(manager.ok, true);
 loginAndChange('onboarding-staff@example.test', 'Staff#Start2026', 'Staff#Final2026');
 loginAndChange('onboarding-manager@example.test', 'Manager#Start2026', 'Manager#Final2026');
 
+const blocked = request('onboardingAdvance');
+assert.equal(blocked.ok, false);
+assert.equal(blocked.code, 'ONBOARDING_BLOCKED');
+
 const settings = request('saveSettings', {
   propertyName: 'Onboarding Test Property',
   propertyAddress: '',
@@ -99,9 +103,9 @@ const settings = request('saveSettings', {
 });
 assert.equal(settings.ok, true);
 
-const blocked = request('onboardingAdvance');
-assert.equal(blocked.ok, false);
-assert.equal(blocked.code, 'ONBOARDING_BLOCKED');
+const stagingStart = request('onboardingAdvance');
+assert.equal(stagingStart.ok, true);
+assert.equal(stagingStart.data.stage, 'stagingUat');
 
 const staffLogin = g.call('login', {
   email: 'onboarding-staff@example.test',
@@ -134,6 +138,26 @@ const shortEvidence = request('onboardingConfirm', {
 assert.equal(shortEvidence.ok, false);
 assert.equal(shortEvidence.code, 'VALIDATION');
 
+const stagingEvidence = [
+  ['loginAndRoles', 'Owner and staff role permissions verified in the staging browser test.'],
+  ['voucherAndReceipt', 'Created a staging voucher and checked the uploaded receipt.'],
+  ['highValueApproval', 'Verified approval at INR 10000 and prevented self-approval.'],
+  ['cashClose', 'Completed cash close and reconciled the expected drawer balance.'],
+  ['offlineSync', 'Synced the intended device offline queue and confirmed no duplicates.'],
+  ['restoreDrill', 'Restored the backup to a separate recovery Sheet and reconciled records.'],
+  ['ownerUatSignoff', 'Owner reviewed the staging test evidence and accepted UAT results.'],
+];
+for (const [stepId, evidence] of stagingEvidence) {
+  const confirmation = request('onboardingConfirm', { stepId, status: 'pass', evidence });
+  assert.equal(confirmation.ok, true, 'staging step passes in order: ' + stepId);
+}
+const stagingComplete = request('onboardingAdvance');
+assert.equal(stagingComplete.ok, true);
+assert.equal(stagingComplete.data.stage, 'complete');
+const stagingWriteAfterUat = request('createVouchers', { entries: [] });
+assert.equal(stagingWriteAfterUat.ok, false);
+assert.equal(stagingWriteAfterUat.code, 'ONBOARDING_GATE');
+
 const unset = create({ onboardingEnvironment: false });
 unset.props.OWNER_EMAIL = 'unset-env@example.test';
 unset.props.OWNER_PASSWORD = 'Owner#Start2026';
@@ -163,6 +187,16 @@ production.props.CV_PRODUCTION_DEPLOYMENT_ID = 'PROD_DEPLOYMENT';
 production.props.CV_PRODUCTION_RECEIPT_FOLDER_ID = production.props.RECEIPT_FOLDER_ID;
 production.props.CV_PRODUCTION_BACKUP_FOLDER_ID = production.props.BACKUP_FOLDER_ID;
 
+production.props.BACKUP_LAST_SUCCESS = new Date().toISOString();
+production.props.BACKUP_LAST_ATTEMPT = production.props.BACKUP_LAST_SUCCESS;
+production.props.ONBOARDING_STATE_V1_PRODUCTION = JSON.stringify({
+  schemaVersion: 1,
+  stage: 'preflight',
+  confirmations: {},
+  initializedAt: '',
+  updatedAt: '',
+});
+
 const productionLogin = production.call('login', {
   email: 'prod-owner@example.test',
   password: 'Owner#Start2026',
@@ -172,15 +206,83 @@ const productionChange = production.call('changePassword', {
   oldPassword: 'Owner#Start2026',
   newPassword: 'Owner#Final2026',
 });
-const productionWrite = production.call('createVouchers', {
-  token: productionChange.data.token,
-  environment: 'production',
-  deploymentId: 'PROD_DEPLOYMENT',
-  rows: [],
-});
+const productionRequest = (action, payload = {}) =>
+  production.call(action, {
+    token: productionChange.data.token,
+    environment: 'production',
+    deploymentId: 'PROD_DEPLOYMENT',
+    ...payload,
+  });
+
+const productionWrite = productionRequest('createVouchers', { entries: [] });
 assert.equal(productionWrite.ok, false);
 assert.equal(productionWrite.code, 'ONBOARDING_GATE');
 
+const productionManager = productionRequest('saveUser', {
+  name: 'Production Manager',
+  email: 'prod-manager@example.test',
+  role: 'manager',
+  password: 'Manager#Start2026',
+});
+assert.equal(productionManager.ok, true);
+const productionStaff = productionRequest('saveUser', {
+  name: 'Production Staff',
+  email: 'prod-staff@example.test',
+  role: 'staff',
+  password: 'Staff#Start2026',
+});
+assert.equal(productionStaff.ok, true);
+
+for (const [email, password, nextPassword] of [
+  ['prod-manager@example.test', 'Manager#Start2026', 'Manager#Final2026'],
+  ['prod-staff@example.test', 'Staff#Start2026', 'Staff#Final2026'],
+]) {
+  const login = production.call('login', { email, password });
+  const changed = production.call('changePassword', {
+    token: login.data.token,
+    oldPassword: password,
+    newPassword: nextPassword,
+  });
+  assert.equal(changed.ok, true);
+}
+const productionSettings = productionRequest('saveSettings', {
+  propertyName: 'Production Onboarding Test Property',
+  propertyAddress: '',
+  categories: ['Test', 'Other'],
+  receiptCategories: ['Other'],
+  nextVoucherNo: 201,
+  nextReceiptNo: 1,
+  openingBalance: 0,
+});
+assert.equal(productionSettings.ok, true);
+
+const productionPreflight = productionRequest('onboardingState');
+assert.equal(productionPreflight.ok, true);
+assert.equal(productionPreflight.data.stage, 'preflight');
+assert.equal(productionPreflight.data.stageReady, true);
+const productionAcceptance = productionRequest('onboardingAdvance');
+assert.equal(productionAcceptance.ok, true);
+assert.equal(productionAcceptance.data.stage, 'productionAcceptance');
+
+for (const [stepId, evidence] of [
+  ['restoreDrill', 'Restored production backup to a separate recovery Sheet and reconciled data.'],
+  ['offlineLimitations', 'Owner acknowledged offline queue and backup recovery limitations.'],
+  ['ownerAcceptance', 'Owner independently accepted production readiness and release evidence.'],
+]) {
+  const confirmation = productionRequest('onboardingConfirm', {
+    stepId,
+    status: 'pass',
+    evidence,
+  });
+  assert.equal(confirmation.ok, true, 'production step passes in order: ' + stepId);
+}
+const accepted = productionRequest('onboardingAdvance');
+assert.equal(accepted.ok, true);
+assert.equal(accepted.data.stage, 'complete');
+assert.equal(accepted.data.releaseAllowed, true);
+const acceptedWrite = productionRequest('createVouchers', { entries: [] });
+assert.notEqual(acceptedWrite.code, 'ONBOARDING_GATE');
+
 console.log(
-  'Onboarding tests passed: mismatch, identity, sequencing, owner authorization and production fail-closed checks.',
+  'Onboarding tests passed: blocked preflight, staging completion, owner-only confirmations, and production acceptance.',
 );
