@@ -51,12 +51,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary formatting diagnostic for setup preflight (remove before merge)
-        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'fix/staging-setup-preflight-')
-        run: |
-          npx prettier backend/10-setup.gs test/test-setup-preflight.js --write
-          git --no-pager diff -- backend/10-setup.gs test/test-setup-preflight.js
-
       - name: Run quality gate
         run: npm run check
 
