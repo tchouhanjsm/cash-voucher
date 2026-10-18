@@ -1,12 +1,12 @@
 # Staging Release Audit and Pending Queue
 
 **Audit date:** 18 October 2026  
-**Verified main baseline:** `449f47d994be3a918f883abc2ab7023043e4cc1b` (PR #175 merge)  
+**Verified main baseline:** `df641e06088910281e0940450bb91b5b82e6d6dc` (latest main after PR #175 and subsequent merged changes)  
 **Scope:** review the current product documentation, source workflow, release controls and first-customer delivery requirements. This audit is evidence of a repository review—not a live staging deployment or production acceptance.
 
 ## Executive status
 
-**Source baseline:** server-backed onboarding/release gates (PR #173), staging artifact/handoff docs (PR #174), and authenticated in-app support reporting (PR #175) are merged. [PR #173](https://github.com/tchouhanjsm/cash-voucher/pull/173) was merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787). Post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) also passed.
+**Source baseline:** server-backed onboarding/release gates (PR #173), staging artifact/handoff docs (PR #174), and authenticated in-app support reporting (PR #175) are merged. [PR #173](https://github.com/tchouhanjsm/cash-voucher/pull/173) was merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787). Post-merge CI after PR #173 passed; current main `df641e06088910281e0940450bb91b5b82e6d6dc` also passes [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39120596949).
 
 - PR #165 (route-safe asynchronous views) and PR #166 (customer-specific static build, response-header artifact and handover docs) remain merged milestones; PR #169 adds password authentication/staging safeguards; PR #173 adds server-backed per-environment onboarding and server-side financial-write gates.
 - The static build emits `dist/` with generated `config.js`, Cloudflare Pages `_headers` and Apache `.htaccess` security-header artifacts. PR #175 adds authenticated `Account → Report a problem` email via each instance's `SUPPORT_EMAIL` Script Property; live delivery remains to be tested. Current main also includes PR #174's staging artifact changes. This does not create a host/subdomain, a Google deployment, customer resources or a live URL.
@@ -72,7 +72,7 @@ Owner actions are documented in [the Apps Script Release Runbook](APPS-SCRIPT-RE
 
 **Source packaging: ready to review/use as a staging input. Live staging: not verified. First-customer handover: blocked until the Priority 0 gates pass.**
 
-The only supported next action is to provision the separate staging resources and protected GitHub Environment, run the owner-authorized manual staging workflow, and review the result. Do not replace that action with another code-only PR or a production deployment.
+The next action is operational: provision the separate staging resources and protected GitHub Environment, verify private-host access, publish the staging-only frontend build, run the owner-authorized manual staging workflow, and review live UAT/support email/backup-restore evidence. Do not point the staging build at the existing unverified root `config.js` endpoint or use the staging workflow for production.
 
 ## Authentication update required before staging deployment
 
