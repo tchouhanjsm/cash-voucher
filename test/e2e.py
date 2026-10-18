@@ -2313,7 +2313,7 @@ with sync_playwright() as p:
     page.fill('#lEmail', 'owner@test.com')
     page.fill('#lPassword', 'Owner#Final2026')
     page.click('#lBtn')
-    page.wait_for_function("document.querySelectorAll('#nav button').length === 10", timeout=10000)
+    page.wait_for_function("document.querySelectorAll('#nav button').length === 11", timeout=10000)
     page.wait_for_function(
         """async () => {
           const db = await new Promise((resolve, reject) => {
