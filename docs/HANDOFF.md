@@ -2,10 +2,10 @@
 
 Updated: 18 October 2026  
 Repository: `tchouhanjsm/cash-voucher`  
-Verified `main` SHA: `449f47d994be3a918f883abc2ab7023043e4cc1b`  
+Verified `main` SHA: `df641e06088910281e0940450bb91b5b82e6d6dc`  
 Current work branch: `docs/final-release-handoff-20261018`  
-Current work: final release handoff after PR #175; live staging provisioning and customer acceptance remain pending.  
-Owner authority: the repository owner retains approval to merge, provision Google resources, perform manual UAT and restore drills, and deploy. PR #173 is merged; no Apps Script or website deployment or production mutation was performed.
+Current work: final staging/production delivery plan after PR #175; actual resource provisioning, host publication and customer acceptance remain owner-controlled.  
+Owner authority: the repository owner retains approval to configure Google resources, GitHub Environments, hosting, live UAT, restore drills and deployment. No Apps Script or frontend deployment was performed by this handoff review.
 
 ## Verified source state
 
@@ -13,8 +13,14 @@ Owner authority: the repository owner retains approval to merge, provision Googl
 - [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166), customer static build, response-header artifact and onboarding/handover documents, merged at `4a759b7513a925aee796949d8f6e79085f096314`. Exact tested head `13f12d314687ec88d9044ccae7e8fb3c202743fb` passed CI, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks). [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776051) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776133) · [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776075).
 - PR #174 (staging artifact and release-doc preparation) is merged at `db3e2b76ef028fe6f20a2664bce454a82be57916`; its exact tested head passed CI, Browser E2E and Full Flight Test.
 - PR #175 ([Account → Report a problem](https://github.com/tchouhanjsm/cash-voucher/pull/175)) is merged at `449f47d994be3a918f883abc2ab7023043e4cc1b`. Its exact tested head `49c672859d86aff4b4c648a0221a57ff3387f8ce` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432725), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432728), and [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432768). The inbox is configured through each client’s Apps Script `SUPPORT_EMAIL` Script Property; actual MailApp delivery still needs one controlled staging test.
-- Repository visibility is now **private**. Verify host access after the visibility change before relying on host-triggered builds.
+- Repository visibility is **private**. Verify the existing static host or new deployment integration can still fetch it before relying on auto-builds or changing DNS.
 - PR #173 adds server-backed per-environment onboarding state, ordered owner confirmations with audit events, environment/resource identity checks and central financial-write gates. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787). PR #173 merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`; post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. This is source/mock evidence, not live staging proof.
+
+## Final deployment decision
+
+**Current source:** `df641e06088910281e0940450bb91b5b82e6d6dc` (PR #175 is merged on top of PR #174). Latest main CI is [run 39120596949](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39120596949), passed. [PR #174](https://github.com/tchouhanjsm/cash-voucher/pull/174) and [PR #175](https://github.com/tchouhanjsm/cash-voucher/pull/175) are merged.
+
+**Not yet production-ready operationally:** no verified staging static hostname, isolated staging Google resource set, GitHub `staging` Environment/secrets, real staging UAT, support email delivery, real backup/restore or physical-device validation is evidenced. Do not publish from an unverified `config.js` endpoint or assume code merged means backend deployed.
 
 ## Product and release boundary
 
