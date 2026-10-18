@@ -190,8 +190,10 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       }
     }
 
-    const ownerNeedsOnboarding = !offline && S.me?.role === 'owner' && S.onboardingStage !== 'complete';
-    const savedView = S.view !== 'onboarding' && NAV.find((item) => item[0] === S.view && item[3]());
+    const ownerNeedsOnboarding =
+      !offline && S.me?.role === 'owner' && S.onboardingStage !== 'complete';
+    const savedView =
+      S.view !== 'onboarding' && NAV.find((item) => item[0] === S.view && item[3]());
 
     renderNav();
     go(

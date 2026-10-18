@@ -1,6 +1,7 @@
 import { $ } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { toast } from '../core/ui.js';
+
 const STAGES = {
   preflight: {
     number: '01',
@@ -23,6 +24,7 @@ const STAGES = {
     description: 'The server rechecks the release gate for protected writes.',
   },
 };
+
 const TITLES = {
   environmentMatch: 'Environment and customer identity',
   propertyConfigured: 'Property name and categories',
@@ -43,88 +45,110 @@ const TITLES = {
   offlineLimitations: 'Offline-data and backup limitations acknowledged',
   ownerAcceptance: 'Final owner production acceptance',
 };
+
 export function createOnboarding({ api }) {
   let current = null;
   let busy = false;
 
-  const el = (tag, text, cls) => {
+  const el = (tag, text, className) => {
     const node = document.createElement(tag);
     if (text !== undefined) node.textContent = text;
-    if (cls) node.className = cls;
+    if (className) node.className = className;
     return node;
   };
-function help(id) {
-    const map = {
-      environmentMatch: 'Compare Script, deployment, Sheet, receipt folder and backup folder with the private instance register.',
-      propertyConfigured: 'Save the real property name and business categories in Settings. Placeholder defaults do not pass.',
-      accountsReady: 'Create Manager and Staff accounts. Each person must sign in and change the temporary password.',
-      sheetSchemaReady: 'Inspect required tabs and headers. Never run setup() on a populated Sheet; use a reviewed migration only.',
-      foldersAccessible: 'Verify folder identity and access with the operator account. Do not grant staff direct Sheet, script or Drive access.',
-      backupTriggerReady: 'Inspect Apps Script triggers. Do not rerun setup() to repair a populated instance.',
-      recentBackup: 'A backup timestamp is not restore proof. Restore into separate recovery resources and have the operator reconcile it.',
+
+  function help(id) {
+    const instructions = {
+      environmentMatch:
+        'Compare Script, deployment, Sheet, receipt folder and backup folder with the private instance register.',
+      propertyConfigured:
+        'Save the real property name and business categories in Settings. Placeholder defaults do not pass.',
+      accountsReady:
+        'Create Manager and Staff accounts. Each person must sign in and change the temporary password.',
+      sheetSchemaReady:
+        'Inspect required tabs and headers. Never run setup() on a populated Sheet; use a reviewed migration only.',
+      foldersAccessible:
+        'Verify folder identity and access with the operator account. Do not grant staff direct Sheet, script or Drive access.',
+      backupTriggerReady:
+        'Inspect Apps Script triggers. Do not rerun setup() to repair a populated instance.',
+      recentBackup:
+        'A backup timestamp is not restore proof. Restore into separate recovery resources and have the operator reconcile it.',
     };
+
     return (
-      map[id] ||
+      instructions[id] ||
       'Run the test on the dedicated staging instance. Note date, device/role and observed outcome. Never enter credentials, tokens or private resource IDs.'
     );
   }
-function renderError(message) {
+
+  function renderError(message) {
     const root = $('#main-content');
     root.replaceChildren();
+
     const card = el('section', undefined, 'onboarding-page card');
     card.append(
       el('p', 'CLIENT LAUNCH', 'muted'),
       el('h1', 'Get Cash Voucher ready'),
       el('p', message, 'error'),
     );
+
     const retry = el('button', 'Retry server checks', 'btn primary');
     retry.type = 'button';
     retry.addEventListener('click', load);
     card.appendChild(retry);
     root.appendChild(card);
   }
-function render() {
+
+  function render() {
     const root = $('#main-content');
     root.replaceChildren();
+
     if (!current) {
       return renderError(
         'Onboarding status is unavailable. Verify customer build and backend configuration. Financial writes remain protected on the server.',
       );
     }
+
     const stage = STAGES[current.stage] || STAGES.preflight;
     const card = el('section', undefined, 'onboarding-page card');
     const header = el('header', undefined, 'onboarding-header');
+
     header.append(
       el('p', 'CLIENT LAUNCH', 'muted'),
       el('h1', 'Get Cash Voucher ready'),
       el('p', stage.description, 'onboarding-lede'),
     );
     card.appendChild(header);
+
     const stageBox = el('section', undefined, 'onboarding-stage');
     stageBox.append(
       el('span', stage.number, 'onboarding-stage__number'),
       el('div', stage.title, 'onboarding-stage__title'),
       el(
         'p',
-        String(current.environment || '').toUpperCase() + ' environment · progress saved on server',
+        String(current.environment || '').toUpperCase() +
+          ' environment · progress saved on server',
         'muted',
       ),
     );
     card.appendChild(stageBox);
+
     const steps = current.steps || [];
     const passed = steps.filter((step) => step.status === 'pass').length;
     const progress = el('section', undefined, 'onboarding-progress');
     progress.append(el('p', passed + ' of ' + steps.length + ' requirements passed', 'muted'));
+
     const meter = el('progress');
     meter.max = Math.max(steps.length, 1);
     meter.value = passed;
     meter.setAttribute('aria-label', 'Current-stage completion');
     progress.appendChild(meter);
     card.appendChild(progress);
+
     const list = el('div', undefined, 'onboarding-steps');
     steps.forEach((step, index) => {
       const item = el('article', undefined, 'onboarding-step');
-      const label =
+      const statusLabel =
         step.status === 'pass'
           ? 'Passed'
           : step.status === 'fail'
@@ -132,11 +156,13 @@ function render() {
             : step.status === 'pending'
               ? 'Needs confirmation'
               : 'Blocked';
+
       item.append(
-        el('span', label, 'onboarding-status onboarding-status--' + step.status),
+        el('span', statusLabel, 'onboarding-status onboarding-status--' + step.status),
         el('h2', index + 1 + '. ' + (TITLES[step.id] || step.id)),
         el('p', step.message, 'onboarding-message'),
       );
+
       if (!step.automatic) {
         const evidenceLabel = el('label', 'Evidence note (12–500 characters)');
         const textarea = el('textarea', undefined, 'onboarding-evidence');
@@ -148,6 +174,7 @@ function render() {
         textarea.dataset.evidenceFor = step.id;
         evidenceLabel.appendChild(textarea);
         item.appendChild(evidenceLabel);
+
         if (step.actorEmail) {
           item.appendChild(
             el(
@@ -159,6 +186,7 @@ function render() {
             ),
           );
         }
+
         const actions = el('div', undefined, 'actions');
         const pass = el('button', 'Record pass', 'btn primary');
         pass.type = 'button';
@@ -173,14 +201,17 @@ function render() {
         details.append(el('summary', 'What should I do?'), el('p', help(step.id)));
         item.appendChild(details);
       }
+
       list.appendChild(item);
     });
     card.appendChild(list);
+
     const footer = el('div', undefined, 'actions onboarding-footer');
     const refresh = el('button', 'Refresh checks', 'btn');
     refresh.type = 'button';
     refresh.addEventListener('click', load);
     footer.appendChild(refresh);
+
     if (current.stage !== 'complete') {
       const label =
         current.stage === 'preflight'
@@ -194,6 +225,7 @@ function render() {
       advance.addEventListener('click', advanceStage);
       footer.appendChild(advance);
     }
+
     const gateText = current.releaseAllowed
       ? 'Production acceptance complete. Server release gate currently passes.'
       : current.environment === 'production'
@@ -207,6 +239,7 @@ function render() {
     card.appendChild(footer);
     root.appendChild(card);
   }
+
   async function load() {
     if (busy) return;
     busy = true;
@@ -222,6 +255,7 @@ function render() {
       busy = false;
     }
   }
+
   async function confirm(stepId, status) {
     if (busy || !current) return;
     const note = $('[data-evidence-for="' + stepId + '"]')?.value || '';
@@ -229,6 +263,7 @@ function render() {
       toast('Add a specific evidence note of at least 12 characters.', 'err');
       return;
     }
+
     busy = true;
     try {
       current = await api('onboardingConfirm', { stepId, status, evidence: note });
@@ -244,6 +279,7 @@ function render() {
       busy = false;
     }
   }
+
   async function advanceStage() {
     if (busy || !current) return;
     busy = true;
@@ -258,12 +294,16 @@ function render() {
       busy = false;
     }
   }
+
   function init() {
     $('#main-content').addEventListener('click', (event) => {
       const button = event.target.closest('button');
       if (!button) return;
-      if (button.dataset.confirmStep) confirm(button.dataset.confirmStep, 'pass');
-      else if (button.dataset.failStep) confirm(button.dataset.failStep, 'fail');
+      if (button.dataset.confirmStep) {
+        confirm(button.dataset.confirmStep, 'pass');
+      } else if (button.dataset.failStep) {
+        confirm(button.dataset.failStep, 'fail');
+      }
     });
   }
 

@@ -1,18 +1,179 @@
 'use strict';
-const assert=require('node:assert/strict');const {create}=require('./mock-gas');
-const g=create(),ownerEmail='onboarding-owner@example.test';g.props.OWNER_EMAIL=ownerEmail;g.props.OWNER_PASSWORD='Owner#Start2026';g.setup();
-g.props.CV_ENVIRONMENT='staging';g.props.CV_DEPLOYMENT_ID='MOCK_DEPLOYMENT';g.props.CV_STAGING_SCRIPT_ID='MOCK_SCRIPT_ID';g.props.CV_STAGING_SPREADSHEET_ID='SS1';g.props.CV_STAGING_DEPLOYMENT_ID='MOCK_DEPLOYMENT';g.props.CV_STAGING_RECEIPT_FOLDER_ID=g.props.RECEIPT_FOLDER_ID;g.props.CV_STAGING_BACKUP_FOLDER_ID=g.props.BACKUP_FOLDER_ID;g.props.BACKUP_LAST_SUCCESS=new Date().toISOString();g.props.BACKUP_LAST_ATTEMPT=g.props.BACKUP_LAST_SUCCESS;
-function loginAndChange(email,password,next){const a=g.call('login',{email,password});assert.equal(a.ok,true);const b=g.call('changePassword',{token:a.data.token,oldPassword:password,newPassword:next});assert.equal(b.ok,true);return b.data.token;}
-const token=loginAndChange(ownerEmail,'Owner#Start2026','Owner#Final2026');function req(action,payload={}){return g.call(action,{token,environment:'staging',deploymentId:'MOCK_DEPLOYMENT',...payload});}
-const mismatch=g.call('onboardingState',{token,environment:'production',deploymentId:'MOCK_DEPLOYMENT'});assert.equal(mismatch.ok,false);assert.equal(mismatch.code,'ENVIRONMENT_MISMATCH');
-const wrong=req('onboardingState',{deploymentId:'WRONG'});assert.equal(wrong.ok,false);assert.equal(wrong.code,'ENVIRONMENT_MISMATCH');
-const state=req('onboardingState');assert.equal(state.ok,true);assert.equal(state.data.stage,'preflight');
-const early=req('createVouchers',{rows:[]});assert.equal(early.ok,false);assert.equal(early.code,'ONBOARDING_GATE');
-const staff=req('saveUser',{name:'Staff',email:'onboarding-staff@example.test',role:'staff',password:'Staff#Start2026'});assert.equal(staff.ok,true);const manager=req('saveUser',{name:'Manager',email:'onboarding-manager@example.test',role:'manager',password:'Manager#Start2026'});assert.equal(manager.ok,true);
-loginAndChange('onboarding-staff@example.test','Staff#Start2026','Staff#Final2026');loginAndChange('onboarding-manager@example.test','Manager#Start2026','Manager#Final2026');
-const settings=req('saveSettings',{propertyName:'Onboarding Test Property',propertyAddress:'',categories:['Test','Other'],receiptCategories:['Other'],nextVoucherNo:201,nextReceiptNo:1,openingBalance:0});assert.equal(settings.ok,true);const blocked=req('onboardingAdvance');assert.equal(blocked.ok,false);assert.equal(blocked.code,'ONBOARDING_BLOCKED');
-const sl=g.call('login',{email:'onboarding-staff@example.test',password:'Staff#Final2026'});const denied=g.call('onboardingConfirm',{token:sl.data.token,environment:'staging',deploymentId:'MOCK_DEPLOYMENT',stepId:'voucherAndReceipt',status:'pass',evidence:'Tested voucher and attached a receipt.'});assert.equal(denied.ok,false);assert.equal(denied.code,'FORBIDDEN');
-const outOfOrder=req('onboardingConfirm',{stepId:'voucherAndReceipt',status:'pass',evidence:'Verified staged voucher and receipt path.'});assert.equal(outOfOrder.ok,false);assert.equal(outOfOrder.code,'ONBOARDING_ORDER');const short=req('onboardingConfirm',{stepId:'loginAndRoles',status:'pass',evidence:'ok'});assert.equal(short.ok,false);assert.equal(short.code,'VALIDATION');
-const unset=create();unset.props.OWNER_EMAIL='unset-env@example.test';unset.props.OWNER_PASSWORD='Owner#Start2026';unset.setup();const ua=unset.call('login',{email:'unset-env@example.test',password:'Owner#Start2026'});const ub=unset.call('changePassword',{token:ua.data.token,oldPassword:'Owner#Start2026',newPassword:'Owner#Final2026'});const uc=unset.call('createVouchers',{token:ub.data.token,rows:[]});assert.equal(uc.ok,false);assert.equal(uc.code,'ENVIRONMENT_MISMATCH');
-const p=create();p.props.OWNER_EMAIL='prod-owner@example.test';p.props.OWNER_PASSWORD='Owner#Start2026';p.setup();p.props.CV_ENVIRONMENT='production';p.props.CV_DEPLOYMENT_ID='PROD_DEPLOYMENT';p.props.CV_PRODUCTION_SCRIPT_ID='MOCK_SCRIPT_ID';p.props.CV_PRODUCTION_SPREADSHEET_ID='SS1';p.props.CV_PRODUCTION_DEPLOYMENT_ID='PROD_DEPLOYMENT';p.props.CV_PRODUCTION_RECEIPT_FOLDER_ID=p.props.RECEIPT_FOLDER_ID;p.props.CV_PRODUCTION_BACKUP_FOLDER_ID=p.props.BACKUP_FOLDER_ID;const pl=p.call('login',{email:'prod-owner@example.test',password:'Owner#Start2026'});const pc=p.call('changePassword',{token:pl.data.token,oldPassword:'Owner#Start2026',newPassword:'Owner#Final2026'});const pw=p.call('createVouchers',{token:pc.data.token,environment:'production',deploymentId:'PROD_DEPLOYMENT',rows:[]});assert.equal(pw.ok,false);assert.equal(pw.code,'ONBOARDING_GATE');
-console.log('Onboarding tests passed: mismatch, identity, sequencing, owner authorization and production fail-closed checks.');
+
+const assert = require('node:assert/strict');
+const { create } = require('./mock-gas');
+
+const g = create();
+const ownerEmail = 'onboarding-owner@example.test';
+g.props.OWNER_EMAIL = ownerEmail;
+g.props.OWNER_PASSWORD = 'Owner#Start2026';
+g.setup();
+
+g.props.CV_ENVIRONMENT = 'staging';
+g.props.CV_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
+g.props.CV_STAGING_SCRIPT_ID = 'MOCK_SCRIPT_ID';
+g.props.CV_STAGING_SPREADSHEET_ID = 'SS1';
+g.props.CV_STAGING_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
+g.props.CV_STAGING_RECEIPT_FOLDER_ID = g.props.RECEIPT_FOLDER_ID;
+g.props.CV_STAGING_BACKUP_FOLDER_ID = g.props.BACKUP_FOLDER_ID;
+g.props.BACKUP_LAST_SUCCESS = new Date().toISOString();
+g.props.BACKUP_LAST_ATTEMPT = g.props.BACKUP_LAST_SUCCESS;
+
+function loginAndChange(email, password, next) {
+  const login = g.call('login', { email, password });
+  assert.equal(login.ok, true);
+  const changed = g.call('changePassword', {
+    token: login.data.token,
+    oldPassword: password,
+    newPassword: next,
+  });
+  assert.equal(changed.ok, true);
+  return changed.data.token;
+}
+
+const token = loginAndChange(ownerEmail, 'Owner#Start2026', 'Owner#Final2026');
+
+function request(action, payload = {}) {
+  return g.call(action, {
+    token,
+    environment: 'staging',
+    deploymentId: 'MOCK_DEPLOYMENT',
+    ...payload,
+  });
+}
+
+const mismatch = g.call('onboardingState', {
+  token,
+  environment: 'production',
+  deploymentId: 'MOCK_DEPLOYMENT',
+});
+assert.equal(mismatch.ok, false);
+assert.equal(mismatch.code, 'ENVIRONMENT_MISMATCH');
+
+const wrongDeployment = request('onboardingState', { deploymentId: 'WRONG' });
+assert.equal(wrongDeployment.ok, false);
+assert.equal(wrongDeployment.code, 'ENVIRONMENT_MISMATCH');
+
+const state = request('onboardingState');
+assert.equal(state.ok, true);
+assert.equal(state.data.stage, 'preflight');
+
+const earlyWrite = request('createVouchers', { rows: [] });
+assert.equal(earlyWrite.ok, false);
+assert.equal(earlyWrite.code, 'ONBOARDING_GATE');
+
+const staff = request('saveUser', {
+  name: 'Staff',
+  email: 'onboarding-staff@example.test',
+  role: 'staff',
+  password: 'Staff#Start2026',
+});
+assert.equal(staff.ok, true);
+
+const manager = request('saveUser', {
+  name: 'Manager',
+  email: 'onboarding-manager@example.test',
+  role: 'manager',
+  password: 'Manager#Start2026',
+});
+assert.equal(manager.ok, true);
+
+loginAndChange('onboarding-staff@example.test', 'Staff#Start2026', 'Staff#Final2026');
+loginAndChange('onboarding-manager@example.test', 'Manager#Start2026', 'Manager#Final2026');
+
+const settings = request('saveSettings', {
+  propertyName: 'Onboarding Test Property',
+  propertyAddress: '',
+  categories: ['Test', 'Other'],
+  receiptCategories: ['Other'],
+  nextVoucherNo: 201,
+  nextReceiptNo: 1,
+  openingBalance: 0,
+});
+assert.equal(settings.ok, true);
+
+const blocked = request('onboardingAdvance');
+assert.equal(blocked.ok, false);
+assert.equal(blocked.code, 'ONBOARDING_BLOCKED');
+
+const staffLogin = g.call('login', {
+  email: 'onboarding-staff@example.test',
+  password: 'Staff#Final2026',
+});
+const staffConfirm = g.call('onboardingConfirm', {
+  token: staffLogin.data.token,
+  environment: 'staging',
+  deploymentId: 'MOCK_DEPLOYMENT',
+  stepId: 'voucherAndReceipt',
+  status: 'pass',
+  evidence: 'Tested voucher and attached a receipt.',
+});
+assert.equal(staffConfirm.ok, false);
+assert.equal(staffConfirm.code, 'FORBIDDEN');
+
+const outOfOrder = request('onboardingConfirm', {
+  stepId: 'voucherAndReceipt',
+  status: 'pass',
+  evidence: 'Verified staged voucher and receipt path.',
+});
+assert.equal(outOfOrder.ok, false);
+assert.equal(outOfOrder.code, 'ONBOARDING_ORDER');
+
+const shortEvidence = request('onboardingConfirm', {
+  stepId: 'loginAndRoles',
+  status: 'pass',
+  evidence: 'ok',
+});
+assert.equal(shortEvidence.ok, false);
+assert.equal(shortEvidence.code, 'VALIDATION');
+
+const unset = create();
+unset.props.OWNER_EMAIL = 'unset-env@example.test';
+unset.props.OWNER_PASSWORD = 'Owner#Start2026';
+unset.setup();
+const unsetLogin = unset.call('login', {
+  email: 'unset-env@example.test',
+  password: 'Owner#Start2026',
+});
+const unsetChange = unset.call('changePassword', {
+  token: unsetLogin.data.token,
+  oldPassword: 'Owner#Start2026',
+  newPassword: 'Owner#Final2026',
+});
+const unsetWrite = unset.call('createVouchers', { token: unsetChange.data.token, rows: [] });
+assert.equal(unsetWrite.ok, false);
+assert.equal(unsetWrite.code, 'ENVIRONMENT_MISMATCH');
+
+const production = create();
+production.props.OWNER_EMAIL = 'prod-owner@example.test';
+production.props.OWNER_PASSWORD = 'Owner#Start2026';
+production.setup();
+production.props.CV_ENVIRONMENT = 'production';
+production.props.CV_DEPLOYMENT_ID = 'PROD_DEPLOYMENT';
+production.props.CV_PRODUCTION_SCRIPT_ID = 'MOCK_SCRIPT_ID';
+production.props.CV_PRODUCTION_SPREADSHEET_ID = 'SS1';
+production.props.CV_PRODUCTION_DEPLOYMENT_ID = 'PROD_DEPLOYMENT';
+production.props.CV_PRODUCTION_RECEIPT_FOLDER_ID = production.props.RECEIPT_FOLDER_ID;
+production.props.CV_PRODUCTION_BACKUP_FOLDER_ID = production.props.BACKUP_FOLDER_ID;
+
+const productionLogin = production.call('login', {
+  email: 'prod-owner@example.test',
+  password: 'Owner#Start2026',
+});
+const productionChange = production.call('changePassword', {
+  token: productionLogin.data.token,
+  oldPassword: 'Owner#Start2026',
+  newPassword: 'Owner#Final2026',
+});
+const productionWrite = production.call('createVouchers', {
+  token: productionChange.data.token,
+  environment: 'production',
+  deploymentId: 'PROD_DEPLOYMENT',
+  rows: [],
+});
+assert.equal(productionWrite.ok, false);
+assert.equal(productionWrite.code, 'ONBOARDING_GATE');
+
+console.log(
+  'Onboarding tests passed: mismatch, identity, sequencing, owner authorization and production fail-closed checks.',
+);

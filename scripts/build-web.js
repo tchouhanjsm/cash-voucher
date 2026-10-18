@@ -53,8 +53,16 @@ function buildWebSite(options = {}) {
   const rootDir = path.resolve(options.rootDir || path.join(__dirname, '..'));
   const outDir = path.resolve(options.outDir || path.join(rootDir, 'dist'));
   const apiUrl = validateApiUrl(options.apiUrl ?? process.env.CV_API_URL);
-  const environment = String(options.environment ?? process.env.CV_ENVIRONMENT ?? '').trim().toLowerCase();
-  if (!['staging', 'production'].includes(environment)) throw new Error('CV_ENVIRONMENT must be explicitly set to staging or production for a customer build.');
+  const environment = String(
+    options.environment ?? process.env.CV_ENVIRONMENT ?? '',
+  )
+    .trim()
+    .toLowerCase();
+  if (!['staging', 'production'].includes(environment)) {
+    throw new Error(
+      'CV_ENVIRONMENT must be explicitly set to staging or production for a customer build.',
+    );
+  }
   const deploymentId = new URL(apiUrl).pathname.split('/')[3];
   const rootFromOutput = path.relative(outDir, rootDir);
   const outputRelativeToRoot = path.relative(rootDir, outDir);
