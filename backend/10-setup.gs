@@ -215,7 +215,6 @@ function setupPreflight_(p) {
     );
   }
 
-
   if (!configuredSsId) {
     throw new Error(
       'An existing application schema was found without an explicit SS_ID. No setup changes were made; verify and set the correct instance target before recovery.',
