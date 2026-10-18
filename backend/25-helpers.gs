@@ -349,3 +349,94 @@ function need_(user, perm) {
     throw err_('You do not have permission to do that.', 'FORBIDDEN');
   }
 }
+
+
+/* ============ customer support email ============ */
+function supportSubmit_(user, req) {
+  const props = props_();
+  const recipient = String(props.getProperty('SUPPORT_EMAIL') || '').trim();
+  if (!/^\\S+@\\S+\\.\\S+$/.test(recipient)) {
+    throw err_('Support email is not configured. Contact the application operator through the agreed support channel.', 'SUPPORT_UNAVAILABLE');
+  }
+
+  const topic = String(req.topic || '').trim();
+  const message = String(req.message || '').replace(/\\r\\n?/g, '\\n').trim();
+  const validTopics = ['Bug report', 'Unexpected result', 'Login/access issue', 'Feature request', 'Other'];
+  const customerEmail = String(user.email || '').trim().toLowerCase();
+  const currentUrl = String(req.currentUrl || '').trim().slice(0, 250);
+
+  if (!validTopics.includes(topic)) throw err_('Choose a support category.', 'VALIDATION');
+  if (message.length < 15 || message.length > 4000) {
+    throw err_('Describe the issue in 15–4,000 characters.', 'VALIDATION');
+  }
+  if (message.indexOf('\\u0000') >= 0) throw err_('The message contains unsupported characters.', 'VALIDATION');
+
+  const now = Date.now();
+  const cutoff = now - 60 * 60 * 1000;
+  const identity = String(user.id || customerEmail || 'unknown')
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '_')
+    .slice(0, 80);
+  const userKey = 'SUPPORT_RATE_' + identity;
+  const globalKey = 'SUPPORT_RATE_GLOBAL';
+  const lock = LockService.getScriptLock();
+  if (!lock.tryLock(5000)) {
+    throw err_('Support is busy right now. Please try again shortly.', 'BUSY');
+  }
+
+  try {
+    let userTimes = [];
+    let globalTimes = [];
+    try { userTimes = JSON.parse(props.getProperty(userKey) || '[]'); } catch (_) { userTimes = []; }
+    try { globalTimes = JSON.parse(props.getProperty(globalKey) || '[]'); } catch (_) { globalTimes = []; }
+    userTimes = userTimes.filter(function (stamp) { return Number(stamp) > cutoff; });
+    globalTimes = globalTimes.filter(function (stamp) { return Number(stamp) > cutoff; });
+    if (userTimes.length >= CFG.SUPPORT_MAX_PER_HOUR || globalTimes.length >= 60) {
+      throw err_('Too many support messages were sent recently. Please try again later.', 'RATE_LIMIT');
+    }
+    userTimes.push(now);
+    globalTimes.push(now);
+    props.setProperty(userKey, JSON.stringify(userTimes));
+    props.setProperty(globalKey, JSON.stringify(globalTimes));
+  } finally {
+    lock.releaseLock();
+  }
+
+  const environment = onboardingEnvironment_();
+  const deploymentId = String(props.getProperty('CV_DEPLOYMENT_ID') || '').trim();
+  const subject = '[Cash Voucher][' + environment + '] ' + topic;
+  const body = [
+    'Cash Voucher support request',
+    '',
+    'Category: ' + topic,
+    'Environment: ' + environment,
+    'Customer/account email: ' + customerEmail,
+    'Account role: ' + String(user.role || 'unknown'),
+    'Deployment ID: ' + deploymentId,
+    'Submitted at: ' + new Date(now).toISOString(),
+    'Client URL: ' + currentUrl,
+    '',
+    'Description:',
+    message,
+    '',
+    'Do not reply until the reported environment and customer identity have been verified.',
+  ].join('\\n');
+
+  try {
+    MailApp.sendEmail({
+      to: recipient,
+      subject: subject,
+      body: body,
+      name: 'Cash Voucher Support',
+      replyTo: customerEmail,
+    });
+  } catch (error) {
+    throw err_('The support message could not be sent. Please try again later or contact your administrator.', 'SUPPORT_SEND_FAILED');
+  }
+
+  audit_(user, 'SUPPORT_SUBMITTED', 'support', topic + '; chars=' + message.length);
+  return {
+    ok: true,
+    message: 'Support request sent. Please do not include passwords, PINs, session tokens or bank/account credentials.',
+  };
+}
