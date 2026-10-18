@@ -10,7 +10,7 @@
 
 - The mainline contains the Cash Voucher PWA and split Google Apps Script backend source.
 - GitHub repository: `tchouhanjsm/cash-voucher`; default branch `main`.
-- Repository visibility was verified as **public** on 17 October 2026. Plan a move to a private source repository after the frontend is hosted independently; do not blindly switch visibility first if it would break a currently used website.
+- Repository visibility is now **private**. Verify that the existing/static host can still read the repository before triggering a rebuild or changing DNS. If host access was lost, reconnect the operator-owned deployment integration; never make the repository public merely to restore a build.
 - The root `config.js` already contains an Apps Script URL, but the project, Sheet, deployment version, data owner and live backup status behind that URL have not been independently verified. **Do not reuse that URL for a new customer.**
 - Mock tests and source code do not prove that a real customer's Google resources, authentication, backup, restore, hosting or customer link work.
 - The customer business name, customer-owner email and new Google/hosting resource identities still need to be entered in the private operator register.
@@ -34,8 +34,8 @@ Do not share a customer's Sheet, receipt folder or backup folder with another cu
 
 - [ ] Use a business-managed Google account that will remain under the product owner's control for Apps Script execution, Sheets, Drive, receipts and backups. Enable two-step verification and verify recovery access.
 - [ ] Keep Clasp authentication and `.clasp.json` local or in a protected deployment environment. Never commit `.clasprc.json`, OAuth tokens, passwords/temporary credentials or live Script/Sheet/Drive identifiers.
-- [ ] Move static hosting to a provider that can build from the source repository and publish only the generated `dist/` artifact. Ensure that provider has read access to the repository before changing GitHub visibility.
-- [ ] Once the new host is verified and no service depends on root-level GitHub Pages, change the repository to private through GitHub Settings if the plan and deployment integration support it. This manual account-administration step cannot be performed by this repository-only workflow. Public repository copies already made by others cannot be recalled.
+- [ ] Verify or provision the static host's private GitHub integration and prove it can build the private repository using the configured environment variables. The published output must be only `dist/`.
+- [ ] Confirm DNS/host continuity for any existing URL before changing its origin or removing an old host. Keep the operator's repository and deployment account private; public repository copies that existed before the privacy change cannot be recalled.
 
 ## B. Create the customer's Google resources
 
@@ -68,7 +68,7 @@ The deployment endpoint is an address, not an authentication credential; app-lev
 
 ## C. Build and publish the customer frontend
 
-The root website must not be deployed as-is for a new customer. It contains development/backend material and a `config.js` that is already wired to an unverified endpoint. The builder emits `_headers` for Cloudflare Pages and `.htaccess` for Apache. On Apache, `mod_headers` and overrides must be enabled; verify live response headers and configure the host directly if needed.
+The root website must not be deployed as-is for a new customer. It contains development/backend material and a `config.js` that is already wired to an unverified endpoint; do not use that URL for a client build. The builder emits `_headers` for Cloudflare Pages and `.htaccess` for Apache. On Apache, `mod_headers` and overrides must be enabled; verify live response headers and configure the host directly if needed.
 
 1. **Recommended default: Cloudflare Pages, one project per customer.** From the product owner's Cloudflare account, create a new Pages project linked to the private `cash-voucher` repository. Use the repository's current source branch and set the build command to `npm ci && npm run build:web`, the output directory to `dist`, and Node to the supported major version specified by `.nvmrc`. Official guide: https://developers.cloudflare.com/pages/get-started/git-integration/ . A separate project should receive its own generated `*.pages.dev` hostname; verify that the exact hostnames are distinct before onboarding another customer. Confirm current plan limits in the Cloudflare dashboard before scaling.
 2. In that project's build settings, set `CV_API_URL` to the exact URL for this instance's **new** Apps Script Web App and set `CV_ENVIRONMENT` explicitly. Use `staging` for the isolated staging site and `production` only for a separate, owner-approved production build. Do not commit the URL into shared `main/config.js`. The URL is a target identifier, not a password; server-side authentication must still protect every action.
