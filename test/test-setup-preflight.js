@@ -100,7 +100,18 @@ function assertPreflightDidNotInitialize(g, expectedSheetNames = []) {
   g.props.OWNER_PASSWORD = 'Unique#TempPass2026';
   g.sheets.Users = seededUsersSheet([
     USER_HEADERS,
-    ['user-1', 'Incomplete', 'incomplete@test.com', 'staff', true, 'salt', '', true, '2026-10-18', ''],
+    [
+      'user-1',
+      'Incomplete',
+      'incomplete@test.com',
+      'staff',
+      true,
+      'salt',
+      '',
+      true,
+      '2026-10-18',
+      '',
+    ],
   ]);
   const before = { ...g.props };
   assert.throws(() => g.setup(), /incomplete user row/i);
@@ -121,4 +132,6 @@ function assertPreflightDidNotInitialize(g, expectedSheetNames = []) {
   assert.equal(g.sheets.Users.rows.length, usersBefore);
 }
 
-console.log('Setup preflight OK — credentials fail closed before writes; malformed Users schema/data are preserved for inspection; valid initialization remains idempotent.');
+console.log(
+  'Setup preflight OK — credentials fail closed before writes; malformed Users schema/data are preserved for inspection; valid initialization remains idempotent.',
+);
