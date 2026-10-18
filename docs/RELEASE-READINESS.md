@@ -1,10 +1,10 @@
 # Release Readiness
 
-**Reviewed:** 17 October 2026. **Verified main baseline:** `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b` (PR #169 merge). [Post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed. PR #169's exact pre-merge head `b82b8f38b891f01b7cba2a1c421a920ceabd14fc` passed CI/quality, Browser E2E and Full Flight Test. See [roadmap](PRODUCT-ROADMAP.md), [staging release audit](STAGING-RELEASE-AUDIT.md) and [final repository audit](FINAL-REPOSITORY-AUDIT-2026-10-17.md). Older snapshots are historical, not a live status feed.
+**Reviewed:** 18 October 2026. **Verified main baseline:** `9335018b5b9edf1109839f5f9aa2216e4128fbdc` (PR #173 merge). PR #173's exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787); post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. See [roadmap](PRODUCT-ROADMAP.md), [staging release audit](STAGING-RELEASE-AUDIT.md) and [final repository audit](FINAL-REPOSITORY-AUDIT-2026-10-17.md). Older PR snapshots below are historical, not a live status feed.
 
-**Status: source packaging and password-authentication consolidation are merged; live staging and first-customer handover are not verified.** PR #165 merged route-safe asynchronous workflow updates, PR #166 merged the per-customer static artifact builder/headers/runbooks, and PR #169 merged password authentication and staging-readiness consolidation. Neither merge creates Google resources, a hosting project or customer URL. The current root `config.js` endpoint has not been independently mapped to its Script/deployment/Sheet/Drive resources. The repository remains public pending an owner-controlled hosting/privacy cutover.
+**Status: source is ready to use as a staging input; live staging and first-customer handover are not verified.** PR #165 route-safe asynchronous updates, PR #166 customer static artifact packaging/headers, PR #169 password authentication/staging safeguards, and PR #173 server-backed onboarding/release gates are merged. A merge does not create Google resources, a hosting project or a customer URL. The root `config.js` endpoint has not been independently mapped to its Script/deployment/Sheet/Drive resources. Repository privacy and hosting continuity still need owner review.
 
-Still unverified: separate staging/customer Apps Script projects and Sheets, deployment/execution identity, protected GitHub staging Environment and secrets, real role/receipt authorization, live host response headers and unique customer origin, real backup/restore/reconciliation, real-device offline recovery/accessibility, real-service quotas/concurrency, and the controlled 14-day pilot. Do not hand over a live link as ready until the relevant gates have witnessed evidence in the private instance register.
+Still unverified: dedicated staging Apps Script project/Sheet/Drive folders, deployment identity, protected GitHub staging Environment/secrets, staging static host/subdomain and live response headers, real role/receipt authorization, backup and isolated restore/reconciliation, real-device offline recovery/accessibility, real-service quota/concurrency, and the controlled 14-day pilot. Do not hand over a live link as ready until the relevant gates have evidence in the private instance register.
 
 ## Staging pipeline — code implemented, live environment not verified
 
@@ -20,21 +20,21 @@ Owner provisioning/execution remains outstanding until independently evidenced:
 
 Do not run `setup()` against an existing production property, use the staging workflow to target production, expose secret values, or treat mock checks as live evidence. No provisioning/deployment/UAT is claimed by this source review.
 
-## Current go-live gates — reviewed 17 October 2026
+## Current go-live gates — reviewed 18 October 2026
 
 PR #111 is merged to source at `6092152c64adff084abfda5407056dac9401b5e9`; PR #126 is also merged on current main. Daily Cash Close source is **not proof of live deployment**; after a verified backup and owner-authorized release, the guarded schema steps remain `migrateCashImpactField()` if needed, then `migrateDailyCashCloseSchema()`. Verify both new tabs and unchanged voucher row counts before publishing.
 
 The Dashboard already displays **Book balance**. It is a recorded-voucher projection (global Settings opening balance + active receipts − active payments), not a physical drawer count, bank balance, or general ledger. Daily Cash Close is a separate, immutable physical-cash reconciliation.
 
 - **Browser CSP baseline — added in this source batch:** the static release check validates the production-source policy. The mock E2E server adds a test-only `'unsafe-eval'` exception for Playwright polling, so its run is functional regression evidence, not proof of the exact production CSP.
-- **Header-level framing protection — artifact implemented, live response not verified:** customer builds generate a Cloudflare Pages `_headers` file with a CSP response header including `frame-ancestors 'none'` and `X-Frame-Options: DENY`. Verify the actual document response after the host is deployed; the HTML meta policy cannot enforce `frame-ancestors`.
+- **Header-level framing protection — artifact implemented, live response not verified:** customer builds generate `_headers` for Cloudflare Pages and `.htaccess` for Apache, including a CSP response header with `frame-ancestors 'none'` and `X-Frame-Options: DENY`. Verify the actual document response after deployment; the HTML meta policy cannot enforce `frame-ancestors`, and Apache must allow `mod_headers` and overrides.
 - **Live Apps Script project/version — not verified:** the owner must confirm the intended project, Sheet binding, Script Properties and deployment ID matching `config.js`.
 - **Authorization and receipt access — not verified live:** perform owner/manager/staff smoke tests against the actual deployed endpoint.
 - **Real scheduled backup and isolated restore — not verified:** inspect a completed Drive snapshot and witness restore into a separate recovery Sheet/folder; validate row counts and voucher numbering.
 - **PWA, offline recovery and accessibility — not verified on devices:** test actual operating phones/tablets, queued/rejected entries, receipt photos, service-worker update, keyboard and assistive technology.
 - **14-day hotel pilot — not started:** start only after release, restore and device gates pass; maintain daily evidence below.
 
-The meta CSP allowlist covers same-origin PWA assets, data/blob receipt previews and the Apps Script ContentService origins. Script execution is restricted to same-origin external files; inline event handlers, object plugins, `unsafe-eval` and child frames are disallowed. Inline styles remain allowed because the dashboard renders variable chart-bar widths through style attributes. The customer build generates a Cloudflare Pages `_headers` file for the corresponding CSP response header, anti-framing, MIME-sniffing, referrer and permissions policies. **No live host response has been checked yet**: CI proves the generated file, not that a configured production host applies it.
+The meta CSP allowlist covers same-origin PWA assets, data/blob receipt previews and the Apps Script ContentService origins. Script execution is restricted to same-origin external files; inline event handlers, object plugins, `unsafe-eval` and child frames are disallowed. Inline styles remain allowed because the dashboard renders variable chart-bar widths through style attributes. The customer build generates `_headers` for Cloudflare Pages and `.htaccess` for Apache to configure CSP, anti-framing, MIME-sniffing, referrer and permissions policies. **No live host response has been checked yet**: CI proves the generated files, not that a configured host applies them.
 
 ## 14-day controlled pilot — NOT STARTED
 
@@ -59,18 +59,14 @@ Do not begin the pilot until the owner confirms the release target, required mig
 
 ## Evidence-based baseline
 
-- **Backend validation, schema checks and number reconciliation — Implemented in source.** Current `backend/*.gs` and mock backend suite; not a live Google-account test.
-- **Password hash and session protection — Implemented in source.** HMAC-SHA256 with per-user salt and a Script Properties pepper; password-change/reset salt rotation invalidates old session tokens. The password-KDF choice remains a security review item.
-- **Login/password-change attempt throttling — Implemented in source.** Failed-login counting is serialized under ScriptLock, with temporary lockout; password-change failures are throttled. PR #169 moves the interactive workflow to passwords. This does not establish live Apps Script deployment.
-- **Server-side role enforcement — Implemented in source.** `PERMS` and `need_`/`can_` in backend; UI visibility is not the security boundary.
-- **Active frontend architecture — Verified in source.** `index.html` loads `frontend/main.js`; the source graph is modular.
-- **PWA/outbox recovery — Implemented in source.** Existing browser regressions cover recovery paths; device/storage durability is not a server backup.
-- **CI quality gate — Last recorded on PR #147.** Exact PR head `bfdbbb401c397730b12480fec5ac9fd1e57072d9` passed CI/quality; PR #148 must pass again on its own final head.
-- **Browser E2E — Last recorded on PR #147.** 358 checks passed with zero failures on that exact PR head; PR #148 adds a new endpoint-binding case that still requires final-head evidence.
-- **Daily backup mechanism — Implemented in source.** Live trigger success, backup contents and restore drill remain unverified.
-- **Accessibility/design audit — Not verified as conformance.** Semantic labels and status landmarks exist; manual device and assistive-technology checks remain outstanding.
-- **Production Apps Script deployment — Unconfirmed.** Current merged backend deployment identity/version is unverified.
-- **Hotel operational pilot/cash reconciliation — Not started.** Requires real operators/devices and an owner-approved trial.
+- **Current source verification — passed:** PR #173 exact tested head passed CI, Browser E2E and Full Flight Test; post-merge main CI also passed. These are source/mock results, not verification of the live staging customer's Google resources.
+- **Password hash and session protection — implemented in source:** HMAC-SHA256 with per-user salt and a Script Properties pepper; password-change/reset salt rotation invalidates existing sessions. Verify live behavior against the staging instance; source tests do not establish production performance or readiness.
+- **Server-backed onboarding — implemented in source:** environment-specific state, owner-only ordered confirmations, resource identity checks and centralized financial-write gates. Owner evidence remains an attestation, not automatic proof of successful device UAT or restore.
+- **Static client packaging — implemented in source:** build requires `CV_API_URL` and explicit `CV_ENVIRONMENT=staging|production`; it emits the minimal static client, generated environment/deployment config and a Cloudflare Pages `_headers` file. It does not provision a host or prove headers are served. The builder also emits `.htaccess` for Apache; verify live response headers and configure the host if required.
+- **Backend validation/role enforcement, password protection, audit recording, daily-backup mechanism, cash close and PWA/outbox recovery — implemented with mock-backed regression coverage.** Live Apps Script behavior, backup completeness and restoreability remain unverified.
+- **Accessibility/design — not verified as conformance.** Automated responsive and accessibility heuristics do not replace manual assistive-technology and real-device review.
+- **Production Apps Script deployment — unconfirmed.** Current live project/version, permissions and recovery evidence are not recorded.
+- **Controlled pilot — not started.** Requires staging, restore and device gates to pass first.
 
 The owner-only Settings panel reports recorded backup metadata, but does not verify live Drive access, snapshot completeness or restoreability.
 

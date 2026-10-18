@@ -83,6 +83,7 @@ try {
     'sw.js',
     'config.js',
     '_headers',
+    '.htaccess',
     '.nojekyll',
     'frontend/main.js',
     'frontend/core/offline-queue.js',
@@ -104,6 +105,12 @@ try {
   assert.ok(headers.includes('X-Frame-Options: DENY'));
   assert.ok(headers.includes("frame-ancestors 'none'"));
   assert.ok(headers.includes('https://script.google.com'));
+
+  const apacheHeaders = fs.readFileSync(path.join(outDir, '.htaccess'), 'utf8');
+  assert.ok(apacheHeaders.includes('Header always set X-Content-Type-Options "nosniff"'));
+  assert.ok(apacheHeaders.includes('Header always set X-Frame-Options "DENY"'));
+  assert.ok(apacheHeaders.includes('Header always set Content-Security-Policy'));
+  assert.ok(apacheHeaders.includes("frame-ancestors 'none'"));
 
   const generatedConfig = fs.readFileSync(path.join(outDir, 'config.js'), 'utf8');
   assert.ok(

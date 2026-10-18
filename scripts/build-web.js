@@ -19,6 +19,15 @@ const SECURITY_HEADERS = `/*
   Content-Security-Policy: default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; worker-src 'self'; form-action 'self'; frame-src 'none'; frame-ancestors 'none'
 `;
 
+const APACHE_SECURITY_HEADERS = `<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options "nosniff"
+  Header always set X-Frame-Options "DENY"
+  Header always set Referrer-Policy "strict-origin-when-cross-origin"
+  Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"
+  Header always set Content-Security-Policy "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; script-src-attr 'none'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://script.google.com https://script.googleusercontent.com; manifest-src 'self'; worker-src 'self'; form-action 'self'; frame-src 'none'; frame-ancestors 'none'"
+</IfModule>
+`;
+
 function validateApiUrl(value) {
   const raw = typeof value === 'string' ? value.trim() : '';
   if (!raw) {
@@ -114,6 +123,7 @@ window.CV_CONFIG = {
 
   fs.writeFileSync(path.join(outDir, 'config.js'), config, 'utf8');
   fs.writeFileSync(path.join(outDir, '_headers'), SECURITY_HEADERS, 'utf8');
+  fs.writeFileSync(path.join(outDir, '.htaccess'), APACHE_SECURITY_HEADERS, 'utf8');
   fs.writeFileSync(path.join(outDir, '.nojekyll'), '', 'utf8');
 
   return {
@@ -123,7 +133,7 @@ window.CV_CONFIG = {
     deploymentId,
     files:
       STATIC_FILES.length +
-      3 +
+      4 +
       countFiles(path.join(outDir, 'frontend')) +
       countFiles(path.join(outDir, 'icons')),
   };

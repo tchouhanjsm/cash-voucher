@@ -32,4 +32,4 @@ Production independently runs preflight against its own resources. After that, t
 
 ## Existing instances
 
-Never run `setup()` on a populated Sheet; it rewrites expected headers and may install/replace triggers. Verify identities and backups first, then use a reviewed migration. Do not deploy from this PR without separate authorization. Exact-head CI, browser E2E and Full Flight Test must pass before merge.
+Never run `setup()` on a populated Sheet; it rewrites expected headers and may install/replace triggers. Verify identities and backups first, then use a reviewed migration. PR #173 is merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`; its exact tested head passed CI, Browser E2E and Full Flight Test. This merge does not authorize deployment. Provision and verify isolated staging resources, run the guarded workflow, and retain live UAT/backup/restore evidence before calling staging accepted.

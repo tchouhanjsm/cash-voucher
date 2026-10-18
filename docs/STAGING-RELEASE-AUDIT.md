@@ -1,20 +1,18 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 17 October 2026  
-**Verified main baseline:** `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b` (PR #169 merge)  
+**Audit date:** 18 October 2026  
+**Verified main baseline:** `9335018b5b9edf1109839f5f9aa2216e4128fbdc` (PR #173 merge)  
 **Scope:** review the current product documentation, source workflow, release controls and first-customer delivery requirements. This audit is evidence of a repository review—not a live staging deployment or production acceptance.
 
 ## Executive status
 
-**Source baseline:** the code and delivery-packaging changes are merged. PR #165 (Phases 37–39) and PR #166 (customer-specific static build/security headers/onboarding) are merged; PR #169 later consolidated password authentication and staging-readiness safeguards into main at `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`.
+**Source baseline:** server-backed onboarding and financial-write release gates are merged. [PR #173](https://github.com/tchouhanjsm/cash-voucher/pull/173) was merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787). Post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) also passed.
 
-- [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165): CI/quality, Browser E2E and Full Flight Test passed on exact head `26a92a70513a088cddc994d1a398d63d908ec8e0`.
-- [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166): CI/quality, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks) passed on exact head `13f12d314687ec88d9044ccae7e8fb3c202743fb`.
-- [Post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39049788835) passed on the verified main baseline; PR #169's pre-merge head also passed CI, Browser E2E and Full Flight Test.
-- The static customer builder creates `dist/`, validates `CV_API_URL`, excludes developer/backend files and emits a Cloudflare Pages `_headers` file. This produces a publishable artifact; it does not create a host, a Google deployment, a customer instance or a live URL. Password-based sign-in and owner/manager password UAT secret names are now in source; the protected staging Environment still needs owner provisioning.
-- The repository is **public**. Proprietary customer handover requires an owner-controlled repository-privacy/hosting cutover. Copies already cloned from a public repository cannot be recalled by later changing visibility.
-- No staging Apps Script project, customer Sheet, Drive receipt/backup folders, GitHub `staging` Environment, Cloudflare Pages project or customer URL is evidenced as provisioned. No live backup/restore drill or customer acceptance is recorded.
-- Product model remains a **single-property instance**. Each staging/customer instance needs a distinct Apps Script project, Sheet and Drive folders, plus a distinct static origin; a different path/query string on a shared origin does not isolate IndexedDB/localStorage.
+- PR #165 (route-safe asynchronous views) and PR #166 (customer-specific static build, response-header artifact and handover docs) remain merged milestones; PR #169 adds password authentication/staging safeguards; PR #173 adds server-backed per-environment onboarding and server-side financial-write gates.
+- The static build emits `dist/` with generated `config.js`, Cloudflare Pages `_headers` and Apache `.htaccess` security-header artifacts. This does not create a host/subdomain, a Google deployment, customer resources or a live URL.
+- Dedicated staging Google resources, protected GitHub `staging` Environment, Clasp/UAT credentials, static-host configuration and staging hostname are **not evidenced as provisioned** in this audit.
+- No successful live staging UAT, real backup/restore drill, physical-device acceptance or customer acceptance is recorded. A merged PR and green mock-backed checks are not these proofs.
+- Cash Voucher is a **single-property instance**. Staging requires its own Apps Script project/deployment, Sheet, receipt/backup folders and a browser origin distinct from production. Never reuse the unverified root `config.js` endpoint for staging.
 
 ## Priority 0 — required before the first customer can be called staging-verified
 
@@ -38,7 +36,7 @@ Owner actions are documented in [the Apps Script Release Runbook](APPS-SCRIPT-RE
 1. Confirm repository privacy and static-host integration first. The repository is currently public; do not switch visibility until the active/static host has authenticated private-repository read access and service continuity is understood.
 2. Create a new customer's Google Sheet, bound Apps Script project, private receipt folder, private backup root and versioned Web App deployment. Do not reuse the staging project, the current root `config.js` endpoint, or another customer's resources.
 3. Give the customer its own Cloudflare Pages project and unique `*.pages.dev` origin. Configure `CV_API_URL` as that customer's verified Web App URL; publish only `dist/`. Never share a hosting/GitHub/Google admin account with the customer.
-4. Verify the deployed frontend points to the intended customer's deployment and serves the generated response headers (including CSP `frame-ancestors 'none'`, `X-Frame-Options: DENY` and `X-Content-Type-Options: nosniff`). A generated `_headers` file alone is not proof of the headers returned by the live host.
+4. Verify the deployed frontend points to the intended customer's deployment and serves the generated response headers (including CSP `frame-ancestors 'none'`, `X-Frame-Options: DENY` and `X-Content-Type-Options: nosniff`). Generated `_headers` and `.htaccess` files are not proof of the headers returned by the live host.
 5. Test owner first-login/password change; Manager/Staff permissions; allowed and denied API operations; voucher creation/cancellation; receipt upload/read access; reports; approval controls; and real deployed API behavior.
 6. Run `backupData_()` on the new instance, verify the actual Drive snapshot, copied Sheet, receipt files and receipt manifest, then restore to a separate recovery Sheet/folder. Reconcile headers, row counts, voucher numbering, user/settings state and receipt mapping. Keep unsynchronized device-local entries out of claims about server backup.
 7. Test every intended operating device: install/update, narrow and desktop layouts, online save confirmation, receipt capture, offline queue display, reconnection, idempotent sync, queue export/recovery and absence of lost/duplicated entries. Check keyboard navigation, visible focus, zoom/reflow and assistive technology with human review.

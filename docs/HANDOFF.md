@@ -2,28 +2,28 @@
 
 Updated: 18 October 2026  
 Repository: `tchouhanjsm/cash-voucher`  
-Verified `main` SHA: `b7134cc623555a79497c68e022fe03cb79acbde9`  
-Current work branch: `feature/server-backed-client-onboarding-20261018`  
-Current pull request: [#173 — Server-backed client onboarding and release gates](https://github.com/tchouhanjsm/cash-voucher/pull/173)  
-Current work: complete server-backed staging/production onboarding, ordered owner evidence, centralized financial-write gates, and the exact-head CI, Browser E2E and Full Flight checks.  
-Owner authority: the repository owner retains approval to merge, provision Google resources, perform manual UAT and restore drills, and deploy. PR #173 is unmerged; no Apps Script or website deployment or production mutation was performed.
+Verified `main` SHA: `9335018b5b9edf1109839f5f9aa2216e4128fbdc`  
+Current work branch: `docs/staging-readiness-batch-20261018`  
+Current pull request: [#174 — Staging readiness documentation sync](https://github.com/tchouhanjsm/cash-voucher/pull/174)  
+Current work: reconcile release handoff docs and prepare a verified staging build; live target provisioning and staging acceptance remain pending.  
+Owner authority: the repository owner retains approval to merge, provision Google resources, perform manual UAT and restore drills, and deploy. PR #173 is merged; no Apps Script or website deployment or production mutation was performed.
 
 ## Verified source state
 
 - [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165), Phases 37–39, merged at `4b729f33d9caff13e01ed56acbc231375c5beec0`. Exact tested head `26a92a70513a088cddc994d1a398d63d908ec8e0` passed CI/quality, Browser E2E and Full Flight Test.
 - [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166), customer static build, response-header artifact and onboarding/handover documents, merged at `4a759b7513a925aee796949d8f6e79085f096314`. Exact tested head `13f12d314687ec88d9044ccae7e8fb3c202743fb` passed CI, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks). [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776051) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776133) · [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776075).
 - [Post-merge main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39003040102) passed on the current main SHA.
-- PR #169 is earlier password-login work. PR #173 is the active onboarding change. On head `2240c3e295ea34b00987d6dcddb7bd012ef135d2`, [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39107512734) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39107512697) passed. [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39107512686) passed its quality/test steps but failed the final PR handoff validation because an unchecked acceptance-criteria box was treated as an unresolved placeholder. The PR description was corrected; CI must rerun on the next exact head. Keep PR #173 unmerged until all required checks pass.
+- PR #173 adds server-backed per-environment onboarding state, ordered owner confirmations with audit events, environment/resource identity checks and central financial-write gates. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787). PR #173 merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`; post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. This is source/mock evidence, not live staging proof.
 
 ## Product and release boundary
 
-Cash Voucher remains a single-property static PWA backed by Google Apps Script, Sheets and Drive. Each staging/customer instance needs its own Script/Web App deployment, Sheet, receipt/backup folders and distinct static origin. The customer build command is `npm run build:web`; set the verified instance URL through `CV_API_URL` and publish only `dist/`.
+Cash Voucher remains a single-property static PWA backed by Google Apps Script, Sheets and Drive. Each staging/customer instance needs its own Script/Web App deployment, Sheet, receipt/backup folders and distinct static origin. The customer build command is `npm run build:web`; set the verified instance URL through `CV_API_URL` and explicitly set `CV_ENVIRONMENT=staging` or `production`. Publish only `dist/`, which emits `_headers` for Cloudflare Pages and `.htaccess` for Apache; verify the live HTTP response headers.
 
 PR #166 prepares packaging and instructions; it did **not** provision a staging/customer Google project, GitHub staging Environment, Cloudflare Pages project, real URL, account or credentials. The repository is still public. Live target identity, roles/receipt access, real scheduled backup, isolated restore, real-device/offline recovery, human accessibility checks, service capacity and the controlled pilot remain unverified.
 
 ## Current priority order
 
-1. **P0 — finish PR #173:** fix any exact-head failures and require green CI, Browser E2E and Full Flight Test. Merge only after owner approval. Then configure distinct customer staging/production identities and run approved live operations; this PR itself must not deploy.
+1. **P0 — provision staging:** create isolated Google resources and a first versioned Web App deployment; verify all target IDs; protect the GitHub `staging` Environment and secrets; build the static client with the verified staging URL and `CV_ENVIRONMENT=staging`; publish only `dist/`; run owner-authorized UAT.
 2. **P0 — privacy and first-customer isolation:** move the source repository to private only after the static host can access it and continuity is verified; provision a new customer instance and unique Cloudflare Pages origin; never reuse the staging Sheet or current unverified root `config.js` endpoint.
 3. **P0 — operational trust:** verify live owner/manager/staff permissions and receipt access, inspect a real backup, restore into a separate recovery destination, reconcile row counts and voucher numbers, and test the actual customer link.
 4. **P1 — real-device verification and 14-day pilot:** PWA installation/update, offline queue/recovery across every operating device, keyboard/focus, zoom/reflow, screen reader, print/export, end-of-day book-vs-physical-cash reconciliation and daily incident/fallback evidence.

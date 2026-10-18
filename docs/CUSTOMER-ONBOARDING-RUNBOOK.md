@@ -4,7 +4,7 @@
 
 **Commercial model:** the current customer arrangement is ₹500 per month under the separately signed contract. The customer operates the application; the product owner provisions, hosts, maintains, backs up and releases it.
 
-**Status:** this is an operational runbook, not evidence that a customer instance has already been provisioned. PR #169 (password authentication/staging readiness) is merged at `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`, but live staging/customer provisioning, backup/restore and acceptance remain unverified. Do not mark a gate complete until its live evidence has been recorded in the private instance register.
+**Status:** this is an operational runbook, not evidence that a customer instance has already been provisioned. PR #173 (server-backed onboarding and financial-write release gates) is merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`; its exact tested head passed CI, Browser E2E and Full Flight Test, and post-merge main CI passed. Live staging/customer provisioning, static hosting, backup/restore and acceptance remain unverified. Do not mark a gate complete until live evidence is in the private instance register.
 
 ## Current verified starting point
 
@@ -67,15 +67,15 @@ The deployment endpoint is an address, not an authentication credential; app-lev
 
 ## C. Build and publish the customer frontend
 
-The root website must not be deployed as-is for a new customer. It contains development/backend material and a `config.js` that is already wired to an unverified endpoint.
+The root website must not be deployed as-is for a new customer. It contains development/backend material and a `config.js` that is already wired to an unverified endpoint. The builder emits `_headers` for Cloudflare Pages and `.htaccess` for Apache. On Apache, `mod_headers` and overrides must be enabled; verify live response headers and configure the host directly if needed.
 
 1. **Recommended default: Cloudflare Pages, one project per customer.** From the product owner's Cloudflare account, create a new Pages project linked to the private `cash-voucher` repository. Use the repository's current source branch and set the build command to `npm ci && npm run build:web`, the output directory to `dist`, and Node to the supported major version specified by `.nvmrc`. Official guide: https://developers.cloudflare.com/pages/get-started/git-integration/ . A separate project should receive its own generated `*.pages.dev` hostname; verify that the exact hostnames are distinct before onboarding another customer. Confirm current plan limits in the Cloudflare dashboard before scaling.
-2. In that project's production build settings, add `CV_API_URL` with the exact URL for this customer's **new** Apps Script Web App. Do not commit that URL into shared `main/config.js`. The URL is a target identifier, not a password; server-side authentication must still protect every action.
-3. Use the build command `npm ci && npm run build:web` and publish directory `dist`. The build validates that `CV_API_URL` is an HTTPS Apps Script `/macros/s/<deployment-id>/exec` URL and fails closed if it is missing or malformed.
+2. In that project's build settings, set `CV_API_URL` to the exact URL for this instance's **new** Apps Script Web App and set `CV_ENVIRONMENT` explicitly. Use `staging` for the isolated staging site and `production` only for a separate, owner-approved production build. Do not commit the URL into shared `main/config.js`. The URL is a target identifier, not a password; server-side authentication must still protect every action.
+3. Use the build command `npm ci && npm run build:web` and publish directory `dist`. The build validates that `CV_API_URL` is an HTTPS Apps Script `/macros/s/<deployment-id>/exec` URL and that `CV_ENVIRONMENT` is explicitly `staging` or `production`; it fails closed when either is missing or malformed.
 4. Confirm that the static host can clone/build the repository after the repository is made private. Do not grant the customer GitHub, Cloudflare or Google administrator access. If you switch repository visibility, first ensure the host's private-repository integration is authorized and the existing site is not the only functioning deployment.
 5. Verify the published artifact contains the static application assets, generated `config.js`, manifest, service worker, frontend modules and icons—but not `backend/`, `docs/`, `scripts/`, `test/` or development metadata.
 6. Record the final HTTPS application URL. Open it in a clean browser/device and confirm that the generated configuration targets this customer's new deployment, not the existing root endpoint.
-7. Confirm the host publishes only `dist/`; do not publish the repository root. The customer build generates a Cloudflare Pages `_headers` file with a matching restrictive CSP response header, `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, a referrer policy and a restrictive permissions policy. After deploy, inspect the actual document response in DevTools and verify these headers are present; a file in `dist/` is not proof the host applied it.
+7. Confirm the host publishes only `dist/`; do not publish the repository root. The customer build emits `_headers` for Cloudflare Pages and `.htaccess` for Apache with the restrictive CSP (including `frame-ancestors 'none'`), `X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`, referrer and permissions policies. Apache must allow `mod_headers` and overrides. After deployment, inspect the actual document response in DevTools; generated files do not prove the host applied the headers.
 
 ## D. Live acceptance and data recovery proof
 

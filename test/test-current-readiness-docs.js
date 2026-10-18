@@ -29,17 +29,19 @@ assert.doesNotMatch(
   project,
   /temporary PIN is removed|PIN\/session changes rotate|current-PIN attempts|Phase 22 regression batch/i,
 );
-assert.match(roadmap, /^Last verified main baseline: `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`/m);
+assert.match(roadmap, /^Last verified main baseline: `9335018b5b9edf1109839f5f9aa2216e4128fbdc`/m);
 assert.match(roadmap, /PR #169/);
-assert.match(release, /Verified main baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/);
+assert.match(release, /Verified main baseline.*9335018b5b9edf1109839f5f9aa2216e4128fbdc/);
 assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
-assert.match(staging, /Verified main baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/);
+assert.match(staging, /Verified main baseline.*9335018b5b9edf1109839f5f9aa2216e4128fbdc/);
 assert.match(staging, /CV_STAGING_UAT_OWNER_PASSWORD/);
 assert.match(appsScriptRunbook, /CV_STAGING_UAT_MANAGER_PASSWORD/);
 assert.doesNotMatch(appsScriptRunbook, /their emails and PINs must be distinct/i);
 assert.doesNotMatch(onboarding, /non-shared PINs/i);
 assert.match(onboarding, /non-shared passwords/i);
+assert.match(onboarding, /CV_API_URL/);
+assert.match(onboarding, /CV_ENVIRONMENT.*staging/i);
 assert.match(ux, /forced-password-change dialog/i);
 assert.doesNotMatch(ux, /forced-PIN dialog/i);
 assert.match(uiSystem, /PR #169/);

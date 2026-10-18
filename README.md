@@ -57,13 +57,16 @@ The root `config.js` contains the endpoint of an existing instance and is **not 
 Set the customer's exact Apps Script Web App URL as the build environment variable, then run:
 
 ```bash
-export CV_API_URL='https://script.google.com/macros/s/<deployment-id>/exec'
+export CV_API_URL='https://script.google.com/macros/s/<verified-staging-deployment-id>/exec'
+export CV_ENVIRONMENT='staging'
 npm run build:web
 ```
 
-The command validates the URL and creates `dist/` containing only the static app shell, styles, frontend modules, icons, manifest, service worker, generated per-customer `config.js` and Cloudflare Pages `_headers` security-header file. It excludes the Apps Script backend, source docs, scripts and tests. The build fails if `CV_API_URL` is missing or does not match the expected HTTPS Apps Script Web App URL shape. The endpoint is not a password; the backend must authenticate every action.
+For an owner-approved production build, use that customer's independently verified endpoint and set `CV_ENVIRONMENT='production'` in a separate build. The build requires both variables, validates the Apps Script `/exec` URL and emits the corresponding environment/deployment identity in generated `dist/config.js`.
 
-Publish **only `dist/`** from the static host. Configure the build command as `npm ci && npm run build:web`, output directory as `dist`, and set `CV_API_URL` separately for each customer hosting project. Use one distinct host origin/hostname per customer so browser offline queues and local login state are not shared. Do not publish the repository root or reuse the existing root GitHub Pages origin as an isolation boundary.
+The command creates `dist/` containing only the static app shell, styles, frontend modules, icons, manifest, service worker, generated per-instance `config.js`, Cloudflare Pages `_headers` and Apache `.htaccess` security-header files. It excludes the Apps Script backend, source docs, scripts and tests. The endpoint is not a password; the backend must authenticate every action.
+
+Publish **only `dist/`** from the static host. Configure the build command as `npm ci && npm run build:web`, output directory as `dist`, and set both `CV_API_URL` and `CV_ENVIRONMENT` separately for each instance. Use a staging origin distinct from production so browser offline queues and local login state are not shared. Do not publish the repository root or reuse the existing root GitHub Pages origin as an isolation boundary. Cloudflare Pages consumes `_headers`; Apache can use generated `.htaccess` when `mod_headers` and overrides are enabled. Verify actual response headers and configure equivalent host-level settings if needed.
 
 Before creating a customer login or using real financial data, complete the live authentication/role checks, run a real backup, inspect its Sheet/receipt manifest, restore it to a separate recovery destination, and test the actual customer link and offline path. Source tests and GitHub Actions do not replace those live release gates; see `docs/RELEASE-READINESS.md`.
 
