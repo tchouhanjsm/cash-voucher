@@ -35,6 +35,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     ['audit', 'receipt', 'Audit log', () => can('audit')],
     ['acct', 'user', 'Account', () => true],
     ['onboarding', 'check', 'Onboarding', () => can('settings')],
+    ['support', 'receipt', 'Contact support', () => Boolean(S.me)],
   ];
 
   const NAV_GROUPS = {
@@ -49,6 +50,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     set: 'Manage',
     audit: 'Manage',
     onboarding: 'Manage',
+    support: 'Help',
   };
   const MOBILE_SHORTCUTS = new Set(['dash', 'new', 'reg', 'reports']);
   const shell = createShell({ go: (view, options) => go(view, options) });
@@ -270,6 +272,94 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     }
   }
 
+  function renderSupportView() {
+    const container = document.createElement('section');
+    container.className = 'page';
+    const heading = document.createElement('header');
+    heading.className = 'page-header';
+    const title = document.createElement('h1');
+    title.textContent = 'Contact support';
+    const intro = document.createElement('p');
+    intro.className = 'muted';
+    intro.textContent = 'Report a bug, unexpected result, login problem, or suggest an improvement. Do not include passwords or financial account credentials.';
+    heading.append(title, intro);
+
+    const form = document.createElement('form');
+    form.className = 'card support-form';
+    form.id = 'supportForm';
+    form.noValidate = true;
+
+    const topicLabel = document.createElement('label');
+    topicLabel.htmlFor = 'supportTopic';
+    topicLabel.textContent = 'What do you need help with?';
+    const topic = document.createElement('select');
+    topic.id = 'supportTopic';
+    topic.name = 'topic';
+    topic.required = true;
+    ['Bug report', 'Unexpected result', 'Login/access issue', 'Feature request', 'Other'].forEach((value) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = value;
+      topic.appendChild(option);
+    });
+
+    const messageLabel = document.createElement('label');
+    messageLabel.htmlFor = 'supportMessage';
+    messageLabel.textContent = 'Describe the issue';
+    const message = document.createElement('textarea');
+    message.id = 'supportMessage';
+    message.name = 'message';
+    message.rows = 7;
+    message.minLength = 15;
+    message.maxLength = 4000;
+    message.required = true;
+    message.placeholder = 'What happened, what did you expect, and what steps reproduce it?';
+
+    const hint = document.createElement('p');
+    hint.className = 'muted';
+    hint.textContent = 'We include your signed-in account email, role, deployment/environment and page URL for troubleshooting. Never include passwords, PINs, session tokens, or bank credentials.';
+    const status = document.createElement('p');
+    status.id = 'supportStatus';
+    status.className = 'support-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.className = 'btn primary';
+    submit.textContent = 'Send support request';
+
+    form.append(topicLabel, topic, messageLabel, message, hint, status, submit);
+    container.append(heading, form);
+    $('#view').replaceChildren(container);
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (message.value.trim().length < 15 || message.value.trim().length > 4000) {
+        status.textContent = 'Describe the issue in 15–4,000 characters.';
+        message.focus();
+        return;
+      }
+      submit.disabled = true;
+      submit.setAttribute('aria-busy', 'true');
+      status.textContent = 'Sending…';
+      try {
+        const result = await api('supportSubmit', {
+          topic: topic.value,
+          message: message.value.trim(),
+          currentUrl: window.location.origin + window.location.pathname,
+        });
+        status.textContent = result.message || 'Support request sent.';
+        message.value = '';
+        toast('Support request sent.', 'ok');
+      } catch (error) {
+        status.textContent = error.message || 'Could not send support request.';
+      } finally {
+        submit.disabled = false;
+        submit.removeAttribute('aria-busy');
+      }
+    });
+  }
+
   function renderNav() {
     const available = NAV.filter(
       (item) => item[0] !== 'acct' && (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3](),
@@ -485,5 +575,6 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     start,
     go,
     refresh,
+    renderSupport: renderSupportView,
   };
 }
