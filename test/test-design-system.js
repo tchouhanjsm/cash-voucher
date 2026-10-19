@@ -8,6 +8,7 @@ const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8')
 const palette = read('style.css');
 const components = read('frontend-ui-kit.css');
 const theme = read('frontend/core/theme.js');
+const auth = read('frontend/features/auth.js');
 const dashboard = read('frontend/features/dashboard.js');
 const ui = read('frontend/core/ui.js');
 const payments = read('frontend/features/payments.js');
@@ -21,16 +22,46 @@ const navigation = read('frontend/features/navigation.js');
 const shell = read('frontend/features/shell.js');
 const serviceWorker = read('sw.js');
 
-assert.match(palette, /--bg:\s*#f7f5f0;/, 'main canvas stays warm and light');
-assert.match(palette, /--card:\s*#fffefc;/, 'cards stay close to warm white');
-assert.match(palette, /--brand:\s*#875521;/, 'primary action keeps restrained gold-brown accent');
-assert.match(palette, /--nav-bg:\s*#fcf9f4;/, 'sidebar uses a light neutral surface');
+assert.match(palette, /--bg:\s*#edf1f6;/, 'main canvas matches the sign-in canvas');
+assert.match(palette, /--card:\s*#ffffff;/, 'workspace cards match the white sign-in panel');
+assert.match(palette, /--brand:\s*#1f2a44;/, 'primary actions match the sign-in navy');
+assert.match(palette, /--nav-bg:\s*#f7f9fc;/, 'sidebar uses the sign-in neutral palette');
 assert.match(
   palette,
-  /--nav-active-ink:\s*#6a3f16;/,
+  /--nav-active-ink:\s*#224f81;/,
   'active light navigation has dedicated text color',
 );
 assert.match(palette, /:root\[data-theme='dark'\]/, 'explicit dark preference remains supported');
+assert.match(
+  palette,
+  /:root:not\(\[data-theme='dark'\]\)\[data-palette='blush'\]/,
+  'blush login theme has matching authenticated-workspace tokens',
+);
+assert.match(
+  palette,
+  /:root:not\(\[data-theme='dark'\]\)\[data-palette='mint'\]/,
+  'mint login theme has matching authenticated-workspace tokens',
+);
+assert.match(
+  theme,
+  /const PALETTE_STORAGE_KEY = 'cv\.palette'/,
+  'selected login palette is persisted separately from light/dark preference',
+);
+assert.match(
+  theme,
+  /document\.documentElement\.dataset\.palette = selected/,
+  'the selected palette is applied to the authenticated application root',
+);
+assert.match(
+  auth,
+  /setPalette\(theme\)/,
+  'login swatch selection updates the shared application palette',
+);
+assert.match(
+  components,
+  /--ui-focus-shadow: 0 0 0 3px color-mix\(in srgb, var\(--focus\)/,
+  'keyboard focus halo follows the selected login accent',
+);
 assert.match(
   components,
   /\.app > \.side\s*\{[\s\S]*?background:\s*var\(--nav-bg\)/,
@@ -367,7 +398,7 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v24'/,
+  /const C = 'cv2-v25'/,
   'PWA cache revision advances with validation and interaction styles',
 );
 assert.match(
