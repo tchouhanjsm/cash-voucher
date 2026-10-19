@@ -39,7 +39,14 @@ const gasGlobals = {
 
 module.exports = [
   {
-    ignores: ['node_modules/**', '.git/**', '*.min.js'],
+    ignores: [
+      'node_modules/**',
+      '.git/**',
+      'dist/**',
+      'dist-template/**',
+      'coverage/**',
+      '*.min.js',
+    ],
   },
 
   eslint.configs.recommended,

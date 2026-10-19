@@ -255,6 +255,19 @@ with sync_playwright() as p:
         and login_style['pageWidth'] <= login_style['viewportWidth'],
         'sign-in surface uses the new two-panel login design with generous spacing and touch-friendly controls',
     )
+    page.click('[data-login-theme="mint"]')
+    page.wait_for_function(
+        "() => getComputedStyle(document.querySelector('#login .auth-login__story')).backgroundColor === 'rgb(221, 241, 229)'"
+    )
+    check(
+        page.locator('#login').get_attribute('data-theme') == 'mint'
+        and page.locator('html').get_attribute('data-palette') == 'mint'
+        and page.evaluate("localStorage.getItem('cv.palette')") == 'mint'
+        and page.evaluate(
+            "getComputedStyle(document.querySelector('#login .auth-login__story')).backgroundColor"
+        ) == 'rgb(221, 241, 229)',
+        'login theme selector persists the selected palette before authentication',
+    )
     page.set_viewport_size({'width': 390, 'height': 800})
 
     page.fill('#lEmail', 'not-an-email')
@@ -325,6 +338,16 @@ with sync_playwright() as p:
         'owner sees Onboarding and Cash Close navigation; Account moved to the user menu',
     )
     check(
+        page.locator('html').get_attribute('data-palette') == 'mint'
+        and page.evaluate("localStorage.getItem('cv.palette')") == 'mint'
+        and page.evaluate("getComputedStyle(document.querySelector('.side')).backgroundColor")
+        == 'rgb(245, 250, 247)'
+        and page.evaluate(
+            "getComputedStyle(document.querySelector('.side nav button.on')).backgroundColor"
+        ) == 'rgb(221, 241, 229)',
+        'authenticated workspace keeps the login palette on navigation and selected states',
+    )
+    check(
         page.locator('#main-content h1').inner_text() == 'Get Cash Voucher ready',
         'owner first login opens the onboarding dashboard',
     )
@@ -348,8 +371,8 @@ with sync_playwright() as p:
     check(
         page.locator('html').get_attribute('data-theme') == 'light'
         and page.evaluate("localStorage.getItem('cv.theme')") == 'light'
-        and page.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(247, 245, 240)'
-        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#f7f5f0'
+        and page.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(237, 241, 246)'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#edf1f6'
         and page.locator('#themeToggle').get_attribute('aria-pressed') == 'false',
         'light theme can be restored and the explicit choice is retained',
     )
@@ -5205,7 +5228,7 @@ with sync_playwright() as p:
         '(element) => getComputedStyle(element).color'
     )
     check(
-        muted_color == 'rgb(86, 101, 117)',
+        muted_color == 'rgb(89, 101, 123)',
         'muted interface text uses the reviewed higher-contrast token',
     )
     page.set_viewport_size({'width': 390, 'height': 800})

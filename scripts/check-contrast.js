@@ -6,9 +6,17 @@ const path = require('node:path');
 const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
 const root = css.match(/:root\s*\{([^}]+)\}/);
 const darkRoot = css.match(/:root\[data-theme=['"]dark['"]\]\s*\{([^}]+)\}/);
+const paletteRoots = {
+  blush: css.match(
+    /:root:not\(\[data-theme=['"]dark['"]\]\)\[data-palette=['"]blush['"]\]\s*\{([^}]+)\}/,
+  ),
+  mint: css.match(
+    /:root:not\(\[data-theme=['"]dark['"]\]\)\[data-palette=['"]mint['"]\]\s*\{([^}]+)\}/,
+  ),
+};
 
-if (!root || !darkRoot) {
-  console.error('Contrast audit failed: both light and dark token blocks are required.');
+if (!root || !darkRoot || !paletteRoots.blush || !paletteRoots.mint) {
+  console.error('Contrast audit failed: default, dark, blush and mint token blocks are required.');
   process.exit(1);
 }
 
@@ -22,6 +30,10 @@ function extractTokens(block) {
 
 const tokens = extractTokens(root[1]);
 const darkTokens = extractTokens(darkRoot[1]);
+const lightPalettes = { sky: tokens };
+for (const [name, block] of Object.entries(paletteRoots)) {
+  lightPalettes[name] = new Map([...tokens, ...extractTokens(block[1])]);
+}
 
 function resolveColor(value, palette = tokens) {
   const token = value.match(/^var\((--[\w-]+)\)$/);
@@ -191,6 +203,28 @@ for (const check of checks) {
   }
 }
 
+for (const [paletteName, paletteTokens] of Object.entries(lightPalettes)) {
+  if (paletteName === 'sky') continue;
+
+  for (const check of checks) {
+    try {
+      const ratio = contrastRatio(check.foreground, check.background, paletteTokens);
+      const passed = ratio >= check.minimum;
+      const status = passed ? 'PASS' : 'FAIL';
+
+      console.log(
+        `${status} ${paletteName} theme — ${check.name}: ${ratio.toFixed(2)}:1 ` +
+          `(minimum ${check.minimum}:1)`,
+      );
+
+      if (!passed) failures += 1;
+    } catch (error) {
+      console.error(`FAIL ${paletteName} theme — ${check.name}: ${error.message}`);
+      failures += 1;
+    }
+  }
+}
+
 const darkChecks = [
   {
     name: 'body text on dark application background',
@@ -323,15 +357,17 @@ for (const check of darkChecks) {
   }
 }
 
+const totalChecks = checks.length * Object.keys(lightPalettes).length + darkChecks.length;
+
 if (failures) {
   console.error(
-    `Contrast audit failed: ${failures} of ${checks.length + darkChecks.length} ` +
+    `Contrast audit failed: ${failures} of ${totalChecks} ` +
       'documented color-pair checks did not meet their threshold.',
   );
   process.exit(1);
 }
 
 console.log(
-  `Contrast audit passed: all ${checks.length + darkChecks.length} documented color-pair ` +
-    'checks meet their thresholds across light and dark palettes.',
+  `Contrast audit passed: all ${totalChecks} documented color-pair checks meet their thresholds ` +
+    'across sky, blush, mint and dark themes.',
 );

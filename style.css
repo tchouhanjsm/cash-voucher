@@ -1,31 +1,31 @@
 :root {
   color-scheme: light;
-  --bg: #f7f5f0;
-  --card: #fffefc;
-  --ink: #172331;
-  --muted: #566575;
-  --line: #e4dfd6;
-  --brand: #875521;
-  --chart-bar: #647d92;
-  --brand-hover: #704319;
-  --accent: #80531e;
-  --focus: #80531e;
-  --nav-active: #f2e3ce;
-  --nav-active-ink: #6a3f16;
-  --nav-bg: #fcf9f4;
-  --nav-muted: #4f5e70;
-  --nav-secondary: #707f8e;
-  --nav-divider: #e6ded2;
-  --nav-surface-hover: #f3ebdd;
-  --focus-on-brand: #8a5a22;
+  --bg: #edf1f6;
+  --card: #ffffff;
+  --ink: #1f2a44;
+  --muted: #59657b;
+  --line: #dce2eb;
+  --brand: #1f2a44;
+  --chart-bar: #3477bf;
+  --brand-hover: #2b3959;
+  --accent: #3477bf;
+  --focus: #3477bf;
+  --nav-active: #e7f1fb;
+  --nav-active-ink: #224f81;
+  --nav-bg: #f7f9fc;
+  --nav-muted: #34405a;
+  --nav-secondary: #68758d;
+  --nav-divider: #e1e7ef;
+  --nav-surface-hover: #edf4fc;
+  --focus-on-brand: #3477bf;
   --bad: #b3261e;
   --ok: #1b7a43;
   --warn: #835800;
-  --control-bg: #fffefb;
-  --control-border: #c9c5bc;
-  --surface-hover: #f3eae0;
-  --surface-muted: #e8edf1;
-  --surface-subtle: #faf8f4;
+  --control-bg: #ffffff;
+  --control-border: #dce2eb;
+  --surface-hover: #edf4fc;
+  --surface-muted: #edf1f6;
+  --surface-subtle: #f7f9fc;
   --surface-danger: #fdeceb;
   --border-danger: #e4b8b4;
   --surface-success: #e4f3ea;
@@ -36,7 +36,7 @@
   --toast-surface: #172331;
   --status-ink: #ffffff;
   --modal-backdrop: #17233188;
-  --main-glow: rgba(185, 204, 223, 0.2);
+  --main-glow: rgba(52, 119, 191, 0.12);
 }
 
 :root[data-theme='dark'] {
@@ -2537,4 +2537,41 @@ nav .ic {
 .account-report-controls {
   display: grid;
   gap: 12px;
+}
+
+/* Login and authenticated workspace share one persisted palette. */
+:root:not([data-theme='dark'])[data-palette='blush'] {
+  --chart-bar: #c84775;
+  --accent: #c84775;
+  --focus: #c84775;
+  --nav-active: #fbe1ea;
+  --nav-active-ink: #77254a;
+  --nav-bg: #fcf7fa;
+  --nav-secondary: #765e6c;
+  --nav-divider: #efdeea;
+  --nav-surface-hover: #fff0f5;
+  --focus-on-brand: #c84775;
+  --control-border: #e5d5e0;
+  --surface-hover: #fff0f5;
+  --surface-muted: #f4edf2;
+  --surface-subtle: #fcf7fa;
+  --main-glow: rgba(200, 71, 117, 0.12);
+}
+
+:root:not([data-theme='dark'])[data-palette='mint'] {
+  --chart-bar: #2f8a5c;
+  --accent: #2f8a5c;
+  --focus: #2f8a5c;
+  --nav-active: #ddf1e5;
+  --nav-active-ink: #205c40;
+  --nav-bg: #f5faf7;
+  --nav-secondary: #5b7567;
+  --nav-divider: #dcebe2;
+  --nav-surface-hover: #eaf6ef;
+  --focus-on-brand: #2f8a5c;
+  --control-border: #d2e3d8;
+  --surface-hover: #eaf6ef;
+  --surface-muted: #edf5ef;
+  --surface-subtle: #f5faf7;
+  --main-glow: rgba(47, 138, 92, 0.12);
 }

@@ -6,8 +6,8 @@
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
-  "background_color": "#1f3a4d",
-  "theme_color": "#1f3a4d",
+  "background_color": "#edf1f6",
+  "theme_color": "#edf1f6",
   "categories": ["business", "finance"],
   "icons": [
     {

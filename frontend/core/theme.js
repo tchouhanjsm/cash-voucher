@@ -1,14 +1,40 @@
 import { ls } from './storage.js';
 
 const STORAGE_KEY = 'cv.theme';
+const PALETTE_STORAGE_KEY = 'cv.palette';
+const PALETTES = new Set(['sky', 'blush', 'mint']);
 const THEME_COLORS = {
-  light: '#f7f5f0',
+  light: '#edf1f6',
   dark: '#111820',
 };
 
 function storedTheme() {
   const value = ls.get(STORAGE_KEY);
   return value === 'light' || value === 'dark' ? value : null;
+}
+
+function storedPalette() {
+  const value = ls.get(PALETTE_STORAGE_KEY);
+  return PALETTES.has(value) ? value : null;
+}
+
+function syncPalette(palette) {
+  const selected = PALETTES.has(palette) ? palette : 'sky';
+  document.documentElement.dataset.palette = selected;
+
+  const login = document.getElementById('login');
+  if (login) login.dataset.theme = selected;
+
+  document.querySelectorAll('[data-login-theme]').forEach((button) => {
+    button.setAttribute('aria-pressed', String(button.dataset.loginTheme === selected));
+  });
+}
+
+export function setPalette(palette) {
+  const selected = PALETTES.has(palette) ? palette : 'sky';
+  ls.set(PALETTE_STORAGE_KEY, selected);
+  syncPalette(selected);
+  return selected;
 }
 
 function updateTheme(theme) {
@@ -29,7 +55,10 @@ function updateTheme(theme) {
 }
 
 export function initTheme() {
-  // The app opens in the light workspace unless the user has explicitly saved a theme choice.
+  // Sign-in and the authenticated workspace share the same saved palette.
+  syncPalette(storedPalette() || 'sky');
+
+  // The app opens in light mode unless the user has explicitly saved a dark preference.
   updateTheme(storedTheme() || 'light');
 
   document.getElementById('themeToggle')?.addEventListener('click', () => {

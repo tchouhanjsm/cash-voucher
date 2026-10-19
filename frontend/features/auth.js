@@ -1,5 +1,6 @@
 import { $ } from '../core/dom.js';
 import { ls } from '../core/storage.js';
+import { setPalette } from '../core/theme.js';
 import {
   clearOfflineCredential,
   saveOfflineCredential,
@@ -255,15 +256,11 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     passwordToggle.setAttribute('aria-pressed', String(!isVisible));
   });
 
-  const loginRoot = $('#login');
   document.querySelectorAll('[data-login-theme]').forEach((button) => {
     button.addEventListener('click', () => {
       const theme = button.dataset.loginTheme;
       if (!['sky', 'blush', 'mint'].includes(theme)) return;
-      loginRoot.dataset.theme = theme;
-      document.querySelectorAll('[data-login-theme]').forEach((item) => {
-        item.setAttribute('aria-pressed', String(item === button));
-      });
+      setPalette(theme);
     });
   });
 

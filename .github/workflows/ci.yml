@@ -2,9 +2,10 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, 'client/**']
   pull_request:
     branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
