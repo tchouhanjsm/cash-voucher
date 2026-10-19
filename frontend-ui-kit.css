@@ -732,16 +732,16 @@ here and in the production app. It requires no JS or remote assets. */
   background: #fff;
 }
 .studio-canvas {
-  background: #f7f5f0;
+  background: #edf1f6;
 }
 .studio-ink {
-  background: #1c2630;
+  background: #1f2a44;
 }
 .studio-navy {
-  background: #1f3a4d;
+  background: #1f2a44;
 }
 .studio-gold {
-  background: #946515;
+  background: #3477bf;
 }
 .studio-success {
   background: #1b7a43;
