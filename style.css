@@ -2539,7 +2539,6 @@ nav .ic {
   gap: 12px;
 }
 
-
 /* Login and authenticated workspace share one persisted palette. */
 :root:not([data-theme='dark'])[data-palette='blush'] {
   --chart-bar: #c84775;
