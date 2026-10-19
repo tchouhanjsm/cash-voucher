@@ -25,9 +25,9 @@ spacing/type/component tokens and the shared visual layer. */
   --ui-radius-card: 14px;
   --ui-radius-panel: 18px;
   --ui-radius-pill: 999px;
-  --ui-shadow-card: 0 1px 2px rgb(31 39 50 / 3%), 0 8px 24px rgb(73 63 48 / 5%);
+  --ui-shadow-card: 0 1px 2px rgb(31 42 68 / 3%), 0 8px 24px rgb(31 42 68 / 5%);
   --ui-shadow-raised: 0 18px 48px rgb(23 35 49 / 18%);
-  --ui-focus-shadow: 0 0 0 3px rgb(135 85 33 / 16%);
+  --ui-focus-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent);
   --radius: var(--ui-radius-card);
   --shadow-1: var(--ui-shadow-card);
   --shadow-2: var(--ui-shadow-raised);
