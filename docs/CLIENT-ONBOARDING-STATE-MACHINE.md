@@ -12,6 +12,12 @@ Every customer must own a unique Apps Script project, bound Sheet, receipt folde
 
 A customer build requires `CV_API_URL` and `CV_ENVIRONMENT`; it derives `DEPLOYMENT_ID` from the verified `/exec` URL. Backend checks compare this against active properties and Script/Sheet/folder identity. Apps Script cannot directly introspect the URL loaded by the client, so deployment identity must be independently verified and registered by the operator. Never infer identity from hostname or reuse root `config.js` without verification.
 
+## Installation setup preflight
+
+The one-time Apps Script `setup()` operation is separate from the in-app onboarding state machine. Before its first write, the operator must verify the target spreadsheet, validate initial Owner credentials for a genuinely new instance, and inspect every existing application tab/header/row. A completely initialized instance is a read-only no-op; partial app tabs, setup markers without tabs, malformed/legacy headers, rows without a `UserID`, incomplete/invalid account rows, or no active Owner fail closed. Do not use `setup()` as a schema migration or account-recovery tool.
+
+A rejected preflight should not initialize tabs, default settings, folders, triggers, or an inferred `SS_ID`. Failures after initialization writes begin may leave partial resources; record what exists and use a reviewed recovery procedure. Never retry blindly or claim a failed run rolled back automatically.
+
 ## Staging
 
 1. Preflight automatically checks environment/resource identity, non-placeholder property configuration, active Owner/Manager/Staff users whose temporary passwords are changed, schema, folder access, scheduled backup trigger, and a recent successful backup with no later attempt or recorded failure.

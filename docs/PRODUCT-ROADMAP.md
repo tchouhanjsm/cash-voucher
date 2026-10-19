@@ -1,7 +1,7 @@
 # Product Gap Register and Roadmap
 
-Last verified main baseline: `df641e06088910281e0940450bb91b5b82e6d6dc` (latest main after PR #175 and subsequent merged changes); [main CI `39120596949`](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39120596949) passed.  
-Current merged source milestones include customer static packaging/handover (PR #166), staging artifact/docs (PR #174), password authentication/staging safeguards (PR #169), server-backed onboarding/release gates (PR #173), and authenticated support reporting (PR #175).  
+Last observed main baseline for this follow-up: `8b14adc72c146589149a33d793ca9e55af5da13a` (merge of PR #180). Verify the current main commit and its own CI status live before release; historical workflow links apply only to their named commits.
+Current merged source milestones include customer static packaging/handover (PR #166), staging artifact/docs (PR #174), password authentication/staging safeguards (PR #169), server-backed onboarding/release gates (PR #173), authenticated support reporting (PR #175), and master-template bundle/runbook (PR #180). The staging setup-preflight follow-up is separate and unmerged.  
 Current release state: repository visibility is private; verify that the static host can still build from it. Staging Google resources, static deployment, protected GitHub Environment/secrets, live UAT, actual support email delivery, backup/restore and first-customer acceptance remain unverified. Staging builds require verified `CV_API_URL` and `CV_ENVIRONMENT=staging`. See `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`.
 
 ## Founder plan — outcome-based work, not PR-count optimization

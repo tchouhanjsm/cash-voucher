@@ -8,7 +8,7 @@ PR #175 adds authenticated Account → Report a problem through Apps Script acti
 
 ## Current release boundary
 
-**Verified source baseline:** main SHA `df641e06088910281e0940450bb91b5b82e6d6dc` (latest main after PR #175 and subsequent merged changes); [latest main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39120596949) passed. PR #175's exact tested head `49c672859d86aff4b4c648a0221a57ff3387f8ce` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432725), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432728), and [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432768). PRs #173, #174 and #175 are merged. A merge remains separate from Clasp upload, Web App deployment, static publication, live UAT and customer acceptance.
+**Base main commit reviewed for this follow-up:** `8b14adc72c146589149a33d793ca9e55af5da13a` (merge of PR #180, master-template bundle). Workflow links elsewhere in this runbook are historical and apply only to the commits they name, not to this follow-up branch or a live deployment. Check the exact PR head's required workflows before merge.
 
 The staging/UAT workflow and server-backed onboarding gates are source-complete. Dedicated staging Google resources, the first Web App deployment, protected GitHub `staging` Environment, secrets and a static staging hostname are not evidenced as provisioned. The repository is private; confirm the existing host integration can still read it before triggering a rebuild or changing DNS. A merge is distinct from Clasp upload, Web App deployment, static publication, live UAT and customer acceptance. Local checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
 
@@ -17,6 +17,14 @@ The root frontend `config.js` contains an unverified Apps Script URL. **Do not r
 **Current staging boundary (18 October 2026):** PR #155's manual workflow, PR #156's credential redaction and PR #173's server-backed environment gate are merged. The owner must provision isolated resources, build the frontend for the verified staging endpoint, then execute the protected workflow. The workflow deploys the Apps Script backend and runs UAT; it does **not** publish the frontend `dist/` to the staging subdomain. UAT creates and cancels one tagged INR 10,000 test payment in staging; its cancelled row and audit trace remain. The customer instance is separate and follows `docs/CUSTOMER-ONBOARDING-RUNBOOK.md`.
 
 The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. Keep local Clasp configuration/authentication in protected secrets or local files; never commit them.
+
+## Setup preflight and safe recovery
+
+Run `setup()` only after the operator has privately verified that the Script project and `SS_ID` identify the intended empty staging Sheet and configured the staging-only owner properties. Before its first write, preflight checks the target and any existing application tab headers/data. A new instance must have no app tabs or initialization markers and valid initial Owner credentials. A completely initialized instance is detected as a read-only no-op; a partial/legacy schema is rejected before setup rewrites headers or formats sheets. The preflight also rejects data rows without a `UserID`, incomplete/invalid account rows, an application without an active Owner, invalid/missing initial-owner credentials, or an inaccessible target. Use a separately documented and backed-up migration for legacy schemas.
+
+If setup fails after writes begin, do not press Run again automatically. Record the execution error, then inspect Script Properties, Sheet tabs/headers/data, Drive folders and Apps Script triggers. A preflight rejection should happen before initialization writes; later permission, quota or service errors may leave partial resources. Preserve them and choose a reviewed recovery path instead of deleting folders or repeatedly replacing triggers.
+
+After success, verify all expected tabs and exact headers; one Owner record requiring a password change; `PEPPER`; receipt/backup folder IDs and access; and the daily `backupData_` trigger. Confirm the temporary `OWNER_PASSWORD` property was removed after initial owner creation. Setup success alone does not prove that a versioned Web App or frontend is live.
 
 ## Frontend CSP release gate
 
