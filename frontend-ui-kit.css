@@ -740,7 +740,7 @@ here and in the production app. It requires no JS or remote assets. */
 .studio-navy {
   background: #1f2a44;
 }
-.studio-gold {
+.studio-accent {
   background: #3477bf;
 }
 .studio-success {
@@ -753,7 +753,7 @@ here and in the production app. It requires no JS or remote assets. */
   background: #b3261e;
 }
 .studio-stroke {
-  background: #dfded8;
+  background: #dce2eb;
 }
 .studio-type-sample {
   display: flex;
