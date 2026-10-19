@@ -1,6 +1,8 @@
 name: Browser E2E
 
 on:
+  push:
+    branches: ['client/**']
   pull_request:
     branches: [main]
   workflow_dispatch:
