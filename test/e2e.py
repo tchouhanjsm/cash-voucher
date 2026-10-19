@@ -256,6 +256,9 @@ with sync_playwright() as p:
         'sign-in surface uses the new two-panel login design with generous spacing and touch-friendly controls',
     )
     page.click('[data-login-theme="mint"]')
+    page.wait_for_function(
+        "() => getComputedStyle(document.querySelector('#login .auth-login__story')).backgroundColor === 'rgb(221, 241, 229)'"
+    )
     check(
         page.locator('#login').get_attribute('data-theme') == 'mint'
         and page.locator('html').get_attribute('data-palette') == 'mint'
@@ -369,7 +372,7 @@ with sync_playwright() as p:
         page.locator('html').get_attribute('data-theme') == 'light'
         and page.evaluate("localStorage.getItem('cv.theme')") == 'light'
         and page.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(237, 241, 246)'
-        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#f7f5f0'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#edf1f6'
         and page.locator('#themeToggle').get_attribute('aria-pressed') == 'false',
         'light theme can be restored and the explicit choice is retained',
     )
