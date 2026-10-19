@@ -256,7 +256,6 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     passwordToggle.setAttribute('aria-pressed', String(!isVisible));
   });
 
-  const loginRoot = $('#login');
   document.querySelectorAll('[data-login-theme]').forEach((button) => {
     button.addEventListener('click', () => {
       const theme = button.dataset.loginTheme;
