@@ -22,6 +22,11 @@ function backupManifestCsv_(manifest) {
     })
     .join('\n');
 }
+// Public entry point so the operator can run a backup from the Apps Script editor.
+// Functions whose names end in "_" are private and never appear in the editor's Run menu.
+function runBackupNow() {
+  return backupData_();
+}
 function backupData_() {
   return backupDataWithServices_({
     getLock: () => LockService.getScriptLock(),
