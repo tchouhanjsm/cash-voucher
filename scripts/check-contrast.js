@@ -7,8 +7,12 @@ const css = fs.readFileSync(path.join(__dirname, '..', 'style.css'), 'utf8');
 const root = css.match(/:root\s*\{([^}]+)\}/);
 const darkRoot = css.match(/:root\[data-theme=['"]dark['"]\]\s*\{([^}]+)\}/);
 const paletteRoots = {
-  blush: css.match(/:root:not\(\[data-theme=['"]dark['"]\]\)\[data-palette=['"]blush['"]\]\s*\{([^}]+)\}/),
-  mint: css.match(/:root:not\(\[data-theme=['"]dark['"]\]\)\[data-palette=['"]mint['"]\]\s*\{([^}]+)\}/),
+  blush: css.match(
+    /:root:not\(\[data-theme=['"]dark['"]\]\)\[data-palette=['"]blush['"]\]\s*\{([^}]+)\}/,
+  ),
+  mint: css.match(
+    /:root:not\(\[data-theme=['"]dark['"]\]\)\[data-palette=['"]mint['"]\]\s*\{([^}]+)\}/,
+  ),
 };
 
 if (!root || !darkRoot || !paletteRoots.blush || !paletteRoots.mint) {
