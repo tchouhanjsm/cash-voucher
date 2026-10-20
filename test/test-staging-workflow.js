@@ -10,6 +10,10 @@ const deploy = fs.readFileSync(path.join(root, 'scripts/deploy-staging.js'), 'ut
 const preflight = fs.readFileSync(path.join(root, 'scripts/staging-preflight.js'), 'utf8');
 const uat = fs.readFileSync(path.join(root, 'test/uat_staging.py'), 'utf8');
 const localServer = fs.readFileSync(path.join(root, 'scripts/staging-web-server.js'), 'utf8');
+const releaseRunbook = fs.readFileSync(
+  path.join(root, 'docs/APPS-SCRIPT-RELEASE-RUNBOOK.md'),
+  'utf8',
+);
 
 assert.match(workflow, /^on:\n {2}workflow_dispatch:/m, 'staging workflow must be manual-only');
 assert.doesNotMatch(
@@ -19,6 +23,21 @@ assert.doesNotMatch(
 );
 assert.match(workflow, /ACTION_REF: \$\{\{ github\.ref \}\}/);
 assert.match(workflow, /ACTION_REF" != "refs\/heads\/client-main"/);
+assert.match(
+  releaseRunbook,
+  /restrict its deployment branch to `client-main`/,
+  'GitHub staging Environment restriction must allow the branch guarded by the workflow',
+);
+assert.doesNotMatch(
+  releaseRunbook,
+  /restrict its deployment branch to `main`/,
+  'runbook must not instruct an Environment restriction that blocks client-main dispatch',
+);
+assert.match(releaseRunbook, /\*\*deploy-and-uat\*\* runs only from `client-main`/);
+assert.match(
+  releaseRunbook,
+  /Merging a change to `backend\/\*\.gs` does \*\*not\*\* update the Google Apps Script project/,
+);
 assert.match(workflow, /CONFIRMATION" != "STAGING-ONLY"/);
 assert.match(workflow, /CONFIRM_WRITES" != "true"/);
 assert.match(workflow, /environment:\n {6}name: staging/m);
