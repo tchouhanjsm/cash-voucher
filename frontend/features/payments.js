@@ -141,7 +141,9 @@ export function createPayments({ api, refresh }) {
       "<label class='category-field'>Category<select class='rc'>" +
       catOpts('Other', NT) +
       '</select></label>' +
-      "<label class='cash-impact-control payment-method-control'>Paid via<select class='rci' required>" +
+      "<label class='cash-impact-control payment-method-control'>" +
+      (NT === 'RECEIPT' ? 'Received via' : 'Paid via') +
+      "<select class='rci' required>" +
       paymentMethodOptions('CASH') +
       '</select></label></div>' +
       "<div class='chips'><label class='btn sm receipt-upload-label'>" +
