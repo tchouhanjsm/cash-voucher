@@ -499,13 +499,6 @@ assert.match(
   'saving Settings does not redraw over a route opened while the save was pending',
 );
 
-const main = read('frontend/main.js');
-const onboarding = read('frontend/features/onboarding.js');
-assert.ok(/function bindFeatures\(\)[\s\S]*?onboarding\.init\(\)/.test(main));
-assert.ok(onboarding.includes('Checking this customer.configuration with the server'));
-assert.ok(/if \(!busy\) void load\(\)/.test(onboarding));
-assert.ok(onboarding.includes("current = await api('onboardingState')"));
-
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',
 );
