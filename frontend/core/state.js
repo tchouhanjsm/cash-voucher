@@ -173,8 +173,8 @@ export const recs = () =>
 export const bySeq = (a, b) =>
   String(b.createdAt).localeCompare(String(a.createdAt)) || b.no - a.no;
 
-const normalizeCategoryList = (value) => {
-  if (!Array.isArray(value)) return ['Other'];
+const normalizeCategoryList = (value, includeSalary = false) => {
+  if (!Array.isArray(value)) return includeSalary ? ['Staff Salary', 'Other'] : ['Other'];
 
   const normalized = [
     ...new Set(
@@ -185,9 +185,10 @@ const normalizeCategoryList = (value) => {
     ),
   ];
 
+  if (includeSalary && !normalized.includes('Staff Salary')) normalized.push('Staff Salary');
   return normalized.length ? normalized : ['Other'];
 };
 
 export const rcats = () => normalizeCategoryList(S.settings?.receiptCategories);
 
-export const categories = () => normalizeCategoryList(S.settings?.categories);
+export const categories = () => normalizeCategoryList(S.settings?.categories, true);
