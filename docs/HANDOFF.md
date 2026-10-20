@@ -17,7 +17,7 @@ Environment authority: this source work does not run Apps Script migrations, ini
 
 ## Next actions
 
-1. Add and run regression tests for both additive schema migrations, including historical-row preservation, idempotency and occupied-target refusal.
+1. Migration-test gap remains open: add and run deterministic tests for both additive schema migrations, including historical-row preservation, idempotency and occupied-target refusal, then record the successful run before any staging migration.
 2. Deliver a coherent UI/interaction batch for both payment and receipt flows: inline saved-payee creation, safe row progression, improved hierarchy/spacing at desktop/tablet/phone widths, useful daily totals/day-sheet workflow, and print/share only where workflow and print acceptance support it.
 3. Verify private static-host access to this private repository. Build a staging-only client ZIP with the independently verified staging `/exec` URL; publish only after explicit owner authorization.
 4. Owner-authorized staging UAT must cover role and receipt permissions, Cash/UPI/Bank treatment, vendor defaults, duplicate warnings, offline replay, A5/PDF alignment, a completed backup and restore into a separate recovery Sheet/folder. Production remains blocked until acceptance evidence is recorded.
