@@ -6,6 +6,7 @@ function vOut_(o) {
     date: isoDate_(o.Date),
     vendor: String(o.Vendor),
     vendorId: String(o.VendorID || ''),
+    paymentMethod: String(o.PaymentMethod || ''),
     amount: Number(o.Amount),
     category: String(o.Category || ''),
     notes: String(o.Notes || ''),
@@ -42,6 +43,8 @@ function bootstrap_(user) {
       company: String(v.Company || ''),
       mobile: String(v.Mobile || ''),
       active: v.Active === true || v.Active === 'TRUE',
+      defaultCategory: String(v.DefaultCategory || ''),
+      defaultPaymentMethod: String(v.DefaultPaymentMethod || ''),
     };
   });
   const names = {};

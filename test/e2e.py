@@ -64,9 +64,8 @@ with sync_playwright() as p:
     page = context.new_page()
 
     def choose_cash_impact_for_current_rows():
-        impact = 'CASH_IN' if page.locator('.seg button.on[data-k="RECEIPT"]').count() else 'CASH_OUT'
         for control in page.locator('#rows .rci').all():
-            control.select_option(impact)
+            control.select_option('CASH')
 
     def choose_bulk_cash_impact_for_current_rows():
         impact = 'CASH_IN' if page.locator('#bt2').input_value() == 'RECEIPT' else 'CASH_OUT'
@@ -664,16 +663,27 @@ with sync_playwright() as p:
         and page.locator('.entry-date-field').count() == 1,
         'New Entry adopts the shared header, labelled type switch and dedicated form layout',
     )
-    entry_style_metrics = page.evaluate("""() => ({
-      formPadding: Number.parseFloat(getComputedStyle(document.querySelector('#nf.entry-form')).paddingTop),
-      saveMinHeight: Number.parseFloat(getComputedStyle(document.querySelector('#nsave')).minHeight),
-      cashImpactPadding: Number.parseFloat(getComputedStyle(document.querySelector('.cash-impact-control')).paddingTop),
-    })""")
+    page.wait_for_selector('#rows .erow .payment-method-control', state='visible')
+    entry_style_metrics = page.evaluate("""() => {
+      const form = document.querySelector('#nf.entry-form');
+      const save = document.querySelector('#nsave');
+      const firstRow = document.querySelector('#rows .erow');
+      const methodControl = firstRow?.querySelector('.payment-method-control');
+      return {
+        formPadding: form ? Number.parseFloat(getComputedStyle(form).paddingTop) : 0,
+        saveMinHeight: save ? Number.parseFloat(getComputedStyle(save).minHeight) : 0,
+        firstRowPresent: Boolean(firstRow),
+        methodControlPresent: Boolean(methodControl),
+        methodControlHeight: methodControl ? methodControl.getBoundingClientRect().height : 0,
+      };
+    }""")
     check(
-        entry_style_metrics['formPadding'] >= 16
+        entry_style_metrics['firstRowPresent']
+        and entry_style_metrics['methodControlPresent']
+        and entry_style_metrics['formPadding'] >= 16
         and entry_style_metrics['saveMinHeight'] >= 44
-        and entry_style_metrics['cashImpactPadding'] >= 10,
-        'New Entry applies the shared card spacing, comfortable save target and visually grouped cash classification',
+        and entry_style_metrics['methodControlHeight'] >= 40,
+        'New Entry renders a compact first row, a usable payment-method control and a comfortable save target',
     )
     go_view(page, 'dash')
     check(
@@ -2039,7 +2049,7 @@ with sync_playwright() as p:
     go_view(page, 'set')
     page.wait_for_selector('#sc')
     check(
-        page.locator('#sc').input_value() == 'Office\nOther'
+        page.locator('#sc').input_value() == 'Office\nOther\nStaff Salary'
         and page.locator('#sx').input_value() == 'Other'
         and page.locator('#sf img, #sf svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
@@ -2048,36 +2058,36 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.wait_for_selector('#rows .erow .rc')
     check(
-        page.locator('#rows .erow .rci').input_value() == ''
-        and 'Cash paid out' in page.locator('#rows .erow .ci-suggestion').inner_text(),
-        'new payment requires explicit classification while showing a non-binding suggestion',
+        page.locator('#rows .erow .rci').input_value() == 'CASH'
+        and page.locator('#rows .erow .rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer'],
+        'new payment defaults to Cash and exposes the three payment methods',
     )
     page.locator('#rows .erow .rv').fill('Cash Impact Test Vendor')
     page.locator('#rows .erow .ra').fill('10')
-    page.locator('#nsave').click()
+    page.select_option('#rows .erow .rci', 'UPI')
+    page.select_option('#rows .erow .rc', 'Office')
     check(
-        page.locator('#rows .erow .row-error').inner_text()
-        == 'Choose how this was settled (cash or not cash) before saving.',
-        'saving without cash-impact selection is blocked with an actionable error',
+        page.locator('#rows .erow .rci').input_value() == 'UPI',
+        'payment method remains independent of category',
     )
     check(
         page.locator('#recentVendors').count() == 1,
-        'entry form offers a recent-payee chip row',
+        'entry form offers recent-payee suggestions',
     )
-    page.select_option('#rows .erow .rci', 'NO_CASH')
+    page.select_option('#rows .erow .rci', 'BANK_TRANSFER')
     page.select_option('#rows .erow .rc', 'Office')
     check(
-        page.locator('#rows .erow .rci').input_value() == 'NO_CASH',
-        'category changes do not overwrite explicit cash-impact choice',
+        page.locator('#rows .erow .rci').input_value() == 'BANK_TRANSFER',
+        'category changes do not overwrite the payment method',
     )
     check(
-        page.locator('#rows .erow .rc option').all_text_contents() == ['Office', 'Other']
-        and page.locator('#rows .erow .rc option').count() == 2
+        page.locator('#rows .erow .rc option').all_text_contents() == ['Office', 'Other', 'Staff Salary']
+        and page.locator('#rows .erow .rc option').count() == 3
         and page.locator('#rows .erow .rc option').evaluate_all(
             "options => options.every(option => typeof option.value === 'string')"
         )
         and not page.evaluate('window.__xssFired === true'),
-        'payment category options render only valid string categories',
+        'payment category options include Staff Salary and only valid strings',
     )
     page.click('[data-act=ntype][data-k=RECEIPT]')
     check(
@@ -2434,19 +2444,17 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.wait_for_selector('#nf')
     check(
-        page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
+        page.locator('.rv').first.get_attribute('aria-label') == 'Paid to, row 1'
         and page.locator('.ra').first.get_attribute('aria-label') == 'Amount in rupees, row 1'
         and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1'
-        and page.locator('.rci').first.get_attribute('aria-label') == 'How it was settled, row 1',
-        'payment row fields have explicit accessible names',
+        and page.locator('.rci').first.get_attribute('aria-label') == 'Payment method, row 1'
+        and page.locator('.rn').first.get_attribute('aria-label') == 'Note, row 1',
+        'compact payment fields have explicit accessible names',
     )
-    cash_impact_help = page.locator('.rci').first.evaluate("""element => {
-        const ids = (element.getAttribute('aria-describedby') || '').split(/\\s+/).filter(Boolean);
-        return ids.map(id => document.getElementById(id)?.innerText || '').join(' ');
-    }""")
     check(
-        'notes or coins moved' in cash_impact_help and 'UPI' in cash_impact_help,
-        'cash-impact selector is persistently associated with its explanatory settlement guidance',
+        page.locator('.rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer']
+        and page.locator('.rci').first.input_value() == 'CASH',
+        'payment method defaults to Cash and exposes explicit UPI/bank transfer options',
     )
     choose_cash_impact_for_current_rows()
     page.click('#nsave')
@@ -2481,35 +2489,13 @@ with sync_playwright() as p:
         page.locator('.ra').first.get_attribute('aria-invalid') is None,
         'payment validation state clears when the amount is corrected',
     )
-    page.select_option('.rci', '')
-    page.click('#nsave')
-    page.wait_for_function(
-        "document.querySelector('.row-error')?.innerText.includes('Choose how this was settled')"
-    )
-    impact_error_relationship = page.locator('.rci').first.evaluate("""element => {
-        const ids = (element.getAttribute('aria-describedby') || '').split(/\\s+/).filter(Boolean);
-        return {
-            invalid: element.getAttribute('aria-invalid'),
-            helpId: document.querySelector('.ci-hint')?.id || '',
-            descriptions: ids,
-            messages: ids.map(id => document.getElementById(id)?.innerText || '').join(' ')
-        };
-    }""")
+    page.select_option('.rci', 'UPI')
     check(
-        impact_error_relationship['invalid'] == 'true'
-        and impact_error_relationship['helpId'] in impact_error_relationship['descriptions']
-        and 'notes or coins moved' in impact_error_relationship['messages']
-        and 'Choose how this was settled' in impact_error_relationship['messages'],
-        'cash-impact validation references both the persistent hint and the current error',
+        page.locator('.rci').first.input_value() == 'UPI'
+        and page.locator('.rci').first.get_attribute('aria-invalid') is None,
+        'selecting UPI does not require a separate cash-drawer classification',
     )
-    choose_cash_impact_for_current_rows()
-    page.wait_for_function("document.querySelector('.row-error') === null")
-    impact_help_after_correction = page.locator('.rci').first.get_attribute('aria-describedby')
-    check(
-        page.locator('.rci').first.get_attribute('aria-invalid') is None
-        and impact_help_after_correction == page.locator('.ci-hint').first.get_attribute('id'),
-        'clearing a cash-impact error preserves its persistent help-text relationship',
-    )
+    page.select_option('.rci', 'CASH')
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
     xss_note = '<img src=x onerror=window.__xssFired=true>'
@@ -2527,7 +2513,7 @@ with sync_playwright() as p:
     page.press('.ra', 'Enter')
     check(page.locator('.erow').count() == 2, 'enter adds row')
     check(
-        page.locator('.rv').nth(1).get_attribute('aria-label') == 'Payee / vendor, row 2'
+        page.locator('.rv').nth(1).get_attribute('aria-label') == 'Paid to, row 2'
         and page.locator('.ra').nth(1).get_attribute('aria-label') == 'Amount in rupees, row 2',
         'added payment row receives distinct accessible names',
     )
@@ -2555,7 +2541,7 @@ with sync_playwright() as p:
     )
     check(
         page.locator('.erow').count() == 1
-        and page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
+        and page.locator('.rv').first.get_attribute('aria-label') == 'Paid to, row 1'
         and page.evaluate("document.activeElement === document.querySelector('.rv')")
         and page.evaluate("url => window.__revokedObjectUrls.includes(url)", removed_preview_url),
         'removing a receipt row restores focus and revokes its preview URL',
@@ -2568,6 +2554,7 @@ with sync_playwright() as p:
     # A malformed server response must not become active HTML in the save confirmation.
     success_number_payload = '<svg onload=window.__xssFired=true></svg>'
     success_vendor_payload = '<img src=x onerror=window.__xssFired=true>'
+    success_payment_method_payload = '<img src=x onerror=window.__xssFired=true>'
 
     def tamper_created_voucher_number(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -2577,6 +2564,7 @@ with sync_playwright() as p:
         if request_data.get('action') == 'createVouchers' and created:
             created[0]['no'] = success_number_payload
             created[0]['vendor'] = success_vendor_payload
+            created[0]['paymentMethod'] = success_payment_method_payload
             # createVouchers responses are pushed into the client cache before a later bootstrap normalization.
             created[0]['date'] = {'split': None}
             route.fulfill(response=response, json=payload)
@@ -2607,6 +2595,8 @@ with sync_playwright() as p:
         'Date unavailable' in page.locator('#printArea .pv-meta').inner_text()
         and success_number_payload in page.locator('#printArea').inner_text()
         and page.locator('#printArea img, #printArea svg').count() == 0
+        and 'Payment method' in page.locator('#printArea').inner_text()
+        and 'Not recorded' in page.locator('#printArea').inner_text()
         and not page.evaluate('window.__xssFired === true')
         and sum(message.startswith('PAGEERR ') for message in logs) == page_errors_before_print,
         'malformed API date uses a safe print fallback without crashing or activating hostile voucher text',
@@ -2617,7 +2607,9 @@ with sync_playwright() as p:
     )
     check(
         normal_voucher_date_display in page.locator('#printArea .pv-meta').inner_text()
-        and 'Date unavailable' not in page.locator('#printArea .pv-meta').inner_text(),
+        and 'Date unavailable' not in page.locator('#printArea .pv-meta').inner_text()
+        and 'Payment method' in page.locator('#printArea').inner_text()
+        and 'Cash' in page.locator('#printArea').inner_text(),
         'valid server-returned voucher date keeps the normal printed date format',
     )
     page.unroute('**/api?*', tamper_created_voucher_number)
@@ -3684,6 +3676,8 @@ with sync_playwright() as p:
 
     # Prototype-named user data must be ordinary aggregation keys, not Object properties.
     prototype_group_values = ['constructor', '__proto__', 'toString', 'hasOwnProperty']
+    vendor_default_category_payload = '<svg onload=window.__xssFired=true></svg>'
+    vendor_default_method_payload = '<img src=x onerror=window.__xssFired=true>'
     invalid_vendor_envelope = False
     invalid_voucher_envelope = False
 
@@ -3777,6 +3771,15 @@ with sync_playwright() as p:
                             'company': {'toString': None, 'valueOf': None},
                             'mobile': '123',
                             'active': True,
+                        },
+                        {
+                            'id': 'vendor-defaults-xss',
+                            'name': 'Vendor Defaults XSS Test',
+                            'company': 'Test Supplies',
+                            'mobile': '',
+                            'active': True,
+                            'defaultCategory': vendor_default_category_payload,
+                            'defaultPaymentMethod': vendor_default_method_payload,
                         },
                     ])
                     data['vendors'] = vendors
@@ -3886,6 +3889,14 @@ with sync_playwright() as p:
         and '[object Object]' not in page.locator('#view').inner_text()
         and page.locator('#view img, #view svg').count() == 0,
         'vendor list omits malformed names and contact metadata without rendering unsafe markup',
+    )
+    check(
+        vendor_default_category_payload in page.locator('#view').inner_text()
+        and 'Vendor Defaults XSS Test' in page.locator('#view').inner_text()
+        and 'Auto / Cash' in page.locator('#view').inner_text()
+        and page.locator('#view img, #view svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'vendor default category is escaped and unknown payment-method metadata falls back safely',
     )
     invalid_vendor_envelope = True
     page.reload(wait_until='domcontentloaded')

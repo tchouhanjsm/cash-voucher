@@ -615,14 +615,48 @@ tr.cx .amt {
 }
 .erow .top {
   display: grid;
-  grid-template-columns: 1fr 130px 36px;
+  grid-template-columns: minmax(180px, 1.25fr) minmax(100px, 140px) minmax(150px, 1fr) 36px;
   gap: 8px;
+  align-items: center;
 }
 .erow .bot {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: minmax(180px, 1fr) minmax(180px, 1fr);
   gap: 8px;
   margin-top: 8px;
+  align-items: end;
+}
+.erow .top input,
+.erow .bot select {
+  min-width: 0;
+}
+.erow label {
+  margin: 0;
+  font-size: 12px;
+  display: grid;
+  gap: 3px;
+}
+.erow .category-field select,
+.erow .payment-method-control select {
+  margin-top: 0;
+}
+.erow .chips {
+  margin-top: 6px;
+}
+.erow .x {
+  min-height: 42px;
+}
+@media (max-width: 760px) {
+  .erow .top {
+    grid-template-columns: minmax(0, 1fr) 108px 36px;
+  }
+  .erow .top .rn {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+  .erow .bot {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
 }
 .erow .x {
   border: 1px solid var(--border-danger);

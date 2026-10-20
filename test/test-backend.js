@@ -2649,6 +2649,99 @@ assert(
   'owner audit status makes the simultaneous marker-store failure limitation explicit in regression evidence',
 );
 
+/* Payment rail is explicit and independent from drawer movement. */
+const railDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
+const paymentRailResult = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'payment-rail-cash-regression',
+      date: railDate,
+      vendor: 'Payment Rail Cash Test',
+      amount: 111,
+      category: 'Other',
+      paymentMethod: 'CASH',
+      cashImpact: 'NO_CASH',
+    },
+    {
+      clientId: 'payment-rail-upi-regression',
+      date: railDate,
+      vendor: 'Payment Rail UPI Test',
+      amount: 222,
+      category: 'Other',
+      paymentMethod: 'UPI',
+      cashImpact: 'CASH_OUT',
+    },
+    {
+      clientId: 'payment-rail-bank-regression',
+      date: railDate,
+      vendor: 'Payment Rail Bank Test',
+      amount: 333,
+      category: 'Other',
+      paymentMethod: 'BANK_TRANSFER',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+});
+ok(
+  paymentRailResult.ok &&
+    paymentRailResult.data.created.length === 3 &&
+    paymentRailResult.data.created[0].paymentMethod === 'CASH' &&
+    paymentRailResult.data.created[0].cashImpact === 'CASH_OUT' &&
+    paymentRailResult.data.created[1].paymentMethod === 'UPI' &&
+    paymentRailResult.data.created[1].cashImpact === 'NO_CASH' &&
+    paymentRailResult.data.created[2].paymentMethod === 'BANK_TRANSFER' &&
+    paymentRailResult.data.created[2].cashImpact === 'NO_CASH',
+  'server allow-lists payment rails and derives cash impact instead of trusting conflicting client values',
+);
+const invalidPaymentRail = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'payment-rail-invalid-regression',
+      date: railDate,
+      vendor: 'Invalid Payment Rail Test',
+      amount: 12,
+      category: 'Other',
+      paymentMethod: 'CARD',
+    },
+  ],
+});
+ok(
+  !invalidPaymentRail.ok && invalidPaymentRail.code === 'VALIDATION',
+  'server rejects unsupported payment rails',
+);
+const blankLegacyRail = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'payment-rail-legacy-blank-regression',
+      date: railDate,
+      vendor: 'Legacy blank rail Test',
+      amount: 55,
+      category: 'Other',
+      cashImpact: 'NO_CASH',
+    },
+  ],
+});
+const changedLegacyRailRetry = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'payment-rail-legacy-blank-regression',
+      date: railDate,
+      vendor: 'Legacy blank rail Test',
+      amount: 55,
+      category: 'Other',
+      cashImpact: 'NO_CASH',
+      paymentMethod: 'BANK_TRANSFER',
+    },
+  ],
+});
+ok(
+  blankLegacyRail.ok &&
+    blankLegacyRail.data.created[0].paymentMethod === '' &&
+    !changedLegacyRailRetry.ok &&
+    changedLegacyRailRetry.code === 'CONFLICT',
+  'idempotency rejects a changed payment rail when the stored legacy rail is unknown',
+);
+
 n += 5;
 
 console.log('backend OK — ' + n + ' checks passed');

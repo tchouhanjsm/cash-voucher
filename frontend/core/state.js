@@ -22,6 +22,8 @@ export const S = {
   },
 };
 
+export const PAYMENT_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER'];
+export const PAYMENT_METHOD_LABELS = { CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank transfer' };
 export const CASH_IMPACT_CHOICES = ['CASH_IN', 'CASH_OUT', 'NO_CASH'];
 export const CASH_IMPACT_LABELS = {
   CASH_IN: 'Cash received into the drawer',
@@ -171,21 +173,23 @@ export const recs = () =>
 export const bySeq = (a, b) =>
   String(b.createdAt).localeCompare(String(a.createdAt)) || b.no - a.no;
 
-const normalizeCategoryList = (value) => {
-  if (!Array.isArray(value)) return ['Other'];
+const normalizeCategoryList = (value, includeSalary = false) => {
+  const normalized = Array.isArray(value)
+    ? [
+        ...new Set(
+          value
+            .filter((category) => typeof category === 'string')
+            .map((category) => category.trim())
+            .filter(Boolean),
+        ),
+      ]
+    : [];
 
-  const normalized = [
-    ...new Set(
-      value
-        .filter((category) => typeof category === 'string')
-        .map((category) => category.trim())
-        .filter(Boolean),
-    ),
-  ];
-
-  return normalized.length ? normalized : ['Other'];
+  if (!normalized.length) normalized.push('Other');
+  if (includeSalary && !normalized.includes('Staff Salary')) normalized.push('Staff Salary');
+  return normalized;
 };
 
 export const rcats = () => normalizeCategoryList(S.settings?.receiptCategories);
 
-export const categories = () => normalizeCategoryList(S.settings?.categories);
+export const categories = () => normalizeCategoryList(S.settings?.categories, true);

@@ -108,6 +108,23 @@ async function run() {
     /500-payment limit/i,
   );
 
+  const withMethod = validateRecoveryRecords(
+    [{ ...validRecord, entry: { ...validRecord.entry, paymentMethod: 'UPI' } }],
+    ownerKey,
+    maxDate,
+  );
+  assert.equal(withMethod.records[0].entry.paymentMethod, 'UPI');
+  assert.throws(
+    () =>
+      validateRecoveryRecords(
+        [{ ...validRecord, entry: { ...validRecord.entry, paymentMethod: 'CHEQUE' } }],
+        ownerKey,
+        maxDate,
+      ),
+    /invalid payment method/,
+  );
+  assert.equal('paymentMethod' in valid.records[0].entry, false);
+
   console.log(
     'Recovery validation OK — scalar-only IDs/bindings, strict payment schema, receipt bounds, and safe legacy defaults covered.',
   );

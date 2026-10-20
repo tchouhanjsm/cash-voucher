@@ -3,9 +3,9 @@ import { catOpts, vendorList } from '../core/form-options.js';
 import { offlineQueue } from '../core/offline-queue.js';
 import {
   CASH_IMPACT_CHOICES,
-  CASH_IMPACT_LABELS,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
   S,
-  suggestCashImpact,
   vno,
 } from '../core/state.js';
 import { busy, fail, head, icon, toast } from '../core/ui.js';
@@ -53,50 +53,114 @@ export function createPayments({ api, refresh }) {
     }
   });
 
-  function cashImpactOptions(selected) {
-    const labels = {
-      CASH_IN: CASH_IMPACT_LABELS.CASH_IN,
-      CASH_OUT: CASH_IMPACT_LABELS.CASH_OUT,
-      NO_CASH: CASH_IMPACT_LABELS.NO_CASH,
-    };
-    const placeholder = selected
-      ? ''
-      : `<option value='' selected disabled>Choose how it was settled…</option>`;
+  function paymentMethodOptions(selected = 'CASH') {
+    return PAYMENT_METHODS.map(
+      (method) =>
+        "<option value='" +
+        method +
+        "'" +
+        (method === selected ? ' selected' : '') +
+        '>' +
+        PAYMENT_METHOD_LABELS[method] +
+        '</option>',
+    ).join('');
+  }
+  function vendorForName(name) {
+    const normalized = scalarText(name).trim().toLowerCase();
     return (
-      placeholder +
-      CASH_IMPACT_CHOICES.map(
-        (value) =>
-          `<option value='${value}'${value === selected ? ' selected' : ''}>${labels[value]}</option>`,
-      ).join('')
+      (Array.isArray(S.vendors) ? S.vendors : []).find(
+        (vendor) =>
+          vendor && vendor.active && scalarText(vendor.name).trim().toLowerCase() === normalized,
+      ) || null
+    );
+  }
+  function categoryForPayee(name) {
+    const vendor = vendorForName(name);
+    const allowed = NT === 'RECEIPT' ? S.settings?.receiptCategories : S.settings?.categories;
+    if (
+      vendor?.defaultCategory &&
+      Array.isArray(allowed) &&
+      allowed.includes(vendor.defaultCategory)
+    )
+      return vendor.defaultCategory;
+    const normalized = scalarText(name).trim().toLowerCase();
+    const recent = [...(Array.isArray(S.vouchers) ? S.vouchers : [])]
+      .filter(
+        (voucher) =>
+          voucher &&
+          voucher.status === 'ACTIVE' &&
+          voucher.type === NT &&
+          scalarText(voucher.vendor).trim().toLowerCase() === normalized &&
+          voucher.category,
+      )
+      .sort(
+        (a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no),
+      )[0];
+    return recent?.category || 'Other';
+  }
+  function methodForPayee(name) {
+    const vendor = vendorForName(name);
+    if (vendor?.defaultPaymentMethod && PAYMENT_METHODS.includes(vendor.defaultPaymentMethod))
+      return vendor.defaultPaymentMethod;
+    const normalized = scalarText(name).trim().toLowerCase();
+    const recent = [...(Array.isArray(S.vouchers) ? S.vouchers : [])]
+      .filter(
+        (voucher) =>
+          voucher &&
+          voucher.status === 'ACTIVE' &&
+          voucher.type === NT &&
+          scalarText(voucher.vendor).trim().toLowerCase() === normalized &&
+          PAYMENT_METHODS.includes(voucher.paymentMethod),
+      )
+      .sort(
+        (a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no),
+      )[0];
+    return recent?.paymentMethod || 'CASH';
+  }
+  function applyPayeeDefaults(row) {
+    const category = categoryForPayee($('.rv', row).value);
+    const categorySelect = $('.rc', row);
+    categorySelect.value = [...categorySelect.options].some((option) => option.value === category)
+      ? category
+      : 'Other';
+    const method = methodForPayee($('.rv', row).value);
+    $('.rci', row).value = method;
+    row.dataset.paymentMethod = method;
+  }
+  function rowHtml() {
+    return (
+      "<div class='erow'>" +
+      "<div class='top'>" +
+      "<input class='rv' list='vlist' placeholder='" +
+      (NT === 'RECEIPT' ? 'Received from' : 'Paid to') +
+      "' autocapitalize='words' autocomplete='off'>" +
+      "<input class='ra' inputmode='decimal' placeholder='Amount ₹'>" +
+      "<input class='rn' placeholder='Note (optional)' aria-label='Note, optional' maxlength='500'>" +
+      "<button type='button' class='x' data-act='delrow' title='Remove payment' aria-label='Remove payment'>✕</button></div>" +
+      "<div class='bot'>" +
+      "<label class='category-field'>Category<select class='rc'>" +
+      catOpts('Other', NT) +
+      '</select></label>' +
+      "<label class='cash-impact-control payment-method-control'>Paid via<select class='rci' required>" +
+      paymentMethodOptions('CASH') +
+      '</select></label></div>' +
+      "<div class='chips'><label class='btn sm receipt-upload-label'>" +
+      icon('receipt') +
+      " Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>"
     );
   }
 
-  function rowHtml() {
-    const suggested = suggestCashImpact(NT, 'Other');
-    return `<div class='erow'><div class='top'><input class='rv' list='vlist' placeholder='${NT === 'RECEIPT' ? 'Received from' : 'Paid to (vendor)'}' autocapitalize='words'><input class='ra' inputmode='decimal' placeholder='Amount ₹'><button type='button' class='x' data-act='delrow' title='Remove'>✕</button></div>
-  <div class='bot'><select class='rc'>${catOpts('Other', NT)}</select><input class='rn' placeholder='Note (optional)'></div>
-  <label class='cash-impact-control'>How was it settled? (required)<select class='rci'>${cashImpactOptions('')}</select></label>
-  <p class='muted ci-hint'>Usual for this category: <span class='ci-suggestion'>${CASH_IMPACT_LABELS[suggested]}</span>. Pick Cash only if notes or coins moved; UPI, card or bank transfer is Not cash.</p>
-  <div class='chips'><label class='btn sm receipt-upload-label'>${icon('receipt')} Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>`;
-  }
-
   function labelRows() {
-    const direction = NT === 'RECEIPT' ? 'Cash received from' : 'Payee / vendor';
-
+    const direction = NT === 'RECEIPT' ? 'Received from' : 'Paid to';
     $$('#rows .erow').forEach((row, index) => {
       const number = index + 1;
-      $('.rv', row).setAttribute('aria-label', `${direction}, row ${number}`);
-      $('.ra', row).setAttribute('aria-label', `Amount in rupees, row ${number}`);
-      $('.rc', row).setAttribute('aria-label', `Category, row ${number}`);
-      $('.rci', row).setAttribute('aria-label', `How it was settled, row ${number}`);
-      const hint = $('.ci-hint', row);
-      hint.id = `payment-row-hint-${number}`;
-      const rowError = $('.row-error', row);
-      const describedBy = [hint.id, rowError?.id].filter(Boolean).join(' ');
-      $('.rci', row).setAttribute('aria-describedby', describedBy);
-      $('.rn', row).setAttribute('aria-label', `Note, row ${number}`);
-      $('.rf', row).setAttribute('aria-label', `Receipt images, row ${number}`);
-      $('[data-act="delrow"]', row).setAttribute('aria-label', `Remove row ${number}`);
+      $('.rv', row).setAttribute('aria-label', direction + ', row ' + number);
+      $('.ra', row).setAttribute('aria-label', 'Amount in rupees, row ' + number);
+      $('.rc', row).setAttribute('aria-label', 'Category, row ' + number);
+      $('.rci', row).setAttribute('aria-label', 'Payment method, row ' + number);
+      $('.rn', row).setAttribute('aria-label', 'Note, row ' + number);
+      $('.rf', row).setAttribute('aria-label', 'Receipt images, row ' + number);
+      $('[data-act="delrow"]', row).setAttribute('aria-label', 'Remove row ' + number);
     });
   }
 
@@ -105,7 +169,7 @@ export function createPayments({ api, refresh }) {
     const errorId = error?.id || '';
     error?.remove();
 
-    ['.rv', '.ra', '.rci'].forEach((selector) => {
+    ['.rv', '.ra'].forEach((selector) => {
       const field = $(selector, row);
       field.removeAttribute('aria-invalid');
       const descriptions = (field.getAttribute('aria-describedby') || '')
@@ -365,6 +429,27 @@ export function createPayments({ api, refresh }) {
   }
 
   function addRow() {
+    const previousRows = $$('#rows .erow');
+    for (const previous of previousRows) {
+      const payee = $('.rv', previous).value.trim();
+      const amount = parseAmt($('.ra', previous).value.trim());
+      if (!payee) {
+        showRowError(
+          previous,
+          $('.rv', previous),
+          'Enter who was paid before adding another payment.',
+        );
+        return;
+      }
+      if (!(amount > 0)) {
+        showRowError(
+          previous,
+          $('.ra', previous),
+          'Enter a valid amount before adding another payment.',
+        );
+        return;
+      }
+    }
     const d = document.createElement('div');
     d.innerHTML = rowHtml();
     const r = d.firstElementChild;
@@ -376,6 +461,7 @@ export function createPayments({ api, refresh }) {
     updateSaveLabel();
     const v = $('.rv', r);
     if ($$('#rows .erow').length > 1) v.focus();
+    applyPayeeDefaults(r);
   }
 
   function clearReceipt(button) {
@@ -439,18 +525,20 @@ export function createPayments({ api, refresh }) {
   document.addEventListener('change', (event) => {
     const row = event.target.closest('.erow');
     if (!row) return;
-    if (event.target.matches('.rci')) {
-      row.dataset.cashImpactChosen = 'true';
-      clearRowError(row);
-      return;
-    }
-    if (event.target.matches('.rc')) {
-      $('.ci-suggestion', row).textContent =
-        CASH_IMPACT_LABELS[suggestCashImpact(NT, event.target.value)];
-    }
+    if (event.target.matches('.rv')) applyPayeeDefaults(row);
+    if (event.target.matches('.rci, .rc, .rn')) clearRowError(row);
+  });
+  document.addEventListener('focusout', (event) => {
+    if (!event.target.matches('.rv')) return;
+    const row = event.target.closest('.erow');
+    if (row && event.target.value.trim()) applyPayeeDefaults(row);
   });
   document.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && e.target.classList.contains('ra')) {
+    if (e.key === 'Enter' && e.target.classList.contains('rv')) {
+      e.preventDefault();
+      const row = e.target.closest('.erow');
+      if (row) $('.ra', row).focus();
+    } else if (e.key === 'Enter' && e.target.classList.contains('ra')) {
       e.preventDefault();
       const rows = $$('#rows .erow');
       if (e.target.closest('.erow') === rows[rows.length - 1]) addRow();
@@ -459,7 +547,7 @@ export function createPayments({ api, refresh }) {
   });
 
   document.addEventListener('input', (event) => {
-    if (!event.target.matches('.rv, .ra')) return;
+    if (!event.target.matches('.rv, .ra, .rn')) return;
 
     const row = event.target.closest('.erow');
     if (row) clearRowError(row);
@@ -473,12 +561,17 @@ export function createPayments({ api, refresh }) {
     const rows = $$('#rows .erow');
     rows.forEach(clearRowError);
 
-    for (const r of rows) {
+    for (const [index, r] of rows.entries()) {
       const vendor = $('.rv', r).value.trim();
       const raw = $('.ra', r).value.trim();
       const amount = parseAmt(raw);
-
-      if (!vendor && !raw && !r._rec.length) continue;
+      const note = $('.rn', r).value.trim();
+      const hasReceipt = Array.isArray(r._rec) && r._rec.length > 0;
+      if (!vendor && !raw && !note && !hasReceipt && index === rows.length - 1) continue;
+      if (!vendor && !raw && !note && !hasReceipt) {
+        showRowError(r, $('.rv', r), 'Complete or remove this payment row before saving.');
+        return;
+      }
       if (!vendor) {
         showRowError(
           r,
@@ -495,15 +588,13 @@ export function createPayments({ api, refresh }) {
         return;
       }
 
-      const cashImpact = $('.rci', r).value;
-      if (!CASH_IMPACT_CHOICES.includes(cashImpact)) {
-        showRowError(
-          r,
-          $('.rci', r),
-          'Choose how this was settled (cash or not cash) before saving.',
-        );
+      const paymentMethod = $('.rci', r).value;
+      if (!PAYMENT_METHODS.includes(paymentMethod)) {
+        showRowError(r, $('.rci', r), 'Choose Cash, UPI or Bank transfer.');
         return;
       }
+      const cashImpact =
+        paymentMethod === 'CASH' ? (NT === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT') : 'NO_CASH';
 
       const duplicate = findPossibleDuplicate({ type: NT, vendor, amount, date });
       if (duplicate && r.dataset.duplicateConfirmed !== 'true') {
@@ -524,7 +615,8 @@ export function createPayments({ api, refresh }) {
         amount,
         category: $('.rc', r).value,
         cashImpact,
-        notes: $('.rn', r).value.trim(),
+        paymentMethod,
+        notes: note,
         receipts: r._rec.map((x) => ({ mime: x.mime, data: x.data })),
       });
     }
