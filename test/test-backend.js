@@ -23,7 +23,6 @@ const nextReceiptNumber = () =>
     .reduce((max, row) => (row[15] === 'RECEIPT' ? Math.max(max, Number(row[1]) || 0) : max), 0) +
   1;
 
-
 // PaymentMethod migration adds W only after the reviewed A:V schema; historical rail stays unknown.
 const paymentMethodMigrationMock = create();
 paymentMethodMigrationMock.props.OWNER_EMAIL = 'Owner@Test.com';
@@ -32,9 +31,28 @@ paymentMethodMigrationMock.setup();
 const paymentMethodSheet = paymentMethodMigrationMock.sheets.Vouchers;
 paymentMethodSheet.rows[0] = paymentMethodSheet.rows[0].slice(0, 22);
 paymentMethodSheet.rows.push([
-  'legacy-payment-method-id', 77, '2026-10-01', 'Legacy cash unknown', 450, 'Other', '',
-  'ACTIVE', 'legacy@test.com', '2026-10-01T00:00:00Z', '', '', '', '',
-  'legacy-payment-method-client', 'PAYMENT', 'CASH_OUT', '', '', '', '', '',
+  'legacy-payment-method-id',
+  77,
+  '2026-10-01',
+  'Legacy cash unknown',
+  450,
+  'Other',
+  '',
+  'ACTIVE',
+  'legacy@test.com',
+  '2026-10-01T00:00:00Z',
+  '',
+  '',
+  '',
+  '',
+  'legacy-payment-method-client',
+  'PAYMENT',
+  'CASH_OUT',
+  '',
+  '',
+  '',
+  '',
+  '',
 ]);
 const paymentMethodMigrationResult = paymentMethodMigrationMock.migrateVoucherPaymentMethodField();
 ok(
@@ -75,13 +93,19 @@ vendorDefaultsMigrationMock.setup();
 const vendorDefaultsSheet = vendorDefaultsMigrationMock.sheets.Vendors;
 vendorDefaultsSheet.rows[0] = vendorDefaultsSheet.rows[0].slice(0, 7);
 vendorDefaultsSheet.rows.push([
-  'legacy-vendor-defaults-id', 'Legacy Supplier', 'Legacy Company', '1234567890',
-  true, 'owner@test.com', '2026-10-01T00:00:00Z',
+  'legacy-vendor-defaults-id',
+  'Legacy Supplier',
+  'Legacy Company',
+  '1234567890',
+  true,
+  'owner@test.com',
+  '2026-10-01T00:00:00Z',
 ]);
 const vendorDefaultsMigrationResult = vendorDefaultsMigrationMock.migrateVendorDefaultsSchema();
 ok(
   vendorDefaultsMigrationResult.includes('Added vendor defaults') &&
-    vendorDefaultsSheet.rows[0].slice(7, 9).join(',') === 'DefaultCategory,DefaultPaymentMethod',
+    vendorDefaultsSheet.rows[0].slice(7, 9).join(',') ===
+      'DefaultCategory,DefaultPaymentMethod',
   'vendor-default migration appends DefaultCategory and DefaultPaymentMethod in H:I',
 );
 ok(
