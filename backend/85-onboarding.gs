@@ -103,6 +103,10 @@ function onboardingReadState_(environment) {
   return state;
 }
 
+function onboardingIdentityValue_(value) {
+  return String(value === undefined || value === null ? '' : value).trim();
+}
+
 function onboardingTargetIdentity_(environment) {
   const p = props_();
   const prefix = 'CV_' + environment.toUpperCase() + '_';
@@ -121,15 +125,44 @@ function onboardingTargetIdentity_(environment) {
   };
 }
 
+// Keep one comparison implementation for request-time enforcement and the onboarding
+// diagnostic. The request-only deployment comparison is deliberately omitted when
+// no browser-supplied deployment ID is available.
+function onboardingIdentityChecks_(target, suppliedDeploymentId) {
+  const scriptMatched =
+    Boolean(target.expectedScriptId) && target.scriptId === target.expectedScriptId;
+  const spreadsheetMatched =
+    Boolean(target.expectedSpreadsheetId) && target.spreadsheetId === target.expectedSpreadsheetId;
+  const serverDeploymentMatched =
+    Boolean(target.expectedDeploymentId) && target.deploymentId === target.expectedDeploymentId;
+  const receiptFolderMatched =
+    Boolean(target.expectedReceiptFolderId) &&
+    target.receiptFolderId === target.expectedReceiptFolderId;
+  const backupFolderMatched =
+    Boolean(target.expectedBackupFolderId) &&
+    target.backupFolderId === target.expectedBackupFolderId;
+
+  const checks = {
+    script: scriptMatched,
+    spreadsheet: spreadsheetMatched,
+    serverDeployment: serverDeploymentMatched,
+    receiptFolder: receiptFolderMatched,
+    backupFolder: backupFolderMatched,
+  };
+
+  if (suppliedDeploymentId !== undefined && suppliedDeploymentId !== null) {
+    const supplied = onboardingIdentityValue_(suppliedDeploymentId);
+    checks.clientDeployment = Boolean(
+      target.deploymentId && supplied && target.deploymentId === supplied,
+    );
+  }
+
+  return checks;
+}
+
 function onboardingRequestIdentity_(req) {
   const env = onboardingEnvironment_();
-  if (
-    !env.valid ||
-    !req ||
-    String(req.environment || '')
-      .trim()
-      .toLowerCase() !== env.name
-  ) {
+  if (!env.valid || !req || onboardingIdentityValue_(req.environment).toLowerCase() !== env.name) {
     throw err_(
       'Configured server environment does not match the client environment. Verify the customer build configuration.',
       'ENVIRONMENT_MISMATCH',
@@ -137,24 +170,18 @@ function onboardingRequestIdentity_(req) {
   }
 
   const target = onboardingTargetIdentity_(env.name);
-  const suppliedDeploymentId = String(req.deploymentId || '').trim();
-  const matched = Boolean(
-    target.expectedScriptId &&
-    target.scriptId === target.expectedScriptId &&
-    target.expectedSpreadsheetId &&
-    target.spreadsheetId === target.expectedSpreadsheetId &&
-    target.expectedDeploymentId &&
-    target.deploymentId === target.expectedDeploymentId &&
-    target.deploymentId === suppliedDeploymentId &&
-    target.expectedReceiptFolderId &&
-    target.receiptFolderId === target.expectedReceiptFolderId &&
-    target.expectedBackupFolderId &&
-    target.backupFolderId === target.expectedBackupFolderId,
-  );
+  const checks = onboardingIdentityChecks_(target, req.deploymentId);
+  const failedChecks = Object.keys(checks).filter(function (key) {
+    return !checks[key];
+  });
 
-  if (!matched) {
+  if (failedChecks.length) {
+    // Report only failed field names. Never disclose Script, Sheet, deployment or
+    // Drive identifiers in an API error message or browser console.
     throw err_(
-      'Customer resource identity is not verified. Financial changes are blocked until the operator verifies Script, Sheet, deployment and Drive folder identities.',
+      'Customer resource identity is not verified. Failed checks: ' +
+        failedChecks.join(', ') +
+        '. Financial changes remain blocked until the operator resolves the mismatch.',
       'ENVIRONMENT_MISMATCH',
     );
   }
@@ -210,14 +237,10 @@ function onboardingTechnicalChecks_(user, environment) {
   need_(user, 'settings');
   const env = environment || onboardingEnvironment_().name;
   const identity = onboardingTargetIdentity_(env);
-  let identityMatched = false;
-
-  try {
-    onboardingRequestIdentity_({ environment: env, deploymentId: identity.deploymentId });
-    identityMatched = true;
-  } catch {
-    identityMatched = false;
-  }
+  const identityChecks = onboardingIdentityChecks_(identity);
+  const identityMatched = Object.keys(identityChecks).every(function (key) {
+    return identityChecks[key];
+  });
 
   const readiness = deploymentReadiness_(user);
   const currentSettings = settings_();
@@ -244,24 +267,11 @@ function onboardingTechnicalChecks_(user, environment) {
         : 'Environment or resource identity is missing/mismatched. Stop and verify the instance register.',
       details: {
         environment: env,
-        scriptMatched: Boolean(
-          identity.expectedScriptId && identity.scriptId === identity.expectedScriptId,
-        ),
-        sheetMatched: Boolean(
-          identity.expectedSpreadsheetId &&
-          identity.spreadsheetId === identity.expectedSpreadsheetId,
-        ),
-        deploymentMatched: Boolean(
-          identity.expectedDeploymentId && identity.deploymentId === identity.expectedDeploymentId,
-        ),
-        receiptFolderMatched: Boolean(
-          identity.expectedReceiptFolderId &&
-          identity.receiptFolderId === identity.expectedReceiptFolderId,
-        ),
-        backupFolderMatched: Boolean(
-          identity.expectedBackupFolderId &&
-          identity.backupFolderId === identity.expectedBackupFolderId,
-        ),
+        scriptMatched: identityChecks.script,
+        sheetMatched: identityChecks.spreadsheet,
+        deploymentMatched: identityChecks.serverDeployment,
+        receiptFolderMatched: identityChecks.receiptFolder,
+        backupFolderMatched: identityChecks.backupFolder,
       },
     },
     propertyConfigured: {

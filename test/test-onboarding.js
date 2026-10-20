@@ -60,6 +60,16 @@ assert.equal(mismatch.code, 'ENVIRONMENT_MISMATCH');
 const wrongDeployment = request('onboardingState', { deploymentId: 'WRONG' });
 assert.equal(wrongDeployment.ok, false);
 assert.equal(wrongDeployment.code, 'ENVIRONMENT_MISMATCH');
+assert.match(wrongDeployment.error, /clientDeployment/);
+assert.doesNotMatch(wrongDeployment.error, /MOCK_DEPLOYMENT/);
+
+g.props.CV_STAGING_DEPLOYMENT_ID = 'WRONG_SERVER_DEPLOYMENT';
+const wrongServerDeployment = request('onboardingState');
+assert.equal(wrongServerDeployment.ok, false);
+assert.equal(wrongServerDeployment.code, 'ENVIRONMENT_MISMATCH');
+assert.match(wrongServerDeployment.error, /serverDeployment/);
+assert.doesNotMatch(wrongServerDeployment.error, /WRONG_SERVER_DEPLOYMENT/);
+g.props.CV_STAGING_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
 
 const state = request('onboardingState');
 assert.equal(state.ok, true);
