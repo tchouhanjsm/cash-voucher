@@ -20,28 +20,28 @@ async function run() {
     categories: [' Office ', hostile, null, 42, 'Other', 'Office', ''],
     receiptCategories: [' Cash received ', hostile, false, 'Cash received'],
   };
-  assert.deepEqual(categories(), ['Office', 'Other']);
+  assert.deepEqual(categories(), ['Office', 'Other', 'Staff Salary']);
   assert.deepEqual(rcats(), ['Cash received']);
 
   S.settings = {
     categories: hostile,
     receiptCategories: 'Cash received',
   };
-  assert.deepEqual(categories(), ['Other']);
+  assert.deepEqual(categories(), ['Other', 'Staff Salary']);
   assert.deepEqual(rcats(), ['Other']);
 
   S.settings = {
     categories: [hostile, null, 42, false, ''],
     receiptCategories: [],
   };
-  assert.deepEqual(categories(), ['Other']);
+  assert.deepEqual(categories(), ['Other', 'Staff Salary']);
   assert.deepEqual(rcats(), ['Other']);
 
   S.settings = {
     categories: ['Travel', 'Meals'],
     receiptCategories: ['Refunds', 'Other'],
   };
-  assert.deepEqual(categories(), ['Travel', 'Meals']);
+  assert.deepEqual(categories(), ['Travel', 'Meals', 'Staff Salary']);
   assert.deepEqual(rcats(), ['Refunds', 'Other']);
 
   assert.deepEqual(CASH_IMPACT_CHOICES, ['CASH_IN', 'CASH_OUT', 'NO_CASH']);
