@@ -54,54 +54,100 @@ export function createPayments({ api, refresh }) {
   });
 
   function paymentMethodOptions(selected = 'CASH') {
-    return PAYMENT_METHODS.map((method) =>
-      "<option value='" + method + "'" + (method === selected ? ' selected' : '') + ">" + PAYMENT_METHOD_LABELS[method] + "</option>",
+    return PAYMENT_METHODS.map(
+      (method) =>
+        "<option value='" +
+        method +
+        "'" +
+        (method === selected ? ' selected' : '') +
+        '>' +
+        PAYMENT_METHOD_LABELS[method] +
+        '</option>',
     ).join('');
   }
   function vendorForName(name) {
     const normalized = scalarText(name).trim().toLowerCase();
-    return (Array.isArray(S.vendors) ? S.vendors : []).find(
-      (vendor) => vendor && vendor.active && scalarText(vendor.name).trim().toLowerCase() === normalized,
-    ) || null;
+    return (
+      (Array.isArray(S.vendors) ? S.vendors : []).find(
+        (vendor) =>
+          vendor && vendor.active && scalarText(vendor.name).trim().toLowerCase() === normalized,
+      ) || null
+    );
   }
   function categoryForPayee(name) {
     const vendor = vendorForName(name);
     const allowed = NT === 'RECEIPT' ? S.settings?.receiptCategories : S.settings?.categories;
-    if (vendor?.defaultCategory && Array.isArray(allowed) && allowed.includes(vendor.defaultCategory)) return vendor.defaultCategory;
+    if (
+      vendor?.defaultCategory &&
+      Array.isArray(allowed) &&
+      allowed.includes(vendor.defaultCategory)
+    )
+      return vendor.defaultCategory;
     const normalized = scalarText(name).trim().toLowerCase();
     const recent = [...(Array.isArray(S.vouchers) ? S.vouchers : [])]
-      .filter((voucher) => voucher && voucher.status === 'ACTIVE' && voucher.type === NT && scalarText(voucher.vendor).trim().toLowerCase() === normalized && voucher.category)
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no))[0];
+      .filter(
+        (voucher) =>
+          voucher &&
+          voucher.status === 'ACTIVE' &&
+          voucher.type === NT &&
+          scalarText(voucher.vendor).trim().toLowerCase() === normalized &&
+          voucher.category,
+      )
+      .sort(
+        (a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no),
+      )[0];
     return recent?.category || 'Other';
   }
   function methodForPayee(name) {
     const vendor = vendorForName(name);
-    if (vendor?.defaultPaymentMethod && PAYMENT_METHODS.includes(vendor.defaultPaymentMethod)) return vendor.defaultPaymentMethod;
+    if (vendor?.defaultPaymentMethod && PAYMENT_METHODS.includes(vendor.defaultPaymentMethod))
+      return vendor.defaultPaymentMethod;
     const normalized = scalarText(name).trim().toLowerCase();
     const recent = [...(Array.isArray(S.vouchers) ? S.vouchers : [])]
-      .filter((voucher) => voucher && voucher.status === 'ACTIVE' && voucher.type === NT && scalarText(voucher.vendor).trim().toLowerCase() === normalized && PAYMENT_METHODS.includes(voucher.paymentMethod))
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no))[0];
+      .filter(
+        (voucher) =>
+          voucher &&
+          voucher.status === 'ACTIVE' &&
+          voucher.type === NT &&
+          scalarText(voucher.vendor).trim().toLowerCase() === normalized &&
+          PAYMENT_METHODS.includes(voucher.paymentMethod),
+      )
+      .sort(
+        (a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no),
+      )[0];
     return recent?.paymentMethod || 'CASH';
   }
   function applyPayeeDefaults(row) {
     const category = categoryForPayee($('.rv', row).value);
     const categorySelect = $('.rc', row);
-    categorySelect.value = [...categorySelect.options].some((option) => option.value === category) ? category : 'Other';
+    categorySelect.value = [...categorySelect.options].some((option) => option.value === category)
+      ? category
+      : 'Other';
     const method = methodForPayee($('.rv', row).value);
     $('.rci', row).value = method;
     row.dataset.paymentMethod = method;
   }
   function rowHtml() {
-    return "<div class='erow'>" +
+    return (
+      "<div class='erow'>" +
       "<div class='top'>" +
-      "<input class='rv' list='vlist' placeholder='" + (NT === 'RECEIPT' ? 'Received from' : 'Paid to') + "' autocapitalize='words' autocomplete='off'>" +
+      "<input class='rv' list='vlist' placeholder='" +
+      (NT === 'RECEIPT' ? 'Received from' : 'Paid to') +
+      "' autocapitalize='words' autocomplete='off'>" +
       "<input class='ra' inputmode='decimal' placeholder='Amount ₹'>" +
       "<input class='rn' placeholder='Note (optional)' aria-label='Note, optional' maxlength='500'>" +
       "<button type='button' class='x' data-act='delrow' title='Remove payment' aria-label='Remove payment'>✕</button></div>" +
       "<div class='bot'>" +
-      "<label class='category-field'>Category<select class='rc'>" + catOpts('Other', NT) + "</select></label>" +
-      "<label class='cash-impact-control payment-method-control'>Paid by<select class='rci' required>" + paymentMethodOptions('CASH') + "</select></label></div>" +
-      "<div class='chips'><label class='btn sm receipt-upload-label'>" + icon('receipt') + " Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>";
+      "<label class='category-field'>Category<select class='rc'>" +
+      catOpts('Other', NT) +
+      '</select></label>' +
+      "<label class='cash-impact-control payment-method-control'>Paid by<select class='rci' required>" +
+      paymentMethodOptions('CASH') +
+      '</select></label></div>' +
+      "<div class='chips'><label class='btn sm receipt-upload-label'>" +
+      icon('receipt') +
+      " Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>"
+    );
   }
 
   function labelRows() {
@@ -387,8 +433,22 @@ export function createPayments({ api, refresh }) {
     for (const previous of previousRows) {
       const payee = $('.rv', previous).value.trim();
       const amount = parseAmt($('.ra', previous).value.trim());
-      if (!payee) { showRowError(previous, $('.rv', previous), 'Enter who was paid before adding another payment.'); return; }
-      if (!(amount > 0)) { showRowError(previous, $('.ra', previous), 'Enter a valid amount before adding another payment.'); return; }
+      if (!payee) {
+        showRowError(
+          previous,
+          $('.rv', previous),
+          'Enter who was paid before adding another payment.',
+        );
+        return;
+      }
+      if (!(amount > 0)) {
+        showRowError(
+          previous,
+          $('.ra', previous),
+          'Enter a valid amount before adding another payment.',
+        );
+        return;
+      }
     }
     const d = document.createElement('div');
     d.innerHTML = rowHtml();
@@ -475,9 +535,12 @@ export function createPayments({ api, refresh }) {
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.classList.contains('rv')) {
-      e.preventDefault(); const row = e.target.closest('.erow'); if (row) $('.ra', row).focus();
+      e.preventDefault();
+      const row = e.target.closest('.erow');
+      if (row) $('.ra', row).focus();
     } else if (e.key === 'Enter' && e.target.classList.contains('ra')) {
-      e.preventDefault(); const rows = $('#rows .erow');
+      e.preventDefault();
+      const rows = $('#rows .erow');
       if (e.target.closest('.erow') === rows[rows.length - 1]) addRow();
       else $('.rv', rows[rows.indexOf(e.target.closest('.erow')) + 1]).focus();
     }
@@ -506,7 +569,8 @@ export function createPayments({ api, refresh }) {
       const hasReceipt = Array.isArray(r._rec) && r._rec.length > 0;
       if (!vendor && !raw && !note && !hasReceipt && index === rows.length - 1) continue;
       if (!vendor && !raw && !note && !hasReceipt) {
-        showRowError(r, $('.rv', r), 'Complete or remove this payment row before saving.'); return;
+        showRowError(r, $('.rv', r), 'Complete or remove this payment row before saving.');
+        return;
       }
       if (!vendor) {
         showRowError(
@@ -525,8 +589,12 @@ export function createPayments({ api, refresh }) {
       }
 
       const paymentMethod = $('.rci', r).value;
-      if (!PAYMENT_METHODS.includes(paymentMethod)) { showRowError(r, $('.rci', r), 'Choose Cash, UPI or Bank transfer.'); return; }
-      const cashImpact = paymentMethod === 'CASH' ? (NT === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT') : 'NO_CASH';
+      if (!PAYMENT_METHODS.includes(paymentMethod)) {
+        showRowError(r, $('.rci', r), 'Choose Cash, UPI or Bank transfer.');
+        return;
+      }
+      const cashImpact =
+        paymentMethod === 'CASH' ? (NT === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT') : 'NO_CASH';
 
       const duplicate = findPossibleDuplicate({ type: NT, vendor, amount, date });
       if (duplicate && r.dataset.duplicateConfirmed !== 'true') {

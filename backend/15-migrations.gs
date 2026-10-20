@@ -132,11 +132,22 @@ function migrateVoucherPaymentMethodField() {
   if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
   const prior = CFG.H.Vouchers.slice(0, 22);
   const actual = sheet.getRange(1, 1, 1, prior.length).getValues()[0];
-  if (!prior.every(function (header, index) { return actual[index] === header; })) throw new Error('Vouchers must have the reviewed A:V schema; no changes were made.');
+  if (
+    !prior.every(function (header, index) {
+      return actual[index] === header;
+    })
+  )
+    throw new Error('Vouchers must have the reviewed A:V schema; no changes were made.');
   const lastRow = Math.max(sheet.getLastRow(), 1);
   const trailing = sheet.getRange(1, 23, lastRow, 1).getValues();
-  if (trailing[0][0] === 'PaymentMethod') return 'PaymentMethod already exists; no changes were made.';
-  if (trailing.some(function (row) { return row[0] !== '' && row[0] !== null; })) throw new Error('Vouchers column W already contains data; no changes were made.');
+  if (trailing[0][0] === 'PaymentMethod')
+    return 'PaymentMethod already exists; no changes were made.';
+  if (
+    trailing.some(function (row) {
+      return row[0] !== '' && row[0] !== null;
+    })
+  )
+    throw new Error('Vouchers column W already contains data; no changes were made.');
   sheet.getRange(1, 23, 1, 1).setValues([['PaymentMethod']]);
   sheet.getRange('W:W').setNumberFormat('@');
   return 'Added PaymentMethod in W. Historical methods remain blank.';
@@ -152,12 +163,29 @@ function migrateVendorDefaultsSchema() {
   if (!sheet) throw new Error('Vendors sheet is missing; no changes were made.');
   const prior = CFG.H.Vendors.slice(0, 7);
   const actual = sheet.getRange(1, 1, 1, prior.length).getValues()[0];
-  if (!prior.every(function (header, index) { return actual[index] === header; })) throw new Error('Vendors must have the reviewed A:G schema; no changes were made.');
+  if (
+    !prior.every(function (header, index) {
+      return actual[index] === header;
+    })
+  )
+    throw new Error('Vendors must have the reviewed A:G schema; no changes were made.');
   const lastRow = Math.max(sheet.getLastRow(), 1);
   const trailing = sheet.getRange(1, 8, lastRow, 2).getValues();
   const expected = ['DefaultCategory', 'DefaultPaymentMethod'];
-  if (expected.every(function (header, index) { return trailing[0][index] === header; })) return 'Vendor defaults already exist; no changes were made.';
-  if (trailing.some(function (row) { return row.some(function (value) { return value !== '' && value !== null; }); })) throw new Error('Vendors columns H:I already contain data; no changes were made.');
+  if (
+    expected.every(function (header, index) {
+      return trailing[0][index] === header;
+    })
+  )
+    return 'Vendor defaults already exist; no changes were made.';
+  if (
+    trailing.some(function (row) {
+      return row.some(function (value) {
+        return value !== '' && value !== null;
+      });
+    })
+  )
+    throw new Error('Vendors columns H:I already contain data; no changes were made.');
   sheet.getRange(1, 8, 1, 2).setValues([expected]);
   sheet.getRange('H:I').setNumberFormat('@');
   return 'Added vendor defaults. Existing vendor defaults remain blank.';

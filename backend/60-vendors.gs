@@ -31,8 +31,10 @@ function saveVendor_(user, req) {
     mobile = clean_(req.mobile, 15),
     defaultCategory = clean_(req.defaultCategory, 40),
     defaultPaymentMethod = clean_(req.defaultPaymentMethod, 20);
-  if (defaultCategory && categories_().indexOf(defaultCategory) < 0) throw err_('Choose a valid default category.', 'VALIDATION');
-  if (defaultPaymentMethod && ['CASH', 'UPI', 'BANK_TRANSFER'].indexOf(defaultPaymentMethod) < 0) throw err_('Choose a valid default payment method.', 'VALIDATION');
+  if (defaultCategory && categories_().indexOf(defaultCategory) < 0)
+    throw err_('Choose a valid default category.', 'VALIDATION');
+  if (defaultPaymentMethod && ['CASH', 'UPI', 'BANK_TRANSFER'].indexOf(defaultPaymentMethod) < 0)
+    throw err_('Choose a valid default payment method.', 'VALIDATION');
   if (!name) throw err_('Vendor name is required.');
   if (mobile && !/^[0-9+\-\s]{7,15}$/.test(mobile)) throw err_('Enter a valid mobile number.');
   const list = readAll_('Vendors'),
@@ -49,12 +51,26 @@ function saveVendor_(user, req) {
       { field: 'name', before: String(vendor.Name || ''), after: name },
       { field: 'company', before: String(vendor.Company || ''), after: company },
       { field: 'mobile', before: String(vendor.Mobile || ''), after: mobile },
-      { field: 'defaultCategory', before: String(vendor.DefaultCategory || ''), after: defaultCategory },
-      { field: 'defaultPaymentMethod', before: String(vendor.DefaultPaymentMethod || ''), after: defaultPaymentMethod },
+      {
+        field: 'defaultCategory',
+        before: String(vendor.DefaultCategory || ''),
+        after: defaultCategory,
+      },
+      {
+        field: 'defaultPaymentMethod',
+        before: String(vendor.DefaultPaymentMethod || ''),
+        after: defaultPaymentMethod,
+      },
     ].filter(function (change) {
       return change.before !== change.after;
     });
-    updateRow_('Vendors', vendor._row, { Name: name, Company: company, Mobile: mobile, DefaultCategory: defaultCategory, DefaultPaymentMethod: defaultPaymentMethod });
+    updateRow_('Vendors', vendor._row, {
+      Name: name,
+      Company: company,
+      Mobile: mobile,
+      DefaultCategory: defaultCategory,
+      DefaultPaymentMethod: defaultPaymentMethod,
+    });
     auditEvent_(
       user,
       'VENDOR_UPDATE',

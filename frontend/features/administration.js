@@ -48,14 +48,16 @@ export function createAdministration({ api, getNavigation, signOut }) {
         vendor.mobile === null ||
         typeof vendor.mobile === 'string') &&
       (vendor.defaultCategory === undefined || typeof vendor.defaultCategory === 'string') &&
-      (vendor.defaultPaymentMethod === undefined || typeof vendor.defaultPaymentMethod === 'string') &&
+      (vendor.defaultPaymentMethod === undefined ||
+        typeof vendor.defaultPaymentMethod === 'string') &&
       typeof vendor.active === 'boolean';
     const rows = receivedRows.filter(isValidVendor).map((vendor) => ({
       ...vendor,
       company: typeof vendor.company === 'string' ? vendor.company : '',
       mobile: typeof vendor.mobile === 'string' ? vendor.mobile : '',
       defaultCategory: typeof vendor.defaultCategory === 'string' ? vendor.defaultCategory : '',
-      defaultPaymentMethod: typeof vendor.defaultPaymentMethod === 'string' ? vendor.defaultPaymentMethod : '',
+      defaultPaymentMethod:
+        typeof vendor.defaultPaymentMethod === 'string' ? vendor.defaultPaymentMethod : '',
     }));
 
     return {
@@ -81,7 +83,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       .sort((a, b) => a.name.localeCompare(b.name))
       .map(
         (vendor) =>
-          `<tr><td>${esc(vendor.name)}</td><td><code>${esc(vendor.id)}</code></td><td>${esc(vendor.company)}</td><td>${esc(vendor.mobile)}</td><td>${esc(vendor.defaultCategory || '—')}</td><td>${esc(({ CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank transfer' })[vendor.defaultPaymentMethod] || 'Auto / Cash')}</td><td><span class="badge ${vendor.active ? '' : 'bad'}">${vendor.active ? 'ACTIVE' : 'INACTIVE'}</span></td><td class="r nw"><button class="btn sm" data-act="vedit" data-id="${esc(vendor.id)}">Edit</button> <button class="btn sm" data-act="vtog" data-id="${esc(vendor.id)}">${vendor.active ? 'Deactivate' : 'Activate'}</button></td></tr>`,
+          `<tr><td>${esc(vendor.name)}</td><td><code>${esc(vendor.id)}</code></td><td>${esc(vendor.company)}</td><td>${esc(vendor.mobile)}</td><td>${esc(vendor.defaultCategory || '—')}</td><td>${esc({ CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank transfer' }[vendor.defaultPaymentMethod] || 'Auto / Cash')}</td><td><span class="badge ${vendor.active ? '' : 'bad'}">${vendor.active ? 'ACTIVE' : 'INACTIVE'}</span></td><td class="r nw"><button class="btn sm" data-act="vedit" data-id="${esc(vendor.id)}">Edit</button> <button class="btn sm" data-act="vtog" data-id="${esc(vendor.id)}">${vendor.active ? 'Deactivate' : 'Activate'}</button></td></tr>`,
       )
       .join('');
 
@@ -114,7 +116,11 @@ export function createAdministration({ api, getNavigation, signOut }) {
           '<input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required>',
           '<input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)">',
           '<input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel">',
-          '<select id="vdcat" aria-label="Default category"><option value="">Use recent category / Other</option>' + categories().map((category) => `<option value="${esc(category)}">${esc(category)}</option>`).join('') + '</select>',
+          '<select id="vdcat" aria-label="Default category"><option value="">Use recent category / Other</option>' +
+            categories()
+              .map((category) => `<option value="${esc(category)}">${esc(category)}</option>`)
+              .join('') +
+            '</select>',
           '<select id="vdmethod" aria-label="Default payment method"><option value="">Default to Cash / recent choice</option><option value="CASH">Cash</option><option value="UPI">UPI</option><option value="BANK_TRANSFER">Bank transfer</option></select>',
           '<button class="btn primary">Save vendor</button>',
           '<button type="button" class="btn" data-act="vclr">Clear</button>',

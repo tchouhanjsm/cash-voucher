@@ -101,7 +101,17 @@ const CFG = {
       'VendorID',
       'PaymentMethod',
     ],
-    Vendors: ['VendorID', 'Name', 'Company', 'Mobile', 'Active', 'CreatedBy', 'CreatedAt', 'DefaultCategory', 'DefaultPaymentMethod'],
+    Vendors: [
+      'VendorID',
+      'Name',
+      'Company',
+      'Mobile',
+      'Active',
+      'CreatedBy',
+      'CreatedAt',
+      'DefaultCategory',
+      'DefaultPaymentMethod',
+    ],
     Settings: ['Key', 'Value'],
     AuditLog: ['Time', 'User', 'Action', 'Target', 'Details'],
     CashCloses: [

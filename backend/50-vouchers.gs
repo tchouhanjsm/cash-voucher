@@ -47,7 +47,10 @@ function cashImpact_(value, prefix) {
 const PAYMENT_METHODS_ = ['CASH', 'UPI', 'BANK_TRANSFER'];
 function paymentMethod_(value, prefix) {
   if (typeof value !== 'string' || PAYMENT_METHODS_.indexOf(value) < 0) {
-    throw err_((prefix || '') + 'payment method must be Cash, UPI, or Bank transfer.', 'VALIDATION');
+    throw err_(
+      (prefix || '') + 'payment method must be Cash, UPI, or Bank transfer.',
+      'VALIDATION',
+    );
   }
   return value;
 }
@@ -65,7 +68,9 @@ function sameClientVoucherPayload_(voucher, entry) {
     String(voucher.Notes || '') === entry.notes &&
     (voucher.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT') === entry.type &&
     String(voucher.CashImpact || 'UNCLASSIFIED') === entry.cashImpact &&
-    (entry.paymentMethod === undefined || !voucher.PaymentMethod || String(voucher.PaymentMethod) === entry.paymentMethod)
+    (entry.paymentMethod === undefined ||
+      !voucher.PaymentMethod ||
+      String(voucher.PaymentMethod) === entry.paymentMethod)
   );
 }
 
@@ -103,8 +108,13 @@ function createVouchers_(user, req) {
     if (rec.length > CFG.MAX_RECEIPTS) throw err_(row + 'too many receipts.');
     const type = en.type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT',
       cats = type === 'RECEIPT' ? catsR : catsP;
-    const method = en.paymentMethod === undefined || en.paymentMethod === '' ? '' : paymentMethod_(en.paymentMethod, row);
-    const impact = method ? cashImpactForPaymentMethod_(method, type) : cashImpact_(en.cashImpact, row);
+    const method =
+      en.paymentMethod === undefined || en.paymentMethod === ''
+        ? ''
+        : paymentMethod_(en.paymentMethod, row);
+    const impact = method
+      ? cashImpactForPaymentMethod_(method, type)
+      : cashImpact_(en.cashImpact, row);
     clean.push({
       type: type,
       date: date,
@@ -305,9 +315,19 @@ function updateVoucher_(user, req) {
   if (f.paymentMethod !== undefined) {
     const method = paymentMethod_(f.paymentMethod, '');
     recordChange('paymentMethod', 'PaymentMethod', String(o.PaymentMethod || ''), method);
-    recordChange('cashImpact', 'CashImpact', String(o.CashImpact || 'UNCLASSIFIED'), cashImpactForPaymentMethod_(method, o.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT'));
+    recordChange(
+      'cashImpact',
+      'CashImpact',
+      String(o.CashImpact || 'UNCLASSIFIED'),
+      cashImpactForPaymentMethod_(method, o.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT'),
+    );
   } else if (f.cashImpact !== undefined) {
-    recordChange('cashImpact', 'CashImpact', String(o.CashImpact || 'UNCLASSIFIED'), cashImpact_(f.cashImpact, ''));
+    recordChange(
+      'cashImpact',
+      'CashImpact',
+      String(o.CashImpact || 'UNCLASSIFIED'),
+      cashImpact_(f.cashImpact, ''),
+    );
   }
   if (CASH_IMPACT_CHOICES.indexOf(o.CashImpact) < 0 && f.cashImpact === undefined) {
     throw err_(
@@ -362,7 +382,11 @@ function updateVoucher_(user, req) {
   const approvalManaged =
     ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'].indexOf(priorApprovalStatus) >= 0;
   const materialApprovalChange = changes.some(function (change) {
-    return ['amount', 'vendor', 'vendorId', 'date', 'cashImpact', 'paymentMethod'].indexOf(change.field) >= 0;
+    return (
+      ['amount', 'vendor', 'vendorId', 'date', 'cashImpact', 'paymentMethod'].indexOf(
+        change.field,
+      ) >= 0
+    );
   });
   // Existing blank/NOT_REQUIRED approval fields are not retroactively backfilled.
   // UAT-048: only material edits invalidate an existing approval; category/notes corrections
