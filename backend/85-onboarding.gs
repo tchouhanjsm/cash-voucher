@@ -124,6 +124,7 @@ function onboardingTargetIdentity_(environment) {
     expectedBackupFolderId: String(p.getProperty(prefix + 'BACKUP_FOLDER_ID') || ''),
   };
 }
+
 // Keep one comparison implementation for request-time enforcement and the onboarding
 // diagnostic. The request-only deployment comparison is deliberately omitted when
 // no browser-supplied deployment ID is available.
