@@ -131,6 +131,11 @@ assert.match(
 );
 assert.match(
   components,
+  /\.page-header h1\s*\{[^}]*width:\s*fit-content;[^}]*max-width:\s*100%;/,
+  'focused page heading keeps its visible focus ring around the title rather than the full row',
+);
+assert.match(
+  components,
   /#nf\.entry-form\s*\{/,
   'new payment and receipt forms adopt shared panel geometry',
 );
