@@ -403,23 +403,28 @@ assert.match(
 );
 assert.match(
   payments,
-  /hint\.id = `payment-row-hint-\$\{number\}`/,
-  'cash-impact help has a stable per-row identifier',
+  /function paymentMethodOptions\(selected = 'CASH'\)/,
+  'staff payment entry defaults to Cash',
 );
 assert.match(
   payments,
-  /setAttribute\('aria-describedby', describedBy\)/,
-  'cash-impact selection exposes its explanatory help through aria-describedby',
+  /PAYMENT_METHODS\.includes\(paymentMethod\)/,
+  'payment entries only accept Cash, UPI or Bank transfer',
 );
 assert.match(
   payments,
-  /descriptions\.push\(error\.id\)/,
-  'field validation appends an error reference without removing persistent help',
+  /Enter who was paid before adding another payment/,
+  'new rows require the previous row to be complete',
 );
 assert.match(
   payments,
-  /filter\(\(id\) => id && id !== errorId\)/,
-  'clearing row validation removes only the error reference',
+  /function categoryForPayee\(name\)/,
+  'saved payee defaults can resolve expense category',
+);
+assert.match(
+  payments,
+  /function methodForPayee\(name\)/,
+  'saved payee defaults can resolve payment method',
 );
 assert.match(
   reports,
