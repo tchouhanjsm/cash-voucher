@@ -240,6 +240,7 @@ function bindFeatures() {
   register.bind();
   bulk.bind();
   administration.bind();
+  onboarding.init();
   installActionDelegation();
 }
 
