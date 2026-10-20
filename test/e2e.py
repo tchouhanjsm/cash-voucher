@@ -663,16 +663,27 @@ with sync_playwright() as p:
         and page.locator('.entry-date-field').count() == 1,
         'New Entry adopts the shared header, labelled type switch and dedicated form layout',
     )
-    entry_style_metrics = page.evaluate("""() => ({
-      formPadding: Number.parseFloat(getComputedStyle(document.querySelector('#nf.entry-form')).paddingTop),
-      saveMinHeight: Number.parseFloat(getComputedStyle(document.querySelector('#nsave')).minHeight),
-      cashImpactPadding: Number.parseFloat(getComputedStyle(document.querySelector('.cash-impact-control')).paddingTop),
-    })""")
+    page.wait_for_selector('#rows .erow .payment-method-control', state='visible')
+    entry_style_metrics = page.evaluate("""() => {
+      const form = document.querySelector('#nf.entry-form');
+      const save = document.querySelector('#nsave');
+      const firstRow = document.querySelector('#rows .erow');
+      const methodControl = firstRow?.querySelector('.payment-method-control');
+      return {
+        formPadding: form ? Number.parseFloat(getComputedStyle(form).paddingTop) : 0,
+        saveMinHeight: save ? Number.parseFloat(getComputedStyle(save).minHeight) : 0,
+        firstRowPresent: Boolean(firstRow),
+        methodControlPresent: Boolean(methodControl),
+        methodControlHeight: methodControl ? methodControl.getBoundingClientRect().height : 0,
+      };
+    }""")
     check(
-        entry_style_metrics['formPadding'] >= 16
+        entry_style_metrics['firstRowPresent']
+        and entry_style_metrics['methodControlPresent']
+        and entry_style_metrics['formPadding'] >= 16
         and entry_style_metrics['saveMinHeight'] >= 44
-        and entry_style_metrics['cashImpactPadding'] >= 10,
-        'New Entry applies the shared card spacing, comfortable save target and visually grouped cash classification',
+        and entry_style_metrics['methodControlHeight'] >= 40,
+        'New Entry renders a compact first row, a usable payment-method control and a comfortable save target',
     )
     go_view(page, 'dash')
     check(
