@@ -2091,6 +2091,10 @@ with sync_playwright() as p:
     )
     page.click('[data-act=ntype][data-k=RECEIPT]')
     check(
+        page.locator('#rows .erow .payment-method-control').inner_text().splitlines()[0] == 'Received via',
+        'cash receipt uses a receiving-method label',
+    )
+    check(
         page.locator('#rows .erow .rc option').all_text_contents() == ['Other']
         and page.locator('#rows .erow .rc option').count() == 1
         and not page.evaluate('window.__xssFired === true'),
@@ -2595,8 +2599,9 @@ with sync_playwright() as p:
         'Date unavailable' in page.locator('#printArea .pv-meta').inner_text()
         and success_number_payload in page.locator('#printArea').inner_text()
         and page.locator('#printArea img, #printArea svg').count() == 0
-        and 'Payment method' in page.locator('#printArea').inner_text()
+        and 'Paid via' in page.locator('#printArea').inner_text()
         and 'Not recorded' in page.locator('#printArea').inner_text()
+        and all(code not in page.locator('#printArea').inner_text() for code in ('CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'))
         and not page.evaluate('window.__xssFired === true')
         and sum(message.startswith('PAGEERR ') for message in logs) == page_errors_before_print,
         'malformed API date uses a safe print fallback without crashing or activating hostile voucher text',
@@ -2608,7 +2613,7 @@ with sync_playwright() as p:
     check(
         normal_voucher_date_display in page.locator('#printArea .pv-meta').inner_text()
         and 'Date unavailable' not in page.locator('#printArea .pv-meta').inner_text()
-        and 'Payment method' in page.locator('#printArea').inner_text()
+        and 'Paid via' in page.locator('#printArea').inner_text()
         and 'Cash' in page.locator('#printArea').inner_text(),
         'valid server-returned voucher date keeps the normal printed date format',
     )
