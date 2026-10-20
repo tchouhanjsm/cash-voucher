@@ -5,10 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const workflow = fs.readFileSync(
-  path.join(root, '.github/workflows/client-dist.yml'),
-  'utf8',
-);
+const workflow = fs.readFileSync(path.join(root, '.github/workflows/client-dist.yml'), 'utf8');
 
 assert.ok(workflow.includes('name: Client staging dist zip'));
 assert.ok(workflow.includes('CV_ENVIRONMENT: staging'));
@@ -22,6 +19,4 @@ assert.ok(workflow.includes('RewriteCond %%{HTTPS} off'));
 assert.ok(workflow.includes('retention-days: 3'));
 assert.ok(!/ftp|scp|rsync|clasp push|deploy-webapp/i.test(workflow));
 
-console.log(
-  'Client ZIP workflow contract OK — staging-only, manifest, archive and security checks.',
-);
+console.log('Client ZIP workflow contract OK — staging-only, manifest, archive and security checks.');
