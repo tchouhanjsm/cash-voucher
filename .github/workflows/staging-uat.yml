@@ -80,8 +80,8 @@ jobs:
           CONFIRMATION: ${{ inputs.confirmation }}
           CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
         run: |
-          if [ "$ACTION_REF" != "refs/heads/main" ]; then
-            echo "Staging deployment/UAT can run only from main."
+          if [ "$ACTION_REF" != "refs/heads/client-main" ]; then
+            echo "Staging deployment/UAT can run only from client-main."
             exit 1
           fi
           if [ "$CONFIRMATION" != "STAGING-ONLY" ]; then
