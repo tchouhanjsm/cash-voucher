@@ -132,11 +132,9 @@ function onboardingIdentityChecks_(target, suppliedDeploymentId) {
   const scriptMatched =
     Boolean(target.expectedScriptId) && target.scriptId === target.expectedScriptId;
   const spreadsheetMatched =
-    Boolean(target.expectedSpreadsheetId) &&
-    target.spreadsheetId === target.expectedSpreadsheetId;
+    Boolean(target.expectedSpreadsheetId) && target.spreadsheetId === target.expectedSpreadsheetId;
   const serverDeploymentMatched =
-    Boolean(target.expectedDeploymentId) &&
-    target.deploymentId === target.expectedDeploymentId;
+    Boolean(target.expectedDeploymentId) && target.deploymentId === target.expectedDeploymentId;
   const receiptFolderMatched =
     Boolean(target.expectedReceiptFolderId) &&
     target.receiptFolderId === target.expectedReceiptFolderId;
@@ -164,11 +162,7 @@ function onboardingIdentityChecks_(target, suppliedDeploymentId) {
 
 function onboardingRequestIdentity_(req) {
   const env = onboardingEnvironment_();
-  if (
-    !env.valid ||
-    !req ||
-    onboardingIdentityValue_(req.environment).toLowerCase() !== env.name
-  ) {
+  if (!env.valid || !req || onboardingIdentityValue_(req.environment).toLowerCase() !== env.name) {
     throw err_(
       'Configured server environment does not match the client environment. Verify the customer build configuration.',
       'ENVIRONMENT_MISMATCH',
