@@ -94,8 +94,8 @@ export function createPayments({ api, refresh }) {
   function rowHtml() {
     return "<div class='erow'>" +
       "<div class='top'>" +
-      "<input class='rv' list='vlist' placeholder='" + (NT === 'RECEIPT' ? 'Received from' : 'Paid to') + "' autocapitalize='words' autocomplete='off' required>" +
-      "<input class='ra' type='number' min='0.01' max='10000000' step='0.01' inputmode='decimal' placeholder='Amount ₹' required>" +
+      "<input class='rv' list='vlist' placeholder='" + (NT === 'RECEIPT' ? 'Received from' : 'Paid to') + "' autocapitalize='words' autocomplete='off'>" +
+      "<input class='ra' inputmode='decimal' placeholder='Amount ₹'>" +
       "<input class='rn' placeholder='Note (optional)' aria-label='Note, optional' maxlength='500'>" +
       "<button type='button' class='x' data-act='delrow' title='Remove payment' aria-label='Remove payment'>✕</button></div>" +
       "<div class='bot'>" +
