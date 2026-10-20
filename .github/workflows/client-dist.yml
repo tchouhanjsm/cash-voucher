@@ -1,22 +1,18 @@
-name: Client dist zip
+name: Client staging dist zip
 
-# Manual only. Builds one client's static site and hands back a ready-to-upload zip.
-# No secrets, no deployment: the zip is downloaded from this run's Artifacts and
-# extracted by hand into the client's subdomain folder in cPanel.
+# Manual, staging-only static artifact builder.
+# It never deploys to cPanel or changes Apps Script / Sheets / Drive.
 on:
   workflow_dispatch:
     inputs:
       client_code:
-        description: 'Client code, letters/digits/dashes (names the zip)'
+        description: 'Client code, letters/digits/dashes (names the artifact)'
         required: true
-      environment:
-        description: 'Target environment'
-        required: true
-        type: choice
-        options: [staging, production]
+        type: string
       api_url:
-        description: 'Client Apps Script Web App URL (https://script.google.com/macros/s/.../exec)'
+        description: 'Verified staging Apps Script Web App URL (HTTPS /exec)'
         required: true
+        type: string
 
 permissions:
   contents: read
@@ -27,46 +23,130 @@ jobs:
     timeout-minutes: 10
     env:
       CLIENT_CODE: ${{ inputs.client_code }}
-      CV_ENVIRONMENT: ${{ inputs.environment }}
+      CV_ENVIRONMENT: staging
       CV_API_URL: ${{ inputs.api_url }}
+      RELEASE_COMMIT: ${{ github.sha }}
     steps:
       - name: Validate client code
+        shell: bash
         run: |
-          if ! printf '%s' "$CLIENT_CODE" | grep -Eq '^[A-Za-z0-9-]{2,40}$'; then
-            echo "client_code must be 2-40 letters, digits or dashes" >&2
+          set -euo pipefail
+          if ! printf '%s' "$CLIENT_CODE" | grep -Eq '^[A-Za-z0-9][A-Za-z0-9-]{1,39}$'; then
+            echo "client_code must be 2-40 letters, digits or dashes and cannot begin with a dash" >&2
             exit 1
           fi
 
-      - uses: actions/checkout@v4
+      - name: Checkout exact workflow commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
 
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
 
-      - run: npm ci
+      - name: Install locked dependencies
+        run: npm ci
 
-      - name: Build site (fails if the API URL is not a valid /exec URL)
+      - name: Build staging site
         run: npm run build:web
 
-      - name: Package for cPanel
+      - name: Package and validate staging artifact
+        shell: bash
         run: |
-          cd dist
-          rm -f _headers .nojekyll
-          printf 'User-agent: *\nDisallow: /\n' > robots.txt
-          {
-            printf '<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteCond %%{HTTPS} off\n  RewriteRule ^ https://%%{HTTP_HOST}%%{REQUEST_URI} [L,R=301]\n</IfModule>\n'
-            cat .htaccess
-          } > .htaccess.new && mv .htaccess.new .htaccess
-          test -f index.html && test -f config.js && test -f sw.js
-          grep -q "script.google.com/macros/s/" config.js
-          zip -qr "../cv-${CLIENT_CODE}-${CV_ENVIRONMENT}.zip" . -x '.DS_Store'
-          cd ..
-          unzip -l "cv-${CLIENT_CODE}-${CV_ENVIRONMENT}.zip"
+          set -euo pipefail
+          test "$CV_ENVIRONMENT" = "staging"
+          test -d dist
+          test -f dist/index.html
+          test -f dist/config.js
+          test -f dist/sw.js
+          test -f dist/.htaccess
+
+          # Confirm generated config matches both the selected environment and supplied URL.
+          node <<'NODE'
+          const fs = require('node:fs');
+          const config = fs.readFileSync('dist/config.js', 'utf8');
+          const expectedUrl = process.env.CV_API_URL;
+          const expectedId = new URL(expectedUrl).pathname.split('/')[3];
+          for (const [name, value] of [
+            ['API_URL', expectedUrl],
+            ['ENVIRONMENT', '"staging"'],
+            ['DEPLOYMENT_ID', JSON.stringify(expectedId)],
+          ]) {
+            if (!config.includes(name + ': ' + value)) {
+              throw new Error('Generated config does not contain the expected ' + name + '.');
+            }
+          }
+          NODE
+
+          # Keep an existing generated security policy; do not overwrite it blindly.
+          # A generated file must exist and contain the expected policy markers.
+          grep -q 'X-Content-Type-Options' dist/.htaccess
+          grep -q 'Content-Security-Policy' dist/.htaccess
+
+          # Exclude deployment metadata not supported on cPanel, then verify source leakage is absent.
+          rm -f dist/_headers dist/.nojekyll
+          printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+          node <<'NODE'
+          const fs = require('node:fs');
+          const path = require('node:path');
+          const root = 'dist';
+          const forbidden = /(^|\/)(\.git|\.github|docs|test|backend|scripts|node_modules)(\/|$)|(^|\/)(\.env[^/]*|\.DS_Store|package\.json|package-lock\.json|README\.md)$/i;
+          const files = [];
+          function walk(dir, prefix = '') {
+            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+              const relative = prefix ? prefix + '/' + entry.name : entry.name;
+              if (forbidden.test(relative)) {
+                throw new Error('Forbidden source/development path in artifact: ' + relative);
+              }
+              const absolute = path.join(dir, entry.name);
+              if (entry.isDirectory()) walk(absolute, relative);
+              else if (entry.isFile()) files.push(relative);
+              else throw new Error('Unexpected non-file artifact entry: ' + relative);
+            }
+          }
+          walk(root);
+          for (const required of ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt']) {
+            if (!files.includes(required)) throw new Error('Missing required artifact file: ' + required);
+          }
+          const badDsStore = files.filter(p => p.split('/').includes('.DS_Store'));
+          if (badDsStore.length) throw new Error('DS_Store files must not be packaged.');
+          fs.writeFileSync(path.join(root, 'release-manifest.json'), JSON.stringify({
+            clientCode: process.env.CLIENT_CODE,
+            environment: 'staging',
+            commit: process.env.RELEASE_COMMIT,
+            builtAt: new Date().toISOString(),
+            apiOrigin: new URL(process.env.CV_API_URL).origin,
+            artifactVersion: 1,
+            requiredAssets: ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt'],
+            fileCount: files.length
+          }, null, 2) + '\n');
+          NODE
+
+          ZIP_NAME="cv-${CLIENT_CODE}-staging-${GITHUB_SHA::7}.zip"
+          (
+            cd dist
+            zip -qr "../$ZIP_NAME" . -x '*/.DS_Store' '.DS_Store'
+          )
+          # A root listing guards against a nested dist/ path and accidental source leakage.
+          unzip -Z1 "$ZIP_NAME" > zip-contents.txt
+          grep -qx 'index.html' zip-contents.txt
+          grep -qx 'config.js' zip-contents.txt
+          grep -qx 'sw.js' zip-contents.txt
+          grep -qx '.htaccess' zip-contents.txt
+          grep -qx 'robots.txt' zip-contents.txt
+          grep -qx 'release-manifest.json' zip-contents.txt
+          if grep -E '(^|/)(\.git|\.github|docs|test|backend|scripts|node_modules)(/|$)|(^|/)(\.env[^/]*|package\.json|package-lock\.json|README\.md)$' zip-contents.txt; then
+            echo "Forbidden repository/source content found in ZIP." >&2
+            exit 1
+          fi
+          unzip -t "$ZIP_NAME"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: cv-${{ inputs.client_code }}-${{ inputs.environment }}
-          path: cv-${{ inputs.client_code }}-${{ inputs.environment }}.zip
+          name: cv-${{ inputs.client_code }}-staging-${{ github.sha }}
+          path: cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip
           retention-days: 3
           if-no-files-found: error
