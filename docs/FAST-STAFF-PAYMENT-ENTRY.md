@@ -27,7 +27,7 @@ Cash impact remains a separate drawer-reconciliation dimension. Cash maps to CAS
 
 ## Print voucher
 
-The current print template retains the legacy A5 layout, amount-in-words and signature zones while adding a separate payment-method line. Physical paper alignment still needs staging print/PDF UAT.
+The print template retains the legacy A5 layout, amount-in-words and signature zones. It uses “Paid via” or “Received via” based on voucher direction and avoids exposing internal cash-impact enum values. Physical paper alignment still needs staging print/PDF UAT.
 
 ## Follow-up opportunities (not implemented)
 
