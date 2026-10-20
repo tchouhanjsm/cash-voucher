@@ -96,6 +96,7 @@ export function printVoucher(id) {
   <div class="pv-meta"><div>Voucher No: <b>${esc(vno(voucher))}</b></div><div>Date: <b>${esc(printDateLabel(voucher.date))}</b></div></div>
   <div class="pv-row"><div class="l">${isIn(voucher) ? 'Received From' : 'Paid To'}</div><div class="v">${esc(voucher.vendor)}</div></div>
   ${voucher.category ? `<div class="pv-row"><div class="l">Category</div><div class="v">${esc(voucher.category)}${voucher.notes ? ' — ' + esc(voucher.notes) : ''}</div></div>` : ''}
+  <div class="pv-row"><div class="l">Payment method</div><div class="v">${esc(({ CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank transfer' })[voucher.paymentMethod] || 'Not recorded')}</div></div>
   <div class="pv-row"><div class="l">Cash impact</div><div class="v">${esc(voucher.cashImpact || 'UNCLASSIFIED')}</div></div>
   <div class="pv-row"><div class="l">Amount ${isIn(voucher) ? 'Received' : 'Paid'}</div><div class="v pv-amt">${money(voucher.amount)}</div></div>
   <div class="pv-words"><b>Amount in Words</b><br><br>${esc(amountInWords(voucher.amount))}</div>${voucher.status !== 'ACTIVE' ? '<div class="pv-cx">*** CANCELLED ***</div>' : ''}
