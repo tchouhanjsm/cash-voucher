@@ -2,9 +2,8 @@ name: CI
 
 on:
   push:
-    branches: [main, 'client/**']
+    branches: ['client/**']
   pull_request:
-    branches: [main]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
 
 concurrency:
@@ -15,6 +14,21 @@ permissions:
   contents: read
 
 jobs:
+  target-branch-policy:
+    name: client-main PR target policy
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require client-main as the pull request target
+        env:
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          if [ "$BASE_REF" != "client-main" ]; then
+            echo "Pull requests must target client-main, not $BASE_REF."
+            exit 1
+          fi
+          echo "Pull request target verified: client-main."
+
   quality:
     runs-on: ubuntu-latest
     timeout-minutes: 15
