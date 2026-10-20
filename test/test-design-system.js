@@ -508,7 +508,7 @@ assert.match(
 );
 assert.match(
   onboarding,
-  /Checking this customer’s configuration with the server/,
+  /Checking this customer.configuration with the server/,
   'onboarding shows an honest loading state while server checks run',
 );
 assert.match(
