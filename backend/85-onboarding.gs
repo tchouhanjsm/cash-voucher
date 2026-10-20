@@ -49,11 +49,24 @@ const ONBOARDING_FINANCIAL_WRITES = new Set([
   'recordCashCloseCorrection',
 ]);
 
+function onboardingIdentityValue_(value) {
+  return String(value || '').trim();
+}
+
 function onboardingEnvironment_() {
-  const value = String(props_().getProperty('CV_ENVIRONMENT') || '')
-    .trim()
-    .toLowerCase();
+  const value = onboardingIdentityValue_(props_().getProperty('CV_ENVIRONMENT')).toLowerCase();
   return { name: value, valid: value === 'staging' || value === 'production' };
+}
+
+// Explicit temporary operator switch. It can relax only the staging onboarding-stage gate;
+// it never bypasses resource identity validation and is ignored outside staging.
+function stagingUatBypassEnabled_() {
+  const environment = onboardingEnvironment_();
+  return (
+    environment.valid &&
+    environment.name === 'staging' &&
+    onboardingIdentityValue_(props_().getProperty('CV_STAGING_UAT_BYPASS')).toLowerCase() === 'true'
+  );
 }
 
 function onboardingStateKey_(environment) {
@@ -108,16 +121,16 @@ function onboardingTargetIdentity_(environment) {
   const prefix = 'CV_' + environment.toUpperCase() + '_';
   return {
     environment: environment,
-    scriptId: String(ScriptApp.getScriptId() || ''),
-    expectedScriptId: String(p.getProperty(prefix + 'SCRIPT_ID') || ''),
-    spreadsheetId: String(p.getProperty('SS_ID') || ''),
-    expectedSpreadsheetId: String(p.getProperty(prefix + 'SPREADSHEET_ID') || ''),
-    deploymentId: String(p.getProperty('CV_DEPLOYMENT_ID') || ''),
-    expectedDeploymentId: String(p.getProperty(prefix + 'DEPLOYMENT_ID') || ''),
-    receiptFolderId: String(p.getProperty('RECEIPT_FOLDER_ID') || ''),
-    expectedReceiptFolderId: String(p.getProperty(prefix + 'RECEIPT_FOLDER_ID') || ''),
-    backupFolderId: String(p.getProperty('BACKUP_FOLDER_ID') || ''),
-    expectedBackupFolderId: String(p.getProperty(prefix + 'BACKUP_FOLDER_ID') || ''),
+    scriptId: onboardingIdentityValue_(ScriptApp.getScriptId()),
+    expectedScriptId: onboardingIdentityValue_(p.getProperty(prefix + 'SCRIPT_ID')),
+    spreadsheetId: onboardingIdentityValue_(p.getProperty('SS_ID')),
+    expectedSpreadsheetId: onboardingIdentityValue_(p.getProperty(prefix + 'SPREADSHEET_ID')),
+    deploymentId: onboardingIdentityValue_(p.getProperty('CV_DEPLOYMENT_ID')),
+    expectedDeploymentId: onboardingIdentityValue_(p.getProperty(prefix + 'DEPLOYMENT_ID')),
+    receiptFolderId: onboardingIdentityValue_(p.getProperty('RECEIPT_FOLDER_ID')),
+    expectedReceiptFolderId: onboardingIdentityValue_(p.getProperty(prefix + 'RECEIPT_FOLDER_ID')),
+    backupFolderId: onboardingIdentityValue_(p.getProperty('BACKUP_FOLDER_ID')),
+    expectedBackupFolderId: onboardingIdentityValue_(p.getProperty(prefix + 'BACKUP_FOLDER_ID')),
   };
 }
 
@@ -137,24 +150,35 @@ function onboardingRequestIdentity_(req) {
   }
 
   const target = onboardingTargetIdentity_(env.name);
-  const suppliedDeploymentId = String(req.deploymentId || '').trim();
-  const matched = Boolean(
-    target.expectedScriptId &&
-    target.scriptId === target.expectedScriptId &&
-    target.expectedSpreadsheetId &&
-    target.spreadsheetId === target.expectedSpreadsheetId &&
-    target.expectedDeploymentId &&
-    target.deploymentId === target.expectedDeploymentId &&
-    target.deploymentId === suppliedDeploymentId &&
-    target.expectedReceiptFolderId &&
-    target.receiptFolderId === target.expectedReceiptFolderId &&
-    target.expectedBackupFolderId &&
-    target.backupFolderId === target.expectedBackupFolderId,
-  );
+  const suppliedDeploymentId = onboardingIdentityValue_(req.deploymentId);
+  const checks = {
+    script: Boolean(target.expectedScriptId && target.scriptId === target.expectedScriptId),
+    spreadsheet: Boolean(
+      target.expectedSpreadsheetId && target.spreadsheetId === target.expectedSpreadsheetId,
+    ),
+    serverDeployment: Boolean(
+      target.expectedDeploymentId && target.deploymentId === target.expectedDeploymentId,
+    ),
+    clientDeployment: Boolean(
+      target.deploymentId && suppliedDeploymentId && target.deploymentId === suppliedDeploymentId,
+    ),
+    receiptFolder: Boolean(
+      target.expectedReceiptFolderId && target.receiptFolderId === target.expectedReceiptFolderId,
+    ),
+    backupFolder: Boolean(
+      target.expectedBackupFolderId && target.backupFolderId === target.expectedBackupFolderId,
+    ),
+  };
+  const matched = Object.values(checks).every(Boolean);
 
   if (!matched) {
+    const failedChecks = Object.keys(checks).filter(function (key) {
+      return !checks[key];
+    });
     throw err_(
-      'Customer resource identity is not verified. Financial changes are blocked until the operator verifies Script, Sheet, deployment and Drive folder identities.',
+      'Customer resource identity is not verified. Failed checks: ' +
+        failedChecks.join(', ') +
+        '. Financial changes remain blocked until the operator resolves the mismatch.',
       'ENVIRONMENT_MISMATCH',
     );
   }
@@ -423,6 +447,7 @@ function onboardingVisibleState_(user, environment) {
   return {
     environment: environment,
     environmentConfigured: true,
+    stagingUatBypass: stagingUatBypassEnabled_(),
     stage: state.stage,
     steps: steps,
     stageReady: allPassed,
@@ -430,16 +455,20 @@ function onboardingVisibleState_(user, environment) {
     releaseAllowed: releaseAllowed,
     writePolicy:
       environment === 'staging'
-        ? state.stage === 'stagingUat'
-          ? 'staging-uat-only'
-          : 'blocked'
+        ? stagingUatBypassEnabled_()
+          ? 'staging-uat-override'
+          : state.stage === 'stagingUat'
+            ? 'staging-uat-only'
+            : 'blocked'
         : releaseAllowed
           ? 'accepted'
           : 'blocked',
     note:
       environment === 'staging'
-        ? 'Test writes are permitted only on the isolated staging instance.'
-        : 'Synthetic UAT transactions are prohibited on production.',
+        ? stagingUatBypassEnabled_()
+          ? 'Temporary staging UAT override is active. Use synthetic test data only; resource identity validation remains enforced and production is unaffected.'
+          : 'Test writes are permitted only on the isolated staging instance.'
+        : 'Synthetic UAT transactions are prohibited on production',
   };
 }
 
@@ -554,6 +583,15 @@ function enforceOnboardingFinancialGate_(user, action, req) {
   const identity = onboardingRequestIdentity_(req);
   const state = onboardingReadState_(identity.environment);
   if (identity.environment === 'staging') {
+    if (stagingUatBypassEnabled_()) {
+      audit_(
+        { email: user.email },
+        'STAGING_UAT_BYPASS',
+        action,
+        'Temporary staging-only onboarding-stage bypass used; resource identity validation passed. Synthetic UAT data only.',
+      );
+      return;
+    }
     if (state.stage !== 'stagingUat') {
       throw err_(
         'Staging financial writes are blocked until preflight is passed and the owner advances onboarding.',
