@@ -2,7 +2,7 @@ name: Full Flight Test
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, client-main]
   workflow_dispatch:
 
 concurrency:

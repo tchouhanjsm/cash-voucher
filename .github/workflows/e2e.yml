@@ -2,9 +2,9 @@ name: Browser E2E
 
 on:
   push:
-    branches: ['client/**']
+    branches: [client-main, 'client/**']
   pull_request:
-    branches: [main]
+    branches: [main, client-main]
   workflow_dispatch:
 
 concurrency:
