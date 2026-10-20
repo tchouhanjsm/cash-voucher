@@ -91,6 +91,16 @@ assert.ok(
 );
 assert.match(clientDistWorkflow, /name: Client staging dist zip/);
 assert.match(clientDistWorkflow, /release-manifest\.json/);
+assert.match(
+  clientDistWorkflow,
+  /ZIP_NAME="cv-\$\{CLIENT_CODE\}-staging-\$\{GITHUB_SHA\}\.zip"/,
+  'ZIP file must use the full commit SHA expected by artifact upload',
+);
+assert.match(
+  clientDistWorkflow,
+  /path: cv-\$\{\{ inputs\.client_code \}\}-staging-\$\{\{ github\.sha \}\}\.zip/,
+  'artifact upload path must use the same client and full commit SHA',
+);
 assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
 assert.doesNotMatch(
   clientDistWorkflow,
