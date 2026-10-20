@@ -180,18 +180,30 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     document.title = propertyName || 'Vouchers';
     shell.render();
 
+    S.stagingUatBypass = false;
     if (!offline && can('settings')) {
       try {
         const onboarding = await api('onboardingState');
         S.onboardingStage = onboarding.stage;
         S.onboardingEnvironment = onboarding.environment;
+        S.stagingUatBypass = onboarding.stagingUatBypass === true;
+        if (S.stagingUatBypass) {
+          toast(
+            'Temporary staging UAT override is active. Use synthetic data only; resource identity checks remain enforced and production is unaffected.',
+            'err',
+          );
+        }
       } catch {
         S.onboardingStage = 'unverified';
+        S.stagingUatBypass = false;
       }
     }
 
     const ownerNeedsOnboarding =
-      !offline && S.me?.role === 'owner' && S.onboardingStage !== 'complete';
+      !offline &&
+      !S.stagingUatBypass &&
+      S.me?.role === 'owner' &&
+      S.onboardingStage !== 'complete';
     const savedView =
       S.view !== 'onboarding' && NAV.find((item) => item[0] === S.view && item[3]());
 
