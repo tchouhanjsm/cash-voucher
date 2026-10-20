@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main, client-main, 'client/**']
+    branches: [client-main, 'client/**']
   pull_request:
-    branches: [main, client-main]
+    branches: [client-main]
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
 
 concurrency:
