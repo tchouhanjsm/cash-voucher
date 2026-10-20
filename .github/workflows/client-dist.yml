@@ -125,7 +125,7 @@ jobs:
           }, null, 2) + '\n');
           NODE
 
-          ZIP_NAME="cv-${CLIENT_CODE}-staging-${GITHUB_SHA::7}.zip"
+          ZIP_NAME="cv-${CLIENT_CODE}-staging-${GITHUB_SHA}.zip"
           (
             cd dist
             zip -qr "../$ZIP_NAME" . -x '*/.DS_Store' '.DS_Store'
