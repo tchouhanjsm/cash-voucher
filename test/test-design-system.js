@@ -499,6 +499,30 @@ assert.match(
   'saving Settings does not redraw over a route opened while the save was pending',
 );
 
+
+const main = read('frontend/main.js');
+const onboarding = read('frontend/features/onboarding.js');
+assert.match(
+  main,
+  /function bindFeatures\(\)[\s\S]*?onboarding\.init\(\)/,
+  'onboarding evidence controls are bound during application startup',
+);
+assert.match(
+  onboarding,
+  /Checking this customer’s configuration with the server/,
+  'onboarding shows an honest loading state while server checks run',
+);
+assert.match(
+  onboarding,
+  /if \(!busy\) void load\(\)/,
+  'opening onboarding automatically requests server-verified status instead of stopping at the empty-state screen',
+);
+assert.match(
+  onboarding,
+  /current = await api\('onboardingState'\)/,
+  'onboarding status is loaded from the server API',
+);
+
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',
 );
