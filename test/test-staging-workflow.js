@@ -18,7 +18,7 @@ assert.doesNotMatch(
   'staging workflow must not deploy on push or PR',
 );
 assert.match(workflow, /ACTION_REF: \$\{\{ github\.ref \}\}/);
-assert.match(workflow, /ACTION_REF" != "refs\/heads\/main"/);
+assert.match(workflow, /ACTION_REF" != "refs\/heads\/client-main"/);
 assert.match(workflow, /CONFIRMATION" != "STAGING-ONLY"/);
 assert.match(workflow, /CONFIRM_WRITES" != "true"/);
 assert.match(workflow, /environment:\n {6}name: staging/m);
@@ -68,5 +68,5 @@ assert.match(localServer, /function stagingServiceWorker/);
 assert.doesNotMatch(localServer, /caches\.open/);
 
 console.log(
-  'Staging workflow guard OK — manual trigger, main-only gate, explicit write consent, isolated deployment config, no-cache test shell and protected resource checks.',
+  'Staging workflow guard OK — manual trigger, client-main-only gate, explicit write consent, isolated deployment config, no-cache test shell and protected resource checks.',
 );
