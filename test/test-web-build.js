@@ -149,7 +149,6 @@ assert.ok(workflow.includes('RewriteCond %%{HTTPS} off'));
 assert.ok(workflow.includes('retention-days: 3'));
 assert.ok(!/ftp|scp|rsync|clasp push|deploy-webapp/i.test(workflow));
 
-
 console.log(
   'Customer web build OK — validates API target, isolates published assets, and generates per-client config.',
 );
