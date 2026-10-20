@@ -506,7 +506,6 @@ assert.ok(onboarding.includes('Checking this customer.configuration with the ser
 assert.ok(/if \(!busy\) void load\(\)/.test(onboarding));
 assert.ok(onboarding.includes("current = await api('onboardingState')"));
 
-
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',
 );
