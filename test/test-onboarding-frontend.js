@@ -4,8 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const read = (file) =>
-  fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 const main = read('frontend/main.js');
 const onboarding = read('frontend/features/onboarding.js');
 
