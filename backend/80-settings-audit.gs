@@ -10,6 +10,7 @@ function saveSettings_(user, req) {
     if (c && cats.indexOf(c) < 0) cats.push(c);
   });
   if (cats.length < 1 || cats.length > 60) throw err_('Provide 1–60 categories.');
+  if (cats.indexOf('Staff Salary') < 0) cats.push('Staff Salary');
   if (cats.indexOf('Other') < 0) cats.push('Other');
   const all = readAll_('Vouchers'),
     mx = function (isR) {
