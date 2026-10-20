@@ -74,6 +74,12 @@ function validateSheetSchema_(s, name) {
           'SCHEMA_MIGRATION',
         );
       }
+      if (name === 'Vouchers' && i === 22 && (actual[i] === '' || actual[i] === null)) {
+        throw err_('Vouchers is missing PaymentMethod. After a verified backup, run migrateVoucherPaymentMethodField() in the Apps Script editor.', 'SCHEMA_MIGRATION');
+      }
+      if (name === 'Vendors' && i >= 7 && i <= 8 && (actual[i] === '' || actual[i] === null)) {
+        throw err_('Vendors is missing default fields. After a verified backup, run migrateVendorDefaultsSchema() in the Apps Script editor.', 'SCHEMA_MIGRATION');
+      }
       throw err_('Sheet "' + name + '" has an invalid header. Run setup() to repair it.', 'SCHEMA');
     }
   }
@@ -148,11 +154,10 @@ function receiptCategories_() {
   }
 }
 function categories_() {
-  try {
-    return JSON.parse(settings_().categories) || CFG.DEFAULT_CATEGORIES;
-  } catch {
-    return CFG.DEFAULT_CATEGORIES;
-  }
+  let configured;
+  try { configured = JSON.parse(settings_().categories); } catch { configured = null; }
+  const saved = Array.isArray(configured) ? configured : CFG.DEFAULT_CATEGORIES;
+  return saved.indexOf('Staff Salary') >= 0 ? saved : saved.concat(['Staff Salary']);
 }
 function nowIso_() {
   return Utilities.formatDate(new Date(), CFG.TZ, "yyyy-MM-dd'T'HH:mm:ss");
