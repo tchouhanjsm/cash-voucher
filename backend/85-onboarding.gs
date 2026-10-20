@@ -129,21 +129,27 @@ function onboardingTargetIdentity_(environment) {
 // diagnostic. The request-only deployment comparison is deliberately omitted when
 // no browser-supplied deployment ID is available.
 function onboardingIdentityChecks_(target, suppliedDeploymentId) {
+  const scriptMatched =
+    Boolean(target.expectedScriptId) && target.scriptId === target.expectedScriptId;
+  const spreadsheetMatched =
+    Boolean(target.expectedSpreadsheetId) &&
+    target.spreadsheetId === target.expectedSpreadsheetId;
+  const serverDeploymentMatched =
+    Boolean(target.expectedDeploymentId) &&
+    target.deploymentId === target.expectedDeploymentId;
+  const receiptFolderMatched =
+    Boolean(target.expectedReceiptFolderId) &&
+    target.receiptFolderId === target.expectedReceiptFolderId;
+  const backupFolderMatched =
+    Boolean(target.expectedBackupFolderId) &&
+    target.backupFolderId === target.expectedBackupFolderId;
+
   const checks = {
-    script: Boolean(target.expectedScriptId && target.scriptId === target.expectedScriptId),
-    spreadsheet: Boolean(
-      target.expectedSpreadsheetId && target.spreadsheetId === target.expectedSpreadsheetId,
-    ),
-    serverDeployment: Boolean(
-      target.expectedDeploymentId && target.deploymentId === target.expectedDeploymentId,
-    ),
-    receiptFolder: Boolean(
-      target.expectedReceiptFolderId &&
-      target.receiptFolderId === target.expectedReceiptFolderId,
-    ),
-    backupFolder: Boolean(
-      target.expectedBackupFolderId && target.backupFolderId === target.expectedBackupFolderId,
-    ),
+    script: scriptMatched,
+    spreadsheet: spreadsheetMatched,
+    serverDeployment: serverDeploymentMatched,
+    receiptFolder: receiptFolderMatched,
+    backupFolder: backupFolderMatched,
   };
 
   if (suppliedDeploymentId !== undefined && suppliedDeploymentId !== null) {
@@ -155,7 +161,6 @@ function onboardingIdentityChecks_(target, suppliedDeploymentId) {
 
   return checks;
 }
-
 function onboardingRequestIdentity_(req) {
   const env = onboardingEnvironment_();
   if (
@@ -272,8 +277,6 @@ function onboardingTechnicalChecks_(user, environment) {
         deploymentMatched: identityChecks.serverDeployment,
         receiptFolderMatched: identityChecks.receiptFolder,
         backupFolderMatched: identityChecks.backupFolder,
-        // The request-only client deployment comparison is validated before this
-        // screen is loaded and is not inferred from a server-side self-comparison.
       },
     },
     propertyConfigured: {
