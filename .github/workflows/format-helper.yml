@@ -7,15 +7,18 @@ jobs:
   format:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
       - run: npm ci
-      - name: Format reviewed files into artifact only
+      - name: Format reviewed files and commit only formatting changes
         shell: bash
         run: |
           set -euo pipefail
@@ -32,12 +35,9 @@ jobs:
             style.css
           )
           npx prettier --write "${files[@]}"
-          mkdir -p /tmp/formatted
-          for file in "${files[@]}"; do mkdir -p "/tmp/formatted/$(dirname "$file")"; cp "$file" "/tmp/formatted/$file"; done
-          cd /tmp && zip -qr formatted-cv-pr184.zip formatted
-      - uses: actions/upload-artifact@v4
-        with:
-          name: formatted-cv-pr184
-          path: /tmp/formatted-cv-pr184.zip
-          if-no-files-found: error
-          retention-days: 1
+          if git diff --quiet -- "${files[@]}"; then echo 'No formatting changes required'; exit 0; fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "${files[@]}"
+          git commit -m 'style: format fast staff payment entry changes'
+          git push origin "HEAD:${GITHUB_HEAD_REF}"
