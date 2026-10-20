@@ -685,6 +685,55 @@ with sync_playwright() as p:
         and entry_style_metrics['methodControlHeight'] >= 40,
         'New Entry renders a compact first row, a usable payment-method control and a comfortable save target',
     )
+    phone_entry_metrics = page.evaluate("""() => {
+      const row = document.querySelector('#rows .erow');
+      const box = (selector) => {
+        const element = row?.querySelector(selector);
+        const rect = element?.getBoundingClientRect();
+        return rect ? {left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom, width: rect.width, height: rect.height} : null;
+      };
+      return {
+        payee: box('.rv'),
+        amount: box('.ra'),
+        note: box('.rn'),
+        remove: box('.x'),
+        horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      };
+    }""")
+    check(
+        phone_entry_metrics['payee']
+        and phone_entry_metrics['payee']['width'] > 180
+        and phone_entry_metrics['amount']
+        and phone_entry_metrics['amount']['width'] >= 80
+        and phone_entry_metrics['note']
+        and phone_entry_metrics['note']['width'] > 160
+        and phone_entry_metrics['remove']
+        and phone_entry_metrics['remove']['width'] >= 44
+        and phone_entry_metrics['note']['top'] > phone_entry_metrics['remove']['bottom']
+        and not phone_entry_metrics['horizontalOverflow'],
+        'phone payment row keeps the optional note full-width and the remove action compact and tappable',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    desktop_entry_metrics = page.evaluate("""() => {
+      const row = document.querySelector('#rows .erow');
+      const top = row?.querySelector('.top');
+      const note = row?.querySelector('.rn');
+      const remove = row?.querySelector('.x');
+      return {
+        columns: top ? getComputedStyle(top).gridTemplateColumns.trim().split(/\\s+/).length : 0,
+        noteWidth: note?.getBoundingClientRect().width || 0,
+        removeWidth: remove?.getBoundingClientRect().width || 0,
+        horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+      };
+    }""")
+    check(
+        desktop_entry_metrics['columns'] >= 4
+        and desktop_entry_metrics['noteWidth'] >= 140
+        and desktop_entry_metrics['removeWidth'] >= 44
+        and not desktop_entry_metrics['horizontalOverflow'],
+        'desktop payment row allocates four distinct tracks without stretched remove controls or overflow',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
     go_view(page, 'dash')
     check(
         page.locator('#view .needs h2').inner_text().startswith('Needs attention')

@@ -131,8 +131,28 @@ assert.match(
 );
 assert.match(
   components,
+  /\.page-header h1\s*\{[^}]*width:\s*fit-content;[^}]*max-width:\s*100%;/,
+  'focused page heading keeps its visible focus ring around the title rather than the full row',
+);
+assert.match(
+  components,
   /#nf\.entry-form\s*\{/,
   'new payment and receipt forms adopt shared panel geometry',
+);
+assert.match(
+  components,
+  /#nf\.entry-form \.erow \.top\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1\.4fr\)\s*minmax\(120px,\s*180px\)\s*minmax\(150px,\s*1fr\)\s*44px;/,
+  'desktop payment row gives payee, amount, note and remove separate grid tracks',
+);
+assert.match(
+  components,
+  /@media \(max-width: 800px\)[\s\S]*?#nf\.entry-form \.erow \.rn\s*\{\s*grid-column:\s*1 \/ -1;\s*grid-row:\s*2;/,
+  'tablet payment row moves the optional note to a full-width second line',
+);
+assert.match(
+  components,
+  /@media \(max-width: 440px\)[\s\S]*?#nf\.entry-form \.erow \.rn\s*\{\s*grid-column:\s*1 \/ -1;\s*grid-row:\s*3;/,
+  'phone payment row places the optional note below payee, amount and remove action',
 );
 assert.match(
   components,
@@ -399,7 +419,7 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v26'/,
+  /const C = 'cv2-v27'/,
   'PWA cache revision advances with validation and interaction styles',
 );
 assert.match(

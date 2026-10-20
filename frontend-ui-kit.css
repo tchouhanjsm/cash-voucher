@@ -1355,6 +1355,8 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   .page-header h1 {
+    width: fit-content;
+    max-width: 100%;
     color: var(--ink);
     font-size: clamp(28px, 2.45vw, 36px);
     font-weight: 720;
@@ -2027,7 +2029,8 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   #nf.entry-form .erow .top {
-    grid-template-columns: minmax(0, 1fr) minmax(120px, 180px) 44px;
+    /* Four controls are rendered here: payee, amount, note and remove. */
+    grid-template-columns: minmax(0, 1.4fr) minmax(120px, 180px) minmax(150px, 1fr) 44px;
     align-items: start;
     gap: 10px;
   }
@@ -2186,6 +2189,24 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   @media (max-width: 800px) {
+    /* Keep the destructive row action in the main line and move the optional note below. */
+    #nf.entry-form .erow .top {
+      grid-template-columns: minmax(0, 1fr) minmax(100px, 130px) 44px;
+    }
+
+    #nf.entry-form .erow .rn {
+      grid-column: 1 / -1;
+      grid-row: 2;
+      min-width: 0;
+    }
+
+    #nf.entry-form .erow .x {
+      grid-column: 3;
+      grid-row: 1;
+      min-width: 44px;
+      min-height: 44px;
+    }
+
     .page-eyebrow {
       margin-bottom: 6px;
     }
@@ -2239,8 +2260,15 @@ here and in the production app. It requires no JS or remote assets. */
 
     #nf.entry-form .erow .x {
       grid-column: 2;
+      grid-row: 2;
       min-width: 44px;
       min-height: 44px;
+    }
+
+    #nf.entry-form .erow .rn {
+      grid-column: 1 / -1;
+      grid-row: 3;
+      min-width: 0;
     }
 
     #nf.entry-form #nsave {
