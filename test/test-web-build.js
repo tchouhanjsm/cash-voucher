@@ -133,15 +133,17 @@ try {
   fs.rmSync(temporaryDirectory, { recursive: true, force: true });
 }
 
-
-
 const workflow = fs.readFileSync(path.join(rootDir, '.github/workflows/client-dist.yml'), 'utf8');
 assert.match(
   workflow,
   /^name: Client staging dist zip/m,
   'client artifact workflow remains clearly staging-only',
 );
-assert.match(workflow, /CV_ENVIRONMENT: staging/, 'ZIP workflow forces staging environment');
+assert.match(
+  workflow,
+  /CV_ENVIRONMENT: staging/,
+  'ZIP workflow forces staging environment',
+);
 assert.doesNotMatch(
   workflow,
   /options:\s*\[staging,\s*production\]/,
@@ -152,20 +154,36 @@ assert.match(
   /RELEASE_COMMIT: \$\{\{ github\.sha \}\}/,
   'manifest is tied to exact workflow commit',
 );
-assert.match(workflow, /release-manifest\.json/, 'ZIP workflow produces release manifest');
-assert.match(workflow, /unzip -t/, 'ZIP workflow validates archive integrity');
+assert.match(
+  workflow,
+  /release-manifest\.json/,
+  'ZIP workflow produces release manifest',
+);
+assert.match(
+  workflow,
+  /unzip -t/,
+  'ZIP workflow validates archive integrity',
+);
 assert.match(
   workflow,
   /grep -qx 'index\.html' zip-contents\.txt/,
   'ZIP has site root at archive root',
 );
-assert.match(workflow, /Content-Security-Policy/, 'ZIP workflow preserves the security policy');
+assert.match(
+  workflow,
+  /Content-Security-Policy/,
+  'ZIP workflow preserves the security policy',
+);
 assert.match(
   workflow,
   /RewriteCond %%\{HTTPS\} off/,
   'ZIP enforces HTTPS without discarding generated security headers',
 );
-assert.match(workflow, /retention-days: 3/, 'ZIP artifact has bounded retention');
+assert.match(
+  workflow,
+  /retention-days: 3/,
+  'ZIP artifact has bounded retention',
+);
 assert.doesNotMatch(
   workflow,
   /ftp|scp|rsync|clasp push|deploy-webapp/i,
