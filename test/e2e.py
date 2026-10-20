@@ -2502,7 +2502,7 @@ with sync_playwright() as p:
     page.press('.ra', 'Enter')
     check(page.locator('.erow').count() == 2, 'enter adds row')
     check(
-        page.locator('.rv').nth(1).get_attribute('aria-label') == 'Payee / vendor, row 2'
+        page.locator('.rv').nth(1).get_attribute('aria-label') == 'Paid to, row 2'
         and page.locator('.ra').nth(1).get_attribute('aria-label') == 'Amount in rupees, row 2',
         'added payment row receives distinct accessible names',
     )
@@ -2530,7 +2530,7 @@ with sync_playwright() as p:
     )
     check(
         page.locator('.erow').count() == 1
-        and page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
+        and page.locator('.rv').first.get_attribute('aria-label') == 'Paid to, row 1'
         and page.evaluate("document.activeElement === document.querySelector('.rv')")
         and page.evaluate("url => window.__revokedObjectUrls.includes(url)", removed_preview_url),
         'removing a receipt row restores focus and revokes its preview URL',
