@@ -2650,7 +2650,7 @@ assert(
 );
 
 /* Payment rail is explicit and independent from drawer movement. */
-const railDate = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
+const railDate = new Date(Date.now() + 86400000).toISOString().slice(0, 10);
 const paymentRailResult = as(T, 'createVouchers', {
   entries: [
     {
