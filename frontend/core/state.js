@@ -22,6 +22,8 @@ export const S = {
   },
 };
 
+export const PAYMENT_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER'];
+export const PAYMENT_METHOD_LABELS = { CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank transfer' };
 export const CASH_IMPACT_CHOICES = ['CASH_IN', 'CASH_OUT', 'NO_CASH'];
 export const CASH_IMPACT_LABELS = {
   CASH_IN: 'Cash received into the drawer',
