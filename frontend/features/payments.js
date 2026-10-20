@@ -152,7 +152,7 @@ export function createPayments({ api, refresh }) {
 
   function labelRows() {
     const direction = NT === 'RECEIPT' ? 'Received from' : 'Paid to';
-    $('#rows .erow').forEach((row, index) => {
+    $$('#rows .erow').forEach((row, index) => {
       const number = index + 1;
       $('.rv', row).setAttribute('aria-label', direction + ', row ' + number);
       $('.ra', row).setAttribute('aria-label', 'Amount in rupees, row ' + number);
@@ -429,7 +429,7 @@ export function createPayments({ api, refresh }) {
   }
 
   function addRow() {
-    const previousRows = $('#rows .erow');
+    const previousRows = $$('#rows .erow');
     for (const previous of previousRows) {
       const payee = $('.rv', previous).value.trim();
       const amount = parseAmt($('.ra', previous).value.trim());
@@ -460,7 +460,7 @@ export function createPayments({ api, refresh }) {
     labelRows();
     updateSaveLabel();
     const v = $('.rv', r);
-    if ($('#rows .erow').length > 1) v.focus();
+    if ($$('#rows .erow').length > 1) v.focus();
     applyPayeeDefaults(r);
   }
 
@@ -540,7 +540,7 @@ export function createPayments({ api, refresh }) {
       if (row) $('.ra', row).focus();
     } else if (e.key === 'Enter' && e.target.classList.contains('ra')) {
       e.preventDefault();
-      const rows = $('#rows .erow');
+      const rows = $$('#rows .erow');
       if (e.target.closest('.erow') === rows[rows.length - 1]) addRow();
       else $('.rv', rows[rows.indexOf(e.target.closest('.erow')) + 1]).focus();
     }
@@ -558,7 +558,7 @@ export function createPayments({ api, refresh }) {
   async function saveNew(btn) {
     const date = $('#nd').value;
     const entries = [];
-    const rows = $('#rows .erow');
+    const rows = $$('#rows .erow');
     rows.forEach(clearRowError);
 
     for (const [index, r] of rows.entries()) {

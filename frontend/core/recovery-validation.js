@@ -128,6 +128,14 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
       throw new Error('Recovery file contains an invalid cash-impact classification.');
     }
 
+    const hasPaymentMethod =
+      entry.paymentMethod !== undefined &&
+      entry.paymentMethod !== null &&
+      entry.paymentMethod !== '';
+    if (hasPaymentMethod && !['CASH', 'UPI', 'BANK_TRANSFER'].includes(entry.paymentMethod)) {
+      throw new Error('Recovery file contains an invalid payment method.');
+    }
+
     const sourceReceipts =
       entry.receipts === undefined || entry.receipts === null ? [] : entry.receipts;
     if (!Array.isArray(sourceReceipts) || sourceReceipts.length > 3) {
@@ -166,6 +174,7 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
         amount: entry.amount,
         category,
         cashImpact,
+        ...(hasPaymentMethod ? { paymentMethod: entry.paymentMethod } : {}),
         notes,
         receipts,
       },
