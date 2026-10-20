@@ -23,10 +23,12 @@ assert.match(flight, /pull_request:\n\s+branches:\s*\[client-main\]/);
 assert.match(staging, /ACTION_REF" != "refs\/heads\/client-main"/);
 assert.match(hook, /refs\/heads\/main/);
 assert.match(hook, /refs\/heads\/client-main/);
-assert.match(handbook, /client-main.*only integration branch|only integration branch.*client-main/i);
+assert.match(
+  handbook,
+  /client-main.*only integration branch|only integration branch.*client-main/i,
+);
 assert.match(handbook, /main.*frozen\/read-only|frozen\/read-only.*main/i);
 
 console.log(
-  'Client-main policy OK — CI, E2E, Flight Test, staging guard, local pre-push hook and documentation consistently use client-main.',
+  'Client-main policy OK — CI, E2E, Flight Test, staging guard and branch documentation align.',
 );
-
