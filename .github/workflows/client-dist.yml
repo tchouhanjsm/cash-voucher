@@ -113,13 +113,12 @@ jobs:
           }
           const badDsStore = files.filter(p => p.split('/').includes('.DS_Store'));
           if (badDsStore.length) throw new Error('DS_Store files must not be packaged.');
-          fs.writeFileSync('release-manifest.json', JSON.stringify({
+          fs.writeFileSync(path.join(root, 'release-manifest.json'), JSON.stringify({
             clientCode: process.env.CLIENT_CODE,
             environment: 'staging',
             commit: process.env.RELEASE_COMMIT,
             builtAt: new Date().toISOString(),
             apiOrigin: new URL(process.env.CV_API_URL).origin,
-            deploymentId: new URL(process.env.CV_API_URL).pathname.split('/')[3],
             artifactVersion: 1,
             requiredAssets: ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt'],
             fileCount: files.length
