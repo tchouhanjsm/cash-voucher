@@ -1,0 +1,43 @@
+name: Temporary Format Helper
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+jobs:
+  format:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Format reviewed files into artifact only
+        shell: bash
+        run: |
+          set -euo pipefail
+          files=(
+            backend/00-config.gs
+            backend/15-migrations.gs
+            backend/25-helpers.gs
+            backend/50-vouchers.gs
+            backend/60-vendors.gs
+            docs/FAST-STAFF-PAYMENT-ENTRY.md
+            frontend/features/administration.js
+            frontend/features/payments.js
+            frontend/features/printing.js
+            style.css
+          )
+          npx prettier --write "${files[@]}"
+          mkdir -p /tmp/formatted
+          for file in "${files[@]}"; do mkdir -p "/tmp/formatted/$(dirname "$file")"; cp "$file" "/tmp/formatted/$file"; done
+          cd /tmp && zip -qr formatted-cv-pr184.zip formatted
+      - uses: actions/upload-artifact@v4
+        with:
+          name: formatted-cv-pr184
+          path: /tmp/formatted-cv-pr184.zip
+          if-no-files-found: error
+          retention-days: 1
