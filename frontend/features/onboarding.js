@@ -105,9 +105,20 @@ export function createOnboarding({ api }) {
     root.replaceChildren();
 
     if (!current) {
-      return renderError(
-        'Onboarding status is unavailable. Verify customer build and backend configuration. Financial writes remain protected on the server.',
+      const loading = el('section', undefined, 'onboarding-page card');
+      loading.append(
+        el('p', 'CLIENT LAUNCH', 'muted'),
+        el('h1', 'Get Cash Voucher ready'),
+        el('p', 'Checking this customer’s configuration with the server…', 'muted'),
       );
+      const retry = el('button', 'Retry server checks', 'btn primary');
+      retry.type = 'button';
+      retry.disabled = busy;
+      retry.addEventListener('click', load);
+      loading.appendChild(retry);
+      root.appendChild(loading);
+      if (!busy) void load();
+      return;
     }
 
     const stage = STAGES[current.stage] || STAGES.preflight;
