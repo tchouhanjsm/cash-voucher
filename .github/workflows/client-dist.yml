@@ -1,0 +1,72 @@
+name: Client dist zip
+
+# Manual only. Builds one client's static site and hands back a ready-to-upload zip.
+# No secrets, no deployment: the zip is downloaded from this run's Artifacts and
+# extracted by hand into the client's subdomain folder in cPanel.
+on:
+  workflow_dispatch:
+    inputs:
+      client_code:
+        description: 'Client code, letters/digits/dashes (names the zip)'
+        required: true
+      environment:
+        description: 'Target environment'
+        required: true
+        type: choice
+        options: [staging, production]
+      api_url:
+        description: 'Client Apps Script Web App URL (https://script.google.com/macros/s/.../exec)'
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CLIENT_CODE: ${{ inputs.client_code }}
+      CV_ENVIRONMENT: ${{ inputs.environment }}
+      CV_API_URL: ${{ inputs.api_url }}
+    steps:
+      - name: Validate client code
+        run: |
+          if ! printf '%s' "$CLIENT_CODE" | grep -Eq '^[A-Za-z0-9-]{2,40}$'; then
+            echo "client_code must be 2-40 letters, digits or dashes" >&2
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Build site (fails if the API URL is not a valid /exec URL)
+        run: npm run build:web
+
+      - name: Package for cPanel
+        run: |
+          cd dist
+          rm -f _headers .nojekyll
+          printf 'User-agent: *\nDisallow: /\n' > robots.txt
+          {
+            printf '<IfModule mod_rewrite.c>\n  RewriteEngine On\n  RewriteCond %%{HTTPS} off\n  RewriteRule ^ https://%%{HTTP_HOST}%%{REQUEST_URI} [L,R=301]\n</IfModule>\n'
+            cat .htaccess
+          } > .htaccess.new && mv .htaccess.new .htaccess
+          test -f index.html && test -f config.js && test -f sw.js
+          grep -q "script.google.com/macros/s/" config.js
+          zip -qr "../cv-${CLIENT_CODE}-${CV_ENVIRONMENT}.zip" . -x '.DS_Store'
+          cd ..
+          unzip -l "cv-${CLIENT_CODE}-${CV_ENVIRONMENT}.zip"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: cv-${{ inputs.client_code }}-${{ inputs.environment }}
+          path: cv-${{ inputs.client_code }}-${{ inputs.environment }}.zip
+          retention-days: 3
+          if-no-files-found: error
