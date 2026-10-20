@@ -133,7 +133,10 @@ try {
   fs.rmSync(temporaryDirectory, { recursive: true, force: true });
 }
 
-const workflow = fs.readFileSync(path.join(rootDir, '.github/workflows/client-dist.yml'), 'utf8');
+const workflow = fs.readFileSync(
+  path.join(rootDir, '.github/workflows/client-dist.yml'),
+  'utf8',
+);
 assert.match(
   workflow,
   /^name: Client staging dist zip/m,
