@@ -161,6 +161,7 @@ function onboardingIdentityChecks_(target, suppliedDeploymentId) {
 
   return checks;
 }
+
 function onboardingRequestIdentity_(req) {
   const env = onboardingEnvironment_();
   if (
