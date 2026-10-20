@@ -85,7 +85,7 @@ assert.match(clientDistWorkflow, /CV_ENVIRONMENT: staging/);
 assert.match(clientDistWorkflow, /CV_API_URL: \$\{\{ inputs\.api_url \}\}/);
 assert.ok(
   clientDistWorkflow.includes(
-    "localApiOverride || ${JSON.stringify(new URL(expectedUrl).toString())}",
+    'localApiOverride || ${JSON.stringify(new URL(expectedUrl).toString())}',
   ),
   'ZIP config validation must match the generated local override expression and endpoint',
 );
