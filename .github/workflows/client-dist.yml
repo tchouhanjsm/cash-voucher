@@ -71,7 +71,7 @@ jobs:
           const expectedUrl = process.env.CV_API_URL;
           const expectedId = new URL(expectedUrl).pathname.split('/')[3];
           for (const [name, value] of [
-            ['API_URL', expectedUrl],
+            ['API_URL', `localApiOverride || ${JSON.stringify(new URL(expectedUrl).toString())}`],
             ['ENVIRONMENT', '"staging"'],
             ['DEPLOYMENT_ID', JSON.stringify(expectedId)],
           ]) {

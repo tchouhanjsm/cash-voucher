@@ -126,6 +126,10 @@ try {
     'generated config uses this customer endpoint',
   );
   assert.ok(
+    generatedConfig.includes('API_URL: localApiOverride || ' + JSON.stringify(customerApiUrl)),
+    'generated API_URL includes the optional local override and the serialized endpoint',
+  );
+  assert.ok(
     !generatedConfig.includes('https://script.google.com/macros/s/LEGACY_ENDPOINT/exec'),
     'generated config does not reuse an unrelated legacy endpoint',
   );
