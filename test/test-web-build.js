@@ -137,61 +137,18 @@ const workflow = fs.readFileSync(
   path.join(rootDir, '.github/workflows/client-dist.yml'),
   'utf8',
 );
-assert.match(
-  workflow,
-  /^name: Client staging dist zip/m,
-  'client artifact workflow remains clearly staging-only',
-);
-assert.match(
-  workflow,
-  /CV_ENVIRONMENT: staging/,
-  'ZIP workflow forces staging environment',
-);
-assert.doesNotMatch(
-  workflow,
-  /options:\s*\[staging,\s*production\]/,
-  'ordinary staging workflow must not offer production',
-);
-assert.match(
-  workflow,
-  /RELEASE_COMMIT: \$\{\{ github\.sha \}\}/,
-  'manifest is tied to exact workflow commit',
-);
-assert.match(
-  workflow,
-  /release-manifest\.json/,
-  'ZIP workflow produces release manifest',
-);
-assert.match(
-  workflow,
-  /unzip -t/,
-  'ZIP workflow validates archive integrity',
-);
-assert.match(
-  workflow,
-  /grep -qx 'index\.html' zip-contents\.txt/,
-  'ZIP has site root at archive root',
-);
-assert.match(
-  workflow,
-  /Content-Security-Policy/,
-  'ZIP workflow preserves the security policy',
-);
-assert.match(
-  workflow,
-  /RewriteCond %%\{HTTPS\} off/,
-  'ZIP enforces HTTPS without discarding generated security headers',
-);
-assert.match(
-  workflow,
-  /retention-days: 3/,
-  'ZIP artifact has bounded retention',
-);
-assert.doesNotMatch(
-  workflow,
-  /ftp|scp|rsync|clasp push|deploy-webapp/i,
-  'ZIP workflow must not deploy or push Apps Script',
-);
+assert.ok(workflow.includes('name: Client staging dist zip'));
+assert.ok(workflow.includes('CV_ENVIRONMENT: staging'));
+assert.ok(!workflow.includes('options: [staging, production]'));
+assert.ok(workflow.includes('RELEASE_COMMIT: ${{ github.sha }}'));
+assert.ok(workflow.includes('release-manifest.json'));
+assert.ok(workflow.includes('unzip -t'));
+assert.ok(workflow.includes("grep -qx 'index.html' zip-contents.txt"));
+assert.ok(workflow.includes('Content-Security-Policy'));
+assert.ok(workflow.includes('RewriteCond %%{HTTPS} off'));
+assert.ok(workflow.includes('retention-days: 3'));
+assert.ok(!/ftp|scp|rsync|clasp push|deploy-webapp/i.test(workflow));
+
 
 console.log(
   'Customer web build OK — validates API target, isolates published assets, and generates per-client config.',
