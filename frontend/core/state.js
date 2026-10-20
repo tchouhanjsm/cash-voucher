@@ -174,19 +174,20 @@ export const bySeq = (a, b) =>
   String(b.createdAt).localeCompare(String(a.createdAt)) || b.no - a.no;
 
 const normalizeCategoryList = (value, includeSalary = false) => {
-  if (!Array.isArray(value)) return includeSalary ? ['Staff Salary', 'Other'] : ['Other'];
+  const normalized = Array.isArray(value)
+    ? [
+        ...new Set(
+          value
+            .filter((category) => typeof category === 'string')
+            .map((category) => category.trim())
+            .filter(Boolean),
+        ),
+      ]
+    : [];
 
-  const normalized = [
-    ...new Set(
-      value
-        .filter((category) => typeof category === 'string')
-        .map((category) => category.trim())
-        .filter(Boolean),
-    ),
-  ];
-
+  if (!normalized.length) normalized.push('Other');
   if (includeSalary && !normalized.includes('Staff Salary')) normalized.push('Staff Salary');
-  return normalized.length ? normalized : ['Other'];
+  return normalized;
 };
 
 export const rcats = () => normalizeCategoryList(S.settings?.receiptCategories);
