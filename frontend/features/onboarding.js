@@ -237,13 +237,15 @@ export function createOnboarding({ api }) {
       footer.appendChild(advance);
     }
 
-    const gateText = current.releaseAllowed
-      ? 'Production acceptance complete. Server release gate currently passes.'
-      : current.environment === 'production'
-        ? 'Production financial writes remain blocked until all acceptance requirements pass.'
-        : current.stage === 'stagingUat'
-          ? 'Staging-only UAT writes are allowed on this instance.'
-          : 'Financial writes are blocked until preflight passes.';
+    const gateText = current.stagingUatBypass
+      ? 'TEMPORARY STAGING UAT OVERRIDE ACTIVE. Use synthetic data only. Resource identity checks remain enforced; production is unaffected.'
+      : current.releaseAllowed
+        ? 'Production acceptance complete. Server release gate currently passes.'
+        : current.environment === 'production'
+          ? 'Production financial writes remain blocked until all acceptance requirements pass.'
+          : current.stage === 'stagingUat'
+            ? 'Staging-only UAT writes are allowed on this instance.'
+            : 'Financial writes are blocked until preflight passes.';
     const gate = el('p', gateText, 'onboarding-gate');
     gate.setAttribute('role', 'status');
     footer.appendChild(gate);
