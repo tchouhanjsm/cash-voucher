@@ -64,9 +64,8 @@ with sync_playwright() as p:
     page = context.new_page()
 
     def choose_cash_impact_for_current_rows():
-        impact = 'CASH_IN' if page.locator('.seg button.on[data-k="RECEIPT"]').count() else 'CASH_OUT'
         for control in page.locator('#rows .rci').all():
-            control.select_option(impact)
+            control.select_option('CASH')
 
     def choose_bulk_cash_impact_for_current_rows():
         impact = 'CASH_IN' if page.locator('#bt2').input_value() == 'RECEIPT' else 'CASH_OUT'
@@ -2039,7 +2038,7 @@ with sync_playwright() as p:
     go_view(page, 'set')
     page.wait_for_selector('#sc')
     check(
-        page.locator('#sc').input_value() == 'Office\nOther'
+        page.locator('#sc').input_value() == 'Office\nOther\nStaff Salary'
         and page.locator('#sx').input_value() == 'Other'
         and page.locator('#sf img, #sf svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
@@ -2048,36 +2047,36 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.wait_for_selector('#rows .erow .rc')
     check(
-        page.locator('#rows .erow .rci').input_value() == ''
-        and 'Cash paid out' in page.locator('#rows .erow .ci-suggestion').inner_text(),
-        'new payment requires explicit classification while showing a non-binding suggestion',
+        page.locator('#rows .erow .rci').input_value() == 'CASH'
+        and page.locator('#rows .erow .rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer'],
+        'new payment defaults to Cash and exposes the three payment methods',
     )
     page.locator('#rows .erow .rv').fill('Cash Impact Test Vendor')
     page.locator('#rows .erow .ra').fill('10')
-    page.locator('#nsave').click()
+    page.select_option('#rows .erow .rci', 'UPI')
+    page.select_option('#rows .erow .rc', 'Office')
     check(
-        page.locator('#rows .erow .row-error').inner_text()
-        == 'Choose how this was settled (cash or not cash) before saving.',
-        'saving without cash-impact selection is blocked with an actionable error',
+        page.locator('#rows .erow .rci').input_value() == 'UPI',
+        'payment method remains independent of category',
     )
     check(
         page.locator('#recentVendors').count() == 1,
-        'entry form offers a recent-payee chip row',
+        'entry form offers recent-payee suggestions',
     )
-    page.select_option('#rows .erow .rci', 'NO_CASH')
+    page.select_option('#rows .erow .rci', 'BANK_TRANSFER')
     page.select_option('#rows .erow .rc', 'Office')
     check(
-        page.locator('#rows .erow .rci').input_value() == 'NO_CASH',
-        'category changes do not overwrite explicit cash-impact choice',
+        page.locator('#rows .erow .rci').input_value() == 'BANK_TRANSFER',
+        'category changes do not overwrite the payment method',
     )
     check(
-        page.locator('#rows .erow .rc option').all_text_contents() == ['Office', 'Other']
-        and page.locator('#rows .erow .rc option').count() == 2
+        page.locator('#rows .erow .rc option').all_text_contents() == ['Office', 'Other', 'Staff Salary']
+        and page.locator('#rows .erow .rc option').count() == 3
         and page.locator('#rows .erow .rc option').evaluate_all(
             "options => options.every(option => typeof option.value === 'string')"
         )
         and not page.evaluate('window.__xssFired === true'),
-        'payment category options render only valid string categories',
+        'payment category options include Staff Salary and only valid strings',
     )
     page.click('[data-act=ntype][data-k=RECEIPT]')
     check(
@@ -2434,19 +2433,17 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.wait_for_selector('#nf')
     check(
-        page.locator('.rv').first.get_attribute('aria-label') == 'Payee / vendor, row 1'
+        page.locator('.rv').first.get_attribute('aria-label') == 'Paid to, row 1'
         and page.locator('.ra').first.get_attribute('aria-label') == 'Amount in rupees, row 1'
         and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1'
-        and page.locator('.rci').first.get_attribute('aria-label') == 'How it was settled, row 1',
-        'payment row fields have explicit accessible names',
+        and page.locator('.rci').first.get_attribute('aria-label') == 'Payment method, row 1'
+        and page.locator('.rn').first.get_attribute('aria-label') == 'Note, row 1',
+        'compact payment fields have explicit accessible names',
     )
-    cash_impact_help = page.locator('.rci').first.evaluate("""element => {
-        const ids = (element.getAttribute('aria-describedby') || '').split(/\\s+/).filter(Boolean);
-        return ids.map(id => document.getElementById(id)?.innerText || '').join(' ');
-    }""")
     check(
-        'notes or coins moved' in cash_impact_help and 'UPI' in cash_impact_help,
-        'cash-impact selector is persistently associated with its explanatory settlement guidance',
+        page.locator('.rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer']
+        and page.locator('.rci').first.input_value() == 'CASH',
+        'payment method defaults to Cash and exposes explicit UPI/bank transfer options',
     )
     choose_cash_impact_for_current_rows()
     page.click('#nsave')
@@ -2481,35 +2478,13 @@ with sync_playwright() as p:
         page.locator('.ra').first.get_attribute('aria-invalid') is None,
         'payment validation state clears when the amount is corrected',
     )
-    page.select_option('.rci', '')
-    page.click('#nsave')
-    page.wait_for_function(
-        "document.querySelector('.row-error')?.innerText.includes('Choose how this was settled')"
-    )
-    impact_error_relationship = page.locator('.rci').first.evaluate("""element => {
-        const ids = (element.getAttribute('aria-describedby') || '').split(/\\s+/).filter(Boolean);
-        return {
-            invalid: element.getAttribute('aria-invalid'),
-            helpId: document.querySelector('.ci-hint')?.id || '',
-            descriptions: ids,
-            messages: ids.map(id => document.getElementById(id)?.innerText || '').join(' ')
-        };
-    }""")
+    page.select_option('.rci', 'UPI')
     check(
-        impact_error_relationship['invalid'] == 'true'
-        and impact_error_relationship['helpId'] in impact_error_relationship['descriptions']
-        and 'notes or coins moved' in impact_error_relationship['messages']
-        and 'Choose how this was settled' in impact_error_relationship['messages'],
-        'cash-impact validation references both the persistent hint and the current error',
+        page.locator('.rci').first.input_value() == 'UPI'
+        and page.locator('.rci').first.get_attribute('aria-invalid') is None,
+        'selecting UPI does not require a separate cash-drawer classification',
     )
-    choose_cash_impact_for_current_rows()
-    page.wait_for_function("document.querySelector('.row-error') === null")
-    impact_help_after_correction = page.locator('.rci').first.get_attribute('aria-describedby')
-    check(
-        page.locator('.rci').first.get_attribute('aria-invalid') is None
-        and impact_help_after_correction == page.locator('.ci-hint').first.get_attribute('id'),
-        'clearing a cash-impact error preserves its persistent help-text relationship',
-    )
+    page.select_option('.rci', 'CASH')
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
     xss_note = '<img src=x onerror=window.__xssFired=true>'
