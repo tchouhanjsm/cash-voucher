@@ -67,7 +67,6 @@ assert.match(localServer, /Cache-Control': 'no-store'/);
 assert.match(localServer, /function stagingServiceWorker/);
 assert.doesNotMatch(localServer, /caches\.open/);
 
-
 const clientDistWorkflow = fs.readFileSync(
   path.join(root, '.github/workflows/client-dist.yml'),
   'utf8',
