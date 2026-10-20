@@ -3,9 +3,9 @@ set -eu
 
 while read -r local_ref local_sha remote_ref remote_sha
 do
-  if [ "$remote_ref" = "refs/heads/main" ]; then
-    echo "ERROR: Direct pushes to main are blocked by this local safety hook."
-    echo "Push your changes to a feature/client branch and open a pull request instead."
+  if [ "$remote_ref" = "refs/heads/main" ] || [ "$remote_ref" = "refs/heads/client-main" ]; then
+    echo "ERROR: Direct pushes to main and client-main are blocked by this local safety hook."
+    echo "Push changes to a client/* feature branch and open a pull request targeting client-main."
     exit 1
   fi
 done

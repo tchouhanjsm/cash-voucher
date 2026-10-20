@@ -9,16 +9,16 @@ git branch --show-current
 npm run check
 ```
 
-Before editing, verify the live GitHub PR state, target branch SHA, active branch head, changed-file list and latest CI/E2E runs. Compare hashes rather than inferring state from chat. If someone reports a merge while GitHub still reports the PR open or `main` unchanged, reconcile that conflict before basing dependent work on the expected merge. Do not claim a branch contains a change until its SHA proves it.
+Before editing, verify the live GitHub PR state, target branch SHA, active branch head, changed-file list and latest CI/E2E runs. Compare hashes rather than inferring state from chat. `client-main` is the integration branch; if GitHub still reports the PR open or `client-main` unchanged, reconcile that conflict before basing dependent work on the expected merge. Do not claim a branch contains a change until its SHA proves it.
 
-**Hard safety rules:** do not commit or push directly to `main`; use a short-lived feature/fix/docs branch in the same repository and a reviewed PR. Do not delete a repository or branch, rename a branch, or force-update a ref without explicit permission. Do not merge a PR, initialize external Google resources, run `clasp push`, publish a frontend or deploy to production on the owner's behalf. Pushing a feature branch updates source control only; it is not permission to mutate Apps Script or hosting.
+**Hard safety rules:** `client-main` is the only integration target. Do not commit or push directly to `client-main`; use a short-lived `client/*` feature branch and a reviewed PR targeting `client-main`. Treat `main` as frozen/read-only. Do not delete a repository or branch, rename a branch, or force-update a ref without explicit permission. Do not initialize external Google resources, run `clasp push`, publish a frontend or deploy to production on the owner's behalf. Pushing a feature branch updates source control only; it is not permission to mutate Apps Script or hosting.
 
 ## Branch lifecycle
 
-- Keep `main` as the protected integration branch. Do not create a new branch for every individual commit or small edit.
+- Keep `client-main` as the only integration branch; keep `main` frozen/read-only. Do not create a new branch for every individual commit or small edit.
 - Create one short-lived feature/fix/docs branch per coherent pull request. Put related incremental commits on that same branch while the pull request is active.
 - A merged feature branch is not a permanent archive; its commits remain in Git history. Enable GitHub's **Automatically delete head branches** setting so merged PR branches are removed by the platform.
-- Before deleting older branches manually, verify that no open PR uses the ref and compare its commits/diff with `main`. Merged branch references are cleanup candidates; branches from closed-unmerged PRs or branches without PRs need an individual diff/commit review first.
+- Before deleting older branches manually, verify that no open PR uses the ref and compare its commits/diff with `client-main`. Merged branch references are cleanup candidates; branches from closed-unmerged PRs or branches without PRs need an individual diff/commit review first.
 - Do not automate deletion of stale/closed branches without a reviewed allowlist and explicit owner approval. Never delete `main`, a protected branch, or a branch containing unique work that has not been preserved.
 
 ## Batch model
@@ -95,7 +95,7 @@ Use three information locations and keep their responsibilities distinct:
 
 Do **not** create `docs/pr-handoffs/PR-<number>.md` for new PRs. Keep existing files as legacy historical records; do not delete or rewrite them solely to adopt this process. `docs/PR-HANDOFFS.md` is a frozen historical index through PR #75, not a live register. Use GitHub's PR history for older per-change details and verify current PR/branch/main state from live GitHub rather than relying on historical notes.
 
-Before requesting review, ensure `docs/HANDOFF.md` describes the current state at the PR's base SHA and points to the active branch/head; the PR description must record exact-head test evidence. After merge, the next engineering PR updates the handoff to the newly verified main SHA and marks the previous phase complete. Do not make a post-merge docs-only PR solely to change handoff metadata.
+Before requesting review, ensure `docs/HANDOFF.md` describes the current state at the PR's base SHA and points to the active branch/head; the PR description must record exact-head test evidence. After merge, the next engineering PR updates the handoff to the newly verified client-main SHA and marks the previous phase complete. Do not make a post-merge docs-only PR solely to change handoff metadata.
 
 The PR description must state:
 
