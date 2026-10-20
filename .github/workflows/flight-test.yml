@@ -1,8 +1,9 @@
 name: Full Flight Test
 
 on:
+  push:
+    branches: ['client/**']
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
