@@ -2649,7 +2649,6 @@ assert(
   'owner audit status makes the simultaneous marker-store failure limitation explicit in regression evidence',
 );
 
-
 /* Payment rail is explicit and independent from drawer movement. */
 const railDate = new Date(Date.now() + 10 * 86400000).toISOString().slice(0, 10);
 const paymentRailResult = as(T, 'createVouchers', {
@@ -2695,39 +2694,45 @@ ok(
   'server allow-lists payment rails and derives cash impact instead of trusting conflicting client values',
 );
 const invalidPaymentRail = as(T, 'createVouchers', {
-  entries: [{
-    clientId: 'payment-rail-invalid-regression',
-    date: railDate,
-    vendor: 'Invalid Payment Rail Test',
-    amount: 12,
-    category: 'Other',
-    paymentMethod: 'CARD',
-  }],
+  entries: [
+    {
+      clientId: 'payment-rail-invalid-regression',
+      date: railDate,
+      vendor: 'Invalid Payment Rail Test',
+      amount: 12,
+      category: 'Other',
+      paymentMethod: 'CARD',
+    },
+  ],
 });
 ok(
   !invalidPaymentRail.ok && invalidPaymentRail.code === 'VALIDATION',
   'server rejects unsupported payment rails',
 );
 const blankLegacyRail = as(T, 'createVouchers', {
-  entries: [{
-    clientId: 'payment-rail-legacy-blank-regression',
-    date: railDate,
-    vendor: 'Legacy blank rail Test',
-    amount: 55,
-    category: 'Other',
-    cashImpact: 'NO_CASH',
-  }],
+  entries: [
+    {
+      clientId: 'payment-rail-legacy-blank-regression',
+      date: railDate,
+      vendor: 'Legacy blank rail Test',
+      amount: 55,
+      category: 'Other',
+      cashImpact: 'NO_CASH',
+    },
+  ],
 });
 const changedLegacyRailRetry = as(T, 'createVouchers', {
-  entries: [{
-    clientId: 'payment-rail-legacy-blank-regression',
-    date: railDate,
-    vendor: 'Legacy blank rail Test',
-    amount: 55,
-    category: 'Other',
-    cashImpact: 'NO_CASH',
-    paymentMethod: 'BANK_TRANSFER',
-  }],
+  entries: [
+    {
+      clientId: 'payment-rail-legacy-blank-regression',
+      date: railDate,
+      vendor: 'Legacy blank rail Test',
+      amount: 55,
+      category: 'Other',
+      cashImpact: 'NO_CASH',
+      paymentMethod: 'BANK_TRANSFER',
+    },
+  ],
 });
 ok(
   blankLegacyRail.ok &&
