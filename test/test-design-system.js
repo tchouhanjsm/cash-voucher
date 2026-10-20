@@ -399,7 +399,7 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v25'/,
+  /const C = 'cv2-v26'/,
   'PWA cache revision advances with validation and interaction styles',
 );
 assert.match(
