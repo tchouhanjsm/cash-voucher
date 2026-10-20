@@ -60,6 +60,16 @@ assert.equal(mismatch.code, 'ENVIRONMENT_MISMATCH');
 const wrongDeployment = request('onboardingState', { deploymentId: 'WRONG' });
 assert.equal(wrongDeployment.ok, false);
 assert.equal(wrongDeployment.code, 'ENVIRONMENT_MISMATCH');
+assert.match(wrongDeployment.error, /clientDeployment/);
+assert.doesNotMatch(wrongDeployment.error, /MOCK_DEPLOYMENT/);
+
+// Normalize accidental whitespace around operator-managed IDs.
+g.props.CV_DEPLOYMENT_ID = ' MOCK_DEPLOYMENT ';
+g.props.CV_STAGING_DEPLOYMENT_ID = ' MOCK_DEPLOYMENT ';
+const whitespaceDeployment = request('onboardingState');
+assert.equal(whitespaceDeployment.ok, true);
+g.props.CV_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
+g.props.CV_STAGING_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
 
 const state = request('onboardingState');
 assert.equal(state.ok, true);
