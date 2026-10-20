@@ -2543,6 +2543,7 @@ with sync_playwright() as p:
     # A malformed server response must not become active HTML in the save confirmation.
     success_number_payload = '<svg onload=window.__xssFired=true></svg>'
     success_vendor_payload = '<img src=x onerror=window.__xssFired=true>'
+    success_payment_method_payload = '<img src=x onerror=window.__xssFired=true>'
 
     def tamper_created_voucher_number(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -2552,6 +2553,7 @@ with sync_playwright() as p:
         if request_data.get('action') == 'createVouchers' and created:
             created[0]['no'] = success_number_payload
             created[0]['vendor'] = success_vendor_payload
+            created[0]['paymentMethod'] = success_payment_method_payload
             # createVouchers responses are pushed into the client cache before a later bootstrap normalization.
             created[0]['date'] = {'split': None}
             route.fulfill(response=response, json=payload)
@@ -2582,6 +2584,8 @@ with sync_playwright() as p:
         'Date unavailable' in page.locator('#printArea .pv-meta').inner_text()
         and success_number_payload in page.locator('#printArea').inner_text()
         and page.locator('#printArea img, #printArea svg').count() == 0
+        and 'Payment method' in page.locator('#printArea').inner_text()
+        and 'Not recorded' in page.locator('#printArea').inner_text()
         and not page.evaluate('window.__xssFired === true')
         and sum(message.startswith('PAGEERR ') for message in logs) == page_errors_before_print,
         'malformed API date uses a safe print fallback without crashing or activating hostile voucher text',
@@ -2592,7 +2596,9 @@ with sync_playwright() as p:
     )
     check(
         normal_voucher_date_display in page.locator('#printArea .pv-meta').inner_text()
-        and 'Date unavailable' not in page.locator('#printArea .pv-meta').inner_text(),
+        and 'Date unavailable' not in page.locator('#printArea .pv-meta').inner_text()
+        and 'Payment method' in page.locator('#printArea').inner_text()
+        and 'Cash' in page.locator('#printArea').inner_text(),
         'valid server-returned voucher date keeps the normal printed date format',
     )
     page.unroute('**/api?*', tamper_created_voucher_number)
@@ -3659,6 +3665,8 @@ with sync_playwright() as p:
 
     # Prototype-named user data must be ordinary aggregation keys, not Object properties.
     prototype_group_values = ['constructor', '__proto__', 'toString', 'hasOwnProperty']
+    vendor_default_category_payload = '<svg onload=window.__xssFired=true></svg>'
+    vendor_default_method_payload = '<img src=x onerror=window.__xssFired=true>'
     invalid_vendor_envelope = False
     invalid_voucher_envelope = False
 
@@ -3752,6 +3760,15 @@ with sync_playwright() as p:
                             'company': {'toString': None, 'valueOf': None},
                             'mobile': '123',
                             'active': True,
+                        },
+                        {
+                            'id': 'vendor-defaults-xss',
+                            'name': 'Vendor Defaults XSS Test',
+                            'company': 'Test Supplies',
+                            'mobile': '',
+                            'active': True,
+                            'defaultCategory': vendor_default_category_payload,
+                            'defaultPaymentMethod': vendor_default_method_payload,
                         },
                     ])
                     data['vendors'] = vendors
@@ -3861,6 +3878,14 @@ with sync_playwright() as p:
         and '[object Object]' not in page.locator('#view').inner_text()
         and page.locator('#view img, #view svg').count() == 0,
         'vendor list omits malformed names and contact metadata without rendering unsafe markup',
+    )
+    check(
+        vendor_default_category_payload in page.locator('#view').inner_text()
+        and 'Vendor Defaults XSS Test' in page.locator('#view').inner_text()
+        and 'Auto / Cash' in page.locator('#view').inner_text()
+        and page.locator('#view img, #view svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'vendor default category is escaped and unknown payment-method metadata falls back safely',
     )
     invalid_vendor_envelope = True
     page.reload(wait_until='domcontentloaded')
