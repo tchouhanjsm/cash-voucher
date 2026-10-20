@@ -501,26 +501,11 @@ assert.match(
 
 const main = read('frontend/main.js');
 const onboarding = read('frontend/features/onboarding.js');
-assert.match(
-  main,
-  /function bindFeatures\(\)[\s\S]*?onboarding\.init\(\)/,
-  'onboarding evidence controls are bound during application startup',
-);
-assert.match(
-  onboarding,
-  /Checking this customer\\.configuration with the server/,
-  'onboarding shows an honest loading state while server checks run',
-);
-assert.match(
-  onboarding,
-  /if \(!busy\) void load\(\)/,
-  'opening onboarding triggers a server check automatically',
-);
-assert.match(
-  onboarding,
-  /current = await api\('onboardingState'\)/,
-  'onboarding status is loaded from the server API',
-);
+assert.ok(/function bindFeatures\(\)[\s\S]*?onboarding\.init\(\)/.test(main));
+assert.ok(onboarding.includes('Checking this customer.configuration with the server'));
+assert.ok(/if \(!busy\) void load\(\)/.test(onboarding));
+assert.ok(onboarding.includes("current = await api('onboardingState')"));
+
 
 console.log(
   'Design system OK — light-first palette, optional dark mode and shared workflow adoption.',
