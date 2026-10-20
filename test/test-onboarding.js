@@ -63,12 +63,12 @@ assert.equal(wrongDeployment.code, 'ENVIRONMENT_MISMATCH');
 assert.match(wrongDeployment.error, /clientDeployment/);
 assert.doesNotMatch(wrongDeployment.error, /MOCK_DEPLOYMENT/);
 
-// Normalize accidental whitespace around operator-managed IDs.
-g.props.CV_DEPLOYMENT_ID = ' MOCK_DEPLOYMENT ';
-g.props.CV_STAGING_DEPLOYMENT_ID = ' MOCK_DEPLOYMENT ';
-const whitespaceDeployment = request('onboardingState');
-assert.equal(whitespaceDeployment.ok, true);
-g.props.CV_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
+g.props.CV_STAGING_DEPLOYMENT_ID = 'WRONG_SERVER_DEPLOYMENT';
+const wrongServerDeployment = request('onboardingState');
+assert.equal(wrongServerDeployment.ok, false);
+assert.equal(wrongServerDeployment.code, 'ENVIRONMENT_MISMATCH');
+assert.match(wrongServerDeployment.error, /serverDeployment/);
+assert.doesNotMatch(wrongServerDeployment.error, /WRONG_SERVER_DEPLOYMENT/);
 g.props.CV_STAGING_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
 
 const state = request('onboardingState');
