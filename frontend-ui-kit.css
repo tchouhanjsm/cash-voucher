@@ -1355,6 +1355,8 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   .page-header h1 {
+    width: fit-content;
+    max-width: 100%;
     color: var(--ink);
     font-size: clamp(28px, 2.45vw, 36px);
     font-weight: 720;
