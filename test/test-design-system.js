@@ -499,7 +499,6 @@ assert.match(
   'saving Settings does not redraw over a route opened while the save was pending',
 );
 
-
 const main = read('frontend/main.js');
 const onboarding = read('frontend/features/onboarding.js');
 assert.match(
