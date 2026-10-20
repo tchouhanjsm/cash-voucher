@@ -7,6 +7,7 @@ export const S = {
   deploymentId: '',
   onboardingStage: '',
   onboardingEnvironment: '',
+  stagingUatBypass: false,
   settings: {},
   vouchers: [],
   vendors: [],
