@@ -133,7 +133,6 @@ assert.throws(
 );
 ok(true, 'vendor-default migration refuses occupied target columns');
 
-
 // Approval migration adds R:U only, preserves prior cells, and stops on occupied columns.
 const approvalMigrationMock = create();
 approvalMigrationMock.props.OWNER_EMAIL = 'Owner@Test.com';
