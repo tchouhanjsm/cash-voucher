@@ -33,7 +33,7 @@ assert.doesNotMatch(
   /restrict its deployment branch to `main`/,
   'runbook must not instruct an Environment restriction that blocks client-main dispatch',
 );
-assert.match(releaseRunbook, /deploy-and-uat` runs only from `client-main`/);
+assert.match(releaseRunbook, /\*\*deploy-and-uat\*\* runs only from `client-main`/);
 assert.match(
   releaseRunbook,
   /Merging a change to `backend\/\*\.gs` does \*\*not\*\* update the Google Apps Script project/,
