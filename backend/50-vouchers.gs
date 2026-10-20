@@ -68,9 +68,7 @@ function sameClientVoucherPayload_(voucher, entry) {
     String(voucher.Notes || '') === entry.notes &&
     (voucher.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT') === entry.type &&
     String(voucher.CashImpact || 'UNCLASSIFIED') === entry.cashImpact &&
-    (entry.paymentMethod === undefined ||
-      !voucher.PaymentMethod ||
-      String(voucher.PaymentMethod) === entry.paymentMethod)
+    (entry.paymentMethod === undefined || String(voucher.PaymentMethod || '') === entry.paymentMethod)
   );
 }
 
