@@ -67,6 +67,32 @@ assert.match(localServer, /Cache-Control': 'no-store'/);
 assert.match(localServer, /function stagingServiceWorker/);
 assert.doesNotMatch(localServer, /caches\.open/);
 
+
+const clientDistWorkflow = fs.readFileSync(
+  path.join(root, '.github/workflows/client-dist.yml'),
+  'utf8',
+);
+assert.match(
+  clientDistWorkflow,
+  /^on:\n {2}workflow_dispatch:/m,
+  'client ZIP workflow must be manually dispatchable from the integration branch',
+);
+assert.doesNotMatch(
+  clientDistWorkflow,
+  /^\s+(push|pull_request):/m,
+  'client ZIP generation must not run automatically on pushes or PRs',
+);
+assert.match(clientDistWorkflow, /CV_ENVIRONMENT: staging/);
+assert.match(clientDistWorkflow, /CV_API_URL: \$\{\{ inputs\.api_url \}\}/);
+assert.match(clientDistWorkflow, /name: Client staging dist zip/);
+assert.match(clientDistWorkflow, /release-manifest\.json/);
+assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
+assert.doesNotMatch(
+  clientDistWorkflow,
+  /CV_ENVIRONMENT:\s*production|clasp push|staging:deploy/,
+  'client ZIP workflow must remain an artifact-only staging build',
+);
+
 console.log(
   'Staging workflow guard OK — manual trigger, client-main-only gate, explicit write consent, isolated deployment config, no-cache test shell and protected resource checks.',
 );
