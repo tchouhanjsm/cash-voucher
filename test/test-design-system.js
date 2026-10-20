@@ -508,13 +508,13 @@ assert.match(
 );
 assert.match(
   onboarding,
-  /Checking this customer.configuration with the server/,
+  /Checking this customer\\.configuration with the server/,
   'onboarding shows an honest loading state while server checks run',
 );
 assert.match(
   onboarding,
   /if \(!busy\) void load\(\)/,
-  'opening onboarding automatically requests server-verified status instead of stopping at the empty-state screen',
+  'opening onboarding triggers a server check automatically',
 );
 assert.match(
   onboarding,
