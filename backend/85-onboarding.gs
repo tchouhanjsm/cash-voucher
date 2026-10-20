@@ -112,19 +112,18 @@ function onboardingTargetIdentity_(environment) {
   const prefix = 'CV_' + environment.toUpperCase() + '_';
   return {
     environment: environment,
-    scriptId: onboardingIdentityValue_(ScriptApp.getScriptId()),
-    expectedScriptId: onboardingIdentityValue_(p.getProperty(prefix + 'SCRIPT_ID')),
-    spreadsheetId: onboardingIdentityValue_(p.getProperty('SS_ID')),
-    expectedSpreadsheetId: onboardingIdentityValue_(p.getProperty(prefix + 'SPREADSHEET_ID')),
-    deploymentId: onboardingIdentityValue_(p.getProperty('CV_DEPLOYMENT_ID')),
-    expectedDeploymentId: onboardingIdentityValue_(p.getProperty(prefix + 'DEPLOYMENT_ID')),
-    receiptFolderId: onboardingIdentityValue_(p.getProperty('RECEIPT_FOLDER_ID')),
-    expectedReceiptFolderId: onboardingIdentityValue_(p.getProperty(prefix + 'RECEIPT_FOLDER_ID')),
-    backupFolderId: onboardingIdentityValue_(p.getProperty('BACKUP_FOLDER_ID')),
-    expectedBackupFolderId: onboardingIdentityValue_(p.getProperty(prefix + 'BACKUP_FOLDER_ID')),
+    scriptId: String(ScriptApp.getScriptId() || ''),
+    expectedScriptId: String(p.getProperty(prefix + 'SCRIPT_ID') || ''),
+    spreadsheetId: String(p.getProperty('SS_ID') || ''),
+    expectedSpreadsheetId: String(p.getProperty(prefix + 'SPREADSHEET_ID') || ''),
+    deploymentId: String(p.getProperty('CV_DEPLOYMENT_ID') || ''),
+    expectedDeploymentId: String(p.getProperty(prefix + 'DEPLOYMENT_ID') || ''),
+    receiptFolderId: String(p.getProperty('RECEIPT_FOLDER_ID') || ''),
+    expectedReceiptFolderId: String(p.getProperty(prefix + 'RECEIPT_FOLDER_ID') || ''),
+    backupFolderId: String(p.getProperty('BACKUP_FOLDER_ID') || ''),
+    expectedBackupFolderId: String(p.getProperty(prefix + 'BACKUP_FOLDER_ID') || ''),
   };
 }
-
 // Keep one comparison implementation for request-time enforcement and the onboarding
 // diagnostic. The request-only deployment comparison is deliberately omitted when
 // no browser-supplied deployment ID is available.
