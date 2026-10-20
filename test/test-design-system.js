@@ -12,6 +12,7 @@ const auth = read('frontend/features/auth.js');
 const dashboard = read('frontend/features/dashboard.js');
 const ui = read('frontend/core/ui.js');
 const payments = read('frontend/features/payments.js');
+const printing = read('frontend/features/printing.js');
 const administration = read('frontend/features/administration.js');
 const bulk = read('frontend/features/bulk.js');
 const reports = read('frontend/features/reports.js');
@@ -405,6 +406,21 @@ assert.match(
   payments,
   /function paymentMethodOptions\(selected = 'CASH'\)/,
   'staff payment entry defaults to Cash',
+);
+assert.match(
+  payments,
+  /NT === 'RECEIPT' \? 'Received via' : 'Paid via'/,
+  'payment method label reflects receipt vs payment direction',
+);
+assert.match(
+  printing,
+  /isIn\(voucher\) \? 'Received via' : 'Paid via'/,
+  'printed voucher labels the payment rail by direction',
+);
+assert.doesNotMatch(
+  printing,
+  /voucher\.cashImpact/,
+  'printed voucher never exposes internal cash-impact enum values',
 );
 assert.match(
   payments,
