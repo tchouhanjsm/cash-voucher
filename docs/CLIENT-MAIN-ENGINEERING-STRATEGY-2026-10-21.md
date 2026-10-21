@@ -1,7 +1,7 @@
 # Client-main — Engineering and Release Strategy
 
 **Effective:** 21 October 2026  
-**Source release baseline:** PR #198 merged at acc93eb68cec21b1c0510c31fc5f4c82c5481e1d. Its merged-head CI/Quality, Browser E2E and Full Flight Test passed. The active phase is now staging release and operational proof, not further feature work.
+**Source release baseline:** PR #198 merged at `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d`; its merged-head CI/Quality, Browser E2E and Full Flight Test passed.
 
 ## Branch policy
 
@@ -52,9 +52,11 @@ Deploy/UAT remains manual and must run from refs/heads/client-main. For deploy-a
 
 ## Current queue
 
-**P0 — current task: execute the six-step staging release pipeline** in docs/EXECUTION-PLAN-2026-10-21.md. Source PRs #197 and #198 are merged and their checks passed. Next, verify staging identity/host access; back up and inspect actual schema; run the two required additive migrations on staging only if the inspected schema confirms they are needed; deploy backend first, then publish the staging static frontend and run manual guarded UAT from client-main; prove live roles, receipts, Cash/UPI/Bank, offline recovery, print/A5 and isolated restore; then obtain acceptance and start the 14-day hotel pilot. No production actions are authorized.
+**P0 — current task:** execute the six-step staging release pipeline in `docs/EXECUTION-PLAN-2026-10-21.md`. Verify isolated staging resources and host access; back up and inspect the real schema; run only required staging migrations after owner approval; deploy backend first; publish the staging frontend and run guarded UAT from `client-main`; prove live authorization, receipts, cash-vs-digital treatment, offline recovery, print/A5 and isolated restore; then accept the 14-day hotel pilot. Production remains untouched.
 
-**P1 — pilot-driven improvement (after the 14-day hotel pilot):** consider Today → Close → Owner card as one vertical slice, reusing existing payment, receipt, approval, exception, close and recovery data paths.
+**P0 — release readiness:** align strategy, handoff and staging audit to PR #197; assert that the workflow, branch policy and documents agree; owner/admin verifies branch rulesets and host private-repo access; run authorized staging UAT; prove real backup/restore; test actual device, roles, receipts, print and offline recovery; obtain acceptance.
+
+**P1 — pilot-driven improvement:** after observation, consider Today → Close → Owner card as one vertical slice, reusing existing payment, receipt, approval, exception, close and recovery data paths.
 
 **P2 — research:** design durable audit-failure handling; validate accountant software/version and import fixture; review the time-bounded braces@3.0.3 exception by 9 November 2026; measure Apps Script/Sheets service limits before a database decision. Do not blindly downgrade Clasp or rewrite to multi-tenant.
 

@@ -17,7 +17,7 @@
 
 ## Current release pipeline
 
-The active next step is the six-step staging release pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PRs #197 and #198 are merged. The next work is staging identity/host verification, backup and schema-reviewed migrations, backend-first deployment, guarded staging UAT, operational/device checks and isolated restore, then the 14-day hotel pilot after customer acceptance. This is a plan, not proof of live staging completion. Production remains excluded.
+The active next step is the six-step staging release pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PRs #197 and #198 are merged; live staging and customer acceptance are not yet proven. Production remains excluded.
 
 ## Current execution documents
 
@@ -27,7 +27,8 @@ The active next step is the six-step staging release pipeline in [the execution 
 - [Staging release audit](STAGING-RELEASE-AUDIT.md)
 - [Current engineering handoff](HANDOFF.md)
 
-PR #198 is the current release-governance baseline. The execution plan records the six-step staging pipeline; these documents do not certify that live staging or customer acceptance has passed.
+These documents share the post-PR #197 baseline. The strategy and execution plan describe
+source/release gates; they do not certify that live staging or customer acceptance has passed.
 
 ## Verification
 

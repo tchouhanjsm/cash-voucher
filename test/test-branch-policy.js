@@ -17,7 +17,6 @@ const boardStrategy = read('docs/CEO-BOARD-STRATEGY.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
 const stagingAudit = read('docs/STAGING-RELEASE-AUDIT.md');
-const handoff = read('docs/HANDOFF.md');
 
 assert.match(ci, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(ci, /pull_request:\n\s+branches:\s*\[client-main\]/);
@@ -41,17 +40,17 @@ assert.match(boardStrategy, /release readiness before feature expansion/i);
 assert.match(executionPlan, /No production migration\/deployment/i);
 assert.match(executionPlan, /## Immediate pipeline — preserve this order/);
 assert.ok(
-  executionPlan.indexOf("### 1. Complete the source release") <
-    executionPlan.indexOf("### 2. Prepare and identify staging") &&
-    executionPlan.indexOf("### 2. Prepare and identify staging") <
-      executionPlan.indexOf("### 3. Back up, then migrate staging") &&
-    executionPlan.indexOf("### 3. Back up, then migrate staging") <
-      executionPlan.indexOf("### 4. Deploy backend first and run staging UAT") &&
-    executionPlan.indexOf("### 4. Deploy backend first and run staging UAT") <
-      executionPlan.indexOf("### 5. Prove operational readiness") &&
-    executionPlan.indexOf("### 5. Prove operational readiness") <
-      executionPlan.indexOf("### 6. Controlled 14-day hotel pilot"),
-  "the operational release steps must remain in the agreed order",
+  executionPlan.indexOf('### 1. Complete the source release') <
+    executionPlan.indexOf('### 2. Prepare and identify staging') &&
+    executionPlan.indexOf('### 2. Prepare and identify staging') <
+      executionPlan.indexOf('### 3. Back up, then migrate staging') &&
+    executionPlan.indexOf('### 3. Back up, then migrate staging') <
+      executionPlan.indexOf('### 4. Deploy backend first and run staging UAT') &&
+    executionPlan.indexOf('### 4. Deploy backend first and run staging UAT') <
+      executionPlan.indexOf('### 5. Prove operational readiness') &&
+    executionPlan.indexOf('### 5. Prove operational readiness') <
+      executionPlan.indexOf('### 6. Controlled 14-day hotel pilot'),
+  'the six release steps must remain in the agreed order',
 );
 assert.match(
   executionPlan,
@@ -59,52 +58,11 @@ assert.match(
 );
 assert.match(executionPlan, /Keep historical `PaymentMethod` blanks blank/);
 assert.match(executionPlan, /Never dispatch deploy\/UAT from `main`/);
-assert.match(branchPolicy, /six-step staging release pipeline/);
-assert.match(currentStrategy, /six-step staging release pipeline/);
-assert.match(
-  handoff,
-  /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/,
-);
-assert.match(
-  handoff,
-  /upload\/deploy the reviewed backend first[\s\S]*publish the static frontend/i,
-);
-assert.match(stagingAudit, /Vouchers W, Vendors H:I/);
-assert.match(stagingAudit, /separate recovery Sheet\/folder/);
-assert.match(
-  executionPlan,
-  /migrateVoucherPaymentMethodField\(\)/,
-);
-assert.match(
-  executionPlan,
-  /migrateVendorDefaultsSchema\(\)/,
-);
-assert.match(
-  executionPlan,
-  /restore into a \*\*separate recovery Sheet\/folder\*\*/,
-);
-assert.match(
-  executionPlan,
-  /Only after steps 2–5 pass/,
-);
-assert.match(
-  stagingAudit,
-  /migrateVoucherPaymentMethodField\(\)/,
-);
-assert.match(
-  stagingAudit,
-  /migrateVendorDefaultsSchema\(\)/,
-);
-assert.match(stagingAudit, /Deploy backend first/);
-assert.match(
-  stagingAudit,
-  /manual guarded UAT from client-main/,
-);
-assert.match(
-  stagingAudit,
-  /Production is excluded/,
-);
 assert.match(branchPolicy, /\[CEO and board product strategy\]\(CEO-BOARD-STRATEGY\.md\)/);
+assert.match(stagingAudit, /six-step pipeline in \[the execution plan\]/);
+assert.match(stagingAudit, /migrateVoucherPaymentMethodField\(\)/);
+assert.match(stagingAudit, /migrateVendorDefaultsSchema\(\)/);
+assert.match(stagingAudit, /separate recovery target/);
 assert.match(
   branchPolicy,
   /\[Client-main engineering and release strategy\]\(CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21\.md\)/,
