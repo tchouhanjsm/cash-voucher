@@ -65,7 +65,7 @@ Only after stages 2–5 pass, record the customer's acceptance, fallback and sup
 No stage is complete because a source PR merged or a mock test passed. Keep evidence for every gate. Do not start the next product feature batch until the first-customer release/pilot evidence shows a real bottleneck.
 
 
-## Phase A — branch and source controls
+## Branch and source controls
 
 - All product PRs target client-main from short-lived client/* branches.
 - Require CI, Browser E2E and Full Flight Test on the exact final PR head; fix failures instead of bypassing checks.
@@ -117,17 +117,13 @@ Consider one integrated **Today → Close → Owner card** workflow: Today prior
 
 ## Priority queue
 
-- **P0 — Release-readiness PR.** Owner: engineering/reviewer. Acceptance: exact-head CI, Browser E2E and Flight Test.
+- **P0 — Current six-step staging release.** Owner: operator + repository/account owner. Acceptance: isolated staging identity; verified pre-migration backup; schema-reviewed required migrations; backend-first deploy; staging static frontend and live UAT; live operational checks and isolated restore.
 - **P0 — Branch rulesets/default branch.** Owner: repository owner/admin. Acceptance: actual GitHub Settings state recorded.
-- **P0 — Staging identity and UAT.** Owner: operator + owner. Acceptance: isolated resource register and exact workflow run.
-- **P0 — Backup and restore.** Owner: owner/operator. Acceptance: restore into a separate target with reconciliation.
-- **P0 — Device/offline/print/accessibility.** Owner: QA + customer operator. Acceptance: device matrix and critical issues closed.
-- **P1 — Controlled pilot.** Owner: product owner + customer. Acceptance: written acceptance and 14-day evidence.
-- **P1 — Next product batch.** Owner: product/engineering. Acceptance: observed problem, baseline and success metric.
+- **P1 — Controlled 14-day pilot.** Owner: product owner + customer. Acceptance: written acceptance, fallback/support terms and daily operating evidence.
+- **P2 — Next product batch.** Owner: product/engineering. Acceptance: observed pilot bottleneck and success metric.
 - **P2 — Durable audit-failure fallback.** Owner: security/backend. Acceptance: failure/retention/access decision.
 - **P2 — Accountant mapping.** Owner: customer/accountant. Acceptance: chosen software/version and anonymized fixture.
 - **P2 — Database/multi-tenant architecture.** Owner: founder/architecture. Acceptance: measured scaling trigger and migration business case.
-
 ## Non-goals and stop conditions
 
 No production migration/deployment, blind branch synchronization, multi-tenant rewrite, AI dependency, autonomous posting, outbound WhatsApp campaign, unvalidated tax/ledger claim or mandatory denomination schema change. Staging is unverified until live UAT, backup and isolated restore are evidenced. Customer handover is blocked until access, device, data ownership and acceptance gates pass.

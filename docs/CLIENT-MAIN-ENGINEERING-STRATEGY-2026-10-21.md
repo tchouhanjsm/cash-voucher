@@ -1,7 +1,7 @@
 # Client-main — Engineering and Release Strategy
 
 **Effective:** 21 October 2026  
-**Current baseline:** d5ed3e77387d0f1896c97dbaac793ed23b17eb32, after PR #197.
+**Source release baseline:** PR #198 merged at acc93eb68cec21b1c0510c31fc5f4c82c5481e1d. Its merged-head CI/Quality, Browser E2E and Full Flight Test passed. The active phase is now staging release and operational proof, not further feature work.
 
 ## Branch policy
 
@@ -51,6 +51,8 @@ Deploy/UAT remains manual and must run from refs/heads/client-main. For deploy-a
 - Do not claim full XSS, CSP headers, accessibility or audit durability unless specific live evidence supports the claim.
 
 ## Current queue
+
+**P0 — current task: execute the six-step staging release pipeline** in docs/EXECUTION-PLAN-2026-10-21.md. Source PRs #197 and #198 are merged and their checks passed. Next, verify staging identity/host access; back up and inspect actual schema; run the two required additive migrations on staging only if the inspected schema confirms they are needed; deploy backend first, then publish the staging static frontend and run manual guarded UAT from client-main; prove live roles, receipts, Cash/UPI/Bank, offline recovery, print/A5 and isolated restore; then obtain acceptance and start the 14-day hotel pilot. No production actions are authorized.
 
 **P0 — execute the six-step staging release pipeline.** PR #197 and PR #198 are merged, and PR #198's merged SHA passed CI/Quality, Browser E2E and Full Flight Test. Do not create duplicate source work. Next: verify staging resources and host access; backup and inspect the actual schema; run only the confirmed required migrations on staging; deploy backend first and then the staging static frontend; dispatch manual guarded UAT from client-main; prove real role/receipt/payment-method/offline/print behavior and backup/restore to a separate target; get written customer acceptance; then begin the 14-day hotel pilot. Keep production untouched.
 

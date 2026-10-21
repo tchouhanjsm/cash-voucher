@@ -23,8 +23,7 @@
 - [Staging release audit](STAGING-RELEASE-AUDIT.md)
 - [Current engineering handoff](HANDOFF.md)
 
-These documents share the post-PR #197 baseline. The strategy and execution plan describe
-source/release gates; they do not certify that live staging or customer acceptance has passed.
+PR #198 is the current release-governance baseline. The execution plan records the six-step staging pipeline; these documents do not certify that live staging or customer acceptance has passed.
 
 ## Verification
 

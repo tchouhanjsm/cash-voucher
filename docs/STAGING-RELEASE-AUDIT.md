@@ -8,13 +8,11 @@
 
 ## Executive status
 
-PR #197 (“streamline fast entry and add live batch totals”) and PR #198 (release-readiness strategy/guardrails) are merged to client-main. PR #198's merged head is acc93eb68cec21b1c0510c31fc5f4c82c5481e1d; its merged-head CI/Quality, Browser E2E and Full Flight Test all passed. Its reported CI/Quality, Browser E2E and Full Flight Test checks passed for the reviewed source commit. It contains source changes and mock-backed migration tests; it does not execute a Google Sheet migration, deploy an Apps Script Web App, publish the static frontend, verify live response headers or demonstrate backup/restore.
+PR #197 (“streamline fast entry and add live batch totals”) and PR #198 (release-readiness strategy/guardrails) are merged to client-main. PR #198's merged head is acc93eb68cec21b1c0510c31fc5f4c82c5481e1d; its merged-head CI/Quality, Browser E2E and Full Flight Test all passed. PR #197 contains source changes and mock-backed migration tests; it does not execute a Google Sheet migration, deploy an Apps Script Web App, publish the static frontend, verify live response headers or demonstrate backup/restore.
 
 The branch policy names client-main as the only integration branch and main as legacy/read-only. Repository metadata still listed main as the default branch. Accessible branch-protection data did not prove active required-check/ruleset enforcement. Owner/admin must verify actual rulesets and default settings; this source PR must not change repository settings or reconcile divergent long-lived branches.
 
 Dedicated staging resources, protected staging Environment, a real deployed staging frontend, successful live UAT, support-email delivery, real backup/restore, physical-device acceptance and customer acceptance are not evidenced as complete. Verify that the private-repository host integration still has access. The product remains single-property, not multi-tenant.
-
-## Active six-step release pipeline
 
 ## Immediate pipeline — preserve this order
 
@@ -70,6 +68,7 @@ Only after stages 2–5 pass, record the customer's acceptance, fallback and sup
 ### Exit rule
 
 No stage is complete because a source PR merged or a mock test passed. Keep evidence for every gate. Do not start the next product feature batch until the first-customer release/pilot evidence shows a real bottleneck.
+
 
 
 ## Branch and staging workflow — authoritative correction

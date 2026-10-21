@@ -47,7 +47,7 @@ assert.match(stagingAudit, /migrateVoucherPaymentMethodField\(\)/);
 assert.match(stagingAudit, /migrateVendorDefaultsSchema\(\)/);
 assert.match(stagingAudit, /Deploy backend first/);
 assert.match(stagingAudit, /manual guarded UAT from client-main/);
-assert.match(stagingAudit, /main remains untouched/);
+assert.match(stagingAudit, /Production migration is not part of this pipeline/);
 assert.match(branchPolicy, /\[CEO and board product strategy\]\(CEO-BOARD-STRATEGY\.md\)/);
 assert.match(
   branchPolicy,
