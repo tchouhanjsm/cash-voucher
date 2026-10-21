@@ -52,13 +52,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary formatter capture for execution plan
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx prettier --write docs/EXECUTION-PLAN-2026-10-21.md
-          node -e "console.log(require('node:fs').readFileSync('docs/EXECUTION-PLAN-2026-10-21.md', 'base64'))"
-
       - name: Run quality gate
         run: npm run check
 
