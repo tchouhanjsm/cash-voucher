@@ -26,8 +26,14 @@ const fixture = {
   CV_STAGING_UAT_MANAGER_PASSWORD: 'UAT#Manager2026',
   CV_STAGING_DEPLOY_CONFIRMATION: 'STAGING-ONLY',
   CLASPRC_JSON: JSON.stringify({
-    token: { access_token: 'fixture-only' },
-    oauth2ClientSettings: { clientId: 'fixture', clientSecret: 'fixture' },
+    tokens: {
+      default: {
+        type: 'authorized_user',
+        refresh_token: 'fixture-refresh-token',
+        client_id: 'fixture-client-id',
+        client_secret: 'fixture-client-secret',
+      },
+    },
   }),
 };
 
@@ -45,6 +51,77 @@ assert.equal(validUat.checks.dedicatedUatAccountsPresent, true);
 
 const validDeploy = validateStagingConfiguration(fixture, { mode: 'deploy' });
 assert.equal(validDeploy.ok, true, validDeploy.errors.join('; '));
+
+const validLegacyClasp = validateStagingConfiguration(
+  {
+    ...fixture,
+    CLASPRC_JSON: JSON.stringify({
+      token: { refresh_token: 'legacy-refresh-token' },
+      oauth2ClientSettings: {
+        clientId: 'legacy-client-id',
+        clientSecret: 'legacy-client-secret',
+      },
+    }),
+  },
+  { mode: 'deploy' },
+);
+assert.equal(validLegacyClasp.ok, true, validLegacyClasp.errors.join('; '));
+
+const incompleteModernClasp = validateStagingConfiguration(
+  {
+    ...fixture,
+    CLASPRC_JSON: JSON.stringify({
+      tokens: { default: { client_id: 'client-id-only', client_secret: 'client-secret-only' } },
+    }),
+  },
+  { mode: 'deploy' },
+);
+assert.equal(incompleteModernClasp.ok, false);
+assert.ok(incompleteModernClasp.errors.some((message) => message.includes('CLASPRC_JSON')));
+
+const withoutProductionReferenceIds = {
+  ...fixture,
+  CV_PRODUCTION_SCRIPT_ID: '',
+  CV_PRODUCTION_SPREADSHEET_ID: '',
+  CV_PRODUCTION_RECEIPT_FOLDER_ID: '',
+  CV_PRODUCTION_BACKUP_FOLDER_ID: '',
+  CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
+};
+const attestedStagingOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
+  mode: 'deploy',
+});
+assert.equal(attestedStagingOnly.ok, true, attestedStagingOnly.errors.join('; '));
+assert.equal(attestedStagingOnly.checks.productionResourceReferencesPresent, false);
+assert.equal(attestedStagingOnly.checks.ownerAttestedIsolationUsed, true);
+assert.equal(attestedStagingOnly.checks.targetIdsAreSeparated, true);
+
+const missingIsolationAttestation = validateStagingConfiguration(
+  {
+    ...withoutProductionReferenceIds,
+    CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: '',
+  },
+  { mode: 'deploy' },
+);
+assert.equal(missingIsolationAttestation.ok, false);
+assert.ok(
+  missingIsolationAttestation.errors.some((message) =>
+    message.includes('CV_STAGING_RESOURCE_ISOLATION_ATTESTATION'),
+  ),
+);
+
+const partialProductionReferenceIds = validateStagingConfiguration(
+  {
+    ...withoutProductionReferenceIds,
+    CV_PRODUCTION_SCRIPT_ID: 'production-script-fixture',
+  },
+  { mode: 'deploy' },
+);
+assert.equal(partialProductionReferenceIds.ok, false);
+assert.ok(
+  partialProductionReferenceIds.errors.some((message) =>
+    message.includes('all four production resource reference IDs'),
+  ),
+);
 
 // Clasp may echo individual OAuth fields rather than the complete JSON document.
 // Every string stored under token/oauth settings must therefore be redacted too.
