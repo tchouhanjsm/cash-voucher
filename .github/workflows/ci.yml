@@ -53,7 +53,6 @@ jobs:
           if-no-files-found: error
 
       - name: Temporary formatter capture for release strategy PR
-        if: github.event_name == 'pull_request'
         shell: bash
         run: |
           set -euo pipefail
