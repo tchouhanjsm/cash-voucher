@@ -2,7 +2,7 @@
 
 **Date:** 21 October 2026  
 **Integration branch:** client-main  
-**Reviewed baseline:** d5ed3e77387d0f1896c97dbaac793ed23b17eb32, post-PR #197  
+**Reviewed baseline:** acc93eb68cec21b1c0510c31fc5f4c82c5481e1d, post-PR #198  
 **Release state:** live staging and first-customer acceptance remain unverified.
 
 ## Executive decision

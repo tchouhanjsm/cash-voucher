@@ -3,7 +3,7 @@
 **Updated:** 21 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** client-main  
-**Verified integration head before this PR:** d5ed3e77387d0f1896c97dbaac793ed23b17eb32 (post-PR #197).  
+**Verified integration head before this PR:** acc93eb68cec21b1c0510c31fc5f4c82c5481e1d (post-PR #198; CI/Quality, Browser E2E and Full Flight Test passed).  
 **Legacy branch:** main (read-only; divergent).  
 **Current phase:** six-step staging release pipeline. PRs #197 and #198 are merged; no live staging run, migration, deployment or customer pilot is claimed.
 
