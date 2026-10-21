@@ -61,7 +61,7 @@ staging-write consent. Starting the staging workflow from main is not supported.
 
 - validate-only runs source checks and mock Browser E2E without staging credentials.
 - deploy-and-uat is owner-authorized and updates an already verified staging deployment; it must not
-create or guess a target deployment.
+  create or guess a target deployment.
 - uat-only tests a known deployed staging version without uploading source.
 - This audit does not authorize production deployment, production migration or a DNS change.
 
@@ -74,43 +74,43 @@ exist. Never copy secret values to Git, chat, PR text or logs.
 ### A. Dedicated staging
 
 1. Verify a staging-only Apps Script project, Spreadsheet, receipt folder, backup folder, Web App
-deployment and distinct browser origin. Record target identity privately and prove every staging
-resource differs from production.
+   deployment and distinct browser origin. Record target identity privately and prove every staging
+   resource differs from production.
 2. On a verified empty staging Sheet only, configure staging Owner properties, run setup once,
-approve scopes, create a dedicated Manager and complete first password changes. Never run setup on
-populated or production data.
+   approve scopes, create a dedicated Manager and complete first password changes. Never run setup on
+   populated or production data.
 3. Create the first versioned staging Web App deployment manually; independently verify deployment
-ID and /exec URL. Automated deployment intentionally updates an existing deployment.
+   ID and /exec URL. Automated deployment intentionally updates an existing deployment.
 4. Verify protected GitHub Environment staging and variables CV_STAGING_SCRIPT_ID,
-CV_STAGING_DEPLOYMENT_ID, CV_STAGING_API_URL, CV_STAGING_SPREADSHEET_ID,
-CV_STAGING_RECEIPT_FOLDER_ID, CV_STAGING_BACKUP_FOLDER_ID, CV_PRODUCTION_SCRIPT_ID,
-CV_PRODUCTION_SPREADSHEET_ID, CV_PRODUCTION_RECEIPT_FOLDER_ID and CV_PRODUCTION_BACKUP_FOLDER_ID.
+   CV_STAGING_DEPLOYMENT_ID, CV_STAGING_API_URL, CV_STAGING_SPREADSHEET_ID,
+   CV_STAGING_RECEIPT_FOLDER_ID, CV_STAGING_BACKUP_FOLDER_ID, CV_PRODUCTION_SCRIPT_ID,
+   CV_PRODUCTION_SPREADSHEET_ID, CV_PRODUCTION_RECEIPT_FOLDER_ID and CV_PRODUCTION_BACKUP_FOLDER_ID.
 5. Configure secrets CLASPRC_JSON, CV_STAGING_UAT_OWNER_EMAIL, CV_STAGING_UAT_OWNER_PASSWORD,
-CV_STAGING_UAT_MANAGER_EMAIL and CV_STAGING_UAT_MANAGER_PASSWORD. Never record values in this audit.
+   CV_STAGING_UAT_MANAGER_EMAIL and CV_STAGING_UAT_MANAGER_PASSWORD. Never record values in this audit.
 6. Run validate-only first. After owner review of target identity and workflow code, dispatch
-deploy-and-uat from client-main with STAGING-ONLY and explicit staging-write consent. Review
-sanitized logs and exact workflow result. The synthetic INR 10,000 payment is created and canceled;
-its canceled record and audit trace remain in staging.
+   deploy-and-uat from client-main with STAGING-ONLY and explicit staging-write consent. Review
+   sanitized logs and exact workflow result. The synthetic INR 10,000 payment is created and canceled;
+   its canceled record and audit trace remain in staging.
 7. Save the workflow run and target identity evidence in the private release register. Green CI
-alone is not live UAT evidence.
+   alone is not live UAT evidence.
 
 ### B. First-customer instance
 
 1. Verify private static-host access. Preserve URL continuity before DNS changes.
 2. Give each customer a distinct Sheet, Script project, private receipt/backup folders, Web App
-deployment and frontend origin. Do not reuse staging or another customer's IDs.
+   deployment and frontend origin. Do not reuse staging or another customer's IDs.
 3. Build the frontend with an independently verified customer Web App URL and the correct
-environment. Publish only the generated artifact after separate owner approval.
+   environment. Publish only the generated artifact after separate owner approval.
 4. Inspect response headers actually served by the host, including framing and content-type
-protection. Generated .htaccess/_headers do not prove live response behavior.
+   protection. Generated .htaccess/_headers do not prove live response behavior.
 5. Test Owner/Manager/Staff permissions, denied API operations, voucher create/cancel, receipt
-upload/read, approvals, reports and real backend behavior.
+   upload/read, approvals, reports and real backend behavior.
 6. Run a real backup, verify Sheet snapshot/copy, receipt files and manifest, then restore into a
-separate recovery Sheet/folder. Reconcile headers, row counts, voucher numbering, user/settings
-state and receipt mapping.
+   separate recovery Sheet/folder. Reconcile headers, row counts, voucher numbering, user/settings
+   state and receipt mapping.
 7. Test intended devices: install/update, online save, receipt capture, offline queue,
-reconnect/idempotent replay, export/recovery, print/PDF, zoom/reflow, keyboard focus and assistive
-technology.
+   reconnect/idempotent replay, export/recovery, print/PDF, zoom/reflow, keyboard focus and assistive
+   technology.
 8. Record instance register, customer quick-start, incident fallback and written acceptance.
 
 **Exit evidence:** isolated resource inventory; target-matched live UAT; verified host and
@@ -132,18 +132,18 @@ contention in authorized staging before publishing service-level promises.
 ## Priority 2 — decisions and later work
 
 - **Audit durability:** simultaneous AuditLog append and Script Properties marker-write failure has
-no durable fallback. Define failure, access, retention and recovery semantics before implementation;
-never invent historical audit events.
+  no durable fallback. Define failure, access, retention and recovery semantics before implementation;
+  never invent historical audit events.
 - **Dependency exception:** braces@3.0.3 remains a time-bounded Clasp toolchain exception. Review
-compatibility by 9 November 2026; CI is expected to reject it from 10 November unless renewed
-explicitly with tests. Do not blindly downgrade Clasp.
+  compatibility by 9 November 2026; CI is expected to reject it from 10 November unless renewed
+  explicitly with tests. Do not blindly downgrade Clasp.
 - **Accountant export:** generic recorded-movement CSV exists, but no destination-specific
-compatibility, tax calculation or ledger claim is approved. The receiving accountant must select
-software/version and validate an anonymized fixture; qualified Indian CA review is required for tax
-treatment.
+  compatibility, tax calculation or ledger claim is approved. The receiving accountant must select
+  software/version and validate an anonymized fixture; qualified Indian CA review is required for tax
+  treatment.
 - **Daily close:** denomination rows remain optional until owner/pilot evidence demonstrates value.
 - **Scale:** collect pilot evidence before numeric SLO promises, chain support or multi-tenant
-architecture.
+  architecture.
 
 ## Release decision
 
