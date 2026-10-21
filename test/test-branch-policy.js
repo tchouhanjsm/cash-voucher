@@ -17,6 +17,7 @@ const boardStrategy = read('docs/CEO-BOARD-STRATEGY.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
 const stagingAudit = read('docs/STAGING-RELEASE-AUDIT.md');
+const handoff = read('docs/HANDOFF.md');
 
 assert.match(ci, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(ci, /pull_request:\n\s+branches:\s*\[client-main\]/);
@@ -58,6 +59,9 @@ assert.match(executionPlan, /Never dispatch deploy\/UAT from `main`/);
 assert.match(policy, /six-step staging release pipeline/);
 assert.match(strat, /six-step staging release pipeline/);
 assert.match(handoff, /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/);
+assert.match(handoff, /upload\/deploy the reviewed backend first[\s\S]*publish the static frontend/i);
+assert.match(stagingAudit, /Vouchers W, Vendors H:I/);
+assert.match(stagingAudit, /separate recovery Sheet\/folder/);
 assert.match(executionPlan, /migrateVoucherPaymentMethodField\(\)/);
 assert.match(executionPlan, /migrateVendorDefaultsSchema\(\)/);
 assert.match(executionPlan, /Restore that backup into a \*\*separate recovery Sheet\/folder\*\*/);

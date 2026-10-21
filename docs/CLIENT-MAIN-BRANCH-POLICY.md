@@ -17,7 +17,7 @@
 
 ## Current release pipeline
 
-The active next step is the six-step staging release pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md): complete source release (PR #197 and #198 merged), identify staging and host access, back up and verify schema before required migrations, deploy backend before static frontend and guarded UAT, prove operations plus isolated restore, then run the 14-day hotel pilot after acceptance. This is a plan, not proof of live staging completion. Production remains excluded.
+The active next step is the six-step staging release pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PRs #197 and #198 are merged. The next work is staging identity/host verification, backup and schema-reviewed migrations, backend-first deployment, guarded staging UAT, operational/device checks and isolated restore, then the 14-day hotel pilot after customer acceptance. This is a plan, not proof of live staging completion. Production remains excluded.
 
 ## Current execution documents
 

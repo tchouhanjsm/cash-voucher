@@ -82,17 +82,33 @@ The active integration branch is **client-main**. The staging Environment must r
 
 Owner/admin must verify that the GitHub Environment is named staging, deployment restrictions allow client-main, reviewer protection is configured where supported, and only expected variables/secrets exist. Never copy secret values to Git, chat, PR text or logs.
 
-## Priority 0 — current release sequence and required proof
+## Priority 0 — execution evidence still required
 
-### A. Dedicated staging
+The six-step pipeline above is the canonical sequence. This section records the release gates to prove; it is not a second sequence and does not certify completion.
 
-1. Verify a staging-only Apps Script project, Spreadsheet, receipt folder, backup folder, Web App deployment and distinct browser origin. Record target identity privately and prove every staging resource differs from production.
-2. On a verified empty staging Sheet only, configure staging Owner properties, run setup once, approve scopes, create a dedicated Manager and complete first password changes. Never run setup on populated or production data.
-3. Create the first versioned staging Web App deployment manually; independently verify deployment ID and /exec URL. Automated deployment intentionally updates an existing deployment.
-4. Verify protected GitHub Environment staging and variables CV_STAGING_SCRIPT_ID, CV_STAGING_DEPLOYMENT_ID, CV_STAGING_API_URL, CV_STAGING_SPREADSHEET_ID, CV_STAGING_RECEIPT_FOLDER_ID, CV_STAGING_BACKUP_FOLDER_ID, CV_PRODUCTION_SCRIPT_ID, CV_PRODUCTION_SPREADSHEET_ID, CV_PRODUCTION_RECEIPT_FOLDER_ID and CV_PRODUCTION_BACKUP_FOLDER_ID.
-5. Configure secrets CLASPRC_JSON, CV_STAGING_UAT_OWNER_EMAIL, CV_STAGING_UAT_OWNER_PASSWORD, CV_STAGING_UAT_MANAGER_EMAIL and CV_STAGING_UAT_MANAGER_PASSWORD. Never record values in this audit.
-6. Run validate-only first. After owner review of target identity and workflow code, dispatch deploy-and-uat from client-main with STAGING-ONLY and explicit staging-write consent. Review sanitized logs and exact workflow result. The synthetic INR 10,000 payment is created and canceled; its canceled record and audit trace remain in staging.
-7. Save the workflow run and target identity evidence in the private release register. Green CI alone is not live UAT evidence.
+### A. Staging identity and configuration
+
+1. Verify the dedicated staging Apps Script project, Spreadsheet, receipt folder, backup folder, existing Web App deployment and distinct browser origin. Record IDs privately and confirm they do not overlap production.
+2. Verify the protected GitHub Environment `staging`, its restriction to `client-main`, any required reviewer gates, variables and secrets. Never copy secret values into Git, chat or logs.
+3. Verify private-repository static-host access and that the generated staging ZIP will use the independently confirmed staging `/exec` URL and `CV_ENVIRONMENT=staging`.
+4. Run `validate-only` first. A deploy/UAT run must be owner-authorized, dispatched from `client-main`, include exact `STAGING-ONLY` confirmation and explicit staging-write consent, and use the verified existing deployment.
+
+### B. Backup and required schema migrations
+
+1. Back up the confirmed staging Sheet and receipt files; inspect the snapshot and receipt manifest before writing.
+2. Inspect actual Vouchers and Vendors headers and row counts. Run `migrateVoucherPaymentMethodField()` and/or `migrateVendorDefaultsSchema()` only where schema inspection proves they are required, after explicit owner approval.
+3. Preserve historical `PaymentMethod` blanks. Stop on unexpected headers or occupied target columns; never overwrite an unknown schema.
+4. Verify Vouchers W, Vendors H:I, unchanged row counts and historical values after any migration.
+
+### C. Deploy, UAT and recovery evidence
+
+- Deploy backend first and verify the Apps Script project/deployment/URL; then publish the static staging frontend with the verified API URL and staging environment.
+- Verify Owner/Manager/Staff authorization, payment/receipt operations, Cash versus UPI/Bank, saved-payee defaults, duplicate warnings, approval/cash-close controls and offline recovery on all intended devices.
+- Verify print/PDF/A5, keyboard focus, zoom/reflow and assistive technology.
+- Back up the migrated staging instance and restore to a **separate recovery Sheet/folder**. Reconcile headers, row counts, voucher numbering, settings/users and receipt mapping.
+
+**Production boundary:** none of these staging steps authorizes a production migration, deployment, DNS change or customer-data write.
+
 
 ### B. First-customer instance
 

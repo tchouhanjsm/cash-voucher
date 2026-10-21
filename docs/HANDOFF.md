@@ -14,13 +14,16 @@
 - The observed branch comparison has client-main 13 commits ahead and 2 behind main, merge base acebc6b63010a92e136200321fc77c03dac9a3be. Do not merge/rebase branches blindly. Repository metadata still listed main as default; an owner/admin must verify actual ruleset state.
 - A source merge is not Apps Script upload, Web App deployment, static-host publication, schema migration, real backup/restore or customer acceptance.
 
-## Immediate actions — execute in this order
+## Immediate actions — follow the six-step pipeline in the execution plan
 
-1. PR #198 is merged at `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d`; CI/Quality, Browser E2E and Full Flight Test passed. Proceed to staging, not another source feature.
-2. Owner/admin verifies active branch rulesets, default branch and private-host permissions. Keep client-main as integration and main read-only; this PR does not alter settings or reconcile branches.
-3. Verify staging resource identity and host access. Back up the confirmed staging Sheet and receipts, inspect actual headers, run only required `migrateVoucherPaymentMethodField()` / `migrateVendorDefaultsSchema()` after owner authorization, and verify headers/row counts. Deploy backend first, publish static frontend with the verified staging API URL and `CV_ENVIRONMENT=staging`, then run manual guarded UAT from client-main using exact STAGING-ONLY confirmation and explicit write consent.
-4. Perform live role/receipt tests; verify a real backup and receipt manifest and restore to a separate recovery Sheet/folder; complete device/offline/print/accessibility checks.
-5. Record written customer acceptance and begin the 14-day controlled pilot only when all launch gates pass.
+1. **Owner/admin:** confirm active rulesets, default branch and private-host access. Keep `client-main` as the integration branch and `main` legacy/read-only.
+2. **Staging identity:** verify the dedicated Script project, Sheet, receipt/backup folders, existing Web App deployment, `/exec` URL and static-host continuity. Prove every staging identity differs from production.
+3. **Backup and migrate:** inspect a verified backup of the confirmed staging Sheet and receipts. Inspect actual Vouchers/Vendors headers; after owner authorization, run only the needed `migrateVoucherPaymentMethodField()` and/or `migrateVendorDefaultsSchema()`. Preserve historical payment-method blanks and stop on unexpected headers or occupied columns.
+4. **Deploy and UAT:** upload/deploy the reviewed backend first, verify the staging deployment and URL, then publish the static frontend using the verified staging API URL and `CV_ENVIRONMENT=staging`. Run the manual guarded Staging UAT workflow from `client-main` with exact `STAGING-ONLY` confirmation and explicit staging-write consent.
+5. **Operational proof:** verify roles, receipts, Cash/UPI/Bank, defaults, duplicate warnings, approval/cash close, offline recovery, PDF/A5 and accessibility. Back up the migrated staging instance and restore to a separate recovery Sheet/folder; reconcile headers, row counts, voucher numbering, users/settings and receipt mapping.
+6. **Hotel pilot:** begin the 14-day pilot only after the staging/restore/device gates pass and customer acceptance, fallback and support boundaries are documented.
+
+No live staging operation is claimed by these instructions. Production remains excluded.
 
 ## Release boundary and safeguards
 
