@@ -139,6 +139,17 @@ assert.doesNotMatch(
   'client ZIP workflow must remain an artifact-only staging build',
 );
 
+assert.match(
+  stagingAudit,
+  /workflow run #39587669660[\s\S]*CV_PRODUCTION_SCRIPT_ID[\s\S]*CLASPRC_JSON/,
+  'staging audit must preserve failed-preflight evidence and document exact configuration recovery',
+);
+assert.match(
+  stagingAudit,
+  /do not rerun it or relax preflight/,
+  'staging recovery instructions must not bypass safety gates',
+);
+
 console.log(
   'Staging workflow guard OK — manual trigger, client-main-only gate, explicit write consent, isolated deployment config, no-cache test shell and protected resource checks.',
 );
