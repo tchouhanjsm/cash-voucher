@@ -34,11 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Temporary formatting diagnostic for staging preflight
-        run: |
-          ./node_modules/.bin/prettier scripts/staging-preflight.js > "$RUNNER_TEMP/staging-preflight.formatted.js"
-          diff -u scripts/staging-preflight.js "$RUNNER_TEMP/staging-preflight.formatted.js" || true
-
       - name: Scan current files and reachable Git history for credential patterns
         run: npm run audit:secrets
 
