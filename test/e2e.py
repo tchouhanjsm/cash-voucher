@@ -734,6 +734,40 @@ with sync_playwright() as p:
         'desktop payment row allocates four distinct tracks without stretched remove controls or overflow',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
+    page.locator('#rows .erow .rv').first.fill('<img src=x onerror="window.__batchXssFired=true">')
+    check(
+        page.locator('#rows .erow img').count() == 0
+        and not page.evaluate('window.__batchXssFired === true'),
+        'untrusted payee input is inert text and cannot inject markup into the entry row',
+    )
+    page.locator('#rows .erow .rv').first.fill('Keyboard Batch Test Vendor')
+    page.locator('#rows .erow .ra').first.fill('42')
+    page.wait_for_function("document.querySelector('#batchTotal')?.dataset.value === '42.00'")
+    check(
+        page.locator('#batchCount').inner_text() == '1 ready entry'
+        and page.locator('#batchTotal').get_attribute('data-value') == '42.00'
+        and page.locator('#batchCash').get_attribute('data-value') == '42.00'
+        and page.locator('#batchUpi').get_attribute('data-value') == '0.00'
+        and page.locator('#batchBank').get_attribute('data-value') == '0.00',
+        'live batch summary reports the ready entry and cash-method amount',
+    )
+    page.locator('#rows .erow .ra').first.press('Enter')
+    page.wait_for_function(
+        "document.querySelectorAll('#rows .erow').length === 2 && "
+        "document.activeElement?.classList.contains('rv') && "
+        "document.activeElement.closest('.erow') === document.querySelectorAll('#rows .erow')[1]"
+    )
+    check(
+        page.locator('#batchTotal').get_attribute('data-value') == '42.00'
+        and page.locator('#batchCount').inner_text() == '1 ready entry',
+        'Enter appends and focuses a new row without counting an incomplete row',
+    )
+    page.locator('#rows .erow').nth(1).locator('.x').click()
+    check(
+        page.locator('#rows .erow').count() == 1
+        and page.locator('#batchTotal').get_attribute('data-value') == '42.00',
+        'removing an incomplete row preserves the live batch total',
+    )
     go_view(page, 'dash')
     check(
         page.locator('#view .needs h2').inner_text().startswith('Needs attention')
@@ -2114,10 +2148,27 @@ with sync_playwright() as p:
     page.locator('#rows .erow .rv').fill('Cash Impact Test Vendor')
     page.locator('#rows .erow .ra').fill('10')
     page.select_option('#rows .erow .rci', 'UPI')
-    page.select_option('#rows .erow .rc', 'Office')
+    page.select_option('#rows .erow .rc', 'Other')
+    page.wait_for_function("document.querySelector('#batchUpi')?.dataset.value === '10.00'")
     check(
-        page.locator('#rows .erow .rci').input_value() == 'UPI',
-        'payment method remains independent of category',
+        page.locator('#rows .erow .rci').input_value() == 'UPI'
+        and page.locator('#batchTotal').get_attribute('data-value') == '10.00'
+        and page.locator('#batchCash').get_attribute('data-value') == '0.00'
+        and page.locator('#batchUpi').get_attribute('data-value') == '10.00'
+        and page.locator('#batchBank').get_attribute('data-value') == '0.00',
+        'UPI batch total is kept separate from cash-method total',
+    )
+    check(
+        page.locator('#rows .erow .rv-quick-save').count() == 1,
+        'manager/owner can save a new payee without leaving entry',
+    )
+    page.click('#rows .erow .rv-quick-save')
+    page.wait_for_function("document.querySelector('#rows .erow .rv-quick-save') === null")
+    check(
+        page.locator('#rows .erow .rc').input_value() == 'Other'
+        and page.locator('#rows .erow .rci').input_value() == 'UPI'
+        and page.locator('#batchUpi').get_attribute('data-value') == '10.00',
+        'saving the payee preserves current voucher entry and selected defaults',
     )
     check(
         page.locator('#recentVendors').count() == 1,
@@ -2125,9 +2176,14 @@ with sync_playwright() as p:
     )
     page.select_option('#rows .erow .rci', 'BANK_TRANSFER')
     page.select_option('#rows .erow .rc', 'Office')
+    page.wait_for_function("document.querySelector('#batchBank')?.dataset.value === '10.00'")
     check(
-        page.locator('#rows .erow .rci').input_value() == 'BANK_TRANSFER',
-        'category changes do not overwrite the payment method',
+        page.locator('#rows .erow .rci').input_value() == 'BANK_TRANSFER'
+        and page.locator('#batchTotal').get_attribute('data-value') == '10.00'
+        and page.locator('#batchCash').get_attribute('data-value') == '0.00'
+        and page.locator('#batchUpi').get_attribute('data-value') == '0.00'
+        and page.locator('#batchBank').get_attribute('data-value') == '10.00',
+        'Bank transfer batch total stays separate from cash and UPI',
     )
     check(
         page.locator('#rows .erow .rc option').all_text_contents() == ['Office', 'Other', 'Staff Salary']

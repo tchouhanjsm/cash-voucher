@@ -74,6 +74,55 @@ export function createPayments({ api, refresh }) {
       ) || null
     );
   }
+  function vendorRecordForName(name) {
+    const normalized = scalarText(name).trim().toLowerCase();
+    if (!normalized) return null;
+    return (
+      (Array.isArray(S.vendors) ? S.vendors : []).find(
+        (vendor) => vendor && scalarText(vendor.name).trim().toLowerCase() === normalized,
+      ) || null
+    );
+  }
+
+  function canSavePayeeDefaults() {
+    return !!(
+      S.me?.perms?.vendors &&
+      S.token &&
+      !S.offlineMode &&
+      typeof navigator !== 'undefined' &&
+      navigator.onLine
+    );
+  }
+
+  function updateQuickSavePayee(row) {
+    if (!row) return;
+    const holder = $('.chips', row);
+    if (!holder) return;
+    const name = scalarText($('.rv', row)?.value).trim();
+    const normalized = name.toLowerCase();
+    const conflictName = row.dataset.quickSaveConflict || '';
+    if (conflictName && conflictName !== normalized) delete row.dataset.quickSaveConflict;
+    const shouldShow =
+      !!name &&
+      canSavePayeeDefaults() &&
+      !vendorRecordForName(name) &&
+      row.dataset.quickSaveConflict !== normalized;
+    let button = $('.rv-quick-save', holder);
+    if (!shouldShow) {
+      button?.remove();
+      return;
+    }
+    if (button) return;
+    button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'btn sm rv-quick-save';
+    button.dataset.act = 'save-payee';
+    button.title = 'Save this payee with the selected category and payment method for next time';
+    button.textContent = 'Save payee';
+    const receiptPreview = $('.rp', holder);
+    holder.insertBefore(button, receiptPreview || null);
+  }
+
   function categoryForPayee(name) {
     const vendor = vendorForName(name);
     const allowed = NT === 'RECEIPT' ? S.settings?.receiptCategories : S.settings?.categories;
@@ -126,6 +175,7 @@ export function createPayments({ api, refresh }) {
     const method = methodForPayee($('.rv', row).value);
     $('.rci', row).value = method;
     row.dataset.paymentMethod = method;
+    updateBatchSummary();
   }
   function rowHtml() {
     return (
@@ -244,6 +294,7 @@ export function createPayments({ api, refresh }) {
     row.remove();
     labelRows();
     updateSaveLabel();
+    updateBatchSummary();
     if (target) $('.rv', target).focus();
   }
 
@@ -343,6 +394,35 @@ export function createPayments({ api, refresh }) {
     if (button) button.textContent = 'Save ' + entryNoun(count > 1 ? 2 : 1);
   }
 
+  function updateBatchSummary() {
+    const summary = $('#entrySummary');
+    if (!summary) return;
+    const totals = { CASH: 0, UPI: 0, BANK_TRANSFER: 0 };
+    let readyCount = 0;
+    $$('#rows .erow').forEach((row) => {
+      const payee = $('.rv', row).value.trim();
+      const amount = parseAmt($('.ra', row).value.trim());
+      const method = $('.rci', row).value;
+      if (!payee || !(amount > 0) || !PAYMENT_METHODS.includes(method)) return;
+      readyCount += 1;
+      totals[method] += amount;
+    });
+    const writeMetric = (id, amount) => {
+      const node = $('#' + id);
+      if (!node) return;
+      const value = Math.round(amount * 100) / 100;
+      node.dataset.value = value.toFixed(2);
+      node.textContent = money(value);
+    };
+    const count = $('#batchCount');
+    if (count) count.textContent = readyCount + ' ready entr' + (readyCount === 1 ? 'y' : 'ies');
+    writeMetric('batchTotal', totals.CASH + totals.UPI + totals.BANK_TRANSFER);
+    writeMetric('batchCash', totals.CASH);
+    writeMetric('batchUpi', totals.UPI);
+    writeMetric('batchBank', totals.BANK_TRANSFER);
+    summary.dataset.readyCount = String(readyCount);
+  }
+
   function vNew() {
     $('#view').innerHTML =
       head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment', '', {
@@ -352,10 +432,21 @@ export function createPayments({ api, refresh }) {
       }) +
       `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" autocomplete="off">${vendorList()}
     <label class="entry-date-field">Date<input type="date" id="nd" value="${today()}" max="${addDays(today(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="Recent payees"></div><div id="rows"></div>
+    <section id="entrySummary" class="entry-summary" aria-label="Current batch totals">
+      <div class="entry-summary__head"><strong>Current batch</strong><span id="batchCount" aria-live="polite">0 ready entries</span></div>
+      <div class="entry-summary__grid">
+        <div class="entry-summary__metric entry-summary__metric--total"><span>Total</span><strong id="batchTotal" data-value="0.00">₹0</strong></div>
+        <div class="entry-summary__metric"><span>Cash method</span><strong id="batchCash" data-value="0.00">₹0</strong></div>
+        <div class="entry-summary__metric"><span>UPI</span><strong id="batchUpi" data-value="0.00">₹0</strong></div>
+        <div class="entry-summary__metric"><span>Bank transfer</span><strong id="batchBank" data-value="0.00">₹0</strong></div>
+      </div>
+      <p class="entry-summary__note">Totals include rows with a payee and valid amount. Only Cash counts toward drawer movement; UPI and bank transfer stay separate.</p>
+    </section>
     <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button><button type="button" class="btn" data-act="import-pending">Import recovery file</button></div>
     <p class="muted">Tip: tap “Receipt” to take a photo or pick a screenshot (up to 3 per payment).</p></form><div id="nres"></div>`;
     addRow();
     renderRecentVendors();
+    updateBatchSummary();
   }
 
   function recentVendors(limit = 6) {
@@ -464,6 +555,8 @@ export function createPayments({ api, refresh }) {
     const v = $('.rv', r);
     if ($$('#rows .erow').length > 1) v.focus();
     applyPayeeDefaults(r);
+    updateQuickSavePayee(r);
+    updateBatchSummary();
   }
 
   function clearReceipt(button) {
@@ -527,13 +620,20 @@ export function createPayments({ api, refresh }) {
   document.addEventListener('change', (event) => {
     const row = event.target.closest('.erow');
     if (!row) return;
-    if (event.target.matches('.rv')) applyPayeeDefaults(row);
+    if (event.target.matches('.rv')) {
+      applyPayeeDefaults(row);
+      updateQuickSavePayee(row);
+    }
     if (event.target.matches('.rci, .rc, .rn')) clearRowError(row);
+    updateBatchSummary();
   });
   document.addEventListener('focusout', (event) => {
     if (!event.target.matches('.rv')) return;
     const row = event.target.closest('.erow');
-    if (row && event.target.value.trim()) applyPayeeDefaults(row);
+    if (row && event.target.value.trim()) {
+      applyPayeeDefaults(row);
+      updateQuickSavePayee(row);
+    }
   });
   document.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && e.target.classList.contains('rv')) {
@@ -552,10 +652,91 @@ export function createPayments({ api, refresh }) {
     if (!event.target.matches('.rv, .ra, .rn')) return;
 
     const row = event.target.closest('.erow');
-    if (row) clearRowError(row);
+    if (row) {
+      clearRowError(row);
+      if (event.target.matches('.rv, .ra')) delete row.dataset.duplicateConfirmed;
+      if (event.target.matches('.rv')) updateQuickSavePayee(row);
+    }
     $('#nres .form-error')?.remove();
     updateSaveLabel();
+    updateBatchSummary();
   });
+
+  async function savePayee(button) {
+    const row = button?.closest('.erow');
+    if (!row) return;
+    if (!S.me?.perms?.vendors) {
+      toast('Only managers and owners can save payee defaults.', 'err');
+      updateQuickSavePayee(row);
+      return;
+    }
+    const name = scalarText($('.rv', row).value).trim();
+    if (!name) return toast('Enter a payee name first.', 'err');
+    if (!canSavePayeeDefaults()) {
+      toast('Reconnect to save this payee for next time. Your voucher entry is still here.', 'err');
+      updateQuickSavePayee(row);
+      return;
+    }
+    if (vendorRecordForName(name)) {
+      toast('This payee is already saved. Your current entry is unchanged.', 'err');
+      updateQuickSavePayee(row);
+      return;
+    }
+
+    const category = $('.rc', row).value;
+    const paymentMethod = $('.rci', row).value;
+    try {
+      await busy(button, async () => {
+        const result = await api('saveVendor', {
+          name,
+          company: '',
+          mobile: '',
+          defaultCategory: category,
+          defaultPaymentMethod: paymentMethod,
+        });
+        const vendorId = scalarText(result?.vendorId).trim();
+        if (!vendorId)
+          throw new Error(
+            'Payee was saved but its ID was not returned. Refresh before saving another voucher.',
+          );
+        const vendor = {
+          id: vendorId,
+          name,
+          company: '',
+          mobile: '',
+          active: true,
+          defaultCategory: category,
+          defaultPaymentMethod: paymentMethod,
+        };
+        if (!Array.isArray(S.vendors)) S.vendors = [];
+        const existingIndex = S.vendors.findIndex(
+          (item) => scalarText(item?.name).trim().toLowerCase() === name.toLowerCase(),
+        );
+        if (existingIndex >= 0) S.vendors[existingIndex] = vendor;
+        else S.vendors.push(vendor);
+        if (
+          row.isConnected &&
+          scalarText($('.rv', row).value).trim().toLowerCase() === name.toLowerCase()
+        ) {
+          delete row.dataset.quickSaveConflict;
+          applyPayeeDefaults(row);
+          updateQuickSavePayee(row);
+        }
+        toast('Payee saved for next time. Your current entry is unchanged.', 'ok');
+      });
+    } catch (error) {
+      if (/already exists/i.test(String(error?.message || ''))) {
+        row.dataset.quickSaveConflict = name.toLowerCase();
+        updateQuickSavePayee(row);
+        toast(
+          'This payee was saved in another session. Your entry is kept; refresh to load its defaults.',
+          'err',
+        );
+      } else {
+        fail(error);
+      }
+    }
+  }
 
   async function saveNew(btn) {
     const date = $('#nd').value;
@@ -1320,6 +1501,7 @@ export function createPayments({ api, refresh }) {
     open,
     newAgain,
     addRow,
+    savePayee,
     clearReceipt,
     removeRow,
     showBanner,

@@ -1488,10 +1488,30 @@ ok(
   "cannot read others' receipt",
 );
 // vendors + settings
+const ramVendorCreate = as(M, 'saveVendor', {
+  name: 'Ram Traders',
+  mobile: '9999999999',
+});
 ok(
-  as(M, 'saveVendor', { name: 'Ram Traders', mobile: '9999999999' }).ok &&
+  ramVendorCreate.ok &&
+    typeof ramVendorCreate.data.vendorId === 'string' &&
+    !!ramVendorCreate.data.vendorId &&
     !as(M, 'saveVendor', { name: 'ram traders' }).ok,
-  'vendor unique',
+  'vendor uniqueness and stable ID response support inline payee defaults',
+);
+const receiptDefaultCreate = as(M, 'saveVendor', {
+  name: 'Receipt Default Supplier',
+  defaultCategory: 'Refund Received',
+  defaultPaymentMethod: 'UPI',
+});
+const receiptDefault = as(T, 'bootstrap').data.vendors.find(
+  (vendor) => vendor.name === 'Receipt Default Supplier',
+);
+ok(
+  receiptDefaultCreate.ok &&
+    receiptDefault?.defaultCategory === 'Refund Received' &&
+    receiptDefault.defaultPaymentMethod === 'UPI',
+  'vendor defaults accept valid receipt categories as well as expense categories',
 );
 const ramVendor = as(M, 'bootstrap').data.vendors.find((vendor) => vendor.name === 'Ram Traders');
 const vendorCreateAudit = [...g.sheets.AuditLog.rows]

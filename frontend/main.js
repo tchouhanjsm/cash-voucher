@@ -122,6 +122,8 @@ registerActions({
 
   addrow: () => payments.addRow(),
 
+  'save-payee': ({ element }) => payments.savePayee(element),
+
   delrow: ({ element }) => payments.removeRow(element),
 
   clrrec: ({ element }) => payments.clearReceipt(element),

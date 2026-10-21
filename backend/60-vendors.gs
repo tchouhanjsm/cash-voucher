@@ -31,7 +31,8 @@ function saveVendor_(user, req) {
     mobile = clean_(req.mobile, 15),
     defaultCategory = clean_(req.defaultCategory, 40),
     defaultPaymentMethod = clean_(req.defaultPaymentMethod, 20);
-  if (defaultCategory && categories_().indexOf(defaultCategory) < 0)
+  const validDefaultCategories = categories_().concat(receiptCategories_());
+  if (defaultCategory && validDefaultCategories.indexOf(defaultCategory) < 0)
     throw err_('Choose a valid default category.', 'VALIDATION');
   if (defaultPaymentMethod && ['CASH', 'UPI', 'BANK_TRANSFER'].indexOf(defaultPaymentMethod) < 0)
     throw err_('Choose a valid default payment method.', 'VALIDATION');
@@ -42,6 +43,7 @@ function saveVendor_(user, req) {
       return String(v.Name).toLowerCase() === name.toLowerCase() && v.VendorID !== req.id;
     })[0];
   if (dup) throw err_('This vendor already exists.');
+  let savedVendorId = req.id || '';
   if (req.id) {
     const vendor = list.filter(function (item) {
       return item.VendorID === req.id;
@@ -94,6 +96,7 @@ function saveVendor_(user, req) {
       CreatedBy: user.email,
       CreatedAt: nowIso_(),
     };
+    savedVendorId = vendor.VendorID;
     appendRows_('Vendors', [vendor]);
     auditEvent_(
       user,
@@ -114,7 +117,7 @@ function saveVendor_(user, req) {
       'Vendor created',
     );
   }
-  return { ok: true };
+  return { ok: true, vendorId: savedVendorId };
 }
 function toggleVendor_(user, req) {
   need_(user, 'vendors');

@@ -4,7 +4,7 @@ Updated: 20 October 2026
 Repository: `tchouhanjsm/cash-voucher`  
 Integration branch: `client-main`  
 Verified integration head before this follow-up: `9f4fffa43ac27c357b7a06cb49832bfddca1e25b` (PR #195 merge).  
-Current work: regression coverage for the PaymentMethod and vendor-default schema migrations, followed by the cohesive staff-entry redesign.  
+Current work: cohesive payment/receipt fast-entry batch with live batch totals, manager/owner quick-save payee defaults, responsive/keyboard regressions and additive schema-migration tests.  
 Environment authority: this source work does not run Apps Script migrations, initialize Google resources, publish static files, update a Web App deployment, mutate live financial data or deploy to production.
 
 ## Verified current phase
@@ -17,8 +17,8 @@ Environment authority: this source work does not run Apps Script migrations, ini
 
 ## Next actions
 
-1. Migration-test gap remains open: add and run deterministic tests for both additive schema migrations, including historical-row preservation, idempotency and occupied-target refusal, then record the successful run before any staging migration.
-2. Deliver a coherent UI/interaction batch for both payment and receipt flows: inline saved-payee creation, safe row progression, improved hierarchy/spacing at desktop/tablet/phone widths, useful daily totals/day-sheet workflow, and print/share only where workflow and print acceptance support it.
+1. Run the migration tests with CI, Browser E2E and Full Flight Test; fix failures before merge.
+2. Complete owner-authorized staging identity checks, verified backup, schema migration, backend-first release, staging frontend publication and UAT/print acceptance. Do not run production migrations or deploy production in this PR.
 3. Verify private static-host access to this private repository. Build a staging-only client ZIP with the independently verified staging `/exec` URL; publish only after explicit owner authorization.
 4. Owner-authorized staging UAT must cover role and receipt permissions, Cash/UPI/Bank treatment, vendor defaults, duplicate warnings, offline replay, A5/PDF alignment, a completed backup and restore into a separate recovery Sheet/folder. Production remains blocked until acceptance evidence is recorded.
 
