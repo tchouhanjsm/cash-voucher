@@ -65,7 +65,10 @@ assert.match(
   handoff,
   /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/,
 );
-assert.match(handoff, /upload\/deploy the reviewed backend first[\s\S]*publish the static frontend/i);
+assert.match(
+  handoff,
+  /upload\/deploy the reviewed backend first[\s\S]*publish the static frontend/i,
+);
 assert.match(stagingAudit, /Vouchers W, Vendors H:I/);
 assert.match(stagingAudit, /separate recovery Sheet\/folder/);
 assert.match(
