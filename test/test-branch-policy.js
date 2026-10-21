@@ -16,6 +16,7 @@ const currentStrategy = read('docs/CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21.m
 const boardStrategy = read('docs/CEO-BOARD-STRATEGY.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
+const stagingAudit = read('docs/STAGING-RELEASE-AUDIT.md');
 
 assert.match(ci, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(ci, /pull_request:\n\s+branches:\s*\[client-main\]/);
@@ -37,7 +38,29 @@ assert.match(currentStrategy, /client-main is the only active integration branch
 assert.match(currentStrategy, /main is legacy\/read-only/);
 assert.match(boardStrategy, /release readiness before feature expansion/i);
 assert.match(executionPlan, /No production migration\/deployment/i);
+assert.match(executionPlan, /## Immediate pipeline — preserve this order/);
+assert.ok(
+  executionPlan.indexOf('### 1. Complete the source release') <
+    executionPlan.indexOf('### 2. Prepare and identify staging') &&
+    executionPlan.indexOf('### 2. Prepare and identify staging') <
+      executionPlan.indexOf('### 3. Back up, then migrate staging') &&
+    executionPlan.indexOf('### 3. Back up, then migrate staging') <
+      executionPlan.indexOf('### 4. Deploy backend first and run staging UAT') &&
+    executionPlan.indexOf('### 4. Deploy backend first and run staging UAT') <
+      executionPlan.indexOf('### 5. Prove operational readiness') &&
+    executionPlan.indexOf('### 5. Prove operational readiness') <
+      executionPlan.indexOf('### 6. Controlled 14-day hotel pilot'),
+  'the six release steps must remain in the agreed order',
+);
+assert.match(
+  executionPlan,
+  /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/,
+);
+assert.match(executionPlan, /Preserve historical `PaymentMethod` blanks/);
+assert.match(executionPlan, /Never dispatch deploy\/UAT from `main`/);
 assert.match(branchPolicy, /\[CEO and board product strategy\]\(CEO-BOARD-STRATEGY\.md\)/);
+assert.match(stagingAudit, /six-step pipeline in \[the execution plan\]/);
+assert.match(stagingAudit, /separate recovery target/);
 assert.match(
   branchPolicy,
   /\[Client-main engineering and release strategy\]\(CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21\.md\)/,

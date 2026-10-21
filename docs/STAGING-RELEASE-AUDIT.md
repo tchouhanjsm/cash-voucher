@@ -14,6 +14,12 @@ The branch policy names client-main as the only integration branch and main as l
 
 Dedicated staging resources, protected staging Environment, a real deployed staging frontend, successful live UAT, support-email delivery, real backup/restore, physical-device acceptance and customer acceptance are not evidenced as complete. Verify that the private-repository host integration still has access. The product remains single-property, not multi-tenant.
 
+## Active release sequence
+
+Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PRs #197 and #198 are merged; live staging and customer acceptance remain unverified.
+
+**Evidence still required:** isolated staging identity and host access; inspected pre-migration backup; schema validation and only required staging migrations; backend-first deploy and staging-configured frontend; exact-run guarded UAT; live role, receipt, payment-method, offline and print checks; and restore into a separate recovery target. The hotel pilot remains blocked until those gates pass. Production is excluded.
+
 ## Branch and staging workflow — authoritative correction
 
 The active integration branch is **client-main**. The staging Environment must restrict deployments to **client-main**, because the deploy/UAT guard accepts only refs/heads/client-main. Dispatch deploy-and-uat or uat-only from client-main with exact STAGING-ONLY confirmation and explicit staging-write consent. Starting the staging workflow from main is not supported.

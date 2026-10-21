@@ -31,15 +31,15 @@ At shift start, the operator needs to know where to begin. During work, recordin
 
 ## Product sequence
 
-### Gate 0 — release confidence
+### Gate 0 — current six-step release pipeline
 
-Stop broad feature expansion while proving staging target identity, guarded UAT, live role boundaries, real backup and isolated restore, device/offline behavior, print/export and customer acceptance.
+Follow the six-step pipeline in docs/EXECUTION-PLAN-2026-10-21.md without reordering: complete source release (PR #197 and PR #198 are merged); verify staging resource identity and hosting access; back up and validate the staging schema before the two additive migrations; deploy backend before the staging-configured static frontend and run the manual guarded UAT; prove real roles, receipts, payment-method treatment, offline recovery, print/A5 and a restore into a separate target; then begin the 14-day hotel pilot after written acceptance. These steps are not proof of completion, and production is excluded.
 
 ### Gate 1 — controlled customer pilot
 
 Run a 14-day pilot only after launch gates pass. Track reconciliations, exceptions, offline queue state, backups, incidents and fallback daily. Pause on missing/duplicate vouchers, unexplained cash variance, missing receipts, failed backup, uncertain resource identity, unauthorized access or unrecoverable offline entries.
 
-### Gate 2 — one integrated workflow batch
+### Gate 2 — one integrated workflow batch, only after the release and pilot
 
 After pilot evidence, consider **Today → Close → Owner card** as one cohesive vertical slice. Today prioritizes actions/exceptions; Close guides sync, pending movements, physical cash, classification and sign-off; Owner card separates physical cash from digital movement and reports only verifiable sync/backup evidence. Build only if pilot observations show material friction. Establish a baseline and acceptance metric before implementation.
 
