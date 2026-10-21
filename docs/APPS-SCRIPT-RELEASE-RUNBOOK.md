@@ -211,7 +211,7 @@ The repository now provides a manually dispatched staging workflow at `.github/w
 
 ### GitHub Environment configuration
 
-Create a GitHub Environment named `staging` and, where available, require reviewer approval. To restrict the branch, open **Settings → Environments → staging**; click the deployment branch dropdown currently labelled **No restriction**, choose **Selected branches and tags**, add the exact branch `client-main`, and save. The workflow separately refuses deploy/UAT runs unless the ref is `refs/heads/client-main`.
+Create a GitHub Environment named `staging`, restrict its deployment branch to `client-main`, and, where available, require reviewer approval. To set the restriction, open **Settings → Environments → staging**; click the deployment branch dropdown currently labelled **No restriction**, choose **Selected branches and tags**, add the exact branch `client-main`, and save. The workflow separately refuses deploy/UAT runs unless the ref is `refs/heads/client-main`.
 
 Configure these environment **variables**: `CV_STAGING_SCRIPT_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_API_URL`, `CV_STAGING_SPREADSHEET_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, and `CV_STAGING_BACKUP_FOLDER_ID`. The production Web App deployment ID is extracted from the existing production `config.js` URL and is always checked against the staging URL/deployment.
 
