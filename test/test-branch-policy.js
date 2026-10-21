@@ -12,6 +12,9 @@ const flight = read('.github/workflows/flight-test.yml');
 const staging = read('.github/workflows/staging-uat.yml');
 const hook = read('.githooks/pre-push');
 const handbook = read('docs/DEVELOPMENT-WORKFLOW.md');
+const currentStrategy = read('docs/CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21.md');
+const boardStrategy = read('docs/CEO-BOARD-STRATEGY.md');
+const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 
 assert.match(ci, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(ci, /pull_request:\n\s+branches:\s*\[client-main\]/);
@@ -29,6 +32,11 @@ assert.match(
 );
 assert.match(handbook, /main.*frozen\/read-only|frozen\/read-only.*main/i);
 
+assert.match(currentStrategy, /client-main is the only active integration branch/);
+assert.match(currentStrategy, /main is legacy\/read-only/);
+assert.match(boardStrategy, /release readiness before feature expansion/i);
+assert.match(executionPlan, /No production migration\/deployment/i);
+
 console.log(
-  'Client-main policy OK — CI, E2E, Flight Test, staging guard and branch documentation align.',
+  'Client-main policy OK — CI, E2E, Flight Test, strategy documents and staging guard align.',
 );
