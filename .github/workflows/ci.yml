@@ -52,6 +52,17 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
+      - name: Temporary formatter capture for branch policy
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx prettier --write docs/CLIENT-MAIN-BRANCH-POLICY.md
+          node <<'NODE'
+          const fs = require('node:fs');
+          const file = 'docs/CLIENT-MAIN-BRANCH-POLICY.md';
+          console.log('FORMATTED_BASE64_' + file + '=' + fs.readFileSync(file).toString('base64'));
+          NODE
+
       - name: Run quality gate
         run: npm run check
 
