@@ -56,6 +56,20 @@ assert.match(workflow, /environment:\n {6}name: staging/m);
 assert.match(workflow, /needs: \[validate, guard\]/);
 assert.match(workflow, /confirm_staging_writes/);
 assert.match(workflow, /CV_STAGING_DEPLOY_CONFIRMATION/);
+assert.match(
+  workflow,
+  /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: \$\{\{ vars\.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION \}\}/,
+);
+assert.equal(
+  (workflow.match(/CV_STAGING_RESOURCE_ISOLATION_ATTESTATION:/g) || []).length,
+  2,
+  'both write-capable staging jobs must receive the configured isolation attestation',
+);
+assert.match(preflight, /tokens\.default/);
+assert.match(preflight, /OWNER-VERIFIED-STAGING-ONLY/);
+assert.match(releaseRunbook, /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION/);
+assert.match(releaseRunbook, /Selected branches and tags[\s\S]*client-main/);
+assert.match(releaseRunbook, /tokens\.default/);
 assert.match(workflow, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
 assert.match(
   workflow,
@@ -142,7 +156,12 @@ assert.doesNotMatch(
 assert.match(
   stagingAudit,
   /workflow run #39587669660[\s\S]*CV_PRODUCTION_SCRIPT_ID[\s\S]*CLASPRC_JSON/,
-  'staging audit must preserve failed-preflight evidence and document exact configuration recovery',
+  'staging audit must preserve the original failed-preflight evidence',
+);
+assert.match(
+  stagingAudit,
+  /workflow run #39596101014[\s\S]*tokens\.default[\s\S]*No restriction/,
+  'staging audit must record the modern Clasp credential-format finding and branch-restriction follow-up',
 );
 assert.match(
   stagingAudit,
