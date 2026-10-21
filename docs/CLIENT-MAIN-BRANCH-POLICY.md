@@ -15,7 +15,6 @@
 3. Create a second active ruleset targeting `main` with **Restrict updates** and **Restrict deletions**, and no bypass actors, so `main` remains frozen. Do not use this rule if you have not confirmed that `client-main` has become the agreed integration branch and the current live source.
 4. Keep Apps Script, staging cPanel and production releases separately approved. A merge is not a deployment authorization.
 
-
 ## Current execution documents
 
 - [CEO and board product strategy](CEO-BOARD-STRATEGY.md)
