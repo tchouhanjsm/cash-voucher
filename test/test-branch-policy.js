@@ -53,24 +53,54 @@ assert.ok(
       executionPlan.indexOf("### 6. Controlled 14-day hotel pilot"),
   "the operational release steps must remain in the agreed order",
 );
-assert.match(executionPlan, /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/);
+assert.match(
+  executionPlan,
+  /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/,
+);
 assert.match(executionPlan, /Keep historical `PaymentMethod` blanks blank/);
 assert.match(executionPlan, /Never dispatch deploy\/UAT from `main`/);
 assert.match(branchPolicy, /six-step staging release pipeline/);
 assert.match(currentStrategy, /six-step staging release pipeline/);
-assert.match(handoff, /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/);
+assert.match(
+  handoff,
+  /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/,
+);
 assert.match(handoff, /upload\/deploy the reviewed backend first[\s\S]*publish the static frontend/i);
 assert.match(stagingAudit, /Vouchers W, Vendors H:I/);
 assert.match(stagingAudit, /separate recovery Sheet\/folder/);
-assert.match(executionPlan, /migrateVoucherPaymentMethodField\(\)/);
-assert.match(executionPlan, /migrateVendorDefaultsSchema\(\)/);
-assert.match(executionPlan, /Restore that backup into a \*\*separate recovery Sheet\/folder\*\*/);
-assert.match(executionPlan, /Only after stages 2–5 pass/);
-assert.match(stagingAudit, /migrateVoucherPaymentMethodField\(\)/);
-assert.match(stagingAudit, /migrateVendorDefaultsSchema\(\)/);
+assert.match(
+  executionPlan,
+  /migrateVoucherPaymentMethodField\(\)/,
+);
+assert.match(
+  executionPlan,
+  /migrateVendorDefaultsSchema\(\)/,
+);
+assert.match(
+  executionPlan,
+  /restore into a \*\*separate recovery Sheet\/folder\*\*/,
+);
+assert.match(
+  executionPlan,
+  /Only after steps 2–5 pass/,
+);
+assert.match(
+  stagingAudit,
+  /migrateVoucherPaymentMethodField\(\)/,
+);
+assert.match(
+  stagingAudit,
+  /migrateVendorDefaultsSchema\(\)/,
+);
 assert.match(stagingAudit, /Deploy backend first/);
-assert.match(stagingAudit, /manual guarded UAT from client-main/);
-assert.match(stagingAudit, /Production migration is not part of this pipeline/);
+assert.match(
+  stagingAudit,
+  /manual guarded UAT from client-main/,
+);
+assert.match(
+  stagingAudit,
+  /Production is excluded/,
+);
 assert.match(branchPolicy, /\[CEO and board product strategy\]\(CEO-BOARD-STRATEGY\.md\)/);
 assert.match(
   branchPolicy,

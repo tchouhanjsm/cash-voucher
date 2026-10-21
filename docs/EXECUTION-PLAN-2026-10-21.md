@@ -11,58 +11,49 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-**This is the active work queue. Do not replace it with a feature sprint.** PR #197 is the completed source batch; PR #198 is merged. The current next action is the verified staging release, followed by the controlled hotel pilot only after all gates pass.
+**This is the active work queue.** PR #197 and PR #198 are merged. The next task is the staging release, not another feature sprint.
 
 ### 1. Complete the source release
 
-- PR #197 is merged to `client-main`; PR #198 has also been merged.
-- Verify CI/Quality, Browser E2E and Full Flight Test on the relevant merged commit. Historical green checks prove source checks only.
-- Review the merged source release and the staging workflow. Do not create another cosmetic PR.
+- PR #197 and PR #198 are merged to `client-main`.
+- The merged PR #198 head `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d` passed CI/Quality, Browser E2E and Full Flight Test.
+- These checks prove source quality, not live deployment or data recovery.
 
 ### 2. Prepare and identify staging
 
-- Verify the dedicated staging Apps Script project, Spreadsheet, receipt folder, backup folder, existing Web App deployment and exact `/exec` URL.
-- Verify the private repository can build through the static-host integration and that the staging ZIP will use the verified staging API URL with `CV_ENVIRONMENT=staging`.
-- Record a private resource identity register and prove the staging Script, deployment, Sheet and Drive folders do not overlap production.
-- Verify the protected GitHub `staging` Environment, variables/secrets and deployment restriction to `client-main`. Keep credentials out of logs and PRs.
-- If any target identity or access is uncertain, stop before writing.
+- Verify the dedicated staging Script, Sheet, receipt/backup folders, existing Web App deployment and `/exec` URL.
+- Confirm static-host access and a staging ZIP configured with the verified API URL and `CV_ENVIRONMENT=staging`.
+- Record resource identities privately. Prove staging IDs do not overlap production.
+- Verify the protected GitHub `staging` Environment, config/secrets and the `client-main` restriction. Stop if target identity is uncertain.
 
 ### 3. Back up, then migrate staging
 
-- Create a backup of the confirmed staging Sheet and receipts before changing schema. Inspect the snapshot/receipt manifest and record the backup evidence.
-- Inspect the actual staging headers and relevant row counts before running either migration. Confirm both migrations are needed and each expected target column is empty; the functions are deliberately fail-closed if their supported prior schema is absent or trailing columns are occupied.
-- With explicit owner authorization, run `migrateVoucherPaymentMethodField()` and `migrateVendorDefaultsSchema()` **against the confirmed staging Sheet only**. Do not infer historical payment methods. Keep historical `PaymentMethod` blanks blank; do not overwrite unexpected columns or vendor data.
-- Verify the resulting Vouchers W and Vendors H:I headers, existing voucher/vendor row counts and unchanged historical values. If the schema differs from expectation, stop and review—do not improvise a migration.
-- Production migration is not part of this pipeline.
+- Back up the confirmed staging Sheet and receipts; inspect the snapshot and manifest first.
+- Inspect live Vouchers/Vendors headers and row counts. With explicit owner approval, run only migrations confirmed necessary: `migrateVoucherPaymentMethodField()` and `migrateVendorDefaultsSchema()`.
+- Preserve historical `PaymentMethod` blanks. Stop on unexpected headers or occupied target columns. Never infer historic methods or overwrite unknown data.
+- Verify Vouchers W, Vendors H:I, row counts and unchanged historic values. Do not migrate production.
 
 ### 4. Deploy backend first and run staging UAT
 
-- Verify the reviewed backend source is selected for the intended staging Apps Script project, upload it to that project, and update the verified existing staging Web App deployment. Confirm the deployment identity and URL.
-- Build the static frontend only after the staging API URL is confirmed, using `CV_ENVIRONMENT=staging`; publish it to the verified staging host through the approved static-host integration or staging ZIP workflow.
-- Run the manual [Staging UAT workflow](https://github.com/tchouhanjsm/cash-voucher/blob/client-main/.github/workflows/staging-uat.yml) from `client-main`: first `validate-only`, then owner-authorized `deploy-and-uat` or `uat-only` as appropriate, with the exact `STAGING-ONLY` confirmation and explicit staging-write consent. Never dispatch deploy/UAT from `main`.
-- Preserve sanitized workflow logs, target identity and UAT results. A passing mock E2E is not live UAT.
+- Upload reviewed backend source to the verified staging Script and update its existing Web App deployment; verify ID and URL.
+- Then build/publish the static frontend with the verified staging API URL and `CV_ENVIRONMENT=staging`.
+- Dispatch the manual [Staging UAT workflow](https://github.com/tchouhanjsm/cash-voucher/blob/client-main/.github/workflows/staging-uat.yml) from `client-main`. Run `validate-only` first; any write-capable run requires exact `STAGING-ONLY` confirmation and explicit staging-write consent.
+- Keep sanitized logs and exact-run evidence. Mock E2E is not live UAT.
 
 ### 5. Prove operational readiness
 
-Test the deployed staging path using the intended Owner, Manager and Staff accounts and real customer devices. Verify:
-- role permissions, denied API actions and password flows;
-- payment and receipt creation/read, including receipt access boundaries;
-- Cash versus UPI/Bank classification and physical-drawer treatment;
-- saved-payee defaults and duplicate warnings;
-- independent approval and cash-close/correction controls;
-- offline entries, queue state, reconnection, idempotent recovery and all-device checks;
-- printed output, PDF/A5 alignment, narrow layouts, keyboard focus, zoom/reflow and assistive technology;
-- the post-migration schema/row counts and a real backup of the migrated staging instance.
-
-Restore that backup into a **separate recovery Sheet/folder**. Verify headers, row counts, voucher numbering, settings/users and receipt mapping. Backup success without an isolated restore is not a pass.
+Verify on the deployed staging instance and intended devices:
+- Owner/Manager/Staff authorization, password flows and denied API actions.
+- Payments, receipts, Cash versus UPI/Bank, saved-payee defaults and duplicate warnings.
+- Independent approval, cash-close controls, offline queue/reconnect/recovery.
+- Print/PDF/A5, responsive layout, keyboard focus, zoom/reflow and assistive technology.
+- Backup the migrated staging instance and restore into a **separate recovery Sheet/folder**. Reconcile headers, counts, voucher numbering, users/settings and receipt mapping.
 
 ### 6. Controlled 14-day hotel pilot
 
-Only after stages 2–5 pass, record the customer's acceptance, fallback and support boundaries, and start the 14-day pilot. Track daily reconciliation, physical cash variance, Cash vs UPI/Bank, pending offline entries on each device, backup freshness, incidents/recovery and owner/manager sign-off. Pause for missing/duplicate vouchers, unexplained variance, missing receipts, failed backup, unauthorized access, target mismatch or unrecoverable offline entries. Production remains behind separate gates and is not implicitly authorized.
+Only after steps 2–5 pass, document customer acceptance, fallback and support boundaries. Track daily reconciliation, physical-cash variance, Cash vs UPI/Bank, every-device offline queues, backup freshness, incidents/recovery and owner/manager sign-off. Pause for missing/duplicate vouchers, unexplained variance, missing receipts, failed backup, unauthorized access, target mismatch or unrecoverable offline entries. Production remains separately gated.
 
-### Exit rule
-
-No stage is complete because a source PR merged or a mock test passed. Keep evidence for every gate. Do not start the next product feature batch until the first-customer release/pilot evidence shows a real bottleneck.
+**Exit rule:** source checks do not complete operational gates. Do not start the next feature batch until pilot evidence identifies a real bottleneck.
 
 
 ## Branch and source controls
