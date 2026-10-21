@@ -52,10 +52,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Capture Prettier diff for execution plan
-        run: |
-          npx prettier docs/EXECUTION-PLAN-2026-10-21.md > "$RUNNER_TEMP/execution-plan.formatted.md"
-          diff -u docs/EXECUTION-PLAN-2026-10-21.md "$RUNNER_TEMP/execution-plan.formatted.md" || true
       - name: Run quality gate
         run: npm run check
 

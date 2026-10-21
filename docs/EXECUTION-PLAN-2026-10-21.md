@@ -40,6 +40,7 @@ PRs #197 and #198 are merged. Next is staging release, not another feature sprin
 - Preserve sanitized logs and exact-run evidence. Mock E2E is not live UAT.
 
 ### 5. Prove operational readiness
+
 On the deployed staging instance and intended devices, verify:
 
 - Owner/Manager/Staff authorization and denied API actions.
@@ -49,6 +50,7 @@ On the deployed staging instance and intended devices, verify:
 - Back up the migrated staging instance and restore to a **separate recovery Sheet/folder**. Reconcile headers, counts, voucher numbering, users/settings and receipts.
 
 ### 6. Controlled 14-day hotel pilot
+
 Only after steps 2–5 pass, document acceptance, fallback and support boundaries. Track daily reconciliation, cash variance, Cash vs UPI/Bank, each-device offline queues, backup freshness, incidents/recovery and owner/manager sign-off. Pause for missing/duplicate vouchers, unexplained variance, missing receipts, failed backup, unauthorized access, target mismatch or unrecoverable offline entries. Production stays separately gated.
 
 **Exit rule:** source checks do not complete operational gates. Do not start the next feature batch until pilot evidence identifies a bottleneck.
