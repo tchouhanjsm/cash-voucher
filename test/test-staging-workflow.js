@@ -27,7 +27,7 @@ assert.doesNotMatch(
 );
 assert.match(workflow, /ACTION_REF: \$\{\{ github\.ref \}\}/);
 assert.match(workflow, /name: Require client-main, staging-only confirmation and write consent/);
-assert.match(stagingAudit, /staging Environment must restrict deployments to \\*\\*client-main\\*\\*/);
+assert.match(stagingAudit, /staging Environment must restrict deployments to .*client-main/);
 assert.match(stagingAudit, /dispatch deploy-and-uat or uat-only from client-main/);
 assert.match(stagingAudit, /CV_STAGING_UAT_OWNER_PASSWORD/);
 assert.match(stagingAudit, /STAGING-ONLY/);
