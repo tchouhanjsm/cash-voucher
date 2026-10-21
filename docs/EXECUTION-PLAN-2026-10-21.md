@@ -75,7 +75,7 @@ No stage is complete because a source PR merged or a mock test passed. Keep evid
 
 **Exit:** branch and exact-head check behavior is verified; any remaining owner-side settings tasks are recorded.
 
-## Branch and source controls
+## Branch governance verification
 
 - All product PRs target client-main from short-lived client/* branches.
 - Require CI, Browser E2E and Full Flight Test on the exact final PR head; fix failures instead of bypassing checks.
