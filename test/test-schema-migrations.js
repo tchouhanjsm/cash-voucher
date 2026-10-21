@@ -34,8 +34,10 @@ assert.equal(vouchers.rows[1][22] || '', '');
 assert.match(paymentMethodMock.migrateVoucherPaymentMethodField(), /already exists/);
 
 const paymentConflictMock = setupMock();
-paymentConflictMock.sheets.Vouchers.rows[0] =
-  paymentConflictMock.sheets.Vouchers.rows[0].slice(0, 22);
+paymentConflictMock.sheets.Vouchers.rows[0] = paymentConflictMock.sheets.Vouchers.rows[0].slice(
+  0,
+  22,
+);
 paymentConflictMock.sheets.Vouchers.rows[1] ||= [];
 paymentConflictMock.sheets.Vouchers.rows[1][22] = 'occupied';
 assert.throws(

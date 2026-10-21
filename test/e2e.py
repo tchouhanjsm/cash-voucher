@@ -734,6 +734,12 @@ with sync_playwright() as p:
         'desktop payment row allocates four distinct tracks without stretched remove controls or overflow',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
+    page.locator('#rows .erow .rv').first.fill('<img src=x onerror="window.__batchXssFired=true">')
+    check(
+        page.locator('#rows .erow img').count() == 0
+        and not page.evaluate('window.__batchXssFired === true'),
+        'untrusted payee input is inert text and cannot inject markup into the entry row',
+    )
     page.locator('#rows .erow .rv').first.fill('Keyboard Batch Test Vendor')
     page.locator('#rows .erow .ra').first.fill('42')
     page.wait_for_function("document.querySelector('#batchTotal')?.dataset.value === '42.00'")

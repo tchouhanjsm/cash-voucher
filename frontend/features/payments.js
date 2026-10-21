@@ -415,8 +415,7 @@ export function createPayments({ api, refresh }) {
       node.textContent = money(value);
     };
     const count = $('#batchCount');
-    if (count)
-      count.textContent = readyCount + ' ready entr' + (readyCount === 1 ? 'y' : 'ies');
+    if (count) count.textContent = readyCount + ' ready entr' + (readyCount === 1 ? 'y' : 'ies');
     writeMetric('batchTotal', totals.CASH + totals.UPI + totals.BANK_TRANSFER);
     writeMetric('batchCash', totals.CASH);
     writeMetric('batchUpi', totals.UPI);
