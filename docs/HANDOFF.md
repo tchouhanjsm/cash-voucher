@@ -5,7 +5,7 @@
 **Integration branch:** client-main  
 **Verified integration head before this PR:** d5ed3e77387d0f1896c97dbaac793ed23b17eb32 (post-PR #197).  
 **Legacy branch:** main (read-only; divergent).  
-**Current phase:** release readiness and first-customer acceptance, not feature expansion.
+**Current phase:** six-step staging release pipeline. PRs #197 and #198 are merged; no live staging run, migration, deployment or customer pilot is claimed.
 
 ## Verified source state
 
@@ -16,9 +16,9 @@
 
 ## Immediate actions
 
-1. Review and merge this release-readiness batch only if CI, Browser E2E and Full Flight Test pass on the exact final PR head.
+1. PR #198 is merged at `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d`; CI/Quality, Browser E2E and Full Flight Test passed on that head. Proceed to staging, not another source feature.
 2. Owner/admin verifies active branch rulesets, default branch and private-host permissions. Keep client-main as integration and main read-only; this PR does not alter settings or reconcile branches.
-3. Verify isolated staging resource IDs and protected staging Environment; run validate-only, then owner-authorized deploy-and-uat or uat-only from client-main using exact STAGING-ONLY confirmation and explicit write consent.
+3. Verify staging resource identity and host access. Back up the confirmed staging Sheet and receipts; inspect actual headers; after owner approval, run only required `migrateVoucherPaymentMethodField()` / `migrateVendorDefaultsSchema()` and verify headers/row counts. Deploy backend first, publish the static frontend with the verified staging API URL and `CV_ENVIRONMENT=staging`, then run manual guarded UAT from `client-main` with exact STAGING-ONLY confirmation and explicit write consent.
 4. Perform live role/receipt tests; verify a real backup and receipt manifest and restore to a separate recovery Sheet/folder; complete device/offline/print/accessibility checks.
 5. Record written customer acceptance and begin the 14-day controlled pilot only when all launch gates pass.
 

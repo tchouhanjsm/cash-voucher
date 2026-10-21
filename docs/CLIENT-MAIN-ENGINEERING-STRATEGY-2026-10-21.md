@@ -1,7 +1,7 @@
 # Client-main — Engineering and Release Strategy
 
 **Effective:** 21 October 2026  
-**Current baseline:** d5ed3e77387d0f1896c97dbaac793ed23b17eb32, after PR #197.
+**Source release baseline:** PR #198 merged at `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d`; its merged-head CI/Quality, Browser E2E and Full Flight Test passed.
 
 ## Branch policy
 
@@ -51,6 +51,8 @@ Deploy/UAT remains manual and must run from refs/heads/client-main. For deploy-a
 - Do not claim full XSS, CSP headers, accessibility or audit durability unless specific live evidence supports the claim.
 
 ## Current queue
+
+**P0 — current task:** execute the six-step staging release pipeline in `docs/EXECUTION-PLAN-2026-10-21.md`. Verify isolated staging resources and host access; back up and inspect the real schema; run only required staging migrations after owner approval; deploy backend first; publish the staging frontend and run guarded UAT from `client-main`; prove live authorization, receipts, cash-vs-digital treatment, offline recovery, print/A5 and isolated restore; then accept the 14-day hotel pilot. Production remains untouched.
 
 **P0 — release readiness:** align strategy, handoff and staging audit to PR #197; assert that the workflow, branch policy and documents agree; owner/admin verifies branch rulesets and host private-repo access; run authorized staging UAT; prove real backup/restore; test actual device, roles, receipts, print and offline recovery; obtain acceptance.
 
