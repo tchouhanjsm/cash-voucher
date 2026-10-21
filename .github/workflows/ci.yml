@@ -52,6 +52,19 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
+      - name: Temporary formatter capture for release plan
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx prettier --write docs/EXECUTION-PLAN-2026-10-21.md
+          node - <<'NODE'
+          const fs = require('node:fs');
+          const formatted = fs.readFileSync('docs/EXECUTION-PLAN-2026-10-21.md', 'utf8');
+          console.log('BEGIN_FORMATTED_EXECUTION_PLAN');
+          console.log(formatted);
+          console.log('END_FORMATTED_EXECUTION_PLAN');
+          NODE
+
       - name: Run quality gate
         run: npm run check
 
