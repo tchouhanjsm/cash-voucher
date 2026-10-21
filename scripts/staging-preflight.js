@@ -174,6 +174,13 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     );
   }
   const productionSet = new Set(productionValues.filter(Boolean));
+  const productionReferenceInventoryValid =
+    hasAllProductionReferenceValues &&
+    productionValues.every(Boolean) &&
+    new Set(productionValues).size === productionValues.length;
+  const ownerAttestedIsolation =
+    !hasAnyProductionReferenceValue &&
+    isolationAttestation === RESOURCE_ISOLATION_ATTESTATION;
   if (stageValues.some((value) => value && productionSet.has(value))) {
     errors.push(
       'At least one staging resource identifier is also configured as a production resource.',
@@ -251,13 +258,9 @@ function validateStagingConfiguration(env = process.env, options = {}) {
         stageValues.every(Boolean) &&
         stageValues.every((value) => !productionSet.has(value)) &&
         new Set(stageValues).size === stageValues.length &&
-        (hasAllProductionReferenceValues ||
-          (!hasAnyProductionReferenceValue &&
-            isolationAttestation === RESOURCE_ISOLATION_ATTESTATION)),
-      productionResourceReferencesPresent: hasAllProductionReferenceValues,
-      ownerAttestedIsolationUsed:
-        !hasAnyProductionReferenceValue &&
-        isolationAttestation === RESOURCE_ISOLATION_ATTESTATION,
+        (productionReferenceInventoryValid || ownerAttestedIsolation),
+      productionResourceReferencesPresent: productionReferenceInventoryValid,
+      ownerAttestedIsolationUsed: ownerAttestedIsolation,
       stagingApiUrlMatchesConfiguredDeployment:
         Boolean(stagingUrl) &&
         stagingUrl.hostname === 'script.google.com' &&
