@@ -62,7 +62,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 - Keep main legacy/read-only. The 21 October comparison showed client-main 13 commits ahead and 2 behind main, with merge base acebc6b63010a92e136200321fc77c03dac9a3be. Do not merge, rebase or force-push long-lived branches as part of this work.
 - Owner/admin must verify active GitHub rulesets, required checks, default branch and the restrictions on main. Available repository metadata did not prove ruleset enforcement.
 - Keep repository branch policy separate from staging/production deployment authorization.
-- Dispatch deploy/UAT only from `client-main`; never dispatch it from `main`.
+- Never dispatch deploy/UAT from `main`; dispatch it only from `client-main`.
 
 **Exit:** branch and exact-head check behavior is verified; any remaining owner-side settings tasks are recorded.
 
