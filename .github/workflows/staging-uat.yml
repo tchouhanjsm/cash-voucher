@@ -68,7 +68,7 @@ jobs:
         run: python -m py_compile test/uat_staging.py
 
   guard:
-    name: Require main, staging-only confirmation and write consent
+    name: Require client-main, staging-only confirmation and write consent
     if: ${{ inputs.operation == 'deploy-and-uat' || inputs.operation == 'uat-only' }}
     runs-on: ubuntu-latest
     timeout-minutes: 2

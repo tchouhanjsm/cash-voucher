@@ -14,6 +14,7 @@ const releaseRunbook = fs.readFileSync(
   path.join(root, 'docs/APPS-SCRIPT-RELEASE-RUNBOOK.md'),
   'utf8',
 );
+const stagingAudit = fs.readFileSync(path.join(root, 'docs/STAGING-RELEASE-AUDIT.md'), 'utf8');
 
 assert.match(workflow, /^on:\n {2}workflow_dispatch:/m, 'staging workflow must be manual-only');
 assert.doesNotMatch(
@@ -22,6 +23,17 @@ assert.doesNotMatch(
   'staging workflow must not deploy on push or PR',
 );
 assert.match(workflow, /ACTION_REF: \$\{\{ github\.ref \}\}/);
+assert.match(workflow, /name: Require client-main, staging-only confirmation and write consent/);
+assert.match(stagingAudit, /staging Environment must restrict deployments to .*client-main/);
+assert.match(stagingAudit, /dispatch deploy-and-uat or uat-only from client-main/i);
+assert.match(stagingAudit, /CV_STAGING_UAT_OWNER_PASSWORD/);
+assert.match(stagingAudit, /STAGING-ONLY/);
+assert.doesNotMatch(
+  stagingAudit,
+  /restrict deployments to main|dispatch deploy-and-uat or uat-only from main/i,
+  'staging audit must not contradict the workflow guard by directing operators to main',
+);
+
 assert.match(workflow, /ACTION_REF" != "refs\/heads\/client-main"/);
 assert.match(
   releaseRunbook,
