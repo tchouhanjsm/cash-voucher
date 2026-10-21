@@ -134,19 +134,14 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   const hasAllProductionReferenceValues = Object.values(productionReferenceValues).every(
     (value) => !isPlaceholder(value),
   );
-  const isolationAttestation = String(
-    env.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION || '',
-  ).trim();
+  const isolationAttestation = String(env.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION || '').trim();
 
   if (hasAnyProductionReferenceValue && !hasAllProductionReferenceValues) {
     errors.push(
       'Configure all four production resource reference IDs together, or leave all four unset and provide the explicit staging isolation attestation.',
     );
   }
-  if (
-    !hasAnyProductionReferenceValue &&
-    isolationAttestation !== RESOURCE_ISOLATION_ATTESTATION
-  ) {
+  if (!hasAnyProductionReferenceValue && isolationAttestation !== RESOURCE_ISOLATION_ATTESTATION) {
     errors.push(
       'When production resource reference IDs are not provided, CV_STAGING_RESOURCE_ISOLATION_ATTESTATION must equal OWNER-VERIFIED-STAGING-ONLY after independently verifying that staging Script, Sheet, receipt folder and backup folder are distinct from production.',
     );
@@ -179,8 +174,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     productionValues.every(Boolean) &&
     new Set(productionValues).size === productionValues.length;
   const ownerAttestedIsolation =
-    !hasAnyProductionReferenceValue &&
-    isolationAttestation === RESOURCE_ISOLATION_ATTESTATION;
+    !hasAnyProductionReferenceValue && isolationAttestation === RESOURCE_ISOLATION_ATTESTATION;
   if (stageValues.some((value) => value && productionSet.has(value))) {
     errors.push(
       'At least one staging resource identifier is also configured as a production resource.',
@@ -223,7 +217,8 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     } catch {
       claspConfig = null;
     }
-    const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
+    const isObject = (value) =>
+      value !== null && typeof value === 'object' && !Array.isArray(value);
     const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
     const legacyFormatValid =
       isObject(claspConfig) &&
