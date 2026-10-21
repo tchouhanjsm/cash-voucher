@@ -59,16 +59,9 @@ Only after steps 2–5 pass, document customer acceptance, fallback and support 
 
 **Exit:** branch and exact-head check behavior is verified; any remaining owner-side settings tasks are recorded.
 
-## Release-governance baseline — PR #198 merged
+## Source release status
 
-1. Add the CEO/board strategy, dated execution plan and dedicated client-main engineering strategy.
-2. Update handoff to post-PR #197 and distinguish source checks from live release proof.
-3. Correct the staging audit: protected staging Environment and guarded deploy/UAT are for client-main, not main.
-4. Rename the misleading workflow guard label from “Require main” to “Require client-main”.
-5. Add regression checks for agreement among the workflow, branch policy, current strategy and staging audit.
-6. Keep live Apps Script migrations, resource creation, static hosting/DNS and production deployment outside this PR.
-
-**Exit:** CI, Browser E2E and Full Flight Test pass on the exact final PR head; regression tests enforce branch-policy consistency; no live resource is mutated.
+PR #198 is merged. Its merged head passed CI/Quality, Browser E2E and Full Flight Test. The release-governance batch is complete; live staging and customer acceptance remain unverified.
 
 ## Stage execution detail — staging and recovery
 
