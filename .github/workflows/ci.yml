@@ -52,6 +52,11 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
+      - name: Temporary formatting diagnostic for staging audit (debug branch only)
+        run: |
+          npx prettier --write docs/STAGING-RELEASE-AUDIT.md
+          git diff -- docs/STAGING-RELEASE-AUDIT.md
+
       - name: Run quality gate
         run: npm run check
 
