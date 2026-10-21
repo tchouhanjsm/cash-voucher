@@ -2148,7 +2148,7 @@ with sync_playwright() as p:
     page.locator('#rows .erow .rv').fill('Cash Impact Test Vendor')
     page.locator('#rows .erow .ra').fill('10')
     page.select_option('#rows .erow .rci', 'UPI')
-    page.select_option('#rows .erow .rc', 'Office')
+    page.select_option('#rows .erow .rc', 'Other')
     page.wait_for_function("document.querySelector('#batchUpi')?.dataset.value === '10.00'")
     check(
         page.locator('#rows .erow .rci').input_value() == 'UPI'
@@ -2165,7 +2165,7 @@ with sync_playwright() as p:
     page.click('#rows .erow .rv-quick-save')
     page.wait_for_function("document.querySelector('#rows .erow .rv-quick-save') === null")
     check(
-        page.locator('#rows .erow .rc').input_value() == 'Office'
+        page.locator('#rows .erow .rc').input_value() == 'Other'
         and page.locator('#rows .erow .rci').input_value() == 'UPI'
         and page.locator('#batchUpi').get_attribute('data-value') == '10.00',
         'saving the payee preserves current voucher entry and selected defaults',
