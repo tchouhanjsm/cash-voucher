@@ -139,7 +139,6 @@ assert.doesNotMatch(
   'client ZIP workflow must remain an artifact-only staging build',
 );
 
-
 assert.match(
   stagingAudit,
   /workflow run #39587669660[\s\S]*CV_PRODUCTION_SCRIPT_ID[\s\S]*CLASPRC_JSON/,
