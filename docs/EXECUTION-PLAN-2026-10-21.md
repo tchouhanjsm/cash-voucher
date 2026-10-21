@@ -1,4 +1,3 @@
-
 # Cash Voucher — Execution Plan
 
 **Date:** 21 October 2026  
