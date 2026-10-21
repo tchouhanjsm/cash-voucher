@@ -38,7 +38,10 @@ assert.match(currentStrategy, /main is legacy\/read-only/);
 assert.match(boardStrategy, /release readiness before feature expansion/i);
 assert.match(executionPlan, /No production migration\/deployment/i);
 assert.match(branchPolicy, /\[CEO and board product strategy\]\(CEO-BOARD-STRATEGY\.md\)/);
-assert.match(branchPolicy, /\[Client-main engineering and release strategy\]\(CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21\.md\)/);
+assert.match(
+  branchPolicy,
+  /\[Client-main engineering and release strategy\]\(CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21\.md\)/,
+);
 
 console.log(
   'Client-main policy OK — CI, E2E, Flight Test, strategy documents and staging guard align.',
