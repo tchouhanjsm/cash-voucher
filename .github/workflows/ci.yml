@@ -52,22 +52,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary formatter capture for staging pipeline docs
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx prettier --write docs/EXECUTION-PLAN-2026-10-21.md docs/STAGING-RELEASE-AUDIT.md test/test-branch-policy.js
-          node <<'NODE'
-          const fs = require('node:fs');
-          for (const file of [
-            'docs/EXECUTION-PLAN-2026-10-21.md',
-            'docs/STAGING-RELEASE-AUDIT.md',
-            'test/test-branch-policy.js',
-          ]) {
-            console.log('FORMATTED_BASE64_' + file + '=' + fs.readFileSync(file).toString('base64'));
-          }
-          NODE
-
       - name: Run quality gate
         run: npm run check
 
