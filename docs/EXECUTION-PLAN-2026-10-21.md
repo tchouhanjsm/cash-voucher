@@ -75,6 +75,16 @@ No stage is complete because a source PR merged or a mock test passed. Keep evid
 
 **Exit:** branch and exact-head check behavior is verified; any remaining owner-side settings tasks are recorded.
 
+## Branch and source controls
+
+- All product PRs target client-main from short-lived client/* branches.
+- Require CI, Browser E2E and Full Flight Test on the exact final PR head; fix failures instead of bypassing checks.
+- Keep main legacy/read-only. The 21 October comparison showed client-main 13 commits ahead and 2 behind main, with merge base acebc6b63010a92e136200321fc77c03dac9a3be. Do not merge, rebase or force-push long-lived branches as part of this work.
+- Owner/admin must verify active GitHub rulesets, required checks, default branch and the restrictions on main. Available repository metadata did not prove ruleset enforcement.
+- Keep repository branch policy separate from staging/production deployment authorization.
+
+**Exit:** branch and exact-head check behavior is verified; any remaining owner-side settings tasks are recorded.
+
 ## Stage execution detail — staging and recovery
 
 1. Verify dedicated staging Script project, Spreadsheet, receipt and backup folders, Web App deployment/URL and unique browser origin. Record identities privately and confirm no staging/production overlap.
@@ -85,6 +95,7 @@ No stage is complete because a source PR merged or a mock test passed. Keep evid
 6. Create a real staging backup; verify its Sheet snapshot, receipt files and manifest; restore into a separate recovery Sheet/folder and reconcile headers, row counts, voucher numbering, settings/users and receipts.
 
 **Exit:** successful exact-run live UAT, identity evidence, live role/receipt tests and witnessed isolated restore. CI alone does not satisfy this gate.
+
 
 ## Phase D — device and usability gate
 

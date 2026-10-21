@@ -109,19 +109,9 @@ The six-step pipeline above is the canonical sequence. This section records the 
 
 **Production boundary:** none of these staging steps authorizes a production migration, deployment, DNS change or customer-data write.
 
+### D. First-customer handover
 
-### B. First-customer instance
-
-1. Verify private static-host access. Preserve URL continuity before DNS changes.
-2. Give each customer a distinct Sheet, Script project, private receipt/backup folders, Web App deployment and frontend origin. Do not reuse staging or another customer's IDs.
-3. Build the frontend with an independently verified customer Web App URL and the correct environment. Publish only the generated artifact after separate owner approval.
-4. Inspect response headers actually served by the host, including framing and content-type protection. Generated .htaccess/_headers do not prove live response behavior.
-5. Test Owner/Manager/Staff permissions, denied API operations, voucher create/cancel, receipt upload/read, approvals, reports and real backend behavior.
-6. Run a real backup, verify Sheet snapshot/copy, receipt files and manifest, then restore into a separate recovery Sheet/folder. Reconcile headers, row counts, voucher numbering, user/settings state and receipt mapping.
-7. Test intended devices: install/update, online save, receipt capture, offline queue, reconnect/idempotent replay, export/recovery, print/PDF, zoom/reflow, keyboard focus and assistive technology.
-8. Record instance register, customer quick-start, incident fallback and written acceptance.
-
-**Exit evidence:** isolated resource inventory; target-matched live UAT; verified host and permissions; real backup and witnessed isolated restore; device/offline evidence; customer acceptance. Any missing item blocks the release claim.
+Do not treat the staging pilot as authorization to deploy another customer's instance. For a first-customer instance, verify its unique Script/Sheet/receipt/backup folders, deployment and frontend origin; inspect actual host response headers; test real backend permissions and receipt access; prove its own backup and isolated restore; complete device/offline/print/accessibility checks; and record its quick-start, fallback and written acceptance. Keep production and unrelated customers untouched.
 
 ## Priority 1 — controlled pilot
 
