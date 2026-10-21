@@ -61,18 +61,16 @@ Consider one integrated **Today → Close → Owner card** workflow: Today prior
 
 ## Priority queue
 
-| Priority | Item | Owner | Acceptance evidence |
-|---|---|---|---|
-| P0 | Release-readiness PR | Engineering/reviewer | Exact-head CI, Browser E2E, Flight Test |
-| P0 | Branch rulesets/default branch | Owner/admin | Actual GitHub Settings state recorded |
-| P0 | Staging identity and UAT | Operator + owner | Isolated resource register and exact workflow run |
-| P0 | Backup and restore | Owner/operator | Restore into separate target with reconciliation |
-| P0 | Device/offline/print/accessibility | QA + customer operator | Device matrix and critical issues closed |
-| P1 | Controlled pilot | Product owner + customer | Written acceptance and 14-day evidence |
-| P1 | Next product batch | Product/engineering | Observed problem, baseline and success metric |
-| P2 | Durable audit-failure fallback | Security/backend | Failure/retention/access decision |
-| P2 | Accountant mapping | Customer/accountant | Chosen software/version and anonymized fixture |
-| P2 | Database/multi-tenant strategy | Founder/architecture | Measured trigger and migration business case |
+- **P0 — Release-readiness PR.** Owner: engineering/reviewer. Acceptance: exact-head CI, Browser E2E and Flight Test.
+- **P0 — Branch rulesets/default branch.** Owner: repository owner/admin. Acceptance: actual GitHub Settings state recorded.
+- **P0 — Staging identity and UAT.** Owner: operator + owner. Acceptance: isolated resource register and exact workflow run.
+- **P0 — Backup and restore.** Owner: owner/operator. Acceptance: restore into a separate target with reconciliation.
+- **P0 — Device/offline/print/accessibility.** Owner: QA + customer operator. Acceptance: device matrix and critical issues closed.
+- **P1 — Controlled pilot.** Owner: product owner + customer. Acceptance: written acceptance and 14-day evidence.
+- **P1 — Next product batch.** Owner: product/engineering. Acceptance: observed problem, baseline and success metric.
+- **P2 — Durable audit-failure fallback.** Owner: security/backend. Acceptance: failure/retention/access decision.
+- **P2 — Accountant mapping.** Owner: customer/accountant. Acceptance: chosen software/version and anonymized fixture.
+- **P2 — Database/multi-tenant architecture.** Owner: founder/architecture. Acceptance: measured scaling trigger and migration business case.
 
 ## Non-goals and stop conditions
 

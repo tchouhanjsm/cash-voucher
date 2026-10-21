@@ -26,15 +26,13 @@ Every PR must receive:
 
 ## Release stages
 
-| Stage | Evidence | Not evidence of |
-|---|---|---|
-| PR merged | Reviewed source on client-main | Live deployment |
-| Clasp push | Backend files uploaded to selected Script | Web App version is live |
-| Deployment updated | Selected version on intended deployment | End-to-end roles/data/receipt/backup |
-| Static ZIP built | Packaging checks passed for staging artifact | Host published it or returns safe headers |
-| Staging UAT | Tested deployed staging path passed | Restore and customer acceptance |
-| Restore drill | Restore verified in separate target | Offline devices all synchronized |
-| Customer acceptance | Instance launch criteria accepted | Readiness to scale to other customers |
+- **Source PR merged:** reviewed source is on client-main; this does not prove Apps Script or the static site changed.
+- **Clasp push:** backend source reached the selected Apps Script project; this does not prove a Web App version is live.
+- **Web App deployment updated:** a selected version is on the intended deployment; this does not prove UI, roles, records, receipts or backup work end-to-end.
+- **Static ZIP built:** a staging-configured artifact passed packaging checks; this does not prove the host published it or returned secure headers.
+- **Staging UAT passed:** tested cases on the deployed staging path passed; this does not prove backup/restore or customer acceptance.
+- **Restore drill passed:** the checked data can be reconstructed into a separate target; this does not prove every offline device has synced.
+- **Customer acceptance:** that instance's documented launch gates were accepted; this does not justify a rollout to other customers.
 
 ## Staging safeguards
 

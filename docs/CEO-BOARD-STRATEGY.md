@@ -69,15 +69,13 @@ Keep the existing customer-specific Google Apps Script + Sheets + Drive model th
 
 ## Decision register
 
-| Decision | Position | Reopen only when |
-|---|---|---|
-| First segment | Independent small hospitality operators | Research proves a stronger repeatable segment |
-| Architecture | Per-customer GAS + Sheets + Drive | Measured service limits or concrete customer demand justify cost |
-| AI | Not required for core workflows | Validated task and safe deterministic fallback exist |
-| Data export/recovery | Remains in core | Never removed as a monetization lever |
-| Denomination rows | Optional | Pilot shows material operational value |
-| Accountant export | Generic recorded-movement CSV first | Accountant validates a chosen software/version and anonymized fixture |
-| Next product batch | Today → Close → Owner card | Pilot evidence justifies it |
+- **First segment:** independent small hospitality operators. Reopen if research proves a stronger repeatable segment.
+- **Architecture:** per-customer GAS + Sheets + Drive for the first pilot. Reopen if measured service limits or concrete customer demand justify cost.
+- **AI:** not required for core workflows. Reopen only when a validated task benefits and a safe deterministic fallback exists.
+- **Data export/recovery:** remains in core; do not remove access to customer-owned records as a monetization lever.
+- **Denomination rows:** optional unless pilot evidence demonstrates material operational value.
+- **Accountant export:** generic recorded-movement CSV first; destination-specific mapping waits for a selected software/version and validated anonymized fixture.
+- **Next product batch:** Today → Close → Owner card, only if pilot evidence justifies it.
 
 ## First 90 days
 
