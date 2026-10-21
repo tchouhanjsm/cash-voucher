@@ -4,17 +4,20 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const ROOT = path.resolve(__dirname, '..');
-const ID_KEYS = [
+const STAGING_ID_KEYS = [
   'CV_STAGING_SCRIPT_ID',
-  'CV_PRODUCTION_SCRIPT_ID',
   'CV_STAGING_DEPLOYMENT_ID',
   'CV_STAGING_SPREADSHEET_ID',
-  'CV_PRODUCTION_SPREADSHEET_ID',
   'CV_STAGING_RECEIPT_FOLDER_ID',
-  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
   'CV_STAGING_BACKUP_FOLDER_ID',
+];
+const PRODUCTION_REFERENCE_KEYS = [
+  'CV_PRODUCTION_SCRIPT_ID',
+  'CV_PRODUCTION_SPREADSHEET_ID',
+  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
   'CV_PRODUCTION_BACKUP_FOLDER_ID',
 ];
+const RESOURCE_ISOLATION_ATTESTATION = 'OWNER-VERIFIED-STAGING-ONLY';
 
 function readProductionApiUrl(root = ROOT) {
   const configPath = path.join(root, 'config.js');
@@ -55,7 +58,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     errors.push('Unsupported preflight mode.');
   }
 
-  for (const key of ID_KEYS) {
+  for (const key of STAGING_ID_KEYS) {
     if (isPlaceholder(String(env[key] || '').trim())) {
       errors.push('Missing or placeholder environment value: ' + key + '.');
     }
@@ -122,20 +125,47 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     String(env.CV_STAGING_RECEIPT_FOLDER_ID || '').trim(),
     String(env.CV_STAGING_BACKUP_FOLDER_ID || '').trim(),
   ];
-  const productionValues = [
-    String(env.CV_PRODUCTION_SCRIPT_ID || '').trim(),
-    productionDeploymentId,
-    String(env.CV_PRODUCTION_SPREADSHEET_ID || '').trim(),
-    String(env.CV_PRODUCTION_RECEIPT_FOLDER_ID || '').trim(),
-    String(env.CV_PRODUCTION_BACKUP_FOLDER_ID || '').trim(),
-  ];
+  const productionReferenceValues = Object.fromEntries(
+    PRODUCTION_REFERENCE_KEYS.map((key) => [key, String(env[key] || '').trim()]),
+  );
+  const hasAnyProductionReferenceValue = Object.values(productionReferenceValues).some(
+    (value) => value.length > 0,
+  );
+  const hasAllProductionReferenceValues = Object.values(productionReferenceValues).every(
+    (value) => !isPlaceholder(value),
+  );
+  const isolationAttestation = String(
+    env.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION || '',
+  ).trim();
 
+  if (hasAnyProductionReferenceValue && !hasAllProductionReferenceValues) {
+    errors.push(
+      'Configure all four production resource reference IDs together, or leave all four unset and provide the explicit staging isolation attestation.',
+    );
+  }
+  if (
+    !hasAnyProductionReferenceValue &&
+    isolationAttestation !== RESOURCE_ISOLATION_ATTESTATION
+  ) {
+    errors.push(
+      'When production resource reference IDs are not provided, CV_STAGING_RESOURCE_ISOLATION_ATTESTATION must equal OWNER-VERIFIED-STAGING-ONLY after independently verifying that staging Script, Sheet, receipt folder and backup folder are distinct from production.',
+    );
+  }
+
+  const productionValues = [
+    productionReferenceValues.CV_PRODUCTION_SCRIPT_ID,
+    productionDeploymentId,
+    productionReferenceValues.CV_PRODUCTION_SPREADSHEET_ID,
+    productionReferenceValues.CV_PRODUCTION_RECEIPT_FOLDER_ID,
+    productionReferenceValues.CV_PRODUCTION_BACKUP_FOLDER_ID,
+  ];
   if (stageValues.every(Boolean) && new Set(stageValues).size !== stageValues.length) {
     errors.push(
       'Staging Script, deployment, Sheet, receipt folder and backup folder must be five distinct resources.',
     );
   }
   if (
+    hasAllProductionReferenceValues &&
     productionValues.every(Boolean) &&
     new Set(productionValues).size !== productionValues.length
   ) {
@@ -186,14 +216,29 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     } catch {
       claspConfig = null;
     }
-    if (
-      !claspConfig ||
-      typeof claspConfig !== 'object' ||
-      Array.isArray(claspConfig) ||
-      !claspConfig.token ||
-      !claspConfig.oauth2ClientSettings
-    ) {
-      errors.push('CLASPRC_JSON is missing or is not a valid Clasp OAuth credentials document.');
+    const isObject = (value) =>
+      value !== null && typeof value === 'object' && !Array.isArray(value);
+    const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
+    const legacyFormatValid =
+      isObject(claspConfig) &&
+      isObject(claspConfig.token) &&
+      isObject(claspConfig.oauth2ClientSettings) &&
+      hasText(claspConfig.token.refresh_token) &&
+      hasText(claspConfig.oauth2ClientSettings.clientId) &&
+      hasText(claspConfig.oauth2ClientSettings.clientSecret);
+    const modernDefaultCredential = claspConfig?.tokens?.default;
+    const modernFormatValid =
+      isObject(claspConfig) &&
+      isObject(claspConfig.tokens) &&
+      isObject(modernDefaultCredential) &&
+      hasText(modernDefaultCredential.refresh_token) &&
+      hasText(modernDefaultCredential.client_id) &&
+      hasText(modernDefaultCredential.client_secret);
+
+    if (!legacyFormatValid && !modernFormatValid) {
+      errors.push(
+        'CLASPRC_JSON must be valid Clasp credentials in either legacy token/oauth2ClientSettings format or Clasp 3.x tokens.default format.',
+      );
     }
   }
 
@@ -204,9 +249,15 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     checks: {
       targetIdsAreSeparated:
         stageValues.every(Boolean) &&
-        productionValues.every(Boolean) &&
         stageValues.every((value) => !productionSet.has(value)) &&
-        new Set(stageValues).size === stageValues.length,
+        new Set(stageValues).size === stageValues.length &&
+        (hasAllProductionReferenceValues ||
+          (!hasAnyProductionReferenceValue &&
+            isolationAttestation === RESOURCE_ISOLATION_ATTESTATION)),
+      productionResourceReferencesPresent: hasAllProductionReferenceValues,
+      ownerAttestedIsolationUsed:
+        !hasAnyProductionReferenceValue &&
+        isolationAttestation === RESOURCE_ISOLATION_ATTESTATION,
       stagingApiUrlMatchesConfiguredDeployment:
         Boolean(stagingUrl) &&
         stagingUrl.hostname === 'script.google.com' &&
@@ -232,8 +283,15 @@ function main() {
   }
 
   console.log(
-    'Staging preflight passed: Script, deployment, Sheet and Drive targets are separated from production.',
+    'Staging preflight passed: the staging API URL and deployment ID are distinct from the production Web App endpoint.',
   );
+  if (result.checks.productionResourceReferencesPresent) {
+    console.log('Staging resource IDs were compared with the configured production resource inventory.');
+  } else {
+    console.log(
+      'Production Script/Sheet/Drive IDs were not provided; full resource isolation relies on the explicit owner attestation.',
+    );
+  }
   console.log('Staging URL shape and dedicated owner/manager UAT credentials are valid.');
   if (mode === 'deploy') {
     console.log('Clasp OAuth configuration is present; credential values are not printed.');
