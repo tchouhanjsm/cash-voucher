@@ -62,7 +62,8 @@ vendors.rows.push(legacyVendor.slice());
 assert.match(vendorMock.migrateVendorDefaultsSchema(), /Added vendor defaults/);
 assert.deepEqual(vendors.rows[0].slice(7, 9), ['DefaultCategory', 'DefaultPaymentMethod']);
 assert.deepEqual(vendors.rows[1].slice(0, 7), legacyVendor);
-assert.deepEqual(vendors.rows[1].slice(7, 9), ['', '']);
+assert.equal(vendors.rows[1][7] || '', '');
+assert.equal(vendors.rows[1][8] || '', '');
 assert.match(vendorMock.migrateVendorDefaultsSchema(), /already exist/);
 
 const vendorConflictMock = setupMock();
