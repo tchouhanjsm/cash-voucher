@@ -56,8 +56,8 @@ assert.ok(
 assert.match(executionPlan, /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/);
 assert.match(executionPlan, /Keep historical `PaymentMethod` blanks blank/);
 assert.match(executionPlan, /Never dispatch deploy\/UAT from `main`/);
-assert.match(policy, /six-step staging release pipeline/);
-assert.match(strat, /six-step staging release pipeline/);
+assert.match(branchPolicy, /six-step staging release pipeline/);
+assert.match(currentStrategy, /six-step staging release pipeline/);
 assert.match(handoff, /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/);
 assert.match(handoff, /upload\/deploy the reviewed backend first[\s\S]*publish the static frontend/i);
 assert.match(stagingAudit, /Vouchers W, Vendors H:I/);
