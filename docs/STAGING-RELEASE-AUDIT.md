@@ -40,41 +40,17 @@ those gates pass. Production is excluded.
 
 ## Evidence from workflow run #39587669660 — 21 October 2026
 
-The manually dispatched workflow from `client-main` passed source/security/backend checks, mock
-Browser E2E, and Python syntax validation. The **deployment preflight failed closed** before
-`staging:deploy`, target recheck, or live UAT ran. The preflight reported four missing production
-resource variables: `CV_PRODUCTION_SCRIPT_ID`, `CV_PRODUCTION_SPREADSHEET_ID`,
-`CV_PRODUCTION_RECEIPT_FOLDER_ID`, and `CV_PRODUCTION_BACKUP_FOLDER_ID`; it also rejected
-`CLASPRC_JSON` as missing/invalid. The workflow log redacted the OAuth value; do not expose or paste
-it into chat.
+The manually dispatched workflow from `client-main` passed source/security/backend checks, mock Browser E2E, and Python syntax validation. The **deployment preflight failed closed** before `staging:deploy`, target recheck, or live UAT ran. The preflight reported four missing production resource variables: `CV_PRODUCTION_SCRIPT_ID`, `CV_PRODUCTION_SPREADSHEET_ID`, `CV_PRODUCTION_RECEIPT_FOLDER_ID`, and `CV_PRODUCTION_BACKUP_FOLDER_ID`; it also rejected `CLASPRC_JSON` as missing/invalid. The workflow log redacted the OAuth value; do not expose or paste it into chat.
 
-No deployment or live UAT steps ran in this attempt. A completed workflow log cannot prove that
-unrelated external systems were untouched, but this workflow provides no evidence that it updated
-the Apps Script deployment or created the synthetic payment. Preserve this run as failed-preflight
-evidence; **do not rerun it or relax preflight to get a green result** until the owner has corrected
-and independently checked the Environment configuration.
+No deployment or live UAT steps ran in this attempt. A completed workflow log cannot prove that unrelated external systems were untouched, but this workflow provides no evidence that it updated the Apps Script deployment or created the synthetic payment. Preserve this run as failed-preflight evidence; **do not rerun it or relax preflight to get a green result** until the owner has corrected and independently checked the Environment configuration.
 
 Owner recovery checklist:
-1. In GitHub **Settings → Environments → staging → Environment variables**, confirm all four
-production resource values correspond to the actual production Script, Sheet, receipt folder and
-backup folder. Enter each exact verified ID privately; do not infer one from another or copy a
-staging ID into the production slot.
-2. In **Environment secrets**, replace `CLASPRC_JSON` only with a fresh, valid Clasp OAuth
-credentials JSON generated for the operator account authorized to access the staging Apps Script
-project. It must contain the expected top-level `token` and `oauth2ClientSettings` members. Do not
-share the secret content or post it in issues/logs. If a real credential was ever pasted into a
-public or untrusted location, revoke/rotate it.
-3. Re-check all other staging and production variable identities independently. The preflight
-requires all five staging resource IDs to be distinct, all five production identities (including the
-deployment derived from root `config.js`) to be distinct, and no staging ID to overlap production.
-**Do not change `config.js` or copy production IDs into staging resources.**
-4. Run `validate-only` from `client-main` to reconfirm source/mock checks, then review the updated
-Environment privately. A validate-only run does not validate these secrets/resources because they
-are not passed into the validation job. Store the Clasp OAuth JSON only in the protected GitHub
-Environment secret; do not paste it into chat, issues, commits or workflow inputs.
-5. Only after private verification should the owner explicitly dispatch a fresh `deploy-and-uat` run
-from `client-main`. Review preflight first, then the exact steps/logs. Stop if any identity is
-uncertain or any guard fails.
+
+1. In GitHub **Settings → Environments → staging → Environment variables**, confirm all four production resource values correspond to the actual production Script, Sheet, receipt folder and backup folder. Enter each exact verified ID privately; do not infer one from another or copy a staging ID into the production slot.
+2. In **Environment secrets**, replace `CLASPRC_JSON` only with a fresh, valid Clasp OAuth credentials JSON generated for the operator account authorized to access the staging Apps Script project. It must contain the expected top-level `token` and `oauth2ClientSettings` members. Do not share the secret content or post it in issues/logs. If a real credential was ever pasted into a public or untrusted location, revoke/rotate it.
+3. Re-check all other staging and production variable identities independently. The preflight requires all five staging resource IDs to be distinct, all five production identities (including the deployment derived from root `config.js`) to be distinct, and no staging ID to overlap production. **Do not change `config.js` or copy production IDs into staging resources.**
+4. Run `validate-only` from `client-main` to reconfirm source/mock checks, then review the updated Environment privately. A validate-only run does not validate these secrets/resources because they are not passed into the validation job. Store the Clasp OAuth JSON only in the protected GitHub Environment secret; do not paste it into chat, issues, commits or workflow inputs.
+5. Only after private verification should the owner explicitly dispatch a fresh `deploy-and-uat` run from `client-main`. Review preflight first, then the exact steps/logs. Stop if any identity is uncertain or any guard fails.
 
 ## Branch and staging workflow — authoritative correction
 
