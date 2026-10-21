@@ -69,9 +69,6 @@ Only after steps 2–5 pass, document customer acceptance, fallback and support 
 PR #198 is merged. Its merged head passed CI/Quality, Browser E2E and Full Flight Test. The release-governance batch is complete; live staging and customer acceptance remain unverified.
 
 
-## Source release status
-
-PR #198 is merged, and its merged head passed CI/Quality, Browser E2E and Full Flight Test. Live staging and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 
