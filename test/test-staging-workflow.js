@@ -142,7 +142,7 @@ assert.doesNotMatch(
 
 assert.match(
   stagingAudit,
-  /workflow run #39587669660[\\s\\S]*CV_PRODUCTION_SCRIPT_ID[\\s\\S]*CLASPRC_JSON/,
+  /workflow run #39587669660[\s\S]*CV_PRODUCTION_SCRIPT_ID[\s\S]*CLASPRC_JSON/,
   'staging audit must preserve failed-preflight evidence and document exact configuration recovery',
 );
 assert.match(
