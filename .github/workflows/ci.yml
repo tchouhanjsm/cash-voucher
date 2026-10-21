@@ -52,23 +52,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary formatter capture for release strategy PR
-        shell: bash
-        run: |
-          set -euo pipefail
-          npx prettier --write docs/CEO-BOARD-STRATEGY.md docs/CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21.md test/test-staging-workflow.js
-          node <<'NODE'
-          const fs = require('node:fs');
-          for (const file of [
-            'docs/CEO-BOARD-STRATEGY.md',
-            'docs/CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21.md',
-            'test/test-staging-workflow.js',
-          ]) {
-            const value = fs.readFileSync(file);
-            console.log('FORMATTED_BASE64_' + file + '=' + value.toString('base64'));
-          }
-          NODE
-
       - name: Run quality gate
         run: npm run check
 

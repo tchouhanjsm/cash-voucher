@@ -17,6 +17,7 @@
 Prefer cohesive outcome-oriented changes that bundle compatible source, focused tests, safety controls, and necessary handoff updates. Avoid tiny PRs limited to one cosmetic change or documentation-only maintenance; update strategy/runbook docs when necessary to close an operational contradiction introduced or discovered in the implementation.
 
 Every PR must receive:
+
 1. Product, security, financial-invariant, permissions, migration, offline/idempotency and rollback review.
 2. Local npm run check and Browser E2E when available; disclose any unrun tests.
 3. CI, Browser E2E and Full Flight Test passing on the exact final PR head.

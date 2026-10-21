@@ -32,15 +32,19 @@ At shift start, the operator needs to know where to begin. During work, recordin
 ## Product sequence
 
 ### Gate 0 — release confidence
+
 Stop broad feature expansion while proving staging target identity, guarded UAT, live role boundaries, real backup and isolated restore, device/offline behavior, print/export and customer acceptance.
 
 ### Gate 1 — controlled customer pilot
+
 Run a 14-day pilot only after launch gates pass. Track reconciliations, exceptions, offline queue state, backups, incidents and fallback daily. Pause on missing/duplicate vouchers, unexplained cash variance, missing receipts, failed backup, uncertain resource identity, unauthorized access or unrecoverable offline entries.
 
 ### Gate 2 — one integrated workflow batch
+
 After pilot evidence, consider **Today → Close → Owner card** as one cohesive vertical slice. Today prioritizes actions/exceptions; Close guides sync, pending movements, physical cash, classification and sign-off; Owner card separates physical cash from digital movement and reports only verifiable sync/backup evidence. Build only if pilot observations show material friction. Establish a baseline and acceptance metric before implementation.
 
 ### Gate 3 — evidence-led extension
+
 Possible later work: durable audit-failure fallback, device reconciliation, accountant export mapping and reusable onboarding. Each needs a named problem, risk analysis and acceptance criteria. A qualified professional must validate jurisdiction-specific tax treatment.
 
 ## Automation and AI
