@@ -75,18 +75,11 @@ No stage is complete because a source PR merged or a mock test passed. Keep evid
 
 **Exit:** branch and exact-head check behavior is verified; any remaining owner-side settings tasks are recorded.
 
-## Phase B — release-readiness implementation PR (completed: PR #198 merged)
+## Phase B — verified staging preparation, migration, deploy and UAT
 
-1. Add the CEO/board strategy, dated execution plan and dedicated client-main engineering strategy.
-2. Update handoff to post-PR #197 and distinguish source checks from live release proof.
-3. Correct the staging audit: protected staging Environment and guarded deploy/UAT are for client-main, not main.
-4. Rename the misleading workflow guard label from “Require main” to “Require client-main”.
-5. Add regression checks for agreement among the workflow, branch policy, current strategy and staging audit.
-6. Keep live Apps Script migrations, resource creation, static hosting/DNS and production deployment outside this PR.
+PR #198 is merged and its merged-head CI, Browser E2E and Full Flight Test passed. Do not repeat source-release work. Follow the six-step pipeline at the top of this document; this phase is the live staging work now.
 
-**Completed:** PR #198 merged to client-main at acc93eb68cec21b1c0510c31fc5f4c82c5481e1d; CI/Quality, Browser E2E and Full Flight Test all passed on that merged head. This does not complete live staging or authorize production.
-
-## Phase C — staging and recovery (current execution phase)
+## Phase B — staging and recovery
 
 1. Verify dedicated staging Script project, Spreadsheet, receipt and backup folders, Web App deployment/URL and unique browser origin. Record identities privately and confirm no staging/production overlap.
 2. Verify the private repository's static-host integration still has access. Independently verify that a generated staging ZIP points to the intended staging /exec endpoint.

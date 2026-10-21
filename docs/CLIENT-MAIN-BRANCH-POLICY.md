@@ -15,6 +15,10 @@
 3. Create a second active ruleset targeting `main` with **Restrict updates** and **Restrict deletions**, and no bypass actors, so `main` remains frozen. Do not use this rule if you have not confirmed that `client-main` has become the agreed integration branch and the current live source.
 4. Keep Apps Script, staging cPanel and production releases separately approved. A merge is not a deployment authorization.
 
+## Current release pipeline
+
+The active next step is the six-step staging release pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md): complete source release (PR #197 and #198 merged), identify staging and host access, back up and verify schema before required migrations, deploy backend before static frontend and guarded UAT, prove operations plus isolated restore, then run the 14-day hotel pilot after acceptance. This is a plan, not proof of live staging completion. Production remains excluded.
+
 ## Current execution documents
 
 - [CEO and board product strategy](CEO-BOARD-STRATEGY.md)

@@ -14,7 +14,7 @@
 - The observed branch comparison has client-main 13 commits ahead and 2 behind main, merge base acebc6b63010a92e136200321fc77c03dac9a3be. Do not merge/rebase branches blindly. Repository metadata still listed main as default; an owner/admin must verify actual ruleset state.
 - A source merge is not Apps Script upload, Web App deployment, static-host publication, schema migration, real backup/restore or customer acceptance.
 
-## Immediate actions
+## Immediate actions — execute in this order
 
 1. PR #198 is merged at `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d`; CI/Quality, Browser E2E and Full Flight Test passed. Proceed to staging, not another source feature.
 2. Owner/admin verifies active branch rulesets, default branch and private-host permissions. Keep client-main as integration and main read-only; this PR does not alter settings or reconcile branches.

@@ -39,6 +39,25 @@ assert.match(currentStrategy, /main is legacy\/read-only/);
 assert.match(boardStrategy, /release readiness before feature expansion/i);
 assert.match(executionPlan, /No production migration\/deployment/i);
 assert.match(executionPlan, /## Immediate pipeline — preserve this order/);
+assert.ok(
+  executionPlan.indexOf("### 1. Complete the source release") <
+    executionPlan.indexOf("### 2. Prepare and identify staging") &&
+    executionPlan.indexOf("### 2. Prepare and identify staging") <
+      executionPlan.indexOf("### 3. Back up, then migrate staging") &&
+    executionPlan.indexOf("### 3. Back up, then migrate staging") <
+      executionPlan.indexOf("### 4. Deploy backend first and run staging UAT") &&
+    executionPlan.indexOf("### 4. Deploy backend first and run staging UAT") <
+      executionPlan.indexOf("### 5. Prove operational readiness") &&
+    executionPlan.indexOf("### 5. Prove operational readiness") <
+      executionPlan.indexOf("### 6. Controlled 14-day hotel pilot"),
+  "the operational release steps must remain in the agreed order",
+);
+assert.match(executionPlan, /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/);
+assert.match(executionPlan, /Keep historical `PaymentMethod` blanks blank/);
+assert.match(executionPlan, /Never dispatch deploy\/UAT from `main`/);
+assert.match(policy, /six-step staging release pipeline/);
+assert.match(strat, /six-step staging release pipeline/);
+assert.match(handoff, /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/);
 assert.match(executionPlan, /migrateVoucherPaymentMethodField\(\)/);
 assert.match(executionPlan, /migrateVendorDefaultsSchema\(\)/);
 assert.match(executionPlan, /Restore that backup into a \*\*separate recovery Sheet\/folder\*\*/);
