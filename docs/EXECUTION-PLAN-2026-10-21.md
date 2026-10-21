@@ -11,48 +11,42 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #197 and #198 are merged. The next action is the staging release, not another feature sprint.
+PRs #197 and #198 are merged. Next is staging release, not another feature sprint.
 
 ### 1. Complete the source release
-
-- PR #197 and PR #198 are merged to `client-main`.
-- PR #198 merged head `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d` passed CI/Quality, Browser E2E and Full Flight Test.
-- Green source checks do not prove live deployment or data recovery.
+- PRs #197 and #198 are merged to `client-main`.
+- PR #198 head `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d` passed CI/Quality, Browser E2E and Full Flight Test.
+- Green source checks do not prove live deployment or recovery.
 
 ### 2. Prepare and identify staging
-
-- Verify the dedicated staging Script, Sheet, receipt/backup folders, existing Web App deployment and `/exec` URL.
-- Confirm private-repository static-host access and a staging ZIP configured with the verified API URL and `CV_ENVIRONMENT=staging`.
-- Record staging IDs privately; prove none overlap production. Verify the protected GitHub `staging` Environment and the `client-main` deployment restriction.
+- Verify the staging Script, Sheet, receipt/backup folders, existing Web App deployment and `/exec` URL.
+- Confirm private-host access and a staging ZIP with the verified API URL and `CV_ENVIRONMENT=staging`.
+- Record staging IDs privately; prove none overlap production. Verify the protected `staging` Environment and `client-main` restriction.
 
 ### 3. Back up, then migrate staging
-
-- Back up the confirmed staging Sheet and receipts; inspect the snapshot and manifest first.
-- Inspect live Vouchers/Vendors headers and row counts. With owner approval, run only required migrations: `migrateVoucherPaymentMethodField()` and `migrateVendorDefaultsSchema()`.
-- Preserve historical `PaymentMethod` blanks. Stop on unexpected headers or occupied target columns; do not infer historic methods, overwrite unknown data or migrate production.
+- Back up the confirmed staging Sheet and receipts; inspect the snapshot and manifest.
+- Inspect Vouchers/Vendors headers and row counts. With owner approval, run only required `migrateVoucherPaymentMethodField()` and `migrateVendorDefaultsSchema()`.
+- Preserve historical `PaymentMethod` blanks. Stop on unexpected headers or occupied columns. Never infer old methods, overwrite unknown data or migrate production.
 - Verify Vouchers W, Vendors H:I, row counts and historic values.
 
 ### 4. Deploy backend first and run staging UAT
-
-- Upload reviewed backend source to the verified staging Script and update its existing Web App deployment; confirm ID and URL.
-- Then publish the static frontend with the verified staging API URL and `CV_ENVIRONMENT=staging`.
-- Dispatch the manual [Staging UAT workflow](https://github.com/tchouhanjsm/cash-voucher/blob/client-main/.github/workflows/staging-uat.yml) from `client-main`. Run `validate-only` first. Write-capable runs require exact `STAGING-ONLY` confirmation and explicit staging-write consent.
+- Upload reviewed backend source to the verified staging Script and update its existing deployment; verify ID and URL.
+- Then publish the static frontend with the verified API URL and `CV_ENVIRONMENT=staging`.
+- Dispatch the manual [Staging UAT workflow](https://github.com/tchouhanjsm/cash-voucher/blob/client-main/.github/workflows/staging-uat.yml) from `client-main`. Run `validate-only` first. Writes require exact `STAGING-ONLY` and explicit staging-write consent.
 - Preserve sanitized logs and exact-run evidence. Mock E2E is not live UAT.
 
 ### 5. Prove operational readiness
-
-Verify on the deployed staging instance and intended devices:
+On the deployed staging instance and intended devices, verify:
 - Owner/Manager/Staff authorization and denied API actions.
-- Payments, receipts, Cash vs UPI/Bank, saved-payee defaults and duplicate warnings.
-- Independent approval, cash-close controls and offline queue/reconnect/recovery.
-- Print/PDF/A5, responsive layout, keyboard focus, zoom/reflow and assistive technology.
-- Back up the migrated staging instance and restore to a **separate recovery Sheet/folder**. Reconcile headers, counts, voucher numbering, users/settings and receipt mapping.
+- Payments, receipts, Cash vs UPI/Bank, payee defaults and duplicate warnings.
+- Independent approval, cash close, offline queue/reconnect/recovery.
+- Print/PDF/A5, responsive layout, keyboard, zoom/reflow and assistive technology.
+- Back up the migrated staging instance and restore to a **separate recovery Sheet/folder**. Reconcile headers, counts, voucher numbering, users/settings and receipts.
 
 ### 6. Controlled 14-day hotel pilot
+Only after steps 2–5 pass, document acceptance, fallback and support boundaries. Track daily reconciliation, cash variance, Cash vs UPI/Bank, each-device offline queues, backup freshness, incidents/recovery and owner/manager sign-off. Pause for missing/duplicate vouchers, unexplained variance, missing receipts, failed backup, unauthorized access, target mismatch or unrecoverable offline entries. Production stays separately gated.
 
-Only after steps 2–5 pass, document customer acceptance, fallback and support boundaries. Track daily reconciliation, physical-cash variance, Cash vs UPI/Bank, device offline queues, backup freshness, incidents/recovery and owner/manager sign-off. Pause for missing/duplicate vouchers, unexplained variance, missing receipts, failed backup, unauthorized access, target mismatch or unrecoverable offline entries. Production remains separately gated.
-
-**Exit rule:** source checks do not complete operational gates. Do not start the next feature batch until pilot evidence identifies a real bottleneck.
+**Exit rule:** source checks do not complete operational gates. Do not start the next feature batch until pilot evidence identifies a bottleneck.
 
 ## Branch and source controls
 
