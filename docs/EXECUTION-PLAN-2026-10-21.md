@@ -11,41 +11,46 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #197 and #198 are merged. The next task is the staging release, not another feature sprint.
+PRs #197 and #198 are merged. The next action is the staging release, not another feature sprint.
 
 ### 1. Complete the source release
+
 - PR #197 and PR #198 are merged to `client-main`.
-- The merged PR #198 head `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d` passed CI/Quality, Browser E2E and Full Flight Test.
+- PR #198 merged head `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d` passed CI/Quality, Browser E2E and Full Flight Test.
 - Green source checks do not prove live deployment or data recovery.
 
 ### 2. Prepare and identify staging
+
 - Verify the dedicated staging Script, Sheet, receipt/backup folders, existing Web App deployment and `/exec` URL.
-- Confirm static-host access and a staging ZIP configured with the verified API URL and `CV_ENVIRONMENT=staging`.
-- Record staging identities privately and prove they do not overlap production.
-- Verify the protected GitHub `staging` Environment, secrets/configuration and `client-main` restriction. Stop if the target is uncertain.
+- Confirm private-repository static-host access and a staging ZIP configured with the verified API URL and `CV_ENVIRONMENT=staging`.
+- Record staging IDs privately; prove none overlap production. Verify the protected GitHub `staging` Environment and the `client-main` deployment restriction.
 
 ### 3. Back up, then migrate staging
+
 - Back up the confirmed staging Sheet and receipts; inspect the snapshot and manifest first.
 - Inspect live Vouchers/Vendors headers and row counts. With owner approval, run only required migrations: `migrateVoucherPaymentMethodField()` and `migrateVendorDefaultsSchema()`.
-- Preserve historical `PaymentMethod` blanks. Stop on unexpected headers or occupied target columns. Never infer historic methods or overwrite unknown data.
-- Verify Vouchers W, Vendors H:I, row counts and unchanged historic values. Do not migrate production.
+- Preserve historical `PaymentMethod` blanks. Stop on unexpected headers or occupied target columns; do not infer historic methods, overwrite unknown data or migrate production.
+- Verify Vouchers W, Vendors H:I, row counts and historic values.
 
 ### 4. Deploy backend first and run staging UAT
-- Upload reviewed backend source to the verified staging Script and update its existing Web App deployment; verify the ID and URL.
-- Then build/publish the static frontend with the verified staging API URL and `CV_ENVIRONMENT=staging`.
+
+- Upload reviewed backend source to the verified staging Script and update its existing Web App deployment; confirm ID and URL.
+- Then publish the static frontend with the verified staging API URL and `CV_ENVIRONMENT=staging`.
 - Dispatch the manual [Staging UAT workflow](https://github.com/tchouhanjsm/cash-voucher/blob/client-main/.github/workflows/staging-uat.yml) from `client-main`. Run `validate-only` first. Write-capable runs require exact `STAGING-ONLY` confirmation and explicit staging-write consent.
-- Keep sanitized logs and exact-run evidence. Mock E2E is not live UAT.
+- Preserve sanitized logs and exact-run evidence. Mock E2E is not live UAT.
 
 ### 5. Prove operational readiness
+
 Verify on the deployed staging instance and intended devices:
-- Owner/Manager/Staff authorization, password flows and denied API actions.
-- Payments, receipts, Cash versus UPI/Bank, saved-payee defaults and duplicate warnings.
+- Owner/Manager/Staff authorization and denied API actions.
+- Payments, receipts, Cash vs UPI/Bank, saved-payee defaults and duplicate warnings.
 - Independent approval, cash-close controls and offline queue/reconnect/recovery.
 - Print/PDF/A5, responsive layout, keyboard focus, zoom/reflow and assistive technology.
-- Back up the migrated staging instance and restore into a **separate recovery Sheet/folder**. Reconcile headers, counts, voucher numbering, users/settings and receipt mapping.
+- Back up the migrated staging instance and restore to a **separate recovery Sheet/folder**. Reconcile headers, counts, voucher numbering, users/settings and receipt mapping.
 
 ### 6. Controlled 14-day hotel pilot
-Only after steps 2–5 pass, document customer acceptance, fallback and support boundaries. Track daily reconciliation, physical-cash variance, Cash vs UPI/Bank, offline queues on each device, backup freshness, incidents/recovery and owner/manager sign-off. Pause for missing/duplicate vouchers, unexplained variance, missing receipts, failed backup, unauthorized access, target mismatch or unrecoverable offline entries. Production remains separately gated.
+
+Only after steps 2–5 pass, document customer acceptance, fallback and support boundaries. Track daily reconciliation, physical-cash variance, Cash vs UPI/Bank, device offline queues, backup freshness, incidents/recovery and owner/manager sign-off. Pause for missing/duplicate vouchers, unexplained variance, missing receipts, failed backup, unauthorized access, target mismatch or unrecoverable offline entries. Production remains separately gated.
 
 **Exit rule:** source checks do not complete operational gates. Do not start the next feature batch until pilot evidence identifies a real bottleneck.
 
@@ -63,16 +68,10 @@ Only after steps 2–5 pass, document customer acceptance, fallback and support 
 
 PR #198 is merged. Its merged head passed CI/Quality, Browser E2E and Full Flight Test. The release-governance batch is complete; live staging and customer acceptance remain unverified.
 
-## Stage execution detail — staging and recovery
 
-1. Verify dedicated staging Script project, Spreadsheet, receipt and backup folders, Web App deployment/URL and unique browser origin. Record identities privately and confirm no staging/production overlap.
-2. Verify the private repository's static-host integration still has access. Independently verify that a generated staging ZIP points to the intended staging /exec endpoint.
-3. Verify the GitHub Environment named staging, its client-main deployment restriction and required variables/secrets. Never expose values in Git or logs.
-4. Run validate-only first. After owner review and approval, run deploy-and-uat from client-main with exact STAGING-ONLY confirmation and explicit staging-write consent; or uat-only against a known deployed staging version.
-5. Inspect sanitized logs, target identity, real role/API behavior and the synthetic transaction/cancellation audit trace.
-6. Create a real staging backup; verify its Sheet snapshot, receipt files and manifest; restore into a separate recovery Sheet/folder and reconcile headers, row counts, voucher numbering, settings/users and receipts.
+## Source release status
 
-**Exit:** successful exact-run live UAT, identity evidence, live role/receipt tests and witnessed isolated restore. CI alone does not satisfy this gate.
+PR #198 is merged, and its merged head passed CI/Quality, Browser E2E and Full Flight Test. Live staging and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 
