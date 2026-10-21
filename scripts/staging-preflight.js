@@ -223,8 +223,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     } catch {
       claspConfig = null;
     }
-    const isObject = (value) =>
-      value !== null && typeof value === 'object' && !Array.isArray(value);
+    const isObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
     const hasText = (value) => typeof value === 'string' && value.trim().length > 0;
     const legacyFormatValid =
       isObject(claspConfig) &&
@@ -289,7 +288,9 @@ function main() {
     'Staging preflight passed: the staging API URL and deployment ID are distinct from the production Web App endpoint.',
   );
   if (result.checks.productionResourceReferencesPresent) {
-    console.log('Staging resource IDs were compared with the configured production resource inventory.');
+    console.log(
+      'Staging resource IDs were compared with the configured production resource inventory.',
+    );
   } else {
     console.log(
       'Production Script/Sheet/Drive IDs were not provided; full resource isolation relies on the explicit owner attestation.',
