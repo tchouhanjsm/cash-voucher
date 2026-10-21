@@ -31,7 +31,8 @@ function saveVendor_(user, req) {
     mobile = clean_(req.mobile, 15),
     defaultCategory = clean_(req.defaultCategory, 40),
     defaultPaymentMethod = clean_(req.defaultPaymentMethod, 20);
-  if (defaultCategory && categories_().indexOf(defaultCategory) < 0)
+  const validDefaultCategories = categories_().concat(receiptCategories_());
+  if (defaultCategory && validDefaultCategories.indexOf(defaultCategory) < 0)
     throw err_('Choose a valid default category.', 'VALIDATION');
   if (defaultPaymentMethod && ['CASH', 'UPI', 'BANK_TRANSFER'].indexOf(defaultPaymentMethod) < 0)
     throw err_('Choose a valid default payment method.', 'VALIDATION');
