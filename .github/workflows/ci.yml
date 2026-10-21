@@ -52,6 +52,11 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
+      - name: Temporary format diagnostics
+        run: |
+          npx prettier --write frontend/features/payments.js test/test-schema-migrations.js
+          git diff -- frontend/features/payments.js test/test-schema-migrations.js
+
       - name: Run quality gate
         run: npm run check
 
