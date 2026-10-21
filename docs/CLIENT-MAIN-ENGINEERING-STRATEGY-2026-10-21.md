@@ -52,9 +52,9 @@ Deploy/UAT remains manual and must run from refs/heads/client-main. For deploy-a
 
 ## Current queue
 
-**P0 — release readiness:** align strategy, handoff and staging audit to PR #197; assert that the workflow, branch policy and documents agree; owner/admin verifies branch rulesets and host private-repo access; run authorized staging UAT; prove real backup/restore; test actual device, roles, receipts, print and offline recovery; obtain acceptance.
+**P0 — execute the six-step staging release pipeline.** PR #197 and PR #198 are merged, and PR #198's merged SHA passed CI/Quality, Browser E2E and Full Flight Test. Do not create duplicate source work. Next: verify staging resources and host access; backup and inspect the actual schema; run only the confirmed required migrations on staging; deploy backend first and then the staging static frontend; dispatch manual guarded UAT from client-main; prove real role/receipt/payment-method/offline/print behavior and backup/restore to a separate target; get written customer acceptance; then begin the 14-day hotel pilot. Keep production untouched.
 
-**P1 — pilot-driven improvement:** after observation, consider Today → Close → Owner card as one vertical slice, reusing existing payment, receipt, approval, exception, close and recovery data paths.
+**P1 — pilot-driven improvement (after the 14-day hotel pilot):** consider Today → Close → Owner card as one vertical slice, reusing existing payment, receipt, approval, exception, close and recovery data paths.
 
 **P2 — research:** design durable audit-failure handling; validate accountant software/version and import fixture; review the time-bounded braces@3.0.3 exception by 9 November 2026; measure Apps Script/Sheets service limits before a database decision. Do not blindly downgrade Clasp or rewrite to multi-tenant.
 

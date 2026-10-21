@@ -16,6 +16,7 @@ const currentStrategy = read('docs/CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21.m
 const boardStrategy = read('docs/CEO-BOARD-STRATEGY.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
+const stagingAudit = read('docs/STAGING-RELEASE-AUDIT.md');
 
 assert.match(ci, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(ci, /pull_request:\n\s+branches:\s*\[client-main\]/);
@@ -37,6 +38,16 @@ assert.match(currentStrategy, /client-main is the only active integration branch
 assert.match(currentStrategy, /main is legacy\/read-only/);
 assert.match(boardStrategy, /release readiness before feature expansion/i);
 assert.match(executionPlan, /No production migration\/deployment/i);
+assert.match(executionPlan, /## Immediate pipeline — preserve this order/);
+assert.match(executionPlan, /migrateVoucherPaymentMethodField\(\)/);
+assert.match(executionPlan, /migrateVendorDefaultsSchema\(\)/);
+assert.match(executionPlan, /Restore that backup into a \*\*separate recovery Sheet\/folder\*\*/);
+assert.match(executionPlan, /Only after stages 2–5 pass/);
+assert.match(stagingAudit, /migrateVoucherPaymentMethodField\(\)/);
+assert.match(stagingAudit, /migrateVendorDefaultsSchema\(\)/);
+assert.match(stagingAudit, /Deploy backend first/);
+assert.match(stagingAudit, /manual guarded UAT from client-main/);
+assert.match(stagingAudit, /main remains untouched/);
 assert.match(branchPolicy, /\[CEO and board product strategy\]\(CEO-BOARD-STRATEGY\.md\)/);
 assert.match(
   branchPolicy,
