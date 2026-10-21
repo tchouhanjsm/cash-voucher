@@ -42,6 +42,7 @@ function saveVendor_(user, req) {
       return String(v.Name).toLowerCase() === name.toLowerCase() && v.VendorID !== req.id;
     })[0];
   if (dup) throw err_('This vendor already exists.');
+  let savedVendorId = req.id || '';
   if (req.id) {
     const vendor = list.filter(function (item) {
       return item.VendorID === req.id;
@@ -94,6 +95,7 @@ function saveVendor_(user, req) {
       CreatedBy: user.email,
       CreatedAt: nowIso_(),
     };
+    savedVendorId = vendor.VendorID;
     appendRows_('Vendors', [vendor]);
     auditEvent_(
       user,
@@ -114,7 +116,7 @@ function saveVendor_(user, req) {
       'Vendor created',
     );
   }
-  return { ok: true };
+  return { ok: true, vendorId: savedVendorId };
 }
 function toggleVendor_(user, req) {
   need_(user, 'vendors');

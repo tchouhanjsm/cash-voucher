@@ -1488,10 +1488,16 @@ ok(
   "cannot read others' receipt",
 );
 // vendors + settings
+const ramVendorCreate = as(M, 'saveVendor', {
+  name: 'Ram Traders',
+  mobile: '9999999999',
+});
 ok(
-  as(M, 'saveVendor', { name: 'Ram Traders', mobile: '9999999999' }).ok &&
+  ramVendorCreate.ok &&
+    typeof ramVendorCreate.data.vendorId === 'string' &&
+    !!ramVendorCreate.data.vendorId &&
     !as(M, 'saveVendor', { name: 'ram traders' }).ok,
-  'vendor unique',
+  'vendor uniqueness and stable ID response support inline payee defaults',
 );
 const ramVendor = as(M, 'bootstrap').data.vendors.find((vendor) => vendor.name === 'Ram Traders');
 const vendorCreateAudit = [...g.sheets.AuditLog.rows]
