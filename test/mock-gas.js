@@ -283,6 +283,8 @@ function create(options = {}) {
     triggerCount: () => scriptTriggers.length,
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),
+    migrateVoucherPaymentMethodField: () => ctx.__api.migrateVoucherPaymentMethodField(),
+    migrateVendorDefaultsSchema: () => ctx.__api.migrateVendorDefaultsSchema(),
     call: (action, payload = {}) => {
       const defaults = withOnboardingEnvironment
         ? { environment: 'staging', deploymentId: 'MOCK_DEPLOYMENT' }

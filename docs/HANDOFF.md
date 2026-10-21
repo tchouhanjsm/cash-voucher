@@ -1,43 +1,27 @@
 # Engineering Handoff
 
-Updated: 18 October 2026  
+Updated: 20 October 2026  
 Repository: `tchouhanjsm/cash-voucher`  
-Base `main` SHA for this follow-up: `8b14adc72c146589149a33d793ca9e55af5da13a` (PR #180 merge)  
-Current work branch: `fix/staging-setup-preflight-20261018`  
-Current work: setup preflight hardening, regression tests, staging login checklist, and operator/client runbook alignment. Branch remains unmerged; live setup, deployment, login, UAT and customer acceptance remain pending.  
-Owner authority: the repository owner retains approval to merge, initialize Google resources, create/update a Web App deployment, publish frontend files, perform UAT/restore drills and deploy production. This source batch makes no Google-resource or hosting changes.
+Integration branch: `client-main`  
+Verified integration head before this follow-up: `9f4fffa43ac27c357b7a06cb49832bfddca1e25b` (PR #195 merge).  
+Current work: regression coverage for the PaymentMethod and vendor-default schema migrations, followed by the cohesive staff-entry redesign.  
+Environment authority: this source work does not run Apps Script migrations, initialize Google resources, publish static files, update a Web App deployment, mutate live financial data or deploy to production.
 
-## This staging setup follow-up
+## Verified current phase
 
-The base `8b14adc72c146589149a33d793ca9e55af5da13a` revision is the PR #180 merge observed before this follow-up. The operator-provided local test log after replacing `getDisplayValues()` with `getValues()` shows the listed `npm run check` suites completing, backend tests reporting 289 checks, and Browser E2E reporting 951 checks passed. This is not GitHub CI evidence for the current branch and is not live Google/hosting proof. Confirm the exact branch head and required CI before merge. `setup()`, `clasp push`, versioned deployment, frontend publication and production changes remain separately authorized operations.
+- PR #195 is merged. On its exact merged integration commit, CI [39469808091](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39469808091), Browser E2E [39469808090](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39469808090), and Full Flight Test [39469808185](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39469808185) passed.
+- Payment entry already supports payee/amount/note, payment methods, vendor defaults, recent payee suggestions, duplicate warnings, receipt attachments and offline/idempotent save recovery. The next UX phase should reduce decision friction and repeated taps rather than add controls by default.
+- The supplied screenshot is a conceptual five-step release workflow, not a pixel-perfect UI reference. Keep GitHub as source of truth, build static frontend artifacts separately, deploy Apps Script separately, verify configured environment identity, and run staging UAT before owner-approved production release.
+- The PaymentMethod and vendor-default migrations are append-only in source. Live staging schema/backend/frontend compatibility remains unverified. Back up and verify the exact target before any authorized migration; release backend before the static frontend; leave historical payment methods blank.
+- GitHub currently reports `main` as the default branch, while repository workflow documentation says `client-main` is the only integration branch. The accessible `main` branch response indicated branch protection/status checks disabled; this GitHub connection cannot inspect the full ruleset configuration. Treat default/ruleset configuration as an owner-admin task and do not change it as part of this source PR.
 
-## Verified source state
+## Next actions
 
-- [PR #165](https://github.com/tchouhanjsm/cash-voucher/pull/165), Phases 37–39, merged at `4b729f33d9caff13e01ed56acbc231375c5beec0`. Exact tested head `26a92a70513a088cddc994d1a398d63d908ec8e0` passed CI/quality, Browser E2E and Full Flight Test.
-- [PR #166](https://github.com/tchouhanjsm/cash-voucher/pull/166), customer static build, response-header artifact and onboarding/handover documents, merged at `4a759b7513a925aee796949d8f6e79085f096314`. Exact tested head `13f12d314687ec88d9044ccae7e8fb3c202743fb` passed CI, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks). [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776051) · [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776133) · [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39002776075).
-- PR #174 (staging artifact and release-doc preparation) is merged at `db3e2b76ef028fe6f20a2664bce454a82be57916`; its exact tested head passed CI, Browser E2E and Full Flight Test.
-- PR #175 ([Account → Report a problem](https://github.com/tchouhanjsm/cash-voucher/pull/175)) is merged at `449f47d994be3a918f883abc2ab7023043e4cc1b`. Its exact tested head `49c672859d86aff4b4c648a0221a57ff3387f8ce` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432725), [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432728), and [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39118432768). The inbox is configured through each client’s Apps Script `SUPPORT_EMAIL` Script Property; actual MailApp delivery still needs one controlled staging test.
-- Repository visibility is now **private**. Verify host access after the visibility change before relying on host-triggered builds.
-- PR #173 adds server-backed per-environment onboarding state, ordered owner confirmations with audit events, environment/resource identity checks and central financial-write gates. Its exact tested head `567b48c54a0e179b9b4775d0aba7ac45f4220749` passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913768), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913770) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39109913787). PR #173 merged at `9335018b5b9edf1109839f5f9aa2216e4128fbdc`; post-merge [main CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39111329035) passed. This is source/mock evidence, not live staging proof.
+1. Migration-test gap remains open: add and run deterministic tests for both additive schema migrations, including historical-row preservation, idempotency and occupied-target refusal, then record the successful run before any staging migration.
+2. Deliver a coherent UI/interaction batch for both payment and receipt flows: inline saved-payee creation, safe row progression, improved hierarchy/spacing at desktop/tablet/phone widths, useful daily totals/day-sheet workflow, and print/share only where workflow and print acceptance support it.
+3. Verify private static-host access to this private repository. Build a staging-only client ZIP with the independently verified staging `/exec` URL; publish only after explicit owner authorization.
+4. Owner-authorized staging UAT must cover role and receipt permissions, Cash/UPI/Bank treatment, vendor defaults, duplicate warnings, offline replay, A5/PDF alignment, a completed backup and restore into a separate recovery Sheet/folder. Production remains blocked until acceptance evidence is recorded.
 
-## Product and release boundary
+## Release boundary
 
-Cash Voucher remains a single-property static PWA backed by Google Apps Script, Sheets and Drive. Each staging/customer instance needs its own Script/Web App deployment, Sheet, receipt/backup folders and distinct static origin. The customer build command is `npm run build:web`; set the verified instance URL through `CV_API_URL` and explicitly set `CV_ENVIRONMENT=staging` or `production`. Publish only `dist/`, which emits `_headers` for Cloudflare Pages and `.htaccess` for Apache; verify the live HTTP response headers.
-
-PR #166 prepares packaging; PR #174 adds the Apache security-header artifact and handoff corrections; PR #175 adds support reporting. These merges did **not** provision staging/customer Google resources, a protected GitHub staging Environment, hosting projects, real URLs, accounts or credentials. The repository is now private; confirm hosting integration remains authorized. Live target identity, roles/receipt access, real scheduled backup, isolated restore, real support delivery, real-device/offline recovery, human accessibility checks, service capacity and the controlled pilot remain unverified.
-
-## Support request email
-
-PR #175 adds an authenticated Account → Report a problem form. It calls Apps Script action `reportIssue` and emails the server-configured `SUPPORT_EMAIL`; the client cannot choose the recipient. The message includes a reference, workspace/reporter/role, environment and Script context. Audit entries record the subject, not the message body. Cache-based rate limits are best-effort (5 per user/hour, 20 per workspace/6 hours). Configure `SUPPORT_EMAIL` in every client project and test one real email in staging. Login-failure support uses the operator-supplied external contact, not an anonymous email-submit endpoint.
-
-## Current priority order
-
-1. **P0 — verify private-host continuity:** confirm the static host can access the now-private repository, build successfully, and publishes only `dist/`. Do not change DNS or remove an existing host until continuity is proven.
-2. **P0 — provision staging:** create isolated Google resources and a first versioned Web App deployment; verify all target IDs; protect the GitHub `staging` Environment and secrets; build the static client with the verified staging URL and `CV_ENVIRONMENT=staging`; publish only `dist/`; run owner-authorized UAT.
-3. **P0 — private-host continuity and first-customer isolation:** the source repository is private; prove the host integration still has access before DNS changes. Provision a new customer instance and unique Cloudflare Pages origin; never reuse the staging Sheet or current unverified root `config.js` endpoint.
-4. **P0 — operational trust:** verify live owner/manager/staff permissions and receipt access, inspect a real backup, restore into a separate recovery destination, reconcile row counts and voucher numbers, and test the actual customer link.
-5. **P1 — real-device verification and 14-day pilot:** PWA installation/update, offline queue/recovery across every operating device, keyboard/focus, zoom/reflow, screen reader, print/export, end-of-day book-vs-physical-cash reconciliation and daily incident/fallback evidence.
-6. **P1 — authorized real-service measurements and contextual review of the 17 active DOM assignment sites.**
-7. **P2 — resolve the owner-approved design for dual audit append/marker-store failure; review the `braces@3.0.3` dependency exception by 9 November 2026; obtain accountant-approved destination/mapping before claiming target-specific exports; decide whether denomination-level counts add operational value.**
-
-See [Staging Release Audit](STAGING-RELEASE-AUDIT.md) for the evidence, detailed setup sequence and queue. See [Release Readiness](RELEASE-READINESS.md) for the acceptance gates. Do not treat a green mock suite, a merged PR or generated `dist/` as live deployment/restore proof.
+A source merge is not a Clasp upload, Web App deployment, static-host publication, backup or restore proof. Never run `setup()` against populated data, guess resource IDs, disclose credentials or infer historical PaymentMethod from CashImpact.
