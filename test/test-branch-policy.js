@@ -56,7 +56,7 @@ assert.match(
   executionPlan,
   /migrateVoucherPaymentMethodField\(\)[\s\S]*migrateVendorDefaultsSchema\(\)/,
 );
-assert.match(executionPlan, /Keep historical `PaymentMethod` blanks blank/);
+assert.match(executionPlan, /Preserve historical `PaymentMethod` blanks/);
 assert.match(executionPlan, /Never dispatch deploy\/UAT from `main`/);
 assert.match(branchPolicy, /\[CEO and board product strategy\]\(CEO-BOARD-STRATEGY\.md\)/);
 assert.match(stagingAudit, /six-step pipeline in \[the execution plan\]/);
