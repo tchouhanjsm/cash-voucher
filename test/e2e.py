@@ -1221,7 +1221,7 @@ with sync_playwright() as p:
     )
     try:
         page.wait_for_function(
-            "document.querySelector('#view')?.innerText.includes('Total paid')",
+            "document.querySelector('#view')?.innerText.includes('TOTAL PAID')",
             timeout=10000,
         )
     except Exception:

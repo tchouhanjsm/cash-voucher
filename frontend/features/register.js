@@ -94,6 +94,7 @@ export function createRegister({ api, go }) {
     totalCount,
   }) {
     const target = $('#rtot');
+    if (!target) return;
     target.replaceChildren();
 
     const appendText = (value) => target.appendChild(document.createTextNode(value));
