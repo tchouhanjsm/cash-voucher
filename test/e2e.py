@@ -1961,6 +1961,37 @@ with sync_playwright() as p:
     )
     check(page.locator('#aud').count() == 0, 'audit events are no longer embedded in Settings')
     check(page.locator('#navMoreItems [data-v=audit]').count() == 1, 'owner has a dedicated audit navigation item in More')
+    def inject_hostile_audit_detail(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'auditLog':
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {}) if payload.get('ok') else {}
+        rows = data.get('rows')
+        if isinstance(rows, list):
+            if rows:
+                row = rows[0]
+                row['action'] = 'VENDOR_CREATE'
+                row['target'] = xss_vendor
+                row['details'] = xss_vendor
+            else:
+                rows.append({
+                    'time': '2026-10-22T00:00:00',
+                    'user': 'owner@test.com',
+                    'action': 'VENDOR_CREATE',
+                    'target': xss_vendor,
+                    'details': xss_vendor,
+                })
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    # Simulate hostile legacy/server-returned audit text without persisting an unsafe name.
+    page.route('**/api?*', inject_hostile_audit_detail)
     go_view(page, 'audit')
     page.wait_for_selector('#aud tr')
     page.wait_for_function(
@@ -2030,20 +2061,32 @@ with sync_playwright() as p:
         and page.locator('#aud-q').input_value() == '',
         'clear audit filters restores the loaded event list',
     )
+    page.unroute('**/api?*', inject_hostile_audit_detail)
     go_view(page, 'set')
     page.wait_for_selector('#sn')
     page.fill('#sn', xss_payload)
     page.fill('#sa', xss_company)
     page.click('#sf .primary')
-    page.wait_for_function("document.querySelector('#brand').textContent === " + json.dumps(xss_payload))
-    page.wait_for_timeout(300)
+    page.wait_for_function(
+        "document.querySelector('#toast')?.textContent.toLowerCase().includes('valid property name')"
+    )
     check(
-        page.locator('#brand').inner_text() == xss_payload
+        xss_payload not in page.locator('#brand').inner_text()
+        and page.locator('#brand img, #brand svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'server rejects an HTML payload as property name before persistence',
+    )
+    page.fill('#sn', 'Xss Test Property')
+    page.fill('#sa', xss_company)
+    page.click('#sf .primary')
+    page.wait_for_function("document.querySelector('#brand').textContent === 'Xss Test Property'")
+    check(
+        page.locator('#brand').inner_text() == 'Xss Test Property'
         and page.locator('#brand img, #brand svg').count() == 0
         and page.locator('#sa').input_value() == xss_company
         and page.locator('#sf img, #sf svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'stored property name and address remain inert text in navigation and settings',
+        'valid property name is saved while address text remains inert in settings',
     )
     page.fill('#sn', 'Hotel Test')
     page.fill('#sa', '1 Fort Road')
@@ -4272,6 +4315,49 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
 
+    # Simulate an unsafe legacy/imported API record in client state so rendering sinks
+    # remain tested independently of the server's new write-time name validator.
+    page.evaluate(
+        """async (payload) => {
+          const { S } = await import('/frontend/core/state.js');
+          const vendor = {
+            id: 'xss-render-vendor-fixture',
+            name: payload,
+            company: '',
+            mobile: '',
+            active: true,
+            defaultCategory: '',
+            defaultPaymentMethod: ''
+          };
+          const voucher = {
+            id: 'xss-render-voucher-fixture',
+            no: 998877,
+            date: new Date().toISOString().slice(0, 10),
+            vendor: payload,
+            vendorId: vendor.id,
+            paymentMethod: 'CASH',
+            amount: 13.5,
+            category: 'Other',
+            notes: '',
+            type: 'PAYMENT',
+            status: 'ACTIVE',
+            createdBy: S.me.email,
+            createdAt: new Date().toISOString(),
+            updatedBy: '',
+            updatedAt: '',
+            receipts: [],
+            cancelReason: '',
+            cashImpact: 'CASH_OUT',
+            approvalStatus: 'NOT_REQUIRED',
+            approvedBy: '',
+            approvedAt: '',
+            approvalReason: ''
+          };
+          S.vendors = [...(S.vendors || []).filter((item) => item.id !== vendor.id), vendor];
+          S.vouchers = [...(S.vouchers || []).filter((item) => item.id !== voucher.id), voucher];
+        }""",
+        xss_payload,
+    )
     go_view(page, 'reg')
     page.wait_for_selector('[data-act=edit]')
     page.set_viewport_size({'width': 390, 'height': 844})
@@ -4679,6 +4765,14 @@ with sync_playwright() as p:
     )
     page.click('#modal [data-x]')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+    page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          S.vouchers = (S.vouchers || []).filter((item) => item.id !== 'xss-render-voucher-fixture');
+          S.vendors = (S.vendors || []).filter((item) => item.id !== 'xss-render-vendor-fixture');
+        }"""
+    )
+    go_view(page, 'reg')
     page.wait_for_selector('[data-act=cancel]')
     page.locator('[data-act=cancel]').first.click()
     page.fill('#cr', 'entered twice')
@@ -6256,15 +6350,40 @@ with sync_playwright() as p:
     page.wait_for_selector('#nf')
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'new cash receipt action preserves the selected mode')
 
-    # Adversarial coverage for the entry-form sinks: a hostile saved payee name must render as
-    # inert text in the recent-payee chips, the duplicate warning and the row.
+    # Seed an unsafe legacy API value in client state to test rendering without making
+    # an unsafe financial write through the server.
     page.click('[data-k=PAYMENT]')
-    page.fill('.erow .rv', xss_payload)
-    page.fill('.erow .ra', '11')
-    choose_cash_impact_for_current_rows()
-    page.click('#nsave')
-    page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1 payment')")
-    page.click('#nres [data-act=newagain]')
+    page.evaluate(
+        """async (payload) => {
+          const { S } = await import('/frontend/core/state.js');
+          S.vouchers.push({
+            id: 'xss-recent-payee-fixture',
+            no: 998878,
+            date: new Date().toISOString().slice(0, 10),
+            vendor: payload,
+            vendorId: 'xss-recent-vendor',
+            paymentMethod: 'CASH',
+            amount: 11,
+            category: 'Other',
+            notes: '',
+            type: 'PAYMENT',
+            status: 'ACTIVE',
+            createdBy: S.me.email,
+            createdAt: new Date().toISOString(),
+            updatedBy: '',
+            updatedAt: '',
+            receipts: [],
+            cancelReason: '',
+            cashImpact: 'CASH_OUT',
+            approvalStatus: 'NOT_REQUIRED',
+            approvedBy: '',
+            approvedAt: '',
+            approvalReason: ''
+          });
+        }""",
+        xss_payload,
+    )
+    page.click('[data-k=PAYMENT]')
     page.wait_for_selector('#recentVendors .vchip')
     page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
     page.fill('.erow .ra', '11')
@@ -6277,7 +6396,13 @@ with sync_playwright() as p:
         and page.locator('#rows .erow .row-error').inner_text().startswith('Possible duplicate')
         and page.locator('#rows svg:not(.i), #rows img').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'hostile payee names stay inert in recent-payee chips and the duplicate warning',
+        'legacy payee names remain inert in recent-payee chips and duplicate warnings',
+    )
+    page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          S.vouchers = (S.vouchers || []).filter((item) => item.id !== 'xss-recent-payee-fixture');
+        }"""
     )
 
     go_view(page, 'dash')
