@@ -45,8 +45,16 @@ invalidNames.forEach((name, index) => {
     password: 'Staff#Temp2026',
   });
   assert.equal(result.ok, false, 'invalid user name is rejected: case ' + index);
-  assert.equal(result.code, 'VALIDATION', 'invalid user name returns validation error: case ' + index);
-  assert.equal(g.sheets.Users.rows.length, before, 'invalid user name does not write a row: case ' + index);
+  assert.equal(
+    result.code,
+    'VALIDATION',
+    'invalid user name returns validation error: case ' + index,
+  );
+  assert.equal(
+    g.sheets.Users.rows.length,
+    before,
+    'invalid user name does not write a row: case ' + index,
+  );
   rejectedUserCount++;
 });
 
@@ -71,8 +79,16 @@ invalidVendorNames.forEach((name, index) => {
   const before = g.sheets.Vendors.rows.length;
   const result = call('saveVendor', { name, company: 'Example Company' });
   assert.equal(result.ok, false, 'invalid vendor name is rejected: case ' + index);
-  assert.equal(result.code, 'VALIDATION', 'invalid vendor name returns validation error: case ' + index);
-  assert.equal(g.sheets.Vendors.rows.length, before, 'invalid vendor name does not write a row: case ' + index);
+  assert.equal(
+    result.code,
+    'VALIDATION',
+    'invalid vendor name returns validation error: case ' + index,
+  );
+  assert.equal(
+    g.sheets.Vendors.rows.length,
+    before,
+    'invalid vendor name does not write a row: case ' + index,
+  );
   rejectedVendorCount++;
 });
 
@@ -98,7 +114,11 @@ invalidNames.slice(0, 6).forEach((vendor, index) => {
     ],
   });
   assert.equal(result.ok, false, 'invalid voucher vendor is rejected: case ' + index);
-  assert.equal(result.code, 'VALIDATION', 'invalid voucher vendor returns validation error: case ' + index);
+  assert.equal(
+    result.code,
+    'VALIDATION',
+    'invalid voucher vendor returns validation error: case ' + index,
+  );
   assert.equal(
     g.sheets.Vouchers.rows.length,
     voucherCountBeforeInvalidNames,
