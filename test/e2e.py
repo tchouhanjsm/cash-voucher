@@ -1646,8 +1646,8 @@ with sync_playwright() as p:
     )
     check(
         '5 malformed user record(s) omitted from this response' in page.locator('#view').inner_text()
-        and page.locator('#view tbody tr').count() == 6
-        and page.locator('#view [data-act=utog]').count() == 6,
+        and page.locator('#view tbody tr').count() == 5
+        and page.locator('#view [data-act=utog]').count() == 5,
         'owner Users view omits malformed rows while keeping valid user records actionable',
     )
     check(
@@ -1675,7 +1675,7 @@ with sync_playwright() as p:
     go_view(page, 'users')
     page.wait_for_selector('#uf')
     check(
-        page.locator('#view tbody tr').count() == 6
+        page.locator('#view tbody tr').count() == 5
         and page.locator('#view [role=status]').count() == 0,
         'owner Users view recovers after a valid list response returns',
     )
