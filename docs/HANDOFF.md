@@ -1,39 +1,39 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 21 October 2026  
+**Updated:** 22 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
-**Integration branch:** client-main  
-**Verified integration head before this PR:** acc93eb68cec21b1c0510c31fc5f4c82c5481e1d (post-PR #198; CI/Quality, Browser E2E and Full Flight Test passed).  
-**Legacy branch:** main (read-only; divergent).  
-**Current phase:** six-step staging release pipeline. PRs #197 and #198 are merged; no live staging run, migration, deployment or customer pilot is claimed.
+**Integration branch:** `client-main`  
+**Verified integration baseline:** `bbc7f4d1266c580a951fad950e09c5c41027b666` (PR #202 merged).  
+**Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
+**Current phase:** six-step staging release pipeline. PR #203 is an open, source-only staging evidence improvement; it has not been merged. No live staging run, migration, deployment, restore drill or customer pilot is claimed.
 
 ## Verified source state
 
-- PR #197 (“streamline fast entry and add live batch totals”) is merged to client-main. The exact source-head checks reported as passed: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39541110608), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39541110591), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39541110605). Recheck the exact head for this follow-up; older checks do not apply to new commits.
-- PR #197 adds fast entry/live batch totals, payment-method batch summaries, quick-save payee defaults, keyboard progression and regression coverage. Its migration tests are mock-backed; it did not run live Google migrations.
-- The observed branch comparison has client-main 13 commits ahead and 2 behind main, merge base acebc6b63010a92e136200321fc77c03dac9a3be. Do not merge/rebase branches blindly. Repository metadata still listed main as default; an owner/admin must verify actual ruleset state.
-- A source merge is not Apps Script upload, Web App deployment, static-host publication, schema migration, real backup/restore or customer acceptance.
+- PR #202 adds server-side validation for user-controlled display names and vendor/company names while preserving safe international phone-number handling. It is merged into `client-main`.
+- PR #203 adds a sanitized release-evidence artifact to both manual staging deployment-and-UAT and UAT-only workflows. It records the exact source commit/workflow run, step outcomes, UAT check count, transcript digest and payment-cancellation status without including raw transcript text, credentials, API endpoint URLs or staging resource IDs. Its exact-head checks must be green before merge.
+- Source CI and mock-backed browser tests do not prove a live Apps Script deployment, real Google Sheet/Drive permissions, restoreability, hosted response headers or customer acceptance.
+- GitHub API currently reports `client-main` as unprotected with required checks disabled. Owner/admin must verify and enforce the intended ruleset/branch protection and default-branch settings. The source workflow cannot substitute for that repository configuration.
+- The private repository's static-host integration must be confirmed to retain access before any frontend publication or DNS change.
 
 ## Immediate actions
 
-1. PR #198 is merged at `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d`; CI/Quality, Browser E2E and Full Flight Test passed on that head. Proceed to staging, not another source feature.
-2. Owner/admin verifies active branch rulesets, default branch and private-host permissions. Keep client-main as integration and main read-only; this PR does not alter settings or reconcile branches.
-3. Verify staging resource identity and host access. Back up the confirmed staging Sheet and receipts; inspect actual headers; after owner approval, run only required `migrateVoucherPaymentMethodField()` / `migrateVendorDefaultsSchema()` and verify headers/row counts. Deploy backend first, publish the static frontend with the verified staging API URL and `CV_ENVIRONMENT=staging`, then run manual guarded UAT from `client-main` with exact STAGING-ONLY confirmation and explicit write consent.
-4. Perform live role/receipt tests; verify a real backup and receipt manifest and restore to a separate recovery Sheet/folder; complete device/offline/print/accessibility checks.
-5. Record written customer acceptance and begin the 14-day controlled pilot only when all launch gates pass.
+1. Review PR #203 after exact-head CI/Quality, Browser E2E and Full Flight Test pass. Do not merge it while any required check is failing, pending or tied to a superseded head.
+2. After merge, have the owner/operator privately verify every staging Script, deployment, Sheet, receipt folder, backup folder, API URL, account and staging Environment secret. Previous deployment attempts failed closed at preflight; do not bypass the checks or dispatch a write-capable run until the configuration is independently reconciled.
+3. Verify a pre-migration backup, inspect actual staging headers, and execute only the approved migrations on the confirmed staging target. Preserve historical `PaymentMethod` blanks; never infer historical values from `CashImpact`.
+4. Deploy the reviewed backend to the verified existing staging deployment, publish the frontend separately with the exact verified staging API URL and `CV_ENVIRONMENT=staging`, then run the guarded manual UAT with `STAGING-ONLY` and explicit transactional write consent.
+5. Verify live roles, receipt upload/read, payment flow and audit trace; complete a real backup and restore into a separate recovery Sheet/folder; finish device/offline/print/accessibility checks. Start the 14-day controlled hotel pilot only after all launch gates and written customer acceptance are evidenced.
 
 ## Release boundary and safeguards
 
-- PaymentMethod/vendor-default migrations must be reviewed against the real schema and run only on a verified, backed-up staging target under owner authorization. Preserve historical blanks; never infer historical PaymentMethod from CashImpact.
-- Cash impacts the physical drawer; UPI/Bank does not. A payment at or above ₹10,000 requires independent approval; the creator cannot self-approve.
-- Do not run setup against a populated or production target. Do not guess IDs, expose credentials, overwrite the only backup or deploy to production from this PR.
-- Current staging audit instructions must agree with the workflow: the supported integration branch and staging Environment restriction are client-main, not main.
+- This source PR does not deploy the Apps Script backend, publish the static frontend, execute migrations, dispatch transactional UAT or mutate Google resources.
+- Never run `setup()` against a populated or production target. Do not guess resource IDs, expose credentials, overwrite the only backup or deploy to production without separate owner approval.
+- The staging workflow remains manual-only and restricted in source to `client-main`, with explicit write consent and target-isolation preflight. Keep Git merge, Clasp upload, Web App version update, static-host publication, live verification and customer acceptance as distinct release gates.
 
 ## Canonical decision documents
 
-- docs/CEO-BOARD-STRATEGY.md — product thesis, commercial direction and deferred work.
-- docs/EXECUTION-PLAN-2026-10-21.md — release gates, staging/UAT, backup/restore, pilot and priority queue.
-- docs/CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21.md — branch, quality, staging and merge controls.
-- docs/STAGING-RELEASE-AUDIT.md — operational proof required before staging and customer launch.
+- `docs/CEO-BOARD-STRATEGY.md` — product thesis, commercial direction and deferred work.
+- `docs/EXECUTION-PLAN-2026-10-21.md` — the ordered release gates, staging/UAT, backup/restore, pilot and priority queue.
+- `docs/CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21.md` — branch, quality, staging and merge controls.
+- `docs/STAGING-RELEASE-AUDIT.md` — operational proof required before staging and customer launch.
 
-No production configuration or live Google resource is changed by this handoff.
+Do not expand features ahead of staging isolation, live UAT and witnessed recovery. No production configuration or live Google resource is changed by this handoff.

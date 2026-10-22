@@ -145,16 +145,44 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Validate isolated deployment configuration
+        id: deployment_preflight
         run: npm run staging:preflight -- --mode=deploy
 
       - name: Update the existing staging deployment only
+        id: update_deployment
         run: npm run staging:deploy
 
       - name: Verify target before testing
+        id: target_recheck
         run: npm run staging:preflight -- --mode=uat
 
       - name: Run staging UAT
+        id: staging_uat
+        env:
+          CV_STAGING_UAT_LOG_FILE: ${{ runner.temp }}/cash-voucher-staging-uat.log
         run: npm run uat:staging
+
+      - name: Assemble sanitized staging execution evidence
+        if: always()
+        env:
+          CV_STAGING_OPERATION: deploy-and-uat
+          CV_EVIDENCE_JOB_OUTCOME: ${{ job.status }}
+          CV_EVIDENCE_PREFLIGHT_OUTCOME: ${{ steps.deployment_preflight.outcome || 'not-run' }}
+          CV_EVIDENCE_DEPLOY_OUTCOME: ${{ steps.update_deployment.outcome || 'not-run' }}
+          CV_EVIDENCE_TARGET_RECHECK_OUTCOME: ${{ steps.target_recheck.outcome || 'not-run' }}
+          CV_EVIDENCE_UAT_OUTCOME: ${{ steps.staging_uat.outcome || 'not-run' }}
+          CV_STAGING_UAT_LOG_FILE: ${{ runner.temp }}/cash-voucher-staging-uat.log
+          CV_EVIDENCE_OUTPUT_PATH: ${{ runner.temp }}/cash-voucher-staging-evidence.json
+        run: node scripts/staging-evidence.js
+
+      - name: Upload sanitized staging evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cash-voucher-staging-evidence-${{ github.run_id }}-${{ github.run_attempt }}-deploy
+          path: ${{ runner.temp }}/cash-voucher-staging-evidence.json
+          if-no-files-found: error
+          retention-days: 90
 
   uat:
     name: Test the already deployed staging project
@@ -203,7 +231,33 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Validate isolated staging target
+        id: target_preflight
         run: npm run staging:preflight -- --mode=uat
 
       - name: Run staging UAT without deploying
+        id: staging_uat
+        env:
+          CV_STAGING_UAT_LOG_FILE: ${{ runner.temp }}/cash-voucher-staging-uat.log
         run: npm run uat:staging
+
+      - name: Assemble sanitized staging execution evidence
+        if: always()
+        env:
+          CV_STAGING_OPERATION: uat-only
+          CV_EVIDENCE_JOB_OUTCOME: ${{ job.status }}
+          CV_EVIDENCE_PREFLIGHT_OUTCOME: ${{ steps.target_preflight.outcome || 'not-run' }}
+          CV_EVIDENCE_DEPLOY_OUTCOME: not-run
+          CV_EVIDENCE_TARGET_RECHECK_OUTCOME: ${{ steps.target_preflight.outcome || 'not-run' }}
+          CV_EVIDENCE_UAT_OUTCOME: ${{ steps.staging_uat.outcome || 'not-run' }}
+          CV_STAGING_UAT_LOG_FILE: ${{ runner.temp }}/cash-voucher-staging-uat.log
+          CV_EVIDENCE_OUTPUT_PATH: ${{ runner.temp }}/cash-voucher-staging-evidence.json
+        run: node scripts/staging-evidence.js
+
+      - name: Upload sanitized staging evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cash-voucher-staging-evidence-${{ github.run_id }}-${{ github.run_attempt }}-uat
+          path: ${{ runner.temp }}/cash-voucher-staging-evidence.json
+          if-no-files-found: error
+          retention-days: 90
