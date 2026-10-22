@@ -1142,6 +1142,9 @@ with sync_playwright() as p:
     )
     go_view(page, 'dash')
     page.wait_for_selector('[data-v=dash][aria-current=page]')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('active payment(s) are pending approval')"
+    )
     check(
         'active payment(s) are pending approval' in page.locator('#view').inner_text()
         and 'excluded from approved totals' in page.locator('#view').inner_text(),
@@ -2938,7 +2941,9 @@ with sync_playwright() as p:
     )
     check(page.locator('#rbody tr').count() == 2, 'staff register 2 rows')
     page.fill('#rq', 'No matching voucher 987654')
-    page.wait_for_function("!document.querySelector('#rempty').classList.contains('hidden')")
+    page.wait_for_function(
+        "document.querySelector('#rempty .empty-state-message')?.textContent.includes('No vouchers match the current filters.')"
+    )
     check(
         page.locator('#rempty .empty-state-message').inner_text() == 'No vouchers match the current filters.'
         and page.locator('#rempty [data-act=rclear]').is_visible(),

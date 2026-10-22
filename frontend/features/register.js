@@ -187,9 +187,7 @@ export function createRegister({ api, go }) {
       const value = R.user;
       userSelect.innerHTML =
         '<option value="">All users</option>' +
-        users
-          .map((user) => `<option value="${esc(user)}">${esc(nm(user))}</option>`)
-          .join('');
+        users.map((user) => `<option value="${esc(user)}">${esc(nm(user))}</option>`).join('');
       userSelect.value = value;
     }
   }
@@ -224,21 +222,20 @@ export function createRegister({ api, go }) {
     }
 
     try {
-      const result = await api(
-        'registerPage',
-        queryFilters(offset, 100),
-      );
+      const result = await api('registerPage', queryFilters(offset, 100));
       if (requestId !== pageRequestSequence || S.view !== 'reg') return;
 
       const items = Array.isArray(result?.items) ? result.items.filter(isRecord) : [];
       pageRows = append ? pageRows.concat(items) : items;
-      pageTotalCount = Number.isSafeInteger(result?.totalCount) && result.totalCount >= 0
-        ? result.totalCount
-        : pageRows.length;
+      pageTotalCount =
+        Number.isSafeInteger(result?.totalCount) && result.totalCount >= 0
+          ? result.totalCount
+          : pageRows.length;
       pageTotals = result?.totals && typeof result.totals === 'object' ? result.totals : {};
-      pageFacets = result?.facets && typeof result.facets === 'object'
-        ? result.facets
-        : { vendors: [], users: [] };
+      pageFacets =
+        result?.facets && typeof result.facets === 'object'
+          ? result.facets
+          : { vendors: [], users: [] };
       R.limit = pageRows.length;
       pageLoading = false;
       pageError = null;
@@ -262,11 +259,13 @@ export function createRegister({ api, go }) {
 
   function drawRows() {
     const dataAvailable = !pageError && !S.offlineMode;
-    const unavailableMessage = pageError?.message ||
+    const unavailableMessage =
+      pageError?.message ||
       (S.offlineMode
         ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
         : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.');
-    const unavailableTotalsMessage = pageError?.message ||
+    const unavailableTotalsMessage =
+      pageError?.message ||
       (S.offlineMode
         ? 'Totals unavailable while offline. Reconnect and refresh to load saved vouchers.'
         : 'Totals unavailable because the server response was invalid. Refresh and retry.');
@@ -430,12 +429,16 @@ export function createRegister({ api, go }) {
 
   function render() {
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
-    const vendors = Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
-      ? pageFacets.vendors
-      : [...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean))].sort();
-    const users = Array.isArray(pageFacets.users) && pageFacets.users.length
-      ? pageFacets.users
-      : [...new Set(vouchers.map((voucher) => scalarText(voucher.createdBy)).filter(Boolean))];
+    const vendors =
+      Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
+        ? pageFacets.vendors
+        : [
+            ...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean)),
+          ].sort();
+    const users =
+      Array.isArray(pageFacets.users) && pageFacets.users.length
+        ? pageFacets.users
+        : [...new Set(vouchers.map((voucher) => scalarText(voucher.createdBy)).filter(Boolean))];
 
     $('#view').innerHTML =
       head(
@@ -551,24 +554,26 @@ export function createRegister({ api, go }) {
       button.setAttribute('aria-busy', 'true');
     }
     try {
-      const rows = [[
-        'No',
-        'Type',
-        'Date',
-        'Vendor',
-        'Category',
-        'CashImpact',
-        'Notes',
-        'Amount',
-        'Status',
-        'ApprovalStatus',
-        'ApprovedBy',
-        'ApprovedAt',
-        'ApprovalReason',
-        'CreatedBy',
-        'CreatedAt',
-        'Receipts',
-      ]];
+      const rows = [
+        [
+          'No',
+          'Type',
+          'Date',
+          'Vendor',
+          'Category',
+          'CashImpact',
+          'Notes',
+          'Amount',
+          'Status',
+          'ApprovalStatus',
+          'ApprovedBy',
+          'ApprovedAt',
+          'ApprovalReason',
+          'CreatedBy',
+          'CreatedAt',
+          'Receipts',
+        ],
+      ];
       let offset = 0;
       let total = null;
       while (total === null || offset < total) {

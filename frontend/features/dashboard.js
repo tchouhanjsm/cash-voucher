@@ -231,17 +231,16 @@ export function createDashboard({ api }) {
       });
     }
 
-    const needsAttention =
-      `<section class="card needs" aria-labelledby="needsTitle"><h2 id="needsTitle">Needs attention <span class="count-pill">${attention.length}</span></h2>${
-        attention.length
-          ? `<ul class="needs-list">${attention
-              .map(
-                (item) =>
-                  `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${esc(item.text)}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
-              )
-              .join('')}</ul>`
-          : `<p class="needs-clear">${icon('check')}<span>No known dashboard exceptions were found in the checks shown here. This does not verify backups, the full recovery queue, or release readiness.</span></p>`
-      }</section>`;
+    const needsAttention = `<section class="card needs" aria-labelledby="needsTitle"><h2 id="needsTitle">Needs attention <span class="count-pill">${attention.length}</span></h2>${
+      attention.length
+        ? `<ul class="needs-list">${attention
+            .map(
+              (item) =>
+                `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${esc(item.text)}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
+            )
+            .join('')}</ul>`
+        : `<p class="needs-clear">${icon('check')}<span>No known dashboard exceptions were found in the checks shown here. This does not verify backups, the full recovery queue, or release readiness.</span></p>`
+    }</section>`;
 
     const financialPanels = `
       <div class="stats dashboard-stats">
@@ -256,7 +255,14 @@ export function createDashboard({ api }) {
       ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
       <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend || [], from, to)}</div>
       <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors || [])}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory || [])}</div></div>
-      ${can('viewAll') ? `<div class="card dashboard-team"><h2>By team member</h2>${bars((summary.byTeamMember || []).map((row) => ({ ...row, k: nm(row.k) })), 10)}</div>` : ''}
+      ${
+        can('viewAll')
+          ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(
+              (summary.byTeamMember || []).map((row) => ({ ...row, k: nm(row.k) })),
+              10,
+            )}</div>`
+          : ''
+      }
     `;
 
     $('#view').innerHTML =

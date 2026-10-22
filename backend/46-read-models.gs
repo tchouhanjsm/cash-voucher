@@ -63,8 +63,7 @@ function readModelApproval_(row) {
 
 function readModelIsApprovedPayment_(row) {
   return (
-    row.Type === 'PAYMENT' &&
-    READ_MODEL_APPROVED_STATUSES.indexOf(readModelApproval_(row)) >= 0
+    row.Type === 'PAYMENT' && READ_MODEL_APPROVED_STATUSES.indexOf(readModelApproval_(row)) >= 0
   );
 }
 
@@ -129,27 +128,33 @@ function registerPage_(user, req) {
   const createdBy = readModelFilterText_(req.user, 'User', 254).toLowerCase();
   const from = readModelDate_(req.from, 'start');
   const to = readModelDate_(req.to, 'end');
-  if (from && to && from > to) throw err_('The start date must be on or before the end date.', 'VALIDATION');
-  if (['', 'PAYMENT', 'RECEIPT'].indexOf(type) < 0) throw err_('Invalid transaction type filter.', 'VALIDATION');
-  if (['ACTIVE', 'CANCELLED', 'ALL'].indexOf(status) < 0) throw err_('Invalid status filter.', 'VALIDATION');
+  if (from && to && from > to)
+    throw err_('The start date must be on or before the end date.', 'VALIDATION');
+  if (['', 'PAYMENT', 'RECEIPT'].indexOf(type) < 0)
+    throw err_('Invalid transaction type filter.', 'VALIDATION');
+  if (['ACTIVE', 'CANCELLED', 'ALL'].indexOf(status) < 0)
+    throw err_('Invalid status filter.', 'VALIDATION');
   if (
-    ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_REQUIRED', 'REVIEW_REQUIRED'].indexOf(approval) < 0
+    ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_REQUIRED', 'REVIEW_REQUIRED'].indexOf(
+      approval,
+    ) < 0
   ) {
     throw err_('Invalid approval status filter.', 'VALIDATION');
   }
   if (createdBy && !seeAll) throw err_('You cannot filter other users’ vouchers.', 'FORBIDDEN');
 
-  const offsetValue = req.offset === undefined || req.offset === null || req.offset === '' ? 0 : Number(req.offset);
-  const limitValue = req.limit === undefined || req.limit === null || req.limit === '' ? 100 : Number(req.limit);
+  const offsetValue =
+    req.offset === undefined || req.offset === null || req.offset === '' ? 0 : Number(req.offset);
+  const limitValue =
+    req.limit === undefined || req.limit === null || req.limit === '' ? 100 : Number(req.limit);
   if (!Number.isSafeInteger(offsetValue) || offsetValue < 0 || offsetValue > 1000000) {
     throw err_('Invalid register page offset.', 'VALIDATION');
   }
-  if (
-    !Number.isSafeInteger(limitValue) ||
-    limitValue < 1 ||
-    limitValue > READ_MODEL_PAGE_LIMIT
-  ) {
-    throw err_('Register page size must be between 1 and ' + READ_MODEL_PAGE_LIMIT + '.', 'VALIDATION');
+  if (!Number.isSafeInteger(limitValue) || limitValue < 1 || limitValue > READ_MODEL_PAGE_LIMIT) {
+    throw err_(
+      'Register page size must be between 1 and ' + READ_MODEL_PAGE_LIMIT + '.',
+      'VALIDATION',
+    );
   }
 
   const vendorSet = Object.create(null);
@@ -232,7 +237,9 @@ function registerPage_(user, req) {
       malformedFieldCount: dataQuality.malformedFieldCount,
     },
     facets: {
-      vendors: Object.keys(vendorSet).sort(function (a, b) { return a.localeCompare(b); }),
+      vendors: Object.keys(vendorSet).sort(function (a, b) {
+        return a.localeCompare(b);
+      }),
       users: Object.keys(userSet).sort(),
     },
   };
@@ -287,9 +294,12 @@ function dashboardSummary_(user, req) {
   const scopedAllVouchers = rows;
   const malformedRecordCount = scopedAllVouchers.filter(readModelHasMalformedRecord_).length;
   const malformedFieldCount = scopedAllVouchers.reduce(function (count, row) {
-    return count + ['Vendor', 'Category', 'CreatedBy', 'Type', 'Status'].filter(function (key) {
-      return row[key] === undefined || row[key] === null;
-    }).length;
+    return (
+      count +
+      ['Vendor', 'Category', 'CreatedBy', 'Type', 'Status'].filter(function (key) {
+        return row[key] === undefined || row[key] === null;
+      }).length
+    );
   }, 0);
   const invalidAmountCount = approvedPayments.concat(receipts).filter(function (row) {
     return !readModelAmount_(row).valid;
@@ -337,17 +347,25 @@ function dashboardSummary_(user, req) {
     paid: currentAmountPaise / 100,
     previousPaid: previousAmountPaise / 100,
     paymentCount: currentPayments.length,
-    validPaymentCount: currentPayments.filter(function (row) { return readModelAmount_(row).valid; }).length,
+    validPaymentCount: currentPayments.filter(function (row) {
+      return readModelAmount_(row).valid;
+    }).length,
     largest: largest ? { amount: largest.paise / 100, vendor: largest.vendor } : null,
     todayPaid: readModelSum_(todayPayments) / 100,
     todayPaymentCount: todayPayments.length,
     received: receiptAmountPaise / 100,
     receiptCount: currentReceipts.length,
     bookBalance: (openingBalancePaise + allReceiptAmountPaise - allPaymentAmountPaise) / 100,
-    topVendors: readModelGroup_(currentPayments, function (row) { return row.Vendor || 'Other'; }).slice(0, 10),
-    byCategory: readModelGroup_(currentPayments, function (row) { return row.Category || 'Other'; }).slice(0, 10),
+    topVendors: readModelGroup_(currentPayments, function (row) {
+      return row.Vendor || 'Other';
+    }).slice(0, 10),
+    byCategory: readModelGroup_(currentPayments, function (row) {
+      return row.Category || 'Other';
+    }).slice(0, 10),
     byTeamMember: can_(user, 'viewAll')
-      ? readModelGroup_(currentPayments, function (row) { return row.CreatedBy || 'Unknown'; }).slice(0, 10)
+      ? readModelGroup_(currentPayments, function (row) {
+          return row.CreatedBy || 'Unknown';
+        }).slice(0, 10)
       : [],
     approvalExceptionCount: approvalExceptionCount,
     invalidAmountCount: invalidAmountCount,

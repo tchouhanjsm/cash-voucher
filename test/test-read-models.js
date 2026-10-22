@@ -20,11 +20,7 @@ const loginAndRotate = (email, temporaryPassword, finalPassword) => {
   return change.data.token;
 };
 
-const owner = loginAndRotate(
-  'read-model-owner@test.com',
-  'Owner#Start2026',
-  'Owner#Final2026',
-);
+const owner = loginAndRotate('read-model-owner@test.com', 'Owner#Start2026', 'Owner#Final2026');
 const dateParts = Object.fromEntries(
   new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Kolkata',
@@ -85,7 +81,11 @@ assert.equal(firstPage.ok, true, 'owner register query succeeds');
 assert.equal(firstPage.data.items.length, 2, 'register query returns only the requested page');
 assert.equal(firstPage.data.totalCount, 3, 'register count describes all matching rows');
 assert.equal(firstPage.data.hasMore, true, 'register indicates more pages');
-assert.equal(firstPage.data.totals.paid, 150, 'pending payment is excluded from approved paid totals');
+assert.equal(
+  firstPage.data.totals.paid,
+  150,
+  'pending payment is excluded from approved paid totals',
+);
 assert.equal(firstPage.data.totals.received, 300, 'received totals include active receipts');
 assert.equal(
   firstPage.data.totals.approvalExceptionCount,
@@ -122,7 +122,11 @@ assert.equal(dashboard.data.paid, 150, 'dashboard only counts approved payment a
 assert.equal(dashboard.data.paymentCount, 1, 'dashboard payment count excludes pending approval');
 assert.equal(dashboard.data.received, 300, 'dashboard returns period receipt amount');
 assert.equal(dashboard.data.receiptCount, 1, 'dashboard returns period receipt count');
-assert.equal(dashboard.data.approvalExceptionCount, 1, 'dashboard identifies pending high-value payment');
+assert.equal(
+  dashboard.data.approvalExceptionCount,
+  1,
+  'dashboard identifies pending high-value payment',
+);
 assert.equal(dashboard.data.bookBalance, 150, 'book balance uses approved payments plus receipts');
 assert.ok(
   dashboard.data.trend.some((item) => item.date === date && item.amount === 150),
@@ -137,11 +141,7 @@ const createStaff = g.call('saveUser', {
   password: 'Staff#Start2026',
 });
 assert.equal(createStaff.ok, true, 'owner can create a staff fixture');
-const staff = loginAndRotate(
-  'read-model-staff@test.com',
-  'Staff#Start2026',
-  'Staff#Final2026',
-);
+const staff = loginAndRotate('read-model-staff@test.com', 'Staff#Start2026', 'Staff#Final2026');
 const staffVoucher = g.call('createVouchers', {
   token: staff,
   entries: [
@@ -167,8 +167,16 @@ const staffPage = g.call('registerPage', {
   limit: 100,
 });
 assert.equal(staffPage.ok, true, 'staff can read own register rows');
-assert.equal(staffPage.data.totalCount, 1, 'staff register query is server-scoped to their own rows');
-assert.equal(staffPage.data.items[0].vendor, 'Staff Private Vendor', 'staff sees their own voucher');
+assert.equal(
+  staffPage.data.totalCount,
+  1,
+  'staff register query is server-scoped to their own rows',
+);
+assert.equal(
+  staffPage.data.items[0].vendor,
+  'Staff Private Vendor',
+  'staff sees their own voucher',
+);
 assert.equal(
   staffPage.data.facets.vendors.includes('Read Model Approved Vendor'),
   false,
