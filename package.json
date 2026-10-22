@@ -33,7 +33,7 @@
     "audit:deps": "node scripts/dependency-audit.js",
     "audit:secrets": "node scripts/scan-secrets.js",
     "check:contrast": "node scripts/check-contrast.js",
-    "test:flight": "npm run audit:deps && npm run check && npm run test:e2e",
+    "test:flight": "npm run check && npm run test:e2e && npm run audit:deps",
     "check:dom-sinks": "node scripts/check-dom-sinks.js",
     "check:dom-sink-source": "node scripts/check-dom-sink-source.js",
     "staging:preflight": "node scripts/staging-preflight.js",
