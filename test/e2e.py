@@ -4095,7 +4095,7 @@ with sync_playwright() as p:
                 ]
             data['malformedRecordCount'] = 3
             data['malformedFieldCount'] = 8
-            data['invalidAmountCount'] = max(1, Number(data.get('invalidAmountCount') or 0))
+            data['invalidAmountCount'] = max(1, int(data.get('invalidAmountCount') or 0))
         elif action == 'registerPage':
             totals = data.get('totals', {})
             totals['malformedRecordCount'] = max(3, int(totals.get('malformedRecordCount') or 0))
