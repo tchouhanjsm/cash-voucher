@@ -1208,11 +1208,20 @@ with sync_playwright() as p:
         + '(intercepts=' + str(len(dashboard_summary_interceptions))
         + ', summaryRendered=' + str('Spending trend' in dashboard_text) + ')',
     )
-    page.click('[data-act=range][data-k="30d"]')
+    page.unroute('**/api?*', inject_hostile_dashboard_summary)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'dashboardSummary'
+    ) as dashboard_recovery_response:
+        page.click('[data-act=range][data-k="30d"]')
+    recovered_summary = dashboard_recovery_response.value.json()
+    check(
+        dashboard_recovery_response.value.ok and recovered_summary.get('ok') is True,
+        'dashboard recovers with a successful live read after hostile test data is removed',
+    )
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('Total paid')"
     )
-    page.unroute('**/api?*', inject_hostile_dashboard_summary)
 
     go_view(page, 'reg')
     page.wait_for_selector('#rq')

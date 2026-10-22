@@ -399,6 +399,17 @@ export function createRegister({ api, go }) {
       emptyState.classList.remove('hidden');
       const message = document.createElement('span');
       message.className = 'empty-state-message';
+      const hasActiveFilters = Boolean(
+        R.q ||
+          R.vendor ||
+          R.cat ||
+          R.user ||
+          R.t ||
+          R.from ||
+          R.to ||
+          R.st !== 'ACTIVE' ||
+          R.approval !== 'ALL',
+      );
       message.textContent = pageLoading
         ? 'Loading vouchers from the server…'
         : rangeInvalid
@@ -407,10 +418,12 @@ export function createRegister({ api, go }) {
             ? unavailableMessage
             : pageTotalCount
               ? 'No vouchers are available on this page. Load more or clear filters.'
-              : 'No vouchers match the current filters. Use New Entry to record the first payment or receipt.';
+              : hasActiveFilters
+                ? 'No vouchers match the current filters.'
+                : 'No vouchers are available to show. Use New Entry to record the first payment or receipt.';
       emptyState.appendChild(message);
 
-      if ((dataAvailable && pageTotalCount) || rangeInvalid) {
+      if ((dataAvailable && (pageTotalCount || hasActiveFilters)) || rangeInvalid) {
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
         clearButton.className = 'btn';
