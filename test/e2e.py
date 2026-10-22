@@ -1687,7 +1687,7 @@ with sync_playwright() as p:
     go_view(page, 'users')
     page.wait_for_selector('#uf')
     check(
-        page.locator('#view tbody tr').count() == 5
+        page.locator('#view tbody tr').count() == 6
         and page.locator('#view [role=status]').count() == 0,
         'owner Users view recovers after a valid list response returns',
     )
@@ -3792,9 +3792,9 @@ with sync_playwright() as p:
         'Date\tVendor\tAmount\tCategory\tNotes\n'
         f'{date_text}\tRam Traders\t1250.50\tKitchen\tdup of staff entry\n'
         f'{date_text}\tNew Vendor\t₹ 3,000\tFuel\t\n'
-        '31/02/2026\tBad Date\t10\t\t\n'
+        f'31/02/2026\t{xss_payload}\t10\t\t\n'
         f'{date_text}\t\t50\t\t\n'
-        f'{date_text}\t{xss_payload}\t40\tNonsense\t'
+        f'{date_text}\tBulk Imported Replacement Vendor\t40\tNonsense\t'
     )
     page.fill('#bt', rows)
     page.click('[data-act=parse]')
