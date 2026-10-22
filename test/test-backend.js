@@ -2344,7 +2344,9 @@ const prototypeVendorSave = as(T, 'saveVendor', {
   company: 'Prototype Safety',
   mobile: '',
 });
-const prototypeVendorRow = g.sheets.Vendors.rows.find((row) => row[1] === 'Prototype Legacy Master');
+const prototypeVendorRow = g.sheets.Vendors.rows.find(
+  (row) => row[1] === 'Prototype Legacy Master',
+);
 const prototypeVendorId = prototypeVendorRow && prototypeVendorRow[0];
 const prototypeVendorVoucher = as(T, 'createVouchers', {
   entries: [
