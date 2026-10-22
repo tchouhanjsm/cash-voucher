@@ -1801,14 +1801,45 @@ with sync_playwright() as p:
     page.fill('#vm', '9876543210')
     page.click('#vf .primary')
     page.wait_for_function(
+        "document.querySelector('#toast')?.textContent.toLowerCase().includes('valid vendor name')"
+    )
+    check(
+        xss_vendor not in page.locator('#view').inner_text()
+        and xss_company not in page.locator('#view').inner_text()
+        and '9876543210' not in page.locator('#view').inner_text()
+        and page.locator('#view img, #view svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'server rejects HTML payloads in vendor fields before persistence',
+    )
+
+    page.fill('#vn', 'Xss Test Vendor')
+    page.fill('#vc', xss_company)
+    page.fill('#vm', '9876543210')
+    page.click('#vf .primary')
+    page.wait_for_function(
+        "document.querySelector('#toast')?.textContent.toLowerCase().includes('valid company name')"
+    )
+    check(
+        'Xss Test Vendor' not in page.locator('#view').inner_text()
+        and '9876543210' not in page.locator('#view').inner_text()
+        and page.locator('#view img, #view svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'server rejects an HTML payload in the optional company field before persistence',
+    )
+
+    page.fill('#vn', 'Xss Test Vendor')
+    page.fill('#vc', 'Xss Test Company')
+    page.fill('#vm', '9876543210')
+    page.click('#vf .primary')
+    page.wait_for_function(
         "document.querySelector('#view').innerText.includes('9876543210')"
     )
     check(
-        page.locator('#view img, #view svg').count() == 0
-        and xss_vendor in page.locator('#view').inner_text()
-        and xss_company in page.locator('#view').inner_text()
+        'Xss Test Vendor' in page.locator('#view').inner_text()
+        and 'Xss Test Company' in page.locator('#view').inner_text()
+        and page.locator('#view img, #view svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'vendor name and company are rendered as text, not executable HTML',
+        'valid vendor name and company are displayed without executable markup',
     )
 
     go_view(page, 'set')
