@@ -1153,11 +1153,14 @@ with sync_playwright() as p:
 
     hostile_dashboard_label = '<svg onload=window.__xssFired=true></svg>'
 
+    dashboard_summary_interceptions = []
+
     def inject_hostile_dashboard_summary(route):
         request_data = json.loads(route.request.post_data or '{}')
         if request_data.get('action') != 'dashboardSummary':
             route.continue_()
             return
+        dashboard_summary_interceptions.append(True)
         response = route.fetch()
         payload = response.json()
         data = payload.get('data', {}) if payload.get('ok') else {}
@@ -1170,14 +1173,18 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
     page.wait_for_function(
-        "label => document.querySelector('#view')?.textContent.includes(label)",
-        arg=hostile_dashboard_label,
+        "document.querySelector('#view')?.innerText.includes('Spending trend') || "
+        "document.querySelector('#view')?.innerText.includes('Dashboard totals unavailable')"
     )
+    dashboard_text = page.locator('#view').text_content() or ''
     check(
-        hostile_dashboard_label in page.locator('#view').inner_text()
+        len(dashboard_summary_interceptions) > 0
+        and hostile_dashboard_label in dashboard_text
         and page.locator('#view [onload], #view [onerror]').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'hostile dashboard summary labels remain text and cannot create active HTML handlers',
+        'hostile dashboard summary labels remain text and cannot create active HTML handlers '
+        + '(intercepts=' + str(len(dashboard_summary_interceptions))
+        + ', summaryRendered=' + str('Spending trend' in dashboard_text) + ')',
     )
     page.unroute('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="30d"]')
