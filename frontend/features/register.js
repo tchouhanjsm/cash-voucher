@@ -401,14 +401,14 @@ export function createRegister({ api, go }) {
       message.className = 'empty-state-message';
       const hasActiveFilters = Boolean(
         R.q ||
-          R.vendor ||
-          R.cat ||
-          R.user ||
-          R.t ||
-          R.from ||
-          R.to ||
-          R.st !== 'ACTIVE' ||
-          R.approval !== 'ALL',
+        R.vendor ||
+        R.cat ||
+        R.user ||
+        R.t ||
+        R.from ||
+        R.to ||
+        R.st !== 'ACTIVE' ||
+        R.approval !== 'ALL',
       );
       message.textContent = pageLoading
         ? 'Loading vouchers from the server…'

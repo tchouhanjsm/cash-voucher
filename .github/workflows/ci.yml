@@ -34,13 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Capture canonical register formatting
-        run: |
-          npx prettier --write frontend/features/register.js
-          printf '<<<PRETTIER_REGISTER_BEGIN>>>'
-          base64 -w0 frontend/features/register.js
-          printf '<<<PRETTIER_REGISTER_END>>>\n'
-
       - name: Scan current files and reachable Git history for credential patterns
         run: npm run audit:secrets
 
