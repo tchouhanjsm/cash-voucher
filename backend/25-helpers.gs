@@ -218,8 +218,8 @@ function nameText_(value, label, max, optional) {
   let text = typeof value.normalize === 'function' ? value.normalize('NFKC') : value;
 
   // Reject invisible/control/bidirectional characters instead of silently storing them.
-  // eslint-disable-next-line no-control-regex
   if (
+    // eslint-disable-next-line no-control-regex
     /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/.test(text)
   ) {
     throw err_('Enter a valid ' + field.toLowerCase() + '.', 'VALIDATION');
