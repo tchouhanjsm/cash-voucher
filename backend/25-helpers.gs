@@ -196,6 +196,54 @@ function clean_(v, max) {
   if (/^[=+\-@]/.test(s)) s = "'" + s; // block spreadsheet formula injection
   return s;
 }
+/**
+ * Validate display-name fields before persistence.
+ *
+ * Google Sheets is the backing store (not SQL), so this prevents malformed
+ * values and reduces spreadsheet/rendering hazards; HTML output must still be
+ * escaped at the renderer and formula-leading free text must still use clean_.
+ * This intentionally validates syntax, not whether a real person/business exists.
+ */
+function nameText_(value, label, max, optional) {
+  const field = String(label || 'Name');
+
+  if (value === undefined || value === null) {
+    if (optional) return '';
+    throw err_(field + ' is required.', 'VALIDATION');
+  }
+  if (typeof value !== 'string') {
+    throw err_(field + ' must be text.', 'VALIDATION');
+  }
+
+  let text = typeof value.normalize === 'function' ? value.normalize('NFKC') : value;
+
+  // Reject invisible/control/bidirectional characters instead of silently storing them.
+  // eslint-disable-next-line no-control-regex
+  if (/[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/.test(text)) {
+    throw err_('Enter a valid ' + field.toLowerCase() + '.', 'VALIDATION');
+  }
+
+  text = text.trim().replace(/\s+/g, ' ');
+  if (!text) {
+    if (optional) return '';
+    throw err_(field + ' is required.', 'VALIDATION');
+  }
+  if (text.length > max) {
+    throw err_(field + ' must be ' + max + ' characters or fewer.', 'VALIDATION');
+  }
+
+  // Support multilingual names and common business-name punctuation, but reject
+  // HTML delimiters, formula operators, semicolons, and punctuation-only/numeric-only input.
+  if (
+    !/\p{L}/u.test(text) ||
+    !/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} .,'’&()\/#:+_©®-]*$/u.test(text)
+  ) {
+    throw err_('Enter a valid ' + field.toLowerCase() + ' using letters, numbers and common punctuation.', 'VALIDATION');
+  }
+
+  return clean_(text, max);
+}
+
 function clientId_(v) {
   const text = String(v === undefined || v === null ? '' : v).trim();
   if (!text) return '';
@@ -234,7 +282,7 @@ function addUser_(name, email, role, password, must) {
   const salt = Utilities.getUuid();
   const u = {
     UserID: Utilities.getUuid(),
-    Name: clean_(name, 80),
+    Name: nameText_(name, 'Name', 80),
     Email: email,
     Role: role,
     Active: true,

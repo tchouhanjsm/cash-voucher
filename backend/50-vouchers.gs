@@ -99,7 +99,7 @@ function createVouchers_(user, req) {
     const date = String(en.date || '');
     if (!validDate_(date)) throw err_(row + 'invalid date.');
     if (closedDates.indexOf(date) >= 0) throw cashCloseDateError_();
-    const vendor = clean_(en.vendor, 200);
+    const vendor = nameText_(en.vendor, 'Vendor name', 200);
     if (!vendor) throw err_(row + 'vendor is required.');
     const amount = Math.round(finiteNumber_(en.amount, row + 'amount') * 100) / 100;
     if (amount <= 0 || amount > CFG.MAX_AMOUNT) throw err_(row + 'invalid amount.');
@@ -289,7 +289,7 @@ function updateVoucher_(user, req) {
     recordChange('date', 'Date', isoDate_(o.Date), String(f.date));
   }
   if (f.vendor !== undefined) {
-    const vendor = clean_(f.vendor, 200);
+    const vendor = nameText_(f.vendor, 'Vendor name', 200);
     if (!vendor) throw err_('Vendor is required.', 'VALIDATION');
     recordChange('vendor', 'Vendor', String(o.Vendor || ''), vendor);
     recordChange('vendorId', 'VendorID', String(o.VendorID || ''), vendorIdForName_(vendor));

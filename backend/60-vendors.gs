@@ -26,8 +26,8 @@ function vendorIdForName_(name, lookup) {
 /* ============ vendors ============ */
 function saveVendor_(user, req) {
   need_(user, 'vendors');
-  const name = clean_(req.name, 120),
-    company = clean_(req.company, 120),
+  const name = nameText_(req.name, 'Vendor name', 120),
+    company = nameText_(req.company, 'Company name', 120, true),
     mobile = clean_(req.mobile, 15),
     defaultCategory = clean_(req.defaultCategory, 40),
     defaultPaymentMethod = clean_(req.defaultPaymentMethod, 20);

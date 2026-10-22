@@ -10,7 +10,7 @@ function activeOwners_() {
 }
 function saveUser_(user, req) {
   need_(user, 'users');
-  const name = clean_(req.name, 80),
+  const name = nameText_(req.name, 'Name', 80),
     email = String(req.email || '')
       .trim()
       .toLowerCase(),
