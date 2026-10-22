@@ -218,12 +218,19 @@ function nameText_(value, label, max, optional) {
   let text = typeof value.normalize === 'function' ? value.normalize('NFKC') : value;
 
   // Reject invisible/control/bidirectional characters instead of silently storing them.
-  if (
-    // eslint-disable-next-line no-control-regex
-    /[\u0000-\u001f\u007f-\u009f]/.test(text) ||
-    /[\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/.test(text)
-  ) {
-    throw err_('Enter a valid ' + field.toLowerCase() + '.', 'VALIDATION');
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (
+      code <= 0x1f ||
+      (code >= 0x7f && code <= 0x9f) ||
+      code === 0x00ad ||
+      (code >= 0x200b && code <= 0x200f) ||
+      (code >= 0x202a && code <= 0x202e) ||
+      (code >= 0x2060 && code <= 0x206f) ||
+      code === 0xfeff
+    ) {
+      throw err_('Enter a valid ' + field.toLowerCase() + '.', 'VALIDATION');
+    }
   }
 
   text = text.trim().replace(/\s+/g, ' ');
