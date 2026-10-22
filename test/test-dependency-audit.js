@@ -63,13 +63,17 @@ function baselineReport() {
   };
 }
 
-function runAudit(report, exitCode = 1) {
+function runAudit(report, exitCode = 1, options = {}) {
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-audit-'));
   const fixturePath = path.join(directory, 'audit.json');
   const npmPath = path.join(directory, 'npm');
+  const callCountPath = path.join(directory, 'npm-audit-call-count.txt');
   const fakeNpm = [
     `#!${process.execPath}`,
     "const fs = require('node:fs');",
+    "const count = (Number(fs.existsSync(process.env.NPM_AUDIT_CALL_COUNT) ? fs.readFileSync(process.env.NPM_AUDIT_CALL_COUNT, 'utf8') : '0') || 0) + 1;",
+    "fs.writeFileSync(process.env.NPM_AUDIT_CALL_COUNT, String(count));",
+    "if (process.env.NPM_AUDIT_FAIL_ONCE === 'true' && count === 1) { process.stdout.write(JSON.stringify({ error: {} })); process.exit(1); }",
     "process.stdout.write(fs.readFileSync(process.env.NPM_AUDIT_FIXTURE, 'utf8'));",
     'process.exit(Number(process.env.NPM_AUDIT_EXIT_CODE || 1));',
     '',
@@ -87,6 +91,8 @@ function runAudit(report, exitCode = 1) {
         PATH: directory + path.delimiter + process.env.PATH,
         NPM_AUDIT_FIXTURE: fixturePath,
         NPM_AUDIT_EXIT_CODE: String(exitCode),
+        NPM_AUDIT_CALL_COUNT: callCountPath,
+        NPM_AUDIT_FAIL_ONCE: options.failOnce ? 'true' : 'false',
       },
     });
   } finally {
@@ -100,6 +106,23 @@ test('permits only the documented unpatched braces advisory chain', () => {
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /REVIEWED EXCEPTION: GHSA-vfj7-8cjw-p6xm/);
   assert.match(result.stdout, /Dependency security gate passed/);
+});
+
+test('retries a transient npm audit service error and then enforces the returned report', () => {
+  const result = runAudit(baselineReport(), 1, { failOnce: true });
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /received a transient audit-service error; retrying once/);
+  assert.match(result.stdout, /Dependency security gate passed/);
+});
+
+test('fails closed after repeated empty npm audit service errors', () => {
+  const result = runAudit({ error: {} }, 1);
+
+  assert.equal(result.status, 2);
+  assert.match(result.stderr, /npm audit failed: unknown error/);
+  assert.match(result.stderr, /npm audit error details: \{\}/);
+  assert.match(result.stdout, /received a transient audit-service error; retrying once/);
 });
 
 test('blocks an unrelated high-severity advisory', () => {
