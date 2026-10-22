@@ -4124,7 +4124,7 @@ with sync_playwright() as p:
     )
     check(
         '3 malformed voucher record(s) were omitted from normal financial calculations.' in page.locator('#view').inner_text()
-        and '8 malformed voucher field(s) handled for safe display' in page.locator('#view').inner_text()
+        and '8 malformed voucher field(s) were handled for safe display.' in page.locator('#view').inner_text()
         and '[object Object]' not in page.locator('#view').inner_text()
         and '1 recorded voucher amount(s) are invalid and excluded from totals.' in page.locator('#view').inner_text(),
         'dashboard announces shared malformed voucher diagnostics, excludes malformed amounts, and keeps coercion inert',
@@ -4466,7 +4466,7 @@ with sync_playwright() as p:
     )
     go_view(page, 'reg')
     page.wait_for_selector('#rtot')
-    page.wait_for_selector('#rbody tr', has_text='numeric-nan')
+    page.locator('#rbody tr', has_text='numeric-nan').first.wait_for()
     register_amount_text = page.locator('#rtot').inner_text()
     check(
         'NaN' not in register_amount_text
