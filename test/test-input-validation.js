@@ -116,7 +116,9 @@ assert.ok(
   validVendor.ok,
   JSON.stringify(validVendor) + ' — legitimate business punctuation is accepted',
 );
-const persistedValidVendor = g.sheets.Vendors.rows.find((row) => row[0] === validVendor.data.vendorId);
+const persistedValidVendor = g.sheets.Vendors.rows.find(
+  (row) => row[0] === validVendor.data.vendorId,
+);
 assert.ok(persistedValidVendor, 'valid vendor is stored');
 assert.equal(
   persistedValidVendor[3],
