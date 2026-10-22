@@ -1150,6 +1150,41 @@ with sync_playwright() as p:
         and 'excluded from approved totals' in page.locator('#view').inner_text(),
         'Dashboard discloses pending approval exceptions and their total treatment',
     )
+
+    hostile_dashboard_label = '<svg onload=window.__xssFired=true></svg>'
+
+    def inject_hostile_dashboard_summary(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {}) if payload.get('ok') else {}
+        if isinstance(data, dict):
+            data['largest'] = {'amount': 1, 'vendor': hostile_dashboard_label}
+            data['topVendors'] = [{'k': hostile_dashboard_label, 'n': 1, 's': 1}]
+            data['byCategory'] = [{'k': hostile_dashboard_label, 'n': 1, 's': 1}]
+        route.fulfill(response=response, json=payload)
+
+    page.route('**/api?*', inject_hostile_dashboard_summary)
+    page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_function(
+        "label => document.querySelector('.dashboard-breakdown .hb-l')?.textContent === label",
+        arg=hostile_dashboard_label,
+    )
+    check(
+        hostile_dashboard_label in page.locator('#view').inner_text()
+        and page.locator('#view [onload], #view [onerror]').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile dashboard summary labels remain text and cannot create active HTML handlers',
+    )
+    page.unroute('**/api?*', inject_hostile_dashboard_summary)
+    page.click('[data-act=range][data-k="30d"]')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('Total paid')"
+    )
+
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
     page.fill('#rq', 'Approval E2E vendor')

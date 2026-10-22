@@ -133,6 +133,85 @@ assert.ok(
   'dashboard returns a compact server-aggregated trend rather than voucher details',
 );
 
+const malformedRecord = {
+  VoucherID: '',
+  VoucherNo: 99999,
+  Date: date,
+  Vendor: 'Malformed Hidden Vendor',
+  Amount: 90000,
+  Category: 'Other',
+  Notes: 'must not appear in read models',
+  Status: 'ACTIVE',
+  CreatedBy: 'read-model-owner@test.com',
+  CreatedAt: date + 'T12:00:00',
+  UpdatedBy: '',
+  UpdatedAt: '',
+  Receipts: '',
+  CancelReason: '',
+  ClientID: 'malformed-read-model-row',
+  Type: 'PAYMENT',
+  CashImpact: 'CASH_OUT',
+  ApprovalStatus: 'NOT_REQUIRED',
+  ApprovedBy: '',
+  ApprovedAt: '',
+  ApprovalReason: '',
+  VendorID: '',
+  PaymentMethod: 'CASH',
+};
+g.sheets.Vouchers.rows.push(
+  g.sheets.Vouchers.rows[0].map((header) => malformedRecord[header] ?? ''),
+);
+const filteredAfterMalformed = g.call('registerPage', {
+  token: owner,
+  from: date,
+  to: date,
+  st: 'ACTIVE',
+  approval: 'ALL',
+  offset: 0,
+  limit: 100,
+});
+assert.equal(
+  filteredAfterMalformed.ok,
+  true,
+  'register remains available with malformed legacy rows',
+);
+assert.equal(
+  filteredAfterMalformed.data.totalCount,
+  3,
+  'malformed records are excluded from visible register results',
+);
+assert.equal(
+  filteredAfterMalformed.data.totals.malformedRecordCount,
+  1,
+  'malformed record is surfaced as a data-quality count',
+);
+assert.equal(
+  filteredAfterMalformed.data.items.some((item) => item.vendor === 'Malformed Hidden Vendor'),
+  false,
+  'malformed voucher data never reaches the normal register rows',
+);
+const dashboardAfterMalformed = g.call('dashboardSummary', { token: owner, from: date, to: date });
+assert.equal(
+  dashboardAfterMalformed.ok,
+  true,
+  'dashboard remains available with malformed legacy rows',
+);
+assert.equal(
+  dashboardAfterMalformed.data.paid,
+  150,
+  'malformed amount is excluded from the dashboard total',
+);
+assert.equal(
+  dashboardAfterMalformed.data.paymentCount,
+  1,
+  'malformed record is excluded from the dashboard count',
+);
+assert.equal(
+  dashboardAfterMalformed.data.malformedRecordCount,
+  1,
+  'dashboard reports the malformed record separately',
+);
+
 const createStaff = g.call('saveUser', {
   token: owner,
   name: 'Read Model Staff',

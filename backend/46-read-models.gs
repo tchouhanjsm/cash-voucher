@@ -161,11 +161,14 @@ function registerPage_(user, req) {
   const userSet = Object.create(null);
   const dataQuality = { malformedRecordCount: 0, invalidAmountCount: 0, malformedFieldCount: 0 };
   rows.forEach(function (row) {
+    if (readModelHasMalformedRecord_(row)) {
+      dataQuality.malformedRecordCount++;
+      return;
+    }
     const name = String(row.Vendor || '');
     if (name) vendorSet[name] = true;
     const email = String(row.CreatedBy || '').toLowerCase();
     if (email) userSet[email] = true;
-    if (readModelHasMalformedRecord_(row)) dataQuality.malformedRecordCount++;
     if (!readModelAmount_(row).valid && String(row.Status || 'ACTIVE') === 'ACTIVE') {
       dataQuality.invalidAmountCount++;
     }
@@ -175,6 +178,7 @@ function registerPage_(user, req) {
   });
 
   rows = rows.filter(function (row) {
+    if (readModelHasMalformedRecord_(row)) return false;
     const rowDate = readModelDateValue_(row);
     const rowType = row.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT';
     const rowStatus = String(row.Status || 'ACTIVE');
@@ -246,7 +250,11 @@ function registerPage_(user, req) {
 }
 
 function dashboardSummary_(user, req) {
-  const rows = readModelRows_(user);
+  let rows = readModelRows_(user);
+  const malformedRecordCount = rows.filter(readModelHasMalformedRecord_).length;
+  rows = rows.filter(function (row) {
+    return !readModelHasMalformedRecord_(row);
+  });
   const from = readModelDate_(req.from, 'start');
   const to = readModelDate_(req.to, 'end');
   if (!from || !to || from > to) {
@@ -291,9 +299,7 @@ function dashboardSummary_(user, req) {
       ? best
       : { paise: amount.paise, vendor: String(row.Vendor || '') };
   }, null);
-  const scopedAllVouchers = rows;
-  const malformedRecordCount = scopedAllVouchers.filter(readModelHasMalformedRecord_).length;
-  const malformedFieldCount = scopedAllVouchers.reduce(function (count, row) {
+  const malformedFieldCount = rows.reduce(function (count, row) {
     return (
       count +
       ['Vendor', 'Category', 'CreatedBy', 'Type', 'Status'].filter(function (key) {

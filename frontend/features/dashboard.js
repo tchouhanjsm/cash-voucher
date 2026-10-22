@@ -103,7 +103,7 @@ export function createDashboard({ api }) {
 
   let summaryRequestId = 0;
 
-  function periodControls(from, to, loading = false) {
+  function periodControls(from, to) {
     return `
       <div class="seg dashboard-period">${[
         ['7d', 'Last 7 days'],
@@ -117,56 +117,139 @@ export function createDashboard({ api }) {
             `<button type="button" data-act="range" data-k="${key}" class="${D.r === key ? 'on' : ''}">${label}</button>`,
         )
         .join('')}</div>
-      ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button type="button" class="btn primary" data-act="cus">Apply</button></div>` : ''}
-      ${loading ? '<div class="card" role="status" aria-live="polite">Calculating the dashboard from the latest saved ledger…</div>' : ''}`;
+      ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button type="button" class="btn primary" data-act="cus">Apply</button></div>` : ''}`;
+  }
+
+  function renderShell(from, to) {
+    const view = $('#view');
+    const frame = document.createElement('div');
+    frame.className = 'dashboard-view';
+
+    const header = document.createElement('div');
+    header.className = 'head page-header';
+    const copy = document.createElement('div');
+    copy.className = 'page-header-copy';
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'page-eyebrow';
+    eyebrow.textContent = 'Work';
+    const title = document.createElement('h1');
+    title.textContent = can('viewAll') ? 'Dashboard' : 'My Dashboard';
+    const description = document.createElement('p');
+    description.className = 'page-description';
+    description.textContent = 'Review saved payment and receipt activity for the selected period.';
+    copy.append(eyebrow, title, description);
+
+    const actions = document.createElement('div');
+    actions.className = 'page-header-actions';
+    if (can('create')) {
+      const create = document.createElement('button');
+      create.type = 'button';
+      create.className = 'btn primary';
+      create.dataset.act = 'ntype';
+      create.dataset.k = 'PAYMENT';
+      create.textContent = '+ New entry';
+      actions.appendChild(create);
+    }
+    const refresh = document.createElement('button');
+    refresh.type = 'button';
+    refresh.className = 'btn sm';
+    refresh.dataset.act = 'refresh';
+    refresh.textContent = '↻ Refresh';
+    actions.appendChild(refresh);
+    header.append(copy, actions);
+
+    const body = document.createElement('div');
+    body.className = 'dashboard-body';
+    const periods = document.createElement('div');
+    periods.className = 'seg dashboard-period';
+    [
+      ['7d', 'Last 7 days'],
+      ['30d', 'Last 30 days'],
+      ['mtd', 'This month'],
+      ['lm', 'Last month'],
+      ['cus', 'Custom'],
+    ].forEach(([key, label]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.act = 'range';
+      button.dataset.k = key;
+      button.className = D.r === key ? 'on' : '';
+      button.textContent = label;
+      periods.appendChild(button);
+    });
+    body.appendChild(periods);
+
+    if (D.r === 'cus') {
+      const filters = document.createElement('div');
+      filters.className = 'card filters';
+      [
+        ['From', 'dFrom', D.from || from],
+        ['To', 'dTo', D.to || to],
+      ].forEach(([labelText, id, value]) => {
+        const label = document.createElement('label');
+        label.appendChild(document.createTextNode(labelText));
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.id = id;
+        input.value = value;
+        label.appendChild(input);
+        filters.appendChild(label);
+      });
+      const apply = document.createElement('button');
+      apply.type = 'button';
+      apply.className = 'btn primary';
+      apply.dataset.act = 'cus';
+      apply.textContent = 'Apply';
+      filters.appendChild(apply);
+      body.appendChild(filters);
+    }
+
+    frame.append(header, body);
+    view.replaceChildren(frame);
+    return body;
+  }
+
+  function appendStatusCard(body, message, options = {}) {
+    const card = document.createElement('div');
+    card.className = options.className || 'card';
+    card.setAttribute('role', options.role || 'status');
+    card.setAttribute('aria-live', options.role === 'alert' ? 'assertive' : 'polite');
+    if (options.title) {
+      const title = document.createElement('h2');
+      title.textContent = options.title;
+      card.appendChild(title);
+    }
+    const text = document.createElement('p');
+    text.textContent = message;
+    card.appendChild(text);
+    body.appendChild(card);
   }
 
   async function render() {
     const requestId = ++summaryRequestId;
     const [from, to] = range();
+    const body = renderShell(from || today(), to || today());
 
     if (!from || !to || from > to) {
-      $('#view').innerHTML =
-        '<div class="dashboard-view">' +
-        head(can('viewAll') ? 'Dashboard' : 'My Dashboard', refreshBtn) +
-        '<div class="dashboard-body">' +
-        periodControls(from || today(), to || today()) +
-        '<div class="card error" role="alert">Choose a valid date range before loading dashboard totals.</div></div></div>';
+      appendStatusCard(body, 'Choose a valid date range before loading dashboard totals.', {
+        className: 'card error',
+        role: 'alert',
+      });
       return;
     }
 
-    $('#view').innerHTML =
-      '<div class="dashboard-view">' +
-      head(
-        can('viewAll') ? 'Dashboard' : 'My Dashboard',
-        `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
-        {
-          section: 'Work',
-          description: 'Review saved payment and receipt activity for the selected period.',
-        },
-      ) +
-      '<div class="dashboard-body">' +
-      periodControls(from, to, true) +
-      '</div></div>';
-
+    appendStatusCard(body, 'Calculating the dashboard from the latest saved ledger…');
     let summary;
     try {
       summary = await api('dashboardSummary', { from, to });
     } catch (error) {
       if (requestId !== summaryRequestId || S.view !== 'dash') return;
-      $('#view').innerHTML =
-        '<div class="dashboard-view">' +
-        head(
-          can('viewAll') ? 'Dashboard' : 'My Dashboard',
-          `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
-          {
-            section: 'Work',
-            description: 'Review saved payment and receipt activity for the selected period.',
-          },
-        ) +
-        '<div class="dashboard-body">' +
-        periodControls(from, to) +
-        `<div class="card" role="alert"><h2>Dashboard totals unavailable</h2><p>${esc(error?.message || 'The server could not calculate the dashboard. Refresh and retry.')}</p></div></div></div>`;
+      const errorBody = renderShell(from, to);
+      appendStatusCard(
+        errorBody,
+        error?.message || 'The server could not calculate the dashboard. Refresh and retry.',
+        { title: 'Dashboard totals unavailable', role: 'alert' },
+      );
       return;
     }
     if (requestId !== summaryRequestId || S.view !== 'dash') return;

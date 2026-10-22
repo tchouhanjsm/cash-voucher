@@ -171,24 +171,32 @@ export function createRegister({ api, go }) {
   }
 
   function syncFacets() {
+    const syncSelect = (select, placeholder, options, labelFor, selectedValue) => {
+      const fragment = document.createDocumentFragment();
+      const first = document.createElement('option');
+      first.value = '';
+      first.textContent = placeholder;
+      fragment.appendChild(first);
+      options.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = labelFor(item);
+        fragment.appendChild(option);
+      });
+      select.replaceChildren(fragment);
+      select.value = selectedValue;
+    };
+
     const vendorSelect = $('#rv');
     if (vendorSelect) {
       const vendors = Array.isArray(pageFacets.vendors) ? pageFacets.vendors : [];
-      const value = R.vendor;
-      vendorSelect.innerHTML =
-        '<option value="">All vendors</option>' +
-        vendors.map((vendor) => `<option value="${esc(vendor)}">${esc(vendor)}</option>`).join('');
-      vendorSelect.value = value;
+      syncSelect(vendorSelect, 'All vendors', vendors, (vendor) => vendor, R.vendor);
     }
 
     const userSelect = $('#ru');
     if (userSelect && can('viewAll')) {
       const users = Array.isArray(pageFacets.users) ? pageFacets.users : [];
-      const value = R.user;
-      userSelect.innerHTML =
-        '<option value="">All users</option>' +
-        users.map((user) => `<option value="${esc(user)}">${esc(nm(user))}</option>`).join('');
-      userSelect.value = value;
+      syncSelect(userSelect, 'All users', users, (user) => nm(user), R.user);
     }
   }
 
