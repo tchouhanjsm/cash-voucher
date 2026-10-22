@@ -1165,9 +1165,9 @@ with sync_playwright() as p:
             data['largest'] = {'amount': 1, 'vendor': hostile_dashboard_label}
             data['topVendors'] = [{'k': hostile_dashboard_label, 'n': 1, 's': 1}]
             data['byCategory'] = [{'k': hostile_dashboard_label, 'n': 1, 's': 1}]
-        route.fulfill(response=response, json=payload)
+        route.fulfill(response=response, body=json.dumps(payload))
 
-    page.route('**/api*', inject_hostile_dashboard_summary)
+    page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
     page.wait_for_function(
         "label => document.querySelector('#view')?.textContent.includes(label)",
@@ -1179,7 +1179,7 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'hostile dashboard summary labels remain text and cannot create active HTML handlers',
     )
-    page.unroute('**/api*', inject_hostile_dashboard_summary)
+    page.unroute('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="30d"]')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('Total paid')"
