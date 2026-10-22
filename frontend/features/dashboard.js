@@ -229,6 +229,24 @@ export function createDashboard({ api }) {
     const requestId = ++summaryRequestId;
     const [from, to] = range();
     const body = renderShell(from || today(), to || today());
+    const diagnostics = S.voucherDiagnostics || {};
+    const bootstrapUnavailable =
+      S.offlineMode ||
+      navigator.onLine === false ||
+      diagnostics.dataAvailable === false ||
+      diagnostics.envelopeValid === false;
+    if (bootstrapUnavailable) {
+      const reason =
+        S.offlineMode || diagnostics.unavailableReason === 'offline' || navigator.onLine === false
+          ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
+          : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.';
+      appendStatusCard(
+        body,
+        reason + ' No financial totals or charts are shown until voucher data is available.',
+        { title: 'Dashboard totals unavailable', role: 'alert' },
+      );
+      return;
+    }
 
     if (!from || !to || from > to) {
       appendStatusCard(body, 'Choose a valid date range before loading dashboard totals.', {
@@ -264,9 +282,18 @@ export function createDashboard({ api }) {
       : 0;
     const received = finiteAmount(summary.received) ?? 0;
     const approvalExceptionCount = Number(summary.approvalExceptionCount) || 0;
-    const invalidAmountCount = Number(summary.invalidAmountCount) || 0;
-    const malformedRecordCount = Number(summary.malformedRecordCount) || 0;
-    const malformedFieldCount = Number(summary.malformedFieldCount) || 0;
+    const invalidAmountCount = Math.max(
+      Number(summary.invalidAmountCount) || 0,
+      Number(diagnostics.invalidAmountCount) || 0,
+    );
+    const malformedRecordCount = Math.max(
+      Number(summary.malformedRecordCount) || 0,
+      Number(diagnostics.malformedRecordCount) || 0,
+    );
+    const malformedFieldCount = Math.max(
+      Number(summary.malformedFieldCount) || 0,
+      Number(diagnostics.malformedFieldCount) || 0,
+    );
     const dataWarnings = [];
 
     if (malformedRecordCount) {

@@ -3086,14 +3086,22 @@ with sync_playwright() as p:
 
     def tamper_register_page_voucher_number(route):
         request_data = json.loads(route.request.post_data or '{}')
+        action = request_data.get('action')
+        if action not in ('bootstrap', 'registerPage'):
+            route.continue_()
+            return
         response = route.fetch()
         payload = response.json()
-        items = payload.get('data', {}).get('items', [])
-        if request_data.get('action') == 'registerPage' and items:
-            items[0]['no'] = number_payload
-            route.fulfill(response=response, json=payload)
+        data = payload.get('data', {})
+        if action == 'bootstrap':
+            vouchers = data.get('vouchers', [])
+            if isinstance(vouchers, list) and vouchers:
+                vouchers[0]['no'] = number_payload
         else:
-            route.fulfill(response=response)
+            items = data.get('items', [])
+            if items:
+                items[0]['no'] = number_payload
+        route.fulfill(response=response, json=payload)
 
     page.route('**/api?*', tamper_register_page_voucher_number)
     page.locator('[data-act=refresh]').click()
@@ -3975,10 +3983,14 @@ with sync_playwright() as p:
 
     def tamper_dashboard_groups(route):
         request_data = json.loads(route.request.post_data or '{}')
+        action = request_data.get('action')
+        if action not in ('bootstrap', 'dashboardSummary', 'registerPage'):
+            route.continue_()
+            return
         response = route.fetch()
         payload = response.json()
         data = payload.get('data', {})
-        if request_data.get('action') == 'bootstrap':
+        if action == 'bootstrap':
             vouchers = data.get('vouchers', [])
             template = vouchers[0].copy() if vouchers else {
                 'id': '',
@@ -4075,9 +4087,21 @@ with sync_playwright() as p:
                         },
                     ])
                     data['vendors'] = vendors
-            route.fulfill(response=response, json=payload)
-        else:
-            route.fulfill(response=response)
+        elif action == 'dashboardSummary':
+            for key_name in ('topVendors', 'byCategory'):
+                data[key_name] = [
+                    {'k': value, 'n': 1, 's': 900001 + index}
+                    for index, value in enumerate(prototype_group_values)
+                ]
+            data['malformedRecordCount'] = 3
+            data['malformedFieldCount'] = 8
+            data['invalidAmountCount'] = max(1, Number(data.get('invalidAmountCount') or 0))
+        elif action == 'registerPage':
+            totals = data.get('totals', {})
+            totals['malformedRecordCount'] = max(3, int(totals.get('malformedRecordCount') or 0))
+            totals['malformedFieldCount'] = max(8, int(totals.get('malformedFieldCount') or 0))
+            totals['invalidAmountCount'] = max(1, int(totals.get('invalidAmountCount') or 0))
+        route.fulfill(response=response, json=payload)
 
     page.route('**/api?*', tamper_dashboard_groups)
     with page.expect_response(

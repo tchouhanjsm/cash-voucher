@@ -84,6 +84,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
           unavailableReason: voucherData.envelopeValid ? '' : 'invalid-response',
           malformedRecordCount: voucherData.malformedRecordCount,
           malformedFieldCount: voucherData.malformedFieldCount,
+          invalidAmountCount: voucherData.invalidAmountCount,
         },
         vendors: data.vendors,
         names: data.names,

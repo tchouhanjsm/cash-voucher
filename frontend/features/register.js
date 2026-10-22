@@ -204,9 +204,24 @@ export function createRegister({ api, go }) {
   async function renderRows(options = {}) {
     const append = options.append === true;
     const requestId = ++pageRequestSequence;
+    const diagnostics = S.voucherDiagnostics || {};
+    const bootstrapUnavailable =
+      S.offlineMode ||
+      navigator.onLine === false ||
+      diagnostics.dataAvailable === false ||
+      diagnostics.envelopeValid === false;
     const rangeInvalid = Boolean(R.from && R.to && R.from > R.to);
 
     pageError = null;
+    if (bootstrapUnavailable) {
+      pageRows = [];
+      pageTotalCount = 0;
+      pageTotals = null;
+      pageLoading = false;
+      R.limit = 100;
+      drawRows();
+      return;
+    }
     if (rangeInvalid) {
       pageRows = [];
       pageTotalCount = 0;
@@ -267,24 +282,40 @@ export function createRegister({ api, go }) {
   }
 
   function drawRows() {
-    const dataAvailable = !pageError && !S.offlineMode;
+    const diagnostics = S.voucherDiagnostics || {};
+    const dataAvailable =
+      !pageError &&
+      !S.offlineMode &&
+      diagnostics.dataAvailable !== false &&
+      diagnostics.envelopeValid !== false;
+    const offlineUnavailable =
+      S.offlineMode || diagnostics.unavailableReason === 'offline' || navigator.onLine === false;
     const unavailableMessage =
       pageError?.message ||
-      (S.offlineMode
+      (offlineUnavailable
         ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
         : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.');
     const unavailableTotalsMessage =
       pageError?.message ||
-      (S.offlineMode
+      (offlineUnavailable
         ? 'Totals unavailable while offline. Reconnect and refresh to load saved vouchers.'
-        : 'Totals unavailable because the server response was invalid. Refresh and retry.');
+        : 'Totals unavailable because the voucher response was invalid.');
     const rangeInvalid = dataAvailable && Boolean(R.from && R.to && R.from > R.to);
     const list = rangeInvalid || !dataAvailable ? [] : filtered();
     const shown = list.slice(0, R.limit);
-    const malformedRecordCount = Number(pageTotals?.malformedRecordCount) || 0;
-    const malformedFieldCount = Number(pageTotals?.malformedFieldCount) || 0;
+    const malformedRecordCount = Math.max(
+      Number(pageTotals?.malformedRecordCount) || 0,
+      Number(diagnostics.malformedRecordCount) || 0,
+    );
+    const malformedFieldCount = Math.max(
+      Number(pageTotals?.malformedFieldCount) || 0,
+      Number(diagnostics.malformedFieldCount) || 0,
+    );
     const approvalExceptionCount = Number(pageTotals?.approvalExceptionCount) || 0;
-    const invalidAmountCount = Number(pageTotals?.invalidAmountCount) || 0;
+    const invalidAmountCount = Math.max(
+      Number(pageTotals?.invalidAmountCount) || 0,
+      Number(diagnostics.invalidAmountCount) || 0,
+    );
     const paid = finiteAmount(pageTotals?.paid) ?? 0;
     const received = finiteAmount(pageTotals?.received) ?? 0;
 
@@ -558,9 +589,20 @@ export function createRegister({ api, go }) {
   }
 
   async function csvExport() {
-    if (pageError || S.voucherDiagnostics?.dataAvailable === false) {
+    const diagnostics = S.voucherDiagnostics || {};
+    const unavailable =
+      pageError ||
+      S.offlineMode ||
+      navigator.onLine === false ||
+      diagnostics.dataAvailable === false ||
+      diagnostics.envelopeValid === false;
+    if (unavailable) {
+      const offline =
+        S.offlineMode || diagnostics.unavailableReason === 'offline' || navigator.onLine === false;
       toast(
-        'Voucher data is unavailable. Reconnect and refresh before exporting the Register.',
+        offline
+          ? 'Voucher data is unavailable while offline. Reconnect and refresh before exporting the Register.'
+          : 'Voucher data is unavailable. Refresh and retry before exporting the Register.',
         'err',
       );
       return;
