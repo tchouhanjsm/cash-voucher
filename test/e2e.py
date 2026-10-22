@@ -1537,13 +1537,13 @@ with sync_playwright() as p:
     page.fill('#up', 'Xss#TestPass2026')
     page.click('#uf .primary')
     page.wait_for_function(
-        "document.querySelector('#view').innerText.includes('stored-xss@test.com')"
+        "document.querySelector('#toast')?.textContent.toLowerCase().includes('valid name')"
     )
     check(
-        page.locator('#view img, #view svg').count() == 0
-        and xss_payload in page.locator('#view').inner_text()
+        'stored-xss@test.com' not in page.locator('#view').inner_text()
+        and page.locator('#view img, #view svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'user name is rendered as text, not executable HTML',
+        'server rejects an HTML payload as a user name before persistence',
     )
 
     # A transient listUsers failure must replace "Loading" with a useful, retryable state.
