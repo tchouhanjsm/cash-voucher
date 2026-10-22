@@ -41,7 +41,7 @@ function bootstrap_(user) {
       id: v.VendorID,
       name: String(v.Name),
       company: String(v.Company || ''),
-      mobile: String(v.Mobile || ''),
+      mobile: mobileDisplay_(v.Mobile || ''),
       active: v.Active === true || v.Active === 'TRUE',
       defaultCategory: String(v.DefaultCategory || ''),
       defaultPaymentMethod: String(v.DefaultPaymentMethod || ''),

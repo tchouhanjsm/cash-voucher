@@ -3,28 +3,125 @@
 const { spawnSync } = require('node:child_process');
 
 const reportOnly = process.argv.includes('--report-only');
-const result = spawnSync('npm', ['audit', '--json'], {
-  encoding: 'utf8',
-  maxBuffer: 10 * 1024 * 1024,
-});
+const maxAttempts = 2;
+const timeoutMs = 60_000;
 
-let report;
+function isTransientAuditFailure(result, report) {
+  const details = [
+    result && result.error && result.error.message,
+    result && result.error && result.error.code,
+    result && result.stderr,
+    report && report.error && JSON.stringify(report.error),
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase();
 
-try {
-  report = JSON.parse(result.stdout || '');
-} catch {
-  console.error('npm audit did not return valid JSON.');
-  if (result.stderr) console.error(result.stderr.trim());
-  process.exit(2);
-}
+  if (
+    result &&
+    result.error &&
+    ['etimedout', 'eai_again', 'enotfound', 'econnreset', 'econnrefused', 'ehostunreach'].includes(
+      String(result.error.code || '').toLowerCase(),
+    )
+  ) {
+    return true;
+  }
 
-if (report.error) {
-  console.error(
-    `npm audit failed: ${report.error.summary || report.error.message || 'unknown error'}`,
+  // npm sometimes returns an empty { "error": {} } when the audit endpoint fails.
+  // Retry that response once, but fail closed if the service remains unavailable.
+  return Boolean(
+    report &&
+    report.error &&
+    (Object.keys(report.error).length === 0 ||
+      /temporarily unavailable|eai_again|enotfound|econnreset|econnrefused|ehostunreach|etimedout|socket hang up|fetch failed|network error|\b5\d\d\b/.test(
+        details,
+      )),
   );
-  if (result.stderr) console.error(result.stderr.trim());
+}
+
+function sleepBriefly() {
+  // Keep CI resilient to a transient registry hiccup without introducing a dependency.
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, 1000);
+}
+
+function runAudit() {
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const result = spawnSync('npm', ['audit', '--json'], {
+      encoding: 'utf8',
+      maxBuffer: 10 * 1024 * 1024,
+      timeout: timeoutMs,
+    });
+
+    if (result.error) {
+      const transient =
+        result.error.code === 'ETIMEDOUT' ||
+        ['EAI_AGAIN', 'ENOTFOUND', 'ECONNRESET', 'ECONNREFUSED', 'EHOSTUNREACH'].includes(
+          result.error.code,
+        );
+
+      if (transient && attempt < maxAttempts) {
+        console.warn(
+          'npm audit encountered a transient process/network error; retrying once (' +
+            attempt +
+            ' of ' +
+            maxAttempts +
+            ').',
+        );
+        sleepBriefly();
+        continue;
+      }
+
+      console.error(
+        'npm audit process failed: ' +
+          result.error.message +
+          (result.error.code ? ' (' + result.error.code + ')' : ''),
+      );
+      if (result.status !== null) console.error('npm audit exit status: ' + result.status);
+      if (result.signal) console.error('npm audit termination signal: ' + result.signal);
+      if (result.stderr) console.error(result.stderr.trim());
+      process.exit(2);
+    }
+
+    let report;
+    try {
+      report = JSON.parse(result.stdout || '');
+    } catch {
+      console.error('npm audit did not return valid JSON.');
+      if (result.stderr) console.error(result.stderr.trim());
+      process.exit(2);
+    }
+
+    if (report.error && isTransientAuditFailure(result, report) && attempt < maxAttempts) {
+      console.warn(
+        'npm audit received a transient audit-service error; retrying once (' +
+          attempt +
+          ' of ' +
+          maxAttempts +
+          ').',
+      );
+      sleepBriefly();
+      continue;
+    }
+
+    if (report.error) {
+      console.error(
+        'npm audit failed: ' + (report.error.summary || report.error.message || 'unknown error'),
+      );
+      console.error('npm audit error details: ' + JSON.stringify(report.error));
+      if (result.status !== null) console.error('npm audit exit status: ' + result.status);
+      if (result.signal) console.error('npm audit termination signal: ' + result.signal);
+      if (result.stderr) console.error(result.stderr.trim());
+      process.exit(2);
+    }
+
+    return { report, result };
+  }
+
+  console.error('npm audit failed after all bounded attempts.');
   process.exit(2);
 }
+
+const { report, result } = runAudit();
 
 const exceptions = {
   'GHSA-vfj7-8cjw-p6xm': {

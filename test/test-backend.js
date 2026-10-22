@@ -519,14 +519,16 @@ ok(
   invalidCashImpacts.every((result) => !result.ok && result.code === 'VALIDATION'),
   'server rejects unknown and UNCLASSIFIED values for new vouchers',
 );
+const formulaNote = '=HYPERLINK("x")';
 r = as(S, 'createVouchers', {
   entries: [
     {
       clientId: 'c1',
       date: today,
-      vendor: '=HYPERLINK("x")',
+      vendor: 'Formula Safety Test Vendor',
       amount: '150.555',
       category: 'Fuel',
+      notes: formulaNote,
       receipts: [{ mime: 'image/jpeg', data: tiny }],
     },
     { clientId: 'c2', date: today, vendor: 'Ram Traders', amount: 2000 },
@@ -539,7 +541,11 @@ ok(
     r.data.created[1].no === 202,
   'numbers from 201',
 );
-ok(r.data.created[0].vendor.startsWith("'="), 'formula injection neutralised');
+ok(
+  r.data.created[0].vendor === 'Formula Safety Test Vendor' &&
+    r.data.created[0].notes.startsWith("'="),
+  'formula-like display names are no longer stored; free-text notes are neutralised',
+);
 ok(
   r.data.created[0].amount === 150.56 || r.data.created[0].amount === 150.55,
   'amount rounded to 2dp',
@@ -568,9 +574,10 @@ const dup = as(S, 'createVouchers', {
     {
       clientId: 'c1',
       date: today,
-      vendor: '=HYPERLINK("x")',
+      vendor: 'Formula Safety Test Vendor',
       amount: '150.555',
       category: 'Fuel',
+      notes: formulaNote,
       receipts: [{ mime: 'image/jpeg', data: tiny }],
     },
   ],
@@ -595,10 +602,10 @@ const changedPayloadResults = changedPayloads.map((override) =>
       {
         clientId: 'c1',
         date: today,
-        vendor: '=HYPERLINK("x")',
+        vendor: 'Formula Safety Test Vendor',
         amount: '150.555',
         category: 'Fuel',
-        notes: '',
+        notes: formulaNote,
         type: 'PAYMENT',
         ...override,
       },
@@ -2330,20 +2337,23 @@ ok(
     linkedVendorReportRow.vendorId === accountantVendorId,
   'accountant report exports the stable VendorID for the matched voucher',
 );
-// Legacy report fallback must use prototype-safe lookup keys for user-controlled names.
+// Legacy report fallback must use prototype-safe lookup keys for historical names.
+// New write APIs reject this malformed display name; seed it only as an already-stored legacy value.
 const prototypeVendorSave = as(T, 'saveVendor', {
-  name: '__proto__',
+  name: 'Prototype Legacy Master',
   company: 'Prototype Safety',
   mobile: '',
 });
-const prototypeVendorRow = g.sheets.Vendors.rows.find((row) => row[1] === '__proto__');
+const prototypeVendorRow = g.sheets.Vendors.rows.find(
+  (row) => row[1] === 'Prototype Legacy Master',
+);
 const prototypeVendorId = prototypeVendorRow && prototypeVendorRow[0];
 const prototypeVendorVoucher = as(T, 'createVouchers', {
   entries: [
     {
       clientId: 'accountant-prototype-vendor-fallback',
       date: today,
-      vendor: '__proto__',
+      vendor: 'Prototype Legacy Voucher',
       amount: 75,
       category: 'Other',
       type: 'PAYMENT',
@@ -2353,6 +2363,8 @@ const prototypeVendorVoucher = as(T, 'createVouchers', {
 const prototypeVoucherRow = g.sheets.Vouchers.rows.find(
   (row) => row[0] === prototypeVendorVoucher.data.created[0].id,
 );
+prototypeVendorRow[1] = '__proto__';
+prototypeVoucherRow[3] = '__proto__';
 prototypeVoucherRow[21] = '';
 const prototypeVendorReport = as(accountantToken, 'recordedMovementReport', {
   from: today,

@@ -8,7 +8,7 @@ on:
     types: [opened, synchronize, reopened, ready_for_review, converted_to_draft, edited]
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -37,9 +37,6 @@ jobs:
       - name: Scan current files and reachable Git history for credential patterns
         run: npm run audit:secrets
 
-      - name: Enforce dependency advisory policy
-        run: npm run audit:deps
-
       - name: Capture seeded mock performance baseline
         env:
           CV_PERFORMANCE_BASELINE_OUT: ${{ runner.temp }}/cash-voucher-performance-baseline.json
@@ -58,3 +55,9 @@ jobs:
       - name: Validate PR handoff evidence
         if: github.event_name == 'pull_request'
         run: npm run check:pr-quality
+
+      # Run the external registry security query last so a temporary npm audit outage
+      # cannot prevent lint, formatting, unit tests, and PR handoff validation from running.
+      # The job still fails closed if dependency audit does not pass.
+      - name: Enforce dependency advisory policy
+        run: npm run audit:deps

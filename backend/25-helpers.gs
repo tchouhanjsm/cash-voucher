@@ -196,6 +196,91 @@ function clean_(v, max) {
   if (/^[=+\-@]/.test(s)) s = "'" + s; // block spreadsheet formula injection
   return s;
 }
+/**
+ * Validate display-name fields before persistence.
+ *
+ * Google Sheets is the backing store (not SQL), so this prevents malformed
+ * values and reduces spreadsheet/rendering hazards; HTML output must still be
+ * escaped at the renderer and formula-leading free text must still use clean_.
+ * This intentionally validates syntax, not whether a real person/business exists.
+ */
+/**
+ * Validate a mobile number and keep formula-like leading characters safe in Sheets.
+ * Phone numbers may legitimately begin with "+"; clean_ stores the text sentinel,
+ * and mobileDisplay_ removes that sentinel only at the API display boundary.
+ */
+function mobileText_(value) {
+  if (value === undefined || value === null) return '';
+  if (typeof value !== 'string') {
+    throw err_('Enter a valid mobile number.', 'VALIDATION');
+  }
+
+  const text = value.trim();
+  if (!text) return '';
+  if (!/^[0-9+ -]{7,15}$/.test(text)) {
+    throw err_('Enter a valid mobile number.', 'VALIDATION');
+  }
+
+  return clean_(text, 15);
+}
+function mobileDisplay_(value) {
+  const text = String(value === undefined || value === null ? '' : value);
+  return text.length > 1 && text[0] === "'" && /^[=+@-]/.test(text[1]) ? text.slice(1) : text;
+}
+
+function nameText_(value, label, max, optional) {
+  const field = String(label || 'Name');
+
+  if (value === undefined || value === null) {
+    if (optional) return '';
+    throw err_(field + ' is required.', 'VALIDATION');
+  }
+  if (typeof value !== 'string') {
+    throw err_(field + ' must be text.', 'VALIDATION');
+  }
+
+  let text = typeof value.normalize === 'function' ? value.normalize('NFKC') : value;
+
+  // Reject invisible/control/bidirectional characters instead of silently storing them.
+  for (let i = 0; i < text.length; i++) {
+    const code = text.charCodeAt(i);
+    if (
+      code <= 0x1f ||
+      (code >= 0x7f && code <= 0x9f) ||
+      code === 0x00ad ||
+      (code >= 0x200b && code <= 0x200f) ||
+      (code >= 0x202a && code <= 0x202e) ||
+      (code >= 0x2060 && code <= 0x206f) ||
+      code === 0xfeff
+    ) {
+      throw err_('Enter a valid ' + field.toLowerCase() + '.', 'VALIDATION');
+    }
+  }
+
+  text = text.trim().replace(/\s+/g, ' ');
+  if (!text) {
+    if (optional) return '';
+    throw err_(field + ' is required.', 'VALIDATION');
+  }
+  if (text.length > max) {
+    throw err_(field + ' must be ' + max + ' characters or fewer.', 'VALIDATION');
+  }
+
+  // Support multilingual names and common business-name punctuation, but reject
+  // HTML delimiters, formula operators, semicolons, and punctuation-only/numeric-only input.
+  if (
+    !/\p{L}/u.test(text) ||
+    !/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} .,'’&()/#:+_©®-]*$/u.test(text)
+  ) {
+    throw err_(
+      'Enter a valid ' + field.toLowerCase() + ' using letters, numbers and common punctuation.',
+      'VALIDATION',
+    );
+  }
+
+  return clean_(text, max);
+}
+
 function clientId_(v) {
   const text = String(v === undefined || v === null ? '' : v).trim();
   if (!text) return '';
@@ -234,7 +319,7 @@ function addUser_(name, email, role, password, must) {
   const salt = Utilities.getUuid();
   const u = {
     UserID: Utilities.getUuid(),
-    Name: clean_(name, 80),
+    Name: nameText_(name, 'Name', 80),
     Email: email,
     Role: role,
     Active: true,

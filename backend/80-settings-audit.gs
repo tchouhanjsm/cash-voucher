@@ -1,12 +1,17 @@
 /* ============ settings / audit (owner) ============ */
 function saveSettings_(user, req) {
   need_(user, 'settings');
-  const name = clean_(req.propertyName, 120),
+  const name = nameText_(req.propertyName, 'Property name', 120),
     addr = clean_(req.propertyAddress, 300);
   if (!name) throw err_('Property name is required.');
   const cats = [];
-  (req.categories || []).forEach(function (c) {
-    c = clean_(c, 40);
+  const categoryInput =
+    req.categories === undefined || req.categories === null ? [] : req.categories;
+  if (!Array.isArray(categoryInput)) {
+    throw err_('Categories must be a list.', 'VALIDATION');
+  }
+  categoryInput.forEach(function (c) {
+    c = nameText_(c, 'Category', 40, true);
     if (c && cats.indexOf(c) < 0) cats.push(c);
   });
   if (cats.length < 1 || cats.length > 60) throw err_('Provide 1–60 categories.');
@@ -31,8 +36,15 @@ function saveSettings_(user, req) {
     throw err_('Next receipt number must be greater than ' + mx(true) + '.', 'VALIDATION');
   if (Math.abs(open) > 1e9) throw err_('Invalid opening balance.', 'VALIDATION');
   const rc = [];
-  (req.receiptCategories || []).forEach(function (c) {
-    c = clean_(c, 40);
+  const receiptCategoryInput =
+    req.receiptCategories === undefined || req.receiptCategories === null
+      ? []
+      : req.receiptCategories;
+  if (!Array.isArray(receiptCategoryInput)) {
+    throw err_('Receipt categories must be a list.', 'VALIDATION');
+  }
+  receiptCategoryInput.forEach(function (c) {
+    c = nameText_(c, 'Receipt category', 40, true);
     if (c && rc.indexOf(c) < 0) rc.push(c);
   });
   if (rc.indexOf('Other') < 0) rc.push('Other');

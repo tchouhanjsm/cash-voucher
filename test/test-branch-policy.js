@@ -25,6 +25,14 @@ assert.match(browser, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(browser, /pull_request:\n\s+branches:\s*\[client-main\]/);
 assert.match(flight, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(flight, /pull_request:\n\s+branches:\s*\[client-main\]/);
+for (const workflow of [ci, browser, flight]) {
+  assert.ok(
+    workflow.includes('github.event.pull_request.head.ref || github.ref_name') &&
+      workflow.includes('github.event.pull_request.head.repo.full_name || github.repository') &&
+      workflow.includes('cancel-in-progress: true'),
+    'push and pull-request runs for the same head branch must share one cancellable workflow group',
+  );
+}
 assert.match(staging, /ACTION_REF" != "refs\/heads\/client-main"/);
 assert.match(hook, /refs\/heads\/main/);
 assert.match(hook, /refs\/heads\/client-main/);
