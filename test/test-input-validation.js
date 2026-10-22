@@ -92,6 +92,19 @@ invalidVendorNames.forEach((name, index) => {
   rejectedVendorCount++;
 });
 
+const invalidCompanyBefore = g.sheets.Vendors.rows.length;
+const invalidCompany = call('saveVendor', {
+  name: 'Valid Company Name',
+  company: '<img src=x onerror=alert(1)>',
+});
+assert.equal(invalidCompany.ok, false, 'markup in optional company name is rejected');
+assert.equal(invalidCompany.code, 'VALIDATION', 'invalid company name returns validation error');
+assert.equal(
+  g.sheets.Vendors.rows.length,
+  invalidCompanyBefore,
+  'invalid company name does not create a vendor row',
+);
+
 const validVendor = call('saveVendor', {
   name: 'M/s Garh Jaisal & Co.',
   company: 'Garh Jaisal Hospitality Pvt. Ltd.',
