@@ -22,6 +22,9 @@ if (report.error) {
   console.error(
     `npm audit failed: ${report.error.summary || report.error.message || 'unknown error'}`,
   );
+  console.error('npm audit error details: ' + JSON.stringify(report.error));
+  if (result.status !== null) console.error('npm audit exit status: ' + result.status);
+  if (result.signal) console.error('npm audit termination signal: ' + result.signal);
   if (result.stderr) console.error(result.stderr.trim());
   process.exit(2);
 }
