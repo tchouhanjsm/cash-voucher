@@ -8,7 +8,9 @@ const OPERATIONS = new Set(['deploy-and-uat', 'uat-only', 'validate-only']);
 const OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped', 'in_progress']);
 
 function normalizeOutcome(value) {
-  const outcome = String(value || '').trim().toLowerCase();
+  const outcome = String(value || '')
+    .trim()
+    .toLowerCase();
   if (!outcome || outcome === 'not-run') return 'not-run';
   return OUTCOMES.has(outcome) ? outcome : 'unknown';
 }
@@ -51,8 +53,9 @@ function summarizeUat(log, stepOutcome) {
       ? (log.match(/^PASS:/gm) || []).length
       : null;
   const manualReviewRequired = /CLEANUP:[^\r\n]*owner review is required/i.test(log);
-  const explicitCleanup =
-    /CLEANUP:[^\r\n]*staging voucher cancelled; audit history retained/i.test(log);
+  const explicitCleanup = /CLEANUP:[^\r\n]*staging voucher cancelled; audit history retained/i.test(
+    log,
+  );
   const cancellationCheckPassed =
     /PASS:[^\r\n]*UAT payment is cancelled with a retained audit trace/i.test(log);
   const cleanupStatus = manualReviewRequired
