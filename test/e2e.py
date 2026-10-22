@@ -1208,11 +1208,11 @@ with sync_playwright() as p:
         + '(intercepts=' + str(len(dashboard_summary_interceptions))
         + ', summaryRendered=' + str('Spending trend' in dashboard_text) + ')',
     )
-    page.unroute('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="30d"]')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('Total paid')"
     )
+    page.unroute('**/api?*', inject_hostile_dashboard_summary)
 
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
