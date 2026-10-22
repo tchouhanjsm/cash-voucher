@@ -1219,9 +1219,27 @@ with sync_playwright() as p:
         dashboard_recovery_response.value.ok and recovered_summary.get('ok') is True,
         'dashboard recovers with a successful live read after hostile test data is removed',
     )
-    page.wait_for_function(
-        "document.querySelector('#view')?.innerText.includes('Total paid')"
-    )
+    try:
+        page.wait_for_function(
+            "document.querySelector('#view')?.innerText.includes('Total paid')",
+            timeout=10000,
+        )
+    except Exception:
+        diagnostics = {
+            'activeNav': page.evaluate(
+                "document.querySelector('#nav button[aria-current=page]')?.dataset.v || ''"
+            ),
+            'viewText': (page.locator('#view').inner_text() or '')[:1600],
+            'viewStatus': page.locator('#view [role=alert], #view [role=status]').all_text_contents(),
+            'dashboardButtons': page.locator('#view [data-act=range]').evaluate_all(
+                "(items) => items.map((item) => ({key: item.dataset.k, disabled: item.disabled, active: item.classList.contains('on')}))"
+            ),
+            'request': json.loads(dashboard_recovery_response.value.request.post_data or '{}'),
+            'response': recovered_summary,
+            'browserErrors': logs[-15:],
+        }
+        print('DASHBOARD_RECOVERY_DIAGNOSTICS=' + json.dumps(diagnostics, ensure_ascii=False))
+        raise
 
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
