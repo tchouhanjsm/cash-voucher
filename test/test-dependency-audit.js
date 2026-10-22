@@ -112,8 +112,9 @@ test('retries a transient npm audit service error and then enforces the returned
   const result = runAudit(baselineReport(), 1, { failOnce: true });
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /received a transient audit-service error; retrying once/);
-  assert.match(result.stdout, /Dependency security gate passed/);
+  const output = result.stdout + result.stderr;
+  assert.match(output, /received a transient audit-service error; retrying once/);
+  assert.match(output, /Dependency security gate passed/);
 });
 
 test('fails closed after repeated empty npm audit service errors', () => {
@@ -122,7 +123,7 @@ test('fails closed after repeated empty npm audit service errors', () => {
   assert.equal(result.status, 2);
   assert.match(result.stderr, /npm audit failed: unknown error/);
   assert.match(result.stderr, /npm audit error details: \{\}/);
-  assert.match(result.stdout, /received a transient audit-service error; retrying once/);
+  assert.match(result.stderr, /received a transient audit-service error; retrying once/);
 });
 
 test('blocks an unrelated high-severity advisory', () => {
