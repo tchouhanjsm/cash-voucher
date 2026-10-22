@@ -49,6 +49,12 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
+      # Temporary probe to capture the canonical formatter diff, then remove this step.
+      - name: Capture canonical Prettier formatting for targeted files
+        run: |
+          npx prettier --write backend/25-helpers.gs scripts/dependency-audit.js test/test-dependency-audit.js
+          git diff -- backend/25-helpers.gs scripts/dependency-audit.js test/test-dependency-audit.js
+
       - name: Run quality gate
         run: npm run check
 
