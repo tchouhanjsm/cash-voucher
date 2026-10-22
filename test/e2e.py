@@ -1161,14 +1161,36 @@ with sync_playwright() as p:
             route.continue_()
             return
         dashboard_summary_interceptions.append(True)
-        response = route.fetch()
-        payload = response.json()
-        data = payload.get('data', {}) if payload.get('ok') else {}
-        if isinstance(data, dict):
-            data['largest'] = {'amount': 1, 'vendor': hostile_dashboard_label}
-            data['topVendors'] = [{'k': hostile_dashboard_label, 'n': 1, 's': 1}]
-            data['byCategory'] = [{'k': hostile_dashboard_label, 'n': 1, 's': 1}]
-        route.fulfill(response=response, body=json.dumps(payload))
+        from_date = request_data.get('from', '2026-10-16')
+        to_date = request_data.get('to', '2026-10-22')
+        payload = {
+            'ok': True,
+            'data': {
+                'from': from_date,
+                'to': to_date,
+                'periodDays': 7,
+                'trendMonthly': False,
+                'trend': [{'date': to_date, 'amount': 1}],
+                'paid': 1,
+                'previousPaid': 0,
+                'paymentCount': 1,
+                'validPaymentCount': 1,
+                'largest': {'amount': 1, 'vendor': hostile_dashboard_label},
+                'todayPaid': 0,
+                'todayPaymentCount': 0,
+                'received': 0,
+                'receiptCount': 0,
+                'bookBalance': 0,
+                'topVendors': [{'k': hostile_dashboard_label, 'n': 1, 's': 1}],
+                'byCategory': [{'k': hostile_dashboard_label, 'n': 1, 's': 1}],
+                'byTeamMember': [],
+                'approvalExceptionCount': 0,
+                'invalidAmountCount': 0,
+                'malformedRecordCount': 0,
+                'malformedFieldCount': 0,
+            },
+        }
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
