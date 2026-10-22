@@ -219,7 +219,9 @@ function nameText_(value, label, max, optional) {
 
   // Reject invisible/control/bidirectional characters instead of silently storing them.
   // eslint-disable-next-line no-control-regex
-  if (/[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/.test(text)) {
+  if (
+    /[\u0000-\u001f\u007f-\u009f\u00ad\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/.test(text)
+  ) {
     throw err_('Enter a valid ' + field.toLowerCase() + '.', 'VALIDATION');
   }
 
@@ -238,7 +240,12 @@ function nameText_(value, label, max, optional) {
     !/\p{L}/u.test(text) ||
     !/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} .,'’&()/#:+_©®-]*$/u.test(text)
   ) {
-    throw err_('Enter a valid ' + field.toLowerCase() + ' using letters, numbers and common punctuation.', 'VALIDATION');
+    throw err_(
+      'Enter a valid ' +
+        field.toLowerCase() +
+        ' using letters, numbers and common punctuation.',
+      'VALIDATION',
+    );
   }
 
   return clean_(text, max);
