@@ -204,6 +204,32 @@ function clean_(v, max) {
  * escaped at the renderer and formula-leading free text must still use clean_.
  * This intentionally validates syntax, not whether a real person/business exists.
  */
+/**
+ * Validate a mobile number and keep formula-like leading characters safe in Sheets.
+ * Phone numbers may legitimately begin with "+"; clean_ stores the text sentinel,
+ * and mobileDisplay_ removes that sentinel only at the API display boundary.
+ */
+function mobileText_(value) {
+  if (value === undefined || value === null) return '';
+  if (typeof value !== 'string') {
+    throw err_('Enter a valid mobile number.', 'VALIDATION');
+  }
+
+  const text = value.trim();
+  if (!text) return '';
+  if (!/^[0-9+\\-\\s]{7,15}$/.test(text)) {
+    throw err_('Enter a valid mobile number.', 'VALIDATION');
+  }
+
+  return clean_(text, 15);
+}
+function mobileDisplay_(value) {
+  const text = String(value === undefined || value === null ? '' : value);
+  return text.length > 1 && text[0] === "'" && /^[=+\\-@]/.test(text[1])
+    ? text.slice(1)
+    : text;
+}
+
 function nameText_(value, label, max, optional) {
   const field = String(label || 'Name');
 

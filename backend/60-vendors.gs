@@ -28,7 +28,7 @@ function saveVendor_(user, req) {
   need_(user, 'vendors');
   const name = nameText_(req.name, 'Vendor name', 120),
     company = nameText_(req.company, 'Company name', 120, true),
-    mobile = clean_(req.mobile, 15),
+    mobile = mobileText_(req.mobile),
     defaultCategory = clean_(req.defaultCategory, 40),
     defaultPaymentMethod = clean_(req.defaultPaymentMethod, 20);
   const validDefaultCategories = categories_().concat(receiptCategories_());
@@ -37,7 +37,7 @@ function saveVendor_(user, req) {
   if (defaultPaymentMethod && ['CASH', 'UPI', 'BANK_TRANSFER'].indexOf(defaultPaymentMethod) < 0)
     throw err_('Choose a valid default payment method.', 'VALIDATION');
   if (!name) throw err_('Vendor name is required.');
-  if (mobile && !/^[0-9+\-\s]{7,15}$/.test(mobile)) throw err_('Enter a valid mobile number.');
+
   const list = readAll_('Vendors'),
     dup = list.filter(function (v) {
       return String(v.Name).toLowerCase() === name.toLowerCase() && v.VendorID !== req.id;
@@ -52,7 +52,11 @@ function saveVendor_(user, req) {
     const changes = [
       { field: 'name', before: String(vendor.Name || ''), after: name },
       { field: 'company', before: String(vendor.Company || ''), after: company },
-      { field: 'mobile', before: String(vendor.Mobile || ''), after: mobile },
+      {
+        field: 'mobile',
+        before: mobileDisplay_(vendor.Mobile),
+        after: mobileDisplay_(mobile),
+      },
       {
         field: 'defaultCategory',
         before: String(vendor.DefaultCategory || ''),
@@ -109,7 +113,7 @@ function saveVendor_(user, req) {
       [
         { field: 'name', before: null, after: name },
         { field: 'company', before: null, after: company },
-        { field: 'mobile', before: null, after: mobile },
+        { field: 'mobile', before: null, after: mobileDisplay_(mobile) },
         { field: 'defaultCategory', before: null, after: defaultCategory },
         { field: 'defaultPaymentMethod', before: null, after: defaultPaymentMethod },
         { field: 'active', before: null, after: true },

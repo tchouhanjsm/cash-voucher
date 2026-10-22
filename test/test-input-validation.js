@@ -112,7 +112,35 @@ const validVendor = call('saveVendor', {
   company: 'Garh Jaisal Hospitality Pvt. Ltd.',
   mobile: '+91 98765 43210',
 });
-assert.ok(validVendor.ok, 'legitimate business punctuation is accepted');
+assert.ok(validVendor.ok, JSON.stringify(validVendor) + ' — legitimate business punctuation is accepted');
+const persistedValidVendor = g.sheets.Vendors.rows.find((row) => row[0] === validVendor.vendorId);
+assert.ok(persistedValidVendor, 'valid vendor is stored');
+assert.equal(
+  persistedValidVendor[3],
+  "'+91 98765 43210",
+  'a leading plus is stored with the spreadsheet formula-safety sentinel',
+);
+const displayedValidVendor = call('bootstrap').data.vendors.find(
+  (vendor) => vendor.id === validVendor.vendorId,
+);
+assert.equal(
+  displayedValidVendor.mobile,
+  '+91 98765 43210',
+  'API output preserves a valid international phone number without exposing the storage sentinel',
+);
+
+const invalidMobileCount = g.sheets.Vendors.rows.length;
+const invalidMobile = call('saveVendor', {
+  name: 'Mobile Validation Test Vendor',
+  mobile: '=IMPORTXML("https://example.test","//a")',
+});
+assert.equal(invalidMobile.ok, false, 'formula-like mobile input is rejected');
+assert.equal(invalidMobile.code, 'VALIDATION', 'invalid mobile returns a validation error');
+assert.equal(
+  g.sheets.Vendors.rows.length,
+  invalidMobileCount,
+  'invalid mobile input does not create a vendor row',
+);
 
 const today = new Date().toISOString().slice(0, 10);
 const voucherCountBeforeInvalidNames = g.sheets.Vouchers.rows.length;
