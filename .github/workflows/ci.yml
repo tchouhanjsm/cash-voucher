@@ -34,15 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Capture canonical formatting for existing category changes
-        run: |
-          npx prettier --write frontend/core/state.js test/test-state-categories.js
-          for file in frontend/core/state.js test/test-state-categories.js; do
-            printf '<<<FORMAT_SOURCE_BEGIN:%s>>>\n' "$file"
-            cat "$file"
-            printf '\n<<<FORMAT_SOURCE_END:%s>>>\n' "$file"
-          done
-
       - name: Scan current files and reachable Git history for credential patterns
         run: npm run audit:secrets
 

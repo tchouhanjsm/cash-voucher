@@ -157,7 +157,13 @@ export function normalizeVoucherCollection(value) {
     rows.push(row);
   });
 
-  return { envelopeValid: true, rows, malformedRecordCount, malformedFieldCount, invalidAmountCount };
+  return {
+    envelopeValid: true,
+    rows,
+    malformedRecordCount,
+    malformedFieldCount,
+    invalidAmountCount,
+  };
 }
 
 export const can = (permission) => !!(S.me && S.me.perms && S.me.perms[permission]);
