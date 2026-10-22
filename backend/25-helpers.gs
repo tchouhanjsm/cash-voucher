@@ -225,9 +225,7 @@ function mobileText_(value) {
 }
 function mobileDisplay_(value) {
   const text = String(value === undefined || value === null ? '' : value);
-  return text.length > 1 && text[0] === "'" && /^[=+@-]/.test(text[1])
-    ? text.slice(1)
-    : text;
+  return text.length > 1 && text[0] === "'" && /^[=+@-]/.test(text[1]) ? text.slice(1) : text;
 }
 
 function nameText_(value, label, max, optional) {

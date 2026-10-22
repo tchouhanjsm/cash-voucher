@@ -49,12 +49,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      # Temporary formatter diagnostic; remove after applying the exact diff.
-      - name: Capture canonical Prettier formatting for modified validator tests
-        run: |
-          npx prettier --write backend/25-helpers.gs test/test-input-validation.js
-          git diff -- backend/25-helpers.gs test/test-input-validation.js
-
       - name: Run quality gate
         run: npm run check
 

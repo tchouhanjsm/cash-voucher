@@ -112,8 +112,11 @@ const validVendor = call('saveVendor', {
   company: 'Garh Jaisal Hospitality Pvt. Ltd.',
   mobile: '+91 98765 43210',
 });
-assert.ok(validVendor.ok, JSON.stringify(validVendor) + ' — legitimate business punctuation is accepted');
-const persistedValidVendor = g.sheets.Vendors.rows.find((row) => row[0] === validVendor.vendorId);
+assert.ok(
+  validVendor.ok,
+  JSON.stringify(validVendor) + ' — legitimate business punctuation is accepted',
+);
+const persistedValidVendor = g.sheets.Vendors.rows.find((row) => row[0] === validVendor.data.vendorId);
 assert.ok(persistedValidVendor, 'valid vendor is stored');
 assert.equal(
   persistedValidVendor[3],
@@ -121,7 +124,7 @@ assert.equal(
   'a leading plus is stored with the spreadsheet formula-safety sentinel',
 );
 const displayedValidVendor = call('bootstrap').data.vendors.find(
-  (vendor) => vendor.id === validVendor.vendorId,
+  (vendor) => vendor.id === validVendor.data.vendorId,
 );
 assert.equal(
   displayedValidVendor.mobile,
