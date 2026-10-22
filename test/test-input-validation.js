@@ -27,6 +27,7 @@ const invalidNames = [
   '<script>alert(1)</script>',
   '<svg onload=alert(1)>',
   'DROP TABLE Users;--',
+  '=HYPERLINK("x")',
   '123456789',
   '!!!!!!!!!',
   'name\u200Bhidden',
@@ -69,6 +70,7 @@ assert.ok(unicodeUser.ok, 'legitimate Hindi Unicode names are accepted');
 const invalidVendorNames = [
   '<script>alert(1)</script>',
   'DROP TABLE Vendors;--',
+  '=HYPERLINK("x")',
   '123456789',
   '!!!!!!!!!',
   'vendor\u202Ename',

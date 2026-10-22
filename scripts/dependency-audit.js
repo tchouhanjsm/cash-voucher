@@ -31,11 +31,11 @@ function isTransientAuditFailure(result, report) {
   // Retry that response once, but fail closed if the service remains unavailable.
   return Boolean(
     report &&
-      report.error &&
-      (Object.keys(report.error).length === 0 ||
-        /temporarily unavailable|eai_again|enotfound|econnreset|econnrefused|ehostunreach|etimedout|socket hang up|fetch failed|network error|\b5\d\d\b/.test(
-          details,
-        )),
+    report.error &&
+    (Object.keys(report.error).length === 0 ||
+      /temporarily unavailable|eai_again|enotfound|econnreset|econnrefused|ehostunreach|etimedout|socket hang up|fetch failed|network error|\b5\d\d\b/.test(
+        details,
+      )),
   );
 }
 

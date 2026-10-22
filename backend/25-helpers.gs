@@ -249,9 +249,7 @@ function nameText_(value, label, max, optional) {
     !/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} .,'’&()/#:+_©®-]*$/u.test(text)
   ) {
     throw err_(
-      'Enter a valid ' +
-        field.toLowerCase() +
-        ' using letters, numbers and common punctuation.',
+      'Enter a valid ' + field.toLowerCase() + ' using letters, numbers and common punctuation.',
       'VALIDATION',
     );
   }

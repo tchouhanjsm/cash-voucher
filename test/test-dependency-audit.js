@@ -72,7 +72,7 @@ function runAudit(report, exitCode = 1, options = {}) {
     `#!${process.execPath}`,
     "const fs = require('node:fs');",
     "const count = (Number(fs.existsSync(process.env.NPM_AUDIT_CALL_COUNT) ? fs.readFileSync(process.env.NPM_AUDIT_CALL_COUNT, 'utf8') : '0') || 0) + 1;",
-    "fs.writeFileSync(process.env.NPM_AUDIT_CALL_COUNT, String(count));",
+    'fs.writeFileSync(process.env.NPM_AUDIT_CALL_COUNT, String(count));',
     "if (process.env.NPM_AUDIT_FAIL_ONCE === 'true' && count === 1) { process.stdout.write(JSON.stringify({ error: {} })); process.exit(1); }",
     "process.stdout.write(fs.readFileSync(process.env.NPM_AUDIT_FIXTURE, 'utf8'));",
     'process.exit(Number(process.env.NPM_AUDIT_EXIT_CODE || 1));',
