@@ -134,9 +134,9 @@ assert.ok(
 );
 
 const malformedRecord = {
-  VoucherID: '',
+  VoucherID: 'malformed-read-model-voucher-id',
   VoucherNo: 99999,
-  Date: date,
+  Date: 'not-a-date',
   Vendor: 'Malformed Hidden Vendor',
   Amount: 90000,
   Category: 'Other',
