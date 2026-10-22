@@ -1167,10 +1167,10 @@ with sync_playwright() as p:
             data['byCategory'] = [{'k': hostile_dashboard_label, 'n': 1, 's': 1}]
         route.fulfill(response=response, json=payload)
 
-    page.route('**/api?*', inject_hostile_dashboard_summary)
+    page.route('**/api*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
     page.wait_for_function(
-        "label => document.querySelector('.dashboard-breakdown .hb-l')?.textContent === label",
+        "label => document.querySelector('#view')?.textContent.includes(label)",
         arg=hostile_dashboard_label,
     )
     check(
@@ -1179,7 +1179,7 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'hostile dashboard summary labels remain text and cannot create active HTML handlers',
     )
-    page.unroute('**/api?*', inject_hostile_dashboard_summary)
+    page.unroute('**/api*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="30d"]')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('Total paid')"
