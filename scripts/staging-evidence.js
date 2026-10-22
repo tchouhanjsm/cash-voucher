@@ -51,7 +51,8 @@ function summarizeUat(log, stepOutcome) {
       ? (log.match(/^PASS:/gm) || []).length
       : null;
   const manualReviewRequired = /CLEANUP:[^\r\n]*owner review is required/i.test(log);
-  const explicitCleanup = /CLEANUP:[^\r\n]*staging voucher cancelled; audit history retained/i.test(log);
+  const explicitCleanup =
+    /CLEANUP:[^\r\n]*staging voucher cancelled; audit history retained/i.test(log);
   const cancellationCheckPassed =
     /PASS:[^\r\n]*UAT payment is cancelled with a retained audit trace/i.test(log);
   const cleanupStatus = manualReviewRequired
@@ -159,7 +160,10 @@ function writeStagingEvidence(env = process.env, logOverride = null) {
       '',
       '- Operation: ' + evidence.operation,
       '- Source commit: ' + evidence.source.commitSha + ' (client-main)',
-      '- Workflow run: ' + evidence.workflowRun.runId + ' attempt ' + evidence.workflowRun.runAttempt,
+      '- Workflow run: ' +
+        evidence.workflowRun.runId +
+        ' attempt ' +
+        evidence.workflowRun.runAttempt,
       '- Overall job: ' + evidence.jobOutcome,
       '- Preflight: ' + evidence.steps.preflight,
       '- Deployment: ' + evidence.steps.deployment,
@@ -182,7 +186,9 @@ function main() {
       'Sanitized staging execution evidence written; sensitive configuration and raw transcript were excluded.',
     );
     if (evidence.steps.uat === 'success' && evidence.uat.status !== 'passed') {
-      console.error('Staging UAT reported success without a complete pass and cancellation record.');
+      console.error(
+        'Staging UAT reported success without a complete pass and cancellation record.',
+      );
       process.exitCode = 1;
     }
   } catch {
