@@ -7,6 +7,9 @@ PYTHON_BIN="${PYTHON_BIN:-python3}"
 STAGING_WEB_PORT="${STAGING_WEB_PORT:-8766}"
 STAGING_WEB_BASE="http://127.0.0.1:${STAGING_WEB_PORT}"
 SERVER_PID=""
+UAT_LOG_FILE="${CV_STAGING_UAT_LOG_FILE:-/tmp/cash-voucher-staging-uat.log}"
+mkdir -p "$(dirname "${UAT_LOG_FILE}")"
+: > "${UAT_LOG_FILE}"
 
 cleanup() {
   if [ -n "${SERVER_PID}" ]; then
@@ -42,4 +45,4 @@ if [ "${ready}" -ne 1 ]; then
   exit 1
 fi
 
-E2E_BASE="${STAGING_WEB_BASE}" "${PYTHON_BIN}" test/uat_staging.py
+E2E_BASE="${STAGING_WEB_BASE}" "${PYTHON_BIN}" test/uat_staging.py 2>&1 | tee "${UAT_LOG_FILE}"

@@ -10,6 +10,7 @@ const deploy = fs.readFileSync(path.join(root, 'scripts/deploy-staging.js'), 'ut
 const preflight = fs.readFileSync(path.join(root, 'scripts/staging-preflight.js'), 'utf8');
 const uat = fs.readFileSync(path.join(root, 'test/uat_staging.py'), 'utf8');
 const localServer = fs.readFileSync(path.join(root, 'scripts/staging-web-server.js'), 'utf8');
+const uatRunner = fs.readFileSync(path.join(root, 'scripts/run-staging-uat.sh'), 'utf8');
 const releaseRunbook = fs.readFileSync(
   path.join(root, 'docs/APPS-SCRIPT-RELEASE-RUNBOOK.md'),
   'utf8',
@@ -108,6 +109,28 @@ assert.match(deploy, /fs\.rmSync\(tempHome, \{ recursive: true, force: true \}\)
 assert.match(uat, /deploymentReadiness/);
 assert.match(uat, /CV_STAGING_UAT_CONFIRM_WRITES/);
 assert.match(uat, /cancelVoucher/);
+assert.match(workflow, /id: deployment_preflight/);
+assert.match(workflow, /id: update_deployment/);
+assert.match(workflow, /id: target_recheck/);
+assert.match(workflow, /id: staging_uat/);
+assert.equal(
+  (workflow.match(/name: Upload sanitized staging evidence/g) || []).length,
+  2,
+  'deploy and UAT-only jobs both publish a sanitized evidence artifact',
+);
+assert.equal(
+  (workflow.match(/retention-days: 90/g) || []).length,
+  2,
+  'staging evidence artifacts have bounded retention',
+);
+assert.ok(
+  workflow.includes(
+    'CV_EVIDENCE_OUTPUT_PATH: ${{ runner.temp }}/cash-voucher-staging-evidence.json',
+  ),
+  'evidence is written to the runner temporary directory',
+);
+assert.match(uatRunner, /CV_STAGING_UAT_LOG_FILE/);
+assert.match(uatRunner, /tee "\$\{UAT_LOG_FILE\}"/);
 assert.match(localServer, /Cache-Control': 'no-store'/);
 assert.match(localServer, /function stagingServiceWorker/);
 assert.doesNotMatch(localServer, /caches\.open/);
