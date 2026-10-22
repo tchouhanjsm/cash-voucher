@@ -105,22 +105,20 @@ export function createDashboard({ api }) {
 
   function periodControls(from, to, loading = false) {
     return `
-      <div class="dashboard-body">
-        <div class="seg dashboard-period">${[
-          ['7d', 'Last 7 days'],
-          ['30d', 'Last 30 days'],
-          ['mtd', 'This month'],
-          ['lm', 'Last month'],
-          ['cus', 'Custom'],
-        ]
-          .map(
-            ([key, label]) =>
-              `<button type="button" data-act="range" data-k="${key}" class="${D.r === key ? 'on' : ''}">${label}</button>`,
-          )
-          .join('')}</div>
-        ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button type="button" class="btn primary" data-act="cus">Apply</button></div>` : ''}
-        ${loading ? '<div class="card" role="status" aria-live="polite">Calculating the dashboard from the latest saved ledger…</div>' : ''}
-      </div>`;
+      <div class="seg dashboard-period">${[
+        ['7d', 'Last 7 days'],
+        ['30d', 'Last 30 days'],
+        ['mtd', 'This month'],
+        ['lm', 'Last month'],
+        ['cus', 'Custom'],
+      ]
+        .map(
+          ([key, label]) =>
+            `<button type="button" data-act="range" data-k="${key}" class="${D.r === key ? 'on' : ''}">${label}</button>`,
+        )
+        .join('')}</div>
+      ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button type="button" class="btn primary" data-act="cus">Apply</button></div>` : ''}
+      ${loading ? '<div class="card" role="status" aria-live="polite">Calculating the dashboard from the latest saved ledger…</div>' : ''}`;
   }
 
   async function render() {
@@ -131,8 +129,9 @@ export function createDashboard({ api }) {
       $('#view').innerHTML =
         '<div class="dashboard-view">' +
         head(can('viewAll') ? 'Dashboard' : 'My Dashboard', refreshBtn) +
+        '<div class="dashboard-body">' +
         periodControls(from || today(), to || today()) +
-        '<div class="card error" role="alert">Choose a valid date range before loading dashboard totals.</div></div>';
+        '<div class="card error" role="alert">Choose a valid date range before loading dashboard totals.</div></div></div>';
       return;
     }
 
@@ -146,8 +145,9 @@ export function createDashboard({ api }) {
           description: 'Review saved payment and receipt activity for the selected period.',
         },
       ) +
+      '<div class="dashboard-body">' +
       periodControls(from, to, true) +
-      '</div>';
+      '</div></div>';
 
     let summary;
     try {
@@ -164,8 +164,9 @@ export function createDashboard({ api }) {
             description: 'Review saved payment and receipt activity for the selected period.',
           },
         ) +
+        '<div class="dashboard-body">' +
         periodControls(from, to) +
-        `<div class="card" role="alert"><h2>Dashboard totals unavailable</h2><p>${esc(error?.message || 'The server could not calculate the dashboard. Refresh and retry.')}</p></div></div>`;
+        `<div class="card" role="alert"><h2>Dashboard totals unavailable</h2><p>${esc(error?.message || 'The server could not calculate the dashboard. Refresh and retry.')}</p></div></div></div>`;
       return;
     }
     if (requestId !== summaryRequestId || S.view !== 'dash') return;

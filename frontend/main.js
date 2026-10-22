@@ -36,7 +36,7 @@ async function api(action, payload = {}) {
   }
 }
 
-const dashboard = createDashboard();
+const dashboard = createDashboard({ api });
 const reports = createReports({ api });
 const cashClose = createCashClose({ api });
 const onboarding = createOnboarding({ api });

@@ -9,7 +9,6 @@ import {
   normalizeApprovalStatus,
   S,
   suggestCashImpact,
-  bySeq,
 } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import {
@@ -86,7 +85,6 @@ export function createRegister({ api, go }) {
     dataAvailable,
     rangeInvalid,
     unavailableTotalsMessage,
-    list,
     paid,
     received,
     approvalExceptionCount,
@@ -286,7 +284,6 @@ export function createRegister({ api, go }) {
       dataAvailable,
       rangeInvalid,
       unavailableTotalsMessage,
-      list,
       paid,
       received,
       approvalExceptionCount,
@@ -511,6 +508,7 @@ export function createRegister({ api, go }) {
     pageRows = [];
     pageTotalCount = 0;
     if (event.target.id === 'rq') {
+      pageRequestSequence++;
       clearTimeout(filterDebounce);
       filterDebounce = setTimeout(() => renderRows(), 220);
     } else {
@@ -572,8 +570,8 @@ export function createRegister({ api, go }) {
         'Receipts',
       ]];
       let offset = 0;
-      let total = 0;
-      do {
+      let total = null;
+      while (total === null || offset < total) {
         const result = await api('registerPage', queryFilters(offset, 200));
         const items = Array.isArray(result?.items) ? result.items.filter(isRecord) : [];
         total = Number.isSafeInteger(result?.totalCount) ? result.totalCount : items.length;
@@ -603,7 +601,7 @@ export function createRegister({ api, go }) {
         });
         offset += items.length;
         if (offset >= total) break;
-      } while (true);
+      }
 
       download(
         'vouchers-' + today() + '.csv',

@@ -104,8 +104,8 @@ for (const target of [100, 500, 1000]) {
       assert.ok(result.ok, 'bootstrap succeeds at seeded size ' + target);
       assert.equal(
         result.data.vouchers.length,
-        target,
-        'bootstrap returns all seeded records at size ' + target,
+        Math.min(target, 200),
+        'bootstrap response is bounded at 200 records for seeded size ' + target,
       );
     },
   );
@@ -134,6 +134,7 @@ for (const target of [100, 500, 1000]) {
   measurements.push({
     seededVoucherRows: target,
     bootstrap,
+    bootstrapItems: Math.min(target, 200),
     recordedMovementReport,
     reportItems: target,
     activePaymentTotal: expectedTotal,
