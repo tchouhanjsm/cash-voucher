@@ -4123,7 +4123,7 @@ with sync_playwright() as p:
         'dashboard preserves prototype-named category groups',
     )
     check(
-        '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#view').inner_text()
+        '3 malformed voucher record(s) were omitted from normal financial calculations.' in page.locator('#view').inner_text()
         and '8 malformed voucher field(s) handled for safe display' in page.locator('#view').inner_text()
         and '[object Object]' not in page.locator('#view').inner_text()
         and '1 recorded voucher amount(s) are invalid and excluded from totals.' in page.locator('#view').inner_text(),
@@ -4265,6 +4265,8 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.stats')
+    page.wait_for_selector('svg.chart')
     recovered_dashboard_text = page.locator('#view').inner_text()
     check(
         'Voucher data is unavailable' not in recovered_dashboard_text
@@ -4281,8 +4283,21 @@ with sync_playwright() as p:
         request_data = json.loads(route.request.post_data or '{}')
         response = route.fetch()
         payload = response.json()
+        action = request_data.get('action')
         data = payload.get('data', {})
-        if request_data.get('action') == 'bootstrap':
+        values = [
+            ('numeric-nan', 'NaN', 'numeric-nan'),
+            ('numeric-infinity', 'Infinity', 'numeric-infinity'),
+            ('numeric-null', None, 'numeric-null'),
+            ('numeric-empty', '', 'numeric-empty'),
+            ('numeric-boolean', True, 'numeric-boolean'),
+            ('numeric-negative', -500, 'numeric-negative'),
+            # A non-finite amount must stay in its own vendor group but never poison chart geometry.
+            ('numeric-string', hostile_vendor, 'numeric-string'),
+            # A large valid value makes the hostile text row deterministic in the top-eight vendor chart.
+            ('hostile-vendor', 910005, hostile_vendor),
+        ]
+        if action == 'bootstrap':
             vouchers = data.get('vouchers', [])
             template = vouchers[0].copy() if vouchers else {
                 'id': '',
@@ -4301,18 +4316,6 @@ with sync_playwright() as p:
                 'receipts': [],
                 'cancelReason': '',
             }
-            values = [
-                ('numeric-nan', 'NaN', 'numeric-nan'),
-                ('numeric-infinity', 'Infinity', 'numeric-infinity'),
-                ('numeric-null', None, 'numeric-null'),
-                ('numeric-empty', '', 'numeric-empty'),
-                ('numeric-boolean', True, 'numeric-boolean'),
-                ('numeric-negative', -500, 'numeric-negative'),
-                # A non-finite amount must stay in its own vendor group but never poison chart geometry.
-                ('numeric-string', hostile_vendor, 'numeric-string'),
-                # Large valid values make the hostile text row deterministic in the top-eight vendor chart.
-                ('hostile-vendor', 910005, hostile_vendor),
-            ]
             for index, (suffix, amount, vendor) in enumerate(values):
                 entry = template.copy()
                 entry.update({
@@ -4330,9 +4333,73 @@ with sync_playwright() as p:
                 vouchers.append(entry)
             data['vouchers'] = vouchers
             route.fulfill(response=response, json=payload)
+        elif action == 'dashboardSummary':
+            # The dashboard now consumes server aggregates instead of deriving charts
+            # from the bootstrap voucher array; corrupt the read-model response directly.
+            data['invalidAmountCount'] = max(7, int(data.get('invalidAmountCount') or 0))
+            data['topVendors'] = [
+                {'k': vendor, 'n': 1, 's': amount}
+                for _, amount, vendor in values
+            ]
+            route.fulfill(response=response, json=payload)
+        elif action == 'registerPage':
+            # Inject the same hostile values into the explicitly paginated Register result,
+            # since those rows no longer come from bootstrap.
+            items = data.get('items', [])
+            template = items[0].copy() if items else {
+                'id': '',
+                'no': 0,
+                'date': datetime.date.today().isoformat(),
+                'vendor': '',
+                'amount': 1,
+                'category': 'Other',
+                'notes': '',
+                'type': 'PAYMENT',
+                'status': 'ACTIVE',
+                'createdBy': 'owner@test.com',
+                'createdAt': '',
+                'updatedBy': '',
+                'updatedAt': '',
+                'receipts': [],
+                'cancelReason': '',
+                'cashImpact': 'CASH_OUT',
+                'approvalStatus': 'NOT_REQUIRED',
+                'approvedBy': '',
+                'approvedAt': '',
+                'approvalReason': '',
+            }
+            injected = []
+            for index, (suffix, amount, vendor) in enumerate(values):
+                entry = template.copy()
+                entry.update({
+                    'id': suffix,
+                    'no': 910001 + index,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': vendor,
+                    'category': 'Rendering boundary',
+                    'notes': '',
+                    'amount': amount,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'owner@test.com',
+                    'createdAt': '2026-10-23T00:00:00Z',
+                    'receipts': [],
+                    'cancelReason': '',
+                    'cashImpact': 'CASH_OUT',
+                    'approvalStatus': 'NOT_REQUIRED',
+                    'approvedBy': '',
+                    'approvedAt': '',
+                    'approvalReason': '',
+                })
+                injected.append(entry)
+            data['items'] = items + injected
+            data['totalCount'] = int(data.get('totalCount') or len(items)) + len(injected)
+            totals = data.get('totals', {})
+            totals['invalidAmountCount'] = max(7, int(totals.get('invalidAmountCount') or 0))
+            data['totals'] = totals
+            route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
-
     page.route('**/api?*', tamper_dashboard_numeric_values)
     with page.expect_response(
         lambda response: '/api?' in response.url
@@ -4399,6 +4466,7 @@ with sync_playwright() as p:
     )
     go_view(page, 'reg')
     page.wait_for_selector('#rtot')
+    page.wait_for_selector('#rbody tr', has_text='numeric-nan')
     register_amount_text = page.locator('#rtot').inner_text()
     check(
         'NaN' not in register_amount_text
