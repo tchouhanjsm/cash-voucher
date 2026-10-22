@@ -144,10 +144,7 @@ registerActions({
 
   rec: ({ id }) => register.receipts(id),
 
-  more: () => {
-    register.state.limit += 200;
-    register.renderRows();
-  },
+  more: () => register.loadMore(),
 
   rclear: () => register.clearFilters(),
 

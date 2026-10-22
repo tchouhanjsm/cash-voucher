@@ -33,6 +33,13 @@ function bootstrap_(user) {
         .filter(function (o) {
           return all || String(o.CreatedBy).toLowerCase() === user.email;
         })
+        .sort(function (a, b) {
+          return (
+            tsStr_(b.CreatedAt).localeCompare(tsStr_(a.CreatedAt)) ||
+            Number(b.VoucherNo || 0) - Number(a.VoucherNo || 0)
+          );
+        })
+        .slice(0, READ_MODEL_BOOTSTRAP_LIMIT)
         .map(vOut_)
     : [];
   const st = settings_();
