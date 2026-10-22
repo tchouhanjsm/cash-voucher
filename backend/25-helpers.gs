@@ -217,7 +217,7 @@ function mobileText_(value) {
 
   const text = value.trim();
   if (!text) return '';
-  if (!/^[0-9+\\-\\s]{7,15}$/.test(text)) {
+  if (!/^[0-9+ -]{7,15}$/.test(text)) {
     throw err_('Enter a valid mobile number.', 'VALIDATION');
   }
 
@@ -225,7 +225,7 @@ function mobileText_(value) {
 }
 function mobileDisplay_(value) {
   const text = String(value === undefined || value === null ? '' : value);
-  return text.length > 1 && text[0] === "'" && /^[=+\\-@]/.test(text[1])
+  return text.length > 1 && text[0] === "'" && /^[=+@-]/.test(text[1])
     ? text.slice(1)
     : text;
 }
