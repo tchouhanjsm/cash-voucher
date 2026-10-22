@@ -1541,9 +1541,21 @@ with sync_playwright() as p:
     )
     check(
         'stored-xss@test.com' not in page.locator('#view').inner_text()
+        and xss_payload not in page.locator('#view').inner_text()
         and page.locator('#view img, #view svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
         'server rejects an HTML payload as a user name before persistence',
+    )
+    page.fill('#un', 'Xss Test User')
+    page.click('#uf .primary')
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('stored-xss@test.com')"
+    )
+    check(
+        'Xss Test User' in page.locator('#view').inner_text()
+        and page.locator('#view img, #view svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'a valid replacement name can be saved after an unsafe name is rejected',
     )
 
     # A transient listUsers failure must replace "Loading" with a useful, retryable state.
@@ -1646,8 +1658,8 @@ with sync_playwright() as p:
     )
     check(
         '5 malformed user record(s) omitted from this response' in page.locator('#view').inner_text()
-        and page.locator('#view tbody tr').count() == 5
-        and page.locator('#view [data-act=utog]').count() == 5,
+        and page.locator('#view tbody tr').count() == 6
+        and page.locator('#view [data-act=utog]').count() == 6,
         'owner Users view omits malformed rows while keeping valid user records actionable',
     )
     check(
@@ -2524,7 +2536,7 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(
-        xss_payload in page.locator('#userName').inner_text()
+        'Xss Test User' in page.locator('#userName').inner_text()
         and page.locator('#userName img, #userName svg, #popName img, #popName svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
         'stored user name is inert text in the signed-in account label',
