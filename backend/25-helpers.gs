@@ -236,7 +236,7 @@ function nameText_(value, label, max, optional) {
   // HTML delimiters, formula operators, semicolons, and punctuation-only/numeric-only input.
   if (
     !/\p{L}/u.test(text) ||
-    !/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} .,'’&()\/#:+_©®-]*$/u.test(text)
+    !/^[\p{L}\p{M}\p{N}][\p{L}\p{M}\p{N} .,'’&()/#:+_©®-]*$/u.test(text)
   ) {
     throw err_('Enter a valid ' + field.toLowerCase() + ' using letters, numbers and common punctuation.', 'VALIDATION');
   }
