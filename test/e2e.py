@@ -4969,6 +4969,9 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_timeout(500)
     page.select_option('#rs', 'CANCELLED')
+    page.wait_for_function(
+        "document.querySelector('#rbody tr.cx')?.innerText.includes('Ram Traders')"
+    )
     check(page.locator('#rbody tr.cx').count() == 1, 'cancelled voucher visible under filter')
 
     # Exercise the recorded movement report through the actual browser/API mock.
@@ -5478,27 +5481,52 @@ with sync_playwright() as p:
         response = route.fetch()
         payload = response.json()
         data = payload.get('data', {})
-        if request_data.get('action') == 'bootstrap':
+        action = request_data.get('action')
+        if action == 'bootstrap':
             vouchers = data.get('vouchers', [])
-            template = next((item.copy() for item in vouchers if isinstance(item, dict)), {})
-            template.update({
-                'id': 'malformed-register-fixture',
-                'no': 999991,
-                'date': datetime.date.today().isoformat(),
-                'vendor': None,
-                'category': 'Other',
-                'notes': {'toString': None, 'valueOf': None},
-                'amount': 12.5,
-                'type': 'PAYMENT',
-                'status': 'ACTIVE',
-                'createdBy': 'm@test.com',
-                'createdAt': '2026-10-12T00:00:00.000Z',
-                'receipts': None,
-            })
-            vouchers.append(template)
             vouchers.append(None)
             data['vouchers'] = vouchers
             payload['data'] = data
+            route.fulfill(response=response, json=payload)
+        elif action == 'registerPage':
+            query = str(request_data.get('q') or '')
+            if query in ('', '999991'):
+                items = data.get('items', [])
+                items.append({
+                    'id': 'malformed-register-fixture',
+                    'no': 999991,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': None,
+                    'category': 'Other',
+                    'notes': {'toString': None, 'valueOf': None},
+                    'amount': 12.5,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'm@test.com',
+                    'createdAt': '2026-10-12T00:00:00.000Z',
+                    'receipts': None,
+                    'cashImpact': 'CASH_OUT',
+                    'approvalStatus': 'NOT_REQUIRED',
+                    'approvedBy': '',
+                    'approvedAt': '',
+                    'approvalReason': '',
+                    'cancelReason': '',
+                    'updatedBy': '',
+                    'updatedAt': '',
+                    'vendorId': '',
+                })
+                data['items'] = items
+                data['totalCount'] = int(data.get('totalCount') or 0) + 1
+                totals = data.setdefault('totals', {})
+                totals['malformedRecordCount'] = max(
+                    1, int(totals.get('malformedRecordCount') or 0)
+                )
+                totals['malformedFieldCount'] = max(
+                    2, int(totals.get('malformedFieldCount') or 0)
+                )
+                facets = data.setdefault('facets', {'vendors': [], 'users': []})
+                if 'm@test.com' not in facets.get('users', []):
+                    facets.setdefault('users', []).append('m@test.com')
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -5514,6 +5542,7 @@ with sync_playwright() as p:
         'register omits malformed voucher records and visibly flags missing receipt metadata',
     )
     page.fill('#rq', '999991')
+    page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('999991')")
     check(
         page.locator('#rbody tr').count() == 1
         and 'malformed voucher record(s) omitted' in page.locator('#rtot').inner_text(),

@@ -116,6 +116,77 @@ function readModelSum_(rows) {
   }, 0);
 }
 
+function checkVoucherDuplicates_(user, req) {
+  if (!can_(user, 'bulk')) {
+    throw err_('You do not have permission to run bulk imports.', 'FORBIDDEN');
+  }
+  const type = req.type;
+  if (type !== 'PAYMENT' && type !== 'RECEIPT') {
+    throw err_('Invalid bulk transaction type.', 'VALIDATION');
+  }
+  if (!Array.isArray(req.entries) || req.entries.length > 3000) {
+    throw err_('Bulk duplicate check requires up to 3,000 entries.', 'VALIDATION');
+  }
+
+  const seenIndexes = Object.create(null);
+  const candidates = req.entries.map(function (entry) {
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
+      throw err_('Invalid bulk duplicate-check entry.', 'VALIDATION');
+    }
+    const index = Number(entry.index);
+    if (
+      !Number.isSafeInteger(index) ||
+      index < 0 ||
+      index >= 3000 ||
+      Object.prototype.hasOwnProperty.call(seenIndexes, String(index))
+    ) {
+      throw err_('Invalid or duplicate bulk row index.', 'VALIDATION');
+    }
+    seenIndexes[String(index)] = true;
+
+    const date = readModelDate_(entry.date, 'entry');
+    const vendor = readModelFilterText_(entry.vendor, 'Vendor', 200);
+    const amount = entry.amount;
+    if (!date || !vendor) {
+      throw err_('Bulk duplicate-check rows require a date and vendor.', 'VALIDATION');
+    }
+    if (
+      typeof amount !== 'number' ||
+      !isFinite(amount) ||
+      amount <= 0 ||
+      amount > CFG.MAX_AMOUNT
+    ) {
+      throw err_('Bulk duplicate-check rows require a valid positive amount.', 'VALIDATION');
+    }
+    const paise = Math.round(amount * 100);
+    if (!Number.isSafeInteger(paise) || paise <= 0) {
+      throw err_('Invalid bulk duplicate-check amount precision.', 'VALIDATION');
+    }
+    return { index: index, date: date, vendor: vendor.toLowerCase(), paise: paise };
+  });
+
+  const existingKeys = Object.create(null);
+  readModelRows_(user).forEach(function (row) {
+    if (String(row.Status || 'ACTIVE') !== 'ACTIVE' || row.Type !== type) return;
+    const date = readModelDateValue_(row);
+    const vendor = String(row.Vendor || '').trim().toLowerCase();
+    const amount = readModelAmount_(row);
+    if (!date || !vendor || !amount.valid) return;
+    existingKeys[JSON.stringify([type, date, vendor, amount.paise])] = true;
+  });
+
+  return {
+    duplicateIndexes: candidates
+      .filter(function (candidate) {
+        const key = JSON.stringify([type, candidate.date, candidate.vendor, candidate.paise]);
+        return Object.prototype.hasOwnProperty.call(existingKeys, key);
+      })
+      .map(function (candidate) {
+        return candidate.index;
+      }),
+  };
+}
+
 function registerPage_(user, req) {
   const seeAll = can_(user, 'viewAll');
   let rows = readModelRows_(user);

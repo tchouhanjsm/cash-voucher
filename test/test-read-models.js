@@ -212,6 +212,101 @@ assert.equal(
   'dashboard reports the malformed record separately',
 );
 
+const voucherHeaders = g.sheets.Vouchers.rows[0];
+const seedHistoricVoucher = (record) => {
+  g.sheets.Vouchers.rows.push(
+    voucherHeaders.map((header) => (record[header] === undefined ? '' : record[header])),
+  );
+};
+seedHistoricVoucher({
+  VoucherID: 'historical-bulk-duplicate',
+  VoucherNo: 88001,
+  Date: '2026-10-01',
+  Vendor: 'Historical Duplicate Vendor',
+  Amount: 450,
+  Category: 'Other',
+  Notes: '',
+  Status: 'ACTIVE',
+  CreatedBy: 'read-model-owner@test.com',
+  CreatedAt: '2025-01-01T00:00:00Z',
+  UpdatedBy: '',
+  UpdatedAt: '',
+  Receipts: '',
+  CancelReason: '',
+  ClientID: 'historical-bulk-duplicate',
+  Type: 'PAYMENT',
+  CashImpact: 'CASH_OUT',
+  ApprovalStatus: 'NOT_REQUIRED',
+  ApprovedBy: '',
+  ApprovedAt: '',
+  ApprovalReason: '',
+});
+for (let index = 0; index < 205; index++) {
+  seedHistoricVoucher({
+    VoucherID: 'bulk-dedupe-window-' + index,
+    VoucherNo: 90000 + index,
+    Date: '2026-10-01',
+    Vendor: 'Bulk Dedupe Window Vendor ' + index,
+    Amount: index + 1,
+    Category: 'Other',
+    Notes: '',
+    Status: 'ACTIVE',
+    CreatedBy: 'read-model-owner@test.com',
+    CreatedAt: '2026-10-22T22:00:00Z',
+    UpdatedBy: '',
+    UpdatedAt: '',
+    Receipts: '',
+    CancelReason: '',
+    ClientID: 'bulk-dedupe-window-' + index,
+    Type: 'PAYMENT',
+    CashImpact: 'CASH_OUT',
+    ApprovalStatus: 'NOT_REQUIRED',
+    ApprovedBy: '',
+    ApprovedAt: '',
+    ApprovalReason: '',
+  });
+}
+const compactBootstrap = g.call('bootstrap', { token: owner });
+assert.equal(compactBootstrap.ok, true, 'bootstrap remains available after historical ledger seeding');
+assert.equal(compactBootstrap.data.vouchers.length, 200, 'bootstrap remains capped at 200 recent voucher rows');
+assert.equal(
+  compactBootstrap.data.vouchers.some((row) => row.vendor === 'Historical Duplicate Vendor'),
+  false,
+  'historical duplicate fixture is older than the 200-row bootstrap sample',
+);
+const historicalDuplicateCheck = g.call('checkVoucherDuplicates', {
+  token: owner,
+  type: 'PAYMENT',
+  entries: [
+    { index: 19, date: '2026-10-01', vendor: 'historical duplicate vendor', amount: 450 },
+    { index: 20, date: '2026-10-01', vendor: 'Brand New Bulk Vendor', amount: 450 },
+  ],
+});
+assert.equal(historicalDuplicateCheck.ok, true, 'owner duplicate preflight succeeds for bulk rows');
+assert.deepEqual(
+  historicalDuplicateCheck.data.duplicateIndexes,
+  [19],
+  'server detects an old voucher outside the capped bootstrap cache',
+);
+assert.equal(
+  g.call('checkVoucherDuplicates', {
+    token: owner,
+    type: 'UNKNOWN',
+    entries: [],
+  }).code,
+  'VALIDATION',
+  'duplicate preflight rejects an unsupported transaction type',
+);
+assert.equal(
+  g.call('checkVoucherDuplicates', {
+    token: owner,
+    type: 'PAYMENT',
+    entries: [{ index: 0, date: '2026-10-01', vendor: 'Bad Amount', amount: Infinity }],
+  }).code,
+  'VALIDATION',
+  'duplicate preflight rejects non-finite amounts',
+);
+
 const createStaff = g.call('saveUser', {
   token: owner,
   name: 'Read Model Staff',

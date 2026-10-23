@@ -1,6 +1,7 @@
 const ACTIONS = {
   bootstrap: bootstrap_,
   registerPage: registerPage_,
+  checkVoucherDuplicates: checkVoucherDuplicates_,
   dashboardSummary: dashboardSummary_,
   createVouchers: createVouchers_,
   updateVoucher: updateVoucher_,
