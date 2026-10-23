@@ -6340,9 +6340,8 @@ with sync_playwright() as p:
         )
     except Exception:
         check(False, 'acknowledgement transaction fault surfaces an explicit recovery message')
-    finally:
-        page.unroute('**/api?*', fail_ack_after_server_commit)
 
+    # Keep interception active through recovery so both create requests are inspected.
     ack_after_failure = outbox_vendor_records(acknowledgement_vendor)
     check(
         acknowledgement_fault['injected']
@@ -6413,6 +6412,7 @@ with sync_playwright() as p:
         + str(ack_visible_rows)
         + ')',
     )
+    page.unroute('**/api?*', fail_ack_after_server_commit)
 
     # A SESSION response during background sync must trigger sign-in, not a permanent rejection.
     # Keep the queued item bound to its original account and submit it safely after reauthentication.
