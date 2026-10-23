@@ -83,8 +83,20 @@ jobs:
 
           # Keep an existing generated security policy; do not overwrite it blindly.
           # A generated file must exist and contain the expected policy markers.
-          grep -q 'X-Content-Type-Options' dist/.htaccess
-          grep -q 'Content-Security-Policy' dist/.htaccess
+          grep -Fq 'Header always set X-Content-Type-Options "nosniff"' dist/.htaccess
+          grep -Fq 'Header always set X-Frame-Options "DENY"' dist/.htaccess
+          grep -Fq 'Header always set Referrer-Policy "strict-origin-when-cross-origin"' dist/.htaccess
+          grep -Fq 'Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"' dist/.htaccess
+          grep -Fq 'Header always set Content-Security-Policy' dist/.htaccess
+          grep -Fq "object-src 'none'" dist/.htaccess
+          grep -Fq "script-src 'self'" dist/.htaccess
+          grep -Fq "script-src-attr 'none'" dist/.htaccess
+          grep -Fq "frame-src 'none'" dist/.htaccess
+          grep -Fq "frame-ancestors 'none'" dist/.htaccess
+          if grep -Eiq 'unsafe-eval|script-src[[:space:]][^;]*(\*|https?:)' dist/.htaccess; then
+            echo "Unsafe or external script source found in generated Apache policy." >&2
+            exit 1
+          fi
 
           # Exclude deployment metadata not supported on cPanel, then verify source leakage is absent.
           rm -f dist/_headers dist/.nojekyll
