@@ -1,9 +1,9 @@
 # Cash Voucher — Execution Plan
 
-**Date:** 21 October 2026  
+**Updated:** 23 October 2026 (P0 release batch follow-up)  
 **Integration branch:** client-main  
-**Reviewed baseline:** acc93eb68cec21b1c0510c31fc5f4c82c5481e1d, post-PR #198  
-**Release state:** live staging and first-customer acceptance remain unverified.
+**Current source baseline for release follow-up:** aa37d94819e59a72c797ba36839aa8f8ec94008f (PR #204 merge)  
+**Release state:** source PR #204 is merged; live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md).
 
 ## Executive decision
 
@@ -11,12 +11,13 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #197 and #198 are merged. Next is staging release, not another feature sprint.
+PRs #197, #198 and #204 are merged. Next is staging release and recovery evidence, not another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md).
 
 ### 1. Complete the source release
 
-- PRs #197 and #198 are merged to `client-main`.
-- PR #198 head `acc93eb68cec21b1c0510c31fc5f4c82c5481e1d` passed CI/Quality, Browser E2E and Full Flight Test.
+- PRs #197, #198 and #204 are merged to `client-main`.
+- PR #204 merge commit is `aa37d94819e59a72c797ba36839aa8f8ec94008f`.
+- Reported post-merge evidence for PR #204: [CI/Quality #2001](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39984568307), [Browser E2E #1780](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39984568104), and [Full Flight Test #1355](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39984568116) passed.
 - Green source checks do not prove live deployment or recovery.
 
 ### 2. Prepare and identify staging
@@ -59,7 +60,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 
 - All product PRs target client-main from short-lived client/* branches.
 - Require CI, Browser E2E and Full Flight Test on the exact final PR head; fix failures instead of bypassing checks.
-- Keep main legacy/read-only. The 21 October comparison showed client-main 13 commits ahead and 2 behind main, with merge base acebc6b63010a92e136200321fc77c03dac9a3be. Do not merge, rebase or force-push long-lived branches as part of this work.
+- Keep main legacy/read-only. A historical 21 October comparison showed client-main 13 commits ahead and 2 behind main, with merge base acebc6b63010a92e136200321fc77c03dac9a3be. Recheck the live relationship before branch operations; do not merge, rebase or force-push long-lived branches as part of this work.
 - Owner/admin must verify active GitHub rulesets, required checks, default branch and the restrictions on main. Available repository metadata did not prove ruleset enforcement.
 - Keep repository branch policy separate from staging/production deployment authorization.
 - Never dispatch deploy/UAT from `main`; dispatch it only from `client-main`.
@@ -68,7 +69,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 
 ## Source release status
 
-PR #198 is merged. Its merged head passed CI/Quality, Browser E2E and Full Flight Test. The release-governance batch is complete; live staging and customer acceptance remain unverified.
+PR #204 is merged at `aa37d94819e59a72c797ba36839aa8f8ec94008f`. The reported post-merge CI/Quality, Browser E2E and Full Flight Test runs passed. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 
