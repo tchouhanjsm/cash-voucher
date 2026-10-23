@@ -34,15 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Capture Prettier output for current runtime batch
-        run: |
-          npx prettier --write backend/46-read-models.gs frontend/features/bulk.js test/test-read-models.js
-          for file in backend/46-read-models.gs frontend/features/bulk.js test/test-read-models.js; do
-            printf '<<<FORMAT_SOURCE_BEGIN:%s>>>\n' "$file"
-            cat "$file"
-            printf '\n<<<FORMAT_SOURCE_END:%s>>>\n' "$file"
-          done
-
       - name: Scan current files and reachable Git history for credential patterns
         run: npm run audit:secrets
 

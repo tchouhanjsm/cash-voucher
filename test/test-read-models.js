@@ -267,8 +267,16 @@ for (let index = 0; index < 205; index++) {
   });
 }
 const compactBootstrap = g.call('bootstrap', { token: owner });
-assert.equal(compactBootstrap.ok, true, 'bootstrap remains available after historical ledger seeding');
-assert.equal(compactBootstrap.data.vouchers.length, 200, 'bootstrap remains capped at 200 recent voucher rows');
+assert.equal(
+  compactBootstrap.ok,
+  true,
+  'bootstrap remains available after historical ledger seeding',
+);
+assert.equal(
+  compactBootstrap.data.vouchers.length,
+  200,
+  'bootstrap remains capped at 200 recent voucher rows',
+);
 assert.equal(
   compactBootstrap.data.vouchers.some((row) => row.vendor === 'Historical Duplicate Vendor'),
   false,

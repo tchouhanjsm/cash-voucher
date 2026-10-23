@@ -150,12 +150,7 @@ function checkVoucherDuplicates_(user, req) {
     if (!date || !vendor) {
       throw err_('Bulk duplicate-check rows require a date and vendor.', 'VALIDATION');
     }
-    if (
-      typeof amount !== 'number' ||
-      !isFinite(amount) ||
-      amount <= 0 ||
-      amount > CFG.MAX_AMOUNT
-    ) {
+    if (typeof amount !== 'number' || !isFinite(amount) || amount <= 0 || amount > CFG.MAX_AMOUNT) {
       throw err_('Bulk duplicate-check rows require a valid positive amount.', 'VALIDATION');
     }
     const paise = Math.round(amount * 100);
@@ -169,7 +164,9 @@ function checkVoucherDuplicates_(user, req) {
   readModelRows_(user).forEach(function (row) {
     if (String(row.Status || 'ACTIVE') !== 'ACTIVE' || row.Type !== type) return;
     const date = readModelDateValue_(row);
-    const vendor = String(row.Vendor || '').trim().toLowerCase();
+    const vendor = String(row.Vendor || '')
+      .trim()
+      .toLowerCase();
     const amount = readModelAmount_(row);
     if (!date || !vendor || !amount.valid) return;
     existingKeys[JSON.stringify([type, date, vendor, amount.paise])] = true;

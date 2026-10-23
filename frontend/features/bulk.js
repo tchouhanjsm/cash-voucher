@@ -1,11 +1,5 @@
 import { $ } from '../core/dom.js';
-import {
-  CASH_IMPACT_CHOICES,
-  categories,
-  rcats,
-  S,
-  suggestCashImpact,
-} from '../core/state.js';
+import { CASH_IMPACT_CHOICES, categories, rcats, S, suggestCashImpact } from '../core/state.js';
 import { addDays, dmy, download, esc, money, pad, parseAmt, today, uid } from '../core/utils.js';
 import { busy, fail, head } from '../core/ui.js';
 
@@ -200,8 +194,7 @@ export function createBulk({ api, refresh, go }) {
       const cashImpact = cashImpactSuggested ? suggestCashImpact(type, category) : impactInput;
 
       const key = `${date}|${vendor.toLowerCase()}|${amount}`;
-      const duplicate =
-        !errors.length && (existingDuplicateIndexes.has(index) || seen.has(key));
+      const duplicate = !errors.length && (existingDuplicateIndexes.has(index) || seen.has(key));
 
       if (!errors.length) seen.add(key);
 
