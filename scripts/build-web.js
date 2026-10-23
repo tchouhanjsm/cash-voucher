@@ -86,7 +86,7 @@ function validateSecurityHeaders(source, format = 'apache') {
     }
   }
 
-  const csp = source.match(/Content-Security-Policy:\s*"?([^"\n]+)"?/i);
+  const csp = source.match(/Content-Security-Policy(?::|\\s+)\\s*"?([^"\\n]+)"?/i);
   if (!csp) {
     throw new Error('Generated ' + format + ' security policy has no readable CSP.');
   }
