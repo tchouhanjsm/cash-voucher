@@ -6695,6 +6695,30 @@ with sync_playwright() as p:
             approvedAt: '',
             approvalReason: ''
           });
+          S.vouchers.push({
+            id: 'invalid-numeric-recent-payee-fixture',
+            no: 998879,
+            date: new Date().toISOString().slice(0, 10),
+            vendor: '6777767777888(+----+;;;)',
+            vendorId: '',
+            paymentMethod: 'CASH',
+            amount: 13,
+            category: 'Other',
+            notes: '',
+            type: 'PAYMENT',
+            status: 'ACTIVE',
+            createdBy: S.me.email,
+            createdAt: new Date().toISOString(),
+            updatedBy: '',
+            updatedAt: '',
+            receipts: [],
+            cancelReason: '',
+            cashImpact: 'CASH_OUT',
+            approvalStatus: 'NOT_REQUIRED',
+            approvedBy: '',
+            approvedAt: '',
+            approvalReason: ''
+          });
         }""",
         xss_payload,
     )
@@ -6707,6 +6731,13 @@ with sync_playwright() as p:
     page.wait_for_selector('#rows .erow .row-error')
     check(
         page.locator('#recentVendors .vchip', has_text='svg onload').count() >= 1
+        and not any(
+            '6777767777888(+----+;;;)' in name
+            for name in page.locator('#recentVendors .vchip').all_text_contents()
+        )
+        and '6777767777888(+----+;;;)' not in page.locator('#vlist option').evaluate_all(
+            "options => options.map(option => option.value)"
+        )
         and page.locator('#recentVendors svg, #recentVendors img').count() == 0
         and page.locator('#rows .erow .row-error').inner_text().startswith('Possible duplicate')
         and page.locator('#rows svg:not(.i), #rows img').count() == 0
@@ -6716,7 +6747,10 @@ with sync_playwright() as p:
     page.evaluate(
         """async () => {
           const { S } = await import('/frontend/core/state.js');
-          S.vouchers = (S.vouchers || []).filter((item) => item.id !== 'xss-recent-payee-fixture');
+          S.vouchers = (S.vouchers || []).filter(
+            (item) =>
+              !['xss-recent-payee-fixture', 'invalid-numeric-recent-payee-fixture'].includes(item.id)
+          );
         }"""
     )
 
