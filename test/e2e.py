@@ -1241,6 +1241,51 @@ with sync_playwright() as p:
         print('DASHBOARD_RECOVERY_DIAGNOSTICS=' + json.dumps(diagnostics, ensure_ascii=False))
         raise
 
+    # A stale Apps Script deployment must yield a safe, actionable error, never guessed totals.
+    unsupported_dashboard_interceptions = []
+
+    def inject_unsupported_dashboard_action(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        unsupported_dashboard_interceptions.append(True)
+        route.fulfill(
+            status=200,
+            content_type='application/json',
+            body=json.dumps({'ok': False, 'error': 'Unknown action.', 'code': 'NOT_FOUND'}),
+        )
+
+    page.route('**/api?*', inject_unsupported_dashboard_action)
+    page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes("
+        "'The connected Apps Script deployment does not recognize dashboardSummary')"
+    )
+    unsupported_dashboard_text = page.locator('#view').inner_text()
+    check(
+        len(unsupported_dashboard_interceptions) == 1
+        and 'Verify the staging deployment identity' in unsupported_dashboard_text
+        and 'Financial totals remain hidden.' in unsupported_dashboard_text
+        and page.locator('#view .stat').count() == 0,
+        'unsupported dashboardSummary action explains the staging mismatch and hides all totals',
+    )
+    page.unroute('**/api?*', inject_unsupported_dashboard_action)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'dashboardSummary'
+    ) as dashboard_after_unsupported_response:
+        page.click('[data-act=range][data-k="30d"]')
+    check(
+        dashboard_after_unsupported_response.value.ok
+        and dashboard_after_unsupported_response.value.json().get('ok') is True,
+        'dashboard recovers after the unsupported-action error is removed',
+    )
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('TOTAL PAID')",
+        timeout=10000,
+    )
+
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
     page.fill('#rq', 'Approval E2E vendor')
