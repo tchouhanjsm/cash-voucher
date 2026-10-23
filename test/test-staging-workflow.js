@@ -174,7 +174,6 @@ for (const securityContract of [
     'staging ZIP workflow must enforce security contract: ' + securityContract,
   );
 }
-assert.match(clientDistWorkflow, /release-manifest\\.json/);
 assert.match(clientDistWorkflow, /release-manifest\.json/);
 assert.match(
   clientDistWorkflow,
