@@ -15,6 +15,8 @@
 - Run the manual Client staging dist ZIP workflow on `client-main` with client code `cash-voucher` and the verified staging `/exec` URL.
 - Inspect the downloaded artifact's root entries, `config.js`, `release-manifest.json` commit and ZIP integrity. Upload only to the verified staging document root after taking a backup.
 - Run the guarded staging UAT workflow only after staging and production resource identity is independently verified.
+- Treat a dashboard response of `Unknown action` for `dashboardSummary` as a client/backend contract or target-identity failure: this action is present in the repository route registry, so verify the generated staging `CV_API_URL`, deployment ID and the source version actually deployed in that same Apps Script project. Do not use partial bootstrap data as a financial-total fallback; keep totals hidden until the staging route responds correctly.
+- Keep the voucher payee string separate from vendor-master maintenance. A saved voucher records who was paid; it does not automatically create a master vendor. Entry suggestions may include historical voucher names, so malformed legacy strings should be suppressed from suggestions without rewriting the historical ledger.
 
 **Exit evidence:** local source SHA; CI/check evidence; verified target/deployment identity stored privately; artifact run ID and manifest commit; live staging URL and UAT run evidence. Do not store credentials or sensitive resource IDs in this repository.
 
@@ -44,6 +46,9 @@
 - The static web builder validates generated Cloudflare Pages and Apache security policy before reporting a successful build.
 - The policy validator requires the core CSP directives and security headers, rejects wildcard/external script sources and `unsafe-eval`, and requires `frame-ancestors 'none'`.
 - The manual staging ZIP workflow independently checks the generated Apache policy markers and rejects unsafe/external script-source patterns.
+- Dashboard error handling now distinguishes an unsupported `dashboardSummary` route and gives staging-target/backend-version remediation while withholding financial totals.
+- Payee suggestion sources filter numeric/punctuation-only legacy values from the quick-entry chips and datalist, without modifying voucher history; regression coverage verifies the filtering while preserving inert hostile-label rendering coverage.
+- The API route-registry test explicitly classifies `dashboardSummary` as a registered read action.
 - Regression tests exercise the policy validator and ensure the staging ZIP workflow retains its security checks.
 
 These checks are source/build gates. They do not certify live response headers, real Google authorization, schema state, backups, restoration or physical-device behavior.
