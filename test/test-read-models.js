@@ -190,6 +190,34 @@ assert.equal(
   false,
   'malformed voucher data never reaches the normal register rows',
 );
+const pendingInvalidAmountRow = {
+  VoucherID: 'pending-invalid-amount-read-model-row',
+  VoucherNo: 99998,
+  Date: date,
+  Vendor: 'Pending Invalid Amount',
+  Amount: 'not-a-number',
+  Category: 'Other',
+  Notes: '',
+  Status: 'ACTIVE',
+  CreatedBy: 'read-model-owner@test.com',
+  CreatedAt: date + 'T13:00:00',
+  UpdatedBy: '',
+  UpdatedAt: '',
+  Receipts: '',
+  CancelReason: '',
+  ClientID: 'pending-invalid-amount-read-model-row',
+  Type: 'PAYMENT',
+  CashImpact: 'CASH_OUT',
+  ApprovalStatus: 'PENDING',
+  ApprovedBy: '',
+  ApprovedAt: '',
+  ApprovalReason: '',
+  VendorID: '',
+  PaymentMethod: 'CASH',
+};
+g.sheets.Vouchers.rows.push(
+  g.sheets.Vouchers.rows[0].map((header) => pendingInvalidAmountRow[header] ?? ''),
+);
 const dashboardAfterMalformed = g.call('dashboardSummary', { token: owner, from: date, to: date });
 assert.equal(
   dashboardAfterMalformed.ok,
@@ -210,6 +238,16 @@ assert.equal(
   dashboardAfterMalformed.data.malformedRecordCount,
   1,
   'dashboard reports the malformed record separately',
+);
+assert.equal(
+  dashboardAfterMalformed.data.invalidAmountCount,
+  1,
+  'active pending payments with invalid amounts remain in data-quality counts',
+);
+assert.equal(
+  dashboardAfterMalformed.data.approvalExceptionCount,
+  2,
+  'pending invalid-amount payments remain in approval exception counts',
 );
 
 const voucherHeaders = g.sheets.Vouchers.rows[0];
@@ -324,6 +362,11 @@ const createStaff = g.call('saveUser', {
 });
 assert.equal(createStaff.ok, true, 'owner can create a staff fixture');
 const staff = loginAndRotate('read-model-staff@test.com', 'Staff#Start2026', 'Staff#Final2026');
+assert.equal(
+  g.call('checkVoucherDuplicates', { token: staff, type: 'PAYMENT', entries: [] }).code,
+  'FORBIDDEN',
+  'staff without bulk permission cannot call the bulk duplicate preflight',
+);
 const staffVoucher = g.call('createVouchers', {
   token: staff,
   entries: [
