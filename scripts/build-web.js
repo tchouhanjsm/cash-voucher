@@ -100,10 +100,7 @@ function validateSecurityHeaders(source, format = 'apache') {
         const separator = directive.search(/\s/);
         return separator === -1
           ? [directive.toLowerCase(), '']
-          : [
-              directive.slice(0, separator).toLowerCase(),
-              directive.slice(separator + 1).trim(),
-            ];
+          : [directive.slice(0, separator).toLowerCase(), directive.slice(separator + 1).trim()];
       }),
   );
 
@@ -119,9 +116,7 @@ function validateSecurityHeaders(source, format = 'apache') {
 
   for (const [name, expected] of Object.entries(expectedDirectives)) {
     if (directives.get(name) !== expected) {
-      throw new Error(
-        'Generated ' + format + ' CSP must set ' + name + ' to ' + expected + '.',
-      );
+      throw new Error('Generated ' + format + ' CSP must set ' + name + ' to ' + expected + '.');
     }
   }
 
