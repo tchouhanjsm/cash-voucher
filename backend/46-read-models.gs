@@ -375,7 +375,7 @@ function dashboardSummary_(user, req) {
       }).length
     );
   }, 0);
-  const invalidAmountCount = approvedPayments.concat(receipts).filter(function (row) {
+  const invalidAmountCount = active.filter(function (row) {
     return !readModelAmount_(row).valid;
   }).length;
   const approvalExceptionCount = active.filter(function (row) {
