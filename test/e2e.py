@@ -4503,50 +4503,56 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
 
-    # Simulate an unsafe legacy/imported API record in client state so rendering sinks
-    # remain tested independently of the server's new write-time name validator.
-    page.evaluate(
-        """async (payload) => {
-          const { S } = await import('/frontend/core/state.js');
-          const vendor = {
-            id: 'xss-render-vendor-fixture',
-            name: payload,
-            company: '',
-            mobile: '',
-            active: true,
-            defaultCategory: '',
-            defaultPaymentMethod: ''
-          };
-          const voucher = {
-            id: 'xss-render-voucher-fixture',
-            no: 998877,
-            date: new Date().toISOString().slice(0, 10),
-            vendor: payload,
-            vendorId: vendor.id,
-            paymentMethod: 'CASH',
-            amount: 13.5,
-            category: 'Other',
-            notes: '',
-            type: 'PAYMENT',
-            status: 'ACTIVE',
-            createdBy: S.me.email,
-            createdAt: new Date().toISOString(),
-            updatedBy: '',
-            updatedAt: '',
-            receipts: [],
-            cancelReason: '',
-            cashImpact: 'CASH_OUT',
-            approvalStatus: 'NOT_REQUIRED',
-            approvedBy: '',
-            approvedAt: '',
-            approvalReason: ''
-          };
-          S.vendors = [...(S.vendors || []).filter((item) => item.id !== vendor.id), vendor];
-          S.vouchers = [...(S.vouchers || []).filter((item) => item.id !== voucher.id), voucher];
-        }""",
-        xss_payload,
-    )
+    # Simulate an unsafe legacy/imported API row through the server-backed register
+    # response. The register no longer reads its visible rows from the bootstrap cache.
+    legacy_xss_voucher_enabled = True
+
+    def inject_legacy_xss_voucher(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        if request_data.get('action') == 'registerPage' and legacy_xss_voucher_enabled:
+            data = payload.get('data', {})
+            items = data.get('items', [])
+            exists = any(item.get('id') == 'xss-render-voucher-fixture' for item in items if isinstance(item, dict))
+            if not exists:
+                items.append({
+                    'id': 'xss-render-voucher-fixture',
+                    'no': 998877,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': xss_payload,
+                    'vendorId': 'xss-render-vendor-fixture',
+                    'paymentMethod': 'CASH',
+                    'amount': 13.5,
+                    'category': 'Other',
+                    'notes': xss_note,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'owner@test.com',
+                    'createdAt': '2026-10-23T01:00:00Z',
+                    'updatedBy': '',
+                    'updatedAt': '',
+                    'receipts': [],
+                    'cancelReason': '',
+                    'cashImpact': 'CASH_OUT',
+                    'approvalStatus': 'NOT_REQUIRED',
+                    'approvedBy': '',
+                    'approvedAt': '',
+                    'approvalReason': '',
+                })
+                data['items'] = items
+                data['totalCount'] = int(data.get('totalCount') or 0) + 1
+                facets = data.setdefault('facets', {'vendors': [], 'users': []})
+                vendors = facets.setdefault('vendors', [])
+                if xss_payload not in vendors:
+                    vendors.append(xss_payload)
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', inject_legacy_xss_voucher)
     go_view(page, 'reg')
+    page.locator('#rbody tr', has_text=xss_payload).first.wait_for()
     page.wait_for_selector('[data-act=edit]')
     page.set_viewport_size({'width': 390, 'height': 844})
     manager_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
@@ -4943,6 +4949,7 @@ with sync_playwright() as p:
     )
     audit_context.close()
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
+    xss_vendor_row.wait_for()
     xss_vendor_row.locator('[data-act=cancel]').click()
     page.wait_for_selector('#modal #cr')
     check(
@@ -4953,13 +4960,8 @@ with sync_playwright() as p:
     )
     page.click('#modal [data-x]')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
-    page.evaluate(
-        """async () => {
-          const { S } = await import('/frontend/core/state.js');
-          S.vouchers = (S.vouchers || []).filter((item) => item.id !== 'xss-render-voucher-fixture');
-          S.vendors = (S.vendors || []).filter((item) => item.id !== 'xss-render-vendor-fixture');
-        }"""
-    )
+    legacy_xss_voucher_enabled = False
+    page.unroute('**/api?*', inject_legacy_xss_voucher)
     go_view(page, 'reg')
     page.wait_for_selector('[data-act=cancel]')
     page.locator('[data-act=cancel]').first.click()
