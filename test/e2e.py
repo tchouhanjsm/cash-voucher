@@ -3040,8 +3040,19 @@ with sync_playwright() as p:
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'register explains an empty filter result and offers a clear-filters action',
     )
-    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
-    page.wait_for_function("document.querySelector('#rq')?.value === ''")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == ''
+    ):
+        page.locator('#rempty [data-act=rclear]').click()
+    page.wait_for_function(
+        "document.querySelector('#rq')?.value === ''"
+        " && document.querySelector('#rs')?.value === 'ACTIVE'"
+        " && !document.querySelector('#rempty')?.classList.contains('hidden')"
+        " === false"
+        " && document.querySelectorAll('#rbody tr').length === 2"
+    )
     clear_filter_state = {
         'query': page.locator('#rq').input_value(),
         'rowCount': page.locator('#rbody tr').count(),
@@ -3068,8 +3079,19 @@ with sync_playwright() as p:
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'invalid register date range blocks misleading totals and CSV export with a recovery action',
     )
-    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
-    page.wait_for_function("document.querySelector('#rfrom')?.value === '' && document.querySelector('#rto')?.value === ''")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('from') == ''
+        and json.loads(response.request.post_data or '{}').get('to') == ''
+    ):
+        page.locator('#rempty [data-act=rclear]').click()
+    page.wait_for_function(
+        "document.querySelector('#rfrom')?.value === ''"
+        " && document.querySelector('#rto')?.value === ''"
+        " && document.querySelectorAll('#rbody tr').length >= 2"
+        " && !document.querySelector('#rf [data-act=csv]')?.disabled"
+    )
     check(
         page.locator('#rbody tr').count() >= 2
         and not page.locator('#rf [data-act=csv]').is_disabled(),
