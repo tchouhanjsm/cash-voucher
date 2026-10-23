@@ -4966,7 +4966,8 @@ with sync_playwright() as p:
     page.unroute('**/api?*', inject_legacy_xss_voucher)
     go_view(page, 'reg')
     page.wait_for_selector('[data-act=cancel]')
-    page.locator('[data-act=cancel]').first.click()
+    ram_traders_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
+    ram_traders_row.locator('[data-act=cancel]').click()
     page.fill('#cr', 'entered twice')
     page.click('.mcard .primary')
     page.wait_for_timeout(500)
