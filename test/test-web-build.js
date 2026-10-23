@@ -115,7 +115,8 @@ try {
   assert.equal(validateSecurityHeaders(headers, 'pages'), true);
   assert.equal(validateSecurityHeaders(apacheHeaders, 'apache'), true);
   assert.throws(
-    () => validateSecurityHeaders(headers.replace("script-src 'self'", "script-src *"), 'pages'),
+    () =>
+      validateSecurityHeaders(headers.replace("script-src 'self'", "script-src *"), 'pages'),
     /script-src/,
     'Pages security validation rejects wildcard script sources',
   );
