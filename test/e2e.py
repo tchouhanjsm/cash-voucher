@@ -5535,17 +5535,32 @@ with sync_playwright() as p:
             route.fulfill(response=response)
 
     page.route('**/api?*', tamper_register_metadata)
-    page.locator('[data-act=refresh]').click()
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and not json.loads(response.request.post_data or '{}').get('q')
+    ):
+        page.locator('[data-act=refresh]').click()
     page.wait_for_function(
-        "document.querySelector('#rtot').innerText.includes('1 malformed voucher record(s) omitted')"
+        "document.querySelector('[data-id=malformed-register-fixture][data-act=rec]') !== null"
+        " && document.querySelector('#rbody')?.innerText.includes('Receipt metadata unavailable')"
+        " && document.querySelector('#rtot')?.innerText.includes('malformed voucher record(s) omitted')"
     )
     check(
         page.locator('[data-id=malformed-register-fixture][data-act=rec]').count() == 1
         and 'Receipt metadata unavailable' in page.locator('#rbody').inner_text(),
         'register omits malformed voucher records and visibly flags missing receipt metadata',
     )
-    page.fill('#rq', '999991')
-    page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('999991')")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == '999991'
+    ):
+        page.fill('#rq', '999991')
+    page.wait_for_function(
+        "document.querySelector('#rbody tr [data-id=malformed-register-fixture][data-act=rec]') !== null"
+        " && document.querySelector('#rtot')?.innerText.includes('malformed voucher record(s) omitted')"
+    )
     check(
         page.locator('#rbody tr').count() == 1
         and 'malformed voucher record(s) omitted' in page.locator('#rtot').inner_text(),
@@ -5562,8 +5577,14 @@ with sync_playwright() as p:
     # isolate malformed receipt metadata from the current no-match search state.
     page.reload()
     page.wait_for_selector('[data-v=reg]')
-    go_view(page, 'reg')
-    page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('999991')")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ):
+        go_view(page, 'reg')
+    page.wait_for_function(
+        "document.querySelector('#rbody tr [data-id=malformed-register-fixture][data-act=rec]') !== null"
+    )
     page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
     page.wait_for_selector('#rimgs .receipt-error[role=alert]')
     check(

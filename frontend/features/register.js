@@ -202,6 +202,9 @@ export function createRegister({ api, go }) {
   }
 
   async function renderRows(options = {}) {
+    // A debounced filter can fire after navigation has detached the Register.
+    if (S.view !== 'reg' || !$('#rbody')) return;
+
     const append = options.append === true;
     const requestId = ++pageRequestSequence;
     const diagnostics = S.voucherDiagnostics || {};
@@ -282,6 +285,9 @@ export function createRegister({ api, go }) {
   }
 
   function drawRows() {
+    // Stale callbacks must never attempt to render into a detached Register surface.
+    if (S.view !== 'reg' || !$('#rbody')) return;
+
     const diagnostics = S.voucherDiagnostics || {};
     const dataAvailable =
       !pageError &&
