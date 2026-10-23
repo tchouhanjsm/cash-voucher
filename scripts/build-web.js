@@ -125,7 +125,10 @@ function validateSecurityHeaders(source, format = 'apache') {
     }
   }
 
-  if (/\bunsafe-eval\b/i.test(csp[1]) || /\bscript-src\s+[^;]*(?:\*|https?:)/i.test(csp[1])) {
+  if (
+    /\bunsafe-eval\b/i.test(csp[1]) ||
+    /\bscript-src\s+[^;]*(?:\*|https?:)/i.test(csp[1])
+  ) {
     throw new Error('Generated ' + format + ' CSP allows an unsafe or external script source.');
   }
 
