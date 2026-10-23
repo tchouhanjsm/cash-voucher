@@ -6271,8 +6271,10 @@ with sync_playwright() as p:
     page.wait_for_selector('#nres .ok-panel')
     ack_before = outbox_vendor_records(acknowledgement_vendor)
     check(
-        len(ack_before) == 1 and ack_before[0]['status'] == 'pending',
-        'acknowledgement-failure scenario begins with one pending offline entry',
+        len(ack_before) == 1
+        and ack_before[0]['status'] == 'pending'
+        and bool(ack_before[0].get('clientId')),
+        'acknowledgement-failure scenario begins with one pending entry and a stable transaction ID',
     )
     ack_client_id = ack_before[0]['clientId'] if ack_before else ''
 
@@ -6294,6 +6296,7 @@ with sync_playwright() as p:
         }"""
     )
     acknowledgement_fault = {'injected': False}
+    acknowledgement_request_client_ids = []
 
     def fail_ack_after_server_commit(route):
         try:
@@ -6309,6 +6312,14 @@ with sync_playwright() as p:
                 for entry in entries
             )
         )
+        if matches:
+            acknowledgement_request_client_ids.append(
+                [
+                    entry.get('clientId')
+                    for entry in entries
+                    if isinstance(entry, dict) and entry.get('vendor') == acknowledgement_vendor
+                ]
+            )
         if not acknowledgement_fault['injected'] and matches:
             response = route.fetch()
             if response.ok:
@@ -6359,16 +6370,48 @@ with sync_playwright() as p:
         'server-committed voucher remains present exactly once before acknowledgement retry',
     )
     page.evaluate("window.dispatchEvent(new Event('online'))")
+    ack_after_retry = {}
+    ack_queue_after_retry = outbox_vendor_records(acknowledgement_vendor)
+    ack_visible_rows = page.locator('#rbody tr', has_text=acknowledgement_vendor).count()
     for _ in range(50):
-        if not outbox_vendor_records(acknowledgement_vendor):
+        ack_after_retry = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+        ack_queue_after_retry = outbox_vendor_records(acknowledgement_vendor)
+        ack_visible_rows = page.locator('#rbody tr', has_text=acknowledgement_vendor).count()
+        if (
+            not ack_queue_after_retry
+            and ack_after_retry.get('acknowledgementCreateRequests') == 2
+            and ack_visible_rows == 1
+        ):
             break
         page.wait_for_timeout(200)
-    ack_after_retry = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+
+    # These assertions stay separate so a failure identifies the broken invariant rather than
+    # hiding whether it was network retry, IndexedDB acknowledgement, stable IDs, or UI refresh.
     check(
-        not outbox_vendor_records(acknowledgement_vendor)
-        and ack_after_retry.get('acknowledgementCreateRequests') == 2
-        and page.locator('#rbody tr', has_text=acknowledgement_vendor).count() == 1,
-        'same-ID acknowledgement retry clears the queue without creating a duplicate voucher',
+        ack_after_retry.get('acknowledgementCreateRequests') == 2,
+        'acknowledgement recovery resends exactly once (observed create requests: '
+        + str(ack_after_retry.get('acknowledgementCreateRequests'))
+        + ')',
+    )
+    check(
+        acknowledgement_request_client_ids == [[ack_client_id], [ack_client_id]],
+        'acknowledgement retry reuses the original transaction ID (observed IDs: '
+        + json.dumps(acknowledgement_request_client_ids)
+        + '; expected: '
+        + json.dumps([[ack_client_id], [ack_client_id]])
+        + ')',
+    )
+    check(
+        not ack_queue_after_retry,
+        'successful acknowledgement removes the pending local entry (remaining records: '
+        + json.dumps(ack_queue_after_retry)
+        + ')',
+    )
+    check(
+        ack_visible_rows == 1,
+        'register refresh settles with exactly one server-committed voucher (visible matches: '
+        + str(ack_visible_rows)
+        + ')',
     )
 
     # A SESSION response during background sync must trigger sign-in, not a permanent rejection.
