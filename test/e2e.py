@@ -5566,8 +5566,16 @@ with sync_playwright() as p:
         and 'malformed voucher record(s) omitted' in page.locator('#rtot').inner_text(),
         'register search tolerates null vendor and object-valued notes',
     )
-    page.fill('#rq', 'query with no match')
-    page.wait_for_function("!document.querySelector('#rempty').classList.contains('hidden')")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == 'query with no match'
+    ):
+        page.fill('#rq', 'query with no match')
+    page.wait_for_function(
+        "document.querySelector('#rempty .empty-state-message')?.textContent"
+        " === 'No vouchers match the current filters.'"
+    )
     check(
         page.locator('#rempty .empty-state-message').inner_text()
         == 'No vouchers match the current filters.',
