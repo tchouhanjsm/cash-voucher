@@ -2,7 +2,6 @@ import { $ } from '../core/dom.js';
 import {
   CASH_IMPACT_CHOICES,
   categories,
-  isIn,
   rcats,
   S,
   suggestCashImpact,

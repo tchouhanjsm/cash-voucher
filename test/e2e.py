@@ -3902,7 +3902,9 @@ with sync_playwright() as p:
     )
     page.fill('#bt', rows)
     page.click('[data-act=parse]')
-    page.wait_for_selector('#bprev table')
+    page.wait_for_function(
+        "document.querySelector('#bprev')?.innerText.includes('Bulk Imported Replacement Vendor')"
+    )
     choose_bulk_cash_impact_for_current_rows()
     preview_text = page.inner_text('#bprev')
     check(
