@@ -1,5 +1,5 @@
 export const hasPayeeLetter = (value) =>
-  typeof value === 'string' && /\\p{L}/u.test(value.trim());
+  typeof value === 'string' && /\p{L}/u.test(value.trim());
 
 export const scalarText = (value) => {
   if (typeof value === 'string') return value;
