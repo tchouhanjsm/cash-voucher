@@ -70,7 +70,7 @@ assert.match(
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
 assert.match(executionPlan, /aa37d94819e59a72c797ba36839aa8f8ec94008f/);
-assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\\.md/);
+assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
 assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
 assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
