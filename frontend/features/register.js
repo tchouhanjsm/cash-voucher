@@ -461,7 +461,7 @@ export function createRegister({ api, go }) {
                 : 'No vouchers are available to show. Use New Entry to record the first payment or receipt.';
       emptyState.appendChild(message);
 
-      if (dataAvailable && hasActiveFilters || rangeInvalid || (dataAvailable && pageTotalCount > shown.length)) {
+      if ((dataAvailable && hasActiveFilters) || rangeInvalid || (dataAvailable && pageTotalCount > shown.length)) {
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
         clearButton.className = 'btn';

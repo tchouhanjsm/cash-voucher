@@ -3049,8 +3049,7 @@ with sync_playwright() as p:
     page.wait_for_function(
         "document.querySelector('#rq')?.value === ''"
         " && document.querySelector('#rs')?.value === 'ACTIVE'"
-        " && !document.querySelector('#rempty')?.classList.contains('hidden')"
-        " === false"
+        " && document.querySelector('#rempty')?.classList.contains('hidden') === true"
         " && document.querySelectorAll('#rbody tr').length === 2"
     )
     clear_filter_state = {
