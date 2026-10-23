@@ -4,7 +4,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { buildWebSite, validateApiUrl } = require('../scripts/build-web');
+const { buildWebSite, validateApiUrl, validateSecurityHeaders } = require('../scripts/build-web');
 
 const rootDir = path.resolve(__dirname, '..');
 const customerApiUrl = 'https://script.google.com/macros/s/TEST_CUSTOMER_DEPLOYMENT_ID/exec';
@@ -111,6 +111,24 @@ try {
   assert.ok(apacheHeaders.includes('Header always set X-Frame-Options "DENY"'));
   assert.ok(apacheHeaders.includes('Header always set Content-Security-Policy'));
   assert.ok(apacheHeaders.includes("frame-ancestors 'none'"));
+
+  assert.equal(validateSecurityHeaders(headers, 'pages'), true);
+  assert.equal(validateSecurityHeaders(apacheHeaders, 'apache'), true);
+  assert.throws(
+    () => validateSecurityHeaders(headers.replace("script-src 'self'", "script-src *"), 'pages'),
+    /script-src/,
+    'Pages security validation rejects wildcard script sources',
+  );
+  assert.throws(
+    () => validateSecurityHeaders(apacheHeaders.replace("frame-ancestors 'none'", "frame-ancestors *"), 'apache'),
+    /frame-ancestors/,
+    'Apache security validation rejects a permissive framing policy',
+  );
+  assert.throws(
+    () => validateSecurityHeaders(headers.replace("script-src 'self'", "script-src 'self' 'unsafe-eval'"), 'pages'),
+    /script-src/,
+    'Pages security validation rejects unsafe script execution',
+  );
 
   const generatedConfig = fs.readFileSync(path.join(outDir, 'config.js'), 'utf8');
   assert.ok(
