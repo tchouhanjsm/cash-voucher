@@ -120,12 +120,20 @@ try {
     'Pages security validation rejects wildcard script sources',
   );
   assert.throws(
-    () => validateSecurityHeaders(apacheHeaders.replace("frame-ancestors 'none'", "frame-ancestors *"), 'apache'),
+    () =>
+      validateSecurityHeaders(
+        apacheHeaders.replace("frame-ancestors 'none'", "frame-ancestors *"),
+        'apache',
+      ),
     /frame-ancestors/,
     'Apache security validation rejects a permissive framing policy',
   );
   assert.throws(
-    () => validateSecurityHeaders(headers.replace("script-src 'self'", "script-src 'self' 'unsafe-eval'"), 'pages'),
+    () =>
+      validateSecurityHeaders(
+        headers.replace("script-src 'self'", "script-src 'self' 'unsafe-eval'"),
+        'pages',
+      ),
     /script-src/,
     'Pages security validation rejects unsafe script execution',
   );
