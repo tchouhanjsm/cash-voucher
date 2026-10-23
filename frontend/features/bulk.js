@@ -1,12 +1,5 @@
 import { $ } from '../core/dom.js';
-import {
-  CASH_IMPACT_CHOICES,
-  categories,
-  isIn,
-  rcats,
-  S,
-  suggestCashImpact,
-} from '../core/state.js';
+import { CASH_IMPACT_CHOICES, categories, rcats, S, suggestCashImpact } from '../core/state.js';
 import { addDays, dmy, download, esc, money, pad, parseAmt, today, uid } from '../core/utils.js';
 import { busy, fail, head } from '../core/ui.js';
 
@@ -167,12 +160,8 @@ export function createBulk({ api, refresh, go }) {
     }));
   }
 
-  function checkRows(raw) {
-    const seen = new Set(
-      S.vouchers
-        .filter((voucher) => voucher.status === 'ACTIVE' && isIn(voucher) === (type === 'RECEIPT'))
-        .map((voucher) => `${voucher.date}|${voucher.vendor.toLowerCase()}|${voucher.amount}`),
-    );
+  function checkRows(raw, existingDuplicateIndexes = new Set()) {
+    const seen = new Set();
     const allowedCategories = type === 'RECEIPT' ? rcats() : categories();
     const output = [];
 
@@ -205,7 +194,7 @@ export function createBulk({ api, refresh, go }) {
       const cashImpact = cashImpactSuggested ? suggestCashImpact(type, category) : impactInput;
 
       const key = `${date}|${vendor.toLowerCase()}|${amount}`;
-      const duplicate = !errors.length && seen.has(key);
+      const duplicate = !errors.length && (existingDuplicateIndexes.has(index) || seen.has(key));
 
       if (!errors.length) seen.add(key);
 
@@ -288,7 +277,34 @@ export function createBulk({ api, refresh, go }) {
     }
 
     type = $('#bt2').value;
-    rows = checkRows(mapRows(inputRows));
+    const mappedRows = mapRows(inputRows);
+    const duplicateCandidates = [];
+    mappedRows.forEach((row, index) => {
+      const date = parseDate(row.date);
+      const vendor = String(row.vendor ?? '').trim();
+      const amount = parseAmt(row.amount);
+      if (date && vendor && amount > 0 && amount <= 1e7) {
+        duplicateCandidates.push({ index, date, vendor, amount });
+      }
+    });
+
+    const existingDuplicateIndexes = new Set();
+    if (duplicateCandidates.length) {
+      const duplicateResult = await api('checkVoucherDuplicates', {
+        type,
+        entries: duplicateCandidates,
+      });
+      if (!Array.isArray(duplicateResult?.duplicateIndexes)) {
+        throw new Error('The server could not verify possible duplicates. Retry before importing.');
+      }
+      duplicateResult.duplicateIndexes.forEach((index) => {
+        if (Number.isSafeInteger(index) && index >= 0 && index < mappedRows.length) {
+          existingDuplicateIndexes.add(index);
+        }
+      });
+    }
+
+    rows = checkRows(mappedRows, existingDuplicateIndexes);
     drawPreview();
   }
 

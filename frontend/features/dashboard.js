@@ -1,9 +1,9 @@
 import { $ } from '../core/dom.js';
-import { can, nm, normalizeApprovalStatus, pays, recs, S } from '../core/state.js';
-import { addDays, dmy, esc, finiteAmount, iso, money, sumAmounts, today } from '../core/utils.js';
+import { can, nm, S } from '../core/state.js';
+import { addDays, dmy, esc, finiteAmount, iso, money, today } from '../core/utils.js';
 import { head, icon, refreshBtn } from '../core/ui.js';
 
-export function createDashboard() {
+export function createDashboard({ api }) {
   const D = { r: '30d', from: '', to: '' };
 
   function range() {
@@ -23,23 +23,6 @@ export function createDashboard() {
     if (D.r === 'cus' && D.from && D.to) return [D.from, D.to];
 
     return [addDays(current, -29), current];
-  }
-
-  function group(list, key) {
-    const grouped = new Map();
-
-    list.forEach((voucher) => {
-      const groupKey = key(voucher);
-      if (!grouped.has(groupKey)) {
-        grouped.set(groupKey, { k: groupKey, n: 0, s: 0 });
-      }
-
-      const item = grouped.get(groupKey);
-      item.n++;
-      item.s += finiteAmount(voucher.amount) ?? 0;
-    });
-
-    return [...grouped.values()].sort((a, b) => b.s - a.s);
   }
 
   function bars(rows, limit = 8) {
@@ -118,78 +101,223 @@ export function createDashboard() {
     );
   }
 
-  function render() {
+  let summaryRequestId = 0;
+
+  function periodControls(from, to) {
+    return `
+      <div class="seg dashboard-period">${[
+        ['7d', 'Last 7 days'],
+        ['30d', 'Last 30 days'],
+        ['mtd', 'This month'],
+        ['lm', 'Last month'],
+        ['cus', 'Custom'],
+      ]
+        .map(
+          ([key, label]) =>
+            `<button type="button" data-act="range" data-k="${key}" class="${D.r === key ? 'on' : ''}">${label}</button>`,
+        )
+        .join('')}</div>
+      ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button type="button" class="btn primary" data-act="cus">Apply</button></div>` : ''}`;
+  }
+
+  function renderShell(from, to) {
+    const view = $('#view');
+    const frame = document.createElement('div');
+    frame.className = 'dashboard-view';
+
+    const header = document.createElement('div');
+    header.className = 'head page-header';
+    const copy = document.createElement('div');
+    copy.className = 'page-header-copy';
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'page-eyebrow';
+    eyebrow.textContent = 'Work';
+    const title = document.createElement('h1');
+    title.textContent = can('viewAll') ? 'Dashboard' : 'My Dashboard';
+    const description = document.createElement('p');
+    description.className = 'page-description';
+    description.textContent = 'Review saved payment and receipt activity for the selected period.';
+    copy.append(eyebrow, title, description);
+
+    const actions = document.createElement('div');
+    actions.className = 'page-header-actions';
+    if (can('create')) {
+      const create = document.createElement('button');
+      create.type = 'button';
+      create.className = 'btn primary';
+      create.dataset.act = 'ntype';
+      create.dataset.k = 'PAYMENT';
+      create.textContent = '+ New entry';
+      actions.appendChild(create);
+    }
+    const refresh = document.createElement('button');
+    refresh.type = 'button';
+    refresh.className = 'btn sm';
+    refresh.dataset.act = 'refresh';
+    refresh.textContent = '↻ Refresh';
+    actions.appendChild(refresh);
+    header.append(copy, actions);
+
+    const body = document.createElement('div');
+    body.className = 'dashboard-body';
+    const periods = document.createElement('div');
+    periods.className = 'seg dashboard-period';
+    [
+      ['7d', 'Last 7 days'],
+      ['30d', 'Last 30 days'],
+      ['mtd', 'This month'],
+      ['lm', 'Last month'],
+      ['cus', 'Custom'],
+    ].forEach(([key, label]) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.dataset.act = 'range';
+      button.dataset.k = key;
+      button.className = D.r === key ? 'on' : '';
+      button.textContent = label;
+      periods.appendChild(button);
+    });
+    body.appendChild(periods);
+
+    if (D.r === 'cus') {
+      const filters = document.createElement('div');
+      filters.className = 'card filters';
+      [
+        ['From', 'dFrom', D.from || from],
+        ['To', 'dTo', D.to || to],
+      ].forEach(([labelText, id, value]) => {
+        const label = document.createElement('label');
+        label.appendChild(document.createTextNode(labelText));
+        const input = document.createElement('input');
+        input.type = 'date';
+        input.id = id;
+        input.value = value;
+        label.appendChild(input);
+        filters.appendChild(label);
+      });
+      const apply = document.createElement('button');
+      apply.type = 'button';
+      apply.className = 'btn primary';
+      apply.dataset.act = 'cus';
+      apply.textContent = 'Apply';
+      filters.appendChild(apply);
+      body.appendChild(filters);
+    }
+
+    frame.append(header, body);
+    view.replaceChildren(frame);
+    return body;
+  }
+
+  function appendStatusCard(body, message, options = {}) {
+    const card = document.createElement('div');
+    card.className = options.className || 'card';
+    card.setAttribute('role', options.role || 'status');
+    card.setAttribute('aria-live', options.role === 'alert' ? 'assertive' : 'polite');
+    if (options.title) {
+      const title = document.createElement('h2');
+      title.textContent = options.title;
+      card.appendChild(title);
+    }
+    const text = document.createElement('p');
+    text.textContent = message;
+    card.appendChild(text);
+    body.appendChild(card);
+  }
+
+  async function render() {
+    const requestId = ++summaryRequestId;
     const [from, to] = range();
-    const length = Math.round((new Date(to) - new Date(from)) / 864e5) + 1;
-    const payments = pays();
-    const current = payments.filter((voucher) => voucher.date >= from && voucher.date <= to);
-    const previous = payments.filter(
-      (voucher) => voucher.date >= addDays(from, -length) && voucher.date < from,
-    );
-    const validCurrent = current.filter((voucher) => finiteAmount(voucher.amount) !== null);
-    const total = sumAmounts(current);
-    const previousTotal = sumAmounts(previous);
+    const body = renderShell(from || today(), to || today());
+    const diagnostics = S.voucherDiagnostics || {};
+    const bootstrapUnavailable =
+      S.offlineMode ||
+      navigator.onLine === false ||
+      diagnostics.dataAvailable === false ||
+      diagnostics.envelopeValid === false;
+    if (bootstrapUnavailable) {
+      const reason =
+        S.offlineMode || diagnostics.unavailableReason === 'offline' || navigator.onLine === false
+          ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
+          : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.';
+      appendStatusCard(
+        body,
+        reason + ' No financial totals or charts are shown until voucher data is available.',
+        { title: 'Dashboard totals unavailable', role: 'alert' },
+      );
+      return;
+    }
+
+    if (!from || !to || from > to) {
+      appendStatusCard(body, 'Choose a valid date range before loading dashboard totals.', {
+        className: 'card error',
+        role: 'alert',
+      });
+      return;
+    }
+
+    appendStatusCard(body, 'Calculating the dashboard from the latest saved ledger…');
+    let summary;
+    try {
+      summary = await api('dashboardSummary', { from, to });
+    } catch (error) {
+      if (requestId !== summaryRequestId || S.view !== 'dash') return;
+      const errorBody = renderShell(from, to);
+      appendStatusCard(
+        errorBody,
+        error?.message || 'The server could not calculate the dashboard. Refresh and retry.',
+        { title: 'Dashboard totals unavailable', role: 'alert' },
+      );
+      return;
+    }
+    if (requestId !== summaryRequestId || S.view !== 'dash') return;
+
+    const length = summary.periodDays;
+    const total = finiteAmount(summary.paid) ?? 0;
+    const previousTotal = finiteAmount(summary.previousPaid) ?? 0;
     const delta = previousTotal ? ((total - previousTotal) / previousTotal) * 100 : null;
-    const todayPayments = payments.filter((voucher) => voucher.date === today());
-    const largest = current.reduce((max, voucher) => {
-      const amount = finiteAmount(voucher.amount);
-      return amount !== null && amount > (max ? finiteAmount(max.amount) : 0) ? voucher : max;
-    }, null);
-    const receipts = recs().filter((voucher) => voucher.date >= from && voucher.date <= to);
-    const received = sumAmounts(receipts);
-    const allReceipts = recs();
-    const openingBalance = finiteAmount(S.settings.openingBalance) ?? 0;
-    const cashInHand = openingBalance + sumAmounts(allReceipts) - sumAmounts(payments);
-    const invalidAmountCount = [...payments, ...allReceipts].filter(
-      (voucher) => finiteAmount(voucher.amount) === null,
-    ).length;
-    const diagnostics = S.voucherDiagnostics || {
-      envelopeValid: true,
-      dataAvailable: true,
-      unavailableReason: '',
-      malformedRecordCount: 0,
-      malformedFieldCount: 0,
-    };
-    const dataAvailable =
-      diagnostics.dataAvailable !== false && diagnostics.envelopeValid !== false;
-    const unavailableMessage =
-      diagnostics.unavailableReason === 'offline'
-        ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
-        : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.';
-    const approvalExceptions = (Array.isArray(S.vouchers) ? S.vouchers : []).filter(
-      (voucher) =>
-        voucher &&
-        typeof voucher === 'object' &&
-        !Array.isArray(voucher) &&
-        voucher.type === 'PAYMENT' &&
-        voucher.status === 'ACTIVE' &&
-        !['NOT_REQUIRED', 'APPROVED'].includes(normalizeApprovalStatus(voucher.approvalStatus)),
+    const paymentCount = Number.isSafeInteger(summary.paymentCount) ? summary.paymentCount : 0;
+    const validPaymentCount = Number.isSafeInteger(summary.validPaymentCount)
+      ? summary.validPaymentCount
+      : 0;
+    const received = finiteAmount(summary.received) ?? 0;
+    const approvalExceptionCount = Number(summary.approvalExceptionCount) || 0;
+    const invalidAmountCount = Math.max(
+      Number(summary.invalidAmountCount) || 0,
+      Number(diagnostics.invalidAmountCount) || 0,
+    );
+    const malformedRecordCount = Math.max(
+      Number(summary.malformedRecordCount) || 0,
+      Number(diagnostics.malformedRecordCount) || 0,
+    );
+    const malformedFieldCount = Math.max(
+      Number(summary.malformedFieldCount) || 0,
+      Number(diagnostics.malformedFieldCount) || 0,
     );
     const dataWarnings = [];
-    if (!dataAvailable) {
-      dataWarnings.push(unavailableMessage);
-    } else if (diagnostics.malformedRecordCount) {
+
+    if (malformedRecordCount) {
       dataWarnings.push(
-        `${diagnostics.malformedRecordCount} malformed voucher record(s) omitted from Dashboard and Register.`,
+        `${malformedRecordCount} malformed voucher record(s) were omitted from normal financial calculations.`,
       );
     }
-    if (diagnostics.malformedFieldCount) {
+    if (malformedFieldCount) {
       dataWarnings.push(
-        `${diagnostics.malformedFieldCount} malformed voucher field(s) handled for safe display.`,
+        `${malformedFieldCount} malformed voucher field(s) were handled for safe display.`,
       );
     }
-    if (dataAvailable && approvalExceptions.length) {
+    if (approvalExceptionCount) {
       dataWarnings.push(
-        `${approvalExceptions.length} active payment(s) are pending approval, rejected, or require review. They are excluded from approved totals and block Daily Cash Close until approved or cancelled.`,
+        `${approvalExceptionCount} active payment(s) are pending approval, rejected, or require review. They are excluded from approved totals and block Daily Cash Close until resolved.`,
       );
     }
 
     const attention = [];
-    if (dataAvailable && approvalExceptions.length) {
+    if (approvalExceptionCount) {
       attention.push({
         tone: 'warn',
         icon: 'clock',
-        text: `${approvalExceptions.length} payment${approvalExceptions.length === 1 ? '' : 's'} need approval or review`,
+        text: `${approvalExceptionCount} payment${approvalExceptionCount === 1 ? '' : 's'} need approval or review`,
         action: 'reg',
         label: 'Open register',
       });
@@ -203,52 +331,49 @@ export function createDashboard() {
         label: '',
       });
     }
-    if (dataAvailable && (diagnostics.malformedRecordCount || invalidAmountCount)) {
+    if (malformedRecordCount || invalidAmountCount) {
       attention.push({
         tone: 'bad',
         icon: 'alert',
-        text: `${diagnostics.malformedRecordCount + invalidAmountCount} voucher record(s) have invalid data and are excluded`,
+        text: `${malformedRecordCount + invalidAmountCount} voucher record(s) have invalid data and are excluded`,
         action: 'reg',
         label: 'Check register',
       });
     }
-    // This panel reports dashboard-level checks only; it is not backup, queue or release health.
-    const needsAttention = !dataAvailable
-      ? ''
-      : `<section class="card needs" aria-labelledby="needsTitle"><h2 id="needsTitle">Needs attention <span class="count-pill">${attention.length}</span></h2>${
-          attention.length
-            ? `<ul class="needs-list">${attention
-                .map(
-                  (item) =>
-                    `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${item.text}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
-                )
-                .join('')}</ul>`
-            : `<p class="needs-clear">${icon('check')}<span>No known dashboard exceptions were found in the checks shown here. This does not verify backups, the full recovery queue, or release readiness.</span></p>`
-        }</section>`;
 
-    const financialPanels = !dataAvailable
-      ? `<div class="card" role="status" aria-live="polite"><h2>Dashboard totals unavailable</h2><p class="muted">${esc(unavailableMessage)} No financial totals or charts are shown until valid voucher data is available.</p></div>`
-      : `
-  <div class="stats dashboard-stats">
-    <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
-    <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${current.length}</b><small class="muted">avg ${money(validCurrent.length ? total / validCurrent.length : 0)}</small></div>
-    <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(largest ? largest.amount : 0)}</b><small class="muted">${largest ? esc(largest.vendor) : '–'}</small></div>
-    <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Today</span><b>${money(sumAmounts(todayPayments))}</b><small class="muted">${todayPayments.length} vouchers</small></div>
-    <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Cash received</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receipts.length} entries · net ${money(received - total)}</small></div>
-    ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(cashInHand)}</b><small class="muted">opening balance + recorded receipts − recorded payments; not a physical cash count</small></div>` : ''}
-  </div>
-  ${dataWarnings.length ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>` : ''}
-  ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
-  <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(current, from, to)}</div>
-  <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(group(current, (voucher) => voucher.vendor))}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(group(current, (voucher) => voucher.category || 'Other'))}</div></div>
-  ${
-    can('viewAll')
-      ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(
-          group(current, (voucher) => nm(voucher.createdBy)),
-          10,
-        )}</div>`
-      : ''
-  }`;
+    const needsAttention = `<section class="card needs" aria-labelledby="needsTitle"><h2 id="needsTitle">Needs attention <span class="count-pill">${attention.length}</span></h2>${
+      attention.length
+        ? `<ul class="needs-list">${attention
+            .map(
+              (item) =>
+                `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${esc(item.text)}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
+            )
+            .join('')}</ul>`
+        : `<p class="needs-clear">${icon('check')}<span>No known dashboard exceptions were found in the checks shown here. This does not verify backups, the full recovery queue, or release readiness.</span></p>`
+    }</section>`;
+
+    const financialPanels = `
+      <div class="stats dashboard-stats">
+        <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(summary.largest?.amount || 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Today</span><b>${money(summary.todayPaid || 0)}</b><small class="muted">${Number(summary.todayPaymentCount) || 0} vouchers</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Cash received</span><b class="cash-received-value">${money(received)}</b><small class="muted">${Number(summary.receiptCount) || 0} entries · net ${money(received - total)}</small></div>
+        ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(summary.bookBalance || 0)}</b><small class="muted">opening balance + recorded receipts − approved recorded payments; not a physical cash count</small></div>` : ''}
+      </div>
+      ${dataWarnings.length ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>` : ''}
+      ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
+      <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend || [], from, to)}</div>
+      <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors || [])}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory || [])}</div></div>
+      ${
+        can('viewAll')
+          ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(
+              (summary.byTeamMember || []).map((row) => ({ ...row, k: nm(row.k) })),
+              10,
+            )}</div>`
+          : ''
+      }
+    `;
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
@@ -257,28 +382,10 @@ export function createDashboard() {
         `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
         {
           section: 'Work',
-          description: 'Review recorded payment and receipt activity for the selected period.',
+          description: 'Review saved payment and receipt activity for the selected period.',
         },
       ) +
-      `
-  <div class="dashboard-body">
-  ${needsAttention}
-  <div class="seg dashboard-period">${[
-    ['7d', 'Last 7 days'],
-    ['30d', 'Last 30 days'],
-    ['mtd', 'This month'],
-    ['lm', 'Last month'],
-    ['cus', 'Custom'],
-  ]
-    .map(
-      ([key, label]) =>
-        `<button data-act="range" data-k="${key}" class="${D.r === key ? 'on' : ''}">${label}</button>`,
-    )
-    .join('')}</div>
-  ${D.r === 'cus' ? `<div class="card filters"><label>From<input type="date" id="dFrom" value="${esc(D.from || from)}"></label><label>To<input type="date" id="dTo" value="${esc(D.to || to)}"></label><button class="btn primary" data-act="cus">Apply</button></div>` : ''}
-  ${financialPanels}
-  </div>
-  </div>`;
+      `<div class="dashboard-body">${needsAttention}${periodControls(from, to)}${financialPanels}</div></div>`;
   }
 
   return {

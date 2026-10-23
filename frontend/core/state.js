@@ -79,12 +79,14 @@ export function normalizeVoucherCollection(value) {
       rows: [],
       malformedRecordCount: 0,
       malformedFieldCount: 0,
+      invalidAmountCount: 0,
     };
   }
 
   const rows = [];
   let malformedRecordCount = 0;
   let malformedFieldCount = 0;
+  let invalidAmountCount = 0;
   const textFields = [
     'vendor',
     'category',
@@ -140,10 +142,28 @@ export function normalizeVoucherCollection(value) {
     optionalVoucherTextFields.forEach((field) => {
       if (typeof row[field] !== 'string') row[field] = '';
     });
+    if (
+      row.status === 'ACTIVE' &&
+      (row.amount === null ||
+        row.amount === undefined ||
+        typeof row.amount === 'boolean' ||
+        (typeof row.amount !== 'number' && typeof row.amount !== 'string') ||
+        (typeof row.amount === 'string' && row.amount.trim() === '') ||
+        !Number.isFinite(Number(row.amount)) ||
+        Number(row.amount) <= 0)
+    ) {
+      invalidAmountCount++;
+    }
     rows.push(row);
   });
 
-  return { envelopeValid: true, rows, malformedRecordCount, malformedFieldCount };
+  return {
+    envelopeValid: true,
+    rows,
+    malformedRecordCount,
+    malformedFieldCount,
+    invalidAmountCount,
+  };
 }
 
 export const can = (permission) => !!(S.me && S.me.perms && S.me.perms[permission]);

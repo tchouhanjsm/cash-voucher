@@ -1142,11 +1142,105 @@ with sync_playwright() as p:
     )
     go_view(page, 'dash')
     page.wait_for_selector('[data-v=dash][aria-current=page]')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('active payment(s) are pending approval')"
+    )
     check(
         'active payment(s) are pending approval' in page.locator('#view').inner_text()
         and 'excluded from approved totals' in page.locator('#view').inner_text(),
         'Dashboard discloses pending approval exceptions and their total treatment',
     )
+
+    hostile_dashboard_label = '<svg onload=window.__xssFired=true></svg>'
+
+    dashboard_summary_interceptions = []
+
+    def inject_hostile_dashboard_summary(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        dashboard_summary_interceptions.append(True)
+        from_date = request_data.get('from', '2026-10-16')
+        to_date = request_data.get('to', '2026-10-22')
+        payload = {
+            'ok': True,
+            'data': {
+                'from': from_date,
+                'to': to_date,
+                'periodDays': 7,
+                'trendMonthly': False,
+                'trend': [{'date': to_date, 'amount': 1}],
+                'paid': 1,
+                'previousPaid': 0,
+                'paymentCount': 1,
+                'validPaymentCount': 1,
+                'largest': {'amount': 1, 'vendor': hostile_dashboard_label},
+                'todayPaid': 0,
+                'todayPaymentCount': 0,
+                'received': 0,
+                'receiptCount': 0,
+                'bookBalance': 0,
+                'topVendors': [{'k': hostile_dashboard_label, 'n': 1, 's': 1}],
+                'byCategory': [{'k': hostile_dashboard_label, 'n': 1, 's': 1}],
+                'byTeamMember': [],
+                'approvalExceptionCount': 0,
+                'invalidAmountCount': 0,
+                'malformedRecordCount': 0,
+                'malformedFieldCount': 0,
+            },
+        }
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
+
+    page.route('**/api?*', inject_hostile_dashboard_summary)
+    page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('Spending trend') || "
+        "document.querySelector('#view')?.innerText.includes('Dashboard totals unavailable')"
+    )
+    dashboard_text = page.locator('#view').text_content() or ''
+    check(
+        len(dashboard_summary_interceptions) > 0
+        and hostile_dashboard_label in dashboard_text
+        and page.locator('#view [onload], #view [onerror]').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile dashboard summary labels remain text and cannot create active HTML handlers '
+        + '(intercepts=' + str(len(dashboard_summary_interceptions))
+        + ', summaryRendered=' + str('Spending trend' in dashboard_text) + ')',
+    )
+    page.unroute('**/api?*', inject_hostile_dashboard_summary)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'dashboardSummary'
+    ) as dashboard_recovery_response:
+        page.click('[data-act=range][data-k="30d"]')
+    recovered_summary = dashboard_recovery_response.value.json()
+    check(
+        dashboard_recovery_response.value.ok and recovered_summary.get('ok') is True,
+        'dashboard recovers with a successful live read after hostile test data is removed',
+    )
+    try:
+        page.wait_for_function(
+            "document.querySelector('#view')?.innerText.includes('TOTAL PAID')",
+            timeout=10000,
+        )
+    except Exception:
+        diagnostics = {
+            'activeNav': page.evaluate(
+                "document.querySelector('#nav button[aria-current=page]')?.dataset.v || ''"
+            ),
+            'viewText': (page.locator('#view').inner_text() or '')[:1600],
+            'viewStatus': page.locator('#view [role=alert], #view [role=status]').all_text_contents(),
+            'dashboardButtons': page.locator('#view [data-act=range]').evaluate_all(
+                "(items) => items.map((item) => ({key: item.dataset.k, disabled: item.disabled, active: item.classList.contains('on')}))"
+            ),
+            'request': json.loads(dashboard_recovery_response.value.request.post_data or '{}'),
+            'response': recovered_summary,
+            'browserErrors': logs[-15:],
+        }
+        print('DASHBOARD_RECOVERY_DIAGNOSTICS=' + json.dumps(diagnostics, ensure_ascii=False))
+        raise
+
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
     page.fill('#rq', 'Approval E2E vendor')
@@ -2938,14 +3032,26 @@ with sync_playwright() as p:
     )
     check(page.locator('#rbody tr').count() == 2, 'staff register 2 rows')
     page.fill('#rq', 'No matching voucher 987654')
-    page.wait_for_function("!document.querySelector('#rempty').classList.contains('hidden')")
+    page.wait_for_function(
+        "document.querySelector('#rempty .empty-state-message')?.textContent.includes('No vouchers match the current filters.')"
+    )
     check(
         page.locator('#rempty .empty-state-message').inner_text() == 'No vouchers match the current filters.'
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'register explains an empty filter result and offers a clear-filters action',
     )
-    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
-    page.wait_for_function("document.querySelector('#rq')?.value === ''")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == ''
+    ):
+        page.locator('#rempty [data-act=rclear]').click()
+    page.wait_for_function(
+        "document.querySelector('#rq')?.value === ''"
+        " && document.querySelector('#rs')?.value === 'ACTIVE'"
+        " && document.querySelector('#rempty')?.classList.contains('hidden') === true"
+        " && document.querySelectorAll('#rbody tr').length === 2"
+    )
     clear_filter_state = {
         'query': page.locator('#rq').input_value(),
         'rowCount': page.locator('#rbody tr').count(),
@@ -2972,8 +3078,19 @@ with sync_playwright() as p:
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'invalid register date range blocks misleading totals and CSV export with a recovery action',
     )
-    page.locator('#rempty [data-act=rclear]').evaluate('(element) => element.click()')
-    page.wait_for_function("document.querySelector('#rfrom')?.value === '' && document.querySelector('#rto')?.value === ''")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('from') == ''
+        and json.loads(response.request.post_data or '{}').get('to') == ''
+    ):
+        page.locator('#rempty [data-act=rclear]').click()
+    page.wait_for_function(
+        "document.querySelector('#rfrom')?.value === ''"
+        " && document.querySelector('#rto')?.value === ''"
+        " && document.querySelectorAll('#rbody tr').length >= 2"
+        " && !document.querySelector('#rf [data-act=csv]')?.disabled"
+    )
     check(
         page.locator('#rbody tr').count() >= 2
         and not page.locator('#rf [data-act=csv]').is_disabled(),
@@ -2988,18 +3105,26 @@ with sync_playwright() as p:
     # Treat a malformed persisted voucher number as untrusted at every HTML sink.
     number_payload = '<svg onload=window.__xssFired=true></svg>'
 
-    def tamper_bootstrap_voucher_number(route):
+    def tamper_register_page_voucher_number(route):
         request_data = json.loads(route.request.post_data or '{}')
+        action = request_data.get('action')
+        if action not in ('bootstrap', 'registerPage'):
+            route.continue_()
+            return
         response = route.fetch()
         payload = response.json()
-        vouchers = payload.get('data', {}).get('vouchers', [])
-        if request_data.get('action') == 'bootstrap' and vouchers:
-            vouchers[0]['no'] = number_payload
-            route.fulfill(response=response, json=payload)
+        data = payload.get('data', {})
+        if action == 'bootstrap':
+            vouchers = data.get('vouchers', [])
+            if isinstance(vouchers, list) and vouchers:
+                vouchers[0]['no'] = number_payload
         else:
-            route.fulfill(response=response)
+            items = data.get('items', [])
+            if items:
+                items[0]['no'] = number_payload
+        route.fulfill(response=response, json=payload)
 
-    page.route('**/api?*', tamper_bootstrap_voucher_number)
+    page.route('**/api?*', tamper_register_page_voucher_number)
     page.locator('[data-act=refresh]').click()
     page.wait_for_function(
         "document.querySelector('#rbody').innerText.includes(" + json.dumps(number_payload) + ")"
@@ -3018,7 +3143,7 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'malformed persisted voucher number remains inert text in the print template',
     )
-    page.unroute('**/api?*', tamper_bootstrap_voucher_number)
+    page.unroute('**/api?*', tamper_register_page_voucher_number)
     page.locator('[data-act=refresh]').click()
     page.wait_for_function(
         "document.querySelector('#rbody').innerText.includes('Ram Traders')"
@@ -3798,7 +3923,9 @@ with sync_playwright() as p:
     )
     page.fill('#bt', rows)
     page.click('[data-act=parse]')
-    page.wait_for_selector('#bprev table')
+    page.wait_for_function(
+        "document.querySelector('#bprev')?.innerText.includes('Bulk Imported Replacement Vendor')"
+    )
     choose_bulk_cash_impact_for_current_rows()
     preview_text = page.inner_text('#bprev')
     check(
@@ -3879,10 +4006,14 @@ with sync_playwright() as p:
 
     def tamper_dashboard_groups(route):
         request_data = json.loads(route.request.post_data or '{}')
+        action = request_data.get('action')
+        if action not in ('bootstrap', 'dashboardSummary', 'registerPage'):
+            route.continue_()
+            return
         response = route.fetch()
         payload = response.json()
         data = payload.get('data', {})
-        if request_data.get('action') == 'bootstrap':
+        if action == 'bootstrap':
             vouchers = data.get('vouchers', [])
             template = vouchers[0].copy() if vouchers else {
                 'id': '',
@@ -3979,9 +4110,21 @@ with sync_playwright() as p:
                         },
                     ])
                     data['vendors'] = vendors
-            route.fulfill(response=response, json=payload)
-        else:
-            route.fulfill(response=response)
+        elif action == 'dashboardSummary':
+            for key_name in ('topVendors', 'byCategory'):
+                data[key_name] = [
+                    {'k': value, 'n': 1, 's': 900001 + index}
+                    for index, value in enumerate(prototype_group_values)
+                ]
+            data['malformedRecordCount'] = 3
+            data['malformedFieldCount'] = 8
+            data['invalidAmountCount'] = max(1, int(data.get('invalidAmountCount') or 0))
+        elif action == 'registerPage':
+            totals = data.get('totals', {})
+            totals['malformedRecordCount'] = max(3, int(totals.get('malformedRecordCount') or 0))
+            totals['malformedFieldCount'] = max(8, int(totals.get('malformedFieldCount') or 0))
+            totals['invalidAmountCount'] = max(1, int(totals.get('invalidAmountCount') or 0))
+        route.fulfill(response=response, json=payload)
 
     page.route('**/api?*', tamper_dashboard_groups)
     with page.expect_response(
@@ -4003,8 +4146,8 @@ with sync_playwright() as p:
         'dashboard preserves prototype-named category groups',
     )
     check(
-        '3 malformed voucher record(s) omitted from Dashboard and Register' in page.locator('#view').inner_text()
-        and '8 malformed voucher field(s) handled for safe display' in page.locator('#view').inner_text()
+        '3 malformed voucher record(s) were omitted from normal financial calculations.' in page.locator('#view').inner_text()
+        and '8 malformed voucher field(s) were handled for safe display.' in page.locator('#view').inner_text()
         and '[object Object]' not in page.locator('#view').inner_text()
         and '1 recorded voucher amount(s) are invalid and excluded from totals.' in page.locator('#view').inner_text(),
         'dashboard announces shared malformed voucher diagnostics, excludes malformed amounts, and keeps coercion inert',
@@ -4145,6 +4288,8 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
+    page.wait_for_selector('.stats')
+    page.wait_for_selector('svg.chart')
     recovered_dashboard_text = page.locator('#view').inner_text()
     check(
         'Voucher data is unavailable' not in recovered_dashboard_text
@@ -4161,8 +4306,21 @@ with sync_playwright() as p:
         request_data = json.loads(route.request.post_data or '{}')
         response = route.fetch()
         payload = response.json()
+        action = request_data.get('action')
         data = payload.get('data', {})
-        if request_data.get('action') == 'bootstrap':
+        values = [
+            ('numeric-nan', 'NaN', 'numeric-nan'),
+            ('numeric-infinity', 'Infinity', 'numeric-infinity'),
+            ('numeric-null', None, 'numeric-null'),
+            ('numeric-empty', '', 'numeric-empty'),
+            ('numeric-boolean', True, 'numeric-boolean'),
+            ('numeric-negative', -500, 'numeric-negative'),
+            # A non-finite amount must stay in its own vendor group but never poison chart geometry.
+            ('numeric-string', hostile_vendor, 'numeric-string'),
+            # A large valid value makes the hostile text row deterministic in the top-eight vendor chart.
+            ('hostile-vendor', 910005, hostile_vendor),
+        ]
+        if action == 'bootstrap':
             vouchers = data.get('vouchers', [])
             template = vouchers[0].copy() if vouchers else {
                 'id': '',
@@ -4181,18 +4339,6 @@ with sync_playwright() as p:
                 'receipts': [],
                 'cancelReason': '',
             }
-            values = [
-                ('numeric-nan', 'NaN', 'numeric-nan'),
-                ('numeric-infinity', 'Infinity', 'numeric-infinity'),
-                ('numeric-null', None, 'numeric-null'),
-                ('numeric-empty', '', 'numeric-empty'),
-                ('numeric-boolean', True, 'numeric-boolean'),
-                ('numeric-negative', -500, 'numeric-negative'),
-                # A non-finite amount must stay in its own vendor group but never poison chart geometry.
-                ('numeric-string', hostile_vendor, 'numeric-string'),
-                # Large valid values make the hostile text row deterministic in the top-eight vendor chart.
-                ('hostile-vendor', 910005, hostile_vendor),
-            ]
             for index, (suffix, amount, vendor) in enumerate(values):
                 entry = template.copy()
                 entry.update({
@@ -4210,9 +4356,73 @@ with sync_playwright() as p:
                 vouchers.append(entry)
             data['vouchers'] = vouchers
             route.fulfill(response=response, json=payload)
+        elif action == 'dashboardSummary':
+            # The dashboard now consumes server aggregates instead of deriving charts
+            # from the bootstrap voucher array; corrupt the read-model response directly.
+            data['invalidAmountCount'] = max(7, int(data.get('invalidAmountCount') or 0))
+            data['topVendors'] = [
+                {'k': vendor, 'n': 1, 's': amount}
+                for _, amount, vendor in values
+            ]
+            route.fulfill(response=response, json=payload)
+        elif action == 'registerPage':
+            # Inject the same hostile values into the explicitly paginated Register result,
+            # since those rows no longer come from bootstrap.
+            items = data.get('items', [])
+            template = items[0].copy() if items else {
+                'id': '',
+                'no': 0,
+                'date': datetime.date.today().isoformat(),
+                'vendor': '',
+                'amount': 1,
+                'category': 'Other',
+                'notes': '',
+                'type': 'PAYMENT',
+                'status': 'ACTIVE',
+                'createdBy': 'owner@test.com',
+                'createdAt': '',
+                'updatedBy': '',
+                'updatedAt': '',
+                'receipts': [],
+                'cancelReason': '',
+                'cashImpact': 'CASH_OUT',
+                'approvalStatus': 'NOT_REQUIRED',
+                'approvedBy': '',
+                'approvedAt': '',
+                'approvalReason': '',
+            }
+            injected = []
+            for index, (suffix, amount, vendor) in enumerate(values):
+                entry = template.copy()
+                entry.update({
+                    'id': suffix,
+                    'no': 910001 + index,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': vendor,
+                    'category': 'Rendering boundary',
+                    'notes': '',
+                    'amount': amount,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'owner@test.com',
+                    'createdAt': '2026-10-23T00:00:00Z',
+                    'receipts': [],
+                    'cancelReason': '',
+                    'cashImpact': 'CASH_OUT',
+                    'approvalStatus': 'NOT_REQUIRED',
+                    'approvedBy': '',
+                    'approvedAt': '',
+                    'approvalReason': '',
+                })
+                injected.append(entry)
+            data['items'] = items + injected
+            data['totalCount'] = int(data.get('totalCount') or len(items)) + len(injected)
+            totals = data.get('totals', {})
+            totals['invalidAmountCount'] = max(7, int(totals.get('invalidAmountCount') or 0))
+            data['totals'] = totals
+            route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
-
     page.route('**/api?*', tamper_dashboard_numeric_values)
     with page.expect_response(
         lambda response: '/api?' in response.url
@@ -4279,6 +4489,7 @@ with sync_playwright() as p:
     )
     go_view(page, 'reg')
     page.wait_for_selector('#rtot')
+    page.locator('#rbody tr', has_text='numeric-nan').first.wait_for()
     register_amount_text = page.locator('#rtot').inner_text()
     check(
         'NaN' not in register_amount_text
@@ -4315,50 +4526,56 @@ with sync_playwright() as p:
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
 
-    # Simulate an unsafe legacy/imported API record in client state so rendering sinks
-    # remain tested independently of the server's new write-time name validator.
-    page.evaluate(
-        """async (payload) => {
-          const { S } = await import('/frontend/core/state.js');
-          const vendor = {
-            id: 'xss-render-vendor-fixture',
-            name: payload,
-            company: '',
-            mobile: '',
-            active: true,
-            defaultCategory: '',
-            defaultPaymentMethod: ''
-          };
-          const voucher = {
-            id: 'xss-render-voucher-fixture',
-            no: 998877,
-            date: new Date().toISOString().slice(0, 10),
-            vendor: payload,
-            vendorId: vendor.id,
-            paymentMethod: 'CASH',
-            amount: 13.5,
-            category: 'Other',
-            notes: '',
-            type: 'PAYMENT',
-            status: 'ACTIVE',
-            createdBy: S.me.email,
-            createdAt: new Date().toISOString(),
-            updatedBy: '',
-            updatedAt: '',
-            receipts: [],
-            cancelReason: '',
-            cashImpact: 'CASH_OUT',
-            approvalStatus: 'NOT_REQUIRED',
-            approvedBy: '',
-            approvedAt: '',
-            approvalReason: ''
-          };
-          S.vendors = [...(S.vendors || []).filter((item) => item.id !== vendor.id), vendor];
-          S.vouchers = [...(S.vouchers || []).filter((item) => item.id !== voucher.id), voucher];
-        }""",
-        xss_payload,
-    )
+    # Simulate an unsafe legacy/imported API row through the server-backed register
+    # response. The register no longer reads its visible rows from the bootstrap cache.
+    legacy_xss_voucher_enabled = True
+
+    def inject_legacy_xss_voucher(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        response = route.fetch()
+        payload = response.json()
+        if request_data.get('action') == 'registerPage' and legacy_xss_voucher_enabled:
+            data = payload.get('data', {})
+            items = data.get('items', [])
+            exists = any(item.get('id') == 'xss-render-voucher-fixture' for item in items if isinstance(item, dict))
+            if not exists:
+                items.append({
+                    'id': 'xss-render-voucher-fixture',
+                    'no': 998877,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': xss_payload,
+                    'vendorId': 'xss-render-vendor-fixture',
+                    'paymentMethod': 'CASH',
+                    'amount': 13.5,
+                    'category': 'Other',
+                    'notes': xss_note,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'owner@test.com',
+                    'createdAt': '2026-10-23T01:00:00Z',
+                    'updatedBy': '',
+                    'updatedAt': '',
+                    'receipts': [],
+                    'cancelReason': '',
+                    'cashImpact': 'CASH_OUT',
+                    'approvalStatus': 'NOT_REQUIRED',
+                    'approvedBy': '',
+                    'approvedAt': '',
+                    'approvalReason': '',
+                })
+                data['items'] = items
+                data['totalCount'] = int(data.get('totalCount') or 0) + 1
+                facets = data.setdefault('facets', {'vendors': [], 'users': []})
+                vendors = facets.setdefault('vendors', [])
+                if xss_payload not in vendors:
+                    vendors.append(xss_payload)
+            route.fulfill(response=response, json=payload)
+        else:
+            route.fulfill(response=response)
+
+    page.route('**/api?*', inject_legacy_xss_voucher)
     go_view(page, 'reg')
+    page.locator('#rbody tr', has_text=xss_payload).first.wait_for()
     page.wait_for_selector('[data-act=edit]')
     page.set_viewport_size({'width': 390, 'height': 844})
     manager_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
@@ -4755,6 +4972,7 @@ with sync_playwright() as p:
     )
     audit_context.close()
     xss_vendor_row = page.locator('#rbody tr', has_text=xss_payload).first
+    xss_vendor_row.wait_for()
     xss_vendor_row.locator('[data-act=cancel]').click()
     page.wait_for_selector('#modal #cr')
     check(
@@ -4765,20 +4983,19 @@ with sync_playwright() as p:
     )
     page.click('#modal [data-x]')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
-    page.evaluate(
-        """async () => {
-          const { S } = await import('/frontend/core/state.js');
-          S.vouchers = (S.vouchers || []).filter((item) => item.id !== 'xss-render-voucher-fixture');
-          S.vendors = (S.vendors || []).filter((item) => item.id !== 'xss-render-vendor-fixture');
-        }"""
-    )
+    legacy_xss_voucher_enabled = False
+    page.unroute('**/api?*', inject_legacy_xss_voucher)
     go_view(page, 'reg')
     page.wait_for_selector('[data-act=cancel]')
-    page.locator('[data-act=cancel]').first.click()
+    ram_traders_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
+    ram_traders_row.locator('[data-act=cancel]').click()
     page.fill('#cr', 'entered twice')
     page.click('.mcard .primary')
     page.wait_for_timeout(500)
     page.select_option('#rs', 'CANCELLED')
+    page.wait_for_function(
+        "document.querySelector('#rbody tr.cx')?.innerText.includes('Ram Traders')"
+    )
     check(page.locator('#rbody tr.cx').count() == 1, 'cancelled voucher visible under filter')
 
     # Exercise the recorded movement report through the actual browser/API mock.
@@ -5288,49 +5505,98 @@ with sync_playwright() as p:
         response = route.fetch()
         payload = response.json()
         data = payload.get('data', {})
-        if request_data.get('action') == 'bootstrap':
+        action = request_data.get('action')
+        if action == 'bootstrap':
             vouchers = data.get('vouchers', [])
-            template = next((item.copy() for item in vouchers if isinstance(item, dict)), {})
-            template.update({
-                'id': 'malformed-register-fixture',
-                'no': 999991,
-                'date': datetime.date.today().isoformat(),
-                'vendor': None,
-                'category': 'Other',
-                'notes': {'toString': None, 'valueOf': None},
-                'amount': 12.5,
-                'type': 'PAYMENT',
-                'status': 'ACTIVE',
-                'createdBy': 'm@test.com',
-                'createdAt': '2026-10-12T00:00:00.000Z',
-                'receipts': None,
-            })
-            vouchers.append(template)
             vouchers.append(None)
             data['vouchers'] = vouchers
             payload['data'] = data
+            route.fulfill(response=response, json=payload)
+        elif action == 'registerPage':
+            query = str(request_data.get('q') or '')
+            if query in ('', '999991'):
+                items = data.get('items', [])
+                items.append({
+                    'id': 'malformed-register-fixture',
+                    'no': 999991,
+                    'date': datetime.date.today().isoformat(),
+                    'vendor': None,
+                    'category': 'Other',
+                    'notes': {'toString': None, 'valueOf': None},
+                    'amount': 12.5,
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'm@test.com',
+                    'createdAt': '2026-10-12T00:00:00.000Z',
+                    'receipts': None,
+                    'cashImpact': 'CASH_OUT',
+                    'approvalStatus': 'NOT_REQUIRED',
+                    'approvedBy': '',
+                    'approvedAt': '',
+                    'approvalReason': '',
+                    'cancelReason': '',
+                    'updatedBy': '',
+                    'updatedAt': '',
+                    'vendorId': '',
+                })
+                data['items'] = items
+                data['totalCount'] = int(data.get('totalCount') or 0) + 1
+                totals = data.setdefault('totals', {})
+                totals['malformedRecordCount'] = max(
+                    1, int(totals.get('malformedRecordCount') or 0)
+                )
+                totals['malformedFieldCount'] = max(
+                    2, int(totals.get('malformedFieldCount') or 0)
+                )
+                facets = data.setdefault('facets', {'vendors': [], 'users': []})
+                if 'm@test.com' not in facets.get('users', []):
+                    facets.setdefault('users', []).append('m@test.com')
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
 
     page.route('**/api?*', tamper_register_metadata)
-    page.locator('[data-act=refresh]').click()
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and not json.loads(response.request.post_data or '{}').get('q')
+    ):
+        page.locator('[data-act=refresh]').click()
     page.wait_for_function(
-        "document.querySelector('#rtot').innerText.includes('1 malformed voucher record(s) omitted')"
+        "document.querySelector('[data-id=malformed-register-fixture][data-act=rec]') !== null"
+        " && document.querySelector('#rbody')?.innerText.includes('Receipt metadata unavailable')"
+        " && document.querySelector('#rtot')?.innerText.includes('malformed voucher record(s) omitted')"
     )
     check(
         page.locator('[data-id=malformed-register-fixture][data-act=rec]').count() == 1
         and 'Receipt metadata unavailable' in page.locator('#rbody').inner_text(),
         'register omits malformed voucher records and visibly flags missing receipt metadata',
     )
-    page.fill('#rq', '999991')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == '999991'
+    ):
+        page.fill('#rq', '999991')
+    page.wait_for_function(
+        "document.querySelector('#rbody tr [data-id=malformed-register-fixture][data-act=rec]') !== null"
+        " && document.querySelector('#rtot')?.innerText.includes('malformed voucher record(s) omitted')"
+    )
     check(
         page.locator('#rbody tr').count() == 1
         and 'malformed voucher record(s) omitted' in page.locator('#rtot').inner_text(),
         'register search tolerates null vendor and object-valued notes',
     )
-    page.fill('#rq', 'query with no match')
-    page.wait_for_function("!document.querySelector('#rempty').classList.contains('hidden')")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == 'query with no match'
+    ):
+        page.fill('#rq', 'query with no match')
+    page.wait_for_function(
+        "document.querySelector('#rempty .empty-state-message')?.textContent"
+        " === 'No vouchers match the current filters.'"
+    )
     check(
         page.locator('#rempty .empty-state-message').inner_text()
         == 'No vouchers match the current filters.',
@@ -5340,8 +5606,14 @@ with sync_playwright() as p:
     # isolate malformed receipt metadata from the current no-match search state.
     page.reload()
     page.wait_for_selector('[data-v=reg]')
-    go_view(page, 'reg')
-    page.wait_for_function("document.querySelector('#rbody')?.innerText.includes('999991')")
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ):
+        go_view(page, 'reg')
+    page.wait_for_function(
+        "document.querySelector('#rbody tr [data-id=malformed-register-fixture][data-act=rec]') !== null"
+    )
     page.locator('[data-id=malformed-register-fixture][data-act=rec]').click()
     page.wait_for_selector('#rimgs .receipt-error[role=alert]')
     check(
@@ -5999,8 +6271,10 @@ with sync_playwright() as p:
     page.wait_for_selector('#nres .ok-panel')
     ack_before = outbox_vendor_records(acknowledgement_vendor)
     check(
-        len(ack_before) == 1 and ack_before[0]['status'] == 'pending',
-        'acknowledgement-failure scenario begins with one pending offline entry',
+        len(ack_before) == 1
+        and ack_before[0]['status'] == 'pending'
+        and bool(ack_before[0].get('clientId')),
+        'acknowledgement-failure scenario begins with one pending entry and a stable transaction ID',
     )
     ack_client_id = ack_before[0]['clientId'] if ack_before else ''
 
@@ -6022,6 +6296,7 @@ with sync_playwright() as p:
         }"""
     )
     acknowledgement_fault = {'injected': False}
+    acknowledgement_request_client_ids = []
 
     def fail_ack_after_server_commit(route):
         try:
@@ -6037,6 +6312,14 @@ with sync_playwright() as p:
                 for entry in entries
             )
         )
+        if matches:
+            acknowledgement_request_client_ids.append(
+                [
+                    entry.get('clientId')
+                    for entry in entries
+                    if isinstance(entry, dict) and entry.get('vendor') == acknowledgement_vendor
+                ]
+            )
         if not acknowledgement_fault['injected'] and matches:
             response = route.fetch()
             if response.ok:
@@ -6057,9 +6340,8 @@ with sync_playwright() as p:
         )
     except Exception:
         check(False, 'acknowledgement transaction fault surfaces an explicit recovery message')
-    finally:
-        page.unroute('**/api?*', fail_ack_after_server_commit)
 
+    # Keep interception active through recovery so both create requests are inspected.
     ack_after_failure = outbox_vendor_records(acknowledgement_vendor)
     check(
         acknowledgement_fault['injected']
@@ -6087,17 +6369,50 @@ with sync_playwright() as p:
         'server-committed voucher remains present exactly once before acknowledgement retry',
     )
     page.evaluate("window.dispatchEvent(new Event('online'))")
+    ack_after_retry = {}
+    ack_queue_after_retry = outbox_vendor_records(acknowledgement_vendor)
+    ack_visible_rows = page.locator('#rbody tr', has_text=acknowledgement_vendor).count()
     for _ in range(50):
-        if not outbox_vendor_records(acknowledgement_vendor):
+        ack_after_retry = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+        ack_queue_after_retry = outbox_vendor_records(acknowledgement_vendor)
+        ack_visible_rows = page.locator('#rbody tr', has_text=acknowledgement_vendor).count()
+        if (
+            not ack_queue_after_retry
+            and ack_after_retry.get('acknowledgementCreateRequests') == 2
+            and ack_visible_rows == 1
+        ):
             break
         page.wait_for_timeout(200)
-    ack_after_retry = page.evaluate("() => fetch('/test-status').then((response) => response.json())")
+
+    # These assertions stay separate so a failure identifies the broken invariant rather than
+    # hiding whether it was network retry, IndexedDB acknowledgement, stable IDs, or UI refresh.
     check(
-        not outbox_vendor_records(acknowledgement_vendor)
-        and ack_after_retry.get('acknowledgementCreateRequests') == 2
-        and page.locator('#rbody tr', has_text=acknowledgement_vendor).count() == 1,
-        'same-ID acknowledgement retry clears the queue without creating a duplicate voucher',
+        ack_after_retry.get('acknowledgementCreateRequests') == 2,
+        'acknowledgement recovery resends exactly once (observed create requests: '
+        + str(ack_after_retry.get('acknowledgementCreateRequests'))
+        + ')',
     )
+    check(
+        acknowledgement_request_client_ids == [[ack_client_id], [ack_client_id]],
+        'acknowledgement retry reuses the original transaction ID (observed IDs: '
+        + json.dumps(acknowledgement_request_client_ids)
+        + '; expected: '
+        + json.dumps([[ack_client_id], [ack_client_id]])
+        + ')',
+    )
+    check(
+        not ack_queue_after_retry,
+        'successful acknowledgement removes the pending local entry (remaining records: '
+        + json.dumps(ack_queue_after_retry)
+        + ')',
+    )
+    check(
+        ack_visible_rows == 1,
+        'register refresh settles with exactly one server-committed voucher (visible matches: '
+        + str(ack_visible_rows)
+        + ')',
+    )
+    page.unroute('**/api?*', fail_ack_after_server_commit)
 
     # A SESSION response during background sync must trigger sign-in, not a permanent rejection.
     # Keep the queued item bound to its original account and submit it safely after reauthentication.

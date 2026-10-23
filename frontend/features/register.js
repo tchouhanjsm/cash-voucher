@@ -9,7 +9,6 @@ import {
   normalizeApprovalStatus,
   S,
   suggestCashImpact,
-  bySeq,
 } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import {
@@ -21,7 +20,6 @@ import {
   finiteAmount,
   money,
   parseAmt,
-  sumAmounts,
   today,
 } from '../core/utils.js';
 import { closeModal, dialog, fail, head, refreshBtn, toast } from '../core/ui.js';
@@ -40,6 +38,14 @@ export function createRegister({ api, go }) {
     limit: 100,
   };
   const receiptCache = {};
+  let pageRows = [];
+  let pageTotalCount = 0;
+  let pageTotals = null;
+  let pageFacets = { vendors: [], users: [] };
+  let pageRequestSequence = 0;
+  let pageLoading = false;
+  let pageError = null;
+  let filterDebounce = null;
 
   const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
   const scalarText = (value) =>
@@ -48,7 +54,7 @@ export function createRegister({ api, go }) {
       : '';
 
   function voucherRows() {
-    return Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
+    return Array.isArray(pageRows) ? pageRows.filter(isRecord) : [];
   }
 
   function voucherNo(voucher) {
@@ -70,44 +76,25 @@ export function createRegister({ api, go }) {
     return label;
   }
 
+  // The server has already applied the user's filters and authorization scope.
   function filtered() {
-    const query = R.q.toLowerCase();
-
-    return voucherRows()
-      .filter((voucher) => {
-        const vendor = scalarText(voucher.vendor).toLowerCase();
-        const notes = scalarText(voucher.notes).toLowerCase();
-        const number = voucherNo(voucher).toLowerCase();
-
-        return (
-          (R.st === 'ALL' || voucher.status === R.st) &&
-          (R.approval === 'ALL' ||
-            normalizeApprovalStatus(voucher.approvalStatus) === R.approval) &&
-          (!R.vendor || voucher.vendor === R.vendor) &&
-          (!R.cat || voucher.category === R.cat) &&
-          (!R.t || voucher.type === R.t) &&
-          (!R.user || voucher.createdBy === R.user) &&
-          (!R.from || scalarText(voucher.date) >= R.from) &&
-          (!R.to || scalarText(voucher.date) <= R.to) &&
-          (!query || number.includes(query) || vendor.includes(query) || notes.includes(query))
-        );
-      })
-      .sort(bySeq);
+    return voucherRows();
   }
 
   function renderTotals({
     dataAvailable,
     rangeInvalid,
     unavailableTotalsMessage,
-    list,
     paid,
     received,
     approvalExceptionCount,
     invalidAmountCount,
     malformedRecordCount,
     malformedFieldCount,
+    totalCount,
   }) {
     const target = $('#rtot');
+    if (!target) return;
     target.replaceChildren();
 
     const appendText = (value) => target.appendChild(document.createTextNode(value));
@@ -146,7 +133,7 @@ export function createRegister({ api, go }) {
     appendText(' ');
     const count = document.createElement('span');
     count.className = 'muted';
-    count.textContent = '(' + list.length + ' vouchers)';
+    count.textContent = '(' + totalCount + ' vouchers)';
     target.appendChild(count);
 
     if (approvalExceptionCount) {
@@ -168,62 +155,187 @@ export function createRegister({ api, go }) {
     }
   }
 
-  function renderRows() {
-    const sourceRows = Array.isArray(S.vouchers) ? S.vouchers : [];
-    const diagnostics = S.voucherDiagnostics || {
-      envelopeValid: true,
-      dataAvailable: true,
-      unavailableReason: '',
-      malformedRecordCount: 0,
-      malformedFieldCount: 0,
+  function queryFilters(offset, limit) {
+    return {
+      q: R.q,
+      vendor: R.vendor,
+      cat: R.cat,
+      user: R.user,
+      t: R.t,
+      from: R.from,
+      to: R.to,
+      st: R.st,
+      approval: R.approval,
+      offset,
+      limit,
     };
+  }
+
+  function syncFacets() {
+    const syncSelect = (select, placeholder, options, labelFor, selectedValue) => {
+      const fragment = document.createDocumentFragment();
+      const first = document.createElement('option');
+      first.value = '';
+      first.textContent = placeholder;
+      fragment.appendChild(first);
+      options.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item;
+        option.textContent = labelFor(item);
+        fragment.appendChild(option);
+      });
+      select.replaceChildren(fragment);
+      select.value = selectedValue;
+    };
+
+    const vendorSelect = $('#rv');
+    if (vendorSelect) {
+      const vendors = Array.isArray(pageFacets.vendors) ? pageFacets.vendors : [];
+      syncSelect(vendorSelect, 'All vendors', vendors, (vendor) => vendor, R.vendor);
+    }
+
+    const userSelect = $('#ru');
+    if (userSelect && can('viewAll')) {
+      const users = Array.isArray(pageFacets.users) ? pageFacets.users : [];
+      syncSelect(userSelect, 'All users', users, (user) => nm(user), R.user);
+    }
+  }
+
+  async function renderRows(options = {}) {
+    // A debounced filter can fire after navigation has detached the Register.
+    if (S.view !== 'reg' || !$('#rbody')) return;
+
+    const append = options.append === true;
+    const requestId = ++pageRequestSequence;
+    const diagnostics = S.voucherDiagnostics || {};
+    const bootstrapUnavailable =
+      S.offlineMode ||
+      navigator.onLine === false ||
+      diagnostics.dataAvailable === false ||
+      diagnostics.envelopeValid === false;
+    const rangeInvalid = Boolean(R.from && R.to && R.from > R.to);
+
+    pageError = null;
+    if (bootstrapUnavailable) {
+      pageRows = [];
+      pageTotalCount = 0;
+      pageTotals = null;
+      pageLoading = false;
+      R.limit = 100;
+      drawRows();
+      return;
+    }
+    if (rangeInvalid) {
+      pageRows = [];
+      pageTotalCount = 0;
+      pageTotals = null;
+      pageLoading = false;
+      R.limit = 100;
+      drawRows();
+      return;
+    }
+
+    const offset = append ? pageRows.length : 0;
+    if (!append) {
+      pageRows = [];
+      pageTotalCount = 0;
+      pageTotals = null;
+      R.limit = 100;
+      pageLoading = true;
+      drawRows();
+    } else {
+      const moreButton = $('#view [data-act="more"]');
+      if (moreButton) moreButton.disabled = true;
+    }
+
+    try {
+      const result = await api('registerPage', queryFilters(offset, 100));
+      if (requestId !== pageRequestSequence || S.view !== 'reg') return;
+
+      const items = Array.isArray(result?.items) ? result.items.filter(isRecord) : [];
+      pageRows = append ? pageRows.concat(items) : items;
+      pageTotalCount =
+        Number.isSafeInteger(result?.totalCount) && result.totalCount >= 0
+          ? result.totalCount
+          : pageRows.length;
+      pageTotals = result?.totals && typeof result.totals === 'object' ? result.totals : {};
+      pageFacets =
+        result?.facets && typeof result.facets === 'object'
+          ? result.facets
+          : { vendors: [], users: [] };
+      R.limit = pageRows.length;
+      pageLoading = false;
+      pageError = null;
+      syncFacets();
+      drawRows();
+    } catch (error) {
+      if (requestId !== pageRequestSequence || S.view !== 'reg') return;
+      pageRows = [];
+      pageTotalCount = 0;
+      pageTotals = null;
+      pageLoading = false;
+      pageError = error;
+      drawRows();
+    }
+  }
+
+  function loadMore() {
+    if (pageLoading || pageRows.length >= pageTotalCount || pageError) return;
+    return renderRows({ append: true });
+  }
+
+  function drawRows() {
+    // Stale callbacks must never attempt to render into a detached Register surface.
+    if (S.view !== 'reg' || !$('#rbody')) return;
+
+    const diagnostics = S.voucherDiagnostics || {};
     const dataAvailable =
-      diagnostics.dataAvailable !== false && diagnostics.envelopeValid !== false;
+      !pageError &&
+      !S.offlineMode &&
+      diagnostics.dataAvailable !== false &&
+      diagnostics.envelopeValid !== false;
+    const offlineUnavailable =
+      S.offlineMode || diagnostics.unavailableReason === 'offline' || navigator.onLine === false;
     const unavailableMessage =
-      diagnostics.unavailableReason === 'offline'
+      pageError?.message ||
+      (offlineUnavailable
         ? 'Voucher data is unavailable while offline. Reconnect and refresh to load saved vouchers.'
-        : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.';
+        : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.');
     const unavailableTotalsMessage =
-      diagnostics.unavailableReason === 'offline'
+      pageError?.message ||
+      (offlineUnavailable
         ? 'Totals unavailable while offline. Reconnect and refresh to load saved vouchers.'
-        : 'Totals unavailable because the voucher response was invalid. Refresh and retry.';
+        : 'Totals unavailable because the voucher response was invalid.');
     const rangeInvalid = dataAvailable && Boolean(R.from && R.to && R.from > R.to);
     const list = rangeInvalid || !dataAvailable ? [] : filtered();
     const shown = list.slice(0, R.limit);
     const malformedRecordCount = Math.max(
-      diagnostics.malformedRecordCount || 0,
-      sourceRows.length - voucherRows().length,
+      Number(pageTotals?.malformedRecordCount) || 0,
+      Number(diagnostics.malformedRecordCount) || 0,
     );
-    const malformedFieldCount = diagnostics.malformedFieldCount || 0;
-    const active = list.filter((voucher) => voucher.status === 'ACTIVE');
-    const paidItems = active.filter(
-      (voucher) =>
-        !isIn(voucher) &&
-        ['NOT_REQUIRED', 'APPROVED'].includes(normalizeApprovalStatus(voucher.approvalStatus)),
+    const malformedFieldCount = Math.max(
+      Number(pageTotals?.malformedFieldCount) || 0,
+      Number(diagnostics.malformedFieldCount) || 0,
     );
-    const receivedItems = active.filter(isIn);
-    const approvalExceptionCount = active.filter(
-      (voucher) =>
-        !isIn(voucher) &&
-        !['NOT_REQUIRED', 'APPROVED'].includes(normalizeApprovalStatus(voucher.approvalStatus)),
-    ).length;
-    const paid = sumAmounts(paidItems);
-    const received = sumAmounts(receivedItems);
-    const invalidAmountCount = active.filter(
-      (voucher) => finiteAmount(voucher.amount) === null,
-    ).length;
+    const approvalExceptionCount = Number(pageTotals?.approvalExceptionCount) || 0;
+    const invalidAmountCount = Math.max(
+      Number(pageTotals?.invalidAmountCount) || 0,
+      Number(diagnostics.invalidAmountCount) || 0,
+    );
+    const paid = finiteAmount(pageTotals?.paid) ?? 0;
+    const received = finiteAmount(pageTotals?.received) ?? 0;
 
     renderTotals({
       dataAvailable,
       rangeInvalid,
       unavailableTotalsMessage,
-      list,
       paid,
       received,
       approvalExceptionCount,
       invalidAmountCount,
       malformedRecordCount,
       malformedFieldCount,
+      totalCount: pageTotalCount,
     });
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
@@ -325,16 +437,35 @@ export function createRegister({ api, go }) {
       emptyState.classList.remove('hidden');
       const message = document.createElement('span');
       message.className = 'empty-state-message';
-      message.textContent = rangeInvalid
-        ? 'The start date must be on or before the end date. Correct the range or clear filters.'
-        : !dataAvailable
-          ? unavailableMessage
-          : voucherRows().length
-            ? 'No vouchers match the current filters.'
-            : 'No vouchers are available to show. If you are offline, reconnect and refresh; otherwise use New Entry to record the first payment or receipt.';
+      const hasActiveFilters = Boolean(
+        R.q ||
+        R.vendor ||
+        R.cat ||
+        R.user ||
+        R.t ||
+        R.from ||
+        R.to ||
+        R.st !== 'ACTIVE' ||
+        R.approval !== 'ALL',
+      );
+      message.textContent = pageLoading
+        ? 'Loading vouchers from the server…'
+        : rangeInvalid
+          ? 'The start date must be on or before the end date. Correct the range or clear filters.'
+          : !dataAvailable
+            ? unavailableMessage
+            : pageTotalCount
+              ? 'No vouchers are available on this page. Load more or clear filters.'
+              : hasActiveFilters
+                ? 'No vouchers match the current filters.'
+                : 'No vouchers are available to show. Use New Entry to record the first payment or receipt.';
       emptyState.appendChild(message);
 
-      if ((dataAvailable && voucherRows().length) || rangeInvalid) {
+      if (
+        (dataAvailable && hasActiveFilters) ||
+        rangeInvalid ||
+        (dataAvailable && pageTotalCount > shown.length)
+      ) {
         const clearButton = document.createElement('button');
         clearButton.type = 'button';
         clearButton.className = 'btn';
@@ -346,27 +477,31 @@ export function createRegister({ api, go }) {
 
     const more = $('#rmore');
     more.replaceChildren();
-    if (list.length > R.limit) {
+    if (list.length < pageTotalCount && !pageLoading) {
       const actions = document.createElement('div');
       actions.className = 'actions';
       const button = document.createElement('button');
       button.type = 'button';
       button.className = 'btn';
       button.dataset.act = 'more';
-      button.textContent = 'Show more (' + (list.length - R.limit) + ' left)';
+      button.textContent = 'Load more (' + (pageTotalCount - list.length) + ' left)';
       actions.appendChild(button);
       more.appendChild(actions);
     }
   }
 
   function render() {
-    const vouchers = voucherRows();
-    const vendors = [
-      ...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean)),
-    ].sort();
-    const users = [
-      ...new Set(vouchers.map((voucher) => scalarText(voucher.createdBy)).filter(Boolean)),
-    ];
+    const vouchers = Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
+    const vendors =
+      Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
+        ? pageFacets.vendors
+        : [
+            ...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean)),
+          ].sort();
+    const users =
+      Array.isArray(pageFacets.users) && pageFacets.users.length
+        ? pageFacets.users
+        : [...new Set(vouchers.map((voucher) => scalarText(voucher.createdBy)).filter(Boolean))];
 
     $('#view').innerHTML =
       head(
@@ -414,7 +549,7 @@ export function createRegister({ api, go }) {
     <button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div>
     <div class="card register-results-card"><div id="rtot" class="register-totals"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Payment register vouchers" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
 
-    renderRows();
+    return renderRows();
   }
 
   function updateFilter(event) {
@@ -431,9 +566,18 @@ export function createRegister({ api, go }) {
     };
     const key = mapping[event.target.id];
 
-    if (key && S.view === 'reg') {
-      R[key] = event.target.value;
-      R.limit = 100;
+    if (!key || S.view !== 'reg') return;
+    if (event.type === 'input' && event.target.id !== 'rq') return;
+    if (event.type === 'change' && event.target.id === 'rq') return;
+    R[key] = event.target.value;
+    R.limit = 100;
+    pageRows = [];
+    pageTotalCount = 0;
+    if (event.target.id === 'rq') {
+      pageRequestSequence++;
+      clearTimeout(filterDebounce);
+      filterDebounce = setTimeout(() => renderRows(), 220);
+    } else {
       renderRows();
     }
   }
@@ -454,13 +598,21 @@ export function createRegister({ api, go }) {
     render();
   }
 
-  function csvExport() {
-    if (
-      S.voucherDiagnostics?.dataAvailable === false ||
-      S.voucherDiagnostics?.envelopeValid === false
-    ) {
+  async function csvExport() {
+    const diagnostics = S.voucherDiagnostics || {};
+    const unavailable =
+      pageError ||
+      S.offlineMode ||
+      navigator.onLine === false ||
+      diagnostics.dataAvailable === false ||
+      diagnostics.envelopeValid === false;
+    if (unavailable) {
+      const offline =
+        S.offlineMode || diagnostics.unavailableReason === 'offline' || navigator.onLine === false;
       toast(
-        'Voucher data is unavailable. Reconnect and refresh before exporting the Register.',
+        offline
+          ? 'Voucher data is unavailable while offline. Reconnect and refresh before exporting the Register.'
+          : 'Voucher data is unavailable. Refresh and retry before exporting the Register.',
         'err',
       );
       return;
@@ -470,51 +622,80 @@ export function createRegister({ api, go }) {
       return;
     }
 
-    const rows = [
-      [
-        'No',
-        'Type',
-        'Date',
-        'Vendor',
-        'Category',
-        'CashImpact',
-        'Notes',
-        'Amount',
-        'Status',
-        'ApprovalStatus',
-        'ApprovedBy',
-        'ApprovedAt',
-        'ApprovalReason',
-        'CreatedBy',
-        'CreatedAt',
-        'Receipts',
-      ],
-    ].concat(
-      filtered().map((voucher) => [
-        voucherNo(voucher),
-        isIn(voucher) ? 'Received' : 'Payment',
-        dmy(scalarText(voucher.date)),
-        scalarText(voucher.vendor),
-        scalarText(voucher.category),
-        normalizeCashImpact(voucher.cashImpact),
-        scalarText(voucher.notes),
-        voucher.amount,
-        voucher.status,
-        normalizeApprovalStatus(voucher.approvalStatus),
-        scalarText(voucher.approvedBy),
-        scalarText(voucher.approvedAt),
-        scalarText(voucher.approvalReason),
-        nm(voucher.createdBy),
-        voucher.createdAt,
-        receiptMetadata(voucher).ids.length,
-      ]),
-    );
+    const button = $('#view [data-act="csv"]');
+    if (button) {
+      button.disabled = true;
+      button.setAttribute('aria-busy', 'true');
+    }
+    try {
+      const rows = [
+        [
+          'No',
+          'Type',
+          'Date',
+          'Vendor',
+          'Category',
+          'CashImpact',
+          'Notes',
+          'Amount',
+          'Status',
+          'ApprovalStatus',
+          'ApprovedBy',
+          'ApprovedAt',
+          'ApprovalReason',
+          'CreatedBy',
+          'CreatedAt',
+          'Receipts',
+        ],
+      ];
+      let offset = 0;
+      let total = null;
+      while (total === null || offset < total) {
+        const result = await api('registerPage', queryFilters(offset, 200));
+        const items = Array.isArray(result?.items) ? result.items.filter(isRecord) : [];
+        total = Number.isSafeInteger(result?.totalCount) ? result.totalCount : items.length;
+        if (!items.length && offset < total) {
+          throw new Error('The server returned an incomplete export page. Retry the export.');
+        }
+        items.forEach((voucher) => {
+          const receipts = receiptMetadata(voucher);
+          rows.push([
+            voucherNo(voucher),
+            isIn(voucher) ? 'Received' : 'Payment',
+            dmy(scalarText(voucher.date)),
+            scalarText(voucher.vendor),
+            scalarText(voucher.category),
+            normalizeCashImpact(voucher.cashImpact),
+            scalarText(voucher.notes),
+            voucher.amount,
+            voucher.status,
+            normalizeApprovalStatus(voucher.approvalStatus),
+            scalarText(voucher.approvedBy),
+            scalarText(voucher.approvedAt),
+            scalarText(voucher.approvalReason),
+            nm(scalarText(voucher.createdBy)),
+            scalarText(voucher.createdAt),
+            receipts.ids.length,
+          ]);
+        });
+        offset += items.length;
+        if (offset >= total) break;
+      }
 
-    download(
-      'vouchers-' + today() + '.csv',
-      '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n'),
-      'text/csv',
-    );
+      download(
+        'vouchers-' + today() + '.csv',
+        '\uFEFF' + rows.map((row) => row.map(csvCell).join(',')).join('\r\n'),
+        'text/csv',
+      );
+      toast('Exported ' + (rows.length - 1) + ' vouchers.', 'ok');
+    } catch (error) {
+      fail(error);
+    } finally {
+      if (button) {
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+      }
+    }
   }
 
   function edit(id) {
@@ -892,6 +1073,7 @@ export function createRegister({ api, go }) {
     bind,
     render,
     renderRows,
+    loadMore,
     clearFilters,
     csvExport,
     edit,

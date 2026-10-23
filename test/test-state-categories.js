@@ -72,6 +72,17 @@ async function run() {
   assert.equal(legacy.rows[0].cashImpact, 'UNCLASSIFIED');
   assert.equal(legacy.rows[1].cashImpact, 'UNCLASSIFIED');
   assert.equal(legacy.malformedFieldCount, 1);
+  assert.equal(legacy.invalidAmountCount, 2, 'missing legacy amounts are surfaced as invalid');
+
+  const malformedAmount = normalizeVoucherCollection([
+    { ...baseVoucher, id: 'malformed-amount', amount: { toString: null, valueOf: null } },
+  ]);
+  assert.equal(malformedAmount.rows.length, 1, 'amount metadata is a field-level diagnostic');
+  assert.equal(
+    malformedAmount.invalidAmountCount,
+    1,
+    'malformed amount is not counted as financial data',
+  );
 
   console.log(
     'Cash impact OK — suggestions, controlled vocabulary, and legacy normalization covered.',

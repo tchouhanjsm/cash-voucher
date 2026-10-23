@@ -84,6 +84,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
           unavailableReason: voucherData.envelopeValid ? '' : 'invalid-response',
           malformedRecordCount: voucherData.malformedRecordCount,
           malformedFieldCount: voucherData.malformedFieldCount,
+          invalidAmountCount: voucherData.invalidAmountCount,
         },
         vendors: data.vendors,
         names: data.names,
@@ -377,6 +378,10 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
           .catch(() => {});
       }
     }
+
+    // Expose async screen completion so callers such as background sync can wait
+    // until the active server-backed view reflects the latest committed data.
+    return renderResult;
   }
 
   async function refresh(quiet) {
@@ -394,7 +399,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
       if (!loaded) return;
       renderNav();
       // Background outbox sync may refresh data while a staff member is drafting an entry.
-      if (S.view !== 'new') go(S.view);
+      if (S.view !== 'new') await go(S.view);
       if (!quiet) toast('Updated.', 'ok');
     } catch (error) {
       if (!quiet) fail(error);

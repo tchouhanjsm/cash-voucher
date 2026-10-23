@@ -36,7 +36,7 @@ async function api(action, payload = {}) {
   }
 }
 
-const dashboard = createDashboard();
+const dashboard = createDashboard({ api });
 const reports = createReports({ api });
 const cashClose = createCashClose({ api });
 const onboarding = createOnboarding({ api });
@@ -144,10 +144,7 @@ registerActions({
 
   rec: ({ id }) => register.receipts(id),
 
-  more: () => {
-    register.state.limit += 200;
-    register.renderRows();
-  },
+  more: () => register.loadMore(),
 
   rclear: () => register.clearFilters(),
 
