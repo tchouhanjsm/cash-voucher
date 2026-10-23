@@ -158,6 +158,23 @@ assert.ok(
   'ZIP config validation must match the generated local override expression and endpoint',
 );
 assert.match(clientDistWorkflow, /name: Client staging dist zip/);
+for (const securityContract of [
+  'Header always set X-Content-Type-Options "nosniff"',
+  'Header always set X-Frame-Options "DENY"',
+  'Header always set Referrer-Policy "strict-origin-when-cross-origin"',
+  'Header always set Permissions-Policy',
+  "object-src 'none'",
+  "script-src 'self'",
+  "script-src-attr 'none'",
+  "frame-ancestors 'none'",
+  'Unsafe or external script source found',
+]) {
+  assert.ok(
+    clientDistWorkflow.includes(securityContract),
+    'staging ZIP workflow must enforce security contract: ' + securityContract,
+  );
+}
+assert.match(clientDistWorkflow, /release-manifest\\.json/);
 assert.match(clientDistWorkflow, /release-manifest\.json/);
 assert.match(
   clientDistWorkflow,
