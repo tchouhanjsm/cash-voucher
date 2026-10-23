@@ -74,7 +74,10 @@ assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\\.md/);
 assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
 assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
-assert.match(p0ReleaseBatch, /No production migration, deployment, DNS change or customer handover is authorized/);
+assert.match(
+  p0ReleaseBatch,
+  /No production migration, deployment, DNS change or customer handover is authorized/,
+);
 
 console.log(
   'Current-readiness documentation: latest merge, password terminology, active architecture and live-release boundaries are aligned.',
