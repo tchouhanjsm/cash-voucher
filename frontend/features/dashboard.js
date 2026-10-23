@@ -263,11 +263,15 @@ export function createDashboard({ api }) {
     } catch (error) {
       if (requestId !== summaryRequestId || S.view !== 'dash') return;
       const errorBody = renderShell(from, to);
-      appendStatusCard(
-        errorBody,
-        error?.message || 'The server could not calculate the dashboard. Refresh and retry.',
-        { title: 'Dashboard totals unavailable', role: 'alert' },
-      );
+      const unsupportedDashboardAction =
+        error?.code === 'NOT_FOUND' && /unknown action/i.test(String(error?.message || ''));
+      const message = unsupportedDashboardAction
+        ? 'The connected Apps Script deployment does not recognize dashboardSummary. The client and backend may be on different versions or this may be the wrong API URL. Verify the staging deployment identity and deploy the reviewed backend to that same staging project before retrying. Financial totals remain hidden.'
+        : error?.message || 'The server could not calculate the dashboard. Refresh and retry.';
+      appendStatusCard(errorBody, message, {
+        title: 'Dashboard totals unavailable',
+        role: 'alert',
+      });
       return;
     }
     if (requestId !== summaryRequestId || S.view !== 'dash') return;
