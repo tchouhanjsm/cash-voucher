@@ -147,6 +147,20 @@ assert.deepEqual(
   [5002],
 );
 assert.ok(candidates.length <= MAX_RECOVERIES_PER_RUN);
+
+const newerSuccessAfterTimeout = makeRun('ci.yml', 'client-main', MAIN_SHA, {
+  conclusion: 'success',
+  runAttempt: 1,
+  runId: 5005,
+  updatedAt: '2026-10-24T23:59:00.000Z',
+  expectedCurrentHeadSha: MAIN_SHA,
+});
+assert.deepEqual(
+  collectRecoveryCandidates([currentTimeout, newerSuccessAfterTimeout], [], NOW),
+  [],
+  'do not retry an older timed-out run when a newer exact-head run already succeeded',
+);
+
 const snapshot = baseSnapshot();
 snapshot.runs[1] = makeRun('e2e.yml', 'client-main', MAIN_SHA, {
   conclusion: 'failure',
@@ -178,6 +192,52 @@ snapshot.openPullRequests = [
 ];
 const report = buildMonitorReport(snapshot, NOW);
 assert.equal(report.state, 'BLOCKED');
+
+const latestAttemptSnapshot = baseSnapshot();
+latestAttemptSnapshot.runs.push(
+  makeRun('ci.yml', 'client-main', MAIN_SHA, {
+    conclusion: 'failure',
+    runAttempt: 2,
+    runId: 6001,
+    updatedAt: '2026-10-24T23:51:00.000Z',
+  }),
+  makeRun('ci.yml', 'client-main', MAIN_SHA, {
+    conclusion: 'success',
+    runAttempt: 1,
+    runId: 6002,
+    updatedAt: '2026-10-24T23:59:00.000Z',
+  }),
+);
+const latestAttemptReport = buildMonitorReport(latestAttemptSnapshot, NOW);
+assert.equal(latestAttemptReport.sourceChecks[0].runId, 6002);
+assert.equal(
+  latestAttemptReport.sourceChecks[0].code,
+  'PASS',
+  'a newer run must outrank an older rerun with a larger attempt number',
+);
+
+const cancelledSnapshot = baseSnapshot();
+cancelledSnapshot.runs[1] = makeRun('e2e.yml', 'client-main', MAIN_SHA, {
+  conclusion: 'cancelled',
+  runId: 6101,
+});
+const cancelledReport = buildMonitorReport(cancelledSnapshot, NOW);
+assert.equal(cancelledReport.sourceChecks[1].code, 'CANCELLED');
+assert.equal(cancelledReport.allSourceChecksPassed, false);
+assert.equal(
+  cancelledReport.state,
+  'WAITING_FOR_VALIDATION',
+  'a cancelled required check must never produce a source-green state',
+);
+
+const skippedSnapshot = baseSnapshot();
+skippedSnapshot.runs[1] = makeRun('e2e.yml', 'client-main', MAIN_SHA, {
+  conclusion: 'skipped',
+  runId: 6102,
+});
+const skippedReport = buildMonitorReport(skippedSnapshot, NOW);
+assert.equal(skippedReport.sourceChecks[1].code, 'SKIPPED');
+assert.equal(skippedReport.state, 'WAITING_FOR_VALIDATION');
 assert.equal(report.phase, 'P0 B6 — audit-health fallback and release gates.');
 assert.equal(report.sourceChecks[0].code, 'PASS');
 assert.equal(report.sourceChecks[1].code, 'FAIL');
