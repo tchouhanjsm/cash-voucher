@@ -10,8 +10,8 @@ function vOut_(o) {
     amount: Number(o.Amount),
     category: String(o.Category || ''),
     notes: String(o.Notes || ''),
-    type: o.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT',
-    status: String(o.Status || 'ACTIVE'),
+    type: o.Type === 'RECEIPT' || o.Type === 'PAYMENT' ? o.Type : 'UNKNOWN',
+    status: String(o.Status || 'UNKNOWN'),
     createdBy: String(o.CreatedBy || ''),
     createdAt: tsStr_(o.CreatedAt),
     updatedBy: String(o.UpdatedBy || ''),
@@ -31,7 +31,8 @@ function bootstrap_(user) {
   const vouchers = canViewRegister
     ? readAll_('Vouchers')
         .filter(function (o) {
-          return all || String(o.CreatedBy).toLowerCase() === user.email;
+          return (all || String(o.CreatedBy).toLowerCase() === user.email) &&
+            !readModelHasMalformedRecord_(o);
         })
         .sort(function (a, b) {
           return (
