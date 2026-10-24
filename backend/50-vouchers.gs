@@ -124,7 +124,7 @@ function sameClientVoucherPayload_(voucher, entry) {
     Number(voucher.Amount) === Number(entry.amount) &&
     String(voucher.Category || '') === entry.category &&
     String(voucher.Notes || '') === entry.notes &&
-    (voucher.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT') === entry.type &&
+    String(voucher.Type || '') === entry.type &&
     String(voucher.CashImpact || 'UNCLASSIFIED') === entry.cashImpact &&
     (entry.paymentMethod === undefined ||
       String(voucher.PaymentMethod || '') === entry.paymentMethod) &&
