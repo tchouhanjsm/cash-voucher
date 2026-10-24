@@ -44,7 +44,7 @@ assert.match(
   staging,
   /Authoritative integration baseline.*client-main.*176da7c559d279149e2473a65a71fd03d3e53018/,
 );
-assert.match(staging, /PR #207/);
+assert.match(staging, /PR #208/);
 assert.match(staging, /P0 B5/);
 assert.match(staging, /P0 B6/);
 assert.match(staging, /Settings-sheet fallback/);
