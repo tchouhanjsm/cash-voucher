@@ -192,7 +192,23 @@ const malformedUnknownTypeRecord = {
   Type: 'EXPENSE',
   CreatedAt: date + 'T13:45:00',
 };
-[malformedBlankStatusRecord, malformedMissingNumberRecord, malformedUnknownTypeRecord].forEach(
+const malformedBooleanNumberRecord = {
+  ...malformedRecord,
+  VoucherID: 'malformed-boolean-number-voucher-id',
+  VoucherNo: true,
+  Date: date,
+  Vendor: 'Malformed Boolean Number Vendor',
+  Amount: 550,
+  Status: 'ACTIVE',
+  Type: 'PAYMENT',
+  CreatedAt: date + 'T13:50:00',
+};
+[
+  malformedBlankStatusRecord,
+  malformedMissingNumberRecord,
+  malformedUnknownTypeRecord,
+  malformedBooleanNumberRecord,
+].forEach(
   (record) => {
     g.sheets.Vouchers.rows.push(
       g.sheets.Vouchers.rows[0].map((header) => record[header] ?? ''),
@@ -220,8 +236,8 @@ assert.equal(
 );
 assert.equal(
   filteredAfterMalformed.data.totals.malformedRecordCount,
-  4,
-  'invalid date, blank status, missing voucher number and unsupported type are surfaced as malformed records',
+  5,
+  'invalid date, blank status, missing or non-numeric voucher number and unsupported type are surfaced as malformed records',
 );
 assert.equal(
   filteredAfterMalformed.data.items.some((item) =>
@@ -230,6 +246,7 @@ assert.equal(
       'Malformed Blank Status Vendor',
       'Malformed Missing Number Vendor',
       'Malformed Unknown Type Vendor',
+      'Malformed Boolean Number Vendor',
     ].includes(item.vendor),
   ),
   false,
@@ -249,6 +266,7 @@ assert.equal(
       'Malformed Blank Status Vendor',
       'Malformed Missing Number Vendor',
       'Malformed Unknown Type Vendor',
+      'Malformed Boolean Number Vendor',
     ].includes(item.vendor),
   ),
   false,
@@ -300,7 +318,7 @@ assert.equal(
 );
 assert.equal(
   dashboardAfterMalformed.data.malformedRecordCount,
-  4,
+  5,
   'dashboard reports every structurally malformed record separately',
 );
 assert.equal(
