@@ -239,12 +239,7 @@ function collectRecoveryCandidates(runs, _openPullRequests, now) {
         run.headSha === run.expectedCurrentHeadSha,
     );
     if (!exactHeadRuns.length) continue;
-    const run = latestRun(
-      exactHeadRuns,
-      policy.id,
-      'client-main',
-      exactHeadRuns[0].headSha,
-    );
+    const run = latestRun(exactHeadRuns, policy.id, 'client-main', exactHeadRuns[0].headSha);
     if (!run || classifyRun(run, policy, now).code !== 'TIMEOUT_RETRY_ELIGIBLE') continue;
     if (!Number.isSafeInteger(Number(run.runId)) || Number(run.runId) <= 0) continue;
     candidates.push({
@@ -335,9 +330,14 @@ function buildMonitorReport(snapshot, now = new Date()) {
     ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
   );
   const incompleteSource = sourceChecks.filter((item) =>
-    ['NOT_RUN', 'PENDING', 'RUNNING', 'CANCELLED', 'SKIPPED', 'TIMEOUT_RETRY_ELIGIBLE'].includes(
-      item.code,
-    ),
+    [
+      'NOT_RUN',
+      'PENDING',
+      'RUNNING',
+      'CANCELLED',
+      'SKIPPED',
+      'TIMEOUT_RETRY_ELIGIBLE',
+    ].includes(item.code),
   );
   const blockedPrs = openPullRequests.filter((item) => item.state === 'BLOCKED');
   const waitingPrs = openPullRequests.filter((item) => item.state === 'WAITING_FOR_CHECKS');
