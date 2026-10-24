@@ -2182,6 +2182,20 @@ const malformedCloseRows = [
     CashImpact: 'CASH_OUT',
     ApprovalStatus: 'NOT_REQUIRED',
   },
+  {
+    VoucherID: 'close-boolean-number-regression',
+    VoucherNo: true,
+    Date: '2020-01-07',
+    Vendor: 'Close boolean number',
+    Amount: 75,
+    Category: 'Other',
+    Status: 'ACTIVE',
+    CreatedBy: 'owner@test.com',
+    ClientID: 'close-boolean-number-regression',
+    Type: 'PAYMENT',
+    CashImpact: 'CASH_OUT',
+    ApprovalStatus: 'NOT_REQUIRED',
+  },
 ].map((record) => malformedCloseHeaders.map((header) => record[header] ?? ''));
 g.sheets.Vouchers.rows.push(...malformedCloseRows);
 const malformedClosePreview = as(T, 'cashClosePreview', { date: '2020-01-07' });
@@ -2193,8 +2207,11 @@ ok(
     malformedClosePreview.data.invalidVouchers.some(
       (row) => row.id === 'close-invalid-status-regression',
     ) &&
+    malformedClosePreview.data.invalidVouchers.some(
+      (row) => row.id === 'close-boolean-number-regression',
+    ) &&
     !malformedClosePreview.data.readyToClose,
-  'cash-close preview blocks malformed voucher types and unsupported statuses',
+  'cash-close preview blocks malformed voucher types, unsupported statuses and coerced voucher numbers',
 );
 const malformedCloseAttempt = as(T, 'createCashClose', {
   date: '2020-01-07',
@@ -2205,7 +2222,7 @@ const malformedCloseAttempt = as(T, 'createCashClose', {
 });
 ok(
   !malformedCloseAttempt.ok && malformedCloseAttempt.code === 'CASH_CLOSE_DATA',
-  'cash close cannot finalize while same-date ledger rows have invalid type/status',
+  'cash close cannot finalize while same-date ledger rows have invalid type, status or voucher number',
 );
 g.sheets.Vouchers.rows.splice(malformedCloseStart, malformedCloseRows.length);
 ok(
