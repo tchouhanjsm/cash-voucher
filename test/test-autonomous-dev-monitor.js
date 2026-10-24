@@ -194,6 +194,8 @@ snapshot.openPullRequests = [
 ];
 const report = buildMonitorReport(snapshot, NOW);
 assert.equal(report.state, 'BLOCKED');
+assert.match(report.scheduleNote, /manual dispatch is not configured/);
+assert.doesNotMatch(report.scheduleNote, /event\/manual|event\/dispatch monitor/i);
 
 const latestAttemptSnapshot = baseSnapshot();
 latestAttemptSnapshot.runs[0] = makeRun('ci.yml', 'client-main', MAIN_SHA, {

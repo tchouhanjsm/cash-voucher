@@ -480,10 +480,10 @@ function buildMonitorReport(snapshot, now = new Date()) {
     },
     scheduleNote:
       snapshot.repository && snapshot.repository.defaultBranch !== 'client-main'
-        ? 'GitHub Actions cron only runs from the repository default branch (' +
+        ? 'GitHub scheduled workflows and workflow_dispatch require the workflow file on the default branch (' +
           snapshot.repository.defaultBranch +
-          '). This workflow is event/manual only while main remains read-only; ChatGPT supplies the configured hourly monitor.'
-        : 'Repository event/dispatch monitor; ChatGPT supplies the configured hourly review.',
+          '). This monitor is event-driven only while main remains frozen; manual dispatch is not configured. ChatGPT supplies the configured hourly monitor.'
+        : 'Repository event-driven monitor; manual dispatch is not configured. ChatGPT supplies the configured hourly review.',
     sourceRunCount: runs.length,
   };
 }
