@@ -700,7 +700,6 @@ export function createRegister({ api, go }) {
 
   function edit(id) {
     const voucher = voucherRows().find((item) => item.id === id);
-
     const body = document.createDocumentFragment();
 
     const date = document.createElement('input');
@@ -715,7 +714,10 @@ export function createRegister({ api, go }) {
     vendor.setAttribute('list', 'vlist');
     vendor.value = scalarText(voucher.vendor);
     vendor.required = true;
-    body.append(labeledControl('Paid to', vendor), vendorListNode());
+    body.append(
+      labeledControl(voucher.type === 'RECEIPT' ? 'Received from' : 'Paid to', vendor),
+      vendorListNode(),
+    );
 
     const amount = document.createElement('input');
     amount.id = 'ea';
@@ -729,9 +731,34 @@ export function createRegister({ api, go }) {
     category.appendChild(catOptionsNode(scalarText(voucher.category), voucher.type));
     body.appendChild(labeledControl('Category', category));
 
+    const knownPaymentMethods = ['CASH', 'UPI', 'BANK_TRANSFER'];
+    const paymentMethodLabels = { CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank transfer' };
+    const storedMethod = scalarText(voucher.paymentMethod).trim();
+    const storedMethodKnown = knownPaymentMethods.includes(storedMethod);
+    const paymentMethod = document.createElement('select');
+    paymentMethod.id = 'epm';
+    paymentMethod.required = !!storedMethod && !storedMethodKnown;
+    if (!storedMethodKnown) {
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = storedMethod
+        ? 'Unknown method — choose a valid method'
+        : 'Not recorded (legacy)';
+      placeholder.selected = true;
+      placeholder.disabled = !!storedMethod;
+      paymentMethod.appendChild(placeholder);
+    }
+    knownPaymentMethods.forEach((value) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = paymentMethodLabels[value];
+      paymentMethod.appendChild(option);
+    });
+    if (storedMethodKnown) paymentMethod.value = storedMethod;
+    body.appendChild(labeledControl('Payment method', paymentMethod));
+
     const cashImpact = document.createElement('select');
     cashImpact.id = 'eci';
-    cashImpact.required = true;
     const selectedImpact = normalizeCashImpact(voucher.cashImpact);
     if (!CASH_IMPACT_CHOICES.includes(selectedImpact)) {
       const placeholder = document.createElement('option');
@@ -748,16 +775,37 @@ export function createRegister({ api, go }) {
       cashImpact.appendChild(option);
     });
     if (CASH_IMPACT_CHOICES.includes(selectedImpact)) cashImpact.value = selectedImpact;
-    body.appendChild(labeledControl('Cash impact (required)', cashImpact));
+    body.appendChild(labeledControl('Cash impact', cashImpact));
 
     const cashImpactHint = document.createElement('p');
     cashImpactHint.className = 'muted';
-    const updateCashImpactHint = () => {
-      cashImpactHint.textContent =
-        'Category suggestion only: ' +
-        suggestCashImpact(voucher.type, category.value) +
-        '. Verify physical notes/coins movement; UPI, card, or bank transfer uses NO_CASH.';
+    const derivedImpact = (method) => {
+      if (method === 'CASH') return voucher.type === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT';
+      return 'NO_CASH';
     };
+    const updateCashImpactHint = () => {
+      const method = paymentMethod.value;
+      const suggestion = suggestCashImpact(voucher.type, category.value);
+      if (knownPaymentMethods.includes(method)) {
+        cashImpact.value = derivedImpact(method);
+        cashImpact.disabled = true;
+        cashImpact.required = false;
+        cashImpactHint.textContent =
+          'Cash impact is derived from ' +
+          paymentMethodLabels[method] +
+          ' (' +
+          cashImpact.value +
+          '). Changing the payment method updates drawer impact.';
+      } else {
+        cashImpact.disabled = false;
+        cashImpact.required = true;
+        cashImpactHint.textContent =
+          'Legacy payment method is not recorded. Category suggestion only: ' +
+          suggestion +
+          '. Verify physical cash movement; choose a method if known, otherwise classify the drawer impact.';
+      }
+    };
+    paymentMethod.addEventListener('change', updateCashImpactHint);
     category.addEventListener('change', updateCashImpactHint);
     updateCashImpactHint();
     body.appendChild(cashImpactHint);
@@ -775,18 +823,23 @@ export function createRegister({ api, go }) {
     reason.rows = 3;
     body.appendChild(labeledControl('Correction reason (required)', reason));
 
-    dialog(`Edit #${voucherNo(voucher)}`, body, async () => {
+    dialog('Edit #' + voucherNo(voucher), body, async () => {
+      const fields = {
+        date: $('#ed').value,
+        vendor: $('#ev').value,
+        amount: parseAmt($('#ea').value),
+        category: $('#ec').value,
+        cashImpact: $('#eci').value,
+        notes: $('#en').value,
+      };
+      const selectedMethod = paymentMethod.value;
+      if (knownPaymentMethods.includes(selectedMethod) || selectedMethod !== storedMethod) {
+        fields.paymentMethod = selectedMethod;
+      }
       const updated = await api('updateVoucher', {
         id,
         reason: $('#er').value,
-        fields: {
-          date: $('#ed').value,
-          vendor: $('#ev').value,
-          amount: parseAmt($('#ea').value),
-          category: $('#ec').value,
-          cashImpact: $('#eci').value,
-          notes: $('#en').value,
-        },
+        fields,
       });
 
       Object.assign(voucher, updated);

@@ -41,9 +41,10 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*d5ed3e77387d0f1896c97dbaac793ed23b17eb32/,
+  /Authoritative integration baseline.*client-main.*2231813ca97dd3c329b4c6bd92093a5b78f05e56/,
 );
-assert.match(staging, /PR #197/);
+assert.match(staging, /PR #206/);
+assert.match(staging, /P0 B5/);
 assert.match(staging, /CV_STAGING_UAT_OWNER_PASSWORD/);
 assert.match(appsScriptRunbook, /CV_STAGING_UAT_MANAGER_PASSWORD/);
 assert.match(appsScriptRunbook, /Setup preflight and safe recovery/);

@@ -3,13 +3,13 @@
 **Updated:** 24 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `27208e0565678b46c7b48f75ab3bc0f55989f54e` (PR #205 merged).  
+**Verified integration baseline:** `2231813ca97dd3c329b4c6bd92093a5b78f05e56` (PR #206 merged).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 B4 — live dashboard/register read-model contract coverage in guarded staging UAT. Feature branch: `client/p0-live-read-model-uat-20261024`. Review and merge are owner-controlled.
+**Current phase:** P0 B5 — post-merge deep-dive data-integrity and failure-recovery hardening. Feature branch: `client/deep-dive-data-integrity-20261024`. Live staging remains unverified.
 
 ## Verified source state
 
-- PR #205 is merged to `client-main` at `27208e0565678b46c7b48f75ab3bc0f55989f54e`. It added static Pages/Apache security policy validation, actionable dashboard handling for an unsupported `dashboardSummary` action, and presentation-only filtering of malformed legacy payee suggestions.
+- PR #205 is merged at `27208e0565678b46c7b48f75ab3bc0f55989f54e`; PR #206 is now merged at `2231813ca97dd3c329b4c6bd92093a5b78f05e56`. PR #206 added guarded staging read-model contract checks, sanitized evidence, the body-parser dependency pin and a time-boxed Zod advisory exception. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/project/version, cPanel response headers, Google resource isolation, schema state, backup/restore, and real-device acceptance still require operational evidence.
 - PR #204's server-backed dashboard/register read models are a key deployment contract. A stale target returning `Unknown action` for `dashboardSummary` must be detected before any synthetic financial write.
 - Payment-entry payees remain separate from vendor-master maintenance. Historical voucher rows must not be rewritten to clean suggestions.
@@ -25,6 +25,19 @@ The guarded staging UAT now validates the two server-backed read models before c
 4. Sanitized evidence records both read-model statuses without exposing endpoints, resource IDs, credentials or raw transcript text.
 
 No production operation or deployment is part of this source batch. The write-capable workflow remains manual-only and requires exact `STAGING-ONLY` confirmation, explicit staging-write consent and resource-isolation preflight.
+
+## Current engineering batch — P0 B5
+
+The deep-dive identified and is addressing the following correctness risks in this branch:
+
+- Receipt data is part of idempotency equality; same client ID with different receipt bytes must conflict rather than silently dropping new evidence.
+- Receipt list/type/base64 validation completes before any Drive write. Unsupported explicit voucher types and malformed receipt containers are rejected instead of being silently coerced to PAYMENT or treated as no receipts.
+- If a Sheets voucher append returns an error, the code rereads the ledger before deleting any new receipt files. If the state cannot be confirmed, receipt files are preserved. Settings counters are best-effort after a confirmed ledger save because next numbering is reconciled from saved voucher rows.
+- Client IDs use a null-prototype lookup map, avoiding special-key collisions such as `constructor` and `__proto__`.
+- A saved non-empty payment method and drawer cash impact are kept consistent. Legacy rows with blank payment method can still be deliberately classified without inventing historical rail data.
+- Daily Cash Close treats malformed status/type/identity rows for the selected business date as blockers rather than silently excluding or relabeling them.
+
+Regression coverage simulates post-commit write acknowledgement failure and settings-counter failure, retries by stable client ID, strict receipt validation, rail/cash consistency and corrupted ledger rows. These are mock-based tests; they do not prove live Apps Script behavior.
 
 ## Dependency advisory gate
 

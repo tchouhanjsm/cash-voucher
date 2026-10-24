@@ -20,7 +20,13 @@ function create(options = {}) {
     propsStore = {},
     cacheStore = {},
     files = {},
-    faults = { failNextAuditWrite: false, failNextAuditMarkerWrite: false, failNextMail: false },
+    faults = {
+      failNextAuditWrite: false,
+      failNextAuditMarkerWrite: false,
+      failNextMail: false,
+      failNextSettingWrite: false,
+      failNextVoucherWriteAfterCommit: false,
+    },
     mailLog = [],
     auditDiagnostics = [],
     lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false, afterAcquire: null },
@@ -38,6 +44,10 @@ function create(options = {}) {
           Array.from({ length: nc }, (_, j) => (rows[r - 1 + i] || [])[c - 1 + j] ?? ''),
         ),
       setValues: (v) => {
+        if (name === 'Settings' && faults.failNextSettingWrite) {
+          faults.failNextSettingWrite = false;
+          throw new Error('Simulated settings counter write failure');
+        }
         if (name === 'AuditLog' && faults.failNextAuditWrite) {
           faults.failNextAuditWrite = false;
           throw new Error('Simulated audit log write failure');
@@ -47,6 +57,10 @@ function create(options = {}) {
             (rows[r - 1 + i] ||= [])[c - 1 + j] = val;
           }),
         );
+        if (name === 'Vouchers' && faults.failNextVoucherWriteAfterCommit) {
+          faults.failNextVoucherWriteAfterCommit = false;
+          throw new Error('Simulated voucher write acknowledgement failure after commit');
+        }
       },
       setNumberFormat() {
         return this;
@@ -239,6 +253,12 @@ function create(options = {}) {
     sheets,
     failNextAuditWrite: () => {
       faults.failNextAuditWrite = true;
+    },
+    failNextSettingWrite: () => {
+      faults.failNextSettingWrite = true;
+    },
+    failNextVoucherWriteAfterCommit: () => {
+      faults.failNextVoucherWriteAfterCommit = true;
     },
     failNextAuditMarkerWrite: () => {
       faults.failNextAuditMarkerWrite = true;
