@@ -1,14 +1,13 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 21 October 2026  
-**Authoritative integration baseline:** client-main d5ed3e77387d0f1896c97dbaac793ed23b17eb32, following PR #197.  
-**Legacy baseline:** main b4fa94405c0e6a7393c36f43e168f8b54c99c408.  
-**Observed relationship:** client-main is 13 commits ahead and 2 behind main; merge base acebc6b63010a92e136200321fc77c03dac9a3be. Do not merge/rebase branches blindly.  
+**Audit date:** 24 October 2026  
+**Authoritative integration baseline:** client-main `2231813ca97dd3c329b4c6bd92093a5b78f05e56`, following PR #206.  
+**Legacy branch:** `main` (read-only by engineering policy; the actual ahead/behind relationship must be rechecked before any branch operation).  
 **Scope:** source and release-workflow audit, not live deployment, restore or customer acceptance.
 
 ## Executive status
 
-PR #197 (“streamline fast entry and add live batch totals”) is merged to client-main. Its reported CI/Quality, Browser E2E and Full Flight Test checks passed for the reviewed source commit. It contains source changes and mock-backed migration tests; it does not execute a Google Sheet migration, deploy an Apps Script Web App, publish the static frontend, verify live response headers or demonstrate backup/restore.
+PR #206 is the latest merged source baseline on client-main at `2231813ca97dd3c329b4c6bd92093a5b78f05e56`. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed. Source and mock tests do not execute a Google Sheet migration, deploy an Apps Script Web App, publish the static frontend, verify live response headers or demonstrate backup/restore.
 
 The branch policy names client-main as the only integration branch and main as legacy/read-only. Repository metadata still listed main as the default branch. Accessible branch-protection data did not prove active required-check/ruleset enforcement. Owner/admin must verify actual rulesets and default settings; this source PR must not change repository settings or reconcile divergent long-lived branches.
 
@@ -16,7 +15,7 @@ Dedicated staging resources, protected staging Environment, a real deployed stag
 
 ## Active release sequence
 
-Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PRs #197 and #198 are merged; live staging and customer acceptance remain unverified.
+Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #206 is the latest merged source baseline; live staging, isolated restore and customer acceptance remain unverified.
 
 **Evidence still required:** isolated staging identity and host access; inspected pre-migration backup; schema validation and only required staging migrations; backend-first deploy and staging-configured frontend; exact-run guarded UAT; live role, receipt, payment-method, offline and print checks; and restore into a separate recovery target. The hotel pilot remains blocked until those gates pass. Production is excluded.
 
@@ -67,6 +66,18 @@ The current npm registry audit surfaced a new high-severity `body-parser` adviso
 The current latest upstream `@google/clasp@3.4.1` declares `zod ^3.25.76`. The Zod advisory (GHSA-mrhx-c7xc-m3w5) is fixed starting at 4.6.6, which is a major-version change outside Clasp's declared dependency range. Rather than downgrade Clasp or force an unverified major override, the source audit uses an advisory-specific exception through **9 November 2026** for that developer/CI-tooling path only. The exception is temporary, not a vulnerability fix; the release owner must re-evaluate an upstream-compatible Clasp/Zod update by its review date. The static client artifact excludes Node dependencies.
 
 This does not relax the gate for unrelated high/critical findings or second advisories on Zod. Exact-head CI must verify the package-lock/install behavior before the batch is reviewable.
+
+## Deep-dive integrity review — P0 B5
+
+The code audit identified and is addressing five high-impact correctness cases:
+
+1. **Voucher/receipt atomicity:** a Sheets write can report an error after its rows have committed. Blindly deleting created receipt files in that path leaves saved voucher rows referencing missing attachments. The revised flow rereads the ledger before cleanup and preserves receipt files when a row is persisted or persistence cannot be verified.
+2. **Counter resilience:** next-number setting writes occur after the voucher ledger append. They are now best-effort after a successful append; numbering is still computed against the ledger so a failed settings update does not report a committed payment as a failed transaction.
+3. **Idempotent evidence:** retries must match receipt count, MIME and bytes as well as voucher fields. Same client ID with changed receipt evidence now conflicts; prototype-like IDs are safe lookup keys.
+4. **Input integrity and cash semantics:** malformed receipt lists/base64 and unsupported explicit types fail validation before Drive writes. A stored payment method constrains drawer impact; old rows with no recorded method remain manually classifiable without backfilling historical method data.
+5. **Close integrity:** malformed status/type/ID/number rows for a business date are surfaced as blockers. Daily Cash Close may not silently omit them or label an unknown voucher type as a payment.
+
+These safeguards are verified with unit/mock fault-injection tests on the B5 branch. They are not evidence of live Google Sheets/Drive transaction behavior. In the remaining operational phase, the owner must deliberately run authorized staging UAT, inspect real attachment references, verify the host response headers, and demonstrate a restore into a separate recovery destination.
 
 ## Priority 0 — required before staging is verified
 
