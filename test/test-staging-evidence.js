@@ -88,6 +88,19 @@ for (const sensitiveValue of [
   );
 }
 
+const incompleteReadModelEvidence = buildStagingEvidence(
+  baseEnv,
+  [
+    'PASS: owner session is authorized',
+    'PASS: the UAT payment is cancelled with a retained audit trace',
+    'STAGING UAT: 2 checks passed, 0 failures.',
+  ].join('\\n'),
+);
+assert.deepEqual(incompleteReadModelEvidence.liveReadModels, {
+  dashboardSummary: 'not-confirmed',
+  registerPage: 'not-confirmed',
+});
+
 const failedLog = [
   'PASS: source preflight completed',
   'CLEANUP: test marker was not uniquely recoverable; owner review is required.',
