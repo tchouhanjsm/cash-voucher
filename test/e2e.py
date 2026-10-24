@@ -4866,6 +4866,14 @@ with sync_playwright() as p:
                     'lastFailureAt': '2026-10-16T09:10:00',
                     'lastFailureKind': hostile_audit_health_kind,
                 }
+            elif audit_health_mode['status'] == 'MONITORING_UNAVAILABLE_WITH_MARKER':
+                payload['data']['auditHealth'] = {
+                    'status': 'MONITORING_UNAVAILABLE',
+                    'failureCount': 2,
+                    'lastFailureAt': '2026-10-24T19:20:00.000Z',
+                    'lastFailureKind': 'EVENT_BATCH',
+                    'markerDurability': 'SCRIPT_PROPERTIES',
+                }
             else:
                 payload['data']['auditHealth'] = {
                     'status': 'NO_KNOWN_FAILURE',
@@ -4945,6 +4953,33 @@ with sync_playwright() as p:
         and degraded_audit_snapshot.get('monitoring', {}).get('failureCount') == 3
         and degraded_audit_snapshot.get('monitoring', {}).get('lastFailureKind') == hostile_audit_health_kind,
         'degraded JSON snapshot preserves failure metadata for owner follow-up',
+    )
+    audit_health_mode['status'] = 'MONITORING_UNAVAILABLE_WITH_MARKER'
+    go_view(audit_page, 'dash')
+    go_view(audit_page, 'audit')
+    audit_page.wait_for_function(
+        "document.querySelector('#aud-health [role=alert]')?.innerText.includes('2 write failure(s) recorded')",
+        timeout=10000,
+    )
+    mixed_audit_health_text = audit_page.locator('#aud-health').inner_text()
+    check(
+        'monitoring could not verify all failure-marker stores' in mixed_audit_health_text.lower()
+        and '2 write failure(s) recorded' in mixed_audit_health_text
+        and 'script properties' in mixed_audit_health_text.lower()
+        and audit_page.locator('#aud-health [role=alert]').count() == 1,
+        'partial marker-store outage stays unavailable while exposing a known failure marker',
+    )
+    with audit_page.expect_download() as mixed_snapshot_download_info:
+        audit_page.click('[data-act=audhealth]')
+    mixed_snapshot_download = mixed_snapshot_download_info.value
+    with open(mixed_snapshot_download.path(), encoding='utf-8') as mixed_snapshot_file:
+        mixed_audit_snapshot = json.load(mixed_snapshot_file)
+    check(
+        mixed_audit_snapshot.get('monitoring', {}).get('status') == 'MONITORING_UNAVAILABLE'
+        and mixed_audit_snapshot.get('monitoring', {}).get('failureCount') == 2
+        and mixed_audit_snapshot.get('monitoring', {}).get('lastFailureKind') == 'EVENT_BATCH'
+        and mixed_audit_snapshot.get('monitoring', {}).get('markerDurability') == 'SCRIPT_PROPERTIES',
+        'unavailable health export preserves known marker metadata without claiming monitoring is healthy',
     )
     audit_health_mode['status'] = 'INVALID_RESPONSE'
     go_view(audit_page, 'dash')

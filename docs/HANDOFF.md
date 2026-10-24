@@ -1,30 +1,28 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 24 October 2026  
+**Updated:** 25 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `e90ef5dfb005745136c0522d983fd42c38db38ff` (PR #207 merged).  
+**Verified integration baseline:** `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208 merged; exact-head source checks passed).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 B6 — audit-health failover, truthful monitoring states and pagination contract. Feature branch: `client/p0-audit-health-fallback-20261024`. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness. PR #208 delivered the P0 B6 audit-health fallback; the current review branch `client/p0-audit-monitoring-integrity-20261025` hardens mixed valid/corrupt marker-store states. Live staging remains unverified; owner retains merge/deploy authority.
 
 ## Verified source state
 
-- PR #205, #206 and #207 are merged to `client-main`. The latest source baseline is `e90ef5dfb005745136c0522d983fd42c38db38ff`.
-- Exact-head integration checks passed after PR #207: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247679), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247678), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247717).
+- PRs #205–#208 are merged to `client-main`. The latest source baseline is `176da7c559d279149e2473a65a71fd03d3e53018`.
+- Exact-head integration checks passed after PR #208: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100024), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100025), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100077).
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
-- The owner-only `auditLog` endpoint exposes audit monitoring. The previous monitor relied only on Script Properties, so a primary marker write failure could hide an AuditLog append failure. The B6 branch adds a Settings-sheet durable fallback and a transient cache fallback, distinguishes unavailable monitoring, and keeps health data on empty cursor pages.
+- The owner-only `auditLog` endpoint exposes audit monitoring. PR #208 added a Settings-sheet durable fallback, a six-hour transient cache fallback, marker durability metadata, and health data on empty cursor pages. The current follow-up makes any unreadable or malformed marker source report `MONITORING_UNAVAILABLE` even when another store retains a valid marker, while preserving known failure details in the owner UI and export.
 - The temporary `GHSA-mrhx-c7xc-m3w5` Zod exception from PR #206 remains a separate risk, due for reassessment by 9 November 2026. Do not force a major-version override of Clasp's declared Zod dependency.
 
-## Current batch — P0 B6
+## P0 B6 — merged source behavior and follow-up
 
-1. Preserve one audit-health response contract for populated, empty and terminal cursor pages.
-2. On an audit append failure, persist the marker in Script Properties and in the Settings-sheet fallback. If both durable stores fail, attempt a clearly labeled transient CacheService marker with a six-hour TTL.
-3. Return `MONITORING_UNAVAILABLE` when marker sources cannot be read or a stored marker is malformed; never translate an unknown source state into `NO_KNOWN_FAILURE`.
-4. Expose marker durability in the owner UI and health export so the owner can distinguish Properties, Settings fallback, temporary cache and unavailable monitoring.
-5. Fault-injection coverage checks primary-store fallback, transient-cache fallback, corrupt markers and the case where every marker write fails.
+PR #208 implements the audit-health response contract for populated, empty and terminal cursor pages. On an audit append failure, the backend attempts Script Properties and a Settings-sheet durable fallback; if both fail, it attempts a CacheService marker with a six-hour TTL. The owner API and export expose marker durability and distinguish a transient cache-only signal from durable markers.
 
-This improves common failure cases; it does not reconstruct missing AuditLog events. If AuditLog, Script Properties, Settings and CacheService all fail to persist the marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. That residual risk remains visible in tests and documentation.
+The current review branch closes a mixed-state defect found during the deep dive: a valid marker in one store must not hide another store that is unreadable or malformed. The response must remain `MONITORING_UNAVAILABLE`, while retaining any known failure count, timestamp, kind and marker source in the owner UI/export. Regression coverage includes valid Properties + corrupt Settings, valid Settings + corrupt Properties, and the case where every marker write fails.
+
+This does not reconstruct missing AuditLog events. If AuditLog, Script Properties, Settings and CacheService all fail to persist the marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. That residual risk remains visible in tests and documentation.
 
 ## Release gates that remain open
 

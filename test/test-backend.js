@@ -2821,6 +2821,62 @@ if (invalidFallbackIndex >= 0) {
   auditMarkerOutageMock.sheets.Settings.rows.splice(invalidFallbackIndex, 1);
 }
 
+/* A valid marker must not hide a malformed or unavailable companion store. */
+auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'DEGRADED';
+auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = '2';
+auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT = '2026-10-24T19:20:00.000Z';
+auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND = 'EVENT_BATCH';
+auditMarkerOutageMock.sheets.Settings.rows.push(['auditWriteFailureMarker', '{not-json']);
+const mixedCorruptFallbackHealth = auditMarkerOutageMock.call('auditLog', {
+  token: markerPinChange.data.token,
+});
+assert(
+  mixedCorruptFallbackHealth.ok &&
+    mixedCorruptFallbackHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+    mixedCorruptFallbackHealth.data.auditHealth.failureCount === 2 &&
+    mixedCorruptFallbackHealth.data.auditHealth.markerDurability === 'SCRIPT_PROPERTIES',
+  'a valid Script Properties marker does not mask a malformed Settings fallback',
+);
+delete auditMarkerOutageMock.props.AUDIT_WRITE_STATUS;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND;
+const mixedCorruptFallbackIndex = auditMarkerOutageMock.sheets.Settings.rows.findIndex(
+  (row) => row[0] === 'auditWriteFailureMarker',
+);
+if (mixedCorruptFallbackIndex >= 0) {
+  auditMarkerOutageMock.sheets.Settings.rows.splice(mixedCorruptFallbackIndex, 1);
+}
+
+auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'INVALID';
+auditMarkerOutageMock.sheets.Settings.rows.push([
+  'auditWriteFailureMarker',
+  JSON.stringify({
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 3,
+    lastFailureAt: '2026-10-24T19:21:00.000Z',
+    lastFailureKind: 'SINGLE_EVENT',
+  }),
+]);
+const mixedCorruptPropertiesHealth = auditMarkerOutageMock.call('auditLog', {
+  token: markerPinChange.data.token,
+});
+assert(
+  mixedCorruptPropertiesHealth.ok &&
+    mixedCorruptPropertiesHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+    mixedCorruptPropertiesHealth.data.auditHealth.failureCount === 3 &&
+    mixedCorruptPropertiesHealth.data.auditHealth.markerDurability === 'SETTINGS_SHEET',
+  'a valid Settings fallback does not mask a malformed Script Properties marker',
+);
+delete auditMarkerOutageMock.props.AUDIT_WRITE_STATUS;
+const mixedCorruptPropertiesIndex = auditMarkerOutageMock.sheets.Settings.rows.findIndex(
+  (row) => row[0] === 'auditWriteFailureMarker',
+);
+if (mixedCorruptPropertiesIndex >= 0) {
+  auditMarkerOutageMock.sheets.Settings.rows.splice(mixedCorruptPropertiesIndex, 1);
+}
+
 /* An outage of every marker store remains an explicitly tested residual limitation. */
 auditMarkerOutageMock.failNextAuditWrite();
 auditMarkerOutageMock.failNextAuditMarkerWrite();
