@@ -59,7 +59,10 @@ assert.equal(success.steps.preflight, 'success');
 assert.equal(success.steps.deployment, 'success');
 assert.equal(success.uat.status, 'passed');
 assert.equal(success.uat.checksPassed, 4);
-assert.deepEqual(success.liveReadModels, { dashboardSummary: 'passed', registerPage: 'passed' });
+assert.deepEqual(success.liveReadModels, {
+  dashboardSummary: 'passed',
+  registerPage: 'passed',
+});
 assert.equal(success.uat.cleanupStatus, 'cancelled-audit-retained');
 assert.match(success.uat.transcriptSha256, /^[a-f0-9]{64}$/);
 assert.deepEqual(success.disclosure, {
@@ -145,7 +148,10 @@ try {
   assert.match(markdown, /Live registerPage contract: passed/);
   assert.equal(markdown.includes(secretApiUrl), false);
   assert.equal(evidence.uat.checksPassed, 4);
-  assert.deepEqual(evidence.liveReadModels, { dashboardSummary: 'passed', registerPage: 'passed' });
+  assert.deepEqual(evidence.liveReadModels, {
+    dashboardSummary: 'passed',
+    registerPage: 'passed',
+  });
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
