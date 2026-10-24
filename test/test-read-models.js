@@ -161,6 +161,44 @@ const malformedRecord = {
 g.sheets.Vouchers.rows.push(
   g.sheets.Vouchers.rows[0].map((header) => malformedRecord[header] ?? ''),
 );
+const malformedBlankStatusRecord = {
+  ...malformedRecord,
+  VoucherID: 'malformed-blank-status-voucher-id',
+  VoucherNo: 99997,
+  Date: date,
+  Vendor: 'Malformed Blank Status Vendor',
+  Amount: 250,
+  Status: '',
+  CreatedAt: date + 'T13:00:00',
+};
+const malformedMissingNumberRecord = {
+  ...malformedRecord,
+  VoucherID: 'malformed-missing-number-voucher-id',
+  VoucherNo: '',
+  Date: date,
+  Vendor: 'Malformed Missing Number Vendor',
+  Amount: 350,
+  Status: 'ACTIVE',
+  CreatedAt: date + 'T13:30:00',
+};
+const malformedUnknownTypeRecord = {
+  ...malformedRecord,
+  VoucherID: 'malformed-unknown-type-voucher-id',
+  VoucherNo: 99996,
+  Date: date,
+  Vendor: 'Malformed Unknown Type Vendor',
+  Amount: 450,
+  Status: 'ACTIVE',
+  Type: 'EXPENSE',
+  CreatedAt: date + 'T13:45:00',
+};
+[malformedBlankStatusRecord, malformedMissingNumberRecord, malformedUnknownTypeRecord].forEach(
+  (record) => {
+    g.sheets.Vouchers.rows.push(
+      g.sheets.Vouchers.rows[0].map((header) => record[header] ?? ''),
+    );
+  },
+);
 const filteredAfterMalformed = g.call('registerPage', {
   token: owner,
   from: date,
@@ -182,13 +220,39 @@ assert.equal(
 );
 assert.equal(
   filteredAfterMalformed.data.totals.malformedRecordCount,
-  1,
-  'malformed record is surfaced as a data-quality count',
+  4,
+  'invalid date, blank status, missing voucher number and unsupported type are surfaced as malformed records',
 );
 assert.equal(
-  filteredAfterMalformed.data.items.some((item) => item.vendor === 'Malformed Hidden Vendor'),
+  filteredAfterMalformed.data.items.some((item) =>
+    [
+      'Malformed Hidden Vendor',
+      'Malformed Blank Status Vendor',
+      'Malformed Missing Number Vendor',
+      'Malformed Unknown Type Vendor',
+    ].includes(item.vendor),
+  ),
   false,
   'malformed voucher data never reaches the normal register rows',
+);
+assert.equal(
+  filteredAfterMalformed.data.totals.malformedFieldCount,
+  2,
+  'blank status and voucher-number fields contribute to field-level data-quality diagnostics',
+);
+const bootstrapAfterMalformed = g.call('bootstrap', { token: owner });
+assert.equal(bootstrapAfterMalformed.ok, true, 'bootstrap remains available with malformed ledger rows');
+assert.equal(
+  bootstrapAfterMalformed.data.vouchers.some((item) =>
+    [
+      'Malformed Hidden Vendor',
+      'Malformed Blank Status Vendor',
+      'Malformed Missing Number Vendor',
+      'Malformed Unknown Type Vendor',
+    ].includes(item.vendor),
+  ),
+  false,
+  'bootstrap excludes malformed rows instead of normalizing unknown types into payments',
 );
 const pendingInvalidAmountRow = {
   VoucherID: 'pending-invalid-amount-read-model-row',
@@ -236,8 +300,8 @@ assert.equal(
 );
 assert.equal(
   dashboardAfterMalformed.data.malformedRecordCount,
-  1,
-  'dashboard reports the malformed record separately',
+  4,
+  'dashboard reports every structurally malformed record separately',
 );
 assert.equal(
   dashboardAfterMalformed.data.invalidAmountCount,
@@ -248,6 +312,11 @@ assert.equal(
   dashboardAfterMalformed.data.approvalExceptionCount,
   2,
   'pending invalid-amount payments remain in approval exception counts',
+);
+assert.equal(
+  dashboardAfterMalformed.data.malformedFieldCount,
+  2,
+  'dashboard field-quality count includes blank values even when those rows are excluded from totals',
 );
 
 const voucherHeaders = g.sheets.Vouchers.rows[0];
