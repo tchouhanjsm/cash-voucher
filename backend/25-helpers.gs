@@ -462,17 +462,19 @@ function recordAuditWriteFailure_(kind, error) {
     console.error('Could not persist the Settings-sheet audit-write fallback:', fallbackError);
   }
 
-  try {
-    if (typeof CacheService !== 'undefined') {
-      CacheService.getScriptCache().put(
-        AUDIT_WRITE_CACHE_KEY_,
-        serialized,
-        AUDIT_WRITE_CACHE_TTL_SECONDS_,
-      );
-      cachePersisted = true;
+  if (!propertiesPersisted && !settingsPersisted) {
+    try {
+      if (typeof CacheService !== 'undefined') {
+        CacheService.getScriptCache().put(
+          AUDIT_WRITE_CACHE_KEY_,
+          serialized,
+          AUDIT_WRITE_CACHE_TTL_SECONDS_,
+        );
+        cachePersisted = true;
+      }
+    } catch (cacheError) {
+      console.error('Could not persist the transient audit-write cache marker:', cacheError);
     }
-  } catch (cacheError) {
-    console.error('Could not persist the transient audit-write cache marker:', cacheError);
   }
 
   if (!propertiesPersisted && !settingsPersisted && !cachePersisted) {
@@ -490,7 +492,7 @@ function auditWriteHealth_() {
   const markers = [propertyState.marker, settingsState.marker, cacheState.marker].filter(Boolean);
   const status = markers.length
     ? 'DEGRADED'
-    : propertyState.available && settingsState.available
+    : propertyState.available && settingsState.available && cacheState.available
       ? 'NO_KNOWN_FAILURE'
       : 'MONITORING_UNAVAILABLE';
   const durability =
@@ -527,6 +529,74 @@ function auditWriteHealth_() {
   };
 }
 
+function audit_(user, action, target, details, detailsMaxLength) {
+  try {
+    appendRows_('AuditLog', [
+      {
+        Time: nowIso_(),
+        User: user.email,
+        Action: action,
+        Target: target || '',
+        Details: clean_(details, detailsMaxLength || 300),
+      },
+    ]);
+  } catch (e) {
+    recordAuditWriteFailure_('SINGLE_EVENT', e);
+  }
+}
+function auditEventDetails_(eventType, entityType, entityId, reason, changes, summary) {
+  return JSON.stringify({
+    version: 1,
+    eventId: Utilities.getUuid(),
+    eventType: String(eventType || ''),
+    entityType: String(entityType || ''),
+    entityId: String(entityId || ''),
+    reason: String(reason || ''),
+    summary: String(summary || ''),
+    changes: Array.isArray(changes) ? changes : [],
+  });
+}
+function auditEvent_(
+  user,
+  action,
+  target,
+  eventType,
+  entityType,
+  entityId,
+  reason,
+  changes,
+  summary,
+) {
+  audit_(
+    user,
+    action,
+    target,
+    auditEventDetails_(eventType, entityType, entityId, reason, changes, summary),
+    5000,
+  );
+}
+function auditEventRows_(events) {
+  if (!Array.isArray(events) || !events.length) return;
+  const timestamp = nowIso_();
+  try {
+    appendRows_(
+      'AuditLog',
+      events.map(function (event) {
+        return {
+          Time: event.Time || event.time || timestamp,
+          User: event.User || event.user || '',
+          Action: event.Action || event.action || '',
+          Target: event.Target || event.target || '',
+          Details: clean_(event.Details || event.details || '', 5000),
+        };
+      }),
+    );
+  } catch (e) {
+    // Audit persistence remains best-effort so a completed financial write is not misreported.
+    // Record the gap durably so an owner can see it and reconcile the affected period.
+    recordAuditWriteFailure_('EVENT_BATCH', e);
+  }
+}
 function can_(user, perm) {
   if (!user || !Object.prototype.hasOwnProperty.call(PERMS, user.role)) return false;
   const permissions = PERMS[user.role];
