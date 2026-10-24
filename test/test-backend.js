@@ -2821,6 +2821,44 @@ if (invalidFallbackIndex >= 0) {
   auditMarkerOutageMock.sheets.Settings.rows.splice(invalidFallbackIndex, 1);
 }
 
+/* A syntactically valid JSON marker with malformed metadata is still unavailable. */
+for (const malformedMarker of [
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 1,
+    lastFailureAt: 'not-a-timestamp',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 1,
+    lastFailureAt: '2026-10-24T19:22:00.000Z',
+    lastFailureKind: '',
+  },
+]) {
+  auditMarkerOutageMock.sheets.Settings.rows.push([
+    'auditWriteFailureMarker',
+    JSON.stringify(malformedMarker),
+  ]);
+  const malformedMetadataHealth = auditMarkerOutageMock.call('auditLog', {
+    token: markerPinChange.data.token,
+  });
+  assert(
+    malformedMetadataHealth.ok &&
+      malformedMetadataHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+      malformedMetadataHealth.data.auditHealth.markerDurability === 'UNKNOWN',
+    'unparseable timestamps and empty failure kinds make a stored Settings marker unavailable',
+  );
+  const malformedMetadataIndex = auditMarkerOutageMock.sheets.Settings.rows.findIndex(
+    (row) => row[0] === 'auditWriteFailureMarker',
+  );
+  if (malformedMetadataIndex >= 0) {
+    auditMarkerOutageMock.sheets.Settings.rows.splice(malformedMetadataIndex, 1);
+  }
+}
+
 /* A valid marker must not hide a malformed or unavailable companion store. */
 auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'DEGRADED';
 auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = '2';

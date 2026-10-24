@@ -361,17 +361,28 @@ function parseAuditFailureMarker_(raw, source) {
     marker.version !== 1 ||
     marker.status !== 'DEGRADED' ||
     !Number.isSafeInteger(Number(marker.failureCount)) ||
-    Number(marker.failureCount) < 1 ||
-    typeof marker.lastFailureAt !== 'string' ||
-    typeof marker.lastFailureKind !== 'string'
+    Number(marker.failureCount) < 1
   ) {
     return null;
   }
+
+  const lastFailureAt =
+    typeof marker.lastFailureAt === 'string' ? marker.lastFailureAt.trim() : '';
+  const lastFailureKind =
+    typeof marker.lastFailureKind === 'string' ? marker.lastFailureKind.trim() : '';
+  if (
+    !lastFailureAt ||
+    !Number.isFinite(Date.parse(lastFailureAt)) ||
+    !lastFailureKind
+  ) {
+    return null;
+  }
+
   return {
     source: source,
     failureCount: Number(marker.failureCount),
-    lastFailureAt: marker.lastFailureAt,
-    lastFailureKind: marker.lastFailureKind,
+    lastFailureAt: lastFailureAt,
+    lastFailureKind: lastFailureKind,
   };
 }
 
