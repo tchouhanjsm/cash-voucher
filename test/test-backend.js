@@ -1661,6 +1661,20 @@ ok(
   'disable staff',
 );
 ok(as(S, 'bootstrap').code === 'SESSION', 'disabled user session dead');
+const nonBooleanActive = as(T, 'saveUser', {
+  id: sm.id,
+  name: sm.name,
+  email: sm.email,
+  role: sm.role,
+  active: 'false',
+});
+const disabledUserRow = g.sheets.Users.rows.find((row) => row[0] === sm.id);
+ok(
+  !nonBooleanActive.ok &&
+    nonBooleanActive.code === 'VALIDATION' &&
+    disabledUserRow[4] === false,
+  'string false cannot be coerced into reactivating a disabled user',
+);
 const userUpdateAudit = [...g.sheets.AuditLog.rows]
   .reverse()
   .find((row) => row[2] === 'USER_UPDATE' && row[3] === sm.email);
