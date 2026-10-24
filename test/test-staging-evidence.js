@@ -94,7 +94,7 @@ const incompleteReadModelEvidence = buildStagingEvidence(
     'PASS: owner session is authorized',
     'PASS: the UAT payment is cancelled with a retained audit trace',
     'STAGING UAT: 2 checks passed, 0 failures.',
-  ].join('\\n'),
+  ].join('\n'),
 );
 assert.deepEqual(incompleteReadModelEvidence.liveReadModels, {
   dashboardSummary: 'not-confirmed',
