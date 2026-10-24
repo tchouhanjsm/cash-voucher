@@ -1,6 +1,6 @@
 import { categories, rcats, S } from './state.js';
 import { ls } from './storage.js';
-import { esc } from './utils.js';
+import { esc, hasPayeeLetter } from './utils.js';
 
 export const catOpts = (selected, type) =>
   (type === 'RECEIPT' ? rcats() : categories())
@@ -12,7 +12,7 @@ export const catOpts = (selected, type) =>
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
 
 function vendorName(value) {
-  return typeof value === 'string' && value.trim() ? value : '';
+  return hasPayeeLetter(value) ? value : '';
 }
 
 function vendorNames() {

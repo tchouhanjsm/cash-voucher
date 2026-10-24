@@ -18,6 +18,8 @@ const uiSystem = read('docs/UI-SHELL-AND-DESIGN-SYSTEM.md');
 const audit = read('docs/FINAL-REPOSITORY-AUDIT-2026-10-17.md');
 const sinkInventory = read('docs/ACTIVE-DOM-SINK-INVENTORY.md');
 const securityAudit = read('docs/SECURITY-RENDERING-AUDIT.md');
+const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
+const p0ReleaseBatch = read('docs/P0-RELEASE-BATCH-B1-B3.md');
 
 assert.match(project, /password authentication/i);
 assert.match(project, /backend\/\*\.gs/);
@@ -66,6 +68,15 @@ assert.match(
 assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
+);
+assert.match(executionPlan, /aa37d94819e59a72c797ba36839aa8f8ec94008f/);
+assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
+assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
+assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
+assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
+assert.match(
+  p0ReleaseBatch,
+  /No production migration, deployment, DNS change or customer handover is authorized/,
 );
 
 console.log(

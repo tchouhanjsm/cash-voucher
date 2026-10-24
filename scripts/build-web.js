@@ -58,6 +58,75 @@ function validateApiUrl(value) {
   return url.toString();
 }
 
+function validateSecurityHeaders(source, format = 'apache') {
+  if (typeof source !== 'string' || !source.trim()) {
+    throw new Error('Generated security policy is empty.');
+  }
+
+  const apache = format === 'apache';
+  const required = apache
+    ? [
+        'Header always set X-Content-Type-Options "nosniff"',
+        'Header always set X-Frame-Options "DENY"',
+        'Header always set Referrer-Policy "strict-origin-when-cross-origin"',
+        'Header always set Permissions-Policy "camera=(self), microphone=(), geolocation=(), payment=()"',
+        'Header always set Content-Security-Policy',
+      ]
+    : [
+        'X-Content-Type-Options: nosniff',
+        'X-Frame-Options: DENY',
+        'Referrer-Policy: strict-origin-when-cross-origin',
+        'Permissions-Policy: camera=(self), microphone=(), geolocation=(), payment=()',
+        'Content-Security-Policy:',
+      ];
+
+  for (const marker of required) {
+    if (!source.includes(marker)) {
+      throw new Error('Generated ' + format + ' security policy is missing: ' + marker);
+    }
+  }
+
+  const csp = source.match(/Content-Security-Policy(?::|\s+)\s*"?([^"\n]+)"?/i);
+  if (!csp) {
+    throw new Error('Generated ' + format + ' security policy has no readable CSP.');
+  }
+
+  const directives = new Map(
+    csp[1]
+      .split(';')
+      .map((directive) => directive.trim())
+      .filter(Boolean)
+      .map((directive) => {
+        const separator = directive.search(/\s/);
+        return separator === -1
+          ? [directive.toLowerCase(), '']
+          : [directive.slice(0, separator).toLowerCase(), directive.slice(separator + 1).trim()];
+      }),
+  );
+
+  const expectedDirectives = {
+    'default-src': "'self'",
+    'base-uri': "'self'",
+    'object-src': "'none'",
+    'script-src': "'self'",
+    'script-src-attr': "'none'",
+    'frame-src': "'none'",
+    'frame-ancestors': "'none'",
+  };
+
+  for (const [name, expected] of Object.entries(expectedDirectives)) {
+    if (directives.get(name) !== expected) {
+      throw new Error('Generated ' + format + ' CSP must set ' + name + ' to ' + expected + '.');
+    }
+  }
+
+  if (/\bunsafe-eval\b/i.test(csp[1]) || /\bscript-src\s+[^;]*(?:\*|https?:)/i.test(csp[1])) {
+    throw new Error('Generated ' + format + ' CSP allows an unsafe or external script source.');
+  }
+
+  return true;
+}
+
 function buildWebSite(options = {}) {
   const rootDir = path.resolve(options.rootDir || path.join(__dirname, '..'));
   const outDir = path.resolve(options.outDir || path.join(rootDir, 'dist'));
@@ -126,6 +195,9 @@ window.CV_CONFIG = {
   fs.writeFileSync(path.join(outDir, '.htaccess'), APACHE_SECURITY_HEADERS, 'utf8');
   fs.writeFileSync(path.join(outDir, '.nojekyll'), '', 'utf8');
 
+  validateSecurityHeaders(fs.readFileSync(path.join(outDir, '_headers'), 'utf8'), 'pages');
+  validateSecurityHeaders(fs.readFileSync(path.join(outDir, '.htaccess'), 'utf8'), 'apache');
+
   return {
     outDir,
     apiUrl,
@@ -154,10 +226,11 @@ if (require.main === module) {
       'API target origin validated: ' + new URL(result.apiUrl).origin + ' (deployment ID omitted).',
     );
     console.log('Published asset files: ' + result.files);
+    console.log('Generated CSP and host-header policies passed static security validation.');
   } catch (error) {
     console.error('Static customer client build failed: ' + error.message);
     process.exitCode = 1;
   }
 }
 
-module.exports = { buildWebSite, validateApiUrl };
+module.exports = { buildWebSite, validateApiUrl, validateSecurityHeaders };

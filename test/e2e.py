@@ -1241,6 +1241,51 @@ with sync_playwright() as p:
         print('DASHBOARD_RECOVERY_DIAGNOSTICS=' + json.dumps(diagnostics, ensure_ascii=False))
         raise
 
+    # A stale Apps Script deployment must yield a safe, actionable error, never guessed totals.
+    unsupported_dashboard_interceptions = []
+
+    def inject_unsupported_dashboard_action(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        unsupported_dashboard_interceptions.append(True)
+        route.fulfill(
+            status=200,
+            content_type='application/json',
+            body=json.dumps({'ok': False, 'error': 'Unknown action.', 'code': 'NOT_FOUND'}),
+        )
+
+    page.route('**/api?*', inject_unsupported_dashboard_action)
+    page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes("
+        "'The connected Apps Script deployment does not recognize dashboardSummary')"
+    )
+    unsupported_dashboard_text = page.locator('#view').inner_text()
+    check(
+        len(unsupported_dashboard_interceptions) == 1
+        and 'Verify the staging deployment identity' in unsupported_dashboard_text
+        and 'Financial totals remain hidden.' in unsupported_dashboard_text
+        and page.locator('#view .stat').count() == 0,
+        'unsupported dashboardSummary action explains the staging mismatch and hides all totals',
+    )
+    page.unroute('**/api?*', inject_unsupported_dashboard_action)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'dashboardSummary'
+    ) as dashboard_after_unsupported_response:
+        page.click('[data-act=range][data-k="30d"]')
+    check(
+        dashboard_after_unsupported_response.value.ok
+        and dashboard_after_unsupported_response.value.json().get('ok') is True,
+        'dashboard recovers after the unsupported-action error is removed',
+    )
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('TOTAL PAID')",
+        timeout=10000,
+    )
+
     go_view(page, 'reg')
     page.wait_for_selector('#rq')
     page.fill('#rq', 'Approval E2E vendor')
@@ -6695,6 +6740,30 @@ with sync_playwright() as p:
             approvedAt: '',
             approvalReason: ''
           });
+          S.vouchers.push({
+            id: 'invalid-numeric-recent-payee-fixture',
+            no: 998879,
+            date: new Date().toISOString().slice(0, 10),
+            vendor: '6777767777888(+----+;;;)',
+            vendorId: '',
+            paymentMethod: 'CASH',
+            amount: 13,
+            category: 'Other',
+            notes: '',
+            type: 'PAYMENT',
+            status: 'ACTIVE',
+            createdBy: S.me.email,
+            createdAt: new Date().toISOString(),
+            updatedBy: '',
+            updatedAt: '',
+            receipts: [],
+            cancelReason: '',
+            cashImpact: 'CASH_OUT',
+            approvalStatus: 'NOT_REQUIRED',
+            approvedBy: '',
+            approvedAt: '',
+            approvalReason: ''
+          });
         }""",
         xss_payload,
     )
@@ -6707,6 +6776,13 @@ with sync_playwright() as p:
     page.wait_for_selector('#rows .erow .row-error')
     check(
         page.locator('#recentVendors .vchip', has_text='svg onload').count() >= 1
+        and not any(
+            '6777767777888(+----+;;;)' in name
+            for name in page.locator('#recentVendors .vchip').all_text_contents()
+        )
+        and '6777767777888(+----+;;;)' not in page.locator('#vlist option').evaluate_all(
+            "options => options.map(option => option.value)"
+        )
         and page.locator('#recentVendors svg, #recentVendors img').count() == 0
         and page.locator('#rows .erow .row-error').inner_text().startswith('Possible duplicate')
         and page.locator('#rows svg:not(.i), #rows img').count() == 0
@@ -6716,7 +6792,10 @@ with sync_playwright() as p:
     page.evaluate(
         """async () => {
           const { S } = await import('/frontend/core/state.js');
-          S.vouchers = (S.vouchers || []).filter((item) => item.id !== 'xss-recent-payee-fixture');
+          S.vouchers = (S.vouchers || []).filter(
+            (item) =>
+              !['xss-recent-payee-fixture', 'invalid-numeric-recent-payee-fixture'].includes(item.id)
+          );
         }"""
     )
 

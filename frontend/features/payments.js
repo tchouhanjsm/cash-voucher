@@ -9,7 +9,17 @@ import {
   vno,
 } from '../core/state.js';
 import { busy, fail, head, icon, toast } from '../core/ui.js';
-import { addDays, compress, dmy, money, parseAmt, scalarText, today, uid } from '../core/utils.js';
+import {
+  addDays,
+  compress,
+  dmy,
+  hasPayeeLetter,
+  money,
+  parseAmt,
+  scalarText,
+  today,
+  uid,
+} from '../core/utils.js';
 import { validateRecoveryRecords } from '../core/recovery-validation.js';
 
 export function createPayments({ api, refresh }) {
@@ -459,7 +469,7 @@ export function createPayments({ api, refresh }) {
       .forEach((voucher) => {
         const name = scalarText(voucher.vendor).trim();
         const key = name.toLowerCase();
-        if (!name || seen.has(key) || names.length >= limit) return;
+        if (!hasPayeeLetter(name) || seen.has(key) || names.length >= limit) return;
         seen.add(key);
         names.push(name);
       });
