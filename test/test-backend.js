@@ -2846,7 +2846,9 @@ assert(
       (row) => row[14] === 'audit-marker-all-stores-failed-test',
     ) &&
     auditMarkerOutageMock.auditDiagnostics.some((entry) =>
-      entry.includes('Audit health is unrecorded: Script Properties, Settings fallback and transient cache all failed.'),
+      entry.includes(
+        'Audit health is unrecorded: Script Properties, Settings fallback and transient cache all failed.',
+      ),
     ),
   'financial write succeeds but emits an explicit diagnostic when all audit-health marker stores fail',
 );
