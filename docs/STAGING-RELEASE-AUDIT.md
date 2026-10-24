@@ -132,7 +132,6 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.
 
-
 ## Autonomous delivery monitor
 
 The repository has an event/manual monitor targeting client-main. It observes exact-SHA CI, Browser E2E and Full Flight Test; summarizes PR reviews/checks and staging/ZIP workflow runs; reports stalled, timeout and failure states; and persists a bounded run history to one GitHub checkpoint issue and workflow artifact.

@@ -44,7 +44,6 @@ This improves common failure cases; it does not reconstruct missing AuditLog eve
 - Keep Git merge, Clasp upload, Web App version update, ZIP publication, live UAT, migrations and production release as separate gates.
 - If target identity, schema, backup, security headers, audit monitoring or restore fails, stop and preserve evidence. No production operation is authorized by this handoff.
 
-
 ## Autonomous delivery workflow — current implementation
 
 - The ChatGPT delivery monitor is configured hourly. The requested 45-minute cadence is unsupported; do not represent it as a 45-minute job.

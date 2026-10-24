@@ -106,7 +106,6 @@ Consider one integrated **Today → Close → Owner card** workflow: Today prior
 
 No production migration/deployment, blind branch synchronization, multi-tenant rewrite, AI dependency, autonomous posting, outbound WhatsApp campaign, unvalidated tax/ledger claim or mandatory denomination schema change. Staging is unverified until live UAT, backup and isolated restore are evidenced. Customer handover is blocked until access, device, data ownership and acceptance gates pass.
 
-
 ## Autonomous delivery monitoring
 
 A checkpoint-based monitoring workflow is implemented on the current source baseline. The ChatGPT monitor runs hourly because 45-minute cadence is unsupported. The GitHub Actions workflow is event/manual driven only: the actual default branch is main, while client-main is the integration branch and main is policy-frozen. Do not add a cron schedule to client-main and claim it is active.
