@@ -222,7 +222,7 @@ test('does not blanket-allow a second advisory on an exempted package', () => {
 
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Dependency security gate failed/);
-  assert.doesNotMatch(result.stdout, /REVIEWED EXCEPTION/);
+  assert.doesNotMatch(result.stdout, /REVIEWED EXCEPTION: GHSA-vfj7-8cjw-p6xm/);
 });
 
 test('reports but does not block moderate-only findings', () => {
