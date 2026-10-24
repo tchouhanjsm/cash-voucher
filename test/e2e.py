@@ -2149,8 +2149,8 @@ with sync_playwright() as p:
     )
     healthy_audit_text = page.locator('#aud-health').inner_text()
     check(
-        'No durable audit-write failure marker is recorded' in healthy_audit_text
-        and 'simultaneous AuditLog append and failure-marker storage outage may be undetectable'
+        'No audit-write failure marker is currently visible' in healthy_audit_text
+        and 'an outage affecting every marker store may still be undetectable'
         in healthy_audit_text
         and 'Historical audit completeness is not verified.' in healthy_audit_text
         and page.locator('#aud-health [role=alert]').count() == 0,
@@ -4907,7 +4907,7 @@ with sync_playwright() as p:
     )
     healthy_audit_text = audit_page.locator('#aud-health').inner_text()
     check(
-        'simultaneous AuditLog append and failure-marker storage outage may be undetectable'
+        'an outage affecting every marker store may still be undetectable'
         in healthy_audit_text
         and 'Historical audit completeness is not verified.' in healthy_audit_text,
         'owner audit view keeps the explicit limitation visible on the loaded audit page',
