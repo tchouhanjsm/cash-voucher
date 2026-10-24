@@ -9,11 +9,18 @@ const test = require('node:test');
 
 const auditScript = path.join(__dirname, '..', 'scripts', 'dependency-audit.js');
 const allowedUrl = 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm';
+const allowedZodUrl = 'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5';
 const allowedAdvisory = {
   title: 'braces stack-exhaustion denial of service',
   url: allowedUrl,
   severity: 'high',
   range: '<=3.0.3',
+};
+const allowedZodAdvisory = {
+  title: 'Zod uncontrolled resource consumption via container validation',
+  url: allowedZodUrl,
+  severity: 'high',
+  range: '<4.6.6',
 };
 
 function baselineReport() {
@@ -26,9 +33,9 @@ function baselineReport() {
   return {
     metadata: {
       vulnerabilities: {
-        total: 3,
+        total: 4,
         critical: 0,
-        high: 3,
+        high: 4,
         moderate: 0,
         low: 0,
         info: 0,
@@ -41,7 +48,15 @@ function baselineReport() {
         range: '>=3.0.0-alpha1',
         nodes: ['node_modules/@google/clasp'],
         fixAvailable,
-        via: ['micromatch'],
+        via: ['micromatch', 'zod'],
+      },
+      zod: {
+        severity: 'high',
+        isDirect: false,
+        range: '<4.6.6',
+        nodes: ['node_modules/zod'],
+        fixAvailable,
+        via: [{ ...allowedZodAdvisory }],
       },
       braces: {
         severity: 'high',
@@ -105,6 +120,7 @@ test('permits only the documented unpatched braces advisory chain', () => {
 
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /REVIEWED EXCEPTION: GHSA-vfj7-8cjw-p6xm/);
+  assert.match(result.stdout, /REVIEWED EXCEPTION: GHSA-mrhx-c7xc-m3w5/);
   assert.match(result.stdout, /Dependency security gate passed/);
 });
 
@@ -124,6 +140,47 @@ test('fails closed after repeated empty npm audit service errors', () => {
   assert.match(result.stderr, /npm audit failed: unknown error/);
   assert.match(result.stderr, /npm audit error details: \{\}/);
   assert.match(result.stderr, /received a transient audit-service error; retrying once/);
+});
+
+test('pins body-parser to its patched release in manifest and lockfile', () => {
+  const packageJson = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
+  );
+  const packageLock = JSON.parse(
+    fs.readFileSync(path.join(__dirname, '..', 'package-lock.json'), 'utf8'),
+  );
+  const bodyParser = packageLock.packages?.['node_modules/body-parser'];
+  const nestedContentType =
+    packageLock.packages?.['node_modules/body-parser/node_modules/content-type'];
+
+  assert.equal(packageJson.overrides?.['body-parser'], '2.4.0');
+  assert.equal(bodyParser?.version, '2.4.0');
+  assert.equal(
+    bodyParser?.resolved,
+    'https://registry.npmjs.org/body-parser/-/body-parser-2.4.0.tgz',
+  );
+  assert.equal(
+    bodyParser?.integrity,
+    'sha512-Ifk1KcLrxaGt1occQagQNFNNOqRt1LFuehEnHHzB8Z6cRgIxRU1TBaiIsUiCdA+gy5PL7Y1IX31DNKkRmxtXjQ==',
+  );
+  assert.equal(nestedContentType?.version, '2.1.0');
+  assert.equal(packageLock.packages?.['node_modules/qs']?.version, '6.16.1');
+});
+
+test('does not blanket-allow a second Zod advisory', () => {
+  const report = baselineReport();
+  report.vulnerabilities.zod.via.push({
+    title: 'unrelated second Zod advisory',
+    url: 'https://github.com/advisories/GHSA-aaaa-bbbb-cccc',
+    severity: 'high',
+    range: '*',
+  });
+
+  const result = runAudit(report);
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Dependency security gate failed/);
+  assert.doesNotMatch(result.stdout, /REVIEWED EXCEPTION: GHSA-mrhx-c7xc-m3w5/);
 });
 
 test('blocks an unrelated high-severity advisory', () => {

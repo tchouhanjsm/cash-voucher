@@ -131,6 +131,16 @@ const exceptions = {
       'No patched release is listed by the upstream GitHub advisory as of 2026-10-16. ' +
       'This is a dev-tool dependency path: @google/clasp -> micromatch -> braces.',
   },
+  'GHSA-mrhx-c7xc-m3w5': {
+    packageName: 'zod',
+    reviewBy: '2026-11-09',
+    rationale:
+      'The current upstream @google/clasp 3.4.1 release declares zod ^3.25.76. ' +
+      'The advisory fix begins at zod 4.6.6, a major-version change outside that ' +
+      'declared range. This exact advisory is temporarily excepted for the local/CI ' +
+      'developer-tool chain only while compatibility is verified; zod is not shipped ' +
+      'in the static client artifact. Reassess Clasp/upstream compatibility by 2026-11-09.',
+  },
 };
 
 function advisoryId(advisory) {

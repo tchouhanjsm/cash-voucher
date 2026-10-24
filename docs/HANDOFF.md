@@ -26,6 +26,12 @@ The guarded staging UAT now validates the two server-backed read models before c
 
 No production operation or deployment is part of this source batch. The write-capable workflow remains manual-only and requires exact `STAGING-ONLY` confirmation, explicit staging-write consent and resource-isolation preflight.
 
+## Dependency advisory gate
+
+- `body-parser` is pinned to patched `2.4.0` through a package override and lockfile update; regression tests verify the manifest, resolved tarball integrity, supporting `content-type` and `qs` versions.
+- The current upstream `@google/clasp` 3.4.1 toolchain declares `zod ^3.25.76`, while the published advisory fix begins in Zod 4.6.6. The audit policy has a precise, time-boxed exception for only `GHSA-mrhx-c7xc-m3w5`, scoped to the local/CI developer-tool chain and due for review on **9 November 2026**. This is not a claim that Zod 3 is patched. Do not force a major override of Clasp's declared dependency; verify upstream compatibility or remove the exception before its review date.
+- Unrelated high/critical advisories and any second advisory on Zod remain blocking; tests assert the exception is not blanket allowlisting.
+
 ## Release gates that remain open
 
 1. Verify the dedicated staging Script, Sheet, receipt/backup folders, existing Web App deployment ID and `/exec` URL against production references privately.
