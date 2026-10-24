@@ -2105,7 +2105,7 @@ const malformedCloseRows = [
   {
     VoucherID: 'close-invalid-type-regression',
     VoucherNo: 99001,
-    Date: '2020-01-06',
+    Date: '2020-01-07',
     Vendor: 'Close invalid type',
     Amount: 100,
     Category: 'Other',
@@ -2119,7 +2119,7 @@ const malformedCloseRows = [
   {
     VoucherID: 'close-invalid-status-regression',
     VoucherNo: 99002,
-    Date: '2020-01-06',
+    Date: '2020-01-07',
     Vendor: 'Close invalid status',
     Amount: 50,
     Category: 'Other',
@@ -2132,7 +2132,7 @@ const malformedCloseRows = [
   },
 ].map((record) => malformedCloseHeaders.map((header) => record[header] ?? ''));
 g.sheets.Vouchers.rows.push(...malformedCloseRows);
-const malformedClosePreview = as(T, 'cashClosePreview', { date: '2020-01-06' });
+const malformedClosePreview = as(T, 'cashClosePreview', { date: '2020-01-07' });
 ok(
   malformedClosePreview.ok &&
     malformedClosePreview.data.invalidVouchers.some(
@@ -2145,7 +2145,7 @@ ok(
   'cash-close preview blocks malformed voucher types and unsupported statuses',
 );
 const malformedCloseAttempt = as(T, 'createCashClose', {
-  date: '2020-01-06',
+  date: '2020-01-07',
   countedCash: '100',
   requestId: 'close-malformed-ledger-regression',
 });
