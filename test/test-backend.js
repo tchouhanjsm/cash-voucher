@@ -2872,10 +2872,11 @@ for (const malformedPropertiesMarker of [
     lastFailureKind: '',
   },
 ]) {
+  const { count, lastFailureAt, lastFailureKind } = malformedPropertiesMarker;
   auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'DEGRADED';
-  auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = malformedPropertiesMarker.count;
-  auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT = malformedPropertiesMarker.lastFailureAt;
-  auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND = malformedPropertiesMarker.lastFailureKind;
+  auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = count;
+  auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT = lastFailureAt;
+  auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND = lastFailureKind;
   const malformedPropertiesMetadataHealth = auditMarkerOutageMock.call('auditLog', {
     token: markerPinChange.data.token,
   });
