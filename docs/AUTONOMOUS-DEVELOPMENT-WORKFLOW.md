@@ -4,6 +4,12 @@
 
 The delivery process must keep development moving without confusing a green mock test with successful live release. Source of truth is GitHub commit/PR/workflow state, docs/HANDOFF.md, the execution plan and staging release audit. The checkpoint issue is a persistent run record, not a substitute for source or deployment evidence.
 
+## Current verified checkpoint
+
+The last merged integration checkpoint is `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208). The monitor must compare the live `client-main` SHA with `docs/HANDOFF.md` and report baseline drift rather than silently treating stale documentation as current. Open PR heads remain separate from the merged integration baseline.
+
+The bounded retry policy permits at most two retries per eligible source-validation run (three total attempts), and only for a revalidated timeout. It never retries ordinary test failures, cancellations, staging UAT or ZIP publication.
+
 ## Scheduler cadence
 
 The ChatGPT monitor is configured to run hourly. A 45-minute recurring schedule is not supported by the available scheduler; do not claim that interval was configured. Repository Actions are event/manual driven and have no cron trigger because the repository default branch is main, while the integration branch is client-main and main is designated frozen/read-only. GitHub scheduled workflows run from the default branch, so a cron job existing only on client-main would not be a reliable real scheduler.
