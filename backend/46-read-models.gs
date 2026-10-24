@@ -100,18 +100,12 @@ function readModelMissingFieldCount_(row) {
 }
 
 function readModelHasMalformedRecord_(row) {
-  const rawVoucherNo = row.VoucherNo;
-  const voucherNo = Number(rawVoucherNo);
   return (
     !String(row.VoucherID || '').trim() ||
     !validDate_(readModelDateValue_(row)) ||
     ['PAYMENT', 'RECEIPT'].indexOf(row.Type) < 0 ||
     ['ACTIVE', 'CANCELLED'].indexOf(String(row.Status || '')) < 0 ||
-    rawVoucherNo === '' ||
-    rawVoucherNo === null ||
-    rawVoucherNo === undefined ||
-    !Number.isSafeInteger(voucherNo) ||
-    voucherNo <= 0
+    !validVoucherNo_(row.VoucherNo)
   );
 }
 
