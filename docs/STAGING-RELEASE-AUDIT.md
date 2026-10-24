@@ -1,13 +1,13 @@
 # Staging Release Audit and Pending Queue
 
 **Audit date:** 24 October 2026  
-**Authoritative integration baseline:** client-main `2231813ca97dd3c329b4c6bd92093a5b78f05e56`, following PR #206.  
+**Authoritative integration baseline:** client-main `e90ef5dfb005745136c0522d983fd42c38db38ff`, following PR #207.  
 **Legacy branch:** `main` (read-only by engineering policy; the actual ahead/behind relationship must be rechecked before any branch operation).  
 **Scope:** source and release-workflow audit, not live deployment, restore or customer acceptance.
 
 ## Executive status
 
-PR #206 is the latest merged source baseline on client-main at `2231813ca97dd3c329b4c6bd92093a5b78f05e56`. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed. Source and mock tests do not execute a Google Sheet migration, deploy an Apps Script Web App, publish the static frontend, verify live response headers or demonstrate backup/restore.
+PR #207 is the latest merged source baseline on client-main at `e90ef5dfb005745136c0522d983fd42c38db38ff`. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed. These checks do not prove live staging, recovery or customer acceptance.
 
 The branch policy names client-main as the only integration branch and main as legacy/read-only. Repository metadata still listed main as the default branch. Accessible branch-protection data did not prove active required-check/ruleset enforcement. Owner/admin must verify actual rulesets and default settings; this source PR must not change repository settings or reconcile divergent long-lived branches.
 
@@ -15,7 +15,7 @@ Dedicated staging resources, protected staging Environment, a real deployed stag
 
 ## Active release sequence
 
-Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #206 is the latest merged source baseline; live staging, isolated restore and customer acceptance remain unverified.
+Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #207 is the latest merged source baseline; live staging, isolated restore and customer acceptance remain unverified.
 
 **Evidence still required:** isolated staging identity and host access; inspected pre-migration backup; schema validation and only required staging migrations; backend-first deploy and staging-configured frontend; exact-run guarded UAT; live role, receipt, payment-method, offline and print checks; and restore into a separate recovery target. The hotel pilot remains blocked until those gates pass. Production is excluded.
 
@@ -79,6 +79,14 @@ The code audit identified and is addressing five high-impact correctness cases:
 
 These safeguards are verified with unit/mock fault-injection tests on the B5 branch. They are not evidence of live Google Sheets/Drive transaction behavior. In the remaining operational phase, the owner must deliberately run authorized staging UAT, inspect real attachment references, verify the host response headers, and demonstrate a restore into a separate recovery destination.
 
+## P0 B6 — audit-health fallback and response-contract correction
+
+The source review found two audit-monitoring weaknesses: the terminal/empty cursor branch of `auditLog` omitted `auditHealth`, and write-failure monitoring depended only on Script Properties. If the AuditLog append and Script Properties marker write failed together, the owner could see `NO_KNOWN_FAILURE` despite a missing event.
+
+The B6 branch writes a versioned failure marker to Script Properties and a dedicated `Settings` row. If both durable paths fail, it attempts a CacheService marker with a six-hour TTL. The owner API reports marker source, labels a cache-only signal as transient, and uses `MONITORING_UNAVAILABLE` when marker stores cannot be read or a marker is malformed. Empty cursor pages return the same `auditHealth` field as populated pages. Health metadata remains owner-only and is not included in public bootstrap settings.
+
+If AuditLog, Script Properties, Settings and CacheService all fail to persist a marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. This edge case is covered by a fault-injection regression and remains an operational limitation, not a claimed fix.
+
 ## Priority 0 — required before staging is verified
 
 ### A. Dedicated staging
@@ -112,7 +120,7 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 
 ## Priority 2 — decisions and later work
 
-- **Audit durability:** simultaneous AuditLog append and Script Properties marker-write failure has no durable fallback. Define failure, access, retention and recovery semantics before implementation; never invent historical audit events.
+- **Audit durability:** B6 adds a Settings-sheet fallback and a labeled transient cache fallback. If all marker stores fail, a missed event can remain undetectable; keep the limitation visible, reconcile records manually and never invent historical events.
 - **Dependency exception:** braces@3.0.3 remains a time-bounded Clasp toolchain exception. Review compatibility by 9 November 2026; CI is expected to reject it from 10 November unless renewed explicitly with tests. Do not blindly downgrade Clasp.
 - **Accountant export:** generic recorded-movement CSV exists, but no destination-specific compatibility, tax calculation or ledger claim is approved. The receiving accountant must select software/version and validate an anonymized fixture; qualified Indian CA review is required for tax treatment.
 - **Daily close:** denomination rows remain optional until owner/pilot evidence demonstrates value.
@@ -120,6 +128,6 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 
 ## Release decision
 
-**Source packaging:** available as a staging input. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
+**Source baseline:** PR #207 is merged; the B6 audit-monitoring improvement is a source-only branch pending exact-head checks and owner review. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.
