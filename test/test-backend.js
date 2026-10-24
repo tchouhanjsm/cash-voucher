@@ -1497,6 +1497,30 @@ ok(
   "cannot read others' receipt",
 );
 
+const voucherHeadersBeforeReceiptFailure = g.sheets.Vouchers.rows[0];
+const voucherRowBeforeReceiptFailure = g.sheets.Vouchers.rows.find(
+  (row, index) => index > 0 && row[voucherHeadersBeforeReceiptFailure.indexOf('VoucherID')] === id2,
+);
+const receiptIdsBeforeReceiptFailure = String(
+  voucherRowBeforeReceiptFailure?.[voucherHeadersBeforeReceiptFailure.indexOf('Receipts')] || '',
+);
+const filesBeforePreCommitReceiptFailure = Object.keys(g.files).length;
+g.failNextVoucherWriteBeforeCommit();
+const preCommitReceiptFailure = as(S, 'addReceipt', {
+  id: id2,
+  receipt: { mime: 'image/png', data: tiny },
+});
+const voucherRowAfterPreCommitFailure = g.sheets.Vouchers.rows.find(
+  (row, index) => index > 0 && row[voucherHeadersBeforeReceiptFailure.indexOf('VoucherID')] === id2,
+);
+ok(
+  !preCommitReceiptFailure.ok &&
+    String(voucherRowAfterPreCommitFailure?.[voucherHeadersBeforeReceiptFailure.indexOf('Receipts')] || '') ===
+      receiptIdsBeforeReceiptFailure &&
+    Object.keys(g.files).length === filesBeforePreCommitReceiptFailure,
+  'a confirmed pre-commit addReceipt failure removes only the unattached Drive file',
+);
+
 const receiptCountBeforeAmbiguousAttach = Object.keys(g.files).length;
 g.failNextVoucherWriteAfterCommit();
 const receiptAfterCommitFailure = as(S, 'addReceipt', {
