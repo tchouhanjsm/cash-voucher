@@ -54,6 +54,20 @@ The active integration branch is **client-main**. The staging Environment must r
 
 Owner/admin must verify that the GitHub Environment is named staging, deployment restrictions allow client-main, reviewer protection is configured where supported, and only expected variables/secrets exist. Never copy secret values to Git, chat, PR text or logs.
 
+## Live read-model contract gate — P0 B4
+
+The guarded staging UAT verifies the owner-scoped `dashboardSummary` and bounded `registerPage` APIs before creating any synthetic financial record. It validates the requested dashboard date range, finite summary fields, trend/group arrays, register page-size and pagination metadata, aggregate totals and facets. If the deployment returns `Unknown action` for `dashboardSummary`, UAT stops with a target/version remediation message before a test payment is created.
+
+The sanitized staging evidence JSON and workflow summary record whether each contract was observed. Missing markers in a failed/incomplete run are `not-confirmed`, not passes; skipped UAT is `not-run`. This source gate is not live evidence until an authorized staging workflow completes against the independently verified staging project.
+
+## Dependency audit response — source-side mitigation
+
+The current npm registry audit surfaced a new high-severity `body-parser` advisory (GHSA-27r3-jxmh-p828, published 22 October 2026). The project pins its indirect Express/MCP-toolchain dependency to patched `body-parser@2.4.0`; the lockfile includes registry integrity and compatible transitive requirements.
+
+The current latest upstream `@google/clasp@3.4.1` declares `zod ^3.25.76`. The Zod advisory (GHSA-mrhx-c7xc-m3w5) is fixed starting at 4.6.6, which is a major-version change outside Clasp's declared dependency range. Rather than downgrade Clasp or force an unverified major override, the source audit uses an advisory-specific exception through **9 November 2026** for that developer/CI-tooling path only. The exception is temporary, not a vulnerability fix; the release owner must re-evaluate an upstream-compatible Clasp/Zod update by its review date. The static client artifact excludes Node dependencies.
+
+This does not relax the gate for unrelated high/critical findings or second advisories on Zod. Exact-head CI must verify the package-lock/install behavior before the batch is reviewable.
+
 ## Priority 0 — required before staging is verified
 
 ### A. Dedicated staging

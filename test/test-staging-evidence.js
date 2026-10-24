@@ -37,11 +37,14 @@ const baseEnv = {
 
 const successfulLog = [
   'PASS: owner session is authorized',
+  'PASS: staging dashboardSummary returns the expected dashboard read model',
+  'PASS: staging registerPage returns a bounded paginated register read model',
   'PASS: the UAT payment is cancelled with a retained audit trace',
-  'STAGING UAT: 2 checks passed, 0 failures.',
+  'STAGING UAT: 4 checks passed, 0 failures.',
 ].join('\n');
 
 const success = buildStagingEvidence(baseEnv, successfulLog);
+assert.equal(success.schemaVersion, 2);
 assert.equal(success.operation, 'deploy-and-uat');
 assert.equal(success.source.ref, 'refs/heads/client-main');
 assert.equal(success.source.commitSha, 'a'.repeat(40));
@@ -55,7 +58,11 @@ assert.equal(success.jobOutcome, 'success');
 assert.equal(success.steps.preflight, 'success');
 assert.equal(success.steps.deployment, 'success');
 assert.equal(success.uat.status, 'passed');
-assert.equal(success.uat.checksPassed, 2);
+assert.equal(success.uat.checksPassed, 4);
+assert.deepEqual(success.liveReadModels, {
+  dashboardSummary: 'passed',
+  registerPage: 'passed',
+});
 assert.equal(success.uat.cleanupStatus, 'cancelled-audit-retained');
 assert.match(success.uat.transcriptSha256, /^[a-f0-9]{64}$/);
 assert.deepEqual(success.disclosure, {
@@ -81,6 +88,19 @@ for (const sensitiveValue of [
   );
 }
 
+const incompleteReadModelEvidence = buildStagingEvidence(
+  baseEnv,
+  [
+    'PASS: owner session is authorized',
+    'PASS: the UAT payment is cancelled with a retained audit trace',
+    'STAGING UAT: 2 checks passed, 0 failures.',
+  ].join('\n'),
+);
+assert.deepEqual(incompleteReadModelEvidence.liveReadModels, {
+  dashboardSummary: 'not-confirmed',
+  registerPage: 'not-confirmed',
+});
+
 const failedLog = [
   'PASS: source preflight completed',
   'CLEANUP: test marker was not uniquely recoverable; owner review is required.',
@@ -97,6 +117,15 @@ assert.equal(skipped.status, 'not-run');
 assert.equal(skipped.checksPassed, null);
 assert.equal(skipped.cleanupStatus, 'not-run');
 assert.equal(skipped.transcriptSha256, null);
+const skippedEvidence = buildStagingEvidence(
+  { ...baseEnv, CV_EVIDENCE_UAT_OUTCOME: 'skipped' },
+  '',
+);
+assert.equal(
+  skippedEvidence.liveReadModels.dashboardSummary,
+  'not-run',
+  'skipped UAT must not claim live dashboard coverage',
+);
 
 assert.throws(
   () => buildStagingEvidence({ ...baseEnv, GITHUB_REF: 'refs/heads/main' }, successfulLog),
@@ -129,8 +158,14 @@ try {
   const markdown = fs.readFileSync(summaryPath, 'utf8');
   assert.match(markdown, /Sanitized staging execution evidence/);
   assert.match(markdown, /Test-payment cleanup: cancelled-audit-retained/);
+  assert.match(markdown, /Live dashboardSummary contract: passed/);
+  assert.match(markdown, /Live registerPage contract: passed/);
   assert.equal(markdown.includes(secretApiUrl), false);
-  assert.equal(evidence.uat.checksPassed, 2);
+  assert.equal(evidence.uat.checksPassed, 4);
+  assert.deepEqual(evidence.liveReadModels, {
+    dashboardSummary: 'passed',
+    registerPage: 'passed',
+  });
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }

@@ -34,6 +34,12 @@ function validateEnvironment(env) {
   return { operation, commitSha: commitSha.toLowerCase(), runId };
 }
 
+function summarizeReadModelContract(log, stepOutcome, marker) {
+  const outcome = normalizeOutcome(stepOutcome);
+  if (outcome === 'not-run' || outcome === 'skipped') return 'not-run';
+  return log.includes(marker) ? 'passed' : 'not-confirmed';
+}
+
 function summarizeUat(log, stepOutcome) {
   const outcome = normalizeOutcome(stepOutcome);
   if (outcome === 'not-run' || outcome === 'skipped') {
@@ -103,7 +109,7 @@ function buildStagingEvidence(env = process.env, log = '') {
       : '';
 
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     evidenceType: 'cash-voucher-staging-execution',
     generatedAt: new Date().toISOString(),
     operation: validated.operation,
@@ -126,6 +132,18 @@ function buildStagingEvidence(env = process.env, log = '') {
       uat: normalizeOutcome(env.CV_EVIDENCE_UAT_OUTCOME),
     },
     uat,
+    liveReadModels: {
+      dashboardSummary: summarizeReadModelContract(
+        log,
+        env.CV_EVIDENCE_UAT_OUTCOME,
+        'PASS: staging dashboardSummary returns the expected dashboard read model',
+      ),
+      registerPage: summarizeReadModelContract(
+        log,
+        env.CV_EVIDENCE_UAT_OUTCOME,
+        'PASS: staging registerPage returns a bounded paginated register read model',
+      ),
+    },
     disclosure: {
       credentialsIncluded: false,
       resourceIdentifiersIncluded: false,
@@ -173,6 +191,8 @@ function writeStagingEvidence(env = process.env, logOverride = null) {
       '- Target recheck: ' + evidence.steps.targetRecheck,
       '- UAT: ' + evidence.uat.status + '; checks passed: ' + checks,
       '- Test-payment cleanup: ' + evidence.uat.cleanupStatus,
+      '- Live dashboardSummary contract: ' + evidence.liveReadModels.dashboardSummary,
+      '- Live registerPage contract: ' + evidence.liveReadModels.registerPage,
       '',
       'The JSON artifact excludes credentials, resource identifiers, API endpoint URLs and raw transcript text.',
       '',
@@ -191,6 +211,15 @@ function main() {
     if (evidence.steps.uat === 'success' && evidence.uat.status !== 'passed') {
       console.error(
         'Staging UAT reported success without a complete pass and cancellation record.',
+      );
+      process.exitCode = 1;
+    }
+    if (
+      evidence.steps.uat === 'success' &&
+      Object.values(evidence.liveReadModels).some((status) => status !== 'passed')
+    ) {
+      console.error(
+        'Staging UAT reported success without both required live read-model contract checks.',
       );
       process.exitCode = 1;
     }

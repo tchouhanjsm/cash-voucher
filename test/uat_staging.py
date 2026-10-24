@@ -1,6 +1,8 @@
 import datetime
+import math
 import os
 import uuid
+from zoneinfo import ZoneInfo
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
@@ -38,8 +40,22 @@ def call_api(page, action, payload=None):
 
 def api_data(page, action, payload=None):
     result = call_api(page, action, payload)
-    check(isinstance(result, dict) and result.get("ok") is True,
-          "staging API action responds successfully: " + action)
+    if (
+        action == "dashboardSummary"
+        and isinstance(result, dict)
+        and result.get("ok") is False
+        and result.get("code") == "NOT_FOUND"
+        and "unknown action" in str(result.get("error", "")).lower()
+    ):
+        raise AssertionError(
+            "STAGING DASHBOARD CONTRACT FAILED: the deployed Apps Script does not "
+            "recognize dashboardSummary. Verify CV_API_URL, the staging deployment ID, "
+            "and the backend version serving that same staging project before retrying UAT."
+        )
+    check(
+        isinstance(result, dict) and result.get("ok") is True,
+        "staging API action responds successfully: " + action,
+    )
     return result.get("data")
 
 
@@ -80,6 +96,94 @@ def active_payment_total(page, date):
     value = report.get("activePaymentTotal") if isinstance(report, dict) else None
     check(isinstance(value, (int, float)), "staging movement report returns a numeric active-payment total")
     return float(value)
+
+
+def verify_live_read_models(page, business_date):
+    dashboard = api_data(
+        page,
+        "dashboardSummary",
+        {"from": business_date, "to": business_date},
+    )
+    dashboard_numeric_fields = (
+        "paid",
+        "previousPaid",
+        "paymentCount",
+        "validPaymentCount",
+        "todayPaid",
+        "todayPaymentCount",
+        "received",
+        "receiptCount",
+        "bookBalance",
+        "approvalExceptionCount",
+        "invalidAmountCount",
+        "malformedRecordCount",
+        "malformedFieldCount",
+    )
+    dashboard_shape_valid = (
+        isinstance(dashboard, dict)
+        and dashboard.get("from") == business_date
+        and dashboard.get("to") == business_date
+        and dashboard.get("periodDays") == 1
+        and all(
+            type(dashboard.get(field)) in (int, float)
+            and math.isfinite(dashboard[field])
+            for field in dashboard_numeric_fields
+        )
+        and isinstance(dashboard.get("trend"), list)
+        and all(
+            isinstance(point, dict)
+            and isinstance(point.get("date"), str)
+            and type(point.get("amount")) in (int, float)
+            and math.isfinite(point["amount"])
+            for point in dashboard.get("trend", [])
+        )
+        and all(
+            isinstance(dashboard.get(field), list)
+            for field in ("topVendors", "byCategory", "byTeamMember")
+        )
+    )
+    check(
+        dashboard_shape_valid,
+        "staging dashboardSummary returns the expected dashboard read model",
+    )
+
+    register = api_data(
+        page,
+        "registerPage",
+        {
+            "from": business_date,
+            "to": business_date,
+            "st": "ACTIVE",
+            "approval": "ALL",
+            "offset": 0,
+            "limit": 20,
+        },
+    )
+    totals = register.get("totals") if isinstance(register, dict) else None
+    facets = register.get("facets") if isinstance(register, dict) else None
+    register_shape_valid = (
+        isinstance(register, dict)
+        and isinstance(register.get("items"), list)
+        and len(register["items"]) <= 20
+        and register.get("offset") == 0
+        and register.get("limit") == 20
+        and type(register.get("totalCount")) is int
+        and register["totalCount"] >= 0
+        and type(register.get("hasMore")) is bool
+        and isinstance(totals, dict)
+        and type(totals.get("paid")) in (int, float)
+        and math.isfinite(totals["paid"])
+        and type(totals.get("received")) in (int, float)
+        and math.isfinite(totals["received"])
+        and type(totals.get("approvalExceptionCount")) is int
+        and isinstance(facets, dict)
+        and isinstance(facets.get("vendors"), list)
+        and isinstance(facets.get("users"), list)
+    )
+    check(
+        register_shape_valid,
+        "staging registerPage returns a bounded paginated register read model",
+    )
 
 
 def find_uat_payment(page, vendor):
@@ -144,7 +248,7 @@ def run():
         raise AssertionError("Staging owner and manager UAT accounts must be distinct.")
 
     unique_vendor = "UAT-P19-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
-    business_date = datetime.date.today().isoformat()
+    business_date = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
     target_verified = False
     payment_created = False
     payment_cancelled = False
@@ -160,6 +264,10 @@ def run():
         owner_token = sign_in(owner_page, owner_email, owner_password, "staging owner")
         staging_target_check(owner_page)
         target_verified = True
+
+        # Probe live read models before any synthetic financial write. An obsolete
+        # deployment must fail here, before the UAT payment is created.
+        verify_live_read_models(owner_page, business_date)
 
         go(owner_page, "dash")
         check(bool(owner_page.locator("#view").inner_text().strip()), "Dashboard renders")
