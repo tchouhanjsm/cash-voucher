@@ -132,7 +132,6 @@ function sameClientVoucherPayload_(voucher, entry) {
   );
 }
 
-
 function createVouchers_(user, req) {
   need_(user, 'create');
   const entries = req.entries;
@@ -176,10 +175,7 @@ function createVouchers_(user, req) {
       receiptBytes_(receipt, row);
     });
 
-    const type =
-      en.type === undefined || en.type === null || en.type === ''
-        ? 'PAYMENT'
-        : en.type;
+    const type = en.type === undefined || en.type === null || en.type === '' ? 'PAYMENT' : en.type;
     if (type !== 'PAYMENT' && type !== 'RECEIPT') {
       throw err_(row + 'invalid voucher type.', 'VALIDATION');
     }

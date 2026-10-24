@@ -81,12 +81,7 @@ function cashCloseCalculatePeriod_(date) {
         rawVoucherNo !== undefined &&
         Number.isSafeInteger(voucherNo) &&
         voucherNo > 0;
-      if (
-        status !== 'ACTIVE' ||
-        !['PAYMENT', 'RECEIPT'].includes(type) ||
-        !id ||
-        !voucherNoValid
-      ) {
+      if (status !== 'ACTIVE' || !['PAYMENT', 'RECEIPT'].includes(type) || !id || !voucherNoValid) {
         invalidVouchers.push({
           id,
           no: (type === 'RECEIPT' ? 'R-' : 'P-') + String(rawVoucherNo || 'UNKNOWN'),

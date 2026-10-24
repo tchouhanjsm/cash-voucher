@@ -15,4 +15,6 @@ assert.match(editor, /Not recorded \(legacy\)/);
 assert.match(backend, /Cash impact must match the saved payment method/);
 assert.match(backend, /sameClientVoucherReceipts_\(voucher, entry\)/);
 
-console.log('Register edit contract OK — rail-derived cash impact, legacy blank rail preservation and receipt-aware idempotency are wired.');
+console.log(
+  'Register edit contract OK — rail-derived cash impact, legacy blank rail preservation and receipt-aware idempotency are wired.',
+);

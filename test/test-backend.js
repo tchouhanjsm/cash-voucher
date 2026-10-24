@@ -2135,8 +2135,12 @@ g.sheets.Vouchers.rows.push(...malformedCloseRows);
 const malformedClosePreview = as(T, 'cashClosePreview', { date: '2020-01-06' });
 ok(
   malformedClosePreview.ok &&
-    malformedClosePreview.data.invalidVouchers.some((row) => row.id === 'close-invalid-type-regression') &&
-    malformedClosePreview.data.invalidVouchers.some((row) => row.id === 'close-invalid-status-regression') &&
+    malformedClosePreview.data.invalidVouchers.some(
+      (row) => row.id === 'close-invalid-type-regression',
+    ) &&
+    malformedClosePreview.data.invalidVouchers.some(
+      (row) => row.id === 'close-invalid-status-regression',
+    ) &&
     !malformedClosePreview.data.readyToClose,
   'cash-close preview blocks malformed voucher types and unsupported statuses',
 );
@@ -2852,34 +2856,40 @@ ok(
 const rowsBeforeInvalidInputs = g.sheets.Vouchers.rows.length;
 const filesBeforeInvalidInputs = Object.keys(g.files).length;
 const invalidVoucherType = as(T, 'createVouchers', {
-  entries: [{
-    clientId: 'invalid-voucher-type-regression',
-    date: railDate,
-    vendor: 'Unsupported Type',
-    amount: 10,
-    type: 'EXPENSE',
-    cashImpact: 'CASH_OUT',
-  }],
+  entries: [
+    {
+      clientId: 'invalid-voucher-type-regression',
+      date: railDate,
+      vendor: 'Unsupported Type',
+      amount: 10,
+      type: 'EXPENSE',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
 });
 const invalidReceiptList = as(T, 'createVouchers', {
-  entries: [{
-    clientId: 'invalid-receipt-list-regression',
-    date: railDate,
-    vendor: 'Malformed Receipt List',
-    amount: 10,
-    cashImpact: 'CASH_OUT',
-    receipts: { mime: 'image/jpeg', data: tiny },
-  }],
+  entries: [
+    {
+      clientId: 'invalid-receipt-list-regression',
+      date: railDate,
+      vendor: 'Malformed Receipt List',
+      amount: 10,
+      cashImpact: 'CASH_OUT',
+      receipts: { mime: 'image/jpeg', data: tiny },
+    },
+  ],
 });
 const invalidReceiptBase64 = as(T, 'createVouchers', {
-  entries: [{
-    clientId: 'invalid-receipt-base64-regression',
-    date: railDate,
-    vendor: 'Malformed Receipt Data',
-    amount: 10,
-    cashImpact: 'CASH_OUT',
-    receipts: [{ mime: 'image/jpeg', data: '%%%not-base64%%%' }],
-  }],
+  entries: [
+    {
+      clientId: 'invalid-receipt-base64-regression',
+      date: railDate,
+      vendor: 'Malformed Receipt Data',
+      amount: 10,
+      cashImpact: 'CASH_OUT',
+      receipts: [{ mime: 'image/jpeg', data: '%%%not-base64%%%' }],
+    },
+  ],
 });
 ok(
   !invalidVoucherType.ok &&
@@ -2894,15 +2904,17 @@ ok(
 );
 
 const reservedClientRequest = {
-  entries: [{
-    clientId: 'constructor',
-    date: railDate,
-    vendor: 'Reserved Key Regression',
-    amount: 31,
-    category: 'Other',
-    paymentMethod: 'CASH',
-    cashImpact: 'CASH_OUT',
-  }],
+  entries: [
+    {
+      clientId: 'constructor',
+      date: railDate,
+      vendor: 'Reserved Key Regression',
+      amount: 31,
+      category: 'Other',
+      paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
 };
 const reservedClientFirst = as(T, 'createVouchers', reservedClientRequest);
 const reservedClientRetry = as(T, 'createVouchers', reservedClientRequest);
@@ -2916,16 +2928,18 @@ ok(
 
 g.failNextSettingWrite();
 const counterFailureRequest = {
-  entries: [{
-    clientId: 'counter-sync-failure-regression',
-    date: railDate,
-    vendor: 'Counter Sync Failure',
-    amount: 41,
-    category: 'Other',
-    paymentMethod: 'CASH',
-    cashImpact: 'CASH_OUT',
-    receipts: [{ mime: 'image/jpeg', data: tiny }],
-  }],
+  entries: [
+    {
+      clientId: 'counter-sync-failure-regression',
+      date: railDate,
+      vendor: 'Counter Sync Failure',
+      amount: 41,
+      category: 'Other',
+      paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
+      receipts: [{ mime: 'image/jpeg', data: tiny }],
+    },
+  ],
 };
 const counterFailureResult = as(T, 'createVouchers', counterFailureRequest);
 const voucherHeadersForFaults = g.sheets.Vouchers.rows[0];
@@ -2934,7 +2948,9 @@ const counterFailureRow = g.sheets.Vouchers.rows.find(
 );
 const counterReceiptIds = String(
   counterFailureRow?.[voucherHeadersForFaults.indexOf('Receipts')] || '',
-).split(',').filter(Boolean);
+)
+  .split(',')
+  .filter(Boolean);
 ok(
   counterFailureResult.ok &&
     counterFailureRow &&
@@ -2943,15 +2959,17 @@ ok(
   'counter-setting failure does not turn a saved voucher into a failed request or delete its receipt',
 );
 const afterCounterFailure = as(T, 'createVouchers', {
-  entries: [{
-    clientId: 'counter-after-failure-regression',
-    date: railDate,
-    vendor: 'Counter After Failure',
-    amount: 42,
-    category: 'Other',
-    paymentMethod: 'CASH',
-    cashImpact: 'CASH_OUT',
-  }],
+  entries: [
+    {
+      clientId: 'counter-after-failure-regression',
+      date: railDate,
+      vendor: 'Counter After Failure',
+      amount: 42,
+      category: 'Other',
+      paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
 });
 ok(
   afterCounterFailure.ok &&
@@ -2961,24 +2979,29 @@ ok(
 
 g.failNextVoucherWriteAfterCommit();
 const ambiguousWriteRequest = {
-  entries: [{
-    clientId: 'ambiguous-voucher-commit-regression',
-    date: railDate,
-    vendor: 'Ambiguous Voucher Commit',
-    amount: 51,
-    category: 'Other',
-    paymentMethod: 'CASH',
-    cashImpact: 'CASH_OUT',
-    receipts: [{ mime: 'image/jpeg', data: tiny }],
-  }],
+  entries: [
+    {
+      clientId: 'ambiguous-voucher-commit-regression',
+      date: railDate,
+      vendor: 'Ambiguous Voucher Commit',
+      amount: 51,
+      category: 'Other',
+      paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
+      receipts: [{ mime: 'image/jpeg', data: tiny }],
+    },
+  ],
 };
 const ambiguousWriteResult = as(T, 'createVouchers', ambiguousWriteRequest);
 const ambiguousRow = g.sheets.Vouchers.rows.find(
-  (row) => row[voucherHeadersForFaults.indexOf('ClientID')] === 'ambiguous-voucher-commit-regression',
+  (row) =>
+    row[voucherHeadersForFaults.indexOf('ClientID')] === 'ambiguous-voucher-commit-regression',
 );
 const ambiguousReceiptIds = String(
   ambiguousRow?.[voucherHeadersForFaults.indexOf('Receipts')] || '',
-).split(',').filter(Boolean);
+)
+  .split(',')
+  .filter(Boolean);
 const filesBeforeAmbiguousRetry = Object.keys(g.files).length;
 const ambiguousRetry = as(T, 'createVouchers', ambiguousWriteRequest);
 ok(

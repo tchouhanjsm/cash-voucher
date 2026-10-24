@@ -849,7 +849,6 @@ export function createRegister({ api, go }) {
     });
   }
 
-
   function cancel(id) {
     const voucher = voucherRows().find((item) => item.id === id);
 
