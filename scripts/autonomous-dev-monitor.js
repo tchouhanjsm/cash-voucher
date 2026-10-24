@@ -277,14 +277,9 @@ function buildMonitorReport(snapshot, now = new Date()) {
       ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
     );
     const pending = checks.some((item) =>
-      [
-        'NOT_RUN',
-        'PENDING',
-        'RUNNING',
-        'CANCELLED',
-        'SKIPPED',
-        'TIMEOUT_RETRY_ELIGIBLE',
-      ].includes(item.code),
+      ['NOT_RUN', 'PENDING', 'RUNNING', 'CANCELLED', 'SKIPPED', 'TIMEOUT_RETRY_ELIGIBLE'].includes(
+        item.code,
+      ),
     );
     return {
       number: pr.number,
@@ -330,14 +325,9 @@ function buildMonitorReport(snapshot, now = new Date()) {
     ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
   );
   const incompleteSource = sourceChecks.filter((item) =>
-    [
-      'NOT_RUN',
-      'PENDING',
-      'RUNNING',
-      'CANCELLED',
-      'SKIPPED',
-      'TIMEOUT_RETRY_ELIGIBLE',
-    ].includes(item.code),
+    ['NOT_RUN', 'PENDING', 'RUNNING', 'CANCELLED', 'SKIPPED', 'TIMEOUT_RETRY_ELIGIBLE'].includes(
+      item.code,
+    ),
   );
   const blockedPrs = openPullRequests.filter((item) => item.state === 'BLOCKED');
   const waitingPrs = openPullRequests.filter((item) => item.state === 'WAITING_FOR_CHECKS');
