@@ -3086,4 +3086,52 @@ ok(
   'ambiguous post-commit voucher write preserves referenced receipts and retry creates no duplicates',
 );
 
+const malformedTypeClientId = 'malformed-type-idempotency-regression';
+const malformedTypeRecord = {
+  VoucherID: 'malformed-type-idempotency-voucher-id',
+  VoucherNo: 99111,
+  Date: railDate,
+  Vendor: 'Malformed Type Replay',
+  Amount: 63,
+  Category: 'Other',
+  Notes: '',
+  Status: 'ACTIVE',
+  CreatedBy: 'owner@test.com',
+  CreatedAt: new Date().toISOString(),
+  UpdatedBy: '',
+  UpdatedAt: '',
+  Receipts: '',
+  CancelReason: '',
+  ClientID: malformedTypeClientId,
+  Type: 'EXPENSE',
+  CashImpact: 'CASH_OUT',
+  ApprovalStatus: 'NOT_REQUIRED',
+  ApprovedBy: '',
+  ApprovedAt: '',
+  ApprovalReason: '',
+  VendorID: '',
+  PaymentMethod: 'CASH',
+};
+g.sheets.Vouchers.rows.push(
+  voucherHeadersForFaults.map((header) => malformedTypeRecord[header] ?? ''),
+);
+const malformedTypeReplay = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: malformedTypeClientId,
+      date: railDate,
+      vendor: 'Malformed Type Replay',
+      amount: 63,
+      category: 'Other',
+      notes: '',
+      paymentMethod: 'CASH',
+      type: 'PAYMENT',
+    },
+  ],
+});
+ok(
+  !malformedTypeReplay.ok && malformedTypeReplay.code === 'CONFLICT',
+  'a malformed stored voucher type cannot be normalized into PAYMENT during idempotency checks',
+);
+
 console.log('backend OK — ' + n + ' checks passed');
