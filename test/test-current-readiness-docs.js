@@ -41,10 +41,12 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*2231813ca97dd3c329b4c6bd92093a5b78f05e56/,
+  /Authoritative integration baseline.*client-main.*e90ef5dfb005745136c0522d983fd42c38db38ff/,
 );
-assert.match(staging, /PR #206/);
+assert.match(staging, /PR #207/);
 assert.match(staging, /P0 B5/);
+assert.match(staging, /P0 B6/);
+assert.match(staging, /Settings-sheet fallback/);
 assert.match(staging, /CV_STAGING_UAT_OWNER_PASSWORD/);
 assert.match(appsScriptRunbook, /CV_STAGING_UAT_MANAGER_PASSWORD/);
 assert.match(appsScriptRunbook, /Setup preflight and safe recovery/);
@@ -70,7 +72,7 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /aa37d94819e59a72c797ba36839aa8f8ec94008f/);
+assert.match(executionPlan, /e90ef5dfb005745136c0522d983fd42c38db38ff/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
 assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
 assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);

@@ -113,7 +113,12 @@ function auditLog_(user, req) {
 
   const endRow = Math.min(lastRow, beforeRow - 1);
   if (endRow < 2) {
-    return { rows: [], nextBeforeRow: null, totalCount: totalCount };
+    return {
+      rows: [],
+      nextBeforeRow: null,
+      totalCount: totalCount,
+      auditHealth: auditWriteHealth_(),
+    };
   }
   const startRow = Math.max(2, endRow - 199);
   const rowCount = endRow - startRow + 1;

@@ -2682,6 +2682,14 @@ ok(
     auditFailureRetry.data.auditHealth.failureCount === 1,
   'a later successful audit read does not silently clear an unresolved audit gap',
 );
+const auditFailureCursor = as(T, 'auditLog', { beforeRow: 2 });
+ok(
+  auditFailureCursor.ok &&
+    auditFailureCursor.data.rows.length === 0 &&
+    auditFailureCursor.data.auditHealth?.status === 'DEGRADED' &&
+    auditFailureCursor.data.auditHealth.failureCount === 1,
+  'empty older-audit pages preserve the same audit-health contract as populated pages',
+);
 
 // Audit-marker durability boundary: when both the audit append and its Script Properties
 // marker fail, the financial write is still successful and the owner status cannot detect the gap.
@@ -2723,21 +2731,134 @@ assert(
     ),
   'voucher write remains successful and persisted when both audit append and marker persistence fail',
 );
+const durableFallbackRow = auditMarkerOutageMock.sheets.Settings.rows.find(
+  (row) => row[0] === 'auditWriteFailureMarker',
+);
 assert(
   !auditMarkerOutageMock.props.AUDIT_WRITE_STATUS &&
+    durableFallbackRow &&
+    JSON.parse(durableFallbackRow[1]).status === 'DEGRADED' &&
     auditMarkerOutageMock.auditDiagnostics.some((entry) =>
-      entry.includes('Could not persist audit-write failure marker'),
+      entry.includes('Could not persist the primary audit-write failure marker'),
     ),
-  'marker-storage failure emits a console diagnostic without pretending a durable marker exists',
+  'when Script Properties marker persistence fails, the Settings-sheet fallback retains a durable marker',
 );
-const unavailableMarkerHealth = auditMarkerOutageMock.call('auditLog', {
+const fallbackMarkerHealth = auditMarkerOutageMock.call('auditLog', {
   token: markerPinChange.data.token,
 });
 assert(
-  unavailableMarkerHealth.ok &&
-    unavailableMarkerHealth.data.auditHealth?.status === 'NO_KNOWN_FAILURE' &&
-    unavailableMarkerHealth.data.auditHealth.failureCount === 0,
-  'owner audit status makes the simultaneous marker-store failure limitation explicit in regression evidence',
+  fallbackMarkerHealth.ok &&
+    fallbackMarkerHealth.data.auditHealth?.status === 'DEGRADED' &&
+    fallbackMarkerHealth.data.auditHealth.failureCount === 1 &&
+    fallbackMarkerHealth.data.auditHealth.markerDurability === 'SETTINGS_SHEET',
+  'owner audit health detects a durable Settings fallback after the primary marker store fails',
+);
+
+/* If both durable marker stores fail, a short-lived cache marker still warns the owner. */
+const fallbackRowIndex = auditMarkerOutageMock.sheets.Settings.rows.findIndex(
+  (row) => row[0] === 'auditWriteFailureMarker',
+);
+if (fallbackRowIndex >= 0) auditMarkerOutageMock.sheets.Settings.rows.splice(fallbackRowIndex, 1);
+delete auditMarkerOutageMock.props.AUDIT_WRITE_STATUS;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND;
+delete auditMarkerOutageMock.cache.CV_AUDIT_WRITE_FAILURE_TRANSIENT;
+auditMarkerOutageMock.failNextAuditWrite();
+auditMarkerOutageMock.failNextAuditMarkerWrite();
+auditMarkerOutageMock.failNextAuditFallbackWrite();
+const cacheFallbackVoucher = auditMarkerOutageMock.call('createVouchers', {
+  token: markerPinChange.data.token,
+  entries: [
+    {
+      clientId: 'audit-marker-cache-fallback-test',
+      date: today,
+      vendor: 'Audit Marker Cache Fallback Vendor',
+      amount: 147,
+      category: 'Other',
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+});
+assert(
+  cacheFallbackVoucher.ok &&
+    auditMarkerOutageMock.sheets.Vouchers.rows.some(
+      (row) => row[14] === 'audit-marker-cache-fallback-test',
+    ) &&
+    auditMarkerOutageMock.cache.CV_AUDIT_WRITE_FAILURE_TRANSIENT,
+  'voucher remains saved while the transient audit marker is retained after durable marker stores fail',
+);
+const cacheFallbackHealth = auditMarkerOutageMock.call('auditLog', {
+  token: markerPinChange.data.token,
+});
+assert(
+  cacheFallbackHealth.ok &&
+    cacheFallbackHealth.data.auditHealth?.status === 'DEGRADED' &&
+    cacheFallbackHealth.data.auditHealth.markerDurability === 'TRANSIENT_CACHE' &&
+    cacheFallbackHealth.data.auditHealth.failureCount === 1,
+  'owner audit health labels a cache-only marker as degraded but transient',
+);
+
+/* A corrupt marker source must not be reported as a clean audit monitor. */
+delete auditMarkerOutageMock.cache.CV_AUDIT_WRITE_FAILURE_TRANSIENT;
+auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'INVALID';
+auditMarkerOutageMock.sheets.Settings.rows.push(['auditWriteFailureMarker', '{not-json']);
+const invalidMarkerHealth = auditMarkerOutageMock.call('auditLog', {
+  token: markerPinChange.data.token,
+});
+assert(
+  invalidMarkerHealth.ok &&
+    invalidMarkerHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+    invalidMarkerHealth.data.auditHealth.markerDurability === 'UNKNOWN',
+  'invalid properties/settings markers report monitoring unavailable rather than a clean status',
+);
+delete auditMarkerOutageMock.props.AUDIT_WRITE_STATUS;
+const invalidFallbackIndex = auditMarkerOutageMock.sheets.Settings.rows.findIndex(
+  (row) => row[0] === 'auditWriteFailureMarker',
+);
+if (invalidFallbackIndex >= 0) {
+  auditMarkerOutageMock.sheets.Settings.rows.splice(invalidFallbackIndex, 1);
+}
+
+/* An outage of every marker store remains an explicitly tested residual limitation. */
+auditMarkerOutageMock.failNextAuditWrite();
+auditMarkerOutageMock.failNextAuditMarkerWrite();
+auditMarkerOutageMock.failNextAuditFallbackWrite();
+auditMarkerOutageMock.failNextAuditCacheWrite();
+const allMarkerStoresFailedVoucher = auditMarkerOutageMock.call('createVouchers', {
+  token: markerPinChange.data.token,
+  entries: [
+    {
+      clientId: 'audit-marker-all-stores-failed-test',
+      date: today,
+      vendor: 'Audit Marker All Stores Failed Vendor',
+      amount: 148,
+      category: 'Other',
+      type: 'PAYMENT',
+      cashImpact: 'CASH_OUT',
+    },
+  ],
+});
+assert(
+  allMarkerStoresFailedVoucher.ok &&
+    auditMarkerOutageMock.sheets.Vouchers.rows.some(
+      (row) => row[14] === 'audit-marker-all-stores-failed-test',
+    ) &&
+    auditMarkerOutageMock.auditDiagnostics.some((entry) =>
+      entry.includes(
+        'Audit health is unrecorded: Script Properties, Settings fallback and transient cache all failed.',
+      ),
+    ),
+  'financial write succeeds but emits an explicit diagnostic when all audit-health marker stores fail',
+);
+const allMarkerStoresFailedHealth = auditMarkerOutageMock.call('auditLog', {
+  token: markerPinChange.data.token,
+});
+assert(
+  allMarkerStoresFailedHealth.ok &&
+    allMarkerStoresFailedHealth.data.auditHealth?.status === 'NO_KNOWN_FAILURE',
+  'the test documents that monitoring cannot recover an event when every marker store failed to persist it',
 );
 
 /* Payment rail is explicit and independent from drawer movement. */

@@ -342,31 +342,190 @@ function pubUser_(u) {
     mustChangePassword: u.MustChangePassword === true || u.MustChangePassword === 'TRUE',
   };
 }
-function recordAuditWriteFailure_(kind, error) {
+const AUDIT_WRITE_FALLBACK_SETTING_ = 'auditWriteFailureMarker';
+const AUDIT_WRITE_CACHE_KEY_ = 'CV_AUDIT_WRITE_FAILURE_TRANSIENT';
+const AUDIT_WRITE_CACHE_TTL_SECONDS_ = 21600;
+
+function parseAuditFailureMarker_(raw, source) {
+  if (!raw) return null;
+  let marker;
+  try {
+    marker = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch {
+    return null;
+  }
+  if (
+    !marker ||
+    typeof marker !== 'object' ||
+    Array.isArray(marker) ||
+    marker.version !== 1 ||
+    marker.status !== 'DEGRADED' ||
+    !Number.isSafeInteger(Number(marker.failureCount)) ||
+    Number(marker.failureCount) < 1 ||
+    typeof marker.lastFailureAt !== 'string' ||
+    typeof marker.lastFailureKind !== 'string'
+  ) {
+    return null;
+  }
+  return {
+    source: source,
+    failureCount: Number(marker.failureCount),
+    lastFailureAt: marker.lastFailureAt,
+    lastFailureKind: marker.lastFailureKind,
+  };
+}
+
+function readAuditPropertiesMarker_() {
   try {
     const properties = props_();
-    const rawCount = Number(properties.getProperty('AUDIT_WRITE_FAILURE_COUNT') || 0);
-    const count = Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0;
-    properties.setProperty('AUDIT_WRITE_STATUS', 'DEGRADED');
-    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_AT', nowIso_());
-    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_KIND', String(kind || 'UNKNOWN'));
-    properties.setProperty('AUDIT_WRITE_FAILURE_COUNT', String(count + 1));
-  } catch (markerError) {
-    console.error('Could not persist audit-write failure marker:', markerError);
+    const status = String(properties.getProperty('AUDIT_WRITE_STATUS') || '');
+    const rawCount = properties.getProperty('AUDIT_WRITE_FAILURE_COUNT');
+    const rawAt = properties.getProperty('AUDIT_WRITE_LAST_FAILURE_AT');
+    const rawKind = properties.getProperty('AUDIT_WRITE_LAST_FAILURE_KIND');
+    if (status !== 'DEGRADED') {
+      return {
+        available: !status && !rawCount && !rawAt && !rawKind,
+        marker: null,
+      };
+    }
+    const parsedCount = Number(rawCount || 0);
+    return {
+      available: true,
+      marker: {
+        source: 'SCRIPT_PROPERTIES',
+        failureCount: Number.isSafeInteger(parsedCount) && parsedCount > 0 ? parsedCount : 1,
+        lastFailureAt: String(rawAt || ''),
+        lastFailureKind: String(rawKind || 'UNKNOWN'),
+      },
+    };
+  } catch {
+    return { available: false, marker: null };
   }
-  console.error('Audit persistence failed (' + String(kind || 'UNKNOWN') + '):', error);
+}
+
+function readAuditSettingsMarker_() {
+  try {
+    const settings = settings_();
+    const raw = settings[AUDIT_WRITE_FALLBACK_SETTING_];
+    if (raw === undefined || raw === null || raw === '') {
+      return { available: true, marker: null };
+    }
+    const marker = parseAuditFailureMarker_(raw, 'SETTINGS_SHEET');
+    return { available: Boolean(marker), marker: marker };
+  } catch {
+    return { available: false, marker: null };
+  }
+}
+
+function readAuditCacheMarker_() {
+  try {
+    if (typeof CacheService === 'undefined') return { available: false, marker: null };
+    const raw = CacheService.getScriptCache().get(AUDIT_WRITE_CACHE_KEY_);
+    if (!raw) return { available: true, marker: null };
+    const marker = parseAuditFailureMarker_(raw, 'TRANSIENT_CACHE');
+    return { available: Boolean(marker), marker: marker };
+  } catch {
+    return { available: false, marker: null };
+  }
+}
+
+function recordAuditWriteFailure_(kind, error) {
+  const health = auditWriteHealth_();
+  const marker = {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: Math.max(0, Number(health.failureCount) || 0) + 1,
+    lastFailureAt: nowIso_(),
+    lastFailureKind: String(kind || 'UNKNOWN'),
+    markerId: Utilities.getUuid(),
+  };
+  const serialized = JSON.stringify(marker);
+  let propertiesPersisted = false;
+  let settingsPersisted = false;
+  let cachePersisted = false;
+
+  try {
+    const properties = props_();
+    properties.setProperty('AUDIT_WRITE_STATUS', 'DEGRADED');
+    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_AT', marker.lastFailureAt);
+    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_KIND', marker.lastFailureKind);
+    properties.setProperty('AUDIT_WRITE_FAILURE_COUNT', String(marker.failureCount));
+    propertiesPersisted = true;
+  } catch (markerError) {
+    console.error('Could not persist the primary audit-write failure marker:', markerError);
+  }
+
+  try {
+    setSetting_(AUDIT_WRITE_FALLBACK_SETTING_, serialized);
+    settingsPersisted = true;
+  } catch (fallbackError) {
+    console.error('Could not persist the Settings-sheet audit-write fallback:', fallbackError);
+  }
+
+  if (!propertiesPersisted && !settingsPersisted) {
+    try {
+      if (typeof CacheService !== 'undefined') {
+        CacheService.getScriptCache().put(
+          AUDIT_WRITE_CACHE_KEY_,
+          serialized,
+          AUDIT_WRITE_CACHE_TTL_SECONDS_,
+        );
+        cachePersisted = true;
+      }
+    } catch (cacheError) {
+      console.error('Could not persist the transient audit-write cache marker:', cacheError);
+    }
+  }
+
+  if (!propertiesPersisted && !settingsPersisted && !cachePersisted) {
+    console.error(
+      'Audit health is unrecorded: Script Properties, Settings fallback and transient cache all failed.',
+    );
+  }
+  console.error('Audit persistence failed (' + marker.lastFailureKind + '):', error);
 }
 
 function auditWriteHealth_() {
-  const properties = props_();
-  const rawCount = Number(properties.getProperty('AUDIT_WRITE_FAILURE_COUNT') || 0);
-  const status =
-    properties.getProperty('AUDIT_WRITE_STATUS') === 'DEGRADED' ? 'DEGRADED' : 'NO_KNOWN_FAILURE';
+  const propertyState = readAuditPropertiesMarker_();
+  const settingsState = readAuditSettingsMarker_();
+  const cacheState = readAuditCacheMarker_();
+  const markers = [propertyState.marker, settingsState.marker, cacheState.marker].filter(Boolean);
+  const status = markers.length
+    ? 'DEGRADED'
+    : propertyState.available && settingsState.available && cacheState.available
+      ? 'NO_KNOWN_FAILURE'
+      : 'MONITORING_UNAVAILABLE';
+  const durability =
+    propertyState.marker && settingsState.marker
+      ? 'SCRIPT_PROPERTIES_AND_SETTINGS'
+      : propertyState.marker
+        ? 'SCRIPT_PROPERTIES'
+        : settingsState.marker
+          ? 'SETTINGS_SHEET'
+          : cacheState.marker
+            ? 'TRANSIENT_CACHE'
+            : status === 'NO_KNOWN_FAILURE'
+              ? 'NONE'
+              : 'UNKNOWN';
+  const latest = markers.reduce(function (best, marker) {
+    if (!best || String(marker.lastFailureAt || '') > String(best.lastFailureAt || '')) {
+      return marker;
+    }
+    return best;
+  }, null);
   return {
     status: status,
-    failureCount: Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0,
-    lastFailureAt: properties.getProperty('AUDIT_WRITE_LAST_FAILURE_AT') || '',
-    lastFailureKind: properties.getProperty('AUDIT_WRITE_LAST_FAILURE_KIND') || '',
+    failureCount: markers.length
+      ? Math.max.apply(
+          null,
+          markers.map(function (marker) {
+            return marker.failureCount;
+          }),
+        )
+      : 0,
+    lastFailureAt: latest ? latest.lastFailureAt : '',
+    lastFailureKind: latest ? latest.lastFailureKind : '',
+    markerDurability: durability,
   };
 }
 

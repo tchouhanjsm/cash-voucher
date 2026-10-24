@@ -1,9 +1,9 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 23 October 2026 (P0 release batch follow-up)  
+**Updated:** 24 October 2026 (P0 B1–B5 source batches merged; operational release still gated)  
 **Integration branch:** client-main  
-**Current source baseline for release follow-up:** aa37d94819e59a72c797ba36839aa8f8ec94008f (PR #204 merge)  
-**Release state:** source PR #204 is merged; live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md).
+**Current source baseline for release follow-up:** e90ef5dfb005745136c0522d983fd42c38db38ff (PR #207 merge)  
+**Release state:** PRs #205–#207 are merged; live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ## Executive decision
 
@@ -11,13 +11,13 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #197, #198 and #204 are merged. Next is staging release and recovery evidence, not another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md).
+PRs #205, #206 and #207 are merged to `client-main`. Next is staging release and recovery evidence, not another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ### 1. Complete the source release
 
-- PRs #197, #198 and #204 are merged to `client-main`.
-- PR #204 merge commit is `aa37d94819e59a72c797ba36839aa8f8ec94008f`.
-- Reported post-merge evidence for PR #204: [CI/Quality #2001](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39984568307), [Browser E2E #1780](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39984568104), and [Full Flight Test #1355](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39984568116) passed.
+- PRs #205, #206 and #207 are merged to `client-main`; the latest source merge is `e90ef5dfb005745136c0522d983fd42c38db38ff`.
+- PR #207's exact-head evidence passed: [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247679), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247678), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247717).
+- Green source checks do not prove live deployment or recovery.
 - Green source checks do not prove live deployment or recovery.
 
 ### 2. Prepare and identify staging
@@ -69,7 +69,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 
 ## Source release status
 
-PR #204 is merged at `aa37d94819e59a72c797ba36839aa8f8ec94008f`. The reported post-merge CI/Quality, Browser E2E and Full Flight Test runs passed. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
+PR #207 is merged at `e90ef5dfb005745136c0522d983fd42c38db38ff` and its exact-head CI/Quality, Browser E2E and Full Flight Test passed. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 

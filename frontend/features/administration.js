@@ -743,7 +743,16 @@ export function createAdministration({ api, getNavigation, signOut }) {
       (health !== null &&
         typeof health === 'object' &&
         !Array.isArray(health) &&
-        ['NO_KNOWN_FAILURE', 'DEGRADED'].includes(health.status) &&
+        ['NO_KNOWN_FAILURE', 'DEGRADED', 'MONITORING_UNAVAILABLE'].includes(health.status) &&
+        (health.markerDurability === undefined ||
+          [
+            'NONE',
+            'SCRIPT_PROPERTIES',
+            'SETTINGS_SHEET',
+            'SCRIPT_PROPERTIES_AND_SETTINGS',
+            'TRANSIENT_CACHE',
+            'UNKNOWN',
+          ].includes(health.markerDurability)) &&
         Number.isSafeInteger(health.failureCount) &&
         health.failureCount >= 0 &&
         typeof health.lastFailureAt === 'string' &&
@@ -965,6 +974,17 @@ export function createAdministration({ api, getNavigation, signOut }) {
       return;
     }
 
+    if (auditHealth.status === 'MONITORING_UNAVAILABLE') {
+      panel.className = 'audit-health degraded';
+      message.className = 'error form-error';
+      message.setAttribute('role', 'alert');
+      message.setAttribute('aria-live', 'assertive');
+      message.textContent =
+        'Audit monitoring could not verify all failure-marker stores. Do not interpret this state as a clean audit history; retry the audit read and reconcile recent financial actions.';
+      panel.appendChild(message);
+      return;
+    }
+
     if (auditHealth.status === 'DEGRADED') {
       panel.className = 'audit-health degraded';
       message.className = 'error form-error';
@@ -974,18 +994,24 @@ export function createAdministration({ api, getNavigation, signOut }) {
       const kind = auditHealth.lastFailureKind
         ? ' (' + auditHealth.lastFailureKind.toLowerCase().replace(/_/g, ' ') + ')'
         : '';
+      const durability = auditHealth.markerDurability || 'UNKNOWN';
+      const markerNote =
+        durability === 'TRANSIENT_CACHE'
+          ? ' Only a temporary cache marker survived; it may expire, so reconcile immediately.'
+          : ' Marker source: ' + durability.toLowerCase().replace(/_/g, ' ') + '.';
       message.textContent =
         'Audit logging is degraded: ' +
         auditHealth.failureCount +
         ' write failure(s) recorded. Last failure: ' +
         when +
         kind +
-        '. One or more actions may be missing from the log. Reconcile the affected records before relying on audit history; this warning does not repair missing events.';
+        '. One or more actions may be missing from the log. Reconcile the affected records before relying on audit history; this warning does not repair missing events.' +
+        markerNote;
     } else {
       panel.className = 'audit-health';
       message.className = 'muted';
       message.textContent =
-        'No durable audit-write failure marker is recorded by the current monitor. This does not prove every action was logged: a simultaneous AuditLog append and failure-marker storage outage may be undetectable. Historical audit completeness is not verified.';
+        'No audit-write failure marker is currently visible in Script Properties, the Settings-sheet fallback, or transient cache. This does not prove every action was logged; an outage affecting every marker store may still be undetectable. Historical audit completeness is not verified.';
     }
     panel.appendChild(message);
   }
@@ -1075,6 +1101,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         failureCount: monitoringKnown ? auditHealth.failureCount : null,
         lastFailureAt: monitoringKnown ? auditHealth.lastFailureAt || null : null,
         lastFailureKind: monitoringKnown ? auditHealth.lastFailureKind || null : null,
+        markerDurability: monitoringKnown ? auditHealth.markerDurability || null : null,
       },
       coverage: {
         loadedRowCount: auditRows.length,
@@ -1086,7 +1113,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
       limitations: [
         'This snapshot contains monitoring metadata only; it does not contain or reconstruct missing audit events.',
         'NO_KNOWN_FAILURE means no failure marker was read; it does not prove audit history is complete.',
-        'A simultaneous AuditLog append and Script Properties marker write failure may be undetectable without an independent durable fallback.',
+        'A fallback marker is stored in the Settings sheet when Script Properties cannot be written; if both durable stores fail, the application attempts a temporary cache marker that expires.',
+        'If AuditLog, Script Properties, the Settings fallback and transient cache all fail, the missed audit event may remain undetectable and must be investigated from other records/logs.',
         'Historical audit completeness is not verified.',
       ],
     };
