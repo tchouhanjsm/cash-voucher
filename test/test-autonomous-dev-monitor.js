@@ -152,6 +152,8 @@ const newerSuccessAfterTimeout = makeRun('ci.yml', 'client-main', MAIN_SHA, {
   conclusion: 'success',
   runAttempt: 1,
   runId: 5005,
+  runNumber: 101,
+  createdAt: '2026-10-24T23:55:00.000Z',
   updatedAt: '2026-10-24T23:59:00.000Z',
   expectedCurrentHeadSha: MAIN_SHA,
 });
@@ -194,18 +196,22 @@ const report = buildMonitorReport(snapshot, NOW);
 assert.equal(report.state, 'BLOCKED');
 
 const latestAttemptSnapshot = baseSnapshot();
+latestAttemptSnapshot.runs[0] = makeRun('ci.yml', 'client-main', MAIN_SHA, {
+  conclusion: 'failure',
+  runAttempt: 2,
+  runId: 6001,
+  runNumber: 100,
+  createdAt: '2026-10-24T23:40:00.000Z',
+  updatedAt: '2026-10-25T00:00:00.000Z',
+});
 latestAttemptSnapshot.runs.push(
-  makeRun('ci.yml', 'client-main', MAIN_SHA, {
-    conclusion: 'failure',
-    runAttempt: 2,
-    runId: 6001,
-    updatedAt: '2026-10-24T23:51:00.000Z',
-  }),
   makeRun('ci.yml', 'client-main', MAIN_SHA, {
     conclusion: 'success',
     runAttempt: 1,
     runId: 6002,
-    updatedAt: '2026-10-24T23:59:00.000Z',
+    runNumber: 101,
+    createdAt: '2026-10-24T23:55:00.000Z',
+    updatedAt: '2026-10-24T23:56:00.000Z',
   }),
 );
 const latestAttemptReport = buildMonitorReport(latestAttemptSnapshot, NOW);
@@ -213,7 +219,7 @@ assert.equal(latestAttemptReport.sourceChecks[0].runId, 6002);
 assert.equal(
   latestAttemptReport.sourceChecks[0].code,
   'PASS',
-  'a newer run must outrank an older rerun with a larger attempt number',
+  'a newer-created workflow run must outrank an older run rerun after it',
 );
 
 const cancelledSnapshot = baseSnapshot();

@@ -18,7 +18,7 @@ The ChatGPT monitor is configured to run hourly. A 45-minute recurring schedule 
 
 The workflow observes pushes to client-main, PR changes targeting client-main, and manual dispatch. Pull-request runs are read-only. It collects the exact integration SHA, canonical handoff baseline/phase, CI/E2E/Flight results for that exact SHA, workflow status against each open PR head SHA, review state, staging/ZIP runs, failed job/step summaries, in-progress age, release gates and API collection warnings.
 
-Pass, failure, pending, running, stalled, timed out, cancelled, skipped and unknown are distinct states. Missing check data is not success. Handoff SHA mismatch is drift. Data/API collection errors become warnings/blockers rather than silently being reported green.
+Pass, failure, pending, running, stalled, timed out, cancelled, skipped and unknown are distinct states. Missing check data is not success. Handoff SHA mismatch is drift. Data/API collection errors become warnings/blockers rather than silently being reported green. Workflow-run selection prioritizes `run_number`, then `created_at`; `updated_at` is only a fallback/tie-breaker so a rerun of an older run cannot displace a newer-created run.
 
 ## Timeout recovery
 

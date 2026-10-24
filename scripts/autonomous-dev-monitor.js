@@ -161,10 +161,25 @@ function latestRun(runs, workflowId, scope, headSha, prNumber = null) {
       (prNumber === null || run.prNumber === prNumber),
   );
   candidates.sort((a, b) => {
-    const at = asDate(a.updatedAt || a.createdAt);
-    const bt = asDate(b.updatedAt || b.createdAt);
-    const byTime = (bt ? bt.getTime() : 0) - (at ? at.getTime() : 0);
-    if (byTime) return byTime;
+    const aRunNumber = Number(a.runNumber);
+    const bRunNumber = Number(b.runNumber);
+    if (
+      Number.isSafeInteger(aRunNumber) &&
+      aRunNumber > 0 &&
+      Number.isSafeInteger(bRunNumber) &&
+      bRunNumber > 0 &&
+      aRunNumber !== bRunNumber
+    ) {
+      return bRunNumber - aRunNumber;
+    }
+    const aCreated = asDate(a.createdAt);
+    const bCreated = asDate(b.createdAt);
+    const byCreation = (bCreated ? bCreated.getTime() : 0) - (aCreated ? aCreated.getTime() : 0);
+    if (byCreation) return byCreation;
+    const aUpdated = asDate(a.updatedAt || a.createdAt);
+    const bUpdated = asDate(b.updatedAt || b.createdAt);
+    const byUpdate = (bUpdated ? bUpdated.getTime() : 0) - (aUpdated ? aUpdated.getTime() : 0);
+    if (byUpdate) return byUpdate;
     return (Number(b.runAttempt) || 1) - (Number(a.runAttempt) || 1);
   });
   return candidates[0] || null;
