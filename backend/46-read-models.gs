@@ -79,12 +79,39 @@ function readModelNo_(row) {
   return (row.Type === 'RECEIPT' ? 'R-' : '') + String(row.VoucherNo || '');
 }
 
+function readModelMissingFieldCount_(row) {
+  return [
+    'VoucherID',
+    'VoucherNo',
+    'Date',
+    'Vendor',
+    'Category',
+    'CreatedBy',
+    'Type',
+    'Status',
+  ].filter(function (key) {
+    const value = row[key];
+    return (
+      value === undefined ||
+      value === null ||
+      (typeof value === 'string' && !value.trim())
+    );
+  }).length;
+}
+
 function readModelHasMalformedRecord_(row) {
+  const rawVoucherNo = row.VoucherNo;
+  const voucherNo = Number(rawVoucherNo);
   return (
     !String(row.VoucherID || '').trim() ||
     !validDate_(readModelDateValue_(row)) ||
     ['PAYMENT', 'RECEIPT'].indexOf(row.Type) < 0 ||
-    ['ACTIVE', 'CANCELLED'].indexOf(String(row.Status || 'ACTIVE')) < 0
+    ['ACTIVE', 'CANCELLED'].indexOf(String(row.Status || '')) < 0 ||
+    rawVoucherNo === '' ||
+    rawVoucherNo === null ||
+    rawVoucherNo === undefined ||
+    !Number.isSafeInteger(voucherNo) ||
+    voucherNo <= 0
   );
 }
 
@@ -229,6 +256,7 @@ function registerPage_(user, req) {
   const userSet = Object.create(null);
   const dataQuality = { malformedRecordCount: 0, invalidAmountCount: 0, malformedFieldCount: 0 };
   rows.forEach(function (row) {
+    dataQuality.malformedFieldCount += readModelMissingFieldCount_(row);
     if (readModelHasMalformedRecord_(row)) {
       dataQuality.malformedRecordCount++;
       return;
@@ -237,12 +265,9 @@ function registerPage_(user, req) {
     if (name) vendorSet[name] = true;
     const email = String(row.CreatedBy || '').toLowerCase();
     if (email) userSet[email] = true;
-    if (!readModelAmount_(row).valid && String(row.Status || 'ACTIVE') === 'ACTIVE') {
+    if (!readModelAmount_(row).valid && String(row.Status || '') === 'ACTIVE') {
       dataQuality.invalidAmountCount++;
     }
-    ['Vendor', 'Category', 'CreatedBy', 'Type', 'Status'].forEach(function (key) {
-      if (row[key] === undefined || row[key] === null) dataQuality.malformedFieldCount++;
-    });
   });
 
   rows = rows.filter(function (row) {
@@ -320,6 +345,9 @@ function registerPage_(user, req) {
 function dashboardSummary_(user, req) {
   let rows = readModelRows_(user);
   const malformedRecordCount = rows.filter(readModelHasMalformedRecord_).length;
+  const malformedFieldCount = rows.reduce(function (count, row) {
+    return count + readModelMissingFieldCount_(row);
+  }, 0);
   rows = rows.filter(function (row) {
     return !readModelHasMalformedRecord_(row);
   });
@@ -367,14 +395,6 @@ function dashboardSummary_(user, req) {
       ? best
       : { paise: amount.paise, vendor: String(row.Vendor || '') };
   }, null);
-  const malformedFieldCount = rows.reduce(function (count, row) {
-    return (
-      count +
-      ['Vendor', 'Category', 'CreatedBy', 'Type', 'Status'].filter(function (key) {
-        return row[key] === undefined || row[key] === null;
-      }).length
-    );
-  }, 0);
   const invalidAmountCount = active.filter(function (row) {
     return !readModelAmount_(row).valid;
   }).length;
