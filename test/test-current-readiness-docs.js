@@ -45,10 +45,7 @@ assert.match(
   /Authoritative integration baseline.*client-main.*176da7c559d279149e2473a65a71fd03d3e53018/,
 );
 assert.match(staging, /PR #208/);
-assert.match(
-  handoff,
-  /Verified integration baseline.*176da7c559d279149e2473a65a71fd03d3e53018/,
-);
+assert.match(handoff, /Verified integration baseline.*176da7c559d279149e2473a65a71fd03d3e53018/);
 assert.match(handoff, /PR #208/);
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(staging, /P0 B5/);
