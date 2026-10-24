@@ -104,11 +104,12 @@ assert.equal(skipped.status, 'not-run');
 assert.equal(skipped.checksPassed, null);
 assert.equal(skipped.cleanupStatus, 'not-run');
 assert.equal(skipped.transcriptSha256, null);
+const skippedEvidence = buildStagingEvidence(
+  { ...baseEnv, CV_EVIDENCE_UAT_OUTCOME: 'skipped' },
+  '',
+);
 assert.equal(
-  buildStagingEvidence(
-    { ...baseEnv, CV_EVIDENCE_UAT_OUTCOME: 'skipped' },
-    '',
-  ).liveReadModels.dashboardSummary,
+  skippedEvidence.liveReadModels.dashboardSummary,
   'not-run',
   'skipped UAT must not claim live dashboard coverage',
 );
