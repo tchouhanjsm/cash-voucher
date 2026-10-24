@@ -370,11 +370,7 @@ function parseAuditFailureMarker_(raw, source) {
     typeof marker.lastFailureAt === 'string' ? marker.lastFailureAt.trim() : '';
   const lastFailureKind =
     typeof marker.lastFailureKind === 'string' ? marker.lastFailureKind.trim() : '';
-  if (
-    !lastFailureAt ||
-    !Number.isFinite(Date.parse(lastFailureAt)) ||
-    !lastFailureKind
-  ) {
+  if (!lastFailureAt || !Number.isFinite(Date.parse(lastFailureAt)) || !lastFailureKind) {
     return null;
   }
 
