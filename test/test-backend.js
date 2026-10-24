@@ -2384,6 +2384,43 @@ assertCorruptCashClose(
   { IncludedVoucherCount: savedVoucherSnapshot.length + 1 },
   'saved close rejects a stored voucher count that differs from its snapshot',
 );
+const closeColumnValue = (name) => dayThreeRow[closeColumn(name)];
+assertCorruptCashClose(
+  { CashInTotal: Number(closeColumnValue('CashInTotal')) + 0.01 },
+  'saved close rejects cash-in totals that disagree with its voucher snapshot',
+);
+assertCorruptCashClose(
+  { ExpectedCash: Number(closeColumnValue('ExpectedCash')) + 1 },
+  'saved close rejects expected-cash values that do not reconcile with opening and movement totals',
+);
+assertCorruptCashClose(
+  { Variance: Number(closeColumnValue('Variance')) + 1 },
+  'saved close rejects variance values that do not reconcile with counted and expected cash',
+);
+assertCorruptCashClose(
+  { IncludedVouchers: '[]', IncludedVoucherIds: '[]', IncludedVoucherCount: 0 },
+  'saved close rejects an empty snapshot when its stored movement totals are nonzero',
+);
+assertCorruptCashClose(
+  { CloseID: '' },
+  'saved close rejects a missing close identity',
+);
+assertCorruptCashClose(
+  { BusinessDate: '' },
+  'saved close rejects a missing business date even with a non-empty snapshot',
+);
+assertCorruptCashClose(
+  { DrawerKey: 'UNKNOWN_DRAWER' },
+  'saved close rejects an unexpected drawer identity',
+);
+const duplicateCloseRow = dayThreeRow.slice();
+closeSheet.rows.push(duplicateCloseRow);
+const duplicateClosePreview = as(T, 'cashClosePreview', { date: '2020-01-03' });
+closeSheet.rows.pop();
+ok(
+  !duplicateClosePreview.ok && duplicateClosePreview.code === 'CASH_CLOSE_DATA',
+  'cash close refuses duplicate saved rows for one business date',
+);
 const duplicateSnapshot = [...savedVoucherSnapshot];
 duplicateSnapshot[1] = { ...duplicateSnapshot[0] };
 assertCorruptCashClose(

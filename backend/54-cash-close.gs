@@ -13,24 +13,50 @@ function cashCloseAmountPaise_(value, label) {
   if (!Number.isSafeInteger(paise)) throw err_('Invalid ' + label + ' amount.', 'VALIDATION');
   return paise;
 }
-function cashCloseAmountNumber_(value, label) {
-  const amount = Number(value);
+function cashCloseStoredPaise_(value, label, allowNegative) {
   if (
     value === '' ||
     value === null ||
     value === undefined ||
     typeof value === 'boolean' ||
-    !isFinite(amount) ||
-    amount < 0 ||
-    amount > CFG.MAX_AMOUNT
-  )
+    (typeof value !== 'string' && typeof value !== 'number')
+  ) {
     throw err_(
       'Stored cash-close ' + label + ' is invalid. Stop and inspect the close record.',
       'CASH_CLOSE_DATA',
     );
+  }
+  const text = String(value).trim();
+  if (
+    !text ||
+    (typeof value === 'string' && !/^-?\d+(?:\.\d{1,2})?$/.test(text))
+  ) {
+    throw err_(
+      'Stored cash-close ' + label + ' is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+  const amount = Number(text);
+  if (!isFinite(amount) || (!allowNegative && amount < 0)) {
+    throw err_(
+      'Stored cash-close ' + label + ' is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
   const paise = Math.round(amount * 100);
-  if (!Number.isSafeInteger(paise))
+  if (!Number.isSafeInteger(paise)) {
     throw err_('Stored cash-close ' + label + ' is invalid.', 'CASH_CLOSE_DATA');
+  }
+  return paise;
+}
+function cashCloseAmountNumber_(value, label) {
+  const paise = cashCloseStoredPaise_(value, label, false);
+  if (paise > CFG.MAX_AMOUNT * 100) {
+    throw err_(
+      'Stored cash-close ' + label + ' is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
   return paise;
 }
 function cashClosePreviousDate_(date) {
@@ -38,12 +64,32 @@ function cashClosePreviousDate_(date) {
   d.setUTCDate(d.getUTCDate() - 1);
   return d.toISOString().slice(0, 10);
 }
+function cashCloseRows_() {
+  const rows = readAll_('CashCloses');
+  const seenDates = Object.create(null);
+  rows.forEach(function (row) {
+    const date = String(row.BusinessDate || '');
+    const closeId = String(row.CloseID || '').trim();
+    const drawerKey = String(row.DrawerKey || CASH_CLOSE_DRAWER);
+    if (!closeId || !validDate_(date) || drawerKey !== CASH_CLOSE_DRAWER) {
+      throw err_(
+        'Saved cash-close identity is invalid. Stop and inspect the close ledger.',
+        'CASH_CLOSE_DATA',
+      );
+    }
+    if (Object.prototype.hasOwnProperty.call(seenDates, date)) {
+      throw err_(
+        'Multiple saved cash closes exist for one business date. Stop and inspect the close ledger.',
+        'CASH_CLOSE_DATA',
+      );
+    }
+    seenDates[date] = true;
+  });
+  return rows;
+}
 function cashDateClosed_(date) {
-  return readAll_('CashCloses').some(function (close) {
-    return (
-      String(close.BusinessDate || '') === date &&
-      String(close.DrawerKey || CASH_CLOSE_DRAWER) === CASH_CLOSE_DRAWER
-    );
+  return cashCloseRows_().some(function (close) {
+    return String(close.BusinessDate || '') === date;
   });
 }
 function cashCloseDateError_() {
@@ -182,6 +228,22 @@ function cashCloseCorrectionOut_(row) {
   };
 }
 function cashCloseOut_(row) {
+  if (!row || typeof row !== 'object') {
+    throw err_(
+      'Saved cash-close record is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+  const closeId = String(row.CloseID || '').trim();
+  const closeDate = typeof row.BusinessDate === 'string' ? row.BusinessDate : '';
+  const drawerKey = String(row.DrawerKey || CASH_CLOSE_DRAWER);
+  if (!closeId || !validDate_(closeDate) || drawerKey !== CASH_CLOSE_DRAWER) {
+    throw err_(
+      'Saved cash-close identity is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+
   let vouchers, ids;
   try {
     if (typeof row.IncludedVouchers !== 'string' || !row.IncludedVouchers.trim()) {
@@ -201,8 +263,9 @@ function cashCloseOut_(row) {
     );
   }
 
-  const closeDate = typeof row.BusinessDate === 'string' ? row.BusinessDate : '';
   const snapshotIds = [];
+  let snapshotCashInPaise = 0;
+  let snapshotCashOutPaise = 0;
   const validSnapshotVoucher = function (item) {
     return (
       item !== null &&
@@ -222,7 +285,7 @@ function cashCloseOut_(row) {
       item.amount > 0 &&
       item.amount <= CFG.MAX_AMOUNT &&
       Number.isSafeInteger(Math.round(item.amount * 100)) &&
-      CASH_IMPACT_CHOICES.indexOf(item.cashImpact) >= 0
+      ['CASH_IN', 'CASH_OUT', 'NO_CASH'].indexOf(item.cashImpact) >= 0
     );
   };
   if (!vouchers.every(validSnapshotVoucher)) {
@@ -233,6 +296,9 @@ function cashCloseOut_(row) {
   }
   vouchers.forEach(function (voucher) {
     snapshotIds.push(voucher.id);
+    const amountPaise = Math.round(voucher.amount * 100);
+    if (voucher.cashImpact === 'CASH_IN') snapshotCashInPaise += amountPaise;
+    else if (voucher.cashImpact === 'CASH_OUT') snapshotCashOutPaise += amountPaise;
   });
 
   try {
@@ -275,20 +341,65 @@ function cashCloseOut_(row) {
     );
   }
 
+  const openingPaise = cashCloseAmountNumber_(row.OpeningCash, 'opening cash');
+  const cashInPaise = cashCloseStoredPaise_(row.CashInTotal, 'cash-in total', false);
+  const cashOutPaise = cashCloseStoredPaise_(row.CashOutTotal, 'cash-out total', false);
+  const expectedCashPaise = cashCloseStoredPaise_(row.ExpectedCash, 'expected cash', false);
+  const countedPaise = cashCloseAmountNumber_(row.CountedCash, 'counted cash');
+  const variancePaise = cashCloseStoredPaise_(row.Variance, 'variance', true);
+  const openingSource = String(row.OpeningSource || '');
+  const openingCloseId = String(row.OpeningCloseID || '');
+  const openingReason = String(row.OpeningReason || '');
+  const varianceReason = String(row.VarianceReason || '');
+  if (
+    !Number.isSafeInteger(snapshotCashInPaise) ||
+    !Number.isSafeInteger(snapshotCashOutPaise) ||
+    snapshotCashInPaise !== cashInPaise ||
+    snapshotCashOutPaise !== cashOutPaise
+  ) {
+    throw err_(
+      'Saved cash-close totals do not match the voucher snapshot. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+  const calculatedExpectedPaise = openingPaise + cashInPaise - cashOutPaise;
+  if (
+    !Number.isSafeInteger(calculatedExpectedPaise) ||
+    calculatedExpectedPaise < 0 ||
+    expectedCashPaise !== calculatedExpectedPaise ||
+    variancePaise !== countedPaise - expectedCashPaise
+  ) {
+    throw err_(
+      'Saved cash-close balances do not reconcile. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+  if (
+    !['MANUAL', 'PREVIOUS_CLOSE'].includes(openingSource) ||
+    (openingSource === 'MANUAL' && openingReason.trim().length < 3) ||
+    (openingSource === 'PREVIOUS_CLOSE' && !openingCloseId.trim()) ||
+    (variancePaise !== 0 && varianceReason.trim().length < 3)
+  ) {
+    throw err_(
+      'Saved cash-close source or explanation is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+
   return {
-    id: String(row.CloseID || ''),
+    id: closeId,
     date: closeDate,
-    drawerKey: String(row.DrawerKey || CASH_CLOSE_DRAWER),
-    openingCash: Number(row.OpeningCash),
-    openingSource: String(row.OpeningSource || ''),
-    openingCloseId: String(row.OpeningCloseID || ''),
-    openingReason: String(row.OpeningReason || ''),
-    cashInTotal: Number(row.CashInTotal),
-    cashOutTotal: Number(row.CashOutTotal),
-    expectedCash: Number(row.ExpectedCash),
-    countedCash: Number(row.CountedCash),
-    variance: Number(row.Variance),
-    varianceReason: String(row.VarianceReason || ''),
+    drawerKey: drawerKey,
+    openingCash: openingPaise / 100,
+    openingSource: openingSource,
+    openingCloseId: openingCloseId,
+    openingReason: openingReason,
+    cashInTotal: cashInPaise / 100,
+    cashOutTotal: cashOutPaise / 100,
+    expectedCash: expectedCashPaise / 100,
+    countedCash: countedPaise / 100,
+    variance: variancePaise / 100,
+    varianceReason: varianceReason,
     includedVoucherCount: includedVoucherCount,
     includedVoucherIds: ids,
     includedVouchers: vouchers,
@@ -332,7 +443,7 @@ function cashClosePreview_(user, req) {
   const date = String(req.date || todayIso_(0)).trim();
   if (!validDate_(date) || date > todayIso_(0))
     throw err_('Choose a valid business date that is not in the future.', 'VALIDATION');
-  const closes = readAll_('CashCloses').filter(function (row) {
+  const closes = cashCloseRows_().filter(function (row) {
     return String(row.DrawerKey || CASH_CLOSE_DRAWER) === CASH_CLOSE_DRAWER;
   });
   const corrections = readAll_('CashCloseCorrections');
@@ -428,7 +539,7 @@ function createCashClose_(user, req) {
   const countedPaise = cashCloseAmountPaise_(req.countedCash, 'counted cash');
   const varianceReason = clean_(req.varianceReason, 200);
   const previousDate = cashClosePreviousDate_(date),
-    closes = readAll_('CashCloses');
+    closes = cashCloseRows_();
   const sameDate = closes.filter(function (row) {
     return (
       String(row.BusinessDate || '') === date &&
