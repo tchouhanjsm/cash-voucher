@@ -351,7 +351,7 @@ function parseAuditFailureMarker_(raw, source) {
   let marker;
   try {
     marker = typeof raw === 'string' ? JSON.parse(raw) : raw;
-  } catch (_) {
+  } catch {
     return null;
   }
   if (
@@ -398,7 +398,7 @@ function readAuditPropertiesMarker_() {
         lastFailureKind: String(rawKind || 'UNKNOWN'),
       },
     };
-  } catch (_) {
+  } catch {
     return { available: false, marker: null };
   }
 }
@@ -412,7 +412,7 @@ function readAuditSettingsMarker_() {
     }
     const marker = parseAuditFailureMarker_(raw, 'SETTINGS_SHEET');
     return { available: Boolean(marker), marker: marker };
-  } catch (_) {
+  } catch {
     return { available: false, marker: null };
   }
 }
@@ -424,7 +424,7 @@ function readAuditCacheMarker_() {
     if (!raw) return { available: true, marker: null };
     const marker = parseAuditFailureMarker_(raw, 'TRANSIENT_CACHE');
     return { available: Boolean(marker), marker: marker };
-  } catch (_) {
+  } catch {
     return { available: false, marker: null };
   }
 }
