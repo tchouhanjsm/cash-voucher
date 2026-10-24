@@ -1496,6 +1496,34 @@ ok(
   !as(S, 'getReceipt', { id: mv.data.created[0].id, fileId: fid }).ok,
   "cannot read others' receipt",
 );
+
+const receiptCountBeforeAmbiguousAttach = Object.keys(g.files).length;
+g.failNextVoucherWriteAfterCommit();
+const receiptAfterCommitFailure = as(S, 'addReceipt', {
+  id: id2,
+  receipt: { mime: 'image/png', data: tiny },
+});
+const voucherRowsForReceiptFault = g.sheets.Vouchers.rows;
+const voucherHeadersForReceiptFault = voucherRowsForReceiptFault[0];
+const voucherRowForReceiptFault = voucherRowsForReceiptFault.find(
+  (row, index) => index > 0 && row[voucherHeadersForReceiptFault.indexOf('VoucherID')] === id2,
+);
+const receiptIdsAfterCommitFailure = String(
+  voucherRowForReceiptFault?.[voucherHeadersForReceiptFault.indexOf('Receipts')] || '',
+)
+  .split(',')
+  .filter(Boolean);
+const newReceiptIdsAfterCommitFailure = receiptIdsAfterCommitFailure.filter((receiptId) => receiptId !== fid);
+ok(
+  receiptAfterCommitFailure.ok &&
+    receiptIdsAfterCommitFailure.length === 2 &&
+    newReceiptIdsAfterCommitFailure.length === 1 &&
+    receiptAfterCommitFailure.data.receipts.includes(newReceiptIdsAfterCommitFailure[0]) &&
+    Object.prototype.hasOwnProperty.call(g.files, newReceiptIdsAfterCommitFailure[0]) &&
+    Object.keys(g.files).length === receiptCountBeforeAmbiguousAttach + 1,
+  'an ambiguous post-commit addReceipt write is reconciled as success and preserves the linked Drive file',
+);
+
 // vendors + settings
 const ramVendorCreate = as(M, 'saveVendor', {
   name: 'Ram Traders',
