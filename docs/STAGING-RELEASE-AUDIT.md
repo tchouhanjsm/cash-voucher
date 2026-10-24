@@ -134,7 +134,7 @@ This audit's branch instructions supersede historical snippets elsewhere that te
 
 ## Autonomous delivery monitor
 
-The repository has an event/manual monitor targeting client-main. It observes exact-SHA CI, Browser E2E and Full Flight Test; summarizes PR reviews/checks and staging/ZIP workflow runs; reports stalled, timeout and failure states; and persists a bounded run history to one GitHub checkpoint issue and workflow artifact.
+The repository has an event-driven monitor targeting `client-main`. It observes exact-SHA CI, Browser E2E and Full Flight Test; summarizes PR reviews/checks and staging/ZIP workflow runs; reports stalled, timeout and failure states; and persists a bounded run history to one GitHub checkpoint issue and workflow artifact. Manual dispatch is unavailable while the workflow is absent from the frozen default branch `main`; do not modify `main` merely to enable it.
 
 The ChatGPT monitor has a real hourly schedule. The requested 45-minute interval is not supported. GitHub Actions cron is intentionally omitted because GitHub scheduled workflows run from the default branch, which remains main while repository policy treats main as frozen/read-only. Do not represent an event/manual workflow as a 45-minute cron.
 

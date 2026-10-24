@@ -7,7 +7,6 @@ on:
   pull_request:
     branches: [client-main]
     types: [opened, synchronize, reopened, ready_for_review]
-  workflow_dispatch:
 
 permissions:
   contents: read

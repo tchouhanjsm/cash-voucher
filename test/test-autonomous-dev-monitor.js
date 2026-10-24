@@ -295,6 +295,11 @@ assert.doesNotMatch(body, /CLASPRC_JSON|CV_STAGING_UAT_OWNER_PASSWORD|CV_STAGING
 const workflow = fs.readFileSync('.github/workflows/autonomous-development-monitor.yml', 'utf8');
 const monitorSource = fs.readFileSync('scripts/autonomous-dev-monitor.js', 'utf8');
 assert.doesNotMatch(workflow, /^\s*schedule:/m, 'do not schedule from the frozen default branch');
+assert.doesNotMatch(
+  workflow,
+  /^\s*workflow_dispatch:/m,
+  'manual dispatch requires the workflow file on the default branch, which remains frozen',
+);
 assert.match(workflow, /github\.event_name != 'pull_request'/);
 assert.match(workflow, /reRunWorkflowFailedJobs/);
 assert.match(monitorSource, /recovery-key/);

@@ -12,17 +12,17 @@ The bounded retry policy permits at most two retries per eligible source-validat
 
 ## Scheduler cadence
 
-The ChatGPT monitor is configured to run hourly. A 45-minute recurring schedule is not supported by the available scheduler; do not claim that interval was configured. Repository Actions are event/manual driven and have no cron trigger because the repository default branch is main, while the integration branch is client-main and main is designated frozen/read-only. GitHub scheduled workflows run from the default branch, so a cron job existing only on client-main would not be a reliable real scheduler.
+The ChatGPT monitor is configured to run hourly. A 45-minute recurring schedule is not supported by the available scheduler; do not claim that interval was configured. Repository Actions are event-driven only and have no cron or manual-dispatch trigger: the default branch is `main`, while `client-main` is the integration branch and `main` is designated frozen/read-only. GitHub scheduled and `workflow_dispatch` triggers require the workflow file on the default branch, so neither is available for this workflow without changing the frozen branch. Do not modify `main` as a workaround.
 
 ## Repository monitor behavior
 
-The workflow observes pushes to client-main, PR changes targeting client-main, and manual dispatch. Pull-request runs are read-only. It collects the exact integration SHA, canonical handoff baseline/phase, CI/E2E/Flight results for that exact SHA, workflow status against each open PR head SHA, review state, staging/ZIP runs, failed job/step summaries, in-progress age, release gates and API collection warnings.
+The workflow observes pushes to `client-main` and PR changes targeting `client-main`. Pull-request runs are read-only. It collects the exact integration SHA, canonical handoff baseline/phase, CI/E2E/Flight results for that exact SHA, workflow status against each open PR head SHA, review state, staging/ZIP runs, failed job/step summaries, in-progress age, release gates and API collection warnings.
 
 Pass, failure, pending, running, stalled, timed out, cancelled, skipped and unknown are distinct states. Missing check data is not success. Handoff SHA mismatch is drift. Data/API collection errors become warnings/blockers rather than silently being reported green. Workflow-run selection prioritizes `run_number`, then `created_at`; `updated_at` is only a fallback/tie-breaker so a rerun of an older run cannot displace a newer-created run.
 
 ## Timeout recovery
 
-Only timed-out source-validation runs are eligible: CI/Quality, Browser E2E and Full Flight. Recovery re-fetches the run before retrying, verifies it is completed with conclusion timed_out, verifies the exact current client-main SHA, and restricts automatic recovery to trusted client-main push/manual runs. Maximum total attempts are three (initial run plus two retries). Only failed jobs are rerun where supported. A recovery reservation is written to the persistent checkpoint before the action; the ledger then records requested or failed. If the request result is uncertain, it is not blindly retried.
+Only timed-out source-validation runs are eligible: CI/Quality, Browser E2E and Full Flight. Recovery re-fetches the run before retrying, verifies it is completed with conclusion `timed_out`, verifies the exact current `client-main` SHA, and restricts automatic recovery to trusted `client-main` push runs. Manual dispatch is not available while the workflow is absent from the default branch. Maximum total attempts are three (initial run plus two retries). Only failed jobs are rerun where supported. A recovery reservation is written to the persistent checkpoint before the action; the ledger then records requested or failed. If the request result is uncertain, it is not blindly retried.
 
 Regular code/test failures, cancellations, PR-head runs, staging UAT, Client staging ZIP, migrations and deploys are never automatically retried or performed by this monitor. Persistent failures require failed-step review/root-cause analysis and a reviewed source fix or human escalation.
 
