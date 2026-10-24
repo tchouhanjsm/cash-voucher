@@ -1,7 +1,7 @@
 # Staging Release Audit and Pending Queue
 
 **Audit date:** 25 October 2026  
-**Authoritative integration baseline:** client-main `176da7c559d279149e2473a65a71fd03d3e53018`, following PR #207.  
+**Authoritative integration baseline:** client-main `176da7c559d279149e2473a65a71fd03d3e53018`, following PR #208.  
 **Legacy branch:** `main` (read-only by engineering policy; the actual ahead/behind relationship must be rechecked before any branch operation).  
 **Scope:** source and release-workflow audit, not live deployment, restore or customer acceptance.
 
@@ -128,7 +128,7 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 
 ## Release decision
 
-**Source baseline:** PR #207 is merged; the B6 audit-monitoring improvement is a source-only branch pending exact-head checks and owner review. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
+**Source baseline:** PR #208 is merged. PR #209 contains the audit-monitoring fail-closed follow-up; all three required checks passed on its exact head `ac732798633f6df655400c5aaa3444cea97558f9`, but owner review/merge remains outstanding. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.
 
