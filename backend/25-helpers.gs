@@ -7,8 +7,13 @@ function err_(msg, code) {
 }
 
 function finiteNumber_(value, label) {
-  const text = String(value === undefined || value === null ? '' : value).trim();
-  if (!/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) throw err_('Invalid ' + label + '.', 'VALIDATION');
+  if (typeof value !== 'string' && typeof value !== 'number') {
+    throw err_('Invalid ' + label + '.', 'VALIDATION');
+  }
+  const text = String(value).trim();
+  if (!/^-?(?:\d+\.?\d*|\.\d+)$/.test(text)) {
+    throw err_('Invalid ' + label + '.', 'VALIDATION');
+  }
   const number = Number(text);
   if (!isFinite(number)) throw err_('Invalid ' + label + '.', 'VALIDATION');
   return number;

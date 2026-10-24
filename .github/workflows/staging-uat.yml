@@ -209,6 +209,7 @@ jobs:
       CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
       CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
       CV_STAGING_UAT_CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
+      CV_STAGING_DEPLOY_CONFIRMATION: ${{ inputs.confirmation }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7

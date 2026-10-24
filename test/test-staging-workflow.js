@@ -114,6 +114,14 @@ assert.match(uat, /"limit": 20/);
 assert.match(uat, /verify_live_read_models\(owner_page, business_date\)/);
 assert.match(uat, /ZoneInfo\("Asia\/Kolkata"\)/);
 assert.match(uat, /CV_STAGING_UAT_CONFIRM_WRITES/);
+assert.match(uat, /CV_STAGING_DEPLOY_CONFIRMATION/);
+assert.match(uatRunner, /CV_STAGING_DEPLOY_CONFIRMATION:-/);
+assert.match(uatRunner, /CV_STAGING_UAT_CONFIRM_WRITES:-/);
+const uatOnlyJob = workflow.split('  uat:\\n')[1];
+assert.ok(
+  uatOnlyJob && uatOnlyJob.includes('CV_STAGING_DEPLOY_CONFIRMATION: ${{ inputs.confirmation }}'),
+  'UAT-only workflow must pass the explicit STAGING-ONLY confirmation to the runner',
+);
 assert.match(uat, /cancelVoucher/);
 assert.match(workflow, /id: deployment_preflight/);
 assert.match(workflow, /id: update_deployment/);

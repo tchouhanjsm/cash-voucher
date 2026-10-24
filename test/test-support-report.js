@@ -112,7 +112,29 @@ assert.ok(text.includes('SUPPORT_REPORT'));
 assert.ok(text.includes('SUPPORT_REPORT_FAILED'));
 assert.ok(!text.includes('stays blank after login'), 'audit log never stores the message body');
 
-// 9. Per-user hourly limit protects the owner's mail quota.
+// 9. The workspace limit must not partially consume an individual user's quota.
+const globalMailCount = g.mailLog.length;
+const ownerCounterKey = 'support:u:support-owner@test.com';
+const priorOwnerCount = g.cache[ownerCounterKey];
+g.cache['support:w'] = '20';
+result = g.call('reportIssue', { token: owner, ...report });
+assert.equal(result.code, 'RATE_LIMIT');
+assert.equal(g.mailLog.length, globalMailCount, 'the workspace limit blocks email delivery');
+assert.equal(
+  g.cache[ownerCounterKey],
+  priorOwnerCount,
+  'a rejected workspace quota reservation does not consume the user counter',
+);
+delete g.cache['support:w'];
+
+// 10. A lock timeout is fail-closed and sends no email.
+const mailCountBeforeLockFailure = g.mailLog.length;
+g.lockStats.failNextWait = true;
+result = g.call('reportIssue', { token: owner, ...report });
+assert.equal(result.code, 'BUSY');
+assert.equal(g.mailLog.length, mailCountBeforeLockFailure, 'no email is sent without a locked reservation');
+
+// 11. Per-user hourly limit protects the owner's mail quota.
 let blocked = null;
 for (let i = 0; i < 6 && !blocked; i++) {
   const attempt = g.call('reportIssue', { token: staff, ...report });

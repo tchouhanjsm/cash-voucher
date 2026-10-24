@@ -433,7 +433,7 @@ function updateVoucher_(user, req) {
     recordChange('vendorId', 'VendorID', String(o.VendorID || ''), vendorIdForName_(vendor));
   }
   if (f.amount !== undefined) {
-    const amount = Math.round(Number(f.amount) * 100) / 100;
+    const amount = Math.round(finiteNumber_(f.amount, 'amount') * 100) / 100;
     if (!isFinite(amount) || amount <= 0 || amount > CFG.MAX_AMOUNT) {
       throw err_('Invalid amount.', 'VALIDATION');
     }

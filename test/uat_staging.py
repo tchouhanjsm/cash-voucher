@@ -235,6 +235,8 @@ def cancel_by_id(page, voucher_id):
 
 
 def run():
+    if os.environ.get("CV_STAGING_DEPLOY_CONFIRMATION") != "STAGING-ONLY":
+        raise AssertionError("Transactional staging UAT requires CV_STAGING_DEPLOY_CONFIRMATION=STAGING-ONLY.")
     if os.environ.get("CV_STAGING_UAT_CONFIRM_WRITES") != "true":
         raise AssertionError("Transactional staging UAT requires CV_STAGING_UAT_CONFIRM_WRITES=true.")
     if not API_URL:

@@ -1,6 +1,8 @@
 'use strict';
 
 const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const path = require('node:path');
 
 const reportOnly = process.argv.includes('--report-only');
 const maxAttempts = 2;
@@ -143,6 +145,85 @@ const exceptions = {
   },
 };
 
+let dependencyContextCache;
+
+function readDependencyContext() {
+  if (dependencyContextCache !== undefined) return dependencyContextCache;
+  try {
+    dependencyContextCache = {
+      manifest: JSON.parse(
+        fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf8'),
+      ),
+      lock: JSON.parse(
+        fs.readFileSync(path.join(__dirname, '..', 'package-lock.json'), 'utf8'),
+      ),
+    };
+  } catch {
+    dependencyContextCache = null;
+  }
+  return dependencyContextCache;
+}
+
+function hasRuntimeDependency(manifest, name) {
+  return ['dependencies', 'optionalDependencies', 'peerDependencies'].some((section) =>
+    Object.prototype.hasOwnProperty.call(manifest[section] || {}, name),
+  );
+}
+
+function exceptionScopeSatisfied(id, packageName, item) {
+  const context = readDependencyContext();
+  if (!context || item.isDirect !== false) return false;
+  const { manifest, lock } = context;
+  const rootLock = lock.packages && lock.packages[''];
+  const clasp = lock.packages && lock.packages['node_modules/@google/clasp'];
+  const noRuntimeClasp = !hasRuntimeDependency(manifest, '@google/clasp');
+  const claspIsDevDependency = Boolean(
+    manifest.devDependencies && manifest.devDependencies['@google/clasp'] &&
+    rootLock && rootLock.devDependencies && rootLock.devDependencies['@google/clasp'],
+  );
+  if (!rootLock || !clasp || !noRuntimeClasp || !claspIsDevDependency) return false;
+
+  const expectedNode = 'node_modules/' + packageName;
+  if (
+    !Array.isArray(item.nodes) ||
+    !item.nodes.length ||
+    !item.nodes.every((node) => node === expectedNode)
+  ) {
+    return false;
+  }
+
+  if (id === 'GHSA-mrhx-c7xc-m3w5' && packageName === 'zod') {
+    const zod = lock.packages['node_modules/zod'];
+    const sdk = lock.packages['node_modules/@modelcontextprotocol/sdk'];
+    return Boolean(
+      !hasRuntimeDependency(manifest, 'zod') &&
+      !(rootLock.dependencies && rootLock.dependencies.zod) &&
+      clasp.version === '3.4.1' &&
+      clasp.dependencies && clasp.dependencies.zod === '^3.25.76' &&
+      sdk && sdk.dependencies && sdk.dependencies.zod === '^3.25 || ^4.0' &&
+      zod && zod.version === '3.25.76' &&
+      item.range === '<4.6.6'
+    );
+  }
+
+  if (id === 'GHSA-vfj7-8cjw-p6xm' && packageName === 'braces') {
+    const micromatch = lock.packages['node_modules/micromatch'];
+    const braces = lock.packages['node_modules/braces'];
+    return Boolean(
+      !hasRuntimeDependency(manifest, 'braces') &&
+      !(rootLock.dependencies && rootLock.dependencies.braces) &&
+      clasp.version === '3.4.1' &&
+      clasp.dependencies && clasp.dependencies.micromatch === '^4.0.8' &&
+      micromatch && micromatch.version === '4.0.8' &&
+      micromatch.dependencies && micromatch.dependencies.braces === '^3.0.3' &&
+      braces && braces.version === '3.0.3' &&
+      item.range === '<=3.0.3'
+    );
+  }
+
+  return false;
+}
+
 function advisoryId(advisory) {
   const text = [advisory.url, advisory.title, advisory.name].filter(Boolean).join(' ');
   return text.match(/GHSA-[a-z0-9-]+/i)?.[0] || null;
@@ -169,7 +250,14 @@ function coveredByReviewedException(packageName, ancestors = []) {
     const exception = id && exceptions[id];
     const expired = exception && new Date().toISOString().slice(0, 10) > exception.reviewBy;
 
-    if (!exception || exception.packageName !== packageName || expired) return null;
+    if (
+      !exception ||
+      exception.packageName !== packageName ||
+      expired ||
+      !exceptionScopeSatisfied(id, packageName, item)
+    ) {
+      return null;
+    }
     covered.push(id);
   }
 

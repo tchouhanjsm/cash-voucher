@@ -3,13 +3,13 @@
 **Updated:** 24 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `e90ef5dfb005745136c0522d983fd42c38db38ff` (PR #207 merged).  
+**Verified integration baseline:** `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208 merged).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 B6 — audit-health failover, truthful monitoring states and pagination contract. Feature branch: `client/p0-audit-health-fallback-20261024`. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** deep code review and delivery guard hardening on `fix/deep-code-review-guards-20261024`. This is a source-only follow-up; owner retains merge/deploy authority. Live staging remains unverified.
 
 ## Verified source state
 
-- PR #205, #206 and #207 are merged to `client-main`. The latest source baseline is `e90ef5dfb005745136c0522d983fd42c38db38ff`.
+- PRs #205–#208 are merged to `client-main`. The latest inspected baseline is `176da7c559d279149e2473a65a71fd03d3e53018`.
 - Exact-head integration checks passed after PR #207: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247679), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247678), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247717).
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
@@ -25,6 +25,15 @@
 5. Fault-injection coverage checks primary-store fallback, transient-cache fallback, corrupt markers and the case where every marker write fails.
 
 This improves common failure cases; it does not reconstruct missing AuditLog events. If AuditLog, Script Properties, Settings and CacheService all fail to persist the marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. That residual risk remains visible in tests and documentation.
+
+## Deep-review findings and fixes in this follow-up
+
+- Staging UAT entry points require both `CV_STAGING_DEPLOY_CONFIRMATION=STAGING-ONLY` and explicit write consent; GitHub workflow and direct shell/Python invocation enforce the same contract.
+- Support-report quota reservations are serialized under the shared ScriptLock. If counters cannot be read or updated, reporting fails closed. The lock is released before MailApp is called.
+- Dependency exceptions are constrained to the exact checked-in Clasp/Zod and Clasp/micromatch/braces toolchain; a direct Zod dependency, changed install path or changed pinned versions no longer inherit a stale exception.
+- Voucher create/edit amount validation rejects non-scalar JSON values and non-decimal coercions. Offline entries rejected because a business date is already closed are sent to review rather than retried automatically.
+- Separate unresolved risk: `migratePinAuthToPasswordSchema()` sets an auth-migration marker, but the reviewed login path does not demonstrate legacy `PinHash`/`MustChangePin` field mapping. Do not run this migration or change the deployed auth version until the legacy-header, interrupted-migration and rollback sequence has an explicit tested runbook and the owner confirms a backup/recovery path.
+- New tests are source/mock-backed. They do not substitute for live staging UAT or Google Workspace quota, locking and migration-recovery verification.
 
 ## Release gates that remain open
 

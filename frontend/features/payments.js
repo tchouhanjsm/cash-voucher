@@ -49,7 +49,7 @@ export function createPayments({ api, refresh }) {
   }
 
   function isRecordRejection(error) {
-    if (['VALIDATION', 'CONFLICT'].includes(String(error?.code || ''))) return true;
+    if (['VALIDATION', 'CONFLICT', 'CASH_PERIOD_CLOSED'].includes(String(error?.code || ''))) return true;
     return error?.code === 'SERVER' && /^\[\d+\]\s/.test(String(error?.message || ''));
   }
 

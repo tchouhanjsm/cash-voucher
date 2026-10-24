@@ -175,6 +175,24 @@ invalidNames.slice(0, 6).forEach((vendor, index) => {
   rejectedVoucherCount++;
 });
 
+// JSON arrays/objects are not valid monetary scalars even when Number/String coercion
+// would turn them into a plausible amount.
+const invalidAmountPayloads = [[12.5], { value: 12.5 }, '0x10'];
+invalidAmountPayloads.forEach((amount, index) => {
+  const before = g.sheets.Vouchers.rows.length;
+  const result = call('createVouchers', {
+    entries: [{
+      date: today,
+      vendor: 'Invalid Amount Scalar ' + index,
+      amount,
+      cashImpact: 'CASH_OUT',
+    }],
+  });
+  assert.equal(result.ok, false, 'non-scalar/alternate-radix amount is rejected: case ' + index);
+  assert.equal(result.code, 'VALIDATION', 'malformed amount returns a validation error');
+  assert.equal(g.sheets.Vouchers.rows.length, before, 'invalid amount does not append a voucher');
+});
+
 const formulaNote = '=HYPERLINK("https://example.test","click")';
 const voucher = call('createVouchers', {
   entries: [
@@ -196,6 +214,25 @@ assert.equal(
   "'" + formulaNote,
   'existing spreadsheet formula-injection protection remains active for free-text notes',
 );
+
+const storedAmountIndex = g.sheets.Vouchers.rows[0].indexOf('Amount');
+const originalAmount = g.sheets.Vouchers.rows.find(
+  (row) => row[0] === voucher.data.created[0].id,
+)[storedAmountIndex];
+[ [12.5], { value: 12.5 }, '0x10' ].forEach((amount, index) => {
+  const result = call('updateVoucher', {
+    id: voucher.data.created[0].id,
+    fields: { amount },
+    reason: 'Reject malformed amount scalar ' + index,
+  });
+  assert.equal(result.ok, false, 'malformed edit amount is rejected: case ' + index);
+  assert.equal(result.code, 'VALIDATION', 'malformed edit amount returns a validation error');
+  assert.equal(
+    g.sheets.Vouchers.rows.find((row) => row[0] === voucher.data.created[0].id)[storedAmountIndex],
+    originalAmount,
+    'invalid edit does not change the stored amount',
+  );
+});
 
 const settingsMap = Object.fromEntries(
   g.sheets.Settings.rows.slice(1).map((row) => [String(row[0]), String(row[1])]),

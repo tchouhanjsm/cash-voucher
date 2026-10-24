@@ -23,13 +23,61 @@ function supportText_(value, max) {
       .slice(0, max)
   );
 }
-// Best-effort counter in the script cache (max 6 h). Protects the mail quota of the owner's account.
-function supportRateAllowed_(key, limit, ttlSeconds) {
-  const cache = CacheService.getScriptCache();
-  const used = Number(cache.get(key) || 0);
-  if (used >= limit) return false;
-  cache.put(key, String(used + 1), ttlSeconds);
-  return true;
+// Reserve both mail-quota counters under the shared ScriptLock. Never hold the lock
+// while sending email; fail closed if the counters cannot be read or updated.
+function reserveSupportReportSlot_(email) {
+  const userKey = 'support:u:' + String(email || '').trim().toLowerCase();
+  const workspaceKey = 'support:w';
+  const lock = LockService.getScriptLock();
+
+  try {
+    lock.waitLock(10000);
+  } catch {
+    throw err_('Support reporting is busy. No report was sent; please retry shortly.', 'BUSY');
+  }
+
+  try {
+    const cache = CacheService.getScriptCache();
+    const readCount = function (key) {
+      const raw = cache.get(key);
+      if (raw === null || raw === undefined || raw === '') return 0;
+      const value = Number(raw);
+      if (!Number.isSafeInteger(value) || value < 0) {
+        throw new Error('The support rate-limit counter is invalid.');
+      }
+      return value;
+    };
+
+    let userCount;
+    let workspaceCount;
+    try {
+      userCount = readCount(userKey);
+      workspaceCount = readCount(workspaceKey);
+    } catch {
+      throw err_(
+        'Support reporting is temporarily unavailable. No report was sent; please retry shortly.',
+        'RATE_LIMIT_UNAVAILABLE',
+      );
+    }
+
+    if (userCount >= SUPPORT_USER_LIMIT_PER_HOUR || workspaceCount >= SUPPORT_WORKSPACE_LIMIT_PER_6H) {
+      throw err_('Too many reports sent recently. Please call your support contact.', 'RATE_LIMIT');
+    }
+
+    try {
+      // A partial cache write can consume quota without sending an email, but cannot
+      // permit an over-limit send. This is deliberately fail-closed.
+      cache.put(userKey, String(userCount + 1), 3600);
+      cache.put(workspaceKey, String(workspaceCount + 1), 21600);
+    } catch {
+      throw err_(
+        'Support reporting is temporarily unavailable. No report was sent; please retry shortly.',
+        'RATE_LIMIT_UNAVAILABLE',
+      );
+    }
+  } finally {
+    lock.releaseLock();
+  }
 }
 function reportIssue_(user, req) {
   const category = Object.prototype.hasOwnProperty.call(SUPPORT_CATEGORIES, req.category)
@@ -50,12 +98,7 @@ function reportIssue_(user, req) {
       'SUPPORT_NOT_CONFIGURED',
     );
   }
-  if (
-    !supportRateAllowed_('support:u:' + user.email, SUPPORT_USER_LIMIT_PER_HOUR, 3600) ||
-    !supportRateAllowed_('support:w', SUPPORT_WORKSPACE_LIMIT_PER_6H, 21600)
-  ) {
-    throw err_('Too many reports sent recently. Please call your support contact.', 'RATE_LIMIT');
-  }
+  reserveSupportReportSlot_(user.email);
 
   const ref = Utilities.getUuid().slice(0, 8).toUpperCase();
   const property = supportText_(settings_().propertyName, 120) || 'Cash Voucher';

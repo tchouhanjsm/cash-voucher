@@ -8,6 +8,17 @@ STAGING_WEB_PORT="${STAGING_WEB_PORT:-8766}"
 STAGING_WEB_BASE="http://127.0.0.1:${STAGING_WEB_PORT}"
 SERVER_PID=""
 UAT_LOG_FILE="${CV_STAGING_UAT_LOG_FILE:-/tmp/cash-voucher-staging-uat.log}"
+
+# Apply the same two explicit confirmations outside GitHub Actions as the workflow guard.
+# This path creates and cancels a real financial voucher in the configured target.
+if [[ "${CV_STAGING_DEPLOY_CONFIRMATION:-}" != "STAGING-ONLY" ]]; then
+  echo "Transactional staging UAT requires CV_STAGING_DEPLOY_CONFIRMATION=STAGING-ONLY."
+  exit 1
+fi
+if [[ "${CV_STAGING_UAT_CONFIRM_WRITES:-}" != "true" ]]; then
+  echo "Transactional staging UAT requires CV_STAGING_UAT_CONFIRM_WRITES=true."
+  exit 1
+fi
 mkdir -p "$(dirname "${UAT_LOG_FILE}")"
 : > "${UAT_LOG_FILE}"
 

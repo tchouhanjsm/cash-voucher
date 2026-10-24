@@ -61,7 +61,7 @@ function baselineReport() {
       braces: {
         severity: 'high',
         isDirect: false,
-        range: '*',
+        range: '<=3.0.3',
         nodes: ['node_modules/braces'],
         fixAvailable,
         via: [{ ...allowedAdvisory }],
@@ -165,6 +165,28 @@ test('pins body-parser to its patched release in manifest and lockfile', () => {
   );
   assert.equal(nestedContentType?.version, '2.1.0');
   assert.equal(packageLock.packages?.['node_modules/qs']?.version, '6.16.1');
+});
+
+test('does not apply the Zod exception when Zod becomes a direct dependency', () => {
+  const report = baselineReport();
+  report.vulnerabilities.zod.isDirect = true;
+
+  const result = runAudit(report);
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Dependency security gate failed/);
+  assert.doesNotMatch(result.stdout, /REVIEWED EXCEPTION: GHSA-mrhx-c7xc-m3w5/);
+});
+
+test('does not apply the Zod exception when the installed path changes', () => {
+  const report = baselineReport();
+  report.vulnerabilities.zod.nodes = ['node_modules/@google/clasp/node_modules/zod'];
+
+  const result = runAudit(report);
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Dependency security gate failed/);
+  assert.doesNotMatch(result.stdout, /REVIEWED EXCEPTION: GHSA-mrhx-c7xc-m3w5/);
 });
 
 test('does not blanket-allow a second Zod advisory', () => {
