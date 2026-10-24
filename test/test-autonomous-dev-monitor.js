@@ -287,10 +287,11 @@ for (let i = 0; i < MAX_HISTORY_ENTRIES + 8; i++) {
 assert.equal((longHistory.match(/<!-- run-key:/g) || []).length, MAX_HISTORY_ENTRIES);
 assert.doesNotMatch(body, /CLASPRC_JSON|CV_STAGING_UAT_OWNER_PASSWORD|CV_STAGING_SCRIPT_ID/i);
 const workflow = fs.readFileSync('.github/workflows/autonomous-development-monitor.yml', 'utf8');
+const monitorSource = fs.readFileSync('scripts/autonomous-dev-monitor.js', 'utf8');
 assert.doesNotMatch(workflow, /^\s*schedule:/m, 'do not schedule from the frozen default branch');
 assert.match(workflow, /github\.event_name != 'pull_request'/);
 assert.match(workflow, /reRunWorkflowFailedJobs/);
-assert.match(workflow, /recovery-key/);
+assert.match(monitorSource, /recovery-key/);
 console.log(
   'Autonomous monitor tests passed — exact-SHA gates, bounded timeout-only recovery, read-only PR events, operational gates and idempotent checkpoint ledger.',
 );
