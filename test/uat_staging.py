@@ -2,6 +2,7 @@ import datetime
 import math
 import os
 import uuid
+from zoneinfo import ZoneInfo
 
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
@@ -247,7 +248,7 @@ def run():
         raise AssertionError("Staging owner and manager UAT accounts must be distinct.")
 
     unique_vendor = "UAT-P19-" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex[:8]
-    business_date = datetime.date.today().isoformat()
+    business_date = datetime.datetime.now(ZoneInfo("Asia/Kolkata")).date().isoformat()
     target_verified = False
     payment_created = False
     payment_cancelled = False
