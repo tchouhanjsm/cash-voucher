@@ -14,6 +14,13 @@ function finiteNumber_(value, label) {
   return number;
 }
 
+function validVoucherNo_(value) {
+  if (typeof value === 'number') return Number.isSafeInteger(value) && value > 0;
+  if (typeof value !== 'string' || !/^\d+$/.test(value)) return false;
+  const number = Number(value);
+  return Number.isSafeInteger(number) && number > 0;
+}
+
 function positiveInteger_(value, label) {
   const text = String(value === undefined || value === null ? '' : value).trim();
   if (!/^\d+$/.test(text)) throw err_('Invalid ' + label + '.', 'VALIDATION');
