@@ -54,6 +54,12 @@ The active integration branch is **client-main**. The staging Environment must r
 
 Owner/admin must verify that the GitHub Environment is named staging, deployment restrictions allow client-main, reviewer protection is configured where supported, and only expected variables/secrets exist. Never copy secret values to Git, chat, PR text or logs.
 
+## Live read-model contract gate — P0 B4
+
+The guarded staging UAT verifies the owner-scoped `dashboardSummary` and bounded `registerPage` APIs before creating any synthetic financial record. It validates the requested dashboard date range, finite summary fields, trend/group arrays, register page-size and pagination metadata, aggregate totals and facets. If the deployment returns `Unknown action` for `dashboardSummary`, UAT stops with a target/version remediation message before a test payment is created.
+
+The sanitized staging evidence JSON and workflow summary record whether each contract was observed. Missing markers in a failed/incomplete run are `not-confirmed`, not passes; skipped UAT is `not-run`. This source gate is not live evidence until an authorized staging workflow completes against the independently verified staging project.
+
 ## Priority 0 — required before staging is verified
 
 ### A. Dedicated staging

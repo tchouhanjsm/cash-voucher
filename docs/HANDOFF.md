@@ -1,44 +1,45 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 23 October 2026  
+**Updated:** 24 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `aa37d94819e59a72c797ba36839aa8f8ec94008f` (PR #204 merged).  
+**Verified integration baseline:** `27208e0565678b46c7b48f75ab3bc0f55989f54e` (PR #205 merged).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 release hardening B1–B3. PR #205 is an open, source-only batch and has not been merged. Exact-head CI, Browser E2E and Full Flight Test must pass before review/merge. No live staging run, migration, deployment, restore drill or customer pilot is claimed.
+**Current phase:** P0 B4 — live dashboard/register read-model contract coverage in guarded staging UAT. Feature branch: `client/p0-live-read-model-uat-20261024`. Review and merge are owner-controlled.
 
 ## Verified source state
 
-- PR #204 is the verified source integration baseline at `aa37d94819e59a72c797ba36839aa8f8ec94008f`.
-- PR #205 groups P0 B1–B3 work: static security-header/CSP validation, staging/schema/backup/restore gates, dashboard deployment-contract diagnostics, and filtering of malformed legacy payee suggestions without rewriting history. It is still open and unmerged.
-- The payment-entry payee is stored on a voucher. The separate vendor master is maintained through the explicit vendor-save flow; a historical payee appearing as a recent suggestion is not proof that a vendor-master record was created.
-- The current screenshot reports `Unknown action` for `dashboardSummary`. That action exists in the reviewed backend route registry, so verify the staging client API URL, Apps Script project and deployed backend version. Do not guess the deployment or push until the staging target is independently confirmed and owner-approved.
-- Source CI and mock-backed browser tests do not prove a live Apps Script deployment, real Google Sheet/Drive permissions, restoreability, hosted response headers or customer acceptance.
-- Source CI and mock-backed browser tests do not prove a live Apps Script deployment, real Google Sheet/Drive permissions, restoreability, hosted response headers or customer acceptance.
-- GitHub API currently reports `client-main` as unprotected with required checks disabled. Owner/admin must verify and enforce the intended ruleset/branch protection and default-branch settings. The source workflow cannot substitute for that repository configuration.
-- The private repository's static-host integration must be confirmed to retain access before any frontend publication or DNS change.
+- PR #205 is merged to `client-main` at `27208e0565678b46c7b48f75ab3bc0f55989f54e`. It added static Pages/Apache security policy validation, actionable dashboard handling for an unsupported `dashboardSummary` action, and presentation-only filtering of malformed legacy payee suggestions.
+- Source readiness is not live staging readiness. The deployed Apps Script URL/project/version, cPanel response headers, Google resource isolation, schema state, backup/restore, and real-device acceptance still require operational evidence.
+- PR #204's server-backed dashboard/register read models are a key deployment contract. A stale target returning `Unknown action` for `dashboardSummary` must be detected before any synthetic financial write.
+- Payment-entry payees remain separate from vendor-master maintenance. Historical voucher rows must not be rewritten to clean suggestions.
+- Keep `.clasp.json`, `.clasprc.json`, OAuth data, passwords and customer resource IDs out of Git and logs.
 
-## Immediate actions
+## Current batch — P0 B4
 
-1. Review PR #205 only after exact-head CI/Quality, Browser E2E and Full Flight Test are green. Its current source-only checks must not be represented as live staging proof. Do not merge while a required check is failed, pending or tied to a superseded SHA.
-2. Diagnose the screenshot's dashboard `Unknown action` by verifying the client `CV_API_URL`, deployment ID and Apps Script project/version. Update only the already verified staging deployment after explicit owner approval; then confirm that `dashboardSummary` responds successfully before showing totals.
-3. Have the owner/operator privately verify every staging Script, deployment, Sheet, receipt folder, backup folder, API URL, account and staging Environment secret. Previous deployment attempts failed closed at preflight; do not bypass checks or dispatch a write-capable run until configuration is independently reconciled.
-4. Verify a pre-migration backup, inspect actual staging headers, and execute only the approved migrations on the confirmed staging target. Preserve historical `PaymentMethod` blanks; never infer historical values from `CashImpact`.
-5. After backend staging verification, publish the frontend separately with the exact verified staging API URL and `CV_ENVIRONMENT=staging`, then run guarded manual UAT with `STAGING-ONLY` and explicit transactional write consent.
-6. Verify live roles, receipt upload/read, payment flow and audit trace; complete a real backup and restore into a separate recovery Sheet/folder; finish device/offline/print/accessibility checks. Start the 14-day controlled hotel pilot only after all launch gates and written customer acceptance are evidenced.
+The guarded staging UAT now validates the two server-backed read models before creating its tagged ₹10,000 synthetic payment. It checks:
 
-## Release boundary and safeguards
+1. `dashboardSummary` date window, finite numeric summary fields, trend series and grouping arrays.
+2. `registerPage` page-size bounds, pagination metadata, aggregate totals and filter facets.
+3. A stale deployment returning `Unknown action` for `dashboardSummary` fails before creating the synthetic voucher.
+4. Sanitized evidence records both read-model statuses without exposing endpoints, resource IDs, credentials or raw transcript text.
 
-- This source PR does not deploy the Apps Script backend, publish the static frontend, execute migrations, dispatch transactional UAT or mutate Google resources.
-- Never run `setup()` against a populated or production target. Do not guess resource IDs, expose credentials, overwrite the only backup or deploy to production without separate owner approval.
-- The staging workflow remains manual-only and restricted in source to `client-main`, with explicit write consent and target-isolation preflight. Keep Git merge, Clasp upload, Web App version update, static-host publication, live verification and customer acceptance as distinct release gates.
+No production operation or deployment is part of this source batch. The write-capable workflow remains manual-only and requires exact `STAGING-ONLY` confirmation, explicit staging-write consent and resource-isolation preflight.
 
-## Canonical decision documents
+## Release gates that remain open
 
-- `docs/CEO-BOARD-STRATEGY.md` — product thesis, commercial direction and deferred work.
-- `docs/EXECUTION-PLAN-2026-10-21.md` — the ordered release gates, staging/UAT, backup/restore, pilot and priority queue.
-- `docs/P0-RELEASE-BATCH-B1-B3.md` — this integrated B1–B3 plan and evidence gates.
-- `docs/CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21.md` — branch, quality, staging and merge controls.
-- `docs/STAGING-RELEASE-AUDIT.md` — operational proof required before staging and customer launch.
+1. Verify the dedicated staging Script, Sheet, receipt/backup folders, existing Web App deployment ID and `/exec` URL against production references privately.
+2. Inspect a staging backup and actual headers before running only schema migrations required by the live data. Preserve historic payment-method blanks; do not use `setup()` as an upgrade.
+3. Push the reviewed backend and update only the verified staging deployment with owner authorization; publish the independently built staging ZIP to the verified cPanel document root.
+4. Review exact staging UAT evidence. Verify actual hosted security headers, live Owner/Manager/Staff authorization, receipt actions, payment/approval/cash-close behavior and both read-model contracts.
+5. Inspect a real backup and restore into a separate recovery Sheet/folder; reconcile counts, voucher numbering, settings/users and receipt references.
+6. Complete installation/update, offline queue/reconnect/recovery, print/PDF/A5, keyboard, zoom/reflow and assistive-technology checks on intended devices.
+7. Start the controlled 14-day pilot only after the prior gates pass and owner/manager acceptance is recorded.
 
-Do not expand features ahead of staging isolation, live UAT and witnessed recovery. No production configuration or live Google resource is changed by this handoff.
+## Engineering constraints
+
+- All product PRs target `client-main` through short-lived `client/*` branches; do not push directly to `client-main`.
+- `main` remains frozen/read-only; do not merge, rebase or force-update long-lived branches blindly.
+- Fix failing checks; exact-head CI/Quality, Browser E2E and Full Flight Test must all pass before review/merge.
+- Keep Git merge, Clasp upload, Web App version update, static ZIP publication, live UAT, migrations and production release as distinct operations.
+- If target identity, schema, backup, security headers or recovery fails, stop and preserve evidence rather than bypassing guardrails.
