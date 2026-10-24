@@ -47,17 +47,24 @@ function bootstrap_(user) {
         .map(vOut_)
     : [];
   const st = settings_();
-  const vendors = readAll_('Vendors').map(function (v) {
-    return {
-      id: v.VendorID,
-      name: String(v.Name),
-      company: String(v.Company || ''),
-      mobile: mobileDisplay_(v.Mobile || ''),
-      active: v.Active === true || v.Active === 'TRUE',
-      defaultCategory: String(v.DefaultCategory || ''),
-      defaultPaymentMethod: String(v.DefaultPaymentMethod || ''),
-    };
-  });
+  const canManageVendors = can_(user, 'vendors');
+  const vendors =
+    user.role === 'accountant'
+      ? []
+      : readAll_('Vendors').map(function (v) {
+          const item = {
+            id: v.VendorID,
+            name: String(v.Name),
+            active: v.Active === true || v.Active === 'TRUE',
+            defaultCategory: String(v.DefaultCategory || ''),
+            defaultPaymentMethod: String(v.DefaultPaymentMethod || ''),
+          };
+          if (canManageVendors) {
+            item.company = String(v.Company || '');
+            item.mobile = mobileDisplay_(v.Mobile || '');
+          }
+          return item;
+        });
   const names = {};
   if (all)
     readAll_('Users').forEach(function (u) {
@@ -82,7 +89,7 @@ function bootstrap_(user) {
       openingBalance: all ? Number(st.openingBalance || 0) : 0,
     },
     vouchers: vouchers,
-    vendors: user.role === 'accountant' ? [] : vendors,
+    vendors: vendors,
     names: names,
   };
 }

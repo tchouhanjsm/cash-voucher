@@ -79,7 +79,8 @@ function cashCloseRows_() {
     }
     if (Object.prototype.hasOwnProperty.call(seenDates, date)) {
       throw err_(
-        'Multiple saved cash closes exist for one business date. Stop and inspect the close ledger.',
+        'Multiple saved cash closes exist for one business date. ' +
+          'Stop and inspect the close ledger.',
         'CASH_CLOSE_DATA',
       );
     }
@@ -155,6 +156,27 @@ function cashCloseCalculatePeriod_(date) {
               : approvalStatus === 'REJECTED'
                 ? 'Payment was rejected; cancel or correct it before closing.'
                 : 'Approval state is invalid and needs review.',
+        });
+        return;
+      }
+      const storedPaymentMethod = String(voucher.PaymentMethod || '');
+      const validKnownPaymentMethod =
+        !storedPaymentMethod || PAYMENT_METHODS_.indexOf(storedPaymentMethod) >= 0;
+      const paymentRailMismatch =
+        !!storedPaymentMethod &&
+        (!validKnownPaymentMethod ||
+          cashImpactForPaymentMethod_(storedPaymentMethod, type) !== voucher.CashImpact);
+      const missingPayee = !String(voucher.Vendor || '').trim();
+      if (paymentRailMismatch || missingPayee) {
+        invalidVouchers.push({
+          id: id,
+          no: (type === 'RECEIPT' ? 'R-' : 'P-') + String(rawVoucherNo || 'UNKNOWN'),
+          vendor: String(voucher.Vendor || ''),
+          amount:
+            voucher.Amount === null || voucher.Amount === undefined ? '' : String(voucher.Amount),
+          reason: paymentRailMismatch
+            ? 'Stored payment method conflicts with cash-impact classification.'
+            : 'Payee name is missing.',
         });
         return;
       }
@@ -280,6 +302,7 @@ function cashCloseOut_(row) {
       validDate_(item.date) &&
       item.date === closeDate &&
       typeof item.vendor === 'string' &&
+      item.vendor.trim() !== '' &&
       typeof item.amount === 'number' &&
       isFinite(item.amount) &&
       item.amount > 0 &&
@@ -358,7 +381,8 @@ function cashCloseOut_(row) {
     snapshotCashOutPaise !== cashOutPaise
   ) {
     throw err_(
-      'Saved cash-close totals do not match the voucher snapshot. Stop and inspect the close record.',
+      'Saved cash-close totals do not match the voucher snapshot. ' +
+        'Stop and inspect the close record.',
       'CASH_CLOSE_DATA',
     );
   }
@@ -381,7 +405,8 @@ function cashCloseOut_(row) {
     (variancePaise !== 0 && varianceReason.trim().length < 3)
   ) {
     throw err_(
-      'Saved cash-close source or explanation is invalid. Stop and inspect the close record.',
+      'Saved cash-close source or explanation is invalid. ' +
+        'Stop and inspect the close record.',
       'CASH_CLOSE_DATA',
     );
   }
@@ -557,9 +582,10 @@ function createCashClose_(user, req) {
     openingReason = '',
     openingCloseId = '';
   if (previous) {
-    openingPaise = cashCloseAmountNumber_(previous.CountedCash, 'prior counted cash');
+    const validatedPrevious = cashCloseOut_(previous);
+    openingPaise = cashCloseAmountNumber_(validatedPrevious.countedCash, 'prior counted cash');
     openingSource = 'PREVIOUS_CLOSE';
-    openingCloseId = String(previous.CloseID || '');
+    openingCloseId = validatedPrevious.id;
   } else {
     openingPaise = cashCloseAmountPaise_(req.openingCash, 'opening cash');
     openingSource = 'MANUAL';
@@ -656,7 +682,7 @@ function createCashClose_(user, req) {
     throw err_(
       'Cannot close this date because ' +
         period.invalidVouchers.length +
-        ' voucher row(s) have invalid status, type, identity, or amount data' +
+        ' voucher row(s) have invalid status, type, identity, payee, payment rail, or amount data' +
         (ids ? ' (' + ids + ')' : '') +
         '. Correct the source records first; no close was saved.',
       'CASH_CLOSE_DATA',

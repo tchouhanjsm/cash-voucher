@@ -2221,6 +2221,36 @@ const malformedCloseRows = [
     CashImpact: 'CASH_OUT',
     ApprovalStatus: 'NOT_REQUIRED',
   },
+  {
+    VoucherID: 'close-payment-rail-mismatch-regression',
+    VoucherNo: 99004,
+    Date: '2020-01-07',
+    Vendor: 'Wrong rail classification',
+    Amount: 85,
+    Category: 'Other',
+    Status: 'ACTIVE',
+    CreatedBy: 'owner@test.com',
+    ClientID: 'close-payment-rail-mismatch-regression',
+    Type: 'PAYMENT',
+    CashImpact: 'CASH_OUT',
+    ApprovalStatus: 'NOT_REQUIRED',
+    PaymentMethod: 'UPI',
+  },
+  {
+    VoucherID: 'close-blank-payee-regression',
+    VoucherNo: 99005,
+    Date: '2020-01-07',
+    Vendor: '',
+    Amount: 95,
+    Category: 'Other',
+    Status: 'ACTIVE',
+    CreatedBy: 'owner@test.com',
+    ClientID: 'close-blank-payee-regression',
+    Type: 'PAYMENT',
+    CashImpact: 'CASH_OUT',
+    ApprovalStatus: 'NOT_REQUIRED',
+    PaymentMethod: 'CASH',
+  },
 ].map((record) => malformedCloseHeaders.map((header) => record[header] ?? ''));
 g.sheets.Vouchers.rows.push(...malformedCloseRows);
 const malformedClosePreview = as(T, 'cashClosePreview', { date: '2020-01-07' });
@@ -2235,9 +2265,15 @@ ok(
     malformedClosePreview.data.invalidVouchers.some(
       (row) => row.id === 'close-boolean-number-regression',
     ) &&
+    malformedClosePreview.data.invalidVouchers.some(
+      (row) => row.id === 'close-payment-rail-mismatch-regression',
+    ) &&
+    malformedClosePreview.data.invalidVouchers.some(
+      (row) => row.id === 'close-blank-payee-regression',
+    ) &&
     !malformedClosePreview.data.readyToClose,
-  'cash-close preview blocks malformed voucher types, unsupported statuses and ' +
-    'coerced voucher numbers',
+  'cash-close preview blocks malformed identity/status/type, blank payees and ' +
+    'payment-rail mismatches',
 );
 const malformedCloseAttempt = as(T, 'createCashClose', {
   date: '2020-01-07',
@@ -2248,8 +2284,7 @@ const malformedCloseAttempt = as(T, 'createCashClose', {
 });
 ok(
   !malformedCloseAttempt.ok && malformedCloseAttempt.code === 'CASH_CLOSE_DATA',
-  'cash close cannot finalize while same-date ledger rows have invalid type, status or ' +
-    'voucher number',
+  'cash close rejects malformed ledger rows before saving a close',
 );
 g.sheets.Vouchers.rows.splice(malformedCloseStart, malformedCloseRows.length);
 ok(
@@ -2412,6 +2447,23 @@ assertCorruptCashClose(
 assertCorruptCashClose(
   { DrawerKey: 'UNKNOWN_DRAWER' },
   'saved close rejects an unexpected drawer identity',
+);
+const closeCountBeforeBadRollForward = closeSheet.rows.length;
+const originalCashInTotal = dayThreeRow[closeColumn('CashInTotal')];
+dayThreeRow[closeColumn('CashInTotal')] = Number(originalCashInTotal) + 0.01;
+const badPreviousCloseRollForward = as(T, 'createCashClose', {
+  date: '2020-01-04',
+  openingCash: '137.50',
+  openingReason: 'Test previous close validation',
+  countedCash: '137.50',
+  requestId: 'bad-previous-close-roll-forward',
+});
+dayThreeRow[closeColumn('CashInTotal')] = originalCashInTotal;
+ok(
+  !badPreviousCloseRollForward.ok &&
+    badPreviousCloseRollForward.code === 'CASH_CLOSE_DATA' &&
+    closeSheet.rows.length === closeCountBeforeBadRollForward,
+  'a corrupted previous close cannot seed the next day opening cash',
 );
 const duplicateCloseRow = dayThreeRow.slice();
 closeSheet.rows.push(duplicateCloseRow);

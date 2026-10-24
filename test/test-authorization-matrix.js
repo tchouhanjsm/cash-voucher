@@ -179,6 +179,14 @@ const managerVoucher = createVoucher(
   'Manager Owner Vendor',
   33,
 );
+const vendorWithPrivateContact = call('saveVendor', users.owner, {
+  name: 'Confidential Contact Vendor',
+  company: 'Confidential Test Company',
+  mobile: '+919876543210',
+  defaultCategory: 'Other',
+  defaultPaymentMethod: 'CASH',
+});
+assert.ok(vendorWithPrivateContact.ok, 'owner can create a vendor contact fixture');
 
 const permissionCases = [
   { action: 'createVouchers', allowed: ['staff', 'manager', 'owner'], payload: { entries: [] } },
@@ -294,6 +302,28 @@ assert.equal(
   0,
   'accountant bootstrap contains no vendor directory',
 );
+const staffVendor = bootstrap.staff.vendors.find(
+  (vendor) => vendor.id === vendorWithPrivateContact.data.vendorId,
+);
+const managerVendor = bootstrap.manager.vendors.find(
+  (vendor) => vendor.id === vendorWithPrivateContact.data.vendorId,
+);
+const ownerVendor = bootstrap.owner.vendors.find(
+  (vendor) => vendor.id === vendorWithPrivateContact.data.vendorId,
+);
+assert.ok(staffVendor, 'staff can use saved vendor names and defaults in payment entry');
+assert.equal(staffVendor.defaultPaymentMethod, 'CASH');
+assert.equal(staffVendor.defaultCategory, 'Other');
+assert.equal(
+  Object.prototype.hasOwnProperty.call(staffVendor, 'company') ||
+    Object.prototype.hasOwnProperty.call(staffVendor, 'mobile'),
+  false,
+  'staff bootstrap omits vendor company and mobile details without vendor-management permission',
+);
+assert.equal(managerVendor.company, 'Confidential Test Company');
+assert.equal(managerVendor.mobile, '+919876543210');
+assert.equal(ownerVendor.company, 'Confidential Test Company');
+assert.equal(ownerVendor.mobile, '+919876543210');
 assert.equal(
   bootstrap.owner.settings.openingBalance,
   4312,
