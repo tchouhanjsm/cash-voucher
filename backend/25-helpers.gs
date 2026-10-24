@@ -342,102 +342,191 @@ function pubUser_(u) {
     mustChangePassword: u.MustChangePassword === true || u.MustChangePassword === 'TRUE',
   };
 }
-function recordAuditWriteFailure_(kind, error) {
-  try {
-    const properties = props_();
-    const rawCount = Number(properties.getProperty('AUDIT_WRITE_FAILURE_COUNT') || 0);
-    const count = Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0;
-    properties.setProperty('AUDIT_WRITE_STATUS', 'DEGRADED');
-    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_AT', nowIso_());
-    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_KIND', String(kind || 'UNKNOWN'));
-    properties.setProperty('AUDIT_WRITE_FAILURE_COUNT', String(count + 1));
-  } catch (markerError) {
-    console.error('Could not persist audit-write failure marker:', markerError);
-  }
-  console.error('Audit persistence failed (' + String(kind || 'UNKNOWN') + '):', error);
-}
+const AUDIT_WRITE_FALLBACK_SETTING_ = 'auditWriteFailureMarker';
+const AUDIT_WRITE_CACHE_KEY_ = 'CV_AUDIT_WRITE_FAILURE_TRANSIENT';
+const AUDIT_WRITE_CACHE_TTL_SECONDS_ = 21600;
 
-function auditWriteHealth_() {
-  const properties = props_();
-  const rawCount = Number(properties.getProperty('AUDIT_WRITE_FAILURE_COUNT') || 0);
-  const status =
-    properties.getProperty('AUDIT_WRITE_STATUS') === 'DEGRADED' ? 'DEGRADED' : 'NO_KNOWN_FAILURE';
+function parseAuditFailureMarker_(raw, source) {
+  if (!raw) return null;
+  let marker;
+  try {
+    marker = typeof raw === 'string' ? JSON.parse(raw) : raw;
+  } catch (_) {
+    return null;
+  }
+  if (
+    !marker ||
+    typeof marker !== 'object' ||
+    Array.isArray(marker) ||
+    marker.version !== 1 ||
+    marker.status !== 'DEGRADED' ||
+    !Number.isSafeInteger(Number(marker.failureCount)) ||
+    Number(marker.failureCount) < 1 ||
+    typeof marker.lastFailureAt !== 'string' ||
+    typeof marker.lastFailureKind !== 'string'
+  ) {
+    return null;
+  }
   return {
-    status: status,
-    failureCount: Number.isSafeInteger(rawCount) && rawCount >= 0 ? rawCount : 0,
-    lastFailureAt: properties.getProperty('AUDIT_WRITE_LAST_FAILURE_AT') || '',
-    lastFailureKind: properties.getProperty('AUDIT_WRITE_LAST_FAILURE_KIND') || '',
+    source: source,
+    failureCount: Number(marker.failureCount),
+    lastFailureAt: marker.lastFailureAt,
+    lastFailureKind: marker.lastFailureKind,
   };
 }
 
-function audit_(user, action, target, details, detailsMaxLength) {
+function readAuditPropertiesMarker_() {
   try {
-    appendRows_('AuditLog', [
-      {
-        Time: nowIso_(),
-        User: user.email,
-        Action: action,
-        Target: target || '',
-        Details: clean_(details, detailsMaxLength || 300),
+    const properties = props_();
+    const status = String(properties.getProperty('AUDIT_WRITE_STATUS') || '');
+    const rawCount = properties.getProperty('AUDIT_WRITE_FAILURE_COUNT');
+    const rawAt = properties.getProperty('AUDIT_WRITE_LAST_FAILURE_AT');
+    const rawKind = properties.getProperty('AUDIT_WRITE_LAST_FAILURE_KIND');
+    if (status !== 'DEGRADED') {
+      return {
+        available: !status && !rawCount && !rawAt && !rawKind,
+        marker: null,
+      };
+    }
+    const parsedCount = Number(rawCount || 0);
+    return {
+      available: true,
+      marker: {
+        source: 'SCRIPT_PROPERTIES',
+        failureCount: Number.isSafeInteger(parsedCount) && parsedCount > 0 ? parsedCount : 1,
+        lastFailureAt: String(rawAt || ''),
+        lastFailureKind: String(rawKind || 'UNKNOWN'),
       },
-    ]);
-  } catch (e) {
-    recordAuditWriteFailure_('SINGLE_EVENT', e);
+    };
+  } catch (_) {
+    return { available: false, marker: null };
   }
 }
-function auditEventDetails_(eventType, entityType, entityId, reason, changes, summary) {
-  return JSON.stringify({
-    version: 1,
-    eventId: Utilities.getUuid(),
-    eventType: String(eventType || ''),
-    entityType: String(entityType || ''),
-    entityId: String(entityId || ''),
-    reason: String(reason || ''),
-    summary: String(summary || ''),
-    changes: Array.isArray(changes) ? changes : [],
-  });
-}
-function auditEvent_(
-  user,
-  action,
-  target,
-  eventType,
-  entityType,
-  entityId,
-  reason,
-  changes,
-  summary,
-) {
-  audit_(
-    user,
-    action,
-    target,
-    auditEventDetails_(eventType, entityType, entityId, reason, changes, summary),
-    5000,
-  );
-}
-function auditEventRows_(events) {
-  if (!Array.isArray(events) || !events.length) return;
-  const timestamp = nowIso_();
+
+function readAuditSettingsMarker_() {
   try {
-    appendRows_(
-      'AuditLog',
-      events.map(function (event) {
-        return {
-          Time: event.Time || event.time || timestamp,
-          User: event.User || event.user || '',
-          Action: event.Action || event.action || '',
-          Target: event.Target || event.target || '',
-          Details: clean_(event.Details || event.details || '', 5000),
-        };
-      }),
-    );
-  } catch (e) {
-    // Audit persistence remains best-effort so a completed financial write is not misreported.
-    // Record the gap durably so an owner can see it and reconcile the affected period.
-    recordAuditWriteFailure_('EVENT_BATCH', e);
+    const settings = settings_();
+    const raw = settings[AUDIT_WRITE_FALLBACK_SETTING_];
+    if (raw === undefined || raw === null || raw === '') {
+      return { available: true, marker: null };
+    }
+    const marker = parseAuditFailureMarker_(raw, 'SETTINGS_SHEET');
+    return { available: Boolean(marker), marker: marker };
+  } catch (_) {
+    return { available: false, marker: null };
   }
 }
+
+function readAuditCacheMarker_() {
+  try {
+    if (typeof CacheService === 'undefined') return { available: false, marker: null };
+    const raw = CacheService.getScriptCache().get(AUDIT_WRITE_CACHE_KEY_);
+    if (!raw) return { available: true, marker: null };
+    const marker = parseAuditFailureMarker_(raw, 'TRANSIENT_CACHE');
+    return { available: Boolean(marker), marker: marker };
+  } catch (_) {
+    return { available: false, marker: null };
+  }
+}
+
+function recordAuditWriteFailure_(kind, error) {
+  const health = auditWriteHealth_();
+  const marker = {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: Math.max(0, Number(health.failureCount) || 0) + 1,
+    lastFailureAt: nowIso_(),
+    lastFailureKind: String(kind || 'UNKNOWN'),
+    markerId: Utilities.getUuid(),
+  };
+  const serialized = JSON.stringify(marker);
+  let propertiesPersisted = false;
+  let settingsPersisted = false;
+  let cachePersisted = false;
+
+  try {
+    const properties = props_();
+    properties.setProperty('AUDIT_WRITE_STATUS', 'DEGRADED');
+    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_AT', marker.lastFailureAt);
+    properties.setProperty('AUDIT_WRITE_LAST_FAILURE_KIND', marker.lastFailureKind);
+    properties.setProperty('AUDIT_WRITE_FAILURE_COUNT', String(marker.failureCount));
+    propertiesPersisted = true;
+  } catch (markerError) {
+    console.error('Could not persist the primary audit-write failure marker:', markerError);
+  }
+
+  try {
+    setSetting_(AUDIT_WRITE_FALLBACK_SETTING_, serialized);
+    settingsPersisted = true;
+  } catch (fallbackError) {
+    console.error('Could not persist the Settings-sheet audit-write fallback:', fallbackError);
+  }
+
+  try {
+    if (typeof CacheService !== 'undefined') {
+      CacheService.getScriptCache().put(
+        AUDIT_WRITE_CACHE_KEY_,
+        serialized,
+        AUDIT_WRITE_CACHE_TTL_SECONDS_,
+      );
+      cachePersisted = true;
+    }
+  } catch (cacheError) {
+    console.error('Could not persist the transient audit-write cache marker:', cacheError);
+  }
+
+  if (!propertiesPersisted && !settingsPersisted && !cachePersisted) {
+    console.error(
+      'Audit health is unrecorded: Script Properties, Settings fallback and transient cache all failed.',
+    );
+  }
+  console.error('Audit persistence failed (' + marker.lastFailureKind + '):', error);
+}
+
+function auditWriteHealth_() {
+  const propertyState = readAuditPropertiesMarker_();
+  const settingsState = readAuditSettingsMarker_();
+  const cacheState = readAuditCacheMarker_();
+  const markers = [propertyState.marker, settingsState.marker, cacheState.marker].filter(Boolean);
+  const status = markers.length
+    ? 'DEGRADED'
+    : propertyState.available && settingsState.available
+      ? 'NO_KNOWN_FAILURE'
+      : 'MONITORING_UNAVAILABLE';
+  const durability =
+    propertyState.marker && settingsState.marker
+      ? 'SCRIPT_PROPERTIES_AND_SETTINGS'
+      : propertyState.marker
+        ? 'SCRIPT_PROPERTIES'
+        : settingsState.marker
+          ? 'SETTINGS_SHEET'
+          : cacheState.marker
+            ? 'TRANSIENT_CACHE'
+            : status === 'NO_KNOWN_FAILURE'
+              ? 'NONE'
+              : 'UNKNOWN';
+  const latest = markers.reduce(function (best, marker) {
+    if (!best || String(marker.lastFailureAt || '') > String(best.lastFailureAt || '')) {
+      return marker;
+    }
+    return best;
+  }, null);
+  return {
+    status: status,
+    failureCount: markers.length
+      ? Math.max.apply(
+          null,
+          markers.map(function (marker) {
+            return marker.failureCount;
+          }),
+        )
+      : 0,
+    lastFailureAt: latest ? latest.lastFailureAt : '',
+    lastFailureKind: latest ? latest.lastFailureKind : '',
+    markerDurability: durability,
+  };
+}
+
 function can_(user, perm) {
   if (!user || !Object.prototype.hasOwnProperty.call(PERMS, user.role)) return false;
   const permissions = PERMS[user.role];

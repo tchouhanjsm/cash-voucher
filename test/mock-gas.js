@@ -23,6 +23,8 @@ function create(options = {}) {
     faults = {
       failNextAuditWrite: false,
       failNextAuditMarkerWrite: false,
+      failNextAuditFallbackWrite: false,
+      failNextAuditCacheWrite: false,
       failNextMail: false,
       failNextSettingWrite: false,
       failNextVoucherWriteAfterCommit: false,
@@ -44,6 +46,14 @@ function create(options = {}) {
           Array.from({ length: nc }, (_, j) => (rows[r - 1 + i] || [])[c - 1 + j] ?? ''),
         ),
       setValues: (v) => {
+        if (
+          name === 'Settings' &&
+          faults.failNextAuditFallbackWrite &&
+          v.some((row) => Array.isArray(row) && row[0] === 'auditWriteFailureMarker')
+        ) {
+          faults.failNextAuditFallbackWrite = false;
+          throw new Error('Simulated audit fallback Settings write failure');
+        }
         if (name === 'Settings' && faults.failNextSettingWrite) {
           faults.failNextSettingWrite = false;
           throw new Error('Simulated settings counter write failure');
@@ -142,7 +152,13 @@ function create(options = {}) {
     CacheService: {
       getScriptCache: () => ({
         get: (k) => cacheStore[k] ?? null,
-        put: (k, v) => (cacheStore[k] = v),
+        put: (k, v) => {
+          if (faults.failNextAuditCacheWrite && k === 'CV_AUDIT_WRITE_FAILURE_TRANSIENT') {
+            faults.failNextAuditCacheWrite = false;
+            throw new Error('Simulated audit cache marker write failure');
+          }
+          cacheStore[k] = v;
+        },
         remove: (k) => delete cacheStore[k],
       }),
     },
@@ -262,6 +278,12 @@ function create(options = {}) {
     },
     failNextAuditMarkerWrite: () => {
       faults.failNextAuditMarkerWrite = true;
+    },
+    failNextAuditFallbackWrite: () => {
+      faults.failNextAuditFallbackWrite = true;
+    },
+    failNextAuditCacheWrite: () => {
+      faults.failNextAuditCacheWrite = true;
     },
     auditDiagnostics,
     mailLog,
