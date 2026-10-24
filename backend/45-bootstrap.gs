@@ -31,8 +31,11 @@ function bootstrap_(user) {
   const vouchers = canViewRegister
     ? readAll_('Vouchers')
         .filter(function (o) {
-          return (all || String(o.CreatedBy).toLowerCase() === user.email) &&
-            !readModelHasMalformedRecord_(o);
+          return (
+            (all || String(o.CreatedBy).toLowerCase() === user.email) &&
+            !readModelHasMalformedRecord_(o) &&
+            String(o.Vendor || '').trim() !== ''
+          );
         })
         .sort(function (a, b) {
           return (

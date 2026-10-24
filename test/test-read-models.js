@@ -237,7 +237,8 @@ assert.equal(
 assert.equal(
   filteredAfterMalformed.data.totals.malformedRecordCount,
   5,
-  'invalid date, blank status, missing or non-numeric voucher number and unsupported type are surfaced as malformed records',
+  'invalid date, blank status, missing or non-numeric voucher number and unsupported ' +
+    'type are surfaced as malformed records',
 );
 assert.equal(
   filteredAfterMalformed.data.items.some((item) =>
@@ -258,7 +259,11 @@ assert.equal(
   'blank status and voucher-number fields contribute to field-level data-quality diagnostics',
 );
 const bootstrapAfterMalformed = g.call('bootstrap', { token: owner });
-assert.equal(bootstrapAfterMalformed.ok, true, 'bootstrap remains available with malformed ledger rows');
+assert.equal(
+  bootstrapAfterMalformed.ok,
+  true,
+  'bootstrap remains available with malformed ledger rows',
+);
 assert.equal(
   bootstrapAfterMalformed.data.vouchers.some((item) =>
     [
@@ -334,7 +339,46 @@ assert.equal(
 assert.equal(
   dashboardAfterMalformed.data.malformedFieldCount,
   2,
-  'dashboard field-quality count includes blank values even when those rows are excluded from totals',
+  'dashboard field-quality count includes blank values even when those rows are excluded ' +
+    'from totals',
+);
+
+const blankPayeeSuggestion = {
+  VoucherID: 'blank-payee-bootstrap-suggestion-regression',
+  VoucherNo: 99995,
+  Date: date,
+  Vendor: '',
+  Amount: 25,
+  Category: 'Other',
+  Notes: '',
+  Status: 'ACTIVE',
+  CreatedBy: 'read-model-owner@test.com',
+  CreatedAt: date + 'T13:55:00',
+  UpdatedBy: '',
+  UpdatedAt: '',
+  Receipts: '',
+  CancelReason: '',
+  ClientID: 'blank-payee-bootstrap-suggestion-regression',
+  Type: 'PAYMENT',
+  CashImpact: 'CASH_OUT',
+  ApprovalStatus: 'NOT_REQUIRED',
+  ApprovedBy: '',
+  ApprovedAt: '',
+  ApprovalReason: '',
+  VendorID: '',
+  PaymentMethod: 'CASH',
+};
+g.sheets.Vouchers.rows.push(
+  g.sheets.Vouchers.rows[0].map((header) => blankPayeeSuggestion[header] ?? ''),
+);
+const bootstrapWithoutBlankPayee = g.call('bootstrap', { token: owner });
+assert.equal(bootstrapWithoutBlankPayee.ok, true, 'bootstrap tolerates an incomplete legacy payee');
+assert.equal(
+  bootstrapWithoutBlankPayee.data.vouchers.some(
+    (item) => item.id === 'blank-payee-bootstrap-suggestion-regression',
+  ),
+  false,
+  'bootstrap never exposes a blank payee as a quick-entry suggestion',
 );
 
 const voucherHeaders = g.sheets.Vouchers.rows[0];

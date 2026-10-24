@@ -18,6 +18,7 @@ export function validateClientId(value, message = 'Recovery file contains an inv
   if (
     !clientId ||
     clientId.length > 60 ||
+    ['=', '+', '-', '@'].includes(clientId[0]) ||
     [...clientId].some((character) => {
       const code = character.charCodeAt(0);
       return code <= 31 || code === 127;

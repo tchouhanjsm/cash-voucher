@@ -291,7 +291,12 @@ function nameText_(value, label, max, optional) {
 function clientId_(v) {
   const text = String(v === undefined || v === null ? '' : v).trim();
   if (!text) return '';
-  if (text.length > 60) throw err_('Invalid client ID.', 'VALIDATION');
+  if (
+    text.length > 60 ||
+    ['=', '+', '-', '@'].indexOf(text.charAt(0)) >= 0
+  ) {
+    throw err_('Invalid client ID.', 'VALIDATION');
+  }
 
   for (let i = 0; i < text.length; i++) {
     const code = text.charCodeAt(i);

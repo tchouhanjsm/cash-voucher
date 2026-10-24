@@ -54,7 +54,9 @@ function readModelAmount_(row) {
     return { valid: false, paise: 0 };
   }
   const paise = Math.round(amount * 100);
-  return Number.isSafeInteger(paise) ? { valid: true, paise: paise } : { valid: false, paise: 0 };
+  return Number.isSafeInteger(paise)
+    ? { valid: true, paise: paise }
+    : { valid: false, paise: 0 };
 }
 
 function readModelApproval_(row) {
@@ -248,7 +250,11 @@ function registerPage_(user, req) {
 
   const vendorSet = Object.create(null);
   const userSet = Object.create(null);
-  const dataQuality = { malformedRecordCount: 0, invalidAmountCount: 0, malformedFieldCount: 0 };
+  const dataQuality = {
+    malformedRecordCount: 0,
+    invalidAmountCount: 0,
+    malformedFieldCount: 0,
+  };
   rows.forEach(function (row) {
     dataQuality.malformedFieldCount += readModelMissingFieldCount_(row);
     if (readModelHasMalformedRecord_(row)) {
