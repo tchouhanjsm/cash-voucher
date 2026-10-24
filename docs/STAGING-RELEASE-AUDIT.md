@@ -1,13 +1,13 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 24 October 2026  
-**Authoritative integration baseline:** client-main `e90ef5dfb005745136c0522d983fd42c38db38ff`, following PR #207.  
+**Audit date:** 25 October 2026  
+**Authoritative integration baseline:** client-main `176da7c559d279149e2473a65a71fd03d3e53018`, following PR #207.  
 **Legacy branch:** `main` (read-only by engineering policy; the actual ahead/behind relationship must be rechecked before any branch operation).  
 **Scope:** source and release-workflow audit, not live deployment, restore or customer acceptance.
 
 ## Executive status
 
-PR #207 is the latest merged source baseline on client-main at `e90ef5dfb005745136c0522d983fd42c38db38ff`. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed. These checks do not prove live staging, recovery or customer acceptance.
+PR #208 is the latest merged source baseline on client-main at `176da7c559d279149e2473a65a71fd03d3e53018`. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed. These checks do not prove live staging, recovery or customer acceptance.
 
 The branch policy names client-main as the only integration branch and main as legacy/read-only. Repository metadata still listed main as the default branch. Accessible branch-protection data did not prove active required-check/ruleset enforcement. Owner/admin must verify actual rulesets and default settings; this source PR must not change repository settings or reconcile divergent long-lived branches.
 
@@ -15,7 +15,7 @@ Dedicated staging resources, protected staging Environment, a real deployed stag
 
 ## Active release sequence
 
-Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #207 is the latest merged source baseline; live staging, isolated restore and customer acceptance remain unverified.
+Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #208 is the latest merged source baseline; live staging, isolated restore and customer acceptance remain unverified.
 
 **Evidence still required:** isolated staging identity and host access; inspected pre-migration backup; schema validation and only required staging migrations; backend-first deploy and staging-configured frontend; exact-run guarded UAT; live role, receipt, payment-method, offline and print checks; and restore into a separate recovery target. The hotel pilot remains blocked until those gates pass. Production is excluded.
 
@@ -131,3 +131,17 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 **Source baseline:** PR #207 is merged; the B6 audit-monitoring improvement is a source-only branch pending exact-head checks and owner review. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.
+
+## Autonomous delivery monitor
+
+The repository has an event/manual monitor targeting client-main. It observes exact-SHA CI, Browser E2E and Full Flight Test; summarizes PR reviews/checks and staging/ZIP workflow runs; reports stalled, timeout and failure states; and persists a bounded run history to one GitHub checkpoint issue and workflow artifact.
+
+The ChatGPT monitor has a real hourly schedule. The requested 45-minute interval is not supported. GitHub Actions cron is intentionally omitted because GitHub scheduled workflows run from the default branch, which remains main while repository policy treats main as frozen/read-only. Do not represent an event/manual workflow as a 45-minute cron.
+
+Automatic recovery is limited to timed-out source-validation runs, validated against the exact current head, with at most three attempts total. It does not rerun failed tests, cancelled runs, write-capable staging UAT or static ZIP publication. PR-event observation is read-only. No automated merge, Clasp push, Apps Script deployment, Google resource mutation, migration, cPanel upload or production change is permitted.
+
+## Deep-dive findings to fix in a separate code batch
+
+- Support report rate limiting in backend/90-support.gs is implemented with CacheService read-then-put and is not atomic under concurrent submissions. Add a bounded lock/atomic counter and concurrency tests.
+- B6 audit-marker parsing appears to coerce malformed Script Properties state into a degraded marker rather than always returning MONITORING_UNAVAILABLE. Add malformed counter/timestamp tests and align implementation with the published fail-closed contract.
+- Live staging, actual response headers, real Google resource isolation, migration need, backup/restore, and device acceptance remain unverified. Green CI/mock tests must never close those release gates.

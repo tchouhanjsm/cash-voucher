@@ -1,9 +1,9 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 24 October 2026 (P0 B1–B5 source batches merged; operational release still gated)  
+**Updated:** 25 October 2026 (P0 B1–B6 source batches merged; operational release still gated)  
 **Integration branch:** client-main  
-**Current source baseline for release follow-up:** e90ef5dfb005745136c0522d983fd42c38db38ff (PR #207 merge)  
-**Release state:** PRs #205–#207 are merged; live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+**Current source baseline for release follow-up:** 176da7c559d279149e2473a65a71fd03d3e53018 (PR #207 merge)  
+**Release state:** PRs #205–#208 are merged; live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ## Executive decision
 
@@ -15,8 +15,8 @@ PRs #205, #206 and #207 are merged to `client-main`. Next is staging release and
 
 ### 1. Complete the source release
 
-- PRs #205, #206 and #207 are merged to `client-main`; the latest source merge is `e90ef5dfb005745136c0522d983fd42c38db38ff`.
-- PR #207's exact-head evidence passed: [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247679), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247678), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247717).
+- PRs #205, #206 and #207 are merged to `client-main`; the latest source merge is `176da7c559d279149e2473a65a71fd03d3e53018`.
+- PR #208's exact-head evidence passed: [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100024), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100025), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100077).
 - Green source checks do not prove live deployment or recovery.
 - Green source checks do not prove live deployment or recovery.
 
@@ -69,7 +69,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 
 ## Source release status
 
-PR #207 is merged at `e90ef5dfb005745136c0522d983fd42c38db38ff` and its exact-head CI/Quality, Browser E2E and Full Flight Test passed. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
+PR #208 is merged at `176da7c559d279149e2473a65a71fd03d3e53018` and its exact-head CI/Quality, Browser E2E and Full Flight Test passed. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 
@@ -105,3 +105,14 @@ Consider one integrated **Today → Close → Owner card** workflow: Today prior
 ## Non-goals and stop conditions
 
 No production migration/deployment, blind branch synchronization, multi-tenant rewrite, AI dependency, autonomous posting, outbound WhatsApp campaign, unvalidated tax/ledger claim or mandatory denomination schema change. Staging is unverified until live UAT, backup and isolated restore are evidenced. Customer handover is blocked until access, device, data ownership and acceptance gates pass.
+
+## Autonomous delivery monitoring
+
+A checkpoint-based monitoring workflow is implemented on the current source baseline. The ChatGPT monitor runs hourly because 45-minute cadence is unsupported. The GitHub Actions workflow is event/manual driven only: the actual default branch is main, while client-main is the integration branch and main is policy-frozen. Do not add a cron schedule to client-main and claim it is active.
+
+The monitor may observe CI, Browser E2E, Full Flight Test, PR reviews/checks, staging/ZIP runs and release-gate notes; it may retry only timed-out source-validation runs after exact-SHA checks and within a three-attempt ceiling. It never auto-merges, publishes static ZIPs, pushes Clasp, deploys Apps Script, runs transactional staging UAT, performs migrations or changes production. GitHub checkpoint history is persistent run evidence; docs/HANDOFF.md remains the engineering session handoff.
+
+## Deep-dive follow-up defects
+
+- backend/90-support.gs supportRateAllowed_ uses a non-atomic cache read/increment/write, so concurrent requests can exceed intended rate limits. Fix separately with concurrency/failure tests.
+- Audit health: readAuditPropertiesMarker_ normalizes malformed persisted counters/timestamps rather than consistently failing to MONITORING_UNAVAILABLE, contrary to the documented fail-closed contract. Add corruption tests and reconcile before modifying behavior.

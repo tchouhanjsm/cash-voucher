@@ -20,6 +20,7 @@ const sinkInventory = read('docs/ACTIVE-DOM-SINK-INVENTORY.md');
 const securityAudit = read('docs/SECURITY-RENDERING-AUDIT.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const p0ReleaseBatch = read('docs/P0-RELEASE-BATCH-B1-B3.md');
+const autonomousMonitor = read('docs/AUTONOMOUS-DEVELOPMENT-WORKFLOW.md');
 
 assert.match(project, /password authentication/i);
 assert.match(project, /backend\/\*\.gs/);
@@ -41,7 +42,7 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*e90ef5dfb005745136c0522d983fd42c38db38ff/,
+  /Authoritative integration baseline.*client-main.*176da7c559d279149e2473a65a71fd03d3e53018/,
 );
 assert.match(staging, /PR #207/);
 assert.match(staging, /P0 B5/);
@@ -72,7 +73,7 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /e90ef5dfb005745136c0522d983fd42c38db38ff/);
+assert.match(executionPlan, /176da7c559d279149e2473a65a71fd03d3e53018/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
 assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
 assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
@@ -85,3 +86,9 @@ assert.match(
 console.log(
   'Current-readiness documentation: latest merge, password terminology, active architecture and live-release boundaries are aligned.',
 );
+
+assert.match(autonomousMonitor, /176da7c559d279149e2473a65a71fd03d3e53018/);
+assert.match(autonomousMonitor, /45-minute.*not supported/i);
+assert.match(autonomousMonitor, /never merges/i);
+assert.match(autonomousMonitor, /bounded retry/i);
+assert.match(autonomousMonitor, /Persistent Checkpoint/i);
