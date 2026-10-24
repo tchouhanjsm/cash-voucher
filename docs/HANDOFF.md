@@ -5,18 +5,20 @@
 **Integration branch:** `client-main`  
 **Verified integration baseline:** `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208 merged).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** Autonomous delivery monitor implementation and P0 operational release gates. PR #208 is the latest merged application batch; live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 operational release gates and delivery-monitor review. PR #208 remains the merged application baseline; PR #209 is checks-green but unmerged; PR #210 is the monitor tooling PR under review. Live staging remains unverified; owner retains merge/deploy authority.
 
 ## Verified source state
 
 - PRs #205–#208 are merged to client-main. The latest source baseline is 176da7c559d279149e2473a65a71fd03d3e53018.
 - Exact-head integration checks passed after PR #208: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100024), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100025), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100077).
+- PR #209 remains open on `ac732798633f6df655400c5aaa3444cea97558f9`; [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40126557717), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40126557746) and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40126557718) all passed on that exact head. Human review and merge remain outstanding.
+- PR #210's last observed head `c09a28db43d70a201265a53d92345bedb1f02c98` had CI fail in the `Run quality gate` step at `test/test-current-readiness-docs.js:90`, because the monitor workflow document lacked the asserted baseline SHA. [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40127345166) passed; [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40127345178) failed at its prerequisite step verifying CI and Browser E2E on the same commit. These are historical results; the corrected branch head must receive fresh checks.
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
 - The owner-only `auditLog` endpoint exposes audit monitoring. The previous monitor relied only on Script Properties, so a primary marker write failure could hide an AuditLog append failure. The B6 branch adds a Settings-sheet durable fallback and a transient cache fallback, distinguishes unavailable monitoring, and keeps health data on empty cursor pages.
 - The temporary `GHSA-mrhx-c7xc-m3w5` Zod exception from PR #206 remains a separate risk, due for reassessment by 9 November 2026. Do not force a major-version override of Clasp's declared Zod dependency.
 
-## Current batch — P0 B6
+## P0 B6 — merged fallback and open fail-closed follow-up
 
 1. Preserve one audit-health response contract for populated, empty and terminal cursor pages.
 2. On an audit append failure, persist the marker in Script Properties and in the Settings-sheet fallback. If both durable stores fail, attempt a clearly labeled transient CacheService marker with a six-hour TTL.
@@ -56,5 +58,5 @@ This improves common failure cases; it does not reconstruct missing AuditLog eve
 ## Deep-dive defects reserved for a separate targeted fix
 
 1. backend/90-support.gs — supportRateAllowed_ uses CacheService get-then-put as a counter. Concurrent requests can observe the same count and exceed intended 5-per-user/hour or 20-per-workspace/6-hour thresholds. Use a lock/atomic strategy or a storage primitive with suitable consistency; add concurrency/failure-path regression tests.
-2. Audit health — B6 readAuditPropertiesMarker_ normalizes malformed counters and missing timestamps/kinds into a degraded marker. Reconcile this behavior with the documented requirement that malformed marker state report MONITORING_UNAVAILABLE; add fault-injection tests before changing the contract.
+2. Audit health — PR #209 hardens readAuditPropertiesMarker_ and mixed-store aggregation so malformed persisted state reports MONITORING_UNAVAILABLE. Its exact-head checks passed, but it is still unmerged; the issue remains present in the current `client-main` baseline until owner review and merge.
 3. Operational launch gates remain P0: confirm staging Script/deployment/Sheet/folders, backend/frontend staging release, guarded UAT, actual response headers, schema migration only after review, restore into a separate recovery target, and real-device/offline/print/accessibility acceptance.
