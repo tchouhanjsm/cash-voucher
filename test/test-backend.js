@@ -595,6 +595,7 @@ const changedPayloads = [
   { notes: 'changed notes' },
   { cashImpact: 'NO_CASH' },
   { type: 'RECEIPT' },
+  { receipts: [{ mime: 'image/jpeg', data: Buffer.from('changed receipt').toString('base64') }] },
 ];
 const changedPayloadResults = changedPayloads.map((override) =>
   as(S, 'createVouchers', {
@@ -607,6 +608,7 @@ const changedPayloadResults = changedPayloads.map((override) =>
         category: 'Fuel',
         notes: formulaNote,
         type: 'PAYMENT',
+        receipts: [{ mime: 'image/jpeg', data: tiny }],
         ...override,
       },
     ],
@@ -2097,6 +2099,57 @@ ok(
   !outOfOrderClose.ok && outOfOrderClose.code === 'CASH_CLOSE_OUT_OF_ORDER',
   'server rejects out-of-order close finalization',
 );
+const malformedCloseHeaders = g.sheets.Vouchers.rows[0];
+const malformedCloseStart = g.sheets.Vouchers.rows.length;
+const malformedCloseRows = [
+  {
+    VoucherID: 'close-invalid-type-regression',
+    VoucherNo: 99001,
+    Date: '2020-01-06',
+    Vendor: 'Close invalid type',
+    Amount: 100,
+    Category: 'Other',
+    Status: 'ACTIVE',
+    CreatedBy: 'owner@test.com',
+    ClientID: 'close-invalid-type-regression',
+    Type: 'EXPENSE',
+    CashImpact: 'CASH_OUT',
+    ApprovalStatus: 'NOT_REQUIRED',
+  },
+  {
+    VoucherID: 'close-invalid-status-regression',
+    VoucherNo: 99002,
+    Date: '2020-01-06',
+    Vendor: 'Close invalid status',
+    Amount: 50,
+    Category: 'Other',
+    Status: 'PENDING',
+    CreatedBy: 'owner@test.com',
+    ClientID: 'close-invalid-status-regression',
+    Type: 'PAYMENT',
+    CashImpact: 'CASH_OUT',
+    ApprovalStatus: 'NOT_REQUIRED',
+  },
+].map((record) => malformedCloseHeaders.map((header) => record[header] ?? ''));
+g.sheets.Vouchers.rows.push(...malformedCloseRows);
+const malformedClosePreview = as(T, 'cashClosePreview', { date: '2020-01-06' });
+ok(
+  malformedClosePreview.ok &&
+    malformedClosePreview.data.invalidVouchers.some((row) => row.id === 'close-invalid-type-regression') &&
+    malformedClosePreview.data.invalidVouchers.some((row) => row.id === 'close-invalid-status-regression') &&
+    !malformedClosePreview.data.readyToClose,
+  'cash-close preview blocks malformed voucher types and unsupported statuses',
+);
+const malformedCloseAttempt = as(T, 'createCashClose', {
+  date: '2020-01-06',
+  countedCash: '100',
+  requestId: 'close-malformed-ledger-regression',
+});
+ok(
+  !malformedCloseAttempt.ok && malformedCloseAttempt.code === 'CASH_CLOSE_DATA',
+  'cash close cannot finalize while same-date ledger rows have invalid type/status',
+);
+g.sheets.Vouchers.rows.splice(malformedCloseStart, malformedCloseRows.length);
 ok(
   as(T, 'updateVoucher', {
     id: cashCloseReceipt.data.created[0].id,
@@ -2774,6 +2827,169 @@ ok(
   'idempotency rejects a changed payment rail when the stored legacy rail is unknown',
 );
 
-n += 5;
+// Deep-dive regressions: rail/impact consistency, strict inputs, reserved client IDs and partial-write recovery.
+const directRailMismatch = as(T, 'updateVoucher', {
+  id: paymentRailResult.data.created[1].id,
+  reason: 'Try conflicting drawer classification',
+  fields: { cashImpact: 'CASH_OUT' },
+});
+ok(
+  !directRailMismatch.ok && directRailMismatch.code === 'VALIDATION',
+  'a stored UPI voucher cannot be reclassified as drawer cash without changing its payment method',
+);
+const changedRail = as(T, 'updateVoucher', {
+  id: paymentRailResult.data.created[1].id,
+  reason: 'Payment method physically confirmed as cash',
+  fields: { paymentMethod: 'CASH' },
+});
+ok(
+  changedRail.ok &&
+    changedRail.data.paymentMethod === 'CASH' &&
+    changedRail.data.cashImpact === 'CASH_OUT',
+  'changing a known payment rail derives the matching cash impact during correction',
+);
+
+const rowsBeforeInvalidInputs = g.sheets.Vouchers.rows.length;
+const filesBeforeInvalidInputs = Object.keys(g.files).length;
+const invalidVoucherType = as(T, 'createVouchers', {
+  entries: [{
+    clientId: 'invalid-voucher-type-regression',
+    date: railDate,
+    vendor: 'Unsupported Type',
+    amount: 10,
+    type: 'EXPENSE',
+    cashImpact: 'CASH_OUT',
+  }],
+});
+const invalidReceiptList = as(T, 'createVouchers', {
+  entries: [{
+    clientId: 'invalid-receipt-list-regression',
+    date: railDate,
+    vendor: 'Malformed Receipt List',
+    amount: 10,
+    cashImpact: 'CASH_OUT',
+    receipts: { mime: 'image/jpeg', data: tiny },
+  }],
+});
+const invalidReceiptBase64 = as(T, 'createVouchers', {
+  entries: [{
+    clientId: 'invalid-receipt-base64-regression',
+    date: railDate,
+    vendor: 'Malformed Receipt Data',
+    amount: 10,
+    cashImpact: 'CASH_OUT',
+    receipts: [{ mime: 'image/jpeg', data: '%%%not-base64%%%' }],
+  }],
+});
+ok(
+  !invalidVoucherType.ok &&
+    invalidVoucherType.code === 'VALIDATION' &&
+    !invalidReceiptList.ok &&
+    invalidReceiptList.code === 'VALIDATION' &&
+    !invalidReceiptBase64.ok &&
+    invalidReceiptBase64.code === 'VALIDATION' &&
+    g.sheets.Vouchers.rows.length === rowsBeforeInvalidInputs &&
+    Object.keys(g.files).length === filesBeforeInvalidInputs,
+  'unsupported voucher types and malformed receipt payloads fail before ledger or Drive writes',
+);
+
+const reservedClientRequest = {
+  entries: [{
+    clientId: 'constructor',
+    date: railDate,
+    vendor: 'Reserved Key Regression',
+    amount: 31,
+    category: 'Other',
+    paymentMethod: 'CASH',
+    cashImpact: 'CASH_OUT',
+  }],
+};
+const reservedClientFirst = as(T, 'createVouchers', reservedClientRequest);
+const reservedClientRetry = as(T, 'createVouchers', reservedClientRequest);
+ok(
+  reservedClientFirst.ok &&
+    reservedClientRetry.ok &&
+    reservedClientRetry.data.skipped === 1 &&
+    reservedClientRetry.data.created[0].id === reservedClientFirst.data.created[0].id,
+  'prototype-like client IDs remain safe, stable idempotency keys',
+);
+
+g.failNextSettingWrite();
+const counterFailureRequest = {
+  entries: [{
+    clientId: 'counter-sync-failure-regression',
+    date: railDate,
+    vendor: 'Counter Sync Failure',
+    amount: 41,
+    category: 'Other',
+    paymentMethod: 'CASH',
+    cashImpact: 'CASH_OUT',
+    receipts: [{ mime: 'image/jpeg', data: tiny }],
+  }],
+};
+const counterFailureResult = as(T, 'createVouchers', counterFailureRequest);
+const voucherHeadersForFaults = g.sheets.Vouchers.rows[0];
+const counterFailureRow = g.sheets.Vouchers.rows.find(
+  (row) => row[voucherHeadersForFaults.indexOf('ClientID')] === 'counter-sync-failure-regression',
+);
+const counterReceiptIds = String(
+  counterFailureRow?.[voucherHeadersForFaults.indexOf('Receipts')] || '',
+).split(',').filter(Boolean);
+ok(
+  counterFailureResult.ok &&
+    counterFailureRow &&
+    counterReceiptIds.length === 1 &&
+    counterReceiptIds.every((fileId) => Object.prototype.hasOwnProperty.call(g.files, fileId)),
+  'counter-setting failure does not turn a saved voucher into a failed request or delete its receipt',
+);
+const afterCounterFailure = as(T, 'createVouchers', {
+  entries: [{
+    clientId: 'counter-after-failure-regression',
+    date: railDate,
+    vendor: 'Counter After Failure',
+    amount: 42,
+    category: 'Other',
+    paymentMethod: 'CASH',
+    cashImpact: 'CASH_OUT',
+  }],
+});
+ok(
+  afterCounterFailure.ok &&
+    afterCounterFailure.data.created[0].no === counterFailureResult.data.created[0].no + 1,
+  'voucher numbering recovers from stale settings by scanning persisted ledger rows',
+);
+
+g.failNextVoucherWriteAfterCommit();
+const ambiguousWriteRequest = {
+  entries: [{
+    clientId: 'ambiguous-voucher-commit-regression',
+    date: railDate,
+    vendor: 'Ambiguous Voucher Commit',
+    amount: 51,
+    category: 'Other',
+    paymentMethod: 'CASH',
+    cashImpact: 'CASH_OUT',
+    receipts: [{ mime: 'image/jpeg', data: tiny }],
+  }],
+};
+const ambiguousWriteResult = as(T, 'createVouchers', ambiguousWriteRequest);
+const ambiguousRow = g.sheets.Vouchers.rows.find(
+  (row) => row[voucherHeadersForFaults.indexOf('ClientID')] === 'ambiguous-voucher-commit-regression',
+);
+const ambiguousReceiptIds = String(
+  ambiguousRow?.[voucherHeadersForFaults.indexOf('Receipts')] || '',
+).split(',').filter(Boolean);
+const filesBeforeAmbiguousRetry = Object.keys(g.files).length;
+const ambiguousRetry = as(T, 'createVouchers', ambiguousWriteRequest);
+ok(
+  !ambiguousWriteResult.ok &&
+    ambiguousRow &&
+    ambiguousReceiptIds.length === 1 &&
+    ambiguousReceiptIds.every((fileId) => Object.prototype.hasOwnProperty.call(g.files, fileId)) &&
+    ambiguousRetry.ok &&
+    ambiguousRetry.data.skipped === 1 &&
+    Object.keys(g.files).length === filesBeforeAmbiguousRetry,
+  'ambiguous post-commit voucher write preserves referenced receipts and retry creates no duplicates',
+);
 
 console.log('backend OK — ' + n + ' checks passed');

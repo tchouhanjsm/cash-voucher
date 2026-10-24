@@ -62,12 +62,49 @@ function cashCloseCalculatePeriod_(date) {
     noCashCount = 0;
   readAll_('Vouchers')
     .filter(function (voucher) {
-      return isoDate_(voucher.Date) === date && String(voucher.Status || '') === 'ACTIVE';
+      return isoDate_(voucher.Date) === date;
     })
     .sort(function (a, b) {
-      return Number(a.VoucherNo) - Number(b.VoucherNo);
+      return (Number(a.VoucherNo) || 0) - (Number(b.VoucherNo) || 0);
     })
     .forEach(function (voucher) {
+      const status = String(voucher.Status || '');
+      if (status === 'CANCELLED') return;
+
+      const type = String(voucher.Type || '');
+      const id = String(voucher.VoucherID || '');
+      const rawVoucherNo = voucher.VoucherNo;
+      const voucherNo = Number(rawVoucherNo);
+      const voucherNoValid =
+        rawVoucherNo !== '' &&
+        rawVoucherNo !== null &&
+        rawVoucherNo !== undefined &&
+        Number.isSafeInteger(voucherNo) &&
+        voucherNo > 0;
+      if (
+        status !== 'ACTIVE' ||
+        !['PAYMENT', 'RECEIPT'].includes(type) ||
+        !id ||
+        !voucherNoValid
+      ) {
+        invalidVouchers.push({
+          id,
+          no: (type === 'RECEIPT' ? 'R-' : 'P-') + String(rawVoucherNo || 'UNKNOWN'),
+          vendor: String(voucher.Vendor || ''),
+          amount:
+            voucher.Amount === null || voucher.Amount === undefined ? '' : String(voucher.Amount),
+          reason:
+            status !== 'ACTIVE'
+              ? 'Voucher status is missing or unsupported.'
+              : !['PAYMENT', 'RECEIPT'].includes(type)
+                ? 'Voucher type is missing or unsupported.'
+                : !id
+                  ? 'Voucher ID is missing.'
+                  : 'Voucher number is missing or invalid.',
+        });
+        return;
+      }
+
       const approvalStatus = approvalStatus_(voucher);
       if (voucher.Type === 'PAYMENT' && ['NOT_REQUIRED', 'APPROVED'].indexOf(approvalStatus) < 0) {
         pendingApprovals.push({
@@ -141,6 +178,7 @@ function cashCloseCalculatePeriod_(date) {
     noCashCount,
   };
 }
+
 function cashCloseCorrectionOut_(row) {
   return {
     id: String(row.CorrectionID || ''),
@@ -518,7 +556,7 @@ function createCashClose_(user, req) {
     throw err_(
       'Cannot close this date because ' +
         period.invalidVouchers.length +
-        ' active voucher(s) have invalid amounts' +
+        ' voucher row(s) have invalid status, type, identity, or amount data' +
         (ids ? ' (' + ids + ')' : '') +
         '. Correct the source records first; no close was saved.',
       'CASH_CLOSE_DATA',

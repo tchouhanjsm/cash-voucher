@@ -9,13 +9,43 @@ function validDate_(d) {
     d >= '2000-01-01'
   );
 }
+function receiptBytes_(receipt, prefix) {
+  const label = prefix || '';
+  if (
+    !receipt ||
+    typeof receipt !== 'object' ||
+    Array.isArray(receipt) ||
+    typeof receipt.mime !== 'string' ||
+    !/^image\/(jpeg|png|webp)$/.test(receipt.mime)
+  ) {
+    throw err_(label + 'receipt must be a JPG, PNG or WebP image.', 'VALIDATION');
+  }
+  if (
+    typeof receipt.data !== 'string' ||
+    !receipt.data ||
+    receipt.data.length > CFG.MAX_B64 ||
+    !/^[A-Za-z0-9+/]+={0,2}$/.test(receipt.data) ||
+    receipt.data.length % 4 === 1 ||
+    (receipt.data.indexOf('=') !== -1 && receipt.data.length % 4 !== 0)
+  ) {
+    throw err_(label + 'receipt image data is invalid or too large.', 'VALIDATION');
+  }
+  let bytes;
+  try {
+    bytes = Utilities.base64Decode(receipt.data);
+  } catch {
+    throw err_(label + 'receipt image data is invalid.', 'VALIDATION');
+  }
+  if (!bytes || !bytes.length) {
+    throw err_(label + 'receipt image data is invalid.', 'VALIDATION');
+  }
+  return bytes;
+}
 function saveReceipt_(r, no, i) {
-  if (!r || !/^image\/(jpeg|png|webp)$/.test(r.mime))
-    throw err_('Receipt must be a JPG, PNG or WebP image.');
-  if (!r.data || r.data.length > CFG.MAX_B64) throw err_('Receipt image is too large.');
+  const bytes = receiptBytes_(r, '');
   const ext = r.mime.split('/')[1].replace('jpeg', 'jpg');
   const blob = Utilities.newBlob(
-    Utilities.base64Decode(r.data),
+    bytes,
     r.mime,
     'V' + no + '-' + (Date.now() % 100000) + '-' + i + '.' + ext,
   );
@@ -59,6 +89,34 @@ function cashImpactForPaymentMethod_(method, type) {
   return 'NO_CASH';
 }
 
+function sameClientVoucherReceipts_(voucher, entry) {
+  const storedIds = String(voucher.Receipts || '')
+    .split(',')
+    .filter(Boolean);
+  const incoming = Array.isArray(entry.receipts) ? entry.receipts : [];
+  if (storedIds.length !== incoming.length) return false;
+
+  try {
+    for (let index = 0; index < storedIds.length; index++) {
+      const receipt = incoming[index];
+      const expectedBytes = receiptBytes_(receipt, '');
+      const blob = DriveApp.getFileById(storedIds[index]).getBlob();
+      if (String(blob.getContentType() || '') !== receipt.mime) return false;
+      const actualBytes = blob.getBytes();
+      if (!actualBytes || actualBytes.length !== expectedBytes.length) return false;
+      for (let byteIndex = 0; byteIndex < actualBytes.length; byteIndex++) {
+        if ((Number(actualBytes[byteIndex]) & 255) !== (Number(expectedBytes[byteIndex]) & 255)) {
+          return false;
+        }
+      }
+    }
+    return true;
+  } catch {
+    // A missing/inaccessible attachment is not evidence of an exact idempotent retry.
+    return false;
+  }
+}
+
 function sameClientVoucherPayload_(voucher, entry) {
   return (
     isoDate_(voucher.Date) === entry.date &&
@@ -69,9 +127,11 @@ function sameClientVoucherPayload_(voucher, entry) {
     (voucher.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT') === entry.type &&
     String(voucher.CashImpact || 'UNCLASSIFIED') === entry.cashImpact &&
     (entry.paymentMethod === undefined ||
-      String(voucher.PaymentMethod || '') === entry.paymentMethod)
+      String(voucher.PaymentMethod || '') === entry.paymentMethod) &&
+    sameClientVoucherReceipts_(voucher, entry)
   );
 }
+
 
 function createVouchers_(user, req) {
   need_(user, 'create');
@@ -89,24 +149,41 @@ function createVouchers_(user, req) {
     closedDates = readAll_('CashCloses').map(function (close) {
       return String(close.BusinessDate || '');
     }),
-    byClient = {};
+    byClient = Object.create(null);
   existing.forEach(function (o) {
     if (o.ClientID) byClient[o.ClientID] = o;
   });
   const clean = [];
   entries.forEach(function (en, i) {
     const row = 'Row ' + (i + 1) + ': ';
+    if (!en || typeof en !== 'object' || Array.isArray(en)) {
+      throw err_(row + 'invalid voucher details.', 'VALIDATION');
+    }
     const date = String(en.date || '');
-    if (!validDate_(date)) throw err_(row + 'invalid date.');
+    if (!validDate_(date)) throw err_(row + 'invalid date.', 'VALIDATION');
     if (closedDates.indexOf(date) >= 0) throw cashCloseDateError_();
     const vendor = nameText_(en.vendor, 'Vendor name', 200);
-    if (!vendor) throw err_(row + 'vendor is required.');
+    if (!vendor) throw err_(row + 'vendor is required.', 'VALIDATION');
     const amount = Math.round(finiteNumber_(en.amount, row + 'amount') * 100) / 100;
-    if (amount <= 0 || amount > CFG.MAX_AMOUNT) throw err_(row + 'invalid amount.');
+    if (amount <= 0 || amount > CFG.MAX_AMOUNT) throw err_(row + 'invalid amount.', 'VALIDATION');
+
+    if (en.receipts !== undefined && en.receipts !== null && !Array.isArray(en.receipts)) {
+      throw err_(row + 'receipt list must be an array.', 'VALIDATION');
+    }
     const rec = Array.isArray(en.receipts) ? en.receipts : [];
-    if (rec.length > CFG.MAX_RECEIPTS) throw err_(row + 'too many receipts.');
-    const type = en.type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT',
-      cats = type === 'RECEIPT' ? catsR : catsP;
+    if (rec.length > CFG.MAX_RECEIPTS) throw err_(row + 'too many receipts.', 'VALIDATION');
+    rec.forEach(function (receipt) {
+      receiptBytes_(receipt, row);
+    });
+
+    const type =
+      en.type === undefined || en.type === null || en.type === ''
+        ? 'PAYMENT'
+        : en.type;
+    if (type !== 'PAYMENT' && type !== 'RECEIPT') {
+      throw err_(row + 'invalid voucher type.', 'VALIDATION');
+    }
+    const cats = type === 'RECEIPT' ? catsR : catsP;
     const method =
       en.paymentMethod === undefined || en.paymentMethod === ''
         ? ''
@@ -135,6 +212,8 @@ function createVouchers_(user, req) {
     skipped = 0,
     newObjs = [];
   const createdFileIds = [];
+  const createdFileIdsByVoucher = Object.create(null);
+  let voucherAppendAttempted = false;
   try {
     clean.forEach(function (c) {
       if (c.clientId && byClient[c.clientId]) {
@@ -192,16 +271,79 @@ function createVouchers_(user, req) {
         ApprovedAt: '',
         ApprovalReason: '',
       };
+      createdFileIdsByVoucher[o.VoucherID] = ids.slice();
       if (c.clientId) byClient[c.clientId] = o;
       newObjs.push(o);
       created.push(vOut_(o));
     });
-    appendRows_('Vouchers', newObjs);
+
+    // Apps Script can report an error after a Sheet write has committed. Once append starts,
+    // only a successful reread can establish which receipt files are definitely unreferenced.
+    voucherAppendAttempted = true;
+    try {
+      appendRows_('Vouchers', newObjs);
+    } catch (appendError) {
+      let rowsAfterWrite = null;
+      try {
+        rowsAfterWrite = readAll_('Vouchers');
+      } catch (readError) {
+        console.error(
+          'Could not determine whether voucher rows were committed; receipt files were preserved.',
+          readError,
+        );
+      }
+
+      if (rowsAfterWrite !== null) {
+        const persistedVoucherIds = Object.create(null);
+        rowsAfterWrite.forEach(function (voucher) {
+          if (voucher.VoucherID) persistedVoucherIds[voucher.VoucherID] = true;
+        });
+        const orphanedFileIds = [];
+        let persistedCount = 0;
+        newObjs.forEach(function (voucher) {
+          if (persistedVoucherIds[voucher.VoucherID]) {
+            persistedCount++;
+            return;
+          }
+          (createdFileIdsByVoucher[voucher.VoucherID] || []).forEach(function (fileId) {
+            orphanedFileIds.push(fileId);
+          });
+        });
+        if (orphanedFileIds.length) trashFiles_(orphanedFileIds);
+        if (persistedCount) {
+          console.error(
+            'Voucher append reported an error after one or more rows persisted; receipt files for persisted rows were preserved.',
+            appendError,
+          );
+        }
+      }
+      throw appendError;
+    }
+  } catch (error) {
+    // Before append starts, no ledger row can reference these files. Once it starts,
+    // the append handler has reconciled or preserved all potentially referenced receipts.
+    if (!voucherAppendAttempted) trashFiles_(createdFileIds);
+    throw error;
+  }
+
+  // The voucher ledger remains authoritative for numbering; nextNumber_ scans saved rows and
+  // self-corrects stale counters. Do not report a saved voucher as failed only because a counter
+  // property could not be synchronized after the ledger append.
+  try {
     setSetting_('nextVoucherNo', String(next));
+  } catch (error) {
+    console.error(
+      'Voucher rows were saved, but the next voucher number setting could not be synchronized; ledger-derived numbering remains authoritative.',
+      error,
+    );
+  }
+  try {
     setSetting_('nextReceiptNo', String(nextR));
-  } catch (e) {
-    trashFiles_(createdFileIds);
-    throw e;
+  } catch (error) {
+    console.error(
+      'Voucher rows were saved, but the next receipt number setting could not be synchronized; ledger-derived numbering remains authoritative.',
+      error,
+    );
   }
   const bulkBatchId = req.bulk ? Utilities.getUuid() : '';
   const auditEvents = newObjs.map(function (voucher) {
@@ -321,12 +463,22 @@ function updateVoucher_(user, req) {
       cashImpactForPaymentMethod_(method, o.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT'),
     );
   } else if (f.cashImpact !== undefined) {
-    recordChange(
-      'cashImpact',
-      'CashImpact',
-      String(o.CashImpact || 'UNCLASSIFIED'),
-      cashImpact_(f.cashImpact, ''),
-    );
+    const impact = cashImpact_(f.cashImpact, '');
+    const storedMethod = String(o.PaymentMethod || '');
+    if (storedMethod) {
+      const method = paymentMethod_(storedMethod, '');
+      const expectedImpact = cashImpactForPaymentMethod_(
+        method,
+        o.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT',
+      );
+      if (impact !== expectedImpact) {
+        throw err_(
+          'Cash impact must match the saved payment method. Correct the payment method to change the derived cash impact.',
+          'VALIDATION',
+        );
+      }
+    }
+    recordChange('cashImpact', 'CashImpact', String(o.CashImpact || 'UNCLASSIFIED'), impact);
   }
   if (CASH_IMPACT_CHOICES.indexOf(o.CashImpact) < 0 && f.cashImpact === undefined) {
     throw err_(
