@@ -112,6 +112,7 @@ assert.match(uat, /registerPage/);
 assert.match(uat, /STAGING DASHBOARD CONTRACT FAILED/);
 assert.match(uat, /"limit": 20/);
 assert.match(uat, /verify_live_read_models\(owner_page, business_date\)/);
+assert.match(uat, /ZoneInfo\("Asia\\/Kolkata"\)/);
 assert.match(uat, /CV_STAGING_UAT_CONFIRM_WRITES/);
 assert.match(uat, /cancelVoucher/);
 assert.match(workflow, /id: deployment_preflight/);
