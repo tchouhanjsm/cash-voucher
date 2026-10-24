@@ -1,16 +1,16 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 24 October 2026  
+**Updated:** 25 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `e90ef5dfb005745136c0522d983fd42c38db38ff` (PR #207 merged).  
+**Verified integration baseline:** `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208 merged).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 B6 — audit-health failover, truthful monitoring states and pagination contract. Feature branch: `client/p0-audit-health-fallback-20261024`. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** Autonomous delivery monitor implementation and P0 operational release gates. PR #208 is the latest merged application batch; live staging remains unverified; owner retains merge/deploy authority.
 
 ## Verified source state
 
-- PR #205, #206 and #207 are merged to `client-main`. The latest source baseline is `e90ef5dfb005745136c0522d983fd42c38db38ff`.
-- Exact-head integration checks passed after PR #207: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247679), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247678), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247717).
+- PRs #205–#208 are merged to client-main. The latest source baseline is 176da7c559d279149e2473a65a71fd03d3e53018.
+- Exact-head integration checks passed after PR #208: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100024), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100025), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100077).
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
 - The owner-only `auditLog` endpoint exposes audit monitoring. The previous monitor relied only on Script Properties, so a primary marker write failure could hide an AuditLog append failure. The B6 branch adds a Settings-sheet durable fallback and a transient cache fallback, distinguishes unavailable monitoring, and keeps health data on empty cursor pages.
@@ -43,3 +43,19 @@ This improves common failure cases; it does not reconstruct missing AuditLog eve
 - Required CI/Quality, Browser E2E and Full Flight Test must pass on the exact final PR head. Fix failures; do not bypass checks.
 - Keep Git merge, Clasp upload, Web App version update, ZIP publication, live UAT, migrations and production release as separate gates.
 - If target identity, schema, backup, security headers, audit monitoring or restore fails, stop and preserve evidence. No production operation is authorized by this handoff.
+
+
+## Autonomous delivery workflow — current implementation
+
+- The ChatGPT delivery monitor is configured hourly. The requested 45-minute cadence is unsupported; do not represent it as a 45-minute job.
+- The repository monitor is event/manual triggered (push to client-main, PR targeting client-main with read-only observation, and manual dispatch). It deliberately has no cron trigger because GitHub scheduled workflows execute from the repository default branch, which remains main and is designated frozen/read-only.
+- The monitor records exact SHA, phase, required CI/E2E/Flight status, PR review/check status, operational staging/ZIP state, release gates, timeout recovery attempts and bounded run history in a dedicated GitHub checkpoint issue and workflow artifact.
+- It may retry only timed-out source-validation workflows with exact-head validation and a three-attempt ceiling. It does not retry ordinary test failures, cancellations, staging UAT or ZIP publication. PR-event jobs are read-only.
+- No automated PR merge, Clasp push, Apps Script deployment, Google resource mutation, migration, live UAT write, cPanel upload or production change is permitted. The repository owner remains responsible for approval, merge and release authorization.
+- GitHub branch protection/rulesets and the mismatch between default branch main and integration branch client-main remain owner/admin settings to verify. The monitor does not assume source workflows enforce branch protection.
+
+## Deep-dive defects reserved for a separate targeted fix
+
+1. backend/90-support.gs — supportRateAllowed_ uses CacheService get-then-put as a counter. Concurrent requests can observe the same count and exceed intended 5-per-user/hour or 20-per-workspace/6-hour thresholds. Use a lock/atomic strategy or a storage primitive with suitable consistency; add concurrency/failure-path regression tests.
+2. Audit health — B6 readAuditPropertiesMarker_ normalizes malformed counters and missing timestamps/kinds into a degraded marker. Reconcile this behavior with the documented requirement that malformed marker state report MONITORING_UNAVAILABLE; add fault-injection tests before changing the contract.
+3. Operational launch gates remain P0: confirm staging Script/deployment/Sheet/folders, backend/frontend staging release, guarded UAT, actual response headers, schema migration only after review, restore into a separate recovery target, and real-device/offline/print/accessibility acceptance.
