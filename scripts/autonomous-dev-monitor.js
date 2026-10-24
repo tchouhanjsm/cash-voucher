@@ -161,11 +161,11 @@ function latestRun(runs, workflowId, scope, headSha, prNumber = null) {
       (prNumber === null || run.prNumber === prNumber),
   );
   candidates.sort((a, b) => {
-    const attempts = (Number(b.runAttempt) || 1) - (Number(a.runAttempt) || 1);
-    if (attempts) return attempts;
     const at = asDate(a.updatedAt || a.createdAt);
     const bt = asDate(b.updatedAt || b.createdAt);
-    return (bt ? bt.getTime() : 0) - (at ? at.getTime() : 0);
+    const byTime = (bt ? bt.getTime() : 0) - (at ? at.getTime() : 0);
+    if (byTime) return byTime;
+    return (Number(b.runAttempt) || 1) - (Number(a.runAttempt) || 1);
   });
   return candidates[0] || null;
 }
@@ -227,21 +227,26 @@ function parseReleaseGates(text) {
 }
 function collectRecoveryCandidates(runs, _openPullRequests, now) {
   const candidates = [];
-  const seen = new Set();
-  for (const run of runs || []) {
-    const policy = WORKFLOW_POLICIES.find((item) => item.id === run.workflowId);
-    if (
-      !policy ||
-      !policy.retryTimeout ||
-      !SOURCE_IDS.has(run.workflowId) ||
-      run.scope !== 'client-main'
-    )
-      continue;
-    if (classifyRun(run, policy, now).code !== 'TIMEOUT_RETRY_ELIGIBLE') continue;
-    if (!run.expectedCurrentHeadSha || run.headSha !== run.expectedCurrentHeadSha) continue;
+  const retryablePolicies = WORKFLOW_POLICIES.filter(
+    (policy) => policy.retryTimeout && SOURCE_IDS.has(policy.id),
+  );
+  for (const policy of retryablePolicies) {
+    const exactHeadRuns = (runs || []).filter(
+      (run) =>
+        run.workflowId === policy.id &&
+        run.scope === 'client-main' &&
+        run.expectedCurrentHeadSha &&
+        run.headSha === run.expectedCurrentHeadSha,
+    );
+    if (!exactHeadRuns.length) continue;
+    const run = latestRun(
+      exactHeadRuns,
+      policy.id,
+      'client-main',
+      exactHeadRuns[0].headSha,
+    );
+    if (!run || classifyRun(run, policy, now).code !== 'TIMEOUT_RETRY_ELIGIBLE') continue;
     if (!Number.isSafeInteger(Number(run.runId)) || Number(run.runId) <= 0) continue;
-    if (seen.has(String(run.runId))) continue;
-    seen.add(String(run.runId));
     candidates.push({
       workflowId: run.workflowId,
       workflowName: policy.name,
@@ -253,10 +258,9 @@ function collectRecoveryCandidates(runs, _openPullRequests, now) {
       headSha: run.headSha,
       scope: run.scope,
       htmlUrl: run.htmlUrl || '',
-      reason: 'Timed-out source validation; only failed jobs may be rerun.',
+      reason: 'Latest exact-head source-validation run timed out; only failed jobs may be rerun.',
     });
   }
-  candidates.sort((a, b) => (Number(a.runNumber) || 0) - (Number(b.runNumber) || 0));
   return candidates.slice(0, MAX_RECOVERIES_PER_RUN);
 }
 function buildMonitorReport(snapshot, now = new Date()) {
@@ -278,7 +282,14 @@ function buildMonitorReport(snapshot, now = new Date()) {
       ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
     );
     const pending = checks.some((item) =>
-      ['NOT_RUN', 'PENDING', 'RUNNING', 'TIMEOUT_RETRY_ELIGIBLE'].includes(item.code),
+      [
+        'NOT_RUN',
+        'PENDING',
+        'RUNNING',
+        'CANCELLED',
+        'SKIPPED',
+        'TIMEOUT_RETRY_ELIGIBLE',
+      ].includes(item.code),
     );
     return {
       number: pr.number,
@@ -324,7 +335,9 @@ function buildMonitorReport(snapshot, now = new Date()) {
     ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
   );
   const incompleteSource = sourceChecks.filter((item) =>
-    ['NOT_RUN', 'PENDING', 'RUNNING', 'TIMEOUT_RETRY_ELIGIBLE'].includes(item.code),
+    ['NOT_RUN', 'PENDING', 'RUNNING', 'CANCELLED', 'SKIPPED', 'TIMEOUT_RETRY_ELIGIBLE'].includes(
+      item.code,
+    ),
   );
   const blockedPrs = openPullRequests.filter((item) => item.state === 'BLOCKED');
   const waitingPrs = openPullRequests.filter((item) => item.state === 'WAITING_FOR_CHECKS');
