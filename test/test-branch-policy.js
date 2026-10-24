@@ -25,6 +25,11 @@ assert.match(browser, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(browser, /pull_request:\n\s+branches:\s*\[client-main\]/);
 assert.match(flight, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(flight, /pull_request:\n\s+branches:\s*\[client-main\]/);
+assert.match(
+  flight,
+  /flight:\n\s+if: github\.event_name == 'pull_request' \|\| \(github\.event_name == 'push' && github\.ref_name == 'client-main'\)/,
+  'the chained Full Flight gate must run on PR heads and client-main pushes, not superseded feature-branch pushes',
+);
 for (const workflow of [ci, browser, flight]) {
   assert.ok(
     workflow.includes('github.event.pull_request.head.ref || github.ref_name') &&
