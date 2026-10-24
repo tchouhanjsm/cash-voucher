@@ -629,17 +629,49 @@ function addReceipt_(user, req) {
   if (have.length >= CFG.MAX_RECEIPTS)
     throw err_('Maximum ' + CFG.MAX_RECEIPTS + ' receipts per voucher.');
   const fileId = saveReceipt_(req.receipt, o.VoucherNo, have.length);
-  have.push(fileId);
+  const nextReceiptIds = have.concat(fileId);
+  const updatedAt = nowIso_();
+  let savedVoucher = Object.assign({}, o, {
+    Receipts: nextReceiptIds.join(','),
+    UpdatedBy: user.email,
+    UpdatedAt: updatedAt,
+  });
+
   try {
     updateRow_('Vouchers', o._row, {
-      Receipts: have.join(','),
+      Receipts: nextReceiptIds.join(','),
       UpdatedBy: user.email,
-      UpdatedAt: nowIso_(),
+      UpdatedAt: updatedAt,
     });
-  } catch (e) {
-    trashFiles_([fileId]);
-    throw e;
+  } catch (writeError) {
+    // A Sheets write can commit and then report an acknowledgement error. Only trash the
+    // new Drive file when a successful reread confirms that the voucher does not reference it.
+    let rowAfterWrite;
+    try {
+      rowAfterWrite = findVoucher_(o.VoucherID);
+    } catch (readError) {
+      console.error(
+        'Could not determine whether the receipt attachment was committed; the receipt file was preserved.',
+        readError,
+      );
+      throw writeError;
+    }
+
+    const persistedReceiptIds = String(rowAfterWrite.Receipts || '')
+      .split(',')
+      .filter(Boolean);
+    if (!persistedReceiptIds.includes(fileId)) {
+      trashFiles_([fileId]);
+      throw writeError;
+    }
+
+    // The ledger confirms success, so return success instead of encouraging a duplicate retry.
+    savedVoucher = rowAfterWrite;
   }
+
+  const persistedReceiptCount = String(savedVoucher.Receipts || '')
+    .split(',')
+    .filter(Boolean).length;
   auditEvent_(
     user,
     'RECEIPT_ADD',
@@ -648,10 +680,10 @@ function addReceipt_(user, req) {
     'voucher',
     o.VoucherID,
     '',
-    [{ field: 'receiptCount', before: have.length - 1, after: have.length }],
+    [{ field: 'receiptCount', before: have.length, after: persistedReceiptCount }],
     'Receipt image attached',
   );
-  return vOut_(Object.assign({}, o, { Receipts: have.join(',') }));
+  return vOut_(savedVoucher);
 }
 function getReceipt_(user, req) {
   const o = findVoucher_(req.id);
