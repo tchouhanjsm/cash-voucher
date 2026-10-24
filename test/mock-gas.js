@@ -25,6 +25,7 @@ function create(options = {}) {
       failNextAuditMarkerWrite: false,
       failNextMail: false,
       failNextSettingWrite: false,
+      failNextVoucherWriteBeforeCommit: false,
       failNextVoucherWriteAfterCommit: false,
     },
     mailLog = [],
@@ -51,6 +52,10 @@ function create(options = {}) {
         if (name === 'AuditLog' && faults.failNextAuditWrite) {
           faults.failNextAuditWrite = false;
           throw new Error('Simulated audit log write failure');
+        }
+        if (name === 'Vouchers' && faults.failNextVoucherWriteBeforeCommit) {
+          faults.failNextVoucherWriteBeforeCommit = false;
+          throw new Error('Simulated voucher write failure before commit');
         }
         v.forEach((row, i) =>
           row.forEach((val, j) => {
@@ -256,6 +261,9 @@ function create(options = {}) {
     },
     failNextSettingWrite: () => {
       faults.failNextSettingWrite = true;
+    },
+    failNextVoucherWriteBeforeCommit: () => {
+      faults.failNextVoucherWriteBeforeCommit = true;
     },
     failNextVoucherWriteAfterCommit: () => {
       faults.failNextVoucherWriteAfterCommit = true;
