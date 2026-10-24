@@ -2146,6 +2146,8 @@ ok(
 );
 const malformedCloseAttempt = as(T, 'createCashClose', {
   date: '2020-01-07',
+  openingCash: '100',
+  openingReason: 'Test opening amount for malformed ledger',
   countedCash: '100',
   requestId: 'close-malformed-ledger-regression',
 });
