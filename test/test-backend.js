@@ -2859,6 +2859,39 @@ for (const malformedMarker of [
   }
 }
 
+/* A malformed split Script Properties marker must not be treated as a valid degraded marker. */
+for (const malformedPropertiesMarker of [
+  {
+    count: '2',
+    lastFailureAt: 'not-a-timestamp',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    count: '2',
+    lastFailureAt: '2026-10-24T19:22:00.000Z',
+    lastFailureKind: '',
+  },
+]) {
+  auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'DEGRADED';
+  auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = malformedPropertiesMarker.count;
+  auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT = malformedPropertiesMarker.lastFailureAt;
+  auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND = malformedPropertiesMarker.lastFailureKind;
+  const malformedPropertiesMetadataHealth = auditMarkerOutageMock.call('auditLog', {
+    token: markerPinChange.data.token,
+  });
+  assert(
+    malformedPropertiesMetadataHealth.ok &&
+      malformedPropertiesMetadataHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+      malformedPropertiesMetadataHealth.data.auditHealth.failureCount === 0 &&
+      malformedPropertiesMetadataHealth.data.auditHealth.markerDurability === 'UNKNOWN',
+    'malformed Script Properties marker metadata is not reported as a valid failure marker',
+  );
+  delete auditMarkerOutageMock.props.AUDIT_WRITE_STATUS;
+  delete auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT;
+  delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT;
+  delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND;
+}
+
 /* A valid marker must not hide a malformed or unavailable companion store. */
 auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'DEGRADED';
 auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = '2';
