@@ -3,15 +3,17 @@
 **Updated:** 25 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208 merged; exact-head source checks passed).  
+**Verified integration baseline:** `3ad2c8f955b36de00b208ee4283682a1a34805eb` (PR #211 merged; exact-head source checks passed).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 release readiness. PR #208 delivered the P0 B6 audit-health fallback; the current review branch `client/p0-audit-monitoring-integrity-20261025` hardens mixed valid/corrupt marker-store states. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness and branch reconciliation. PR #211 merged support-report rate-limit atomicity; PR #209 remains open for mixed audit-marker integrity, and PR #210 remains open for the delivery monitor. Live staging remains unverified; owner retains merge/deploy authority.
 
 ## Verified source state
 
-- PRs #205–#208 are merged to `client-main`. The latest source baseline is `176da7c559d279149e2473a65a71fd03d3e53018`.
-- Exact-head integration checks passed after PR #208: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100024), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100025), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100077).
+- PRs #205–#208 and #211 are merged to `client-main`. The current source baseline is `3ad2c8f955b36de00b208ee4283682a1a34805eb`; PRs #209 and #210 remain open and need base reconciliation before merge.
+- Exact-head checks passed on current integration SHA `3ad2c8f955b36de00b208ee4283682a1a34805eb`: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102). Historical PR #208 checks remain recorded in the audit trail.
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
+- PR #211 merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; its PR-head CI [#40162435222](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435222), Browser E2E [#40162435213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435213), and Full Flight Test [#40162435233](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435233) passed on `f018a958fa86c7ffe4ef8baa799ddd62c1bfb0d2`; the merge SHA then passed the current integration checks listed above.
+- PR #209's prior head `ac732798633f6df655400c5aaa3444cea97558f9` passed its three required checks, but this baseline-reconciliation commit creates a new head and requires fresh exact-head validation. PR #210's prior head `0f57d199d2b9eccc009b0c5c21f796f60c9fe662` also passed its checks, but its branch is diverged/dirty against the new base and must be reconciled before merge.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
 - The owner-only `auditLog` endpoint exposes audit monitoring. PR #208 added a Settings-sheet durable fallback, a six-hour transient cache fallback, marker durability metadata, and health data on empty cursor pages. The current follow-up makes any unreadable or malformed marker source report `MONITORING_UNAVAILABLE` even when another store retains a valid marker, while preserving known failure details in the owner UI and export.
 - The temporary `GHSA-mrhx-c7xc-m3w5` Zod exception from PR #206 remains a separate risk, due for reassessment by 9 November 2026. Do not force a major-version override of Clasp's declared Zod dependency.

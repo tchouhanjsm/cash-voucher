@@ -42,11 +42,12 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*176da7c559d279149e2473a65a71fd03d3e53018/,
+  /Authoritative integration baseline.*client-main.*3ad2c8f955b36de00b208ee4283682a1a34805eb/,
 );
 assert.match(staging, /PR #208/);
-assert.match(handoff, /Verified integration baseline.*176da7c559d279149e2473a65a71fd03d3e53018/);
+assert.match(handoff, /Verified integration baseline.*3ad2c8f955b36de00b208ee4283682a1a34805eb/);
 assert.match(handoff, /PR #208/);
+assert.match(handoff, /PR #211 merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`/);
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(staging, /P0 B5/);
 assert.match(staging, /P0 B6/);
@@ -76,7 +77,7 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /176da7c559d279149e2473a65a71fd03d3e53018/);
+assert.match(executionPlan, /3ad2c8f955b36de00b208ee4283682a1a34805eb/);
 assert.match(executionPlan, /PR #208/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
 assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
