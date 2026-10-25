@@ -2821,6 +2821,134 @@ if (invalidFallbackIndex >= 0) {
   auditMarkerOutageMock.sheets.Settings.rows.splice(invalidFallbackIndex, 1);
 }
 
+/* A syntactically valid JSON marker with malformed metadata is still unavailable. */
+for (const malformedMarker of [
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 1,
+    lastFailureAt: 'not-a-timestamp',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 1,
+    lastFailureAt: '2026-10-24T19:22:00.000Z',
+    lastFailureKind: '',
+  },
+]) {
+  auditMarkerOutageMock.sheets.Settings.rows.push([
+    'auditWriteFailureMarker',
+    JSON.stringify(malformedMarker),
+  ]);
+  const malformedMetadataHealth = auditMarkerOutageMock.call('auditLog', {
+    token: markerPinChange.data.token,
+  });
+  assert(
+    malformedMetadataHealth.ok &&
+      malformedMetadataHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+      malformedMetadataHealth.data.auditHealth.markerDurability === 'UNKNOWN',
+    'unparseable timestamps and empty failure kinds make a stored Settings marker unavailable',
+  );
+  const malformedMetadataIndex = auditMarkerOutageMock.sheets.Settings.rows.findIndex(
+    (row) => row[0] === 'auditWriteFailureMarker',
+  );
+  if (malformedMetadataIndex >= 0) {
+    auditMarkerOutageMock.sheets.Settings.rows.splice(malformedMetadataIndex, 1);
+  }
+}
+
+/* A malformed split Script Properties marker must not be treated as a valid degraded marker. */
+for (const malformedPropertiesMarker of [
+  {
+    count: '2',
+    lastFailureAt: 'not-a-timestamp',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    count: '2',
+    lastFailureAt: '2026-10-24T19:22:00.000Z',
+    lastFailureKind: '',
+  },
+]) {
+  const { count, lastFailureAt, lastFailureKind } = malformedPropertiesMarker;
+  auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'DEGRADED';
+  auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = count;
+  auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT = lastFailureAt;
+  auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND = lastFailureKind;
+  const malformedPropertiesMetadataHealth = auditMarkerOutageMock.call('auditLog', {
+    token: markerPinChange.data.token,
+  });
+  assert(
+    malformedPropertiesMetadataHealth.ok &&
+      malformedPropertiesMetadataHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+      malformedPropertiesMetadataHealth.data.auditHealth.failureCount === 0 &&
+      malformedPropertiesMetadataHealth.data.auditHealth.markerDurability === 'UNKNOWN',
+    'malformed Script Properties marker metadata is not reported as a valid failure marker',
+  );
+  delete auditMarkerOutageMock.props.AUDIT_WRITE_STATUS;
+  delete auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT;
+  delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT;
+  delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND;
+}
+
+/* A valid marker must not hide a malformed or unavailable companion store. */
+auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'DEGRADED';
+auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = '2';
+auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT = '2026-10-24T19:20:00.000Z';
+auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND = 'EVENT_BATCH';
+auditMarkerOutageMock.sheets.Settings.rows.push(['auditWriteFailureMarker', '{not-json']);
+const mixedCorruptFallbackHealth = auditMarkerOutageMock.call('auditLog', {
+  token: markerPinChange.data.token,
+});
+assert(
+  mixedCorruptFallbackHealth.ok &&
+    mixedCorruptFallbackHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+    mixedCorruptFallbackHealth.data.auditHealth.failureCount === 2 &&
+    mixedCorruptFallbackHealth.data.auditHealth.markerDurability === 'SCRIPT_PROPERTIES',
+  'a valid Script Properties marker does not mask a malformed Settings fallback',
+);
+delete auditMarkerOutageMock.props.AUDIT_WRITE_STATUS;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT;
+delete auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND;
+const mixedCorruptFallbackIndex = auditMarkerOutageMock.sheets.Settings.rows.findIndex(
+  (row) => row[0] === 'auditWriteFailureMarker',
+);
+if (mixedCorruptFallbackIndex >= 0) {
+  auditMarkerOutageMock.sheets.Settings.rows.splice(mixedCorruptFallbackIndex, 1);
+}
+
+auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'INVALID';
+auditMarkerOutageMock.sheets.Settings.rows.push([
+  'auditWriteFailureMarker',
+  JSON.stringify({
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 3,
+    lastFailureAt: '2026-10-24T19:21:00.000Z',
+    lastFailureKind: 'SINGLE_EVENT',
+  }),
+]);
+const mixedCorruptPropertiesHealth = auditMarkerOutageMock.call('auditLog', {
+  token: markerPinChange.data.token,
+});
+assert(
+  mixedCorruptPropertiesHealth.ok &&
+    mixedCorruptPropertiesHealth.data.auditHealth?.status === 'MONITORING_UNAVAILABLE' &&
+    mixedCorruptPropertiesHealth.data.auditHealth.failureCount === 3 &&
+    mixedCorruptPropertiesHealth.data.auditHealth.markerDurability === 'SETTINGS_SHEET',
+  'a valid Settings fallback does not mask a malformed Script Properties marker',
+);
+delete auditMarkerOutageMock.props.AUDIT_WRITE_STATUS;
+const mixedCorruptPropertiesIndex = auditMarkerOutageMock.sheets.Settings.rows.findIndex(
+  (row) => row[0] === 'auditWriteFailureMarker',
+);
+if (mixedCorruptPropertiesIndex >= 0) {
+  auditMarkerOutageMock.sheets.Settings.rows.splice(mixedCorruptPropertiesIndex, 1);
+}
+
 /* An outage of every marker store remains an explicitly tested residual limitation. */
 auditMarkerOutageMock.failNextAuditWrite();
 auditMarkerOutageMock.failNextAuditMarkerWrite();

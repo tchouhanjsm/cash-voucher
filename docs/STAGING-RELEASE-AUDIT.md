@@ -1,21 +1,21 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 24 October 2026  
-**Authoritative integration baseline:** client-main `e90ef5dfb005745136c0522d983fd42c38db38ff`, following PR #207.  
+**Audit date:** 25 October 2026  
+**Authoritative integration baseline:** client-main `3ad2c8f955b36de00b208ee4283682a1a34805eb`, following merged PR #211.  
 **Legacy branch:** `main` (read-only by engineering policy; the actual ahead/behind relationship must be rechecked before any branch operation).  
 **Scope:** source and release-workflow audit, not live deployment, restore or customer acceptance.
 
 ## Executive status
 
-PR #207 is the latest merged source baseline on client-main at `e90ef5dfb005745136c0522d983fd42c38db38ff`. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed. These checks do not prove live staging, recovery or customer acceptance.
+PR #211 is the latest merged source baseline on client-main at `3ad2c8f955b36de00b208ee4283682a1a34805eb`. Its exact integration SHA passed [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102). These checks do not prove live staging, recovery or customer acceptance.
 
-The branch policy names client-main as the only integration branch and main as legacy/read-only. Repository metadata still listed main as the default branch. Accessible branch-protection data did not prove active required-check/ruleset enforcement. Owner/admin must verify actual rulesets and default settings; this source PR must not change repository settings or reconcile divergent long-lived branches.
+The branch policy names client-main as the only integration branch and main as legacy/read-only. Current GitHub metadata reports `client-main` as unprotected. The active `cash-voucher-rule` ruleset targets `~DEFAULT_BRANCH` (currently `main`), requires only `quality`, and requires zero approving reviews. Owner/admin must correct and verify ruleset coverage for `client-main`; this source PR does not change repository settings or blindly reconcile long-lived branches.
 
 Dedicated staging resources, protected staging Environment, a real deployed staging frontend, successful live UAT, support-email delivery, real backup/restore, physical-device acceptance and customer acceptance are not evidenced as complete. Verify that the private-repository host integration still has access. The product remains single-property, not multi-tenant.
 
 ## Active release sequence
 
-Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #207 is the latest merged source baseline; live staging, isolated restore and customer acceptance remain unverified.
+Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #211 is the latest merged source baseline. PR #209 now includes the current base and awaits final exact-head status confirmation and owner review; PR #210 still needs base reconciliation. Live staging, isolated restore and customer acceptance remain unverified.
 
 **Evidence still required:** isolated staging identity and host access; inspected pre-migration backup; schema validation and only required staging migrations; backend-first deploy and staging-configured frontend; exact-run guarded UAT; live role, receipt, payment-method, offline and print checks; and restore into a separate recovery target. The hotel pilot remains blocked until those gates pass. Production is excluded.
 
@@ -81,11 +81,11 @@ These safeguards are verified with unit/mock fault-injection tests on the B5 bra
 
 ## P0 B6 — audit-health fallback and response-contract correction
 
-The source review found two audit-monitoring weaknesses: the terminal/empty cursor branch of `auditLog` omitted `auditHealth`, and write-failure monitoring depended only on Script Properties. If the AuditLog append and Script Properties marker write failed together, the owner could see `NO_KNOWN_FAILURE` despite a missing event.
+PR #208 merged the B6 source change at `176da7c559d279149e2473a65a71fd03d3e53018`. It adds a Settings-sheet fallback when Script Properties cannot persist an audit-write failure marker, then a labeled six-hour CacheService marker when both durable paths fail. Owner-only `auditLog` responses expose marker source/durability and keep `auditHealth` consistent on populated and empty cursor pages.
 
-The B6 branch writes a versioned failure marker to Script Properties and a dedicated `Settings` row. If both durable paths fail, it attempts a CacheService marker with a six-hour TTL. The owner API reports marker source, labels a cache-only signal as transient, and uses `MONITORING_UNAVAILABLE` when marker stores cannot be read or a marker is malformed. Empty cursor pages return the same `auditHealth` field as populated pages. Health metadata remains owner-only and is not included in public bootstrap settings.
+The current review branch `client/p0-audit-monitoring-integrity-20261025` addresses a mixed-source gap found in the follow-up audit: if one marker is valid while another marker source is unreadable or malformed, the response must still be `MONITORING_UNAVAILABLE`, not merely `DEGRADED`. Any known marker metadata remains visible in the UI and health export. Tests cover both directions of mixed valid/corrupt markers and preserve the all-stores-write-failed residual case.
 
-If AuditLog, Script Properties, Settings and CacheService all fail to persist a marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. This edge case is covered by a fault-injection regression and remains an operational limitation, not a claimed fix.
+If AuditLog, Script Properties, Settings and CacheService all fail to persist a marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. This is an operational limitation, not a claimed fix.
 
 ## Priority 0 — required before staging is verified
 
@@ -128,6 +128,6 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 
 ## Release decision
 
-**Source baseline:** PR #207 is merged; the B6 audit-monitoring improvement is a source-only branch pending exact-head checks and owner review. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
+**Source baseline:** PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; exact integration CI/Quality, Browser E2E and Full Flight Test passed. PR #209's branch now includes the current base and its previous exact-head checks passed, but the latest documentation/status commit must be revalidated before owner review. PR #210 remains open and diverged/dirty against the new base, requiring reconciliation plus fresh exact-head checks. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.

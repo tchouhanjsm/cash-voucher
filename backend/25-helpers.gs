@@ -361,17 +361,23 @@ function parseAuditFailureMarker_(raw, source) {
     marker.version !== 1 ||
     marker.status !== 'DEGRADED' ||
     !Number.isSafeInteger(Number(marker.failureCount)) ||
-    Number(marker.failureCount) < 1 ||
-    typeof marker.lastFailureAt !== 'string' ||
-    typeof marker.lastFailureKind !== 'string'
+    Number(marker.failureCount) < 1
   ) {
     return null;
   }
+
+  const lastFailureAt = typeof marker.lastFailureAt === 'string' ? marker.lastFailureAt.trim() : '';
+  const lastFailureKind =
+    typeof marker.lastFailureKind === 'string' ? marker.lastFailureKind.trim() : '';
+  if (!lastFailureAt || !Number.isFinite(Date.parse(lastFailureAt)) || !lastFailureKind) {
+    return null;
+  }
+
   return {
     source: source,
     failureCount: Number(marker.failureCount),
-    lastFailureAt: marker.lastFailureAt,
-    lastFailureKind: marker.lastFailureKind,
+    lastFailureAt: lastFailureAt,
+    lastFailureKind: lastFailureKind,
   };
 }
 
@@ -382,20 +388,37 @@ function readAuditPropertiesMarker_() {
     const rawCount = properties.getProperty('AUDIT_WRITE_FAILURE_COUNT');
     const rawAt = properties.getProperty('AUDIT_WRITE_LAST_FAILURE_AT');
     const rawKind = properties.getProperty('AUDIT_WRITE_LAST_FAILURE_KIND');
+    const hasMarkerFields = [rawCount, rawAt, rawKind].some(function (value) {
+      return value !== null && value !== '';
+    });
+
     if (status !== 'DEGRADED') {
       return {
-        available: !status && !rawCount && !rawAt && !rawKind,
+        available: !status && !hasMarkerFields,
         marker: null,
       };
     }
-    const parsedCount = Number(rawCount || 0);
+
+    const parsedCount = Number(rawCount);
+    const lastFailureAt = String(rawAt || '').trim();
+    const lastFailureKind = String(rawKind || '').trim();
+    if (
+      !Number.isSafeInteger(parsedCount) ||
+      parsedCount < 1 ||
+      !lastFailureAt ||
+      !Number.isFinite(Date.parse(lastFailureAt)) ||
+      !lastFailureKind
+    ) {
+      return { available: false, marker: null };
+    }
+
     return {
       available: true,
       marker: {
         source: 'SCRIPT_PROPERTIES',
-        failureCount: Number.isSafeInteger(parsedCount) && parsedCount > 0 ? parsedCount : 1,
-        lastFailureAt: String(rawAt || ''),
-        lastFailureKind: String(rawKind || 'UNKNOWN'),
+        failureCount: parsedCount,
+        lastFailureAt: lastFailureAt,
+        lastFailureKind: lastFailureKind,
       },
     };
   } catch {
@@ -490,11 +513,13 @@ function auditWriteHealth_() {
   const settingsState = readAuditSettingsMarker_();
   const cacheState = readAuditCacheMarker_();
   const markers = [propertyState.marker, settingsState.marker, cacheState.marker].filter(Boolean);
-  const status = markers.length
-    ? 'DEGRADED'
-    : propertyState.available && settingsState.available && cacheState.available
-      ? 'NO_KNOWN_FAILURE'
-      : 'MONITORING_UNAVAILABLE';
+  const allMarkerSourcesAvailable =
+    propertyState.available && settingsState.available && cacheState.available;
+  const status = !allMarkerSourcesAvailable
+    ? 'MONITORING_UNAVAILABLE'
+    : markers.length
+      ? 'DEGRADED'
+      : 'NO_KNOWN_FAILURE';
   const durability =
     propertyState.marker && settingsState.marker
       ? 'SCRIPT_PROPERTIES_AND_SETTINGS'

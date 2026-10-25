@@ -979,8 +979,26 @@ export function createAdministration({ api, getNavigation, signOut }) {
       message.className = 'error form-error';
       message.setAttribute('role', 'alert');
       message.setAttribute('aria-live', 'assertive');
+      let knownMarkerNote = '';
+      if (Number.isSafeInteger(auditHealth.failureCount) && auditHealth.failureCount > 0) {
+        const when = auditHealth.lastFailureAt || 'time unavailable';
+        const kind = auditHealth.lastFailureKind
+          ? ' (' + auditHealth.lastFailureKind.toLowerCase().replace(/_/g, ' ') + ')'
+          : '';
+        const source = (auditHealth.markerDurability || 'UNKNOWN').toLowerCase().replace(/_/g, ' ');
+        knownMarkerNote =
+          ' A known failure marker remains visible: ' +
+          auditHealth.failureCount +
+          ' write failure(s) recorded. Last failure: ' +
+          when +
+          kind +
+          '. Marker source: ' +
+          source +
+          '.';
+      }
       message.textContent =
-        'Audit monitoring could not verify all failure-marker stores. Do not interpret this state as a clean audit history; retry the audit read and reconcile recent financial actions.';
+        'Audit monitoring could not verify all failure-marker stores. Do not interpret this state as a clean audit history; retry the audit read and reconcile recent financial actions.' +
+        knownMarkerNote;
       panel.appendChild(message);
       return;
     }
@@ -1091,6 +1109,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
           ? auditHealth.status
           : 'UNAVAILABLE';
     const monitoringKnown = ['NO_KNOWN_FAILURE', 'DEGRADED'].includes(monitoringStatus);
+    const knownMarkerDuringOutage =
+      monitoringStatus === 'MONITORING_UNAVAILABLE' &&
+      auditHealth &&
+      Number.isSafeInteger(auditHealth.failureCount) &&
+      auditHealth.failureCount > 0;
+    const monitoringDetailsAvailable = monitoringKnown || Boolean(knownMarkerDuringOutage);
     const auditPageUnavailable = auditRequestFailed || auditResponseInvalid;
     const snapshot = {
       schemaVersion: 1,
@@ -1098,10 +1122,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
       capturedAt: new Date().toISOString(),
       monitoring: {
         status: monitoringStatus,
-        failureCount: monitoringKnown ? auditHealth.failureCount : null,
-        lastFailureAt: monitoringKnown ? auditHealth.lastFailureAt || null : null,
-        lastFailureKind: monitoringKnown ? auditHealth.lastFailureKind || null : null,
-        markerDurability: monitoringKnown ? auditHealth.markerDurability || null : null,
+        failureCount: monitoringDetailsAvailable ? auditHealth.failureCount : null,
+        lastFailureAt: monitoringDetailsAvailable ? auditHealth.lastFailureAt || null : null,
+        lastFailureKind: monitoringDetailsAvailable ? auditHealth.lastFailureKind || null : null,
+        markerDurability: monitoringDetailsAvailable ? auditHealth.markerDurability || null : null,
       },
       coverage: {
         loadedRowCount: auditRows.length,
