@@ -67,8 +67,8 @@ assert.doesNotMatch(
   /it is still unmerged; the issue remains present in the current `client-main` baseline/,
 );
 assert.match(handoff, /allow_auto_merge=true/);
-assert.match(handoff, /fb99228e9191ce92baf7b67ba91ccceace971d56/);
-assert.match(handoff, /CI \/ Quality #40215001346/);
+assert.match(handoff, /df9d2a01adae93e305c530eae1635079137adcd6/);
+assert.match(handoff, /CI \/ Quality #40217235001/);
 assert.match(staging, /P0 B5/);
 assert.match(staging, /P0 B6/);
 assert.match(staging, /Settings-sheet fallback/);
