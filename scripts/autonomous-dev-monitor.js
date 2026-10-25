@@ -202,6 +202,40 @@ function checkView(policy, run, now) {
     failedJobs: run && Array.isArray(run.failedJobs) ? run.failedJobs : [],
   };
 }
+function deriveReviewState(reviews, headSha) {
+  const latestByUser = new Map();
+  for (const review of reviews || []) {
+    const state = String(review.state || '').toUpperCase();
+    if (
+      !review.user ||
+      !review.user.login ||
+      !review.submitted_at ||
+      !['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(state)
+    ) {
+      continue;
+    }
+    const prior = latestByUser.get(review.user.login);
+    if (!prior || String(review.submitted_at) > String(prior.submitted_at)) {
+      latestByUser.set(review.user.login, review);
+    }
+  }
+  const latest = Array.from(latestByUser.values()).filter(
+    (review) => String(review.state || '').toUpperCase() !== 'DISMISSED',
+  );
+  if (latest.some((review) => String(review.state || '').toUpperCase() === 'CHANGES_REQUESTED')) {
+    return 'CHANGES_REQUESTED';
+  }
+  if (
+    latest.some(
+      (review) =>
+        String(review.state || '').toUpperCase() === 'APPROVED' &&
+        review.commit_id === headSha,
+    )
+  ) {
+    return 'APPROVED';
+  }
+  return 'REVIEW_REQUIRED';
+}
 function extractPhase(text) {
   const match = String(text || '').match(/^\*\*Current phase:\*\*\s*(.+)$/im);
   return match ? match[1].trim().slice(0, 300) : 'Not recorded in docs/HANDOFF.md';
@@ -316,11 +350,13 @@ function buildMonitorReport(snapshot, now = new Date()) {
       checks,
       state: failed
         ? 'BLOCKED'
-        : pending
-          ? 'WAITING_FOR_CHECKS'
-          : checks.every((item) => item.code === 'PASS')
-            ? 'CHECKS_GREEN_REVIEW_REQUIRED'
-            : 'NEEDS_REVIEW',
+        : pr.reviewState === 'CHANGES_REQUESTED'
+          ? 'CHANGES_REQUESTED'
+          : pending
+            ? 'WAITING_FOR_CHECKS'
+            : checks.every((item) => item.code === 'PASS')
+              ? 'CHECKS_GREEN_REVIEW_REQUIRED'
+              : 'NEEDS_REVIEW',
     };
   });
   const operationalRuns = WORKFLOW_POLICIES.filter((item) => item.category === 'operational').map(
@@ -344,7 +380,9 @@ function buildMonitorReport(snapshot, now = new Date()) {
       item.code,
     ),
   );
-  const blockedPrs = openPullRequests.filter((item) => item.state === 'BLOCKED');
+  const blockedPrs = openPullRequests.filter(
+    (item) => item.state === 'BLOCKED' || item.state === 'CHANGES_REQUESTED',
+  );
   const waitingPrs = openPullRequests.filter((item) => item.state === 'WAITING_FOR_CHECKS');
   const failedOperational = operationalRuns.filter((item) =>
     ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
@@ -363,8 +401,14 @@ function buildMonitorReport(snapshot, now = new Date()) {
     blockers.push(
       check.name + ': ' + check.label + ' on client-main (' + (check.sha || 'SHA unknown') + ').',
     );
-  for (const pr of blockedPrs)
-    blockers.push('PR #' + pr.number + ' has a failed or stalled required source check.');
+  for (const pr of blockedPrs) {
+    if (pr.reviewState === 'CHANGES_REQUESTED') {
+      blockers.push('PR #' + pr.number + ' has changes requested; address review feedback before merge.');
+    }
+    if (pr.state === 'BLOCKED') {
+      blockers.push('PR #' + pr.number + ' has a failed or stalled required source check.');
+    }
+  }
   for (const run of failedOperational)
     blockers.push(run.name + ': last recorded staging/package run is ' + run.label + '.');
   if (baselineDrift)
@@ -400,7 +444,17 @@ function buildMonitorReport(snapshot, now = new Date()) {
     state = 'SOURCE_GREEN_OPERATIONAL_GATES_OPEN';
   const recoveryCandidates = collectRecoveryCandidates(runs, prs, now);
   const nextActions = [];
-  if (failedSource.length || blockedPrs.length || failedOperational.length)
+  const changeRequestPrs = openPullRequests.filter(
+    (item) => item.reviewState === 'CHANGES_REQUESTED',
+  );
+  if (changeRequestPrs.length) {
+    nextActions.push(
+      'Resolve requested changes on PR(s) ' +
+        changeRequestPrs.map((item) => '#' + item.number).join(', ') +
+        ' before considering merge readiness.',
+    );
+  }
+  if (failedSource.length || blockedPrs.some((item) => item.state === 'BLOCKED') || failedOperational.length)
     nextActions.push(
       'Inspect exact failed job/step and logs; distinguish code defects from infrastructure/timeouts before retrying.',
     );
@@ -806,6 +860,7 @@ module.exports = {
   buildMonitorReport,
   classifyRun,
   collectRecoveryCandidates,
+  deriveReviewState,
   formatSummary,
   parseRecoveryLedger,
   shouldRetryTimedOutRun,

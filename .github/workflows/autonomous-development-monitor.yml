@@ -45,6 +45,7 @@ jobs:
         with:
           script: |
             const fs = require('node:fs');
+            const monitor = require('./scripts/autonomous-dev-monitor.js');
             const path = process.env.MONITOR_SNAPSHOT_PATH;
             const { owner, repo } = context.repo;
             const warnings = [];
@@ -75,14 +76,7 @@ jobs:
               const requestedReviewers = (pr.requested_reviewers || []).map((reviewer) => reviewer.login).slice(0, 8);
               try {
                 const reviews = await github.paginate(github.rest.pulls.listReviews, { owner, repo, pull_number: pr.number, per_page: 100 });
-                const latestByUser = new Map();
-                for (const review of reviews) {
-                  if (!review.user || !review.submitted_at || !['APPROVED', 'CHANGES_REQUESTED', 'DISMISSED'].includes(review.state)) continue;
-                  const prior = latestByUser.get(review.user.login);
-                  if (!prior || String(review.submitted_at) > String(prior.submitted_at)) latestByUser.set(review.user.login, review);
-                }
-                const states = Array.from(latestByUser.values()).map((item) => item.state).filter((state) => state !== 'DISMISSED');
-                reviewState = states.includes('CHANGES_REQUESTED') ? 'CHANGES_REQUESTED' : states.includes('APPROVED') ? 'APPROVED' : 'REVIEW_REQUIRED';
+                reviewState = monitor.deriveReviewState(reviews, pr.head.sha);
               } catch (error) {
                 reviewState = 'REVIEW_STATUS_UNAVAILABLE';
                 warnings.push('PR #' + pr.number + ' review lookup failed: HTTP ' + (error.status || 'unknown'));

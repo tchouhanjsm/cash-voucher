@@ -10,6 +10,7 @@ const {
   buildMonitorReport,
   classifyRun,
   collectRecoveryCandidates,
+  deriveReviewState,
   parseRecoveryLedger,
   shouldRetryTimedOutRun,
   WORKFLOW_POLICIES,
@@ -73,6 +74,39 @@ function baseSnapshot() {
   };
 }
 assert.equal(classifyRun(null, WORKFLOW_POLICIES[0], NOW).code, 'NOT_RUN');
+const staleApproval = {
+  user: { login: 'reviewer' },
+  state: 'APPROVED',
+  submitted_at: '2026-10-24T23:50:00.000Z',
+  commit_id: 'c'.repeat(40),
+};
+assert.equal(
+  deriveReviewState([staleApproval], PR_SHA),
+  'REVIEW_REQUIRED',
+  'an approval on an older commit must not approve the current PR head',
+);
+assert.equal(
+  deriveReviewState([{ ...staleApproval, commit_id: PR_SHA }], PR_SHA),
+  'APPROVED',
+  'an approval on the exact current head is current review evidence',
+);
+assert.equal(
+  deriveReviewState([{ ...staleApproval, state: 'CHANGES_REQUESTED' }], PR_SHA),
+  'CHANGES_REQUESTED',
+  'unresolved change requests remain blocking across a new head',
+);
+assert.equal(
+  deriveReviewState(
+    [
+      { ...staleApproval, state: 'CHANGES_REQUESTED' },
+      { ...staleApproval, state: 'APPROVED', commit_id: PR_SHA, submitted_at: '2026-10-25T00:00:00.000Z' },
+    ],
+    PR_SHA,
+  ),
+  'APPROVED',
+  'a later current-head approval by the same reviewer supersedes their earlier change request',
+);
+
 const timeout = makeRun('ci.yml', 'client-main', MAIN_SHA, {
   conclusion: 'timed_out',
   runAttempt: 1,
@@ -251,6 +285,34 @@ assert.equal(report.sourceChecks[0].code, 'PASS');
 assert.equal(report.sourceChecks[1].code, 'FAIL');
 assert.equal(report.sourceChecks[2].code, 'PASS');
 assert.equal(report.openPullRequests[0].state, 'CHECKS_GREEN_REVIEW_REQUIRED');
+const reviewBlockedSnapshot = baseSnapshot();
+reviewBlockedSnapshot.openPullRequests = [
+  {
+    number: 209,
+    title: 'Review-blocked PR',
+    htmlUrl: 'https://github.com/tchouhanjsm/cash-voucher/pull/209',
+    draft: false,
+    baseRef: 'client-main',
+    headRef: 'client/review-blocked',
+    headSha: PR_SHA,
+    headRepoFullName: 'tchouhanjsm/cash-voucher',
+    baseRepoFullName: 'tchouhanjsm/cash-voucher',
+    mergeable: true,
+    reviewState: 'CHANGES_REQUESTED',
+    requestedReviewers: [],
+  },
+];
+reviewBlockedSnapshot.runs.push(
+  makeRun('ci.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 7201 }),
+  makeRun('e2e.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 7202 }),
+  makeRun('flight-test.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 7203 }),
+);
+const reviewBlockedReport = buildMonitorReport(reviewBlockedSnapshot, NOW);
+assert.equal(reviewBlockedReport.openPullRequests[0].state, 'CHANGES_REQUESTED');
+assert.equal(reviewBlockedReport.state, 'BLOCKED');
+assert.ok(reviewBlockedReport.blockers.some((item) => item.includes('PR #209 has changes requested')));
+assert.ok(reviewBlockedReport.nextActions.some((item) => item.includes('Resolve requested changes')));
+
 assert.equal(
   report.operationalRuns.find((item) => item.workflowId === 'staging-uat.yml').code,
   'FAIL',
@@ -309,6 +371,7 @@ assert.match(
   'completed cancelled runs must be inspected for exact job/step diagnostics',
 );
 assert.match(workflow, /reRunWorkflowFailedJobs/);
+assert.match(workflow, /monitor\.deriveReviewState\(reviews, pr\.head\.sha\)/);
 assert.match(monitorSource, /recovery-key/);
 console.log(
   'Autonomous monitor tests passed — exact-SHA gates, bounded timeout-only recovery, read-only PR events, operational gates and idempotent checkpoint ledger.',

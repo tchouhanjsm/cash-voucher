@@ -69,3 +69,10 @@ This improves common failure cases; it does not reconstruct missing AuditLog eve
 - The follow-up in PR #210 includes cancelled workflow runs in diagnostic collection. The existing job and step filters retain cancellation conclusions, so operators can distinguish a concurrency-superseded run from a cancellation inside the actual validation job.
 - A regression assertion protects the workflow collector's cancellation filter. Cancellation is still never treated as success; a cancelled required check remains `WAITING_FOR_VALIDATION` until valid exact-head evidence exists.
 - This source commit invalidates prior PR #210 exact-head evidence. Re-run CI / Quality, Browser E2E and Full Flight Test on the new head before review or merge.
+
+## Review-state integrity follow-up — 25 October 2026
+
+- Deep review found the delivery monitor recorded PR review state but did not let `CHANGES_REQUESTED` block the PR's delivery state. A green check set could therefore appear as review-ready even when review feedback remained unresolved.
+- The review collector now treats unresolved `CHANGES_REQUESTED` as a blocker and reports the explicit owner action to resolve review feedback before merge.
+- An `APPROVED` review counts as current approval only when its `commit_id` matches the current PR head SHA. An approval on a superseded head falls back to `REVIEW_REQUIRED`; unresolved change requests remain blocking until a later review from that reviewer supersedes them.
+- Regression tests cover stale approvals, exact-head approvals, unresolved changes requests, later approvals, and monitor-level blocked-state reporting. The current PR head must pass CI / Quality, Browser E2E, and Full Flight Test after this correction.
