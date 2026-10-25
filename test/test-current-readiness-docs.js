@@ -49,13 +49,14 @@ assert.match(staging, /PR #208/);
 assert.match(staging, /PR #213 is the only open PR targeting/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(staging, /PR #210 remains open and diverged\/dirty/);
-assert.match(handoff, /Verified integration baseline.*f9188ede9dd83f5e12c563bfa5b8f3082c0765b8/);
+assert.match(handoff, /Verified integration baseline.*e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(handoff, /PR #208/);
 assert.match(
   handoff,
   /PR #211 merged this source fix at `3ad2c8f955b36de00b208ee4283682a1a34805eb`/,
 );
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
+assert.match(handoff, /Checkpoint finalization defect/);
 assert.match(handoff, /PRs #209–#211 are merged/);
 assert.match(handoff, /PR #213 is the sole open PR targeting/);
 assert.doesNotMatch(handoff, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
@@ -63,7 +64,7 @@ assert.doesNotMatch(
   handoff,
   /it is still unmerged; the issue remains present in the current `client-main` baseline/,
 );
-assert.match(handoff, /allow_auto_merge=false/);
+assert.match(handoff, /allow_auto_merge=true/);
 assert.match(staging, /P0 B5/);
 assert.match(staging, /P0 B6/);
 assert.match(staging, /Settings-sheet fallback/);

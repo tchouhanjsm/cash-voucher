@@ -12,6 +12,7 @@ const {
   collectRecoveryCandidates,
   deriveReviewState,
   parseRecoveryLedger,
+  refreshExactHeadSourceRuns,
   shouldRetryTimedOutRun,
   WORKFLOW_POLICIES,
 } = require('../scripts/autonomous-dev-monitor');
@@ -262,6 +263,67 @@ assert.equal(
   'PASS',
   'a newer-created workflow run must outrank an older run rerun after it',
 );
+
+const finalizationSnapshot = baseSnapshot();
+const finalizationRunsByWorkflow = {};
+for (const [index, policy] of WORKFLOW_POLICIES.filter((item) => item.required).entries()) {
+  const observed = finalizationSnapshot.runs.find(
+    (run) => run.workflowId === policy.id && run.scope === 'client-main',
+  );
+  assert.ok(observed, 'fixture contains an initial exact-head observation for ' + policy.id);
+  observed.status = 'in_progress';
+  observed.conclusion = null;
+  const completed = {
+    id: observed.runId,
+    head_branch: 'client-main',
+    head_sha: MAIN_SHA,
+    event: 'push',
+    status: 'completed',
+    conclusion: 'success',
+    run_attempt: 1,
+    run_number: Number(observed.runNumber) || 900 + index,
+    created_at: '2026-10-24T23:50:00.000Z',
+    run_started_at: '2026-10-24T23:50:00.000Z',
+    updated_at: '2026-10-25T00:02:00.000Z',
+    html_url: observed.htmlUrl,
+  };
+  finalizationRunsByWorkflow[policy.id] = [
+    { ...completed, head_sha: PR_SHA, run_number: 9999 },
+    completed,
+  ];
+}
+const finalizedSnapshot = refreshExactHeadSourceRuns(finalizationSnapshot, finalizationRunsByWorkflow);
+const finalizedReport = buildMonitorReport(finalizedSnapshot, new Date('2026-10-25T00:03:00.000Z'));
+assert.equal(finalizedReport.allSourceChecksPassed, true);
+assert.deepEqual(
+  finalizedReport.sourceChecks.map((item) => item.code),
+  ['PASS', 'PASS', 'PASS'],
+  'checkpoint finalization uses terminal results for the exact integration SHA',
+);
+assert.ok(finalizedReport.sourceChecks.every((item) => item.sha === MAIN_SHA));
+
+const wrongShaOnly = baseSnapshot();
+wrongShaOnly.runs[0].status = 'in_progress';
+wrongShaOnly.runs[0].conclusion = null;
+const wrongShaRefresh = refreshExactHeadSourceRuns(wrongShaOnly, {
+  'ci.yml': [{
+    id: 999999,
+    head_branch: 'client-main',
+    head_sha: PR_SHA,
+    event: 'push',
+    status: 'completed',
+    conclusion: 'success',
+    run_attempt: 1,
+    run_number: 9999,
+    created_at: '2026-10-25T00:03:00.000Z',
+    run_started_at: '2026-10-25T00:03:00.000Z',
+    updated_at: '2026-10-25T00:04:00.000Z',
+    html_url: 'https://github.com/tchouhanjsm/cash-voucher/actions/runs/999999',
+  }],
+});
+const wrongShaReport = buildMonitorReport(wrongShaRefresh, new Date('2026-10-25T00:04:00.000Z'));
+assert.equal(wrongShaReport.sourceChecks[0].code, 'RUNNING');
+assert.equal(wrongShaReport.sourceChecks[0].sha, MAIN_SHA);
 
 const cancelledSnapshot = baseSnapshot();
 cancelledSnapshot.runs[1] = makeRun('e2e.yml', 'client-main', MAIN_SHA, {

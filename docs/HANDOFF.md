@@ -1,13 +1,22 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 25 October 2026 20:23 IST  
+**Updated:** 25 October 2026 22:04 IST  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8` (PR #210 merged; exact-head source checks passed).  
+**Verified integration baseline:** `e97c4e080b3f6903e16ef77f571822f9844faeed` (PR #213 merged; exact integration checks passed).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 release readiness and governance/staging gate closure. PRs #209–#211 are merged. PR #213 is the sole open PR targeting [`client-main`](https://github.com/tchouhanjsm/cash-voucher/pull/213). Its live exact-head check state is maintained in the PR description rather than pinned here, because every new commit invalidates earlier head-specific evidence. GitHub last reported `mergeable=true` but `mergeable_state=unstable`; no reviews are submitted, repository auto-merge is disabled, and ruleset coverage excludes `client-main`. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness and monitor-correctness follow-up. PRs #209–#213 were merged at the start of this follow-up; this single PR proposes checkpoint finalization, with exact-head check evidence kept in its live PR description. Repository auto-merge is enabled, but the active ruleset still does not cover `client-main`. Live staging, restore and customer acceptance remain unverified; owner retains merge/deploy authority.
 
-## Current checkpoint — 25 October 2026 20:16 IST
+## Current checkpoint — 25 October 2026 22:04 IST
+
+- **Current `client-main` SHA:** `e97c4e080b3f6903e16ef77f571822f9844faeed`; PR #213 merged at this commit. Exact integration checks passed: [CI / Quality #40206481359](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481359), [Browser E2E #40206481344](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481344), [Full Flight Test #40206481349](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481349), and [monitor #40206481372](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481372).
+- **Checkpoint finalization defect:** monitor run #40206481372 captured its initial report at `2026-10-25T15:20:51Z`, when CI, Browser E2E and Full Flight Test were still `in_progress`. The persistence job successfully wrote that point-in-time snapshot to Issue #212; all three checks completed successfully by `15:22:30Z`, but no completion-triggered observation replaced the early snapshot. The API write succeeded; the defect is missing bounded finalization after source checks finish.
+- **Proposed correction in the active follow-up:** poll the three required source workflows for up to three minutes, accept only push runs for `client-main` with the exact observed SHA, rebuild the report from terminal results, inspect failed/cancelled job steps, and persist a separate finalized artifact. Recheck the live branch tip before every issue write; if the branch advances, skip stale persistence. A timeout remains non-passing, never a pass.
+- **Repository governance:** `allow_auto_merge=true`; ruleset #24624368 still excludes `client-main` and requires only `quality` with zero approvals. Owner/admin must add `client-main` and require exact-head CI / Quality, Browser E2E, Full Flight Test and the intended human review.
+- **Operational blockers:** staging UAT #39596101014 failed at **Validate isolated deployment configuration**. Staging identity/Clasp configuration, guarded live UAT, real backup/restore, device/offline/printing/accessibility checks and customer acceptance remain unverified.
+- **Queue policy:** no parallel PRs; this change is the only source follow-up for checkpoint finalization. No Clasp push, Apps Script deploy, Google resource mutation, migration, cPanel publication or production change is included.
+
+## Historical checkpoint — 25 October 2026 20:16 IST (superseded; retained for RCA)
 
 This time-stamped checkpoint supersedes earlier PR-state and baseline snapshots retained below for historical failure analysis. Re-query live GitHub state before every decision.
 
@@ -98,6 +107,12 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 1. backend/90-support.gs — supportRateAllowed_ uses CacheService get-then-put as a counter. Concurrent requests can observe the same count and exceed intended 5-per-user/hour or 20-per-workspace/6-hour thresholds. Use a lock/atomic strategy or a storage primitive with suitable consistency; add concurrency/failure-path regression tests.
 2. Audit health — PR #209 is merged into `client-main`; its mixed valid/corrupt marker-store fail-closed behavior is integrated. The historical PR section below preserves its implementation and exact-head validation evidence. This is no longer an open source blocker; live Google Sheets/Drive behavior remains unverified until staging UAT.
 3. Operational launch gates remain P0: confirm staging Script/deployment/Sheet/folders, backend/frontend staging release, guarded UAT, actual response headers, schema migration only after review, restore into a separate recovery target, and real-device/offline/print/accessibility acceptance.
+
+## Checkpoint finalization follow-up — 25 October 2026
+
+- Monitor run #40206481372 wrote a valid checkpoint issue update, but its snapshot was captured before same-SHA CI / Quality, Browser E2E and Full Flight Test completed. No workflow completion trigger caused a second observation, so Issue #212 kept intermediate run states.
+- The trusted `client-main` push workflow now performs a bounded three-minute exact-SHA finalization poll, refreshes source-run records, rebuilds the report, inspects failure/cancellation job steps, and uploads a separate finalized report artifact.
+- Before every checkpoint issue write, the workflow re-reads the live `client-main` tip and refuses stale-SHA updates if the branch advanced. Regression tests protect current-SHA selection and preserve non-passing results when validation is incomplete.
 
 ## Cancellation diagnostics follow-up — 25 October 2026
 
