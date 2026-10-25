@@ -5,7 +5,7 @@
 **Integration branch:** `client-main`  
 **Verified integration baseline:** `e97c4e080b3f6903e16ef77f571822f9844faeed` (PR #213 merged; exact integration checks passed).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 release readiness and monitor-correctness follow-up. PRs #209–#213 were merged at the start of this follow-up; this single PR proposes checkpoint finalization, with exact-head check evidence kept in its live PR description. Repository auto-merge is enabled, but the active ruleset still does not cover `client-main`. Live staging, restore and customer acceptance remain unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness and monitor-correctness follow-up. PRs #209–#213 are merged. PR #214 is the sole active follow-up for monitor checkpoint finalization; exact-head check evidence is maintained in its live PR description. Repository auto-merge is enabled, but the active ruleset still does not cover `client-main`. Live staging, restore and customer acceptance remain unverified; owner retains merge/deploy authority.
 
 ## Current checkpoint — 25 October 2026 22:04 IST
 
@@ -109,6 +109,11 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 3. Operational launch gates remain P0: confirm staging Script/deployment/Sheet/folders, backend/frontend staging release, guarded UAT, actual response headers, schema migration only after review, restore into a separate recovery target, and real-device/offline/print/accessibility acceptance.
 
 ## Checkpoint finalization follow-up — 25 October 2026
+
+- Monitor run #40206481372 successfully wrote a checkpoint from an early snapshot while the same-SHA required checks were still running. The next run must finalize from terminal same-SHA outcomes and refuse stale writes if `client-main` advances.
+- On PR #214, CI source quality and Prettier passed on head `5f062a94619e44f47381a5b52d8c349e2c0d9376`, but the later **Validate PR handoff evidence** step failed because the original pull-request event payload had no required template headings. The PR description was then corrected to include all six required sections.
+- A failed-job rerun still reads the original event payload through `GITHUB_EVENT_PATH`; it therefore repeated the old missing-headings failure even though the live PR description was corrected. This is stale event-input behavior, not a runtime/test failure. A new PR `synchronize` event is required to validate the updated description; do not repeatedly rerun the stale event.
+
 
 - Monitor run #40206481372 wrote a valid checkpoint issue update, but its snapshot was captured before same-SHA CI / Quality, Browser E2E and Full Flight Test completed. No workflow completion trigger caused a second observation, so Issue #212 kept intermediate run states.
 - The trusted `client-main` push workflow now performs a bounded three-minute exact-SHA finalization poll, refreshes source-run records, rebuilds the report, inspects failure/cancellation job steps, and uploads a separate finalized report artifact.
