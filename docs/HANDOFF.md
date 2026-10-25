@@ -5,11 +5,11 @@
 **Integration branch:** `client-main`  
 **Verified integration baseline:** `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208 merged).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 release readiness — support-report rate-limit atomicity and delivery-monitor follow-ups. Feature branch: `client/support-rate-limit-atomic-20261025`. PRs #209 and #210 remain open; live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness — support-report rate-limit atomicity and delivery-monitor follow-ups. Feature branch: `client/support-rate-limit-atomic-20261025`. PRs #209–#211 remain open; live staging remains unverified; owner retains merge/deploy authority.
 
 ## Verified source state
 
-- PRs #205–#208 are merged to `client-main`. The latest source baseline is `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208). PRs #209 and #210 are open and are not yet integrated.
+- PRs #205–#208 are merged to `client-main`. The latest source baseline is `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208). PRs #209–#211 are open and are not yet integrated.
 - Exact-head integration checks passed after PR #207: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247679), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247678), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247717).
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
