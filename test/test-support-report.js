@@ -121,4 +121,63 @@ for (let i = 0; i < 6 && !blocked; i++) {
 assert.ok(blocked, 'a user cannot send unlimited reports');
 assert.equal(blocked.code, 'RATE_LIMIT');
 
+// 10. Quota check and increments must happen after acquiring one shared lock.
+const userRateKey = 'support:u:support-staff@test.com';
+const workspaceRateKey = 'support:w';
+const mailCountBeforeAtomicChecks = g.mailLog.length;
+g.cache[userRateKey] = '4';
+g.cache[workspaceRateKey] = '0';
+g.lockStats.afterAcquire = () => {
+  g.cache[userRateKey] = '5';
+};
+result = g.call('reportIssue', { token: staff, ...report });
+assert.equal(result.code, 'RATE_LIMIT', 'the latest user counter is rechecked under the lock');
+assert.equal(
+  g.mailLog.length,
+  mailCountBeforeAtomicChecks,
+  'a concurrent quota update sends no email',
+);
+assert.equal(g.cache[userRateKey], '5');
+assert.equal(g.lockStats.afterAcquire, null, 'the lock mock hook is consumed');
+
+// 11. Workspace quota is also rechecked under the same lock.
+g.cache[userRateKey] = '0';
+g.cache[workspaceRateKey] = '19';
+g.lockStats.afterAcquire = () => {
+  g.cache[workspaceRateKey] = '20';
+};
+result = g.call('reportIssue', { token: staff, ...report });
+assert.equal(result.code, 'RATE_LIMIT', 'the latest workspace counter is rechecked under the lock');
+assert.equal(
+  g.mailLog.length,
+  mailCountBeforeAtomicChecks,
+  'workspace quota blocks email before sending',
+);
+assert.equal(g.cache[workspaceRateKey], '20');
+
+// 12. Lock contention fails closed without releasing a lock that was not acquired.
+g.cache[userRateKey] = '0';
+g.cache[workspaceRateKey] = '0';
+const lockAttemptsBeforeBusy = g.lockStats.attempts;
+const lockWaitsBeforeBusy = g.lockStats.waits;
+const lockReleasesBeforeBusy = g.lockStats.releases;
+g.lockStats.failNextWait = true;
+result = g.call('reportIssue', { token: staff, ...report });
+assert.equal(
+  result.code,
+  'BUSY',
+  'lock contention returns a temporary busy response, not a false quota error',
+);
+assert.equal(g.mailLog.length, mailCountBeforeAtomicChecks, 'lock contention sends no email');
+assert.equal(g.lockStats.attempts, lockAttemptsBeforeBusy + 1);
+assert.equal(g.lockStats.waits, lockWaitsBeforeBusy);
+assert.equal(g.lockStats.releases, lockReleasesBeforeBusy, 'an unacquired lock is never released');
+
+// 13. A successful request consumes both counters exactly once.
+result = g.call('reportIssue', { token: staff, ...report });
+assert.ok(result.ok, 'report is accepted when both quotas are available');
+assert.equal(g.cache[userRateKey], '1');
+assert.equal(g.cache[workspaceRateKey], '1');
+assert.equal(g.lockStats.releases, lockReleasesBeforeBusy + 1);
+
 console.log('Support report tests passed');

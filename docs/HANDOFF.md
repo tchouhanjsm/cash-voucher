@@ -1,15 +1,15 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 24 October 2026  
+**Updated:** 25 October 2026  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `e90ef5dfb005745136c0522d983fd42c38db38ff` (PR #207 merged).  
+**Verified integration baseline:** `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208 merged).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 B6 — audit-health failover, truthful monitoring states and pagination contract. Feature branch: `client/p0-audit-health-fallback-20261024`. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness — support-report rate-limit atomicity and delivery-monitor follow-ups. Feature branch: `client/support-rate-limit-atomic-20261025`. PRs #209–#211 remain open; live staging remains unverified; owner retains merge/deploy authority.
 
 ## Verified source state
 
-- PR #205, #206 and #207 are merged to `client-main`. The latest source baseline is `e90ef5dfb005745136c0522d983fd42c38db38ff`.
+- PRs #205–#208 are merged to `client-main`. The latest source baseline is `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208). PRs #209–#211 are open and are not yet integrated.
 - Exact-head integration checks passed after PR #207: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247679), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247678), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40064247717).
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
@@ -25,6 +25,14 @@
 5. Fault-injection coverage checks primary-store fallback, transient-cache fallback, corrupt markers and the case where every marker write fails.
 
 This improves common failure cases; it does not reconstruct missing AuditLog events. If AuditLog, Script Properties, Settings and CacheService all fail to persist the marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. That residual risk remains visible in tests and documentation.
+
+## Support-report rate-limit concurrency hardening — 25 October 2026
+
+- **Finding:** `supportRateAllowed_` previously performed CacheService read/check/write operations without serialization. Concurrent requests could observe the same counter and exceed the per-user hourly or workspace six-hour limit.
+- **Correction:** one short ScriptLock now protects both quota reads and both increments as a single decision. Counter values are validated; exhausted quotas return `RATE_LIMIT`. Lock/cache errors fail closed with a temporary `BUSY` response. A lock is released only after successful acquisition.
+- **Regression coverage:** `test/test-support-report.js` simulates a counter changing immediately before the locked read for both user and workspace quotas, verifies lock contention sends no email and releases no unacquired lock, and checks that a successful request increments both counters once.
+- **Boundary:** these are mock/source-level checks, not proof of live Apps Script concurrency or email delivery. CacheService remains best-effort storage; the lock serializes concurrent executions within this script project but does not make cache data durable. If support reporting returns `BUSY`, the reporter should retry later or use the workspace's established support contact.
+- **Release status:** this source fix is proposed on `client/support-rate-limit-atomic-20261025`; exact-head CI, Browser E2E and Full Flight Test must pass before merge. No live staging or production operation is authorized.
 
 ## Release gates that remain open
 
