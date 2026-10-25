@@ -311,6 +311,22 @@ function collectRecoveryCandidates(runs, _openPullRequests, now) {
   }
   return candidates.slice(0, MAX_RECOVERIES_PER_RUN);
 }
+function pullRequestGateState(pr, checks) {
+  const failed = checks.some((item) =>
+    ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
+  );
+  if (failed) return 'BLOCKED';
+  if (pr.reviewState === 'CHANGES_REQUESTED') return 'CHANGES_REQUESTED';
+  const pending = checks.some((item) =>
+    ['NOT_RUN', 'PENDING', 'RUNNING', 'CANCELLED', 'SKIPPED', 'TIMEOUT_RETRY_ELIGIBLE'].includes(
+      item.code,
+    ),
+  );
+  if (pending) return 'WAITING_FOR_CHECKS';
+  return checks.every((item) => item.code === 'PASS')
+    ? 'CHECKS_GREEN_REVIEW_REQUIRED'
+    : 'NEEDS_REVIEW';
+}
 function buildMonitorReport(snapshot, now = new Date()) {
   const capturedAt = (asDate(now) || new Date()).toISOString();
   const handoff = snapshot.handoffText || '';
@@ -326,18 +342,10 @@ function buildMonitorReport(snapshot, now = new Date()) {
     const checks = WORKFLOW_POLICIES.filter((item) => item.required).map((policy) =>
       checkView(policy, latestRun(runs, policy.id, 'pull_request', pr.headSha, pr.number), now),
     );
-    const failed = checks.some((item) =>
-      ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
-    );
-    const pending = checks.some((item) =>
-      ['NOT_RUN', 'PENDING', 'RUNNING', 'CANCELLED', 'SKIPPED', 'TIMEOUT_RETRY_ELIGIBLE'].includes(
-        item.code,
-      ),
-    );
     return {
       number: pr.number,
       title: String(pr.title || '')
-        .replace(/[\r\n|]+/g, ' ')
+        .replace(/[\\r\\n|]+/g, ' ')
         .slice(0, 180),
       url: pr.htmlUrl || '',
       draft: Boolean(pr.draft),
@@ -352,15 +360,7 @@ function buildMonitorReport(snapshot, now = new Date()) {
         ? pr.requestedReviewers.slice(0, 8)
         : [],
       checks,
-      state: failed
-        ? 'BLOCKED'
-        : pr.reviewState === 'CHANGES_REQUESTED'
-          ? 'CHANGES_REQUESTED'
-          : pending
-            ? 'WAITING_FOR_CHECKS'
-            : checks.every((item) => item.code === 'PASS')
-              ? 'CHECKS_GREEN_REVIEW_REQUIRED'
-              : 'NEEDS_REVIEW',
+      state: pullRequestGateState(pr, checks),
     };
   });
   const operationalRuns = WORKFLOW_POLICIES.filter((item) => item.category === 'operational').map(
