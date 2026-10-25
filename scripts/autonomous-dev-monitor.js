@@ -403,7 +403,11 @@ function buildMonitorReport(snapshot, now = new Date()) {
     );
   for (const pr of blockedPrs) {
     if (pr.reviewState === 'CHANGES_REQUESTED') {
-      blockers.push('PR #' + pr.number + ' has changes requested; address review feedback before merge.');
+      blockers.push(
+        'PR #' +
+          pr.number +
+          ' has changes requested; address review feedback before merge.',
+      );
     }
     if (pr.state === 'BLOCKED') {
       blockers.push('PR #' + pr.number + ' has a failed or stalled required source check.');
@@ -454,7 +458,11 @@ function buildMonitorReport(snapshot, now = new Date()) {
         ' before considering merge readiness.',
     );
   }
-  if (failedSource.length || blockedPrs.some((item) => item.state === 'BLOCKED') || failedOperational.length)
+  if (
+    failedSource.length ||
+    blockedPrs.some((item) => item.state === 'BLOCKED') ||
+    failedOperational.length
+  )
     nextActions.push(
       'Inspect exact failed job/step and logs; distinguish code defects from infrastructure/timeouts before retrying.',
     );

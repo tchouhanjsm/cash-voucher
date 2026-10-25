@@ -99,7 +99,12 @@ assert.equal(
   deriveReviewState(
     [
       { ...staleApproval, state: 'CHANGES_REQUESTED' },
-      { ...staleApproval, state: 'APPROVED', commit_id: PR_SHA, submitted_at: '2026-10-25T00:00:00.000Z' },
+      {
+        ...staleApproval,
+        state: 'APPROVED',
+        commit_id: PR_SHA,
+        submitted_at: '2026-10-25T00:00:00.000Z',
+      },
     ],
     PR_SHA,
   ),
@@ -310,8 +315,12 @@ reviewBlockedSnapshot.runs.push(
 const reviewBlockedReport = buildMonitorReport(reviewBlockedSnapshot, NOW);
 assert.equal(reviewBlockedReport.openPullRequests[0].state, 'CHANGES_REQUESTED');
 assert.equal(reviewBlockedReport.state, 'BLOCKED');
-assert.ok(reviewBlockedReport.blockers.some((item) => item.includes('PR #209 has changes requested')));
-assert.ok(reviewBlockedReport.nextActions.some((item) => item.includes('Resolve requested changes')));
+assert.ok(
+  reviewBlockedReport.blockers.some((item) => item.includes('PR #209 has changes requested')),
+);
+assert.ok(
+  reviewBlockedReport.nextActions.some((item) => item.includes('Resolve requested changes')),
+);
 
 assert.equal(
   report.operationalRuns.find((item) => item.workflowId === 'staging-uat.yml').code,
