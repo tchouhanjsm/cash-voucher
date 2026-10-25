@@ -228,8 +228,7 @@ function deriveReviewState(reviews, headSha) {
   if (
     latest.some(
       (review) =>
-        String(review.state || '').toUpperCase() === 'APPROVED' &&
-        review.commit_id === headSha,
+        String(review.state || '').toUpperCase() === 'APPROVED' && review.commit_id === headSha,
     )
   ) {
     return 'APPROVED';
@@ -404,9 +403,7 @@ function buildMonitorReport(snapshot, now = new Date()) {
   for (const pr of blockedPrs) {
     if (pr.reviewState === 'CHANGES_REQUESTED') {
       blockers.push(
-        'PR #' +
-          pr.number +
-          ' has changes requested; address review feedback before merge.',
+        'PR #' + pr.number + ' has changes requested; address review feedback before merge.',
       );
     }
     if (pr.state === 'BLOCKED') {

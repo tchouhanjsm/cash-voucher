@@ -49,11 +49,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary diagnostic — show Prettier diff for monitor
-        run: |
-          npx prettier scripts/autonomous-dev-monitor.js > "$RUNNER_TEMP/autonomous-dev-monitor.formatted.js"
-          diff -u scripts/autonomous-dev-monitor.js "$RUNNER_TEMP/autonomous-dev-monitor.formatted.js" || true
-
       - name: Run quality gate
         run: npm run check
 
