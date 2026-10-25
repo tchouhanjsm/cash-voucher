@@ -1,21 +1,28 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 25 October 2026  
-**Authoritative integration baseline:** client-main `3ad2c8f955b36de00b208ee4283682a1a34805eb`, following merged PR #211.  
+**Audit date:** 25 October 2026 20:16 IST  
+**Authoritative integration baseline:** client-main `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`, following merged PR #210.  
 **Legacy branch:** `main` (read-only by engineering policy; the actual ahead/behind relationship must be rechecked before any branch operation).  
 **Scope:** source and release-workflow audit, not live deployment, restore or customer acceptance.
 
 ## Executive status
 
-PR #211 is the latest merged source baseline on client-main at `3ad2c8f955b36de00b208ee4283682a1a34805eb`. Its exact integration SHA passed [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102). These checks do not prove live staging, recovery or customer acceptance.
+PR #210 is the latest merged source baseline on client-main at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`. The exact integration SHA passed [CI / Quality #40188595578](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595578), [Browser E2E #40188595631](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595631), and [Full Flight Test #40188595579](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595579); the monitor passed on [#40188596236](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188596236). These checks do not prove live staging, recovery or customer acceptance.
 
 The branch policy names client-main as the only integration branch and main as legacy/read-only. Current GitHub metadata reports `client-main` as unprotected. The active `cash-voucher-rule` ruleset targets `~DEFAULT_BRANCH` (currently `main`), requires only `quality`, and requires zero approving reviews. Owner/admin must correct and verify ruleset coverage for `client-main`; this source PR does not change repository settings or blindly reconcile long-lived branches.
 
 Dedicated staging resources, protected staging Environment, a real deployed staging frontend, successful live UAT, support-email delivery, real backup/restore, physical-device acceptance and customer acceptance are not evidenced as complete. Verify that the private-repository host integration still has access. The product remains single-property, not multi-tenant.
 
+## Current checkpoint — 25 October 2026 20:16 IST
+
+- PRs #209–#211 are merged. PR #213 is the only open PR targeting [`client-main`](https://github.com/tchouhanjsm/cash-voucher/pull/213). Its live exact-head checks and conclusions are maintained in the PR description and must be rechecked after each commit. No review is submitted and auto-merge remains blocked by repository settings/governance.
+- Repository metadata reports `allow_auto_merge=false`; the active ruleset targets only `~DEFAULT_BRANCH` (main), requires `quality` only, and requires zero approvals. Owner/admin must enable auto-merge and extend protections to `client-main`. Classic branch protection could not be independently read by the connected integration (HTTP 403).
+- Staging UAT #39596101014 failed at **Validate isolated deployment configuration**; no deployment or live UAT steps ran. The last ZIP #39988800756 is built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and expires 26 October 2026 at 16:41:12 UTC. No published GitHub release is recorded by the live releases endpoint.
+- Live staging, isolated restore and customer acceptance remain unverified. Production is not authorized.
+
 ## Active release sequence
 
-Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #211 is the latest merged source baseline. PR #209 now includes the current base and awaits final exact-head status confirmation and owner review; PR #210 still needs base reconciliation. Live staging, isolated restore and customer acceptance remain unverified.
+Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). Source PRs #209–#211 are merged at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`; PR #213 is the only open PR and synchronizes release-readiness documentation. Do not open another PR while #213 remains open, and do not start a product-feature batch while release gates remain open.
 
 **Evidence still required:** isolated staging identity and host access; inspected pre-migration backup; schema validation and only required staging migrations; backend-first deploy and staging-configured frontend; exact-run guarded UAT; live role, receipt, payment-method, offline and print checks; and restore into a separate recovery target. The hotel pilot remains blocked until those gates pass. Production is excluded.
 
@@ -128,7 +135,7 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 
 ## Release decision
 
-**Source baseline:** PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; exact integration CI/Quality, Browser E2E and Full Flight Test passed. PR #209's branch now includes the current base and its previous exact-head checks passed, but the latest documentation/status commit must be revalidated before owner review. PR #210 remains open and diverged/dirty against the new base, requiring reconciliation plus fresh exact-head checks. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
+**Source baseline:** PRs #209–#211 are merged at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`; current integration CI / Quality, Browser E2E and Full Flight Test passed. PR #213 is the only open PR and synchronizes release-readiness documentation; use its live PR description for exact-head results instead of pinning a SHA here. GitHub last reported `mergeable_state=unstable`, no review is submitted, and repository auto-merge is disabled. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.
 

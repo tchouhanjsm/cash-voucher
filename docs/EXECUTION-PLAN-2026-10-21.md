@@ -1,9 +1,16 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 25 October 2026 (P0 B1–B6 core source batches merged through PR #211; follow-up PRs and operational release remain gated)  
+**Updated:** 25 October 2026 20:16 IST (PR #213 documentation sync is the only open PR; operational release remains gated)  
 **Integration branch:** client-main  
-**Current source baseline for release follow-up:** 3ad2c8f955b36de00b208ee4283682a1a34805eb (PR #211 merge)  
-**Release state:** PRs #205–#208 and #211 are merged. PR #209 now includes the current base and is awaiting final exact-head status confirmation and owner review; PR #210 remains open and needs base reconciliation. Live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+**Current source baseline for release follow-up:** f9188ede9dd83f5e12c563bfa5b8f3082c0765b8 (PR #210 merge)  
+**Release state:** PRs #205–#211 are merged at `client-main` SHA `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`. PR #213 is the only open PR targeting `client-main`; its live exact-head status must be read from the PR description and rechecked after every new commit. Auto-merge is disabled, `client-main` is not covered by the active ruleset, and no review is submitted. Live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+
+## Current checkpoint — 25 October 2026 20:16 IST
+
+- Exact current-source checks passed on `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`: [CI / Quality #40188595578](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595578), [Browser E2E #40188595631](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595631), [Full Flight Test #40188595579](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595579), and [monitor #40188596236](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188596236).
+- PRs #209–#211 are merged. PR #213 is now the only open PR targeting [`client-main`](https://github.com/tchouhanjsm/cash-voucher/pull/213). Its current exact-head check links and conclusions are maintained in the live PR description; do not treat results from a superseded SHA as current. Do not open another PR while #213 remains open.
+- Repository `allow_auto_merge=false`. Ruleset #24624368 targets `~DEFAULT_BRANCH` (main), requires only `quality`, and has zero approvals; it does not cover `client-main`. Owner/admin must enable auto-merge and correct branch rules before the scheduler can safely request auto-merge.
+- Staging UAT #39596101014 remains failed at deployment-configuration preflight; ZIP #39988800756 is stale and expires 26 October 2026 at 16:41:12 UTC. No release is published.
 
 ## Executive decision
 
@@ -11,11 +18,11 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #205–#208 and #211 are merged to `client-main`. PR #209's base reconciliation is complete and its latest exact-head checks must remain green for owner review; next reconcile PR #210, then continue operational release evidence. Do not start another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+PRs #209–#211 are merged to `client-main` at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`. PR #213 is the only open PR, limited to documentation/checkpoint synchronization. Its exact-head checks must be verified from the live PR after each head change; GitHub last reported `mergeable_state=unstable`, no review is submitted, and auto-merge is blocked by repository settings/governance. Do not open another PR until #213 is merged or closed. Then continue owner-led governance and operational release evidence; do not start another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ### 1. Complete the source release
 
-- PRs #205–#208 and #211 are merged to `client-main`; the latest source merge is `3ad2c8f955b36de00b208ee4283682a1a34805eb`.
+- PRs #205–#211 are merged to `client-main`; the current source merge is `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`.
 - PR #211's exact-head checks passed on `f018a958fa86c7ffe4ef8baa799ddd62c1bfb0d2`: [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435222), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435213), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435233). The resulting integration SHA `3ad2c8f955b36de00b208ee4283682a1a34805eb` also passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102).
 - Green source checks do not prove live deployment or recovery.
 
@@ -68,7 +75,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 
 ## Source release status
 
-PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; CI/Quality, Browser E2E and Full Flight Test passed on that exact integration SHA. PR #209 now contains the current base and awaits final exact-head status confirmation and owner review; PR #210 still requires base reconciliation. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
+PR #211 and the subsequent PR #210 monitor changes are merged. Current `client-main` is `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`; its integration CI / Quality, Browser E2E and Full Flight Test passed. PR #213 is the only open PR; consult its live description for exact-head results. Repository auto-merge and `client-main` governance remain unresolved. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 
@@ -107,11 +114,11 @@ No production migration/deployment, blind branch synchronization, multi-tenant r
 
 ## Autonomous delivery monitoring
 
-A checkpoint-based monitoring workflow is proposed in PR #210 and remains unmerged until its exact-head checks pass and the owner completes review and merge. The ChatGPT monitor runs hourly because a 45-minute cadence is unsupported. The GitHub Actions workflow is event-driven only: pushes to `client-main` run the trusted checkpoint/recovery job, while PRs targeting `client-main` run read-only observation. GitHub requires `workflow_dispatch` workflows to exist on the default branch; this workflow is not on default branch `main`, which remains frozen, so manual dispatch is not available. Do not add a cron schedule to `client-main` or modify `main` merely to advertise an unavailable trigger.
+PR #210's checkpoint-based monitoring workflow merged into `client-main` at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8` after exact-head validation and owner merge. The workflow is now integrated; its event-only behavior remains as documented below. The ChatGPT monitor runs hourly because a 45-minute cadence is unsupported. The GitHub Actions workflow is event-driven only: pushes to `client-main` run the trusted checkpoint/recovery job, while PRs targeting `client-main` run read-only observation. GitHub requires `workflow_dispatch` workflows to exist on the default branch; this workflow is not on default branch `main`, which remains frozen, so manual dispatch is not available. Do not add a cron schedule to `client-main` or modify `main` merely to advertise an unavailable trigger.
 
 The monitor may observe CI, Browser E2E, Full Flight Test, PR reviews/checks, staging/ZIP runs and release-gate notes; it may retry only timed-out source-validation runs after exact-SHA checks and within a three-attempt ceiling. It never auto-merges, publishes static ZIPs, pushes Clasp, deploys Apps Script, runs transactional staging UAT, performs migrations or changes production. GitHub checkpoint history is persistent run evidence; docs/HANDOFF.md remains the engineering session handoff.
 
 ## Deep-dive follow-up defects
 
 - backend/90-support.gs supportRateAllowed_ uses a non-atomic cache read/increment/write, so concurrent requests can exceed intended rate limits. Fix separately with concurrency/failure tests.
-- Audit health: PR #209 addresses malformed persisted counters/timestamps and mixed-store fail-closed behavior. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed on `ac732798633f6df655400c5aaa3444cea97558f9`; it remains open and unmerged, so `client-main` retains the old behavior until owner review and merge.
+- Audit health: PR #209 is merged. Its mixed-store fail-closed behavior for malformed persisted counters/timestamps is integrated into `client-main`; historical PR-head checks passed before merge. Live Google Sheets/Drive behavior still requires guarded staging UAT.

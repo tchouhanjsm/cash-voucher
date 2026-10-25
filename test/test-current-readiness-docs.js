@@ -43,16 +43,27 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*3ad2c8f955b36de00b208ee4283682a1a34805eb/,
+  /Authoritative integration baseline.*client-main.*f9188ede9dd83f5e12c563bfa5b8f3082c0765b8/,
 );
 assert.match(staging, /PR #208/);
-assert.match(handoff, /Verified integration baseline.*3ad2c8f955b36de00b208ee4283682a1a34805eb/);
+assert.match(staging, /PR #213 is the only open PR targeting/);
+assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
+assert.doesNotMatch(staging, /PR #210 remains open and diverged\/dirty/);
+assert.match(handoff, /Verified integration baseline.*f9188ede9dd83f5e12c563bfa5b8f3082c0765b8/);
 assert.match(handoff, /PR #208/);
 assert.match(
   handoff,
   /PR #211 merged this source fix at `3ad2c8f955b36de00b208ee4283682a1a34805eb`/,
 );
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
+assert.match(handoff, /PRs #209–#211 are merged/);
+assert.match(handoff, /PR #213 is the sole open PR targeting/);
+assert.doesNotMatch(handoff, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
+assert.doesNotMatch(
+  handoff,
+  /it is still unmerged; the issue remains present in the current `client-main` baseline/,
+);
+assert.match(handoff, /allow_auto_merge=false/);
 assert.match(staging, /P0 B5/);
 assert.match(staging, /P0 B6/);
 assert.match(staging, /Settings-sheet fallback/);
@@ -81,8 +92,12 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /3ad2c8f955b36de00b208ee4283682a1a34805eb/);
+assert.match(executionPlan, /f9188ede9dd83f5e12c563bfa5b8f3082c0765b8/);
 assert.match(executionPlan, /PR #211/);
+assert.match(executionPlan, /PRs #209–#211 are merged/);
+assert.match(executionPlan, /PR #213 is the only open PR targeting/);
+assert.doesNotMatch(executionPlan, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
+assert.doesNotMatch(executionPlan, /PR #210 still requires base reconciliation/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
 assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
 assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
@@ -93,11 +108,15 @@ assert.match(
 );
 
 console.log(
-  'Current-readiness documentation: latest merge, password terminology, active architecture and live-release boundaries are aligned.',
+  'Current-readiness documentation: integration baseline, serial PR queue, password terminology, active architecture and live-release boundaries are aligned.',
 );
 
-assert.match(autonomousMonitor, /176da7c559d279149e2473a65a71fd03d3e53018/);
+assert.match(autonomousMonitor, /f9188ede9dd83f5e12c563bfa5b8f3082c0765b8/);
 assert.match(autonomousMonitor, /45-minute.*not supported/i);
 assert.match(autonomousMonitor, /never merges/i);
 assert.match(autonomousMonitor, /bounded retry/i);
 assert.match(autonomousMonitor, /Persistent Checkpoint/i);
+assert.match(
+  autonomousMonitor,
+  /Do not open another PR while any prior PR remains open\/unmerged/i,
+);
