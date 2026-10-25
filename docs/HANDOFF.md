@@ -114,7 +114,6 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - On PR #214, CI source quality and Prettier passed on head `5f062a94619e44f47381a5b52d8c349e2c0d9376`, but the later **Validate PR handoff evidence** step failed because the original pull-request event payload had no required template headings. The PR description was then corrected to include all six required sections.
 - A failed-job rerun still reads the original event payload through `GITHUB_EVENT_PATH`; it therefore repeated the old missing-headings failure even though the live PR description was corrected. This is stale event-input behavior, not a runtime/test failure. A new PR `synchronize` event is required to validate the updated description; do not repeatedly rerun the stale event.
 
-
 - Monitor run #40206481372 wrote a valid checkpoint issue update, but its snapshot was captured before same-SHA CI / Quality, Browser E2E and Full Flight Test completed. No workflow completion trigger caused a second observation, so Issue #212 kept intermediate run states.
 - The trusted `client-main` push workflow now performs a bounded three-minute exact-SHA finalization poll, refreshes source-run records, rebuilds the report, inspects failure/cancellation job steps, and uploads a separate finalized report artifact.
 - Before every checkpoint issue write, the workflow re-reads the live `client-main` tip and refuses stale-SHA updates if the branch advanced. Regression tests protect current-SHA selection and preserve non-passing results when validation is incomplete.
