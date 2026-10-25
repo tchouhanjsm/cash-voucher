@@ -47,7 +47,7 @@ assert.match(
 assert.match(staging, /PR #208/);
 assert.match(handoff, /Verified integration baseline.*3ad2c8f955b36de00b208ee4283682a1a34805eb/);
 assert.match(handoff, /PR #208/);
-assert.match(handoff, /PR #211 merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`/);
+assert.match(handoff, /PR #211 merged this source fix at `3ad2c8f955b36de00b208ee4283682a1a34805eb`/);
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(staging, /P0 B5/);
 assert.match(staging, /P0 B6/);
