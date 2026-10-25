@@ -291,7 +291,7 @@ function cleanGateSnapshot() {
   snapshot.handoffText = [
     '**Verified integration baseline:** `' + MAIN_SHA + '` (PR #208 merged).',
     '**Current phase:** P0 release readiness.',
-  ].join('\\n');
+  ].join('\n');
   snapshot.repositoryGovernance = {
     status: 'CLASSIC_PROTECTION_ENABLED',
     note: 'Verified for this regression fixture.',
