@@ -292,36 +292,49 @@ for (const [index, policy] of WORKFLOW_POLICIES.filter((item) => item.required).
     completed,
   ];
 }
-const finalizedSnapshot = refreshExactHeadSourceRuns(finalizationSnapshot, finalizationRunsByWorkflow);
-const finalizedReport = buildMonitorReport(finalizedSnapshot, new Date('2026-10-25T00:03:00.000Z'));
+const finalizedSnapshot = refreshExactHeadSourceRuns(
+  finalizationSnapshot,
+  finalizationRunsByWorkflow,
+);
+const finalizedReport = buildMonitorReport(
+  finalizedSnapshot,
+  new Date('2026-10-25T00:03:00.000Z'),
+);
 assert.equal(finalizedReport.allSourceChecksPassed, true);
 assert.deepEqual(
   finalizedReport.sourceChecks.map((item) => item.code),
   ['PASS', 'PASS', 'PASS'],
   'checkpoint finalization uses terminal results for the exact integration SHA',
 );
-assert.ok(finalizedReport.sourceChecks.every((item) => item.sha === MAIN_SHA));
+assert.ok(
+  finalizedReport.sourceChecks.every((item) => item.sha === MAIN_SHA),
+);
 
 const wrongShaOnly = baseSnapshot();
 wrongShaOnly.runs[0].status = 'in_progress';
 wrongShaOnly.runs[0].conclusion = null;
 const wrongShaRefresh = refreshExactHeadSourceRuns(wrongShaOnly, {
-  'ci.yml': [{
-    id: 999999,
-    head_branch: 'client-main',
-    head_sha: PR_SHA,
-    event: 'push',
-    status: 'completed',
-    conclusion: 'success',
-    run_attempt: 1,
-    run_number: 9999,
-    created_at: '2026-10-25T00:03:00.000Z',
-    run_started_at: '2026-10-25T00:03:00.000Z',
-    updated_at: '2026-10-25T00:04:00.000Z',
-    html_url: 'https://github.com/tchouhanjsm/cash-voucher/actions/runs/999999',
-  }],
+  'ci.yml': [
+    {
+      id: 999999,
+      head_branch: 'client-main',
+      head_sha: PR_SHA,
+      event: 'push',
+      status: 'completed',
+      conclusion: 'success',
+      run_attempt: 1,
+      run_number: 9999,
+      created_at: '2026-10-25T00:03:00.000Z',
+      run_started_at: '2026-10-25T00:03:00.000Z',
+      updated_at: '2026-10-25T00:04:00.000Z',
+      html_url: 'https://github.com/tchouhanjsm/cash-voucher/actions/runs/999999',
+    },
+  ],
 });
-const wrongShaReport = buildMonitorReport(wrongShaRefresh, new Date('2026-10-25T00:04:00.000Z'));
+const wrongShaReport = buildMonitorReport(
+  wrongShaRefresh,
+  new Date('2026-10-25T00:04:00.000Z'),
+);
 assert.equal(wrongShaReport.sourceChecks[0].code, 'RUNNING');
 assert.equal(wrongShaReport.sourceChecks[0].sha, MAIN_SHA);
 
