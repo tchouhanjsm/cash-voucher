@@ -132,7 +132,11 @@ g.lockStats.afterAcquire = () => {
 };
 result = g.call('reportIssue', { token: staff, ...report });
 assert.equal(result.code, 'RATE_LIMIT', 'the latest user counter is rechecked under the lock');
-assert.equal(g.mailLog.length, mailCountBeforeAtomicChecks, 'a concurrent quota update sends no email');
+assert.equal(
+  g.mailLog.length,
+  mailCountBeforeAtomicChecks,
+  'a concurrent quota update sends no email',
+);
 assert.equal(g.cache[userRateKey], '5');
 assert.equal(g.lockStats.afterAcquire, null, 'the lock mock hook is consumed');
 
@@ -144,7 +148,11 @@ g.lockStats.afterAcquire = () => {
 };
 result = g.call('reportIssue', { token: staff, ...report });
 assert.equal(result.code, 'RATE_LIMIT', 'the latest workspace counter is rechecked under the lock');
-assert.equal(g.mailLog.length, mailCountBeforeAtomicChecks, 'workspace quota blocks email before sending');
+assert.equal(
+  g.mailLog.length,
+  mailCountBeforeAtomicChecks,
+  'workspace quota blocks email before sending',
+);
 assert.equal(g.cache[workspaceRateKey], '20');
 
 // 12. Lock contention fails closed without releasing a lock that was not acquired.
@@ -155,7 +163,11 @@ const lockWaitsBeforeBusy = g.lockStats.waits;
 const lockReleasesBeforeBusy = g.lockStats.releases;
 g.lockStats.failNextWait = true;
 result = g.call('reportIssue', { token: staff, ...report });
-assert.equal(result.code, 'BUSY', 'lock contention returns a temporary busy response, not a false quota error');
+assert.equal(
+  result.code,
+  'BUSY',
+  'lock contention returns a temporary busy response, not a false quota error',
+);
 assert.equal(g.mailLog.length, mailCountBeforeAtomicChecks, 'lock contention sends no email');
 assert.equal(g.lockStats.attempts, lockAttemptsBeforeBusy + 1);
 assert.equal(g.lockStats.waits, lockWaitsBeforeBusy);
