@@ -57,7 +57,10 @@ assert.match(
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(handoff, /PRs #209–#211 are merged/);
 assert.match(handoff, /PR #213 is the sole open PR targeting `client-main`/);
-assert.doesNotMatch(handoff, /it is still unmerged; the issue remains present in the current `client-main` baseline/);
+assert.doesNotMatch(
+  handoff,
+  /it is still unmerged; the issue remains present in the current `client-main` baseline/,
+);
 assert.match(handoff, /allow_auto_merge=false/);
 assert.match(staging, /P0 B5/);
 assert.match(staging, /P0 B6/);
@@ -110,4 +113,7 @@ assert.match(autonomousMonitor, /45-minute.*not supported/i);
 assert.match(autonomousMonitor, /never merges/i);
 assert.match(autonomousMonitor, /bounded retry/i);
 assert.match(autonomousMonitor, /Persistent Checkpoint/i);
-assert.match(autonomousMonitor, /Do not open another PR while any prior PR remains open\/unmerged/i);
+assert.match(
+  autonomousMonitor,
+  /Do not open another PR while any prior PR remains open\/unmerged/i,
+);
