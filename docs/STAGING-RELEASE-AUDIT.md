@@ -1,6 +1,6 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 25 October 2026 18:03 IST  
+**Audit date:** 25 October 2026 20:04 IST  
 **Authoritative integration baseline:** client-main `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`, following merged PR #210.  
 **Legacy branch:** `main` (read-only by engineering policy; the actual ahead/behind relationship must be rechecked before any branch operation).  
 **Scope:** source and release-workflow audit, not live deployment, restore or customer acceptance.
@@ -13,16 +13,16 @@ The branch policy names client-main as the only integration branch and main as l
 
 Dedicated staging resources, protected staging Environment, a real deployed staging frontend, successful live UAT, support-email delivery, real backup/restore, physical-device acceptance and customer acceptance are not evidenced as complete. Verify that the private-repository host integration still has access. The product remains single-property, not multi-tenant.
 
-## Current checkpoint — 25 October 2026 18:03 IST
+## Current checkpoint — 25 October 2026 20:04 IST
 
-- PRs #209–#211 are merged. No open PRs targeted `client-main` at checkpoint capture.
+- PRs #209–#211 are merged. PR #213 is the only open PR targeting `client-main`, head `1304a6555ccdd777f447a63eb648df84a257f6ec`; CI / Quality #40194018133, Browser E2E #40194018134, Full Flight Test #40194018122 and monitor #40194018138 passed on that exact head. No review is submitted and auto-merge remains blocked by repository settings/governance.
 - Repository metadata reports `allow_auto_merge=false`; the active ruleset targets only `~DEFAULT_BRANCH` (main), requires `quality` only, and requires zero approvals. Owner/admin must enable auto-merge and extend protections to `client-main`. Classic branch protection could not be independently read by the connected integration (HTTP 403).
 - Staging UAT #39596101014 failed at **Validate isolated deployment configuration**; no deployment or live UAT steps ran. The last ZIP #39988800756 is built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and expires 26 October 2026 at 16:41:12 UTC. No published GitHub release is recorded by the live releases endpoint.
 - Live staging, isolated restore and customer acceptance remain unverified. Production is not authorized.
 
 ## Active release sequence
 
-Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). All current source PRs #209–#211 are merged. Continue with owner-led governance and operational release evidence; do not start a new product-feature batch while release gates remain open.
+Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). Source PRs #209–#211 are merged at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`; PR #213 is the only open PR and synchronizes release-readiness documentation. Do not open another PR while #213 remains open, and do not start a product-feature batch while release gates remain open.
 
 **Evidence still required:** isolated staging identity and host access; inspected pre-migration backup; schema validation and only required staging migrations; backend-first deploy and staging-configured frontend; exact-run guarded UAT; live role, receipt, payment-method, offline and print checks; and restore into a separate recovery target. The hotel pilot remains blocked until those gates pass. Production is excluded.
 
@@ -135,7 +135,7 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 
 ## Release decision
 
-**Source baseline:** PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; exact integration CI/Quality, Browser E2E and Full Flight Test passed. PR #209's branch now includes the current base and its previous exact-head checks passed, but the latest documentation/status commit must be revalidated before owner review. PR #210 remains open and diverged/dirty against the new base, requiring reconciliation plus fresh exact-head checks. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
+**Source baseline:** PRs #209–#211 are merged at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`; current integration CI / Quality, Browser E2E and Full Flight Test passed. PR #213 is the only open PR; its exact-head CI / Quality, Browser E2E, Full Flight Test and monitor checks passed, but `mergeable_state=unstable`, no review is submitted, and repository auto-merge is disabled. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.
 

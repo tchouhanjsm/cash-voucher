@@ -1,14 +1,14 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 25 October 2026 18:03 IST (PRs #205–#211 merged; operational release remains gated)  
+**Updated:** 25 October 2026 20:04 IST (PR #213 documentation sync is the only open PR; operational release remains gated)  
 **Integration branch:** client-main  
 **Current source baseline for release follow-up:** f9188ede9dd83f5e12c563bfa5b8f3082c0765b8 (PR #210 merge)  
-**Release state:** PRs #205–#211 are merged, with current `client-main` at f9188ede9dd83f5e12c563bfa5b8f3082c0765b8; no open PRs targeted `client-main` at the latest checkpoint. Live staging, backup/restore and first-customer acceptance remain unverified. Repository auto-merge is disabled and branch rules do not cover `client-main`; owner/admin action is required. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+**Release state:** PRs #205–#211 are merged at `client-main` SHA `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`. PR #213 is the only open PR targeting `client-main`; its exact-head CI / Quality, Browser E2E, Full Flight Test and monitor checks passed. Auto-merge is disabled, `client-main` is not covered by the active ruleset, and no review is submitted. Live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
-## Current checkpoint — 25 October 2026 18:03 IST
+## Current checkpoint — 25 October 2026 20:04 IST
 
 - Exact current-source checks passed on `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`: [CI / Quality #40188595578](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595578), [Browser E2E #40188595631](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595631), [Full Flight Test #40188595579](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595579), and [monitor #40188596236](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188596236).
-- PRs #209, #210 and #211 are merged; no PRs were open against `client-main` at checkpoint capture. Do not create product-feature work while operational gates remain blocked.
+- PRs #209–#211 are merged. PR #213 is now the only open PR targeting `client-main`, head `1304a6555ccdd777f447a63eb648df84a257f6ec`; CI / Quality #40194018133, Browser E2E #40194018134, Full Flight Test #40194018122 and monitor #40194018138 passed on that exact head. Do not open another PR while #213 remains open.
 - Repository `allow_auto_merge=false`. Ruleset #24624368 targets `~DEFAULT_BRANCH` (main), requires only `quality`, and has zero approvals; it does not cover `client-main`. Owner/admin must enable auto-merge and correct branch rules before the scheduler can safely request auto-merge.
 - Staging UAT #39596101014 remains failed at deployment-configuration preflight; ZIP #39988800756 is stale and expires 26 October 2026 at 16:41:12 UTC. No release is published.
 
@@ -18,7 +18,7 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #205–#211 are merged to `client-main`. The next work is owner-led governance and operational release evidence, not another feature sprint. Do not start another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+PRs #209–#211 are merged to `client-main` at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`. PR #213 is the only open PR, limited to documentation/checkpoint synchronization; its exact-head checks pass, but GitHub reports `mergeable_state=unstable`, no review is submitted, and auto-merge is blocked by repository settings/governance. Do not open another PR until #213 is merged or closed. Then continue owner-led governance and operational release evidence; do not start another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ### 1. Complete the source release
 
@@ -75,7 +75,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 
 ## Source release status
 
-PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; CI/Quality, Browser E2E and Full Flight Test passed on that exact integration SHA. PR #209 now contains the current base and awaits final exact-head status confirmation and owner review; PR #210 still requires base reconciliation. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
+PR #211 and the subsequent PR #210 monitor changes are merged. Current `client-main` is `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`; its CI / Quality, Browser E2E and Full Flight Test passed. PR #213 is the only open PR and its exact-head checks pass, but repository auto-merge and `client-main` governance remain unresolved. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 
@@ -114,11 +114,11 @@ No production migration/deployment, blind branch synchronization, multi-tenant r
 
 ## Autonomous delivery monitoring
 
-A checkpoint-based monitoring workflow is proposed in PR #210 and remains unmerged until its exact-head checks pass and the owner completes review and merge. The ChatGPT monitor runs hourly because a 45-minute cadence is unsupported. The GitHub Actions workflow is event-driven only: pushes to `client-main` run the trusted checkpoint/recovery job, while PRs targeting `client-main` run read-only observation. GitHub requires `workflow_dispatch` workflows to exist on the default branch; this workflow is not on default branch `main`, which remains frozen, so manual dispatch is not available. Do not add a cron schedule to `client-main` or modify `main` merely to advertise an unavailable trigger.
+PR #210's checkpoint-based monitoring workflow merged into `client-main` at `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8` after exact-head validation and owner merge. The workflow is now integrated; its event-only behavior remains as documented below. The ChatGPT monitor runs hourly because a 45-minute cadence is unsupported. The GitHub Actions workflow is event-driven only: pushes to `client-main` run the trusted checkpoint/recovery job, while PRs targeting `client-main` run read-only observation. GitHub requires `workflow_dispatch` workflows to exist on the default branch; this workflow is not on default branch `main`, which remains frozen, so manual dispatch is not available. Do not add a cron schedule to `client-main` or modify `main` merely to advertise an unavailable trigger.
 
 The monitor may observe CI, Browser E2E, Full Flight Test, PR reviews/checks, staging/ZIP runs and release-gate notes; it may retry only timed-out source-validation runs after exact-SHA checks and within a three-attempt ceiling. It never auto-merges, publishes static ZIPs, pushes Clasp, deploys Apps Script, runs transactional staging UAT, performs migrations or changes production. GitHub checkpoint history is persistent run evidence; docs/HANDOFF.md remains the engineering session handoff.
 
 ## Deep-dive follow-up defects
 
 - backend/90-support.gs supportRateAllowed_ uses a non-atomic cache read/increment/write, so concurrent requests can exceed intended rate limits. Fix separately with concurrency/failure tests.
-- Audit health: PR #209 addresses malformed persisted counters/timestamps and mixed-store fail-closed behavior. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed on `ac732798633f6df655400c5aaa3444cea97558f9`; it remains open and unmerged, so `client-main` retains the old behavior until owner review and merge.
+- Audit health: PR #209 is merged. Its mixed-store fail-closed behavior for malformed persisted counters/timestamps is integrated into `client-main`; historical PR-head checks passed before merge. Live Google Sheets/Drive behavior still requires guarded staging UAT.
