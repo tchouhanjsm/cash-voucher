@@ -1,9 +1,9 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 25 October 2026 (P0 B1–B6 source batches merged; operational release still gated)  
+**Updated:** 25 October 2026 (P0 B1–B6 core source batches merged through PR #211; follow-up PRs and operational release remain gated)  
 **Integration branch:** client-main  
-**Current source baseline for release follow-up:** 176da7c559d279149e2473a65a71fd03d3e53018 (PR #208 merge)  
-**Release state:** PRs #205–#208 are merged; live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+**Current source baseline for release follow-up:** 3ad2c8f955b36de00b208ee4283682a1a34805eb (PR #211 merge)  
+**Release state:** PRs #205–#208 and #211 are merged. PR #209 now includes the current base and is awaiting final exact-head status confirmation and owner review; PR #210 remains open and needs base reconciliation. Live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ## Executive decision
 
@@ -11,12 +11,12 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #205–#208 are merged to `client-main`. Next is staging release and recovery evidence, not another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+PRs #205–#208 and #211 are merged to `client-main`. PR #209's base reconciliation is complete and its latest exact-head checks must remain green for owner review; next reconcile PR #210, then continue operational release evidence. Do not start another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ### 1. Complete the source release
 
-- PRs #205–#208 are merged to `client-main`; the latest source merge is `176da7c559d279149e2473a65a71fd03d3e53018`.
-- PR #208's exact-head evidence passed: [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100024), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100025), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40085100077).
+- PRs #205–#208 and #211 are merged to `client-main`; the latest source merge is `3ad2c8f955b36de00b208ee4283682a1a34805eb`.
+- PR #211's exact-head checks passed on `f018a958fa86c7ffe4ef8baa799ddd62c1bfb0d2`: [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435222), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435213), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435233). The resulting integration SHA `3ad2c8f955b36de00b208ee4283682a1a34805eb` also passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102).
 - Green source checks do not prove live deployment or recovery.
 
 ### 2. Prepare and identify staging
@@ -60,7 +60,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 - All product PRs target client-main from short-lived client/* branches.
 - Require CI, Browser E2E and Full Flight Test on the exact final PR head; fix failures instead of bypassing checks.
 - Keep main legacy/read-only. A historical 21 October comparison showed client-main 13 commits ahead and 2 behind main, with merge base acebc6b63010a92e136200321fc77c03dac9a3be. Recheck the live relationship before branch operations; do not merge, rebase or force-push long-lived branches as part of this work.
-- Owner/admin must verify active GitHub rulesets, required checks, default branch and the restrictions on main. Available repository metadata did not prove ruleset enforcement.
+- Verified governance gap: `client-main` reports `protected=false`; the active ruleset `cash-voucher-rule` targets `~DEFAULT_BRANCH` (currently `main`), requires only `quality`, and requires zero approving reviews. Owner/admin must extend and verify the intended ruleset coverage for `client-main`; this plan does not change repository settings.
 - Keep repository branch policy separate from staging/production deployment authorization.
 - Never dispatch deploy/UAT from `main`; dispatch it only from `client-main`.
 
@@ -68,7 +68,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 
 ## Source release status
 
-PR #208 is merged at `176da7c559d279149e2473a65a71fd03d3e53018` and its exact-head CI/Quality, Browser E2E and Full Flight Test passed. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
+PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; CI/Quality, Browser E2E and Full Flight Test passed on that exact integration SHA. PR #209 now contains the current base and awaits final exact-head status confirmation and owner review; PR #210 still requires base reconciliation. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 
