@@ -7,7 +7,7 @@
 
 ## Executive status
 
-PR #211 is the latest merged source baseline on client-main at `3ad2c8f955b36de00b208ee4283682a1a34805eb`. Its exact integration SHA passed CI/Quality ([CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), Browser E2E ([Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and Full Flight Test ([Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102)). These checks do not prove live staging, recovery or customer acceptance.
+PR #211 is the latest merged source baseline on client-main at `3ad2c8f955b36de00b208ee4283682a1a34805eb`. Its exact integration SHA passed [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102). These checks do not prove live staging, recovery or customer acceptance.
 
 The branch policy names client-main as the only integration branch and main as legacy/read-only. Current GitHub metadata reports `client-main` as unprotected. The active `cash-voucher-rule` ruleset targets `~DEFAULT_BRANCH` (currently `main`), requires only `quality`, and requires zero approving reviews. Owner/admin must correct and verify ruleset coverage for `client-main`; this source PR does not change repository settings or blindly reconcile long-lived branches.
 
