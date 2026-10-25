@@ -285,6 +285,91 @@ skippedSnapshot.runs[1] = makeRun('e2e.yml', 'client-main', MAIN_SHA, {
 const skippedReport = buildMonitorReport(skippedSnapshot, NOW);
 assert.equal(skippedReport.sourceChecks[1].code, 'SKIPPED');
 assert.equal(skippedReport.state, 'WAITING_FOR_VALIDATION');
+
+function cleanGateSnapshot() {
+  const snapshot = baseSnapshot();
+  snapshot.handoffText = [
+    '**Verified integration baseline:** `' + MAIN_SHA + '` (PR #208 merged).',
+    '**Current phase:** P0 release readiness.',
+  ].join('\\n');
+  snapshot.repositoryGovernance = {
+    status: 'CLASSIC_PROTECTION_ENABLED',
+    note: 'Verified for this regression fixture.',
+  };
+  return snapshot;
+}
+
+const missingOperationalReport = buildMonitorReport(cleanGateSnapshot(), NOW);
+assert.equal(
+  missingOperationalReport.operationalRuns.find((item) => item.workflowId === 'staging-uat.yml')
+    .code,
+  'NOT_RUN',
+);
+assert.equal(
+  missingOperationalReport.state,
+  'WAITING_FOR_VALIDATION',
+  'missing staging and ZIP evidence must not produce a healthy report',
+);
+
+const cancelledOperationalSnapshot = cleanGateSnapshot();
+cancelledOperationalSnapshot.runs.push(
+  makeRun('staging-uat.yml', 'client-main', MAIN_SHA, {
+    conclusion: 'cancelled',
+    runId: 6201,
+    runNumber: 201,
+  }),
+  makeRun('client-dist.yml', 'client-main', MAIN_SHA, { runId: 6202, runNumber: 201 }),
+);
+const cancelledOperationalReport = buildMonitorReport(cancelledOperationalSnapshot, NOW);
+assert.equal(
+  cancelledOperationalReport.operationalRuns.find((item) => item.workflowId === 'staging-uat.yml')
+    .code,
+  'CANCELLED',
+);
+assert.equal(cancelledOperationalReport.state, 'WAITING_FOR_VALIDATION');
+assert.ok(
+  cancelledOperationalReport.nextActions.some((item) =>
+    item.includes('current-SHA operational evidence'),
+  ),
+);
+
+const staleZipSnapshot = cleanGateSnapshot();
+staleZipSnapshot.runs.push(
+  makeRun('staging-uat.yml', 'client-main', MAIN_SHA, { runId: 6301, runNumber: 301 }),
+  makeRun('client-dist.yml', 'client-main', 'c'.repeat(40), { runId: 6302, runNumber: 301 }),
+);
+const staleZipReport = buildMonitorReport(staleZipSnapshot, NOW);
+assert.equal(
+  staleZipReport.operationalRuns.find((item) => item.workflowId === 'client-dist.yml').code,
+  'STALE_HEAD',
+);
+assert.equal(staleZipReport.state, 'BLOCKED');
+assert.ok(
+  staleZipReport.blockers.some(
+    (item) => item.includes('Client staging ZIP:') && item.includes('Stale source SHA'),
+  ),
+);
+
+const unverifiedGovernanceSnapshot = cleanGateSnapshot();
+unverifiedGovernanceSnapshot.repositoryGovernance = {
+  status: 'OWNER_VERIFICATION_REQUIRED',
+  note: 'Branch protection has not been verified.',
+};
+unverifiedGovernanceSnapshot.runs.push(
+  makeRun('staging-uat.yml', 'client-main', MAIN_SHA, { runId: 6401, runNumber: 401 }),
+  makeRun('client-dist.yml', 'client-main', MAIN_SHA, { runId: 6402, runNumber: 401 }),
+);
+const unverifiedGovernanceReport = buildMonitorReport(unverifiedGovernanceSnapshot, NOW);
+assert.equal(
+  unverifiedGovernanceReport.state,
+  'SOURCE_GREEN_OPERATIONAL_GATES_OPEN',
+  'unverified client-main governance must prevent a healthy state',
+);
+assert.ok(
+  unverifiedGovernanceReport.nextActions.some((item) =>
+    item.includes('Owner/admin must verify rulesets'),
+  ),
+);
 assert.equal(report.phase, 'P0 B6 — audit-health fallback and release gates.');
 assert.equal(report.sourceChecks[0].code, 'PASS');
 assert.equal(report.sourceChecks[1].code, 'FAIL');

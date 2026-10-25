@@ -360,15 +360,27 @@ function buildMonitorReport(snapshot, now = new Date()) {
   });
   const operationalRuns = WORKFLOW_POLICIES.filter((item) => item.category === 'operational').map(
     (policy) => {
-      const candidates = runs.filter(
-        (run) => run.workflowId === policy.id && run.scope === 'client-main',
-      );
-      candidates.sort((a, b) => {
-        const at = asDate(a.createdAt);
-        const bt = asDate(b.createdAt);
-        return (bt ? bt.getTime() : 0) - (at ? at.getTime() : 0);
-      });
-      return { ...checkView(policy, candidates[0] || null, now), category: policy.category };
+      const run = latestRun(runs, policy.id, 'client-main', null);
+      const view = checkView(policy, run, now);
+      if (run && run.headSha !== clientMainSha) {
+        return {
+          ...view,
+          code: 'STALE_HEAD',
+          label: 'Stale source SHA (' + view.label + ')',
+          blocker: true,
+          originalCode: view.code,
+          reason:
+            'The latest operational run used ' +
+            (run.headSha || 'an unknown SHA') +
+            ', not current client-main ' +
+            (clientMainSha || 'SHA unknown') +
+            '. Original result: ' +
+            view.label +
+            '.',
+          category: policy.category,
+        };
+      }
+      return { ...view, category: policy.category };
     },
   );
   const failedSource = sourceChecks.filter((item) =>
@@ -384,7 +396,12 @@ function buildMonitorReport(snapshot, now = new Date()) {
   );
   const waitingPrs = openPullRequests.filter((item) => item.state === 'WAITING_FOR_CHECKS');
   const failedOperational = operationalRuns.filter((item) =>
-    ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN'].includes(item.code),
+    ['FAIL', 'STALLED', 'TIMEOUT_ESCALATE', 'UNKNOWN', 'STALE_HEAD'].includes(item.code),
+  );
+  const incompleteOperational = operationalRuns.filter((item) =>
+    ['NOT_RUN', 'PENDING', 'RUNNING', 'CANCELLED', 'SKIPPED', 'TIMEOUT_RETRY_ELIGIBLE'].includes(
+      item.code,
+    ),
   );
   const gates = parseReleaseGates(handoff);
   const baselineDrift = Boolean(
@@ -412,6 +429,8 @@ function buildMonitorReport(snapshot, now = new Date()) {
   }
   for (const run of failedOperational)
     blockers.push(run.name + ': last recorded staging/package run is ' + run.label + '.');
+  for (const run of incompleteOperational)
+    blockers.push(run.name + ': ' + run.label + ' — current operational evidence is incomplete.');
   if (baselineDrift)
     blockers.push(
       'docs/HANDOFF.md baseline (' +
@@ -435,12 +454,14 @@ function buildMonitorReport(snapshot, now = new Date()) {
   let state = 'HEALTHY';
   if (failedSource.length || blockedPrs.length || failedOperational.length || warnings.length)
     state = 'BLOCKED';
-  else if (incompleteSource.length || waitingPrs.length) state = 'WAITING_FOR_VALIDATION';
+  else if (incompleteSource.length || waitingPrs.length || incompleteOperational.length)
+    state = 'WAITING_FOR_VALIDATION';
   else if (
     gates.stagingUnverified ||
     gates.restoreUnverified ||
     gates.deviceAcceptanceUnverified ||
-    baselineDrift
+    baselineDrift ||
+    governance.status !== 'CLASSIC_PROTECTION_ENABLED'
   )
     state = 'SOURCE_GREEN_OPERATIONAL_GATES_OPEN';
   const recoveryCandidates = collectRecoveryCandidates(runs, prs, now);
@@ -466,6 +487,12 @@ function buildMonitorReport(snapshot, now = new Date()) {
   if (recoveryCandidates.length)
     nextActions.push(
       'Retry eligible timed-out source-validation runs only; maximum three total attempts per workflow run.',
+    );
+  if (incompleteOperational.length)
+    nextActions.push(
+      'Obtain completed current-SHA operational evidence for ' +
+        incompleteOperational.map((item) => item.name + ' (' + item.label + ')').join(', ') +
+        '. Missing, running, cancelled and skipped operational runs are not release evidence.',
     );
   if (baselineDrift)
     nextActions.push(
