@@ -1,6 +1,6 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 25 October 2026 20:16 IST  
+**Updated:** 25 October 2026 20:23 IST  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
 **Verified integration baseline:** `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8` (PR #210 merged; exact-head source checks passed).  
@@ -17,6 +17,12 @@ This time-stamped checkpoint supersedes earlier PR-state and baseline snapshots 
 - **Branch governance:** ruleset [cash-voucher-rule #24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets `~DEFAULT_BRANCH` (currently `main`), requires only `quality`, and requires zero approvals. It does not cover `client-main`. The branch-protection API returned 403 to this connection, so classic branch protection could not be independently verified. Owner/admin must cover `client-main` and require exact-head CI / Quality, Browser E2E, Full Flight Test, and the intended human approval.
 - **Staging:** [UAT run #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed at **Validate isolated deployment configuration**; deployment and live UAT were skipped. [Client staging ZIP #39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) is from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and expires 26 October 2026 at 16:41:12 UTC. The GitHub releases endpoint returned an empty list.
 - **Still unverified:** staging identity/deployment, real backup/restore into a separate destination, actual HTTP security headers and role/receipt authorization, offline/reconnect and print behavior, intended-device/accessibility acceptance, and customer sign-off. No deployment, migration, or production operation was performed.
+
+## PR #213 — validation RCA (25 October 2026)
+
+- On a superseded PR #213 head, CI [#40203888544](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203888544) failed in **Run quality gate** at `npm test`. The readiness regression test expected the literal phrase `PR #213 is the only open PR targeting \`client-main\``, while the documentation used a Markdown link label. This was a brittle assertion mismatch, not a product-code or browser-test failure. The test now asserts the stable queue wording independently of link markup.
+- Full Flight Test [#40203888571](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203888571) failed at **Verify CI and Browser E2E on the same commit** because CI failed on that SHA and Browser E2E [#40203888558](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203888558) was cancelled after a later commit superseded the head. This was a deterministic regression-test failure plus a superseded cancellation, not a browser assertion failure or timeout. No manual retry was used.
+- An earlier superseded head also failed CI [#40203359552](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203359552) at `Run quality gate` / `prettier --check .` because `test/test-current-readiness-docs.js` was not formatted. The formatting correction was made on this same PR branch. Check results for the active head must be read from the live PR description; prior-head results are historical only.
 
 ## Release gates that remain open
 
