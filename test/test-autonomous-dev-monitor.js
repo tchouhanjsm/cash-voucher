@@ -296,19 +296,14 @@ const finalizedSnapshot = refreshExactHeadSourceRuns(
   finalizationSnapshot,
   finalizationRunsByWorkflow,
 );
-const finalizedReport = buildMonitorReport(
-  finalizedSnapshot,
-  new Date('2026-10-25T00:03:00.000Z'),
-);
+const finalizedReport = buildMonitorReport(finalizedSnapshot, new Date('2026-10-25T00:03:00.000Z'));
 assert.equal(finalizedReport.allSourceChecksPassed, true);
 assert.deepEqual(
   finalizedReport.sourceChecks.map((item) => item.code),
   ['PASS', 'PASS', 'PASS'],
   'checkpoint finalization uses terminal results for the exact integration SHA',
 );
-assert.ok(
-  finalizedReport.sourceChecks.every((item) => item.sha === MAIN_SHA),
-);
+assert.ok(finalizedReport.sourceChecks.every((item) => item.sha === MAIN_SHA));
 
 const wrongShaOnly = baseSnapshot();
 wrongShaOnly.runs[0].status = 'in_progress';
@@ -331,10 +326,7 @@ const wrongShaRefresh = refreshExactHeadSourceRuns(wrongShaOnly, {
     },
   ],
 });
-const wrongShaReport = buildMonitorReport(
-  wrongShaRefresh,
-  new Date('2026-10-25T00:04:00.000Z'),
-);
+const wrongShaReport = buildMonitorReport(wrongShaRefresh, new Date('2026-10-25T00:04:00.000Z'));
 assert.equal(wrongShaReport.sourceChecks[0].code, 'RUNNING');
 assert.equal(wrongShaReport.sourceChecks[0].sha, MAIN_SHA);
 
