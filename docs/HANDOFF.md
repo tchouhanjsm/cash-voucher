@@ -62,3 +62,11 @@ This improves common failure cases; it does not reconstruct missing AuditLog eve
 1. backend/90-support.gs — supportRateAllowed_ uses CacheService get-then-put as a counter. Concurrent requests can observe the same count and exceed intended 5-per-user/hour or 20-per-workspace/6-hour thresholds. Use a lock/atomic strategy or a storage primitive with suitable consistency; add concurrency/failure-path regression tests.
 2. Audit health — PR #209 hardens readAuditPropertiesMarker_ and mixed-store aggregation so malformed persisted state reports MONITORING_UNAVAILABLE. Its exact-head checks passed, but it is still unmerged; the issue remains present in the current `client-main` baseline until owner review and merge.
 3. Operational launch gates remain P0: confirm staging Script/deployment/Sheet/folders, backend/frontend staging release, guarded UAT, actual response headers, schema migration only after review, restore into a separate recovery target, and real-device/offline/print/accessibility acceptance.
+
+
+## Cancellation diagnostics follow-up — 25 October 2026
+
+- Deep review found that the monitor's detailed-job inspection selected failed, timed-out and action-required workflow runs, but omitted completed `cancelled` runs. Cancelled required checks remained non-passing, yet their job/step diagnostics were not collected into the checkpoint report.
+- The follow-up in PR #210 includes cancelled workflow runs in diagnostic collection. The existing job and step filters retain cancellation conclusions, so operators can distinguish a concurrency-superseded run from a cancellation inside the actual validation job.
+- A regression assertion protects the workflow collector's cancellation filter. Cancellation is still never treated as success; a cancelled required check remains `WAITING_FOR_VALIDATION` until valid exact-head evidence exists.
+- This source commit invalidates prior PR #210 exact-head evidence. Re-run CI / Quality, Browser E2E and Full Flight Test on the new head before review or merge.

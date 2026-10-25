@@ -303,6 +303,11 @@ assert.doesNotMatch(
   'manual dispatch requires the workflow file on the default branch, which remains frozen',
 );
 assert.match(workflow, /github\.event_name != 'pull_request'/);
+assert.match(
+  workflow,
+  /run\.status === 'completed' && \['failure', 'timed_out', 'cancelled', 'action_required'\]\.includes\(String\(run\.conclusion \|\| ''\)\)/,
+  'completed cancelled runs must be inspected for exact job/step diagnostics',
+);
 assert.match(workflow, /reRunWorkflowFailedJobs/);
 assert.match(monitorSource, /recovery-key/);
 console.log(

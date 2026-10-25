@@ -137,7 +137,7 @@ jobs:
 
             const nowMs = Date.now();
             const inspected = normalizedRuns
-              .filter((run) => (run.status === 'completed' && ['failure', 'timed_out', 'action_required'].includes(String(run.conclusion || ''))) ||
+              .filter((run) => (run.status === 'completed' && ['failure', 'timed_out', 'cancelled', 'action_required'].includes(String(run.conclusion || ''))) ||
                 (run.status === 'in_progress' && nowMs - Date.parse(run.startedAt || run.createdAt) > 25 * 60 * 1000))
               .sort((a, b) => Date.parse(b.updatedAt || b.createdAt) - Date.parse(a.updatedAt || a.createdAt))
               .slice(0, 8);
