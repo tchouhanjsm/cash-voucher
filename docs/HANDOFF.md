@@ -1,19 +1,37 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 25 October 2026  
+**Updated:** 25 October 2026 18:03 IST  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
-**Verified integration baseline:** `3ad2c8f955b36de00b208ee4283682a1a34805eb` (PR #211 merged; exact-head source checks passed).  
+**Verified integration baseline:** `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8` (PR #210 merged; exact-head source checks passed).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 release readiness and branch reconciliation. PR #211 is merged; PR #209 remains open on `client/p0-audit-monitoring-integrity-20261025` for mixed audit-marker integrity, and PR #210 remains open for delivery-monitor tooling. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness and governance/staging gate closure. PRs #209–#211 are merged; no open PRs targeted `client-main` at the latest checkpoint. Exact-head CI, Browser E2E, Full Flight Test and monitor checks passed on `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`. Live staging remains unverified; owner retains merge/deploy authority. Repository auto-merge is disabled and requires owner/admin action.
+
+## Current checkpoint — 25 October 2026 18:03 IST
+
+This time-stamped checkpoint supersedes earlier PR-state and baseline snapshots retained below for historical failure analysis. Re-query live GitHub state before every decision.
+
+- **Authoritative integration SHA:** `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`, the merge commit for PR #210. PR #209 merged at 07:04:10 UTC, PR #211 merged at 05:50:15 UTC, and PR #210 merged at 11:22:26 UTC on 25 October 2026. The open-PR query for base `client-main` returned an empty list at this checkpoint.
+- **Exact-head source evidence:** [CI / Quality #40188595578](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595578), [Browser E2E #40188595631](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595631), [Full Flight Test #40188595579](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595579), and [Autonomous Development Monitor #40188596236](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188596236) all completed successfully on `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`. These are source/workflow checks only, not live staging or release evidence.
+- **Repository auto-merge:** `allow_auto_merge=false`. The connected GitHub actions expose no repository-settings write operation, so auto-merge could not be enabled from this run. Owner/admin must enable **Settings → General → Pull Requests → Allow auto-merge** before the scheduler can request auto-merge for a future eligible PR.
+- **Branch governance:** ruleset [cash-voucher-rule #24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets `~DEFAULT_BRANCH` (currently `main`), requires only `quality`, and requires zero approvals. It does not cover `client-main`. The branch-protection API returned 403 to this connection, so classic branch protection could not be independently verified. Owner/admin must cover `client-main` and require exact-head CI / Quality, Browser E2E, Full Flight Test, and the intended human approval.
+- **Staging:** [UAT run #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed at **Validate isolated deployment configuration**; deployment and live UAT were skipped. [Client staging ZIP #39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) is from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and expires 26 October 2026 at 16:41:12 UTC. The GitHub releases endpoint returned an empty list.
+- **Still unverified:** staging identity/deployment, real backup/restore into a separate destination, actual HTTP security headers and role/receipt authorization, offline/reconnect and print behavior, intended-device/accessibility acceptance, and customer sign-off. No deployment, migration, or production operation was performed.
+
+## Release gates that remain open
+
+1. Owner/admin enables repository auto-merge and applies the intended ruleset and human-review protection to `client-main`.
+2. Owner/operator privately corrects staging identity references and Clasp credentials, verifies isolation, and runs preflight before any explicitly authorized guarded staging UAT.
+3. QA/operator demonstrates a real backup and restore into a separate recovery destination and completes intended-device, offline/reconnect, printing, accessibility, and customer-acceptance checks.
+4. Security reassesses the temporary Zod advisory exception by 9 November 2026.
 
 ## Verified source state
 
-- PRs #205–#208 and #211 are merged to `client-main`. The current source baseline is `3ad2c8f955b36de00b208ee4283682a1a34805eb`. PR #209 now includes current `client-main` as a merge parent; it remains open for owner review and final exact-head status confirmation. PR #210 remains open and still needs base reconciliation.
-- Exact-head checks passed on current integration SHA `3ad2c8f955b36de00b208ee4283682a1a34805eb`: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102). Historical PR #207/#208 checks remain in the audit trail.
+- PRs #205–#211 are merged to `client-main`. The current source baseline is `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`, the PR #210 merge commit. No open PRs targeted `client-main` at the checkpoint captured above. Do not start a product-feature batch while staging identity, governance, recovery and customer-acceptance gates remain open.
+- Exact-head checks passed on current integration SHA `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595578), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595631), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595579). The monitor also passed on [run #40188596236](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188596236). Historical runs below are retained as historical evidence.
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
-- The owner-only `auditLog` endpoint exposes audit monitoring. The previous monitor relied only on Script Properties, so a primary marker write failure could hide an AuditLog append failure. PR #208 added a Settings-sheet durable fallback and a transient cache fallback, distinguishes unavailable monitoring, and keeps health data on empty cursor pages. PR #209 remains open to make mixed valid/corrupt marker-store states fail closed.
+- The owner-only `auditLog` endpoint exposes audit monitoring. The previous monitor relied only on Script Properties, so a primary marker write failure could hide an AuditLog append failure. PR #208 added a Settings-sheet durable fallback and a transient cache fallback, distinguishes unavailable monitoring, and keeps health data on empty cursor pages. PR #209 merged into client-main before PR #210; its mixed valid/corrupt marker-store fail-closed behavior is now part of the integration history.
 - The temporary `GHSA-mrhx-c7xc-m3w5` Zod exception from PR #206 remains a separate risk, due for reassessment by 9 November 2026. Do not force a major-version override of Clasp's declared Zod dependency.
 
 ## P0 B6 — merged fallback and open fail-closed follow-up
@@ -26,9 +44,9 @@
 
 This improves common failure cases; it does not reconstruct missing AuditLog events. If AuditLog, Script Properties, Settings and CacheService all fail to persist the marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. That residual risk remains visible in tests and documentation.
 
-## PR #209 — mixed audit-marker integrity follow-up
+## Historical PR #209 — mixed audit-marker integrity follow-up
 
-The open branch `client/p0-audit-monitoring-integrity-20261025` makes the owner-facing audit-health contract fail closed: if any marker store is unreadable or malformed, the result is `MONITORING_UNAVAILABLE` even when another store retains a valid marker. Known failure count, timestamp, kind and marker source remain visible in the owner UI and health export.
+The merged branch `client/p0-audit-monitoring-integrity-20261025` made the owner-facing audit-health contract fail closed: if any marker store is unreadable or malformed, the result is `MONITORING_UNAVAILABLE` even when another store retains a valid marker. Known failure count, timestamp, kind and marker source remain visible in the owner UI and health export.
 
 The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07eddb9f6df376db4`: [CI / Quality #40170498728](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40170498728), [Browser E2E #40170498735](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40170498735), and [Full Flight Test #40170498738](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40170498738) passed on that exact SHA. The current branch includes `client-main` at `3ad2c8f955b36de00b208ee4283682a1a34805eb` as a merge parent; use PR #209's live `Verification evidence` section for the newest head and check conclusions. These are source/mock checks, not proof of live Google Sheets/Drive behavior.
 

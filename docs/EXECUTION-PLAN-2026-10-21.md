@@ -1,9 +1,16 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 25 October 2026 (P0 B1–B6 core source batches merged through PR #211; follow-up PRs and operational release remain gated)  
+**Updated:** 25 October 2026 18:03 IST (PRs #205–#211 merged; operational release remains gated)  
 **Integration branch:** client-main  
-**Current source baseline for release follow-up:** 3ad2c8f955b36de00b208ee4283682a1a34805eb (PR #211 merge)  
-**Release state:** PRs #205–#208 and #211 are merged. PR #209 now includes the current base and is awaiting final exact-head status confirmation and owner review; PR #210 remains open and needs base reconciliation. Live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+**Current source baseline for release follow-up:** f9188ede9dd83f5e12c563bfa5b8f3082c0765b8 (PR #210 merge)  
+**Release state:** PRs #205–#211 are merged, with current `client-main` at f9188ede9dd83f5e12c563bfa5b8f3082c0765b8; no open PRs targeted `client-main` at the latest checkpoint. Live staging, backup/restore and first-customer acceptance remain unverified. Repository auto-merge is disabled and branch rules do not cover `client-main`; owner/admin action is required. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+
+## Current checkpoint — 25 October 2026 18:03 IST
+
+- Exact current-source checks passed on `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`: [CI / Quality #40188595578](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595578), [Browser E2E #40188595631](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595631), [Full Flight Test #40188595579](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188595579), and [monitor #40188596236](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40188596236).
+- PRs #209, #210 and #211 are merged; no PRs were open against `client-main` at checkpoint capture. Do not create product-feature work while operational gates remain blocked.
+- Repository `allow_auto_merge=false`. Ruleset #24624368 targets `~DEFAULT_BRANCH` (main), requires only `quality`, and has zero approvals; it does not cover `client-main`. Owner/admin must enable auto-merge and correct branch rules before the scheduler can safely request auto-merge.
+- Staging UAT #39596101014 remains failed at deployment-configuration preflight; ZIP #39988800756 is stale and expires 26 October 2026 at 16:41:12 UTC. No release is published.
 
 ## Executive decision
 
@@ -11,11 +18,11 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #205–#208 and #211 are merged to `client-main`. PR #209's base reconciliation is complete and its latest exact-head checks must remain green for owner review; next reconcile PR #210, then continue operational release evidence. Do not start another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+PRs #205–#211 are merged to `client-main`. The next work is owner-led governance and operational release evidence, not another feature sprint. Do not start another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ### 1. Complete the source release
 
-- PRs #205–#208 and #211 are merged to `client-main`; the latest source merge is `3ad2c8f955b36de00b208ee4283682a1a34805eb`.
+- PRs #205–#211 are merged to `client-main`; the current source merge is `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8`.
 - PR #211's exact-head checks passed on `f018a958fa86c7ffe4ef8baa799ddd62c1bfb0d2`: [CI/Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435222), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435213), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435233). The resulting integration SHA `3ad2c8f955b36de00b208ee4283682a1a34805eb` also passed [CI](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102).
 - Green source checks do not prove live deployment or recovery.
 

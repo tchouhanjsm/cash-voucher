@@ -6,13 +6,17 @@ The delivery process must keep development moving without confusing a green mock
 
 ## Current verified checkpoint
 
-The last merged integration checkpoint is `176da7c559d279149e2473a65a71fd03d3e53018` (PR #208). The monitor must compare the live `client-main` SHA with `docs/HANDOFF.md` and report baseline drift rather than silently treating stale documentation as current. Open PR heads remain separate from the merged integration baseline.
+The latest merged integration checkpoint at this update is `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8` (PR #210). PRs #209–#211 are merged; no open PRs targeted `client-main` at checkpoint capture. The monitor must compare the live `client-main` SHA with `docs/HANDOFF.md` and report baseline drift rather than silently treating stale documentation as current. Open PR heads remain separate from the merged integration baseline. Current source checks passed on the checkpoint SHA; this does not close staging, restore, governance or customer-acceptance gates.
 
 The bounded retry policy permits at most two retries per eligible source-validation run (three total attempts), and only for a revalidated timeout. It never retries ordinary test failures, cancellations, staging UAT or ZIP publication.
 
 ## Scheduler cadence
 
 The ChatGPT monitor is configured to run hourly. A 45-minute recurring schedule is not supported by the available scheduler; do not claim that interval was configured. Repository Actions are event-driven only and have no cron or manual-dispatch trigger: the default branch is `main`, while `client-main` is the integration branch and `main` is designated frozen/read-only. GitHub scheduled and `workflow_dispatch` triggers require the workflow file on the default branch, so neither is available for this workflow without changing the frozen branch. Do not modify `main` as a workaround.
+
+## Auto-merge policy boundary
+
+The external ChatGPT delivery scheduler may request GitHub auto-merge only for the single active PR after exact-head required checks, dependency/security gates, mergeability, branch protection and required human review are satisfied. Repository metadata currently reports `allow_auto_merge=false`; the connected GitHub toolset has no repository-settings write action. Owner/admin must enable **Settings → General → Pull Requests → Allow auto-merge**. The scheduler must not claim auto-merge is enabled until GitHub confirms it. The repository Actions monitor itself remains read-only with respect to merges.
 
 ## Repository monitor behavior
 
@@ -46,7 +50,7 @@ The monitor never performs Clasp push, Apps Script version update, Google Sheets
 
 ## Owner-required actions
 
-- Confirm rulesets and branch protection actually cover client-main and require intended checks and review.
+- Enable repository auto-merge and confirm rulesets/branch protection cover client-main with the intended checks and review.
 - Confirm staging Script/deployment/Sheet/folders and production separation privately; never paste credentials or private IDs into the checkpoint.
 - Review the temporary Zod advisory exception from PR #206 by 9 November 2026.
 - Authorize staging deployment, migrations, transactional UAT and pilot explicitly; none is implied by monitor success.
