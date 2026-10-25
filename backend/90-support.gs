@@ -23,13 +23,42 @@ function supportText_(value, max) {
       .slice(0, max)
   );
 }
-// Best-effort counter in the script cache (max 6 h). Protects the mail quota of the owner's account.
-function supportRateAllowed_(key, limit, ttlSeconds) {
-  const cache = CacheService.getScriptCache();
-  const used = Number(cache.get(key) || 0);
-  if (used >= limit) return false;
-  cache.put(key, String(used + 1), ttlSeconds);
-  return true;
+// Atomically checks and consumes both support-report quotas. Fail closed on lock/cache errors.
+function supportRateAllowed_(
+  userKey,
+  userLimit,
+  userTtlSeconds,
+  workspaceKey,
+  workspaceLimit,
+  workspaceTtlSeconds,
+) {
+  const lock = LockService.getScriptLock();
+  let acquired = false;
+  try {
+    lock.waitLock(1000);
+    acquired = true;
+    const cache = CacheService.getScriptCache();
+    const userRaw = cache.get(userKey);
+    const workspaceRaw = cache.get(workspaceKey);
+    const userUsed = userRaw === null || userRaw === '' ? 0 : Number(userRaw);
+    const workspaceUsed = workspaceRaw === null || workspaceRaw === '' ? 0 : Number(workspaceRaw);
+    if (
+      !Number.isSafeInteger(userUsed) ||
+      userUsed < 0 ||
+      !Number.isSafeInteger(workspaceUsed) ||
+      workspaceUsed < 0
+    ) {
+      return null;
+    }
+    if (userUsed >= userLimit || workspaceUsed >= workspaceLimit) return false;
+    cache.put(userKey, String(userUsed + 1), userTtlSeconds);
+    cache.put(workspaceKey, String(workspaceUsed + 1), workspaceTtlSeconds);
+    return true;
+  } catch {
+    return null;
+  } finally {
+    if (acquired) lock.releaseLock();
+  }
 }
 function reportIssue_(user, req) {
   const category = Object.prototype.hasOwnProperty.call(SUPPORT_CATEGORIES, req.category)
@@ -50,10 +79,18 @@ function reportIssue_(user, req) {
       'SUPPORT_NOT_CONFIGURED',
     );
   }
-  if (
-    !supportRateAllowed_('support:u:' + user.email, SUPPORT_USER_LIMIT_PER_HOUR, 3600) ||
-    !supportRateAllowed_('support:w', SUPPORT_WORKSPACE_LIMIT_PER_6H, 21600)
-  ) {
+  const rateAllowed = supportRateAllowed_(
+    'support:u:' + user.email,
+    SUPPORT_USER_LIMIT_PER_HOUR,
+    3600,
+    'support:w',
+    SUPPORT_WORKSPACE_LIMIT_PER_6H,
+    21600,
+  );
+  if (rateAllowed === null) {
+    throw err_('Support reporting is temporarily busy. Please try again shortly.', 'BUSY');
+  }
+  if (!rateAllowed) {
     throw err_('Too many reports sent recently. Please call your support contact.', 'RATE_LIMIT');
   }
 
