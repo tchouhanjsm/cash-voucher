@@ -104,3 +104,14 @@ Consider one integrated **Today → Close → Owner card** workflow: Today prior
 ## Non-goals and stop conditions
 
 No production migration/deployment, blind branch synchronization, multi-tenant rewrite, AI dependency, autonomous posting, outbound WhatsApp campaign, unvalidated tax/ledger claim or mandatory denomination schema change. Staging is unverified until live UAT, backup and isolated restore are evidenced. Customer handover is blocked until access, device, data ownership and acceptance gates pass.
+
+## Autonomous delivery monitoring
+
+A checkpoint-based monitoring workflow is proposed in PR #210 and remains unmerged until its exact-head checks pass and the owner completes review and merge. The ChatGPT monitor runs hourly because a 45-minute cadence is unsupported. The GitHub Actions workflow is event-driven only: pushes to `client-main` run the trusted checkpoint/recovery job, while PRs targeting `client-main` run read-only observation. GitHub requires `workflow_dispatch` workflows to exist on the default branch; this workflow is not on default branch `main`, which remains frozen, so manual dispatch is not available. Do not add a cron schedule to `client-main` or modify `main` merely to advertise an unavailable trigger.
+
+The monitor may observe CI, Browser E2E, Full Flight Test, PR reviews/checks, staging/ZIP runs and release-gate notes; it may retry only timed-out source-validation runs after exact-SHA checks and within a three-attempt ceiling. It never auto-merges, publishes static ZIPs, pushes Clasp, deploys Apps Script, runs transactional staging UAT, performs migrations or changes production. GitHub checkpoint history is persistent run evidence; docs/HANDOFF.md remains the engineering session handoff.
+
+## Deep-dive follow-up defects
+
+- backend/90-support.gs supportRateAllowed_ uses a non-atomic cache read/increment/write, so concurrent requests can exceed intended rate limits. Fix separately with concurrency/failure tests.
+- Audit health: PR #209 addresses malformed persisted counters/timestamps and mixed-store fail-closed behavior. Its exact-head CI/Quality, Browser E2E and Full Flight Test passed on `ac732798633f6df655400c5aaa3444cea97558f9`; it remains open and unmerged, so `client-main` retains the old behavior until owner review and merge.

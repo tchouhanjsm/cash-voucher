@@ -131,3 +131,17 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 **Source baseline:** PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; exact integration CI/Quality, Browser E2E and Full Flight Test passed. PR #209's branch now includes the current base and its previous exact-head checks passed, but the latest documentation/status commit must be revalidated before owner review. PR #210 remains open and diverged/dirty against the new base, requiring reconciliation plus fresh exact-head checks. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.
+
+## Autonomous delivery monitor
+
+The repository has an event-driven monitor targeting `client-main`. It observes exact-SHA CI, Browser E2E and Full Flight Test; summarizes PR reviews/checks and staging/ZIP workflow runs; reports stalled, timeout and failure states; and persists a bounded run history to one GitHub checkpoint issue and workflow artifact. Manual dispatch is unavailable while the workflow is absent from the frozen default branch `main`; do not modify `main` merely to enable it.
+
+The ChatGPT monitor has a real hourly schedule. The requested 45-minute interval is not supported. GitHub Actions cron is intentionally omitted because GitHub scheduled workflows run from the default branch, which remains main while repository policy treats main as frozen/read-only. Do not represent an event/manual workflow as a 45-minute cron.
+
+Automatic recovery is limited to timed-out source-validation runs, validated against the exact current head, with at most three attempts total. It does not rerun failed tests, cancelled runs, write-capable staging UAT or static ZIP publication. PR-event observation is read-only. No automated merge, Clasp push, Apps Script deployment, Google resource mutation, migration, cPanel upload or production change is permitted.
+
+## Deep-dive findings to fix in a separate code batch
+
+- Support report rate limiting in backend/90-support.gs is implemented with CacheService read-then-put and is not atomic under concurrent submissions. Add a bounded lock/atomic counter and concurrency tests.
+- B6 audit-marker parsing appears to coerce malformed Script Properties state into a degraded marker rather than always returning MONITORING_UNAVAILABLE. Add malformed counter/timestamp tests and align implementation with the published fail-closed contract.
+- Live staging, actual response headers, real Google resource isolation, migration need, backup/restore, and device acceptance remain unverified. Green CI/mock tests must never close those release gates.

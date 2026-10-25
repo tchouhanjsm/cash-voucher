@@ -16,7 +16,7 @@
 - The owner-only `auditLog` endpoint exposes audit monitoring. The previous monitor relied only on Script Properties, so a primary marker write failure could hide an AuditLog append failure. PR #208 added a Settings-sheet durable fallback and a transient cache fallback, distinguishes unavailable monitoring, and keeps health data on empty cursor pages. PR #209 remains open to make mixed valid/corrupt marker-store states fail closed.
 - The temporary `GHSA-mrhx-c7xc-m3w5` Zod exception from PR #206 remains a separate risk, due for reassessment by 9 November 2026. Do not force a major-version override of Clasp's declared Zod dependency.
 
-## Current batch — P0 B6
+## P0 B6 — merged fallback and open fail-closed follow-up
 
 1. Preserve one audit-health response contract for populated, empty and terminal cursor pages.
 2. On an audit append failure, persist the marker in Script Properties and in the Settings-sheet fallback. If both durable stores fail, attempt a clearly labeled transient CacheService marker with a six-hour TTL.
@@ -59,3 +59,53 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - PR handoff validation requires the exact `## Verification evidence` heading with meaningful current-head links; update the PR body before pushing a new head so the handoff gate evaluates the intended evidence.
 - Keep Git merge, Clasp upload, Web App version update, ZIP publication, live UAT, migrations and production release as separate gates.
 - If target identity, schema, backup, security headers, audit monitoring or restore fails, stop and preserve evidence. No production operation is authorized by this handoff.
+
+## Autonomous delivery workflow — current implementation
+
+- The ChatGPT delivery monitor is configured hourly. The requested 45-minute cadence is unsupported; do not represent it as a 45-minute job.
+- The repository monitor is event-driven: pushes to `client-main` trigger the trusted checkpoint/recovery job, while PRs targeting `client-main` run read-only observation. Manual dispatch is intentionally unavailable because GitHub requires a `workflow_dispatch` workflow to exist on the default branch, while `main` remains frozen and this workflow is not present there. Do not modify `main` as a workaround. The ChatGPT monitor supplies the hourly observation cadence.
+- The monitor records exact SHA, phase, required CI/E2E/Flight status, PR review/check status, operational staging/ZIP state, release gates, timeout recovery attempts and bounded run history in a dedicated GitHub checkpoint issue and workflow artifact.
+- It may retry only timed-out source-validation workflows with exact-head validation and a three-attempt ceiling. It does not retry ordinary test failures, cancellations, staging UAT or ZIP publication. PR-event jobs are read-only.
+- No automated PR merge, Clasp push, Apps Script deployment, Google resource mutation, migration, live UAT write, cPanel upload or production change is permitted. The repository owner remains responsible for approval, merge and release authorization.
+- GitHub branch protection/rulesets and the mismatch between default branch main and integration branch client-main remain owner/admin settings to verify. The monitor does not assume source workflows enforce branch protection.
+
+## Deep-dive defects reserved for a separate targeted fix
+
+1. backend/90-support.gs — supportRateAllowed_ uses CacheService get-then-put as a counter. Concurrent requests can observe the same count and exceed intended 5-per-user/hour or 20-per-workspace/6-hour thresholds. Use a lock/atomic strategy or a storage primitive with suitable consistency; add concurrency/failure-path regression tests.
+2. Audit health — PR #209 hardens readAuditPropertiesMarker_ and mixed-store aggregation so malformed persisted state reports MONITORING_UNAVAILABLE. Its exact-head checks passed, but it is still unmerged; the issue remains present in the current `client-main` baseline until owner review and merge.
+3. Operational launch gates remain P0: confirm staging Script/deployment/Sheet/folders, backend/frontend staging release, guarded UAT, actual response headers, schema migration only after review, restore into a separate recovery target, and real-device/offline/print/accessibility acceptance.
+
+## Cancellation diagnostics follow-up — 25 October 2026
+
+- Deep review found that the monitor's detailed-job inspection selected failed, timed-out and action-required workflow runs, but omitted completed `cancelled` runs. Cancelled required checks remained non-passing, yet their job/step diagnostics were not collected into the checkpoint report.
+- The follow-up in PR #210 includes cancelled workflow runs in diagnostic collection. The existing job and step filters retain cancellation conclusions, so operators can distinguish a concurrency-superseded run from a cancellation inside the actual validation job.
+- A regression assertion protects the workflow collector's cancellation filter. Cancellation is still never treated as success; a cancelled required check remains `WAITING_FOR_VALIDATION` until valid exact-head evidence exists.
+- This source commit invalidates prior PR #210 exact-head evidence. Re-run CI / Quality, Browser E2E and Full Flight Test on the new head before review or merge.
+
+## Review-state integrity follow-up — 25 October 2026
+
+- Deep review found the delivery monitor recorded PR review state but did not let `CHANGES_REQUESTED` block the PR's delivery state. A green check set could therefore appear as review-ready even when review feedback remained unresolved.
+- The review collector now treats unresolved `CHANGES_REQUESTED` as a blocker and reports the explicit owner action to resolve review feedback before merge.
+- An `APPROVED` review counts as current approval only when its `commit_id` matches the current PR head SHA. An approval on a superseded head falls back to `REVIEW_REQUIRED`; unresolved change requests remain blocking until a later review from that reviewer supersedes them.
+- Regression tests cover stale approvals, exact-head approvals, unresolved changes requests, later approvals, and monitor-level blocked-state reporting. The current PR head must pass CI / Quality, Browser E2E, and Full Flight Test after this correction.
+- Review-state follow-up validation RCA: CI / Quality runs [#40155142165](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40155142165), [#40155325426](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40155325426), [#40155458256](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40155458256), and [#40155666356](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40155666356) stopped at `Run quality gate` / `prettier --check .`; the first run flagged both the monitor and test file, later runs flagged only `scripts/autonomous-dev-monitor.js`. The temporary diagnostic run [#40155791155](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40155791155) exposed the exact remaining two line-wrap differences in the current-head approval predicate and change-request blocker message. Those lines are corrected, and the temporary diagnostic workflow step is removed in this follow-up. These were deterministic formatter failures; the regression suite did not run before the gate stopped. Fresh exact-head checks remain mandatory.
+
+## Delivery-monitor release-state integrity follow-up — 25 October 2026
+
+- Deep review found that the monitor selected the newest staging/ZIP run but did not compare its source SHA with current `client-main`. The latest Client staging ZIP run [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from `aa37d94819e59a72c797ba36839aa8f8ec94008f`, older than the current baseline `176da7c559d279149e2473a65a71fd03d3e53018`; it must not be represented as current release evidence.
+- Missing, pending, running, cancelled or skipped operational runs were not included in the monitor's incomplete-validation state calculation. If handoff wording later changed, the report could incorrectly appear healthy without completed staging and ZIP evidence.
+- Unverified repository governance was shown as a next action but did not participate in overall state precedence. A report could therefore appear healthy while protection for `client-main` remained unverified.
+- PR #210 now labels operational runs from any SHA other than the exact current `client-main` SHA as `STALE_HEAD`, preserves the original conclusion for diagnostics, and treats stale operational evidence as a release blocker. Missing, pending, running, cancelled and skipped staging/ZIP runs now produce `WAITING_FOR_VALIDATION`. An unverified governance state prevents `HEALTHY` and leaves the report in `SOURCE_GREEN_OPERATIONAL_GATES_OPEN` when source and operational checks otherwise pass.
+- Regression tests cover missing operational evidence, cancelled staging, a stale ZIP artifact and unverified governance. This is a monitoring/reporting correction only; it does not rerun staging, deploy artifacts, or authorize release.
+- Validation RCA: CI / Quality run [#40158708240](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40158708240) failed at `Run quality gate` / `prettier --check .` because this handoff update ended with an extra blank line. This was a deterministic formatting failure; the regression suite did not run. The trailing blank line is removed in this follow-up commit, and all required checks must pass on the new exact head.
+- The existing staging preflight failure [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) remains unresolved. No retry was attempted with unchanged configuration.
+
+## Latest base-commit Full Flight false negative — 25 October 2026
+
+- **Integration checkpoint:** `client-main` remains at `176da7c559d279149e2473a65a71fd03d3e53018`. PR #210's workflow correction is not integrated yet.
+- **Observed run:** [Full Flight Test #40162268665](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162268665), created 25 October 2026 at 04:32:40 UTC. GitHub identifies this as a `push` event for branch `client/support-rate-limit-atomic-20261025`; the log confirms `branch=client/support-rate-limit-atomic-20261025`, `event=push`, while the commit SHA was the base `176da7c559d279149e2473a65a71fd03d3e53018`. This is a feature-branch creation push at the base SHA, not evidence that the `client-main` push itself failed.
+- **Failed job/step:** job `flight` (job ID `121076114308`), step **Verify CI and Browser E2E on the same commit**. The log selected CI run #2205 as `success`, but Browser E2E run #1984 as `cancelled`, then failed the gate. [Flight job log](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162268665/job/121076114308).
+- **Cancellation evidence:** [Browser E2E run #40162268669](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162268669), job ID `121076114302`, had Playwright installation complete; the **Run browser E2E** step was cancelled and the visual-matrix artifact uploaded. The test suite did not finish, so this run is neither a test pass nor an assertion failure.
+- **Root cause:** the integration workflow still permits `push` events on `client/**` and runs the chained gate for any non-manual event. A feature-branch creation push at the base SHA was superseded by later PR commits; the Full Flight gate consumed the cancelled Browser E2E result. This is a concurrency/event-selection defect, not a timeout or demonstrated application regression.
+- **Correction already proposed in this PR:** `.github/workflows/flight-test.yml` runs the chained gate only for PR events targeting `client-main` and pushes to `client-main`. This preserves exact-head validation and does not convert cancellation to success; it removes the redundant feature-branch push gate. PR #210's own current-head checks were green before this documentation update; this new commit requires fresh exact-head checks.
+- **Recovery:** no manual retry. Retrying the cancelled feature-branch run would not correct the event-selection defect. Do not treat the cancelled run as passing evidence.

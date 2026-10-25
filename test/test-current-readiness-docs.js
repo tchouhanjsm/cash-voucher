@@ -21,6 +21,7 @@ const securityAudit = read('docs/SECURITY-RENDERING-AUDIT.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const handoff = read('docs/HANDOFF.md');
 const p0ReleaseBatch = read('docs/P0-RELEASE-BATCH-B1-B3.md');
+const autonomousMonitor = read('docs/AUTONOMOUS-DEVELOPMENT-WORKFLOW.md');
 
 assert.match(project, /password authentication/i);
 assert.match(project, /backend\/\*\.gs/);
@@ -94,3 +95,9 @@ assert.match(
 console.log(
   'Current-readiness documentation: latest merge, password terminology, active architecture and live-release boundaries are aligned.',
 );
+
+assert.match(autonomousMonitor, /176da7c559d279149e2473a65a71fd03d3e53018/);
+assert.match(autonomousMonitor, /45-minute.*not supported/i);
+assert.match(autonomousMonitor, /never merges/i);
+assert.match(autonomousMonitor, /bounded retry/i);
+assert.match(autonomousMonitor, /Persistent Checkpoint/i);

@@ -1,0 +1,290 @@
+name: Autonomous Development Monitor
+
+# Event-driven source monitor. No schedule trigger while main is default and frozen.
+on:
+  push:
+    branches: [client-main]
+  pull_request:
+    branches: [client-main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  actions: read
+  pull-requests: read
+
+concurrency:
+  group: autonomous-monitor-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Inspect exact-head delivery state
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      pull-requests: read
+    steps:
+      - name: Checkout monitor implementation
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Collect repository, PR, workflow and release-gate snapshot
+        uses: actions/github-script@v7
+        env:
+          MONITOR_SNAPSHOT_PATH: ${{ runner.temp }}/autonomous-dev-snapshot.json
+        with:
+          script: |
+            const fs = require('node:fs');
+            const monitor = require('./scripts/autonomous-dev-monitor.js');
+            const path = process.env.MONITOR_SNAPSHOT_PATH;
+            const { owner, repo } = context.repo;
+            const warnings = [];
+            const workflows = [
+              { id: 'ci.yml', name: 'CI / Quality', required: true },
+              { id: 'e2e.yml', name: 'Browser E2E', required: true },
+              { id: 'flight-test.yml', name: 'Full Flight Test', required: true },
+              { id: 'staging-uat.yml', name: 'Staging UAT', required: false },
+              { id: 'client-dist.yml', name: 'Client staging ZIP', required: false },
+            ];
+            const repositoryResponse = await github.rest.repos.get({ owner, repo });
+            const branchResponse = await github.rest.git.getRef({ owner, repo, ref: 'heads/client-main' });
+            const mainSha = branchResponse.data.object.sha;
+            const handoffResponse = await github.rest.repos.getContent({ owner, repo, path: 'docs/HANDOFF.md', ref: 'client-main' });
+            if (Array.isArray(handoffResponse.data) || !handoffResponse.data.content) {
+              throw new Error('docs/HANDOFF.md could not be read as a file from client-main.');
+            }
+            const handoffText = Buffer.from(handoffResponse.data.content, 'base64').toString('utf8');
+            const repositoryGovernance = {
+              status: 'OWNER_VERIFICATION_REQUIRED',
+              note: 'This read-only monitor does not treat branch protection as verified. Owner/admin must check rulesets, branch filters, required checks and review requirements for client-main.',
+            };
+
+            const pullResponse = await github.rest.pulls.list({ owner, repo, state: 'open', base: 'client-main', sort: 'updated', direction: 'desc', per_page: 100 });
+            const openPullRequests = [];
+            for (const pr of pullResponse.data.slice(0, 15)) {
+              let reviewState = 'REVIEW_REQUIRED';
+              const requestedReviewers = (pr.requested_reviewers || []).map((reviewer) => reviewer.login).slice(0, 8);
+              try {
+                const reviews = await github.paginate(github.rest.pulls.listReviews, { owner, repo, pull_number: pr.number, per_page: 100 });
+                reviewState = monitor.deriveReviewState(reviews, pr.head.sha);
+              } catch (error) {
+                reviewState = 'REVIEW_STATUS_UNAVAILABLE';
+                warnings.push('PR #' + pr.number + ' review lookup failed: HTTP ' + (error.status || 'unknown'));
+              }
+              openPullRequests.push({
+                number: pr.number, title: pr.title, htmlUrl: pr.html_url, draft: pr.draft,
+                baseRef: pr.base.ref, headRef: pr.head.ref, headSha: pr.head.sha,
+                headRepoFullName: pr.head.repo?.full_name || '', baseRepoFullName: pr.base.repo?.full_name || '',
+                mergeable: pr.mergeable, reviewState, requestedReviewers,
+              });
+            }
+
+            const normalizedRuns = [];
+            const seen = new Set();
+            async function addRunsForWorkflow(workflow, args, scope, prNumber, expectedSha) {
+              try {
+                const response = await github.rest.actions.listWorkflowRuns({ owner, repo, workflow_id: workflow.id, ...args, per_page: 20 });
+                const items = response.data.workflow_runs.filter((run) => {
+                  if (expectedSha && run.head_sha !== expectedSha) return false;
+                  if (scope === 'client-main' && run.head_branch !== 'client-main') return false;
+                  if (scope === 'pull_request' && run.event !== 'pull_request') return false;
+                  if (scope === 'client-main' && workflow.required && run.event !== 'push') return false;
+                  return true;
+                });
+                const chosen = workflow.required && scope === 'client-main'
+                  ? items.filter((run) => run.head_sha === mainSha).slice(0, 5)
+                  : items.slice(0, (scope === 'pull_request' ? 3 : 8));
+                for (const run of chosen) {
+                  const key = [run.id, scope, prNumber || ''].join(':');
+                  if (seen.has(key)) continue;
+                  seen.add(key);
+                  normalizedRuns.push({
+                    workflowId: workflow.id, workflowName: workflow.name, scope, prNumber: prNumber || null,
+                    headSha: run.head_sha, expectedCurrentHeadSha: scope === 'client-main' ? mainSha : null,
+                    headBranch: run.head_branch,
+                    headRepoFullName: scope === 'pull_request' ? (openPullRequests.find((item) => item.number === prNumber)?.headRepoFullName || '') : repositoryResponse.data.full_name,
+                    event: run.event, status: run.status, conclusion: run.conclusion, runAttempt: run.run_attempt,
+                    runId: run.id, runNumber: run.run_number, createdAt: run.created_at, startedAt: run.run_started_at,
+                    updatedAt: run.updated_at, htmlUrl: run.html_url, failedJobs: [],
+                  });
+                }
+              } catch (error) {
+                warnings.push(workflow.name + ' run query failed (' + scope + '): HTTP ' + (error.status || 'unknown'));
+              }
+            }
+            for (const workflow of workflows) {
+              await addRunsForWorkflow(workflow, { branch: 'client-main' }, 'client-main', null, workflow.required ? mainSha : null);
+              for (const pr of openPullRequests) {
+                if (workflow.required) await addRunsForWorkflow(workflow, { head_sha: pr.headSha, event: 'pull_request' }, 'pull_request', pr.number, pr.headSha);
+              }
+            }
+
+            const nowMs = Date.now();
+            const inspected = normalizedRuns
+              .filter((run) => (run.status === 'completed' && ['failure', 'timed_out', 'cancelled', 'action_required'].includes(String(run.conclusion || ''))) ||
+                (run.status === 'in_progress' && nowMs - Date.parse(run.startedAt || run.createdAt) > 25 * 60 * 1000))
+              .sort((a, b) => Date.parse(b.updatedAt || b.createdAt) - Date.parse(a.updatedAt || a.createdAt))
+              .slice(0, 8);
+            for (const run of inspected) {
+              try {
+                const response = await github.rest.actions.listJobsForWorkflowRun({ owner, repo, run_id: run.runId, per_page: 100 });
+                run.failedJobs = response.data.jobs
+                  .filter((job) => job.conclusion && ['failure', 'timed_out', 'cancelled', 'action_required'].includes(job.conclusion))
+                  .slice(0, 10)
+                  .map((job) => ({
+                    name: job.name, conclusion: job.conclusion, url: job.html_url,
+                    failedSteps: (job.steps || [])
+                      .filter((step) => step.conclusion && ['failure', 'timed_out', 'cancelled', 'action_required'].includes(step.conclusion))
+                      .slice(0, 10)
+                      .map((step) => ({ name: step.name, conclusion: step.conclusion })),
+                  }));
+              } catch (error) {
+                warnings.push('Could not inspect jobs for run ' + run.runId + ': HTTP ' + (error.status || 'unknown'));
+              }
+            }
+
+            const snapshot = {
+              repository: { fullName: repositoryResponse.data.full_name, defaultBranch: repositoryResponse.data.default_branch },
+              clientMain: { sha: mainSha, htmlUrl: 'https://github.com/' + owner + '/' + repo + '/commit/' + mainSha },
+              repositoryGovernance, handoffText, openPullRequests, runs: normalizedRuns, warnings,
+              githubRun: {
+                id: context.runId, runNumber: process.env.GITHUB_RUN_NUMBER, runAttempt: process.env.GITHUB_RUN_ATTEMPT,
+                eventName: context.eventName, ref: process.env.GITHUB_REF,
+                url: 'https://github.com/' + owner + '/' + repo + '/actions/runs/' + context.runId,
+              },
+            };
+            fs.writeFileSync(path, JSON.stringify(snapshot, null, 2) + '\n');
+            core.info('Snapshot captured. PR count=' + openPullRequests.length + '; workflow records=' + normalizedRuns.length + '; warnings=' + warnings.length);
+
+      - name: Build monitor checkpoint report
+        run: |
+          node scripts/autonomous-dev-monitor.js \
+            --input "$RUNNER_TEMP/autonomous-dev-snapshot.json" \
+            --output "$RUNNER_TEMP/autonomous-dev-report.json" \
+            --summary "$RUNNER_TEMP/autonomous-dev-summary.md"
+          cat "$RUNNER_TEMP/autonomous-dev-summary.md" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload sanitized checkpoint report
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-dev-monitor-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/autonomous-dev-snapshot.json
+            ${{ runner.temp }}/autonomous-dev-report.json
+            ${{ runner.temp }}/autonomous-dev-summary.md
+          retention-days: 90
+          if-no-files-found: error
+
+  record-and-recover:
+    name: Persist checkpoint and recover eligible timeouts
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/client-main' && needs.observe.result == 'success'
+    needs: [observe]
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+    steps:
+      - name: Checkout trusted workflow source
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Download report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: autonomous-dev-monitor-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/monitor-report
+
+      - name: Persist checkpoint and retry safe timeout candidates
+        uses: actions/github-script@v7
+        env:
+          REPORT_PATH: ${{ runner.temp }}/monitor-report/autonomous-dev-report.json
+        with:
+          script: |
+            const fs = require('node:fs');
+            const monitor = require('./scripts/autonomous-dev-monitor.js');
+            const report = JSON.parse(fs.readFileSync(process.env.REPORT_PATH, 'utf8'));
+            const { owner, repo } = context.repo;
+            const allIssues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'all', per_page: 100 });
+            let issue = allIssues.find((item) => !item.pull_request && item.title === monitor.CHECKPOINT_ISSUE_TITLE) || null;
+            let previousBody = issue?.body || '';
+            report.recoveryActions = Array.isArray(report.recoveryActions) ? report.recoveryActions : [];
+            async function saveCheckpoint() {
+              const body = monitor.buildCheckpointIssueBody(report, previousBody);
+              if (issue) {
+                const response = await github.rest.issues.update({ owner, repo, issue_number: issue.number, body, state: 'open' });
+                issue = response.data;
+              } else {
+                const response = await github.rest.issues.create({ owner, repo, title: monitor.CHECKPOINT_ISSUE_TITLE, body });
+                issue = response.data;
+              }
+              previousBody = issue.body || body;
+            }
+            await saveCheckpoint();
+            let attempted = 0;
+            for (const candidate of report.recoveryCandidates || []) {
+              if (attempted >= monitor.MAX_RECOVERIES_PER_RUN) break;
+              if (candidate.scope !== 'client-main' || candidate.headSha !== report.clientMainSha) continue;
+              if (!monitor.shouldRetryTimedOutRun(candidate)) continue;
+              const key = String(candidate.runId) + ':' + String(candidate.runAttempt);
+              if (monitor.parseRecoveryLedger(previousBody).some((item) => item.key === key)) {
+                core.info('Skipping already-reserved timeout recovery key ' + key);
+                continue;
+              }
+              let currentRun;
+              try {
+                const lookup = await github.rest.actions.getWorkflowRun({ owner, repo, run_id: candidate.runId });
+                currentRun = lookup.data;
+              } catch (error) {
+                report.recoveryActions.push({ key, status: 'LOOKUP_FAILED', workflowName: candidate.workflowName, summary: 'Could not revalidate run ' + key + ' before retry (HTTP ' + (error.status || 'unknown') + ').' });
+                await saveCheckpoint();
+                continue;
+              }
+              const safeToRetry = currentRun.head_branch === 'client-main' &&
+                currentRun.head_sha === report.clientMainSha &&
+                currentRun.status === 'completed' &&
+                currentRun.conclusion === 'timed_out' &&
+                Number(currentRun.run_attempt) === Number(candidate.runAttempt) &&
+                monitor.shouldRetryTimedOutRun({
+                  workflowId: candidate.workflowId, runId: currentRun.id, runAttempt: currentRun.run_attempt,
+                  status: currentRun.status, conclusion: currentRun.conclusion,
+                });
+              if (!safeToRetry) {
+                core.info('Skipping stale or no-longer-retryable timeout candidate ' + key);
+                continue;
+              }
+              const action = { key, status: 'INTENT', workflowName: candidate.workflowName, summary: candidate.workflowName + ' run ' + key + ' — retry reserved before API action.' };
+              report.recoveryActions.push(action);
+              await saveCheckpoint();
+              attempted += 1;
+              try {
+                await github.rest.actions.reRunWorkflowFailedJobs({ owner, repo, run_id: candidate.runId });
+                action.status = 'REQUESTED';
+                action.summary = candidate.workflowName + ' run ' + key + ' — failed jobs rerun requested.';
+                core.info('Requested failed-job retry for ' + key);
+              } catch (error) {
+                action.status = 'FAILED';
+                action.summary = candidate.workflowName + ' run ' + key + ' — retry request failed; manual inspection required (HTTP ' + (error.status || 'unknown') + ').';
+                core.warning(action.summary);
+              }
+              await saveCheckpoint();
+            }
+            report.recoveryCandidates = (report.recoveryCandidates || []).map((item) => ({
+              ...item,
+              recoveryLedgerStatus: monitor.parseRecoveryLedger(previousBody).find((entry) => entry.key === String(item.runId) + ':' + String(item.runAttempt))?.status || 'NOT_ATTEMPTED',
+            }));
+            await saveCheckpoint();
+            core.info('Persistent checkpoint saved to issue #' + issue.number + '. Recovery attempts requested=' + attempted + '.');

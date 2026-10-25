@@ -20,7 +20,7 @@ jobs:
   # CI and Browser E2E perform the substantive checks. This third status is a release gate
   # that waits for both current-SHA results; it does not report success unless both actually pass.
   flight:
-    if: github.event_name != 'workflow_dispatch'
+    if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name == 'client-main')
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
