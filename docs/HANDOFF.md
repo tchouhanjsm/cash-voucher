@@ -5,7 +5,7 @@
 **Integration branch:** `client-main`  
 **Verified integration baseline:** `3ad2c8f955b36de00b208ee4283682a1a34805eb` (PR #211 merged; exact-head source checks passed).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 release readiness and branch reconciliation. PR #211 merged support-report rate-limit atomicity; PR #209 remains open for mixed audit-marker integrity, and PR #210 remains open for the delivery monitor. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness and branch reconciliation. PR #211 merged support-report rate-limit atomicity; PR #209 remains open on `client/p0-audit-monitoring-integrity-20261025` for mixed audit-marker integrity, and PR #210 remains open for the delivery monitor. Live staging remains unverified; owner retains merge/deploy authority.
 
 ## Verified source state
 
