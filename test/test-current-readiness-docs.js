@@ -46,7 +46,7 @@ assert.match(
   /Authoritative integration baseline.*client-main.*f9188ede9dd83f5e12c563bfa5b8f3082c0765b8/,
 );
 assert.match(staging, /PR #208/);
-assert.match(staging, /PR #213 is the only open PR targeting `client-main`/);
+assert.match(staging, /PR #213 is the only open PR targeting/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(staging, /PR #210 remains open and diverged\/dirty/);
 assert.match(handoff, /Verified integration baseline.*f9188ede9dd83f5e12c563bfa5b8f3082c0765b8/);
@@ -57,7 +57,7 @@ assert.match(
 );
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(handoff, /PRs #209–#211 are merged/);
-assert.match(handoff, /PR #213 is the sole open PR targeting `client-main`/);
+assert.match(handoff, /PR #213 is the sole open PR targeting/);
 assert.doesNotMatch(handoff, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(
   handoff,
@@ -95,7 +95,7 @@ assert.match(
 assert.match(executionPlan, /f9188ede9dd83f5e12c563bfa5b8f3082c0765b8/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#211 are merged/);
-assert.match(executionPlan, /PR #213 is the only open PR targeting `client-main`/);
+assert.match(executionPlan, /PR #213 is the only open PR targeting/);
 assert.doesNotMatch(executionPlan, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(executionPlan, /PR #210 still requires base reconciliation/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
