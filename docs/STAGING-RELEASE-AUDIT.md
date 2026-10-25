@@ -15,7 +15,7 @@ Dedicated staging resources, protected staging Environment, a real deployed stag
 
 ## Active release sequence
 
-Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #211 is the latest merged source baseline; PRs #209 and #210 remain open and need base reconciliation; live staging, isolated restore and customer acceptance remain unverified.
+Follow the six-step pipeline in [the execution plan](EXECUTION-PLAN-2026-10-21.md). PR #211 is the latest merged source baseline. PR #209 now includes the current base and awaits final exact-head status confirmation and owner review; PR #210 still needs base reconciliation. Live staging, isolated restore and customer acceptance remain unverified.
 
 **Evidence still required:** isolated staging identity and host access; inspected pre-migration backup; schema validation and only required staging migrations; backend-first deploy and staging-configured frontend; exact-run guarded UAT; live role, receipt, payment-method, offline and print checks; and restore into a separate recovery target. The hotel pilot remains blocked until those gates pass. Production is excluded.
 
@@ -128,6 +128,6 @@ Include physical-device/accessibility review, including 200–400% zoom/reflow, 
 
 ## Release decision
 
-**Source baseline:** PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; exact integration CI/Quality, Browser E2E and Full Flight Test passed. PR #209 remains open for mixed-source audit-health integrity, and PR #210 remains open for delivery-monitor tooling; both branches are currently diverged/dirty against the new base and require reconciliation plus fresh exact-head checks. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
+**Source baseline:** PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; exact integration CI/Quality, Browser E2E and Full Flight Test passed. PR #209's branch now includes the current base and its previous exact-head checks passed, but the latest documentation/status commit must be revalidated before owner review. PR #210 remains open and diverged/dirty against the new base, requiring reconciliation plus fresh exact-head checks. **Live staging:** not verified. **First-customer handover:** blocked until Priority 0 gates pass. **Production:** untouched and not authorized by this audit.
 
 This audit's branch instructions supersede historical snippets elsewhere that tell operators to dispatch from or restrict staging deployment to main. Update this audit and its regression tests in the same meaningful release-governance change whenever the workflow guard changes.

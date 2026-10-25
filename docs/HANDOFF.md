@@ -9,7 +9,7 @@
 
 ## Verified source state
 
-- PRs #205–#208 and #211 are merged to `client-main`. The current source baseline is `3ad2c8f955b36de00b208ee4283682a1a34805eb`; PRs #209 and #210 remain open and need base reconciliation before merge.
+- PRs #205–#208 and #211 are merged to `client-main`. The current source baseline is `3ad2c8f955b36de00b208ee4283682a1a34805eb`. PR #209 now includes current `client-main` as a merge parent; it remains open for owner review and final exact-head status confirmation. PR #210 remains open and still needs base reconciliation.
 - Exact-head checks passed on current integration SHA `3ad2c8f955b36de00b208ee4283682a1a34805eb`: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102). Historical PR #207/#208 checks remain in the audit trail.
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
@@ -30,9 +30,7 @@ This improves common failure cases; it does not reconstruct missing AuditLog eve
 
 The open branch `client/p0-audit-monitoring-integrity-20261025` makes the owner-facing audit-health contract fail closed: if any marker store is unreadable or malformed, the result is `MONITORING_UNAVAILABLE` even when another store retains a valid marker. Known failure count, timestamp, kind and marker source remain visible in the owner UI and health export.
 
-The latest source-validation head is `8a5982f78ca084e7954f7c56c3e57acd10f08ef7`. Its exact-SHA checks passed: [CI / Quality #40169928357](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40169928357), [Browser E2E #40169928349](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40169928349), and [Full Flight Test #40169928403](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40169928403). These are source/mock checks, not proof of live Google Sheets/Drive behavior.
-
-After PR #211 merged, GitHub reports PR #209 as 11 commits ahead and 1 behind current `client-main`, with merge conflicts still present. The owner/reviewer must verify the combined diff and resolve remaining conflicts before merge; rerun required checks on the resulting exact head.
+The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07eddb9f6df376db4`: [CI / Quality #40170498728](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40170498728), [Browser E2E #40170498735](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40170498735), and [Full Flight Test #40170498738](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40170498738) passed on that exact SHA. The current branch includes `client-main` at `3ad2c8f955b36de00b208ee4283682a1a34805eb` as a merge parent; use PR #209's live `Verification evidence` section for the newest head and check conclusions. These are source/mock checks, not proof of live Google Sheets/Drive behavior.
 
 ## Support-report rate-limit concurrency hardening — 25 October 2026
 

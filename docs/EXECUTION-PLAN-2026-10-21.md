@@ -3,7 +3,7 @@
 **Updated:** 25 October 2026 (P0 B1–B6 core source batches merged through PR #211; follow-up PRs and operational release remain gated)  
 **Integration branch:** client-main  
 **Current source baseline for release follow-up:** 3ad2c8f955b36de00b208ee4283682a1a34805eb (PR #211 merge)  
-**Release state:** PRs #205–#208 and #211 are merged; PRs #209 and #210 remain open and require reconciliation against the current base. Live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+**Release state:** PRs #205–#208 and #211 are merged. PR #209 now includes the current base and is awaiting final exact-head status confirmation and owner review; PR #210 remains open and needs base reconciliation. Live staging, backup/restore and first-customer acceptance remain unverified. See [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md) and [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ## Executive decision
 
@@ -11,7 +11,7 @@ Do not start a broad feature sprint. Run a coherent release-readiness batch that
 
 ## Immediate pipeline — preserve this order
 
-PRs #205–#208 and #211 are merged to `client-main`. Next is branch reconciliation and operational release evidence, not another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
+PRs #205–#208 and #211 are merged to `client-main`. PR #209's base reconciliation is complete and its latest exact-head checks must remain green for owner review; next reconcile PR #210, then continue operational release evidence. Do not start another feature sprint. The integrated operator checklist is [P0 Release Batch B1–B3](P0-RELEASE-BATCH-B1-B3.md), with the current state in [Staging Release Audit](STAGING-RELEASE-AUDIT.md).
 
 ### 1. Complete the source release
 
@@ -68,7 +68,7 @@ Only after steps 2–5 pass, document acceptance, fallback and support boundarie
 
 ## Source release status
 
-PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; CI/Quality, Browser E2E and Full Flight Test passed on that exact integration SHA. PR #209 and PR #210 remain open and must be reconciled against the new base before merge. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
+PR #211 is merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; CI/Quality, Browser E2E and Full Flight Test passed on that exact integration SHA. PR #209 now contains the current base and awaits final exact-head status confirmation and owner review; PR #210 still requires base reconciliation. Source readiness does not complete operational gates; live staging, isolated restore, device acceptance and customer acceptance remain unverified.
 
 ## Phase D — device and usability gate
 
