@@ -5,26 +5,42 @@
 **Integration branch:** `client-main`  
 **Verified integration baseline:** `3ad2c8f955b36de00b208ee4283682a1a34805eb` (PR #211 merged; exact-head source checks passed).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** P0 release readiness and branch reconciliation. PR #211 merged support-report rate-limit atomicity; PR #209 remains open on `client/p0-audit-monitoring-integrity-20261025` for mixed audit-marker integrity, and PR #210 remains open for the delivery monitor. Live staging remains unverified; owner retains merge/deploy authority.
+**Current phase:** P0 release readiness and branch reconciliation. PR #211 is merged; PR #209 remains open on `client/p0-audit-monitoring-integrity-20261025` for mixed audit-marker integrity, and PR #210 remains open for delivery-monitor tooling. Live staging remains unverified; owner retains merge/deploy authority.
 
 ## Verified source state
 
 - PRs #205–#208 and #211 are merged to `client-main`. The current source baseline is `3ad2c8f955b36de00b208ee4283682a1a34805eb`; PRs #209 and #210 remain open and need base reconciliation before merge.
-- Exact-head checks passed on current integration SHA `3ad2c8f955b36de00b208ee4283682a1a34805eb`: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102). Historical PR #208 checks remain recorded in the audit trail.
+- Exact-head checks passed on current integration SHA `3ad2c8f955b36de00b208ee4283682a1a34805eb`: [CI / Quality](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966112), [Browser E2E](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966123), and [Full Flight Test](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40166966102). Historical PR #207/#208 checks remain in the audit trail.
 - PR #207 hardened voucher/receipt idempotency, ambiguous append recovery, post-append setting counters, payment rail consistency and malformed cash-close rows. Mock tests do not prove real Google Sheets/Drive transaction semantics.
-- PR #211 merged at `3ad2c8f955b36de00b208ee4283682a1a34805eb`; its PR-head CI [#40162435222](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435222), Browser E2E [#40162435213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435213), and Full Flight Test [#40162435233](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435233) passed on `f018a958fa86c7ffe4ef8baa799ddd62c1bfb0d2`; the merge SHA then passed the current integration checks listed above.
-- PR #209's prior head `ac732798633f6df655400c5aaa3444cea97558f9` passed its three required checks, but this baseline-reconciliation commit creates a new head and requires fresh exact-head validation. PR #210's prior head `0f57d199d2b9eccc009b0c5c21f796f60c9fe662` also passed its checks, but its branch is diverged/dirty against the new base and must be reconciled before merge.
 - Source readiness is not live staging readiness. The deployed Apps Script URL/version, cPanel response headers, resource isolation, schema state, backup/restore and intended-device acceptance remain unverified.
-- The owner-only `auditLog` endpoint exposes audit monitoring. PR #208 added a Settings-sheet durable fallback, a six-hour transient cache fallback, marker durability metadata, and health data on empty cursor pages. The current follow-up makes any unreadable or malformed marker source report `MONITORING_UNAVAILABLE` even when another store retains a valid marker, while preserving known failure details in the owner UI and export.
+- The owner-only `auditLog` endpoint exposes audit monitoring. The previous monitor relied only on Script Properties, so a primary marker write failure could hide an AuditLog append failure. PR #208 added a Settings-sheet durable fallback and a transient cache fallback, distinguishes unavailable monitoring, and keeps health data on empty cursor pages. PR #209 remains open to make mixed valid/corrupt marker-store states fail closed.
 - The temporary `GHSA-mrhx-c7xc-m3w5` Zod exception from PR #206 remains a separate risk, due for reassessment by 9 November 2026. Do not force a major-version override of Clasp's declared Zod dependency.
 
-## P0 B6 — merged source behavior and follow-up
+## Current batch — P0 B6
 
-PR #208 implements the audit-health response contract for populated, empty and terminal cursor pages. On an audit append failure, the backend attempts Script Properties and a Settings-sheet durable fallback; if both fail, it attempts a CacheService marker with a six-hour TTL. The owner API and export expose marker durability and distinguish a transient cache-only signal from durable markers.
+1. Preserve one audit-health response contract for populated, empty and terminal cursor pages.
+2. On an audit append failure, persist the marker in Script Properties and in the Settings-sheet fallback. If both durable stores fail, attempt a clearly labeled transient CacheService marker with a six-hour TTL.
+3. Return `MONITORING_UNAVAILABLE` when marker sources cannot be read or a stored marker is malformed; never translate an unknown source state into `NO_KNOWN_FAILURE`.
+4. Expose marker durability in the owner UI and health export so the owner can distinguish Properties, Settings fallback, temporary cache and unavailable monitoring.
+5. Fault-injection coverage checks primary-store fallback, transient-cache fallback, corrupt markers and the case where every marker write fails.
 
-The current review branch closes a mixed-state defect found during the deep dive: a valid marker in one store must not hide another store that is unreadable or malformed. The response must remain `MONITORING_UNAVAILABLE`, while retaining any known failure count, timestamp, kind and marker source in the owner UI/export. Regression coverage includes valid Properties + corrupt Settings, valid Settings + corrupt Properties, and the case where every marker write fails.
+This improves common failure cases; it does not reconstruct missing AuditLog events. If AuditLog, Script Properties, Settings and CacheService all fail to persist the marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. That residual risk remains visible in tests and documentation.
 
-This does not reconstruct missing AuditLog events. If AuditLog, Script Properties, Settings and CacheService all fail to persist the marker, the application emits an explicit diagnostic but cannot guarantee a durable alert. That residual risk remains visible in tests and documentation.
+## PR #209 — mixed audit-marker integrity follow-up
+
+The open branch `client/p0-audit-monitoring-integrity-20261025` makes the owner-facing audit-health contract fail closed: if any marker store is unreadable or malformed, the result is `MONITORING_UNAVAILABLE` even when another store retains a valid marker. Known failure count, timestamp, kind and marker source remain visible in the owner UI and health export.
+
+The latest source-validation head is `8a5982f78ca084e7954f7c56c3e57acd10f08ef7`. Its exact-SHA checks passed: [CI / Quality #40169928357](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40169928357), [Browser E2E #40169928349](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40169928349), and [Full Flight Test #40169928403](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40169928403). These are source/mock checks, not proof of live Google Sheets/Drive behavior.
+
+After PR #211 merged, GitHub reports PR #209 as 11 commits ahead and 1 behind current `client-main`, with merge conflicts still present. The owner/reviewer must verify the combined diff and resolve remaining conflicts before merge; rerun required checks on the resulting exact head.
+
+## Support-report rate-limit concurrency hardening — 25 October 2026
+
+- **Finding:** `supportRateAllowed_` previously performed CacheService read/check/write operations without serialization. Concurrent requests could observe the same counter and exceed the per-user hourly or workspace six-hour limit.
+- **Correction:** one short ScriptLock now protects both quota reads and both increments as a single decision. Counter values are validated; exhausted quotas return `RATE_LIMIT`. Lock/cache errors fail closed with a temporary `BUSY` response. A lock is released only after successful acquisition.
+- **Regression coverage:** `test/test-support-report.js` simulates a counter changing immediately before the locked read for both user and workspace quotas, verifies lock contention sends no email and releases no unacquired lock, and checks that a successful request increments both counters once.
+- **Boundary:** these are mock/source-level checks, not proof of live Apps Script concurrency or email delivery. CacheService remains best-effort storage; the lock serializes concurrent executions within this script project but does not make cache data durable. If support reporting returns `BUSY`, the reporter should retry later or use the workspace's established support contact.
+- **Release status:** PR #211 merged this source fix at `3ad2c8f955b36de00b208ee4283682a1a34805eb`. Its PR-head CI [#40162435222](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435222), Browser E2E [#40162435213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435213), and Full Flight Test [#40162435233](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40162435233) passed on `f018a958fa86c7ffe4ef8baa799ddd62c1bfb0d2`; the merge SHA then passed current integration checks. No live staging or production operation is authorized.
 
 ## Release gates that remain open
 
@@ -40,6 +56,7 @@ This does not reconstruct missing AuditLog events. If AuditLog, Script Propertie
 
 - All product PRs target `client-main` through short-lived `client/*` branches; never push directly to `client-main`.
 - `main` remains frozen/read-only. Recheck branch relationships before branch operations; do not blindly merge, rebase or force-update long-lived branches.
+- **Verified branch-protection gap:** `client-main` reports `protected=false`; the active `cash-voucher-rule` ruleset targets `~DEFAULT_BRANCH` (currently `main`), requires only `quality`, and requires zero approving reviews. Owner/admin must correct and verify ruleset coverage for `client-main` before relying on enforcement.
 - Required CI/Quality, Browser E2E and Full Flight Test must pass on the exact final PR head. Fix failures; do not bypass checks.
 - Keep Git merge, Clasp upload, Web App version update, ZIP publication, live UAT, migrations and production release as separate gates.
 - If target identity, schema, backup, security headers, audit monitoring or restore fails, stop and preserve evidence. No production operation is authorized by this handoff.
