@@ -63,7 +63,6 @@ This improves common failure cases; it does not reconstruct missing AuditLog eve
 2. Audit health — PR #209 hardens readAuditPropertiesMarker_ and mixed-store aggregation so malformed persisted state reports MONITORING_UNAVAILABLE. Its exact-head checks passed, but it is still unmerged; the issue remains present in the current `client-main` baseline until owner review and merge.
 3. Operational launch gates remain P0: confirm staging Script/deployment/Sheet/folders, backend/frontend staging release, guarded UAT, actual response headers, schema migration only after review, restore into a separate recovery target, and real-device/offline/print/accessibility acceptance.
 
-
 ## Cancellation diagnostics follow-up — 25 October 2026
 
 - Deep review found that the monitor's detailed-job inspection selected failed, timed-out and action-required workflow runs, but omitted completed `cancelled` runs. Cancelled required checks remained non-passing, yet their job/step diagnostics were not collected into the checkpoint report.
