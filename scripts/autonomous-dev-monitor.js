@@ -222,11 +222,7 @@ function deriveReviewState(reviews, headSha) {
   const latest = Array.from(latestByUser.values()).filter(
     (review) => String(review.state || '').toUpperCase() !== 'DISMISSED',
   );
-  if (
-    latest.some(
-      (review) => String(review.state || '').toUpperCase() === 'CHANGES_REQUESTED',
-    )
-  ) {
+  if (latest.some((review) => String(review.state || '').toUpperCase() === 'CHANGES_REQUESTED')) {
     return 'CHANGES_REQUESTED';
   }
   if (
