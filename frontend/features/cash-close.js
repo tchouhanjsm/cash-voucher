@@ -157,8 +157,8 @@ export function createCashClose({ api }) {
       !isRecord(value) ||
       value.date !== requestedDate ||
       !isDate(value.date) ||
-      !isDate(value.businessDate) ||
-      value.date > value.businessDate ||
+      !isDate(value.today) ||
+      value.date > value.today ||
       typeof value.closed !== 'boolean' ||
       !isText(value.timeZone) ||
       !Array.isArray(value.recentCloses) ||
