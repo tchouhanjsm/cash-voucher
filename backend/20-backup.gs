@@ -585,6 +585,75 @@ function recordedMovementReport_(user, req) {
   };
 }
 
+function inspectReceiptManifest_(manifestRows, manifestReadable, receiptFiles) {
+  const manifestHeader = ['originalFileId', 'backupFileId', 'name', 'createdAt'];
+  const header = manifestRows.length ? manifestRows[0] : [];
+  const headerValid =
+    manifestReadable &&
+    manifestHeader.every(function (name, index) {
+      return header[index] === name;
+    }) &&
+    header.length === manifestHeader.length;
+  const records = manifestRows.slice(1).filter(function (row) {
+    return row.some(function (value) {
+      return String(value || '') !== '';
+    });
+  });
+  const originals = records.map(function (row) {
+    return String(row[0] || '').trim();
+  });
+  const backupIds = records.map(function (row) {
+    return String(row[1] || '').trim();
+  });
+  const receiptById = Object.create(null);
+  receiptFiles.forEach(function (file) {
+    receiptById[String(file.getId())] = file;
+  });
+  const unique = function (values) {
+    return values.every(function (value, index) {
+      return Boolean(value) && values.indexOf(value) === index;
+    });
+  };
+  const recordsValid = records.every(function (row) {
+    if (!Array.isArray(row) || row.length !== manifestHeader.length) return false;
+    const originalId = String(row[0] || '').trim();
+    const backupId = String(row[1] || '').trim();
+    const name = String(row[2] || '').trim();
+    const createdAt = String(row[3] || '').trim();
+    const createdAtMs = Date.parse(createdAt);
+    return (
+      Boolean(originalId) &&
+      Boolean(backupId) &&
+      originalId !== backupId &&
+      Boolean(name) &&
+      /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(createdAt) &&
+      isFinite(createdAtMs) &&
+      new Date(createdAtMs).toISOString() === createdAt
+    );
+  });
+  const copiesPresent = backupIds.every(function (id) {
+    return Object.prototype.hasOwnProperty.call(receiptById, id);
+  });
+  const copyNamesMatch = records.every(function (row) {
+    const copy = receiptById[String(row[1] || '').trim()];
+    return Boolean(copy) && copy.getName() === String(row[2] || '');
+  });
+
+  return {
+    headerValid: headerValid,
+    recordCount: records.length,
+    recordsValid: recordsValid,
+    uniqueIds:
+      unique(originals) &&
+      unique(backupIds) &&
+      originals.every(function (id) {
+        return backupIds.indexOf(id) === -1;
+      }),
+    copiesPresent: copiesPresent,
+    copyNamesMatch: copyNamesMatch,
+  };
+}
+
 function backupIntegrityReport_(user) {
   need_(user, 'settings');
   const backupRootId = props_().getProperty('BACKUP_FOLDER_ID');
@@ -699,58 +768,7 @@ function backupIntegrityReport_(user) {
         }
       }
 
-      const manifestHeader = ['originalFileId', 'backupFileId', 'name', 'createdAt'];
-      const header = manifestRows.length ? manifestRows[0] : [];
-      const manifestHeaderValid =
-        manifestReadable &&
-        manifestHeader.every(function (name, index) {
-          return header[index] === name;
-        }) &&
-        header.length === manifestHeader.length;
-      const records = manifestRows.slice(1).filter(function (row) {
-        return row.some(function (value) {
-          return String(value || '') !== '';
-        });
-      });
-      const originals = records.map(function (row) {
-        return String(row[0] || '').trim();
-      });
-      const backupIds = records.map(function (row) {
-        return String(row[1] || '').trim();
-      });
-      const receiptById = Object.create(null);
-      receiptFiles.forEach(function (file) {
-        receiptById[String(file.getId())] = file;
-      });
-      const unique = function (values) {
-        return values.every(function (value, index) {
-          return Boolean(value) && values.indexOf(value) === index;
-        });
-      };
-      const recordsValid = records.every(function (row) {
-        if (!Array.isArray(row) || row.length !== manifestHeader.length) return false;
-        const originalId = String(row[0] || '').trim();
-        const backupId = String(row[1] || '').trim();
-        const name = String(row[2] || '').trim();
-        const createdAt = String(row[3] || '').trim();
-        const createdAtMs = Date.parse(createdAt);
-        return (
-          Boolean(originalId) &&
-          Boolean(backupId) &&
-          originalId !== backupId &&
-          Boolean(name) &&
-          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(createdAt) &&
-          isFinite(createdAtMs) &&
-          new Date(createdAtMs).toISOString() === createdAt
-        );
-      });
-      const copiesPresent = backupIds.every(function (id) {
-        return Object.prototype.hasOwnProperty.call(receiptById, id);
-      });
-      const copyNamesMatch = records.every(function (row) {
-        const copy = receiptById[String(row[1] || '').trim()];
-        return Boolean(copy) && copy.getName() === String(row[2] || '');
-      });
+      const manifestInspection = inspectReceiptManifest_(manifestRows, manifestReadable, receiptFiles);
 
       return {
         sheet: {
@@ -763,17 +781,12 @@ function backupIntegrityReport_(user) {
         manifest: {
           present: Boolean(manifestFile),
           readable: manifestReadable,
-          headerValid: manifestHeaderValid,
-          recordCount: records.length,
-          recordsValid: recordsValid,
-          uniqueIds:
-            unique(originals) &&
-            unique(backupIds) &&
-            originals.every(function (id) {
-              return backupIds.indexOf(id) === -1;
-            }),
-          copiesPresent: copiesPresent,
-          copyNamesMatch: copyNamesMatch,
+          headerValid: manifestInspection.headerValid,
+          recordCount: manifestInspection.recordCount,
+          recordsValid: manifestInspection.recordsValid,
+          uniqueIds: manifestInspection.uniqueIds,
+          copiesPresent: manifestInspection.copiesPresent,
+          copyNamesMatch: manifestInspection.copyNamesMatch,
         },
         receipts: {
           present: Boolean(receiptFolder),
