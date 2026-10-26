@@ -1,12 +1,8 @@
-# Autonomous Development Workflow — Cash Voucher
-
-## Purpose and source of truth
-
-The delivery process must keep development moving without confusing a green mock test with successful live release. Source of truth is GitHub commit/PR/workflow state, docs/HANDOFF.md, the execution plan and staging release audit. The checkpoint issue is a persistent run record, not a substitute for source or deployment evidence.
-
 ## Current verified checkpoint
 
-The latest merged integration checkpoint at this update is `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8` (PR #210). PRs #209–#211 are merged. PR #213 is the sole open PR targeting [`client-main`](https://github.com/tchouhanjsm/cash-voucher/pull/213). Its live exact-head checks are maintained in the PR description and must be rechecked after every commit; do not pin a changing PR head in the handoff. GitHub last reported `mergeable_state=unstable`, no review is submitted, and auto-merge is disabled. The monitor must compare the live `client-main` SHA with `docs/HANDOFF.md` and report baseline drift rather than silently treating stale documentation as current. Open PR heads remain separate from the merged integration baseline. Source checks do not close staging, restore, governance or customer-acceptance gates.
+The current merged integration checkpoint is `e97c4e080b3f6903e16ef77f571822f9844faeed` (PR #213). PRs #209–#213 are merged. PR #214 is the sole open PR targeting [`client-main`](https://github.com/tchouhanjsm/cash-voucher/pull/214), with exact head `fb99228e9191ce92baf7b67ba91ccceace971d56`. CI / Quality #40215001346, Browser E2E #40215001337 and Full Flight Test #40215001342 passed on that exact head; the monitor's read-only PR observation #40215001360 also passed. PR #214 is not draft and GitHub reports it mergeable, but no review is submitted and PR-level auto-merge is not requested. Repository metadata confirms `allow_auto_merge=true`; the latest recorded ruleset evidence still excludes `client-main` and requires no approvals. The current connector cannot independently re-read branch rules. Owner/admin must verify governance; source checks do not close staging, restore or customer-acceptance gates.
+
+The monitor must compare the live `client-main` SHA with `docs/HANDOFF.md` and report baseline drift rather than silently treating stale documentation as current. Open PR heads remain separate from the merged integration baseline. Source checks do not close staging, restore, governance or customer-acceptance gates.
 
 The bounded retry policy permits at most two retries per eligible source-validation run (three total attempts), and only for a revalidated timeout. It never retries ordinary test failures, cancellations, staging UAT or ZIP publication.
 
@@ -16,7 +12,7 @@ The ChatGPT monitor is configured to run hourly. A 45-minute recurring schedule 
 
 ## Auto-merge policy boundary
 
-The external ChatGPT delivery scheduler may request GitHub auto-merge only for the single active PR after exact-head required checks, dependency/security gates, mergeability, branch protection and required human review are satisfied. Repository metadata currently reports `allow_auto_merge=false`; the connected GitHub toolset has no repository-settings write action. Owner/admin must enable **Settings → General → Pull Requests → Allow auto-merge**. The scheduler must not claim auto-merge is enabled until GitHub confirms it. The repository Actions monitor itself remains read-only with respect to merges.
+The external ChatGPT delivery scheduler may request GitHub auto-merge only for the single active PR after exact-head required checks, dependency/security gates, mergeability, verified branch protection and required human review are satisfied. Repository metadata confirms `allow_auto_merge=true`; no repository-settings change is needed. PR-level auto-merge remains unrequested for PR #214 because no review is submitted and `client-main` protection is not verified. The scheduler must not claim a PR-level request succeeded without GitHub confirmation. The repository Actions monitor itself remains read-only with respect to merges.
 
 **Serial PR queue:** inspect all open PRs at the start of each scheduler run. Do not open another PR while any prior PR remains open/unmerged. Fix a failed check on the active PR branch instead of creating a second PR. Advance to the next planned batch only after GitHub confirms the current PR is merged; a requested auto-merge is not a merge confirmation.
 
@@ -52,7 +48,7 @@ The monitor never performs Clasp push, Apps Script version update, Google Sheets
 
 ## Owner-required actions
 
-- Enable repository auto-merge and confirm rulesets/branch protection cover client-main with the intended checks and review.
+- Verify that rulesets/branch protection cover `client-main` with CI / Quality, Browser E2E, Full Flight Test and the intended human approval. Repository auto-merge is already enabled; PR-level auto-merge must wait for those gates.
 - Confirm staging Script/deployment/Sheet/folders and production separation privately; never paste credentials or private IDs into the checkpoint.
 - Review the temporary Zod advisory exception from PR #206 by 9 November 2026.
 - Authorize staging deployment, migrations, transactional UAT and pilot explicitly; none is implied by monitor success.

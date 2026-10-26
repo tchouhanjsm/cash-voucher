@@ -159,7 +159,7 @@ jobs:
               repositoryGovernance, handoffText, openPullRequests, runs: normalizedRuns, warnings,
               githubRun: {
                 id: context.runId, runNumber: process.env.GITHUB_RUN_NUMBER, runAttempt: process.env.GITHUB_RUN_ATTEMPT,
-                eventName: context.eventName, ref: process.env.GITHUB_REF,
+                eventName: context.eventName, ref: process.env.GITHUB_REF, eventSha: context.sha,
                 url: 'https://github.com/' + owner + '/' + repo + '/actions/runs/' + context.runId,
               },
             };
@@ -210,19 +210,154 @@ jobs:
 
       - name: Persist checkpoint and retry safe timeout candidates
         uses: actions/github-script@v7
+        id: persist
         env:
+          SNAPSHOT_PATH: ${{ runner.temp }}/monitor-report/autonomous-dev-snapshot.json
           REPORT_PATH: ${{ runner.temp }}/monitor-report/autonomous-dev-report.json
+          SUMMARY_PATH: ${{ runner.temp }}/monitor-report/autonomous-dev-summary.md
         with:
           script: |
             const fs = require('node:fs');
             const monitor = require('./scripts/autonomous-dev-monitor.js');
-            const report = JSON.parse(fs.readFileSync(process.env.REPORT_PATH, 'utf8'));
+            const snapshotPath = process.env.SNAPSHOT_PATH;
+            const reportPath = process.env.REPORT_PATH;
+            const summaryPath = process.env.SUMMARY_PATH;
+            const snapshot = JSON.parse(fs.readFileSync(snapshotPath, 'utf8'));
+            const initialReport = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
             const { owner, repo } = context.repo;
+            const expectedSha = initialReport.clientMainSha;
+            const monitorEvent = snapshot.githubRun || {};
+            const sourcePolicies = monitor.WORKFLOW_POLICIES.filter((item) => item.required);
+            const waitDeadline = Date.now() + 180000;
+            const pollingWarnings = [];
+            const pollFailures = new Set();
+            let runsByWorkflow = {};
+            let terminalResultsObserved = false;
+
+            async function currentClientMainSha() {
+              const response = await github.rest.git.getRef({ owner, repo, ref: 'heads/client-main' });
+              return response.data.object.sha;
+            }
+            const initialBranchSha = await currentClientMainSha();
+            if (
+              initialBranchSha !== expectedSha ||
+              (monitorEvent.eventSha && monitorEvent.eventSha !== expectedSha)
+            ) {
+              core.warning(
+                'Skipping checkpoint persistence because the observation is stale: event SHA=' +
+                  (monitorEvent.eventSha || 'unknown') +
+                  ', observed client-main SHA=' + expectedSha +
+                  ', live client-main SHA=' + initialBranchSha + '.',
+              );
+              return;
+            }
+
+            // The initial observation runs early. Wait briefly for the same-SHA source workflows.
+            while (true) {
+              const queries = await Promise.all(sourcePolicies.map(async (policy) => {
+                try {
+                  const response = await github.rest.actions.listWorkflowRuns({
+                    owner, repo, workflow_id: policy.id, branch: 'client-main', event: 'push', per_page: 100,
+                  });
+                  pollFailures.delete(policy.id);
+                  const matches = response.data.workflow_runs
+                    .filter((run) =>
+                      run.head_branch === 'client-main' &&
+                      run.head_sha === expectedSha &&
+                      run.event === 'push')
+                    .sort((a, b) => {
+                      const runNumberDifference = (Number(b.run_number) || 0) - (Number(a.run_number) || 0);
+                      if (runNumberDifference) return runNumberDifference;
+                      const createdDifference = (Date.parse(b.created_at || 0) || 0) - (Date.parse(a.created_at || 0) || 0);
+                      if (createdDifference) return createdDifference;
+                      return (Number(b.run_attempt) || 1) - (Number(a.run_attempt) || 1);
+                    });
+                  return { id: policy.id, runs: matches };
+                } catch (error) {
+                  pollFailures.add(policy.id);
+                  pollingWarnings.push(
+                    'Finalization poll for ' + policy.name + ' failed with HTTP ' +
+                    (error.status || 'unknown') + '.',
+                  );
+                  return { id: policy.id, runs: [] };
+                }
+              }));
+              runsByWorkflow = Object.fromEntries(queries.map((item) => [item.id, item.runs]));
+              const latestRuns = sourcePolicies.map((policy) => (runsByWorkflow[policy.id] || [])[0] || null);
+              terminalResultsObserved = latestRuns.every((run) => run && run.status === 'completed');
+
+              const liveSha = await currentClientMainSha();
+              if (liveSha !== expectedSha) {
+                core.warning(
+                  'Skipping checkpoint persistence because client-main advanced during finalization: observed=' +
+                    expectedSha + ', current=' + liveSha + '.',
+                );
+                return;
+              }
+              if (terminalResultsObserved || Date.now() >= waitDeadline || pollFailures.size === sourcePolicies.length) break;
+              await new Promise((resolve) => setTimeout(resolve, 15000));
+            }
+
+            const refreshedSnapshot = monitor.refreshExactHeadSourceRuns(snapshot, runsByWorkflow);
+            for (const policy of sourcePolicies) {
+              const run = (runsByWorkflow[policy.id] || [])[0];
+              if (!run || run.status !== 'completed' || run.conclusion === 'success') continue;
+              try {
+                const jobs = await github.rest.actions.listJobsForWorkflowRun({
+                  owner, repo, run_id: run.id, per_page: 100,
+                });
+                const normalized = refreshedSnapshot.runs.find(
+                  (item) => String(item.runId) === String(run.id),
+                );
+                if (normalized) {
+                  normalized.failedJobs = jobs.data.jobs
+                    .filter((job) => job.conclusion &&
+                      ['failure', 'timed_out', 'cancelled', 'action_required'].includes(job.conclusion))
+                    .slice(0, 10)
+                    .map((job) => ({
+                      name: job.name, conclusion: job.conclusion, url: job.html_url,
+                      failedSteps: (job.steps || [])
+                        .filter((step) => step.conclusion &&
+                          ['failure', 'timed_out', 'cancelled', 'action_required'].includes(step.conclusion))
+                        .slice(0, 10)
+                        .map((step) => ({ name: step.name, conclusion: step.conclusion })),
+                    }));
+                }
+              } catch (error) {
+                refreshedSnapshot.warnings = [
+                  ...(refreshedSnapshot.warnings || []),
+                  'Could not inspect jobs for finalized ' + policy.name + ' run ' + run.id +
+                    ' (HTTP ' + (error.status || 'unknown') + ').',
+                ];
+              }
+            }
+            refreshedSnapshot.warnings = [...(refreshedSnapshot.warnings || []), ...pollingWarnings];
+            const report = monitor.buildMonitorReport(refreshedSnapshot, new Date());
+            report.recoveryActions = Array.isArray(initialReport.recoveryActions) ? initialReport.recoveryActions : [];
+            const summary = monitor.formatSummary(report);
+            fs.writeFileSync(snapshotPath, JSON.stringify(refreshedSnapshot, null, 2) + '\n');
+            fs.writeFileSync(reportPath, JSON.stringify(report, null, 2) + '\n');
+            fs.writeFileSync(summaryPath, summary + '\n');
+            fs.appendFileSync(process.env.GITHUB_STEP_SUMMARY, summary + '\n');
+            if (!terminalResultsObserved) {
+              core.warning(
+                'The bounded three-minute finalization window expired before every required source workflow completed; checkpoint remains non-passing for missing/non-terminal checks.',
+              );
+            }
+
             const allIssues = await github.paginate(github.rest.issues.listForRepo, { owner, repo, state: 'all', per_page: 100 });
             let issue = allIssues.find((item) => !item.pull_request && item.title === monitor.CHECKPOINT_ISSUE_TITLE) || null;
             let previousBody = issue?.body || '';
             report.recoveryActions = Array.isArray(report.recoveryActions) ? report.recoveryActions : [];
             async function saveCheckpoint() {
+              const liveSha = await currentClientMainSha();
+              if (liveSha !== report.clientMainSha) {
+                core.warning(
+                  'Refusing to overwrite the checkpoint with stale SHA ' + report.clientMainSha +
+                  '; live client-main is ' + liveSha + '.',
+                );
+                return false;
+              }
               const body = monitor.buildCheckpointIssueBody(report, previousBody);
               if (issue) {
                 const response = await github.rest.issues.update({ owner, repo, issue_number: issue.number, body, state: 'open' });
@@ -232,8 +367,9 @@ jobs:
                 issue = response.data;
               }
               previousBody = issue.body || body;
+              return true;
             }
-            await saveCheckpoint();
+            if (!(await saveCheckpoint())) return;
             let attempted = 0;
             for (const candidate of report.recoveryCandidates || []) {
               if (attempted >= monitor.MAX_RECOVERIES_PER_RUN) break;
@@ -250,7 +386,7 @@ jobs:
                 currentRun = lookup.data;
               } catch (error) {
                 report.recoveryActions.push({ key, status: 'LOOKUP_FAILED', workflowName: candidate.workflowName, summary: 'Could not revalidate run ' + key + ' before retry (HTTP ' + (error.status || 'unknown') + ').' });
-                await saveCheckpoint();
+                if (!(await saveCheckpoint())) return;
                 continue;
               }
               const safeToRetry = currentRun.head_branch === 'client-main' &&
@@ -268,7 +404,7 @@ jobs:
               }
               const action = { key, status: 'INTENT', workflowName: candidate.workflowName, summary: candidate.workflowName + ' run ' + key + ' — retry reserved before API action.' };
               report.recoveryActions.push(action);
-              await saveCheckpoint();
+              if (!(await saveCheckpoint())) return;
               attempted += 1;
               try {
                 await github.rest.actions.reRunWorkflowFailedJobs({ owner, repo, run_id: candidate.runId });
@@ -280,11 +416,24 @@ jobs:
                 action.summary = candidate.workflowName + ' run ' + key + ' — retry request failed; manual inspection required (HTTP ' + (error.status || 'unknown') + ').';
                 core.warning(action.summary);
               }
-              await saveCheckpoint();
+              if (!(await saveCheckpoint())) return;
             }
             report.recoveryCandidates = (report.recoveryCandidates || []).map((item) => ({
               ...item,
               recoveryLedgerStatus: monitor.parseRecoveryLedger(previousBody).find((entry) => entry.key === String(item.runId) + ':' + String(item.runAttempt))?.status || 'NOT_ATTEMPTED',
             }));
-            await saveCheckpoint();
-            core.info('Persistent checkpoint saved to issue #' + issue.number + '. Recovery attempts requested=' + attempted + '.');
+            if (!(await saveCheckpoint())) return;
+            core.setOutput('checkpoint_finalized', 'true');
+            core.info('Persistent checkpoint saved to issue #' + issue.number + ' using finalized exact-head results. Recovery attempts requested=' + attempted + '.');
+
+      - name: Upload finalized checkpoint evidence
+        if: steps.persist.outputs.checkpoint_finalized == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: autonomous-dev-final-checkpoint-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/monitor-report/autonomous-dev-snapshot.json
+            ${{ runner.temp }}/monitor-report/autonomous-dev-report.json
+            ${{ runner.temp }}/monitor-report/autonomous-dev-summary.md
+          retention-days: 90
+          if-no-files-found: error

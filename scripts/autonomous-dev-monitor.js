@@ -184,6 +184,58 @@ function latestRun(runs, workflowId, scope, headSha, prNumber = null) {
   });
   return candidates[0] || null;
 }
+function refreshExactHeadSourceRuns(snapshot, runsByWorkflow = {}) {
+  const clientMainSha = snapshot.clientMain && snapshot.clientMain.sha;
+  if (!clientMainSha) return snapshot;
+  const refreshed = [];
+  for (const policy of WORKFLOW_POLICIES.filter((item) => item.required)) {
+    const candidates = (Array.isArray(runsByWorkflow[policy.id]) ? runsByWorkflow[policy.id] : [])
+      .filter(
+        (run) =>
+          run &&
+          run.head_sha === clientMainSha &&
+          run.head_branch === 'client-main' &&
+          run.event === 'push',
+      )
+      .sort((a, b) => {
+        const runNumberDifference = (Number(b.run_number) || 0) - (Number(a.run_number) || 0);
+        if (runNumberDifference) return runNumberDifference;
+        const createdDifference =
+          (asDate(b.created_at)?.getTime() || 0) - (asDate(a.created_at)?.getTime() || 0);
+        if (createdDifference) return createdDifference;
+        return (Number(b.run_attempt) || 1) - (Number(a.run_attempt) || 1);
+      });
+    const run = candidates[0];
+    if (!run) continue;
+    refreshed.push({
+      workflowId: policy.id,
+      workflowName: policy.name,
+      scope: 'client-main',
+      prNumber: null,
+      headSha: run.head_sha,
+      expectedCurrentHeadSha: clientMainSha,
+      headBranch: run.head_branch,
+      headRepoFullName: snapshot.repository?.fullName || '',
+      event: run.event,
+      status: run.status,
+      conclusion: run.conclusion,
+      runAttempt: Number(run.run_attempt) || 1,
+      runId: run.id,
+      runNumber: run.run_number,
+      createdAt: run.created_at,
+      startedAt: run.run_started_at,
+      updatedAt: run.updated_at,
+      htmlUrl: run.html_url || '',
+      failedJobs: Array.isArray(run.failedJobs) ? run.failedJobs : [],
+    });
+  }
+  const refreshedIds = new Set(refreshed.map((run) => String(run.runId)));
+  const existingRuns = (Array.isArray(snapshot.runs) ? snapshot.runs : []).filter(
+    (run) => !refreshedIds.has(String(run.runId)),
+  );
+  return { ...snapshot, runs: [...existingRuns, ...refreshed] };
+}
+
 function checkView(policy, run, now) {
   const result = classifyRun(run, policy, now);
   return {
@@ -889,6 +941,7 @@ module.exports = {
   ageMinutes,
   appendHistory,
   buildCheckpointIssueBody,
+  refreshExactHeadSourceRuns,
   buildMonitorReport,
   classifyRun,
   collectRecoveryCandidates,
