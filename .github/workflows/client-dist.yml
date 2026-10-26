@@ -1,6 +1,7 @@
 name: Client staging dist zip
 
 # Manual, staging-only static artifact builder.
+# The target comes from the staging Environment secret and is preflighted before packaging.
 # It never deploys to cPanel or changes Apps Script / Sheets / Drive.
 on:
   workflow_dispatch:
@@ -9,22 +10,48 @@ on:
         description: 'Client code, letters/digits/dashes (names the artifact)'
         required: true
         type: string
-      api_url:
-        description: 'Verified staging Apps Script Web App URL (HTTPS /exec)'
-        required: true
-        type: string
 
 permissions:
   contents: read
 
 jobs:
+  guard:
+    name: Require client-main for staging artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Refuse non-client-main source
+        env:
+          ACTION_REF: ${{ github.ref }}
+        run: |
+          if [ "$ACTION_REF" != "refs/heads/client-main" ]; then
+            echo "Client staging ZIP can run only from client-main." >&2
+            exit 1
+          fi
+
   build:
+    name: Build isolated staging artifact
+    needs: [guard]
+    if: ${{ needs.guard.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    environment:
+      name: staging
     env:
       CLIENT_CODE: ${{ inputs.client_code }}
       CV_ENVIRONMENT: staging
-      CV_API_URL: ${{ inputs.api_url }}
+      CV_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+      CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+      CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+      CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+      CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+      CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+      CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+      CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+      CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+      CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}
       RELEASE_COMMIT: ${{ github.sha }}
     steps:
       - name: Validate client code
@@ -49,6 +76,9 @@ jobs:
 
       - name: Install locked dependencies
         run: npm ci
+
+      - name: Validate staging target isolation before building
+        run: npm run staging:preflight -- --mode=artifact
 
       - name: Build staging site
         run: npm run build:web

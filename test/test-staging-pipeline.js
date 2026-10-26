@@ -52,6 +52,19 @@ assert.equal(validUat.checks.dedicatedUatAccountsPresent, true);
 const validDeploy = validateStagingConfiguration(fixture, { mode: 'deploy' });
 assert.equal(validDeploy.ok, true, validDeploy.errors.join('; '));
 
+const artifactTarget = {
+  ...fixture,
+  CV_STAGING_UAT_OWNER_EMAIL: '',
+  CV_STAGING_UAT_OWNER_PASSWORD: '',
+  CV_STAGING_UAT_MANAGER_EMAIL: '',
+  CV_STAGING_UAT_MANAGER_PASSWORD: '',
+  CLASPRC_JSON: '',
+};
+const validArtifact = validateStagingConfiguration(artifactTarget, { mode: 'artifact' });
+assert.equal(validArtifact.ok, true, validArtifact.errors.join('; '));
+assert.equal(validArtifact.checks.targetIdsAreSeparated, true);
+assert.equal(validArtifact.checks.dedicatedUatAccountsPresent, null);
+
 const validLegacyClasp = validateStagingConfiguration(
   {
     ...fixture,
@@ -205,6 +218,19 @@ assert.equal(productionDeployment.ok, false);
 assert.ok(productionDeployment.errors.some((message) => message.includes('production endpoint')));
 assert.ok(
   productionDeployment.errors.some((message) => message.includes('production URL deployment ID')),
+);
+
+const productionDeploymentArtifact = validateStagingConfiguration(
+  {
+    ...artifactTarget,
+    CV_STAGING_DEPLOYMENT_ID: productionDeploymentId,
+    CV_STAGING_API_URL: productionApiUrl,
+  },
+  { mode: 'artifact' },
+);
+assert.equal(productionDeploymentArtifact.ok, false);
+assert.ok(
+  productionDeploymentArtifact.errors.some((message) => message.includes('production endpoint')),
 );
 
 const urlMismatch = validateStagingConfiguration({
