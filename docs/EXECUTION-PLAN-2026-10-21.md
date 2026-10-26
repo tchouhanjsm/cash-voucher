@@ -1,19 +1,23 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 26 October 2026 (post-merge regression review)  
-**Integration branch:** `client-main`; `main` remains legacy/read-only.  
-**Current integration SHA:** `1b016a82d9e42eeb71d875561cc356d946fa5db5` (PR #224 merged on top of PR #225 merge `24176f030b2f33b1174779fa191152f7441c3460`).  
-**Active recovery PR:** [#226 — restore Dashboard and staging artifact integrity](https://github.com/tchouhanjsm/cash-voucher/pull/226), branch `client/post-224-restore-dashboard-and-artifact-integrity-20261026`, targeting `client-main`.
+**Updated:** 26 October 2026 23:59 IST (live-source audit)
+**Integration branch:** `client-main`; `main` remains legacy/read-only.
+**Current integration SHA:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
+**Active source batch:** `client/release-gate-reliability-20261026-2359`; at selection there were no open PRs.
 
-## Current checkpoint — restore release protections
+## Current checkpoint — restore exact-head release gates
 
-- **Exact merged-head verification:** [CI / Quality #40319063089](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063089), [Browser E2E #40319062917](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062917), [Full Flight Test #40319063051](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063051) and [Autonomous Development Monitor #40319062906](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062906) passed on the exact current merge SHA.
-- **Regression found in the merge tree:** PR #224’s staging-security work is present, but the merge snapshot removed PR #225’s strict Dashboard summary validation/fault-injection coverage and artifact-v2 package checksums. Restore both sets in one reviewable correction PR, without weakening the staging isolation preflight.
-- **Acceptance criteria:** malformed/missing Dashboard money, counters, trend and grouping data fail closed (never render as zero); browser E2E verifies the invalid state and recovery; a staging ZIP is only buildable from current `client-main` with Environment secrets and passing isolation preflight; manifest v2 includes SHA-256 inventory and ZIP sidecar, artifact retains for 14 days, and branch freshness is checked before and after packaging.
-- **Deadline plan for 27 October:** finish this single source-recovery batch and obtain exact-head CI/E2E/Flight evidence. In parallel, the owner/admin must repair branch protection and privately configure/verify staging Environment secrets. Do not substitute source checks for live staging proof.
-- **Known operational blockers:** prior staging UAT run [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight because four production reference IDs were empty and the Clasp credential document was missing/rejected. Do not rerun unchanged configuration. Live deployment identity, separate-target backup/restore, actual security headers, role/receipt authorization, all-device offline/reconnect, print/PDF, accessibility and customer sign-off remain unverified.
-- **Governance:** live branch API reported `client-main` as `protected=false`; owner/admin must ensure effective rules enforce CI / Quality, Browser E2E, Full Flight Test and intended human approval. This source PR does not change GitHub settings.
-- **Safety boundary:** no live Google resources, Clasp push/deploy, migration, cPanel publication or production mutation is performed by this source batch.
+- **CI / Quality:** [run #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on the current SHA at `prettier --check .` for `test/test-staging-workflow.js`. The source quality gate stopped at formatting; this is a deterministic formatting regression, not evidence of a backend assertion failure.
+- **Browser E2E:** [run #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the exact current SHA.
+- **Full Flight Test:** [run #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after a GitHub Actions API HTTP 502 when querying E2E workflow runs. The query has no transient retry today; CI was also red. The source batch adds at most two total retries for HTTP 500/502/503/504 and preserves immediate failure for other statuses.
+- **Autonomous Development Monitor:** [run #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed but warned that its three-minute finalization window expired before every required workflow completed. The checkpoint is explicitly non-passing for missing/non-terminal checks; artifact `12672174746` is available.
+- **Acceptance criteria:** formatting check passes; the workflow regression test enforces the retry allowlist and two-retry ceiling; CI / Quality, Browser E2E and Full Flight Test pass on the same exact final PR head; monitor evidence does not mark missing checks as passed.
+- **Operational priority remains P0:** staging isolation source guards and backup-manifest validation are merged (#224 and #226); Asia/Kolkata business-date handling is merged (#227). Live staging identity, real backup/restore, role/receipt authorization, offline/reconnect and intended-device/customer acceptance are still unverified and cannot be substituted by this source batch.
+- **Governance:** ruleset #24624368 covers `main` only, requires `quality` only and zero approvals; `client-main` reports `protected=false`. Owner/admin must configure and verify the intended protection and review requirements. This batch does not change settings.
+- **Staging:** UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight due to missing production references and rejected/missing Clasp credentials. Do not rerun unchanged configuration. ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and has expired; no published release exists.
+- **Safety boundary:** source and mock validation only. No deployment, migration, Google resource mutation, cPanel publication or production operation is included.
+
+---
 
 ## Historical execution-plan snapshot — 25 October 2026
 
