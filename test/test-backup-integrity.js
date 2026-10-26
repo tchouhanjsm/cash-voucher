@@ -27,8 +27,10 @@ function validInspection() {
       readable: true,
       headerValid: true,
       recordCount: 2,
+      recordsValid: true,
       uniqueIds: true,
       copiesPresent: true,
+      copyNamesMatch: true,
     },
     receipts: { present: true, count: 2 },
   };
@@ -85,6 +87,53 @@ assert.equal(
   report.snapshots.some((snapshot) => snapshot.name === 'backup-2026-10-02_020000'),
   false,
   'older snapshots outside the ten-item window are omitted',
+);
+
+function reportWithInspection(inspection) {
+  return g.backupIntegrityReportWithServices({
+    now: () => '2026-10-13T00:00:00.000Z',
+    listBackupFolders: () => [
+      {
+        id: 'backup-2026-10-13_020000',
+        name: 'backup-2026-10-13_020000',
+        createdAt: '2026-10-13T02:00:00.000Z',
+      },
+    ],
+    inspectSnapshot: () => inspection,
+  });
+}
+
+const malformedManifest = validInspection();
+malformedManifest.manifest.recordsValid = false;
+const malformedManifestReport = reportWithInspection(malformedManifest);
+assert.equal(malformedManifestReport.snapshots[0].state, 'fail');
+assert.ok(
+  malformedManifestReport.snapshots[0].checks.some(
+    (check) => check.code === 'MANIFEST_RECORDS' && check.state === 'fail',
+  ),
+  'missing IDs, invalid names, malformed timestamps or wrong-width rows fail the manifest gate',
+);
+
+const mismatchedReceiptName = validInspection();
+mismatchedReceiptName.manifest.copyNamesMatch = false;
+const mismatchedReceiptNameReport = reportWithInspection(mismatchedReceiptName);
+assert.equal(mismatchedReceiptNameReport.snapshots[0].state, 'fail');
+assert.ok(
+  mismatchedReceiptNameReport.snapshots[0].checks.some(
+    (check) => check.code === 'RECEIPT_NAMES' && check.state === 'fail',
+  ),
+  'renamed receipt copies fail the manifest cross-check',
+);
+
+const collidingIds = validInspection();
+collidingIds.manifest.uniqueIds = false;
+const collidingIdsReport = reportWithInspection(collidingIds);
+assert.equal(collidingIdsReport.snapshots[0].state, 'fail');
+assert.ok(
+  collidingIdsReport.snapshots[0].checks.some(
+    (check) => check.code === 'RECEIPT_REFERENCES' && check.state === 'fail',
+  ),
+  'duplicate IDs and source/copy ID collisions fail closed',
 );
 
 console.log(
