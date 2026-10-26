@@ -2297,6 +2297,30 @@ assertCorruptCashClose(
   },
   'saved close rejects duplicate voucher IDs in an otherwise shape-valid snapshot',
 );
+assertCorruptCashClose(
+  { CountedCash: '' },
+  'saved close rejects a blank counted-cash cell instead of coercing it to zero',
+);
+assertCorruptCashClose(
+  { ExpectedCash: dayThree.data.expectedCash + 1 },
+  'saved close rejects an expected-cash total that does not follow the opening and cash-impact calculation',
+);
+assertCorruptCashClose(
+  { CashInTotal: dayThree.data.cashInTotal + 1 },
+  'saved close reconciles cash-in total with the included voucher snapshot',
+);
+assertCorruptCashClose(
+  { Variance: dayThree.data.variance + 1 },
+  'saved close rejects a variance that does not equal counted cash minus expected cash',
+);
+assertCorruptCashClose(
+  { DrawerKey: '' },
+  'saved close rejects missing drawer identity instead of defaulting it to the main drawer',
+);
+assertCorruptCashClose(
+  { CreatedAt: 'not-a-timestamp' },
+  'saved close rejects malformed creation timestamps',
+);
 
 const futureClose = as(T, 'cashClosePreview', { date: '2999-01-01' });
 ok(!futureClose.ok && futureClose.code === 'VALIDATION', 'future close date rejected');
