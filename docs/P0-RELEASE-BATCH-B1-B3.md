@@ -1,7 +1,7 @@
 # P0 Release Batch — B1, B2 and B3
 
-**Integration target:** `client-main`
-**Original design baseline for B1–B3:** PR #204 merge `aa37d94819e59a72c797ba36839aa8f8ec94008f`
+**Integration target:** `client-main`  
+**Original design baseline for B1–B3:** PR #204 merge `aa37d94819e59a72c797ba36839aa8f8ec94008f`  
 **Current integration baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
 **Purpose:** complete release readiness across staging identity, schema/recovery safety, authorization, offline/sync and device/customer acceptance. This is a checklist, not proof that an external operation ran.
 
@@ -18,7 +18,6 @@ Operational release gates remain blocked independently of source validation:
 
 The source batch does not authorize Clasp pushes, Apps Script deployment, migrations, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operations.
 
-## Scope
 ## Scope
 
 ### B1 — staging identity and release proof

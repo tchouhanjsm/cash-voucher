@@ -10,10 +10,7 @@ const workflow = fs.readFileSync(
   'utf8',
 );
 
-assert.match(
-  workflow,
-  /const transientHttpStatuses = new Set\(\[500, 502, 503, 504\]\);/,
-);
+assert.match(workflow, /const transientHttpStatuses = new Set\(\[500, 502, 503, 504\]\);/);
 assert.match(workflow, /const maxTransientRetries = 2;/);
 assert.match(workflow, /let transientRetriesUsed = 0;/);
 assert.match(
@@ -27,6 +24,4 @@ assert.match(workflow, /run\.head_branch === branch/);
 assert.match(workflow, /run\.event === event/);
 assert.match(workflow, /core\.setFailed/);
 
-console.log(
-  'Full Flight workflow guard OK — exact SHA and bounded transient 5xx retries.',
-);
+console.log('Full Flight workflow guard OK — exact SHA and bounded transient 5xx retries.');
