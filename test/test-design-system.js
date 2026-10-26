@@ -427,7 +427,7 @@ assert.match(
 assert.match(serviceWorker, /frontend\/core\/unsaved-work\.js/);
 assert.match(unsavedWork, /This voucher draft has unsaved changes/);
 assert.match(unsavedWork, /beforeunload/);
-assert.match(components, /\.unsaved-draft-notice\s*\{/);
+assert.match(palette, /\.unsaved-draft-notice\s*\{/);
 assert.match(pwa, /confirmDiscardUnsavedWork/);
 assert.match(
   authHtml,
