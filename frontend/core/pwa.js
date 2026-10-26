@@ -2,6 +2,7 @@ export function registerPwa({
   navigatorRef = globalThis.navigator,
   locationRef = globalThis.location,
   documentRef = globalThis.document,
+  confirmDiscardUnsavedWork,
 } = {}) {
   const serviceWorker = navigatorRef?.serviceWorker;
   if (!locationRef?.protocol?.startsWith('http') || !serviceWorker) return null;
@@ -25,6 +26,7 @@ export function registerPwa({
     }
 
     try {
+      if (confirmDiscardUnsavedWork && !confirmDiscardUnsavedWork()) return;
       waitingWorker.postMessage({ type: 'SKIP_WAITING' });
       applyButton.disabled = true;
       applyButton.textContent = 'Updating…';

@@ -5863,6 +5863,34 @@ with sync_playwright() as p:
     page.click('[data-k=PAYMENT]')
     page.locator('.erow .rv').first.fill('Mobile workflow vendor')
     page.locator('.erow .ra').first.fill('42')
+    check(
+        page.locator('#nf .unsaved-draft-notice').inner_text()
+        == 'Unsaved voucher draft — save it before leaving this screen.',
+        'editing a payment displays a visible unsaved-draft warning',
+    )
+    page.once('dialog', lambda dialog: dialog.dismiss())
+    page.click('[data-k=RECEIPT]')
+    check(
+        page.locator('#nsave').inner_text() == 'Save payment'
+        and page.locator('.erow .rv').first.input_value() == 'Mobile workflow vendor',
+        'cancelling entry-type switching preserves the unsaved payment draft',
+    )
+    page.once('dialog', lambda dialog: dialog.dismiss())
+    page.click('#nav [data-v="dash"]')
+    check(
+        page.locator('#nf').is_visible()
+        and page.locator('.erow .rv').first.input_value() == 'Mobile workflow vendor'
+        and page.locator('.erow .ra').first.input_value() == '42',
+        'cancelling navigation preserves the unsaved financial draft',
+    )
+    page.once('dialog', lambda dialog: dialog.accept())
+    page.click('#nav [data-v="dash"]')
+    page.wait_for_selector('.dashboard-view')
+    check(page.locator('#nf').count() == 0, 'confirmed navigation explicitly discards the draft')
+    go_view(page, 'new')
+    page.wait_for_selector('#nf')
+    page.locator('.erow .rv').first.fill('Mobile workflow vendor')
+    page.locator('.erow .ra').first.fill('42')
     check(page.locator('#nsave').inner_text() == 'Save payment', 'single-entry save label stays singular')
     page.click('[data-act=addrow]')
     page.locator('.erow .rv').nth(1).fill('Second workflow vendor')
