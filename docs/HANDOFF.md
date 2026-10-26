@@ -20,7 +20,6 @@
 - **Unverified operational gates:** live staging identity/deployment, actual host response headers, live role/receipt authorization, real backup and restore into a separate destination, all-device offline/reconnect, print/PDF, accessibility and customer acceptance remain unverified. Production remains untouched.
 
 ---
----
 
 ## Historical handoff snapshot — 25 October 2026
 
