@@ -1,19 +1,20 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 26 October 2026 (post-merge regression review)  
+**Updated:** 26 October 2026 (live audit after PR #227)  
 **Integration branch:** `client-main`; `main` remains legacy/read-only.  
-**Current integration SHA:** `1b016a82d9e42eeb71d875561cc356d946fa5db5` (PR #224 merged on top of PR #225 merge `24176f030b2f33b1174779fa191152f7441c3460`).  
-**Active recovery PR:** [#226 — restore Dashboard and staging artifact integrity](https://github.com/tchouhanjsm/cash-voucher/pull/226), branch `client/post-224-restore-dashboard-and-artifact-integrity-20261026`, targeting `client-main`.
+**Current integration SHA:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).  
+**Open PR queue at audit:** empty; candidate branch `client/fix-business-date-arithmetic-20261027`.  
+**Baseline CI:** [#40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed at Prettier for `test/test-staging-workflow.js`; Browser E2E [#40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed; Full Flight Test [#40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed its same-SHA CI prerequisite; Monitor [#40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) passed. These are baseline results only.
 
-## Current checkpoint — restore release protections
+## Current checkpoint — business-date consistency and source quality
 
-- **Exact merged-head verification:** [CI / Quality #40319063089](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063089), [Browser E2E #40319062917](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062917), [Full Flight Test #40319063051](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063051) and [Autonomous Development Monitor #40319062906](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062906) passed on the exact current merge SHA.
-- **Regression found in the merge tree:** PR #224’s staging-security work is present, but the merge snapshot removed PR #225’s strict Dashboard summary validation/fault-injection coverage and artifact-v2 package checksums. Restore both sets in one reviewable correction PR, without weakening the staging isolation preflight.
-- **Acceptance criteria:** malformed/missing Dashboard money, counters, trend and grouping data fail closed (never render as zero); browser E2E verifies the invalid state and recovery; a staging ZIP is only buildable from current `client-main` with Environment secrets and passing isolation preflight; manifest v2 includes SHA-256 inventory and ZIP sidecar, artifact retains for 14 days, and branch freshness is checked before and after packaging.
-- **Deadline plan for 27 October:** finish this single source-recovery batch and obtain exact-head CI/E2E/Flight evidence. In parallel, the owner/admin must repair branch protection and privately configure/verify staging Environment secrets. Do not substitute source checks for live staging proof.
-- **Known operational blockers:** prior staging UAT run [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight because four production reference IDs were empty and the Clasp credential document was missing/rejected. Do not rerun unchanged configuration. Live deployment identity, separate-target backup/restore, actual security headers, role/receipt authorization, all-device offline/reconnect, print/PDF, accessibility and customer sign-off remain unverified.
-- **Governance:** live branch API reported `client-main` as `protected=false`; owner/admin must ensure effective rules enforce CI / Quality, Browser E2E, Full Flight Test and intended human approval. This source PR does not change GitHub settings.
-- **Safety boundary:** no live Google resources, Clasp push/deploy, migration, cPanel publication or production mutation is performed by this source batch.
+- Acceptance requires `npm run check`, `npm run test:e2e`, CI / Quality, Browser E2E and Full Flight Test to pass on one exact final PR head.
+- Legacy and modular frontend paths use the Asia/Kolkata business date plus UTC date-only arithmetic. Dashboard/Report custom ranges must reject impossible/reversed dates before financial read requests.
+- No schema migration, accounting-policy change, added dependency or live write is planned. Increment the service-worker revision when cached runtime modules change.
+- Owner/admin must verify effective branch protection and human review; `client-main` reports `protected=false`.
+- Staging identity, live UAT, backup/restore, host response headers, device acceptance and customer acceptance remain independent release gates. This source batch does not deploy or perform write-capable UAT.
+
+---
 
 ## Historical execution-plan snapshot — 25 October 2026
 

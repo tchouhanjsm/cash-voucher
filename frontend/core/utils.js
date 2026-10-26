@@ -36,8 +36,9 @@ export const uid = () =>
 
 export const pad = (n) => String(n).padStart(2, '0');
 
+// Date-only ISO values represent calendar days, not instants in the viewer's timezone.
 export const iso = (date) =>
-  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+  `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
 
 // Cash Voucher is a single-property ledger whose business day is always Asia/Kolkata.
 const BUSINESS_DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
@@ -59,11 +60,19 @@ export function businessDate(value = new Date()) {
 
 export const today = () => businessDate();
 
-export const addDays = (dateString, days) => {
-  const date = new Date(dateString + 'T12:00:00');
-  date.setDate(date.getDate() + days);
-  return iso(date);
-};
+export function isBusinessDate(value) {
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+  const date = new Date(value + 'T00:00:00.000Z');
+  return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+export function addDays(dateString, days) {
+  if (!isBusinessDate(dateString)) throw new TypeError('A valid business date is required.');
+  if (!Number.isSafeInteger(days)) throw new TypeError('A whole number of days is required.');
+  const date = new Date(dateString + 'T00:00:00.000Z');
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
+}
 
 export const dmy = (value) => (value ? value.split('-').reverse().join('/') : '');
 

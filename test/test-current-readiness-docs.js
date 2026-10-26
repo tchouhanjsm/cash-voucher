@@ -24,18 +24,15 @@ const dashboard = read('frontend/features/dashboard.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 26 October 2026/m);
-assert.match(handoff, /Verified integration baseline.*1b016a82d9e42eeb71d875561cc356d946fa5db5/);
+assert.match(handoff, /Verified integration SHA.*524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b/);
 assert.match(dashboard, /function dashboardSummaryIssue/);
 assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
 assert.match(browserE2e, /Dashboard totals unavailable/);
 assert.match(deliveryPhase, /PR #225.*merged/i);
 assert.doesNotMatch(deliveryPhase, /it remains open until reviewed and merged by the owner/);
-assert.match(
-  handoff,
-  /exact-head CI \/ Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor passed/,
-);
-assert.match(handoff, /Current phase.*post-merge Dashboard and artifact-integrity recovery/i);
-assert.match(handoff, /PR #223 merged/);
+assert.match(handoff, /Baseline CI.*#40373320173/);
+assert.match(handoff, /Current checkpoint — date correctness and release gates/);
+assert.match(handoff, /PR #227 merged/);
 assert.match(handoff, /client-main.*protected=false/);
 assert.match(handoff, /## Historical handoff snapshot — 25 October 2026/);
 const p0ReleaseBatch = read('docs/P0-RELEASE-BATCH-B1-B3.md');
@@ -61,10 +58,10 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*1b016a82d9e42eeb71d875561cc356d946fa5db5/,
+  /Authoritative integration baseline.*client-main.*524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b/,
 );
 assert.match(staging, /PR #208/);
-assert.match(staging, /Active source recovery.*PR #226/);
+assert.match(staging, /candidate source branch.*client\\/fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(staging, /PR #210 remains open and diverged\/dirty/);
 assert.match(handoff, /Verified integration baseline.*e97c4e080b3f6903e16ef77f571822f9844faeed/);
@@ -115,7 +112,7 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*1b016a82d9e42eeb71d875561cc356d946fa5db5/);
+assert.match(executionPlan, /Current integration SHA.*524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);

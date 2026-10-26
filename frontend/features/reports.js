@@ -1,6 +1,6 @@
 import { $ } from '../core/dom.js';
 import { can, S } from '../core/state.js';
-import { csvCell, dmy, download, esc, finiteAmount, money, today } from '../core/utils.js';
+import { csvCell, dmy, download, esc, finiteAmount, isBusinessDate, money, today } from '../core/utils.js';
 import { emptyState, head, pageNotice, tableView, toast } from '../core/ui.js';
 
 export function createReports({ api }) {
@@ -225,13 +225,13 @@ export function createReports({ api }) {
       return;
     }
 
-    if (!R.from || !R.to || R.from > R.to) {
+    if (!isBusinessDate(R.from) || !isBusinessDate(R.to) || R.from > R.to) {
       R.summary = null;
       R.rows = [];
       R.invalidRowCount = 0;
       R.loading = false;
       R.dateRangeInvalid = true;
-      R.error = 'Choose a valid date range (From must not be after To).';
+      R.error = 'Choose real calendar dates with From on or before To.';
       if (S.view === 'reports') render();
       return;
     }

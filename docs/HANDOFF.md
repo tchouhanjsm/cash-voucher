@@ -1,25 +1,22 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 26 October 2026 (post-merge integrity review)  
+**Updated:** 26 October 2026 (live audit after PR #227)  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`; legacy `main` remains read-only.  
-**Verified integration baseline:** `1b016a82d9e42eeb71d875561cc356d946fa5db5` (PR #224 merged; its first parent is `24176f030b2f33b1174779fa191152f7441c3460`, the PR #225 merge). The earlier baseline `75561d19e5f72f885c813152de122e7444801d70` was PR #223 merged.  
-**Current phase:** post-merge Dashboard and staging-artifact integrity recovery in [PR #226](https://github.com/tchouhanjsm/cash-voucher/pull/226), branch `client/post-224-restore-dashboard-and-artifact-integrity-20261026`.  
-**Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, live write-capable UAT, cPanel publication or production change.
+**Verified integration SHA:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).  
+**Open PR queue at audit:** empty; candidate branch: `client/fix-business-date-arithmetic-20261027`.  
+**Baseline CI:** [#40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed at Prettier for `test/test-staging-workflow.js`; [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed; [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed its same-SHA CI prerequisite; [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) passed. These are baseline SHA results only.  
+**Governance:** live branch metadata reports `client-main protected=false`; owner/admin must verify effective branch rules and required human review.  
+**Release boundary:** source-only; no deployment, migration, Google resource mutation, write-capable staging UAT, cPanel publication or production change.
 
-## Current checkpoint — post-merge reconciliation
+## Current checkpoint — date correctness and release gates
 
-- **Exact merged-head checks are green:** [CI / Quality #40319063089](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063089), [Browser E2E #40319062917](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062917), [Full Flight Test #40319063051](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063051), and [Autonomous Development Monitor #40319062906](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062906) all completed successfully on `1b016a82d9e42eeb71d875561cc356d946fa5db5`.
-- **Important finding:** comparing the PR #224 merge tree with PR #225’s first-parent tree showed the strict Dashboard-summary validator/browser fault-injection regressions and the ZIP artifact-v2 checksum safeguards were absent from the merged snapshot. Green workflows on the merged snapshot did not reveal this because both affected implementation and some regression coverage were removed together.
-- **Recovery batch:** restore the Dashboard fail-closed summary contract and malformed-response/recovery browser tests; retain PR #224's staging-secret and artifact-mode preflight boundary; restore SHA-256 file inventory, detached ZIP checksum, 14-day artifact retention and fresh-branch checks; strengthen tests so a future merge cannot silently drop these contracts. Restore the deleted page-by-page delivery record and update the current release handoff.
-- **Next release gates remain external:** staging Environment secrets must be configured and privately verified; the prior staging UAT failed preflight due to missing production reference IDs and invalid/missing Clasp credentials. Do not retry until corrected. Owner/admin must include `client-main` in an effective ruleset; it currently reports `protected=false`.
-- **Not verified:** live staging deployment/version, actual host security headers, role and receipt authorization, isolated backup/restore, all-device offline/reconnect, print/PDF, assistive technology and customer acceptance. Source CI is not a substitute for these gates.
-
-## Immediate objective before the 27 October deadline
-
-1. Merge the source regression-recovery PR only after its exact final head passes CI / Quality, Browser E2E and Full Flight Test and receives human review.
-2. Complete owner-controlled staging identity and branch-governance tasks; retain sanitized evidence and do not expose resource identifiers in workflow logs.
-3. Do not call the product customer-ready until live UAT, separate-target restore and operator/device acceptance are recorded.
+- Local-device calendar arithmetic existed in both frontend entry paths. The modular shell derived today from Asia/Kolkata but performed date-only arithmetic and monthly trend grouping in the browser timezone; legacy `app.js` also derived the business date and custom Dashboard periods from the device timezone.
+- This batch aligns both paths on the Asia/Kolkata business day, uses UTC-only date-only arithmetic, strictly validates real calendar dates for Dashboard and Reports, bumps the service-worker cache revision, and covers India midnight, leap/year boundaries and non-India browser timezones.
+- Backend voucher/read-model validation already uses the configured business timezone and strict date checks. No accounting semantic or schema change is included.
+- The known Prettier failure is corrected in the same batch. Exact-head CI, Browser E2E and Full Flight Test must pass on the candidate PR head; prior baseline results do not validate it.
+- Staging remains unverified. Prior preflight failures around production reference IDs and Clasp credentials remain blockers; do not retry unchanged configuration. Live deployment identity, backup/restore, host headers, device acceptance and customer acceptance are not established by source tests.
+- `client-main` currently reports `protected=false`. Owner/admin must configure and verify effective required checks and human review before release.
 
 ---
 

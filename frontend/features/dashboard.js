@@ -1,6 +1,6 @@
 import { $ } from '../core/dom.js';
 import { can, nm, S } from '../core/state.js';
-import { addDays, dmy, esc, finiteAmount, iso, money, pad, today } from '../core/utils.js';
+import { addDays, dmy, esc, finiteAmount, iso, isBusinessDate, money, pad, today } from '../core/utils.js';
 import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard({ api }) {
@@ -20,7 +20,9 @@ export function createDashboard({ api }) {
       return [first.toISOString().slice(0, 10), last.toISOString().slice(0, 10)];
     }
 
-    if (D.r === 'cus' && D.from && D.to) return [D.from, D.to];
+    if (D.r === 'cus' && isBusinessDate(D.from) && isBusinessDate(D.to) && D.from <= D.to) {
+      return [D.from, D.to];
+    }
 
     return [addDays(current, -29), current];
   }
@@ -58,12 +60,12 @@ export function createDashboard({ api }) {
     const keys = [];
 
     if (monthly) {
-      const date = new Date(from.slice(0, 7) + '-01T12:00:00');
+      const date = new Date(from.slice(0, 7) + '-01T00:00:00.000Z');
       const end = to.slice(0, 7);
 
       while (iso(date).slice(0, 7) <= end) {
         keys.push(iso(date).slice(0, 7));
-        date.setMonth(date.getMonth() + 1);
+        date.setUTCMonth(date.getUTCMonth() + 1);
       }
     } else {
       for (let index = 0; index < days; index++) {
