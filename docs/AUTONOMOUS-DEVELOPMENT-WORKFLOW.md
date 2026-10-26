@@ -52,3 +52,11 @@ The monitor never performs Clasp push, Apps Script version update, Google Sheets
 - Confirm staging Script/deployment/Sheet/folders and production separation privately; never paste credentials or private IDs into the checkpoint.
 - Review the temporary Zod advisory exception from PR #206 by 9 November 2026.
 - Authorize staging deployment, migrations, transactional UAT and pilot explicitly; none is implied by monitor success.
+
+## Live phase and handoff baseline semantics — 26 October 2026
+
+The checkpoint's **Current phase** is derived from live exact-head CI / Quality, Browser E2E and Full Flight results, the current open PR queue, operational workflow evidence, release-gate flags, and observed branch-governance state. It is not copied verbatim from the handoff's historical **Current phase** field, because that prose can outlive a merge and leave the checkpoint reporting an already-closed PR as active.
+
+The handoff's **Verified integration baseline** is a recorded snapshot, while the checkpoint's **Current SHA** is read from the live `client-main` ref. A baseline mismatch remains visible for provenance but is informational by itself; it is not a release blocker or a request to chase the exact merge SHA in another documentation PR. Failed or non-terminal source checks, unresolved PR reviews, stale or incomplete operational evidence, unverified staging/recovery/device gates, branch governance, and monitor data errors remain actionable gates.
+
+This changes checkpoint reporting only. It does not weaken exact-SHA CI/E2E pairing, treat missing/cancelled checks as passes, grant review or merge approval, or authorize any staging or production operation.
