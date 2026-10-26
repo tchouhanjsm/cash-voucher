@@ -35,6 +35,11 @@ def go_view(page, view):
     """Navigate through the visible mobile shortcut or the accessible More sheet."""
     shortcut = page.locator(f'#nav [data-v="{view}"]')
     if shortcut.count() == 1 and shortcut.is_visible():
+        dirty_draft = page.evaluate(
+            "() => document.querySelector('#nf')?.dataset.unsavedWork === 'true'"
+        )
+        if dirty_draft:
+            page.once('dialog', lambda dialog: dialog.accept())
         shortcut.click()
         return
 
@@ -47,6 +52,12 @@ def go_view(page, view):
     if overflow_item.count() != 1:
         page.keyboard.press('Escape')
         raise AssertionError(f'Navigation item {view!r} is not available in More.')
+
+    dirty_draft = page.evaluate(
+        "() => document.querySelector('#nf')?.dataset.unsavedWork === 'true'"
+    )
+    if dirty_draft:
+        page.once('dialog', lambda dialog: dialog.accept())
     overflow_item.click()
 
 
@@ -768,7 +779,6 @@ with sync_playwright() as p:
         and page.locator('#batchTotal').get_attribute('data-value') == '42.00',
         'removing an incomplete row preserves the live batch total',
     )
-    page.once('dialog', lambda dialog: dialog.accept())
     go_view(page, 'dash')
     check(
         page.locator('#view .needs h2').inner_text().startswith('Needs attention')
