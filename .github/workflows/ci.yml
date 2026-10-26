@@ -49,11 +49,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Temporary formatter diagnostic for unsaved-work guard
-        run: |
-          npx prettier frontend/core/unsaved-work.js > "$RUNNER_TEMP/unsaved-work-formatted.js"
-          diff -u frontend/core/unsaved-work.js "$RUNNER_TEMP/unsaved-work-formatted.js" || true
-
       - name: Run quality gate
         run: npm run check
 

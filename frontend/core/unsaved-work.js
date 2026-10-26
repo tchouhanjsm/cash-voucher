@@ -52,8 +52,8 @@ export function createUnsavedWorkGuard({
   function isSaving(form) {
     return Boolean(
       form &&
-        (form.dataset.saving === 'true' ||
-          (dirtyForms.has(form) && form.querySelector('#nsave')?.disabled)),
+      (form.dataset.saving === 'true' ||
+        (dirtyForms.has(form) && form.querySelector('#nsave')?.disabled)),
     );
   }
 
