@@ -4,6 +4,64 @@ const assert = require('node:assert/strict');
 const { create } = require('./mock-gas');
 
 const g = create();
+
+const manifestHeader = ['originalFileId', 'backupFileId', 'name', 'createdAt'];
+const validManifestRow = [
+  'source-receipt-1',
+  'backup-receipt-1',
+  'receipt.jpg',
+  '2026-10-12T02:00:00.000Z',
+];
+const receiptFiles = [
+  {
+    getId: () => 'backup-receipt-1',
+    getName: () => 'receipt.jpg',
+  },
+];
+const validManifest = g.inspectReceiptManifest(
+  [manifestHeader, validManifestRow],
+  true,
+  receiptFiles,
+);
+assert.equal(validManifest.headerValid, true);
+assert.equal(validManifest.recordCount, 1);
+assert.equal(validManifest.recordsValid, true);
+assert.equal(validManifest.uniqueIds, true);
+assert.equal(validManifest.copiesPresent, true);
+assert.equal(validManifest.copyNamesMatch, true);
+
+const invalidTimestamp = g.inspectReceiptManifest(
+  [manifestHeader, [...validManifestRow.slice(0, 3), 'not-a-timestamp']],
+  true,
+  receiptFiles,
+);
+assert.equal(invalidTimestamp.recordsValid, false, 'timestamps must be canonical UTC ISO strings');
+
+const malformedRow = g.inspectReceiptManifest(
+  [manifestHeader, validManifestRow.slice(0, 3)],
+  true,
+  receiptFiles,
+);
+assert.equal(malformedRow.recordsValid, false, 'manifest rows must contain exactly four fields');
+
+const sameSourceAndCopy = g.inspectReceiptManifest(
+  [manifestHeader, ['same-id', 'same-id', 'receipt.jpg', '2026-10-12T02:00:00.000Z']],
+  true,
+  [{ getId: () => 'same-id', getName: () => 'receipt.jpg' }],
+);
+assert.equal(sameSourceAndCopy.recordsValid, false, 'source and backup IDs must differ');
+assert.equal(sameSourceAndCopy.uniqueIds, false, 'source/copy ID collision must fail');
+
+const renamedCopy = g.inspectReceiptManifest(
+  [manifestHeader, validManifestRow],
+  true,
+  [{ getId: () => 'backup-receipt-1', getName: () => 'renamed.jpg' }],
+);
+assert.equal(renamedCopy.copyNamesMatch, false, 'manifest must detect renamed receipt copies');
+
+const absentCopy = g.inspectReceiptManifest([manifestHeader, validManifestRow], true, []);
+assert.equal(absentCopy.copiesPresent, false, 'manifest must detect missing receipt copies');
+
 const folders = Array.from({ length: 12 }, (_, index) => {
   const day = String(index + 1).padStart(2, '0');
   return {
