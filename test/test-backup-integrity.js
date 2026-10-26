@@ -4,6 +4,57 @@ const assert = require('node:assert/strict');
 const { create } = require('./mock-gas');
 
 const g = create();
+
+const manifestHeader = ['originalFileId', 'backupFileId', 'name', 'createdAt'];
+const validManifestRow = [
+  'source-receipt-1',
+  'backup-receipt-1',
+  'receipt.jpg',
+  '2026-10-12T02:00:00.000Z',
+];
+const receiptFiles = [{ getId: () => 'backup-receipt-1', getName: () => 'receipt.jpg' }];
+const validManifest = g.inspectReceiptManifest(
+  [manifestHeader, validManifestRow],
+  true,
+  receiptFiles,
+);
+assert.equal(validManifest.headerValid, true);
+assert.equal(validManifest.recordCount, 1);
+assert.equal(validManifest.recordsValid, true);
+assert.equal(validManifest.uniqueIds, true);
+assert.equal(validManifest.copiesPresent, true);
+assert.equal(validManifest.copyNamesMatch, true);
+
+const invalidTimestamp = g.inspectReceiptManifest(
+  [manifestHeader, [...validManifestRow.slice(0, 3), 'not-a-timestamp']],
+  true,
+  receiptFiles,
+);
+assert.equal(invalidTimestamp.recordsValid, false, 'timestamps must be canonical UTC ISO strings');
+
+const malformedRow = g.inspectReceiptManifest(
+  [manifestHeader, validManifestRow.slice(0, 3)],
+  true,
+  receiptFiles,
+);
+assert.equal(malformedRow.recordsValid, false, 'manifest rows must contain exactly four fields');
+
+const sameSourceAndCopy = g.inspectReceiptManifest(
+  [manifestHeader, ['same-id', 'same-id', 'receipt.jpg', '2026-10-12T02:00:00.000Z']],
+  true,
+  [{ getId: () => 'same-id', getName: () => 'receipt.jpg' }],
+);
+assert.equal(sameSourceAndCopy.recordsValid, false, 'source and backup IDs must differ');
+assert.equal(sameSourceAndCopy.uniqueIds, false, 'source/copy ID collision must fail');
+
+const renamedCopy = g.inspectReceiptManifest([manifestHeader, validManifestRow], true, [
+  { getId: () => 'backup-receipt-1', getName: () => 'renamed.jpg' },
+]);
+assert.equal(renamedCopy.copyNamesMatch, false, 'manifest must detect renamed receipt copies');
+
+const absentCopy = g.inspectReceiptManifest([manifestHeader, validManifestRow], true, []);
+assert.equal(absentCopy.copiesPresent, false, 'manifest must detect missing receipt copies');
+
 const folders = Array.from({ length: 12 }, (_, index) => {
   const day = String(index + 1).padStart(2, '0');
   return {
@@ -27,8 +78,10 @@ function validInspection() {
       readable: true,
       headerValid: true,
       recordCount: 2,
+      recordsValid: true,
       uniqueIds: true,
       copiesPresent: true,
+      copyNamesMatch: true,
     },
     receipts: { present: true, count: 2 },
   };
@@ -85,6 +138,53 @@ assert.equal(
   report.snapshots.some((snapshot) => snapshot.name === 'backup-2026-10-02_020000'),
   false,
   'older snapshots outside the ten-item window are omitted',
+);
+
+function reportWithInspection(inspection) {
+  return g.backupIntegrityReportWithServices({
+    now: () => '2026-10-13T00:00:00.000Z',
+    listBackupFolders: () => [
+      {
+        id: 'backup-2026-10-13_020000',
+        name: 'backup-2026-10-13_020000',
+        createdAt: '2026-10-13T02:00:00.000Z',
+      },
+    ],
+    inspectSnapshot: () => inspection,
+  });
+}
+
+const malformedManifest = validInspection();
+malformedManifest.manifest.recordsValid = false;
+const malformedManifestReport = reportWithInspection(malformedManifest);
+assert.equal(malformedManifestReport.snapshots[0].state, 'fail');
+assert.ok(
+  malformedManifestReport.snapshots[0].checks.some(
+    (check) => check.code === 'MANIFEST_RECORDS' && check.state === 'fail',
+  ),
+  'missing IDs, invalid names, malformed timestamps or wrong-width rows fail the manifest gate',
+);
+
+const mismatchedReceiptName = validInspection();
+mismatchedReceiptName.manifest.copyNamesMatch = false;
+const mismatchedReceiptNameReport = reportWithInspection(mismatchedReceiptName);
+assert.equal(mismatchedReceiptNameReport.snapshots[0].state, 'fail');
+assert.ok(
+  mismatchedReceiptNameReport.snapshots[0].checks.some(
+    (check) => check.code === 'RECEIPT_NAMES' && check.state === 'fail',
+  ),
+  'renamed receipt copies fail the manifest cross-check',
+);
+
+const collidingIds = validInspection();
+collidingIds.manifest.uniqueIds = false;
+const collidingIdsReport = reportWithInspection(collidingIds);
+assert.equal(collidingIdsReport.snapshots[0].state, 'fail');
+assert.ok(
+  collidingIdsReport.snapshots[0].checks.some(
+    (check) => check.code === 'RECEIPT_REFERENCES' && check.state === 'fail',
+  ),
+  'duplicate IDs and source/copy ID collisions fail closed',
 );
 
 console.log(

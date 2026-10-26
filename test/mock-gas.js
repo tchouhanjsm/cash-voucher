@@ -258,7 +258,7 @@ function create(options = {}) {
   vm.createContext(ctx);
   vm.runInContext(
     backendSource() +
-      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,migrateVoucherPaymentMethodField,migrateVendorDefaultsSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_};',
+      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,migrateVoucherPaymentMethodField,migrateVendorDefaultsSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_,inspectReceiptManifest_};',
     ctx,
   );
   return {
@@ -348,6 +348,8 @@ function create(options = {}) {
     backupDataWithServices: (services) => ctx.__api.backupDataWithServices_(services),
     backupIntegrityReportWithServices: (services) =>
       ctx.__api.backupIntegrityReportWithServices_(services),
+    inspectReceiptManifest: (rows, readable, receiptFiles) =>
+      ctx.__api.inspectReceiptManifest_(rows, readable, receiptFiles),
   };
 }
 module.exports = { create };
