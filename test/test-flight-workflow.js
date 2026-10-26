@@ -5,10 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const workflow = fs.readFileSync(
-  path.join(root, '.github/workflows/flight-test.yml'),
-  'utf8',
-);
+const workflow = fs.readFileSync(path.join(root, '.github/workflows/flight-test.yml'), 'utf8');
 
 assert.match(workflow, /const transientHttpStatuses = new Set\(\[500, 502, 503, 504\]\);/);
 assert.match(workflow, /const maxTransientRetries = 2;/);
