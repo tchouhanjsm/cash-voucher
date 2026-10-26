@@ -1,7 +1,7 @@
 # Delivery Phase — 26 October 2026
 
 **Integration baseline:** 75561d19e5f72f885c813152de122e7444801d70
-**Source PR:** #224 — bulk Dashboard contract and staging artifact hardening
+**Source PR:** #225 — bulk Dashboard contract and staging artifact hardening
 **Scope:** source-level page review, automated regressions and release-package readiness. No production changes, Clasp push, live UAT, cPanel publication or device certification are claimed here.
 
 ## Page-by-page review
@@ -47,7 +47,7 @@ Do **not** merge, rebase, reset or force-push legacy main. Review saved work and
 
 ## Build and publish the staging website ZIP
 
-This is separate from Clasp. After PR #224 is merged to client-main and the owner has privately verified the protected GitHub staging Environment:
+This is separate from Clasp. After PR #225 is merged to client-main and the owner has privately verified the protected GitHub staging Environment:
 
 1. Confirm CV_STAGING_API_URL is the dedicated staging Web App's exact HTTPS /exec URL and CV_STAGING_DEPLOYMENT_ID matches that URL and the intended Script deployment. Do not reuse the unknown root config.js endpoint or commit/paste staging IDs.
 2. Open **Actions → Client staging dist zip → Run workflow** and choose client-main. Enter the client code; the endpoint comes from the protected Environment, not a form. The workflow rejects other refs, stale branch tips, missing variables and deployment-ID mismatches.
@@ -80,7 +80,7 @@ For a manual local Clasp project, inspect the private .clasp.json target, then r
 
 ## PR and CI/CD gates
 
-- PR #224 targets client-main from client/bulk-dashboard-staging-release-20261026; it remains open until reviewed and merged by the owner.
+- PR #225 targets client-main from client/bulk-dashboard-staging-release-20261026; it remains open until reviewed and merged by the owner.
 - Require CI / Quality, Browser E2E and Full Flight Test to pass on the **same final PR SHA**. Green checks from a previous commit are not evidence for the final head.
 - This batch has not changed branch rules, auto-merged a PR, run a Clasp push, run migrations, executed transactional UAT, or published a staging/production site.
 - The last recorded client-main branch API state reported protected=false; owner/admin must configure and verify the effective ruleset and approvals.

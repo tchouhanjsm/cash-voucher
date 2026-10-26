@@ -7,15 +7,15 @@
 
 ## Executive status
 
-PR #223 merged at 75561d19e5f72f885c813152de122e7444801d70; its exact-merge CI, Browser E2E, Full Flight Test and autonomous monitor passed. PR #224 is the active, open batch covering fail-closed Dashboard summary validation and staging ZIP provenance/integrity. Its required exact-head checks and owner review are not assumed complete.
+PR #223 merged at 75561d19e5f72f885c813152de122e7444801d70; its exact-merge CI, Browser E2E, Full Flight Test and autonomous monitor passed. PR #225 is the active, open batch covering fail-closed Dashboard summary validation and staging ZIP provenance/integrity. Its required exact-head checks and owner review are not assumed complete.
 
-The static ZIP workflow uses the protected GitHub staging Environment's CV_STAGING_API_URL and CV_STAGING_DEPLOYMENT_ID, checks the identities agree, only packages the live client-main tip, and produces a per-file SHA-256 inventory plus detached ZIP checksum. It remains artifact-only: it does not deploy to cPanel or push Apps Script. A fresh staging ZIP must wait until PR #224 is merged and the dedicated staging values are privately verified.
+The static ZIP workflow uses the protected GitHub staging Environment's CV_STAGING_API_URL and CV_STAGING_DEPLOYMENT_ID, checks the identities agree, only packages the live client-main tip, and produces a per-file SHA-256 inventory plus detached ZIP checksum. It remains artifact-only: it does not deploy to cPanel or push Apps Script. A fresh staging ZIP must wait until PR #225 is merged and the dedicated staging values are privately verified.
 
 **Live release is still blocked.** Dedicated staging Script/Sheet/receipt/backup resources, protected Environment configuration and credentials, live role/receipt authorization, current host security headers, backup and restore into a separate destination, real-device offline/print/accessibility acceptance, and customer acceptance have not been proven by source CI. Earlier staging preflight failures and stale ZIP details below are historical, not a new run. Production remains excluded.
 
 ## Current release sequence
 
-1. Review and merge PR #224 only after CI / Quality, Browser E2E and Full Flight Test pass on the exact final PR SHA.
+1. Review and merge PR #225 only after CI / Quality, Browser E2E and Full Flight Test pass on the exact final PR SHA.
 2. Verify the protected staging Environment contains the approved staging URL and deployment ID, matched to the intended isolated Script project and distinct from production. Keep IDs and credentials private.
 3. Dispatch the manual Client staging ZIP workflow from client-main. Download the ZIP and detached .sha256 sidecar from the same artifact. Verify the archive checksum and embedded release-manifest.json / SHA256SUMS.txt before extraction into the **staging** cPanel document root. Keep a rollback copy first.
 4. Deploy reviewed backend source only through guarded staging Clasp after resource isolation and credentials pass preflight. Static asset publication and Apps Script deployment are separate operations.

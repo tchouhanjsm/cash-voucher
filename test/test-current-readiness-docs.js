@@ -24,7 +24,7 @@ assert.match(handoff, /^\*\*Updated:\*\* 26 October 2026/m);
 assert.match(handoff, /Verified integration baseline.*75561d19e5f72f885c813152de122e7444801d70/);
 assert.match(handoff, /exact-merge CI, Browser E2E and Full Flight Test all passed/);
 assert.match(handoff, /Current source batch.*fail-closed Dashboard summary/);
-assert.match(handoff, /PR #224 is open and unmerged/);
+assert.match(handoff, /PR #225 is open and unmerged/);
 assert.match(handoff, /client-main.*protected=false/);
 assert.match(handoff, /## Historical handoff snapshot — 25 October 2026/);
 const p0ReleaseBatch = read('docs/P0-RELEASE-BATCH-B1-B3.md');

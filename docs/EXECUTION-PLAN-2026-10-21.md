@@ -3,15 +3,15 @@
 **Updated:** 26 October 2026 (current bulk-delivery checkpoint)
 **Integration branch:** client-main
 **Verified baseline:** 75561d19e5f72f885c813152de122e7444801d70 (PR #223 merge; exact-merge CI, Browser E2E, Full Flight Test and read-only monitor passed).
-**Active source PR:** #224 — Dashboard fail-closed response validation and staging artifact provenance/integrity, branch client/bulk-dashboard-staging-release-20261026; open and unmerged at this checkpoint.
-**Release state:** exact-head source checks and owner review for PR #224 are not assumed complete. Static package generation is gated by the protected staging Environment. Live staging resources, backup/restore, actual host headers and customer acceptance are not verified.
+**Active source PR:** #225 — Dashboard fail-closed response validation and staging artifact provenance/integrity, branch client/bulk-dashboard-staging-release-20261026; open and unmerged at this checkpoint.
+**Release state:** exact-head source checks and owner review for PR #225 are not assumed complete. Static package generation is gated by the protected staging Environment. Live staging resources, backup/restore, actual host headers and customer acceptance are not verified.
 
 ## Current checkpoint — 26 October 2026
 
 - **Integrated baseline evidence:** [CI / Quality #40299960269](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960269), [Browser E2E #40299960457](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960457), [Full Flight Test #40299960312](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960312) and [Autonomous Development Monitor #40299960297](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960297) passed on the same PR #223 merge commit 75561d19e5f72f885c813152de122e7444801d70.
 - **Dashboard:** validate server financial amounts, counters, date interval, time-series rows and group breakdowns before showing totals. Malformed payloads remain in an explicit unavailable state rather than rendering zero-like figures.
 - **Static staging artifact:** obtain the endpoint and deployment ID from the protected GitHub staging Environment. Require client-main to be current before and after the build. The ZIP includes a release manifest, SHA-256 inventory and detached archive checksum with 14-day artifact retention. Build is artifact-only; it does not publish to cPanel or deploy Apps Script.
-- **Next gates:** exact-head CI / Quality, Browser E2E and Full Flight Test for PR #224; owner review/merge; verify staging Environment values and isolated Google resource identities; then create the latest staging artifact. The source workflow does not run Clasp push or cPanel publication.
+- **Next gates:** exact-head CI / Quality, Browser E2E and Full Flight Test for PR #225; owner review/merge; verify staging Environment values and isolated Google resource identities; then create the latest staging artifact. The source workflow does not run Clasp push or cPanel publication.
 - **Operator procedure:** see [DELIVERY-PHASE-2026-10-26-BULK.md](DELIVERY-PHASE-2026-10-26-BULK.md). No production deployment/migration or write-capable UAT is authorized here.
 
 ---
