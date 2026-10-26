@@ -423,9 +423,21 @@ assert.match(
   /const C = 'cv2-v29'/,
   'PWA cache revision advances with the controlled update and cache-isolation implementation',
 );
-assert.match(authHtml, /id="appUpdateNotice"[\\s\\S]*id="appUpdateApply"[\\s\\S]*id="appUpdateLater"/);
-assert.match(pwa, /postMessage\\(\\{ type: 'SKIP_WAITING' \\}\\)/);
-assert.match(pwa, /installingWorker\\.state === 'installed'/);
+assert.match(
+  authHtml,
+  /id="appUpdateNotice"[\s\S]*id="appUpdateApply"[\s\S]*id="appUpdateLater"/,
+  'the application includes an accessible update notice with apply and dismiss controls',
+);
+assert.match(
+  pwa,
+  /postMessage\(\{ type: 'SKIP_WAITING' \}\)/,
+  'service-worker activation follows the user-controlled update action',
+);
+assert.match(
+  pwa,
+  /installingWorker\.state === 'installed'/,
+  'the update notice appears after the new worker finishes installation',
+);
 assert.match(
   payments,
   /function paymentMethodOptions\(selected = 'CASH'\)/,
