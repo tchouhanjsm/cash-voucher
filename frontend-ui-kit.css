@@ -1621,6 +1621,141 @@ here and in the production app. It requires no JS or remote assets. */
     line-height: 1.5;
   }
 
+  .dashboard-view .dashboard-empty-state {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr);
+    align-items: center;
+    gap: clamp(20px, 3vw, 36px);
+    margin-bottom: 18px;
+    padding: clamp(20px, 3vw, 32px);
+    border: 1px solid var(--line);
+    border-top: 4px solid var(--accent);
+    border-radius: var(--ui-radius-panel);
+    background: linear-gradient(145deg, var(--card), var(--surface-subtle));
+    box-shadow: var(--ui-shadow-card);
+  }
+
+  .dashboard-empty-state__eyebrow,
+  .dashboard-empty-state__next-title {
+    margin: 0;
+    color: var(--accent);
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    line-height: 1.4;
+  }
+
+  .dashboard-empty-state__period {
+    margin: 7px 0 15px;
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 650;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dashboard-empty-state__main h2 {
+    max-width: 24ch;
+    margin: 0 0 12px;
+    color: var(--ink);
+    font-size: clamp(23px, 2.5vw, 32px);
+    font-weight: 760;
+    letter-spacing: -0.035em;
+    line-height: 1.18;
+  }
+
+  .dashboard-empty-state__copy {
+    max-width: 58ch;
+    margin: 0;
+    color: var(--ink);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .dashboard-empty-state__scope {
+    max-width: 62ch;
+    margin: 10px 0 0;
+    color: var(--muted);
+    font-size: 13px;
+    line-height: 1.55;
+  }
+
+  .dashboard-empty-state__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 22px;
+  }
+
+  .dashboard-empty-state__actions .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    min-height: 46px;
+  }
+
+  .dashboard-empty-state__actions .i {
+    width: 17px;
+    height: 17px;
+    flex: 0 0 auto;
+  }
+
+  .dashboard-empty-state__next {
+    min-width: 0;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: var(--ui-radius-card);
+    background: var(--card);
+  }
+
+  .dashboard-empty-state__next-title {
+    margin-bottom: 13px;
+    color: var(--muted);
+  }
+
+  .dashboard-empty-state__steps {
+    display: grid;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .dashboard-empty-state__steps li {
+    display: grid;
+    grid-template-columns: 34px minmax(0, 1fr);
+    align-items: start;
+    gap: 11px;
+    min-width: 0;
+  }
+
+  .dashboard-empty-state__step-number {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--brand);
+    color: var(--focus-on-brand);
+    font-size: 11px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .dashboard-empty-state__steps strong {
+    display: block;
+    color: var(--ink);
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .dashboard-empty-state__steps p {
+    margin: 2px 0 0;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
   .dashboard-view .dashboard-period {
     margin: 0 0 17px;
   }
@@ -1897,6 +2032,16 @@ here and in the production app. It requires no JS or remote assets. */
       grid-template-columns: minmax(0, 1fr);
     }
 
+    .dashboard-view .dashboard-empty-state {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 16px;
+      padding: 18px;
+    }
+
+    .dashboard-view .dashboard-empty-state__next {
+      padding: 15px;
+    }
+
     .dashboard-view .dashboard-trend {
       padding: 16px;
     }
@@ -1926,6 +2071,18 @@ here and in the production app. It requires no JS or remote assets. */
       display: block;
       min-height: 0;
       padding: 12px;
+    }
+
+    .dashboard-view .dashboard-empty-state {
+      padding: 16px;
+    }
+
+    .dashboard-empty-state__actions {
+      flex-direction: column;
+    }
+
+    .dashboard-empty-state__actions .btn {
+      width: 100%;
     }
 
     .dashboard-view .stat > .stat-ic {
