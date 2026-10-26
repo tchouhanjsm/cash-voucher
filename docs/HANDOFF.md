@@ -1,5 +1,25 @@
 # Engineering Handoff — Cash Voucher
 
+**Updated:** 26 October 2026 (live-source checkpoint)  
+**Repository:** tchouhanjsm/cash-voucher  
+**Integration branch:** `client-main`  
+**Verified integration baseline:** `858b69d91480c468606fd243e6396e8b6e88723d` (PR #222 merged; exact-merge CI, Browser E2E and Full Flight Test all passed).  
+**Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
+**Current phase:** Fail-closed validation of saved Daily Cash Close records and their immutable voucher snapshots. This work is isolated on `client/cash-close-record-integrity-20261026`; PR #223 is open and unmerged; its final synchronized head must pass exact-head CI, Browser E2E and Full Flight Test before review.  
+**Release boundary:** no staging deployment, Apps Script push, migration, Google Sheets/Drive mutation or production change is authorized by this source batch.
+
+## Current checkpoint — 26 October 2026
+
+- **Current `client-main` SHA:** `858b69d91480c468606fd243e6396e8b6e88723d`, merged PR #222, which hardens backup receipt-manifest integrity checks. Exact-merge evidence: [CI / Quality #40290605686](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40290605686), [Browser E2E #40290605661](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40290605661), [Full Flight Test #40290605674](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40290605674), and [Autonomous Development Monitor #40290605697](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40290605697). All four completed successfully on the same merge commit.
+- **Current source batch:** validate the persisted close record's identity, timestamp and accounting metadata; strictly validate stored monetary cells; reconcile recorded cash-in/cash-out totals against the immutable voucher snapshot; confirm expected-cash and variance arithmetic before presenting a close as valid. Regression tests inject corrupted values and assert the read model fails closed with `CASH_CLOSE_DATA`.
+- **Repository governance remains a P0 gap:** the live `client-main` branch API reports `protected=false`. Ruleset #24624368 currently targets only `~DEFAULT_BRANCH` (`main`), requires only the `quality` context and has zero required approvals. Owner/admin must explicitly include `client-main`, require CI / Quality, Browser E2E, Full Flight Test and the intended human approval, then verify the effective ruleset in GitHub. No repository-setting mutation was performed by this batch.
+- **Release blockers remain operational:** the staging deployment identity, protected staging environment, live HTTP headers and role/receipt authorization, a real backup plus witnessed restore into a separate recovery destination, all-device offline/reconnect validation, print/PDF, accessibility and customer acceptance remain unverified. Mock tests do not discharge these gates.
+- **Source control rule:** keep `main` as the legacy/read-only baseline. Do not push Clasp, deploy Apps Script, run migrations, trigger write-capable staging UAT or mutate Google Sheets/Drive for this batch. The repository owner retains merge and release authority.
+
+---
+
+## Historical handoff snapshot — 25 October 2026
+
 **Updated:** 25 October 2026 23:56 IST (pre-sync snapshot; post-sync checks must be read from the live PR)  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
@@ -7,7 +27,7 @@
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
 **Current phase:** P0 release readiness and monitor-correctness follow-up. PRs #209–#213 are merged. PR #214 is the sole active follow-up for monitor checkpoint finalization. Repository auto-merge is enabled, but PR-level auto-merge remains unrequested while required human review and branch governance are unresolved. Live staging, restore and customer acceptance remain unverified; owner retains merge/deploy authority.
 
-## Current checkpoint — 25 October 2026 23:56 IST (pre-sync evidence snapshot)
+### Historical checkpoint — 25 October 2026 23:56 IST (pre-sync evidence snapshot)
 
 - **Current `client-main` SHA:** `e97c4e080b3f6903e16ef77f571822f9844faeed`; PR #213 merged at this commit. The latest recorded exact-integration evidence is [CI / Quality #40206481359](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481359), [Browser E2E #40206481344](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481344), [Full Flight Test #40206481349](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481349), and monitor #40206481372. This run's combined-status query returned no classic status contexts and its workflow-run lookup only exposes PR-triggered runs; absence of those records is not a pass or a fresh rerun.
 - **Active PR #214:** [fix: finalize monitor checkpoint after exact-head checks](https://github.com/tchouhanjsm/cash-voucher/pull/214) is open, non-draft and GitHub reports it mergeable. Base is `client-main` at `e97c4e080b3f6903e16ef77f571822f9844faeed`. The last code-validated pre-sync head was `df9d2a01adae93e305c530eae1635079137adcd6`; this documentation synchronization advances the head, so use live PR metadata for the current SHA and comparison. The review and inline review-thread lists are empty; PR-level auto-merge is not requested.
