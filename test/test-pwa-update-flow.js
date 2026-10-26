@@ -196,6 +196,35 @@ function fakePwaEnvironment({
   firstInstall.events.get('controllerchange')();
   assert.equal(firstInstall.reloads, 0, 'first installation does not reload the application shell');
 
+  const guardedEnvironment = fakePwaEnvironment();
+  let permitDiscard = false;
+  const guarded = await registerPwa({
+    navigatorRef: guardedEnvironment.navigatorRef,
+    locationRef: guardedEnvironment.locationRef,
+    documentRef: guardedEnvironment.documentRef,
+    confirmDiscardUnsavedWork: () => permitDiscard,
+  });
+  assert.equal(guarded, guardedEnvironment.registration);
+  guardedEnvironment.apply.click();
+  assert.equal(
+    guardedEnvironment.messages.length,
+    0,
+    'a cancelled unsaved-draft guard keeps the update waiting',
+  );
+  assert.equal(
+    guardedEnvironment.apply.disabled,
+    false,
+    'cancelling an update leaves its control usable',
+  );
+  permitDiscard = true;
+  guardedEnvironment.apply.click();
+  assert.deepEqual(
+    guardedEnvironment.messages,
+    [{ type: 'SKIP_WAITING' }],
+    'a confirmed discard permits the update',
+  );
+  assert.equal(guardedEnvironment.apply.disabled, true);
+
   const brokenEnvironment = fakePwaEnvironment();
   brokenEnvironment.navigatorRef.serviceWorker.register = async () => {
     throw new Error('registration unavailable');

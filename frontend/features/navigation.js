@@ -20,7 +20,7 @@ const NAV_ICON_NAMES = new Set([
   'check',
 ]);
 
-export function createNavigation({ api, getAuth, getPayments, renderers }) {
+export function createNavigation({ api, getAuth, getPayments, renderers, unsavedWork }) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
   const NAV = [
     ['dash', 'home', 'Dashboard', () => can('viewAll') || can('viewOwn')],
@@ -349,6 +349,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers }) {
     if (S.offlineMode && (!OFFLINE_VIEWS.has(view) || (view === 'new' && !can('create')))) {
       view = can('create') ? 'new' : 'reg';
     }
+    if (unsavedWork && !unsavedWork.confirmDiscard()) return false;
     if (S.view === 'new') getPayments().disposePreviews();
     S.view = view;
     syncNavActiveState();

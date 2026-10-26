@@ -31,11 +31,44 @@ def check(condition, message):
         ok += 1
 
 
+def click_with_draft_discard(page, button):
+    dirty_draft = page.evaluate(
+        """() => {
+          const form = document.querySelector('#nf');
+          return Boolean(
+            form
+              && form.isConnected
+              && !form.classList.contains('hidden')
+              && !form.closest('.hidden')
+              && form.dataset.unsavedWork === 'true'
+              && !form.querySelector('#nsave')?.disabled
+          );
+        }"""
+    )
+    if not dirty_draft:
+        button.click()
+        return
+
+    def handle_dialog(dialog):
+        if dialog.type == 'confirm' and dialog.message.startswith(
+            'This voucher draft has unsaved changes.'
+        ):
+            dialog.accept()
+        else:
+            dialog.dismiss()
+
+    page.on('dialog', handle_dialog)
+    try:
+        button.click()
+    finally:
+        page.remove_listener('dialog', handle_dialog)
+
+
 def go_view(page, view):
     """Navigate through the visible mobile shortcut or the accessible More sheet."""
     shortcut = page.locator(f'#nav [data-v="{view}"]')
     if shortcut.count() == 1 and shortcut.is_visible():
-        shortcut.click()
+        click_with_draft_discard(page, shortcut)
         return
 
     more_button = page.locator('#mobileMoreBtn')
@@ -47,7 +80,7 @@ def go_view(page, view):
     if overflow_item.count() != 1:
         page.keyboard.press('Escape')
         raise AssertionError(f'Navigation item {view!r} is not available in More.')
-    overflow_item.click()
+    click_with_draft_discard(page, overflow_item)
 
 
 png = base64.b64decode(
@@ -2505,7 +2538,7 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'payment category options include Staff Salary and only valid strings',
     )
-    page.click('[data-act=ntype][data-k=RECEIPT]')
+    click_with_draft_discard(page, page.locator('[data-act=ntype][data-k=RECEIPT]'))
     check(
         page.locator('#rows .erow .payment-method-control').inner_text().splitlines()[0] == 'Received via',
         'cash receipt uses a receiving-method label',
@@ -3898,7 +3931,7 @@ with sync_playwright() as p:
     # A queued cash receipt must be labeled accurately and sync when connectivity returns.
     context.set_offline(True)
     go_view(page, 'new')
-    page.click('[data-k=RECEIPT]')
+    click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.rv', 'Offline Receipt Label Test')
     page.fill('.ra', '21')
     choose_cash_impact_for_current_rows()
@@ -3954,7 +3987,7 @@ with sync_playwright() as p:
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
 
     go_view(page, 'new')
-    page.click('[data-k=RECEIPT]')
+    click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.rv', 'Guest Room 5')
     page.fill('.ra', '5000')
     choose_cash_impact_for_current_rows()
@@ -5858,9 +5891,37 @@ with sync_playwright() as p:
         all(target['height'] >= 44 for target in touch_targets),
         'payment save and payment/receipt switch targets are at least 44px tall on mobile',
     )
-    page.click('[data-k=RECEIPT]')
+    click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash-receipt mode uses matching save terminology')
-    page.click('[data-k=PAYMENT]')
+    click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
+    page.locator('.erow .rv').first.fill('Mobile workflow vendor')
+    page.locator('.erow .ra').first.fill('42')
+    check(
+        page.locator('#nf .unsaved-draft-notice').inner_text()
+        == 'Unsaved voucher draft — save it before leaving this screen.',
+        'editing a payment displays a visible unsaved-draft warning',
+    )
+    page.once('dialog', lambda dialog: dialog.dismiss())
+    page.click('[data-k=RECEIPT]')
+    check(
+        page.locator('#nsave').inner_text() == 'Save payment'
+        and page.locator('.erow .rv').first.input_value() == 'Mobile workflow vendor',
+        'cancelling entry-type switching preserves the unsaved payment draft',
+    )
+    page.once('dialog', lambda dialog: dialog.dismiss())
+    page.click('#nav [data-v="dash"]')
+    check(
+        page.locator('#nf').is_visible()
+        and page.locator('.erow .rv').first.input_value() == 'Mobile workflow vendor'
+        and page.locator('.erow .ra').first.input_value() == '42',
+        'cancelling navigation preserves the unsaved financial draft',
+    )
+    page.once('dialog', lambda dialog: dialog.accept())
+    page.click('#nav [data-v="dash"]')
+    page.wait_for_selector('.dashboard-view')
+    check(page.locator('#nf').count() == 0, 'confirmed navigation explicitly discards the draft')
+    go_view(page, 'new')
+    page.wait_for_selector('#nf')
     page.locator('.erow .rv').first.fill('Mobile workflow vendor')
     page.locator('.erow .ra').first.fill('42')
     check(page.locator('#nsave').inner_text() == 'Save payment', 'single-entry save label stays singular')
@@ -6819,7 +6880,7 @@ with sync_playwright() as p:
     # Finish with a full staff cash-receipt journey and verify the next-entry action preserves mode.
     go_view(page, 'new')
     page.wait_for_selector('#nf')
-    page.click('[data-k=RECEIPT]')
+    click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.erow .rv', 'Mobile cash receipt workflow')
     page.fill('.erow .ra', '25')
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash receipt form has matching save action')
@@ -6833,7 +6894,7 @@ with sync_playwright() as p:
 
     # Seed an unsafe legacy API value in client state to test rendering without making
     # an unsafe financial write through the server.
-    page.click('[data-k=PAYMENT]')
+    click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
     page.evaluate(
         """async (payload) => {
           const { S } = await import('/frontend/core/state.js');
@@ -6888,7 +6949,7 @@ with sync_playwright() as p:
         }""",
         xss_payload,
     )
-    page.click('[data-k=PAYMENT]')
+    click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
     page.wait_for_selector('#recentVendors .vchip')
     page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
     page.fill('.erow .ra', '11')

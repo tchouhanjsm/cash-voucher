@@ -23,6 +23,7 @@ const navigation = read('frontend/features/navigation.js');
 const shell = read('frontend/features/shell.js');
 const serviceWorker = read('sw.js');
 const pwa = read('frontend/core/pwa.js');
+const unsavedWork = read('frontend/core/unsaved-work.js');
 
 assert.match(palette, /--bg:\s*#edf1f6;/, 'main canvas matches the sign-in canvas');
 assert.match(palette, /--card:\s*#ffffff;/, 'workspace cards match the white sign-in panel');
@@ -420,9 +421,14 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v29'/,
-  'PWA cache revision advances with the controlled update and cache-isolation implementation',
+  /const C = 'cv2-v30'/,
+  'PWA cache revision advances with unsaved-draft protection and cache isolation',
 );
+assert.match(serviceWorker, /frontend\/core\/unsaved-work\.js/);
+assert.match(unsavedWork, /This voucher draft has unsaved changes/);
+assert.match(unsavedWork, /beforeunload/);
+assert.match(palette, /\.unsaved-draft-notice\s*\{/);
+assert.match(pwa, /confirmDiscardUnsavedWork/);
 assert.match(
   authHtml,
   /id="appUpdateNotice"[\s\S]*id="appUpdateApply"[\s\S]*id="appUpdateLater"/,

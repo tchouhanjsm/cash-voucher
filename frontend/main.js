@@ -1,4 +1,5 @@
 import { createApi } from './core/api.js';
+import { createUnsavedWorkGuard } from './core/unsaved-work.js';
 import { $ } from './core/dom.js';
 import { registerActions, installActionDelegation } from './core/actions.js';
 import { S } from './core/state.js';
@@ -26,6 +27,11 @@ let navigation;
 const apiTransport = createApi({
   getUrl: () => S.url,
   getToken: () => S.token,
+});
+
+const unsavedWork = createUnsavedWorkGuard({
+  onBlocked: () =>
+    toast('A voucher save is still in progress. Wait for it to finish before leaving.', 'err'),
 });
 
 async function api(action, payload = {}) {
@@ -80,6 +86,7 @@ const administration = createAdministration({
 
 navigation = createNavigation({
   api,
+  unsavedWork,
   getAuth: () => auth,
   getPayments: () => payments,
   renderers: {
@@ -131,7 +138,9 @@ registerActions({
 
   newagain: () => payments.newAgain(),
 
-  ntype: ({ key }) => payments.open(key),
+  ntype: ({ key }) => {
+    if (unsavedWork.confirmDiscard()) payments.open(key);
+  },
 
   print: ({ id }) => printVoucher(id),
 
@@ -249,7 +258,7 @@ function init() {
 
   S.token = ls.get('cv.token') || '';
 
-  registerPwa();
+  registerPwa({ confirmDiscardUnsavedWork: unsavedWork.confirmDiscard });
 
   bindFeatures();
   payments.showBanner();

@@ -2753,3 +2753,15 @@ nav .ic {
     flex: 1 1 140px;
   }
 }
+
+/* Financial drafts remain visible and protected until saved or explicitly discarded. */
+.unsaved-draft-notice {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  color: var(--warning-ink);
+  background: var(--surface-warning);
+  border: 1px solid var(--border-warning);
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.45;
+}
