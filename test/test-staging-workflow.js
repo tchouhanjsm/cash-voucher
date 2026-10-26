@@ -159,7 +159,7 @@ assert.match(clientDistWorkflow, /CV_ENVIRONMENT: staging/);
 assert.match(clientDistWorkflow, /CV_API_URL: \$\{\{ secrets\.CV_STAGING_API_URL \}\}/);
 assert.doesNotMatch(clientDistWorkflow, /inputs\.api_url/);
 assert.match(clientDistWorkflow, /name: Require client-main for staging artifact/);
-assert.match(clientDistWorkflow, /ACTION_REF" != "refs\\/heads\\/client-main"/);
+assert.ok(clientDistWorkflow.includes('if [ "$ACTION_REF" != "refs/heads/client-main" ]'));
 assert.match(clientDistWorkflow, /needs: \[guard\]/);
 assert.match(clientDistWorkflow, /environment:\n {6}name: staging/);
 assert.match(clientDistWorkflow, /npm run staging:preflight -- --mode=artifact/);
@@ -168,8 +168,8 @@ assert.ok(
     clientDistWorkflow.indexOf('npm run build:web'),
   'staging target isolation must pass before the client ZIP is built',
 );
-const clientDistGuard = clientDistWorkflow.split('  build:\\n')[0];
-assert.doesNotMatch(clientDistGuard, /secrets\\./, 'branch guard must run without staging secrets');
+const clientDistGuard = clientDistWorkflow.split('  build:\n')[0];
+assert.doesNotMatch(clientDistGuard, /secrets\./, 'branch guard must run without staging secrets');
 for (const key of [
   'CV_STAGING_API_URL',
   'CV_STAGING_SCRIPT_ID',
@@ -201,9 +201,10 @@ assert.doesNotMatch(
   /vars\\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
   'ZIP workflow must not source resource identifiers from unmasked variables',
 );
-assert.match(
-  clientDistWorkflow,
-  /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: \\$\\{\\{ vars\\.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION \\}\\}/,
+assert.ok(
+  clientDistWorkflow.includes(
+    'CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}',
+  ),
 );
 assert.ok(
   clientDistWorkflow.includes(
