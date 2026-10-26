@@ -226,7 +226,7 @@ function cashCloseOut_(row) {
     closeDate.length !== 10 ||
     drawerKey !== CASH_CLOSE_DRAWER ||
     !createdBy ||
-    !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/.test(createdAt) ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(createdAt) ||
     !isFinite(timestampMs) ||
     new Date(timestampMs).toISOString() !== createdAt ||
     timeZone !== CFG.TZ ||
@@ -279,7 +279,7 @@ function cashCloseOut_(row) {
       typeof item.no !== 'string' ||
       item.no.trim() === '' ||
       typeof item.date !== 'string' ||
-      !/^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(item.date) ||
       !validDate_(item.date) ||
       item.date !== closeDate ||
       typeof item.vendor !== 'string' ||
