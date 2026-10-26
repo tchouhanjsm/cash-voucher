@@ -237,10 +237,17 @@ assert.match(
 );
 assert.match(
   clientDistWorkflow,
-  /path: cv-\$\{\{ inputs\.client_code \}\}-staging-\$\{\{ github\.sha \}\}\.zip/,
-  'artifact upload path must use the same client and full commit SHA',
+  /path:\s*\|\s*\n\s+cv-\$\{\{ inputs\.client_code \}\}-staging-\$\{\{ github\.sha \}\}\.zip\s*\n\s+cv-\$\{\{ inputs\.client_code \}\}-staging-\$\{\{ github\.sha \}\}\.zip\.sha256/,
+  'artifact upload must include both the full-SHA ZIP and its detached checksum',
 );
 assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
+assert.match(clientDistWorkflow, /artifactVersion: 2/);
+assert.match(clientDistWorkflow, /checksumAlgorithm: 'SHA-256'/);
+assert.match(clientDistWorkflow, /checksumsFile: 'SHA256SUMS\.txt'/);
+assert.match(clientDistWorkflow, /sha256sum -c SHA256SUMS\.txt/);
+assert.match(clientDistWorkflow, /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/);
+assert.match(clientDistWorkflow, /retention-days: 14/);
+assert.match(clientDistWorkflow, /Confirm integration commit is still current before publishing the artifact/);
 assert.doesNotMatch(
   clientDistWorkflow,
   /CV_ENVIRONMENT:\s*production|clasp push|staging:deploy/,

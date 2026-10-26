@@ -1,25 +1,26 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 26 October 2026 15:27 IST (live-source audit)  
+**Updated:** 26 October 2026 (post-merge integrity review)  
 **Repository:** tchouhanjsm/cash-voucher  
-**Integration branch:** `client-main`  
-**Verified integration baseline:** `75561d19e5f72f885c813152de122e7444801d70` (PR #223 merged; exact-head CI / Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor passed).  
-**Legacy branch:** `main` (legacy/read-only; do not merge or rebase blindly).  
-**Current phase:** Staging artifact target-isolation and public workflow-log confidentiality hardening on `client/staging-artifact-isolation-20261026`. No open PR existed when this batch was selected; this branch is a single reviewable source batch targeting `client-main`.  
-**Release boundary:** no Apps Script push, deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change is authorized by this source batch.
+**Integration branch:** `client-main`; legacy `main` remains read-only.  
+**Verified integration baseline:** `1b016a82d9e42eeb71d875561cc356d946fa5db5` (PR #224 merged; its first parent is `24176f030b2f33b1174779fa191152f7441c3460`, the PR #225 merge). The earlier baseline `75561d19e5f72f885c813152de122e7444801d70` was PR #223 merged.  
+**Current phase:** post-merge Dashboard and staging-artifact integrity recovery on `client/post-224-restore-dashboard-and-artifact-integrity-20261026`.  
+**Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, live write-capable UAT, cPanel publication or production change.
 
-## Current checkpoint — 26 October 2026 15:27 IST
+## Current checkpoint — post-merge reconciliation
 
-- **Current `client-main` SHA:** `75561d19e5f72f885c813152de122e7444801d70`, merged PR #223. Exact-head evidence: [CI / Quality #40299960269](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960269), [Browser E2E #40299960457](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960457), [Full Flight Test #40299960312](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960312), and [Autonomous Development Monitor #40299960297](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960297). All four workflows completed successfully on this SHA. The monitor persisted Issue #212 with this same SHA and the three source checks passed.
-- **PR queue:** PRs #220, #221, #222 and #223 are merged. GitHub returned zero open PRs at batch start. Reviews for PRs #220–#223 are empty; no review was submitted on those PRs.
-- **PR handoff contract:** every reviewable PR description must include Outcome, Acceptance criteria, Verification evidence, Security and failure review, Release boundary, and Residual risks / not verified. The CI handoff gate enforces these sections.
-- **Active PR queue after batch creation:** PR #224 is the oldest open PR. PR #225 opened later and overlaps `.github/workflows/client-dist.yml`, staging workflow tests, and the current handoff/plan/audit documents. Follow serial order: resolve #224 first; do not modify or merge #225 until #224 is resolved. Neither PR has a submitted review, and no merge or auto-merge is requested.
-- **Governance P0:** `client-main` reports `protected=false`. Active ruleset #24624368 includes only `~DEFAULT_BRANCH` (`main`), requires only `quality`, and requires zero approvals. The classic branch-protection endpoint returns 403 to this integration. Owner/admin must correct and independently verify `client-main` governance; this batch does not change repository settings.
-- **Source-side isolation defect found:** the manual client ZIP workflow accepted a free-form API URL and did not run the existing staging target-isolation preflight before packaging. The staging UAT and ZIP workflows also sourced resource identifiers from unmasked workflow variables. Because GitHub currently reports the repository visibility as public, the previous UAT job logs exposed operational resource identifiers and the staging endpoint. This batch switches target identifiers to `staging` Environment secrets, removes the free-form ZIP URL input, and runs an artifact-only preflight before building. The generated client config necessarily embeds the chosen staging endpoint; it is not an authentication credential.
-- **Owner configuration prerequisite:** after this source change, the owner must migrate the existing staging and production reference IDs plus `CV_STAGING_API_URL` from Environment variables into the `staging` Environment secrets. Configure either all four production resource references or the explicit owner isolation attestation. Correct Clasp credentials privately. No live values belong in Git, PR text, or chat.
-- **Staging UAT blocker:** [run #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed at `Validate isolated deployment configuration`: four production reference IDs were empty and `CLASPRC_JSON` was missing/invalid to the validator. Deployment, target recheck and live UAT were skipped. Playwright download logs contained transient DNS errors, but installation completed; those errors were not the preflight root cause. No retry is warranted until owner configuration is corrected.
-- **Artifact/release state:** [Client staging ZIP #39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) succeeded on stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`; it is not deployable evidence. The live releases endpoint returned no published releases.
-- **Unverified operational gates:** live staging identity/deployment, actual host response headers, live role/receipt authorization, real backup and restore into a separate destination, all-device offline/reconnect, print/PDF, accessibility and customer acceptance remain unverified. Production remains untouched.
+- **Exact merged-head checks are green:** [CI / Quality #40319063089](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063089), [Browser E2E #40319062917](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062917), [Full Flight Test #40319063051](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063051), and [Autonomous Development Monitor #40319062906](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062906) all completed successfully on `1b016a82d9e42eeb71d875561cc356d946fa5db5`.
+- **Important finding:** comparing the PR #224 merge tree with PR #225’s first-parent tree showed the strict Dashboard-summary validator/browser fault-injection regressions and the ZIP artifact-v2 checksum safeguards were absent from the merged snapshot. Green workflows on the merged snapshot did not reveal this because both affected implementation and some regression coverage were removed together.
+- **Recovery batch:** restore the Dashboard fail-closed summary contract and malformed-response/recovery browser tests; retain PR #224's staging-secret and artifact-mode preflight boundary; restore SHA-256 file inventory, detached ZIP checksum, 14-day artifact retention and fresh-branch checks; strengthen tests so a future merge cannot silently drop these contracts. Restore the deleted page-by-page delivery record and update the current release handoff.
+- **Next release gates remain external:** staging Environment secrets must be configured and privately verified; the prior staging UAT failed preflight due to missing production reference IDs and invalid/missing Clasp credentials. Do not retry until corrected. Owner/admin must include `client-main` in an effective ruleset; it currently reports `protected=false`.
+- **Not verified:** live staging deployment/version, actual host security headers, role and receipt authorization, isolated backup/restore, all-device offline/reconnect, print/PDF, assistive technology and customer acceptance. Source CI is not a substitute for these gates.
+
+## Immediate objective before the 27 October deadline
+
+1. Merge the source regression-recovery PR only after its exact final head passes CI / Quality, Browser E2E and Full Flight Test and receives human review.
+2. Complete owner-controlled staging identity and branch-governance tasks; retain sanitized evidence and do not expose resource identifiers in workflow logs.
+3. Do not call the product customer-ready until live UAT, separate-target restore and operator/device acceptance are recorded.
+
 
 ---
 

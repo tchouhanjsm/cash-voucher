@@ -20,16 +20,20 @@ const sinkInventory = read('docs/ACTIVE-DOM-SINK-INVENTORY.md');
 const securityAudit = read('docs/SECURITY-RENDERING-AUDIT.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const handoff = read('docs/HANDOFF.md');
+const dashboard = read('frontend/features/dashboard.js');
+const browserE2e = read('test/e2e.py');
+const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 26 October 2026/m);
-assert.match(handoff, /Verified integration baseline.*75561d19e5f72f885c813152de122e7444801d70/);
+assert.match(handoff, /Verified integration baseline.*1b016a82d9e42eeb71d875561cc356d946fa5db5/);
+assert.match(dashboard, /function dashboardSummaryIssue/);
+assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
+assert.match(browserE2e, /Dashboard totals unavailable/);
+assert.match(deliveryPhase, /PR #225.*merged/i);
 assert.match(
   handoff,
   /exact-head CI \/ Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor passed/,
 );
-assert.match(
-  handoff,
-  /Current phase.*Staging artifact target-isolation and public workflow-log confidentiality/,
-);
+assert.match(handoff, /Current phase.*post-merge Dashboard and artifact-integrity recovery/i);
 assert.match(handoff, /PR #223 merged/);
 assert.match(handoff, /client-main.*protected=false/);
 assert.match(handoff, /## Historical handoff snapshot — 25 October 2026/);
@@ -110,7 +114,7 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*75561d19e5f72f885c813152de122e7444801d70/);
+assert.match(executionPlan, /Current integration SHA.*1b016a82d9e42eeb71d875561cc356d946fa5db5/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
