@@ -2692,7 +2692,6 @@ nav .ic {
   --main-glow: rgba(47, 138, 92, 0.12);
 }
 
-
 /* PWA updates are user-controlled so an install cannot silently interrupt entry. */
 .app-update-notice {
   display: flex;

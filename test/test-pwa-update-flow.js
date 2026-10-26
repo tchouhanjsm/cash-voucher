@@ -39,7 +39,10 @@ function fakeElement(initiallyHidden = true) {
   };
 }
 
-function fakePwaEnvironment({ controller = { active: true }, waiting = { postMessage() {} } } = {}) {
+function fakePwaEnvironment({
+  controller = { active: true },
+  waiting = { postMessage() {} },
+} = {}) {
   const notice = fakeElement();
   const apply = fakeElement(false);
   apply.textContent = 'Reload to update';
@@ -139,10 +142,18 @@ function fakePwaEnvironment({ controller = { active: true }, waiting = { postMes
   });
   assert.equal(registered, env.registration);
   assert.equal(env.registerPath, 'sw.js');
-  assert.equal(env.notice.isHidden(), false, 'a waiting update is announced to a controlled client');
+  assert.equal(
+    env.notice.isHidden(),
+    false,
+    'a waiting update is announced to a controlled client',
+  );
 
   env.later.click();
-  assert.equal(env.notice.isHidden(), true, 'Later dismisses the notice without activating the worker');
+  assert.equal(
+    env.notice.isHidden(),
+    true,
+    'Later dismisses the notice without activating the worker',
+  );
   assert.equal(env.messages.length, 0, 'dismissing an update does not send an activation message');
 
   env.apply.click();
@@ -165,7 +176,11 @@ function fakePwaEnvironment({ controller = { active: true }, waiting = { postMes
   discovered.registrationEvents.get('updatefound')();
   discovered.installingWorker.state = 'installed';
   discovered.installingEvents.get('statechange')();
-  assert.equal(discovered.notice.isHidden(), false, 'a completed waiting install reveals the update action');
+  assert.equal(
+    discovered.notice.isHidden(),
+    false,
+    'a completed waiting install reveals the update action',
+  );
 
   const firstInstall = fakePwaEnvironment({ controller: null, waiting: { postMessage() {} } });
   await registerPwa({
@@ -173,7 +188,11 @@ function fakePwaEnvironment({ controller = { active: true }, waiting = { postMes
     locationRef: firstInstall.locationRef,
     documentRef: firstInstall.documentRef,
   });
-  assert.equal(firstInstall.notice.isHidden(), true, 'first installation does not demand an update reload');
+  assert.equal(
+    firstInstall.notice.isHidden(),
+    true,
+    'first installation does not demand an update reload',
+  );
   firstInstall.events.get('controllerchange')();
   assert.equal(firstInstall.reloads, 0, 'first installation does not reload the application shell');
 

@@ -139,17 +139,28 @@ function createHarness({ failAddAll = false } = {}) {
   assert.ok(currentCache, 'installation creates the current app-shell cache');
   assert.ok(currentCache.has('https://example.test/app/index.html'));
   assert.ok(currentCache.has('https://example.test/app/frontend/core/pwa.js'));
-  assert.equal(harness.counts.skipWaiting, 0, 'installation does not activate over an existing app automatically');
+  assert.equal(
+    harness.counts.skipWaiting,
+    0,
+    'installation does not activate over an existing app automatically',
+  );
 
   harness.stores.set('cv2-v28', new Map([['old', response('old')]]));
   harness.stores.set('unrelated-host-cache', new Map([['keep', response('keep')]]));
   await harness.lifecycle('activate');
   assert.ok(!harness.stores.has('cv2-v28'), 'activation removes stale Cash Voucher caches');
-  assert.ok(harness.stores.has('unrelated-host-cache'), 'activation leaves caches owned by other host code intact');
+  assert.ok(
+    harness.stores.has('unrelated-host-cache'),
+    'activation leaves caches owned by other host code intact',
+  );
   assert.equal(harness.counts.claim, 1);
 
   harness.handlers.get('message')({ data: { type: 'OTHER' } });
-  assert.equal(harness.counts.skipWaiting, 0, 'unrecognized worker messages do not activate an update');
+  assert.equal(
+    harness.counts.skipWaiting,
+    0,
+    'unrecognized worker messages do not activate an update',
+  );
   harness.handlers.get('message')({ data: { type: 'SKIP_WAITING' } });
   assert.equal(harness.counts.skipWaiting, 1, 'explicit UI approval activates the waiting update');
 
@@ -160,22 +171,40 @@ function createHarness({ failAddAll = false } = {}) {
     mode: 'cors',
   });
   assert.equal(cssResponse.url, cssUrl);
-  assert.ok(harness.stores.get('cv2-v29').has(cssUrl), 'approved shell assets are cached after a successful network response');
+  assert.ok(
+    harness.stores.get('cv2-v29').has(cssUrl),
+    'approved shell assets are cached after a successful network response',
+  );
 
   const privateUrl = 'https://example.test/app/private/customer-report.json';
   const privateRequest = { url: privateUrl, method: 'GET', mode: 'cors' };
-  assert.equal(await harness.dispatchFetch(privateRequest), null, 'unlisted same-origin GETs pass through untouched');
-  assert.ok(!harness.stores.get('cv2-v29').has(privateUrl), 'unlisted private responses are not placed in the app cache');
+  assert.equal(
+    await harness.dispatchFetch(privateRequest),
+    null,
+    'unlisted same-origin GETs pass through untouched',
+  );
+  assert.ok(
+    !harness.stores.get('cv2-v29').has(privateUrl),
+    'unlisted private responses are not placed in the app cache',
+  );
 
   const crossOriginRequest = {
     url: 'https://script.google.com/macros/s/TEST/exec',
     method: 'GET',
     mode: 'cors',
   };
-  assert.equal(await harness.dispatchFetch(crossOriginRequest), null, 'cross-origin API requests pass through untouched');
+  assert.equal(
+    await harness.dispatchFetch(crossOriginRequest),
+    null,
+    'cross-origin API requests pass through untouched',
+  );
 
   const postRequest = { url: cssUrl, method: 'POST', mode: 'cors' };
-  assert.equal(await harness.dispatchFetch(postRequest), null, 'POST requests are never intercepted');
+  assert.equal(
+    await harness.dispatchFetch(postRequest),
+    null,
+    'POST requests are never intercepted',
+  );
 
   harness.failedFetches.add(cssUrl);
   const cachedCss = await harness.dispatchFetch({ url: cssUrl, method: 'GET', mode: 'cors' });
@@ -201,8 +230,14 @@ function createHarness({ failAddAll = false } = {}) {
   const failedInstall = createHarness({ failAddAll: true });
   failedInstall.stores.set('cv2-v28', new Map([['old', response('old')]]));
   await assert.rejects(failedInstall.lifecycle('install'), /precache failed/);
-  assert.ok(failedInstall.stores.has('cv2-v28'), 'failed installation preserves the prior active cache');
-  assert.ok(failedInstall.deleted.includes('cv2-v29'), 'failed installation removes its partial cache');
+  assert.ok(
+    failedInstall.stores.has('cv2-v28'),
+    'failed installation preserves the prior active cache',
+  );
+  assert.ok(
+    failedInstall.deleted.includes('cv2-v29'),
+    'failed installation removes its partial cache',
+  );
   assert.equal(failedInstall.counts.skipWaiting, 0);
 
   console.log('Service-worker policy tests passed');

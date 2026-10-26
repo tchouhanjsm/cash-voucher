@@ -128,7 +128,6 @@ The current source review found a late Report response rerendering the active wo
 
 No shared component framework, external runtime resources, APIs, schemas or financial/authorization behavior are changed. Existing screenshot coverage supports visual review but does not replace manual review at real device sizes, zoom/reflow and assistive technology.
 
-
 ## PWA cache isolation and explicit updates — 26 October 2026
 
 The app-shell worker now caches only its declared, query-free static asset allowlist. Unlisted same-origin GETs and cross-origin API requests pass through without Cache Storage interception. A precache failure rejects installation and removes the partial new cache so the previous worker can continue serving the app; activation removes only obsolete `cv2-v*` caches, not unrelated origin caches. New workers wait for the user to choose **Reload to update**, and the UI warns users to save unfinished forms first. Reloading preserves the IndexedDB outbox; it does not turn local records into server-synchronized records.
