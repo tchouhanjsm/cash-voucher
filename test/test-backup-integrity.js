@@ -1,3 +1,8 @@
+'use strict';
+
+const assert = require('node:assert/strict');
+const { create } = require('./mock-gas');
+
 const g = create();
 
 const manifestHeader = ['originalFileId', 'backupFileId', 'name', 'createdAt'];
