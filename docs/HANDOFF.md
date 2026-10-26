@@ -1,6 +1,6 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 26 October 2026 15:04 IST (live-source audit)  
+**Updated:** 26 October 2026 15:27 IST (live-source audit)  
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`  
 **Verified integration baseline:** `75561d19e5f72f885c813152de122e7444801d70` (PR #223 merged; exact-head CI / Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor passed).  
@@ -8,11 +8,12 @@
 **Current phase:** Staging artifact target-isolation and public workflow-log confidentiality hardening on `client/staging-artifact-isolation-20261026`. No open PR existed when this batch was selected; this branch is a single reviewable source batch targeting `client-main`.  
 **Release boundary:** no Apps Script push, deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change is authorized by this source batch.
 
-## Current checkpoint — 26 October 2026 15:04 IST
+## Current checkpoint — 26 October 2026 15:27 IST
 
 - **Current `client-main` SHA:** `75561d19e5f72f885c813152de122e7444801d70`, merged PR #223. Exact-head evidence: [CI / Quality #40299960269](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960269), [Browser E2E #40299960457](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960457), [Full Flight Test #40299960312](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960312), and [Autonomous Development Monitor #40299960297](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960297). All four workflows completed successfully on this SHA. The monitor persisted Issue #212 with this same SHA and the three source checks passed.
 - **PR queue:** PRs #220, #221, #222 and #223 are merged. GitHub returned zero open PRs at batch start. Reviews for PRs #220–#223 are empty; no review was submitted on those PRs.
 - **PR handoff contract:** every reviewable PR description must include Outcome, Acceptance criteria, Verification evidence, Security and failure review, Release boundary, and Residual risks / not verified. The CI handoff gate enforces these sections.
+- **Active PR queue after batch creation:** PR #224 is the oldest open PR. PR #225 opened later and overlaps `.github/workflows/client-dist.yml`, staging workflow tests, and the current handoff/plan/audit documents. Follow serial order: resolve #224 first; do not modify or merge #225 until #224 is resolved. Neither PR has a submitted review, and no merge or auto-merge is requested.
 - **Governance P0:** `client-main` reports `protected=false`. Active ruleset #24624368 includes only `~DEFAULT_BRANCH` (`main`), requires only `quality`, and requires zero approvals. The classic branch-protection endpoint returns 403 to this integration. Owner/admin must correct and independently verify `client-main` governance; this batch does not change repository settings.
 - **Source-side isolation defect found:** the manual client ZIP workflow accepted a free-form API URL and did not run the existing staging target-isolation preflight before packaging. The staging UAT and ZIP workflows also sourced resource identifiers from unmasked workflow variables. Because GitHub currently reports the repository visibility as public, the previous UAT job logs exposed operational resource identifiers and the staging endpoint. This batch switches target identifiers to `staging` Environment secrets, removes the free-form ZIP URL input, and runs an artifact-only preflight before building. The generated client config necessarily embeds the chosen staging endpoint; it is not an authentication credential.
 - **Owner configuration prerequisite:** after this source change, the owner must migrate the existing staging and production reference IDs plus `CV_STAGING_API_URL` from Environment variables into the `staging` Environment secrets. Configure either all four production resource references or the explicit owner isolation attestation. Correct Clasp credentials privately. No live values belong in Git, PR text, or chat.
