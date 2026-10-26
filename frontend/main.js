@@ -2,6 +2,7 @@ import { createApi } from './core/api.js';
 import { $ } from './core/dom.js';
 import { registerActions, installActionDelegation } from './core/actions.js';
 import { S } from './core/state.js';
+import { registerPwa } from './core/pwa.js';
 import { ls } from './core/storage.js';
 import { initTheme } from './core/theme.js';
 import { busy, closeModal, dialog, fail, toast } from './core/ui.js';
@@ -248,9 +249,7 @@ function init() {
 
   S.token = ls.get('cv.token') || '';
 
-  if (location.protocol.startsWith('http') && 'serviceWorker' in navigator) {
-    navigator.serviceWorker.register('sw.js').catch(() => {});
-  }
+  registerPwa();
 
   bindFeatures();
   payments.showBanner();

@@ -22,6 +22,7 @@ const cashClose = read('frontend/features/cash-close.js');
 const navigation = read('frontend/features/navigation.js');
 const shell = read('frontend/features/shell.js');
 const serviceWorker = read('sw.js');
+const pwa = read('frontend/core/pwa.js');
 
 assert.match(palette, /--bg:\s*#edf1f6;/, 'main canvas matches the sign-in canvas');
 assert.match(palette, /--card:\s*#ffffff;/, 'workspace cards match the white sign-in panel');
@@ -419,8 +420,23 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v28'/,
-  'PWA cache revision advances with validation and interaction styles',
+  /const C = 'cv2-v29'/,
+  'PWA cache revision advances with the controlled update and cache-isolation implementation',
+);
+assert.match(
+  authHtml,
+  /id="appUpdateNotice"[\s\S]*id="appUpdateApply"[\s\S]*id="appUpdateLater"/,
+  'the application includes an accessible update notice with apply and dismiss controls',
+);
+assert.match(
+  pwa,
+  /postMessage\(\{ type: 'SKIP_WAITING' \}\)/,
+  'service-worker activation follows the user-controlled update action',
+);
+assert.match(
+  pwa,
+  /installingWorker\.state === 'installed'/,
+  'the update notice appears after the new worker finishes installation',
 );
 assert.match(
   payments,
