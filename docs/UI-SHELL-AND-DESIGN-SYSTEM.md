@@ -134,7 +134,6 @@ The app-shell worker now caches only its declared, query-free static asset allow
 
 The new Node tests exercise install failure, cache ownership, request allowlisting, offline asset/navigation fallback, explicit activation messaging, and update-notice/reload behavior. This is source-level PWA lifecycle evidence only; live-host update behavior, real-device install/reconnect, and offline recovery remain release gates.
 
-
 ## Unsaved voucher protection — 26 October 2026
 
 The New Entry workflow now marks a draft dirty when a user edits a field, adds/removes a row or clears an attached receipt. The form exposes a visible, announced warning, browser reload/close requests trigger the native unsaved-work prompt, and navigation/type-switch actions require explicit discard confirmation. During a financial save, navigation is blocked until the request finishes; the guard uses the existing disabled Save control to detect an in-flight request. The PWA update button reuses the same guard before activating a waiting worker.

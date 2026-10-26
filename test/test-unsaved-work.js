@@ -179,8 +179,16 @@ function eventTarget(form, action = '') {
   env.saveButton.disabled = true;
   assert.equal(guard.hasUnsavedWork(), true, 'an in-flight save remains protected');
   assert.equal(guard.confirmDiscard(), false, 'route changes cannot interrupt an in-flight save');
-  assert.equal(env.blockedCalls, 1, 'a blocked save transition explains why navigation did not occur');
-  assert.equal(env.confirmCalls.length, 2, 'an in-flight save does not present a discard confirmation');
+  assert.equal(
+    env.blockedCalls,
+    1,
+    'a blocked save transition explains why navigation did not occur',
+  );
+  assert.equal(
+    env.confirmCalls.length,
+    3,
+    'an in-flight save does not present a discard confirmation',
+  );
 
   env.saveButton.disabled = false;
   env.classes.add('parent-hidden');

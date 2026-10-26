@@ -768,6 +768,7 @@ with sync_playwright() as p:
         and page.locator('#batchTotal').get_attribute('data-value') == '42.00',
         'removing an incomplete row preserves the live batch total',
     )
+    page.once('dialog', lambda dialog: dialog.accept())
     go_view(page, 'dash')
     check(
         page.locator('#view .needs h2').inner_text().startswith('Needs attention')

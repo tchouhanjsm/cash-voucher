@@ -8,7 +8,8 @@ export function createUnsavedWorkGuard({
   const protectedFormSelector = '#nf';
   const destructiveActions = new Set(['addrow', 'delrow', 'clrrec']);
   const confirmation =
-    'This voucher draft has unsaved changes. Discard the entered amounts, details and attached receipt images?';
+    'This voucher draft has unsaved changes. Discard the entered amounts, details and ' +
+    'attached receipt images?';
   const noticeText = 'Unsaved voucher draft — save it before leaving this screen.';
 
   function activeForm() {
