@@ -522,9 +522,15 @@ export function createDashboard({ api }) {
           </aside>
         </section>`
       : '';
-    const financialPanels = periodIsEmpty
-      ? ''
-      : `
+    const dashboardWarnings =
+      (dataWarnings.length
+        ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>`
+        : '') +
+      (invalidAmountCount
+        ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>`
+        : '');
+
+    const financialPanels = periodIsEmpty ? '' : `
       <div class="stats dashboard-stats">
         <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
@@ -533,8 +539,7 @@ export function createDashboard({ api }) {
         <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Cash received</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} entries · net ${money(received - total)}</small></div>
         ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(summary.bookBalance || 0)}</b><small class="muted">opening balance + recorded receipts − approved recorded payments; not a physical cash count</small></div>` : ''}
       </div>
-      ${dataWarnings.length ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>` : ''}
-      ${invalidAmountCount ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>` : ''}
+      ${dashboardWarnings}
       <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend || [], from, to)}</div>
       <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors || [])}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory || [])}</div></div>
       ${
@@ -551,6 +556,7 @@ export function createDashboard({ api }) {
       ? [
           periodControls(from, to),
           emptyPeriodPanel,
+          dashboardWarnings,
           needsAttention,
           dailyCloseCard(dailyOperations, dailyOperationsError),
         ].join('')
