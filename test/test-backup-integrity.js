@@ -12,12 +12,7 @@ const validManifestRow = [
   'receipt.jpg',
   '2026-10-12T02:00:00.000Z',
 ];
-const receiptFiles = [
-  {
-    getId: () => 'backup-receipt-1',
-    getName: () => 'receipt.jpg',
-  },
-];
+const receiptFiles = [{ getId: () => 'backup-receipt-1', getName: () => 'receipt.jpg' }];
 const validManifest = g.inspectReceiptManifest(
   [manifestHeader, validManifestRow],
   true,
