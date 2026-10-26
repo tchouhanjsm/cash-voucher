@@ -103,12 +103,11 @@ jobs:
           set -euo pipefail
           test "$CV_ENVIRONMENT" = "staging"
           test -d dist
-          test -f dist/index.html
-          test -f dist/config.js
-          test -f dist/sw.js
-          test -f dist/.htaccess
+          for required in index.html config.js sw.js .htaccess; do
+            test -f "dist/$required"
+          done
 
-          # Confirm generated config matches both the selected environment and supplied URL.
+          # Confirm the generated API endpoint, environment and deployment identity agree.
           node <<'NODE'
           const fs = require('node:fs');
           const config = fs.readFileSync('dist/config.js', 'utf8');
@@ -125,8 +124,7 @@ jobs:
           }
           NODE
 
-          # Keep an existing generated security policy; do not overwrite it blindly.
-          # A generated file must exist and contain the expected policy markers.
+          # Validate the generated Apache security policy.
           grep -Fq 'Header always set X-Content-Type-Options "nosniff"' dist/.htaccess
           grep -Fq 'Header always set X-Frame-Options "DENY"' dist/.htaccess
           grep -Fq 'Header always set Referrer-Policy "strict-origin-when-cross-origin"' dist/.htaccess
@@ -142,12 +140,15 @@ jobs:
             exit 1
           fi
 
-          # Exclude deployment metadata not supported on cPanel, then verify source leakage is absent.
+          # Remove host-specific Pages metadata and set noindex for staging.
           rm -f dist/_headers dist/.nojekyll
           printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
+
+          # Reject source files, credentials, Clasp project metadata and unexpected filesystem entries.
           node <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
+          const crypto = require('node:crypto');
           const root = 'dist';
           const forbidden = /(^|\/)(\.git|\.github|docs|test|backend|scripts|node_modules)(\/|$)|(^|\/)(\.env[^/]*|\.DS_Store|\.clasp\.json|\.clasprc\.json|credentials?\.json|package\.json|package-lock\.json|README\.md)$/i;
           const files = [];
@@ -164,18 +165,17 @@ jobs:
             }
           }
           walk(root);
-          for (const required of ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt', 'release-manifest.json', 'SHA256SUMS.txt']) {
+          for (const required of ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt']) {
             if (!files.includes(required)) throw new Error('Missing required artifact file: ' + required);
           }
-          const badDsStore = files.filter(p => p.split('/').includes('.DS_Store'));
-          if (badDsStore.length) throw new Error('DS_Store files must not be packaged.');
-          const crypto = require('node:crypto');
+
           fs.writeFileSync(path.join(root, 'release-manifest.json'), JSON.stringify({
             clientCode: process.env.CLIENT_CODE,
             environment: 'staging',
             commit: process.env.RELEASE_COMMIT,
             builtAt: new Date().toISOString(),
             apiOrigin: new URL(process.env.CV_API_URL).origin,
+            deploymentId: process.env.EXPECTED_STAGING_DEPLOYMENT_ID,
             artifactVersion: 2,
             checksumAlgorithm: 'SHA-256',
             checksumsFile: 'SHA256SUMS.txt',
@@ -205,26 +205,22 @@ jobs:
           fs.writeFileSync(path.join(root, 'SHA256SUMS.txt'), checksumText);
           NODE
 
-          ZIP_NAME="cv-${CLIENT_CODE}-staging-${GITHUB_SHA}.zip"
-          (
-            cd dist
-            zip -qr "../$ZIP_NAME" . -x '*/.DS_Store' '.DS_Store'
-          )
           (cd dist && sha256sum -c SHA256SUMS.txt)
+          ZIP_NAME="cv-${CLIENT_CODE}-staging-${GITHUB_SHA}.zip"
+          (cd dist && zip -qr "../$ZIP_NAME" . -x '*/.DS_Store' '.DS_Store')
           sha256sum "$ZIP_NAME" > "$ZIP_NAME.sha256"
-          test "$(grep -Ec '^[a-f0-9]{64}  [^/]+[.]zip
-          grep -qx 'index.html' zip-contents.txt
-          grep -qx 'config.js' zip-contents.txt
-          grep -qx 'sw.js' zip-contents.txt
-          grep -qx '.htaccess' zip-contents.txt
-          grep -qx 'robots.txt' zip-contents.txt
-          grep -qx 'release-manifest.json' zip-contents.txt
-          grep -qx 'SHA256SUMS.txt' zip-contents.txt
-          if grep -E '(^|/)(\.git|\.github|docs|test|backend|scripts|node_modules)(/|$)|(^|/)(\.env[^/]*|\.clasp\.json|\.clasprc\.json|credentials?\.json|package\.json|package-lock\.json|README\.md); then
+          test "$(grep -Ec '^[a-f0-9]{64}  [^/]+[.]zip$' "$ZIP_NAME.sha256")" -eq 1
+
+          # Validate archive integrity, top-level assets, and source-leak exclusion.
+          unzip -t "$ZIP_NAME"
+          unzip -Z1 "$ZIP_NAME" > zip-contents.txt
+          for required in index.html config.js sw.js .htaccess robots.txt release-manifest.json SHA256SUMS.txt; do
+            grep -qx "$required" zip-contents.txt
+          done
+          if grep -E '(^|/)(\.git|\.github|docs|test|backend|scripts|node_modules)(/|$)|(^|/)(\.env[^/]*|\.clasp\.json|\.clasprc\.json|credentials?\.json|package\.json|package-lock\.json|README\.md)$' zip-contents.txt; then
             echo "Forbidden repository/source content found in ZIP." >&2
             exit 1
           fi
-          unzip -t "$ZIP_NAME"
 
       - name: Confirm integration commit is still current before publishing the artifact
         env:
@@ -244,58 +240,4 @@ jobs:
             cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip
             cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip.sha256
           retention-days: 14
-          if-no-files-found: error
- "$ZIP_NAME.sha256")" -eq 1
-          # A root listing guards against a nested dist/ path and accidental source leakage.
-          unzip -Z1 "$ZIP_NAME" > zip-contents.txt
-          grep -qx 'index.html' zip-contents.txt
-          grep -qx 'config.js' zip-contents.txt
-          grep -qx 'sw.js' zip-contents.txt
-          grep -qx '.htaccess' zip-contents.txt
-          grep -qx 'robots.txt' zip-contents.txt
-          grep -qx 'release-manifest.json' zip-contents.txt
-          if grep -E '(^|/)(\.git|\.github|docs|test|backend|scripts|node_modules)(/|$)|(^|/)(\.env[^/]*|package\.json|package-lock\.json|README\.md)$' zip-contents.txt; then
-            echo "Forbidden repository/source content found in ZIP." >&2
-            exit 1
-          fi
-          unzip -t "$ZIP_NAME"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cv-${{ inputs.client_code }}-staging-${{ github.sha }}
-          path: cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip
-          retention-days: 3
-          if-no-files-found: error
- zip-contents.txt; then
-            echo "Forbidden repository/source content found in ZIP." >&2
-            exit 1
-          fi
-          unzip -t "$ZIP_NAME"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cv-${{ inputs.client_code }}-staging-${{ github.sha }}
-          path: cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip
-          retention-days: 3
-          if-no-files-found: error
- "$ZIP_NAME.sha256")" -eq 1
-          # A root listing guards against a nested dist/ path and accidental source leakage.
-          unzip -Z1 "$ZIP_NAME" > zip-contents.txt
-          grep -qx 'index.html' zip-contents.txt
-          grep -qx 'config.js' zip-contents.txt
-          grep -qx 'sw.js' zip-contents.txt
-          grep -qx '.htaccess' zip-contents.txt
-          grep -qx 'robots.txt' zip-contents.txt
-          grep -qx 'release-manifest.json' zip-contents.txt
-          if grep -E '(^|/)(\.git|\.github|docs|test|backend|scripts|node_modules)(/|$)|(^|/)(\.env[^/]*|package\.json|package-lock\.json|README\.md)$' zip-contents.txt; then
-            echo "Forbidden repository/source content found in ZIP." >&2
-            exit 1
-          fi
-          unzip -t "$ZIP_NAME"
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: cv-${{ inputs.client_code }}-staging-${{ github.sha }}
-          path: cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip
-          retention-days: 3
           if-no-files-found: error
