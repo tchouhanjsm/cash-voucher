@@ -209,14 +209,18 @@ function cashCloseOut_(row) {
 
   const closeId = typeof row.CloseID === 'string' ? row.CloseID.trim() : '';
   const closeDate = typeof row.BusinessDate === 'string' ? row.BusinessDate : '';
-  const drawerKey = typeof row.DrawerKey === 'string' ? row.DrawerKey : '';
+  const drawerKey =
+    typeof row.DrawerKey === 'string' && row.DrawerKey.trim()
+      ? row.DrawerKey.trim()
+      : CASH_CLOSE_DRAWER;
   const openingSource = typeof row.OpeningSource === 'string' ? row.OpeningSource : '';
   const openingCloseId = typeof row.OpeningCloseID === 'string' ? row.OpeningCloseID.trim() : '';
   const openingReason = typeof row.OpeningReason === 'string' ? row.OpeningReason.trim() : '';
   const varianceReason = typeof row.VarianceReason === 'string' ? row.VarianceReason.trim() : '';
   const createdBy = typeof row.CreatedBy === 'string' ? row.CreatedBy.trim() : '';
   const createdAt = typeof row.CreatedAt === 'string' ? row.CreatedAt : '';
-  const timeZone = typeof row.TimeZone === 'string' ? row.TimeZone : '';
+  const timeZone =
+    typeof row.TimeZone === 'string' && row.TimeZone.trim() ? row.TimeZone.trim() : CFG.TZ;
   const requestId = typeof row.RequestID === 'string' ? row.RequestID.trim() : '';
   const requestPayload = typeof row.RequestPayload === 'string' ? row.RequestPayload : '';
   const timestampMs = Date.parse(createdAt);
