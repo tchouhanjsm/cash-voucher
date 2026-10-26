@@ -420,6 +420,97 @@ with sync_playwright() as p:
         and page.locator('#view .page-description').count() == 1,
         'page context and description are rendered in the shared production header',
     )
+
+    # An empty selected period must explain the scope and offer an immediate, permitted next action.
+    empty_dashboard_interceptions = []
+
+    def inject_empty_dashboard_summary(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        from_date = request_data.get('from', '2026-10-20')
+        to_date = request_data.get('to', '2026-10-26')
+        empty_dashboard_interceptions.append({'from': from_date, 'to': to_date})
+        payload = {
+            'ok': True,
+            'data': {
+                'from': from_date,
+                'to': to_date,
+                'periodDays': 7,
+                'trendMonthly': False,
+                'trend': [],
+                'paid': 0,
+                'previousPaid': 0,
+                'paymentCount': 0,
+                'validPaymentCount': 0,
+                'largest': None,
+                'todayPaid': 0,
+                'todayPaymentCount': 0,
+                'received': 0,
+                'receiptCount': 0,
+                'bookBalance': 0,
+                'topVendors': [],
+                'byCategory': [],
+                'byTeamMember': [],
+                'approvalExceptionCount': 0,
+                'invalidAmountCount': 0,
+                'malformedRecordCount': 0,
+                'malformedFieldCount': 0,
+            },
+        }
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
+
+    page.route('**/api?*', inject_empty_dashboard_summary)
+    try:
+        page.click('[data-act=range][data-k="7d"]')
+        page.wait_for_selector('#view .dashboard-empty-state', timeout=10000)
+        empty_text = page.locator('#view .dashboard-empty-state').inner_text()
+        empty_request = empty_dashboard_interceptions[-1] if empty_dashboard_interceptions else {}
+        from_label = '/'.join(reversed(empty_request.get('from', '').split('-')))
+        to_label = '/'.join(reversed(empty_request.get('to', '').split('-')))
+        check(
+            bool(empty_dashboard_interceptions)
+            and from_label in empty_text
+            and to_label in empty_text
+            and 'date-filtered summary' in empty_text,
+            'empty dashboard names the exact selected period and avoids claiming the whole book is empty',
+        )
+        check(
+            page.locator('#view .stat').count() == 0
+            and page.locator('#view .dashboard-trend').count() == 0
+            and page.locator('#view .dashboard-breakdowns').count() == 0,
+            'empty approved-activity period does not present zero KPIs and empty analytics as useful metrics',
+        )
+        check(
+            page.locator('.dashboard-empty-state [data-act=ntype][data-k="PAYMENT"]').count() == 1
+            and page.locator('.dashboard-empty-state [data-act=ntype][data-k="RECEIPT"]').count() == 1,
+            'create-permitted owner receives direct payment and receipt actions',
+        )
+        page.click('.dashboard-empty-state [data-act=ntype][data-k="RECEIPT"]')
+        page.wait_for_selector('#nf.entry-form')
+        check(
+            page.locator('#view .page-header h1').inner_text() == 'Cash Received'
+            and page.locator('.entry-type-switch button[data-k="RECEIPT"].on').count() == 1,
+            'empty-state receipt action opens the correctly selected Cash Received workflow',
+        )
+    finally:
+        page.unroute('**/api?*', inject_empty_dashboard_summary)
+
+    go_view(page, 'dash')
+    page.wait_for_function(
+        "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included') || "
+        "document.querySelector('#view')?.innerText.includes('Spending trend')"
+    )
+    check(
+        page.locator('#view .page-header h1').inner_text() == 'Dashboard'
+        and page.locator('#view .dashboard-empty-state, #view .dashboard-trend').count() == 1,
+        'dashboard recovers after the controlled empty-summary response is removed',
+    )
+
     page.click('#userBtn')
     page.locator('#userPop button[data-go="acct"]').first.click()
     page.wait_for_selector('#pf')

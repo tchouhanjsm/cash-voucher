@@ -110,6 +110,31 @@ assert.match(
   /dashboard-breakdowns/,
   'vendor and category analysis stay in shared dashboard layout',
 );
+assert.match(
+  dashboard,
+  /periodIsEmpty/,
+  'dashboard detects an empty date-scoped summary only from validated counts',
+);
+assert.match(
+  dashboard,
+  /No approved payments or recorded receipts are included in the selected period/,
+  'empty-period copy is precise about approved totals and the selected dates',
+);
+assert.match(
+  dashboard,
+  /data-k="RECEIPT"/,
+  'empty-period actions can begin a receipt as well as a payment',
+);
+assert.match(
+  components,
+  /\.dashboard-view \.dashboard-empty-state\s*\{[\s\S]*?grid-template-columns:/,
+  'the empty-period experience has a dedicated responsive two-column surface',
+);
+assert.match(
+  components,
+  /\.dashboard-empty-state__steps li\s*\{[\s\S]*?grid-template-columns:/,
+  'empty-period guidance uses an aligned step layout',
+);
 
 assert.match(
   ui,
@@ -421,8 +446,8 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v30'/,
-  'PWA cache revision advances with unsaved-draft protection and cache isolation',
+  /const C = 'cv2-v31'/,
+  'PWA cache revision advances with empty-period dashboard guidance and existing update safeguards',
 );
 assert.match(serviceWorker, /frontend\/core\/unsaved-work\.js/);
 assert.match(unsavedWork, /This voucher draft has unsaved changes/);

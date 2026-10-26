@@ -139,3 +139,12 @@ The new Node tests exercise install failure, cache ownership, request allowlisti
 The New Entry workflow now marks a draft dirty when a user edits a field, adds/removes a row or clears an attached receipt. The form exposes a visible, announced warning, browser reload/close requests trigger the native unsaved-work prompt, and navigation/type-switch actions require explicit discard confirmation. During a financial save, navigation is blocked until the request finishes; the guard uses the existing disabled Save control to detect an in-flight request. The PWA update button reuses the same guard before activating a waiting worker.
 
 This deliberately protects the financial-entry form rather than treating every search/filter interaction as unsaved financial work. Regression tests cover draft retention after a cancelled navigation, explicit discard, browser unload and update-activation cancellation. Browser automation is mock-backed; intended-device behavior remains a release acceptance gate.
+
+
+## Period-aware dashboard first impression — 26 October 2026
+
+The dashboard now treats an empty selected period as an intentional workflow state rather than showing zero-value KPIs and blank analytics. It requires both payment and receipt counts to be present and non-negative before calling the period empty, shows the exact dates, and distinguishes a date-filtered summary from the entire voucher book. Create-permitted users receive direct Payment and Receipt actions; other roles receive a Register action and review-oriented next steps.
+
+For an empty period, the new state replaces the spending chart, KPI grid and vendor/category breakdowns while preserving the existing Needs attention and Daily Cash Close sections. This keeps approval exceptions and cash-close guidance visible. The shared UI kit supplies a responsive two-column desktop composition and a stacked narrow-screen layout.
+
+Browser regression injects an empty dashboard-summary response, checks date scoping and removes misleading zero analytics, follows the Receipt action into the correct workflow, and verifies recovery after the mock response is removed. This is mock-backed behavior evidence, not live staging or customer-usability sign-off.

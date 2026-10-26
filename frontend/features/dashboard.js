@@ -403,7 +403,17 @@ export function createDashboard({ api }) {
     const total = finiteAmount(summary.paid) ?? 0;
     const previousTotal = finiteAmount(summary.previousPaid) ?? 0;
     const delta = previousTotal ? ((total - previousTotal) / previousTotal) * 100 : null;
-    const paymentCount = Number.isSafeInteger(summary.paymentCount) ? summary.paymentCount : 0;
+    const paymentCountValid =
+      Number.isSafeInteger(summary.paymentCount) && summary.paymentCount >= 0;
+    const paymentCount = paymentCountValid ? summary.paymentCount : 0;
+    const receiptCountValid =
+      Number.isSafeInteger(summary.receiptCount) && summary.receiptCount >= 0;
+    const receiptCount = receiptCountValid ? summary.receiptCount : 0;
+    const periodIsEmpty =
+      paymentCountValid &&
+      receiptCountValid &&
+      paymentCount === 0 &&
+      receiptCount === 0;
     const validPaymentCount = Number.isSafeInteger(summary.validPaymentCount)
       ? summary.validPaymentCount
       : 0;
@@ -479,13 +489,46 @@ export function createDashboard({ api }) {
         : `<p class="needs-clear">${icon('check')}<span>No known dashboard exceptions were found in the checks shown here. This does not verify backups, the full recovery queue, or release readiness.</span></p>`
     }</section>`;
 
-    const financialPanels = `
+    const emptyPeriodActions = can('create')
+      ? `<div class="dashboard-empty-state__actions">
+          <button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">${icon('wallet')}<span>Record a payment</span>${icon('arrow-right')}</button>
+          <button type="button" class="btn" data-act="ntype" data-k="RECEIPT">${icon('cash')}<span>Record a receipt</span>${icon('arrow-right')}</button>
+        </div>`
+      : `<div class="dashboard-empty-state__actions"><button type="button" class="btn primary" data-act="goto" data-k="reg">Open register ${icon('arrow-right')}</button></div>`;
+    const emptyNextSteps = can('create')
+      ? `<ol class="dashboard-empty-state__steps">
+          <li><span class="dashboard-empty-state__step-number" aria-hidden="true">01</span><div><strong>Record the movement</strong><p>Choose Payment out or Cash received.</p></div></li>
+          <li><span class="dashboard-empty-state__step-number" aria-hidden="true">02</span><div><strong>Capture the details</strong><p>Confirm date, amount, payee or source, and purpose. Attach a receipt image when available.</p></div></li>
+          <li><span class="dashboard-empty-state__step-number" aria-hidden="true">03</span><div><strong>Follow its status</strong><p>Review the entry in Register. Payment approval remains a separate step.</p></div></li>
+        </ol>`
+      : `<ol class="dashboard-empty-state__steps">
+          <li><span class="dashboard-empty-state__step-number" aria-hidden="true">01</span><div><strong>Confirm the date range</strong><p>Choose the dates where you expect to see recorded activity.</p></div></li>
+          <li><span class="dashboard-empty-state__step-number" aria-hidden="true">02</span><div><strong>Review the register</strong><p>Inspect entries and their current approval or receipt status.</p></div></li>
+          <li><span class="dashboard-empty-state__step-number" aria-hidden="true">03</span><div><strong>Escalate an exception</strong><p>Ask an owner or manager to investigate an expected entry that is not visible.</p></div></li>
+        </ol>`;
+    const emptyPeriodPanel = periodIsEmpty
+      ? `<section class="card dashboard-empty-state" aria-labelledby="dashboardEmptyTitle" data-state="period-empty">
+          <div class="dashboard-empty-state__main">
+            <p class="dashboard-empty-state__eyebrow">SELECTED PERIOD</p>
+            <p class="dashboard-empty-state__period">${esc(dmy(from))} <span aria-hidden="true">—</span> ${esc(dmy(to))}</p>
+            <h2 id="dashboardEmptyTitle">No approved payments or recorded receipts for these dates</h2>
+            <p class="dashboard-empty-state__copy">No approved payments or recorded receipts are included in the selected period’s totals.</p>
+            <p class="dashboard-empty-state__scope">This is a date-filtered summary, not a statement that your full voucher book is empty. Pending or rejected payments remain separate from approved totals.</p>
+            ${emptyPeriodActions}
+          </div>
+          <aside class="dashboard-empty-state__next" aria-label="What to do next">
+            <p class="dashboard-empty-state__next-title">WHAT TO DO NEXT</p>
+            ${emptyNextSteps}
+          </aside>
+        </section>`
+      : '';
+    const financialPanels = periodIsEmpty ? '' : `
       <div class="stats dashboard-stats">
         <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(summary.largest?.amount || 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Today</span><b>${money(summary.todayPaid || 0)}</b><small class="muted">${Number(summary.todayPaymentCount) || 0} vouchers</small></div>
-        <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Cash received</span><b class="cash-received-value">${money(received)}</b><small class="muted">${Number(summary.receiptCount) || 0} entries · net ${money(received - total)}</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Cash received</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} entries · net ${money(received - total)}</small></div>
         ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(summary.bookBalance || 0)}</b><small class="muted">opening balance + recorded receipts − approved recorded payments; not a physical cash count</small></div>` : ''}
       </div>
       ${dataWarnings.length ? `<p class="muted" role="status" aria-live="polite">${dataWarnings.map(esc).join(' ')}</p>` : ''}
@@ -502,6 +545,10 @@ export function createDashboard({ api }) {
       }
     `;
 
+    const dashboardContent = periodIsEmpty
+      ? `${periodControls(from, to)}${emptyPeriodPanel}${needsAttention}${dailyCloseCard(dailyOperations, dailyOperationsError)}`
+      : `${needsAttention}${dailyCloseCard(dailyOperations, dailyOperationsError)}${periodControls(from, to)}${financialPanels}`;
+
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
       head(
@@ -512,7 +559,7 @@ export function createDashboard({ api }) {
           description: 'Review saved payment and receipt activity for the selected period.',
         },
       ) +
-      `<div class="dashboard-body">${needsAttention}${dailyCloseCard(dailyOperations, dailyOperationsError)}${periodControls(from, to)}${financialPanels}</div></div>`;
+      `<div class="dashboard-body">${dashboardContent}</div></div>`;
   }
 
   return {
