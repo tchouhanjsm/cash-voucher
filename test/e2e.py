@@ -2,6 +2,7 @@ import base64
 import csv
 import datetime
 import json
+import math
 import os
 import urllib.parse
 
@@ -4619,12 +4620,16 @@ with sync_playwright() as p:
         data = payload.get('data', {})
         if dashboard_summary_fault['field'] == 'paid':
             data['paid'] = 'NaN'
-        else:
+        elif dashboard_summary_fault['field'] == 'trend':
             data['trend'] = None
+        else:
+            if not data.get('topVendors'):
+                data['topVendors'] = [{'k': 'Test vendor', 'n': 1, 's': 1}]
+            data['topVendors'][0]['s'] = 'NaN'
         route.fulfill(response=response, json=payload)
 
     page.route('**/api?*', inject_invalid_dashboard_summary)
-    for invalid_field in ('paid', 'trend'):
+    for invalid_field in ('paid', 'trend', 'topVendors'):
         dashboard_summary_fault['field'] = invalid_field
         with page.expect_response(
             lambda response: '/api?' in response.url
@@ -4719,8 +4724,21 @@ with sync_playwright() as p:
             # The dashboard now consumes server aggregates instead of deriving charts
             # from the bootstrap voucher array; corrupt the read-model response directly.
             data['invalidAmountCount'] = max(7, int(data.get('invalidAmountCount') or 0))
+            # The server group sum excludes invalid voucher amounts; keep this
+            # response contract valid while exercising hostile labels and voucher rows.
             data['topVendors'] = [
-                {'k': vendor, 'n': 1, 's': amount}
+                {
+                    'k': vendor,
+                    'n': 1,
+                    's': (
+                        amount
+                        if isinstance(amount, (int, float))
+                        and not isinstance(amount, bool)
+                        and math.isfinite(amount)
+                        and amount >= 0
+                        else 0
+                    ),
+                }
                 for _, amount, vendor in values
             ]
             route.fulfill(response=response, json=payload)
