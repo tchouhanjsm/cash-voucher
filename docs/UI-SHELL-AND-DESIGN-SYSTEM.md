@@ -140,7 +140,6 @@ The New Entry workflow now marks a draft dirty when a user edits a field, adds/r
 
 This deliberately protects the financial-entry form rather than treating every search/filter interaction as unsaved financial work. Regression tests cover draft retention after a cancelled navigation, explicit discard, browser unload and update-activation cancellation. Browser automation is mock-backed; intended-device behavior remains a release acceptance gate.
 
-
 ## Period-aware dashboard first impression — 26 October 2026
 
 The dashboard now treats an empty selected period as an intentional workflow state rather than showing zero-value KPIs and blank analytics. It requires both payment and receipt counts to be present and non-negative before calling the period empty, shows the exact dates, and distinguishes a date-filtered summary from the entire voucher book. Create-permitted users receive direct Payment and Receipt actions; other roles receive a Register action and review-oriented next steps.

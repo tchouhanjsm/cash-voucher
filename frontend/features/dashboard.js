@@ -522,7 +522,9 @@ export function createDashboard({ api }) {
           </aside>
         </section>`
       : '';
-    const financialPanels = periodIsEmpty ? '' : `
+    const financialPanels = periodIsEmpty
+      ? ''
+      : `
       <div class="stats dashboard-stats">
         <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>

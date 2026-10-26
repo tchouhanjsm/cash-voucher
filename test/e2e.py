@@ -1407,7 +1407,7 @@ with sync_playwright() as p:
     )
     try:
         page.wait_for_function(
-            "document.querySelector('#view')?.innerText.includes('TOTAL PAID') || "
+            "document.querySelector('#view')?.innerText.includes('Total paid') || "
             "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
             timeout=10000,
         )
@@ -1538,7 +1538,7 @@ with sync_playwright() as p:
         'dashboard recovers after the unsupported-action error is removed',
     )
     page.wait_for_function(
-        "document.querySelector('#view')?.innerText.includes('TOTAL PAID') || "
+        "document.querySelector('#view')?.innerText.includes('Total paid') || "
             "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
         timeout=10000,
     )
