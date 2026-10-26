@@ -410,10 +410,7 @@ export function createDashboard({ api }) {
       Number.isSafeInteger(summary.receiptCount) && summary.receiptCount >= 0;
     const receiptCount = receiptCountValid ? summary.receiptCount : 0;
     const periodIsEmpty =
-      paymentCountValid &&
-      receiptCountValid &&
-      paymentCount === 0 &&
-      receiptCount === 0;
+      paymentCountValid && receiptCountValid && paymentCount === 0 && receiptCount === 0;
     const validPaymentCount = Number.isSafeInteger(summary.validPaymentCount)
       ? summary.validPaymentCount
       : 0;
