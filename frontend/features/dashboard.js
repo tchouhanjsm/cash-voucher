@@ -118,7 +118,7 @@ export function createDashboard({ api }) {
     ) {
       return 'period';
     }
-    if (summary.trendMonthly !== (periodDays > 62)) return 'trend interval';
+    if (summary.trendMonthly !== periodDays > 62) return 'trend interval';
 
     const amountFields = {
       paid: false,
@@ -129,11 +129,7 @@ export function createDashboard({ api }) {
     };
     for (const [field, allowNegative] of Object.entries(amountFields)) {
       const value = summary[field];
-      if (
-        typeof value !== 'number' ||
-        !Number.isFinite(value) ||
-        (!allowNegative && value < 0)
-      ) {
+      if (typeof value !== 'number' || !Number.isFinite(value) || (!allowNegative && value < 0)) {
         return field;
       }
     }

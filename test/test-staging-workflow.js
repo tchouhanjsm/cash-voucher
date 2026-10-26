@@ -158,7 +158,11 @@ assert.doesNotMatch(
 assert.match(clientDistWorkflow, /CV_ENVIRONMENT: staging/);
 assert.match(clientDistWorkflow, /environment:\n {6}name: staging/m);
 assert.ok(clientDistWorkflow.includes('CV_API_URL: ${{ vars.CV_STAGING_API_URL }}'));
-assert.ok(clientDistWorkflow.includes('EXPECTED_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}'));
+assert.ok(
+  clientDistWorkflow.includes(
+    'EXPECTED_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}',
+  ),
+);
 assert.doesNotMatch(clientDistWorkflow, /^\s+api_url:/m);
 assert.ok(clientDistWorkflow.includes('refs/heads/client-main'));
 assert.match(clientDistWorkflow, /sha256sum/);
@@ -194,9 +198,7 @@ assert.match(
   'ZIP file must use the full commit SHA expected by artifact upload',
 );
 assert.ok(
-  clientDistWorkflow.includes(
-    'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip.sha256',
-  ),
+  clientDistWorkflow.includes('cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip.sha256'),
   'artifact upload includes the commit-pinned ZIP and its SHA-256 sidecar',
 );
 assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);

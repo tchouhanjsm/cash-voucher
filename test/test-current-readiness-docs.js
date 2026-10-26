@@ -50,7 +50,7 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*e97c4e080b3f6903e16ef77f571822f9844faeed/,
+  /Authoritative integration baseline.*client-main.*75561d19e5f72f885c813152de122e7444801d70/,
 );
 assert.match(staging, /PR #208/);
 assert.match(staging, /PR #214 is the sole open PR targeting/);
