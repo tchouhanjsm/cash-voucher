@@ -1,6 +1,6 @@
 import { $ } from '../core/dom.js';
 import { can, nm, S } from '../core/state.js';
-import { addDays, dmy, esc, finiteAmount, iso, money, today } from '../core/utils.js';
+import { addDays, dmy, esc, finiteAmount, iso, money, pad, today } from '../core/utils.js';
 import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard({ api }) {
@@ -8,16 +8,16 @@ export function createDashboard({ api }) {
 
   function range() {
     const current = today();
-    const date = new Date();
-    const monthStart = iso(new Date(date.getFullYear(), date.getMonth(), 1));
+    const [year, month] = current.split('-').map(Number);
+    const monthStart = `${year}-${pad(month)}-01`;
 
     if (D.r === '7d') return [addDays(current, -6), current];
     if (D.r === 'mtd') return [monthStart, current];
 
     if (D.r === 'lm') {
-      const first = new Date(date.getFullYear(), date.getMonth() - 1, 1);
-      const last = new Date(date.getFullYear(), date.getMonth(), 0);
-      return [iso(first), iso(last)];
+      const first = new Date(Date.UTC(year, month - 2, 1));
+      const last = new Date(Date.UTC(year, month - 1, 0));
+      return [first.toISOString().slice(0, 10), last.toISOString().slice(0, 10)];
     }
 
     if (D.r === 'cus' && D.from && D.to) return [D.from, D.to];

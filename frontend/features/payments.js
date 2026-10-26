@@ -17,7 +17,7 @@ import {
   money,
   parseAmt,
   scalarText,
-  today,
+  businessDate,
   uid,
 } from '../core/utils.js';
 import { validateRecoveryRecords } from '../core/recovery-validation.js';
@@ -441,7 +441,7 @@ export function createPayments({ api, refresh }) {
           'Record a payment or receipt, attach supporting evidence, and confirm how the money moved.',
       }) +
       `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" autocomplete="off">${vendorList()}
-    <label class="entry-date-field">Date<input type="date" id="nd" value="${today()}" max="${addDays(today(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="Recent payees"></div><div id="rows"></div>
+    <label class="entry-date-field">Date<input type="date" id="nd" value="${businessDate()}" max="${addDays(businessDate(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="Recent payees"></div><div id="rows"></div>
     <section id="entrySummary" class="entry-summary" aria-label="Current batch totals">
       <div class="entry-summary__head"><strong>Current batch</strong><span id="batchCount" aria-live="polite">0 ready entries</span></div>
       <div class="entry-summary__grid">
@@ -1292,7 +1292,7 @@ export function createPayments({ api, refresh }) {
       const link = document.createElement('a');
 
       link.href = url;
-      link.download = 'cash-vouchers-pending-' + today() + '.json';
+      link.download = 'cash-vouchers-pending-' + businessDate() + '.json';
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1341,7 +1341,7 @@ export function createPayments({ api, refresh }) {
           const validation = validateRecoveryRecords(
             payload.records,
             ownerKey,
-            addDays(today(), 1),
+            addDays(businessDate(), 1),
           );
           const unboundCount = validation.unboundCount;
           const accountName = scalarText(S.me?.email) || 'the signed-in account';

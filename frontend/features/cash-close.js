@@ -1,7 +1,7 @@
 import { $ } from '../core/dom.js';
 import { can } from '../core/state.js';
 import { offlineQueue } from '../core/offline-queue.js';
-import { csvCell, download, esc, money, today, uid } from '../core/utils.js';
+import { csvCell, download, esc, money, businessDate, uid } from '../core/utils.js';
 import { busy, fail, head, pageNotice, toast } from '../core/ui.js';
 
 const CORRECTION_TYPES = [
@@ -13,7 +13,7 @@ const CORRECTION_TYPES = [
 
 export function createCashClose({ api }) {
   let data = null;
-  let currentDate = today();
+  let currentDate = businessDate();
   let pendingRequestId = '';
   let pendingRequestSignature = '';
 
@@ -208,7 +208,7 @@ export function createCashClose({ api }) {
       );
       return;
     }
-    currentDate = $('#cc-date')?.value || today();
+    currentDate = $('#cc-date')?.value || businessDate();
     $('#view').innerHTML =
       head('Daily Cash Close', '', {
         section: 'Money',
@@ -217,7 +217,7 @@ export function createCashClose({ api }) {
       '<p class="muted cc-intro">One physical drawer · calendar day in Asia/Kolkata · server-saved vouchers only. This report is a physical cash reconciliation, not a bank balance or general ledger.</p>' +
       '<section class="card cc-controls"><div class="filters">' +
       '<label for="cc-date">Business date <input id="cc-date" type="date" min="2000-01-01" max="' +
-      esc(today()) +
+      esc(businessDate()) +
       '" value="' +
       esc(currentDate) +
       '" required></label>' +
