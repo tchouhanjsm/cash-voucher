@@ -85,7 +85,7 @@ function makeEnvironment() {
       windowListeners.set(type, callback);
     },
     removeEventListener(type, callback) {
-      windowListeners.delete(type);
+      if (windowListeners.get(type) === callback) windowListeners.delete(type);
     },
   };
   const env = {
