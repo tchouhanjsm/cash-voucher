@@ -326,9 +326,7 @@ export function createDashboard({ api }) {
       '</span></div>' +
       movements +
       '<ul class="needs-list">' +
-      details
-        .map((item) => '<li class="needs-item">' + esc(item) + '</li>')
-        .join('') +
+      details.map((item) => '<li class="needs-item">' + esc(item) + '</li>').join('') +
       '</ul>' +
       action +
       '</section>'
