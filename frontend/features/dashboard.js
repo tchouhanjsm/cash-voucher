@@ -276,8 +276,7 @@ export function createDashboard({ api }) {
     } else {
       if (data.blockedByLaterClose === true) {
         const laterDate =
-          typeof data.laterCloseDate === 'string' &&
-          /^\d{4}-\d{2}-\d{2}$/.test(data.laterCloseDate)
+          typeof data.laterCloseDate === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.laterCloseDate)
             ? dmy(data.laterCloseDate)
             : 'a later business date';
         details.push('Closing is blocked because ' + laterDate + ' already has a close.');

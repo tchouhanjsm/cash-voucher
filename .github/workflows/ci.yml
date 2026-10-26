@@ -49,11 +49,6 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
-      - name: Diagnose dashboard Prettier diff temporarily
-        run: |
-          npx prettier frontend/features/dashboard.js > "$RUNNER_TEMP/dashboard-formatted.js"
-          diff -u frontend/features/dashboard.js "$RUNNER_TEMP/dashboard-formatted.js" || true
-
       - name: Run quality gate
         run: npm run check
 
