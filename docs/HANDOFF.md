@@ -4,7 +4,7 @@
 **Repository:** tchouhanjsm/cash-voucher  
 **Integration branch:** `client-main`; legacy `main` remains read-only.  
 **Verified integration baseline:** `1b016a82d9e42eeb71d875561cc356d946fa5db5` (PR #224 merged; its first parent is `24176f030b2f33b1174779fa191152f7441c3460`, the PR #225 merge). The earlier baseline `75561d19e5f72f885c813152de122e7444801d70` was PR #223 merged.  
-**Current phase:** post-merge Dashboard and staging-artifact integrity recovery on `client/post-224-restore-dashboard-and-artifact-integrity-20261026`.  
+**Current phase:** post-merge Dashboard and staging-artifact integrity recovery in [PR #226](https://github.com/tchouhanjsm/cash-voucher/pull/226), branch `client/post-224-restore-dashboard-and-artifact-integrity-20261026`.  
 **Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, live write-capable UAT, cPanel publication or production change.
 
 ## Current checkpoint — post-merge reconciliation
@@ -20,7 +20,6 @@
 1. Merge the source regression-recovery PR only after its exact final head passes CI / Quality, Browser E2E and Full Flight Test and receives human review.
 2. Complete owner-controlled staging identity and branch-governance tasks; retain sanitized evidence and do not expose resource identifiers in workflow logs.
 3. Do not call the product customer-ready until live UAT, separate-target restore and operator/device acceptance are recorded.
-
 
 ---
 

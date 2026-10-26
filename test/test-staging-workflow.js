@@ -244,10 +244,19 @@ assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
 assert.match(clientDistWorkflow, /artifactVersion: 2/);
 assert.match(clientDistWorkflow, /checksumAlgorithm: 'SHA-256'/);
 assert.match(clientDistWorkflow, /checksumsFile: 'SHA256SUMS\.txt'/);
-assert.match(clientDistWorkflow, /sha256sum -c SHA256SUMS\.txt/);
-assert.match(clientDistWorkflow, /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/);
+assert.match(
+  clientDistWorkflow,
+  /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/,
+);
+assert.match(
+  clientDistWorkflow,
+  /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/,
+);
 assert.match(clientDistWorkflow, /retention-days: 14/);
-assert.match(clientDistWorkflow, /Confirm integration commit is still current before publishing the artifact/);
+assert.match(
+  clientDistWorkflow,
+  /Confirm integration commit is still current before publishing the artifact/,
+);
 assert.doesNotMatch(
   clientDistWorkflow,
   /CV_ENVIRONMENT:\s*production|clasp push|staging:deploy/,

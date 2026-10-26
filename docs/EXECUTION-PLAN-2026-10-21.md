@@ -3,7 +3,7 @@
 **Updated:** 26 October 2026 (post-merge regression review)  
 **Integration branch:** `client-main`; `main` remains legacy/read-only.  
 **Current integration SHA:** `1b016a82d9e42eeb71d875561cc356d946fa5db5` (PR #224 merged on top of PR #225 merge `24176f030b2f33b1174779fa191152f7441c3460`).  
-**Open PRs at batch start:** none; urgent recovery work is grouped on `client/post-224-restore-dashboard-and-artifact-integrity-20261026` and targets `client-main`.
+**Active recovery PR:** [#226 — restore Dashboard and staging artifact integrity](https://github.com/tchouhanjsm/cash-voucher/pull/226), branch `client/post-224-restore-dashboard-and-artifact-integrity-20261026`, targeting `client-main`.
 
 ## Current checkpoint — restore release protections
 
