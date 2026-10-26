@@ -5,7 +5,7 @@
 **Integration branch:** `client-main`  
 **Verified integration baseline:** `858b69d91480c468606fd243e6396e8b6e88723d` (PR #222 merged; exact-merge CI, Browser E2E and Full Flight Test all passed).  
 **Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** Fail-closed validation of saved Daily Cash Close records and their immutable voucher snapshots. This work is isolated on `client/cash-close-record-integrity-20261026`; the planned PR must pass exact-head CI, Browser E2E and Full Flight Test before review.  
+**Current phase:** Fail-closed validation of saved Daily Cash Close records and their immutable voucher snapshots. This work is isolated on `client/cash-close-record-integrity-20261026`; PR #223 is open and unmerged; its final synchronized head must pass exact-head CI, Browser E2E and Full Flight Test before review.  
 **Release boundary:** no staging deployment, Apps Script push, migration, Google Sheets/Drive mutation or production change is authorized by this source batch.
 
 ## Current checkpoint — 26 October 2026
