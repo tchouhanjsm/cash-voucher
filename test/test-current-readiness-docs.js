@@ -56,10 +56,10 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*e97c4e080b3f6903e16ef77f571822f9844faeed/,
+  /Authoritative integration baseline.*client-main.*75561d19e5f72f885c813152de122e7444801d70/,
 );
 assert.match(staging, /PR #208/);
-assert.match(staging, /PR #214 is the sole open PR targeting/);
+assert.match(staging, /There were no open PRs at the start of this audit/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(staging, /PR #210 remains open and diverged\/dirty/);
 assert.match(handoff, /Verified integration baseline.*e97c4e080b3f6903e16ef77f571822f9844faeed/);
@@ -70,7 +70,7 @@ assert.match(
 );
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(handoff, /Checkpoint finalization defect/);
-assert.match(handoff, /PR #214 is the sole active follow-up for monitor checkpoint finalization/);
+assert.match(handoff, /No open PR existed when this batch was selected/);
 assert.match(handoff, /GITHUB_EVENT_PATH/);
 assert.match(handoff, /PRs #209–#213 are merged/);
 assert.match(handoff, /PR #213 merged at this commit/);
@@ -110,10 +110,11 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
+assert.match(executionPlan, /Current integration SHA.*75561d19e5f72f885c813152de122e7444801d70/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
-assert.match(executionPlan, /PR #214 is the only open PR targeting/);
+assert.match(executionPlan, /Open PRs at batch start: none/);
 assert.doesNotMatch(executionPlan, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(executionPlan, /PR #210 still requires base reconciliation/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
