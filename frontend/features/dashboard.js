@@ -255,8 +255,7 @@ export function createDashboard({ api }) {
       : 'REVIEW_REQUIRED';
     const amountLabel = (value) =>
       typeof value === 'number' && Number.isFinite(value) ? money(value) : 'Not available';
-    const countLabel = (value) =>
-      Number.isSafeInteger(value) && value >= 0 ? value : null;
+    const countLabel = (value) => (Number.isSafeInteger(value) && value >= 0 ? value : null);
     const dateLabel =
       typeof data.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.date)
         ? dmy(data.date)
