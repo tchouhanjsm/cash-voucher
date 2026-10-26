@@ -2314,8 +2314,8 @@ assertCorruptCashClose(
   'saved close rejects a variance that does not equal counted cash minus expected cash',
 );
 assertCorruptCashClose(
-  { DrawerKey: '' },
-  'saved close rejects missing drawer identity instead of defaulting it to the main drawer',
+  { OpeningSource: 'UNRECOGNIZED' },
+  'saved close rejects an unsupported opening-cash source',
 );
 assertCorruptCashClose(
   { CreatedAt: 'not-a-timestamp' },
