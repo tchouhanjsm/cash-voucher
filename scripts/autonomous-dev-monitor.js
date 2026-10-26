@@ -374,6 +374,62 @@ function pullRequestGateState(pr, checks) {
     ? 'CHECKS_GREEN_REVIEW_REQUIRED'
     : 'NEEDS_REVIEW';
 }
+function deriveCurrentPhase({
+  openPullRequests = [],
+  failedSource = [],
+  incompleteSource = [],
+  allSourceChecksPassed = false,
+  failedOperational = [],
+  incompleteOperational = [],
+  gates = {},
+  governance = {},
+  warnings = [],
+} = {}) {
+  if (failedSource.length) {
+    return 'P0 source validation — resolve failed or stalled exact-head source checks before release.';
+  }
+  if (incompleteSource.length || !allSourceChecksPassed) {
+    return 'P0 source validation — obtain all exact-head CI / Quality, Browser E2E and Full Flight results.';
+  }
+
+  const blockedPullRequests = openPullRequests.filter(
+    (pr) => pr.state === 'BLOCKED' || pr.state === 'CHANGES_REQUESTED',
+  );
+  const pullRequestNumbers = openPullRequests.map((pr) => '#' + pr.number).join(', ');
+  if (blockedPullRequests.length) {
+    return (
+      'Source delivery — resolve required checks or requested review on PR(s) ' +
+      blockedPullRequests.map((pr) => '#' + pr.number).join(', ') +
+      ' before merge.'
+    );
+  }
+  if (openPullRequests.length) {
+    return (
+      'Source delivery — review the current open PR queue (' +
+      pullRequestNumbers +
+      ') before starting another batch.'
+    );
+  }
+  if (warnings.length) {
+    return 'Monitor integrity — resolve snapshot/API warnings before making release decisions.';
+  }
+  if (
+    gates.stagingUnverified ||
+    gates.restoreUnverified ||
+    gates.deviceAcceptanceUnverified ||
+    governance.status !== 'CLASSIC_PROTECTION_ENABLED' ||
+    failedOperational.length ||
+    incompleteOperational.length
+  ) {
+    return (
+      'P0 release readiness — source checks are green; ' +
+      'verify client-main governance, staging identity/UAT, isolated restore, ' +
+      'and intended-device acceptance before pilot or feature expansion.'
+    );
+  }
+  return 'Release evidence current — confirm owner/customer acceptance and pilot entry criteria before selecting the next measured product batch.';
+}
+
 function buildMonitorReport(snapshot, now = new Date()) {
   const capturedAt = (asDate(now) || new Date()).toISOString();
   const handoff = snapshot.handoffText || '';
@@ -483,14 +539,6 @@ function buildMonitorReport(snapshot, now = new Date()) {
     blockers.push(run.name + ': last recorded staging/package run is ' + run.label + '.');
   for (const run of incompleteOperational)
     blockers.push(run.name + ': ' + run.label + ' — current operational evidence is incomplete.');
-  if (baselineDrift)
-    blockers.push(
-      'docs/HANDOFF.md baseline (' +
-        documentedBaseline +
-        ') differs from client-main (' +
-        clientMainSha +
-        ').',
-    );
   if (gates.stagingUnverified)
     blockers.push(
       'Live staging is documented as unverified; operational release gates remain open.',
@@ -512,7 +560,6 @@ function buildMonitorReport(snapshot, now = new Date()) {
     gates.stagingUnverified ||
     gates.restoreUnverified ||
     gates.deviceAcceptanceUnverified ||
-    baselineDrift ||
     governance.status !== 'CLASSIC_PROTECTION_ENABLED'
   )
     state = 'SOURCE_GREEN_OPERATIONAL_GATES_OPEN';
@@ -545,10 +592,6 @@ function buildMonitorReport(snapshot, now = new Date()) {
       'Obtain completed current-SHA operational evidence for ' +
         incompleteOperational.map((item) => item.name + ' (' + item.label + ')').join(', ') +
         '. Missing, running, cancelled and skipped operational runs are not release evidence.',
-    );
-  if (baselineDrift)
-    nextActions.push(
-      'Synchronize docs/HANDOFF.md and execution plan to the exact client-main SHA.',
     );
   if (gates.stagingUnverified || gates.restoreUnverified || gates.deviceAcceptanceUnverified)
     nextActions.push(
@@ -590,7 +633,18 @@ function buildMonitorReport(snapshot, now = new Date()) {
       : '',
     documentedBaseline,
     baselineDrift,
-    phase: extractPhase(handoff),
+    documentedPhase: extractPhase(handoff),
+    phase: deriveCurrentPhase({
+      openPullRequests,
+      failedSource,
+      incompleteSource,
+      allSourceChecksPassed,
+      failedOperational,
+      incompleteOperational,
+      gates,
+      governance,
+      warnings,
+    }),
     state,
     allSourceChecksPassed,
     sourceChecks,
@@ -796,9 +850,11 @@ function buildCheckpointIssueBody(report, previousBody = '') {
       '](' +
       (report.clientMainUrl || '') +
       ')',
-    '- **Documented baseline:** ' +
+    '- **Handoff snapshot baseline (informational):** ' +
       (report.documentedBaseline || 'not recorded') +
-      (report.baselineDrift ? ' — DRIFT' : ''),
+      (report.baselineDrift
+        ? ' — older than the live integration SHA; the current SHA above is authoritative.'
+        : ''),
     '- **Monitor run:** [' +
       (run.runNumber || '?') +
       ' attempt ' +
@@ -889,6 +945,9 @@ function formatSummary(report) {
     '- **State:** ' + report.state,
     '- **Phase:** ' + report.phase,
     '- **client-main:** ' + (report.clientMainSha || 'unknown'),
+    '- **Handoff snapshot baseline (informational):** ' +
+      (report.documentedBaseline || 'not recorded') +
+      (report.baselineDrift ? ' (older than current SHA; not a release gate)' : ''),
     '- **Default branch:** ' + report.defaultBranch,
     '- **Observation:** ' + report.capturedAt,
     '',

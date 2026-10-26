@@ -437,7 +437,19 @@ assert.ok(
     item.includes('Owner/admin must verify rulesets'),
   ),
 );
-assert.equal(report.phase, 'P0 B6 — audit-health fallback and release gates.');
+assert.match(
+  unverifiedGovernanceReport.phase,
+  /^P0 release readiness/,
+  'live phase must be derived from current gates rather than stale handoff prose',
+);
+assert.doesNotMatch(unverifiedGovernanceReport.phase, /PR #214/);
+assert.equal(report.documentedPhase, 'P0 B6 — audit-health fallback and release gates.');
+assert.match(report.phase, /^P0 source validation/);
+assert.doesNotMatch(
+  report.phase,
+  /PR #214/,
+  'current phase must not repeat a stale handoff PR queue',
+);
 assert.equal(report.sourceChecks[0].code, 'PASS');
 assert.equal(report.sourceChecks[1].code, 'FAIL');
 assert.equal(report.sourceChecks[2].code, 'PASS');
@@ -473,6 +485,11 @@ assert.ok(
 assert.ok(
   reviewBlockedReport.nextActions.some((item) => item.includes('Resolve requested changes')),
 );
+assert.match(
+  reviewBlockedReport.phase,
+  /PR\(s\) #209/,
+  'live phase must name the actual open PR requiring review',
+);
 
 assert.equal(
   report.operationalRuns.find((item) => item.workflowId === 'staging-uat.yml').code,
@@ -486,7 +503,33 @@ assert.ok(report.blockers.some((item) => item.includes('Browser E2E: Failed')));
 assert.ok(report.blockers.some((item) => item.includes('Staging UAT')));
 const drift = baseSnapshot();
 drift.handoffText = drift.handoffText.replace(MAIN_SHA, 'c'.repeat(40));
-assert.equal(buildMonitorReport(drift, NOW).baselineDrift, true);
+const driftReport = buildMonitorReport(drift, NOW);
+assert.equal(driftReport.baselineDrift, true);
+assert.ok(
+  !driftReport.blockers.some((item) => item.includes('docs/HANDOFF.md baseline')),
+  'a snapshot SHA mismatch is informational rather than a release blocker',
+);
+assert.ok(
+  !driftReport.nextActions.some((item) => item.includes('Synchronize docs/HANDOFF.md')),
+  'a self-referential snapshot SHA must not trigger an endless docs-sync loop',
+);
+const baselineOnlySnapshot = cleanGateSnapshot();
+baselineOnlySnapshot.handoffText = baselineOnlySnapshot.handoffText.replace(
+  MAIN_SHA,
+  'c'.repeat(40),
+);
+baselineOnlySnapshot.runs.push(
+  makeRun('staging-uat.yml', 'client-main', MAIN_SHA, { runId: 6501, runNumber: 501 }),
+  makeRun('client-dist.yml', 'client-main', MAIN_SHA, { runId: 6502, runNumber: 501 }),
+);
+const baselineOnlyReport = buildMonitorReport(baselineOnlySnapshot, NOW);
+assert.equal(baselineOnlyReport.baselineDrift, true);
+assert.equal(
+  baselineOnlyReport.state,
+  'HEALTHY',
+  'a historical handoff SHA alone does not make fully passing current evidence unhealthy',
+);
+assert.match(baselineOnlyReport.phase, /Release evidence current/);
 const body = buildCheckpointIssueBody(report, '');
 assert.match(body, /Recent monitor run history/);
 assert.match(body, /AUTO-DEV-HISTORY-BEGIN/);
