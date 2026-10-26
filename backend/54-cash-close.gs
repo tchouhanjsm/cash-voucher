@@ -204,7 +204,10 @@ function cashCloseStoredAmountPaise_(value, label, allowNegative) {
 }
 function cashCloseOut_(row) {
   if (!row || typeof row !== 'object' || Array.isArray(row)) {
-    throw err_('Saved cash-close record is invalid. Stop and inspect the close record.', 'CASH_CLOSE_DATA');
+    throw err_(
+      'Saved cash-close record is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
   }
 
   const closeId = typeof row.CloseID === 'string' ? row.CloseID.trim() : '';
