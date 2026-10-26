@@ -422,6 +422,20 @@ with sync_playwright() as p:
         'page context and description are rendered in the shared production header',
     )
 
+    # Business dates must follow Asia/Kolkata even when the browser/device is in another timezone.
+    business_date_boundaries = page.evaluate("""async () => {
+        const { businessDate } = await import('/frontend/core/utils.js');
+        return [
+            businessDate(new Date('2026-10-26T18:29:59.000Z')),
+            businessDate(new Date('2026-10-26T18:30:00.000Z')),
+            businessDate(new Date('2026-10-27T00:00:00.000Z'))
+        ];
+    }""")
+    check(
+        business_date_boundaries == ['2026-10-26', '2026-10-27', '2026-10-27'],
+        'business date switches at Asia/Kolkata midnight and does not follow device-local midnight',
+    )
+
     # An empty selected period must explain the scope and offer an immediate, permitted next action.
     empty_dashboard_interceptions = []
 

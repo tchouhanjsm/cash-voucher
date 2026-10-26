@@ -39,7 +39,25 @@ export const pad = (n) => String(n).padStart(2, '0');
 export const iso = (date) =>
   `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 
-export const today = () => iso(new Date());
+// Cash Voucher is a single-property ledger whose business day is always Asia/Kolkata.
+const BUSINESS_DATE_FORMATTER = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Asia/Kolkata',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+export function businessDate(value = new Date()) {
+  if (!(value instanceof Date) || !Number.isFinite(value.getTime())) {
+    throw new TypeError('A valid date is required.');
+  }
+  const parts = Object.fromEntries(
+    BUSINESS_DATE_FORMATTER.formatToParts(value).map((part) => [part.type, part.value]),
+  );
+  return `${parts.year}-${parts.month}-${parts.day}`;
+}
+
+export const today = () => businessDate();
 
 export const addDays = (dateString, days) => {
   const date = new Date(dateString + 'T12:00:00');
