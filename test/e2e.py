@@ -780,6 +780,23 @@ with sync_playwright() as p:
         and 'does not verify backups' in page.locator('#view .needs .needs-clear').inner_text(),
         'dashboard empty-attention state does not imply complete operational health',
     )
+    daily_close_card = page.locator('#view .daily-close-readiness')
+    check(
+        daily_close_card.count() == 1
+        and daily_close_card.get_attribute('data-status') in [
+            'CLOSED',
+            'READY_TO_CLOSE',
+            'BLOCKED',
+            'BLOCKED_BY_LATER_CLOSE',
+            'OPENING_CASH_REQUIRED',
+            'REVIEW_REQUIRED',
+        ]
+        and 'Business date:' in daily_close_card.inner_text()
+        and 'Cash in:' in daily_close_card.inner_text()
+        and 'Cash out:' in daily_close_card.inner_text()
+        and daily_close_card.locator('[data-act=goto][data-k=cashClose]').is_visible(),
+        'authorized dashboard shows live close status, cash movement summary and direct close navigation',
+    )
     check(
         page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
         'Dashboard exposes the create-permitted primary action in its page header',
@@ -1240,6 +1257,75 @@ with sync_playwright() as p:
         }
         print('DASHBOARD_RECOVERY_DIAGNOSTICS=' + json.dumps(diagnostics, ensure_ascii=False))
         raise
+
+    hostile_operations_label = '<svg onload=window.__xssFired=true></svg>'
+    daily_operations_interceptions = []
+
+    def inject_hostile_daily_operations(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'dailyOperationsSummary':
+            route.continue_()
+            return
+        daily_operations_interceptions.append(True)
+        payload = {
+            'ok': True,
+            'data': {
+                'date': hostile_operations_label,
+                'status': hostile_operations_label,
+                'laterCloseDate': hostile_operations_label,
+                'blockedByLaterClose': True,
+                'pendingApprovalCount': hostile_operations_label,
+                'unclassifiedCount': hostile_operations_label,
+                'invalidVoucherCount': hostile_operations_label,
+                'openingCashRequired': True,
+                'readyToClose': True,
+                'cashInTotal': hostile_operations_label,
+                'cashOutTotal': hostile_operations_label,
+                'noCashCount': hostile_operations_label,
+                'countedCash': hostile_operations_label,
+                'variance': hostile_operations_label,
+            },
+        }
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
+
+    page.route('**/api?*', inject_hostile_daily_operations)
+    page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_function(
+        "document.querySelector('#view .daily-close-readiness')?.getAttribute('data-status') === 'REVIEW_REQUIRED'"
+    )
+    hostile_operations_card = page.locator('#view .daily-close-readiness')
+    hostile_operations_text = hostile_operations_card.inner_text()
+    check(
+        len(daily_operations_interceptions) == 1
+        and hostile_operations_card.get_attribute('data-status') == 'REVIEW_REQUIRED'
+        and 'unknown date' in hostile_operations_text
+        and 'Not available' in hostile_operations_text
+        and hostile_operations_label not in hostile_operations_text
+        and hostile_operations_card.locator('[onload], [onerror]').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile daily-close summary values fail closed and remain inert text',
+    )
+    page.unroute('**/api?*', inject_hostile_daily_operations)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'dailyOperationsSummary'
+    ) as daily_operations_recovery_response:
+        page.click('[data-act=range][data-k="30d"]')
+    recovered_daily_operations = daily_operations_recovery_response.value.json()
+    check(
+        daily_operations_recovery_response.value.ok
+        and recovered_daily_operations.get('ok') is True
+        and isinstance(recovered_daily_operations.get('data'), dict)
+        and recovered_daily_operations['data'].get('status') in [
+            'CLOSED',
+            'READY_TO_CLOSE',
+            'BLOCKED',
+            'BLOCKED_BY_LATER_CLOSE',
+            'OPENING_CASH_REQUIRED',
+            'REVIEW_REQUIRED',
+        ],
+        'daily-close card recovers to a recognized server status after hostile data is removed',
+    )
 
     # A stale Apps Script deployment must yield a safe, actionable error, never guessed totals.
     unsupported_dashboard_interceptions = []

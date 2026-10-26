@@ -56,6 +56,7 @@ for (const action of actions) {
 for (const readAction of [
   'bootstrap',
   'dashboardSummary',
+  'dailyOperationsSummary',
   'auditLog',
   'recordedMovementReport',
   'dataQualityReport',
