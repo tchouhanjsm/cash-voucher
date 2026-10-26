@@ -191,6 +191,12 @@ for (const key of [
     'staging UAT must read target identity from Environment secret: ' + key,
   );
 }
+assert.ok(
+  clientDistWorkflow.includes(
+    'EXPECTED_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}',
+  ),
+  'ZIP config/manifest verification uses the staging deployment ID secret',
+);
 assert.doesNotMatch(
   workflow,
   /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
@@ -235,19 +241,23 @@ assert.match(
   /ZIP_NAME="cv-\$\{CLIENT_CODE\}-staging-\$\{GITHUB_SHA\}\.zip"/,
   'ZIP file must use the full commit SHA expected by artifact upload',
 );
-assert.match(
-  clientDistWorkflow,
-  /path:\s*\|\s*\n\s+cv-\$\{\{ inputs\.client_code \}\}-staging-\$\{\{ github\.sha \}\}\.zip\s*\n\s+cv-\$\{\{ inputs\.client_code \}\}-staging-\$\{\{ github\.sha \}\}\.zip\.sha256/,
-  'artifact upload must include both the full-SHA ZIP and its detached checksum',
+const clientDistUpload = clientDistWorkflow.split(
+  '      - uses: actions/upload-artifact@v4',
+)[1] || '';
+const clientZipName = 'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
+assert.match(clientDistUpload, /path:\s*\|/);
+assert.ok(
+  clientDistUpload.includes(clientZipName),
+  'artifact upload includes the full-SHA staging ZIP',
+);
+assert.ok(
+  clientDistUpload.includes(`${clientZipName}.sha256`),
+  'artifact upload includes the detached ZIP checksum',
 );
 assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
 assert.match(clientDistWorkflow, /artifactVersion: 2/);
 assert.match(clientDistWorkflow, /checksumAlgorithm: 'SHA-256'/);
 assert.match(clientDistWorkflow, /checksumsFile: 'SHA256SUMS\.txt'/);
-assert.match(
-  clientDistWorkflow,
-  /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/,
-);
 assert.match(
   clientDistWorkflow,
   /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/,
