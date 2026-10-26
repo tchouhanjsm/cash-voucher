@@ -18,6 +18,8 @@
 
 ## Historical execution-plan snapshot — 25 October 2026
 
+Pre-sync 25 October snapshot: PR #214 is the only open PR targeting `client-main`; historical only.
+
 ## Executive decision
 
 Do not start a broad feature sprint. Run a coherent release-readiness batch that aligns branch policy, manual staging controls, source baseline and release evidence. Pass live staging and recovery gates before starting the pilot. This plan does not authorize production changes.
