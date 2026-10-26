@@ -546,8 +546,18 @@ export function createDashboard({ api }) {
     `;
 
     const dashboardContent = periodIsEmpty
-      ? `${periodControls(from, to)}${emptyPeriodPanel}${needsAttention}${dailyCloseCard(dailyOperations, dailyOperationsError)}`
-      : `${needsAttention}${dailyCloseCard(dailyOperations, dailyOperationsError)}${periodControls(from, to)}${financialPanels}`;
+      ? [
+          periodControls(from, to),
+          emptyPeriodPanel,
+          needsAttention,
+          dailyCloseCard(dailyOperations, dailyOperationsError),
+        ].join('')
+      : [
+          needsAttention,
+          dailyCloseCard(dailyOperations, dailyOperationsError),
+          periodControls(from, to),
+          financialPanels,
+        ].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +

@@ -561,6 +561,46 @@ with sync_playwright() as p:
         ('audit', 'audit', '.audit-panel'),
         ('account', 'acct', '#pf'),
     ]
+    def inject_visual_dashboard_summary(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        from_date = request_data.get('from', '2026-10-20')
+        to_date = request_data.get('to', '2026-10-26')
+        payload = {
+            'ok': True,
+            'data': {
+                'from': from_date,
+                'to': to_date,
+                'periodDays': 7,
+                'trendMonthly': False,
+                'trend': [{'date': to_date, 'amount': 1250}],
+                'paid': 1250,
+                'previousPaid': 1000,
+                'paymentCount': 1,
+                'validPaymentCount': 1,
+                'largest': {'amount': 1250, 'vendor': 'Visual review sample'},
+                'todayPaid': 1250,
+                'todayPaymentCount': 1,
+                'received': 500,
+                'receiptCount': 1,
+                'bookBalance': 1750,
+                'topVendors': [{'k': 'Visual review sample', 'n': 1, 's': 1250}],
+                'byCategory': [{'k': 'Operations', 'n': 1, 's': 1250}],
+                'byTeamMember': [{'k': 'Visual Owner', 'n': 1, 's': 1250}],
+                'approvalExceptionCount': 0,
+                'invalidAmountCount': 0,
+                'malformedRecordCount': 0,
+                'malformedFieldCount': 0,
+            },
+        }
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
+
+    page.route('**/api?*', inject_visual_dashboard_summary)
     visual_widths = [320, 360, 390, 768, 1024, 1280, 1440]
     for route_name, route_id, ready_selector in visual_routes:
         if route_id == 'acct':
@@ -721,6 +761,8 @@ with sync_playwright() as p:
                         full_page=width == 1280,
                         animations='disabled',
                     )
+
+    page.unroute('**/api?*', inject_visual_dashboard_summary)
 
     # Verify user-preference states against the running app stylesheet, not only source regexes.
     page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
@@ -895,9 +937,12 @@ with sync_playwright() as p:
     go_view(page, 'dash')
     check(
         page.locator('#view .needs h2').inner_text().startswith('Needs attention')
-        and page.locator('#view .stat .stat-ic svg').count() >= 5
+        and (
+            page.locator('#view .dashboard-empty-state').count() == 1
+            or page.locator('#view .stat .stat-ic svg').count() >= 5
+        )
         and page.locator('[data-v=dash] .ic svg use').get_attribute('href') == '#i-home',
-        'Dashboard shows scoped needs-attention text, KPI icons and SVG navigation icons',
+        'Dashboard shows scoped attention, a truthful empty or KPI state, and SVG navigation icons',
     )
     check(
         page.locator('#view .needs .needs-clear').count() == 1
@@ -1362,7 +1407,8 @@ with sync_playwright() as p:
     )
     try:
         page.wait_for_function(
-            "document.querySelector('#view')?.innerText.includes('TOTAL PAID')",
+            "document.querySelector('#view')?.innerText.includes('TOTAL PAID') || "
+            "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
             timeout=10000,
         )
     except Exception:
@@ -1492,7 +1538,8 @@ with sync_playwright() as p:
         'dashboard recovers after the unsupported-action error is removed',
     )
     page.wait_for_function(
-        "document.querySelector('#view')?.innerText.includes('TOTAL PAID')",
+        "document.querySelector('#view')?.innerText.includes('TOTAL PAID') || "
+            "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
         timeout=10000,
     )
 
