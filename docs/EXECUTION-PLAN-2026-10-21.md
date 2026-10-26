@@ -1,18 +1,19 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 26 October 2026 15:04 IST (live-source audit)  
+**Updated:** 26 October 2026 (post-merge regression review)  
 **Integration branch:** `client-main`; `main` remains legacy/read-only.  
-**Current integration SHA:** `75561d19e5f72f885c813152de122e7444801d70` (PR #223 merged).  
-**Open PRs at batch start:** none. One cohesive source batch is being prepared on `client/staging-artifact-isolation-20261026`; it targets `client-main` and must not be merged until exact-head validation and human review are complete.
+**Current integration SHA:** `1b016a82d9e42eeb71d875561cc356d946fa5db5` (PR #224 merged on top of PR #225 merge `24176f030b2f33b1174779fa191152f7441c3460`).  
+**Active recovery PR:** [#226 — restore Dashboard and staging artifact integrity](https://github.com/tchouhanjsm/cash-voucher/pull/226), branch `client/post-224-restore-dashboard-and-artifact-integrity-20261026`, targeting `client-main`.
 
-## Current checkpoint — staging isolation first
+## Current checkpoint — restore release protections
 
-- Exact current-head checks: [CI / Quality #40299960269](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960269), [Browser E2E #40299960457](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960457), [Full Flight Test #40299960312](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960312), and [Autonomous Development Monitor #40299960297](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960297) all passed on `75561d19e5f72f885c813152de122e7444801d70`.
-- First implementation priority: make the staging ZIP target non-user-selectable at dispatch, validate staging-vs-production identity before packaging, and keep resource IDs out of unmasked public workflow logs. The workflow will use the dedicated `staging` Environment secrets and an artifact-only preflight.
-- Governance remains blocked: `client-main` is unprotected, the only active ruleset targets `main`, only `quality` is required, and approving-review count is zero. Owner/admin action is required; this plan does not change repository settings.
-- The last staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight because production reference IDs were missing and the Clasp credential document was rejected. No deployment or live UAT ran. Do not retry unchanged configuration.
-- The last ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) used stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`; no published release is recorded.
-- After the source PR is reviewed, the owner must migrate staging/production reference IDs and the staging API URL into the `staging` Environment secrets, verify the environment's `client-main` branch restriction and reviewer protection, then separately authorize guarded staging UAT. Real isolated restore, live security/authorization, offline/reconnect and intended-device/customer acceptance remain mandatory. No live resource operation is authorized here.
+- **Exact merged-head verification:** [CI / Quality #40319063089](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063089), [Browser E2E #40319062917](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062917), [Full Flight Test #40319063051](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063051) and [Autonomous Development Monitor #40319062906](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062906) passed on the exact current merge SHA.
+- **Regression found in the merge tree:** PR #224’s staging-security work is present, but the merge snapshot removed PR #225’s strict Dashboard summary validation/fault-injection coverage and artifact-v2 package checksums. Restore both sets in one reviewable correction PR, without weakening the staging isolation preflight.
+- **Acceptance criteria:** malformed/missing Dashboard money, counters, trend and grouping data fail closed (never render as zero); browser E2E verifies the invalid state and recovery; a staging ZIP is only buildable from current `client-main` with Environment secrets and passing isolation preflight; manifest v2 includes SHA-256 inventory and ZIP sidecar, artifact retains for 14 days, and branch freshness is checked before and after packaging.
+- **Deadline plan for 27 October:** finish this single source-recovery batch and obtain exact-head CI/E2E/Flight evidence. In parallel, the owner/admin must repair branch protection and privately configure/verify staging Environment secrets. Do not substitute source checks for live staging proof.
+- **Known operational blockers:** prior staging UAT run [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight because four production reference IDs were empty and the Clasp credential document was missing/rejected. Do not rerun unchanged configuration. Live deployment identity, separate-target backup/restore, actual security headers, role/receipt authorization, all-device offline/reconnect, print/PDF, accessibility and customer sign-off remain unverified.
+- **Governance:** live branch API reported `client-main` as `protected=false`; owner/admin must ensure effective rules enforce CI / Quality, Browser E2E, Full Flight Test and intended human approval. This source PR does not change GitHub settings.
+- **Safety boundary:** no live Google resources, Clasp push/deploy, migration, cPanel publication or production mutation is performed by this source batch.
 
 ## Historical execution-plan snapshot — 25 October 2026
 
