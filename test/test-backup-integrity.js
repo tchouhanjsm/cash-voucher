@@ -1,8 +1,3 @@
-'use strict';
-
-const assert = require('node:assert/strict');
-const { create } = require('./mock-gas');
-
 const g = create();
 
 const manifestHeader = ['originalFileId', 'backupFileId', 'name', 'createdAt'];
@@ -47,11 +42,9 @@ const sameSourceAndCopy = g.inspectReceiptManifest(
 assert.equal(sameSourceAndCopy.recordsValid, false, 'source and backup IDs must differ');
 assert.equal(sameSourceAndCopy.uniqueIds, false, 'source/copy ID collision must fail');
 
-const renamedCopy = g.inspectReceiptManifest(
-  [manifestHeader, validManifestRow],
-  true,
-  [{ getId: () => 'backup-receipt-1', getName: () => 'renamed.jpg' }],
-);
+const renamedCopy = g.inspectReceiptManifest([manifestHeader, validManifestRow], true, [
+  { getId: () => 'backup-receipt-1', getName: () => 'renamed.jpg' },
+]);
 assert.equal(renamedCopy.copyNamesMatch, false, 'manifest must detect renamed receipt copies');
 
 const absentCopy = g.inspectReceiptManifest([manifestHeader, validManifestRow], true, []);
