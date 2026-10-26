@@ -244,7 +244,8 @@ assert.match(
 const clientDistUpload = clientDistWorkflow.split(
   '      - uses: actions/upload-artifact@v4',
 )[1] || '';
-const clientZipName = 'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
+const clientZipName =
+  'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
 assert.match(clientDistUpload, /path:\s*\|/);
 assert.ok(
   clientDistUpload.includes(clientZipName),
