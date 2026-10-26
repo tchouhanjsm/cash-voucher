@@ -134,7 +134,11 @@ assert.ok(
 );
 
 const dailyOperations = g.call('dailyOperationsSummary', { token: owner });
-assert.equal(dailyOperations.ok, true, 'owner daily-operations read model succeeds');
+assert.equal(
+  dailyOperations.ok,
+  true,
+  'owner daily-operations read model succeeds',
+);
 assert.equal(
   dailyOperations.data.date,
   date,
