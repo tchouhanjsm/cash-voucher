@@ -187,7 +187,68 @@ function cashCloseCorrectionOut_(row) {
     createdAt: tsStr_(row.CreatedAt),
   };
 }
+function cashCloseStoredAmountPaise_(value, label, allowNegative) {
+  const invalid =
+    typeof value !== 'number' ||
+    !isFinite(value) ||
+    (!allowNegative && value < 0) ||
+    !Number.isSafeInteger(Math.round(value * 100)) ||
+    Math.abs(value * 100 - Math.round(value * 100)) > 0.000001;
+  if (invalid) {
+    throw err_(
+      'Saved cash-close ' + label + ' is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+  return Math.round(value * 100);
+}
 function cashCloseOut_(row) {
+  if (!row || typeof row !== 'object' || Array.isArray(row)) {
+    throw err_('Saved cash-close record is invalid. Stop and inspect the close record.', 'CASH_CLOSE_DATA');
+  }
+
+  const closeId = typeof row.CloseID === 'string' ? row.CloseID.trim() : '';
+  const closeDate = typeof row.BusinessDate === 'string' ? row.BusinessDate : '';
+  const drawerKey = typeof row.DrawerKey === 'string' ? row.DrawerKey : '';
+  const openingSource = typeof row.OpeningSource === 'string' ? row.OpeningSource : '';
+  const openingCloseId = typeof row.OpeningCloseID === 'string' ? row.OpeningCloseID.trim() : '';
+  const openingReason = typeof row.OpeningReason === 'string' ? row.OpeningReason.trim() : '';
+  const varianceReason = typeof row.VarianceReason === 'string' ? row.VarianceReason.trim() : '';
+  const createdBy = typeof row.CreatedBy === 'string' ? row.CreatedBy.trim() : '';
+  const createdAt = typeof row.CreatedAt === 'string' ? row.CreatedAt : '';
+  const timeZone = typeof row.TimeZone === 'string' ? row.TimeZone : '';
+  const requestId = typeof row.RequestID === 'string' ? row.RequestID.trim() : '';
+  const requestPayload = typeof row.RequestPayload === 'string' ? row.RequestPayload : '';
+  const timestampMs = Date.parse(createdAt);
+  if (
+    !closeId ||
+    !validDate_(closeDate) ||
+    closeDate.length !== 10 ||
+    drawerKey !== CASH_CLOSE_DRAWER ||
+    !createdBy ||
+    !/^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/.test(createdAt) ||
+    !isFinite(timestampMs) ||
+    new Date(timestampMs).toISOString() !== createdAt ||
+    timeZone !== CFG.TZ ||
+    !requestId ||
+    !requestPayload.trim()
+  ) {
+    throw err_(
+      'Saved cash-close identity or metadata is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+  if (
+    (openingSource === 'MANUAL' && (openingReason.length < 3 || openingCloseId)) ||
+    (openingSource === 'PREVIOUS_CLOSE' && (!openingCloseId || openingReason)) ||
+    !['MANUAL', 'PREVIOUS_CLOSE'].includes(openingSource)
+  ) {
+    throw err_(
+      'Saved cash-close opening source is invalid. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+
   let vouchers, ids;
   try {
     if (typeof row.IncludedVouchers !== 'string' || !row.IncludedVouchers.trim()) {
@@ -207,29 +268,32 @@ function cashCloseOut_(row) {
     );
   }
 
-  const closeDate = typeof row.BusinessDate === 'string' ? row.BusinessDate : '';
   const snapshotIds = [];
   const validSnapshotVoucher = function (item) {
-    return (
-      item !== null &&
-      typeof item === 'object' &&
-      !Array.isArray(item) &&
-      typeof item.id === 'string' &&
-      item.id.trim() !== '' &&
-      typeof item.no === 'string' &&
-      item.no.trim() !== '' &&
-      typeof item.date === 'string' &&
-      /^\d{4}-\d{2}-\d{2}$/.test(item.date) &&
-      validDate_(item.date) &&
-      item.date === closeDate &&
-      typeof item.vendor === 'string' &&
-      typeof item.amount === 'number' &&
-      isFinite(item.amount) &&
-      item.amount > 0 &&
-      item.amount <= CFG.MAX_AMOUNT &&
-      Number.isSafeInteger(Math.round(item.amount * 100)) &&
-      CASH_IMPACT_CHOICES.indexOf(item.cashImpact) >= 0
-    );
+    if (
+      item === null ||
+      typeof item !== 'object' ||
+      Array.isArray(item) ||
+      typeof item.id !== 'string' ||
+      item.id.trim() === '' ||
+      typeof item.no !== 'string' ||
+      item.no.trim() === '' ||
+      typeof item.date !== 'string' ||
+      !/^\\d{4}-\\d{2}-\\d{2}$/.test(item.date) ||
+      !validDate_(item.date) ||
+      item.date !== closeDate ||
+      typeof item.vendor !== 'string' ||
+      typeof item.amount !== 'number' ||
+      !isFinite(item.amount) ||
+      item.amount <= 0 ||
+      item.amount > CFG.MAX_AMOUNT ||
+      !Number.isSafeInteger(Math.round(item.amount * 100)) ||
+      Math.abs(item.amount * 100 - Math.round(item.amount * 100)) > 0.000001 ||
+      CASH_IMPACT_CHOICES.indexOf(item.cashImpact) < 0
+    ) {
+      return false;
+    }
+    return true;
   };
   if (!vouchers.every(validSnapshotVoucher)) {
     throw err_(
@@ -281,26 +345,73 @@ function cashCloseOut_(row) {
     );
   }
 
+  const openingCashPaise = cashCloseStoredAmountPaise_(row.OpeningCash, 'opening cash', false);
+  const cashInTotalPaise = cashCloseStoredAmountPaise_(row.CashInTotal, 'cash-in total', false);
+  const cashOutTotalPaise = cashCloseStoredAmountPaise_(row.CashOutTotal, 'cash-out total', false);
+  const expectedCashPaise = cashCloseStoredAmountPaise_(row.ExpectedCash, 'expected cash', false);
+  const countedCashPaise = cashCloseStoredAmountPaise_(row.CountedCash, 'counted cash', false);
+  const variancePaise = cashCloseStoredAmountPaise_(row.Variance, 'variance', true);
+  if (
+    openingCashPaise > Math.round(CFG.MAX_AMOUNT * 100) ||
+    countedCashPaise > Math.round(CFG.MAX_AMOUNT * 100)
+  ) {
+    throw err_(
+      'Saved cash-close opening/count amount exceeds the supported range. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+
+  let snapshotCashInPaise = 0;
+  let snapshotCashOutPaise = 0;
+  vouchers.forEach(function (voucher) {
+    const amountPaise = Math.round(voucher.amount * 100);
+    if (voucher.cashImpact === 'CASH_IN') snapshotCashInPaise += amountPaise;
+    else if (voucher.cashImpact === 'CASH_OUT') snapshotCashOutPaise += amountPaise;
+    if (!Number.isSafeInteger(snapshotCashInPaise) || !Number.isSafeInteger(snapshotCashOutPaise)) {
+      throw err_(
+        'Saved cash-close voucher snapshot totals exceed the supported range. Stop and inspect the close record.',
+        'CASH_CLOSE_DATA',
+      );
+    }
+  });
+  const calculatedExpectedPaise = openingCashPaise + snapshotCashInPaise - snapshotCashOutPaise;
+  const calculatedVariancePaise = countedCashPaise - expectedCashPaise;
+  if (
+    cashInTotalPaise !== snapshotCashInPaise ||
+    cashOutTotalPaise !== snapshotCashOutPaise ||
+    !Number.isSafeInteger(calculatedExpectedPaise) ||
+    calculatedExpectedPaise < 0 ||
+    expectedCashPaise !== calculatedExpectedPaise ||
+    !Number.isSafeInteger(calculatedVariancePaise) ||
+    variancePaise !== calculatedVariancePaise ||
+    (variancePaise !== 0 && varianceReason.length < 3)
+  ) {
+    throw err_(
+      'Saved cash-close totals do not reconcile with the immutable voucher snapshot. Stop and inspect the close record.',
+      'CASH_CLOSE_DATA',
+    );
+  }
+
   return {
-    id: String(row.CloseID || ''),
+    id: closeId,
     date: closeDate,
-    drawerKey: String(row.DrawerKey || CASH_CLOSE_DRAWER),
-    openingCash: Number(row.OpeningCash),
-    openingSource: String(row.OpeningSource || ''),
-    openingCloseId: String(row.OpeningCloseID || ''),
-    openingReason: String(row.OpeningReason || ''),
-    cashInTotal: Number(row.CashInTotal),
-    cashOutTotal: Number(row.CashOutTotal),
-    expectedCash: Number(row.ExpectedCash),
-    countedCash: Number(row.CountedCash),
-    variance: Number(row.Variance),
-    varianceReason: String(row.VarianceReason || ''),
+    drawerKey: drawerKey,
+    openingCash: openingCashPaise / 100,
+    openingSource: openingSource,
+    openingCloseId: openingCloseId,
+    openingReason: openingReason,
+    cashInTotal: cashInTotalPaise / 100,
+    cashOutTotal: cashOutTotalPaise / 100,
+    expectedCash: expectedCashPaise / 100,
+    countedCash: countedCashPaise / 100,
+    variance: variancePaise / 100,
+    varianceReason: varianceReason,
     includedVoucherCount: includedVoucherCount,
     includedVoucherIds: ids,
     includedVouchers: vouchers,
-    createdBy: String(row.CreatedBy || ''),
-    createdAt: tsStr_(row.CreatedAt),
-    timeZone: String(row.TimeZone || CFG.TZ),
+    createdBy: createdBy,
+    createdAt: createdAt,
+    timeZone: timeZone,
   };
 }
 function cashCloseWithCorrections_(row, corrections) {
