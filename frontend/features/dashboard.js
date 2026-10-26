@@ -295,7 +295,9 @@ export function createDashboard({ api }) {
         details.push('Record opening cash and explain the opening amount before closing.');
       }
       if (data.readyToClose === true && status === 'READY_TO_CLOSE') {
-        details.push('Server-side checks pass. Verify the physical drawer count before finalizing.');
+        details.push(
+          'Server-side checks pass. Verify the physical drawer count before finalizing.',
+        );
       }
       if (!details.length) {
         details.push(
