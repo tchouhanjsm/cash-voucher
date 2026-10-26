@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Temporary diagnose backup test formatting
+        run: npx prettier test/test-backup-integrity.js
+
       - name: Scan current files and reachable Git history for credential patterns
         run: npm run audit:secrets
 
