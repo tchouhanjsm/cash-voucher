@@ -29,6 +29,7 @@ assert.match(dashboard, /function dashboardSummaryIssue/);
 assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
 assert.match(browserE2e, /Dashboard totals unavailable/);
 assert.match(deliveryPhase, /PR #225.*merged/i);
+assert.doesNotMatch(deliveryPhase, /it remains open until reviewed and merged by the owner/);
 assert.match(
   handoff,
   /exact-head CI \/ Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor passed/,

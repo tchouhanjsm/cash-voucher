@@ -81,7 +81,7 @@ For a manual local Clasp project, inspect the private .clasp.json target, then r
 
 ## PR and CI/CD gates
 
-- PR #225 targets client-main from client/bulk-dashboard-staging-release-20261026; it remains open until reviewed and merged by the owner.
+- PR #225 merged into `client-main` at `24176f030b2f33b1174779fa191152f7441c3460`; follow-up PR #226 restores the Dashboard and artifact-integrity contracts found missing from the later merge snapshot.
 - Require CI / Quality, Browser E2E and Full Flight Test to pass on the **same final PR SHA**. Green checks from a previous commit are not evidence for the final head.
 - This batch has not changed branch rules, auto-merged a PR, run a Clasp push, run migrations, executed transactional UAT, or published a staging/production site.
 - The last recorded client-main branch API state reported protected=false; owner/admin must configure and verify the effective ruleset and approvals.
