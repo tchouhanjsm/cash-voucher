@@ -127,3 +127,10 @@ Branch: `phase-34-36-form-guidance-and-async-state-2026-10-17`, based on merged 
 The current source review found a late Report response rerendering the active workspace, plus stale/out-of-order Report requests and an equivalent risk in Users and post-save administration redraws. The batch sequences Report and Users requests, protects the destination route during async completion, and updates the shell cache to `cv2-v23`. E2E tests hold requests/save operations across navigation so route correctness is exercised against the browser and mock API, not inferred from CSS presence.
 
 No shared component framework, external runtime resources, APIs, schemas or financial/authorization behavior are changed. Existing screenshot coverage supports visual review but does not replace manual review at real device sizes, zoom/reflow and assistive technology.
+
+
+## PWA cache isolation and explicit updates — 26 October 2026
+
+The app-shell worker now caches only its declared, query-free static asset allowlist. Unlisted same-origin GETs and cross-origin API requests pass through without Cache Storage interception. A precache failure rejects installation and removes the partial new cache so the previous worker can continue serving the app; activation removes only obsolete `cv2-v*` caches, not unrelated origin caches. New workers wait for the user to choose **Reload to update**, and the UI warns users to save unfinished forms first. Reloading preserves the IndexedDB outbox; it does not turn local records into server-synchronized records.
+
+The new Node tests exercise install failure, cache ownership, request allowlisting, offline asset/navigation fallback, explicit activation messaging, and update-notice/reload behavior. This is source-level PWA lifecycle evidence only; live-host update behavior, real-device install/reconnect, and offline recovery remain release gates.

@@ -2691,3 +2691,66 @@ nav .ic {
   --surface-subtle: #f5faf7;
   --main-glow: rgba(47, 138, 92, 0.12);
 }
+
+
+/* PWA updates are user-controlled so an install cannot silently interrupt entry. */
+.app-update-notice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  color: var(--ink);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgb(31 42 68 / 6%);
+}
+
+.app-update-copy {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+
+.app-update-copy strong {
+  display: block;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.app-update-copy p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.app-update-actions {
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.app-update-actions .btn {
+  min-height: 44px;
+}
+
+@media (max-width: 520px) {
+  .app-update-notice {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 12px;
+  }
+
+  .app-update-actions {
+    width: 100%;
+  }
+
+  .app-update-actions .btn {
+    flex: 1 1 140px;
+  }
+}
