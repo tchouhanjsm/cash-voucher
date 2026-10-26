@@ -21,10 +21,10 @@ const securityAudit = read('docs/SECURITY-RENDERING-AUDIT.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const handoff = read('docs/HANDOFF.md');
 assert.match(handoff, /^\*\*Updated:\*\* 26 October 2026/m);
-assert.match(handoff, /Verified integration baseline.*858b69d91480c468606fd243e6396e8b6e88723d/);
+assert.match(handoff, /Verified integration baseline.*75561d19e5f72f885c813152de122e7444801d70/);
 assert.match(handoff, /exact-merge CI, Browser E2E and Full Flight Test all passed/);
-assert.match(handoff, /Current source batch.*immutable voucher snapshot/);
-assert.match(handoff, /PR #223 is open and unmerged/);
+assert.match(handoff, /Current source batch.*fail-closed Dashboard summary/);
+assert.match(handoff, /PR #225 is open and unmerged/);
 assert.match(handoff, /client-main.*protected=false/);
 assert.match(handoff, /## Historical handoff snapshot — 25 October 2026/);
 const p0ReleaseBatch = read('docs/P0-RELEASE-BATCH-B1-B3.md');
@@ -50,7 +50,7 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*e97c4e080b3f6903e16ef77f571822f9844faeed/,
+  /Authoritative integration baseline.*client-main.*75561d19e5f72f885c813152de122e7444801d70/,
 );
 assert.match(staging, /PR #208/);
 assert.match(staging, /PR #214 is the sole open PR targeting/);

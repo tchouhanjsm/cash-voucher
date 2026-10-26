@@ -1,20 +1,24 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 26 October 2026 (live-source checkpoint)  
-**Repository:** tchouhanjsm/cash-voucher  
-**Integration branch:** `client-main`  
-**Verified integration baseline:** `858b69d91480c468606fd243e6396e8b6e88723d` (PR #222 merged; exact-merge CI, Browser E2E and Full Flight Test all passed).  
-**Legacy branch:** `main` (read-only and divergent; do not merge/rebase blindly).  
-**Current phase:** Fail-closed validation of saved Daily Cash Close records and their immutable voucher snapshots. This work is isolated on `client/cash-close-record-integrity-20261026`; PR #223 is open and unmerged; its final synchronized head must pass exact-head CI, Browser E2E and Full Flight Test before review.  
-**Release boundary:** no staging deployment, Apps Script push, migration, Google Sheets/Drive mutation or production change is authorized by this source batch.
+**Updated:** 26 October 2026 (bulk delivery checkpoint)
+**Repository:** tchouhanjsm/cash-voucher
+**Integration branch:** client-main
+**Verified integration baseline:** 75561d19e5f72f885c813152de122e7444801d70 (PR #223 merged; exact-merge CI, Browser E2E and Full Flight Test all passed).
+**Legacy branch:** main (read-only and divergent; do not merge/rebase blindly).
+**Current phase:** bulk Dashboard response-integrity hardening and staging ZIP provenance/integrity improvements on client/bulk-dashboard-staging-release-20261026. PR #225 is open and unmerged; exact-head CI, Browser E2E and Full Flight Test are pending against the final PR head.
+**Release boundary:** no staging deployment, Apps Script push, migration, Google Sheets/Drive mutation, cPanel publication or production change is performed by this source batch.
 
 ## Current checkpoint — 26 October 2026
 
-- **Current `client-main` SHA:** `858b69d91480c468606fd243e6396e8b6e88723d`, merged PR #222, which hardens backup receipt-manifest integrity checks. Exact-merge evidence: [CI / Quality #40290605686](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40290605686), [Browser E2E #40290605661](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40290605661), [Full Flight Test #40290605674](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40290605674), and [Autonomous Development Monitor #40290605697](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40290605697). All four completed successfully on the same merge commit.
-- **Current source batch:** validate the persisted close record's identity, timestamp and accounting metadata; strictly validate stored monetary cells; reconcile recorded cash-in/cash-out totals against the immutable voucher snapshot; confirm expected-cash and variance arithmetic before presenting a close as valid. Regression tests inject corrupted values and assert the read model fails closed with `CASH_CLOSE_DATA`.
-- **Repository governance remains a P0 gap:** the live `client-main` branch API reports `protected=false`. Ruleset #24624368 currently targets only `~DEFAULT_BRANCH` (`main`), requires only the `quality` context and has zero required approvals. Owner/admin must explicitly include `client-main`, require CI / Quality, Browser E2E, Full Flight Test and the intended human approval, then verify the effective ruleset in GitHub. No repository-setting mutation was performed by this batch.
-- **Release blockers remain operational:** the staging deployment identity, protected staging environment, live HTTP headers and role/receipt authorization, a real backup plus witnessed restore into a separate recovery destination, all-device offline/reconnect validation, print/PDF, accessibility and customer acceptance remain unverified. Mock tests do not discharge these gates.
-- **Source control rule:** keep `main` as the legacy/read-only baseline. Do not push Clasp, deploy Apps Script, run migrations, trigger write-capable staging UAT or mutate Google Sheets/Drive for this batch. The repository owner retains merge and release authority.
+- **Verified integration evidence for PR #223 merge** (75561d19e5f72f885c813152de122e7444801d70): [CI / Quality #40299960269](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960269), [Browser E2E #40299960457](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960457), [Full Flight Test #40299960312](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960312) and [Autonomous Development Monitor #40299960297](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960297) all passed on the exact same merge commit.
+- **Current source batch:** fail-closed Dashboard summary validation checks the requested date window, financial amounts, counters, trend records and grouping rows before rendering financial KPIs, charts or breakdowns. Invalid payloads are not silently converted to zero. Browser regressions inject malformed paid and trend fields and then prove recovery after a valid response returns.
+- **Staging package pipeline:** the manual Client staging ZIP workflow is restricted to client-main, obtains CV_STAGING_API_URL and CV_STAGING_DEPLOYMENT_ID from the protected GitHub staging Environment, verifies they agree, and checks branch freshness before and after the build. The ZIP includes a release manifest and per-file SHA-256 inventory, with a detached ZIP checksum; artifacts are retained for 14 days. The workflow packages static assets only and does not publish to cPanel or push Apps Script.
+- **PR #225 is open and unmerged.** No fresh deployment ZIP is produced until PR #225 is merged and the staging Environment values are privately verified. The artifact builder is not evidence that a live website has been deployed or tested.
+- **Governance remains a release blocker:** the last recorded client-main branch API state reported protected=false. Owner/admin must include client-main in an effective ruleset requiring CI / Quality, Browser E2E, Full Flight Test and the intended human approval. This PR does not change repository settings.
+- **Operational release gates remain open:** real staging identity/version, live role and receipt authorization, actual response headers, backup and restore into a separate recovery destination, device/offline/reconnect, print/PDF, accessibility and customer acceptance. Mock tests do not discharge these gates.
+- **Git/Clasp boundary:** keep main read-only. Never commit .clasp.json, .clasprc.json, OAuth content, staging IDs or passwords. A staging push must use guarded npm run staging:deploy and a privately verified staging target; transactional UAT additionally requires explicit write consent.
+
+See [Phase delivery review and operator steps](DELIVERY-PHASE-2026-10-26-BULK.md) for the page-by-page review, reverse-sync commands, staging ZIP procedure and guarded Clasp sequence.
 
 ---
 
