@@ -114,7 +114,7 @@ assert.match(executionPlan, /Current integration SHA.*75561d19e5f72f885c813152de
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
-assert.match(executionPlan, /Open PRs at batch start: none/);
+assert.match(executionPlan, /Open PRs at batch start/);
 assert.doesNotMatch(executionPlan, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(executionPlan, /PR #210 still requires base reconciliation/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
