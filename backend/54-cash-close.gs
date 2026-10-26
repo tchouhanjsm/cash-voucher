@@ -226,16 +226,16 @@ function cashCloseOut_(row) {
     typeof row.TimeZone === 'string' && row.TimeZone.trim() ? row.TimeZone.trim() : CFG.TZ;
   const requestId = typeof row.RequestID === 'string' ? row.RequestID.trim() : '';
   const requestPayload = typeof row.RequestPayload === 'string' ? row.RequestPayload : '';
-  const timestampMs = Date.parse(createdAt);
+  const timestampMs = Date.parse(createdAt + 'Z');
   if (
     !closeId ||
     !validDate_(closeDate) ||
     closeDate.length !== 10 ||
     drawerKey !== CASH_CLOSE_DRAWER ||
     !createdBy ||
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(createdAt) ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(createdAt) ||
     !isFinite(timestampMs) ||
-    new Date(timestampMs).toISOString() !== createdAt ||
+    new Date(timestampMs).toISOString().slice(0, 19) !== createdAt ||
     timeZone !== CFG.TZ ||
     !requestId ||
     !requestPayload.trim()
