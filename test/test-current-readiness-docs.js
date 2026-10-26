@@ -22,9 +22,15 @@ const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const handoff = read('docs/HANDOFF.md');
 assert.match(handoff, /^\*\*Updated:\*\* 26 October 2026/m);
 assert.match(handoff, /Verified integration baseline.*75561d19e5f72f885c813152de122e7444801d70/);
-assert.match(handoff, /exact-merge CI, Browser E2E and Full Flight Test all passed/);
-assert.match(handoff, /Current source batch.*fail-closed Dashboard summary/);
-assert.match(handoff, /PR #225 is open and unmerged/);
+assert.match(
+  handoff,
+  /exact-head CI \/ Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor passed/,
+);
+assert.match(
+  handoff,
+  /Current phase.*Staging artifact target-isolation and public workflow-log confidentiality/,
+);
+assert.match(handoff, /PR #223 merged/);
 assert.match(handoff, /client-main.*protected=false/);
 assert.match(handoff, /## Historical handoff snapshot — 25 October 2026/);
 const p0ReleaseBatch = read('docs/P0-RELEASE-BATCH-B1-B3.md');
@@ -53,7 +59,7 @@ assert.match(
   /Authoritative integration baseline.*client-main.*75561d19e5f72f885c813152de122e7444801d70/,
 );
 assert.match(staging, /PR #208/);
-assert.match(staging, /PR #214 is the sole open PR targeting/);
+assert.match(staging, /There were no open PRs at the start of this audit/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(staging, /PR #210 remains open and diverged\/dirty/);
 assert.match(handoff, /Verified integration baseline.*e97c4e080b3f6903e16ef77f571822f9844faeed/);
@@ -64,7 +70,7 @@ assert.match(
 );
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(handoff, /Checkpoint finalization defect/);
-assert.match(handoff, /PR #214 is the sole active follow-up for monitor checkpoint finalization/);
+assert.match(handoff, /No open PR existed when this batch was selected/);
 assert.match(handoff, /GITHUB_EVENT_PATH/);
 assert.match(handoff, /PRs #209–#213 are merged/);
 assert.match(handoff, /PR #213 merged at this commit/);
@@ -87,7 +93,7 @@ assert.match(onboarding, /If setup fails after writes begin/);
 assert.doesNotMatch(appsScriptRunbook, /their emails and PINs must be distinct/i);
 assert.doesNotMatch(onboarding, /non-shared PINs/i);
 assert.match(onboarding, /non-shared passwords/i);
-assert.match(onboarding, /Repository visibility is now.*private/i);
+assert.match(onboarding, /Repository visibility.*public/i);
 assert.match(onboarding, /CV_API_URL/);
 assert.match(onboarding, /CV_ENVIRONMENT.*staging/i);
 assert.match(ux, /forced-password-change dialog/i);
@@ -104,10 +110,11 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
+assert.match(executionPlan, /Current integration SHA.*75561d19e5f72f885c813152de122e7444801d70/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
-assert.match(executionPlan, /PR #214 is the only open PR targeting/);
+assert.match(executionPlan, /Open PRs at batch start/);
 assert.doesNotMatch(executionPlan, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(executionPlan, /PR #210 still requires base reconciliation/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);

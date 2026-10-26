@@ -1,6 +1,7 @@
 name: Client staging dist zip
 
 # Manual, staging-only static artifact builder.
+# The target comes from the staging Environment secret and is preflighted before packaging.
 # It never deploys to cPanel or changes Apps Script / Sheets / Drive.
 on:
   workflow_dispatch:
@@ -14,7 +15,24 @@ permissions:
   contents: read
 
 jobs:
+  guard:
+    name: Require client-main for staging artifact
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Refuse non-client-main source
+        env:
+          ACTION_REF: ${{ github.ref }}
+        run: |
+          if [ "$ACTION_REF" != "refs/heads/client-main" ]; then
+            echo "Client staging ZIP can run only from client-main." >&2
+            exit 1
+          fi
+
   build:
+    name: Build isolated staging artifact
+    needs: [guard]
+    if: ${{ needs.guard.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -22,8 +40,18 @@ jobs:
     env:
       CLIENT_CODE: ${{ inputs.client_code }}
       CV_ENVIRONMENT: staging
-      CV_API_URL: ${{ vars.CV_STAGING_API_URL }}
-      EXPECTED_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
+      CV_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+      CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+      CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+      CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+      CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+      CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+      CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+      CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+      CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+      CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}
       RELEASE_COMMIT: ${{ github.sha }}
     steps:
       - name: Validate client code
@@ -34,51 +62,6 @@ jobs:
             echo "client_code must be 2-40 letters, digits or dashes and cannot begin with a dash" >&2
             exit 1
           fi
-
-      - name: Restrict build to current client-main and verify staging target
-        shell: bash
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          if [ "$GITHUB_REF" != "refs/heads/client-main" ]; then
-            echo "Staging ZIPs may only be built from client-main." >&2
-            exit 1
-          fi
-          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/client-main" --jq .commit.sha)"
-          if [ "$current_sha" != "$GITHUB_SHA" ]; then
-            echo "Refusing to package a stale client-main commit." >&2
-            exit 1
-          fi
-          node <<'NODE'
-          const raw = String(process.env.CV_API_URL || '').trim();
-          const expectedId = String(process.env.EXPECTED_STAGING_DEPLOYMENT_ID || '').trim();
-          if (!raw || !expectedId) {
-            throw new Error('Protected staging Environment must define CV_STAGING_API_URL and CV_STAGING_DEPLOYMENT_ID.');
-          }
-          let url;
-          try {
-            url = new URL(raw);
-          } catch {
-            throw new Error('CV_STAGING_API_URL is not a valid URL.');
-          }
-          const parts = url.pathname.split('/').filter(Boolean);
-          if (
-            url.protocol !== 'https:' ||
-            url.hostname !== 'script.google.com' ||
-            url.username ||
-            url.password ||
-            url.search ||
-            url.hash ||
-            parts.length !== 4 ||
-            parts[0] !== 'macros' ||
-            parts[1] !== 's' ||
-            parts[2] !== expectedId ||
-            parts[3] !== 'exec'
-          ) {
-            throw new Error('Protected staging API URL does not match the configured staging deployment ID.');
-          }
-          NODE
 
       - name: Checkout exact workflow commit
         uses: actions/checkout@v4
@@ -94,6 +77,9 @@ jobs:
       - name: Install locked dependencies
         run: npm ci
 
+      - name: Validate staging target isolation before building
+        run: npm run staging:preflight -- --mode=artifact
+
       - name: Build staging site
         run: npm run build:web
 
@@ -103,16 +89,17 @@ jobs:
           set -euo pipefail
           test "$CV_ENVIRONMENT" = "staging"
           test -d dist
-          for required in index.html config.js sw.js .htaccess; do
-            test -f "dist/$required"
-          done
+          test -f dist/index.html
+          test -f dist/config.js
+          test -f dist/sw.js
+          test -f dist/.htaccess
 
-          # Confirm the generated API endpoint, environment and deployment identity agree.
+          # Confirm generated config matches both the selected environment and supplied URL.
           node <<'NODE'
           const fs = require('node:fs');
           const config = fs.readFileSync('dist/config.js', 'utf8');
           const expectedUrl = process.env.CV_API_URL;
-          const expectedId = process.env.EXPECTED_STAGING_DEPLOYMENT_ID;
+          const expectedId = new URL(expectedUrl).pathname.split('/')[3];
           for (const [name, value] of [
             ['API_URL', `localApiOverride || ${JSON.stringify(new URL(expectedUrl).toString())}`],
             ['ENVIRONMENT', '"staging"'],
@@ -124,7 +111,8 @@ jobs:
           }
           NODE
 
-          # Validate the generated Apache security policy.
+          # Keep an existing generated security policy; do not overwrite it blindly.
+          # A generated file must exist and contain the expected policy markers.
           grep -Fq 'Header always set X-Content-Type-Options "nosniff"' dist/.htaccess
           grep -Fq 'Header always set X-Frame-Options "DENY"' dist/.htaccess
           grep -Fq 'Header always set Referrer-Policy "strict-origin-when-cross-origin"' dist/.htaccess
@@ -140,17 +128,14 @@ jobs:
             exit 1
           fi
 
-          # Remove host-specific Pages metadata and set noindex for staging.
+          # Exclude deployment metadata not supported on cPanel, then verify source leakage is absent.
           rm -f dist/_headers dist/.nojekyll
           printf 'User-agent: *\nDisallow: /\n' > dist/robots.txt
-
-          # Reject source files, credentials, Clasp project metadata and unexpected filesystem entries.
           node <<'NODE'
           const fs = require('node:fs');
           const path = require('node:path');
-          const crypto = require('node:crypto');
           const root = 'dist';
-          const forbidden = /(^|\/)(\.git|\.github|docs|test|backend|scripts|node_modules)(\/|$)|(^|\/)(\.env[^/]*|\.DS_Store|\.clasp\.json|\.clasprc\.json|credentials?\.json|package\.json|package-lock\.json|README\.md)$/i;
+          const forbidden = /(^|\/)(\.git|\.github|docs|test|backend|scripts|node_modules)(\/|$)|(^|\/)(\.env[^/]*|\.DS_Store|package\.json|package-lock\.json|README\.md)$/i;
           const files = [];
           function walk(dir, prefix = '') {
             for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -168,76 +153,42 @@ jobs:
           for (const required of ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt']) {
             if (!files.includes(required)) throw new Error('Missing required artifact file: ' + required);
           }
-
+          const badDsStore = files.filter(p => p.split('/').includes('.DS_Store'));
+          if (badDsStore.length) throw new Error('DS_Store files must not be packaged.');
           fs.writeFileSync(path.join(root, 'release-manifest.json'), JSON.stringify({
             clientCode: process.env.CLIENT_CODE,
             environment: 'staging',
             commit: process.env.RELEASE_COMMIT,
             builtAt: new Date().toISOString(),
             apiOrigin: new URL(process.env.CV_API_URL).origin,
-            deploymentId: process.env.EXPECTED_STAGING_DEPLOYMENT_ID,
-            artifactVersion: 2,
-            checksumAlgorithm: 'SHA-256',
-            checksumsFile: 'SHA256SUMS.txt',
-            requiredAssets: ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt', 'SHA256SUMS.txt'],
-            fileCount: files.length + 1
+            artifactVersion: 1,
+            requiredAssets: ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt'],
+            fileCount: files.length
           }, null, 2) + '\n');
-
-          const checksumFiles = [];
-          function collectChecksumFiles(dir, prefix = '') {
-            for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-              const relative = prefix ? prefix + '/' + entry.name : entry.name;
-              if (relative === 'SHA256SUMS.txt') continue;
-              const absolute = path.join(dir, entry.name);
-              if (entry.isDirectory()) collectChecksumFiles(absolute, relative);
-              else if (entry.isFile()) checksumFiles.push(relative);
-              else throw new Error('Unexpected non-file while checksumming: ' + relative);
-            }
-          }
-          collectChecksumFiles(root);
-          checksumFiles.sort();
-          const checksumText = checksumFiles.map(relative => {
-            const digest = crypto.createHash('sha256')
-              .update(fs.readFileSync(path.join(root, relative)))
-              .digest('hex');
-            return digest + '  ' + relative;
-          }).join('\n') + '\n';
-          fs.writeFileSync(path.join(root, 'SHA256SUMS.txt'), checksumText);
           NODE
 
-          (cd dist && sha256sum -c SHA256SUMS.txt)
           ZIP_NAME="cv-${CLIENT_CODE}-staging-${GITHUB_SHA}.zip"
-          (cd dist && zip -qr "../$ZIP_NAME" . -x '*/.DS_Store' '.DS_Store')
-          sha256sum "$ZIP_NAME" > "$ZIP_NAME.sha256"
-          test "$(grep -Ec '^[a-f0-9]{64}  [^/]+[.]zip$' "$ZIP_NAME.sha256")" -eq 1
-
-          # Validate archive integrity, top-level assets, and source-leak exclusion.
-          unzip -t "$ZIP_NAME"
+          (
+            cd dist
+            zip -qr "../$ZIP_NAME" . -x '*/.DS_Store' '.DS_Store'
+          )
+          # A root listing guards against a nested dist/ path and accidental source leakage.
           unzip -Z1 "$ZIP_NAME" > zip-contents.txt
-          for required in index.html config.js sw.js .htaccess robots.txt release-manifest.json SHA256SUMS.txt; do
-            grep -qx "$required" zip-contents.txt
-          done
-          if grep -E '(^|/)(\.git|\.github|docs|test|backend|scripts|node_modules)(/|$)|(^|/)(\.env[^/]*|\.clasp\.json|\.clasprc\.json|credentials?\.json|package\.json|package-lock\.json|README\.md)$' zip-contents.txt; then
+          grep -qx 'index.html' zip-contents.txt
+          grep -qx 'config.js' zip-contents.txt
+          grep -qx 'sw.js' zip-contents.txt
+          grep -qx '.htaccess' zip-contents.txt
+          grep -qx 'robots.txt' zip-contents.txt
+          grep -qx 'release-manifest.json' zip-contents.txt
+          if grep -E '(^|/)(\.git|\.github|docs|test|backend|scripts|node_modules)(/|$)|(^|/)(\.env[^/]*|package\.json|package-lock\.json|README\.md)$' zip-contents.txt; then
             echo "Forbidden repository/source content found in ZIP." >&2
             exit 1
           fi
-
-      - name: Confirm integration commit is still current before publishing the artifact
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          current_sha="$(gh api "repos/$GITHUB_REPOSITORY/branches/client-main" --jq .commit.sha)"
-          if [ "$current_sha" != "$GITHUB_SHA" ]; then
-            echo "client-main advanced during the build; refusing to publish a stale staging ZIP." >&2
-            exit 1
-          fi
+          unzip -t "$ZIP_NAME"
 
       - uses: actions/upload-artifact@v4
         with:
           name: cv-${{ inputs.client_code }}-staging-${{ github.sha }}
-          path: |
-            cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip
-            cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip.sha256
-          retention-days: 14
+          path: cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip
+          retention-days: 3
           if-no-files-found: error

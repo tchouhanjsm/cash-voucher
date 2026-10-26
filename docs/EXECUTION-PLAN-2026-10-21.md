@@ -1,24 +1,20 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 26 October 2026 (current bulk-delivery checkpoint)
-**Integration branch:** client-main
-**Verified baseline:** 75561d19e5f72f885c813152de122e7444801d70 (PR #223 merge; exact-merge CI, Browser E2E, Full Flight Test and read-only monitor passed).
-**Active source PR:** #225 — Dashboard fail-closed response validation and staging artifact provenance/integrity, branch client/bulk-dashboard-staging-release-20261026; open and unmerged at this checkpoint.
-**Release state:** exact-head source checks and owner review for PR #225 are not assumed complete. Static package generation is gated by the protected staging Environment. Live staging resources, backup/restore, actual host headers and customer acceptance are not verified.
+**Updated:** 26 October 2026 15:04 IST (live-source audit)  
+**Integration branch:** `client-main`; `main` remains legacy/read-only.  
+**Current integration SHA:** `75561d19e5f72f885c813152de122e7444801d70` (PR #223 merged).  
+**Open PRs at batch start:** none. One cohesive source batch is being prepared on `client/staging-artifact-isolation-20261026`; it targets `client-main` and must not be merged until exact-head validation and human review are complete.
 
-## Current checkpoint — 26 October 2026
+## Current checkpoint — staging isolation first
 
-- **Integrated baseline evidence:** [CI / Quality #40299960269](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960269), [Browser E2E #40299960457](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960457), [Full Flight Test #40299960312](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960312) and [Autonomous Development Monitor #40299960297](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960297) passed on the same PR #223 merge commit 75561d19e5f72f885c813152de122e7444801d70.
-- **Dashboard:** validate server financial amounts, counters, date interval, time-series rows and group breakdowns before showing totals. Malformed payloads remain in an explicit unavailable state rather than rendering zero-like figures.
-- **Static staging artifact:** obtain the endpoint and deployment ID from the protected GitHub staging Environment. Require client-main to be current before and after the build. The ZIP includes a release manifest, SHA-256 inventory and detached archive checksum with 14-day artifact retention. Build is artifact-only; it does not publish to cPanel or deploy Apps Script.
-- **Next gates:** exact-head CI / Quality, Browser E2E and Full Flight Test for PR #225; owner review/merge; verify staging Environment values and isolated Google resource identities; then create the latest staging artifact. The source workflow does not run Clasp push or cPanel publication.
-- **Operator procedure:** see [DELIVERY-PHASE-2026-10-26-BULK.md](DELIVERY-PHASE-2026-10-26-BULK.md). No production deployment/migration or write-capable UAT is authorized here.
-
----
+- Exact current-head checks: [CI / Quality #40299960269](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960269), [Browser E2E #40299960457](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960457), [Full Flight Test #40299960312](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960312), and [Autonomous Development Monitor #40299960297](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960297) all passed on `75561d19e5f72f885c813152de122e7444801d70`.
+- First implementation priority: make the staging ZIP target non-user-selectable at dispatch, validate staging-vs-production identity before packaging, and keep resource IDs out of unmasked public workflow logs. The workflow will use the dedicated `staging` Environment secrets and an artifact-only preflight.
+- Governance remains blocked: `client-main` is unprotected, the only active ruleset targets `main`, only `quality` is required, and approving-review count is zero. Owner/admin action is required; this plan does not change repository settings.
+- The last staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight because production reference IDs were missing and the Clasp credential document was rejected. No deployment or live UAT ran. Do not retry unchanged configuration.
+- The last ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) used stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`; no published release is recorded.
+- After the source PR is reviewed, the owner must migrate staging/production reference IDs and the staging API URL into the `staging` Environment secrets, verify the environment's `client-main` branch restriction and reviewer protection, then separately authorize guarded staging UAT. Real isolated restore, live security/authorization, offline/reconnect and intended-device/customer acceptance remain mandatory. No live resource operation is authorized here.
 
 ## Historical execution-plan snapshot — 25 October 2026
-
-Pre-sync 25 October snapshot: PR #214 is the only open PR targeting `client-main`; historical only.
 
 ## Executive decision
 

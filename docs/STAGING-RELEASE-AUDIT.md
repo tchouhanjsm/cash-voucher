@@ -1,30 +1,32 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 26 October 2026 (current batch checkpoint)
-**Authoritative integration baseline:** client-main 75561d19e5f72f885c813152de122e7444801d70, after PR #223 merged.
-**Legacy branch:** main (read-only; do not reconcile branches blindly).
-**Scope:** source/workflow audit and release preparation, not live deployment, restore or customer acceptance.
+**Audit date:** 26 October 2026 15:04 IST (live-source audit)  
+**Authoritative integration baseline:** `client-main` `75561d19e5f72f885c813152de122e7444801d70`, following merged PR #223.  
+**Legacy branch:** `main` (read-only by engineering policy).  
+**Scope:** source/workflow audit only; no live deployment, restore, customer acceptance or production operation was performed.
+
+## Current release decision
+
+Source validation is green on the exact current integration SHA, but the release is **BLOCKED**. There were no open PRs at the start of this audit. The next single implementation batch is staging artifact target isolation and confidentiality of workflow resource identifiers.
+
+- **Exact-head source evidence:** [CI / Quality #40299960269](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960269), [Browser E2E #40299960457](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960457), [Full Flight Test #40299960312](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960312), and [Autonomous Development Monitor #40299960297](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40299960297) all passed on `75561d19e5f72f885c813152de122e7444801d70`. Issue #212 records that SHA and the three source checks.
+- **Governance:** `client-main` reports `protected=false`; ruleset #24624368 targets only `main`, requires only `quality`, and requires zero approvals. The classic protection endpoint returns 403 to this integration. Owner/admin must correct and verify `client-main` rules; this PR does not alter settings.
+- **Isolation and log confidentiality:** the current ZIP workflow accepts a free-form API URL and packages it without the existing target-isolation preflight. Staging workflows also read resource IDs from unmasked variables, which are printed in public Actions logs. The proposed source change uses `staging` Environment secrets, removes the URL input, and adds `--mode=artifact` preflight before packaging. The owner must migrate configuration privately before the workflow can pass.
+- **Staging UAT:** [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed at isolated deployment configuration because production resource references were empty and the Clasp credentials document was missing/invalid to the validator. Deployment, target recheck and live UAT were skipped. The Playwright DNS messages were transient and not the decisive failure. Do not retry until configuration is corrected.
+- **Staging ZIP:** [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`; do not deploy it. No published release is recorded.
+- **Outstanding operational gates:** verified staging identity, protected Environment, live response headers and role/receipt authorization, a real backup and witnessed restore into a separate destination, offline/reconnect, print/PDF, accessibility, intended-device testing and customer acceptance remain unverified. Production remains untouched.
+
+## Historical audit snapshot — 25 October 2026
 
 ## Executive status
 
-PR #223 merged at 75561d19e5f72f885c813152de122e7444801d70; its exact-merge CI, Browser E2E, Full Flight Test and autonomous monitor passed. PR #225 is the active, open batch covering fail-closed Dashboard summary validation and staging ZIP provenance/integrity. Its required exact-head checks and owner review are not assumed complete.
+PR #213 is the latest merged documentation/checkpoint baseline on `client-main` at `e97c4e080b3f6903e16ef77f571822f9844faeed`. The latest recorded exact integration evidence is [CI / Quality #40206481359](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481359), [Browser E2E #40206481344](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481344), and [Full Flight Test #40206481349](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40206481349). Monitor run #40206481372 completed but captured an intermediate snapshot before those checks finished. The current monitor fix is open as PR #214; source/mock validation is not live release evidence.
 
-The static ZIP workflow uses the protected GitHub staging Environment's CV_STAGING_API_URL and CV_STAGING_DEPLOYMENT_ID, checks the identities agree, only packages the live client-main tip, and produces a per-file SHA-256 inventory plus detached ZIP checksum. It remains artifact-only: it does not deploy to cPanel or push Apps Script. A fresh staging ZIP must wait until PR #225 is merged and the dedicated staging values are privately verified.
+The branch policy names `client-main` as the only integration branch and `main` as legacy/read-only. Live ruleset #24624368 includes only `~DEFAULT_BRANCH` (`main`), requires only `quality`, and sets required approvals to zero. The `client-main` branch API reports `protected=false`; the classic branch-protection endpoint returned 403 `Resource not accessible by integration`. Repository metadata confirms `allow_auto_merge=true`, but repository-level auto-merge availability is not branch protection. Owner/admin must extend the active ruleset to `client-main` and verify the intended required checks and approval before considering PR-level auto-merge.
 
-**Live release is still blocked.** Dedicated staging Script/Sheet/receipt/backup resources, protected Environment configuration and credentials, live role/receipt authorization, current host security headers, backup and restore into a separate destination, real-device offline/print/accessibility acceptance, and customer acceptance have not been proven by source CI. Earlier staging preflight failures and stale ZIP details below are historical, not a new run. Production remains excluded.
+Dedicated staging resources, protected staging Environment, a real deployed staging frontend, successful live UAT, support-email delivery, real backup/restore, physical-device acceptance and customer acceptance are not evidenced as complete. Verify that the static-host integration builds the intended branch and environment; repository visibility is currently public. The product remains single-property, not multi-tenant.
 
-## Current release sequence
-
-1. Review and merge PR #225 only after CI / Quality, Browser E2E and Full Flight Test pass on the exact final PR SHA.
-2. Verify the protected staging Environment contains the approved staging URL and deployment ID, matched to the intended isolated Script project and distinct from production. Keep IDs and credentials private.
-3. Dispatch the manual Client staging ZIP workflow from client-main. Download the ZIP and detached .sha256 sidecar from the same artifact. Verify the archive checksum and embedded release-manifest.json / SHA256SUMS.txt before extraction into the **staging** cPanel document root. Keep a rollback copy first.
-4. Deploy reviewed backend source only through guarded staging Clasp after resource isolation and credentials pass preflight. Static asset publication and Apps Script deployment are separate operations.
-5. Run staging UAT only under STAGING-ONLY. The write-capable flow adds/cancels one tagged INR 10,000 test payment and requires explicit staging-write consent. Validation-only is not live UAT.
-6. Back up and restore into a separate recovery destination; test owner/manager/staff/accountant roles, receipts, offline/reconnect, print/PDF, headers, keyboard/zoom/screen-reader and customer acceptance before a pilot.
-
----
-
-## Historical checkpoint — 25 October 2026 23:56 IST (pre-sync evidence snapshot)
+## Current checkpoint — 25 October 2026 23:56 IST (pre-sync evidence snapshot)
 
 - **Open PR queue:** PRs #209–#213 are merged. PR #214 is the sole open PR targeting [`client-main`](https://github.com/tchouhanjsm/cash-voucher/pull/214), based on `e97c4e080b3f6903e16ef77f571822f9844faeed`. The last code-validated pre-sync head was `df9d2a01adae93e305c530eae1635079137adcd6`; this documentation sync advances the head, so read live PR metadata for the current SHA and comparison. GitHub previously reported it open, non-draft and mergeable. No review or inline review thread was submitted; PR-level auto-merge was not requested.
 - **Pre-sync exact-head source checks:** On source head `df9d2a01adae93e305c530eae1635079137adcd6`, [CI / Quality #40217235001](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40217235001) passed (298 backend checks); [Browser E2E #40217234948](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40217234948) passed (975 checks, 0 failures); [Full Flight Test #40217234947](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40217234947) passed the same-head CI/E2E gate; [Autonomous Development Monitor #40217235113](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40217235113) passed read-only observation. Expected PR-event skips were not failures. This documentation-only synchronization creates a new PR head; these prior runs do not validate that head. Read the live PR description and exact-head runs for final post-sync conclusions.

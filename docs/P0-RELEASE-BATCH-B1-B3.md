@@ -1,8 +1,13 @@
 # P0 Release Batch — B1, B2 and B3
 
 **Integration target:** `client-main`  
-**Source baseline for this batch:** PR #204 merge `aa37d94819e59a72c797ba36839aa8f8ec94008f`  
+**Original design baseline for B1–B3:** PR #204 merge `aa37d94819e59a72c797ba36839aa8f8ec94008f`  
+**Current integration baseline:** `75561d19e5f72f885c813152de122e7444801d70` (PR #223 merged)  
 **Purpose:** complete one coherent release-readiness batch spanning staging identity, schema/recovery safety, and security/device acceptance. This document is a plan and evidence checklist; it does not attest that an external operation has already run.
+
+## Current gate checkpoint — 26 October 2026
+
+The next source batch hardens staging artifact target isolation: the client ZIP workflow must use the `staging` Environment secret for its API URL and run artifact-mode preflight before packaging. The repository is public, so resource IDs must not be emitted from unmasked workflow variables. This source change does not verify live staging, perform a restore, or discharge device/customer acceptance. Owner/admin must separately correct `client-main` governance and privately provision the required Environment secrets.
 
 ## Scope
 
@@ -12,7 +17,7 @@
 - Validate the supported Node version, locked dependencies, source checks, browser E2E, dependency policy and exact source SHA.
 - Verify the local `.clasp.json` identifies the dedicated staging Script project and `rootDir: "backend"`; verify the Script's bound Sheet, Script Properties, receipt folder, backup folder, deployment ID and `/exec` URL in the Apps Script editor.
 - Upload backend source only after target confirmation and owner authorization. Update the already verified deployment; do not create a parallel deployment or change the URL silently.
-- Run the manual Client staging dist ZIP workflow on `client-main` with client code `cash-voucher` and the verified staging `/exec` URL.
+- Dispatch the manual Client staging dist ZIP workflow on `client-main` with client code `cash-voucher`. The workflow reads the endpoint from the `staging` Environment secret and runs artifact-mode target-isolation preflight before packaging; no free-form API URL is accepted.
 - Inspect the downloaded artifact's root entries, `config.js`, `release-manifest.json` commit and ZIP integrity. Upload only to the verified staging document root after taking a backup.
 - Run the guarded staging UAT workflow only after staging and production resource identity is independently verified.
 - Treat a dashboard response of `Unknown action` for `dashboardSummary` as a client/backend contract or target-identity failure: this action is present in the repository route registry, so verify the generated staging `CV_API_URL`, deployment ID and the source version actually deployed in that same Apps Script project. Do not use partial bootstrap data as a financial-total fallback; keep totals hidden until the staging route responds correctly.

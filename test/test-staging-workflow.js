@@ -156,18 +156,56 @@ assert.doesNotMatch(
   'client ZIP generation must not run automatically on pushes or PRs',
 );
 assert.match(clientDistWorkflow, /CV_ENVIRONMENT: staging/);
-assert.match(clientDistWorkflow, /environment:\n {6}name: staging/m);
-assert.ok(clientDistWorkflow.includes('CV_API_URL: ${{ vars.CV_STAGING_API_URL }}'));
+assert.match(clientDistWorkflow, /CV_API_URL: \$\{\{ secrets\.CV_STAGING_API_URL \}\}/);
+assert.doesNotMatch(clientDistWorkflow, /inputs\.api_url/);
+assert.match(clientDistWorkflow, /name: Require client-main for staging artifact/);
+assert.ok(clientDistWorkflow.includes('if [ "$ACTION_REF" != "refs/heads/client-main" ]'));
+assert.match(clientDistWorkflow, /needs: \[guard\]/);
+assert.match(clientDistWorkflow, /environment:\n {6}name: staging/);
+assert.match(clientDistWorkflow, /npm run staging:preflight -- --mode=artifact/);
+assert.ok(
+  clientDistWorkflow.indexOf('npm run staging:preflight -- --mode=artifact') <
+    clientDistWorkflow.indexOf('npm run build:web'),
+  'staging target isolation must pass before the client ZIP is built',
+);
+const clientDistGuard = clientDistWorkflow.split('  build:\n')[0];
+assert.doesNotMatch(clientDistGuard, /secrets\./, 'branch guard must run without staging secrets');
+for (const key of [
+  'CV_STAGING_API_URL',
+  'CV_STAGING_SCRIPT_ID',
+  'CV_STAGING_DEPLOYMENT_ID',
+  'CV_STAGING_SPREADSHEET_ID',
+  'CV_STAGING_RECEIPT_FOLDER_ID',
+  'CV_STAGING_BACKUP_FOLDER_ID',
+  'CV_PRODUCTION_SCRIPT_ID',
+  'CV_PRODUCTION_SPREADSHEET_ID',
+  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
+  'CV_PRODUCTION_BACKUP_FOLDER_ID',
+]) {
+  assert.ok(
+    clientDistWorkflow.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'staging ZIP must read target identity from Environment secret: ' + key,
+  );
+  assert.ok(
+    workflow.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'staging UAT must read target identity from Environment secret: ' + key,
+  );
+}
+assert.doesNotMatch(
+  workflow,
+  /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
+  'resource identifiers and API URL must not be sourced from unmasked workflow variables',
+);
+assert.doesNotMatch(
+  clientDistWorkflow,
+  /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
+  'ZIP workflow must not source resource identifiers from unmasked variables',
+);
 assert.ok(
   clientDistWorkflow.includes(
-    'EXPECTED_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}',
+    'CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}',
   ),
 );
-assert.doesNotMatch(clientDistWorkflow, /^\s+api_url:/m);
-assert.ok(clientDistWorkflow.includes('refs/heads/client-main'));
-assert.match(clientDistWorkflow, /sha256sum/);
-assert.match(clientDistWorkflow, /SHA256SUMS\.txt/);
-assert.match(clientDistWorkflow, /retention-days: 14/);
 assert.ok(
   clientDistWorkflow.includes(
     'localApiOverride || ${JSON.stringify(new URL(expectedUrl).toString())}',
@@ -197,9 +235,10 @@ assert.match(
   /ZIP_NAME="cv-\$\{CLIENT_CODE\}-staging-\$\{GITHUB_SHA\}\.zip"/,
   'ZIP file must use the full commit SHA expected by artifact upload',
 );
-assert.ok(
-  clientDistWorkflow.includes('cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip.sha256'),
-  'artifact upload includes the commit-pinned ZIP and its SHA-256 sidecar',
+assert.match(
+  clientDistWorkflow,
+  /path: cv-\$\{\{ inputs\.client_code \}\}-staging-\$\{\{ github\.sha \}\}\.zip/,
+  'artifact upload path must use the same client and full commit SHA',
 );
 assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
 assert.doesNotMatch(

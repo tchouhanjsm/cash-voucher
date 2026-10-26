@@ -10,7 +10,7 @@
 
 - The mainline contains the Cash Voucher PWA and split Google Apps Script backend source.
 - GitHub repository: `tchouhanjsm/cash-voucher`; default branch `main`.
-- Repository visibility is now **private**. Verify the existing/static host can still read the repository before triggering a rebuild or changing DNS. If host access was lost, reconnect the operator-owned deployment integration; never make the repository public merely to restore a build.
+- Live GitHub metadata currently reports repository visibility as **public**. Treat Actions logs and artifacts as publicly visible; do not put resource IDs or credentials in workflow inputs, unmasked variables, PR text or chat. Verify that the static host builds the intended `client-main` commit and publishes only generated `dist/`; public repository access alone does not prove the target environment is correct.
 - The root `config.js` already contains an Apps Script URL, but the project, Sheet, deployment version, data owner and live backup status behind that URL have not been independently verified. **Do not reuse that URL for a new customer.**
 - Mock tests and source code do not prove that a real customer's Google resources, authentication, backup, restore, hosting or customer link work.
 - The customer business name, customer-owner email and new Google/hosting resource identities still need to be entered in the private operator register.
@@ -34,7 +34,7 @@ Do not share a customer's Sheet, receipt folder or backup folder with another cu
 
 - [ ] Use a business-managed Google account that will remain under the product owner's control for Apps Script execution, Sheets, Drive, receipts and backups. Enable two-step verification and verify recovery access.
 - [ ] Keep Clasp authentication and `.clasp.json` local or in a protected deployment environment. Never commit `.clasprc.json`, OAuth tokens, passwords/temporary credentials or live Script/Sheet/Drive identifiers.
-- [ ] Verify or provision the static host's private GitHub integration and prove it can build the private repository using the configured environment variables. The published output must be only `dist/`.
+- [ ] Verify the static host integration builds the intended `client-main` commit with the intended staging configuration. The repository is currently public, so access alone is not evidence of target correctness. The published output must be only `dist/`.
 - [ ] Confirm URL/DNS continuity before changing its origin or removing an old host. Keep the source and deployment accounts private; public repository copies made before the visibility change cannot be recalled.
 
 ## B. Create the customer's Google resources

@@ -54,7 +54,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   let productionApiUrl = '';
   let productionDeploymentId = '';
 
-  if (!['uat', 'deploy'].includes(mode)) {
+  if (!['uat', 'deploy', 'artifact'].includes(mode)) {
     errors.push('Unsupported preflight mode.');
   }
 
@@ -181,32 +181,37 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     );
   }
 
-  const ownerEmail = String(env.CV_STAGING_UAT_OWNER_EMAIL || '')
-    .trim()
-    .toLowerCase();
-  const managerEmail = String(env.CV_STAGING_UAT_MANAGER_EMAIL || '')
-    .trim()
-    .toLowerCase();
-  const ownerPassword = String(env.CV_STAGING_UAT_OWNER_PASSWORD || '');
-  const managerPassword = String(env.CV_STAGING_UAT_MANAGER_PASSWORD || '');
+  let ownerEmail = '';
+  let managerEmail = '';
+  let ownerPassword = '';
+  let managerPassword = '';
+  if (mode !== 'artifact') {
+    ownerEmail = String(env.CV_STAGING_UAT_OWNER_EMAIL || '')
+      .trim()
+      .toLowerCase();
+    managerEmail = String(env.CV_STAGING_UAT_MANAGER_EMAIL || '')
+      .trim()
+      .toLowerCase();
+    ownerPassword = String(env.CV_STAGING_UAT_OWNER_PASSWORD || '');
+    managerPassword = String(env.CV_STAGING_UAT_MANAGER_PASSWORD || '');
 
-  if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
-    errors.push('A valid dedicated staging owner email is required.');
+    if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
+      errors.push('A valid dedicated staging owner email is required.');
+    }
+    if (!/^\S+@\S+\.\S+$/.test(managerEmail)) {
+      errors.push('A valid dedicated staging manager email is required.');
+    }
+    if (ownerEmail && managerEmail && ownerEmail === managerEmail) {
+      errors.push('The staging owner and manager UAT accounts must be different accounts.');
+    }
+    if (!isStrongPassword(ownerPassword))
+      errors.push('The staging owner UAT password must be 8–128 characters.');
+    if (!isStrongPassword(managerPassword))
+      errors.push('The staging manager UAT password must be 8–128 characters.');
+    if (ownerPassword && managerPassword && ownerPassword === managerPassword) {
+      errors.push('Use different passwords for the staging owner and manager UAT accounts.');
+    }
   }
-  if (!/^\S+@\S+\.\S+$/.test(managerEmail)) {
-    errors.push('A valid dedicated staging manager email is required.');
-  }
-  if (ownerEmail && managerEmail && ownerEmail === managerEmail) {
-    errors.push('The staging owner and manager UAT accounts must be different accounts.');
-  }
-  if (!isStrongPassword(ownerPassword))
-    errors.push('The staging owner UAT password must be 8–128 characters.');
-  if (!isStrongPassword(managerPassword))
-    errors.push('The staging manager UAT password must be 8–128 characters.');
-  if (ownerPassword && managerPassword && ownerPassword === managerPassword) {
-    errors.push('Use different passwords for the staging owner and manager UAT accounts.');
-  }
-
   if (mode === 'deploy') {
     if (String(env.CV_STAGING_DEPLOY_CONFIRMATION || '') !== 'STAGING-ONLY') {
       errors.push('Deployment requires the explicit STAGING-ONLY confirmation.');
@@ -260,9 +265,10 @@ function validateStagingConfiguration(env = process.env, options = {}) {
         stagingUrl.hostname === 'script.google.com' &&
         stagingUrl.pathname ===
           '/macros/s/' + String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec',
-      dedicatedUatAccountsPresent: Boolean(
-        ownerEmail && managerEmail && ownerPassword && managerPassword,
-      ),
+      dedicatedUatAccountsPresent:
+        mode === 'artifact'
+          ? null
+          : Boolean(ownerEmail && managerEmail && ownerPassword && managerPassword),
     },
   };
 }
@@ -291,7 +297,13 @@ function main() {
       'Production Script/Sheet/Drive IDs were not provided; full resource isolation relies on the explicit owner attestation.',
     );
   }
-  console.log('Staging URL shape and dedicated owner/manager UAT credentials are valid.');
+  if (mode === 'artifact') {
+    console.log(
+      'Artifact target URL and resource-isolation preflight passed; no UAT accounts or remote writes were tested.',
+    );
+  } else {
+    console.log('Staging URL shape and dedicated owner/manager UAT credentials are valid.');
+  }
   if (mode === 'deploy') {
     console.log('Clasp OAuth configuration is present; credential values are not printed.');
   }
