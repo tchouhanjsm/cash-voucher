@@ -410,10 +410,7 @@ export function createDashboard({ api }) {
       Number.isSafeInteger(summary.receiptCount) && summary.receiptCount >= 0;
     const receiptCount = receiptCountValid ? summary.receiptCount : 0;
     const periodIsEmpty =
-      paymentCountValid &&
-      receiptCountValid &&
-      paymentCount === 0 &&
-      receiptCount === 0;
+      paymentCountValid && receiptCountValid && paymentCount === 0 && receiptCount === 0;
     const validPaymentCount = Number.isSafeInteger(summary.validPaymentCount)
       ? summary.validPaymentCount
       : 0;
@@ -530,7 +527,9 @@ export function createDashboard({ api }) {
         ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>`
         : '');
 
-    const financialPanels = periodIsEmpty ? '' : `
+    const financialPanels = periodIsEmpty
+      ? ''
+      : `
       <div class="stats dashboard-stats">
         <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
