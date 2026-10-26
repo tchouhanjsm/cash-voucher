@@ -193,12 +193,12 @@ for (const key of [
 }
 assert.doesNotMatch(
   workflow,
-  /vars\\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
+  /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
   'resource identifiers and API URL must not be sourced from unmasked workflow variables',
 );
 assert.doesNotMatch(
   clientDistWorkflow,
-  /vars\\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
+  /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
   'ZIP workflow must not source resource identifiers from unmasked variables',
 );
 assert.ok(
