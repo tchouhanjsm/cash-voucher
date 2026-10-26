@@ -31,16 +31,44 @@ def check(condition, message):
         ok += 1
 
 
+def click_route_button(page, button):
+    dirty_draft = page.evaluate(
+        """() => {
+          const form = document.querySelector('#nf');
+          return Boolean(
+            form
+              && form.isConnected
+              && !form.classList.contains('hidden')
+              && !form.closest('.hidden')
+              && form.dataset.unsavedWork === 'true'
+              && !form.querySelector('#nsave')?.disabled
+          );
+        }"""
+    )
+    if not dirty_draft:
+        button.click()
+        return
+
+    def handle_dialog(dialog):
+        if dialog.type == 'confirm' and dialog.message.startswith(
+            'This voucher draft has unsaved changes.'
+        ):
+            dialog.accept()
+        else:
+            dialog.dismiss()
+
+    page.on('dialog', handle_dialog)
+    try:
+        button.click()
+    finally:
+        page.remove_listener('dialog', handle_dialog)
+
+
 def go_view(page, view):
     """Navigate through the visible mobile shortcut or the accessible More sheet."""
     shortcut = page.locator(f'#nav [data-v="{view}"]')
     if shortcut.count() == 1 and shortcut.is_visible():
-        dirty_draft = page.evaluate(
-            "() => document.querySelector('#nf')?.dataset.unsavedWork === 'true'"
-        )
-        if dirty_draft:
-            page.once('dialog', lambda dialog: dialog.accept())
-        shortcut.click()
+        click_route_button(page, shortcut)
         return
 
     more_button = page.locator('#mobileMoreBtn')
@@ -52,13 +80,7 @@ def go_view(page, view):
     if overflow_item.count() != 1:
         page.keyboard.press('Escape')
         raise AssertionError(f'Navigation item {view!r} is not available in More.')
-
-    dirty_draft = page.evaluate(
-        "() => document.querySelector('#nf')?.dataset.unsavedWork === 'true'"
-    )
-    if dirty_draft:
-        page.once('dialog', lambda dialog: dialog.accept())
-    overflow_item.click()
+    click_route_button(page, overflow_item)
 
 
 png = base64.b64decode(
