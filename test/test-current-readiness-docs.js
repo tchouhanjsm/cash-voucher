@@ -26,7 +26,10 @@ assert.match(
   handoff,
   /exact-head CI \/ Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor passed/,
 );
-assert.match(handoff, /Current phase.*Staging artifact target-isolation and public workflow-log confidentiality/);
+assert.match(
+  handoff,
+  /Current phase.*Staging artifact target-isolation and public workflow-log confidentiality/,
+);
 assert.match(handoff, /PR #223 merged/);
 assert.match(handoff, /client-main.*protected=false/);
 assert.match(handoff, /## Historical handoff snapshot — 25 October 2026/);
