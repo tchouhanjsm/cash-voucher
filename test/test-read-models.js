@@ -134,11 +134,7 @@ assert.ok(
 );
 
 const dailyOperations = g.call('dailyOperationsSummary', { token: owner });
-assert.equal(
-  dailyOperations.ok,
-  true,
-  'owner daily-operations read model succeeds',
-);
+assert.equal(dailyOperations.ok, true, 'owner daily-operations read model succeeds');
 assert.equal(
   dailyOperations.data.date,
   date,
@@ -154,11 +150,7 @@ assert.equal(
   1,
   'daily-operations summary counts pending approval exceptions',
 );
-assert.equal(
-  dailyOperations.data.readyToClose,
-  false,
-  'blocked daily close never reports ready',
-);
+assert.equal(dailyOperations.data.readyToClose, false, 'blocked daily close never reports ready');
 assert.equal(
   Object.prototype.hasOwnProperty.call(dailyOperations.data, 'includedVouchers'),
   false,
