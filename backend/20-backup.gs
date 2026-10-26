@@ -739,7 +739,7 @@ function backupIntegrityReport_(user) {
           Boolean(backupId) &&
           originalId !== backupId &&
           Boolean(name) &&
-          /^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z$/.test(createdAt) &&
+          /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(createdAt) &&
           isFinite(createdAtMs) &&
           new Date(createdAtMs).toISOString() === createdAt
         );
