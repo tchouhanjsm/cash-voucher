@@ -768,7 +768,11 @@ function backupIntegrityReport_(user) {
         }
       }
 
-      const manifestInspection = inspectReceiptManifest_(manifestRows, manifestReadable, receiptFiles);
+      const manifestInspection = inspectReceiptManifest_(
+        manifestRows,
+        manifestReadable,
+        receiptFiles,
+      );
 
       return {
         sheet: {
