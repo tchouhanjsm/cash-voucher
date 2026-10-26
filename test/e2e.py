@@ -571,14 +571,19 @@ with sync_playwright() as p:
             return
         from_date = request_data.get('from', '2026-10-20')
         to_date = request_data.get('to', '2026-10-26')
+        from_value = datetime.date.fromisoformat(from_date)
+        to_value = datetime.date.fromisoformat(to_date)
+        period_days = (to_value - from_value).days + 1
+        trend_monthly = period_days > 62
+        trend_key = to_date[:7] if trend_monthly else to_date
         payload = {
             'ok': True,
             'data': {
                 'from': from_date,
                 'to': to_date,
-                'periodDays': 7,
-                'trendMonthly': False,
-                'trend': [{'date': to_date, 'amount': 1250}],
+                'periodDays': period_days,
+                'trendMonthly': trend_monthly,
+                'trend': [{'date': trend_key, 'amount': 1250}],
                 'paid': 1250,
                 'previousPaid': 1000,
                 'paymentCount': 1,
@@ -4599,6 +4604,58 @@ with sync_playwright() as p:
         and page.locator('#view svg.chart').count() == 1
         and page.locator('#view .hb').count() > 0,
         'dashboard restores KPIs and charts after a valid voucher collection returns',
+    )
+
+    # A malformed dashboard summary must never degrade into zero-like financial KPIs.
+    dashboard_summary_fault = {'field': 'paid'}
+
+    def inject_invalid_dashboard_summary(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {})
+        if dashboard_summary_fault['field'] == 'paid':
+            data['paid'] = 'NaN'
+        else:
+            data['trend'] = None
+        route.fulfill(response=response, json=payload)
+
+    page.route('**/api?*', inject_invalid_dashboard_summary)
+    for invalid_field in ('paid', 'trend'):
+        dashboard_summary_fault['field'] = invalid_field
+        with page.expect_response(
+            lambda response: '/api?' in response.url
+            and json.loads(response.request.post_data or '{}').get('action') == 'dashboardSummary'
+        ):
+            page.locator('#view [data-act=refresh]').click()
+        page.wait_for_function(
+            "document.querySelector('#view')?.innerText.includes('The server returned incomplete or invalid dashboard summary data.')"
+        )
+        invalid_summary_text = page.locator('#view').inner_text()
+        check(
+            'Dashboard totals unavailable' in invalid_summary_text
+            and 'Financial totals remain hidden.' in invalid_summary_text
+            and page.locator('#view .stats, #view svg.chart, #view .hb').count() == 0
+            and all(
+                label not in invalid_summary_text
+                for label in ('Total paid', 'Cash received', 'Book balance', 'Spending trend')
+            ),
+            f'malformed Dashboard {invalid_field} response hides financial totals and charts',
+        )
+    page.unroute('**/api?*', inject_invalid_dashboard_summary)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    go_view(page, 'dash')
+    page.wait_for_selector('.stats')
+    page.wait_for_selector('svg.chart')
+    check(
+        page.locator('#view .stats').count() == 1
+        and page.locator('#view svg.chart').count() == 1
+        and 'incomplete or invalid dashboard summary' not in page.locator('#view').inner_text().lower(),
+        'Dashboard recovers after the malformed summary fault is removed',
     )
 
     # Malformed bootstrap data must not produce invalid CSS geometry.

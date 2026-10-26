@@ -101,6 +101,121 @@ export function createDashboard({ api }) {
     );
   }
 
+  function dashboardSummaryIssue(summary, from, to) {
+    if (!summary || typeof summary !== 'object' || Array.isArray(summary)) return 'envelope';
+    if (summary.from !== from || summary.to !== to) return 'date range';
+
+    const startMs = Date.parse(from + 'T00:00:00Z');
+    const endMs = Date.parse(to + 'T00:00:00Z');
+    const periodDays = Math.round((endMs - startMs) / 864e5) + 1;
+    if (
+      !Number.isFinite(startMs) ||
+      !Number.isFinite(endMs) ||
+      !Number.isSafeInteger(periodDays) ||
+      periodDays < 1 ||
+      periodDays > 3660 ||
+      summary.periodDays !== periodDays
+    ) {
+      return 'period';
+    }
+    if (summary.trendMonthly !== (periodDays > 62)) return 'trend interval';
+
+    const amountFields = {
+      paid: false,
+      previousPaid: false,
+      received: false,
+      todayPaid: false,
+      bookBalance: true,
+    };
+    for (const [field, allowNegative] of Object.entries(amountFields)) {
+      const value = summary[field];
+      if (
+        typeof value !== 'number' ||
+        !Number.isFinite(value) ||
+        (!allowNegative && value < 0)
+      ) {
+        return field;
+      }
+    }
+
+    const countFields = [
+      'paymentCount',
+      'validPaymentCount',
+      'receiptCount',
+      'todayPaymentCount',
+      'approvalExceptionCount',
+      'invalidAmountCount',
+      'malformedRecordCount',
+      'malformedFieldCount',
+    ];
+    for (const field of countFields) {
+      if (!Number.isSafeInteger(summary[field]) || summary[field] < 0) return field;
+    }
+    if (summary.validPaymentCount > summary.paymentCount) return 'validPaymentCount';
+
+    if (summary.largest !== null) {
+      if (
+        !summary.largest ||
+        typeof summary.largest !== 'object' ||
+        Array.isArray(summary.largest) ||
+        typeof summary.largest.vendor !== 'string' ||
+        typeof summary.largest.amount !== 'number' ||
+        !Number.isFinite(summary.largest.amount) ||
+        summary.largest.amount < 0
+      ) {
+        return 'largest';
+      }
+    }
+
+    if (!Array.isArray(summary.trend) || summary.trend.length > 3660) return 'trend';
+    const startDate = from.slice(0, 10);
+    const endDate = to.slice(0, 10);
+    const startMonth = from.slice(0, 7);
+    const endMonth = to.slice(0, 7);
+    const trendKeys = new Set();
+    for (const row of summary.trend) {
+      if (!row || typeof row !== 'object' || Array.isArray(row)) return 'trend';
+      const key = row.date;
+      const validKey =
+        typeof key === 'string' &&
+        (summary.trendMonthly
+          ? /^\d{4}-(0[1-9]|1[0-2])$/.test(key) && key >= startMonth && key <= endMonth
+          : /^\d{4}-\d{2}-\d{2}$/.test(key) && key >= startDate && key <= endDate);
+      if (
+        !validKey ||
+        trendKeys.has(key) ||
+        typeof row.amount !== 'number' ||
+        !Number.isFinite(row.amount) ||
+        row.amount < 0
+      ) {
+        return 'trend';
+      }
+      trendKeys.add(key);
+    }
+
+    for (const field of ['topVendors', 'byCategory', 'byTeamMember']) {
+      const rows = summary[field];
+      if (!Array.isArray(rows) || rows.length > 10) return field;
+      for (const row of rows) {
+        if (
+          !row ||
+          typeof row !== 'object' ||
+          Array.isArray(row) ||
+          typeof row.k !== 'string' ||
+          !Number.isSafeInteger(row.n) ||
+          row.n < 0 ||
+          typeof row.s !== 'number' ||
+          !Number.isFinite(row.s) ||
+          row.s < 0
+        ) {
+          return field;
+        }
+      }
+    }
+
+    return '';
+  }
+
   let summaryRequestId = 0;
 
   function periodControls(from, to) {
@@ -379,6 +494,14 @@ export function createDashboard({ api }) {
         dailyOperationsRequest,
       ]);
       summary = results[0];
+      if (dashboardSummaryIssue(summary, from, to)) {
+        throw Object.assign(
+          new Error(
+            'The server returned incomplete or invalid dashboard summary data. Financial totals remain hidden. Refresh and retry; if this persists, verify that the frontend and Apps Script deployment are on compatible versions.',
+          ),
+          { code: 'BAD_SUMMARY' },
+        );
+      }
       if (results[1]) {
         dailyOperations = results[1].data || null;
         dailyOperationsError = results[1].error || null;
@@ -400,22 +523,20 @@ export function createDashboard({ api }) {
     if (requestId !== summaryRequestId || S.view !== 'dash') return;
 
     const length = summary.periodDays;
-    const total = finiteAmount(summary.paid) ?? 0;
-    const previousTotal = finiteAmount(summary.previousPaid) ?? 0;
+    const total = summary.paid;
+    const previousTotal = summary.previousPaid;
     const delta = previousTotal ? ((total - previousTotal) / previousTotal) * 100 : null;
     const paymentCountValid =
       Number.isSafeInteger(summary.paymentCount) && summary.paymentCount >= 0;
-    const paymentCount = paymentCountValid ? summary.paymentCount : 0;
+    const paymentCount = summary.paymentCount;
     const receiptCountValid =
       Number.isSafeInteger(summary.receiptCount) && summary.receiptCount >= 0;
-    const receiptCount = receiptCountValid ? summary.receiptCount : 0;
+    const receiptCount = summary.receiptCount;
     const periodIsEmpty =
       paymentCountValid && receiptCountValid && paymentCount === 0 && receiptCount === 0;
-    const validPaymentCount = Number.isSafeInteger(summary.validPaymentCount)
-      ? summary.validPaymentCount
-      : 0;
-    const received = finiteAmount(summary.received) ?? 0;
-    const approvalExceptionCount = Number(summary.approvalExceptionCount) || 0;
+    const validPaymentCount = summary.validPaymentCount;
+    const received = summary.received;
+    const approvalExceptionCount = summary.approvalExceptionCount;
     const invalidAmountCount = Math.max(
       Number(summary.invalidAmountCount) || 0,
       Number(diagnostics.invalidAmountCount) || 0,
@@ -533,18 +654,18 @@ export function createDashboard({ api }) {
       <div class="stats dashboard-stats">
         <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
-        <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(summary.largest?.amount || 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>
-        <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Today</span><b>${money(summary.todayPaid || 0)}</b><small class="muted">${Number(summary.todayPaymentCount) || 0} vouchers</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small></div>
         <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Cash received</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} entries · net ${money(received - total)}</small></div>
-        ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(summary.bookBalance || 0)}</b><small class="muted">opening balance + recorded receipts − approved recorded payments; not a physical cash count</small></div>` : ''}
+        ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(summary.bookBalance)}</b><small class="muted">opening balance + recorded receipts − approved recorded payments; not a physical cash count</small></div>` : ''}
       </div>
       ${dashboardWarnings}
-      <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend || [], from, to)}</div>
-      <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors || [])}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory || [])}</div></div>
+      <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend, from, to)}</div>
+      <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors)}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory)}</div></div>
       ${
         can('viewAll')
           ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(
-              (summary.byTeamMember || []).map((row) => ({ ...row, k: nm(row.k) })),
+              summary.byTeamMember.map((row) => ({ ...row, k: nm(row.k) })),
               10,
             )}</div>`
           : ''
