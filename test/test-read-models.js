@@ -133,6 +133,44 @@ assert.ok(
   'dashboard returns a compact server-aggregated trend rather than voucher details',
 );
 
+const dailyOperations = g.call('dailyOperationsSummary', { token: owner });
+assert.equal(dailyOperations.ok, true, 'owner daily-operations read model succeeds');
+assert.equal(
+  dailyOperations.data.date,
+  date,
+  'daily-operations summary uses the server business date',
+);
+assert.equal(
+  dailyOperations.data.status,
+  'BLOCKED',
+  'approval exceptions prevent a ready-to-close status',
+);
+assert.equal(
+  dailyOperations.data.pendingApprovalCount,
+  1,
+  'daily-operations summary counts pending approval exceptions',
+);
+assert.equal(
+  dailyOperations.data.readyToClose,
+  false,
+  'blocked daily close never reports ready',
+);
+assert.equal(
+  Object.prototype.hasOwnProperty.call(dailyOperations.data, 'includedVouchers'),
+  false,
+  'daily-operations card does not return the detailed voucher snapshot',
+);
+assert.equal(
+  Object.prototype.hasOwnProperty.call(dailyOperations.data, 'pendingApprovals'),
+  false,
+  'daily-operations card exposes counts instead of approval details',
+);
+assert.equal(
+  g.call('dailyOperationsSummary', { token: owner, date: 'not-a-date' }).code,
+  'VALIDATION',
+  'daily-operations endpoint rejects malformed business dates',
+);
+
 const malformedRecord = {
   VoucherID: 'malformed-read-model-voucher-id',
   VoucherNo: 99999,
@@ -362,6 +400,11 @@ const createStaff = g.call('saveUser', {
 });
 assert.equal(createStaff.ok, true, 'owner can create a staff fixture');
 const staff = loginAndRotate('read-model-staff@test.com', 'Staff#Start2026', 'Staff#Final2026');
+assert.equal(
+  g.call('dailyOperationsSummary', { token: staff }).code,
+  'FORBIDDEN',
+  'staff without cash-close permission cannot read the owner/manager daily-close summary',
+);
 assert.equal(
   g.call('checkVoucherDuplicates', { token: staff, type: 'PAYMENT', entries: [] }).code,
   'FORBIDDEN',

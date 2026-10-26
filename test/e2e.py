@@ -780,6 +780,23 @@ with sync_playwright() as p:
         and 'does not verify backups' in page.locator('#view .needs .needs-clear').inner_text(),
         'dashboard empty-attention state does not imply complete operational health',
     )
+    daily_close_card = page.locator('#view .daily-close-readiness')
+    check(
+        daily_close_card.count() == 1
+        and daily_close_card.get_attribute('data-status') in [
+            'CLOSED',
+            'READY_TO_CLOSE',
+            'BLOCKED',
+            'BLOCKED_BY_LATER_CLOSE',
+            'OPENING_CASH_REQUIRED',
+            'REVIEW_REQUIRED',
+        ]
+        and 'Business date:' in daily_close_card.inner_text()
+        and 'Cash in:' in daily_close_card.inner_text()
+        and 'Cash out:' in daily_close_card.inner_text()
+        and daily_close_card.locator('[data-act=goto][data-k=cashClose]').is_visible(),
+        'authorized dashboard shows live close status, cash movement summary and direct close navigation',
+    )
     check(
         page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
         'Dashboard exposes the create-permitted primary action in its page header',

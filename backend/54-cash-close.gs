@@ -424,6 +424,67 @@ function cashClosePreview_(user, req) {
     timeZone: CFG.TZ,
   };
 }
+function dailyOperationsSummary_(user, req) {
+  need_(user, 'cashClose');
+  const request = req || {};
+  const requestedDate = readModelDate_(request.date, 'business');
+  const preview = cashClosePreview_(user, { date: requestedDate || todayIso_(0) });
+  const closed = preview.closed === true;
+  const close = closed ? preview.close : null;
+  const pendingApprovals = Array.isArray(preview.pendingApprovals) ? preview.pendingApprovals : [];
+  const unclassified = Array.isArray(preview.unclassified) ? preview.unclassified : [];
+  const invalidVouchers = Array.isArray(preview.invalidVouchers) ? preview.invalidVouchers : [];
+  const blockedByLaterClose = !closed && preview.blockedByLaterClose === true;
+  const hasExceptions =
+    pendingApprovals.length > 0 || unclassified.length > 0 || invalidVouchers.length > 0;
+  let status = 'REVIEW_REQUIRED';
+  if (closed) status = 'CLOSED';
+  else if (blockedByLaterClose) status = 'BLOCKED_BY_LATER_CLOSE';
+  else if (hasExceptions) status = 'BLOCKED';
+  else if (preview.openingCash === null || preview.openingCash === undefined) {
+    status = 'OPENING_CASH_REQUIRED';
+  } else if (preview.readyToClose === true) status = 'READY_TO_CLOSE';
+
+  const includedVouchers =
+    close && Array.isArray(close.includedVouchers) ? close.includedVouchers : [];
+  const noCashCount = closed
+    ? includedVouchers.filter(function (voucher) {
+        return voucher.cashImpact === 'NO_CASH';
+      }).length
+    : Number.isSafeInteger(preview.noCashCount) && preview.noCashCount >= 0
+      ? preview.noCashCount
+      : 0;
+
+  return {
+    date: String(preview.date || requestedDate || todayIso_(0)),
+    timeZone: String(preview.timeZone || CFG.TZ),
+    status: status,
+    closed: closed,
+    readyToClose: !closed && preview.readyToClose === true,
+    blockedByLaterClose: blockedByLaterClose,
+    laterCloseDate: blockedByLaterClose ? String(preview.laterCloseDate || '') : '',
+    activeVoucherCount: closed
+      ? close.includedVoucherCount
+      : Number.isSafeInteger(preview.activeVoucherCount) && preview.activeVoucherCount >= 0
+        ? preview.activeVoucherCount
+        : 0,
+    cashInTotal: closed ? close.cashInTotal : preview.cashInTotal,
+    cashOutTotal: closed ? close.cashOutTotal : preview.cashOutTotal,
+    noCashCount: noCashCount,
+    pendingApprovalCount: closed ? 0 : pendingApprovals.length,
+    unclassifiedCount: closed ? 0 : unclassified.length,
+    invalidVoucherCount: closed ? 0 : invalidVouchers.length,
+    openingCashRequired:
+      !closed &&
+      preview.requiresManualOpening === true &&
+      (preview.openingCash === null || preview.openingCash === undefined),
+    openingReady: closed || preview.openingReady === true,
+    expectedCash: closed ? close.expectedCash : preview.expectedCash,
+    countedCash: closed ? close.countedCash : null,
+    variance: closed ? close.variance : null,
+  };
+}
+
 function createCashClose_(user, req) {
   need_(user, 'cashClose');
   const date = String(req.date || '').trim();

@@ -3,6 +3,7 @@ const ACTIONS = {
   registerPage: registerPage_,
   checkVoucherDuplicates: checkVoucherDuplicates_,
   dashboardSummary: dashboardSummary_,
+  dailyOperationsSummary: dailyOperationsSummary_,
   createVouchers: createVouchers_,
   updateVoucher: updateVoucher_,
   cancelVoucher: cancelVoucher_,

@@ -225,6 +225,110 @@ export function createDashboard({ api }) {
     body.appendChild(card);
   }
 
+  function dailyCloseCard(data, error) {
+    if (!can('cashClose')) return '';
+
+    const action =
+      '<button type="button" class="btn" data-act="goto" data-k="cashClose">Open Daily Cash Close ' +
+      icon('arrow-right') +
+      '</button>';
+    if (error || !data || typeof data !== 'object') {
+      return (
+        '<section class="card daily-close-readiness" data-status="UNAVAILABLE" aria-labelledby="dailyCloseTitle">' +
+        '<h2 id="dailyCloseTitle">Daily Cash Close</h2>' +
+        '<p role="status">Today’s close readiness could not be verified. No ready or closed status is assumed.</p>' +
+        action +
+        '</section>'
+      );
+    }
+
+    const labels = {
+      CLOSED: 'Closed',
+      READY_TO_CLOSE: 'Ready to close',
+      BLOCKED: 'Needs attention',
+      BLOCKED_BY_LATER_CLOSE: 'Blocked by a later close',
+      OPENING_CASH_REQUIRED: 'Opening cash required',
+      REVIEW_REQUIRED: 'Review required',
+    };
+    const status = Object.prototype.hasOwnProperty.call(labels, data.status)
+      ? data.status
+      : 'REVIEW_REQUIRED';
+    const amountLabel = (value) =>
+      typeof value === 'number' && Number.isFinite(value) ? money(value) : 'Not available';
+    const countLabel = (value) => (Number.isSafeInteger(value) && value >= 0 ? value : null);
+    const dateLabel =
+      typeof data.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(data.date)
+        ? dmy(data.date)
+        : 'unknown date';
+    const pending = countLabel(data.pendingApprovalCount);
+    const unclassified = countLabel(data.unclassifiedCount);
+    const invalid = countLabel(data.invalidVoucherCount);
+    const details = [];
+
+    if (status === 'CLOSED') {
+      details.push(
+        'Close recorded. Counted drawer cash: ' +
+          amountLabel(data.countedCash) +
+          '; variance: ' +
+          amountLabel(data.variance) +
+          '.',
+      );
+    } else {
+      if (data.blockedByLaterClose === true) {
+        const laterDate =
+          typeof data.laterCloseDate === 'string' &&
+          /^\d{4}-\d{2}-\d{2}$/.test(data.laterCloseDate)
+            ? dmy(data.laterCloseDate)
+            : 'a later business date';
+        details.push('Closing is blocked because ' + laterDate + ' already has a close.');
+      }
+      if (pending > 0) {
+        details.push(pending + ' payment approval/review exception(s) block closing.');
+      }
+      if (unclassified > 0) {
+        details.push(unclassified + ' voucher(s) need a verified cash-impact classification.');
+      }
+      if (invalid > 0) {
+        details.push(invalid + ' voucher(s) contain invalid data and block closing.');
+      }
+      if (data.openingCashRequired === true) {
+        details.push('Record opening cash and explain the opening amount before closing.');
+      }
+      if (data.readyToClose === true && status === 'READY_TO_CLOSE') {
+        details.push('Server-side checks pass. Verify the physical drawer count before finalizing.');
+      }
+      if (!details.length) {
+        details.push('Readiness is not established. Review the full close screen before taking action.');
+      }
+    }
+
+    const noCashCount = countLabel(data.noCashCount);
+    const movements =
+      '<p class="muted">Business date: ' +
+      esc(dateLabel) +
+      ' · Cash in: ' +
+      esc(amountLabel(data.cashInTotal)) +
+      ' · Cash out: ' +
+      esc(amountLabel(data.cashOutTotal)) +
+      ' · Non-cash entries: ' +
+      (noCashCount === null ? 'Not available' : noCashCount) +
+      '</p>';
+    return (
+      '<section class="card daily-close-readiness" data-status="' +
+      esc(status) +
+      '" aria-labelledby="dailyCloseTitle">' +
+      '<div class="head"><h2 id="dailyCloseTitle">Daily Cash Close</h2><span class="muted">' +
+      esc(labels[status]) +
+      '</span></div>' +
+      movements +
+      '<ul class="needs-list">' +
+      details.map((item) => '<li class="needs-item">' + esc(item) + '</li>').join('') +
+      '</ul>' +
+      action +
+      '</section>'
+    );
+  }
+
   async function render() {
     const requestId = ++summaryRequestId;
     const [from, to] = range();
@@ -258,8 +362,24 @@ export function createDashboard({ api }) {
 
     appendStatusCard(body, 'Calculating the dashboard from the latest saved ledger…');
     let summary;
+    let dailyOperations = null;
+    let dailyOperationsError = null;
+    const dailyOperationsRequest = can('cashClose')
+      ? api('dailyOperationsSummary').then(
+          (data) => ({ data }),
+          (error) => ({ error }),
+        )
+      : Promise.resolve(null);
     try {
-      summary = await api('dashboardSummary', { from, to });
+      const results = await Promise.all([
+        api('dashboardSummary', { from, to }),
+        dailyOperationsRequest,
+      ]);
+      summary = results[0];
+      if (results[1]) {
+        dailyOperations = results[1].data || null;
+        dailyOperationsError = results[1].error || null;
+      }
     } catch (error) {
       if (requestId !== summaryRequestId || S.view !== 'dash') return;
       const errorBody = renderShell(from, to);
@@ -389,7 +509,7 @@ export function createDashboard({ api }) {
           description: 'Review saved payment and receipt activity for the selected period.',
         },
       ) +
-      `<div class="dashboard-body">${needsAttention}${periodControls(from, to)}${financialPanels}</div></div>`;
+      `<div class="dashboard-body">${needsAttention}${dailyCloseCard(dailyOperations, dailyOperationsError)}${periodControls(from, to)}${financialPanels}</div></div>`;
   }
 
   return {
