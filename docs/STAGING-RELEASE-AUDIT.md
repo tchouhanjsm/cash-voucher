@@ -3,6 +3,7 @@
 **Audit date:** 27 October 2026, 16:50 IST (canonical backup freshness gate — current source batch)
 **Current integration baseline:** `client-main` `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c` (PR #238 merged and all exact-head/post-merge source gates passed; operational release remains blocked).
 **Current source batch:** `client/onboarding-backup-marker-contract-20261027`; require exact UTC ISO success/attempt backup markers before production acceptance can remain enabled.
+**Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
