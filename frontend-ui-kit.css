@@ -2540,7 +2540,8 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   .register-results-card.is-empty .table-wrap,
-  .register-results-card.is-empty #rtot {
+  .register-results-card.is-empty[data-empty-kind='first-use'] #rtot,
+  .register-results-card.is-empty[data-empty-kind='filtered'] #rtot {
     display: none;
   }
 

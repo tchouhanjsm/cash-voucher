@@ -340,7 +340,21 @@ export function createRegister({ api, go }) {
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
     const resultsCard = $('.register-results-card');
-    if (resultsCard) resultsCard.classList.toggle('is-empty', shown.length === 0);
+    if (resultsCard) {
+      resultsCard.classList.toggle('is-empty', shown.length === 0);
+      resultsCard.dataset.emptyKind = !dataAvailable
+        ? 'unavailable'
+        : rangeInvalid
+          ? 'invalid-range'
+          : pageLoading
+            ? 'loading'
+            : pageTotalCount > 0
+              ? 'page-empty'
+              : R.q || R.vendor || R.cat || R.user || R.t || R.from || R.to ||
+                  R.st !== 'ACTIVE' || R.approval !== 'ALL'
+                ? 'filtered'
+                : 'first-use';
+    }
 
     $('#rbody').innerHTML = shown
       .map((voucher) => {
