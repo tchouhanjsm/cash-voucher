@@ -157,7 +157,10 @@ function validateRecoveryEvidence(evidence) {
     if (typeof source.clientMainSha !== 'string' || !SHA1.test(source.clientMainSha)) {
       add('SOURCE_SHA', 'source.clientMainSha must be a full 40-character commit SHA.');
     }
-    if (typeof source.snapshotFingerprint !== 'string' || !SHA256.test(source.snapshotFingerprint)) {
+    if (
+      typeof source.snapshotFingerprint !== 'string' ||
+      !SHA256.test(source.snapshotFingerprint)
+    ) {
       add(
         'SNAPSHOT_FINGERPRINT',
         'source.snapshotFingerprint must be a SHA-256 fingerprint, not a raw resource identifier.',
@@ -186,7 +189,12 @@ function validateRecoveryEvidence(evidence) {
   } else {
     rejectUnknownKeys(resources, ['production', 'recovery'], '$.resources', errors);
     ['production', 'recovery'].forEach((environment) => {
-      rejectUnknownKeys(resources[environment], RESOURCE_KEYS, '$.resources.' + environment, errors);
+      rejectUnknownKeys(
+        resources[environment],
+        RESOURCE_KEYS,
+        '$.resources.' + environment,
+        errors,
+      );
       RESOURCE_KEYS.forEach((key) => {
         const fingerprint = resources[environment][key];
         if (typeof fingerprint !== 'string' || !SHA256.test(fingerprint)) {
@@ -264,7 +272,10 @@ function validateRecoveryEvidence(evidence) {
       SHA1.test(source.clientMainSha) &&
       restore.deployedClientMainSha.toLowerCase() !== source.clientMainSha.toLowerCase()
     ) {
-      add('DEPLOYED_SHA_MISMATCH', 'The recorded restore source SHA must match the selected integration SHA.');
+      add(
+        'DEPLOYED_SHA_MISMATCH',
+        'The recorded restore source SHA must match the selected integration SHA.',
+      );
     }
     if (
       isRecord(source) &&
@@ -272,7 +283,10 @@ function validateRecoveryEvidence(evidence) {
       validTimestamp(restore.startedAt) &&
       Date.parse(source.snapshotCreatedAt) > Date.parse(restore.startedAt)
     ) {
-      add('SNAPSHOT_AFTER_RESTORE_START', 'The selected snapshot must predate the restore operation.');
+      add(
+        'SNAPSHOT_AFTER_RESTORE_START',
+        'The selected snapshot must predate the restore operation.',
+      );
     }
     if (
       typeof restore.deployedVersion !== 'string' ||
@@ -362,7 +376,9 @@ function validateRecoveryEvidence(evidence) {
         typeof sheet.recoveryHeaderSha256 === 'string' && SHA256.test(sheet.recoveryHeaderSha256);
       if (!sourceHeaderValid || !recoveryHeaderValid) {
         add('SHEET_HEADER_DIGEST', 'Header digests must be SHA-256 values for ' + name + '.');
-      } else if (sheet.sourceHeaderSha256.toLowerCase() !== sheet.recoveryHeaderSha256.toLowerCase()) {
+      } else if (
+        sheet.sourceHeaderSha256.toLowerCase() !== sheet.recoveryHeaderSha256.toLowerCase()
+      ) {
         add('SHEET_HEADER_MISMATCH', 'Source and recovery header digests differ for ' + name + '.');
       }
     });
@@ -456,7 +472,10 @@ function validateRecoveryEvidence(evidence) {
       validCount(receipts.recoveryFiles) &&
       receipts.manifestRecords !== receipts.recoveryFiles
     ) {
-      add('RECEIPT_COUNT_MISMATCH', 'Manifest record count and recovered receipt-file count differ.');
+      add(
+        'RECEIPT_COUNT_MISMATCH',
+        'Manifest record count and recovered receipt-file count differ.',
+      );
     }
     ['missingCopies', 'nameMismatches', 'sampleReadbackFailures'].forEach((key) => {
       if (validCount(receipts[key]) && receipts[key] !== 0) {
@@ -479,7 +498,10 @@ function validateRecoveryEvidence(evidence) {
       validCount(receipts.sampleReadbackFailures) &&
       receipts.sampleReadbackFailures > receipts.sampleReadbacks
     ) {
-      add('RECEIPT_SAMPLE_COUNTS', 'Receipt read-back failures cannot exceed attempted read-backs.');
+      add(
+        'RECEIPT_SAMPLE_COUNTS',
+        'Receipt read-back failures cannot exceed attempted read-backs.',
+      );
     }
   }
 
