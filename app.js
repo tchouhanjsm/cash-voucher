@@ -1,6 +1,7 @@
 import { createApi } from './frontend/core/api.js';
 import { createAuth } from './frontend/features/auth.js';
 import { createPayments } from './frontend/features/payments.js';
+import { businessDate, isBusinessDate, addDays as addBusinessDays } from './frontend/core/utils.js';
 
 /* Cash Payment Vouchers — static PWA front end. Talks to the Apps Script API (backend/Code.gs). */
 (() => {
@@ -17,13 +18,9 @@ import { createPayments } from './frontend/features/payments.js';
       ? crypto.randomUUID()
       : Date.now() + '-' + Math.random().toString(16).slice(2);
   const pad = (n) => String(n).padStart(2, '0');
-  const iso = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  const today = () => iso(new Date());
-  const addDays = (s, n) => {
-    const d = new Date(s + 'T12:00:00');
-    d.setDate(d.getDate() + n);
-    return iso(d);
-  };
+  const iso = (d) => `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())}`;
+  const today = () => businessDate();
+  const addDays = (s, n) => addBusinessDays(s, n);
   const dmy = (s) => (s ? s.split('-').reverse().join('/') : '');
   const money = (n) => {
     n = Number(n || 0);
@@ -371,17 +368,19 @@ import { createPayments } from './frontend/features/payments.js';
   /* ---------------- dashboard ---------------- */
   const D = { r: '30d', from: '', to: '' };
   function range() {
-    const t = today(),
-      d = new Date(),
-      ms = iso(new Date(d.getFullYear(), d.getMonth(), 1));
+    const t = today();
+    const [year, month] = t.split('-').map(Number);
+    const ms = `${year}-${pad(month)}-01`;
     if (D.r === '7d') return [addDays(t, -6), t];
     if (D.r === 'mtd') return [ms, t];
     if (D.r === 'lm') {
-      const a = new Date(d.getFullYear(), d.getMonth() - 1, 1),
-        b = new Date(d.getFullYear(), d.getMonth(), 0);
+      const a = new Date(Date.UTC(year, month - 2, 1));
+      const b = new Date(Date.UTC(year, month - 1, 0));
       return [iso(a), iso(b)];
     }
-    if (D.r === 'cus' && D.from && D.to) return [D.from, D.to];
+    if (D.r === 'cus' && isBusinessDate(D.from) && isBusinessDate(D.to) && D.from <= D.to) {
+      return [D.from, D.to];
+    }
     return [addDays(t, -29), t];
   }
   function group(list, key) {
@@ -416,11 +415,11 @@ import { createPayments } from './frontend/features/payments.js';
     });
     const keys = [];
     if (monthly) {
-      let d = new Date(from.slice(0, 7) + '-01T12:00:00');
+      let d = new Date(from.slice(0, 7) + '-01T00:00:00.000Z');
       const end = to.slice(0, 7);
       while (iso(d).slice(0, 7) <= end) {
         keys.push(iso(d).slice(0, 7));
-        d.setMonth(d.getMonth() + 1);
+        d.setUTCMonth(d.getUTCMonth() + 1);
       }
     } else for (let i = 0; i < days; i++) keys.push(addDays(from, i));
     const vals = keys.map((k) => m[k] || 0),
@@ -1186,7 +1185,9 @@ import { createPayments } from './frontend/features/payments.js';
       cus: () => {
         D.from = $('#dFrom').value;
         D.to = $('#dTo').value;
-        if (!D.from || D.from > D.to) return toast('Pick a valid range.', 'err');
+        if (!isBusinessDate(D.from) || !isBusinessDate(D.to) || D.from > D.to) {
+          return toast('Choose real calendar dates with From on or before To.', 'err');
+        }
         vDash();
       },
       addrow: () => payments.addRow(),

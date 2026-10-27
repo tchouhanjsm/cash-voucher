@@ -1,16 +1,17 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 26 October 2026 23:59 IST (live-source audit)
+**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Verified integration baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
-**Current source batch:** `client/release-gate-reliability-20261026-2359` — repair the current quality-gate regression and bound transient Full Flight API retries.
+**Current integration baseline:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged; supersedes PR #227's base).
+**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
+**Current source batch:** PR #229, `client/fix-business-date-arithmetic-20261027` — make business-date calculations timezone-independent on top of PR #228's integrated release-gate fixes.
 **Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
-## Current checkpoint — 26 October 2026 23:59 IST
+## Historical pre-PR #228 checkpoint — 27 October 2026 05:48 IST
 
-- **PR queue at selection:** no open PRs. PRs #220–#227 are merged; the reviewed batch below is the only new source PR planned. Reviews on PRs #220–#227 were empty; do not treat merge history as proof of review.
-- **Exact integration-head evidence:** [CI / Quality #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on this SHA at `prettier --check .`; the formatter flagged `test/test-staging-workflow.js` because the `clientZipName` declaration was collapsed to one line. [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the same SHA. [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after an unhandled GitHub Actions API HTTP 502 while listing E2E runs; CI is also red, so the release gate cannot pass on this baseline. [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed, but its bounded three-minute finalization window expired before every source workflow was terminal. It saved a checkpoint explicitly marked non-passing and uploaded artifact `12672174746`.
+- **PR queue at selection:** PR #228 merged as `b2a4a45e0f4326a59b51151754691d56476f0b35`; PR #229 is open and must remain unmerged until exact-head checks and human review pass. Reviews on prior PRs should not be inferred from merge history.
+- **Historical PR #227 integration-head evidence:** [CI / Quality #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on this SHA at `prettier --check .`; the formatter flagged `test/test-staging-workflow.js` because the `clientZipName` declaration was collapsed to one line. [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the same SHA. [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after an unhandled GitHub Actions API HTTP 502 while listing E2E runs; CI is also red, so the release gate cannot pass on this baseline. [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed, but its bounded three-minute finalization window expired before every source workflow was terminal. It saved a checkpoint explicitly marked non-passing and uploaded artifact `12672174746`.
 - **Source batch:** restore the expected formatting; add a global maximum of two retries for HTTP 500/502/503/504 only in the Full Flight workflow; add a regression contract test and run it in `npm test`. Exact SHA/branch/event filtering remains mandatory. No retry of the failed CI or Full Flight run was performed during this audit.
 - **Governance:** ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets only `~DEFAULT_BRANCH` (`main`), requires only `quality`, and requires zero approvals. The live branch API reports `client-main` as `protected=false`; the classic branch-protection endpoint returns 403 to this connection. Owner/admin must correct and verify branch protection; this source batch does not alter settings.
 - **Staging blocker:** [UAT #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed deployment preflight due to missing production resource references and rejected/missing Clasp credentials. Deployment, target recheck and live UAT were skipped. Do not retry unchanged configuration.
@@ -23,6 +24,15 @@
 2. Obtain the designated human review and owner/admin confirmation that `client-main` has effective required checks and approval rules. Do not merge or enable auto-merge from this run.
 3. Privately correct staging Environment identity and credentials, then separately authorize guarded staging UAT and a real restore into a separate destination.
 4. Record intended-device, offline/reconnect, accessibility, authorization and customer acceptance before any pilot. Production remains excluded.
+
+## Current checkpoint — date correctness and release gates
+
+- PR #228 is now integrated at `b2a4a45e0f4326a59b51151754691d56476f0b35`; its release-gate reliability changes, including the staging-test formatting correction and bounded transient Full Flight retries, must be preserved.
+- PR #229 adds Asia/Kolkata business-date consistency across the legacy and modular frontend paths, UTC-only date arithmetic, real-calendar-date validation for Dashboard/Reports ranges, and cache revision `cv2-v32`.
+- PR #229's prior head `c71e233e11eec5b6d2b2d37be27216a80a170f7e` had CI / Quality [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102) and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096) fail; Autonomous Development Monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. Those results apply only to the superseded pre-conflict-resolution SHA.
+- Conflict resolution preserves PR #228's current `.github/workflows/flight-test.yml`, `test/test-flight-workflow.js`, `package.json` test wiring and formatted `test/test-staging-workflow.js`. The new merge-resolution head requires fresh exact-head CI, Browser E2E and Full Flight Test results.
+- The source-fingerprint gate exposed stale recorded hashes for unchanged `cash-close.js` and `payments.js` HTML assignments. Review confirmed the cash-close date values are escaped and the payment form builds vendor/category options through escaping helpers. Only the reviewed fingerprint values were refreshed (`8b83b045`, `ec0c627d`); no sink implementation was weakened. Existing E2E hostile-input coverage remains active.
+- Release remains blocked until new exact-head checks pass, human review is obtained, and owner-controlled branch protection and live staging/backup/restore/device/customer-acceptance gates are evidenced. No deployment or live data mutation is authorized by this source change.
 
 ---
 

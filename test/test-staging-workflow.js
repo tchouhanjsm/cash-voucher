@@ -241,11 +241,9 @@ assert.match(
   /ZIP_NAME="cv-\$\{CLIENT_CODE\}-staging-\$\{GITHUB_SHA\}\.zip"/,
   'ZIP file must use the full commit SHA expected by artifact upload',
 );
-const clientDistUpload = clientDistWorkflow.split(
-  '      - uses: actions/upload-artifact@v4',
-)[1] || '';
-const clientZipName =
-  'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
+const clientDistUpload =
+  clientDistWorkflow.split('      - uses: actions/upload-artifact@v4')[1] || '';
+const clientZipName = 'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
 assert.match(clientDistUpload, /path:\s*\|/);
 assert.ok(
   clientDistUpload.includes(clientZipName),

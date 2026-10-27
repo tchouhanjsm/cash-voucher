@@ -1,17 +1,26 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 26 October 2026, 23:59 IST (live-source audit)
-**Authoritative integration baseline:** `client-main` `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
-**Current source batch:** `client/release-gate-reliability-20261026-2359`, targeting `client-main`; one PR maximum.
+**Audit date:** 27 October 2026, 05:48 IST (PR #229 conflict-resolution checkpoint)
+**Current integration baseline:** `client-main` `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).
+**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
+**Current follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main`; merge-conflict resolution must retain the upstream PR #228 release-gate changes.
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
+
+## Current checkpoint — date correctness and release gates
+
+- PR #228 advanced `client-main` to `b2a4a45e0f4326a59b51151754691d56476f0b35` and added bounded retries for transient Full Flight API 5xx responses plus a workflow contract test. Preserve its updated Flight workflow, `test/test-flight-workflow.js`, `package.json` test registration and staging-test formatting.
+- PR #229's intended product fix is timezone-independent date-only arithmetic and strict Dashboard/Reports date validation across legacy and modular frontend paths, with service-worker cache revision `cv2-v32`.
+- The source-fingerprint gate found stale approved hashes for two HTML assignments whose source files are unchanged from `client-main`. Review confirmed escaped date values on the cash-close page and escaped vendor/category option content on the payment-entry page. The baseline was refreshed only for those reviewed assignments (`8b83b045`, `ec0c627d`); the existing adversarial E2E coverage was preserved.
+- The previous PR #229 head `c71e233e11eec5b6d2b2d37be27216a80a170f7e` had failed CI [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102), and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096); the monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. These are historical results for the pre-resolution head only.
+- The conflict-resolution head needs a fresh exact-SHA run of CI / Quality, Browser E2E and Full Flight Test. Until then the release remains blocked; branch protection, staging identity/preflight, live backup/restore, device and customer acceptance remain independent gates.
 
 ## Current release decision
 
 The release remains **BLOCKED**.
 
-- **Exact current-head checks:** [CI / Quality #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed at `prettier --check .` on `test/test-staging-workflow.js`; [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed; [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after an unhandled GitHub API HTTP 502; [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed with an explicit warning that checkpoint finalization expired before all required source workflows were terminal.
-- **Source-only correction:** restore the expected multiline declaration in the staging-workflow regression test and add a total two-retry cap for transient HTTP 500/502/503/504 in the Full Flight workflow. Keep exact SHA/branch/event matching and fail immediately on non-transient errors. Add a regression contract test. No manual workflow retry was performed during the audit.
+- **Historical PR #227 baseline checks:** [CI / Quality #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed at `prettier --check .` on `test/test-staging-workflow.js`; [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed; [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after an unhandled GitHub API HTTP 502; [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed with an explicit warning that checkpoint finalization expired before all required source workflows were terminal.
+- **Integrated PR #228 correction:** the multiline staging-test formatting fix, bounded two-retry policy for transient Full Flight API 5xx responses, exact SHA/branch/event matching and workflow regression coverage are already included in the current baseline. PR #229 still needs fresh exact-head CI / Quality, Browser E2E and Full Flight Test results.
 - **Governance:** ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets `~DEFAULT_BRANCH` (`main`) only, requires `quality` only and zero approvals. The `client-main` branch API reports `protected=false`; the classic branch-protection endpoint returns 403 to this connection. Owner/admin must correct and verify effective rules.
 - **Staging UAT blocker:** [run #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed at isolated-deployment preflight because production references were empty and Clasp credentials were missing/rejected. Deployment, target recheck and live UAT were skipped. Do not retry until corrected and independently verified.
 - **Artifact/release boundary:** [ZIP #39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`; its artifact is expired. The live releases endpoint is empty. A successful source or ZIP workflow is not a live deployment certificate.

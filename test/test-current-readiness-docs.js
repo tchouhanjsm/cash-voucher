@@ -23,19 +23,16 @@ const handoff = read('docs/HANDOFF.md');
 const dashboard = read('frontend/features/dashboard.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
-assert.match(handoff, /^\*\*Updated:\*\* 26 October 2026/m);
-assert.match(handoff, /Verified integration baseline.*1b016a82d9e42eeb71d875561cc356d946fa5db5/);
+assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
+assert.match(handoff, /Current integration baseline.*b2a4a45e0f4326a59b51151754691d56476f0b35/);
 assert.match(dashboard, /function dashboardSummaryIssue/);
 assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
 assert.match(browserE2e, /Dashboard totals unavailable/);
 assert.match(deliveryPhase, /PR #225.*merged/i);
 assert.doesNotMatch(deliveryPhase, /it remains open until reviewed and merged by the owner/);
-assert.match(
-  handoff,
-  /exact-head CI \/ Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor passed/,
-);
-assert.match(handoff, /Current phase.*post-merge Dashboard and artifact-integrity recovery/i);
-assert.match(handoff, /PR #223 merged/);
+assert.match(handoff, /Historical PR #227 integration-head evidence.*#40373320173/);
+assert.match(handoff, /Current checkpoint — date correctness and release gates/);
+assert.match(handoff, /PR #228 merged/);
 assert.match(handoff, /client-main.*protected=false/);
 assert.match(handoff, /## Historical handoff snapshot — 25 October 2026/);
 const p0ReleaseBatch = read('docs/P0-RELEASE-BATCH-B1-B3.md');
@@ -61,10 +58,10 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Authoritative integration baseline.*client-main.*1b016a82d9e42eeb71d875561cc356d946fa5db5/,
+  /Current integration baseline.*client-main.*b2a4a45e0f4326a59b51151754691d56476f0b35/,
 );
 assert.match(staging, /PR #208/);
-assert.match(staging, /Active source recovery.*PR #226/);
+assert.match(staging, /Current follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(staging, /PR #210 remains open and diverged\/dirty/);
 assert.match(handoff, /Verified integration baseline.*e97c4e080b3f6903e16ef77f571822f9844faeed/);
@@ -75,7 +72,7 @@ assert.match(
 );
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(handoff, /Checkpoint finalization defect/);
-assert.match(handoff, /No open PR existed when this batch was selected/);
+assert.match(handoff, /PR #214 is the sole active follow-up/);
 assert.match(handoff, /GITHUB_EVENT_PATH/);
 assert.match(handoff, /PRs #209–#213 are merged/);
 assert.match(handoff, /PR #213 merged at this commit/);
@@ -115,11 +112,11 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*1b016a82d9e42eeb71d875561cc356d946fa5db5/);
+assert.match(executionPlan, /Current integration SHA.*b2a4a45e0f4326a59b51151754691d56476f0b35/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
-assert.match(executionPlan, /Open PRs at batch start/);
+assert.match(executionPlan, /\*\*Active follow-up:\*\* PR #229/);
 assert.doesNotMatch(executionPlan, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(executionPlan, /PR #210 still requires base reconciliation/);
 assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);

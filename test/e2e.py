@@ -5792,12 +5792,12 @@ with sync_playwright() as p:
     )
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
-        "document.querySelector('#view').innerText.includes('Choose a valid date range')"
+        "document.querySelector('#view').innerText.includes('Choose real calendar dates')"
     )
     check(
         page.locator('#view svg').count() == 0
         and range_payload not in page.locator('#view').inner_text()
-        and 'Choose a valid date range' in page.locator('#view').inner_text()
+        and 'Choose real calendar dates' in page.locator('#view').inner_text()
         and not page.evaluate('window.__xssFired === true'),
         'malformed report date-range value is rejected without reflecting hostile input',
     )

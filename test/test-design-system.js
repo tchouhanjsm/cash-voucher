@@ -446,7 +446,7 @@ assert.match(
 );
 assert.match(
   serviceWorker,
-  /const C = 'cv2-v31'/,
+  /const C = 'cv2-v32'/,
   'PWA cache revision advances with empty-period dashboard guidance and existing update safeguards',
 );
 assert.match(serviceWorker, /frontend\/core\/unsaved-work\.js/);

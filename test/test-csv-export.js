@@ -1,11 +1,14 @@
 const assert = require('node:assert/strict');
+const { execFileSync } = require('node:child_process');
 const fs = require('node:fs');
 
 const source = fs.readFileSync(require.resolve('../frontend/core/utils.js'), 'utf8');
 
 async function run() {
   const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
-  const { csvCell, esc, scalarText } = await import(moduleUrl);
+  const { addDays, businessDate, csvCell, esc, isBusinessDate, iso, scalarText } = await import(
+    moduleUrl
+  );
 
   for (const value of ['=SUM(1,1)', '+cmd', '-cmd', '@cmd', '\t=cmd', '\r=cmd', '\n=cmd']) {
     assert.match(
@@ -76,8 +79,36 @@ async function run() {
     '""',
   );
   assert.equal(csvCell(Symbol('non-scalar')), '""');
+  assert.equal(businessDate(new Date('2026-10-26T18:29:59.000Z')), '2026-10-26');
+  assert.equal(businessDate(new Date('2026-10-26T18:30:00.000Z')), '2026-10-27');
+  assert.equal(isBusinessDate('2024-02-29'), true);
+  assert.equal(isBusinessDate('2026-02-29'), false);
+  assert.equal(isBusinessDate('2026-13-01'), false);
+  assert.equal(isBusinessDate('2026-1-01'), false);
+  assert.equal(addDays('2026-03-01', -1), '2026-02-28');
+  assert.equal(addDays('2024-03-01', -1), '2024-02-29');
+  assert.equal(addDays('2027-01-01', -1), '2026-12-31');
+  assert.equal(addDays('2026-12-31', 1), '2027-01-01');
+  assert.equal(iso(new Date('2027-01-01T00:00:00.000Z')), '2027-01-01');
+  assert.throws(() => addDays('2026-02-30', 1), /valid business date/);
+  assert.throws(() => addDays('2026-01-01', 1.5), /whole number/);
+  for (const timezone of ['America/Los_Angeles', 'Pacific/Kiritimati']) {
+    const output = execFileSync(
+      process.execPath,
+      [
+        '-e',
+        `import('data:text/javascript;base64,${Buffer.from(source).toString('base64')}').then(\n          ({ addDays, businessDate }) =>\n            console.log(\n              [\n                addDays('2027-01-01', -1),\n                businessDate(new Date('2026-10-26T18:30:00.000Z')),\n              ].join('|'),\n            ),\n        )`,
+      ],
+      { encoding: 'utf8', env: { ...process.env, TZ: timezone } },
+    );
+    assert.equal(
+      output.trim(),
+      '2026-12-31|2026-10-27',
+      `timezone-independent math in ${timezone}`,
+    );
+  }
   console.log(
-    'HTML/CSV safety OK — scalar coercion, hostile objects, formula prefixes and quoting covered.',
+    'HTML/CSV and business-date safety OK — India midnight, timezone independence, leap/year rollover and invalid inputs covered.',
   );
 }
 

@@ -1,21 +1,26 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 26 October 2026 23:59 IST (live-source audit)
+**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
-**Current integration SHA:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
-**Active source batch:** `client/release-gate-reliability-20261026-2359`; at selection there were no open PRs.
+**Current integration SHA:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).
+**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
+**Active follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main` and remains unmerged pending exact-head validation.
 
-## Current checkpoint — restore exact-head release gates
+## Historical gate evidence and current business-date follow-up
 
-- **CI / Quality:** [run #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on the current SHA at `prettier --check .` for `test/test-staging-workflow.js`. The source quality gate stopped at formatting; this is a deterministic formatting regression, not evidence of a backend assertion failure.
-- **Browser E2E:** [run #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the exact current SHA.
-- **Full Flight Test:** [run #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after a GitHub Actions API HTTP 502 when querying E2E workflow runs. The query has no transient retry today; CI was also red. The source batch adds at most two total retries for HTTP 500/502/503/504 and preserves immediate failure for other statuses.
-- **Autonomous Development Monitor:** [run #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed but warned that its three-minute finalization window expired before every required workflow completed. The checkpoint is explicitly non-passing for missing/non-terminal checks; artifact `12672174746` is available.
+- **Historical PR #227 baseline — CI / Quality:** [run #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on the current SHA at `prettier --check .` for `test/test-staging-workflow.js`. The source quality gate stopped at formatting; this is a deterministic formatting regression, not evidence of a backend assertion failure.
+- **Historical PR #227 baseline — Browser E2E:** [run #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the exact current SHA.
+- **Historical PR #227 baseline — Full Flight Test:** [run #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after a GitHub Actions API HTTP 502 when querying E2E workflow runs. The query has no transient retry today; CI was also red. PR #228 integrated the at-most-two retries for HTTP 500/502/503/504 and preserves immediate failure for other statuses.
+- **Historical PR #227 baseline — Autonomous Development Monitor:** [run #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed but warned that its three-minute finalization window expired before every required workflow completed. The checkpoint is explicitly non-passing for missing/non-terminal checks; artifact `12672174746` is available.
 - **Acceptance criteria:** formatting check passes; the workflow regression test enforces the retry allowlist and two-retry ceiling; CI / Quality, Browser E2E and Full Flight Test pass on the same exact final PR head; monitor evidence does not mark missing checks as passed.
 - **Operational priority remains P0:** staging isolation source guards and backup-manifest validation are merged (#224 and #226); Asia/Kolkata business-date handling is merged (#227). Live staging identity, real backup/restore, role/receipt authorization, offline/reconnect and intended-device/customer acceptance are still unverified and cannot be substituted by this source batch.
 - **Governance:** ruleset #24624368 covers `main` only, requires `quality` only and zero approvals; `client-main` reports `protected=false`. Owner/admin must configure and verify the intended protection and review requirements. This batch does not change settings.
 - **Staging:** UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight due to missing production references and rejected/missing Clasp credentials. Do not rerun unchanged configuration. ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and has expired; no published release exists.
 - **Safety boundary:** source and mock validation only. No deployment, migration, Google resource mutation, cPanel publication or production operation is included.
+
+- **Conflict resolution:** PR #228 advanced `client-main` to `b2a4a45e0f4326a59b51151754691d56476f0b35` after PR #229 was opened from the earlier PR #227 baseline. The conflict-resolution merge must preserve PR #228's updated Full Flight workflow, `test/test-flight-workflow.js`, `package.json` test wiring and formatted staging contract test.
+- **Business-date implementation:** PR #229 aligns date-only calendar arithmetic and Dashboard/Reports range validation across the legacy and modular frontend entry paths, increments the service-worker cache version, and adds timezone, India-midnight, leap-day and year-boundary regression coverage.
+- **Prior PR #229 head evidence:** CI / Quality [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102), and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096) failed on superseded SHA `c71e233e11eec5b6d2b2d37be27216a80a170f7e`; monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. These results do not validate the merge-resolution head; all exact-head checks must rerun.
 
 ---
 
