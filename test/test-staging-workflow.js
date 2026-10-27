@@ -292,9 +292,7 @@ assert.match(
   'staging recovery instructions must not bypass safety gates',
 );
 
-const readinessJob = workflow
-  .split('  preflight-readiness:\n')[1]
-  .split('  guard:\n')[0];
+const readinessJob = workflow.split('  preflight-readiness:\n')[1].split('  guard:\n')[0];
 assert.match(readinessJob, /github\.ref == 'refs\/heads\/client-main'/);
 assert.match(readinessJob, /inputs\.operation == 'validate-only'/);
 assert.match(readinessJob, /needs: \[validate\]/);
@@ -316,7 +314,6 @@ assert.match(readinessJob, /CV_STAGING_PREFLIGHT_EVIDENCE_PATH/);
 assert.match(readinessJob, /retention-days: 90/);
 assert.doesNotMatch(readinessJob, /staging:deploy|uat:staging|clasp push|curl/);
 assert.doesNotMatch(workflow.split('  preflight-readiness:\n')[0], /secrets\./);
-
 
 console.log(
   'Staging workflow guard OK — manual trigger, client-main-only gate, explicit write consent, isolated deployment config, no-cache test shell and protected resource checks.',
