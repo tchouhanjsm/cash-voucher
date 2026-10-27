@@ -69,29 +69,12 @@ jobs:
 
   preflight-readiness:
     name: Inspect protected staging configuration (read-only)
-    if: ${{ inputs.operation == 'validate-only' && needs.validate.result == 'success' }}
+    if: ${{ github.ref == 'refs/heads/client-main' && inputs.operation == 'validate-only' && needs.validate.result == 'success' }}
     needs: [validate]
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
       name: staging
-    env:
-      CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
-      CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
-      CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
-      CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
-      CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
-      CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
-      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
-      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
-      CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
-      CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
-      CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
-      CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
-      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
-      CV_STAGING_PREFLIGHT_EVIDENCE_PATH: ${{ runner.temp }}/cash-voucher-staging-preflight-evidence.json
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -100,13 +83,26 @@ jobs:
         uses: actions/setup-node@v7
         with:
           node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install locked dependencies
-        run: npm ci
 
       - name: Validate configuration only (no remote access or writes)
-        run: npm run staging:preflight -- --mode=readiness
+        env:
+          CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+          CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+          CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+          CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+          CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+          CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+          CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+          CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+          CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+          CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
+          CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+          CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CV_STAGING_PREFLIGHT_EVIDENCE_PATH: ${{ runner.temp }}/cash-voucher-staging-preflight-evidence.json
+        run: node scripts/staging-preflight.js --mode=readiness
 
       - name: Upload sanitized preflight evidence
         if: always()

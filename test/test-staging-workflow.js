@@ -293,11 +293,21 @@ assert.match(
 );
 
 const readinessJob = workflow.split('  preflight-readiness:\n')[1].split('  guard:\n')[0];
+assert.match(readinessJob, /github\.ref == 'refs\/heads\/client-main'/);
 assert.match(readinessJob, /inputs\.operation == 'validate-only'/);
 assert.match(readinessJob, /needs: \[validate\]/);
 assert.match(readinessJob, /environment:\n {6}name: staging/);
-assert.match(readinessJob, /npm run staging:preflight -- --mode=readiness/);
-assert.match(readinessJob, /secrets\.CLASPRC_JSON/);
+assert.match(readinessJob, /node scripts\/staging-preflight\.js --mode=readiness/);
+const readinessHeader = readinessJob.split('    steps:\\n')[0];
+assert.doesNotMatch(readinessHeader, /secrets\\./);
+const readinessValidationStep = readinessJob
+  .split('      - name: Validate configuration only (no remote access or writes)\\n')[1]
+  .split('      - name: Upload sanitized preflight evidence\\n')[0];
+assert.match(readinessValidationStep, /secrets\\.CLASPRC_JSON/);
+assert.match(readinessValidationStep, /secrets\\.CV_STAGING_SCRIPT_ID/);
+assert.doesNotMatch(readinessJob, /npm ci|npm run staging:preflight/);
+const readinessUploadStep = readinessJob.split('      - name: Upload sanitized preflight evidence\\n')[1];
+assert.doesNotMatch(readinessUploadStep, /secrets\\./);
 assert.match(readinessJob, /CV_STAGING_PREFLIGHT_EVIDENCE_PATH/);
 assert.match(readinessJob, /retention-days: 90/);
 assert.doesNotMatch(readinessJob, /staging:deploy|uat:staging|clasp push|curl/);
