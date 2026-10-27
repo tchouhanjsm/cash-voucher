@@ -25,12 +25,15 @@ const recoveryValidator = read('scripts/validate-recovery-evidence.js');
 const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
 const dashboard = read('frontend/features/dashboard.js');
 const auditHelpers = read('backend/25-helpers.gs');
+const backupHelpers = read('backend/20-backup.gs');
+const onboardingFrontend = read('frontend/features/onboarding.js');
+const administrationFrontend = read('frontend/features/administration.js');
 const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(handoff, /Current integration baseline.*fd0cfea3903d5c9b0a6e704f5545afe598c50c5c/);
-assert.match(handoff, /Current live checkpoint.*27 October 2026 16:50 IST/);
+assert.match(handoff, /Current integration baseline.*ba56028c4eba2ea499c988fe03866a592005f12c/);
+assert.match(handoff, /Current live checkpoint.*27 October 2026 17:59 IST/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);
@@ -53,6 +56,13 @@ assert.ok(auditHelpers.includes('toISOString().slice(0, 19) === value'));
 assert.match(auditHelpers, /typeof marker[.]failureCount !== 'number'/);
 assert.match(backendTests, /count: '2e0'/);
 assert.match(backendTests, /failureCount: '1'/);
+assert.match(backupHelpers, /function backupMarkerHealth_\(/);
+assert.match(backupHelpers, /INVALID_ATTEMPT_TIMESTAMP/);
+assert.match(backupHelpers, /ATTEMPT_AFTER_SUCCESS/);
+assert.match(onboardingFrontend, /onboardingCount = key/);
+assert.match(onboardingFrontend, /renderBackupDetails\(step\)/);
+assert.match(administrationFrontend, /Fresh for onboarding/);
+assert.match(administrationFrontend, /backup-marker-issues/);
 assert.match(handoff, /cv2-v35/);
 assert.match(deliveryPhase, /PR #225.*merged/i);
 assert.doesNotMatch(deliveryPhase, /it remains open until reviewed and merged by the owner/);
@@ -84,9 +94,9 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Current integration baseline.*client-main.*fd0cfea3903d5c9b0a6e704f5545afe598c50c5c/,
+  /Current integration baseline.*client-main.*ba56028c4eba2ea499c988fe03866a592005f12c/,
 );
-assert.match(staging, /Current source batch.*client\/onboarding-backup-marker-contract-20261027/);
+assert.match(staging, /Current source batch.*client\/backup-readiness-vertical-slice-20261027/);
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
@@ -139,8 +149,8 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*2b8120789811f27410f0542c29c7436fcc5f190c/);
-assert.match(executionPlan, /Current source batch.*client\/p0-recovery-drill-evidence-20261027/);
+assert.match(executionPlan, /Current integration SHA.*ba56028c4eba2ea499c988fe03866a592005f12c/);
+assert.match(executionPlan, /Current source batch.*client\/backup-readiness-vertical-slice-20261027/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
