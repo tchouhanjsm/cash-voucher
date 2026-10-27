@@ -108,7 +108,7 @@ assert.doesNotMatch(
   staging,
   /\*\*Current integration baseline:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
 );
-assert.match(staging, /Current source batch.*client\/staging-config-preflight-20261027/);
+assert.ok(staging.includes('client/release-integrity-dependency-hardening-20261027'));
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
@@ -165,7 +165,7 @@ assert.doesNotMatch(
   executionPlan,
   /\*\*Current integration SHA:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
 );
-assert.match(executionPlan, /Current source batch.*client\/staging-config-preflight-20261027/);
+assert.ok(executionPlan.includes('client/release-integrity-dependency-hardening-20261027'));
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
@@ -178,10 +178,10 @@ assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
 assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
 
-assert.match(staging, /read-only staging configuration readiness phase/i);
+assert.ok(staging.includes('release integrity and dependency policy phase'));
 assert.match(staging, /remote connectivity.*restore were not verified/i);
-assert.match(executionPlan, /read-only staging configuration readiness phase/i);
-assert.match(handoff, /staging configuration preflight phase/i);
+assert.ok(executionPlan.includes('release integrity and dependency policy phase'));
+assert.ok(handoff.includes('release integrity and dependency policy phase'));
 assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(staging, /Workflow isolation.*only from `client-main`/i);
 assert.match(executionPlan, /Secrets are scoped to the one validation step/i);
