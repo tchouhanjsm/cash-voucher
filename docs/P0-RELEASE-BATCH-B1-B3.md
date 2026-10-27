@@ -2,12 +2,21 @@
 
 **Integration target:** `client-main`  
 **Original design baseline for B1–B3:** PR #204 merge `aa37d94819e59a72c797ba36839aa8f8ec94008f`  
-**Current integration baseline:** `75561d19e5f72f885c813152de122e7444801d70` (PR #223 merged)  
-**Purpose:** complete one coherent release-readiness batch spanning staging identity, schema/recovery safety, and security/device acceptance. This document is a plan and evidence checklist; it does not attest that an external operation has already run.
+**Current integration baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
+**Purpose:** complete release readiness across staging identity, schema/recovery safety, authorization, offline/sync and device/customer acceptance. This is a checklist, not proof that an external operation ran.
 
-## Current gate checkpoint — 26 October 2026
+## Current gate checkpoint — 26 October 2026, 23:59 IST
 
-The next source batch hardens staging artifact target isolation: the client ZIP workflow must use the `staging` Environment secret for its API URL and run artifact-mode preflight before packaging. The repository is public, so resource IDs must not be emitted from unmasked workflow variables. This source change does not verify live staging, perform a restore, or discharge device/customer acceptance. Owner/admin must separately correct `client-main` governance and privately provision the required Environment secrets.
+The source isolation boundary from PR #224, backup-manifest integrity from PR #226 and Asia/Kolkata business-date handling from PR #227 are merged. The current integration source gate is not green: CI [#40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed formatting on `test/test-staging-workflow.js`; Full Flight [#40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) hit a GitHub API HTTP 502 and failed. The single source batch repairs the formatting regression and adds a bounded transient-only retry with regression coverage.
+
+Operational release gates remain blocked independently of source validation:
+
+- Owner/admin must configure and verify `client-main` rules requiring CI / Quality, Browser E2E, Full Flight Test and human approval. The active ruleset covers `main` only; `client-main` reports `protected=false`.
+- The last staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight because production resource references were missing and Clasp credentials were missing/rejected. Do not retry unchanged configuration.
+- The last ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) used stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`; its artifact has expired. No published release is recorded.
+- Live staging identity, actual HTTP security headers, role/receipt authorization, a real restore into a separate recovery target, offline/reconnect, print/PDF, intended-device/accessibility testing and customer sign-off remain unverified. Production remains excluded.
+
+The source batch does not authorize Clasp pushes, Apps Script deployment, migrations, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operations.
 
 ## Scope
 

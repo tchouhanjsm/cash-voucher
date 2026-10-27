@@ -244,7 +244,8 @@ assert.match(
 const clientDistUpload = clientDistWorkflow.split(
   '      - uses: actions/upload-artifact@v4',
 )[1] || '';
-const clientZipName = 'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
+const clientZipName =
+  'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
 assert.match(clientDistUpload, /path:\s*\|/);
 assert.ok(
   clientDistUpload.includes(clientZipName),
@@ -258,10 +259,7 @@ assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
 assert.match(clientDistWorkflow, /artifactVersion: 2/);
 assert.match(clientDistWorkflow, /checksumAlgorithm: 'SHA-256'/);
 assert.match(clientDistWorkflow, /checksumsFile: 'SHA256SUMS\.txt'/);
-assert.match(
-  clientDistWorkflow,
-  /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/,
-);
+assert.match(clientDistWorkflow, /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/);
 assert.match(clientDistWorkflow, /retention-days: 14/);
 assert.match(
   clientDistWorkflow,

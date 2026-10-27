@@ -1,25 +1,28 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 26 October 2026 (post-merge integrity review)  
-**Repository:** tchouhanjsm/cash-voucher  
-**Integration branch:** `client-main`; legacy `main` remains read-only.  
-**Verified integration baseline:** `1b016a82d9e42eeb71d875561cc356d946fa5db5` (PR #224 merged; its first parent is `24176f030b2f33b1174779fa191152f7441c3460`, the PR #225 merge). The earlier baseline `75561d19e5f72f885c813152de122e7444801d70` was PR #223 merged.  
-**Current phase:** post-merge Dashboard and staging-artifact integrity recovery in [PR #226](https://github.com/tchouhanjsm/cash-voucher/pull/226), branch `client/post-224-restore-dashboard-and-artifact-integrity-20261026`.  
-**Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, live write-capable UAT, cPanel publication or production change.
+**Updated:** 26 October 2026 23:59 IST (live-source audit)
+**Repository:** tchouhanjsm/cash-voucher
+**Integration branch:** `client-main`; legacy `main` remains read-only.
+**Verified integration baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
+**Current source batch:** `client/release-gate-reliability-20261026-2359` — repair the current quality-gate regression and bound transient Full Flight API retries.
+**Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
-## Current checkpoint — post-merge reconciliation
+## Current checkpoint — 26 October 2026 23:59 IST
 
-- **Exact merged-head checks are green:** [CI / Quality #40319063089](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063089), [Browser E2E #40319062917](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062917), [Full Flight Test #40319063051](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319063051), and [Autonomous Development Monitor #40319062906](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40319062906) all completed successfully on `1b016a82d9e42eeb71d875561cc356d946fa5db5`.
-- **Important finding:** comparing the PR #224 merge tree with PR #225’s first-parent tree showed the strict Dashboard-summary validator/browser fault-injection regressions and the ZIP artifact-v2 checksum safeguards were absent from the merged snapshot. Green workflows on the merged snapshot did not reveal this because both affected implementation and some regression coverage were removed together.
-- **Recovery batch:** restore the Dashboard fail-closed summary contract and malformed-response/recovery browser tests; retain PR #224's staging-secret and artifact-mode preflight boundary; restore SHA-256 file inventory, detached ZIP checksum, 14-day artifact retention and fresh-branch checks; strengthen tests so a future merge cannot silently drop these contracts. Restore the deleted page-by-page delivery record and update the current release handoff.
-- **Next release gates remain external:** staging Environment secrets must be configured and privately verified; the prior staging UAT failed preflight due to missing production reference IDs and invalid/missing Clasp credentials. Do not retry until corrected. Owner/admin must include `client-main` in an effective ruleset; it currently reports `protected=false`.
-- **Not verified:** live staging deployment/version, actual host security headers, role and receipt authorization, isolated backup/restore, all-device offline/reconnect, print/PDF, assistive technology and customer acceptance. Source CI is not a substitute for these gates.
+- **PR queue at selection:** no open PRs. PRs #220–#227 are merged; the reviewed batch below is the only new source PR planned. Reviews on PRs #220–#227 were empty; do not treat merge history as proof of review.
+- **Exact integration-head evidence:** [CI / Quality #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on this SHA at `prettier --check .`; the formatter flagged `test/test-staging-workflow.js` because the `clientZipName` declaration was collapsed to one line. [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the same SHA. [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after an unhandled GitHub Actions API HTTP 502 while listing E2E runs; CI is also red, so the release gate cannot pass on this baseline. [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed, but its bounded three-minute finalization window expired before every source workflow was terminal. It saved a checkpoint explicitly marked non-passing and uploaded artifact `12672174746`.
+- **Source batch:** restore the expected formatting; add a global maximum of two retries for HTTP 500/502/503/504 only in the Full Flight workflow; add a regression contract test and run it in `npm test`. Exact SHA/branch/event filtering remains mandatory. No retry of the failed CI or Full Flight run was performed during this audit.
+- **Governance:** ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets only `~DEFAULT_BRANCH` (`main`), requires only `quality`, and requires zero approvals. The live branch API reports `client-main` as `protected=false`; the classic branch-protection endpoint returns 403 to this connection. Owner/admin must correct and verify branch protection; this source batch does not alter settings.
+- **Staging blocker:** [UAT #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed deployment preflight due to missing production resource references and rejected/missing Clasp credentials. Deployment, target recheck and live UAT were skipped. Do not retry unchanged configuration.
+- **Artifact/release:** [staging ZIP #39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) succeeded on stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`, but its artifact has expired. The releases endpoint is empty; no published release is recorded.
+- **Not verified:** staging identity/version, live host security headers, role/receipt authorization, restore to a separate recovery target, offline/reconnect on intended devices, printing, accessibility, and customer acceptance. Automated source tests do not satisfy these operational gates.
 
-## Immediate objective before the 27 October deadline
+## Immediate sequence
 
-1. Merge the source regression-recovery PR only after its exact final head passes CI / Quality, Browser E2E and Full Flight Test and receives human review.
-2. Complete owner-controlled staging identity and branch-governance tasks; retain sanitized evidence and do not expose resource identifiers in workflow logs.
-3. Do not call the product customer-ready until live UAT, separate-target restore and operator/device acceptance are recorded.
+1. Complete this one source-only gate-reliability PR and require exact-head CI / Quality, Browser E2E and Full Flight Test to pass.
+2. Obtain the designated human review and owner/admin confirmation that `client-main` has effective required checks and approval rules. Do not merge or enable auto-merge from this run.
+3. Privately correct staging Environment identity and credentials, then separately authorize guarded staging UAT and a real restore into a separate destination.
+4. Record intended-device, offline/reconnect, accessibility, authorization and customer acceptance before any pilot. Production remains excluded.
 
 ---
 

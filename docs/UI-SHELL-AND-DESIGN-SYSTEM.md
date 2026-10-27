@@ -1,5 +1,7 @@
 # UI shell and design system
 
+**Current `client-main` integration note — 26 October 2026:** PRs #224–#227 are merged at `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`. PR #227 makes date selection follow the single-property `Asia/Kolkata` business day across Dashboard, entry and cash-close flows; Browser E2E passed on the integration SHA. The source quality gate is currently blocked by a formatting regression in `test/test-staging-workflow.js`; Full Flight also encountered a transient GitHub API HTTP 502. Neither source validation nor this design record certifies live staging, offline/reconnect, actual-device accessibility or customer acceptance.
+
 Status: FrontUI Studio (PR #151), light-first redesign (PR #157), production-screen adoption (PR #159), responsive reporting/admin adoption (PR #160), Bulk Upload/Cash Close completion (PR #161), cross-workflow visual matrix (PR #162), navigation/accessibility contract (PR #163), validation/async-state work (PR #164), route-safe asynchronous views (PR #165), customer static packaging (PR #166) and password authentication/staging-readiness consolidation (PR #169) are merged. The verified main baseline is `8e18b4f3ed8601f70e192b6d32587675ad4cdb7b`; main CI passed. None of this certifies manual assistive-technology or live operational readiness.
 
 ## Approach
