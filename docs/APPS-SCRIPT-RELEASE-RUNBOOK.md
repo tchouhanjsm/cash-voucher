@@ -145,7 +145,7 @@ After the intended deployment is updated:
 - Verify receipt upload/read authorization and that production Sheet/Drive folders remain private.
 - Check backup status and Drive for a real completed snapshot, receipt copies and manifest.
 - Review the new Apps Script MailApp permission before authorizing the intended project. Verify `OWNER_EMAIL` is the approved recipient, then confirm that a controlled failure in a non-production project sends one email and that subsequent failures do not spam the recipient; also verify a successful backup clears the failure incident state.
-- Perform a restore drill into a separate recovery Sheet/folder before claiming recoverability. Do not overwrite the only production copy. Do not deliberately break the production backup to test notification delivery.
+- Perform a restore drill into a separate recovery Sheet/folder before claiming recoverability. Record the owner-approved result privately using `docs/RECOVERY-DRILL-EVIDENCE.md` and validate it with `npm run validate:recovery-evidence -- /private/path/recovery-evidence.json`. The validator checks contract completeness and internal consistency only; it does not authenticate the operator or independently prove live resource state. Never commit the evidence JSON. Do not overwrite the only production copy. Do not deliberately break the production backup to test notification delivery.
 - Record deployed version, deployment ID, UTC/local timestamp, authorization scopes approved, checks performed and any failed/untested gates.
 
 ## Rollback
