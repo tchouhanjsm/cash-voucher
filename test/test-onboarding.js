@@ -83,7 +83,9 @@ assert.ok(
       state.data.summary.pending === 7,
   'onboarding returns server-derived status counts for all current-stage requirements',
 );
-const backupReadinessStep = state.data.steps.find((step) => step.id === 'recentBackup');
+const backupReadinessStep = state.data.steps.find(
+  (step) => step.id === 'recentBackup',
+);
 assert.ok(
   backupReadinessStep &&
     backupReadinessStep.details &&
