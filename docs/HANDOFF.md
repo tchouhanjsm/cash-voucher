@@ -1,23 +1,23 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 16:32 IST (audit marker canonical metadata validation — PR #238)
+**Updated:** 27 October 2026 16:50 IST (canonical backup freshness gate — current source batch)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `b20d9d9a7377032bb3f139be5ed0d051d35c4d20` (PR #237 merged; dashboard KPI responsive UX integrated).
-**Active PR:** #238, `client/audit-marker-canonical-validation-20261027`, targeting `client-main`. It rejects noncanonical marker counters/timestamps so malformed audit-health state cannot be represented as a valid degraded marker.
-**Release boundary:** backend validation, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
+**Current integration baseline:** `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c` (PR #238 merged; exact-head CI, Browser E2E and Full Flight passed; post-merge source workflows also passed).
+**Current source batch:** `client/onboarding-backup-marker-contract-20261027` requires canonical backup success/attempt timestamps and denies production release when either marker is missing, malformed, future-dated, or inconsistent.
+**Release boundary:** onboarding guard, regression tests and release checkpoint docs only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current live checkpoint — 27 October 2026 16:32 IST
+## Current live checkpoint — 27 October 2026 16:50 IST
 
-- **Authoritative integration:** `client-main` at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
-- **PR queue:** PR #237 merged at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`. Current source follow-up is PR #238, `client/audit-marker-canonical-validation-20261027`.
-- **Finding:** audit marker readers used numeric coercion for JSON `failureCount` values and relied on permissive `Date.parse`. Exponential/decimal/zero-padded property counts and date-only, timezone-suffixed, fractional-second or calendar-rollover timestamps could be accepted despite not matching the machine-written marker contract.
-- **Correction in PR #238:** JSON markers require a numeric safe integer greater than zero; Script Properties counters require canonical positive decimal digit strings; marker timestamps must match the application-emitted second-precision `yyyy-MM-dd'T'HH:mm:ss` business-time format and round-trip to the same calendar/time fields. Invalid metadata makes that marker source unavailable, preserving `MONITORING_UNAVAILABLE` instead of a false `DEGRADED` or clean state.
-- **Regression coverage:** backend tests now exercise numeric-string JSON counters, exponential/decimal/zero-padded property counters, date-only, timezone-suffixed/fractional-second timestamps, and impossible calendar dates across Settings JSON and Script Properties stores.
-- **Verification state:** PR #238 CI / Quality, Browser E2E and Full Flight must pass on one identical final PR head before review/merge. No pass is claimed until live run results complete.
-- **Governance:** `client-main` still reports `protected=false`; ruleset #24624368 targets default branch `main` only. Owner/admin must establish and verify integration-branch protections and human-review requirements.
-- **Operational blockers remain separate:** the recorded staging preflight failed because production resource references were empty and Clasp credentials were missing/rejected. Do not retry unchanged configuration. Live target identity, UAT, real backup/restore, host headers, live authorization, device recovery/accessibility and customer acceptance remain unverified.
-- **Release boundary:** source validation/tests/docs only. No live Apps Script deployment, resource mutation, migration, write-capable UAT, cPanel publish or production operation was performed.
+- **Authoritative integration:** `client-main` at `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
+- **PR #238 — audit marker canonical metadata validation:** merged to `client-main`. Its exact-head CI / Quality [#40489163399](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163399), Browser E2E [#40489163534](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163534), and Full Flight Test [#40489163334](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163334) passed. Post-merge CI [#40493844709](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844709), Browser E2E [#40493844544](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844544), Full Flight Test [#40493844746](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844746), and Autonomous Development Monitor [#40493844521](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844521) also passed on the integration commit.
+- **New finding:** `onboardingBackupCheck_()` used permissive `Date.parse()` and accepted an absent `BACKUP_LAST_ATTEMPT`. The backup writer emits both markers with `Date.toISOString()`; the accepted contract is exact UTC ISO text with millisecond precision (`YYYY-MM-DDTHH:mm:ss.sssZ`).
+- **Correction in this batch:** validate the exact timestamp grammar and calendar round-trip; require both success and attempt timestamps; require a successful backup to be non-future and within the existing 36-hour freshness window; require the latest attempt not to be newer than the success; and continue to block if a recorded backup error exists. Any failed condition keeps production release and financial writes blocked.
+- **Regression coverage:** missing attempt, date-only success/attempt values, omitted milliseconds, an impossible calendar date, future success and an attempt later than success must deny release; restoring both canonical consistent markers returns the test fixture to the accepted state. This is mock-backed validation, not a real backup/restore.
+- **Governance:** `client-main` reports `protected=false`; ruleset #24624368 still targets default branch `main` only. Owner/admin must configure and verify integration-branch required checks and human approval.
+- **Staging blocker:** the recorded UAT preflight [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed because production resource references were absent and Clasp credentials were missing/rejected. Do not retry unchanged configuration.
+- **Release remains BLOCKED:** live staging target/version, guarded UAT, real isolated restore, actual host headers, live role/receipt authorization, offline/reconnect, printing, accessibility and customer acceptance remain unverified.
+- **Boundary:** this batch changes source, tests and checkpoint documentation only. It does not make live resource calls or deploy, migrate, publish, or mutate customer data.
 
 ## Historical checkpoint — 27 October 2026 15:22 IST (superseded by PR #237 merge)
 
