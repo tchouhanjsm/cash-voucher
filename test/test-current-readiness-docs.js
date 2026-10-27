@@ -24,10 +24,7 @@ const dashboard = read('frontend/features/dashboard.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(
-  handoff,
-  /Current integration baseline.*b2a4a45e0f4326a59b51151754691d56476f0b35/,
-);
+assert.match(handoff, /Current integration baseline.*b2a4a45e0f4326a59b51151754691d56476f0b35/);
 assert.match(dashboard, /function dashboardSummaryIssue/);
 assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
 assert.match(browserE2e, /Dashboard totals unavailable/);
@@ -115,10 +112,7 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(
-  executionPlan,
-  /Current integration SHA.*b2a4a45e0f4326a59b51151754691d56476f0b35/,
-);
+assert.match(executionPlan, /Current integration SHA.*b2a4a45e0f4326a59b51151754691d56476f0b35/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);

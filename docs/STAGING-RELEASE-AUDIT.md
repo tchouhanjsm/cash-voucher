@@ -1,11 +1,11 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 27 October 2026, 05:48 IST (PR #229 conflict-resolution checkpoint)  
-**Current integration baseline:** `client-main` `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).  
-**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).  
-**Current follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main`; merge-conflict resolution must retain the upstream PR #228 release-gate changes.  
-**Legacy branch:** `main` (read-only by engineering policy).  
-**Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.  
+**Audit date:** 27 October 2026, 05:48 IST (PR #229 conflict-resolution checkpoint)
+**Current integration baseline:** `client-main` `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).
+**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
+**Current follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main`; merge-conflict resolution must retain the upstream PR #228 release-gate changes.
+**Legacy branch:** `main` (read-only by engineering policy).
+**Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
 
 ## Current checkpoint — date correctness and release gates
 

@@ -5769,9 +5769,20 @@ with sync_playwright() as p:
         and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
     ):
         page.locator('.form-error [data-act=reportRun]').click()
-    page.wait_for_function(
-        "document.querySelector('#view').innerText.includes('Source vouchers')"
-    )
+    try:
+        page.wait_for_function(
+            "document.querySelector('#view').innerText.includes('Source vouchers')"
+        )
+    except Exception:
+        recovery_state = page.evaluate("""() => ({
+            viewText: document.querySelector('#view')?.innerText?.slice(0, 3000) || '',
+            from: document.querySelector('#movementFrom')?.value || '',
+            to: document.querySelector('#movementTo')?.value || '',
+            outputBusy: document.querySelector('#report-output')?.getAttribute('aria-busy') || '',
+            reportError: document.querySelector('.form-error')?.innerText || '',
+        })""")
+        print('Report recovery diagnostics:', json.dumps(recovery_state, ensure_ascii=False))
+        raise
     check(
         'invalid response' not in page.locator('#view').inner_text().lower(),
         'movement report recovers after a malformed response is removed',

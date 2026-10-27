@@ -1,12 +1,12 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)  
-**Repository:** tchouhanjsm/cash-voucher  
-**Integration branch:** `client-main`; legacy `main` remains read-only.  
-**Current integration baseline:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged; supersedes PR #227's base).  
-**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.  
-**Current source batch:** PR #229, `client/fix-business-date-arithmetic-20261027` — make business-date calculations timezone-independent on top of PR #228's integrated release-gate fixes.  
-**Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.  
+**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
+**Repository:** tchouhanjsm/cash-voucher
+**Integration branch:** `client-main`; legacy `main` remains read-only.
+**Current integration baseline:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged; supersedes PR #227's base).
+**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
+**Current source batch:** PR #229, `client/fix-business-date-arithmetic-20261027` — make business-date calculations timezone-independent on top of PR #228's integrated release-gate fixes.
+**Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
 ## Historical pre-PR #228 checkpoint — 27 October 2026 05:48 IST
 

@@ -1,10 +1,10 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)  
-**Integration branch:** `client-main`; `main` remains legacy/read-only.  
-**Current integration SHA:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).  
-**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.  
-**Active follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main` and remains unmerged pending exact-head validation.  
+**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
+**Integration branch:** `client-main`; `main` remains legacy/read-only.
+**Current integration SHA:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).
+**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
+**Active follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main` and remains unmerged pending exact-head validation.
 
 ## Historical gate evidence and current business-date follow-up
 
@@ -21,7 +21,7 @@
 
 - **Conflict resolution:** PR #228 advanced `client-main` to `b2a4a45e0f4326a59b51151754691d56476f0b35` after PR #229 was opened from the earlier PR #227 baseline. The conflict-resolution merge must preserve PR #228's updated Full Flight workflow, `test/test-flight-workflow.js`, `package.json` test wiring and formatted staging contract test.
 - **Business-date implementation:** PR #229 aligns date-only calendar arithmetic and Dashboard/Reports range validation across the legacy and modular frontend entry paths, increments the service-worker cache version, and adds timezone, India-midnight, leap-day and year-boundary regression coverage.
-- **Prior PR #229 head evidence:** CI / Quality [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102), and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096) failed on superseded SHA `c71e233e11eec5b6d2b2d37be27216a80a170f7e); monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. These results do not validate the merge-resolution head; all exact-head checks must rerun.
+- **Prior PR #229 head evidence:** CI / Quality [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102), and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096) failed on superseded SHA `c71e233e11eec5b6d2b2d37be27216a80a170f7e`; monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. These results do not validate the merge-resolution head; all exact-head checks must rerun.
 
 ---
 

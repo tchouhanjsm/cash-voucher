@@ -103,7 +103,7 @@ async function run() {
       process.execPath,
       [
         '-e',
-        `import('data:text/javascript;base64,${Buffer.from(source).toString('base64')}').then(({addDays,businessDate})=>console.log([addDays('2027-01-01',-1),businessDate(new Date('2026-10-26T18:30:00.000Z'))].join('|')))`,
+        `import('data:text/javascript;base64,${Buffer.from(source).toString('base64')}').then(\n          ({ addDays, businessDate }) =>\n            console.log(\n              [\n                addDays('2027-01-01', -1),\n                businessDate(new Date('2026-10-26T18:30:00.000Z')),\n              ].join('|'),\n            ),\n        )`,
       ],
       { encoding: 'utf8', env: { ...process.env, TZ: timezone } },
     );
