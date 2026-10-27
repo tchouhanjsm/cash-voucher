@@ -350,8 +350,15 @@ export function createRegister({ api, go }) {
             ? 'loading'
             : pageTotalCount > 0
               ? 'page-empty'
-              : R.q || R.vendor || R.cat || R.user || R.t || R.from || R.to ||
-                  R.st !== 'ACTIVE' || R.approval !== 'ALL'
+              : R.q ||
+                  R.vendor ||
+                  R.cat ||
+                  R.user ||
+                  R.t ||
+                  R.from ||
+                  R.to ||
+                  R.st !== 'ACTIVE' ||
+                  R.approval !== 'ALL'
                 ? 'filtered'
                 : 'first-use';
     }
