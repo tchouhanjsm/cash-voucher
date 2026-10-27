@@ -49,7 +49,7 @@ assert.match(handoff, /audit marker canonical metadata validation/i);
 assert.match(auditHelpers, /function isCanonicalAuditTimestamp_/);
 assert.match(auditHelpers, /AUDIT_TIMESTAMP_PATTERN_/);
 assert.ok(auditHelpers.includes("Date.parse(value + 'Z')"));
-assert.ok(auditHelpers.includes("toISOString().slice(0, 19) === value"));
+assert.ok(auditHelpers.includes('toISOString().slice(0, 19) === value'));
 assert.match(auditHelpers, /typeof marker[.]failureCount !== 'number'/);
 assert.match(backendTests, /count: '2e0'/);
 assert.match(backendTests, /failureCount: '1'/);
