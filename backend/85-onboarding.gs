@@ -398,6 +398,7 @@ function onboardingVisibleState_(user, environment) {
       automatic: automatic,
       status: status,
       message: message,
+      details: check && check.details,
       evidence: record ? record.evidence : '',
       actorEmail: record ? record.actorEmail : '',
       completedAt: record ? record.completedAt : '',
