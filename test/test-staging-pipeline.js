@@ -113,9 +113,10 @@ const attestedDeployOnly = validateStagingConfiguration(withoutProductionReferen
 });
 assert.equal(attestedDeployOnly.ok, false);
 assert.ok(
-  attestedDeployOnly.errors.some((message) =>
-    message.includes('write-capable staging operations') &&
-    message.includes('not sufficient'),
+  attestedDeployOnly.errors.some(
+    (message) =>
+      message.includes('write-capable staging operations') &&
+      message.includes('not sufficient'),
   ),
 );
 assert.equal(attestedDeployOnly.checks.ownerAttestedIsolationUsed, false);
