@@ -1,23 +1,27 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 13:50 IST (PR #235 Register responsive filter UX batch)
+**Updated:** 27 October 2026 14:06 IST (PR #236 Full Flight timeout correction)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `21546c0bc48878d71aaae24933752d3599fcb105` (PR #234 merged; CI / Quality, Browser E2E and Full Flight prerequisite gate passed on the same merged commit).
-**Active PR:** #235, `client/register-responsive-filter-ux-20261027`, targeting `client-main`. It adds visible labels and mobile alignment for Register filters, an E2E permission-visibility regression, the corresponding DOM sink fingerprint update, and shell cache revision `cv2-v34`. Re-fetch the live PR head and require fresh exact-head checks after every push.
-**Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
+**Current integration baseline:** `16ce3305313bbe4caaf16c9b5d5d35ea0f2f3b8f` (PR #235 merged; integration-head CI, Browser E2E and Full Flight all passed on the merged commit).
+**Active PR:** #236, `client/fix-full-flight-timeout-20261027`, targeting `client-main`. It aligns the exact-SHA Full Flight wait budget with the Browser E2E runtime and adds a regression contract for workflow timeout margins.
+**Release boundary:** workflow/test/documentation changes only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
-## Current live checkpoint — 27 October 2026 13:50 IST
+## Current live checkpoint — 27 October 2026 14:06 IST
 
-- **Authoritative integration:** `client-main` at `21546c0bc48878d71aaae24933752d3599fcb105`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408` and must not be modified.
-- **PR queue:** PR #234 is merged. PR #235 is the current UX follow-up and targets `client-main`. No merge, approval, auto-merge request or deployment is authorised by this batch.
-- **PR #235 scope:** Register filters now have visible labels for Vendor, Category, From, To, User (when permitted), Transaction type, Status and Approval. The responsive grid keeps date labels with their own controls. Browser coverage exercises real first-use-empty response, table-chrome suppression, first-entry visibility based on `can('create')`, permission restoration and populated Register recovery.
-- **Validation boundary:** the first branch-push checks were collected before the live handoff checkpoint was synchronized; those results are historical for that earlier head. Required PR-event CI / Quality, Browser E2E and Full Flight Test must all pass on the identical latest PR head. The Full Flight push-event job is skipped by policy on feature branches and is not a release pass.
-- **Security/recovery:** the reviewed source-to-sink fingerprint for `frontend/features/register.js` was recomputed and updated narrowly. The recovery-evidence validator/tests and staging/recovery safeguards remain on `client-main`; this UI batch changes no accounting, authorization policy, API, schema, offline queue or recovery contract.
-- **PWA:** `sw.js` advances the shell cache to `cv2-v34` because the Register module and shared visual shell changed.
-- **Governance:** active ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) still targets only `~DEFAULT_BRANCH` (`main`). The live `client-main` branch API reports `protected=false`; owner/admin must add and verify integration-branch governance, required CI/E2E/Full Flight checks and human review.
-- **Staging/release:** the latest recorded staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolated-deployment preflight because required production resource references were absent and Clasp credentials were missing/rejected. Do not retry unchanged configuration. Live staging identity, guarded UAT, backup/restore, host headers, live role/receipt authorization, offline/reconnect, print/PDF, assistive-technology checks and customer acceptance remain unverified.
-- **Next action:** fetch the current PR #235 SHA and workflow run states after this documentation sync. If any gate fails, inspect its actual failure and fix it in this PR; do not treat skipped, cancelled, stale-SHA or superseded results as success. Keep the PR open for human review; do not merge or deploy.
+- **Authoritative integration:** `client-main` at `16ce3305313bbe4caaf16c9b5d5d35ea0f2f3b8f`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
+- **PR queue:** PR #235 is merged. PR #236 is the current workflow-reliability follow-up. No merge, approval, auto-merge request or deployment is authorised by this batch.
+- **Root cause:** PR-event Full Flight [run #40472954474](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40472954474) failed at 08:33:58 UTC, while Browser E2E [run #40472954460](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40472954460) completed successfully at 08:34:57 UTC on the identical head `2638dc5b76da711ad950f23d753f019c4a973fa4`. The 12-minute gate deadline was shorter than the 20-minute Browser E2E job timeout; the gate gave up about 59 seconds before E2E finished. This was a deterministic release-gate timing defect, not an E2E assertion failure.
+- **Post-merge confirmation:** integration push checks all passed on merged commit `16ce3305313bbe4caaf16c9b5d5d35ea0f2f3b8f`: CI [#40474678092](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40474678092), Browser E2E [#40474678068](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40474678068), and Full Flight Test [#40474678079](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40474678079). These integration-push passes do not erase the failed PR-event gate.
+- **Correction in PR #236:** Full Flight now waits up to 25 minutes and its job timeout is 30 minutes. A contract test reads the Browser E2E timeout and verifies a minimum five-minute margin both between the prerequisite timeout and gate deadline, and between the gate deadline and Full Flight job timeout. Exact-SHA, branch, event and non-success handling remain unchanged.
+- **Governance:** the active ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) still targets `~DEFAULT_BRANCH` (`main`) only. The live `client-main` branch API reports `protected=false`; owner/admin must verify appropriate protection, required checks and human approval.
+- **Operational blockers:** the latest recorded staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight because resource references and valid Clasp credentials were missing. Do not retry unchanged configuration. Live staging identity, guarded UAT, backup/restore, host headers, live role/receipt authorization, offline/reconnect, print/PDF, assistive-technology checks and customer acceptance remain unverified.
+- **Next action:** validate PR #236 on one exact SHA with CI / Quality, Browser E2E and Full Flight. Keep the PR open for human review; do not merge or deploy. Once the gate correction is integrated, continue the next product UX batch with dashboard Owner/Staff responsive regression coverage.
+
+## Historical checkpoint — 27 October 2026 13:50 IST (superseded by PR #235)
+
+- At the previous checkpoint, PR #235 was an open Register responsive UX follow-up. It has since merged at `16ce3305313bbe4caaf16c9b5d5d35ea0f2f3b8f`.
+- PR #235's PR-event CI and Browser E2E passed, but its Full Flight gate timed out before Browser E2E completed. The next checkpoint records the root cause and correction.
 
 ## Historical checkpoint — 27 October 2026 12:02 IST (superseded by PR #234)
 
