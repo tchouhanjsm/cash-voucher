@@ -3357,6 +3357,23 @@ with sync_playwright() as p:
         and page.locator('#rs').get_attribute('aria-label') == 'Filter by status',
         'register search and filter controls have explicit accessible names',
     )
+    register_search_xss_payload = '\"><svg onload=window.__registerSearchXssFired=true></svg>'
+    page.evaluate('window.__registerSearchXssFired = false')
+    page.fill('#rq', register_search_xss_payload)
+    page.wait_for_function(
+        'payload => document.querySelector("#rq")?.value === payload',
+        arg=register_search_xss_payload,
+    )
+    go_view(page, 'dash')
+    go_view(page, 'reg')
+    page.wait_for_selector('#rq')
+    check(
+        page.locator('#rq').input_value() == register_search_xss_payload
+        and page.locator('#view svg[onload], #view img[onerror]').count() == 0
+        and not page.evaluate('window.__registerSearchXssFired === true'),
+        'Register search input safely round-trips hostile text when the view is rebuilt',
+    )
+
     check(page.locator('#rbody tr').count() == 2, 'staff register 2 rows')
     page.fill('#rq', 'No matching voucher 987654')
     page.wait_for_function(
