@@ -27,8 +27,8 @@ const dashboard = read('frontend/features/dashboard.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(handoff, /Current integration baseline.*16ce3305313bbe4caaf16c9b5d5d35ea0f2f3b8f/);
-assert.match(handoff, /Current live checkpoint.*27 October 2026 14:06 IST/);
+assert.match(handoff, /Current integration baseline.*e1864c23c2aec607262d68f5800056cc52305484/);
+assert.match(handoff, /Current live checkpoint.*27 October 2026 15:22 IST/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);
@@ -37,6 +37,14 @@ assert.match(handoff, /Historical checkpoint — PR #229 integration audit/);
 assert.match(dashboard, /function dashboardSummaryIssue/);
 assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
 assert.match(browserE2e, /Dashboard totals unavailable/);
+assert.match(browserE2e, /owner dashboard KPI grid matches the role and breakpoint contract/);
+assert.match(
+  browserE2e,
+  /staff dashboard KPI grid matches the five-card role and breakpoint contract/,
+);
+assert.match(browserE2e, /dashboard KPI values fit inside their cards without horizontal clipping/);
+assert.match(handoff, /dashboard KPI responsive UX batch/i);
+assert.match(handoff, /cv2-v35/);
 assert.match(deliveryPhase, /PR #225.*merged/i);
 assert.doesNotMatch(deliveryPhase, /it remains open until reviewed and merged by the owner/);
 assert.match(handoff, /Historical PR #227 integration-head evidence.*#40373320173/);

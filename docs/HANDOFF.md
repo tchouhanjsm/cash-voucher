@@ -1,13 +1,26 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 14:06 IST (PR #236 Full Flight timeout correction)
+**Updated:** 27 October 2026 15:22 IST (dashboard KPI responsive UX batch — PR #237)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `16ce3305313bbe4caaf16c9b5d5d35ea0f2f3b8f` (PR #235 merged; integration-head CI, Browser E2E and Full Flight all passed on the merged commit).
-**Active PR:** #236, `client/fix-full-flight-timeout-20261027`, targeting `client-main`. It aligns the exact-SHA Full Flight wait budget with the Browser E2E runtime and adds a regression contract for workflow timeout margins.
-**Release boundary:** workflow/test/documentation changes only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
+**Current integration baseline:** `e1864c23c2aec607262d68f5800056cc52305484` (PR #236 merged; Full Flight timeout correction integrated).
+**Active PR:** #237, `client/dashboard-kpi-responsive-20261027`, targeting `client-main`. It improves phone-size KPI hierarchy and adds owner/staff browser coverage at role-specific grid breakpoints.
+**Release boundary:** frontend CSS, browser regression coverage, service-worker shell revision and handoff documentation only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
-## Current live checkpoint — 27 October 2026 14:06 IST
+## Current live checkpoint — 27 October 2026 15:22 IST
+
+- **Authoritative integration:** `client-main` at `e1864c23c2aec607262d68f5800056cc52305484`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
+- **PR queue:** PR #236 merged as `e1864c23c2aec607262d68f5800056cc52305484`. The next bulk UX batch is PR #237, targeting only `client-main`; no PR is merged or deployed by this batch.
+- **Dashboard UX objective:** make Owner and Staff KPI cards readable at phone widths while protecting the role-aware card count, responsive grid breakpoints, numeric visibility, and page overflow in actual browser tests.
+- **Phone layout change:** at widths up to 440px, each KPI card uses a compact icon/label header, a full-width single-line amount, and a full-width wrap-safe supporting line. The two-column KPI grid remains intact to avoid turning the dashboard into a long stack.
+- **Role/viewport contract:** Owner displays six KPIs with 3 columns above 800px and 2 columns at 800px and below. Staff displays five permitted KPIs, using 5 columns above 1100px, 3 columns from 801–1100px, and 2 columns at 800px and below. Browser assertions check exact card counts, computed columns, card containment, amount clipping and page overflow in both themes at 320–1440px, including the 440/441, 800/801 and 1100/1101 breakpoints.
+- **Offline shell:** `sw.js` moves from `cv2-v34` to `cv2-v35` so the updated CSS is re-fetched instead of leaving returning users on a stale cached shell.
+- **Verification state:** PR #237's CI / Quality, Browser E2E and Full Flight results must all complete successfully on the same final PR head. They are not represented as passed before the checks finish. Do not merge, approve, enable auto-merge or deploy from this batch.
+- **Governance:** repository ruleset #24624368 still targets default branch `main` only; `client-main` currently reports `protected=false`. Owner/admin must configure and verify appropriate protection, required checks and human approval.
+- **Operational release blockers:** the last recorded staging preflight failed because resource references and valid Clasp credentials were missing. Live staging identity, guarded UAT, backup/restore, host headers, live authorization, offline/reconnect on intended devices, printing, accessibility and customer acceptance remain unverified. Do not retry unchanged configuration.
+- **Next action:** inspect exact-head checks after PR #237 opens; correct any failures before requesting review. After integration, continue with the next substantive launch/readiness phase, without treating source tests as live-staging proof.
+
+## Historical checkpoint — 27 October 2026 14:06 IST (superseded by PR #236)
 
 - **Authoritative integration:** `client-main` at `16ce3305313bbe4caaf16c9b5d5d35ea0f2f3b8f`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
 - **PR queue:** PR #235 is merged. PR #236 is the current workflow-reliability follow-up. No merge, approval, auto-merge request or deployment is authorised by this batch.
