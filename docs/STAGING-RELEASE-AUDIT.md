@@ -1,14 +1,24 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 27 October 2026 (read-only staging configuration readiness phase)
-**Current integration baseline:** `client-main` `1dba1b008eb2303ffddf069285fbb22efc76a8cb` (PR #240 merged; operational release remains blocked).
-**Current source batch:** `client/staging-config-preflight-20261027`; add read-only protected-Environment staging configuration preflight and sanitized evidence.
+**Audit date:** 27 October 2026 (release integrity and dependency policy phase)
+**Current integration baseline:** `client-main` `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; operational release remains blocked).
+**Current source batch:** `client/release-integrity-dependency-hardening-20261027`; harden recovery evidence, dependency policy and current release-state accuracy.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
 
-## Current release-session checkpoint — 27 October 2026
+## Current release-session checkpoint — 27 October 2026 22:11 IST
+
+- **Integration baseline:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PRs #240 and #241 are merged. Legacy `main` remains frozen/read-only.
+- **Current consolidated source batch:** `client/release-integrity-dependency-hardening-20261027`. It tightens recovery-evidence version labels, removes an exception for a withdrawn advisory, adds regression coverage, and refreshes current release/handoff checkpoints. It does not deploy or access live resources.
+- **Support throttling finding disposition:** `backend/90-support.gs` already serializes quota read/check/increment under a script lock; `test/test-support-report.js` covers under-lock rechecks, lock contention and single counter consumption. This is source/mock-test evidence—not a claim of live Apps Script load testing.
+- **Audit-health finding disposition:** `backend/25-helpers.gs` already rejects malformed marker metadata and reports `MONITORING_UNAVAILABLE` when a marker store is malformed/unavailable; `test/test-backend.js` covers malformed and mixed valid/corrupt stores. Do not reopen these as pending source fixes unless a new reproducer proves a regression.
+- **Dependency policy:** GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) on 23 October 2026; it is no longer an approved exception. [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) remains the scoped Zod concern; current upstream Clasp is 3.4.1 and declares Zod `^3.25.76`, so do not force an unverified major override. Keep the existing exception limited to this developer/CI toolchain and review compatibility by 9 November 2026.
+- **Release remains blocked:** verify branch protection/human review on `client-main`; privately verify staging resource identities and credentials; run configuration readiness; then separately authorize live staging UAT, restore into separate recovery resources, full seven-sheet/header/count reconciliation, voucher/receipt read-back, production-unchanged evidence, host-header/authorization checks and device/accessibility/customer acceptance.
+- **Safety boundary:** no live workflow dispatch, Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, cPanel publication or production operation is included. Preserve exact-head CI / Quality, Browser E2E and Full Flight gates; require them on one SHA. No automatic merge. Keep `main` read-only.
+
+## Historical checkpoint — PR #241 staging configuration readiness (superseded by current release integrity checkpoint)
 
 - **Integration baseline:** `client-main` at `1dba1b008eb2303ffddf069285fbb22efc76a8cb` after PR #240 merged. Legacy `main` remains read-only.
 - **Selected bulk phase:** `client/staging-config-preflight-20261027`. Add a read-only `readiness` mode to the staging preflight and invoke it from `validate-only` through the protected GitHub `staging` Environment.
@@ -246,8 +256,10 @@ The ChatGPT monitor has a real hourly schedule. The requested 45-minute interval
 
 Automatic recovery is limited to timed-out source-validation runs, validated against the exact current head, with at most three attempts total. It does not rerun failed tests, cancelled runs, write-capable staging UAT or static ZIP publication. PR-event observation is read-only. No automated merge, Clasp push, Apps Script deployment, Google resource mutation, migration, cPanel upload or production change is permitted.
 
-## Deep-dive findings to fix in a separate code batch
+## Deep-dive findings — current source disposition
 
-- Support report rate limiting in backend/90-support.gs is implemented with CacheService read-then-put and is not atomic under concurrent submissions. Add a bounded lock/atomic counter and concurrency tests.
-- B6 audit-marker parsing appears to coerce malformed Script Properties state into a degraded marker rather than always returning MONITORING_UNAVAILABLE. Add malformed counter/timestamp tests and align implementation with the published fail-closed contract.
-- Live staging, actual response headers, real Google resource isolation, migration need, backup/restore, and device acceptance remain unverified. Green CI/mock tests must never close those release gates.
+- **Support-report throttling:** the current source uses a shared script lock around cache read/check/increment and fails closed on lock/cache errors. Regression coverage exists in `test/test-support-report.js`. The old read-then-put finding is stale; real Apps Script concurrency/load behaviour remains unproven by mocks.
+- **Audit-marker parsing:** `backend/25-helpers.gs` validates canonical counters/timestamps, and the aggregate health contract is `MONITORING_UNAVAILABLE` if any marker store is malformed or unavailable. `test/test-backend.js` exercises invalid properties/settings metadata and mixed valid/corrupt stores. The previous pending-code finding is resolved in the merged baseline.
+- **Recovery-evidence sanitization:** the current batch restricts `restore.deployedVersion` to a safe version-label pattern so this allowed field cannot carry a URL, email address, path or arbitrary identifier string.
+- **Dependency policy:** GHSA-vfj7-8cjw-p6xm was withdrawn by GitHub on 23 October 2026 and is removed from the accepted exceptions; the active Zod advisory remains a scoped developer-tooling exception with a 9 November 2026 review date.
+- **Still operational:** live staging identity/UAT, actual response headers, real isolated backup/restore, migration need, device/offline recovery, printing, accessibility and customer acceptance remain unverified. Green CI/mock tests must not close those gates.
