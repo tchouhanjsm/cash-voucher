@@ -1,23 +1,30 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 27 October 2026, 16:50 IST (canonical backup freshness gate — current source batch)
-**Current integration baseline:** `client-main` `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c` (PR #238 merged and all exact-head/post-merge source gates passed; operational release remains blocked).
-**Current source batch:** `client/onboarding-backup-marker-contract-20261027`; require exact UTC ISO success/attempt backup markers before production acceptance can remain enabled.
+**Audit date:** 27 October 2026, 17:59 IST (backup readiness vertical slice — current source batch)
+**Current integration baseline:** `client-main` `ba56028c4eba2ea499c988fe03866a592005f12c` (PR #239 merged; operational release remains blocked).
+**Current source batch:** `client/backup-readiness-vertical-slice-20261027`; unify backup-marker semantics across status and onboarding, expose actionable launch-state summaries, and cover the end-to-end owner interaction.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
 
-## Current live checkpoint — 27 October 2026 16:50 IST
+## Current live checkpoint — 27 October 2026 17:59 IST
 
-- **Authoritative integration:** `client-main` at `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c`; `main` remains legacy/read-only and must not be changed.
-- **PR #238 and integration gates:** PR-event CI / Quality [#40489163399](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163399), Browser E2E [#40489163534](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163534) and Full Flight [#40489163334](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163334) passed on its final PR head. Post-merge CI [#40493844709](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844709), Browser E2E [#40493844544](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844544), Full Flight [#40493844746](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844746), and monitor [#40493844521](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844521) passed on `fd0cfea...`.
-- **New source finding:** `onboardingBackupCheck_()` used permissive timestamp parsing and accepted a missing last-attempt marker. The actual backup writer emits both `BACKUP_LAST_SUCCESS` and `BACKUP_LAST_ATTEMPT` via `Date.toISOString()`; markers must round-trip exact `YYYY-MM-DDTHH:mm:ss.sssZ` strings.
-- **Current batch contract:** both markers must be present and canonical; success must be at most 36 hours old and not future-dated; the latest attempt cannot be later than the last success; any recorded backup failure blocks readiness. Failure keeps production `releaseAllowed` false and financial writes rejected. Source tests do not prove that a backup can be restored.
-- **Governance:** `client-main` reports `protected=false`; active ruleset #24624368 still targets default branch `main` only. Owner/admin must establish and verify required integration checks and human approval.
+- **Authoritative integration:** `client-main` at `ba56028c4eba2ea499c988fe03866a592005f12c`; `main` remains legacy/read-only and must not be changed.
+- **Bulk implementation:** one backend backup-marker contract drives both Settings backup status and onboarding. Marker issues include missing/invalid timestamps, future success, attempt-after-success and recorded failure; freshness is reported separately.
+- **Onboarding workflow:** the server supplies current-stage counts; the launch UI summarizes Passed/Blocked/Pending/Failed, points to the next required action and displays marker reasons. Browser E2E exercises a successful owner confirmation followed by a recorded failure and checks the resulting summary.
+- **Evidence limitation:** metadata checks and structural snapshot inspection are not restore proof. A witnessed restore into separate recovery resources and reconciliation of Sheet/receipt contents remain necessary.
+- **Governance:** `client-main` reports `protected=false`; ruleset #24624368 still targets default branch `main` only. Owner/admin must establish and verify required integration checks and human approval.
 - **Staging blocker:** prior UAT preflight [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed because production resource references were empty and Clasp credentials were missing/rejected. Do not retry unchanged configuration.
 - **Release remains BLOCKED:** staging identity/version, guarded UAT, verified isolated restore, actual host headers, live role/receipt authorization, offline/reconnect, printing, accessibility and customer acceptance remain open.
-- **Boundary:** source/test/checkpoint changes only; no Clasp push, deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+- **Boundary:** source/tests/runbook changes only; no Clasp push, deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+
+## Immediate release sequence
+
+1. Finish this cross-layer PR with CI / Quality, Browser E2E and Full Flight Test passing on the identical final PR SHA.
+2. Owner/admin: protect `client-main` with exact-head required checks and human review.
+3. Privately correct staging Environment identity and credentials; separately authorize guarded staging UAT and a real isolated backup/restore.
+4. Record actual role/receipt, offline/reconnect, printing, accessibility and customer acceptance before any pilot. Production remains excluded.
 
 ## Historical checkpoint — 27 October 2026 11:02 IST (superseded by PR #237 merge)
 

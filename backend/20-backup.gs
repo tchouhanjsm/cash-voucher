@@ -944,6 +944,59 @@ function backupIntegrityReportWithServices_(services) {
   };
 }
 
+const BACKUP_TIMESTAMP_PATTERN_ = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
+function isCanonicalBackupTimestamp_(value) {
+  if (typeof value !== 'string' || !BACKUP_TIMESTAMP_PATTERN_.test(value)) return false;
+  const milliseconds = Date.parse(value);
+  return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === value;
+}
+
+function backupMarkerHealth_(lastSuccessValue, lastAttemptValue, lastErrorValue, nowValue) {
+  const lastSuccess = String(lastSuccessValue || '');
+  const lastAttempt = String(lastAttemptValue || '');
+  const lastError = String(lastErrorValue || '');
+  const nowMs = Number.isFinite(nowValue) ? nowValue : Date.now();
+  const successTimestampCanonical = isCanonicalBackupTimestamp_(lastSuccess);
+  const attemptTimestampCanonical = isCanonicalBackupTimestamp_(lastAttempt);
+  const successMs = successTimestampCanonical ? Date.parse(lastSuccess) : NaN;
+  const attemptMs = attemptTimestampCanonical ? Date.parse(lastAttempt) : NaN;
+  const successInFuture = Number.isFinite(successMs) && successMs > nowMs;
+  const attemptAfterSuccess =
+    successTimestampCanonical &&
+    attemptTimestampCanonical &&
+    Number.isFinite(attemptMs) &&
+    attemptMs > successMs;
+  const successAgeMs =
+    successTimestampCanonical && Number.isFinite(successMs) && successMs <= nowMs
+      ? nowMs - successMs
+      : null;
+  const successAgeHours =
+    successAgeMs === null ? null : Math.floor(successAgeMs / (60 * 60 * 1000));
+  const freshWithin36Hours = successAgeMs !== null && successAgeMs <= 36 * 60 * 60 * 1000;
+  const issues = [];
+
+  if (!lastSuccess) issues.push('NO_SUCCESS');
+  else if (!successTimestampCanonical) issues.push('INVALID_SUCCESS_TIMESTAMP');
+  else if (successInFuture) issues.push('SUCCESS_IN_FUTURE');
+
+  if (!lastAttempt) issues.push('NO_ATTEMPT');
+  else if (!attemptTimestampCanonical) issues.push('INVALID_ATTEMPT_TIMESTAMP');
+
+  if (attemptAfterSuccess) issues.push('ATTEMPT_AFTER_SUCCESS');
+  if (lastError) issues.push('RECORDED_FAILURE');
+
+  return {
+    successTimestampCanonical: successTimestampCanonical,
+    attemptTimestampCanonical: attemptTimestampCanonical,
+    successInFuture: successInFuture,
+    attemptAfterSuccess: attemptAfterSuccess,
+    successAgeHours: successAgeHours,
+    freshWithin36Hours: freshWithin36Hours,
+    issues: issues,
+  };
+}
+
 function backupStatus_(user) {
   need_(user, 'settings');
   const p = props_();
@@ -963,24 +1016,24 @@ function backupStatus_(user) {
   } catch {
     metrics = null;
   }
+  const markerHealth = backupMarkerHealth_(lastSuccess, lastAttempt, lastError);
   let state;
 
   if (!configured) {
     state = 'not_configured';
   } else if (lastError) {
     state = 'failed';
-  } else if (!lastSuccess) {
-    state = lastAttempt ? 'incomplete' : 'never_run';
+  } else if (!lastSuccess && !lastAttempt) {
+    state = 'never_run';
+  } else if (
+    !markerHealth.successTimestampCanonical ||
+    !markerHealth.attemptTimestampCanonical ||
+    markerHealth.successInFuture ||
+    markerHealth.attemptAfterSuccess
+  ) {
+    state = 'incomplete';
   } else {
-    const successTime = Date.parse(lastSuccess);
-    const attemptTime = lastAttempt ? Date.parse(lastAttempt) : null;
-    const invalidAttempt = lastAttempt && !isFinite(attemptTime);
-    const newerAttempt = lastAttempt && attemptTime > successTime;
-    if (!isFinite(successTime) || invalidAttempt || newerAttempt) {
-      state = 'incomplete';
-    } else {
-      state = 'success';
-    }
+    state = 'success';
   }
 
   return {
@@ -989,6 +1042,13 @@ function backupStatus_(user) {
     retentionDays: CFG.BACKUP_RETENTION_DAYS,
     lastAttempt: lastAttempt,
     lastSuccess: lastSuccess,
+    lastSuccessTimestampCanonical: markerHealth.successTimestampCanonical,
+    lastAttemptTimestampCanonical: markerHealth.attemptTimestampCanonical,
+    successInFuture: markerHealth.successInFuture,
+    attemptAfterSuccess: markerHealth.attemptAfterSuccess,
+    successAgeHours: markerHealth.successAgeHours,
+    freshWithin36Hours: markerHealth.freshWithin36Hours,
+    markerIssues: markerHealth.issues,
     lastError: lastError.slice(0, 300),
     lastAlertError: lastAlertError,
     lastSuccessDurationMs:

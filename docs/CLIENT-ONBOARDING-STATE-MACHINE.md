@@ -28,6 +28,13 @@ A rejected preflight should not initialize tabs, default settings, folders, trig
 
 Production independently runs preflight against its own resources. After that, the owner records operator-witnessed restore drill, acknowledges offline-data/backup limitations, and provides final acceptance. Production writes remain blocked until accepted and technical requirements continue to pass. Synthetic UAT transactions are prohibited on production.
 
+## Readiness feedback and backup metadata contract
+
+- The onboarding state response includes server-derived counts for passed, blocked, pending-evidence and failed requirements. The browser uses these only for presentation; the backend's own `stageReady` and `releaseAllowed` values remain authoritative.
+- The launch page prioritizes the first outstanding step, retains the ordered step list, and re-fetches authoritative state after a failed confirmation or stage transition before presenting the next action.
+- `BACKUP_LAST_SUCCESS` and `BACKUP_LAST_ATTEMPT` must both match the exact UTC ISO form emitted by `Date.toISOString()` (`YYYY-MM-DDTHH:mm:ss.sssZ`) and round-trip to the same calendar/time fields. Missing or malformed values, a future success, an attempt later than the success, or a recorded failure blocks preflight; a success older than 36 hours is stale.
+- Settings and onboarding present marker checks and their reason codes without exposing private resource identifiers. This marker contract does not inspect snapshot content or prove a restore succeeded. Use the separate backup-integrity scan and a witnessed restore into a separate recovery destination.
+
 ## Security and evidence
 
 - Onboarding actions require authenticated owner/Settings permission; confirm/advance also explicitly require owner role.

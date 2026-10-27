@@ -1213,7 +1213,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       const labels = {
         not_configured: 'Not configured',
         never_run: 'No completed backup recorded',
-        incomplete: 'Latest attempt may not have completed',
+        incomplete: 'Backup markers are missing or inconsistent',
         failed: 'Latest backup attempt failed',
         success: 'Last recorded backup succeeded',
       };
@@ -1240,6 +1240,26 @@ export function createAdministration({ api, getNavigation, signOut }) {
         ['Retention', `${status.retentionDays} days`],
         ['Last attempt', formatBackupTimestamp(status.lastAttempt)],
         ['Last success', formatBackupTimestamp(status.lastSuccess)],
+        [
+          'Success marker format',
+          status.lastSuccessTimestampCanonical ? 'Canonical UTC timestamp' : 'Missing or invalid',
+        ],
+        [
+          'Attempt marker format',
+          status.lastAttemptTimestampCanonical ? 'Canonical UTC timestamp' : 'Missing or invalid',
+        ],
+        [
+          'Attempt chronology',
+          status.attemptAfterSuccess
+            ? 'Invalid — latest attempt is newer than the last success'
+            : status.lastAttemptTimestampCanonical && status.lastSuccessTimestampCanonical
+              ? 'Consistent'
+              : 'Cannot be verified',
+        ],
+        [
+          'Fresh for onboarding',
+          status.freshWithin36Hours ? 'Within 36 hours' : 'Older than 36 hours or unavailable',
+        ],
         ['Last successful runtime', formatBackupDuration(status.lastSuccessDurationMs)],
         [
           'Receipt copies in last successful backup',
@@ -1272,6 +1292,37 @@ export function createAdministration({ api, getNavigation, signOut }) {
         line.append(name, text);
         details.appendChild(line);
       });
+
+      const markerIssueLabels = {
+        NO_SUCCESS: 'No completed backup success is recorded.',
+        INVALID_SUCCESS_TIMESTAMP: 'The last-success timestamp is missing or malformed.',
+        SUCCESS_IN_FUTURE: 'The last-success timestamp is in the future.',
+        NO_ATTEMPT: 'The latest backup-attempt timestamp is missing.',
+        INVALID_ATTEMPT_TIMESTAMP: 'The latest backup-attempt timestamp is malformed.',
+        ATTEMPT_AFTER_SUCCESS: 'The latest attempt is later than the last successful backup.',
+        RECORDED_FAILURE: 'A backup failure is recorded and needs operator review.',
+      };
+      const markerIssues = Array.isArray(status.markerIssues)
+        ? status.markerIssues.filter((issue) =>
+            Object.prototype.hasOwnProperty.call(markerIssueLabels, issue),
+          )
+        : [];
+      if (markerIssues.length) {
+        const issues = document.createElement('section');
+        issues.className = 'backup-marker-issues';
+        issues.setAttribute('role', status.state === 'failed' ? 'alert' : 'status');
+        issues.setAttribute('aria-live', status.state === 'failed' ? 'assertive' : 'polite');
+        const heading = document.createElement('h3');
+        heading.textContent = 'Marker checks needing attention';
+        const list = document.createElement('ul');
+        markerIssues.forEach((issue) => {
+          const item = document.createElement('li');
+          item.textContent = markerIssueLabels[issue];
+          list.appendChild(item);
+        });
+        issues.append(heading, list);
+        details.appendChild(issues);
+      }
 
       const note = document.createElement('p');
       note.className = 'muted';

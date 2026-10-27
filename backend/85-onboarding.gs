@@ -210,43 +210,37 @@ function onboardingAccountCheck_() {
   };
 }
 
-const BACKUP_TIMESTAMP_PATTERN_ = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-
-function isCanonicalBackupTimestamp_(value) {
-  if (typeof value !== 'string' || !BACKUP_TIMESTAMP_PATTERN_.test(value)) return false;
-  const milliseconds = Date.parse(value);
-  return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === value;
-}
-
 function onboardingBackupCheck_() {
   const p = props_();
   const lastSuccess = String(p.getProperty('BACKUP_LAST_SUCCESS') || '');
   const lastAttempt = String(p.getProperty('BACKUP_LAST_ATTEMPT') || '');
   const lastError = String(p.getProperty('BACKUP_LAST_ERROR') || '');
-  const successTimestampCanonical = isCanonicalBackupTimestamp_(lastSuccess);
-  const attemptTimestampCanonical = isCanonicalBackupTimestamp_(lastAttempt);
-  const successMs = successTimestampCanonical ? Date.parse(lastSuccess) : NaN;
-  const attemptMs = attemptTimestampCanonical ? Date.parse(lastAttempt) : NaN;
-  const recent =
-    successTimestampCanonical &&
-    Number.isFinite(successMs) &&
-    Date.now() >= successMs &&
-    Date.now() - successMs <= 36 * 60 * 60 * 1000;
+  const markerHealth = backupMarkerHealth_(lastSuccess, lastAttempt, lastError);
+  const issues = markerHealth.issues.slice();
+  const recent = markerHealth.freshWithin36Hours;
   const noLaterAttempt =
-    attemptTimestampCanonical &&
-    Number.isFinite(attemptMs) &&
-    Number.isFinite(successMs) &&
-    attemptMs <= successMs;
+    markerHealth.successTimestampCanonical &&
+    markerHealth.attemptTimestampCanonical &&
+    !markerHealth.attemptAfterSuccess;
+
+  if (markerHealth.successTimestampCanonical && !markerHealth.successInFuture && !recent) {
+    issues.push('SUCCESS_STALE');
+  }
 
   return {
     lastSuccess: lastSuccess,
     lastAttempt: lastAttempt,
-    successTimestampCanonical: successTimestampCanonical,
-    attemptTimestampCanonical: attemptTimestampCanonical,
+    successTimestampCanonical: markerHealth.successTimestampCanonical,
+    attemptTimestampCanonical: markerHealth.attemptTimestampCanonical,
+    successInFuture: markerHealth.successInFuture,
+    attemptAfterSuccess: markerHealth.attemptAfterSuccess,
+    successAgeHours: markerHealth.successAgeHours,
+    freshWithin36Hours: recent,
     hasRecordedFailure: Boolean(lastError),
     recent: recent,
     noLaterAttempt: noLaterAttempt,
-    ready: recent && !lastError && noLaterAttempt,
+    issues: issues,
+    ready: recent && !lastError && noLaterAttempt && issues.length === 0,
   };
 }
 
@@ -404,6 +398,7 @@ function onboardingVisibleState_(user, environment) {
       automatic: automatic,
       status: status,
       message: message,
+      details: check && check.details,
       evidence: record ? record.evidence : '',
       actorEmail: record ? record.actorEmail : '',
       completedAt: record ? record.completedAt : '',
@@ -446,12 +441,25 @@ function onboardingVisibleState_(user, environment) {
     allPassed &&
     productionEvidence &&
     liveProductionChecks;
+  const summary = steps.reduce(
+    function (counts, step) {
+      counts.total++;
+      if (step.status === 'pass') counts.passed++;
+      else if (step.status === 'blocked') counts.blocked++;
+      else if (step.status === 'fail') counts.failed++;
+      else if (step.status === 'pending') counts.pending++;
+      return counts;
+    },
+    { total: 0, passed: 0, blocked: 0, failed: 0, pending: 0 },
+  );
+  summary.attention = summary.blocked + summary.failed + summary.pending;
 
   return {
     environment: environment,
     environmentConfigured: true,
     stage: state.stage,
     steps: steps,
+    summary: summary,
     stageReady: allPassed,
     canAdvance: state.stage !== 'complete' && allPassed,
     releaseAllowed: releaseAllowed,

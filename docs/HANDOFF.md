@@ -1,23 +1,24 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 16:50 IST (canonical backup freshness gate — current source batch)
+**Updated:** 27 October 2026 17:59 IST (backup readiness vertical slice — current source batch)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c` (PR #238 merged; exact-head CI, Browser E2E and Full Flight passed; post-merge source workflows also passed).
-**Current source batch:** `client/onboarding-backup-marker-contract-20261027` requires canonical backup success/attempt timestamps and denies production release when either marker is missing, malformed, future-dated, or inconsistent.
-**Release boundary:** onboarding guard, regression tests and release checkpoint docs only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+**Current integration baseline:** `ba56028c4eba2ea499c988fe03866a592005f12c` (PR #239 merged; strict backup timestamp validation is now the baseline).
+**Current source batch:** `client/backup-readiness-vertical-slice-20261027` connects the shared backup-marker contract, Settings diagnostics, onboarding stage summary and retry-safe operator flow.
+**Release boundary:** backend, frontend, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current live checkpoint — 27 October 2026 16:50 IST
+## Current live checkpoint — 27 October 2026 17:59 IST
 
-- **Authoritative integration:** `client-main` at `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
-- **PR #238 — audit marker canonical metadata validation:** merged to `client-main`. Its exact-head CI / Quality [#40489163399](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163399), Browser E2E [#40489163534](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163534), and Full Flight Test [#40489163334](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163334) passed. Post-merge CI [#40493844709](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844709), Browser E2E [#40493844544](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844544), Full Flight Test [#40493844746](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844746), and Autonomous Development Monitor [#40493844521](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844521) also passed on the integration commit.
-- **New finding:** `onboardingBackupCheck_()` used permissive `Date.parse()` and accepted an absent `BACKUP_LAST_ATTEMPT`. The backup writer emits both markers with `Date.toISOString()`; the accepted contract is exact UTC ISO text with millisecond precision (`YYYY-MM-DDTHH:mm:ss.sssZ`).
-- **Correction in this batch:** validate the exact timestamp grammar and calendar round-trip; require both success and attempt timestamps; require a successful backup to be non-future and within the existing 36-hour freshness window; require the latest attempt not to be newer than the success; and continue to block if a recorded backup error exists. Any failed condition keeps production release and financial writes blocked.
-- **Regression coverage:** missing attempt, date-only success/attempt values, omitted milliseconds, an impossible calendar date, future success and an attempt later than success must deny release; restoring both canonical consistent markers returns the test fixture to the accepted state. This is mock-backed validation, not a real backup/restore.
-- **Governance:** `client-main` reports `protected=false`; ruleset #24624368 still targets default branch `main` only. Owner/admin must configure and verify integration-branch required checks and human approval.
-- **Staging blocker:** the recorded UAT preflight [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed because production resource references were absent and Clasp credentials were missing/rejected. Do not retry unchanged configuration.
+- **Authoritative integration:** `client-main` at `ba56028c4eba2ea499c988fe03866a592005f12c`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
+- **PR #238 — audit marker canonical metadata validation:** remains part of the current baseline. PR #239 then tightened canonical backup success/attempt timestamps, but its scope was one backend source file plus tests/docs.
+- **Implementation scope:** one shared backend contract powers both `backupStatus` and onboarding; Settings exposes marker validity, chronology, freshness and reason codes; onboarding returns server-derived stage counts and marker issue codes; the launch UI prioritizes the first outstanding action and shows the backup failure reason.
+- **Operator-flow resilience:** confirmation and stage-transition controls become busy-aware during requests, and the page refreshes authoritative state after a failed mutation instead of retaining stale local progress.
+- **Regression scope:** backend status tests cover missing/malformed/future markers and attempt chronology; onboarding tests assert summary and issue details; Browser E2E exercises an owner pass and failure and verifies the counts update after API responses.
+- **Backup evidence boundary:** metadata checks and structural snapshot inspection do not prove restoreability; a witnessed restore into separate recovery resources and reconciliation of Sheet/receipt contents remain necessary.
+- **Governance:** `client-main` reports `protected=false`; ruleset #24624368 still targets default branch `main` only. Owner/admin must configure and verify integration-branch required checks and human review.
+- **Staging blocker:** the previous UAT preflight [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed because production resource references were absent and Clasp credentials were missing/rejected. Do not retry unchanged configuration.
 - **Release remains BLOCKED:** live staging target/version, guarded UAT, real isolated restore, actual host headers, live role/receipt authorization, offline/reconnect, printing, accessibility and customer acceptance remain unverified.
-- **Boundary:** this batch changes source, tests and checkpoint documentation only. It does not make live resource calls or deploy, migrate, publish, or mutate customer data.
+- **Boundary:** this is source/test/runbook work only. No live resource access, deployment, migration, UAT write, site publication or production data mutation is included.
 
 ## Historical checkpoint — 27 October 2026 15:22 IST (superseded by PR #237 merge)
 

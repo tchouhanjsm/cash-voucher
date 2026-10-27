@@ -446,7 +446,39 @@ ok(
 );
 g.props.BACKUP_LAST_SUCCESS = '2026-10-09T10:01:00.000Z';
 backupStatus = as(T, 'backupStatus').data;
-ok(backupStatus.state === 'success', 'owner backup status reports recorded success');
+ok(
+  backupStatus.state === 'success' &&
+    backupStatus.lastSuccessTimestampCanonical === true &&
+    backupStatus.lastAttemptTimestampCanonical === true &&
+    backupStatus.attemptAfterSuccess === false &&
+    backupStatus.freshWithin36Hours === false,
+  'owner backup status distinguishes consistent historical markers from the separate freshness gate',
+);
+const originalAttemptForMarkerTests = g.props.BACKUP_LAST_ATTEMPT;
+delete g.props.BACKUP_LAST_ATTEMPT;
+backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.state === 'incomplete' && backupStatus.markerIssues.includes('NO_ATTEMPT'),
+  'backup status fails closed when the attempt marker is absent after a recorded success',
+);
+g.props.BACKUP_LAST_ATTEMPT = originalAttemptForMarkerTests;
+g.props.BACKUP_LAST_ATTEMPT = '2026-10-09';
+backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.state === 'incomplete' &&
+    backupStatus.markerIssues.includes('INVALID_ATTEMPT_TIMESTAMP'),
+  'backup status rejects noncanonical attempt timestamp precision',
+);
+g.props.BACKUP_LAST_ATTEMPT = originalAttemptForMarkerTests;
+g.props.BACKUP_LAST_SUCCESS = new Date(Date.now() + 60000).toISOString();
+g.props.BACKUP_LAST_ATTEMPT = g.props.BACKUP_LAST_SUCCESS;
+backupStatus = as(T, 'backupStatus').data;
+ok(
+  backupStatus.state === 'incomplete' && backupStatus.markerIssues.includes('SUCCESS_IN_FUTURE'),
+  'backup status rejects future-dated successful backup markers',
+);
+g.props.BACKUP_LAST_SUCCESS = '2026-10-09T10:01:00.000Z';
+g.props.BACKUP_LAST_ATTEMPT = originalAttemptForMarkerTests;
 g.props.BACKUP_LAST_SUCCESS_METRICS = JSON.stringify({
   completedAt: g.props.BACKUP_LAST_SUCCESS,
   durationMs: 1250,

@@ -74,6 +74,36 @@ g.props.CV_STAGING_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
 const state = request('onboardingState');
 assert.equal(state.ok, true);
 assert.equal(state.data.stage, 'preflight');
+assert.equal(state.data.summary.total, 7, 'onboarding returns all current-stage requirements');
+
+assert.equal(
+  state.data.summary.passed +
+    state.data.summary.blocked +
+    state.data.summary.failed +
+    state.data.summary.pending,
+  7,
+  'each current-stage requirement appears in exactly one status bucket',
+);
+const backupReadinessStep = state.data.steps.find((step) => step.id === 'recentBackup');
+assert.ok(
+  backupReadinessStep &&
+    backupReadinessStep.details &&
+    backupReadinessStep.details.ready === true &&
+    backupReadinessStep.details.issues.length === 0,
+  'preflight exposes a structured and clean backup-marker diagnostic',
+);
+const validAttemptMarker = g.props.BACKUP_LAST_ATTEMPT;
+g.props.BACKUP_LAST_ATTEMPT = '';
+const missingAttemptState = request('onboardingState');
+const missingAttemptStep = missingAttemptState.data.steps.find(
+  (step) => step.id === 'recentBackup',
+);
+assert.equal(missingAttemptStep.status, 'blocked');
+assert.ok(
+  missingAttemptStep.details.issues.includes('NO_ATTEMPT'),
+  'onboarding reports the missing backup attempt marker by code',
+);
+g.props.BACKUP_LAST_ATTEMPT = validAttemptMarker;
 
 const earlyWrite = request('createVouchers', { rows: [] });
 assert.equal(earlyWrite.ok, false);
