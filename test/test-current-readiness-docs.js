@@ -41,7 +41,7 @@ assert.ok(staging.includes('previous pending-code finding is resolved in the mer
 assert.ok(staging.includes('GHSA-vfj7-8cjw-p6xm was withdrawn'));
 assert.ok(recoveryValidator.includes('SAFE_DEPLOYED_VERSION'));
 assert.ok(recoveryEvidenceTest.includes('private-id/exec'));
-assert.match(handoff, /Current integration baseline.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
+assert.doesNotMatch(handoff, /\*\*Current integration baseline:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
 assert.match(handoff, /Current release-session checkpoint.*27 October 2026/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
@@ -101,10 +101,7 @@ assert.match(roadmap, /PR #169/);
 assert.match(release, /Verified main baseline.*8b14adc72c146589149a33d793ca9e55af5da13a/);
 assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
-assert.match(
-  staging,
-  /Current integration baseline.*client-main.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
-);
+assert.doesNotMatch(staging, /\*\*Current integration baseline:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
 assert.match(staging, /Current source batch.*client\/staging-config-preflight-20261027/);
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
@@ -158,7 +155,7 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
+assert.doesNotMatch(executionPlan, /\*\*Current integration SHA:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
 assert.match(executionPlan, /Current source batch.*client\/staging-config-preflight-20261027/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
