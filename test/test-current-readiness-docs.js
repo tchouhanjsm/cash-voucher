@@ -20,12 +20,17 @@ const sinkInventory = read('docs/ACTIVE-DOM-SINK-INVENTORY.md');
 const securityAudit = read('docs/SECURITY-RENDERING-AUDIT.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const handoff = read('docs/HANDOFF.md');
+const recoveryEvidence = read('docs/RECOVERY-DRILL-EVIDENCE.md');
+const recoveryValidator = read('scripts/validate-recovery-evidence.js');
+const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
 const dashboard = read('frontend/features/dashboard.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
 assert.match(handoff, /Current integration baseline.*693f06fd160c3e161a82dd35c939339a2880c733/);
 assert.match(handoff, /Current live checkpoint.*27 October 2026 12:02 IST/);
+assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
+assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);
 assert.match(handoff, /client\/p0-write-staging-inventory-20261027/);
 assert.match(handoff, /Historical checkpoint — PR #229 integration audit/);
@@ -62,9 +67,9 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Current integration baseline.*client-main.*f1041a177b292468dca59cf1c68d2bdcf2a5c192/,
+  /Current integration baseline.*client-main.*2b8120789811f27410f0542c29c7436fcc5f190c/,
 );
-assert.match(staging, /Current source batch.*client\/p0-write-staging-inventory-20261027/);
+assert.match(staging, /Current source batch.*client\/p0-recovery-drill-evidence-20261027/);
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
@@ -117,8 +122,8 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*f1041a177b292468dca59cf1c68d2bdcf2a5c192/);
-assert.match(executionPlan, /Current source batch.*client\/p0-write-staging-inventory-20261027/);
+assert.match(executionPlan, /Current integration SHA.*2b8120789811f27410f0542c29c7436fcc5f190c/);
+assert.match(executionPlan, /Current source batch.*client\/p0-recovery-drill-evidence-20261027/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
@@ -129,6 +134,11 @@ assert.match(executionPlan, /P0-RELEASE-BATCH-B1-B3\.md/);
 assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
 assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
+assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
+assert.match(recoveryEvidence, /does not authenticate the operator/i);
+assert.match(recoveryValidator, /RESOURCE_COLLISION/);
+assert.match(recoveryValidator, /PRODUCTION_CHANGED/);
+assert.match(recoveryEvidenceTest, /SHEET_COUNT_MISMATCH/);
 assert.match(
   p0ReleaseBatch,
   /No production migration, deployment, DNS change or customer handover is authorized/,
