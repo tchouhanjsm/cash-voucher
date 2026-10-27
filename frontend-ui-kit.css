@@ -2274,7 +2274,7 @@ here and in the production app. It requires no JS or remote assets. */
     align-items: end;
   }
 
-  #rf #rq {
+  #rf .register-search-field {
     grid-column: span 2;
   }
 
@@ -2421,7 +2421,7 @@ here and in the production app. It requires no JS or remote assets. */
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 
-    #rf #rq {
+    #rf .register-search-field {
       grid-column: 1 / -1;
     }
 

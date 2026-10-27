@@ -3348,7 +3348,9 @@ with sync_playwright() as p:
     go_view(page, 'reg')
     page.wait_for_selector('#rbody tr')
     check(
-        page.locator('#rq').get_attribute('aria-label') == 'Search vouchers by number, vendor or note'
+        page.locator('#rq').get_attribute('aria-label') == 'Search vouchers by number, payee or note'
+        and page.locator('#view .page-header h1').inner_text() == 'Voucher Register'
+        and page.locator('.register-search-field').inner_text().startswith('Search vouchers')
         and page.locator('#rv').get_attribute('aria-label') == 'Filter by vendor'
         and page.locator('#rc').get_attribute('aria-label') == 'Filter by category'
         and page.locator('#rt').get_attribute('aria-label') == 'Filter by transaction type'
@@ -3393,6 +3395,85 @@ with sync_playwright() as p:
         'empty-state clear-filters clears the search and restores the default active-only view: '
         + json.dumps(clear_filter_state),
     )
+
+    empty_register_interceptions = []
+
+    def inject_first_use_empty_register(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if (
+            request_data.get('action') != 'registerPage'
+            or request_data.get('q')
+            or request_data.get('from')
+            or request_data.get('to')
+            or request_data.get('offset', 0) not in (0, '', None)
+        ):
+            route.continue_()
+            return
+        empty_register_interceptions.append(True)
+        route.fulfill(
+            status=200,
+            content_type='application/json',
+            body=json.dumps({
+                'ok': True,
+                'data': {
+                    'items': [],
+                    'offset': 0,
+                    'limit': 100,
+                    'totalCount': 0,
+                    'hasMore': False,
+                    'totals': {
+                        'paid': 0,
+                        'received': 0,
+                        'approvalExceptionCount': 0,
+                        'invalidAmountCount': 0,
+                        'malformedRecordCount': 0,
+                        'malformedFieldCount': 0,
+                    },
+                    'facets': {'vendors': [], 'users': []},
+                },
+            }),
+        )
+
+    page.route('**/api?*', inject_first_use_empty_register)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and not json.loads(response.request.post_data or '{}').get('q')
+    ):
+        page.locator('#view [data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelector('#rempty .register-empty-state__title')?.textContent "
+        "=== 'Your voucher register starts here'"
+    )
+    check(
+        empty_register_interceptions
+        and page.locator('#rempty .register-empty-state__copy').inner_text()
+        == 'Record your first payment or receipt to begin building a clear, searchable cash record.'
+        and page.locator('#rempty [data-act=ntype][data-k=PAYMENT]').inner_text()
+        == 'Create first entry'
+        and page.locator('.register-results-card[data-empty-kind=first-use] .table-wrap').is_hidden()
+        and page.locator('.register-results-card[data-empty-kind=first-use] #rtot').is_hidden(),
+        'true first-use Register state removes empty table chrome and offers a first action',
+    )
+    page.unroute('**/api?*', inject_first_use_empty_register)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ):
+        page.locator('#view [data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelectorAll('#rbody tr').length === 2"
+        " && document.querySelector('#rempty')?.classList.contains('hidden') === true"
+    )
+    check(
+        page.locator('#rbody tr').count() == 2
+        and page.locator('.register-results-card').get_attribute('data-empty-kind') != 'first-use',
+        'Register returns to its populated table after the first-use fixture is removed',
+    )
+
     page.fill('#rfrom', '2026-10-20')
     page.fill('#rto', '2026-10-10')
     check(
@@ -4998,7 +5079,7 @@ with sync_playwright() as p:
     register_table_region = page.locator('#view .table-wrap[role=region][tabindex="0"]')
     check(
         register_table_region.count() == 1
-        and register_table_region.get_attribute('aria-label') == 'Payment register vouchers',
+        and register_table_region.get_attribute('aria-label') == 'Voucher register entries',
         'Register table scrolling has a named, keyboard-focusable region',
     )
     page.locator('#rf [data-act=csv]').focus()

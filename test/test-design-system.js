@@ -217,6 +217,21 @@ assert.match(
   'Register has a deliberate first-use state and a primary creation action',
 );
 assert.match(
+  register,
+  /head\(\s*'Voucher Register'/,
+  'Register uses a title that includes both payments and receipts',
+);
+assert.match(
+  register,
+  /class="register-search-field" for="rq">Search vouchers<input id="rq"/,
+  'Register search has a persistent visible label instead of relying on placeholder text',
+);
+assert.match(
+  components,
+  /#rf \.register-search-field\s*\{\s*grid-column:\s*span 2;/,
+  'the labelled Register search keeps the intended desktop filter-grid span',
+);
+assert.match(
   components,
   /\.register-results-card\.is-empty \.table-wrap,\s*\.register-results-card\.is-empty\[data-empty-kind='first-use'\] #rtot,\s*\.register-results-card\.is-empty\[data-empty-kind='filtered'\] #rtot\s*\{\s*display:\s*none;/,
   'Register hides empty table headers and hides totals only for genuinely empty states',
