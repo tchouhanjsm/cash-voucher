@@ -47,7 +47,7 @@ assert.match(
 assert.match(browserE2e, /dashboard KPI values fit inside their cards without horizontal clipping/);
 assert.match(handoff, /audit marker canonical metadata validation/i);
 assert.match(auditHelpers, /function isCanonicalAuditTimestamp_/);
-assert.match(auditHelpers, /typeof marker\\.failureCount !== 'number'/);
+assert.match(auditHelpers, /typeof marker[.]failureCount !== 'number'/);
 assert.match(backendTests, /count: '2e0'/);
 assert.match(backendTests, /failureCount: '1'/);
 assert.match(handoff, /cv2-v35/);
