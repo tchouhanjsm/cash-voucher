@@ -124,13 +124,6 @@ function runAudit() {
 const { report, result } = runAudit();
 
 const exceptions = {
-  'GHSA-vfj7-8cjw-p6xm': {
-    packageName: 'braces',
-    reviewBy: '2026-11-09',
-    rationale:
-      'No patched release is listed by the upstream GitHub advisory as of 2026-10-16. ' +
-      'This is a dev-tool dependency path: @google/clasp -> micromatch -> braces.',
-  },
   'GHSA-mrhx-c7xc-m3w5': {
     packageName: 'zod',
     reviewBy: '2026-11-09',
