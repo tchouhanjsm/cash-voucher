@@ -57,10 +57,6 @@ assert.match(workflow, /environment:\n {6}name: staging/m);
 assert.match(workflow, /needs: \[validate, guard\]/);
 assert.match(workflow, /confirm_staging_writes/);
 assert.match(workflow, /CV_STAGING_DEPLOY_CONFIRMATION/);
-assert.match(
-  workflow,
-  /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: \$\{\{ vars\.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION \}\}/,
-);
 assert.equal(
   (workflow.match(/CV_STAGING_RESOURCE_ISOLATION_ATTESTATION:/g) || []).length,
   0,
@@ -72,7 +68,7 @@ assert.match(
 );
 assert.match(
   releaseRunbook,
-  /write-capable staging operations[\s\S]*owner attestation alone is not sufficient/i,
+  /Write-capable `deploy` and `uat` preflight[\s\S]*owner attestation is not a substitute for the inventory/i,
 );
 assert.match(preflight, /tokens\.default/);
 assert.match(preflight, /OWNER-VERIFIED-STAGING-ONLY/);

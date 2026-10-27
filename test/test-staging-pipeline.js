@@ -126,7 +126,9 @@ const attestedUatOnly = validateStagingConfiguration(withoutProductionReferenceI
 });
 assert.equal(attestedUatOnly.ok, false);
 assert.ok(
-  attestedUatOnly.errors.some((message) => message.includes('all four production resource reference IDs')),
+  attestedUatOnly.errors.some((message) =>
+    message.includes('all four production resource reference IDs'),
+  ),
 );
 
 const missingIsolationAttestation = validateStagingConfiguration(
