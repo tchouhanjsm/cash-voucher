@@ -418,8 +418,7 @@ function readAuditPropertiesMarker_() {
       };
     }
 
-    const canonicalCount =
-      typeof rawCount === 'string' && /^[1-9][0-9]*$/.test(rawCount);
+    const canonicalCount = typeof rawCount === 'string' && /^[1-9][0-9]*$/.test(rawCount);
     const parsedCount = canonicalCount ? Number(rawCount) : NaN;
     const lastFailureAt = typeof rawAt === 'string' ? rawAt : '';
     const lastFailureKind = String(rawKind || '').trim();
