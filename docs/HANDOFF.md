@@ -1,11 +1,11 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
+**Updated:** 27 October 2026 09:05 IST (post-merge gate recovery)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged; supersedes PR #227's base).
+**Current integration baseline:** `2b7fec463575f235373f01d2d97eddbb6ecea6fa` (PR #229 merged on 27 October 2026 at 08:48 IST).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** PR #229, `client/fix-business-date-arithmetic-20261027` — make business-date calculations timezone-independent on top of PR #228's integrated release-gate fixes.
+**Current follow-up:** PR #230, `client/post-merge-business-date-gate-recovery-20261027` — repair stale regression-test contracts and restore truthful release-gate evidence after PR #229 merged with failing checks.
 **Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
 ## Historical pre-PR #228 checkpoint — 27 October 2026 05:48 IST
@@ -25,15 +25,14 @@
 3. Privately correct staging Environment identity and credentials, then separately authorize guarded staging UAT and a real restore into a separate destination.
 4. Record intended-device, offline/reconnect, accessibility, authorization and customer acceptance before any pilot. Production remains excluded.
 
-## Current checkpoint — date correctness and release gates
+## Current checkpoint — post-merge gate recovery
 
-- PR #228 is now integrated at `b2a4a45e0f4326a59b51151754691d56476f0b35`; its release-gate reliability changes, including the staging-test formatting correction and bounded transient Full Flight retries, must be preserved.
-- PR #229 adds Asia/Kolkata business-date consistency across the legacy and modular frontend paths, UTC-only date arithmetic, real-calendar-date validation for Dashboard/Reports ranges, and cache revision `cv2-v32`.
-- PR #229's prior head `c71e233e11eec5b6d2b2d37be27216a80a170f7e` had CI / Quality [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102) and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096) fail; Autonomous Development Monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. Those results apply only to the superseded pre-conflict-resolution SHA.
-- Conflict resolution preserves PR #228's current `.github/workflows/flight-test.yml`, `test/test-flight-workflow.js`, `package.json` test wiring and formatted `test/test-staging-workflow.js`. The new merge-resolution head requires fresh exact-head CI, Browser E2E and Full Flight Test results.
-- The source-fingerprint gate exposed stale recorded hashes for unchanged `cash-close.js` and `payments.js` HTML assignments. Review confirmed the cash-close date values are escaped and the payment form builds vendor/category options through escaping helpers. Only the reviewed fingerprint values were refreshed (`8b83b045`, `ec0c627d`); no sink implementation was weakened. Existing E2E hostile-input coverage remains active.
-- Release remains blocked until new exact-head checks pass, human review is obtained, and owner-controlled branch protection and live staging/backup/restore/device/customer-acceptance gates are evidenced. No deployment or live data mutation is authorized by this source change.
-
+- **PR #229 merge:** PR #229 is merged to `client-main` at `2b7fec463575f235373f01d2d97eddbb6ecea6fa` (merge commit). Its product changes are integrated, but its exact-head checks failed; this merge is not release validation.
+- **CI / Quality — FAIL:** [run #40442534357](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40442534357) failed in `test/test-service-worker-policy.js`: the app shell cache was intentionally bumped to `cv2-v32`, while the policy test still looked up `cv2-v31`.
+- **Browser E2E — FAIL:** [run #40442534346](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40442534346) recorded 991 checks passed and one failed. The combined invalid-date accessibility assertion still expected the old wording `Choose a valid date range`, while the current safe validator copy is `Choose real calendar dates with From on or before To.`.
+- **Full Flight Test — FAIL:** [run #40442534349](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40442534349) correctly failed because CI and Browser E2E were not successful on the same SHA `7ef9387a5ff8a045d3dfbc8653b29e70a929824a`. Monitor [run #40442534439](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40442534439) was read-only; its success does not override source-gate failures.
+- **Post-merge correction:** PR #230 aligns the stale service-worker and report-accessibility test expectations and updates the current checkpoint to the actual `client-main` tip. It does not alter accounting semantics, schemas, authorisation, or production configuration.
+- **Governance / release boundary:** `client-main` reports `protected=false`; PR #229 merged while required checks were red. Release remains **BLOCKED** until PR #230's exact-head CI / Quality, Browser E2E and Full Flight Test all pass and owner-controlled branch governance is corrected. No deployment, staging write, or production change is authorized.
 ---
 
 ## Historical handoff snapshot — 25 October 2026

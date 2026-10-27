@@ -1,12 +1,12 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
+**Updated:** 27 October 2026 09:05 IST (post-merge gate recovery)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
-**Current integration SHA:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).
+**Current integration SHA:** `2b7fec463575f235373f01d2d97eddbb6ecea6fa` (PR #229 merge commit).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Active follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main` and remains unmerged pending exact-head validation.
+**Active follow-up:** PR #230, `client/post-merge-business-date-gate-recovery-20261027`, targets `client-main`; the release remains blocked pending exact-head validation.
 
-## Historical gate evidence and current business-date follow-up
+## Historical gate evidence — pre-merge baselines
 
 - **Historical PR #227 baseline — CI / Quality:** [run #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on the current SHA at `prettier --check .` for `test/test-staging-workflow.js`. The source quality gate stopped at formatting; this is a deterministic formatting regression, not evidence of a backend assertion failure.
 - **Historical PR #227 baseline — Browser E2E:** [run #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the exact current SHA.
@@ -22,6 +22,14 @@
 - **Business-date implementation:** PR #229 aligns date-only calendar arithmetic and Dashboard/Reports range validation across the legacy and modular frontend entry paths, increments the service-worker cache version, and adds timezone, India-midnight, leap-day and year-boundary regression coverage.
 - **Prior PR #229 head evidence:** CI / Quality [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102), and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096) failed on superseded SHA `c71e233e11eec5b6d2b2d37be27216a80a170f7e`; monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. These results do not validate the merge-resolution head; all exact-head checks must rerun.
 
+
+## Current checkpoint — post-merge gate recovery
+
+- PR #229 merged to `client-main` at `2b7fec463575f235373f01d2d97eddbb6ecea6fa`, despite its exact-head CI, Browser E2E and Full Flight Test being red. This is not a validated release.
+- CI / Quality [#40442534357](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40442534357) failed because the service-worker policy test expected stale cache `cv2-v31`; runtime intentionally uses `cv2-v32`.
+- Browser E2E [#40442534346](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40442534346) reported 991 passed and 1 failed: the invalid date-range accessibility test expected obsolete error text. Full Flight [#40442534349](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40442534349) failed the same-SHA gate because CI and E2E failed.
+- PR #230 corrects both test contracts and reconciles the current checkpoint. Require all three gates to pass on the same final SHA before a release decision.
+- Governance remains a blocker: `client-main` reports `protected=false`; owner/admin must configure required checks and human review. No deployment, migration, staging write, or production change is included.
 ---
 
 ## Historical execution-plan snapshot — 25 October 2026

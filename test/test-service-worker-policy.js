@@ -135,7 +135,7 @@ function createHarness({ failAddAll = false } = {}) {
   const harness = createHarness();
   await harness.lifecycle('install');
 
-  const currentCache = harness.stores.get('cv2-v31');
+  const currentCache = harness.stores.get('cv2-v32');
   assert.ok(currentCache, 'installation creates the current app-shell cache');
   assert.ok(currentCache.has('https://example.test/app/index.html'));
   assert.ok(currentCache.has('https://example.test/app/frontend/core/pwa.js'));
@@ -172,7 +172,7 @@ function createHarness({ failAddAll = false } = {}) {
   });
   assert.equal(cssResponse.url, cssUrl);
   assert.ok(
-    harness.stores.get('cv2-v31').has(cssUrl),
+    harness.stores.get('cv2-v32').has(cssUrl),
     'approved shell assets are cached after a successful network response',
   );
 
@@ -184,7 +184,7 @@ function createHarness({ failAddAll = false } = {}) {
     'unlisted same-origin GETs pass through untouched',
   );
   assert.ok(
-    !harness.stores.get('cv2-v31').has(privateUrl),
+    !harness.stores.get('cv2-v32').has(privateUrl),
     'unlisted private responses are not placed in the app cache',
   );
 
@@ -223,7 +223,7 @@ function createHarness({ failAddAll = false } = {}) {
     'offline navigation falls back to the cached app shell',
   );
   assert.ok(
-    !harness.stores.get('cv2-v31').has(rootUrl),
+    !harness.stores.get('cv2-v32').has(rootUrl),
     'arbitrary navigation responses are not persisted as app-shell pages',
   );
 
@@ -235,7 +235,7 @@ function createHarness({ failAddAll = false } = {}) {
     'failed installation preserves the prior active cache',
   );
   assert.ok(
-    failedInstall.deleted.includes('cv2-v31'),
+    failedInstall.deleted.includes('cv2-v32'),
     'failed installation removes its partial cache',
   );
   assert.equal(failedInstall.counts.skipWaiting, 0);
