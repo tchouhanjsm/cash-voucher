@@ -12,7 +12,14 @@ assert.ok(/function bindFeatures\(\)[\s\S]*?onboarding\.init\(\)/.test(main));
 assert.ok(onboarding.includes('Checking this customer’s configuration with the server…'));
 assert.ok(/if \(!busy\) void load\(\)/.test(onboarding));
 assert.ok(onboarding.includes("current = await api('onboardingState')"));
+assert.ok(onboarding.includes('onboardingCount = key'));
+assert.ok(onboarding.includes('renderBackupDetails(step)'));
+assert.ok(onboarding.includes('SUCCESS_STALE'));
+assert.ok(onboarding.includes('refreshAfterMutationFailure'));
+assert.ok(onboarding.includes("root.setAttribute('aria-busy', busy ? 'true' : 'false')"));
+assert.ok(onboarding.includes('Current-stage readiness summary'));
+assert.ok(onboarding.includes('Outstanding onboarding actions'));
 
 console.log(
-  'Onboarding startup contract OK — server check runs on entry and action handlers are bound.',
+  'Onboarding contract OK — server state, summary counts, backup diagnostics, retry recovery and busy semantics are connected.',
 );

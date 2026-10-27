@@ -384,6 +384,48 @@ with sync_playwright() as p:
         page.locator('#main-content h1').inner_text() == 'Get Cash Voucher ready',
         'owner first login opens the onboarding dashboard',
     )
+    page.wait_for_selector('.onboarding-summary [data-onboarding-count="pending"]')
+    check(
+        page.locator('[data-onboarding-count="passed"]').inner_text() == '0'
+        and page.locator('[data-onboarding-count="pending"]').inner_text() == '7'
+        and page.locator('[data-onboarding-count="blocked"]').inner_text() == '0'
+        and page.locator('[data-onboarding-count="failed"]').inner_text() == '0',
+        'onboarding summary counts all seven unconfirmed staging UAT steps',
+    )
+    check(
+        page.locator('.onboarding-attention h2').inner_text() == 'Next action'
+        and 'Login and role restrictions' in page.locator('.onboarding-attention').inner_text(),
+        'onboarding highlights the first required operator action in sequence',
+    )
+    page.fill(
+        '[data-evidence-for="loginAndRoles"]',
+        'Verified owner role and session restrictions in the isolated browser test.',
+    )
+    page.click('[data-confirm-step="loginAndRoles"]')
+    page.wait_for_function(
+        "document.querySelector('[data-onboarding-count=\\"passed\\"]')?.textContent === '1'",
+        timeout=8000,
+    )
+    check(
+        page.locator('[data-onboarding-count="pending"]').inner_text() == '6'
+        and page.locator('[data-confirm-step="loginAndRoles"]').count() == 1
+        and not page.locator('[data-confirm-step="loginAndRoles"]').is_disabled(),
+        'owner confirmation updates counts and re-enables actions after the server response',
+    )
+    page.fill(
+        '[data-evidence-for="voucherAndReceipt"]',
+        'Receipt upload journey needs retry handling before the staging sign-off can pass.',
+    )
+    page.click('[data-fail-step="voucherAndReceipt"]')
+    page.wait_for_function(
+        "document.querySelector('[data-onboarding-count=\\"failed\\"]')?.textContent === '1'",
+        timeout=8000,
+    )
+    check(
+        page.locator('[data-onboarding-count="pending"]').inner_text() == '5'
+        and 'failed' in page.locator('.onboarding-attention').inner_text().lower(),
+        'recorded failure updates the stage summary and keeps later steps visibly pending',
+    )
     page.click('#userBtn')
     check(
         page.locator('#themeToggle').is_visible()
