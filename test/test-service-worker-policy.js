@@ -6,6 +6,11 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const source = fs.readFileSync(path.join(__dirname, '../sw.js'), 'utf8');
+const cacheVersion = source.match(/^const C = '(cv2-v)(\d+)';$/m);
+assert.ok(cacheVersion, 'service worker declares a versioned app-shell cache');
+assert.ok(Number(cacheVersion[2]) > 0, 'app-shell cache version has a previous version');
+const currentCacheName = `${cacheVersion[1]}${cacheVersion[2]}`;
+const previousCacheName = `${cacheVersion[1]}${Number(cacheVersion[2]) - 1}`;
 
 function response(url) {
   return {
@@ -135,20 +140,33 @@ function createHarness({ failAddAll = false } = {}) {
   const harness = createHarness();
   await harness.lifecycle('install');
 
-  const currentCache = harness.stores.get('cv2-v31');
+  const currentCache = harness.stores.get(currentCacheName);
   assert.ok(currentCache, 'installation creates the current app-shell cache');
   assert.ok(currentCache.has('https://example.test/app/index.html'));
   assert.ok(currentCache.has('https://example.test/app/frontend/core/pwa.js'));
+  for (const asset of [
+    'frontend/core/offline-queue.js',
+    'frontend/core/offline-auth.js',
+    'frontend/core/recovery-validation.js',
+  ]) {
+    assert.ok(
+      currentCache.has(`https://example.test/app/${asset}`),
+      `${asset} is available in the offline application shell`,
+    );
+  }
   assert.equal(
     harness.counts.skipWaiting,
     0,
     'installation does not activate over an existing app automatically',
   );
 
-  harness.stores.set('cv2-v30', new Map([['old', response('old')]]));
+  harness.stores.set(previousCacheName, new Map([['old', response('old')]]));
   harness.stores.set('unrelated-host-cache', new Map([['keep', response('keep')]]));
   await harness.lifecycle('activate');
-  assert.ok(!harness.stores.has('cv2-v30'), 'activation removes stale Cash Voucher caches');
+  assert.ok(
+    !harness.stores.has(previousCacheName),
+    'activation removes the previous Cash Voucher shell cache',
+  );
   assert.ok(
     harness.stores.has('unrelated-host-cache'),
     'activation leaves caches owned by other host code intact',
@@ -172,7 +190,7 @@ function createHarness({ failAddAll = false } = {}) {
   });
   assert.equal(cssResponse.url, cssUrl);
   assert.ok(
-    harness.stores.get('cv2-v31').has(cssUrl),
+    harness.stores.get(currentCacheName).has(cssUrl),
     'approved shell assets are cached after a successful network response',
   );
 
@@ -184,7 +202,7 @@ function createHarness({ failAddAll = false } = {}) {
     'unlisted same-origin GETs pass through untouched',
   );
   assert.ok(
-    !harness.stores.get('cv2-v31').has(privateUrl),
+    !harness.stores.get(currentCacheName).has(privateUrl),
     'unlisted private responses are not placed in the app cache',
   );
 
@@ -223,19 +241,19 @@ function createHarness({ failAddAll = false } = {}) {
     'offline navigation falls back to the cached app shell',
   );
   assert.ok(
-    !harness.stores.get('cv2-v31').has(rootUrl),
+    !harness.stores.get(currentCacheName).has(rootUrl),
     'arbitrary navigation responses are not persisted as app-shell pages',
   );
 
   const failedInstall = createHarness({ failAddAll: true });
-  failedInstall.stores.set('cv2-v30', new Map([['old', response('old')]]));
+  failedInstall.stores.set(previousCacheName, new Map([['old', response('old')]]));
   await assert.rejects(failedInstall.lifecycle('install'), /precache failed/);
   assert.ok(
-    failedInstall.stores.has('cv2-v30'),
+    failedInstall.stores.has(previousCacheName),
     'failed installation preserves the prior active cache',
   );
   assert.ok(
-    failedInstall.deleted.includes('cv2-v31'),
+    failedInstall.deleted.includes(currentCacheName),
     'failed installation removes its partial cache',
   );
   assert.equal(failedInstall.counts.skipWaiting, 0);

@@ -1,12 +1,25 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
+**Updated:** 27 October 2026 08:56 IST (post-PR #229 integration audit)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged; supersedes PR #227's base).
+**Current integration baseline:** `2b7fec463575f235373f01d2d97eddbb6ecea6fa` (PR #229 merged; exact-head CI and Browser E2E currently fail).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** PR #229, `client/fix-business-date-arithmetic-20261027` — make business-date calculations timezone-independent on top of PR #228's integrated release-gate fixes.
+**Current source batch:** `client/restore-green-source-gates-20261027` — repair the stale PWA cache-version regression and Reports date-range accessibility assertion on top of PR #229.
 **Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
+
+## Current live checkpoint — 27 October 2026 08:56 IST
+
+- **Integration baseline:** `client-main` `2b7fec463575f235373f01d2d97eddbb6ecea6fa`. PRs #220–#229 are merged; the live open-PR query returned zero before this source batch was selected. The legacy `main` branch remains read-only.
+- **PR #229 merge:** `fix: make business-date windows timezone independent` merged at 03:18:35Z into the current integration SHA. No review was submitted. Its current integration-head source checks are red; merge history is not release approval.
+- **Exact-head CI / Quality:** [run #40443448972](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443448972) failed at `test/test-service-worker-policy.js:139`: the test hard-codes `cv2-v31` while `sw.js` declares `cv2-v32`. The quality run reached the regression suite; this is a stale cache-version fixture, not a backend assertion failure.
+- **Exact-head Browser E2E:** [run #40443449053](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443449053) reported 991 checks passed and 1 failed. The failing check, “invalid date range marks both fields and programmatically links them to one alert,” expected `Choose a valid date range` while the current UI renders `Choose real calendar dates with From on or before To.`
+- **Exact-head Full Flight Test:** [run #40443449098](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443449098) failed because both exact-SHA CI and Browser E2E prerequisites failed. The separate manual job was skipped by the push-event condition.
+- **Autonomous Development Monitor:** [run #40443449014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443449014) completed successfully and persisted a finalized checkpoint to [Issue #212](https://github.com/tchouhanjsm/cash-voucher/issues/212); artifact [12707118240](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443449014/artifacts/12707118240) is the monitor report. The checkpoint correctly records all three source gates as failed.
+- **Selected source batch:** `client/restore-green-source-gates-20261027`. It makes the PWA cache-policy test derive current/previous shell-cache names from `sw.js`, explicitly checks that offline queue/auth/recovery modules are precached, and aligns the Reports date-range E2E assertion with the actual validation copy. It also updates the readiness-document contract and release checkpoint wording. This is source/test validation only; the date-copy correction changes no application behavior.
+- **Governance:** ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets `main` only, requires `quality` only and zero approvals. The live `client-main` branch API reports `protected=false`; classic branch-protection details remain unavailable to this integration. Owner/admin must configure and verify the intended protection and approval policy.
+- **Staging and release:** staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolation preflight due to missing production resource references and missing/rejected Clasp credentials; deployment and live UAT were skipped. ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and is expired. The live releases endpoint is empty.
+- **Still unverified:** live staging identity/version, actual host security headers, live role/receipt authorization, real backup/restore to a separate destination, offline/reconnect on intended devices, print/PDF, accessibility and customer acceptance. No deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation is authorized by this batch.
 
 ## Historical pre-PR #228 checkpoint — 27 October 2026 05:48 IST
 
@@ -25,7 +38,7 @@
 3. Privately correct staging Environment identity and credentials, then separately authorize guarded staging UAT and a real restore into a separate destination.
 4. Record intended-device, offline/reconnect, accessibility, authorization and customer acceptance before any pilot. Production remains excluded.
 
-## Current checkpoint — date correctness and release gates
+## Historical checkpoint — date correctness and release gates (PR #229 pre-merge snapshot)
 
 - PR #228 is now integrated at `b2a4a45e0f4326a59b51151754691d56476f0b35`; its release-gate reliability changes, including the staging-test formatting correction and bounded transient Full Flight retries, must be preserved.
 - PR #229 adds Asia/Kolkata business-date consistency across the legacy and modular frontend paths, UTC-only date arithmetic, real-calendar-date validation for Dashboard/Reports ranges, and cache revision `cv2-v32`.
