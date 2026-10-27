@@ -1,13 +1,25 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 15:22 IST (dashboard KPI responsive UX batch — PR #237)
+**Updated:** 27 October 2026 16:32 IST (audit marker canonical metadata validation — PR #238)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `e1864c23c2aec607262d68f5800056cc52305484` (PR #236 merged; Full Flight timeout correction integrated).
-**Active PR:** #237, `client/dashboard-kpi-responsive-20261027`, targeting `client-main`. It improves phone-size KPI hierarchy and adds owner/staff browser coverage at role-specific grid breakpoints.
-**Release boundary:** frontend CSS, browser regression coverage, service-worker shell revision and handoff documentation only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
+**Current integration baseline:** `b20d9d9a7377032bb3f139be5ed0d051d35c4d20` (PR #237 merged; dashboard KPI responsive UX integrated).
+**Active PR:** #238, `client/audit-marker-canonical-validation-20261027`, targeting `client-main`. It rejects noncanonical marker counters/timestamps so malformed audit-health state cannot be represented as a valid degraded marker.
+**Release boundary:** backend validation, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
-## Current live checkpoint — 27 October 2026 15:22 IST
+## Current live checkpoint — 27 October 2026 16:32 IST
+
+- **Authoritative integration:** `client-main` at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
+- **PR queue:** PR #237 merged at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`. Current source follow-up is PR #238, `client/audit-marker-canonical-validation-20261027`.
+- **Finding:** audit marker readers used numeric coercion for JSON `failureCount` values and relied on permissive `Date.parse`. Exponential/decimal/zero-padded property counts and date-only, omitted-millisecond or calendar-rollover timestamps could be accepted despite not matching the machine-written marker contract.
+- **Correction in PR #238:** JSON markers require a numeric safe integer greater than zero; Script Properties counters require canonical positive decimal digit strings; all marker timestamps must match millisecond-precision UTC ISO format and round-trip exactly. Invalid metadata makes that marker source unavailable, preserving `MONITORING_UNAVAILABLE` instead of a false `DEGRADED` or clean state.
+- **Regression coverage:** backend tests now exercise numeric-string JSON counters, exponential/decimal/zero-padded property counters, date-only and missing-millisecond timestamps, and impossible calendar dates across Settings JSON and Script Properties stores.
+- **Verification state:** PR #238 CI / Quality, Browser E2E and Full Flight must pass on one identical final PR head before review/merge. No pass is claimed until live run results complete.
+- **Governance:** `client-main` still reports `protected=false`; ruleset #24624368 targets default branch `main` only. Owner/admin must establish and verify integration-branch protections and human-review requirements.
+- **Operational blockers remain separate:** the recorded staging preflight failed because production resource references were empty and Clasp credentials were missing/rejected. Do not retry unchanged configuration. Live target identity, UAT, real backup/restore, host headers, live authorization, device recovery/accessibility and customer acceptance remain unverified.
+- **Release boundary:** source validation/tests/docs only. No live Apps Script deployment, resource mutation, migration, write-capable UAT, cPanel publish or production operation was performed.
+
+## Historical checkpoint — 27 October 2026 15:22 IST (superseded by PR #237 merge)
 
 - **Authoritative integration:** `client-main` at `e1864c23c2aec607262d68f5800056cc52305484`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
 - **PR queue:** PR #236 merged as `e1864c23c2aec607262d68f5800056cc52305484`. The next bulk UX batch is PR #237, targeting only `client-main`; no PR is merged or deployed by this batch.
