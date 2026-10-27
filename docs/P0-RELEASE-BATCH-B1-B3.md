@@ -2,10 +2,21 @@
 
 **Integration target:** `client-main`  
 **Original design baseline for B1–B3:** PR #204 merge `aa37d94819e59a72c797ba36839aa8f8ec94008f`  
-**Current integration baseline:** `2b7fec463575f235373f01d2d97eddbb6ecea6fa` (PR #229 merged; exact-head source gates currently fail).
+**Current integration baseline:** `f1041a177b292468dca59cf1c68d2bdcf2a5c192` (PR #230 merged; exact-head source gates pass; operational release gates remain blocked).
 **Purpose:** complete release readiness across staging identity, schema/recovery safety, authorization, offline/sync and device/customer acceptance. This is a checklist, not proof that an external operation ran.
 
-## Current live checkpoint — 27 October 2026 08:56 IST
+## Current live checkpoint — 27 October 2026 09:59 IST
+
+- **Authoritative integration:** `client-main` at `f1041a177b292468dca59cf1c68d2bdcf2a5c192`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
+- **PR queue:** PRs #220–#230 are merged. PR #231 (`fa73c17dc96615dc106290232d05516941996b34`) is closed without merge and was superseded by PR #230. The live open-PR query returned zero.
+- **Exact integration-head checks:** CI / Quality [#40445374416](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40445374416) PASS (304 backend checks); Browser E2E [#40445374459](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40445374459) PASS (992 checks, 0 failures); Full Flight Test [#40445374394](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40445374394) PASS on the same SHA; Autonomous Development Monitor [#40445374437](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40445374437) PASS and persisted Issue #212. The optional manual-full-flight and browser-diagnostics jobs were skipped by workflow conditions, not required-gate failures.
+- **Review/governance:** PR #230 merged without a submitted review; PR #231 was closed unmerged without review. Repository auto-merge is enabled but no PR-level auto-merge is requested. Ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets `main` only, requires only `quality`, and requires zero approvals. `client-main` reports `protected=false`; classic branch-protection read returned HTTP 403. Owner/admin verification and correction remain required.
+- **Selected P0 source batch:** `client/p0-write-staging-inventory-20261027`. It requires a complete production Script/Sheet/receipt-folder/backup-folder inventory for write-capable `deploy` and `uat` preflight; the owner attestation remains available only for non-mutating artifact builds. It adds negative tests and reconciles staging runbook instructions. This is source-only and does not populate secrets or execute staging operations.
+- **Staging/recovery:** latest recorded staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed preflight because required resource references were absent and Clasp credentials were missing/rejected. Do not retry unchanged configuration. Client ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) used stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and is expired; the releases endpoint is empty.
+- **Still unverified:** live staging identity/version, guarded live UAT, real backup/restore to a separate destination, actual host security headers, live role/receipt authorization, offline/reconnect on intended devices, print/PDF, assistive-technology/accessibility and customer acceptance. No deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation is authorized by this source batch.
+- **Security follow-up:** reassess the temporary Clasp/Zod advisory exception by **9 November 2026**.
+
+## Historical checkpoint — PR #229 integration audit (superseded 27 October 2026 09:59 IST)
 
 - **Integration baseline:** `client-main` `2b7fec463575f235373f01d2d97eddbb6ecea6fa`. PRs #220–#229 are merged; the live open-PR query returned zero before this source batch was selected. The legacy `main` branch remains read-only.
 - **PR #229 merge:** `fix: make business-date windows timezone independent` merged at 03:18:35Z into the current integration SHA. No review was submitted. Its current integration-head source checks are red; merge history is not release approval.
