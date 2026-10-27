@@ -20,7 +20,6 @@
 - **Staging and release:** staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolation preflight due to missing production resource references and missing/rejected Clasp credentials; deployment and live UAT were skipped. ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and is expired. The live releases endpoint is empty.
 - **Still unverified:** live staging identity/version, actual host security headers, live role/receipt authorization, real backup/restore to a separate destination, offline/reconnect on intended devices, print/PDF, accessibility and customer acceptance. No deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation is authorized by this batch.
 
-
 ## Historical gate evidence — PR #229 pre-merge snapshot
 
 - **Historical PR #227 baseline — CI / Quality:** [run #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on the current SHA at `prettier --check .` for `test/test-staging-workflow.js`. The source quality gate stopped at formatting; this is a deterministic formatting regression, not evidence of a backend assertion failure.

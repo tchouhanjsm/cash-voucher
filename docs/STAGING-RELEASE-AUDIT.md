@@ -21,7 +21,6 @@
 - **Staging and release:** staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolation preflight due to missing production resource references and missing/rejected Clasp credentials; deployment and live UAT were skipped. ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and is expired. The live releases endpoint is empty.
 - **Still unverified:** live staging identity/version, actual host security headers, live role/receipt authorization, real backup/restore to a separate destination, offline/reconnect on intended devices, print/PDF, accessibility and customer acceptance. No deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation is authorized by this batch.
 
-
 ## Historical checkpoint — date correctness and release gates (superseded 27 October 2026 08:56 IST)
 
 - PR #228 advanced `client-main` to `b2a4a45e0f4326a59b51151754691d56476f0b35` and added bounded retries for transient Full Flight API 5xx responses plus a workflow contract test. Preserve its updated Flight workflow, `test/test-flight-workflow.js`, `package.json` test registration and staging-test formatting.

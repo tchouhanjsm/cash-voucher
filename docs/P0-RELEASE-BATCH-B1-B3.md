@@ -18,7 +18,6 @@
 - **Staging and release:** staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolation preflight due to missing production resource references and missing/rejected Clasp credentials; deployment and live UAT were skipped. ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and is expired. The live releases endpoint is empty.
 - **Still unverified:** live staging identity/version, actual host security headers, live role/receipt authorization, real backup/restore to a separate destination, offline/reconnect on intended devices, print/PDF, accessibility and customer acceptance. No deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation is authorized by this batch.
 
-
 ## Historical gate checkpoint — 26 October 2026, 23:59 IST (superseded)
 
 The source isolation boundary from PR #224, backup-manifest integrity from PR #226 and Asia/Kolkata business-date handling from PR #227 are merged. The current integration source gate is not green: CI [#40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed formatting on `test/test-staging-workflow.js`; Full Flight [#40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) hit a GitHub API HTTP 502 and failed. The single source batch repairs the formatting regression and adds a bounded transient-only retry with regression coverage.

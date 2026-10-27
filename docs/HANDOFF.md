@@ -21,7 +21,6 @@
 - **Staging and release:** staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolation preflight due to missing production resource references and missing/rejected Clasp credentials; deployment and live UAT were skipped. ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and is expired. The live releases endpoint is empty.
 - **Still unverified:** live staging identity/version, actual host security headers, live role/receipt authorization, real backup/restore to a separate destination, offline/reconnect on intended devices, print/PDF, accessibility and customer acceptance. No deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation is authorized by this batch.
 
-
 ## Historical pre-PR #228 checkpoint — 27 October 2026 05:48 IST
 
 - **PR queue at selection:** PR #228 merged as `b2a4a45e0f4326a59b51151754691d56476f0b35`; PR #229 is open and must remain unmerged until exact-head checks and human review pass. Reviews on prior PRs should not be inferred from merge history.

@@ -163,7 +163,10 @@ function createHarness({ failAddAll = false } = {}) {
   harness.stores.set(previousCacheName, new Map([['old', response('old')]]));
   harness.stores.set('unrelated-host-cache', new Map([['keep', response('keep')]]));
   await harness.lifecycle('activate');
-  assert.ok(!harness.stores.has(previousCacheName), 'activation removes the previous Cash Voucher shell cache');
+  assert.ok(
+    !harness.stores.has(previousCacheName),
+    'activation removes the previous Cash Voucher shell cache',
+  );
   assert.ok(
     harness.stores.has('unrelated-host-cache'),
     'activation leaves caches owned by other host code intact',
