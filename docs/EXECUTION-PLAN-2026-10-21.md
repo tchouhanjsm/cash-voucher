@@ -2,15 +2,16 @@
 
 **Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
-**Current integration SHA:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
+**Current integration SHA:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).
+**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
 **Active follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main` and remains unmerged pending exact-head validation.
 
-## Current checkpoint — release gates and business-date conflict resolution
+## Historical gate evidence and current business-date follow-up
 
-- **CI / Quality:** [run #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on the current SHA at `prettier --check .` for `test/test-staging-workflow.js`. The source quality gate stopped at formatting; this is a deterministic formatting regression, not evidence of a backend assertion failure.
-- **Browser E2E:** [run #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the exact current SHA.
-- **Full Flight Test:** [run #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after a GitHub Actions API HTTP 502 when querying E2E workflow runs. The query has no transient retry today; CI was also red. The source batch adds at most two total retries for HTTP 500/502/503/504 and preserves immediate failure for other statuses.
-- **Autonomous Development Monitor:** [run #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed but warned that its three-minute finalization window expired before every required workflow completed. The checkpoint is explicitly non-passing for missing/non-terminal checks; artifact `12672174746` is available.
+- **Historical PR #227 baseline — CI / Quality:** [run #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on the current SHA at `prettier --check .` for `test/test-staging-workflow.js`. The source quality gate stopped at formatting; this is a deterministic formatting regression, not evidence of a backend assertion failure.
+- **Historical PR #227 baseline — Browser E2E:** [run #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the exact current SHA.
+- **Historical PR #227 baseline — Full Flight Test:** [run #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after a GitHub Actions API HTTP 502 when querying E2E workflow runs. The query has no transient retry today; CI was also red. PR #228 integrated the at-most-two retries for HTTP 500/502/503/504 and preserves immediate failure for other statuses.
+- **Historical PR #227 baseline — Autonomous Development Monitor:** [run #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed but warned that its three-minute finalization window expired before every required workflow completed. The checkpoint is explicitly non-passing for missing/non-terminal checks; artifact `12672174746` is available.
 - **Acceptance criteria:** formatting check passes; the workflow regression test enforces the retry allowlist and two-retry ceiling; CI / Quality, Browser E2E and Full Flight Test pass on the same exact final PR head; monitor evidence does not mark missing checks as passed.
 - **Operational priority remains P0:** staging isolation source guards and backup-manifest validation are merged (#224 and #226); Asia/Kolkata business-date handling is merged (#227). Live staging identity, real backup/restore, role/receipt authorization, offline/reconnect and intended-device/customer acceptance are still unverified and cannot be substituted by this source batch.
 - **Governance:** ruleset #24624368 covers `main` only, requires `quality` only and zero approvals; `client-main` reports `protected=false`. Owner/admin must configure and verify the intended protection and review requirements. This batch does not change settings.

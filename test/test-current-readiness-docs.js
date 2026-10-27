@@ -30,7 +30,7 @@ assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
 assert.match(browserE2e, /Dashboard totals unavailable/);
 assert.match(deliveryPhase, /PR #225.*merged/i);
 assert.doesNotMatch(deliveryPhase, /it remains open until reviewed and merged by the owner/);
-assert.match(handoff, /Exact integration-head evidence.*#40373320173/);
+assert.match(handoff, /Historical PR #227 integration-head evidence.*#40373320173/);
 assert.match(handoff, /Current checkpoint — date correctness and release gates/);
 assert.match(handoff, /PR #228 merged/);
 assert.match(handoff, /client-main.*protected=false/);
