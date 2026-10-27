@@ -1,14 +1,26 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 09:59 IST (P0 staging isolation gate hardening)
+**Updated:** 27 October 2026 11:02 IST (P0 recovery drill evidence contract)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `f1041a177b292468dca59cf1c68d2bdcf2a5c192` (PR #230 merged; exact-head source checks pass; release remains blocked).
+**Current integration baseline:** `2b8120789811f27410f0542c29c7436fcc5f190c` (PR #232 merged; exact-head source checks pass; release remains blocked).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** `client/p0-write-staging-inventory-20261027` — require complete production resource inventory for write-capable staging preflight; owner attestation is artifact-only.
+**Current source batch:** `client/p0-recovery-drill-evidence-20261027` — validate privately recorded, owner-approved isolated restore evidence without performing a restore or claiming live acceptance.
 **Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
-## Current live checkpoint — 27 October 2026 09:59 IST
+## Current live checkpoint — 27 October 2026 11:02 IST
+
+- **Authoritative integration:** `client-main` at `2b8120789811f27410f0542c29c7436fcc5f190c`; legacy `main` remains read-only by engineering policy at `b4fa94405c0e6a7393c36f43e168f8b54c99c408` (GitHub reports `main` protected and `client-main` unprotected).
+- **PR queue at batch selection:** PRs #220–#230 and #232 are merged; PR #231 is closed without merge. No open PR existed when this batch was selected. PR #232 merged at 05:24:42Z with merge commit `2b8120789811f27410f0542c29c7436fcc5f190c`; its tested head was `9e94e1c8ebf925154a14a757eeb2109605a9884a`. Exact PR-head CI [#40450927644](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40450927644), Browser E2E [#40450927649](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40450927649), Full Flight Test [#40450927659](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40450927659) and monitor [#40450927568](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40450927568) passed. PR #232 has no submitted review.
+- **Exact integration-head checks:** CI / Quality [#40455165721](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40455165721) PASS (304 backend checks); Browser E2E [#40455165659](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40455165659) PASS; Full Flight Test [#40455165635](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40455165635) PASS and confirms CI run 2505 and Browser E2E run 2284 both succeeded on the same SHA with zero transient retries; Autonomous Development Monitor [#40455165577](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40455165577) PASS and persisted Issue #212. Final checkpoint artifact: [12711829132](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40455165577/artifacts/12711829132). The optional manual-full-flight job and browser-diagnostics upload were skipped by event conditions.
+- **Governance:** repository `allow_auto_merge=true`, but PR-level auto-merge was not requested by this source batch. Ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets `main` only, requires only `quality`, and requires zero approvals. The live `client-main` branch API reports `protected=false`; the classic branch-protection read returns HTTP 403 to this integration. Owner/admin correction and verification remain required.
+- **Selected recovery batch:** `client/p0-recovery-drill-evidence-20261027`, based on `2b8120789811f27410f0542c29c7436fcc5f190c`. It adds a strict private recovery-drill evidence contract and regression suite for resource-fingerprint separation, snapshot integrity, all seven required tabs and header/row-count reconciliation, voucher-ID/number digests, receipt-manifest/read-back reconciliation, owner approval and unchanged production state. It does not execute a restore, access Google resources, or authenticate evidence claims.
+- **Staging/recovery:** the latest recorded staging UAT remains [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014), which failed preflight on `f3b5cf0b6e70f79e33db235b49458350a8e3c175` because production resource references were missing and Clasp credentials were missing/rejected. Deployment and live UAT were skipped; do not retry unchanged configuration. Client ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) used stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and its artifact is expired. The live releases endpoint is empty.
+- **Still unverified:** live staging identity/version, guarded live UAT, a real restore into a separate destination, actual host security headers, live role/receipt authorization, offline/reconnect on intended devices, print/PDF, accessibility and customer acceptance. The evidence validator checks completeness/internal consistency only and is not proof of live recovery.
+- **Security follow-up:** reassess the temporary Clasp/Zod advisory exception by **9 November 2026**.
+- **Release boundary:** source/tests/runbook/checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication, release publication or production operation was performed.
+
+## Historical checkpoint — 27 October 2026 09:59 IST (superseded by PR #232)
 
 - **Authoritative integration:** `client-main` at `f1041a177b292468dca59cf1c68d2bdcf2a5c192`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408`.
 - **PR queue:** PRs #220–#230 are merged. PR #231 (`fa73c17dc96615dc106290232d05516941996b34`) is closed without merge and was superseded by PR #230. The live open-PR query returned zero.
