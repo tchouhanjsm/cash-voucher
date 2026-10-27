@@ -349,16 +349,16 @@ const AUDIT_WRITE_CACHE_TTL_SECONDS_ = 21600;
 // Audit markers are machine-written ISO timestamps. Reject parseable-but-noncanonical
 // values (for example a date-only string or a calendar date that rolls into next month).
 const AUDIT_TIMESTAMP_PATTERN_ =
-  /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$/;
+  /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
 
 function isCanonicalAuditTimestamp_(value) {
   if (typeof value !== 'string' || !AUDIT_TIMESTAMP_PATTERN_.test(value)) {
     return false;
   }
-  const milliseconds = Date.parse(value);
+  const milliseconds = Date.parse(value + 'Z');
   if (!Number.isFinite(milliseconds)) return false;
   try {
-    return new Date(milliseconds).toISOString() === value;
+    return new Date(milliseconds).toISOString().slice(0, 19) === value;
   } catch {
     return false;
   }

@@ -3,7 +3,7 @@
 **Audit date:** 27 October 2026, 16:32 IST (audit marker canonical metadata validation — PR #238)
 **Current integration baseline:** `client-main` `b20d9d9a7377032bb3f139be5ed0d051d35c4d20` (PR #237 merged; exact-head source gates passed; operational release remains blocked).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
-**Current source batch:** PR #238 `client/audit-marker-canonical-validation-20261027` targets `client-main`; strictly validate audit-health marker counters and UTC timestamps without live data access.
+**Current source batch:** PR #238 `client/audit-marker-canonical-validation-20261027` targets `client-main`; strictly validate audit-health marker counters and canonical business-time timestamps without live data access.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
@@ -12,7 +12,7 @@
 
 - **Authoritative integration:** `client-main` at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`; `main` remains legacy/read-only and must not be changed.
 - **Source state:** PR #237 is merged. PR #238 hardens malformed audit-marker metadata parsing; exact-head validation is pending.
-- **Marker contract:** JSON fallback/cache markers require a numeric positive safe-integer `failureCount` and round-trip canonical millisecond-precision UTC timestamps. Script Properties require a canonical positive decimal count string and the same timestamp representation. Malformed or ambiguous values fail closed to `MONITORING_UNAVAILABLE`.
+- **Marker contract:** JSON fallback/cache markers require a numeric positive safe-integer `failureCount` and round-trip canonical second-precision timestamps in the application's configured business timezone (`yyyy-MM-dd'T'HH:mm:ss`). Script Properties require a canonical positive decimal count string and the same timestamp representation; timezone suffixes and fractional seconds are not valid stored marker values. Malformed or ambiguous values fail closed to `MONITORING_UNAVAILABLE`.
 - **Source verification boundary:** regression tests cover corrupted marker values but do not prove live Apps Script Properties, Settings-sheet, or CacheService behavior.
 - **Governance:** `client-main` reports `protected=false`; active ruleset #24624368 still targets default branch `main` only. Owner/admin must correct and verify the required CI/E2E/Full Flight checks and human approval.
 - **Staging blocker:** last recorded UAT preflight [run #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed because production resource references were missing and Clasp credentials were unavailable/rejected. Deployment and UAT were skipped; do not retry with unchanged configuration.
