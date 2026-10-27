@@ -72,7 +72,7 @@ assert.match(
 );
 assert.match(handoff, /client\/p0-audit-monitoring-integrity-20261025/);
 assert.match(handoff, /Checkpoint finalization defect/);
-assert.match(handoff, /No open PR existed when this batch was selected/);
+assert.match(handoff, /PR #214 is the sole active follow-up/);
 assert.match(handoff, /GITHUB_EVENT_PATH/);
 assert.match(handoff, /PRs #209–#213 are merged/);
 assert.match(handoff, /PR #213 merged at this commit/);
