@@ -966,7 +966,7 @@ with sync_playwright() as p:
     )
     check(
         page.locator('#view .needs .needs-clear').count() == 1
-        and 'does not verify backups' in page.locator('#view .needs .needs-clear').inner_text(),
+        and 'Backup and recovery status are checked separately.' in page.locator('#view .needs .needs-clear').inner_text(),
         'dashboard empty-attention state does not imply complete operational health',
     )
     daily_close_card = page.locator('#view .daily-close-readiness')

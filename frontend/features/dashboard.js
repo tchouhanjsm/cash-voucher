@@ -612,7 +612,7 @@ export function createDashboard({ api }) {
                 `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${esc(item.text)}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
             )
             .join('')}</ul>`
-        : `<p class="needs-clear">${icon('check')}<span>No dashboard issues need your attention right now.</span></p>`
+        : `<p class="needs-clear">${icon('check')}<span>No dashboard issues need your attention right now. Backup and recovery status are checked separately.</span></p>`
     }</section>`;
 
     const emptyPeriodActions = can('create')
