@@ -5,21 +5,12 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
-const workflow = fs.readFileSync(
-  path.join(root, '.github/workflows/staging-uat.yml'),
-  'utf8',
-);
+const workflow = fs.readFileSync(path.join(root, '.github/workflows/staging-uat.yml'), 'utf8');
 const deploy = fs.readFileSync(path.join(root, 'scripts/deploy-staging.js'), 'utf8');
 const preflight = fs.readFileSync(path.join(root, 'scripts/staging-preflight.js'), 'utf8');
 const uat = fs.readFileSync(path.join(root, 'test/uat_staging.py'), 'utf8');
-const localServer = fs.readFileSync(
-  path.join(root, 'scripts/staging-web-server.js'),
-  'utf8',
-);
-const uatRunner = fs.readFileSync(
-  path.join(root, 'scripts/run-staging-uat.sh'),
-  'utf8',
-);
+const localServer = fs.readFileSync(path.join(root, 'scripts/staging-web-server.js'), 'utf8');
+const uatRunner = fs.readFileSync(path.join(root, 'scripts/run-staging-uat.sh'), 'utf8');
 const releaseRunbook = fs.readFileSync(
   path.join(root, 'docs/APPS-SCRIPT-RELEASE-RUNBOOK.md'),
   'utf8',
@@ -253,7 +244,8 @@ assert.match(
 const clientDistUpload = clientDistWorkflow.split(
   '      - uses: actions/upload-artifact@v4',
 )[1] || '';
-const clientZipName = 'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
+const clientZipName =
+  'cv-${{ inputs.client_code }}-staging-${{ github.sha }}.zip';
 assert.match(clientDistUpload, /path:\s*\|/);
 assert.ok(
   clientDistUpload.includes(clientZipName),
@@ -267,10 +259,7 @@ assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
 assert.match(clientDistWorkflow, /artifactVersion: 2/);
 assert.match(clientDistWorkflow, /checksumAlgorithm: 'SHA-256'/);
 assert.match(clientDistWorkflow, /checksumsFile: 'SHA256SUMS\.txt'/);
-assert.match(
-  clientDistWorkflow,
-  /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/,
-);
+assert.match(clientDistWorkflow, /sha256sum "\$ZIP_NAME" > "\$ZIP_NAME\.sha256"/);
 assert.match(clientDistWorkflow, /retention-days: 14/);
 assert.match(
   clientDistWorkflow,

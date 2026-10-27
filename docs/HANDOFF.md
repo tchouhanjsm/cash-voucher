@@ -1,22 +1,37 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 26 October 2026 (live audit after PR #227)  
-**Repository:** tchouhanjsm/cash-voucher  
-**Integration branch:** `client-main`; legacy `main` remains read-only.  
-**Verified integration SHA:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).  
-**Open PR queue at audit:** empty; candidate branch: `client/fix-business-date-arithmetic-20261027`.  
-**Baseline CI:** [#40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed at Prettier for `test/test-staging-workflow.js`; [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed; [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed its same-SHA CI prerequisite; [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) passed. These are baseline SHA results only.  
-**Governance:** live branch metadata reports `client-main protected=false`; owner/admin must verify effective branch rules and required human review.  
-**Release boundary:** source-only; no deployment, migration, Google resource mutation, write-capable staging UAT, cPanel publication or production change.
+**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
+**Repository:** tchouhanjsm/cash-voucher
+**Integration branch:** `client-main`; legacy `main` remains read-only.
+**Verified integration baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
+**Current source batch:** PR #229, `client/fix-business-date-arithmetic-20261027` — make business-date calculations timezone-independent on top of PR #228's integrated release-gate fixes.
+**Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
+
+## Current checkpoint — 27 October 2026 05:48 IST
+
+- **PR queue at selection:** PR #228 has merged as `b2a4a45e0f4326a59b51151754691d56476f0b35`; PR #229 is open and must remain unmerged until exact-head checks and human review pass. Reviews on prior PRs should not be inferred from merge history.
+- **Exact integration-head evidence:** [CI / Quality #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed on this SHA at `prettier --check .`; the formatter flagged `test/test-staging-workflow.js` because the `clientZipName` declaration was collapsed to one line. [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed on the same SHA. [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after an unhandled GitHub Actions API HTTP 502 while listing E2E runs; CI is also red, so the release gate cannot pass on this baseline. [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed, but its bounded three-minute finalization window expired before every source workflow was terminal. It saved a checkpoint explicitly marked non-passing and uploaded artifact `12672174746`.
+- **Source batch:** restore the expected formatting; add a global maximum of two retries for HTTP 500/502/503/504 only in the Full Flight workflow; add a regression contract test and run it in `npm test`. Exact SHA/branch/event filtering remains mandatory. No retry of the failed CI or Full Flight run was performed during this audit.
+- **Governance:** ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets only `~DEFAULT_BRANCH` (`main`), requires only `quality`, and requires zero approvals. The live branch API reports `client-main` as `protected=false`; the classic branch-protection endpoint returns 403 to this connection. Owner/admin must correct and verify branch protection; this source batch does not alter settings.
+- **Staging blocker:** [UAT #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed deployment preflight due to missing production resource references and rejected/missing Clasp credentials. Deployment, target recheck and live UAT were skipped. Do not retry unchanged configuration.
+- **Artifact/release:** [staging ZIP #39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) succeeded on stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`, but its artifact has expired. The releases endpoint is empty; no published release is recorded.
+- **Not verified:** staging identity/version, live host security headers, role/receipt authorization, restore to a separate recovery target, offline/reconnect on intended devices, printing, accessibility, and customer acceptance. Automated source tests do not satisfy these operational gates.
+
+## Immediate sequence
+
+1. Complete this one source-only gate-reliability PR and require exact-head CI / Quality, Browser E2E and Full Flight Test to pass.
+2. Obtain the designated human review and owner/admin confirmation that `client-main` has effective required checks and approval rules. Do not merge or enable auto-merge from this run.
+3. Privately correct staging Environment identity and credentials, then separately authorize guarded staging UAT and a real restore into a separate destination.
+4. Record intended-device, offline/reconnect, accessibility, authorization and customer acceptance before any pilot. Production remains excluded.
+
 
 ## Current checkpoint — date correctness and release gates
 
-- Local-device calendar arithmetic existed in both frontend entry paths. The modular shell derived today from Asia/Kolkata but performed date-only arithmetic and monthly trend grouping in the browser timezone; legacy `app.js` also derived the business date and custom Dashboard periods from the device timezone.
-- This batch aligns both paths on the Asia/Kolkata business day, uses UTC-only date-only arithmetic, strictly validates real calendar dates for Dashboard and Reports, bumps the service-worker cache revision, and covers India midnight, leap/year boundaries and non-India browser timezones.
-- Backend voucher/read-model validation already uses the configured business timezone and strict date checks. No accounting semantic or schema change is included.
-- The known Prettier failure is corrected in the same batch. Exact-head CI, Browser E2E and Full Flight Test must pass on the candidate PR head; prior baseline results do not validate it.
-- Staging remains unverified. Prior preflight failures around production reference IDs and Clasp credentials remain blockers; do not retry unchanged configuration. Live deployment identity, backup/restore, host headers, device acceptance and customer acceptance are not established by source tests.
-- `client-main` currently reports `protected=false`. Owner/admin must configure and verify effective required checks and human review before release.
+- PR #228 is now integrated at `b2a4a45e0f4326a59b51151754691d56476f0b35`; its release-gate reliability changes, including the staging-test formatting correction and bounded transient Full Flight retries, must be preserved.
+- PR #229 adds Asia/Kolkata business-date consistency across the legacy and modular frontend paths, UTC-only date arithmetic, real-calendar-date validation for Dashboard/Reports ranges, and cache revision `cv2-v32`.
+- PR #229's prior head `c71e233e11eec5b6d2b2d37be27216a80a170f7e` had CI / Quality [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102) and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096) fail; Autonomous Development Monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. Those results apply only to the superseded pre-conflict-resolution SHA.
+- Conflict resolution preserves PR #228's current `.github/workflows/flight-test.yml`, `test/test-flight-workflow.js`, `package.json` test wiring and formatted `test/test-staging-workflow.js`. The new merge-resolution head requires fresh exact-head CI, Browser E2E and Full Flight Test results.
+- Release remains blocked until new exact-head checks pass, human review is obtained, and owner-controlled branch protection and live staging/backup/restore/device/customer-acceptance gates are evidenced. No deployment or live data mutation is authorized by this source change.
 
 ---
 

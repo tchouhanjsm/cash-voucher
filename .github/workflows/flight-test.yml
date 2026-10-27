@@ -42,6 +42,38 @@ jobs:
             ];
             const deadline = Date.now() + 12 * 60 * 1000;
             const latest = {};
+            const transientHttpStatuses = new Set([500, 502, 503, 504]);
+            const maxTransientRetries = 2;
+            let transientRetriesUsed = 0;
+
+            async function listWorkflowRunsWithRetry(workflow) {
+              while (true) {
+                try {
+                  return await github.rest.actions.listWorkflowRuns({
+                    owner,
+                    repo,
+                    workflow_id: workflow.workflow_id,
+                    head_sha: sha,
+                    event,
+                    per_page: 100,
+                  });
+                } catch (error) {
+                  if (
+                    !transientHttpStatuses.has(error.status) ||
+                    transientRetriesUsed >= maxTransientRetries
+                  ) {
+                    throw error;
+                  }
+
+                  transientRetriesUsed += 1;
+                  const delayMs = 500 * transientRetriesUsed;
+                  core.warning(
+                    `${workflow.name} workflow-runs API returned transient HTTP ${error.status}; retry ${transientRetriesUsed}/${maxTransientRetries} in ${delayMs}ms.`,
+                  );
+                  await new Promise((resolve) => setTimeout(resolve, delayMs));
+                }
+              }
+            }
 
             core.info(`Waiting for CI and Browser E2E on ${sha} (branch=${branch}, event=${event}).`);
 
@@ -49,14 +81,7 @@ jobs:
               let allCompleted = true;
 
               for (const workflow of workflows) {
-                const response = await github.rest.actions.listWorkflowRuns({
-                  owner,
-                  repo,
-                  workflow_id: workflow.workflow_id,
-                  head_sha: sha,
-                  event,
-                  per_page: 100,
-                });
+                const response = await listWorkflowRunsWithRetry(workflow);
 
                 const runs = response.data.workflow_runs
                   .filter((run) =>
@@ -96,7 +121,7 @@ jobs:
                 }
 
                 core.info(
-                  `Full Flight gate passed for ${sha}: CI and Browser E2E both completed successfully. Results: ${JSON.stringify(latest)}`
+                  `Full Flight gate passed for ${sha}: CI and Browser E2E both completed successfully. Transient retries used=${transientRetriesUsed}. Results: ${JSON.stringify(latest)}`
                 );
                 return;
               }
