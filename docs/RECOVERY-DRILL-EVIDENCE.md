@@ -6,7 +6,7 @@
 
 ## Current staging preflight boundary — 27 October 2026
 
-The next staging phase adds a configuration-only check to the manual `validate-only` workflow. Its artifact is configuration evidence, not a recovery drill. It does not query Google resources, authenticate resource ownership, deploy, run UAT, or prove a restore.
+PR #241 adds a configuration-only check to the manual `validate-only` workflow. The readiness job is restricted to `client-main` and uses the protected `staging` Environment. Secrets are bound to its one validation step only; checkout, Node setup and artifact upload do not inherit them. The artifact is configuration evidence, not a recovery drill: it does not query Google resources, authenticate resource ownership, deploy, run UAT, or prove a restore.
 
 Continue to require owner-approved verification of the intended production and recovery identities, a passing backup-integrity report, restore into separate recovery resources, full seven-sheet/header/count reconciliation, voucher and receipt reconciliation, and evidence that production remained unchanged.
 
