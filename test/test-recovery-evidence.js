@@ -35,8 +35,7 @@ function buildEvidence() {
     };
   });
 
-  const timestamp = (second) =>
-    '2026-10-27T05:30:' + String(second).padStart(2, '0') + '.000Z';
+  const timestamp = (second) => '2026-10-27T05:30:' + String(second).padStart(2, '0') + '.000Z';
   return {
     schemaVersion: 1,
     evidenceType: 'cash-voucher-recovery-drill',
