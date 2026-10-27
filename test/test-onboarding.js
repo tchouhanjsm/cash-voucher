@@ -84,9 +84,7 @@ assert.equal(
   7,
   'each current-stage requirement appears in exactly one status bucket',
 );
-const backupReadinessStep = state.data.steps.find(
-  (step) => step.id === 'recentBackup',
-);
+const backupReadinessStep = state.data.steps.find((step) => step.id === 'recentBackup');
 assert.ok(
   backupReadinessStep &&
     backupReadinessStep.details &&
