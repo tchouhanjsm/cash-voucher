@@ -167,6 +167,26 @@ const deployedShaMismatch = buildEvidence();
 deployedShaMismatch.restore.deployedClientMainSha = 'b'.repeat(40);
 assert.ok(hasError(deployedShaMismatch, 'DEPLOYED_SHA_MISMATCH'));
 
+const unsafeVersionLabels = [
+  'https://script.google.com/macros/s/private-id/exec',
+  'operator@example.com',
+  'projects/123/deployments/98765',
+  'script-id-123456789012345678901234567890',
+  'version 42',
+];
+unsafeVersionLabels.forEach((version) => {
+  const unsafeVersion = buildEvidence();
+  unsafeVersion.restore.deployedVersion = version;
+  assert.ok(
+    hasError(unsafeVersion, 'DEPLOYED_VERSION'),
+    'unsafe deployed version label is rejected: ' + version,
+  );
+});
+
+const supportedVersionLabel = buildEvidence();
+supportedVersionLabel.restore.deployedVersion = 'version-42';
+assert.equal(validateRecoveryEvidence(supportedVersionLabel).ok, true);
+
 const snapshotAfterRestoreStart = buildEvidence();
 snapshotAfterRestoreStart.source.snapshotCreatedAt = '2026-10-27T05:30:11.000Z';
 assert.ok(hasError(snapshotAfterRestoreStart, 'SNAPSHOT_AFTER_RESTORE_START'));
