@@ -26,6 +26,8 @@
 
 ## Contract requirements
 
+The JSON root must use `schemaVersion: 1` and `evidenceType: cash-voucher-recovery-drill`.
+
 - Source metadata: full 40-character integration SHA, snapshot fingerprint, snapshot creation timestamp, manifest SHA-256 and a passing integrity-report state.
 - Resource separation: SHA-256 fingerprints for production and recovery Script, deployment, Spreadsheet, receipt folder and backup folder. Every fingerprint must be distinct from every other resource fingerprint and from the selected snapshot fingerprint.
 - Restore metadata: success result, ordered UTC timestamps, deployed version label and deployed source SHA.
