@@ -2,7 +2,13 @@
 
 **Purpose:** standardize the evidence required to accept a backup restore into a separate recovery destination. This is a source-side evidence validator, not a restore implementation.
 
-**Current baseline at selection:** `client-main` at `2b8120789811f27410f0542c29c7436fcc5f190c` (PR #232 merged; exact-head CI, Browser E2E, Full Flight Test and monitor passed). The repository had no open PR when this batch was selected.
+**Historical baseline at original selection:** `client-main` at `2b8120789811f27410f0542c29c7436fcc5f190c` (PR #232). The current integration baseline is `1dba1b008eb2303ffddf069285fbb22efc76a8cb` after PR #240 merged.
+
+## Current staging preflight boundary — 27 October 2026
+
+PR #241 adds a configuration-only check to the manual `validate-only` workflow. The readiness job is restricted to `client-main` and uses the protected `staging` Environment. Secrets are bound to its one validation step only; checkout, Node setup and artifact upload do not inherit them. The artifact is configuration evidence, not a recovery drill: it does not query Google resources, authenticate resource ownership, deploy, run UAT, or prove a restore.
+
+Continue to require owner-approved verification of the intended production and recovery identities, a passing backup-integrity report, restore into separate recovery resources, full seven-sheet/header/count reconciliation, voucher and receipt reconciliation, and evidence that production remained unchanged.
 
 ## Hard safety boundary
 

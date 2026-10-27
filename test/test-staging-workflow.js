@@ -89,7 +89,7 @@ assert.match(
 );
 assert.doesNotMatch(workflow, /CV_STAGING_UAT_(OWNER|MANAGER)_PIN/);
 
-const validationJob = workflow.split('  guard:\n')[0];
+const validationJob = workflow.split('  validate:\n')[1].split('  preflight-readiness:\n')[0];
 assert.doesNotMatch(
   validationJob,
   /secrets\./,
@@ -133,8 +133,8 @@ assert.equal(
 );
 assert.equal(
   (workflow.match(/retention-days: 90/g) || []).length,
-  2,
-  'staging evidence artifacts have bounded retention',
+  3,
+  'deploy, UAT-only and read-only preflight artifacts have bounded retention',
 );
 assert.ok(
   workflow.includes(
@@ -291,6 +291,29 @@ assert.match(
   /do not rerun it or relax preflight/,
   'staging recovery instructions must not bypass safety gates',
 );
+
+const readinessJob = workflow.split('  preflight-readiness:\n')[1].split('  guard:\n')[0];
+assert.match(readinessJob, /github\.ref == 'refs\/heads\/client-main'/);
+assert.match(readinessJob, /inputs\.operation == 'validate-only'/);
+assert.match(readinessJob, /needs: \[validate\]/);
+assert.match(readinessJob, /environment:\n {6}name: staging/);
+assert.match(readinessJob, /node scripts\/staging-preflight\.js --mode=readiness/);
+const readinessHeader = readinessJob.split('    steps:\n')[0];
+assert.doesNotMatch(readinessHeader, /secrets\./);
+const readinessValidationStep = readinessJob
+  .split('      - name: Validate configuration only (no remote access or writes)\n')[1]
+  .split('      - name: Upload sanitized preflight evidence\n')[0];
+assert.match(readinessValidationStep, /secrets\.CLASPRC_JSON/);
+assert.match(readinessValidationStep, /secrets\.CV_STAGING_SCRIPT_ID/);
+assert.doesNotMatch(readinessJob, /npm ci|npm run staging:preflight/);
+const readinessUploadStep = readinessJob.split(
+  '      - name: Upload sanitized preflight evidence\n',
+)[1];
+assert.doesNotMatch(readinessUploadStep, /secrets\./);
+assert.match(readinessJob, /CV_STAGING_PREFLIGHT_EVIDENCE_PATH/);
+assert.match(readinessJob, /retention-days: 90/);
+assert.doesNotMatch(readinessJob, /staging:deploy|uat:staging|clasp push|curl/);
+assert.doesNotMatch(workflow.split('  preflight-readiness:\n')[0], /secrets\./);
 
 console.log(
   'Staging workflow guard OK — manual trigger, client-main-only gate, explicit write consent, isolated deployment config, no-cache test shell and protected resource checks.',

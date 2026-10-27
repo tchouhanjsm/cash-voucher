@@ -1,11 +1,22 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 17:59 IST (backup readiness vertical slice — current source batch)
+**Updated:** 27 October 2026 (staging configuration preflight phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `ba56028c4eba2ea499c988fe03866a592005f12c` (PR #239 merged; strict backup timestamp validation is now the baseline).
-**Current source batch:** `client/backup-readiness-vertical-slice-20261027` connects the shared backup-marker contract, Settings diagnostics, onboarding stage summary and retry-safe operator flow.
+**Current integration baseline:** `1dba1b008eb2303ffddf069285fbb22efc76a8cb` (PR #240 merged; backup readiness/onboarding is integrated).
+**Current source batch:** `client/staging-config-preflight-20261027` adds configuration-only staging readiness checks and sanitized evidence; no live operation is performed.
 **Release boundary:** backend, frontend, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+
+## Current release-session checkpoint — 27 October 2026
+
+- **Integration baseline:** `client-main` at `1dba1b008eb2303ffddf069285fbb22efc76a8cb` after PR #240 merged. Legacy `main` remains read-only.
+- **Selected bulk phase:** `client/staging-config-preflight-20261027`. Add a read-only `readiness` mode to the staging preflight and invoke it from `validate-only` through the protected GitHub `staging` Environment.
+- **Preflight coverage:** staging and production resource inventory, endpoint/deployment consistency, distinct owner/manager UAT credentials, and Clasp legacy/3.x credential shape. The `STAGING-ONLY` confirmation remains mandatory for actual deploy/UAT paths; readiness mode does not deploy or write.
+- **Evidence boundary:** the evidence report carries only the source/run reference, category states and sanitized blocker messages. It excludes raw resource identifiers, endpoint URLs, email/passwords and credential JSON. It explicitly states that remote connectivity, independent ownership, deployment and restore were not verified.
+- **Workflow isolation:** the readiness job runs only from `client-main` in the protected GitHub `staging` Environment. Secrets are scoped to the one validation step; checkout, Node setup and artifact upload do not receive them. No dependency install runs in that secret-bearing step, and the evidence remains configuration-only—not proof of connectivity, resource ownership or restore.
+- **Required checks:** CI / Quality, Browser E2E and Full Flight Test must all pass on the same final PR head. No live Environment run is performed by source validation itself.
+- **Still blocked:** staging secrets must be privately populated and owner-verified, the read-only workflow must run against the intended protected Environment, then separately authorized live UAT and an isolated restore/reconciliation are required. Governance and device/customer acceptance gates remain open.
+- **Scope boundary:** no Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication, release publication or production operation.
 
 ## Current live checkpoint — 27 October 2026 17:59 IST
 

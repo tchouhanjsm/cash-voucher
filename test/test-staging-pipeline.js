@@ -52,6 +52,52 @@ assert.equal(validUat.checks.dedicatedUatAccountsPresent, true);
 const validDeploy = validateStagingConfiguration(fixture, { mode: 'deploy' });
 assert.equal(validDeploy.ok, true, validDeploy.errors.join('; '));
 
+const readinessWithoutWriteConfirmation = validateStagingConfiguration(
+  { ...fixture, CV_STAGING_DEPLOY_CONFIRMATION: '' },
+  { mode: 'readiness' },
+);
+assert.equal(
+  readinessWithoutWriteConfirmation.ok,
+  true,
+  readinessWithoutWriteConfirmation.errors.join('; '),
+);
+assert.equal(readinessWithoutWriteConfirmation.checks.claspCredentialShapeValid, true);
+assert.equal(readinessWithoutWriteConfirmation.checks.productionResourceReferencesPresent, true);
+assert.equal(readinessWithoutWriteConfirmation.checks.targetIdsAreSeparated, true);
+
+const readinessWithoutProductionInventory = validateStagingConfiguration(
+  {
+    ...fixture,
+    CV_PRODUCTION_SCRIPT_ID: '',
+    CV_PRODUCTION_SPREADSHEET_ID: '',
+    CV_PRODUCTION_RECEIPT_FOLDER_ID: '',
+    CV_PRODUCTION_BACKUP_FOLDER_ID: '',
+  },
+  { mode: 'readiness' },
+);
+assert.equal(readinessWithoutProductionInventory.ok, false);
+assert.equal(readinessWithoutProductionInventory.checks.productionResourceReferencesPresent, false);
+assert.ok(
+  readinessWithoutProductionInventory.errors.some((message) =>
+    /all four production resource reference IDs/.test(message),
+  ),
+);
+
+const readinessWithBadClasp = validateStagingConfiguration(
+  { ...fixture, CLASPRC_JSON: JSON.stringify({ tokens: { default: { client_id: 'id-only' } } }) },
+  { mode: 'readiness' },
+);
+assert.equal(readinessWithBadClasp.ok, false);
+assert.equal(readinessWithBadClasp.checks.claspCredentialShapeValid, false);
+assert.ok(readinessWithBadClasp.errors.some((message) => /CLASPRC_JSON/.test(message)));
+
+const readinessMissingConfirmation = validateStagingConfiguration(
+  { ...fixture, CV_STAGING_DEPLOY_CONFIRMATION: '' },
+  { mode: 'deploy' },
+);
+assert.equal(readinessMissingConfirmation.ok, false);
+assert.ok(readinessMissingConfirmation.errors.some((message) => /STAGING-ONLY/.test(message)));
+
 const artifactTarget = {
   ...fixture,
   CV_STAGING_UAT_OWNER_EMAIL: '',

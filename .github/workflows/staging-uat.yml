@@ -67,6 +67,52 @@ jobs:
       - name: Validate staging UAT Python syntax
         run: python -m py_compile test/uat_staging.py
 
+  preflight-readiness:
+    name: Inspect protected staging configuration (read-only)
+    if: ${{ github.ref == 'refs/heads/client-main' && inputs.operation == 'validate-only' && needs.validate.result == 'success' }}
+    needs: [validate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: staging
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+
+      - name: Validate configuration only (no remote access or writes)
+        env:
+          CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+          CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+          CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+          CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+          CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+          CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+          CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+          CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+          CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+          CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
+          CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+          CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
+          CV_STAGING_PREFLIGHT_EVIDENCE_PATH: ${{ runner.temp }}/cash-voucher-staging-preflight-evidence.json
+        run: node scripts/staging-preflight.js --mode=readiness
+
+      - name: Upload sanitized preflight evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cash-voucher-staging-preflight-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cash-voucher-staging-preflight-evidence.json
+          if-no-files-found: error
+          retention-days: 90
+
   guard:
     name: Require client-main, staging-only confirmation and write consent
     if: ${{ inputs.operation == 'deploy-and-uat' || inputs.operation == 'uat-only' }}
