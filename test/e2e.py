@@ -621,7 +621,7 @@ with sync_playwright() as p:
         route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
     page.route('**/api?*', inject_visual_dashboard_summary)
-    visual_widths = [320, 360, 390, 768, 1024, 1280, 1440]
+    visual_widths = [320, 360, 390, 440, 441, 768, 800, 801, 1024, 1100, 1101, 1280, 1440]
     for route_name, route_id, ready_selector in visual_routes:
         if route_id == 'acct':
             page.click('#userBtn')
@@ -749,6 +749,31 @@ with sync_playwright() as p:
                         dashboardIconAlignment: view.querySelector('.dashboard-view .stat .stat-ic')
                             ? getComputedStyle(view.querySelector('.dashboard-view .stat .stat-ic')).alignSelf
                             : '',
+                        dashboardStatMetrics: (() => {
+                            const stats = view.querySelector('.dashboard-view .dashboard-stats');
+                            if (!stats) return null;
+                            const cards = Array.from(stats.querySelectorAll(':scope > .stat'));
+                            const statsRect = stats.getBoundingClientRect();
+                            return {
+                                role: stats.classList.contains('dashboard-stats--owner') ? 'owner'
+                                    : stats.classList.contains('dashboard-stats--staff') ? 'staff' : 'unknown',
+                                cardCount: cards.length,
+                                columns: getComputedStyle(stats).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
+                                cardsWithinGrid: cards.every((card) => {
+                                    const rect = card.getBoundingClientRect();
+                                    return rect.left >= statsRect.left - 1 && rect.right <= statsRect.right + 1;
+                                }),
+                                valuesFit: cards.every((card) => {
+                                    const value = card.querySelector(':scope > b');
+                                    if (!value) return false;
+                                    const valueRect = value.getBoundingClientRect();
+                                    const cardRect = card.getBoundingClientRect();
+                                    return valueRect.left >= cardRect.left - 1
+                                        && valueRect.right <= cardRect.right + 1
+                                        && value.scrollWidth <= value.clientWidth + 1;
+                                })
+                            };
+                        })(),
                         tooShortControls
                     };
                 }""")
@@ -763,6 +788,19 @@ with sync_playwright() as p:
                     f'{route_name}: exactly one page heading remains at {width}px in {theme_name} theme',
                 )
                 if route_id == 'dash':
+                    dashboard_metrics = layout['dashboardStatMetrics']
+                    expected_columns = 3 if width >= 801 else 2
+                    check(
+                        dashboard_metrics is not None
+                        and dashboard_metrics['role'] == 'owner'
+                        and dashboard_metrics['cardCount'] == 6
+                        and dashboard_metrics['columns'] == expected_columns,
+                        f'owner dashboard KPI grid matches the role and breakpoint contract at {width}px in {theme_name} theme; metrics={dashboard_metrics}',
+                    )
+                    check(
+                        dashboard_metrics['cardsWithinGrid'] and dashboard_metrics['valuesFit'],
+                        f'dashboard KPI values fit inside their cards without horizontal clipping at {width}px in {theme_name} theme; metrics={dashboard_metrics}',
+                    )
                     check(
                         layout['dashboardIconPosition'] == 'static'
                         and layout['dashboardIconAlignment'] == 'start',
@@ -3036,6 +3074,46 @@ with sync_playwright() as p:
     page.click('#view [data-act=signout]')
     page.wait_for_selector('#loginForm')
 
+    def inject_staff_dashboard_summary(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        from_date = request_data.get('from', '2026-10-20')
+        to_date = request_data.get('to', '2026-10-26')
+        payload = {
+            'ok': True,
+            'data': {
+                'from': from_date,
+                'to': to_date,
+                'periodDays': 7,
+                'trendMonthly': False,
+                'trend': [{'date': to_date, 'amount': 12345678}],
+                'paid': 12345678,
+                'previousPaid': 11000000,
+                'paymentCount': 12345,
+                'validPaymentCount': 12345,
+                'largest': {'amount': 12345678, 'vendor': 'Responsive KPI sample'},
+                'todayPaid': 9876543,
+                'todayPaymentCount': 9876,
+                'received': 8765432,
+                'receiptCount': 8765,
+                'bookBalance': 21000000,
+                'topVendors': [{'k': 'Responsive KPI sample', 'n': 12345, 's': 12345678}],
+                'byCategory': [{'k': 'Operations', 'n': 12345, 's': 12345678}],
+                'byTeamMember': [{'k': 'Staff sample', 'n': 12345, 's': 12345678}],
+                'approvalExceptionCount': 0,
+                'invalidAmountCount': 0,
+                'malformedRecordCount': 0,
+                'malformedFieldCount': 0,
+            },
+        }
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
+
+    page.route('**/api?*', inject_staff_dashboard_summary)
     login('s@test.com', 'Staff#Start2026')
     page.wait_for_selector('#currentPassword')
     page.fill('#currentPassword', 'Staff#Start2026')
@@ -3043,6 +3121,71 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 3, 'staff sees 3 nav items (dash,new,reg); Account is in the user menu')
+
+    # Exercise the live staff dashboard at every KPI breakpoint with deliberately long
+    # INR values, rather than inferring its layout from owner-only screenshots.
+    go_view(page, 'dash')
+    page.wait_for_selector('#view .dashboard-stats--staff', timeout=10000)
+    staff_dashboard_widths = [320, 390, 440, 441, 768, 800, 801, 1024, 1100, 1101, 1280]
+    for theme_name in ['light', 'dark']:
+        page.evaluate("theme => document.documentElement.setAttribute('data-theme', theme)", theme_name)
+        for width in staff_dashboard_widths:
+            page.set_viewport_size({'width': width, 'height': 900 if width >= 768 else 844})
+            page.wait_for_timeout(25)
+            staff_metrics = page.evaluate("""() => {
+                const root = document.documentElement;
+                const body = document.body;
+                const view = document.querySelector('#view');
+                const stats = view?.querySelector('.dashboard-view .dashboard-stats');
+                if (!stats) return {
+                    role: 'missing', cardCount: 0, columns: 0,
+                    cardsWithinGrid: false, valuesFit: false,
+                    viewportWidth: root.clientWidth,
+                    documentWidth: Math.max(root.scrollWidth, body.scrollWidth)
+                };
+                const cards = Array.from(stats.querySelectorAll(':scope > .stat'));
+                const statsRect = stats.getBoundingClientRect();
+                return {
+                    role: stats.classList.contains('dashboard-stats--staff') ? 'staff'
+                        : stats.classList.contains('dashboard-stats--owner') ? 'owner' : 'unknown',
+                    cardCount: cards.length,
+                    columns: getComputedStyle(stats).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
+                    cardsWithinGrid: cards.every((card) => {
+                        const rect = card.getBoundingClientRect();
+                        return rect.left >= statsRect.left - 1 && rect.right <= statsRect.right + 1;
+                    }),
+                    valuesFit: cards.every((card) => {
+                        const value = card.querySelector(':scope > b');
+                        if (!value) return false;
+                        const valueRect = value.getBoundingClientRect();
+                        const cardRect = card.getBoundingClientRect();
+                        return valueRect.left >= cardRect.left - 1
+                            && valueRect.right <= cardRect.right + 1
+                            && value.scrollWidth <= value.clientWidth + 1;
+                    }),
+                    viewportWidth: root.clientWidth,
+                    documentWidth: Math.max(root.scrollWidth, body.scrollWidth)
+                };
+            }""")
+            expected_columns = 5 if width >= 1101 else 3 if width >= 801 else 2
+            check(
+                staff_metrics['role'] == 'staff'
+                and staff_metrics['cardCount'] == 5
+                and staff_metrics['columns'] == expected_columns,
+                f'staff dashboard KPI grid matches the five-card role and breakpoint contract at {width}px in {theme_name} theme; metrics={staff_metrics}',
+            )
+            check(
+                staff_metrics['cardsWithinGrid'] and staff_metrics['valuesFit'],
+                f'dashboard KPI values fit inside their cards without horizontal clipping at {width}px in {theme_name} theme; metrics={staff_metrics}',
+            )
+            check(
+                staff_metrics['documentWidth'] <= staff_metrics['viewportWidth'] + 1,
+                f'staff dashboard remains within the viewport at {width}px in {theme_name} theme',
+            )
+    page.unroute('**/api?*', inject_staff_dashboard_summary)
+    page.set_viewport_size({'width': 390, 'height': 800})
+    page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+
     page.click('#mobileMoreBtn')
     page.wait_for_selector('#navMore:not(.hidden)')
     check(
