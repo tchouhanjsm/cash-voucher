@@ -5769,20 +5769,9 @@ with sync_playwright() as p:
         and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
     ):
         page.locator('.form-error [data-act=reportRun]').click()
-    try:
-        page.wait_for_function(
-            "document.querySelector('#view').innerText.includes('Source vouchers')"
-        )
-    except Exception:
-        recovery_state = page.evaluate("""() => ({
-            viewText: document.querySelector('#view')?.innerText?.slice(0, 3000) || '',
-            from: document.querySelector('#movementFrom')?.value || '',
-            to: document.querySelector('#movementTo')?.value || '',
-            outputBusy: document.querySelector('#report-output')?.getAttribute('aria-busy') || '',
-            reportError: document.querySelector('.form-error')?.innerText || '',
-        })""")
-        print('Report recovery diagnostics:', json.dumps(recovery_state, ensure_ascii=False))
-        raise
+    page.wait_for_function(
+        "document.querySelector('#view').innerText.includes('Source vouchers')"
+    )
     check(
         'invalid response' not in page.locator('#view').inner_text().lower(),
         'movement report recovers after a malformed response is removed',
@@ -5803,12 +5792,12 @@ with sync_playwright() as p:
     )
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
-        "document.querySelector('#view').innerText.includes('Choose a valid date range')"
+        "document.querySelector('#view').innerText.includes('Choose real calendar dates')"
     )
     check(
         page.locator('#view svg').count() == 0
         and range_payload not in page.locator('#view').inner_text()
-        and 'Choose a valid date range' in page.locator('#view').inner_text()
+        and 'Choose real calendar dates' in page.locator('#view').inner_text()
         and not page.evaluate('window.__xssFired === true'),
         'malformed report date-range value is rejected without reflecting hostile input',
     )

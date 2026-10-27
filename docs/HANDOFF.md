@@ -25,7 +25,6 @@
 3. Privately correct staging Environment identity and credentials, then separately authorize guarded staging UAT and a real restore into a separate destination.
 4. Record intended-device, offline/reconnect, accessibility, authorization and customer acceptance before any pilot. Production remains excluded.
 
-
 ## Current checkpoint — date correctness and release gates
 
 - PR #228 is now integrated at `b2a4a45e0f4326a59b51151754691d56476f0b35`; its release-gate reliability changes, including the staging-test formatting correction and bounded transient Full Flight retries, must be preserved.

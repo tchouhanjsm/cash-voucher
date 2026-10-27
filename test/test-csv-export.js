@@ -6,15 +6,9 @@ const source = fs.readFileSync(require.resolve('../frontend/core/utils.js'), 'ut
 
 async function run() {
   const moduleUrl = 'data:text/javascript;base64,' + Buffer.from(source).toString('base64');
-  const {
-    addDays,
-    businessDate,
-    csvCell,
-    esc,
-    isBusinessDate,
-    iso,
-    scalarText,
-  } = await import(moduleUrl);
+  const { addDays, businessDate, csvCell, esc, isBusinessDate, iso, scalarText } = await import(
+    moduleUrl
+  );
 
   for (const value of ['=SUM(1,1)', '+cmd', '-cmd', '@cmd', '\t=cmd', '\r=cmd', '\n=cmd']) {
     assert.match(
