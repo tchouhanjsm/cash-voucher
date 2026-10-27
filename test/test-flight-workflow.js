@@ -6,6 +6,38 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/flight-test.yml'), 'utf8');
+const browserWorkflow = fs.readFileSync(path.join(root, '.github/workflows/e2e.yml'), 'utf8');
+
+const browserTimeout = Number(
+  browserWorkflow.match(/jobs:\s*browser:[\s\S]*?timeout-minutes:\s*(\d+)/)?.[1],
+);
+const flightTimeout = Number(
+  workflow.match(/^\s{2}flight:[^\S\r\n]*[\r\n]+[\s\S]*?^\s{4}timeout-minutes:\s*(\d+)/m)?.[1],
+);
+const gateWaitMinutes = Number(
+  workflow.match(/const deadline = Date\.now\(\) \+ (\d+) \* 60 \* 1000;/)?.[1],
+);
+
+assert.ok(
+  Number.isInteger(browserTimeout) && browserTimeout > 0,
+  'Browser E2E declares a job timeout.',
+);
+assert.ok(
+  Number.isInteger(flightTimeout) && flightTimeout > 0,
+  'Full Flight declares a job timeout.',
+);
+assert.ok(
+  Number.isInteger(gateWaitMinutes) && gateWaitMinutes > 0,
+  'Full Flight declares an exact-SHA gate deadline.',
+);
+assert.ok(
+  gateWaitMinutes >= browserTimeout + 5,
+  'Full Flight gate deadline must exceed the Browser E2E job timeout by at least five minutes.',
+);
+assert.ok(
+  flightTimeout >= gateWaitMinutes + 5,
+  'Full Flight job timeout must exceed its gate deadline by at least five minutes.',
+);
 
 assert.match(workflow, /const transientHttpStatuses = new Set\(\[500, 502, 503, 504\]\);/);
 assert.match(workflow, /const maxTransientRetries = 2;/);
@@ -21,4 +53,6 @@ assert.match(workflow, /run\.head_branch === branch/);
 assert.match(workflow, /run\.event === event/);
 assert.match(workflow, /core\.setFailed/);
 
-console.log('Full Flight workflow guard OK — exact SHA and bounded transient 5xx retries.');
+console.log(
+  'Full Flight workflow guard OK — exact-SHA validation, bounded retries and safe timeout margins.',
+);

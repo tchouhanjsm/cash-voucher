@@ -22,7 +22,7 @@ jobs:
   flight:
     if: github.event_name == 'pull_request' || (github.event_name == 'push' && github.ref_name == 'client-main')
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 30
 
     steps:
       - name: Verify CI and Browser E2E on the same commit
@@ -40,7 +40,8 @@ jobs:
               { name: 'CI', workflow_id: 'ci.yml' },
               { name: 'Browser E2E', workflow_id: 'e2e.yml' },
             ];
-            const deadline = Date.now() + 12 * 60 * 1000;
+            // Browser E2E has a 20-minute job limit; reserve time for startup and status propagation.
+            const deadline = Date.now() + 25 * 60 * 1000;
             const latest = {};
             const transientHttpStatuses = new Set([500, 502, 503, 504]);
             const maxTransientRetries = 2;
