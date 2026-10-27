@@ -339,6 +339,8 @@ export function createRegister({ api, go }) {
     });
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
+    const resultsCard = $('.register-results-card');
+    if (resultsCard) resultsCard.classList.toggle('is-empty', shown.length === 0);
 
     $('#rbody').innerHTML = shown
       .map((voucher) => {
@@ -435,8 +437,6 @@ export function createRegister({ api, go }) {
       emptyState.classList.add('hidden');
     } else {
       emptyState.classList.remove('hidden');
-      const message = document.createElement('span');
-      message.className = 'empty-state-message';
       const hasActiveFilters = Boolean(
         R.q ||
         R.vendor ||
@@ -448,6 +448,25 @@ export function createRegister({ api, go }) {
         R.st !== 'ACTIVE' ||
         R.approval !== 'ALL',
       );
+      const firstUse =
+        dataAvailable && !pageLoading && !rangeInvalid && pageTotalCount === 0 && !hasActiveFilters;
+      const title = document.createElement('h2');
+      title.className = 'register-empty-state__title';
+      title.textContent = pageLoading
+        ? 'Loading your vouchers'
+        : rangeInvalid
+          ? 'Check the date range'
+          : !dataAvailable
+            ? 'Vouchers could not be loaded'
+            : pageTotalCount
+              ? 'No vouchers on this page'
+              : hasActiveFilters
+                ? 'No matching vouchers'
+                : 'Your voucher register starts here';
+      emptyState.appendChild(title);
+
+      const message = document.createElement('p');
+      message.className = 'empty-state-message register-empty-state__copy';
       message.textContent = pageLoading
         ? 'Loading vouchers from the server…'
         : rangeInvalid
@@ -455,11 +474,24 @@ export function createRegister({ api, go }) {
           : !dataAvailable
             ? unavailableMessage
             : pageTotalCount
-              ? 'No vouchers are available on this page. Load more or clear filters.'
+              ? 'No vouchers are available on this page. Load more or adjust filters.'
               : hasActiveFilters
                 ? 'No vouchers match the current filters.'
-                : 'No vouchers are available to show. Use New Entry to record the first payment or receipt.';
+                : 'Record your first payment or receipt to begin building a clear, searchable cash record.';
       emptyState.appendChild(message);
+
+      if (firstUse && can('create')) {
+        const actions = document.createElement('div');
+        actions.className = 'register-empty-state__actions';
+        const createButton = document.createElement('button');
+        createButton.type = 'button';
+        createButton.className = 'btn primary';
+        createButton.dataset.act = 'ntype';
+        createButton.dataset.k = 'PAYMENT';
+        createButton.textContent = 'Create first entry';
+        actions.appendChild(createButton);
+        emptyState.appendChild(actions);
+      }
 
       if (
         (dataAvailable && hasActiveFilters) ||

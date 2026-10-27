@@ -191,11 +191,11 @@ export function createPayments({ api, refresh }) {
     return (
       "<div class='erow'>" +
       "<div class='top'>" +
-      "<input class='rv' list='vlist' placeholder='" +
+      "<label class='entry-row-field entry-payee-field'><span>" +
       (NT === 'RECEIPT' ? 'Received from' : 'Paid to') +
-      "' autocapitalize='words' autocomplete='off'>" +
-      "<input class='ra' inputmode='decimal' placeholder='Amount ₹'>" +
-      "<input class='rn' placeholder='Note (optional)' aria-label='Note, optional' maxlength='500'>" +
+      "</span><input class='rv' list='vlist' placeholder='Vendor or recipient' autocapitalize='words' autocomplete='off'></label>" +
+      "<label class='entry-row-field entry-amount-field'><span>Amount (₹)</span><input class='ra' inputmode='decimal' placeholder='0.00'></label>" +
+      "<label class='entry-row-field entry-note-field'><span>Note</span><input class='rn' placeholder='Optional' aria-label='Note, optional' maxlength='500'></label>" +
       "<button type='button' class='x' data-act='delrow' title='Remove payment' aria-label='Remove payment'>✕</button></div>" +
       "<div class='bot'>" +
       "<label class='category-field'>Category<select class='rc'>" +

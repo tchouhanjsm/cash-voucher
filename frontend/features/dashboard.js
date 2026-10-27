@@ -612,7 +612,7 @@ export function createDashboard({ api }) {
                 `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${esc(item.text)}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
             )
             .join('')}</ul>`
-        : `<p class="needs-clear">${icon('check')}<span>No known dashboard exceptions were found in the checks shown here. This does not verify backups, the full recovery queue, or release readiness.</span></p>`
+        : `<p class="needs-clear">${icon('check')}<span>No dashboard issues need your attention right now.</span></p>`
     }</section>`;
 
     const emptyPeriodActions = can('create')
@@ -659,7 +659,7 @@ export function createDashboard({ api }) {
     const financialPanels = periodIsEmpty
       ? ''
       : `
-      <div class="stats dashboard-stats">
+      <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--staff'}">
         <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>

@@ -48,7 +48,10 @@ function updateTheme(theme) {
 
   const control = document.getElementById('themeToggle');
   if (control) {
-    control.textContent = next === 'dark' ? '🌙 Use dark theme' : '☀️ Use light theme';
+    const label = document.getElementById('themeToggleLabel');
+    const glyph = document.getElementById('themeToggleIcon');
+    if (label) label.textContent = next === 'dark' ? 'Use dark theme' : 'Use light theme';
+    if (glyph) glyph.setAttribute('href', next === 'dark' ? '#i-moon' : '#i-sun');
     control.setAttribute('aria-label', `Switch to ${next} theme`);
     control.setAttribute('aria-pressed', String(selected === 'dark'));
   }

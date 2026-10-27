@@ -3059,8 +3059,11 @@ with sync_playwright() as p:
         and page.locator('.ra').first.get_attribute('aria-label') == 'Amount in rupees, row 1'
         and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1'
         and page.locator('.rci').first.get_attribute('aria-label') == 'Payment method, row 1'
-        and page.locator('.rn').first.get_attribute('aria-label') == 'Note, row 1',
-        'compact payment fields have explicit accessible names',
+        and page.locator('.rn').first.get_attribute('aria-label') == 'Note, row 1'
+        and page.locator('.rv').first.evaluate("(element) => element.closest('label')?.innerText.includes('Paid to')")
+        and page.locator('.ra').first.evaluate("(element) => element.closest('label')?.innerText.includes('Amount (₹)')")
+        and page.locator('.rn').first.evaluate("(element) => element.closest('label')?.innerText.includes('Note')"),
+        'payment fields have visible labels as well as explicit accessible names',
     )
     check(
         page.locator('.rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer']
@@ -3359,6 +3362,8 @@ with sync_playwright() as p:
     )
     check(
         page.locator('#rempty .empty-state-message').inner_text() == 'No vouchers match the current filters.'
+        and page.locator('#rempty .register-empty-state__title').inner_text() == 'No matching vouchers'
+        and page.locator('.register-results-card.is-empty .table-wrap').is_hidden()
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'register explains an empty filter result and offers a clear-filters action',
     )
