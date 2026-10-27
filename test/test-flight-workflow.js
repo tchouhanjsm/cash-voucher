@@ -12,7 +12,7 @@ const browserTimeout = Number(
   browserWorkflow.match(/jobs:\s*browser:[\s\S]*?timeout-minutes:\s*(\d+)/)?.[1],
 );
 const flightTimeout = Number(
-  workflow.match(/^  flight:\s*[\r\n]+[\s\S]*?^    timeout-minutes:\s*(\d+)/m)?.[1],
+  workflow.match(/^\s{2}flight:[^\S\r\n]*[\r\n]+[\s\S]*?^\s{4}timeout-minutes:\s*(\d+)/m)?.[1],
 );
 const gateWaitMinutes = Number(
   workflow.match(/const deadline = Date\.now\(\) \+ (\d+) \* 60 \* 1000;/)?.[1],
