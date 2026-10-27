@@ -133,8 +133,8 @@ assert.equal(
 );
 assert.equal(
   (workflow.match(/retention-days: 90/g) || []).length,
-  2,
-  'staging evidence artifacts have bounded retention',
+  3,
+  'deploy, UAT-only and read-only preflight artifacts have bounded retention',
 );
 assert.ok(
   workflow.includes(
