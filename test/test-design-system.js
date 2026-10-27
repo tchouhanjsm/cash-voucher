@@ -499,10 +499,10 @@ assert.match(
   /\.app #view \.page-header h1:focus-visible\s*\{[\s\S]*?outline:\s*3px solid var\(--focus\)/,
   'keyboard focus on a page heading is visibly identified',
 );
-assert.match(
-  serviceWorker,
-  /const C = 'cv2-v32'/,
-  'PWA cache revision advances with empty-period dashboard guidance and existing update safeguards',
+const serviceWorkerRevision = Number(serviceWorker.match(/const C = 'cv2-v(\d+)'/)?.[1]);
+assert.ok(
+  Number.isInteger(serviceWorkerRevision) && serviceWorkerRevision >= 33,
+  'PWA cache revision advances beyond the pre-empty-period shell version',
 );
 assert.match(serviceWorker, /frontend\/core\/unsaved-work\.js/);
 assert.match(unsavedWork, /This voucher draft has unsaved changes/);
