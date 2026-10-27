@@ -210,13 +210,10 @@ function onboardingAccountCheck_() {
   };
 }
 
+const BACKUP_TIMESTAMP_PATTERN_ = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+
 function isCanonicalBackupTimestamp_(value) {
-  if (
-    typeof value !== 'string' ||
-    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
-  ) {
-    return false;
-  }
+  if (typeof value !== 'string' || !BACKUP_TIMESTAMP_PATTERN_.test(value)) return false;
   const milliseconds = Date.parse(value);
   return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === value;
 }

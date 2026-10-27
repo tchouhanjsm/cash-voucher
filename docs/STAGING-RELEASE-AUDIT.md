@@ -77,6 +77,7 @@ The release remains **BLOCKED**.
 2. Owner/admin: protect `client-main` with the intended exact-head checks and human approval; no repository settings are changed by this batch.
 3. Privately correct and verify staging Environment identity/credentials, then separately authorize guarded staging UAT and an actual isolated backup/restore.
 4. Record role/receipt authorization, offline/reconnect, printing, accessibility, intended-device and customer acceptance before any pilot. Production remains excluded.
+
 ---
 
 ## Historical audit snapshot — 25 October 2026
