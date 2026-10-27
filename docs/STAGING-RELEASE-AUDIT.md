@@ -1,23 +1,22 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 27 October 2026, 16:32 IST (audit marker canonical metadata validation — PR #238)
-**Current integration baseline:** `client-main` `b20d9d9a7377032bb3f139be5ed0d051d35c4d20` (PR #237 merged; exact-head source gates passed; operational release remains blocked).
+**Audit date:** 27 October 2026, 16:50 IST (canonical backup freshness gate — current source batch)
+**Current integration baseline:** `client-main` `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c` (PR #238 merged and all exact-head/post-merge source gates passed; operational release remains blocked).
+**Current source batch:** `client/onboarding-backup-marker-contract-20261027`; require exact UTC ISO success/attempt backup markers before production acceptance can remain enabled.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
-**Current source batch:** PR #238 `client/audit-marker-canonical-validation-20261027` targets `client-main`; strictly validate audit-health marker counters and canonical business-time timestamps without live data access.
-**Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
 
-## Current live checkpoint — 27 October 2026 16:32 IST
+## Current live checkpoint — 27 October 2026 16:50 IST
 
-- **Authoritative integration:** `client-main` at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`; `main` remains legacy/read-only and must not be changed.
-- **Source state:** PR #237 is merged. PR #238 hardens malformed audit-marker metadata parsing; exact-head validation is pending.
-- **Marker contract:** JSON fallback/cache markers require a numeric positive safe-integer `failureCount` and round-trip canonical second-precision timestamps in the application's configured business timezone (`yyyy-MM-dd'T'HH:mm:ss`). Script Properties require a canonical positive decimal count string and the same timestamp representation; timezone suffixes and fractional seconds are not valid stored marker values. Malformed or ambiguous values fail closed to `MONITORING_UNAVAILABLE`.
-- **Source verification boundary:** regression tests cover corrupted marker values but do not prove live Apps Script Properties, Settings-sheet, or CacheService behavior.
-- **Governance:** `client-main` reports `protected=false`; active ruleset #24624368 still targets default branch `main` only. Owner/admin must correct and verify the required CI/E2E/Full Flight checks and human approval.
-- **Staging blocker:** last recorded UAT preflight [run #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed because production resource references were missing and Clasp credentials were unavailable/rejected. Deployment and UAT were skipped; do not retry with unchanged configuration.
-- **Release remains BLOCKED:** staging resource identity/version, isolated restore, actual HTTP headers, live role/receipt authorization, offline/reconnect, printing, accessibility and customer acceptance remain unverified.
-- **Boundary:** PR #238 is source/tests/checkpoint only. No Clasp push, deployment, migration, Sheet/Drive mutation, UAT, ZIP/cPanel publication or production operation is included.
+- **Authoritative integration:** `client-main` at `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c`; `main` remains legacy/read-only and must not be changed.
+- **PR #238 and integration gates:** PR-event CI / Quality [#40489163399](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163399), Browser E2E [#40489163534](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163534) and Full Flight [#40489163334](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40489163334) passed on its final PR head. Post-merge CI [#40493844709](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844709), Browser E2E [#40493844544](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844544), Full Flight [#40493844746](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844746), and monitor [#40493844521](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40493844521) passed on `fd0cfea...`.
+- **New source finding:** `onboardingBackupCheck_()` used permissive timestamp parsing and accepted a missing last-attempt marker. The actual backup writer emits both `BACKUP_LAST_SUCCESS` and `BACKUP_LAST_ATTEMPT` via `Date.toISOString()`; markers must round-trip exact `YYYY-MM-DDTHH:mm:ss.sssZ` strings.
+- **Current batch contract:** both markers must be present and canonical; success must be at most 36 hours old and not future-dated; the latest attempt cannot be later than the last success; any recorded backup failure blocks readiness. Failure keeps production `releaseAllowed` false and financial writes rejected. Source tests do not prove that a backup can be restored.
+- **Governance:** `client-main` reports `protected=false`; active ruleset #24624368 still targets default branch `main` only. Owner/admin must establish and verify required integration checks and human approval.
+- **Staging blocker:** prior UAT preflight [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed because production resource references were empty and Clasp credentials were missing/rejected. Do not retry unchanged configuration.
+- **Release remains BLOCKED:** staging identity/version, guarded UAT, verified isolated restore, actual host headers, live role/receipt authorization, offline/reconnect, printing, accessibility and customer acceptance remain open.
+- **Boundary:** source/test/checkpoint changes only; no Clasp push, deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
 ## Historical checkpoint — 27 October 2026 11:02 IST (superseded by PR #237 merge)
 
@@ -63,22 +62,21 @@
 - The previous PR #229 head `c71e233e11eec5b6d2b2d37be27216a80a170f7e` had failed CI [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102), and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096); the monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. These are historical results for the pre-resolution head only.
 - The conflict-resolution head needs a fresh exact-SHA run of CI / Quality, Browser E2E and Full Flight Test. Until then the release remains blocked; branch protection, staging identity/preflight, live backup/restore, device and customer acceptance remain independent gates.
 
-## Current release decision — 27 October 2026 16:32 IST
+## Current release decision — 27 October 2026 16:50 IST
 
 The release remains **BLOCKED**.
 
-- **Current source baseline:** PR #237 merged at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`; its exact-head CI, Browser E2E and Full Flight checks passed. PR #238 addresses strict audit-marker metadata validation and must pass the same exact-head required checks before review.
-- **Governance:** ruleset #24624368 targets `main` only, requires only `quality`, and requires zero approvals. `client-main` currently reports `protected=false`; repository owner/admin must configure and verify effective rules and human approval.
-- **Staging UAT blocker:** run [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolated-deployment preflight because production resource references were empty and Clasp credentials were missing/rejected. Deployment, target recheck and live UAT were skipped. Do not rerun unchanged configuration.
-- **Operational acceptance:** live staging identity/version, actual host security headers, role/receipt authorization, a witnessed restore into a separate target, device/offline recovery, printing, accessibility and customer acceptance remain unverified. Source CI is not proof of these external operations.
+- **Source baseline:** PR #238 is merged at `fd0cfea3903d5c9b0a6e704f5545afe598c50c5c`. CI / Quality, Browser E2E, Full Flight and the post-merge monitor passed on their named exact commits. The current follow-on batch hardens the production onboarding gate against incomplete or noncanonical backup freshness metadata.
+- **Governance:** ruleset #24624368 targets `main` only, requires only `quality`, and requires zero approvals. `client-main` reports `protected=false`; owner/admin must configure and verify effective rules, the required integration checks and human approval.
+- **Staging UAT blocker:** run [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolated-deployment preflight because production resource references were empty and Clasp credentials were missing/rejected. Do not retry unchanged configuration.
+- **Operational acceptance:** live staging identity/version, guarded UAT, an independently witnessed restore into a separate target, actual host security headers, live role/receipt authorization, device/offline recovery, printing, accessibility and customer acceptance remain unverified.
 
 ## Immediate release sequence
 
-1. Review the source-gate reliability PR and require CI / Quality, Browser E2E and Full Flight Test to pass on its exact final head.
-2. Owner/admin: protect `client-main` with the intended exact-head checks and human approval. No settings are changed by this batch.
-3. Privately correct and verify staging Environment identity/credentials. Then separately authorize guarded staging UAT and real backup/restore into a separate destination.
-4. Record role/receipt authorization, offline/reconnect, printing, accessibility, intended-device and customer acceptance before any pilot. No production operation is authorized here.
-
+1. Complete the current source batch with CI / Quality, Browser E2E and Full Flight Test passing on the identical final PR SHA.
+2. Owner/admin: protect `client-main` with the intended exact-head checks and human approval; no repository settings are changed by this batch.
+3. Privately correct and verify staging Environment identity/credentials, then separately authorize guarded staging UAT and an actual isolated backup/restore.
+4. Record role/receipt authorization, offline/reconnect, printing, accessibility, intended-device and customer acceptance before any pilot. Production remains excluded.
 ---
 
 ## Historical audit snapshot — 25 October 2026

@@ -29,8 +29,8 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(handoff, /Current integration baseline.*b20d9d9a7377032bb3f139be5ed0d051d35c4d20/);
-assert.match(handoff, /Current live checkpoint.*27 October 2026 16:32 IST/);
+assert.match(handoff, /Current integration baseline.*fd0cfea3903d5c9b0a6e704f5545afe598c50c5c/);
+assert.match(handoff, /Current live checkpoint.*27 October 2026 16:50 IST/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);
@@ -84,9 +84,9 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Current integration baseline.*client-main.*b20d9d9a7377032bb3f139be5ed0d051d35c4d20/,
+  /Current integration baseline.*client-main.*fd0cfea3903d5c9b0a6e704f5545afe598c50c5c/,
 );
-assert.match(staging, /Current source batch.*client\/audit-marker-canonical-validation-20261027/);
+assert.match(staging, /Current source batch.*client\/onboarding-backup-marker-contract-20261027/);
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);

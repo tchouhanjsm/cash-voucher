@@ -293,6 +293,75 @@ assert.equal(accepted.data.releaseAllowed, true);
 const acceptedWrite = productionRequest('createVouchers', { entries: [] });
 assert.notEqual(acceptedWrite.code, 'ONBOARDING_GATE');
 
+// Production acceptance is recalculated against the backup markers on every read
+// and financial write. Only canonical, internally consistent writer-emitted timestamps
+// may keep the release gate open.
+const validBackupMarker = new Date().toISOString();
+const invalidBackupMarkerCases = [
+  {
+    label: 'missing latest backup attempt',
+    success: validBackupMarker,
+    attempt: '',
+  },
+  {
+    label: 'date-only backup success marker',
+    success: validBackupMarker.slice(0, 10),
+    attempt: validBackupMarker,
+  },
+  {
+    label: 'backup success marker without milliseconds',
+    success: validBackupMarker.replace(/\.\d{3}Z$/, 'Z'),
+    attempt: validBackupMarker,
+  },
+  {
+    label: 'impossible backup success date',
+    success: '2026-02-30T12:34:56.000Z',
+    attempt: validBackupMarker,
+  },
+  {
+    label: 'date-only backup attempt marker',
+    success: validBackupMarker,
+    attempt: validBackupMarker.slice(0, 10),
+  },
+  {
+    label: 'backup attempt newer than last success',
+    success: new Date(Date.now() - 60000).toISOString(),
+    attempt: new Date(Date.now() + 60000).toISOString(),
+  },
+  {
+    label: 'future backup success marker',
+    success: new Date(Date.now() + 60000).toISOString(),
+    attempt: new Date(Date.now() + 60000).toISOString(),
+  },
+];
+
+for (const testCase of invalidBackupMarkerCases) {
+  production.props.BACKUP_LAST_SUCCESS = testCase.success;
+  production.props.BACKUP_LAST_ATTEMPT = testCase.attempt;
+  const blockedState = productionRequest('onboardingState');
+  assert.equal(blockedState.ok, true, testCase.label + ': onboarding state remains readable');
+  assert.equal(
+    blockedState.data.releaseAllowed,
+    false,
+    testCase.label + ': malformed or inconsistent backup markers block release',
+  );
+  assert.equal(
+    productionRequest('createVouchers', { entries: [] }).code,
+    'ONBOARDING_GATE',
+    testCase.label + ': production financial writes remain blocked',
+  );
+
+  const recoveredAt = new Date().toISOString();
+  production.props.BACKUP_LAST_SUCCESS = recoveredAt;
+  production.props.BACKUP_LAST_ATTEMPT = recoveredAt;
+  const recoveredState = productionRequest('onboardingState');
+  assert.equal(
+    recoveredState.data.releaseAllowed,
+    true,
+    testCase.label + ': restoring canonical consistent markers restores the fixture gate',
+  );
+}
+
 console.log(
-  'Onboarding tests passed: blocked preflight, staging completion, owner-only confirmations, and production acceptance.',
+  'Onboarding tests passed: identity and stage gates, owner-only confirmations, canonical backup markers, and production write blocking.',
 );

@@ -210,22 +210,42 @@ function onboardingAccountCheck_() {
   };
 }
 
+function isCanonicalBackupTimestamp_(value) {
+  if (
+    typeof value !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(value)
+  ) {
+    return false;
+  }
+  const milliseconds = Date.parse(value);
+  return Number.isFinite(milliseconds) && new Date(milliseconds).toISOString() === value;
+}
+
 function onboardingBackupCheck_() {
   const p = props_();
   const lastSuccess = String(p.getProperty('BACKUP_LAST_SUCCESS') || '');
   const lastAttempt = String(p.getProperty('BACKUP_LAST_ATTEMPT') || '');
   const lastError = String(p.getProperty('BACKUP_LAST_ERROR') || '');
-  const successMs = Date.parse(lastSuccess);
-  const attemptMs = Date.parse(lastAttempt);
+  const successTimestampCanonical = isCanonicalBackupTimestamp_(lastSuccess);
+  const attemptTimestampCanonical = isCanonicalBackupTimestamp_(lastAttempt);
+  const successMs = successTimestampCanonical ? Date.parse(lastSuccess) : NaN;
+  const attemptMs = attemptTimestampCanonical ? Date.parse(lastAttempt) : NaN;
   const recent =
+    successTimestampCanonical &&
     Number.isFinite(successMs) &&
     Date.now() >= successMs &&
     Date.now() - successMs <= 36 * 60 * 60 * 1000;
-  const noLaterAttempt = !lastAttempt || (Number.isFinite(attemptMs) && attemptMs <= successMs);
+  const noLaterAttempt =
+    attemptTimestampCanonical &&
+    Number.isFinite(attemptMs) &&
+    Number.isFinite(successMs) &&
+    attemptMs <= successMs;
 
   return {
     lastSuccess: lastSuccess,
     lastAttempt: lastAttempt,
+    successTimestampCanonical: successTimestampCanonical,
+    attemptTimestampCanonical: attemptTimestampCanonical,
     hasRecordedFailure: Boolean(lastError),
     recent: recent,
     noLaterAttempt: noLaterAttempt,
