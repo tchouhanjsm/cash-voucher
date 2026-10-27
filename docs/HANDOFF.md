@@ -1,13 +1,23 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 (staging configuration preflight phase)
+**Updated:** 27 October 2026 (release integrity and dependency policy phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `1dba1b008eb2303ffddf069285fbb22efc76a8cb` (PR #240 merged; backup readiness/onboarding is integrated).
-**Current source batch:** `client/staging-config-preflight-20261027` adds configuration-only staging readiness checks and sanitized evidence; no live operation is performed.
+**Current integration baseline:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; current source baseline verified).
+**Current source batch:** `client/release-integrity-dependency-hardening-20261027` tightens recovery-evidence validation, dependency advisory handling and release-state accuracy.
 **Release boundary:** backend, frontend, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current release-session checkpoint — 27 October 2026
+## Current release-session checkpoint — 27 October 2026 22:11 IST
+
+- **Integration baseline:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PRs #240 and #241 are merged. Legacy `main` remains frozen/read-only.
+- **Current consolidated source batch:** `client/release-integrity-dependency-hardening-20261027`. It tightens the recovery evidence validator's deployed-version label, removes an exception for a withdrawn advisory, adds regression coverage, and refreshes current release/handoff checkpoints. It does not deploy or access live resources.
+- **Support throttling finding disposition:** `backend/90-support.gs` already serializes quota read/check/increment under a script lock; `test/test-support-report.js` covers under-lock rechecks, lock contention and single counter consumption. This is source/mock-test evidence—not a claim of live Apps Script load testing.
+- **Audit-health finding disposition:** `backend/25-helpers.gs` already rejects malformed marker metadata and reports `MONITORING_UNAVAILABLE` when a marker store is malformed/unavailable; `test/test-backend.js` covers malformed and mixed valid/corrupt stores. Do not reopen these as pending source fixes unless a new reproducer proves a regression.
+- **Dependency policy:** GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) on 23 October 2026; it is no longer an approved exception. [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) remains the scoped Zod concern; the current upstream Clasp release is 3.4.1 and declares Zod `^3.25.76`, so do not force an unverified major override. Keep the existing exception limited to this developer/CI toolchain and review compatibility by 9 November 2026.
+- **Release remains blocked:** verify branch protection/human review on `client-main`; privately verify staging resource identities and credentials; run configuration readiness; then separately authorize live staging UAT, restore to a separate recovery target, full seven-sheet/header/count reconciliation, voucher/receipt read-back, production-unchanged evidence, host-header/authorization checks and device/accessibility/customer acceptance.
+- **Safety boundary:** no live workflow dispatch, Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, cPanel publication or production operation is included. Preserve exact-head CI / Quality, Browser E2E and Full Flight gates; require them on one SHA. No automatic merge. Keep `main` read-only.
+
+## Historical checkpoint — PR #241 staging configuration readiness (superseded by the current release integrity checkpoint)
 
 - **Integration baseline:** `client-main` at `1dba1b008eb2303ffddf069285fbb22efc76a8cb` after PR #240 merged. Legacy `main` remains read-only.
 - **Selected bulk phase:** `client/staging-config-preflight-20261027`. Add a read-only `readiness` mode to the staging preflight and invoke it from `validate-only` through the protected GitHub `staging` Environment.
