@@ -89,7 +89,7 @@ assert.match(
 );
 assert.doesNotMatch(workflow, /CV_STAGING_UAT_(OWNER|MANAGER)_PIN/);
 
-const validationJob = workflow.split('  guard:\n')[0];
+const validationJob = workflow.split('  validate:\n')[1].split('  preflight-readiness:\n')[0];
 assert.doesNotMatch(
   validationJob,
   /secrets\./,
