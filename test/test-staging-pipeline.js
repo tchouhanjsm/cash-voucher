@@ -112,13 +112,9 @@ const attestedDeployOnly = validateStagingConfiguration(withoutProductionReferen
   mode: 'deploy',
 });
 assert.equal(attestedDeployOnly.ok, false);
-assert.ok(
-  attestedDeployOnly.errors.some(
-    (message) =>
-      message.includes('write-capable staging operations') &&
-      message.includes('not sufficient'),
-  ),
-);
+const attestedDeployErrors = attestedDeployOnly.errors.join(' ');
+assert.match(attestedDeployErrors, /write-capable staging operations/);
+assert.match(attestedDeployErrors, /not sufficient/);
 assert.equal(attestedDeployOnly.checks.ownerAttestedIsolationUsed, false);
 assert.equal(attestedDeployOnly.checks.targetIdsAreSeparated, false);
 
@@ -126,11 +122,8 @@ const attestedUatOnly = validateStagingConfiguration(withoutProductionReferenceI
   mode: 'uat',
 });
 assert.equal(attestedUatOnly.ok, false);
-assert.ok(
-  attestedUatOnly.errors.some((message) =>
-    message.includes('all four production resource reference IDs'),
-  ),
-);
+const attestedUatErrors = attestedUatOnly.errors.join(' ');
+assert.match(attestedUatErrors, /all four production resource reference IDs/);
 
 const missingIsolationAttestation = validateStagingConfiguration(
   {
