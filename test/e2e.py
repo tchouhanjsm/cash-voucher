@@ -3084,14 +3084,19 @@ with sync_playwright() as p:
             return
         from_date = request_data.get('from', '2026-10-20')
         to_date = request_data.get('to', '2026-10-26')
+        from_value = datetime.date.fromisoformat(from_date)
+        to_value = datetime.date.fromisoformat(to_date)
+        period_days = (to_value - from_value).days + 1
+        trend_monthly = period_days > 62
+        trend_key = to_date[:7] if trend_monthly else to_date
         payload = {
             'ok': True,
             'data': {
                 'from': from_date,
                 'to': to_date,
-                'periodDays': 7,
-                'trendMonthly': False,
-                'trend': [{'date': to_date, 'amount': 12345678}],
+                'periodDays': period_days,
+                'trendMonthly': trend_monthly,
+                'trend': [{'date': trend_key, 'amount': 12345678}],
                 'paid': 12345678,
                 'previousPaid': 11000000,
                 'paymentCount': 12345,
