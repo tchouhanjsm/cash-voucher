@@ -119,7 +119,7 @@ try {
   assert.equal(fs.statSync(outputPath).mode & 0o777, 0o600);
   const summary = fs.readFileSync(summaryPath, 'utf8');
   assert.match(summary, /Staging configuration preflight \(read-only\)/);
-  assert.match(summary, /does not contact Google/);
+  assert.match(summary, /no remote connectivity.*was verified/);
   assert.equal(summary.includes(apiUrl), false);
   assert.equal(summary.includes(ownerPassword), false);
 } finally {
