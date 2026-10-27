@@ -167,7 +167,7 @@ assert.match(staging, /read-only staging configuration readiness phase/i);
 assert.match(staging, /remote connectivity.*restore were not verified/i);
 assert.match(executionPlan, /read-only staging configuration readiness phase/i);
 assert.match(handoff, /staging configuration preflight phase/i);
-assert.match(recoveryEvidence, /configuration-only check.*validate-only workflow/i);
+assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(recoveryEvidence, /does not authenticate the operator/i);
 assert.match(recoveryValidator, /RESOURCE_COLLISION/);
 assert.match(recoveryValidator, /PRODUCTION_CHANGED/);
