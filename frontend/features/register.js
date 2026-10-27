@@ -567,16 +567,16 @@ export function createRegister({ api, go }) {
       ) +
       `<div class="card filters" id="rf">
     <label class="register-search-field" for="rq">Search vouchers<input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}"></label>
-    <select id="rv" aria-label="Filter by vendor"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select>
-    <select id="rc" aria-label="Filter by category"><option value="">All categories</option>${categories()
+    <label class="register-filter-field" for="rv">Vendor<select id="rv" aria-label="Filter by vendor"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select></label>
+    <label class="register-filter-field" for="rc">Category<select id="rc" aria-label="Filter by category"><option value="">All categories</option>${categories()
       .map(
         (category) => `<option${category === R.cat ? ' selected' : ''}>${esc(category)}</option>`,
       )
-      .join('')}</select>
-    ${can('viewAll') ? `<select id="ru" aria-label="Filter by user"><option value="">All users</option>${users.map((user) => `<option value="${esc(user)}"${user === R.user ? ' selected' : ''}>${esc(nm(user))}</option>`).join('')}</select>` : ''}
-    <label>From<input type="date" id="rfrom" value="${esc(R.from)}"></label><label>To<input type="date" id="rto" value="${esc(R.to)}"></label>
-    <select id="rt" aria-label="Filter by transaction type"><option value="">Paid & received</option><option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option><option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option></select>
-    <select id="rs" aria-label="Filter by status">${[
+      .join('')}</select></label>
+    <label class="register-filter-field" for="rfrom">From<input type="date" id="rfrom" value="${esc(R.from)}"></label><label class="register-filter-field" for="rto">To<input type="date" id="rto" value="${esc(R.to)}"></label>
+    ${can('viewAll') ? `<label class="register-filter-field" for="ru">User<select id="ru" aria-label="Filter by user"><option value="">All users</option>${users.map((user) => `<option value="${esc(user)}"${user === R.user ? ' selected' : ''}>${esc(nm(user))}</option>`).join('')}</select></label>` : ''}
+    <label class="register-filter-field" for="rt">Transaction type<select id="rt" aria-label="Filter by transaction type"><option value="">Paid & received</option><option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option><option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option></select></label>
+    <label class="register-filter-field" for="rs">Status<select id="rs" aria-label="Filter by status">${[
       ['ACTIVE', 'Active'],
       ['CANCELLED', 'Cancelled'],
       ['ALL', 'All'],
@@ -585,8 +585,8 @@ export function createRegister({ api, go }) {
         ([key, label]) =>
           `<option value="${key}"${R.st === key ? ' selected' : ''}>${label}</option>`,
       )
-      .join('')}</select>
-    <select id="rapproval" aria-label="Filter by approval status">${[
+      .join('')}</select></label>
+    <label class="register-filter-field" for="rapproval">Approval<select id="rapproval" aria-label="Filter by approval status">${[
       ['ALL', 'All approval states'],
       ['PENDING', 'Pending approval'],
       ['APPROVED', 'Approved'],
@@ -598,7 +598,7 @@ export function createRegister({ api, go }) {
         ([key, label]) =>
           `<option value="${key}"${R.approval === key ? ' selected' : ''}>${label}</option>`,
       )
-      .join('')}</select>
+      .join('')}</select></label>
     <button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div>
     <div class="card register-results-card"><div id="rtot" class="register-totals"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Voucher register entries" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
 

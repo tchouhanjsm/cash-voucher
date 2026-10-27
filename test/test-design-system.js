@@ -227,6 +227,31 @@ assert.match(
   'Register search has a persistent visible label instead of relying on placeholder text',
 );
 assert.match(
+  register,
+  /class="register-filter-field" for="rv">Vendor<select id="rv"/,
+  'Register vendor filter has an associated visible label',
+);
+assert.match(
+  register,
+  /class="register-filter-field" for="rfrom">From<input type="date" id="rfrom"/,
+  'Register date filters keep their visible labels attached to the correct controls',
+);
+assert.match(
+  register,
+  /class="register-filter-field" for="ru">User<select id="ru"/,
+  'Register user filter keeps an explicit label when the permission exposes it',
+);
+assert.match(
+  register,
+  /class="register-filter-field" for="rapproval">Approval<select id="rapproval"/,
+  'Register approval filter has an associated visible label',
+);
+assert.match(
+  components,
+  /#rf \.register-filter-field\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?min-width:\s*0;/,
+  'Register filter labels keep labels and controls aligned without overflowing grid cells',
+);
+assert.match(
   components,
   /#rf \.register-search-field\s*\{\s*grid-column:\s*span 2;/,
   'the labelled Register search keeps the intended desktop filter-grid span',
