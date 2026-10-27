@@ -2858,8 +2858,43 @@ for (const malformedMarker of [
     version: 1,
     status: 'DEGRADED',
     failureCount: 1,
-    lastFailureAt: '2026-10-24T19:22:00.000Z',
+    lastFailureAt: '2026-10-24T19:22:00',
     lastFailureKind: '',
+  },
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: '1',
+    lastFailureAt: '2026-10-24T19:22:00',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 1,
+    lastFailureAt: '2026-10-24',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 1,
+    lastFailureAt: '2026-10-24T19:22:00Z',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 1,
+    lastFailureAt: '2026-10-24T19:22:00.000Z',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    version: 1,
+    status: 'DEGRADED',
+    failureCount: 1,
+    lastFailureAt: '2026-02-30T19:22:00',
+    lastFailureKind: 'EVENT_BATCH',
   },
 ]) {
   auditMarkerOutageMock.sheets.Settings.rows.push([
@@ -2892,8 +2927,43 @@ for (const malformedPropertiesMarker of [
   },
   {
     count: '2',
-    lastFailureAt: '2026-10-24T19:22:00.000Z',
+    lastFailureAt: '2026-10-24T19:22:00',
     lastFailureKind: '',
+  },
+  {
+    count: '2e0',
+    lastFailureAt: '2026-10-24T19:22:00',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    count: '2.0',
+    lastFailureAt: '2026-10-24T19:22:00',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    count: '02',
+    lastFailureAt: '2026-10-24T19:22:00',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    count: '2',
+    lastFailureAt: '2026-10-24',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    count: '2',
+    lastFailureAt: '2026-10-24T19:22:00Z',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    count: '2',
+    lastFailureAt: '2026-10-24T19:22:00.000Z',
+    lastFailureKind: 'EVENT_BATCH',
+  },
+  {
+    count: '2',
+    lastFailureAt: '2026-02-30T19:22:00',
+    lastFailureKind: 'EVENT_BATCH',
   },
 ]) {
   const { count, lastFailureAt, lastFailureKind } = malformedPropertiesMarker;
@@ -2920,7 +2990,7 @@ for (const malformedPropertiesMarker of [
 /* A valid marker must not hide a malformed or unavailable companion store. */
 auditMarkerOutageMock.props.AUDIT_WRITE_STATUS = 'DEGRADED';
 auditMarkerOutageMock.props.AUDIT_WRITE_FAILURE_COUNT = '2';
-auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT = '2026-10-24T19:20:00.000Z';
+auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_AT = '2026-10-24T19:20:00';
 auditMarkerOutageMock.props.AUDIT_WRITE_LAST_FAILURE_KIND = 'EVENT_BATCH';
 auditMarkerOutageMock.sheets.Settings.rows.push(['auditWriteFailureMarker', '{not-json']);
 const mixedCorruptFallbackHealth = auditMarkerOutageMock.call('auditLog', {
@@ -2951,7 +3021,7 @@ auditMarkerOutageMock.sheets.Settings.rows.push([
     version: 1,
     status: 'DEGRADED',
     failureCount: 3,
-    lastFailureAt: '2026-10-24T19:21:00.000Z',
+    lastFailureAt: '2026-10-24T19:21:00',
     lastFailureKind: 'SINGLE_EVENT',
   }),
 ]);

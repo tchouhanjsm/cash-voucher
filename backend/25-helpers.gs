@@ -346,6 +346,23 @@ const AUDIT_WRITE_FALLBACK_SETTING_ = 'auditWriteFailureMarker';
 const AUDIT_WRITE_CACHE_KEY_ = 'CV_AUDIT_WRITE_FAILURE_TRANSIENT';
 const AUDIT_WRITE_CACHE_TTL_SECONDS_ = 21600;
 
+// Audit markers are machine-written ISO timestamps. Reject parseable-but-noncanonical
+// values (for example a date-only string or a calendar date that rolls into next month).
+const AUDIT_TIMESTAMP_PATTERN_ = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}$/;
+
+function isCanonicalAuditTimestamp_(value) {
+  if (typeof value !== 'string' || !AUDIT_TIMESTAMP_PATTERN_.test(value)) {
+    return false;
+  }
+  const milliseconds = Date.parse(value + 'Z');
+  if (!Number.isFinite(milliseconds)) return false;
+  try {
+    return new Date(milliseconds).toISOString().slice(0, 19) === value;
+  } catch {
+    return false;
+  }
+}
+
 function parseAuditFailureMarker_(raw, source) {
   if (!raw) return null;
   let marker;
@@ -360,22 +377,23 @@ function parseAuditFailureMarker_(raw, source) {
     Array.isArray(marker) ||
     marker.version !== 1 ||
     marker.status !== 'DEGRADED' ||
-    !Number.isSafeInteger(Number(marker.failureCount)) ||
-    Number(marker.failureCount) < 1
+    typeof marker.failureCount !== 'number' ||
+    !Number.isSafeInteger(marker.failureCount) ||
+    marker.failureCount < 1
   ) {
     return null;
   }
 
-  const lastFailureAt = typeof marker.lastFailureAt === 'string' ? marker.lastFailureAt.trim() : '';
+  const lastFailureAt = typeof marker.lastFailureAt === 'string' ? marker.lastFailureAt : '';
   const lastFailureKind =
     typeof marker.lastFailureKind === 'string' ? marker.lastFailureKind.trim() : '';
-  if (!lastFailureAt || !Number.isFinite(Date.parse(lastFailureAt)) || !lastFailureKind) {
+  if (!isCanonicalAuditTimestamp_(lastFailureAt) || !lastFailureKind) {
     return null;
   }
 
   return {
     source: source,
-    failureCount: Number(marker.failureCount),
+    failureCount: marker.failureCount,
     lastFailureAt: lastFailureAt,
     lastFailureKind: lastFailureKind,
   };
@@ -399,14 +417,14 @@ function readAuditPropertiesMarker_() {
       };
     }
 
-    const parsedCount = Number(rawCount);
-    const lastFailureAt = String(rawAt || '').trim();
+    const canonicalCount = typeof rawCount === 'string' && /^[1-9][0-9]*$/.test(rawCount);
+    const parsedCount = canonicalCount ? Number(rawCount) : NaN;
+    const lastFailureAt = typeof rawAt === 'string' ? rawAt : '';
     const lastFailureKind = String(rawKind || '').trim();
     if (
       !Number.isSafeInteger(parsedCount) ||
       parsedCount < 1 ||
-      !lastFailureAt ||
-      !Number.isFinite(Date.parse(lastFailureAt)) ||
+      !isCanonicalAuditTimestamp_(lastFailureAt) ||
       !lastFailureKind
     ) {
       return { available: false, marker: null };

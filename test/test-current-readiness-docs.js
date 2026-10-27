@@ -24,11 +24,13 @@ const recoveryEvidence = read('docs/RECOVERY-DRILL-EVIDENCE.md');
 const recoveryValidator = read('scripts/validate-recovery-evidence.js');
 const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
 const dashboard = read('frontend/features/dashboard.js');
+const auditHelpers = read('backend/25-helpers.gs');
+const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(handoff, /Current integration baseline.*e1864c23c2aec607262d68f5800056cc52305484/);
-assert.match(handoff, /Current live checkpoint.*27 October 2026 15:22 IST/);
+assert.match(handoff, /Current integration baseline.*b20d9d9a7377032bb3f139be5ed0d051d35c4d20/);
+assert.match(handoff, /Current live checkpoint.*27 October 2026 16:32 IST/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);
@@ -43,7 +45,14 @@ assert.match(
   /staff dashboard KPI grid matches the five-card role and breakpoint contract/,
 );
 assert.match(browserE2e, /dashboard KPI values fit inside their cards without horizontal clipping/);
-assert.match(handoff, /dashboard KPI responsive UX batch/i);
+assert.match(handoff, /audit marker canonical metadata validation/i);
+assert.match(auditHelpers, /function isCanonicalAuditTimestamp_/);
+assert.match(auditHelpers, /AUDIT_TIMESTAMP_PATTERN_/);
+assert.ok(auditHelpers.includes("Date.parse(value + 'Z')"));
+assert.ok(auditHelpers.includes('toISOString().slice(0, 19) === value'));
+assert.match(auditHelpers, /typeof marker[.]failureCount !== 'number'/);
+assert.match(backendTests, /count: '2e0'/);
+assert.match(backendTests, /failureCount: '1'/);
 assert.match(handoff, /cv2-v35/);
 assert.match(deliveryPhase, /PR #225.*merged/i);
 assert.doesNotMatch(deliveryPhase, /it remains open until reviewed and merged by the owner/);
@@ -75,9 +84,9 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Current integration baseline.*client-main.*2b8120789811f27410f0542c29c7436fcc5f190c/,
+  /Current integration baseline.*client-main.*b20d9d9a7377032bb3f139be5ed0d051d35c4d20/,
 );
-assert.match(staging, /Current source batch.*client\/p0-recovery-drill-evidence-20261027/);
+assert.match(staging, /Current source batch.*client\/audit-marker-canonical-validation-20261027/);
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);

@@ -1,14 +1,25 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 27 October 2026, 11:02 IST (P0 recovery drill evidence contract)
-**Current integration baseline:** `client-main` `2b8120789811f27410f0542c29c7436fcc5f190c` (PR #232 merged; source validation is green; operational release is blocked).
+**Audit date:** 27 October 2026, 16:32 IST (audit marker canonical metadata validation — PR #238)
+**Current integration baseline:** `client-main` `b20d9d9a7377032bb3f139be5ed0d051d35c4d20` (PR #237 merged; exact-head source gates passed; operational release remains blocked).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
-**Current source batch:** `client/p0-recovery-drill-evidence-20261027` targets `client-main`; validate privately recorded isolated-restore evidence without live mutation.
+**Current source batch:** PR #238 `client/audit-marker-canonical-validation-20261027` targets `client-main`; strictly validate audit-health marker counters and canonical business-time timestamps without live data access.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
 
-## Current live checkpoint — 27 October 2026 11:02 IST
+## Current live checkpoint — 27 October 2026 16:32 IST
+
+- **Authoritative integration:** `client-main` at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`; `main` remains legacy/read-only and must not be changed.
+- **Source state:** PR #237 is merged. PR #238 hardens malformed audit-marker metadata parsing; exact-head validation is pending.
+- **Marker contract:** JSON fallback/cache markers require a numeric positive safe-integer `failureCount` and round-trip canonical second-precision timestamps in the application's configured business timezone (`yyyy-MM-dd'T'HH:mm:ss`). Script Properties require a canonical positive decimal count string and the same timestamp representation; timezone suffixes and fractional seconds are not valid stored marker values. Malformed or ambiguous values fail closed to `MONITORING_UNAVAILABLE`.
+- **Source verification boundary:** regression tests cover corrupted marker values but do not prove live Apps Script Properties, Settings-sheet, or CacheService behavior.
+- **Governance:** `client-main` reports `protected=false`; active ruleset #24624368 still targets default branch `main` only. Owner/admin must correct and verify the required CI/E2E/Full Flight checks and human approval.
+- **Staging blocker:** last recorded UAT preflight [run #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed because production resource references were missing and Clasp credentials were unavailable/rejected. Deployment and UAT were skipped; do not retry with unchanged configuration.
+- **Release remains BLOCKED:** staging resource identity/version, isolated restore, actual HTTP headers, live role/receipt authorization, offline/reconnect, printing, accessibility and customer acceptance remain unverified.
+- **Boundary:** PR #238 is source/tests/checkpoint only. No Clasp push, deployment, migration, Sheet/Drive mutation, UAT, ZIP/cPanel publication or production operation is included.
+
+## Historical checkpoint — 27 October 2026 11:02 IST (superseded by PR #237 merge)
 
 - **Authoritative integration:** `client-main` at `2b8120789811f27410f0542c29c7436fcc5f190c`; legacy `main` remains read-only by engineering policy at `b4fa94405c0e6a7393c36f43e168f8b54c99c408` (GitHub reports `main` protected and `client-main` unprotected).
 - **PR queue at batch selection:** PRs #220–#230 and #232 are merged; PR #231 is closed without merge. No open PR existed when this batch was selected. PR #232 merged at 05:24:42Z with merge commit `2b8120789811f27410f0542c29c7436fcc5f190c`; its tested head was `9e94e1c8ebf925154a14a757eeb2109605a9884a`. Exact PR-head CI [#40450927644](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40450927644), Browser E2E [#40450927649](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40450927649), Full Flight Test [#40450927659](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40450927659) and monitor [#40450927568](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40450927568) passed. PR #232 has no submitted review.
@@ -52,16 +63,14 @@
 - The previous PR #229 head `c71e233e11eec5b6d2b2d37be27216a80a170f7e` had failed CI [#40379591148](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591148), Browser E2E [#40379591102](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591102), and Full Flight Test [#40379591096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591096); the monitor [#40379591122](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40379591122) passed. These are historical results for the pre-resolution head only.
 - The conflict-resolution head needs a fresh exact-SHA run of CI / Quality, Browser E2E and Full Flight Test. Until then the release remains blocked; branch protection, staging identity/preflight, live backup/restore, device and customer acceptance remain independent gates.
 
-## Current release decision
+## Current release decision — 27 October 2026 16:32 IST
 
 The release remains **BLOCKED**.
 
-- **Historical PR #227 baseline checks:** [CI / Quality #40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed at `prettier --check .` on `test/test-staging-workflow.js`; [Browser E2E #40373320581](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320581) passed; [Full Flight Test #40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) failed after an unhandled GitHub API HTTP 502; [Autonomous Development Monitor #40373320213](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320213) completed with an explicit warning that checkpoint finalization expired before all required source workflows were terminal.
-- **Integrated PR #228 correction:** the multiline staging-test formatting fix, bounded two-retry policy for transient Full Flight API 5xx responses, exact SHA/branch/event matching and workflow regression coverage are already included in the current baseline. PR #229 still needs fresh exact-head CI / Quality, Browser E2E and Full Flight Test results.
-- **Governance:** ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets `~DEFAULT_BRANCH` (`main`) only, requires `quality` only and zero approvals. The `client-main` branch API reports `protected=false`; the classic branch-protection endpoint returns 403 to this connection. Owner/admin must correct and verify effective rules.
-- **Staging UAT blocker:** [run #39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed at isolated-deployment preflight because production references were empty and Clasp credentials were missing/rejected. Deployment, target recheck and live UAT were skipped. Do not retry until corrected and independently verified.
-- **Artifact/release boundary:** [ZIP #39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f`; its artifact is expired. The live releases endpoint is empty. A successful source or ZIP workflow is not a live deployment certificate.
-- **Operational acceptance:** live staging identity/version, actual host security headers, role/receipt authorization, separate-target backup/restore, offline/reconnect on intended devices, print/PDF, accessibility and customer acceptance remain unverified. Production remains untouched.
+- **Current source baseline:** PR #237 merged at `b20d9d9a7377032bb3f139be5ed0d051d35c4d20`; its exact-head CI, Browser E2E and Full Flight checks passed. PR #238 addresses strict audit-marker metadata validation and must pass the same exact-head required checks before review.
+- **Governance:** ruleset #24624368 targets `main` only, requires only `quality`, and requires zero approvals. `client-main` currently reports `protected=false`; repository owner/admin must configure and verify effective rules and human approval.
+- **Staging UAT blocker:** run [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolated-deployment preflight because production resource references were empty and Clasp credentials were missing/rejected. Deployment, target recheck and live UAT were skipped. Do not rerun unchanged configuration.
+- **Operational acceptance:** live staging identity/version, actual host security headers, role/receipt authorization, a witnessed restore into a separate target, device/offline recovery, printing, accessibility and customer acceptance remain unverified. Source CI is not proof of these external operations.
 
 ## Immediate release sequence
 
