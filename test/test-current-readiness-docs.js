@@ -32,14 +32,26 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(handoff, /^\*\*Current integration baseline:\*\* `a7421807b9bc2c56618ac1889c43f48ecfb79c81`/m);
-assert.match(staging, /^\*\*Current integration baseline:\*\* `client-main` `a7421807b9bc2c56618ac1889c43f48ecfb79c81`/m);
-assert.match(executionPlan, /^\*\*Current integration SHA:\*\* `a7421807b9bc2c56618ac1889c43f48ecfb79c81`/m);
+assert.match(
+  handoff,
+  /^\*\*Current integration baseline:\*\* `a7421807b9bc2c56618ac1889c43f48ecfb79c81`/m,
+);
+assert.match(
+  staging,
+  /^\*\*Current integration baseline:\*\* `client-main` `a7421807b9bc2c56618ac1889c43f48ecfb79c81`/m,
+);
+assert.match(
+  executionPlan,
+  /^\*\*Current integration SHA:\*\* `a7421807b9bc2c56618ac1889c43f48ecfb79c81`/m,
+);
 assert.match(staging, /Deep-dive findings — current source disposition/);
 assert.match(staging, /previous pending-code finding is resolved in the merged baseline/);
 assert.match(staging, /GHSA-vfj7-8cjw-p6xm was withdrawn/);
 assert.match(recoveryValidator, /SAFE_DEPLOYED_VERSION/);
-assert.match(recoveryEvidenceTest, /https:\/\/script\.google\.com\/macros\/s\/private-id\/exec/);
+assert.match(
+  recoveryEvidenceTest,
+  /https:\/\/script\.google\.com\/macros\/s\/private-id\/exec/,
+);
 assert.match(handoff, /Current integration baseline.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
 assert.match(handoff, /Current release-session checkpoint.*27 October 2026/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
