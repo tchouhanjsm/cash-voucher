@@ -5,7 +5,7 @@
 **Integration branch:** `client-main`; legacy `main` remains read-only.
 **Current integration baseline:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; current source baseline verified).
 **Current source batch:** `client/release-integrity-dependency-hardening-20261027` tightens recovery-evidence validation, dependency advisory handling and release-state accuracy.
-**Release boundary:** backend, frontend, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+**Release boundary:** recovery-evidence validation, dependency-audit policy, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
 ## Current release-session checkpoint — 27 October 2026 22:11 IST
 
