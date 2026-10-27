@@ -113,7 +113,7 @@ const attestedDeployOnly = validateStagingConfiguration(withoutProductionReferen
 });
 assert.equal(attestedDeployOnly.ok, false);
 const attestedDeployErrors = attestedDeployOnly.errors.join(' ');
-assert.match(attestedDeployErrors, /write-capable staging operations/);
+assert.match(attestedDeployErrors, /write-capable staging operations/i);
 assert.match(attestedDeployErrors, /not sufficient/);
 assert.equal(attestedDeployOnly.checks.ownerAttestedIsolationUsed, false);
 assert.equal(attestedDeployOnly.checks.targetIdsAreSeparated, false);
