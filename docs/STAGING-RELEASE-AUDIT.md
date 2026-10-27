@@ -1,12 +1,22 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 27 October 2026, 17:59 IST (backup readiness vertical slice — current source batch)
-**Current integration baseline:** `client-main` `ba56028c4eba2ea499c988fe03866a592005f12c` (PR #239 merged; operational release remains blocked).
-**Current source batch:** `client/backup-readiness-vertical-slice-20261027`; unify backup-marker semantics across status and onboarding, expose actionable launch-state summaries, and cover the end-to-end owner interaction.
+**Audit date:** 27 October 2026 (read-only staging configuration readiness phase)
+**Current integration baseline:** `client-main` `1dba1b008eb2303ffddf069285fbb22efc76a8cb` (PR #240 merged; operational release remains blocked).
+**Current source batch:** `client/staging-config-preflight-20261027`; add read-only protected-Environment staging configuration preflight and sanitized evidence.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
+
+## Current release-session checkpoint — 27 October 2026
+
+- **Integration baseline:** `client-main` at `1dba1b008eb2303ffddf069285fbb22efc76a8cb` after PR #240 merged. Legacy `main` remains read-only.
+- **Selected bulk phase:** `client/staging-config-preflight-20261027`. Add a read-only `readiness` mode to the staging preflight and invoke it from `validate-only` through the protected GitHub `staging` Environment.
+- **Preflight coverage:** staging and production resource inventory, endpoint/deployment consistency, distinct owner/manager UAT credentials, and Clasp legacy/3.x credential shape. The `STAGING-ONLY` confirmation remains mandatory for actual deploy/UAT paths; readiness mode does not deploy or write.
+- **Evidence boundary:** the evidence report carries only the source/run reference, category states and sanitized blocker messages. It excludes raw resource identifiers, endpoint URLs, email/passwords and credential JSON. It explicitly states that remote connectivity, independent ownership, deployment and restore were not verified.
+- **Required checks:** CI / Quality, Browser E2E and Full Flight Test must all pass on the same final PR head. No live Environment run is performed by source validation itself.
+- **Still blocked:** staging secrets must be privately populated and owner-verified, the read-only workflow must run against the intended protected Environment, then separately authorized live UAT and an isolated restore/reconciliation are required. Governance and device/customer acceptance gates remain open.
+- **Scope boundary:** no Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication, release publication or production operation.
 
 ## Current live checkpoint — 27 October 2026 17:59 IST
 

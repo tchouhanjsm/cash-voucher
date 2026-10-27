@@ -54,7 +54,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   let productionApiUrl = '';
   let productionDeploymentId = '';
 
-  if (!['uat', 'deploy', 'artifact'].includes(mode)) {
+  if (!['uat', 'deploy', 'artifact', 'readiness'].includes(mode)) {
     errors.push('Unsupported preflight mode.');
   }
 
@@ -223,8 +223,9 @@ function validateStagingConfiguration(env = process.env, options = {}) {
       errors.push('Use different passwords for the staging owner and manager UAT accounts.');
     }
   }
-  if (mode === 'deploy') {
-    if (String(env.CV_STAGING_DEPLOY_CONFIRMATION || '') !== 'STAGING-ONLY') {
+  let claspCredentialShapeValid = null;
+  if (mode === 'deploy' || mode === 'readiness') {
+    if (mode === 'deploy' && String(env.CV_STAGING_DEPLOY_CONFIRMATION || '') !== 'STAGING-ONLY') {
       errors.push('Deployment requires the explicit STAGING-ONLY confirmation.');
     }
     let claspConfig;
@@ -252,7 +253,8 @@ function validateStagingConfiguration(env = process.env, options = {}) {
       hasText(modernDefaultCredential.client_id) &&
       hasText(modernDefaultCredential.client_secret);
 
-    if (!legacyFormatValid && !modernFormatValid) {
+    claspCredentialShapeValid = legacyFormatValid || modernFormatValid;
+    if (!claspCredentialShapeValid) {
       errors.push(
         'CLASPRC_JSON must be valid Clasp credentials in either legacy token/oauth2ClientSettings format or Clasp 3.x tokens.default format.',
       );
@@ -264,6 +266,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     errors,
     productionApiUrl,
     checks: {
+      claspCredentialShapeValid,
       targetIdsAreSeparated:
         stageValues.every(Boolean) &&
         stageValues.every((value) => !productionSet.has(value)) &&
@@ -284,10 +287,72 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   };
 }
 
+function buildStagingPreflightEvidence(result, env = process.env) {
+  const repo = String(env.GITHUB_REPOSITORY || '');
+  const safeRepo = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) ? repo : 'unknown';
+  const runId = /^\d+$/.test(String(env.GITHUB_RUN_ID || '')) ? String(env.GITHUB_RUN_ID) : '';
+  const sha = /^[a-f0-9]{40}$/i.test(String(env.GITHUB_SHA || '')) ? String(env.GITHUB_SHA).toLowerCase() : null;
+  const checks = result.checks || {};
+  const status = (value) => value === null || value === undefined ? 'not-required' : value ? 'pass' : 'blocked';
+  return {
+    schemaVersion: 1,
+    evidenceType: 'cash-voucher-staging-configuration-preflight',
+    generatedAt: new Date().toISOString(),
+    source: { repository: safeRepo, ref: String(env.GITHUB_REF || '') === 'refs/heads/client-main' ? 'refs/heads/client-main' : 'unverified-ref', commitSha: sha },
+    workflowRun: { runId, url: runId && safeRepo !== 'unknown' ? 'https://github.com/' + safeRepo + '/actions/runs/' + runId : '' },
+    outcome: result.ok ? 'configuration-pass' : 'blocked',
+    categories: {
+      stagingResourceSeparation: status(checks.targetIdsAreSeparated),
+      productionResourceInventory: status(checks.productionResourceReferencesPresent),
+      stagingEndpoint: status(checks.stagingApiUrlMatchesConfiguredDeployment),
+      dedicatedUatAccounts: status(checks.dedicatedUatAccountsPresent),
+      claspCredentialShape: status(checks.claspCredentialShapeValid),
+    },
+    blockers: result.errors.map((message) => String(message)),
+    boundaries: {
+      credentialValuesIncluded: false,
+      resourceIdentifiersIncluded: false,
+      endpointIncluded: false,
+      remoteConnectivityTested: false,
+      ownershipIndependentlyVerified: false,
+      deploymentChanged: false,
+      backupRestoreVerified: false,
+    },
+  };
+}
+
+function writeStagingPreflightEvidence(result, env = process.env) {
+  const outputPath = String(env.CV_STAGING_PREFLIGHT_EVIDENCE_PATH || '').trim();
+  if (!outputPath) return null;
+  const report = buildStagingPreflightEvidence(result, env);
+  const fullPath = path.resolve(outputPath);
+  fs.mkdirSync(path.dirname(fullPath), { recursive: true });
+  fs.writeFileSync(fullPath, JSON.stringify(report, null, 2) + '\n', { mode: 0o600 });
+  fs.chmodSync(fullPath, 0o600);
+  const summaryPath = String(env.GITHUB_STEP_SUMMARY || '').trim();
+  if (summaryPath) {
+    const lines = [
+      '## Staging configuration preflight (read-only)',
+      '',
+      '- Outcome: ' + report.outcome,
+      '- Commit: ' + (report.source.commitSha || 'not recorded'),
+      '- Run: ' + (report.workflowRun.url || 'not recorded'),
+      ...Object.entries(report.categories).map(([key, value]) => '- ' + key + ': ' + value),
+      ...report.blockers.map((message) => '- Blocker: ' + message),
+      '',
+      'Configuration values only; no remote connectivity, resource ownership, deployment, UAT transaction or restore was verified.',
+      '',
+    ];
+    fs.appendFileSync(summaryPath, lines.join('\n'), { mode: 0o600 });
+  }
+  return report;
+}
+
 function main() {
   const modeArgument = process.argv.find((argument) => argument.startsWith('--mode='));
   const mode = modeArgument ? modeArgument.slice('--mode='.length) : 'uat';
   const result = validateStagingConfiguration(process.env, { mode });
+  if (mode === 'readiness') writeStagingPreflightEvidence(result, process.env);
 
   if (!result.ok) {
     console.error('STAGING PREFLIGHT FAILED:');
@@ -312,6 +377,9 @@ function main() {
     console.log(
       'Artifact target URL and resource-isolation preflight passed; no UAT accounts or remote writes were tested.',
     );
+  } else if (mode === 'readiness') {
+    console.log('Configuration-only readiness passed. No Google API calls, deployments, UAT writes or restore verification were performed.');
+    console.log('Sanitized category evidence was written when an output path was supplied.');
   } else {
     console.log('Staging URL shape and dedicated owner/manager UAT credentials are valid.');
   }
@@ -326,5 +394,7 @@ module.exports = {
   isStrongPassword,
   normalizeUrl,
   readProductionApiUrl,
+  buildStagingPreflightEvidence,
   validateStagingConfiguration,
+  writeStagingPreflightEvidence,
 };

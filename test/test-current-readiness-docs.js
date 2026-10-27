@@ -32,8 +32,8 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(handoff, /Current integration baseline.*ba56028c4eba2ea499c988fe03866a592005f12c/);
-assert.match(handoff, /Current live checkpoint.*27 October 2026 17:59 IST/);
+assert.match(handoff, /Current integration baseline.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
+assert.match(handoff, /Current release-session checkpoint.*27 October 2026/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);
@@ -94,9 +94,9 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Current integration baseline.*client-main.*ba56028c4eba2ea499c988fe03866a592005f12c/,
+  /Current integration baseline.*client-main.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
 );
-assert.match(staging, /Current source batch.*client\/backup-readiness-vertical-slice-20261027/);
+assert.match(staging, /Current source batch.*client\/staging-config-preflight-20261027/);
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
@@ -149,10 +149,10 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*ba56028c4eba2ea499c988fe03866a592005f12c/);
+assert.match(executionPlan, /Current integration SHA.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
 assert.match(
   executionPlan,
-  /Current source batch.*client\/backup-readiness-vertical-slice-20261027/,
+  /Current source batch.*client\/staging-config-preflight-20261027/,
 );
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
@@ -165,6 +165,12 @@ assert.match(p0ReleaseBatch, /B1 — staging identity and release proof/);
 assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
 assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
+assert.match(staging, /read-only staging configuration readiness phase/i);
+assert.match(staging, /remote connectivity.*restore were not verified/i);
+assert.match(executionPlan, /read-only staging configuration readiness phase/i);
+assert.match(handoff, /staging configuration preflight phase/i);
+assert.match(recoveryEvidence, /configuration-only check.*validate-only workflow/i);
+assert.match(recoveryEvidence, /does not authenticate the operator/i);
 assert.match(recoveryEvidence, /does not authenticate the operator/i);
 assert.match(recoveryValidator, /RESOURCE_COLLISION/);
 assert.match(recoveryValidator, /PRODUCTION_CHANGED/);
