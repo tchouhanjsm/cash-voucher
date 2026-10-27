@@ -1,6 +1,16 @@
 import { $ } from '../core/dom.js';
 import { can, nm, S } from '../core/state.js';
-import { addDays, dmy, esc, finiteAmount, iso, isBusinessDate, money, pad, today } from '../core/utils.js';
+import {
+  addDays,
+  dmy,
+  esc,
+  finiteAmount,
+  iso,
+  isBusinessDate,
+  money,
+  pad,
+  today,
+} from '../core/utils.js';
 import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard({ api }) {

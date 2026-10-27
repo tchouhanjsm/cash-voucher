@@ -1,10 +1,10 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)
-**Integration branch:** `client-main`; `main` remains legacy/read-only.
-**Current integration SHA:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).
-**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Active follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main` and remains unmerged pending exact-head validation.
+**Updated:** 27 October 2026 05:48 IST (PR #229 conflict-resolution checkpoint)  
+**Integration branch:** `client-main`; `main` remains legacy/read-only.  
+**Current integration SHA:** `b2a4a45e0f4326a59b51151754691d56476f0b35` (PR #228 merged).  
+**Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.  
+**Active follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, targets `client-main` and remains unmerged pending exact-head validation.  
 
 ## Historical gate evidence and current business-date follow-up
 

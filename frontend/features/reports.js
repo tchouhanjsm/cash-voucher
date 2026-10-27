@@ -1,6 +1,15 @@
 import { $ } from '../core/dom.js';
 import { can, S } from '../core/state.js';
-import { csvCell, dmy, download, esc, finiteAmount, isBusinessDate, money, today } from '../core/utils.js';
+import {
+  csvCell,
+  dmy,
+  download,
+  esc,
+  finiteAmount,
+  isBusinessDate,
+  money,
+  today,
+} from '../core/utils.js';
 import { emptyState, head, pageNotice, tableView, toast } from '../core/ui.js';
 
 export function createReports({ api }) {
