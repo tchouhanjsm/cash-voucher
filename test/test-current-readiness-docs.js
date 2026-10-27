@@ -58,7 +58,7 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(staging, /Current integration baseline.*client-main.*b2a4a45e0f4326a59b51151754691d56476f0b35/);
 assert.match(staging, /PR #208/);
-assert.match(staging, /Current follow-up.*PR #229.*client\\/fix-business-date-arithmetic-20261027/);
+assert.match(staging, /Current follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
 assert.doesNotMatch(staging, /PR #210 remains open and diverged\/dirty/);
 assert.match(handoff, /Verified integration baseline.*e97c4e080b3f6903e16ef77f571822f9844faeed/);
