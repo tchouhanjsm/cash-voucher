@@ -3374,6 +3374,8 @@ with sync_playwright() as p:
         'Register search input safely round-trips hostile text when the view is rebuilt',
     )
 
+    page.fill('#rq', '')
+    page.wait_for_function("document.querySelectorAll('#rbody tr').length === 2")
     check(page.locator('#rbody tr').count() == 2, 'staff register 2 rows')
     page.fill('#rq', 'No matching voucher 987654')
     page.wait_for_function(
