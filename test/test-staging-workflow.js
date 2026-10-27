@@ -63,12 +63,23 @@ assert.match(
 );
 assert.equal(
   (workflow.match(/CV_STAGING_RESOURCE_ISOLATION_ATTESTATION:/g) || []).length,
-  2,
-  'both write-capable staging jobs must receive the configured isolation attestation',
+  0,
+  'write-capable staging jobs must not receive the artifact-only isolation attestation',
+);
+assert.match(
+  preflight,
+  /Write-capable staging operations \(deploy and UAT\) require all four production resource reference IDs; OWNER-VERIFIED-STAGING-ONLY attestation is not sufficient/,
+);
+assert.match(
+  releaseRunbook,
+  /write-capable staging operations[\s\S]*owner attestation alone is not sufficient/i,
 );
 assert.match(preflight, /tokens\.default/);
 assert.match(preflight, /OWNER-VERIFIED-STAGING-ONLY/);
 assert.match(releaseRunbook, /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION/);
+assert.match(releaseRunbook, /git switch client-main/);
+assert.match(releaseRunbook, /git pull --ff-only origin client-main/);
+assert.doesNotMatch(releaseRunbook, /git switch main/);
 assert.match(releaseRunbook, /Selected branches and tags[\s\S]*client-main/);
 assert.match(releaseRunbook, /tokens\.default/);
 assert.match(workflow, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);

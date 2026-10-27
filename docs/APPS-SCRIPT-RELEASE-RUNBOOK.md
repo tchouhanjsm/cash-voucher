@@ -18,6 +18,14 @@ The root frontend `config.js` contains a production/legacy Apps Script URL. **Do
 
 The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. Keep local Clasp configuration/authentication in protected secrets or local files; never commit them.
 
+## Staging resource isolation policy (current)
+
+The isolation attestation `OWNER-VERIFIED-STAGING-ONLY` is permitted **only for the non-mutating artifact preflight** when all four production resource reference IDs are intentionally omitted. It records an operator assertion; it does not independently prove resource identity.
+
+Write-capable `deploy` and `uat` preflight must receive all four production references: Script ID, Spreadsheet ID, receipt-folder ID and backup-folder ID. The validator compares them with the configured production Web App deployment ID and each staging resource, rejects duplicate/cross-environment identifiers, and fails closed if any reference is missing or placeholder. The owner attestation is not a substitute for the inventory in these modes.
+
+Do not work around a failed preflight, invent IDs, copy credentials into logs, or retry unchanged configuration. The repository owner/operator must privately populate and verify the protected `staging` Environment secrets before any separately authorized write-capable run. Artifact generation remains non-deploying and does not prove that the deployed staging resources are live or isolated.
+
 ## Setup preflight and safe recovery
 
 Run `setup()` only after the operator has privately verified that the Script project and `SS_ID` identify the intended empty staging Sheet and configured the staging-only owner properties. Before its first write, preflight checks the target and any existing application tab headers/data. A new instance must have no app tabs or initialization markers and valid initial Owner credentials. A completely initialized instance is detected as a read-only no-op; a partial/legacy schema is rejected before setup rewrites headers or formats sheets. The preflight also rejects data rows without a `UserID`, incomplete/invalid account rows, an application without an active Owner, invalid/missing initial-owner credentials, or an inaccessible target. Use a separately documented and backed-up migration for legacy schemas.
@@ -37,7 +45,7 @@ The active frontend shell contains a meta Content Security Policy. `npm run chec
 
 ## Required distinction
 
-1. **Git merge:** reviewed source is in `main`.
+1. **Git merge:** reviewed source is in `client-main`; `main` remains the legacy/read-only baseline.
 2. **Clasp upload:** `clasp push` uploads the local `backend/` project files to the selected Apps Script project.
 3. **Web App release:** create a new version and update the intended existing deployment (or create a new deployment only if explicitly approved).
 4. **Live verification:** exercise the actual Web App, roles, records, receipts and backup behavior. CI green is not live-service evidence.
@@ -47,8 +55,8 @@ The active frontend shell contains a meta Content Security Policy. `npm run chec
 From the local repository root:
 
 ```bash
-git switch main
-git pull --ff-only origin main
+git switch client-main
+git pull --ff-only origin client-main
 git status --short
 git rev-parse HEAD
 npm ci
