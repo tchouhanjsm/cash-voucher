@@ -49,6 +49,19 @@ jobs:
           path: ${{ runner.temp }}/cash-voucher-performance-baseline.json
           if-no-files-found: error
 
+      - name: Temporary Prettier preview (remove after capturing formatter output)
+        run: |
+          npx prettier --write \
+            docs/HANDOFF.md \
+            docs/EXECUTION-PLAN-2026-10-21.md \
+            test/test-csv-export.js \
+            test/test-staging-workflow.js
+          git diff --color=never -- \
+            docs/HANDOFF.md \
+            docs/EXECUTION-PLAN-2026-10-21.md \
+            test/test-csv-export.js \
+            test/test-staging-workflow.js
+
       - name: Run quality gate
         run: npm run check
 
