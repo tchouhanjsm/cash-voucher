@@ -136,14 +136,23 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   );
   const isolationAttestation = String(env.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION || '').trim();
 
-  if (hasAnyProductionReferenceValue && !hasAllProductionReferenceValues) {
+  if (mode === 'artifact') {
+    if (hasAnyProductionReferenceValue && !hasAllProductionReferenceValues) {
+      errors.push(
+        'Artifact preflight requires all four production resource reference IDs together when any production reference is provided.',
+      );
+    }
+    if (
+      !hasAnyProductionReferenceValue &&
+      isolationAttestation !== RESOURCE_ISOLATION_ATTESTATION
+    ) {
+      errors.push(
+        'For artifact-only builds without production resource reference IDs, CV_STAGING_RESOURCE_ISOLATION_ATTESTATION must equal OWNER-VERIFIED-STAGING-ONLY after independently verifying staging resources outside this workflow.',
+      );
+    }
+  } else if (!hasAllProductionReferenceValues) {
     errors.push(
-      'Configure all four production resource reference IDs together, or leave all four unset and provide the explicit staging isolation attestation.',
-    );
-  }
-  if (!hasAnyProductionReferenceValue && isolationAttestation !== RESOURCE_ISOLATION_ATTESTATION) {
-    errors.push(
-      'When production resource reference IDs are not provided, CV_STAGING_RESOURCE_ISOLATION_ATTESTATION must equal OWNER-VERIFIED-STAGING-ONLY after independently verifying that staging Script, Sheet, receipt folder and backup folder are distinct from production.',
+      'Write-capable staging operations (deploy and UAT) require all four production resource reference IDs; OWNER-VERIFIED-STAGING-ONLY attestation is not sufficient.',
     );
   }
 
@@ -174,7 +183,9 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     productionValues.every(Boolean) &&
     new Set(productionValues).size === productionValues.length;
   const ownerAttestedIsolation =
-    !hasAnyProductionReferenceValue && isolationAttestation === RESOURCE_ISOLATION_ATTESTATION;
+    mode === 'artifact' &&
+    !hasAnyProductionReferenceValue &&
+    isolationAttestation === RESOURCE_ISOLATION_ATTESTATION;
   if (stageValues.some((value) => value && productionSet.has(value))) {
     errors.push(
       'At least one staging resource identifier is also configured as a production resource.',

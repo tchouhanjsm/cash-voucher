@@ -100,20 +100,37 @@ const withoutProductionReferenceIds = {
   CV_PRODUCTION_BACKUP_FOLDER_ID: '',
   CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
 };
-const attestedStagingOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
+const attestedArtifactOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
+  mode: 'artifact',
+});
+assert.equal(attestedArtifactOnly.ok, true, attestedArtifactOnly.errors.join('; '));
+assert.equal(attestedArtifactOnly.checks.productionResourceReferencesPresent, false);
+assert.equal(attestedArtifactOnly.checks.ownerAttestedIsolationUsed, true);
+assert.equal(attestedArtifactOnly.checks.targetIdsAreSeparated, true);
+
+const attestedDeployOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
   mode: 'deploy',
 });
-assert.equal(attestedStagingOnly.ok, true, attestedStagingOnly.errors.join('; '));
-assert.equal(attestedStagingOnly.checks.productionResourceReferencesPresent, false);
-assert.equal(attestedStagingOnly.checks.ownerAttestedIsolationUsed, true);
-assert.equal(attestedStagingOnly.checks.targetIdsAreSeparated, true);
+assert.equal(attestedDeployOnly.ok, false);
+const attestedDeployErrors = attestedDeployOnly.errors.join(' ');
+assert.match(attestedDeployErrors, /write-capable staging operations/i);
+assert.match(attestedDeployErrors, /not sufficient/);
+assert.equal(attestedDeployOnly.checks.ownerAttestedIsolationUsed, false);
+assert.equal(attestedDeployOnly.checks.targetIdsAreSeparated, false);
+
+const attestedUatOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
+  mode: 'uat',
+});
+assert.equal(attestedUatOnly.ok, false);
+const attestedUatErrors = attestedUatOnly.errors.join(' ');
+assert.match(attestedUatErrors, /all four production resource reference IDs/);
 
 const missingIsolationAttestation = validateStagingConfiguration(
   {
     ...withoutProductionReferenceIds,
     CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: '',
   },
-  { mode: 'deploy' },
+  { mode: 'artifact' },
 );
 assert.equal(missingIsolationAttestation.ok, false);
 assert.ok(

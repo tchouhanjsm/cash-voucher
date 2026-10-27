@@ -24,10 +24,11 @@ const dashboard = read('frontend/features/dashboard.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(handoff, /Current integration baseline.*2b7fec463575f235373f01d2d97eddbb6ecea6fa/);
-assert.match(handoff, /Current live checkpoint.*27 October 2026 08:56 IST/);
+assert.match(handoff, /Current integration baseline.*f1041a177b292468dca59cf1c68d2bdcf2a5c192/);
+assert.match(handoff, /Current live checkpoint.*27 October 2026 09:59 IST/);
 assert.match(handoff, /40443448972/);
-assert.match(handoff, /client\/restore-green-source-gates-20261027/);
+assert.match(handoff, /client\/p0-write-staging-inventory-20261027/);
+assert.match(handoff, /Historical checkpoint — PR #229 integration audit/);
 assert.match(dashboard, /function dashboardSummaryIssue/);
 assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
 assert.match(browserE2e, /Dashboard totals unavailable/);
@@ -61,9 +62,9 @@ assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
 assert.match(
   staging,
-  /Current integration baseline.*client-main.*2b7fec463575f235373f01d2d97eddbb6ecea6fa/,
+  /Current integration baseline.*client-main.*f1041a177b292468dca59cf1c68d2bdcf2a5c192/,
 );
-assert.match(staging, /Current source repair.*client\/restore-green-source-gates-20261027/);
+assert.match(staging, /Current source batch.*client\/p0-write-staging-inventory-20261027/);
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
@@ -116,8 +117,8 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*2b7fec463575f235373f01d2d97eddbb6ecea6fa/);
-assert.match(executionPlan, /Current source batch.*client\/restore-green-source-gates-20261027/);
+assert.match(executionPlan, /Current integration SHA.*f1041a177b292468dca59cf1c68d2bdcf2a5c192/);
+assert.match(executionPlan, /Current source batch.*client\/p0-write-staging-inventory-20261027/);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
