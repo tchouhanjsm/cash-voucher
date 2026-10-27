@@ -403,7 +403,7 @@ with sync_playwright() as p:
     )
     page.click('[data-confirm-step="loginAndRoles"]')
     page.wait_for_function(
-        "document.querySelector('[data-onboarding-count=\\"passed\\"]')?.textContent === '1'",
+        """document.querySelector('[data-onboarding-count="passed"]')?.textContent === '1'""",
         timeout=8000,
     )
     check(
@@ -418,7 +418,7 @@ with sync_playwright() as p:
     )
     page.click('[data-fail-step="voucherAndReceipt"]')
     page.wait_for_function(
-        "document.querySelector('[data-onboarding-count=\\"failed\\"]')?.textContent === '1'",
+        """document.querySelector('[data-onboarding-count="failed"]')?.textContent === '1'""",
         timeout=8000,
     )
     check(

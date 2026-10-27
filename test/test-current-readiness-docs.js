@@ -150,7 +150,10 @@ assert.match(
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
 assert.match(executionPlan, /Current integration SHA.*ba56028c4eba2ea499c988fe03866a592005f12c/);
-assert.match(executionPlan, /Current source batch.*client\/backup-readiness-vertical-slice-20261027/);
+assert.match(
+  executionPlan,
+  /Current source batch.*client\/backup-readiness-vertical-slice-20261027/,
+);
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);

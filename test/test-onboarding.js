@@ -94,7 +94,9 @@ assert.ok(
 const validAttemptMarker = g.props.BACKUP_LAST_ATTEMPT;
 g.props.BACKUP_LAST_ATTEMPT = '';
 const missingAttemptState = request('onboardingState');
-const missingAttemptStep = missingAttemptState.data.steps.find((step) => step.id === 'recentBackup');
+const missingAttemptStep = missingAttemptState.data.steps.find(
+  (step) => step.id === 'recentBackup',
+);
 assert.equal(missingAttemptStep.status, 'blocked');
 assert.ok(
   missingAttemptStep.details.issues.includes('NO_ATTEMPT'),
