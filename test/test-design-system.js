@@ -218,8 +218,8 @@ assert.match(
 );
 assert.match(
   components,
-  /\.register-results-card\.is-empty \.table-wrap\s*\{\s*display:\s*none;/,
-  'Register hides empty table headers when there are no rows to show',
+  /\.register-results-card\.is-empty \.table-wrap,\s*\.register-results-card\.is-empty\[data-empty-kind='first-use'\] #rtot,\s*\.register-results-card\.is-empty\[data-empty-kind='filtered'\] #rtot\s*\{\s*display:\s*none;/,
+  'Register hides empty table headers and hides totals only for genuinely empty states',
 );
 assert.match(
   authHtml,
