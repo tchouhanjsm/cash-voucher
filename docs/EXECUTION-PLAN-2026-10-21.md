@@ -1,13 +1,23 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 27 October 2026 (read-only staging configuration readiness phase)
+**Updated:** 27 October 2026 (release integrity and dependency policy phase)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
-**Current integration SHA:** `1dba1b008eb2303ffddf069285fbb22efc76a8cb` (PR #240 merged; the current release remains blocked).
+**Current integration SHA:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; the current release remains blocked).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** `client/staging-config-preflight-20261027`; extend the staging preflight with a read-only readiness mode and sanitized evidence. No live operation is performed.
+**Current source batch:** `client/release-integrity-dependency-hardening-20261027`; tighten recovery-evidence validation, remove a withdrawn advisory exception and reconcile release checkpoints.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 
-## Current release-session checkpoint — 27 October 2026
+## Current release-session checkpoint — 27 October 2026 22:11 IST
+
+- **Integration baseline:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PRs #240 and #241 are merged. Legacy `main` remains frozen/read-only.
+- **Current consolidated source batch:** `client/release-integrity-dependency-hardening-20261027`. It tightens recovery-evidence version labels, removes an exception for a withdrawn advisory, adds regression coverage, and refreshes current release/handoff checkpoints. It does not deploy or access live resources.
+- **Support throttling finding disposition:** `backend/90-support.gs` already serializes quota read/check/increment under a script lock; `test/test-support-report.js` covers under-lock rechecks, lock contention and single counter consumption. This is source/mock-test evidence—not a claim of live Apps Script load testing.
+- **Audit-health finding disposition:** `backend/25-helpers.gs` already rejects malformed marker metadata and reports `MONITORING_UNAVAILABLE` when a marker store is malformed/unavailable; `test/test-backend.js` covers malformed and mixed valid/corrupt stores. Do not reopen these as pending source fixes unless a new reproducer proves a regression.
+- **Dependency policy:** GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) on 23 October 2026; it is no longer an approved exception. [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) remains the scoped Zod concern; current upstream Clasp is 3.4.1 and declares Zod `^3.25.76`, so do not force an unverified major override. Keep the existing exception limited to this developer/CI toolchain and review compatibility by 9 November 2026.
+- **Release remains blocked:** verify branch protection/human review on `client-main`; privately verify staging resource identities and credentials; run configuration readiness; then separately authorize live staging UAT, restore into separate recovery resources, full seven-sheet/header/count reconciliation, voucher/receipt read-back, production-unchanged evidence, host-header/authorization checks and device/accessibility/customer acceptance.
+- **Safety boundary:** no live workflow dispatch, Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, cPanel publication or production operation is included. Preserve exact-head CI / Quality, Browser E2E and Full Flight gates; require them on one SHA. No automatic merge. Keep `main` read-only.
+
+## Historical checkpoint — PR #241 staging configuration readiness (superseded by current release integrity checkpoint)
 
 - **Integration baseline:** `client-main` at `1dba1b008eb2303ffddf069285fbb22efc76a8cb` after PR #240 merged. Legacy `main` remains read-only.
 - **Selected bulk phase:** `client/staging-config-preflight-20261027`. Add a read-only `readiness` mode to the staging preflight and invoke it from `validate-only` through the protected GitHub `staging` Environment.
@@ -176,7 +186,10 @@ PR #210's checkpoint-based monitoring workflow merged into `client-main` at `f91
 
 The monitor may observe CI, Browser E2E, Full Flight Test, PR reviews/checks, staging/ZIP runs and release-gate notes; it may retry only timed-out source-validation runs after exact-SHA checks and within a three-attempt ceiling. It never auto-merges, publishes static ZIPs, pushes Clasp, deploys Apps Script, runs transactional staging UAT, performs migrations or changes production. GitHub checkpoint history is persistent run evidence; docs/HANDOFF.md remains the engineering session handoff.
 
-## Deep-dive follow-up defects
+## Deep-dive follow-up disposition
 
-- backend/90-support.gs supportRateAllowed_ uses a non-atomic cache read/increment/write, so concurrent requests can exceed intended rate limits. Fix separately with concurrency/failure tests.
-- Audit health: PR #209 is merged. Its mixed-store fail-closed behavior for malformed persisted counters/timestamps is integrated into `client-main`; historical PR-head checks passed before merge. Live Google Sheets/Drive behavior still requires guarded staging UAT.
+- **Support throttling:** the merged source already guards cache read/check/increment with a script lock and fails closed on lock/cache errors; regression tests cover the critical cases. Real Apps Script concurrent execution remains an operational validation item, not an open source fix.
+- **Audit health:** the merged source already validates canonical marker metadata and reports `MONITORING_UNAVAILABLE` when a marker source is malformed/unavailable. Tests cover invalid metadata and mixed marker stores. Do not duplicate this fix without a new reproducer.
+- **Recovery evidence:** version labels now require a constrained safe prefix and reject URLs, emails, path-like strings and arbitrary IDs.
+- **Dependencies:** remove the braces advisory exception because GitHub withdrew it on 23 October 2026. The Zod compatibility exception remains narrowly scoped with review due 9 November 2026.
+- **Still blocked:** actual staging identity/UAT, a real isolated restore, receipt read-back, production-unchanged evidence, live HTTP headers, offline/device/accessibility checks and customer acceptance. Source validation is not release approval.
