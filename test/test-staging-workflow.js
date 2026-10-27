@@ -308,7 +308,9 @@ const readinessValidationStep = readinessJob
 assert.match(readinessValidationStep, /secrets\.CLASPRC_JSON/);
 assert.match(readinessValidationStep, /secrets\.CV_STAGING_SCRIPT_ID/);
 assert.doesNotMatch(readinessJob, /npm ci|npm run staging:preflight/);
-const readinessUploadStep = readinessJob.split('      - name: Upload sanitized preflight evidence\n')[1];
+const readinessUploadStep = readinessJob.split(
+  '      - name: Upload sanitized preflight evidence\n',
+)[1];
 assert.doesNotMatch(readinessUploadStep, /secrets\./);
 assert.match(readinessJob, /CV_STAGING_PREFLIGHT_EVIDENCE_PATH/);
 assert.match(readinessJob, /retention-days: 90/);
