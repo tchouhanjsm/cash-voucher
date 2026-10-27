@@ -39,4 +39,4 @@ The JSON root must use `schemaVersion: 1` and `evidenceType: cash-voucher-recove
 
 ## Acceptance interpretation
 
-A contract pass means only that the submitted evidence is complete and internally consistent. It is not a cryptographic signature, a live resource query, a proof of actual restore success, or a substitute for owner/QA witness review. Live staging identity, a real isolated restore, actual HTTP security headers, live authorization, offline/reconnect on intended devices, printing, accessibility and customer acceptance remain separate release gates.
+A contract pass means only that the submitted evidence is complete and internally consistent. It does not authenticate the operator, is not a cryptographic signature or live resource query, does not prove actual restore success, and is not a substitute for owner/QA witness review. Live staging identity, a real isolated restore, actual HTTP security headers, live authorization, offline/reconnect on intended devices, printing, accessibility and customer acceptance remain separate release gates.
