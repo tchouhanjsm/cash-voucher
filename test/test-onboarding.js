@@ -74,14 +74,15 @@ g.props.CV_STAGING_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
 const state = request('onboardingState');
 assert.equal(state.ok, true);
 assert.equal(state.data.stage, 'preflight');
-assert.ok(
-  state.data.summary &&
-    state.data.summary.total === 7 &&
-    state.data.summary.passed +
-      state.data.summary.blocked +
-      state.data.summary.failed +
-      state.data.summary.pending === 7,
-  'onboarding returns server-derived status counts for all current-stage requirements',
+assert.equal(state.data.summary.total, 7, 'onboarding returns all current-stage requirements');
+
+assert.equal(
+  state.data.summary.passed +
+    state.data.summary.blocked +
+    state.data.summary.failed +
+    state.data.summary.pending,
+  7,
+  'each current-stage requirement appears in exactly one status bucket',
 );
 const backupReadinessStep = state.data.steps.find(
   (step) => step.id === 'recentBackup',
