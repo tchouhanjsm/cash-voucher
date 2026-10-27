@@ -107,6 +107,26 @@ assert.match(
 );
 assert.match(
   dashboard,
+  /No dashboard issues need your attention right now\./,
+  'the clear dashboard state uses concise operator-facing copy',
+);
+assert.doesNotMatch(
+  dashboard,
+  /This does not verify backups, the full recovery queue, or release readiness/,
+  'developer-only release caveats do not leak into the normal dashboard',
+);
+assert.match(
+  components,
+  /\.dashboard-view \.dashboard-stats--owner\s*\{[^}]*grid-template-columns:\s*repeat\(3,\s*minmax\(0,\s*1fr\)\)/,
+  'six owner KPIs have a balanced three-column desktop grid',
+);
+assert.match(
+  components,
+  /\.dashboard-view \.dashboard-stats--staff\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,
+  'five staff KPIs retain a balanced single-row desktop grid',
+);
+assert.match(
+  dashboard,
   /dashboard-breakdowns/,
   'vendor and category analysis stay in shared dashboard layout',
 );
@@ -173,13 +193,63 @@ assert.match(
 );
 assert.match(
   components,
-  /@media \(max-width: 800px\)[\s\S]*?#nf\.entry-form \.erow \.rn\s*\{\s*grid-column:\s*1 \/ -1;\s*grid-row:\s*2;/,
+  /@media \(max-width: 800px\)[\s\S]*?#nf\.entry-form \.erow \.entry-note-field\s*\{\s*grid-column:\s*1 \/ -1;\s*grid-row:\s*2;/,
   'tablet payment row moves the optional note to a full-width second line',
 );
 assert.match(
   components,
-  /@media \(max-width: 440px\)[\s\S]*?#nf\.entry-form \.erow \.rn\s*\{\s*grid-column:\s*1 \/ -1;\s*grid-row:\s*3;/,
+  /@media \(max-width: 440px\)[\s\S]*?#nf\.entry-form \.erow \.entry-note-field\s*\{\s*grid-column:\s*1 \/ -1;\s*grid-row:\s*3;/,
   'phone payment row places the optional note below payee, amount and remove action',
+);
+assert.match(
+  payments,
+  /entry-payee-field'><span>[\s\S]*?entry-amount-field'><span>Amount \(₹\)<\/span>/,
+  'New Entry includes persistent visible payee and amount labels',
+);
+assert.match(
+  payments,
+  /entry-note-field'><span>Note<\/span>/,
+  'New Entry includes a visible note label instead of relying on its placeholder',
+);
+assert.match(
+  register,
+  /register-empty-state__title[\s\S]*?Create first entry/,
+  'Register has a deliberate first-use state and a primary creation action',
+);
+assert.match(
+  register,
+  /head\(\s*'Voucher Register'/,
+  'Register uses a title that includes both payments and receipts',
+);
+assert.match(
+  register,
+  /class="register-search-field" for="rq">Search vouchers<input id="rq"/,
+  'Register search has a persistent visible label instead of relying on placeholder text',
+);
+assert.match(
+  components,
+  /#rf \.register-search-field\s*\{\s*grid-column:\s*span 2;/,
+  'the labelled Register search keeps the intended desktop filter-grid span',
+);
+assert.match(
+  components,
+  /\.register-results-card\.is-empty \.table-wrap,\s*\.register-results-card\.is-empty\[data-empty-kind='first-use'\] #rtot,\s*\.register-results-card\.is-empty\[data-empty-kind='filtered'\] #rtot\s*\{\s*display:\s*none;/,
+  'Register hides empty table headers and hides totals only for genuinely empty states',
+);
+assert.match(
+  authHtml,
+  /id="themeToggleLabel"/,
+  'account theme control has a stable label separate from its icon',
+);
+assert.match(
+  authHtml,
+  /<use href="#i-key"><\/use>/,
+  'account menu uses local SVG assets instead of emoji icons',
+);
+assert.match(
+  theme,
+  /themeToggleIcon[\s\S]*?#i-sun/,
+  'theme switching updates the local SVG icon and visible label together',
 );
 assert.match(
   components,
@@ -444,10 +514,10 @@ assert.match(
   /\.app #view \.page-header h1:focus-visible\s*\{[\s\S]*?outline:\s*3px solid var\(--focus\)/,
   'keyboard focus on a page heading is visibly identified',
 );
-assert.match(
-  serviceWorker,
-  /const C = 'cv2-v32'/,
-  'PWA cache revision advances with empty-period dashboard guidance and existing update safeguards',
+const serviceWorkerRevision = Number(serviceWorker.match(/const C = 'cv2-v(\d+)'/)?.[1]);
+assert.ok(
+  Number.isInteger(serviceWorkerRevision) && serviceWorkerRevision >= 33,
+  'PWA cache revision advances beyond the pre-empty-period shell version',
 );
 assert.match(serviceWorker, /frontend\/core\/unsaved-work\.js/);
 assert.match(unsavedWork, /This voucher draft has unsaved changes/);

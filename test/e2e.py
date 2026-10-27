@@ -966,7 +966,7 @@ with sync_playwright() as p:
     )
     check(
         page.locator('#view .needs .needs-clear').count() == 1
-        and 'does not verify backups' in page.locator('#view .needs .needs-clear').inner_text(),
+        and 'Backup and recovery status are checked separately.' in page.locator('#view .needs .needs-clear').inner_text(),
         'dashboard empty-attention state does not imply complete operational health',
     )
     daily_close_card = page.locator('#view .daily-close-readiness')
@@ -3059,8 +3059,11 @@ with sync_playwright() as p:
         and page.locator('.ra').first.get_attribute('aria-label') == 'Amount in rupees, row 1'
         and page.locator('.rc').first.get_attribute('aria-label') == 'Category, row 1'
         and page.locator('.rci').first.get_attribute('aria-label') == 'Payment method, row 1'
-        and page.locator('.rn').first.get_attribute('aria-label') == 'Note, row 1',
-        'compact payment fields have explicit accessible names',
+        and page.locator('.rn').first.get_attribute('aria-label') == 'Note, row 1'
+        and page.locator('.rv').first.evaluate("(element) => element.closest('label')?.innerText.includes('Paid to')")
+        and page.locator('.ra').first.evaluate("(element) => element.closest('label')?.innerText.includes('Amount (₹)')")
+        and page.locator('.rn').first.evaluate("(element) => element.closest('label')?.innerText.includes('Note')"),
+        'payment fields have visible labels as well as explicit accessible names',
     )
     check(
         page.locator('.rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer']
@@ -3345,13 +3348,34 @@ with sync_playwright() as p:
     go_view(page, 'reg')
     page.wait_for_selector('#rbody tr')
     check(
-        page.locator('#rq').get_attribute('aria-label') == 'Search vouchers by number, vendor or note'
+        page.locator('#rq').get_attribute('aria-label') == 'Search vouchers by number, payee or note'
+        and page.locator('#view .page-header h1').inner_text() == 'Voucher Register'
+        and page.locator('.register-search-field').inner_text().startswith('Search vouchers')
         and page.locator('#rv').get_attribute('aria-label') == 'Filter by vendor'
         and page.locator('#rc').get_attribute('aria-label') == 'Filter by category'
         and page.locator('#rt').get_attribute('aria-label') == 'Filter by transaction type'
         and page.locator('#rs').get_attribute('aria-label') == 'Filter by status',
         'register search and filter controls have explicit accessible names',
     )
+    register_search_xss_payload = '\"><svg onload=window.__registerSearchXssFired=true></svg>'
+    page.evaluate('window.__registerSearchXssFired = false')
+    page.fill('#rq', register_search_xss_payload)
+    page.wait_for_function(
+        'payload => document.querySelector("#rq")?.value === payload',
+        arg=register_search_xss_payload,
+    )
+    go_view(page, 'dash')
+    go_view(page, 'reg')
+    page.wait_for_selector('#rq')
+    check(
+        page.locator('#rq').input_value() == register_search_xss_payload
+        and page.locator('#view svg[onload], #view img[onerror]').count() == 0
+        and not page.evaluate('window.__registerSearchXssFired === true'),
+        'Register search input safely round-trips hostile text when the view is rebuilt',
+    )
+
+    page.fill('#rq', '')
+    page.wait_for_function("document.querySelectorAll('#rbody tr').length === 2")
     check(page.locator('#rbody tr').count() == 2, 'staff register 2 rows')
     page.fill('#rq', 'No matching voucher 987654')
     page.wait_for_function(
@@ -3359,6 +3383,8 @@ with sync_playwright() as p:
     )
     check(
         page.locator('#rempty .empty-state-message').inner_text() == 'No vouchers match the current filters.'
+        and page.locator('#rempty .register-empty-state__title').inner_text() == 'No matching vouchers'
+        and page.locator('.register-results-card.is-empty .table-wrap').is_hidden()
         and page.locator('#rempty [data-act=rclear]').is_visible(),
         'register explains an empty filter result and offers a clear-filters action',
     )
@@ -3388,6 +3414,85 @@ with sync_playwright() as p:
         'empty-state clear-filters clears the search and restores the default active-only view: '
         + json.dumps(clear_filter_state),
     )
+
+    empty_register_interceptions = []
+
+    def inject_first_use_empty_register(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if (
+            request_data.get('action') != 'registerPage'
+            or request_data.get('q')
+            or request_data.get('from')
+            or request_data.get('to')
+            or request_data.get('offset', 0) not in (0, '', None)
+        ):
+            route.continue_()
+            return
+        empty_register_interceptions.append(True)
+        route.fulfill(
+            status=200,
+            content_type='application/json',
+            body=json.dumps({
+                'ok': True,
+                'data': {
+                    'items': [],
+                    'offset': 0,
+                    'limit': 100,
+                    'totalCount': 0,
+                    'hasMore': False,
+                    'totals': {
+                        'paid': 0,
+                        'received': 0,
+                        'approvalExceptionCount': 0,
+                        'invalidAmountCount': 0,
+                        'malformedRecordCount': 0,
+                        'malformedFieldCount': 0,
+                    },
+                    'facets': {'vendors': [], 'users': []},
+                },
+            }),
+        )
+
+    page.route('**/api?*', inject_first_use_empty_register)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and not json.loads(response.request.post_data or '{}').get('q')
+    ):
+        page.locator('#view [data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelector('#rempty .register-empty-state__title')?.textContent "
+        "=== 'Your voucher register starts here'"
+    )
+    check(
+        empty_register_interceptions
+        and page.locator('#rempty .register-empty-state__copy').inner_text()
+        == 'Record your first payment or receipt to begin building a clear, searchable cash record.'
+        and page.locator('#rempty [data-act=ntype][data-k=PAYMENT]').inner_text()
+        == 'Create first entry'
+        and page.locator('.register-results-card[data-empty-kind=first-use] .table-wrap').is_hidden()
+        and page.locator('.register-results-card[data-empty-kind=first-use] #rtot').is_hidden(),
+        'true first-use Register state removes empty table chrome and offers a first action',
+    )
+    page.unroute('**/api?*', inject_first_use_empty_register)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ):
+        page.locator('#view [data-act=refresh]').click()
+    page.wait_for_function(
+        "document.querySelectorAll('#rbody tr').length === 2"
+        " && document.querySelector('#rempty')?.classList.contains('hidden') === true"
+    )
+    check(
+        page.locator('#rbody tr').count() == 2
+        and page.locator('.register-results-card').get_attribute('data-empty-kind') != 'first-use',
+        'Register returns to its populated table after the first-use fixture is removed',
+    )
+
     page.fill('#rfrom', '2026-10-20')
     page.fill('#rto', '2026-10-10')
     check(
@@ -4993,7 +5098,7 @@ with sync_playwright() as p:
     register_table_region = page.locator('#view .table-wrap[role=region][tabindex="0"]')
     check(
         register_table_region.count() == 1
-        and register_table_region.get_attribute('aria-label') == 'Payment register vouchers',
+        and register_table_region.get_attribute('aria-label') == 'Voucher register entries',
         'Register table scrolling has a named, keyboard-focusable region',
     )
     page.locator('#rf [data-act=csv]').focus()

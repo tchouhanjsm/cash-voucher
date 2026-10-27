@@ -652,7 +652,7 @@ tr.cx .amt {
   .erow .top {
     grid-template-columns: minmax(0, 1fr) 108px 44px;
   }
-  .erow .top .rn {
+  .erow .top .entry-note-field {
     grid-column: 1 / -1;
     grid-row: 2;
   }
@@ -1663,7 +1663,9 @@ button {
   overflow-wrap: anywhere;
 }
 .user-pop button {
-  display: block;
+  display: flex;
+  align-items: center;
+  gap: 10px;
   width: 100%;
   padding: 10px;
   border: 0;
@@ -2764,4 +2766,9 @@ nav .ic {
   border-radius: 8px;
   font-size: 13px;
   line-height: 1.45;
+}
+
+.user-pop button .menu-icon {
+  width: 17px;
+  height: 17px;
 }

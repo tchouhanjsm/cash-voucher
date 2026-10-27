@@ -339,6 +339,29 @@ export function createRegister({ api, go }) {
     });
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
+    const resultsCard = $('.register-results-card');
+    if (resultsCard) {
+      resultsCard.classList.toggle('is-empty', shown.length === 0);
+      resultsCard.dataset.emptyKind = !dataAvailable
+        ? 'unavailable'
+        : rangeInvalid
+          ? 'invalid-range'
+          : pageLoading
+            ? 'loading'
+            : pageTotalCount > 0
+              ? 'page-empty'
+              : R.q ||
+                  R.vendor ||
+                  R.cat ||
+                  R.user ||
+                  R.t ||
+                  R.from ||
+                  R.to ||
+                  R.st !== 'ACTIVE' ||
+                  R.approval !== 'ALL'
+                ? 'filtered'
+                : 'first-use';
+    }
 
     $('#rbody').innerHTML = shown
       .map((voucher) => {
@@ -435,8 +458,6 @@ export function createRegister({ api, go }) {
       emptyState.classList.add('hidden');
     } else {
       emptyState.classList.remove('hidden');
-      const message = document.createElement('span');
-      message.className = 'empty-state-message';
       const hasActiveFilters = Boolean(
         R.q ||
         R.vendor ||
@@ -448,6 +469,25 @@ export function createRegister({ api, go }) {
         R.st !== 'ACTIVE' ||
         R.approval !== 'ALL',
       );
+      const firstUse =
+        dataAvailable && !pageLoading && !rangeInvalid && pageTotalCount === 0 && !hasActiveFilters;
+      const title = document.createElement('h2');
+      title.className = 'register-empty-state__title';
+      title.textContent = pageLoading
+        ? 'Loading your vouchers'
+        : rangeInvalid
+          ? 'Check the date range'
+          : !dataAvailable
+            ? 'Vouchers could not be loaded'
+            : pageTotalCount
+              ? 'No vouchers on this page'
+              : hasActiveFilters
+                ? 'No matching vouchers'
+                : 'Your voucher register starts here';
+      emptyState.appendChild(title);
+
+      const message = document.createElement('p');
+      message.className = 'empty-state-message register-empty-state__copy';
       message.textContent = pageLoading
         ? 'Loading vouchers from the server…'
         : rangeInvalid
@@ -455,11 +495,24 @@ export function createRegister({ api, go }) {
           : !dataAvailable
             ? unavailableMessage
             : pageTotalCount
-              ? 'No vouchers are available on this page. Load more or clear filters.'
+              ? 'No vouchers are available on this page. Load more or adjust filters.'
               : hasActiveFilters
                 ? 'No vouchers match the current filters.'
-                : 'No vouchers are available to show. Use New Entry to record the first payment or receipt.';
+                : 'Record your first payment or receipt to begin building a clear, searchable cash record.';
       emptyState.appendChild(message);
+
+      if (firstUse && can('create')) {
+        const actions = document.createElement('div');
+        actions.className = 'register-empty-state__actions';
+        const createButton = document.createElement('button');
+        createButton.type = 'button';
+        createButton.className = 'btn primary';
+        createButton.dataset.act = 'ntype';
+        createButton.dataset.k = 'PAYMENT';
+        createButton.textContent = 'Create first entry';
+        actions.appendChild(createButton);
+        emptyState.appendChild(actions);
+      }
 
       if (
         (dataAvailable && hasActiveFilters) ||
@@ -505,15 +558,15 @@ export function createRegister({ api, go }) {
 
     $('#view').innerHTML =
       head(
-        'Payment Register',
+        'Voucher Register',
         `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
         {
           section: 'Work',
-          description: 'Find and review recorded vouchers using the filters below.',
+          description: 'Search payments and receipts, review status, and open voucher details.',
         },
       ) +
       `<div class="card filters" id="rf">
-    <input id="rq" aria-label="Search vouchers by number, vendor or note" placeholder="Search no / vendor / note" value="${esc(R.q)}">
+    <label class="register-search-field" for="rq">Search vouchers<input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}"></label>
     <select id="rv" aria-label="Filter by vendor"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select>
     <select id="rc" aria-label="Filter by category"><option value="">All categories</option>${categories()
       .map(
@@ -547,7 +600,7 @@ export function createRegister({ api, go }) {
       )
       .join('')}</select>
     <button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div>
-    <div class="card register-results-card"><div id="rtot" class="register-totals"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Payment register vouchers" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
+    <div class="card register-results-card"><div id="rtot" class="register-totals"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Voucher register entries" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
 
     return renderRows();
   }
