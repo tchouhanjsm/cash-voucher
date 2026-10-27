@@ -3354,8 +3354,15 @@ with sync_playwright() as p:
         and page.locator('#rv').get_attribute('aria-label') == 'Filter by vendor'
         and page.locator('#rc').get_attribute('aria-label') == 'Filter by category'
         and page.locator('#rt').get_attribute('aria-label') == 'Filter by transaction type'
-        and page.locator('#rs').get_attribute('aria-label') == 'Filter by status',
-        'register search and filter controls have explicit accessible names',
+        and page.locator('#rs').get_attribute('aria-label') == 'Filter by status'
+        and page.locator('#rf label[for=rv]').inner_text().startswith('Vendor')
+        and page.locator('#rf label[for=rc]').inner_text().startswith('Category')
+        and page.locator('#rf label[for=rfrom]').inner_text().startswith('From')
+        and page.locator('#rf label[for=rto]').inner_text().startswith('To')
+        and page.locator('#rf label[for=rt]').inner_text().startswith('Transaction type')
+        and page.locator('#rf label[for=rs]').inner_text().startswith('Status')
+        and page.locator('#rf label[for=rapproval]').inner_text().startswith('Approval'),
+        'register search and every filter have persistent visible and accessible labels',
     )
     register_search_xss_payload = '\"><svg onload=window.__registerSearchXssFired=true></svg>'
     page.evaluate('window.__registerSearchXssFired = false')
@@ -3476,6 +3483,58 @@ with sync_playwright() as p:
         and page.locator('.register-results-card[data-empty-kind=first-use] .table-wrap').is_hidden()
         and page.locator('.register-results-card[data-empty-kind=first-use] #rtot').is_hidden(),
         'true first-use Register state removes empty table chrome and offers a first action',
+    )
+
+    original_create_permission = page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          const allowed = Boolean(S.me?.perms?.create);
+          if (S.me?.perms) S.me.perms.create = false;
+          return allowed;
+        }"""
+    )
+    try:
+        go_view(page, 'dash')
+        with page.expect_response(
+            lambda response: '/api?' in response.url
+            and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+            and not json.loads(response.request.post_data or '{}').get('q')
+        ):
+            go_view(page, 'reg')
+        page.wait_for_function(
+            "document.querySelector('#rempty .register-empty-state__title')?.textContent "
+            "=== 'Your voucher register starts here'"
+        )
+        check(
+            original_create_permission
+            and page.locator('#rempty [data-act=ntype][data-k=PAYMENT]').count() == 0
+            and page.locator('#view .page-header [data-act=ntype]').count() == 0,
+            'first-use creation actions are hidden when the account lacks create permission',
+        )
+    finally:
+        page.evaluate(
+            """async (allowed) => {
+              const { S } = await import('/frontend/core/state.js');
+              if (S.me?.perms) S.me.perms.create = allowed;
+            }""",
+            original_create_permission,
+        )
+
+    go_view(page, 'dash')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and not json.loads(response.request.post_data or '{}').get('q')
+    ):
+        go_view(page, 'reg')
+    page.wait_for_function(
+        "document.querySelector('#rempty .register-empty-state__title')?.textContent "
+        "=== 'Your voucher register starts here' && "
+        "document.querySelector('#rempty [data-act=ntype][data-k=PAYMENT]') !== null"
+    )
+    check(
+        page.locator('#rempty [data-act=ntype][data-k=PAYMENT]').inner_text() == 'Create first entry',
+        'permitted first-use Register restores its primary action after permission recovery',
     )
     page.unroute('**/api?*', inject_first_use_empty_register)
     with page.expect_response(

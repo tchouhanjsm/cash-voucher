@@ -1,13 +1,25 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 12:02 IST (PR #234 checkpoint and base-document reconciliation)
+**Updated:** 27 October 2026 13:50 IST (PR #235 Register responsive filter UX batch)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `693f06fd160c3e161a82dd35c939339a2880c733` (PR #233 merged; exact integration-head CI, Browser E2E, Full Flight Test and monitor passed).
-**Active PR:** #234, `client/ux-first-impression-batch-20261027`, targeting `client-main`. The last feature head before conflict resolution was `6abb745f02189fabd47593f7c1613b00708f5065`. This merge-resolution commit incorporates `client-main` at `693f06fd160c3e161a82dd35c939339a2880c733` as its second parent while preserving the UX changes. Prior workflow results apply only to previous heads.
+**Current integration baseline:** `21546c0bc48878d71aaae24933752d3599fcb105` (PR #234 merged; CI / Quality, Browser E2E and Full Flight prerequisite gate passed on the same merged commit).
+**Active PR:** #235, `client/register-responsive-filter-ux-20261027`, targeting `client-main`. It adds visible labels and mobile alignment for Register filters, an E2E permission-visibility regression, the corresponding DOM sink fingerprint update, and shell cache revision `cv2-v34`. Re-fetch the live PR head and require fresh exact-head checks after every push.
 **Release boundary:** source-only. No Clasp push, Apps Script deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production change.
 
-## Current live checkpoint — 27 October 2026 12:02 IST
+## Current live checkpoint — 27 October 2026 13:50 IST
+
+- **Authoritative integration:** `client-main` at `21546c0bc48878d71aaae24933752d3599fcb105`; legacy `main` remains read-only at `b4fa94405c0e6a7393c36f43e168f8b54c99c408` and must not be modified.
+- **PR queue:** PR #234 is merged. PR #235 is the current UX follow-up and targets `client-main`. No merge, approval, auto-merge request or deployment is authorised by this batch.
+- **PR #235 scope:** Register filters now have visible labels for Vendor, Category, From, To, User (when permitted), Transaction type, Status and Approval. The responsive grid keeps date labels with their own controls. Browser coverage exercises real first-use-empty response, table-chrome suppression, first-entry visibility based on `can('create')`, permission restoration and populated Register recovery.
+- **Validation boundary:** the first branch-push checks were collected before the live handoff checkpoint was synchronized; those results are historical for that earlier head. Required PR-event CI / Quality, Browser E2E and Full Flight Test must all pass on the identical latest PR head. The Full Flight push-event job is skipped by policy on feature branches and is not a release pass.
+- **Security/recovery:** the reviewed source-to-sink fingerprint for `frontend/features/register.js` was recomputed and updated narrowly. The recovery-evidence validator/tests and staging/recovery safeguards remain on `client-main`; this UI batch changes no accounting, authorization policy, API, schema, offline queue or recovery contract.
+- **PWA:** `sw.js` advances the shell cache to `cv2-v34` because the Register module and shared visual shell changed.
+- **Governance:** active ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) still targets only `~DEFAULT_BRANCH` (`main`). The live `client-main` branch API reports `protected=false`; owner/admin must add and verify integration-branch governance, required CI/E2E/Full Flight checks and human review.
+- **Staging/release:** the latest recorded staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolated-deployment preflight because required production resource references were absent and Clasp credentials were missing/rejected. Do not retry unchanged configuration. Live staging identity, guarded UAT, backup/restore, host headers, live role/receipt authorization, offline/reconnect, print/PDF, assistive-technology checks and customer acceptance remain unverified.
+- **Next action:** fetch the current PR #235 SHA and workflow run states after this documentation sync. If any gate fails, inspect its actual failure and fix it in this PR; do not treat skipped, cancelled, stale-SHA or superseded results as success. Keep the PR open for human review; do not merge or deploy.
+
+## Historical checkpoint — 27 October 2026 12:02 IST (superseded by PR #234)
 
 - **Authoritative integration:** `client-main` at `693f06fd160c3e161a82dd35c939339a2880c733`; legacy `main` remains at `b4fa94405c0e6a7393c36f43e168f8b54c99c408` and must not be modified.
 - **PR queue and conflict repair:** PRs #220–#230 and #232–#233 are merged; PR #231 is closed without merge. PR #234 remains the sole open PR. Its branch was previously marked dirty after PR #233 advanced `client-main`. This merge-resolution commit now includes `client-main` at `693f06fd160c3e161a82dd35c939339a2880c733` as a parent and preserves the current recovery validator, its tests, package test command, and updated release runbooks alongside the UX changes. Re-fetch PR mergeability and run all required checks on the resulting exact SHA; previous workflow links are historical only.

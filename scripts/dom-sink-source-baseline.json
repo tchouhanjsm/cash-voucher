@@ -4,7 +4,7 @@
   "frontend/features/cash-close.js": ["8b83b045", "269d5b33", "4054cdbb", "136bf987"],
   "frontend/features/dashboard.js": ["eaf1e51b"],
   "frontend/features/payments.js": ["ec0c627d", "86fe0972"],
-  "frontend/features/register.js": ["447eef80", "63770635"],
+  "frontend/features/register.js": ["447eef80", "1863bb88"],
   "frontend/features/reports.js": ["e3958601"],
   "frontend/features/printing.js": ["192002f4"]
 }
