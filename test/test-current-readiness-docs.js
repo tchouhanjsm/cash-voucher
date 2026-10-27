@@ -37,18 +37,12 @@ assert.match(handoff, /Historical checkpoint — PR #229 integration audit/);
 assert.match(dashboard, /function dashboardSummaryIssue/);
 assert.match(browserE2e, /def inject_invalid_dashboard_summary/);
 assert.match(browserE2e, /Dashboard totals unavailable/);
-assert.match(
-  browserE2e,
-  /owner dashboard KPI grid matches the role and breakpoint contract/,
-);
+assert.match(browserE2e, /owner dashboard KPI grid matches the role and breakpoint contract/);
 assert.match(
   browserE2e,
   /staff dashboard KPI grid matches the five-card role and breakpoint contract/,
 );
-assert.match(
-  browserE2e,
-  /dashboard KPI values fit inside their cards without horizontal clipping/,
-);
+assert.match(browserE2e, /dashboard KPI values fit inside their cards without horizontal clipping/);
 assert.match(handoff, /dashboard KPI responsive UX batch/i);
 assert.match(handoff, /cv2-v35/);
 assert.match(deliveryPhase, /PR #225.*merged/i);
