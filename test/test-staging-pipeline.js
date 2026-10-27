@@ -56,7 +56,11 @@ const readinessWithoutWriteConfirmation = validateStagingConfiguration(
   { ...fixture, CV_STAGING_DEPLOY_CONFIRMATION: '' },
   { mode: 'readiness' },
 );
-assert.equal(readinessWithoutWriteConfirmation.ok, true, readinessWithoutWriteConfirmation.errors.join('; '));
+assert.equal(
+  readinessWithoutWriteConfirmation.ok,
+  true,
+  readinessWithoutWriteConfirmation.errors.join('; '),
+);
 assert.equal(readinessWithoutWriteConfirmation.checks.claspCredentialShapeValid, true);
 assert.equal(readinessWithoutWriteConfirmation.checks.productionResourceReferencesPresent, true);
 assert.equal(readinessWithoutWriteConfirmation.checks.targetIdsAreSeparated, true);
@@ -73,7 +77,11 @@ const readinessWithoutProductionInventory = validateStagingConfiguration(
 );
 assert.equal(readinessWithoutProductionInventory.ok, false);
 assert.equal(readinessWithoutProductionInventory.checks.productionResourceReferencesPresent, false);
-assert.ok(readinessWithoutProductionInventory.errors.some((message) => /all four production resource reference IDs/.test(message)));
+assert.ok(
+  readinessWithoutProductionInventory.errors.some((message) =>
+    /all four production resource reference IDs/.test(message),
+  ),
+);
 
 const readinessWithBadClasp = validateStagingConfiguration(
   { ...fixture, CLASPRC_JSON: JSON.stringify({ tokens: { default: { client_id: 'id-only' } } }) },
@@ -89,7 +97,6 @@ const readinessMissingConfirmation = validateStagingConfiguration(
 );
 assert.equal(readinessMissingConfirmation.ok, false);
 assert.ok(readinessMissingConfirmation.errors.some((message) => /STAGING-ONLY/.test(message)));
-
 
 const artifactTarget = {
   ...fixture,

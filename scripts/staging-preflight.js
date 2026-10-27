@@ -291,15 +291,33 @@ function buildStagingPreflightEvidence(result, env = process.env) {
   const repo = String(env.GITHUB_REPOSITORY || '');
   const safeRepo = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repo) ? repo : 'unknown';
   const runId = /^\d+$/.test(String(env.GITHUB_RUN_ID || '')) ? String(env.GITHUB_RUN_ID) : '';
-  const sha = /^[a-f0-9]{40}$/i.test(String(env.GITHUB_SHA || '')) ? String(env.GITHUB_SHA).toLowerCase() : null;
+  const sha = /^[a-f0-9]{40}$/i.test(String(env.GITHUB_SHA || ''))
+    ? String(env.GITHUB_SHA).toLowerCase()
+    : null;
   const checks = result.checks || {};
-  const status = (value) => value === null || value === undefined ? 'not-required' : value ? 'pass' : 'blocked';
+  const status = (value) => {
+    if (value === null || value === undefined) return 'not-required';
+    return value ? 'pass' : 'blocked';
+  };
   return {
     schemaVersion: 1,
     evidenceType: 'cash-voucher-staging-configuration-preflight',
     generatedAt: new Date().toISOString(),
-    source: { repository: safeRepo, ref: String(env.GITHUB_REF || '') === 'refs/heads/client-main' ? 'refs/heads/client-main' : 'unverified-ref', commitSha: sha },
-    workflowRun: { runId, url: runId && safeRepo !== 'unknown' ? 'https://github.com/' + safeRepo + '/actions/runs/' + runId : '' },
+    source: {
+      repository: safeRepo,
+      ref:
+        String(env.GITHUB_REF || '') === 'refs/heads/client-main'
+          ? 'refs/heads/client-main'
+          : 'unverified-ref',
+      commitSha: sha,
+    },
+    workflowRun: {
+      runId,
+      url:
+        runId && safeRepo !== 'unknown'
+          ? 'https://github.com/' + safeRepo + '/actions/runs/' + runId
+          : '',
+    },
     outcome: result.ok ? 'configuration-pass' : 'blocked',
     categories: {
       stagingResourceSeparation: status(checks.targetIdsAreSeparated),
@@ -378,7 +396,9 @@ function main() {
       'Artifact target URL and resource-isolation preflight passed; no UAT accounts or remote writes were tested.',
     );
   } else if (mode === 'readiness') {
-    console.log('Configuration-only readiness passed. No Google API calls, deployments, UAT writes or restore verification were performed.');
+    console.log(
+      'Configuration-only readiness passed. No Google API calls, deployments, UAT writes or restore verification were performed.',
+    );
     console.log('Sanitized category evidence was written when an output path was supplied.');
   } else {
     console.log('Staging URL shape and dedicated owner/manager UAT credentials are valid.');

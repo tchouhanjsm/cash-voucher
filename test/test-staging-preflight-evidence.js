@@ -57,7 +57,10 @@ const evidence = buildStagingPreflightEvidence(result, fixture);
 assert.equal(evidence.outcome, 'configuration-pass');
 assert.equal(evidence.source.ref, 'refs/heads/client-main');
 assert.equal(evidence.source.commitSha, 'a'.repeat(40));
-assert.equal(evidence.workflowRun.url, 'https://github.com/tchouhanjsm/cash-voucher/actions/runs/40514299999');
+assert.equal(
+  evidence.workflowRun.url,
+  'https://github.com/tchouhanjsm/cash-voucher/actions/runs/40514299999',
+);
 assert.deepEqual(evidence.categories, {
   stagingResourceSeparation: 'pass',
   productionResourceInventory: 'pass',
@@ -86,7 +89,11 @@ for (const privateValue of [
   fixture.CV_PRODUCTION_RECEIPT_FOLDER_ID,
   fixture.CV_PRODUCTION_BACKUP_FOLDER_ID,
 ]) {
-  assert.equal(serialized.includes(privateValue), false, 'Evidence must not include private configuration values.');
+  assert.equal(
+    serialized.includes(privateValue),
+    false,
+    'Evidence must not include private configuration values.',
+  );
 }
 
 const blocked = validateStagingConfiguration(
@@ -119,4 +126,6 @@ try {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
 
-console.log('Staging preflight evidence OK — private values redacted, blocker states explicit, and file permissions restricted.');
+console.log(
+  'Staging preflight evidence OK — private values redacted, blocker states explicit, and file permissions restricted.',
+);
