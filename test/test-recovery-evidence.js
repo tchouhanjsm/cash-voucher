@@ -160,6 +160,18 @@ const missingApproval = buildEvidence();
 missingApproval.ownerApproval.approved = false;
 assert.ok(hasError(missingApproval, 'OWNER_APPROVAL'));
 
+const lateApproval = buildEvidence();
+lateApproval.ownerApproval.approvedAt = '2026-10-27T05:30:20.000Z';
+assert.ok(hasError(lateApproval, 'OWNER_APPROVAL_AFTER_RESTORE'));
+
+const deployedShaMismatch = buildEvidence();
+deployedShaMismatch.restore.deployedClientMainSha = 'b'.repeat(40);
+assert.ok(hasError(deployedShaMismatch, 'DEPLOYED_SHA_MISMATCH'));
+
+const snapshotAfterRestoreStart = buildEvidence();
+snapshotAfterRestoreStart.source.snapshotCreatedAt = '2026-10-27T05:30:11.000Z';
+assert.ok(hasError(snapshotAfterRestoreStart, 'SNAPSHOT_AFTER_RESTORE_START'));
+
 const badTimestamp = buildEvidence();
 badTimestamp.restore.completedAt = '2026-02-30T05:30:30.000Z';
 assert.ok(hasError(badTimestamp, 'RESTORE_TIMESTAMPS'));

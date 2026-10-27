@@ -269,6 +269,21 @@ function validateRecoveryEvidence(evidence) {
       !SHA1.test(restore.deployedClientMainSha)
     ) {
       add('DEPLOYED_SHA', 'restore.deployedClientMainSha must be a full 40-character commit SHA.');
+    } else if (
+      isRecord(source) &&
+      typeof source.clientMainSha === 'string' &&
+      SHA1.test(source.clientMainSha) &&
+      restore.deployedClientMainSha.toLowerCase() !== source.clientMainSha.toLowerCase()
+    ) {
+      add('DEPLOYED_SHA_MISMATCH', 'The recorded restore source SHA must match the selected integration SHA.');
+    }
+    if (
+      isRecord(source) &&
+      validTimestamp(source.snapshotCreatedAt) &&
+      validTimestamp(restore.startedAt) &&
+      Date.parse(source.snapshotCreatedAt) > Date.parse(restore.startedAt)
+    ) {
+      add('SNAPSHOT_AFTER_RESTORE_START', 'The selected snapshot must predate the restore operation.');
     }
     if (
       typeof restore.deployedVersion !== 'string' ||
@@ -302,11 +317,20 @@ function validateRecoveryEvidence(evidence) {
       'OWNER_APPROVAL',
       'A recorded owner approval, UTC timestamp and non-sensitive change reference are required.',
     );
-  } else if (
-    validTimestamp(evidence.recordedAt) &&
-    Date.parse(approval.approvedAt) > Date.parse(evidence.recordedAt)
-  ) {
-    add('OWNER_APPROVAL_ORDER', 'Owner approval cannot be newer than the recorded evidence.');
+  } else {
+    if (
+      validTimestamp(evidence.recordedAt) &&
+      Date.parse(approval.approvedAt) > Date.parse(evidence.recordedAt)
+    ) {
+      add('OWNER_APPROVAL_ORDER', 'Owner approval cannot be newer than the recorded evidence.');
+    }
+    if (
+      isRecord(restore) &&
+      validTimestamp(restore.startedAt) &&
+      Date.parse(approval.approvedAt) > Date.parse(restore.startedAt)
+    ) {
+      add('OWNER_APPROVAL_AFTER_RESTORE', 'Owner approval must precede the restore operation.');
+    }
   }
 
   const checks = evidence.checks;
