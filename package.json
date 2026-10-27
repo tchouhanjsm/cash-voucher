@@ -7,7 +7,7 @@
     "node": ">=22 <23"
   },
   "scripts": {
-    "test": "node test/test-current-readiness-docs.js && node test/test-autonomous-dev-monitor.js && node test/test-register-edit-contract.js && node test/test-setup-preflight.js && node test/test-schema-migrations.js && node test/test-backend.js && node test/test-read-models.js && node test/test-input-validation.js && node test/test-backup-failure.js && node test/test-backup-observability.js && node test/test-backup-integrity.js && node test/test-csv-export.js && node test/test-state-categories.js && node test/test-recovery-validation.js && node test/test-offline-auth.js && node test/test-dependency-audit.js && node test/test-pr-quality.js && node test/test-flight-workflow.js && node test/test-api-route-registry.js && node test/test-design-system.js && node test/test-service-worker-policy.js && node test/test-pwa-update-flow.js && node test/test-unsaved-work.js && node test/test-performance-baseline.js && node test/test-secret-scan.js && node test/test-authorization-matrix.js && node test/test-dom-sink-source.js && node test/test-deployment-readiness.js && node test/test-onboarding.js && node test/test-manual-backup.js && node test/test-support-report.js && node test/test-staging-pipeline.js && node test/test-staging-evidence.js && node test/test-staging-web-server.js && node test/test-staging-workflow.js && node test/test-branch-policy.js && node test/test-web-build.js && node test/test-template-build.js && node test/test-onboarding-frontend.js",
+    "test": "node test/test-current-readiness-docs.js && node test/test-autonomous-dev-monitor.js && node test/test-register-edit-contract.js && node test/test-setup-preflight.js && node test/test-schema-migrations.js && node test/test-backend.js && node test/test-read-models.js && node test/test-input-validation.js && node test/test-backup-failure.js && node test/test-backup-observability.js && node test/test-backup-integrity.js && node test/test-csv-export.js && node test/test-state-categories.js && node test/test-recovery-validation.js && node test/test-recovery-evidence.js && node test/test-offline-auth.js && node test/test-dependency-audit.js && node test/test-pr-quality.js && node test/test-flight-workflow.js && node test/test-api-route-registry.js && node test/test-design-system.js && node test/test-service-worker-policy.js && node test/test-pwa-update-flow.js && node test/test-unsaved-work.js && node test/test-performance-baseline.js && node test/test-secret-scan.js && node test/test-authorization-matrix.js && node test/test-dom-sink-source.js && node test/test-deployment-readiness.js && node test/test-onboarding.js && node test/test-manual-backup.js && node test/test-support-report.js && node test/test-staging-pipeline.js && node test/test-staging-evidence.js && node test/test-staging-web-server.js && node test/test-staging-workflow.js && node test/test-branch-policy.js && node test/test-web-build.js && node test/test-template-build.js && node test/test-onboarding-frontend.js",
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
@@ -40,7 +40,8 @@
     "staging:deploy": "node scripts/deploy-staging.js",
     "uat:staging": "bash scripts/run-staging-uat.sh",
     "build:web": "node scripts/build-web.js",
-    "build:template": "node scripts/build-template.js"
+    "build:template": "node scripts/build-template.js",
+    "validate:recovery-evidence": "node scripts/validate-recovery-evidence.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
