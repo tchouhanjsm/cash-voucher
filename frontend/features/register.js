@@ -562,7 +562,7 @@ export function createRegister({ api, go }) {
         `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
         {
           section: 'Work',
-          description: 'Search payments and receipts, review their status, and open voucher details.',
+          description: 'Search payments and receipts, review status, and open voucher details.',
         },
       ) +
       `<div class="card filters" id="rf">
