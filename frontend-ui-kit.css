@@ -3336,7 +3336,6 @@ here and in the production app. It requires no JS or remote assets. */
   }
 }
 
-
 /* Compact dashboard KPIs on phones: keep labels legible and amounts on one line. */
 @media screen and (max-width: 440px) {
   .dashboard-view .stat {
