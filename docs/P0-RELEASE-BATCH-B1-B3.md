@@ -2,10 +2,24 @@
 
 **Integration target:** `client-main`  
 **Original design baseline for B1–B3:** PR #204 merge `aa37d94819e59a72c797ba36839aa8f8ec94008f`  
-**Current integration baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (PR #227 merged).
+**Current integration baseline:** `2b7fec463575f235373f01d2d97eddbb6ecea6fa` (PR #229 merged; exact-head source gates currently fail).
 **Purpose:** complete release readiness across staging identity, schema/recovery safety, authorization, offline/sync and device/customer acceptance. This is a checklist, not proof that an external operation ran.
 
-## Current gate checkpoint — 26 October 2026, 23:59 IST
+## Current live checkpoint — 27 October 2026 08:56 IST
+
+- **Integration baseline:** `client-main` `2b7fec463575f235373f01d2d97eddbb6ecea6fa`. PRs #220–#229 are merged; the live open-PR query returned zero before this source batch was selected. The legacy `main` branch remains read-only.
+- **PR #229 merge:** `fix: make business-date windows timezone independent` merged at 03:18:35Z into the current integration SHA. No review was submitted. Its current integration-head source checks are red; merge history is not release approval.
+- **Exact-head CI / Quality:** [run #40443448972](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443448972) failed at `test/test-service-worker-policy.js:139`: the test hard-codes `cv2-v31` while `sw.js` declares `cv2-v32`. The quality run reached the regression suite; this is a stale cache-version fixture, not a backend assertion failure.
+- **Exact-head Browser E2E:** [run #40443449053](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443449053) reported 991 checks passed and 1 failed. The failing check, “invalid date range marks both fields and programmatically links them to one alert,” expected `Choose a valid date range` while the current UI renders `Choose real calendar dates with From on or before To.`
+- **Exact-head Full Flight Test:** [run #40443449098](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443449098) failed because both exact-SHA CI and Browser E2E prerequisites failed. The separate manual job was skipped by the push-event condition.
+- **Autonomous Development Monitor:** [run #40443449014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443449014) completed successfully and persisted a finalized checkpoint to [Issue #212](https://github.com/tchouhanjsm/cash-voucher/issues/212); artifact [12707118240](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40443449014/artifacts/12707118240) is the monitor report. The checkpoint correctly records all three source gates as failed.
+- **Selected source batch:** `client/restore-green-source-gates-20261027`. It makes the PWA cache-policy test derive current/previous shell-cache names from `sw.js`, explicitly checks that offline queue/auth/recovery modules are precached, and aligns the Reports date-range E2E assertion with the actual validation copy. It also updates the readiness-document contract and release checkpoint wording. This is source/test validation only; the date-copy correction changes no application behavior.
+- **Governance:** ruleset [#24624368](https://github.com/tchouhanjsm/cash-voucher/rules/24624368) targets `main` only, requires `quality` only and zero approvals. The live `client-main` branch API reports `protected=false`; classic branch-protection details remain unavailable to this integration. Owner/admin must configure and verify the intended protection and approval policy.
+- **Staging and release:** staging UAT [#39596101014](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39596101014) failed isolation preflight due to missing production resource references and missing/rejected Clasp credentials; deployment and live UAT were skipped. ZIP [#39988800756](https://github.com/tchouhanjsm/cash-voucher/actions/runs/39988800756) was built from stale SHA `aa37d94819e59a72c797ba36839aa8f8ec94008f` and is expired. The live releases endpoint is empty.
+- **Still unverified:** live staging identity/version, actual host security headers, live role/receipt authorization, real backup/restore to a separate destination, offline/reconnect on intended devices, print/PDF, accessibility and customer acceptance. No deployment, migration, Google Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation is authorized by this batch.
+
+
+## Historical gate checkpoint — 26 October 2026, 23:59 IST (superseded)
 
 The source isolation boundary from PR #224, backup-manifest integrity from PR #226 and Asia/Kolkata business-date handling from PR #227 are merged. The current integration source gate is not green: CI [#40373320173](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320173) failed formatting on `test/test-staging-workflow.js`; Full Flight [#40373320448](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40373320448) hit a GitHub API HTTP 502 and failed. The single source batch repairs the formatting regression and adds a bounded transient-only retry with regression coverage.
 

@@ -5821,7 +5821,7 @@ with sync_playwright() as p:
         and date_range_a11y['fromDescription'] == 'report-date-range-error'
         and date_range_a11y['toDescription'] == 'report-date-range-error'
         and date_range_a11y['errorRole'] == 'alert'
-        and 'Choose a valid date range' in date_range_a11y['errorText']
+        and 'Choose real calendar dates' in date_range_a11y['errorText']
         and date_range_a11y['busy'] == 'false',
         'invalid date range marks both fields and programmatically links them to one alert',
     )
