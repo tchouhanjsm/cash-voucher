@@ -1222,10 +1222,11 @@ with sync_playwright() as p:
     )
     page.evaluate('window.print = () => {}')
     page.locator('[data-act=closePrint]').click()
-    page.wait_for_selector('#printArea .pv')
+    page.wait_for_selector('#printArea .pv', state='attached')
+    print_text = page.locator('#printArea').text_content() or ''
     check(
-        'Unrecognized method' in page.locator('#printArea').inner_text()
-        and cash_close_method_payload not in page.locator('#printArea').inner_text()
+        'Unrecognized method' in print_text
+        and cash_close_method_payload not in print_text
         and page.locator('#printArea img, #printArea svg').count() == 0
         and not page.evaluate('window.xss === true'),
         'cash-close print sink normalizes hostile method values before rendering',
