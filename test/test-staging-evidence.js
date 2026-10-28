@@ -150,10 +150,7 @@ try {
   const transcriptPath = path.join(transcriptDir, 'uat.log');
   fs.writeFileSync(transcriptPath, successfulLog, { mode: 0o600 });
   fs.chmodSync(transcriptPath, 0o600);
-  assert.equal(
-    readTranscript({ CV_STAGING_UAT_LOG_FILE: transcriptPath }),
-    successfulLog,
-  );
+  assert.equal(readTranscript({ CV_STAGING_UAT_LOG_FILE: transcriptPath }), successfulLog);
   assert.equal(readTranscript({}), '');
 
   const alternateParent = path.join(tempDir, 'other-run');
