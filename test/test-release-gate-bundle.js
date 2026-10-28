@@ -8,6 +8,7 @@ const path = require('node:path');
 const {
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
+  SOURCE_CHECK_WORKFLOW_NAMES,
   validateReleaseGateBundle,
 } = require('../scripts/validate-release-gate-bundle');
 const { buildRecoveryEvidence } = require('./fixtures/recovery-evidence');
@@ -52,10 +53,16 @@ function buildPreflight() {
 function buildBundle() {
   const sourceChecks = {};
   REQUIRED_SOURCE_CHECKS.forEach((name, index) => {
+    const runId = String(50101 + index);
     sourceChecks[name] = {
       conclusion: 'success',
       headSha: commitSha,
-      runId: String(50101 + index),
+      runId,
+      repository,
+      workflowName: SOURCE_CHECK_WORKFLOW_NAMES[name],
+      event: 'push',
+      ref,
+      runUrl: 'https://github.com/' + repository + '/actions/runs/' + runId,
     };
   });
 
@@ -125,6 +132,26 @@ assert.ok(hasCode(duplicateSourceRun, 'SOURCE_CHECK_RUN_ID_DUPLICATE'));
 const failedSourceCheck = buildBundle();
 failedSourceCheck.sourceChecks.ciQuality.conclusion = 'failure';
 assert.ok(hasCode(failedSourceCheck, 'SOURCE_CHECK_FAILED'));
+
+const wrongSourceRepository = buildBundle();
+wrongSourceRepository.sourceChecks.ciQuality.repository = 'another/repository';
+assert.ok(hasCode(wrongSourceRepository, 'SOURCE_CHECK_REPOSITORY'));
+
+const wrongWorkflowName = buildBundle();
+wrongWorkflowName.sourceChecks.browserE2e.workflowName = 'CI';
+assert.ok(hasCode(wrongWorkflowName, 'SOURCE_CHECK_WORKFLOW'));
+
+const pullRequestRun = buildBundle();
+pullRequestRun.sourceChecks.ciQuality.event = 'pull_request';
+assert.ok(hasCode(pullRequestRun, 'SOURCE_CHECK_EVENT'));
+
+const wrongSourceBranch = buildBundle();
+wrongSourceBranch.sourceChecks.fullFlight.ref = 'refs/heads/main';
+assert.ok(hasCode(wrongSourceBranch, 'SOURCE_CHECK_REF'));
+
+const wrongSourceRunUrl = buildBundle();
+wrongSourceRunUrl.sourceChecks.autonomousMonitor.runUrl = 'https://example.test/forged-run';
+assert.ok(hasCode(wrongSourceRunUrl, 'SOURCE_CHECK_RUN_URL'));
 
 const staleBundle = buildBundle();
 staleBundle.generatedAt = '2026-10-27T00:00:00.000Z';
