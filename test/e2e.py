@@ -1571,7 +1571,8 @@ with sync_playwright() as p:
         history_requests[-1] == 'CREATED'
         and 'VOUCHER_CREATED' in page.locator('#modal').inner_text()
         and 'Loaded 1 structured event(s) matching created' in history_status
-        and 'Searched AuditLog rows ' in history_status,
+        and 'Searched AuditLog rows ' in history_status
+        and 'Coverage diagnostics:' in history_status,
         'Register filters lifecycle events and discloses the exact AuditLog coverage range',
     )
     page.click('#modal [data-x]')

@@ -204,6 +204,7 @@ function voucherAuditHistory_(user, req) {
       rows: [],
       nextBeforeRow: null,
       scannedRows: 0,
+      scanDiagnostics: { recognizedRows: 0, unstructuredRows: 0, unsupportedRows: 0 },
       scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
@@ -228,6 +229,7 @@ function voucherAuditHistory_(user, req) {
       rows: [],
       nextBeforeRow: null,
       scannedRows: 0,
+      scanDiagnostics: { recognizedRows: 0, unstructuredRows: 0, unsupportedRows: 0 },
       scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
@@ -240,6 +242,9 @@ function voucherAuditHistory_(user, req) {
   const values = sheet.getRange(startRow, 1, endRow - startRow + 1, 5).getValues();
   const rows = [];
   let scannedRows = 0;
+  let recognizedRows = 0;
+  let unstructuredRows = 0;
+  let unsupportedRows = 0;
   let nextBeforeRow = startRow > 2 ? startRow : null;
   let stoppedAtMatchLimit = false;
 
@@ -249,16 +254,26 @@ function voucherAuditHistory_(user, req) {
     try {
       details = JSON.parse(String(values[i][4] || ''));
     } catch (_) {
+      unstructuredRows++;
       continue;
     }
-    if (
-      !details ||
-      typeof details !== 'object' ||
-      Array.isArray(details) ||
-      details.version !== 1 ||
-      details.entityType !== 'voucher' ||
-      details.entityId !== id
-    ) {
+    const supportedEnvelope =
+      details &&
+      typeof details === 'object' &&
+      !Array.isArray(details) &&
+      details.version === 1 &&
+      typeof details.entityType === 'string' &&
+      details.entityType.trim() &&
+      typeof details.entityId === 'string' &&
+      details.entityId.length > 0 &&
+      typeof details.eventType === 'string' &&
+      details.eventType.trim();
+    if (!supportedEnvelope) {
+      unsupportedRows++;
+      continue;
+    }
+    recognizedRows++;
+    if (details.entityType !== 'voucher' || details.entityId !== id) {
       continue;
     }
     if (
@@ -308,6 +323,11 @@ function voucherAuditHistory_(user, req) {
     rows: rows,
     nextBeforeRow: pageCursor,
     scannedRows: scannedRows,
+    scanDiagnostics: {
+      recognizedRows: recognizedRows,
+      unstructuredRows: unstructuredRows,
+      unsupportedRows: unsupportedRows,
+    },
     scanRange: {
       firstRow: endRow - scannedRows + 1,
       lastRow: endRow,

@@ -1147,6 +1147,16 @@ export function createRegister({ api, go }) {
       if (
         !isRecord(page) ||
         page.eventCategory !== eventCategory ||
+        !isRecord(page.scanDiagnostics) ||
+        !['recognizedRows', 'unstructuredRows', 'unsupportedRows'].every(
+          (field) =>
+            Number.isSafeInteger(page.scanDiagnostics[field]) &&
+            page.scanDiagnostics[field] >= 0 &&
+            page.scanDiagnostics[field] <= 500,
+        ) ||
+        page.scanDiagnostics.recognizedRows +
+          page.scanDiagnostics.unstructuredRows +
+          page.scanDiagnostics.unsupportedRows !== page.scannedRows ||
         !(
           page.scanRange === null ||
           (isRecord(page.scanRange) &&
@@ -1299,6 +1309,19 @@ export function createRegister({ api, go }) {
               : 'No older rows remain.');
         } else if (page.scannedRows === 0) {
           status.textContent += ' No AuditLog rows were available to search.';
+        }
+        const scanDiagnostics = page.scanDiagnostics;
+        status.textContent +=
+          ' Coverage diagnostics: ' +
+          scanDiagnostics.recognizedRows +
+          ' recognized audit envelope(s), ' +
+          scanDiagnostics.unstructuredRows +
+          ' unstructured row(s), ' +
+          scanDiagnostics.unsupportedRows +
+          ' unsupported row(s).';
+        if (scanDiagnostics.unstructuredRows || scanDiagnostics.unsupportedRows) {
+          status.textContent +=
+            ' Unstructured and unsupported rows were not used to link events to this voucher.';
         }
       } catch (error) {
         status.className = 'error voucher-history-status';

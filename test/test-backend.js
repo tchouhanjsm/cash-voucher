@@ -1750,8 +1750,12 @@ ok(
     historyPage.data.rows[1].changes.some(
       (change) => change.field === 'amount' && change.before === 'Not set' && change.after === '47',
     ) &&
-    historyPage.data.scannedRows <= 500,
-  'voucher history returns newest structured events for the exact stable voucher ID in a bounded scan',
+    historyPage.data.scannedRows <= 500 &&
+    historyPage.data.scanDiagnostics.recognizedRows +
+      historyPage.data.scanDiagnostics.unstructuredRows +
+      historyPage.data.scanDiagnostics.unsupportedRows === historyPage.data.scannedRows &&
+    historyPage.data.scanDiagnostics.recognizedRows >= historyPage.data.rows.length,
+  'voucher history returns newest structured events and accounts for every row in its bounded scan',
 );
 const updatedHistoryOnly = as(T, 'voucherHistory', {
   id: historyVoucherId,
@@ -1799,8 +1803,47 @@ ok(
   emptyOlderPage.ok &&
     emptyOlderPage.data.scannedRows === 0 &&
     emptyOlderPage.data.scanRange === null &&
-    emptyOlderPage.data.nextBeforeRow === null,
+    emptyOlderPage.data.nextBeforeRow === null &&
+    emptyOlderPage.data.scanDiagnostics.recognizedRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.unstructuredRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.unsupportedRows === 0,
   'voucher history reports an empty coverage range when a valid cursor has no older rows',
+);
+const diagnosticsFixtureStart = g.sheets.AuditLog.rows.length;
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'legacy-history-fixture@test.com',
+  'LEGACY_AUDIT',
+  'voucher-history',
+  'legacy details without structured JSON',
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'unsupported-history-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 2,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: 'unsupported-event-fixture',
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Unsupported fixture',
+  }),
+]);
+const historyWithDiagnostics = as(T, 'voucherHistory', { id: historyVoucherId });
+const historyScanDiagnostics = historyWithDiagnostics.data && historyWithDiagnostics.data.scanDiagnostics;
+g.sheets.AuditLog.rows.splice(diagnosticsFixtureStart);
+ok(
+  historyWithDiagnostics.ok &&
+    historyScanDiagnostics &&
+    historyScanDiagnostics.unstructuredRows >= 1 &&
+    historyScanDiagnostics.unsupportedRows >= 1 &&
+    historyScanDiagnostics.recognizedRows +
+      historyScanDiagnostics.unstructuredRows +
+      historyScanDiagnostics.unsupportedRows === historyWithDiagnostics.data.scannedRows &&
+    !historyWithDiagnostics.data.rows.some((event) => event.eventId === 'unsupported-event-fixture'),
+  'voucher history reports legacy and unsupported rows without linking unsupported events',
 );
 const unrelatedHistory = as(T, 'voucherHistory', { id: 'voucher-does-not-exist' });
 ok(
