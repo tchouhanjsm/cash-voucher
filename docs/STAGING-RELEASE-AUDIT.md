@@ -14,6 +14,7 @@
 - The GitHub step summary is appended through a no-follow file descriptor and must remain outside the repository. It contains only sanitized outcome metadata.
 - Staging deployment cleanup attempts both the temporary project workspace and the isolated Clasp credential home even when one removal fails. Failure to verify cleanup produces a generic stop-and-inspect error instead of silently continuing.
 - Regression tests verify existing-file preservation, symlink target preservation, repo-path rejection, output-parent failures and cleanup attempts after a simulated removal failure.
+- **UAT transcript isolation:** per-run mode-`0700` log directories and mode-`0600` files are required. The transcript reader rejects symlinks, non-private files, directories outside the dedicated run-directory naming contract and logs above 2 MiB. The static server runs under a minimal environment without UAT credentials/write consent; raw UAT output is not streamed to Actions logs.
 - These checks protect artifact handling and local runner residue; they do not authenticate the staging target or prove deployment/UAT/restore.
 
 ## Staging secret-scope sprint batch — 28 October 2026
