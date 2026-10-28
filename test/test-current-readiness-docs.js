@@ -84,7 +84,7 @@ assert.doesNotMatch(ciWorkflow, /Temporary formatting diagnostic for PR 242|npx 
 assert.ok(ciWorkflow.includes('Print non-mutating Prettier diff for changed files'));
 assert.ok(ciWorkflow.includes("if: failure() && steps.quality.outcome == 'failure'"));
 assert.ok(formatDiffScript.includes("'--stdin-filepath'"));
-assert.ok(formatDiffScript.includes('git diff'));
+assert.ok(formatDiffScript.includes("'diff'"));
 assert.ok(formatDiffScript.includes('fs.mkdtempSync'));
 assert.ok(formatDiffScript.includes('fs.rmSync(tempRoot'));
 assert.doesNotMatch(formatDiffScript, /--write/);
