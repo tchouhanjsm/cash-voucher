@@ -19,7 +19,7 @@ The command reads a JSON file up to 5 MiB and exits nonzero on missing, failed, 
 ## Required contract
 
 - **Source:** repository `tchouhanjsm/cash-voucher`, ref `refs/heads/client-main`, full integration commit SHA.
-- **Four exact-head checks:** `ciQuality`, `browserE2e`, `fullFlight` and `autonomousMonitor`; each must conclude `success`, carry a distinct numeric workflow run ID, and use the same SHA as the bundle.
+- **Four integration-branch checks:** `ciQuality`, `browserE2e`, `fullFlight` and `autonomousMonitor` must conclude `success`, use distinct numeric run IDs, and all reference the same source SHA. Each record must also state the expected GitHub Actions workflow name, repository `tchouhanjsm/cash-voucher`, event `push`, ref `refs/heads/client-main`, and canonical URL `https://github.com/tchouhanjsm/cash-voucher/actions/runs/{runId}`. This rejects PR-head checks and mismatched run metadata at the contract level.
 - **Staging configuration preflight:** include the complete sanitized `cash-voucher-staging-configuration-preflight` report. Its commit/repository/ref must match the bundle, all five categories must pass, the blocker list must be empty, and all declared non-live boundaries must remain false.
 - **Recovery drill:** include the complete `cash-voucher-recovery-drill` evidence object. It must pass `validate-recovery-evidence.js` and name the same integration SHA.
 - **Operational acceptance:** include `status: pass`, a non-sensitive evidence reference and a canonical UTC `verifiedAt` timestamp for each gate. All application-level gates must include `testedClientMainSha` matching the release bundle SHA; branch-protection verification is the only gate that does not require an application SHA.
@@ -27,6 +27,6 @@ The command reads a JSON file up to 5 MiB and exits nonzero on missing, failed, 
 
 ## Important limitations
 
-A passing bundle means the fields are complete and internally consistent. It does not independently query GitHub, Google Apps Script, Sheets, Drive or the hosting provider; authenticate a human witness; prove a supplied assertion is truthful; or execute UAT/restore. Evidence references must point to separately retained, owner-reviewed records. A fixture-based test pass is not live release evidence.
+A passing bundle means the fields are complete and internally consistent. It does not independently query GitHub, Google Apps Script, Sheets, Drive or the hosting provider; authenticate a human witness; prove a supplied assertion is truthful; or execute UAT/restore. Workflow names, refs, events, URLs and run IDs are cross-checked against the expected contract but remain operator-supplied claims until reviewed against GitHub. Evidence references must point to separately retained, owner-reviewed records. A fixture-based test pass is not live release evidence.
 
 If any configuration, recovery or operational gate is not ready, do not manufacture a passing report. Fix the blocker and retain an honest blocked record outside the repository. Keep legacy `main` read-only, and do not merge, deploy or change production as a side effect of evidence validation.
