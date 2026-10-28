@@ -291,7 +291,10 @@ function validateOperationalGates(gates, generatedAt, commitSha, errors) {
         'OPERATIONAL_VERIFIED_AT',
         'Every live operational gate must include a canonical UTC verification timestamp.',
       );
-    } else if (validTimestamp(generatedAt) && Date.parse(gate.verifiedAt) > Date.parse(generatedAt)) {
+    } else if (
+      validTimestamp(generatedAt) &&
+      Date.parse(gate.verifiedAt) > Date.parse(generatedAt)
+    ) {
       add(
         errors,
         'OPERATIONAL_EVIDENCE_AFTER_BUNDLE',
