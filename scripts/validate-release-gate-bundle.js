@@ -36,6 +36,21 @@ const REQUIRED_OPERATIONAL_GATES = [
   'customerAcceptanceApproved',
 ];
 const SAFE_EVIDENCE_REFERENCE = /^[A-Z][A-Z0-9]{1,11}-[A-Z0-9][A-Z0-9._/-]{1,70}$/;
+const MAX_STAGING_PREFLIGHT_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_RECOVERY_EVIDENCE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+const MAX_OPERATIONAL_EVIDENCE_AGE_MS = {
+  ownerBranchProtectionVerified: 30 * 24 * 60 * 60 * 1000,
+  liveStagingUatPassed: 7 * 24 * 60 * 60 * 1000,
+  liveSecurityHeadersVerified: 7 * 24 * 60 * 60 * 1000,
+  liveRoleAuthorizationVerified: 7 * 24 * 60 * 60 * 1000,
+  offlineReconnectVerified: 30 * 24 * 60 * 60 * 1000,
+  printPdfVerified: 30 * 24 * 60 * 60 * 1000,
+  accessibilityVerified: 30 * 24 * 60 * 60 * 1000,
+  customerAcceptanceApproved: 7 * 24 * 60 * 60 * 1000,
+};
+const OPERATIONAL_GATES_REQUIRE_CLIENT_SHA = REQUIRED_OPERATIONAL_GATES.filter(
+  (name) => name !== 'ownerBranchProtectionVerified',
+);
 
 function isRecord(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -49,6 +64,12 @@ function validTimestamp(value) {
 
 function add(errors, code, message) {
   errors.push({ code, message });
+}
+
+function isEvidenceWithinAge(referenceTimestamp, observedTimestamp, maximumAgeMs) {
+  if (!validTimestamp(referenceTimestamp) || !validTimestamp(observedTimestamp)) return false;
+  const ageMs = Date.parse(referenceTimestamp) - Date.parse(observedTimestamp);
+  return ageMs >= 0 && ageMs <= maximumAgeMs;
 }
 
 function exactKeys(value, keys, path, errors) {
@@ -236,14 +257,19 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
   }
 }
 
-function validateOperationalGates(gates, errors) {
+function validateOperationalGates(gates, generatedAt, commitSha, errors) {
   exactKeys(gates, REQUIRED_OPERATIONAL_GATES, 'operationalGates', errors);
   if (!isRecord(gates)) return;
 
   REQUIRED_OPERATIONAL_GATES.forEach((name) => {
+    const requiresClientSha = OPERATIONAL_GATES_REQUIRE_CLIENT_SHA.includes(name);
+    const allowedKeys = requiresClientSha
+      ? ['status', 'evidenceRef', 'verifiedAt', 'testedClientMainSha']
+      : ['status', 'evidenceRef', 'verifiedAt'];
     const gate = gates[name];
-    exactKeys(gate, ['status', 'evidenceRef'], 'operationalGates.' + name, errors);
+    exactKeys(gate, allowedKeys, 'operationalGates.' + name, errors);
     if (!isRecord(gate)) return;
+
     if (gate.status !== 'pass') {
       add(
         errors,
@@ -257,6 +283,51 @@ function validateOperationalGates(gates, errors) {
         'OPERATIONAL_EVIDENCE_REFERENCE',
         'Each live operational gate requires a non-sensitive ticket/change reference.',
       );
+    }
+
+    if (!validTimestamp(gate.verifiedAt)) {
+      add(
+        errors,
+        'OPERATIONAL_VERIFIED_AT',
+        'Every live operational gate must include a canonical UTC verification timestamp.',
+      );
+    } else if (validTimestamp(generatedAt) && Date.parse(gate.verifiedAt) > Date.parse(generatedAt)) {
+      add(
+        errors,
+        'OPERATIONAL_EVIDENCE_AFTER_BUNDLE',
+        'Bundle generation cannot precede an operational gate verification.',
+      );
+    } else if (
+      !isEvidenceWithinAge(
+        generatedAt,
+        gate.verifiedAt,
+        MAX_OPERATIONAL_EVIDENCE_AGE_MS[name],
+      )
+    ) {
+      add(
+        errors,
+        'OPERATIONAL_EVIDENCE_STALE',
+        'Operational gate evidence is older than the allowed freshness window.',
+      );
+    }
+
+    if (requiresClientSha) {
+      if (
+        typeof gate.testedClientMainSha !== 'string' ||
+        !SHA1.test(gate.testedClientMainSha)
+      ) {
+        add(
+          errors,
+          'OPERATIONAL_TEST_SHA',
+          'Product acceptance evidence must include a full tested client-main SHA.',
+        );
+      } else if (gate.testedClientMainSha.toLowerCase() !== String(commitSha || '').toLowerCase()) {
+        add(
+          errors,
+          'OPERATIONAL_TEST_SHA_MISMATCH',
+          'Product acceptance evidence must reference the release bundle SHA.',
+        );
+      }
     }
   });
 }
@@ -350,14 +421,53 @@ function validateReleaseGateBundle(bundle) {
   }
   if (
     validTimestamp(bundle.generatedAt) &&
+    isRecord(bundle.stagingPreflight) &&
+    validTimestamp(bundle.stagingPreflight.generatedAt) &&
+    Date.parse(bundle.stagingPreflight.generatedAt) <= Date.parse(bundle.generatedAt) &&
+    !isEvidenceWithinAge(
+      bundle.generatedAt,
+      bundle.stagingPreflight.generatedAt,
+      MAX_STAGING_PREFLIGHT_AGE_MS,
+    )
+  ) {
+    add(
+      errors,
+      'PREFLIGHT_STALE',
+      'Staging configuration preflight must be no older than 24 hours.',
+    );
+  }
+  if (
+    validTimestamp(bundle.generatedAt) &&
     isRecord(bundle.recoveryEvidence) &&
     validTimestamp(bundle.recoveryEvidence.recordedAt) &&
     Date.parse(bundle.recoveryEvidence.recordedAt) > Date.parse(bundle.generatedAt)
   ) {
     add(errors, 'RECOVERY_AFTER_BUNDLE', 'Bundle generation cannot precede its recovery evidence.');
   }
+  if (
+    validTimestamp(bundle.generatedAt) &&
+    isRecord(bundle.recoveryEvidence) &&
+    validTimestamp(bundle.recoveryEvidence.recordedAt) &&
+    Date.parse(bundle.recoveryEvidence.recordedAt) <= Date.parse(bundle.generatedAt) &&
+    !isEvidenceWithinAge(
+      bundle.generatedAt,
+      bundle.recoveryEvidence.recordedAt,
+      MAX_RECOVERY_EVIDENCE_AGE_MS,
+    )
+  ) {
+    add(
+      errors,
+      'RECOVERY_STALE',
+      'Recovery drill evidence must be no older than seven days.',
+    );
+  }
 
-  validateOperationalGates(bundle.operationalGates, errors);
+  validateOperationalGates(
+    bundle.operationalGates,
+    bundle.generatedAt,
+    commitSha,
+    errors,
+  );
 
   return {
     ok: errors.length === 0,
