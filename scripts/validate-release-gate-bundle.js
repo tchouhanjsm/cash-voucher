@@ -474,7 +474,6 @@ function main() {
   }
 
   let bundle;
-  let inputStats;
   try {
     const linkStats = fs.lstatSync(inputPath);
     if (linkStats.isSymbolicLink()) {
@@ -482,7 +481,6 @@ function main() {
       process.exitCode = 2;
       return;
     }
-    inputStats = linkStats;
     const stats = fs.statSync(inputPath);
     if (!stats.isFile() || stats.size > 5 * 1024 * 1024) {
       console.error(
