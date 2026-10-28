@@ -1153,7 +1153,9 @@ with sync_playwright() as p:
     # Cash-close snapshots and correction notes are API output, so the renderer must keep hostile text inert.
     cash_close_vendor_payload = '<svg onload=window.__xssFired=true></svg>'
     cash_close_note_payload = '<img src=x onerror=window.__xssFired=true>'
+    cash_close_method_payload = '<img src=x onerror=window.xss=1>'
     page.evaluate('window.__xssFired = false')
+    page.evaluate('window.xss = false')
 
     def inject_cash_close_markup(route):
         try:
@@ -1179,6 +1181,7 @@ with sync_playwright() as p:
             'no': 'P-XSS',
             'date': '2020-01-01',
             'vendor': cash_close_vendor_payload,
+            'paymentMethod': cash_close_method_payload,
             'amount': 1,
             'cashImpact': 'CASH_OUT',
         }
@@ -1211,9 +1214,21 @@ with sync_playwright() as p:
     check(
         cash_close_vendor_payload in page.locator('#cc-closed-report').inner_text()
         and cash_close_note_payload in page.locator('.cc-corrections').inner_text()
+        and 'Unrecognized method' in page.locator('#cc-closed-report').inner_text()
+        and cash_close_method_payload not in page.locator('#cc-closed-report').inner_text()
         and page.locator('#cc-results img, #cc-results svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'cash-close snapshot and correction text render literally without creating executable markup',
+        'cash-close snapshot normalizes hostile payment methods and keeps text inert',
+    )
+    page.evaluate('window.print = () => {}')
+    page.locator('[data-act=closePrint]').click()
+    page.wait_for_selector('#printArea .pv')
+    check(
+        'Unrecognized method' in page.locator('#printArea').inner_text()
+        and cash_close_method_payload not in page.locator('#printArea').inner_text()
+        and page.locator('#printArea img, #printArea svg').count() == 0
+        and not page.evaluate('window.xss === true'),
+        'cash-close print sink normalizes hostile method values before rendering',
     )
     page.unroute('**/api?*', inject_cash_close_markup)
 
@@ -1868,6 +1883,7 @@ with sync_playwright() as p:
     # Phase 7: valid report rows are still untrusted HTML and CSV content.
     report_markup_payloads = {
         'vendorId': '<svg data-xss-field="vendorId" onload=window.__xssFired=true></svg>',
+        'paymentMethod': '<svg data-xss-field="paymentMethod" onload=window.__xssFired=true></svg>',
         'category': '<svg data-xss-field="category" onload=window.__xssFired=true></svg>',
         'notes': '<svg data-xss-field="notes" onload=window.__xssFired=true></svg>',
         'cancelReason': '<svg data-xss-field="cancelReason" onload=window.__xssFired=true></svg>',
@@ -1900,6 +1916,7 @@ with sync_playwright() as p:
             'date': date_text,
             'voucherNo': 'P-REPORT-OUTPUT-TEST',
             'type': 'PAYMENT',
+            'paymentMethod': report_markup_payloads['paymentMethod'],
             'vendor': formula_payload,
             'vendorId': report_markup_payloads['vendorId'],
             'category': report_markup_payloads['category'],
@@ -1943,8 +1960,9 @@ with sync_playwright() as p:
         and all(
             value in report_text
             for field, value in report_markup_payloads.items()
-            if field != 'approvedAt'
+            if field not in ('approvedAt', 'paymentMethod')
         )
+        and 'Unrecognized method' in report_text
         and formula_payload in report_text
         and accountant_page.locator('#view img, #view svg').count() == 0
         and not accountant_page.evaluate('window.__xssFired === true'),
@@ -3545,6 +3563,8 @@ with sync_playwright() as p:
         and page.locator('#rc').get_attribute('aria-label') == 'Filter by category'
         and page.locator('#rt').get_attribute('aria-label') == 'Filter by transaction type'
         and page.locator('#rs').get_attribute('aria-label') == 'Filter by status'
+        and page.locator('#rpmethod').get_attribute('aria-label') == 'Filter by payment method'
+        and page.locator('#rf label[for=rpmethod]').inner_text().startswith('Payment method')
         and page.locator('#rf label[for=rv]').inner_text().startswith('Vendor')
         and page.locator('#rf label[for=rc]').inner_text().startswith('Category')
         and page.locator('#rf label[for=rfrom]').inner_text().startswith('From')
@@ -3798,6 +3818,7 @@ with sync_playwright() as p:
             items = data.get('items', [])
             if items:
                 items[0]['no'] = number_payload
+                items[0]['paymentMethod'] = number_payload
         route.fulfill(response=response, json=payload)
 
     page.route('**/api?*', tamper_register_page_voucher_number)
@@ -3808,8 +3829,9 @@ with sync_playwright() as p:
     check(
         page.locator('#rbody svg').count() == 0
         and number_payload in page.locator('#rbody').inner_text()
+        and 'Unrecognized method' in page.locator('#rbody').inner_text()
         and not page.evaluate('window.__xssFired === true'),
-        'malformed persisted voucher number remains inert text in the register',
+        'malformed voucher number and payment method remain inert in the register',
     )
     page.locator('#rbody [data-act=print]').first.click()
     page.wait_for_function("document.querySelector('#printArea .pv') !== null")
