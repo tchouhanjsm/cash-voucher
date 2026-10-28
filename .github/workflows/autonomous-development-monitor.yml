@@ -205,7 +205,11 @@ jobs:
       - name: Download report artifact
         uses: actions/download-artifact@v4
         with:
-          name: autonomous-dev-monitor-${{ github.run_id }}-${{ github.run_attempt }}
+          # A job-only retry increments github.run_attempt but does not rerun
+          # the observe job that produced the original artifact. Reuse that
+          # same-run observation artifact rather than looking for a nonexistent
+          # artifact suffixed with the retry attempt number.
+          name: autonomous-dev-monitor-${{ github.run_id }}-1
           path: ${{ runner.temp }}/monitor-report
 
       - name: Persist checkpoint and retry safe timeout candidates
