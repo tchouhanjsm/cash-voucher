@@ -1,16 +1,25 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 27 October 2026 (release integrity and dependency policy phase)
+**Updated:** 28 October 2026 (release gate bundle validation phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
 **Current integration baseline:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; current source baseline verified).
-**Current source batch:** `client/release-integrity-dependency-hardening-20261027` tightens recovery-evidence validation, dependency advisory handling and release-state accuracy.
-**Release boundary:** recovery-evidence validation, dependency-audit policy, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+**Current source batch:** `client/release-integrity-dependency-hardening-20261027` now includes a fail-closed release-gate bundle validator tying exact-SHA source checks, sanitized staging preflight, recovery evidence and operational gate references together.
+**Release boundary:** release-gate validation tooling, dependency-audit policy, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current release-session checkpoint — 27 October 2026 22:11 IST
+## Current release-session checkpoint — 28 October 2026 06:04 IST
+
+- **Integration baseline remains:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PR #242 is an open feature-branch proposal until human-reviewed and merged. Keep legacy `main` read-only.
+- **Current phase:** PR #242 adds consolidated release-gate bundle validation, contract tests and operator instructions on top of recovery evidence validation and dependency-policy cleanup.
+- **Bundle acceptance:** the source gate requires CI / Quality, Browser E2E, Full Flight and the development monitor to succeed on one commit; staging-preflight and recovery evidence must name that same commit; eight operational gates need non-sensitive evidence references.
+- **Privacy and scope:** keep the actual bundle and recovery evidence private and out of Git. Do not use test fixtures as live proof. Validation is structural only; owner review and live evidence remain mandatory.
+- **Release remains blocked:** staging identities/configuration, live UAT, isolated restore, seven-sheet and receipt reconciliation, production-unchanged evidence, actual host security headers, authorization, offline/reconnect, printing, accessibility and customer acceptance remain owner/operator tasks.
+
+## Historical checkpoint — 27 October 2026 22:11 IST (superseded by the release-gate bundle phase)
 
 - **Integration baseline:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PRs #240 and #241 are merged. Legacy `main` remains frozen/read-only.
 - **Current consolidated source batch:** `client/release-integrity-dependency-hardening-20261027`. It tightens the recovery evidence validator's deployed-version label, removes an exception for a withdrawn advisory, adds regression coverage, and refreshes current release/handoff checkpoints. It does not deploy or access live resources.
+- **Current PR expansion:** `scripts/validate-release-gate-bundle.js` binds four successful source workflow runs to one exact `client-main` SHA, validates the staging configuration artifact and recovery-drill evidence, requires references for eight live operational gates, and always returns `human-review-required` rather than issuing release approval. It performs no live calls.
 - **Support throttling finding disposition:** `backend/90-support.gs` already serializes quota read/check/increment under a script lock; `test/test-support-report.js` covers under-lock rechecks, lock contention and single counter consumption. This is source/mock-test evidence—not a claim of live Apps Script load testing.
 - **Audit-health finding disposition:** `backend/25-helpers.gs` already rejects malformed marker metadata and reports `MONITORING_UNAVAILABLE` when a marker store is malformed/unavailable; `test/test-backend.js` covers malformed and mixed valid/corrupt stores. Do not reopen these as pending source fixes unless a new reproducer proves a regression.
 - **Dependency policy:** GitHub withdrew [GHSA-vfj7-8cjw-p6xm](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) on 23 October 2026; it is no longer an approved exception. [GHSA-mrhx-c7xc-m3w5](https://github.com/advisories/GHSA-mrhx-c7xc-m3w5) remains the scoped Zod concern; the current upstream Clasp release is 3.4.1 and declares Zod `^3.25.76`, so do not force an unverified major override. Keep the existing exception limited to this developer/CI toolchain and review compatibility by 9 November 2026.
