@@ -277,10 +277,10 @@ assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
 assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
 
-assert.ok(staging.includes('private evidence digest verification phase'));
+assert.ok(staging.includes('staging workflow secret-scope phase'));
 assert.match(staging, /remote connectivity.*restore were not verified/i);
-assert.ok(executionPlan.includes('private evidence digest verification phase'));
-assert.ok(handoff.includes('private evidence digest verification phase'));
+assert.ok(executionPlan.includes('staging workflow secret-scope phase'));
+assert.ok(handoff.includes('staging workflow secret-scope phase'));
 assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(staging, /Workflow isolation.*only from `client-main`/i);
 assert.match(executionPlan, /Secrets are scoped to the one validation step/i);
