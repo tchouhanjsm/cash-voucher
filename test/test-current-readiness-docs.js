@@ -60,16 +60,32 @@ assert.ok(stagingWorkflow.includes('name: Update the existing staging deployment
 assert.ok(stagingWorkflowTest.includes('job header must not expose secrets to every step'));
 assert.ok(stagingWorkflowTest.includes('UAT-only must never receive the Clasp OAuth credential'));
 assert.ok(staging.includes('Staging evidence output and cleanup hardening — 28 October 2026'));
-assert.ok(executionPlan.includes('Evidence artifact and temporary credential cleanup sprint — 28 October 2026'));
-assert.ok(appsScriptRunbook.includes('Staging evidence files and temporary credential cleanup — 28 October 2026'));
+assert.ok(
+  executionPlan.includes(
+    'Evidence artifact and temporary credential cleanup sprint — 28 October 2026',
+  ),
+);
+assert.ok(
+  appsScriptRunbook.includes(
+    'Staging evidence files and temporary credential cleanup — 28 October 2026',
+  ),
+);
 assert.ok(stagingEvidenceWriter.includes('fs.constants.O_EXCL'));
 assert.ok(stagingEvidenceWriter.includes('fs.constants.O_NOFOLLOW'));
 assert.ok(stagingEvidenceWriter.includes('must be outside the repository'));
-assert.ok(stagingEvidenceTests.includes('a rerun must not overwrite an existing evidence artifact'));
+assert.ok(
+  stagingEvidenceTests.includes('a rerun must not overwrite an existing evidence artifact'),
+);
 assert.ok(stagingEvidenceTests.includes('summaryLink'));
 assert.ok(stagingDeployScript.includes('cleanupTemporaryDirectories([workspace, tempHome])'));
-assert.ok(stagingDeployScript.includes('temporary workspace/credential cleanup could not be verified'));
-assert.ok(stagingPipelineTests.includes('cleanup must attempt credential-home removal even if workspace removal fails'));
+assert.ok(
+  stagingDeployScript.includes('temporary workspace/credential cleanup could not be verified'),
+);
+assert.ok(
+  stagingPipelineTests.includes(
+    'cleanup must attempt credential-home removal even if workspace removal fails',
+  ),
+);
 
 
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
