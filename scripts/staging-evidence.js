@@ -6,6 +6,109 @@ const path = require('node:path');
 
 const OPERATIONS = new Set(['deploy-and-uat', 'uat-only', 'validate-only']);
 const OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped', 'in_progress']);
+const ROOT = path.resolve(__dirname, '..');
+
+
+function resolveSafeExternalFile(rawPath, label) {
+  const value = String(rawPath || '').trim();
+  if (!value) throw new Error('The ' + label + ' path is required.');
+
+  const requested = path.resolve(value);
+  const basename = path.basename(requested);
+  if (!basename || basename === '.' || basename === path.sep) {
+    throw new Error('The ' + label + ' path must name a file.');
+  }
+
+  let realParent;
+  let realRoot;
+  try {
+    realParent = fs.realpathSync(path.dirname(requested));
+    realRoot = fs.realpathSync(ROOT);
+  } catch {
+    throw new Error('The ' + label + ' parent directory must already exist.');
+  }
+
+  const target = path.join(realParent, basename);
+  const relative = path.relative(realRoot, target);
+  if (
+    relative === '' ||
+    relative === '..' ||
+    relative.startsWith('..' + path.sep) ||
+    path.isAbsolute(relative)
+  ) {
+    throw new Error('The ' + label + ' must be outside the repository.');
+  }
+
+  let stat = null;
+  try {
+    stat = fs.lstatSync(target);
+  } catch (error) {
+    if (!error || error.code !== 'ENOENT') {
+      throw new Error('The ' + label + ' cannot be inspected safely.');
+    }
+  }
+  if (stat && (stat.isSymbolicLink() || !stat.isFile())) {
+    throw new Error('The ' + label + ' must be a regular, non-symlink file.');
+  }
+  return { path: target, exists: Boolean(stat) };
+}
+
+function writeNewPrivateEvidenceFile(rawPath, content) {
+  const target = resolveSafeExternalFile(rawPath, 'staging evidence output');
+  let descriptor;
+  let created = false;
+  const flags =
+    fs.constants.O_WRONLY |
+    fs.constants.O_CREAT |
+    fs.constants.O_EXCL |
+    (fs.constants.O_NOFOLLOW || 0);
+  try {
+    descriptor = fs.openSync(target.path, flags, 0o600);
+    created = true;
+    fs.fchmodSync(descriptor, 0o600);
+    fs.writeFileSync(descriptor, content, 'utf8');
+  } catch {
+    if (created) {
+      if (descriptor !== undefined) {
+        try {
+          fs.closeSync(descriptor);
+        } catch {}
+        descriptor = undefined;
+      }
+      try {
+        fs.unlinkSync(target.path);
+      } catch {}
+    }
+    throw new Error(
+      'Staging evidence output could not be created safely; existing files are never overwritten.',
+    );
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
+
+function appendPrivateStepSummary(rawPath, content) {
+  if (!String(rawPath || '').trim()) return;
+  const target = resolveSafeExternalFile(rawPath, 'GitHub step summary');
+  let descriptor;
+  const flags =
+    fs.constants.O_WRONLY |
+    fs.constants.O_APPEND |
+    fs.constants.O_CREAT |
+    (fs.constants.O_NOFOLLOW || 0);
+  try {
+    descriptor = fs.openSync(target.path, flags, 0o600);
+    if (!fs.fstatSync(descriptor).isFile()) {
+      throw new Error('summary is not a regular file');
+    }
+    fs.fchmodSync(descriptor, 0o600);
+    fs.writeFileSync(descriptor, content, 'utf8');
+  } catch {
+    throw new Error('The GitHub step summary could not be appended safely.');
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
 
 function normalizeOutcome(value) {
   const outcome = String(value || '')
@@ -169,9 +272,7 @@ function writeStagingEvidence(env = process.env, logOverride = null) {
   if (!outputPath) throw new Error('The staging evidence output path is required.');
   const log = logOverride === null ? readTranscript(env) : String(logOverride);
   const evidence = buildStagingEvidence(env, log);
-  fs.mkdirSync(path.dirname(path.resolve(outputPath)), { recursive: true });
-  fs.writeFileSync(outputPath, JSON.stringify(evidence, null, 2) + '\n', { mode: 0o600 });
-  fs.chmodSync(outputPath, 0o600);
+  writeNewPrivateEvidenceFile(outputPath, JSON.stringify(evidence, null, 2) + '\n');
 
   const summaryPath = String(env.GITHUB_STEP_SUMMARY || '').trim();
   if (summaryPath) {
@@ -197,7 +298,7 @@ function writeStagingEvidence(env = process.env, logOverride = null) {
       'The JSON artifact excludes credentials, resource identifiers, API endpoint URLs and raw transcript text.',
       '',
     ].join('\n');
-    fs.appendFileSync(summaryPath, markdown, { mode: 0o600 });
+    appendPrivateStepSummary(summaryPath, markdown);
   }
   return evidence;
 }
