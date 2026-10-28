@@ -372,6 +372,29 @@ const successfulCleanup = cleanupTemporaryDirectories([...removedDirectories], {
 assert.equal(successfulCleanup, true);
 assert.equal(removedDirectories.size, 0);
 
+const partiallyAllocated = new Set(['/tmp/workspace-before-home-failure']);
+const partialAllocationAttempts = [];
+assert.equal(
+  cleanupTemporaryDirectories(
+    ['/tmp/workspace-before-home-failure', undefined],
+    {
+      rmSync(directory) {
+        partialAllocationAttempts.push(directory);
+        partiallyAllocated.delete(directory);
+      },
+      existsSync(directory) {
+        return partiallyAllocated.has(directory);
+      },
+    },
+  ),
+  true,
+);
+assert.deepEqual(
+  partialAllocationAttempts,
+  ['/tmp/workspace-before-home-failure'],
+  'workspace cleanup must still succeed when credential-home allocation never completed',
+);
+
 const attemptedRemovals = [];
 const failedCleanup = cleanupTemporaryDirectories(
   ['/tmp/first-workspace', '/tmp/second-credential-home'],
