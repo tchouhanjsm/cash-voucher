@@ -633,6 +633,9 @@ function resolveOperationalEvidenceDirectory(candidatePath) {
   if (isInsideRepository(canonicalPath)) {
     throw new Error('EVIDENCE_DIR_INSIDE_REPOSITORY');
   }
+  if (process.platform !== 'win32' && (linkStats.mode & 0o077) !== 0) {
+    throw new Error('EVIDENCE_DIR_PERMISSIONS');
+  }
   return canonicalPath;
 }
 
@@ -707,6 +710,13 @@ function verifyOperationalEvidenceDigests(bundle, evidenceDirectory) {
         errors.push({
           code: 'OPERATIONAL_EVIDENCE_FILE_UNSAFE',
           message: 'An operational evidence record is not a regular file.',
+        });
+        return;
+      }
+      if (process.platform !== 'win32' && (fileStats.mode & 0o077) !== 0) {
+        errors.push({
+          code: 'OPERATIONAL_EVIDENCE_FILE_PERMISSIONS',
+          message: 'An operational evidence record must not be readable by group or other users.',
         });
         return;
       }
