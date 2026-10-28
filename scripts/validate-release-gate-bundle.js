@@ -1,0 +1,327 @@
+'use strict';
+
+const fs = require('node:fs');
+const { validateRecoveryEvidence } = require('./validate-recovery-evidence');
+
+const SHA1 = /^[a-f0-9]{40}$/i;
+const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const REPOSITORY = 'tchouhanjsm/cash-voucher';
+const SOURCE_REF = 'refs/heads/client-main';
+const REQUIRED_SOURCE_CHECKS = ['ciQuality', 'browserE2e', 'fullFlight', 'autonomousMonitor'];
+const REQUIRED_PREFLIGHT_CATEGORIES = [
+  'stagingResourceSeparation',
+  'productionResourceInventory',
+  'stagingEndpoint',
+  'dedicatedUatAccounts',
+  'claspCredentialShape',
+];
+const REQUIRED_FALSE_BOUNDARIES = [
+  'credentialValuesIncluded',
+  'resourceIdentifiersIncluded',
+  'endpointIncluded',
+  'remoteConnectivityTested',
+  'ownershipIndependentlyVerified',
+  'deploymentChanged',
+  'backupRestoreVerified',
+];
+const REQUIRED_OPERATIONAL_GATES = [
+  'ownerBranchProtectionVerified',
+  'liveStagingUatPassed',
+  'liveSecurityHeadersVerified',
+  'liveRoleAuthorizationVerified',
+  'offlineReconnectVerified',
+  'printPdfVerified',
+  'accessibilityVerified',
+  'customerAcceptanceApproved',
+];
+const SAFE_EVIDENCE_REFERENCE = /^[A-Z][A-Z0-9]{1,11}-[A-Z0-9][A-Z0-9._/-]{1,70}$/;
+
+function isRecord(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value);
+}
+
+function validTimestamp(value) {
+  if (typeof value !== 'string' || !UTC_TIMESTAMP.test(value)) return false;
+  const parsed = new Date(value);
+  return Number.isFinite(parsed.getTime()) && parsed.toISOString() === value;
+}
+
+function add(errors, code, message) {
+  errors.push({ code, message });
+}
+
+function exactKeys(value, keys, path, errors) {
+  if (!isRecord(value)) {
+    add(errors, 'OBJECT_REQUIRED', path + ' must be a JSON object.');
+    return;
+  }
+  Object.keys(value).forEach((key) => {
+    if (!keys.includes(key)) add(errors, 'UNKNOWN_FIELD', path + ' contains an unsupported field.');
+  });
+  keys.forEach((key) => {
+    if (!Object.prototype.hasOwnProperty.call(value, key)) {
+      add(errors, 'MISSING_FIELD', path + ' is missing a required field.');
+    }
+  });
+}
+
+function validateSourceChecks(sourceChecks, commitSha, errors) {
+  exactKeys(sourceChecks, REQUIRED_SOURCE_CHECKS, 'sourceChecks', errors);
+  if (!isRecord(sourceChecks)) return;
+
+  REQUIRED_SOURCE_CHECKS.forEach((name) => {
+    const check = sourceChecks[name];
+    exactKeys(check, ['conclusion', 'headSha', 'runId'], 'sourceChecks.' + name, errors);
+    if (!isRecord(check)) return;
+    if (check.conclusion !== 'success') {
+      add(errors, 'SOURCE_CHECK_FAILED', 'Every required source check must conclude success.');
+    }
+    if (typeof check.headSha !== 'string' || !SHA1.test(check.headSha)) {
+      add(errors, 'SOURCE_CHECK_SHA', 'Every source check must include a full commit SHA.');
+    } else if (check.headSha.toLowerCase() !== String(commitSha || '').toLowerCase()) {
+      add(errors, 'SOURCE_CHECK_SHA_MISMATCH', 'All required source checks must match the release SHA.');
+    }
+    if (typeof check.runId !== 'string' || !/^\d{1,20}$/.test(check.runId)) {
+      add(errors, 'SOURCE_CHECK_RUN_ID', 'Every source check must include a numeric workflow run ID.');
+    }
+  });
+}
+
+function validateStagingPreflight(preflight, source, errors) {
+  exactKeys(
+    preflight,
+    [
+      'schemaVersion',
+      'evidenceType',
+      'generatedAt',
+      'source',
+      'workflowRun',
+      'outcome',
+      'categories',
+      'blockers',
+      'boundaries',
+    ],
+    'stagingPreflight',
+    errors,
+  );
+  if (!isRecord(preflight)) return;
+
+  if (preflight.schemaVersion !== 1) add(errors, 'PREFLIGHT_VERSION', 'Unsupported staging preflight version.');
+  if (preflight.evidenceType !== 'cash-voucher-staging-configuration-preflight') {
+    add(errors, 'PREFLIGHT_TYPE', 'Unexpected staging preflight evidence type.');
+  }
+  if (!validTimestamp(preflight.generatedAt)) {
+    add(errors, 'PREFLIGHT_TIMESTAMP', 'Staging preflight timestamp is not canonical UTC.');
+  }
+
+  exactKeys(preflight.source, ['repository', 'ref', 'commitSha'], 'stagingPreflight.source', errors);
+  if (isRecord(preflight.source)) {
+    if (preflight.source.repository !== REPOSITORY || source.repository !== REPOSITORY) {
+      add(errors, 'PREFLIGHT_REPOSITORY', 'Staging preflight and release bundle must identify the expected repository.');
+    }
+    if (preflight.source.ref !== SOURCE_REF || source.ref !== SOURCE_REF) {
+      add(errors, 'PREFLIGHT_REF', 'Staging preflight must be scoped to client-main.');
+    }
+    if (
+      typeof preflight.source.commitSha !== 'string' ||
+      preflight.source.commitSha.toLowerCase() !== String(source.commitSha || '').toLowerCase()
+    ) {
+      add(errors, 'PREFLIGHT_SHA_MISMATCH', 'Staging preflight must match the release commit SHA.');
+    }
+  }
+
+  exactKeys(preflight.workflowRun, ['runId', 'url'], 'stagingPreflight.workflowRun', errors);
+  if (isRecord(preflight.workflowRun)) {
+    if (typeof preflight.workflowRun.runId !== 'string' || !/^\d{1,20}$/.test(preflight.workflowRun.runId)) {
+      add(errors, 'PREFLIGHT_RUN_ID', 'Staging preflight must include a numeric workflow run ID.');
+    } else if (
+      preflight.workflowRun.url !==
+      'https://github.com/' + REPOSITORY + '/actions/runs/' + preflight.workflowRun.runId
+    ) {
+      add(errors, 'PREFLIGHT_RUN_URL', 'Staging preflight run URL must match its repository and run ID.');
+    }
+  }
+
+  if (preflight.outcome !== 'configuration-pass') {
+    add(errors, 'PREFLIGHT_BLOCKED', 'Staging configuration preflight did not pass.');
+  }
+  exactKeys(preflight.categories, REQUIRED_PREFLIGHT_CATEGORIES, 'stagingPreflight.categories', errors);
+  if (isRecord(preflight.categories)) {
+    REQUIRED_PREFLIGHT_CATEGORIES.forEach((category) => {
+      if (preflight.categories[category] !== 'pass') {
+        add(errors, 'PREFLIGHT_CATEGORY', 'Every required staging configuration category must pass.');
+      }
+    });
+  }
+  if (!Array.isArray(preflight.blockers) || preflight.blockers.length !== 0) {
+    add(errors, 'PREFLIGHT_BLOCKERS', 'Passing staging preflight must contain an empty blocker list.');
+  }
+
+  exactKeys(preflight.boundaries, REQUIRED_FALSE_BOUNDARIES, 'stagingPreflight.boundaries', errors);
+  if (isRecord(preflight.boundaries)) {
+    REQUIRED_FALSE_BOUNDARIES.forEach((boundary) => {
+      if (preflight.boundaries[boundary] !== false) {
+        add(
+          errors,
+          'PREFLIGHT_BOUNDARY',
+          'Preflight evidence must not claim live connectivity, ownership, deployment or restore.',
+        );
+      }
+    });
+  }
+}
+
+function validateOperationalGates(gates, errors) {
+  exactKeys(gates, REQUIRED_OPERATIONAL_GATES, 'operationalGates', errors);
+  if (!isRecord(gates)) return;
+
+  REQUIRED_OPERATIONAL_GATES.forEach((name) => {
+    const gate = gates[name];
+    exactKeys(gate, ['status', 'evidenceRef'], 'operationalGates.' + name, errors);
+    if (!isRecord(gate)) return;
+    if (gate.status !== 'pass') {
+      add(errors, 'OPERATIONAL_GATE_BLOCKED', 'Every live operational release gate must be explicitly passed.');
+    }
+    if (typeof gate.evidenceRef !== 'string' || !SAFE_EVIDENCE_REFERENCE.test(gate.evidenceRef)) {
+      add(
+        errors,
+        'OPERATIONAL_EVIDENCE_REFERENCE',
+        'Each live operational gate requires a non-sensitive ticket/change reference.',
+      );
+    }
+  });
+}
+
+function validateReleaseGateBundle(bundle) {
+  const errors = [];
+  if (!isRecord(bundle)) {
+    return {
+      ok: false,
+      errors: [{ code: 'ROOT', message: 'Release gate bundle must be a JSON object.' }],
+    };
+  }
+
+  exactKeys(
+    bundle,
+    [
+      'schemaVersion',
+      'evidenceType',
+      'generatedAt',
+      'source',
+      'sourceChecks',
+      'stagingPreflight',
+      'recoveryEvidence',
+      'operationalGates',
+    ],
+    '$',
+    errors,
+  );
+  if (bundle.schemaVersion !== 1) add(errors, 'SCHEMA_VERSION', 'schemaVersion must equal 1.');
+  if (bundle.evidenceType !== 'cash-voucher-release-gate-bundle') {
+    add(errors, 'EVIDENCE_TYPE', 'Unexpected release gate bundle evidence type.');
+  }
+  if (!validTimestamp(bundle.generatedAt)) {
+    add(errors, 'RECORDED_AT', 'Bundle timestamp must be canonical UTC.');
+  }
+
+  exactKeys(bundle.source, ['repository', 'ref', 'commitSha'], 'source', errors);
+  if (isRecord(bundle.source)) {
+    if (bundle.source.repository !== REPOSITORY) {
+      add(errors, 'SOURCE_REPOSITORY', 'Release bundle repository is not the expected repository.');
+    }
+    if (bundle.source.ref !== SOURCE_REF) {
+      add(errors, 'SOURCE_REF', 'Release bundle must target client-main.');
+    }
+    if (typeof bundle.source.commitSha !== 'string' || !SHA1.test(bundle.source.commitSha)) {
+      add(errors, 'SOURCE_SHA', 'Release source must contain a full commit SHA.');
+    }
+  }
+
+  const commitSha = isRecord(bundle.source) ? bundle.source.commitSha : '';
+  validateSourceChecks(bundle.sourceChecks, commitSha, errors);
+  validateStagingPreflight(bundle.stagingPreflight, isRecord(bundle.source) ? bundle.source : {}, errors);
+
+  const recovery = validateRecoveryEvidence(bundle.recoveryEvidence);
+  if (!recovery.ok) {
+    recovery.errors.forEach((item) => {
+      add(errors, 'RECOVERY_' + item.code, 'Recovery drill evidence failed its independent contract check.');
+    });
+  } else if (
+    isRecord(bundle.recoveryEvidence.source) &&
+    typeof commitSha === 'string' &&
+    bundle.recoveryEvidence.source.clientMainSha.toLowerCase() !== commitSha.toLowerCase()
+  ) {
+    add(errors, 'RECOVERY_SHA_MISMATCH', 'Recovery drill evidence must reference the release commit SHA.');
+  }
+
+  validateOperationalGates(bundle.operationalGates, errors);
+
+  return {
+    ok: errors.length === 0,
+    errors,
+    summary:
+      errors.length === 0
+        ? {
+            sourceSha: commitSha,
+            requiredSourceChecks: REQUIRED_SOURCE_CHECKS.length,
+            stagingConfigurationPass: true,
+            recoveryEvidenceContractPass: true,
+            operationalGatesPassed: REQUIRED_OPERATIONAL_GATES.length,
+            releaseApproval: 'human-review-required',
+          }
+        : undefined,
+  };
+}
+
+function main() {
+  const inputPath = String(process.argv[2] || '').trim();
+  if (!inputPath) {
+    console.error('Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json');
+    process.exitCode = 2;
+    return;
+  }
+
+  let bundle;
+  try {
+    const stats = fs.statSync(inputPath);
+    if (!stats.isFile() || stats.size > 5 * 1024 * 1024) {
+      console.error('RELEASE GATE BUNDLE FAILED: input must be a regular JSON file no larger than 5 MiB.');
+      process.exitCode = 1;
+      return;
+    }
+    bundle = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
+  } catch {
+    console.error('RELEASE GATE BUNDLE FAILED: input is unreadable or is not valid JSON.');
+    process.exitCode = 1;
+    return;
+  }
+
+  const result = validateReleaseGateBundle(bundle);
+  if (!result.ok) {
+    console.error('RELEASE GATE BUNDLE FAILED: ' + result.errors.length + ' validation issue(s).');
+    result.errors.forEach((error) => console.error('- [' + error.code + '] ' + error.message));
+    process.exitCode = 1;
+    return;
+  }
+
+  console.log(
+    'Release gate evidence contract passed for source ' +
+      result.summary.sourceSha +
+      '; ' +
+      result.summary.requiredSourceChecks +
+      ' source checks, staging configuration, recovery evidence and ' +
+      result.summary.operationalGatesPassed +
+      ' live operational gate references were internally consistent.',
+  );
+  console.log(
+    'This validates structure and consistency only. It does not authenticate evidence, execute live checks, or replace owner/QA approval.',
+  );
+}
+
+if (require.main === module) main();
+
+module.exports = {
+  REQUIRED_OPERATIONAL_GATES,
+  REQUIRED_SOURCE_CHECKS,
+  validateReleaseGateBundle,
+};
