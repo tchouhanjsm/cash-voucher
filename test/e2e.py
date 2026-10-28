@@ -1501,6 +1501,55 @@ with sync_playwright() as p:
         and page.locator('#rbody [data-act=reject]').count() == 0,
         'voucher creator cannot self-approve or self-reject from the Register',
     )
+
+    history_row = page.locator('#rbody tr').filter(has_text='Approval E2E vendor').first
+    check(
+        history_row.locator('[data-act=history]').count() == 1,
+        'owner sees the voucher-specific history action in Register',
+    )
+    history_xss_payload = '<svg onload=window.__voucherHistoryXssFired=true></svg>'
+    page.evaluate('window.__voucherHistoryXssFired = false')
+
+    def inject_hostile_voucher_history(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'voucherHistory':
+            route.continue_()
+            return
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {}) if payload.get('ok') else {}
+        rows = data.get('rows')
+        if isinstance(rows, list) and rows:
+            rows[0]['summary'] = history_xss_payload
+            rows[0]['reason'] = history_xss_payload
+            if isinstance(rows[0].get('changes'), list) and rows[0]['changes']:
+                rows[0]['changes'][0]['after'] = history_xss_payload
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    page.route('**/api?*', inject_hostile_voucher_history)
+    history_row.locator('[data-act=history]').click()
+    page.wait_for_function(
+        "document.querySelector('#modal')?.innerText.includes('VOUCHER_CREATED')",
+        timeout=10000,
+    )
+    history_text = page.locator('#modal').inner_text()
+    check(
+        history_xss_payload in history_text
+        and page.locator('#modal svg[onload], #modal img[onerror]').count() == 0
+        and not page.evaluate('window.__voucherHistoryXssFired === true'),
+        'voucher history renders hostile summary, reason and field values as inert text',
+    )
+    check(
+        'amount:' in history_text.lower() and '10000' in history_text,
+        'voucher history displays the payment amount change from its structured audit event',
+    )
+    page.click('#modal [data-x]')
+    page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+    page.unroute('**/api?*', inject_hostile_voucher_history)
+
     go_view(page, 'dash')
     page.wait_for_selector('[data-v=dash][aria-current=page]')
     page.wait_for_function(

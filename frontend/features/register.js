@@ -406,6 +406,9 @@ export function createRegister({ api, go }) {
             : ` · <span class="badge bad">CANCELLED</span> ${esc(scalarText(voucher.cancelReason))}`;
         const actions = [
           `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
+          can('audit')
+            ? `<button class="btn sm" data-act="history" data-id="${esc(voucher.id)}">History</button>`
+            : '',
           receiptAction
             ? `<button
                 class="btn sm"
@@ -1087,6 +1090,154 @@ export function createRegister({ api, go }) {
     }
   }
 
+  function history(id) {
+    const voucher = voucherRows().find((item) => item.id === id);
+    if (!voucher || !can('audit')) {
+      fail(new Error('Voucher history is unavailable for this account. Refresh and retry.'));
+      return;
+    }
+
+    const body = document.createElement('div');
+    body.className = 'voucher-history';
+    const note = document.createElement('p');
+    note.className = 'muted voucher-history-intro';
+    note.textContent =
+      'Structured events are matched by stable voucher ID. Some legacy audit entries lack a reliable ID and cannot be linked safely. This is an operational view, not a tamper-evident ledger.';
+    const status = document.createElement('p');
+    status.className = 'muted voucher-history-status';
+    status.setAttribute('role', 'status');
+    status.setAttribute('aria-live', 'polite');
+    status.textContent = 'Loading voucher history…';
+    const list = document.createElement('div');
+    list.className = 'voucher-history-list';
+    const older = document.createElement('button');
+    older.type = 'button';
+    older.className = 'btn voucher-history-older';
+    older.textContent = 'Load older events';
+    older.hidden = true;
+    body.append(note, status, list, older);
+
+    let beforeRow = null;
+    let loading = false;
+    let loadedEventCount = 0;
+    const isValidPage = (page) => {
+      if (
+        !isRecord(page) ||
+        !Array.isArray(page.rows) ||
+        page.rows.length > 50 ||
+        !Number.isSafeInteger(page.scannedRows) ||
+        page.scannedRows < 0 ||
+        page.scannedRows > 500 ||
+        !(page.nextBeforeRow === null ||
+          (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2))
+      ) return false;
+      if (
+        page.auditHealth !== undefined &&
+        (!isRecord(page.auditHealth) ||
+          !['NO_KNOWN_FAILURE', 'DEGRADED', 'MONITORING_UNAVAILABLE'].includes(page.auditHealth.status))
+      ) return false;
+      return page.rows.every((event) =>
+        isRecord(event) &&
+        ['time', 'user', 'action', 'target', 'eventId', 'eventType', 'summary', 'reason'].every(
+          (field) => typeof event[field] === 'string' && event[field].length <= 500,
+        ) &&
+        Array.isArray(event.changes) &&
+        event.changes.length <= 30 &&
+        event.changes.every((change) =>
+          isRecord(change) &&
+          typeof change.field === 'string' && change.field.length <= 100 &&
+          typeof change.before === 'string' && change.before.length <= 300 &&
+          typeof change.after === 'string' && change.after.length <= 300,
+        ),
+      );
+    };
+
+    const appendEvents = (events) => {
+      events.forEach((event) => {
+        const card = document.createElement('article');
+        card.className = 'voucher-history-event';
+        const title = document.createElement('h3');
+        title.textContent = event.summary || event.eventType || event.action || 'Audit event';
+        const metadata = document.createElement('p');
+        metadata.className = 'voucher-history-meta muted';
+        metadata.textContent = [event.time, event.user, event.action, event.eventType]
+          .filter(Boolean)
+          .join(' · ');
+        card.append(title, metadata);
+        if (event.reason) {
+          const reason = document.createElement('p');
+          reason.className = 'voucher-history-reason';
+          reason.textContent = 'Reason: ' + event.reason;
+          card.appendChild(reason);
+        }
+        if (event.changes.length) {
+          const changes = document.createElement('ul');
+          changes.className = 'voucher-history-changes';
+          event.changes.forEach((change) => {
+            const item = document.createElement('li');
+            item.textContent = change.field + ': ' + change.before + ' → ' + change.after;
+            changes.appendChild(item);
+          });
+          card.appendChild(changes);
+        }
+        list.appendChild(card);
+        loadedEventCount++;
+      });
+    };
+
+    const loadPage = async (append) => {
+      if (loading) return;
+      loading = true;
+      older.disabled = true;
+      older.textContent = 'Loading older events…';
+      try {
+        const page = await api('voucherHistory', { id: voucher.id, beforeRow });
+        if (!isValidPage(page)) throw new Error('The server returned invalid voucher-history data.');
+        if (!append) list.replaceChildren();
+        appendEvents(page.rows);
+        beforeRow = page.nextBeforeRow;
+        older.hidden = beforeRow === null;
+        status.className = 'muted voucher-history-status';
+        if (page.auditHealth && page.auditHealth.status !== 'NO_KNOWN_FAILURE') {
+          status.className = 'error voucher-history-status';
+          status.textContent =
+            'Audit monitoring is ' + page.auditHealth.status.replace(/_/g, ' ').toLowerCase() +
+            '. This view cannot prove that every audit event was saved.';
+        } else if (page.rows.length) {
+          status.textContent =
+            'Loaded ' + loadedEventCount + ' structured voucher event(s). This page scanned ' +
+            page.scannedRows + ' audit row(s).';
+        } else if (beforeRow !== null && loadedEventCount === 0) {
+          status.textContent =
+            'No structured events for this voucher were found in the ' + page.scannedRows +
+            ' most recently scanned audit row(s). Load older events to continue.';
+        } else if (beforeRow !== null) {
+          status.textContent =
+            'No additional matching events were found in the older audit range. Load older events to continue.';
+        } else if (loadedEventCount === 0) {
+          status.textContent =
+            'No structured events could be linked to this voucher. Legacy audit rows may not contain a stable voucher ID.';
+        } else {
+          status.textContent = 'Reached the oldest available audit rows.';
+        }
+      } catch (error) {
+        status.className = 'error voucher-history-status';
+        status.textContent = error && typeof error.message === 'string'
+          ? error.message.slice(0, 300)
+          : 'Voucher history could not be loaded. Check the connection and retry.';
+      } finally {
+        loading = false;
+        older.disabled = false;
+        older.textContent = 'Load older events';
+        older.hidden = beforeRow === null;
+      }
+    };
+
+    older.addEventListener('click', () => loadPage(true));
+    dialog('Voucher history for ' + voucherNo(voucher), body, null);
+    loadPage(false);
+  }
+
   function approve(id) {
     const voucher = voucherRows().find((item) => item.id === id);
     if (!voucher || !can('approvePayments')) {
@@ -1199,6 +1350,7 @@ export function createRegister({ api, go }) {
     cancel,
     approve,
     reject,
+    history,
     receipts,
     state: R,
   };

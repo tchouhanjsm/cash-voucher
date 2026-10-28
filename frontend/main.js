@@ -154,6 +154,8 @@ registerActions({
 
   rec: ({ id }) => register.receipts(id),
 
+  history: ({ id }) => register.history(id),
+
   more: () => register.loadMore(),
 
   rclear: () => register.clearFilters(),

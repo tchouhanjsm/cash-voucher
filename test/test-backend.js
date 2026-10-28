@@ -1711,6 +1711,54 @@ ok(
     auditPage.data.totalCount > 10,
   'audit log returns a bounded page and total record count',
 );
+const historyFixture = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'voucher-history-timeline-fixture',
+      date: today,
+      vendor: 'Voucher History Timeline Fixture',
+      amount: 47,
+      category: 'Other',
+      paymentMethod: 'CASH',
+    },
+  ],
+});
+ok(historyFixture.ok && historyFixture.data.created.length === 1, 'voucher history fixture is created');
+const historyVoucherId = historyFixture.data.created[0].id;
+const historyFixtureUpdate = as(T, 'updateVoucher', {
+  id: historyVoucherId,
+  fields: { notes: 'History note corrected' },
+  reason: 'Audit timeline regression',
+});
+ok(historyFixtureUpdate.ok, 'voucher history fixture update is saved');
+const historyPage = as(T, 'voucherHistory', { id: historyVoucherId });
+ok(
+  historyPage.ok &&
+    historyPage.data.rows.length === 2 &&
+    historyPage.data.rows[0].eventType === 'VOUCHER_UPDATED' &&
+    historyPage.data.rows[0].reason === 'Audit timeline regression' &&
+    historyPage.data.rows[1].eventType === 'VOUCHER_CREATED' &&
+    historyPage.data.rows[1].changes.some(
+      (change) => change.field === 'amount' && change.before === 'Not set' && change.after === '47',
+    ) &&
+    historyPage.data.scannedRows <= 500,
+  'voucher history returns newest structured events for the exact stable voucher ID in a bounded scan',
+);
+const unrelatedHistory = as(T, 'voucherHistory', { id: 'voucher-does-not-exist' });
+ok(
+  unrelatedHistory.ok &&
+    !unrelatedHistory.data.rows.some((row) => row.eventId === historyPage.data.rows[0]?.eventId),
+  'voucher history never leaks events that reference another stable voucher ID',
+);
+ok(
+  as(T, 'voucherHistory', { id: '' }).code === 'VALIDATION' &&
+    as(T, 'voucherHistory', { id: historyVoucherId, beforeRow: 'not-a-cursor' }).code === 'VALIDATION' &&
+    as(T, 'voucherHistory', {
+      id: historyVoucherId,
+      beforeRow: String(g.sheets.AuditLog.rows.length + 5),
+    }).code === 'VALIDATION',
+  'voucher history rejects blank IDs, malformed cursors and out-of-range cursors',
+);
 const auditRowsBeforeFixture = g.sheets.AuditLog.rows.length;
 for (let i = 0; i < 205; i++) {
   g.sheets.AuditLog.rows.push([

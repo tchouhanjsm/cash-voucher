@@ -140,6 +140,110 @@ function auditLog_(user, req) {
   };
 }
 
+function voucherAuditValue_(value) {
+  if (value === null || value === undefined) return 'Not set';
+  if (typeof value === 'string') return value ? clean_(value, 240) : '(empty)';
+  if (typeof value === 'number' && isFinite(value)) return String(value);
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No';
+  return '[complex value omitted]';
+}
+
+// Owner-only, bounded, read-only history matched by the stable voucher ID.
+// Each call scans at most 500 AuditLog rows and returns at most 50 events.
+function voucherAuditHistory_(user, req) {
+  need_(user, 'audit');
+  const id = typeof req.id === 'string' ? req.id.trim() : '';
+  if (!id || id.length > 100) throw err_('A valid voucher ID is required.', 'VALIDATION');
+
+  const sheet = sheet_('AuditLog');
+  const lastRow = sheet.getLastRow();
+  if (lastRow < 2) {
+    return { rows: [], nextBeforeRow: null, scannedRows: 0, auditHealth: auditWriteHealth_() };
+  }
+
+  let beforeRow = lastRow + 1;
+  if (req.beforeRow !== undefined && req.beforeRow !== null && req.beforeRow !== '') {
+    const rawCursor = String(req.beforeRow);
+    if (!/^\d+$/.test(rawCursor)) throw err_('Invalid voucher-history page cursor.', 'VALIDATION');
+    beforeRow = Number(rawCursor);
+    if (!Number.isSafeInteger(beforeRow) || beforeRow < 2 || beforeRow > lastRow + 1) {
+      throw err_('Invalid voucher-history page cursor.', 'VALIDATION');
+    }
+  }
+
+  const endRow = Math.min(lastRow, beforeRow - 1);
+  if (endRow < 2) {
+    return { rows: [], nextBeforeRow: null, scannedRows: 0, auditHealth: auditWriteHealth_() };
+  }
+  const scanLimit = 500;
+  const matchLimit = 50;
+  const startRow = Math.max(2, endRow - scanLimit + 1);
+  const values = sheet.getRange(startRow, 1, endRow - startRow + 1, 5).getValues();
+  const rows = [];
+  let scannedRows = 0;
+  let nextBeforeRow = startRow > 2 ? startRow : null;
+  let stoppedAtMatchLimit = false;
+
+  for (let i = values.length - 1; i >= 0; i--) {
+    scannedRows++;
+    let details;
+    try {
+      details = JSON.parse(String(values[i][4] || ''));
+    } catch (_) {
+      continue;
+    }
+    if (
+      !details ||
+      typeof details !== 'object' ||
+      Array.isArray(details) ||
+      details.version !== 1 ||
+      details.entityType !== 'voucher' ||
+      details.entityId !== id
+    ) continue;
+
+    const changes = Array.isArray(details.changes)
+      ? details.changes
+          .filter(function (change) {
+            return change && typeof change === 'object' && !Array.isArray(change);
+          })
+          .slice(0, 30)
+          .map(function (change) {
+            return {
+              field: clean_(String(change.field || 'Field'), 80),
+              before: voucherAuditValue_(change.before),
+              after: voucherAuditValue_(change.after),
+            };
+          })
+      : [];
+
+    rows.push({
+      time: tsStr_(values[i][0]),
+      user: clean_(String(values[i][1] || ''), 254),
+      action: clean_(String(values[i][2] || ''), 80),
+      target: clean_(String(values[i][3] || ''), 120),
+      eventId: typeof details.eventId === 'string' ? clean_(details.eventId, 100) : '',
+      eventType: typeof details.eventType === 'string' ? clean_(details.eventType, 100) : '',
+      summary: typeof details.summary === 'string' ? clean_(details.summary, 240) : '',
+      reason: typeof details.reason === 'string' ? clean_(details.reason, 240) : '',
+      changes: changes,
+    });
+
+    if (rows.length >= matchLimit) {
+      const matchedSheetRow = startRow + i;
+      nextBeforeRow = matchedSheetRow > 2 ? matchedSheetRow : null;
+      stoppedAtMatchLimit = true;
+      break;
+    }
+  }
+
+  return {
+    rows: rows,
+    nextBeforeRow: stoppedAtMatchLimit ? nextBeforeRow : startRow > 2 ? startRow : null,
+    scannedRows: scannedRows,
+    auditHealth: auditWriteHealth_(),
+  };
+}
+
 /**
  * Owner-only, read-only release target probe used by the staging/UAT guard.
  * It reports resource identifiers only to a user with the Settings permission;
