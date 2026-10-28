@@ -93,7 +93,7 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
   }
 }
 
-function validateStagingPreflight(preflight, source, errors) {
+function validateStagingPreflight(preflight, source, sourceChecks, errors) {
   exactKeys(
     preflight,
     [
@@ -145,6 +145,17 @@ function validateStagingPreflight(preflight, source, errors) {
       'https://github.com/' + REPOSITORY + '/actions/runs/' + preflight.workflowRun.runId
     ) {
       add(errors, 'PREFLIGHT_RUN_URL', 'Staging preflight run URL must match its repository and run ID.');
+    }
+  }
+
+  if (isRecord(preflight.workflowRun) && typeof preflight.workflowRun.runId === 'string') {
+    const sourceRunIds = isRecord(sourceChecks)
+      ? Object.values(sourceChecks)
+          .filter((check) => isRecord(check) && typeof check.runId === 'string')
+          .map((check) => check.runId)
+      : [];
+    if (sourceRunIds.includes(preflight.workflowRun.runId)) {
+      add(errors, 'PREFLIGHT_RUN_ID_DUPLICATE', 'Staging preflight must reference a distinct workflow run.');
     }
   }
 
@@ -245,7 +256,12 @@ function validateReleaseGateBundle(bundle) {
 
   const commitSha = isRecord(bundle.source) ? bundle.source.commitSha : '';
   validateSourceChecks(bundle.sourceChecks, commitSha, errors);
-  validateStagingPreflight(bundle.stagingPreflight, isRecord(bundle.source) ? bundle.source : {}, errors);
+  validateStagingPreflight(
+    bundle.stagingPreflight,
+    isRecord(bundle.source) ? bundle.source : {},
+    bundle.sourceChecks,
+    errors,
+  );
 
   const recovery = validateRecoveryEvidence(bundle.recoveryEvidence);
   if (!recovery.ok) {
