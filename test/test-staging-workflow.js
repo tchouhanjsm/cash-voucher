@@ -292,6 +292,127 @@ assert.match(
   'staging recovery instructions must not bypass safety gates',
 );
 
+function extractWorkflowJob(name, nextName) {
+  const start = workflow.indexOf('  ' + name + ':\\n');
+  const end = nextName ? workflow.indexOf('  ' + nextName + ':\\n', start + 1) : workflow.length;
+  assert.ok(start >= 0 && end > start, 'workflow job exists: ' + name);
+  return workflow.slice(start, end);
+}
+
+function extractWorkflowStep(job, name) {
+  const marker = '      - name: ' + name + '\\n';
+  const start = job.indexOf(marker);
+  assert.ok(start >= 0, 'workflow step exists: ' + name);
+  const end = job.indexOf('\\n      - name: ', start + marker.length);
+  return job.slice(start, end < 0 ? job.length : end);
+}
+
+function assertNoStepSecrets(step, description) {
+  assert.doesNotMatch(step, /\\$\\{\\{\\s*secrets\\./, description);
+}
+
+const deployJob = extractWorkflowJob('deploy', 'uat');
+const uatOnlyJob = extractWorkflowJob('uat');
+const deployHeader = deployJob.split('    steps:\\n')[0];
+const uatOnlyHeader = uatOnlyJob.split('    steps:\\n')[0];
+assertNoStepSecrets(deployHeader, 'deploy job header must not expose secrets to every step');
+assertNoStepSecrets(uatOnlyHeader, 'uat job header must not expose secrets to every step');
+assert.doesNotMatch(
+  uatOnlyJob,
+  /CLASPRC_JSON|secrets\\.CLASPRC_JSON/,
+  'UAT-only must never receive the Clasp OAuth credential',
+);
+
+for (const stepName of [
+  'Checkout',
+  'Setup Node.js',
+  'Setup Python',
+  'Install dependencies',
+  'Install Playwright',
+  'Assemble sanitized staging execution evidence',
+  'Upload sanitized staging evidence',
+]) {
+  assertNoStepSecrets(
+    extractWorkflowStep(deployJob, stepName),
+    'deploy job step must be credential-free: ' + stepName,
+  );
+}
+for (const stepName of [
+  'Checkout',
+  'Setup Node.js',
+  'Setup Python',
+  'Install dependencies',
+  'Assemble sanitized staging execution evidence',
+  'Upload sanitized staging evidence',
+]) {
+  assertNoStepSecrets(
+    extractWorkflowStep(uatOnlyJob, stepName),
+    'UAT-only job step must be credential-free: ' + stepName,
+  );
+}
+
+const deployConfigPreflight = extractWorkflowStep(
+  deployJob,
+  'Validate isolated deployment configuration',
+);
+const deployMutation = extractWorkflowStep(
+  deployJob,
+  'Update the existing staging deployment only',
+);
+const deployTargetRecheck = extractWorkflowStep(deployJob, 'Verify target before testing');
+const deployUatStep = extractWorkflowStep(deployJob, 'Run staging UAT');
+const uatTargetPreflight = extractWorkflowStep(uatOnlyJob, 'Validate isolated staging target');
+const uatOnlyStep = extractWorkflowStep(uatOnlyJob, 'Run staging UAT without deploying');
+
+for (const key of [
+  'CV_STAGING_SCRIPT_ID',
+  'CV_PRODUCTION_SCRIPT_ID',
+  'CV_STAGING_DEPLOYMENT_ID',
+  'CV_STAGING_API_URL',
+  'CV_STAGING_SPREADSHEET_ID',
+  'CV_PRODUCTION_SPREADSHEET_ID',
+  'CV_STAGING_RECEIPT_FOLDER_ID',
+  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
+  'CV_STAGING_BACKUP_FOLDER_ID',
+  'CV_PRODUCTION_BACKUP_FOLDER_ID',
+]) {
+  assert.ok(
+    deployConfigPreflight.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'deploy preflight receives required resource-isolation input: ' + key,
+  );
+  assert.ok(
+    deployMutation.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'deployment step receives required target identity input: ' + key,
+  );
+  assert.ok(
+    deployTargetRecheck.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'post-deploy target recheck receives required resource input: ' + key,
+  );
+  assert.ok(
+    deployUatStep.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'deploy UAT step receives required target input: ' + key,
+  );
+  assert.ok(
+    uatTargetPreflight.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'UAT-only preflight receives required target input: ' + key,
+  );
+  assert.ok(
+    uatOnlyStep.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'UAT-only execution receives required target input: ' + key,
+  );
+}
+assert.match(deployConfigPreflight, /CLASPRC_JSON: \\$\\{\\{ secrets\\.CLASPRC_JSON \\}\\}/);
+assert.match(deployMutation, /CLASPRC_JSON: \\$\\{\\{ secrets\\.CLASPRC_JSON \\}\\}/);
+assert.doesNotMatch(deployTargetRecheck, /CLASPRC_JSON/);
+assert.doesNotMatch(deployUatStep, /CLASPRC_JSON/);
+assert.doesNotMatch(uatTargetPreflight, /CLASPRC_JSON/);
+assert.doesNotMatch(uatOnlyStep, /CLASPRC_JSON/);
+assert.match(deployUatStep, /CV_STAGING_UAT_CONFIRM_WRITES: \\$\\{\\{ inputs\\.confirm_staging_writes \\}\\}/);
+assert.match(uatOnlyStep, /CV_STAGING_UAT_CONFIRM_WRITES: \\$\\{\\{ inputs\\.confirm_staging_writes \\}\\}/);
+assert.doesNotMatch(deployConfigPreflight, /CV_STAGING_UAT_CONFIRM_WRITES/);
+assert.doesNotMatch(deployTargetRecheck, /CV_STAGING_UAT_CONFIRM_WRITES/);
+assert.doesNotMatch(uatTargetPreflight, /CV_STAGING_UAT_CONFIRM_WRITES/);
+
 const readinessJob = workflow.split('  preflight-readiness:\n')[1].split('  guard:\n')[0];
 assert.match(readinessJob, /github\.ref == 'refs\/heads\/client-main'/);
 assert.match(readinessJob, /inputs\.operation == 'validate-only'/);
