@@ -71,12 +71,16 @@ function writeNewPrivateEvidenceFile(rawPath, content) {
       if (descriptor !== undefined) {
         try {
           fs.closeSync(descriptor);
-        } catch {}
+        } catch {
+          // Preserve the original write failure; cleanup below still attempts unlink.
+        }
         descriptor = undefined;
       }
       try {
         fs.unlinkSync(target.path);
-      } catch {}
+      } catch {
+        // The caller receives a generic error; avoid exposing low-level paths or errors.
+      }
     }
     throw new Error(
       'Staging evidence output could not be created safely; existing files are never overwritten.',
