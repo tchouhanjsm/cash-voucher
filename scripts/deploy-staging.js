@@ -70,7 +70,6 @@ function sanitized(value, env = process.env) {
   return text.slice(0, 5000);
 }
 
-
 function cleanupTemporaryDirectories(directories, fileSystem = fs) {
   let successful = true;
   for (const directory of directories) {
