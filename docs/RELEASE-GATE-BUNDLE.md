@@ -11,10 +11,12 @@ Keep the combined JSON in a private operator-controlled location. Do not commit 
 ## Validation command
 
 ```sh
-npm run validate:release-bundle -- /private/path/release-gate-bundle.json --report=/private/path/release-gate-validation.json
+npm run validate:release-bundle -- /private/path/release-gate-bundle.json --evidence-dir=/private/path/evidence-records --report=/private/path/release-gate-validation.json
 ```
 
-The command reads a JSON file up to 5 MiB and exits nonzero on missing, failed, mismatched or unexpected evidence. With `--report=...`, it writes a sanitized validation report containing the outcome, source SHA and error codes only. Reports are mode `0600`; newly created output directories use mode `0700`. Both the input bundle and report must be outside the repository, existing report files are never overwritten, the report may not overwrite the input, and symlink output paths/aliases are rejected. The report is not the bundle and contains no resource fingerprints, run URLs, raw evidence or error messages. Run `npm run validate:recovery-evidence -- /private/path/recovery-evidence.json` separately when preparing the recovery evidence source.
+The `--evidence-dir` argument is required. Store the eight exact operational evidence records in that private directory as `<evidenceRef>.evidence`; the reference must be a safe filename identifier and may not contain path separators. The validator rejects missing, non-regular, symlinked or larger-than-10-MiB records and recomputes SHA-256 from the file bytes. A digest mismatch blocks the bundle. The directory and all records must remain outside the repository; do not put customer rows, credential exports or unredacted sensitive content in the evidence files unless the private handling process explicitly allows it. The evidence directory itself must be a real, non-symlink directory.
+
+The command reads a bundle file up to 5 MiB and exits nonzero on missing, failed, mismatched or unexpected evidence. With `--report=...`, it writes a sanitized validation report containing the outcome, source SHA, error codes and the count of verified operational digests only. Reports are mode `0600`; newly created output directories use mode `0700`. The input bundle, evidence directory and report must be outside the repository; existing report files are never overwritten, the report may not overwrite the input, and symlink output paths/aliases are rejected. The report is not the bundle and contains no resource fingerprints, evidence references, run URLs, raw evidence, error messages or hashes. Run `npm run validate:recovery-evidence -- /private/path/recovery-evidence.json` separately when preparing the recovery evidence source.
 
 ## Required contract
 
@@ -25,7 +27,7 @@ The command reads a JSON file up to 5 MiB and exits nonzero on missing, failed, 
 - **Operational acceptance:** include `status: pass`, a non-sensitive evidence reference, the SHA-256 digest of the exact retained evidence record, and a canonical UTC `verifiedAt` timestamp for each gate. Calculate the digest privately with `shasum -a 256 /private/path/evidence-record.json` (or an equivalent trusted tool) and compare it to the stored record before attesting. All application-level gates must include `testedClientMainSha` matching the release bundle SHA; branch-protection verification is the only gate that does not require an application SHA.
 - **Freshness windows:** the bundle itself must be validated within 24 hours of creation and may not be dated more than five minutes into the future. Staging configuration preflight must be no older than 24 hours; recovery-drill evidence no older than 7 days; live staging UAT, security headers, role/receipt authorization and customer acceptance no older than 7 days; branch protection, offline/reconnect, printing/PDF and accessibility no older than 30 days. All evidence timestamps must be at or before the bundle timestamp.
 
-The validator checks only that each `evidenceSha256` is a 64-character hexadecimal digest. It does not read or hash the referenced evidence file; the owner/reviewer must independently calculate the file's digest and compare it with the bundle before accepting the record. Do not place sensitive evidence paths or raw evidence in the bundle or Git.
+The validator recomputes each operational evidence file's SHA-256 and compares it with `evidenceSha256`. This confirms byte-level consistency, not authenticity or correctness; the owner/reviewer must still inspect each record, confirm that the evidenceRef maps to the intended check, and independently verify live-source provenance. Do not place file paths or raw evidence contents in the bundle or Git.
 
 ## Important limitations
 
