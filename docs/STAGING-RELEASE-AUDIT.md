@@ -9,7 +9,6 @@
 - This source verifier only reports governance configuration. The owner/admin must set client-main as default, add complete client-main protection and an explicit main freeze, then rerun the verifier.
 - Source checks passing on a PR do not authenticate live operational evidence or authorize staging, deployment, schema migration, Sheets/Drive writes, cPanel publication or production operation.
 
-
 **Audit date:** 28 October 2026 (client-main governance verifier phase)
 **Current integration baseline:** `client-main` `afeb6376f7be9a1b3f8b5d8e1034a8a476986382` (PR #244 merged; operational release remains blocked).
 **Current source batch:** `client/verify-client-main-governance-20261028`; inspect active ruleset targets, required checks, review enforcement and legacy-main freeze without changing repository settings.

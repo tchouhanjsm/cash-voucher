@@ -9,7 +9,6 @@
 - This source verifier only reports governance configuration. The owner/admin must set client-main as default, add complete client-main protection and an explicit main freeze, then rerun the verifier.
 - Source checks passing on a PR do not authenticate live operational evidence or authorize staging, deployment, schema migration, Sheets/Drive writes, cPanel publication or production operation.
 
-
 **Updated:** 28 October 2026 (client-main governance verifier phase)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
 **Current integration SHA:** `afeb6376f7be9a1b3f8b5d8e1034a8a476986382` (PR #244 merged; release remains blocked pending governance and live evidence).

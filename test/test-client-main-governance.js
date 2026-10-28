@@ -19,7 +19,10 @@ const requiredContexts = [
 function classicProtection() {
   return {
     required_status_checks: { strict: true, contexts: requiredContexts, checks: [] },
-    required_pull_request_reviews: { required_approving_review_count: 1, dismiss_stale_reviews: true },
+    required_pull_request_reviews: {
+      required_approving_review_count: 1,
+      dismiss_stale_reviews: true,
+    },
     enforce_admins: { enabled: true },
     allow_force_pushes: { enabled: false },
     allow_deletions: { enabled: false },
@@ -44,7 +47,10 @@ function integrationRuleSet(include = ['client-main']) {
       type: 'required_status_checks',
       parameters: {
         strict_required_status_checks_policy: true,
-        required_status_checks: requiredContexts.map((context) => ({ context, integration_id: 15368 })),
+        required_status_checks: requiredContexts.map((context) => ({
+          context,
+          integration_id: 15368,
+        })),
       },
     },
     {
@@ -61,7 +67,12 @@ function integrationRuleSet(include = ['client-main']) {
 }
 
 function legacyFreezeRuleSet(include = ['main'], bypassActors = []) {
-  return ruleSet('legacy-freeze', include, [{ type: 'update' }, { type: 'deletion' }], bypassActors);
+  return ruleSet(
+    'legacy-freeze',
+    include,
+    [{ type: 'update' }, { type: 'deletion' }],
+    bypassActors,
+  );
 }
 
 function goodSnapshot() {
@@ -134,12 +145,24 @@ async function main() {
   assert.ok(errorCodes(forcePush).includes('CLIENT_MAIN_CLASSIC_FORCE_PUSH_ENABLED'));
 
   const mainNotFrozen = goodSnapshot();
-  mainNotFrozen.rulesets = [ruleSet('legacy-default-only', ['~DEFAULT_BRANCH'], [
-    { type: 'deletion' },
-    { type: 'non_fast_forward' },
-    { type: 'pull_request', parameters: { required_approving_review_count: 0 } },
-    { type: 'required_status_checks', parameters: { strict_required_status_checks_policy: true, required_status_checks: [{ context: 'quality' }] } },
-  ])];
+  mainNotFrozen.rulesets = [
+    ruleSet(
+      'legacy-default-only',
+      ['~DEFAULT_BRANCH'],
+      [
+        { type: 'deletion' },
+        { type: 'non_fast_forward' },
+        { type: 'pull_request', parameters: { required_approving_review_count: 0 } },
+        {
+          type: 'required_status_checks',
+          parameters: {
+            strict_required_status_checks_policy: true,
+            required_status_checks: [{ context: 'quality' }],
+          },
+        },
+      ],
+    ),
+  ];
   assert.ok(
     errorCodes(mainNotFrozen).includes('MAIN_FREEZE_RULESET_MISSING'),
     'default-branch-only rule set does not protect client-main',
@@ -156,24 +179,39 @@ async function main() {
   assert.ok(onlyDefaultCodes.includes('CLIENT_MAIN_RULESET_NOT_APPLICABLE'));
   assert.ok(onlyDefaultCodes.includes('MAIN_FREEZE_RULESET_MISSING'));
 
-  const request = await requestGitHubJson('/repos/' + repositoryName, 'test-token', async (url, options) => {
-    assert.equal(url, 'https://api.github.com/repos/' + repositoryName);
-    assert.equal(options.headers.Authorization, 'Bearer test-token');
-    assert.equal(options.headers.Accept, 'application/vnd.github+json');
-    assert.equal(options.method, undefined);
-    return { ok: true, json: async () => ({ full_name: repositoryName }) };
-  });
+  const request = await requestGitHubJson(
+    '/repos/' + repositoryName,
+    'test-token',
+    async (url, options) => {
+      assert.equal(url, 'https://api.github.com/repos/' + repositoryName);
+      assert.equal(options.headers.Authorization, 'Bearer test-token');
+      assert.equal(options.headers.Accept, 'application/vnd.github+json');
+      assert.equal(options.method, undefined);
+      return { ok: true, json: async () => ({ full_name: repositoryName }) };
+    },
+  );
   assert.equal(request.full_name, repositoryName);
   await assert.rejects(
-    requestGitHubJson('/repos/other/repo', 'test-token', async () => ({ ok: true, json: async () => ({}) })),
+    requestGitHubJson('/repos/other/repo', 'test-token', async () => ({
+      ok: true,
+      json: async () => ({}),
+    })),
     /INVALID_API_ENDPOINT/,
   );
   await assert.rejects(
-    requestGitHubJson('/repos/' + repositoryName, 'test-token', async () => ({ ok: false, status: 403 })),
-    (error) => error.status === 403 && error.message === 'GITHUB_API_RESPONSE' && !error.message.includes('test-token'),
+    requestGitHubJson('/repos/' + repositoryName, 'test-token', async () => ({
+      ok: false,
+      status: 403,
+    })),
+    (error) =>
+      error.status === 403 &&
+      error.message === 'GITHUB_API_RESPONSE' &&
+      !error.message.includes('test-token'),
   );
 
-  console.log('Client-main governance verification contract OK — integration checks, approval policy and legacy-main freeze fail closed.');
+  console.log(
+    'Client-main governance verification contract OK — integration checks, approval policy and legacy-main freeze fail closed.',
+  );
 }
 
 main().catch((error) => {
