@@ -5,7 +5,7 @@ const {
   readProductionApiUrl,
   validateStagingConfiguration,
 } = require('../scripts/staging-preflight');
-const { sanitized } = require('../scripts/deploy-staging');
+const { cleanupTemporaryDirectories, sanitized } = require('../scripts/deploy-staging');
 
 const productionApiUrl = readProductionApiUrl();
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
@@ -358,6 +358,41 @@ assert.equal(
   JSON.stringify(failures.errors).includes(fixture.CLASPRC_JSON),
   false,
   'preflight diagnostics never echo Clasp credential content',
+);
+
+const removedDirectories = new Set(['/tmp/workspace', '/tmp/credential-home']);
+const successfulCleanup = cleanupTemporaryDirectories(
+  [...removedDirectories],
+  {
+    rmSync(directory) {
+      removedDirectories.delete(directory);
+    },
+    existsSync(directory) {
+      return removedDirectories.has(directory);
+    },
+  },
+);
+assert.equal(successfulCleanup, true);
+assert.equal(removedDirectories.size, 0);
+
+const attemptedRemovals = [];
+const failedCleanup = cleanupTemporaryDirectories(
+  ['/tmp/first-workspace', '/tmp/second-credential-home'],
+  {
+    rmSync(directory) {
+      attemptedRemovals.push(directory);
+      if (directory === '/tmp/first-workspace') throw new Error('simulated cleanup failure');
+    },
+    existsSync(directory) {
+      return directory === '/tmp/first-workspace';
+    },
+  },
+);
+assert.equal(failedCleanup, false);
+assert.deepEqual(
+  attemptedRemovals,
+  ['/tmp/first-workspace', '/tmp/second-credential-home'],
+  'cleanup must attempt credential-home removal even if workspace removal fails',
 );
 
 console.log(
