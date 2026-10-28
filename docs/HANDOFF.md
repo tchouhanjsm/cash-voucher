@@ -1,13 +1,13 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 28 October 2026 (staging workflow secret-scope phase)
+**Updated:** 28 October 2026 (staging evidence output and cleanup hardening phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
 **Current integration baseline:** `80b83af4bd722557b8889e8082c6e49029bdc311` (PR #242 merged; release-gate validation is integrated; operational release remains blocked).
-**Current source batch:** `client/staging-secret-scope-release-sprints-20261028` removes job-level staging credentials and scopes secrets to the exact deploy/UAT steps that require them; it adds regression coverage and reconciles release checkpoints without dispatching any live workflow.
+**Current source batch:** `client/staging-secret-scope-release-sprints-20261028` now combines least-privilege staging secrets, safe no-overwrite/symlink-resistant evidence output, and verified cleanup attempts for temporary Clasp credential workspaces. No live workflow is dispatched.
 **Release boundary:** staging workflow credential scoping, workflow regression tests and operator/release documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current release-session checkpoint — 28 October 2026 10:36 IST
+## Current release-session checkpoint — 28 October 2026 11:18 IST
 
 - **Integration baseline:** `client-main` at `80b83af4bd722557b8889e8082c6e49029bdc311`; PR #242 is merged. Legacy `main` remains read-only. `client-main` currently reports `protected=false`, so owner/admin governance work remains open.
 - **Previous phase:** merged PR #242 added release-bundle freshness, exact deployed-SHA binding, private evidence digest verification and safe report handling. This source phase does not reopen those completed code contracts.
@@ -22,6 +22,8 @@
 - **Security issue:** deploy and UAT jobs previously set staging resource identities, owner/manager credentials, and (for deployment) Clasp OAuth JSON at job level. This exposed them to every step in those jobs, including dependency installation, browser setup, evidence assembly and artifact upload.
 - **Fix:** remove job-level secret environments. Secret references are now scoped to the individual preflight, deploy, target-recheck and UAT steps that need them. UAT-only never receives Clasp OAuth credentials; write consent is passed only to the transactional UAT step.
 - **Regression contract:** `test/test-staging-workflow.js` checks job headers, every secret-free setup/install/evidence/upload step, required per-step inputs, Clasp exclusion from UAT/rechecks, and that explicit write consent reaches only the UAT execution step.
+- **Additional security phase:** `scripts/staging-evidence.js` now refuses evidence outputs inside the repository, rejects symlink/non-regular destinations and missing parent directories, creates artifacts exclusively with mode `0600`, and safely appends the step summary. The staging deploy wrapper now attempts cleanup of both the temporary project and Clasp credential home even if one removal fails, and raises a sanitized hard failure if cleanup cannot be verified. Regression tests cover overwrite/symlink/path traversal boundaries and cleanup attempts.
+- **Active PR:** PR #243 remains open against `client-main`. CI/E2E/Full Flight/monitor were green on its preceding head before this additional hardening; the expanded head must pass all four checks before review.
 - **Ten sprint outcomes consolidated:** (1) deploy job no longer inherits secrets; (2) UAT job no longer inherits secrets; (3) deployment preflight gets only its required config; (4) Clasp is limited to deployment preflight/deploy; (5) post-deploy target recheck excludes Clasp; (6) UAT execution receives only UAT/resource config; (7) UAT-only follows the same boundaries; (8) dependency/browser installation receives no staging secrets; (9) evidence generation/upload receives no staging credentials; (10) operator documentation and regression checks enforce these rules.
 - **Release boundary:** this is workflow, test and runbook hardening only. No workflow dispatch, Google API call, Clasp push, deployment, UAT write or production mutation was performed.
 - **Remaining governance risk:** GitHub currently reports `client-main` as unprotected. Step-scoping reduces credential exposure but does not replace owner/admin branch protection, reviewed merges, the protected `staging` Environment, `STAGING-ONLY` confirmation and explicit staging-write consent.
