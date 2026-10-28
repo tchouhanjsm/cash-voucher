@@ -153,6 +153,78 @@ try {
     },
     successfulLog,
   );
+
+  const originalEvidenceBytes = fs.readFileSync(outputPath, 'utf8');
+  assert.throws(
+    () =>
+      writeStagingEvidence(
+        { ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: outputPath },
+        successfulLog,
+      ),
+    /existing files are never overwritten/,
+  );
+  assert.equal(
+    fs.readFileSync(outputPath, 'utf8'),
+    originalEvidenceBytes,
+    'a rerun must not overwrite an existing evidence artifact',
+  );
+
+  const repoOutputPath = path.join(
+    path.resolve(__dirname, '..'),
+    'test',
+    '.unsafe-staging-evidence-' + process.pid + '.json',
+  );
+  assert.throws(
+    () =>
+      writeStagingEvidence(
+        { ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: repoOutputPath },
+        successfulLog,
+      ),
+    /outside the repository/,
+  );
+  assert.equal(fs.existsSync(repoOutputPath), false);
+
+  const missingParentOutput = path.join(tempDir, 'missing-parent', 'evidence.json');
+  assert.throws(
+    () =>
+      writeStagingEvidence(
+        { ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: missingParentOutput },
+        successfulLog,
+      ),
+    /parent directory must already exist/,
+  );
+
+  const protectedTarget = path.join(tempDir, 'protected-target.json');
+  const symlinkOutput = path.join(tempDir, 'evidence-link.json');
+  fs.writeFileSync(protectedTarget, 'keep-target-unchanged', 'utf8');
+  fs.symlinkSync(protectedTarget, symlinkOutput);
+  assert.throws(
+    () =>
+      writeStagingEvidence(
+        { ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: symlinkOutput },
+        successfulLog,
+      ),
+    /regular, non-symlink file/,
+  );
+  assert.equal(fs.readFileSync(protectedTarget, 'utf8'), 'keep-target-unchanged');
+
+  const summaryLink = path.join(tempDir, 'summary-link.md');
+  const summaryEvidencePath = path.join(tempDir, 'summary-link-evidence.json');
+  fs.symlinkSync(protectedTarget, summaryLink);
+  assert.throws(
+    () =>
+      writeStagingEvidence(
+        {
+          ...baseEnv,
+          CV_EVIDENCE_OUTPUT_PATH: summaryEvidencePath,
+          GITHUB_STEP_SUMMARY: summaryLink,
+        },
+        successfulLog,
+      ),
+    /regular, non-symlink file/,
+  );
+  assert.equal(fs.readFileSync(protectedTarget, 'utf8'), 'keep-target-unchanged');
+  fs.rmSync(summaryEvidencePath, { force: true });
   assert.equal(JSON.parse(fs.readFileSync(outputPath, 'utf8')).uat.status, 'passed');
   assert.equal(fs.statSync(outputPath).mode & 0o777, 0o600);
   const markdown = fs.readFileSync(summaryPath, 'utf8');
