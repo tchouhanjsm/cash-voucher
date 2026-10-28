@@ -23,6 +23,11 @@ const handoff = read('docs/HANDOFF.md');
 const recoveryEvidence = read('docs/RECOVERY-DRILL-EVIDENCE.md');
 const recoveryValidator = read('scripts/validate-recovery-evidence.js');
 const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
+const releaseGateBundleDocs = read('docs/RELEASE-GATE-BUNDLE.md');
+const releaseGateBundleValidator = read('scripts/validate-release-gate-bundle.js');
+const releaseGateBundleTest = read('test/test-release-gate-bundle.js');
+const recoveryEvidenceFixture = read('test/fixtures/recovery-evidence.js');
+const packageJson = JSON.parse(read('package.json'));
 const dashboard = read('frontend/features/dashboard.js');
 const auditHelpers = read('backend/25-helpers.gs');
 const backupHelpers = read('backend/20-backup.gs');
@@ -34,6 +39,21 @@ const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
 const currentIntegrationSha = 'a7421807b9bc2c56618ac1889c43f48ecfb79c81';
 assert.ok(handoff.includes(currentIntegrationSha));
+assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
+assert.ok(handoff.includes('release-gate bundle validator'));
+assert.ok(staging.includes('Current release-gate bundle phase — 28 October 2026'));
+assert.ok(executionPlan.includes('Current release-gate bundle phase — 28 October 2026'));
+assert.ok(recoveryEvidence.includes('Consolidated release gate bundle — 28 October 2026'));
+assert.ok(packageJson.scripts['validate:release-bundle']);
+assert.ok(packageJson.scripts.test.includes('test/test-release-gate-bundle.js'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_SHA_MISMATCH'));
+assert.ok(releaseGateBundleValidator.includes('PREFLIGHT_BOUNDARY'));
+assert.ok(releaseGateBundleValidator.includes("releaseApproval: 'human-review-required'"));
+assert.ok(releaseGateBundleTest.includes('SOURCE_CHECK_SHA_MISMATCH'));
+assert.ok(releaseGateBundleTest.includes('unsafeOperationalReference'));
+assert.ok(recoveryEvidenceFixture.includes('function buildRecoveryEvidence'));
+assert.ok(releaseGateBundleDocs.includes('does not independently query GitHub'));
+
 assert.ok(staging.includes(currentIntegrationSha));
 assert.ok(executionPlan.includes(currentIntegrationSha));
 assert.ok(staging.includes('Deep-dive findings — current source disposition'));
@@ -45,7 +65,7 @@ assert.doesNotMatch(
   handoff,
   /\*\*Current integration baseline:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
 );
-assert.match(handoff, /Current release-session checkpoint.*27 October 2026/);
+assert.match(handoff, /Current release-session checkpoint.*28 October 2026/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);
@@ -178,10 +198,10 @@ assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
 assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
 
-assert.ok(staging.includes('release integrity and dependency policy phase'));
+assert.ok(staging.includes('release gate bundle validation phase'));
 assert.match(staging, /remote connectivity.*restore were not verified/i);
-assert.ok(executionPlan.includes('release integrity and dependency policy phase'));
-assert.ok(handoff.includes('release integrity and dependency policy phase'));
+assert.ok(executionPlan.includes('release gate bundle validation phase'));
+assert.ok(handoff.includes('release gate bundle validation phase'));
 assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(staging, /Workflow isolation.*only from `client-main`/i);
 assert.match(executionPlan, /Secrets are scoped to the one validation step/i);
