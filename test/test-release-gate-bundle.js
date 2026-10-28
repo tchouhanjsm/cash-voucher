@@ -1,6 +1,10 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const { spawnSync } = require('node:child_process');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
 const {
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
@@ -174,6 +178,71 @@ assert.ok(hasCode(wrongSourceRef, 'SOURCE_REF'));
 const missingRecoveryProof = buildBundle();
 delete missingRecoveryProof.recoveryEvidence.receipts;
 assert.ok(hasCode(missingRecoveryProof, 'RECOVERY_RECEIPTS'));
+
+const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-bundle-'));
+try {
+  const inputPath = path.join(tempDir, 'bundle.json');
+  const passingReportPath = path.join(tempDir, 'passing-report.json');
+  fs.writeFileSync(inputPath, JSON.stringify(buildBundle()), { mode: 0o600 });
+
+  const passingRun = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--report=' + passingReportPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(passingRun.status, 0, passingRun.stderr);
+  assert.equal(fs.statSync(passingReportPath).mode & 0o777, 0o600);
+  const passingReportText = fs.readFileSync(passingReportPath, 'utf8');
+  const passingReport = JSON.parse(passingReportText);
+  assert.equal(passingReport.outcome, 'contract-pass');
+  assert.equal(passingReport.sourceSha, commitSha);
+  assert.equal(passingReport.summary.releaseApproval, 'human-review-required');
+  assert.deepEqual(passingReport.errorCodes, []);
+  assert.equal(passingReportText.includes('https://github.com'), false);
+  assert.equal(passingReportText.includes('scriptFingerprint'), false);
+
+  const blockedBundle = buildBundle();
+  blockedBundle.sourceChecks.ciQuality.headSha = 'b'.repeat(40);
+  blockedBundle.privateNotes = 'SENSITIVE-INTERNAL-NOTE';
+  fs.writeFileSync(inputPath, JSON.stringify(blockedBundle), { mode: 0o600 });
+  const blockedReportPath = path.join(tempDir, 'blocked-report.json');
+  const blockedRun = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--report=' + blockedReportPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(blockedRun.status, 1);
+  assert.equal(fs.statSync(blockedReportPath).mode & 0o777, 0o600);
+  const blockedReportText = fs.readFileSync(blockedReportPath, 'utf8');
+  const blockedReport = JSON.parse(blockedReportText);
+  assert.equal(blockedReport.outcome, 'blocked');
+  assert.ok(blockedReport.errorCodes.includes('SOURCE_CHECK_SHA_MISMATCH'));
+  assert.ok(blockedReport.errorCodes.includes('UNKNOWN_FIELD'));
+  assert.equal(blockedReportText.includes('SENSITIVE-INTERNAL-NOTE'), false);
+  assert.equal(blockedReportText.includes('https://github.com'), false);
+
+  const overwriteAttempt = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--report=' + inputPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(overwriteAttempt.status, 2);
+  assert.match(overwriteAttempt.stderr, /must not overwrite the input bundle/);
+} finally {
+  fs.rmSync(tempDir, { recursive: true, force: true });
+}
 
 console.log(
   'Release gate bundle contract OK — same-SHA source checks, staging preflight boundaries,',
