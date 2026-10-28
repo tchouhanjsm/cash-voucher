@@ -1148,7 +1148,7 @@ export function createRegister({ api, go }) {
         !isRecord(page) ||
         page.eventCategory !== eventCategory ||
         !isRecord(page.scanDiagnostics) ||
-        !['recognizedRows', 'unstructuredRows', 'unsupportedRows'].every(
+        !['recognizedRows', 'unstructuredRows', 'unsupportedRows', 'duplicateEventRows'].every(
           (field) =>
             Number.isSafeInteger(page.scanDiagnostics[field]) &&
             page.scanDiagnostics[field] >= 0 &&
@@ -1339,6 +1339,13 @@ export function createRegister({ api, go }) {
         if (scanDiagnostics.unstructuredRows || scanDiagnostics.unsupportedRows) {
           status.textContent +=
             ' Unstructured and unsupported rows were not used to link events to this voucher.';
+        }
+        if (scanDiagnostics.duplicateEventRows) {
+          status.textContent +=
+            ' Repeated event identifiers found: ' +
+            scanDiagnostics.duplicateEventRows +
+            ' duplicate row(s) in this scan. The rows remain visible; review the audit log before relying on completeness.';
+          status.className = 'error voucher-history-status';
         }
       } catch (error) {
         status.className = 'error voucher-history-status';

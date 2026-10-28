@@ -1807,7 +1807,8 @@ ok(
     emptyOlderPage.data.nextBeforeRow === null &&
     emptyOlderPage.data.scanDiagnostics.recognizedRows === 0 &&
     emptyOlderPage.data.scanDiagnostics.unstructuredRows === 0 &&
-    emptyOlderPage.data.scanDiagnostics.unsupportedRows === 0,
+    emptyOlderPage.data.scanDiagnostics.unsupportedRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.duplicateEventRows === 0,
   'voucher history reports an empty coverage range when a valid cursor has no older rows',
 );
 const diagnosticsFixtureStart = g.sheets.AuditLog.rows.length;
@@ -1832,6 +1833,21 @@ g.sheets.AuditLog.rows.push([
     summary: 'Unsupported fixture',
   }),
 ]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'duplicate-history-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: historyPage.data.rows[0].eventId,
+    eventType: historyPage.data.rows[0].eventType,
+    summary: 'Duplicate event ID fixture',
+    changes: [],
+  }),
+]);
 const historyWithDiagnostics = as(T, 'voucherHistory', { id: historyVoucherId });
 const historyScanDiagnostics =
   historyWithDiagnostics.data && historyWithDiagnostics.data.scanDiagnostics;
@@ -1841,6 +1857,7 @@ ok(
     historyScanDiagnostics &&
     historyScanDiagnostics.unstructuredRows >= 1 &&
     historyScanDiagnostics.unsupportedRows >= 1 &&
+    historyScanDiagnostics.duplicateEventRows >= 1 &&
     historyScanDiagnostics.recognizedRows +
       historyScanDiagnostics.unstructuredRows +
       historyScanDiagnostics.unsupportedRows ===

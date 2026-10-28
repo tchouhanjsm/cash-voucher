@@ -204,7 +204,12 @@ function voucherAuditHistory_(user, req) {
       rows: [],
       nextBeforeRow: null,
       scannedRows: 0,
-      scanDiagnostics: { recognizedRows: 0, unstructuredRows: 0, unsupportedRows: 0 },
+      scanDiagnostics: {
+        recognizedRows: 0,
+        unstructuredRows: 0,
+        unsupportedRows: 0,
+        duplicateEventRows: 0,
+      },
       scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
@@ -229,7 +234,12 @@ function voucherAuditHistory_(user, req) {
       rows: [],
       nextBeforeRow: null,
       scannedRows: 0,
-      scanDiagnostics: { recognizedRows: 0, unstructuredRows: 0, unsupportedRows: 0 },
+      scanDiagnostics: {
+        recognizedRows: 0,
+        unstructuredRows: 0,
+        unsupportedRows: 0,
+        duplicateEventRows: 0,
+      },
       scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
@@ -245,6 +255,8 @@ function voucherAuditHistory_(user, req) {
   let recognizedRows = 0;
   let unstructuredRows = 0;
   let unsupportedRows = 0;
+  let duplicateEventRows = 0;
+  const seenEventIds = Object.create(null);
   let nextBeforeRow = startRow > 2 ? startRow : null;
   let stoppedAtMatchLimit = false;
 
@@ -282,6 +294,14 @@ function voucherAuditHistory_(user, req) {
     ) {
       continue;
     }
+    const eventId = typeof details.eventId === 'string' ? clean_(details.eventId, 100) : '';
+    if (eventId) {
+      if (Object.prototype.hasOwnProperty.call(seenEventIds, eventId)) {
+        duplicateEventRows++;
+      } else {
+        seenEventIds[eventId] = true;
+      }
+    }
 
     const changes = Array.isArray(details.changes)
       ? details.changes
@@ -303,7 +323,7 @@ function voucherAuditHistory_(user, req) {
       user: clean_(String(values[i][1] || ''), 254),
       action: clean_(String(values[i][2] || ''), 80),
       target: clean_(String(values[i][3] || ''), 120),
-      eventId: typeof details.eventId === 'string' ? clean_(details.eventId, 100) : '',
+      eventId: eventId,
       eventType: typeof details.eventType === 'string' ? clean_(details.eventType, 100) : '',
       summary: typeof details.summary === 'string' ? clean_(details.summary, 240) : '',
       reason: typeof details.reason === 'string' ? clean_(details.reason, 240) : '',
@@ -327,6 +347,7 @@ function voucherAuditHistory_(user, req) {
       recognizedRows: recognizedRows,
       unstructuredRows: unstructuredRows,
       unsupportedRows: unsupportedRows,
+      duplicateEventRows: duplicateEventRows,
     },
     scanRange: {
       firstRow: endRow - scannedRows + 1,

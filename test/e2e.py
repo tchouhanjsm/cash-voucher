@@ -1533,6 +1533,8 @@ with sync_playwright() as p:
         payload = response.json()
         route_state['phase'] = 'json-decoded'
         data = payload.get('data', {}) if payload.get('ok') else {}
+        if isinstance(data, dict):
+            data.setdefault('scanDiagnostics', {})['duplicateEventRows'] = 1
         rows = data.get('rows')
         if isinstance(rows, list) and rows:
             rows[0]['summary'] = history_xss_payload
@@ -1608,8 +1610,9 @@ with sync_playwright() as p:
         and 'VOUCHER_CREATED' in page.locator('#modal').inner_text()
         and 'Loaded 1 structured event(s) matching created' in history_status
         and 'Searched AuditLog rows ' in history_status
-        and 'Coverage diagnostics:' in history_status,
-        'Register filters lifecycle events and discloses the exact AuditLog coverage range',
+        and 'Coverage diagnostics:' in history_status
+        and 'Repeated event identifiers found: 1 duplicate row(s)' in history_status,
+        'Register filters lifecycle events and surfaces repeated event-ID diagnostics',
     )
     inject_invalid_history_page['enabled'] = True
     history_filter.select_option('ALL')
