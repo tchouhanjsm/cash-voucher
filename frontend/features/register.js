@@ -1294,7 +1294,9 @@ export function createRegister({ api, go }) {
             '–' +
             page.scanRange.lastRow +
             '. ' +
-            (page.scanRange.hasOlderPage ? 'Older rows remain available.' : 'No older rows remain.');
+            (page.scanRange.hasOlderPage
+              ? 'Older rows remain available.'
+              : 'No older rows remain.');
         } else if (page.scannedRows === 0) {
           status.textContent += ' No AuditLog rows were available to search.';
         }
