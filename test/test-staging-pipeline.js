@@ -16,7 +16,10 @@ const runStagingUatScript = fs.readFileSync(
 assert.match(runStagingUatScript, /mktemp -d/);
 assert.match(runStagingUatScript, /set -o noclobber/);
 assert.match(runStagingUatScript, /env -i/);
-assert.match(runStagingUatScript, /env -u GITHUB_OUTPUT -u GITHUB_ENV -u GITHUB_PATH -u GITHUB_STEP_SUMMARY/);
+assert.match(
+  runStagingUatScript,
+  /env -u GITHUB_OUTPUT -u GITHUB_ENV -u GITHUB_PATH -u GITHUB_STEP_SUMMARY/,
+);
 assert.doesNotMatch(runStagingUatScript, /\/tmp\/cash-voucher-staging-(?:uat|server)\.log/);
 assert.doesNotMatch(runStagingUatScript, /tee "\$\{UAT_LOG_FILE\}"/);
 assert.match(runStagingUatScript, /detailed transcript is withheld from workflow logs/);
@@ -389,18 +392,15 @@ assert.equal(removedDirectories.size, 0);
 const partiallyAllocated = new Set(['/tmp/workspace-before-home-failure']);
 const partialAllocationAttempts = [];
 assert.equal(
-  cleanupTemporaryDirectories(
-    ['/tmp/workspace-before-home-failure', undefined],
-    {
-      rmSync(directory) {
-        partialAllocationAttempts.push(directory);
-        partiallyAllocated.delete(directory);
-      },
-      existsSync(directory) {
-        return partiallyAllocated.has(directory);
-      },
+  cleanupTemporaryDirectories(['/tmp/workspace-before-home-failure', undefined], {
+    rmSync(directory) {
+      partialAllocationAttempts.push(directory);
+      partiallyAllocated.delete(directory);
     },
-  ),
+    existsSync(directory) {
+      return partiallyAllocated.has(directory);
+    },
+  }),
   true,
 );
 assert.deepEqual(
