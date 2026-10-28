@@ -18,6 +18,22 @@ The root frontend `config.js` contains a production/legacy Apps Script URL. **Do
 
 The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. Keep local Clasp configuration/authentication in protected secrets or local files; never commit them.
 
+## Staging workflow secret isolation — 28 October 2026
+
+The manual `.github/workflows/staging-uat.yml` workflow must not put resource IDs, UAT account credentials or Clasp OAuth JSON in job-level `env`. Job-level values are inherited by every command in that job; dependency installation and artifact/reporting steps must not receive staging credentials.
+
+The current contract scopes credentials as follows:
+
+- **Deploy configuration preflight:** receives the resource inventory, dedicated UAT accounts, `STAGING-ONLY` confirmation and Clasp credential shape input needed to validate before mutation.
+- **Deploy step:** receives the same target inputs and Clasp OAuth JSON only while `scripts/deploy-staging.js` updates the existing dedicated staging deployment.
+- **Post-deploy target recheck:** receives resource inventory and UAT account configuration, but no Clasp OAuth JSON.
+- **Transactional UAT steps:** receive the resource inventory and dedicated UAT accounts; only the UAT execution step receives `confirm_staging_writes`. UAT-only must never receive Clasp OAuth JSON or deployment confirmation.
+- **No-secret steps:** checkout, Node/Python setup, `npm ci`, Playwright installation, evidence assembly and artifact upload run without staging secrets.
+
+The workflow regression test enforces these boundaries. Do not weaken it to accommodate a workflow refactor; update the test only when the step dependency is reviewed and the new scope remains least-privilege.
+
+This protects credentials from unnecessary step exposure; it does not protect a deployment if an authorized but unsafe command is placed inside a secret-bearing step. Keep such steps narrow, reviewed and auditable. Require manual dispatch from `client-main`, owner/admin branch protection, the protected `staging` Environment, exact `STAGING-ONLY` confirmation and explicit write consent. **Step scoping is not a substitute for branch protection**, and it does not authorize a deployment by itself.
+
 ## Staging resource isolation policy (current)
 
 The isolation attestation `OWNER-VERIFIED-STAGING-ONLY` is permitted **only for the non-mutating artifact preflight** when all four production resource reference IDs are intentionally omitted. It records an operator assertion; it does not independently prove resource identity.

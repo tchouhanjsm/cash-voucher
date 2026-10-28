@@ -1,21 +1,30 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 28 October 2026 (private evidence digest verification phase)
+**Updated:** 28 October 2026 (staging workflow secret-scope phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; current source baseline verified).
-**Current source batch:** `client/release-integrity-dependency-hardening-20261027` now recomputes SHA-256 for all eight retained operational evidence records from a private evidence directory. The CLI blocks missing, modified, symlinked, unsafe or oversized records before reporting contract-pass; exact-SHA workflow provenance and freshness checks remain enforced.
-**Release boundary:** release-gate validation tooling, dependency-audit policy, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+**Current integration baseline:** `80b83af4bd722557b8889e8082c6e49029bdc311` (PR #242 merged; release-gate validation is integrated; operational release remains blocked).
+**Current source batch:** `client/staging-secret-scope-release-sprints-20261028` removes job-level staging credentials and scopes secrets to the exact deploy/UAT steps that require them; it adds regression coverage and reconciles release checkpoints without dispatching any live workflow.
+**Release boundary:** staging workflow credential scoping, workflow regression tests and operator/release documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current release-session checkpoint — 28 October 2026 09:26 IST
+## Current release-session checkpoint — 28 October 2026 10:36 IST
 
-- **Integration baseline remains:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PR #242 is an open feature-branch proposal until human-reviewed and merged. Keep legacy `main` read-only.
-- **Current phase:** PR #242 extends the release-gate bundle with a 24-hour validation-age limit (five-minute future clock-skew tolerance), freshness windows (24h preflight, 7d recovery and selected live gates, 30d stable acceptance checks), timestamps on every operational gate, and exact deployed `client-main` SHA binding for application-level acceptance.
+- **Integration baseline:** `client-main` at `80b83af4bd722557b8889e8082c6e49029bdc311`; PR #242 is merged. Legacy `main` remains read-only. `client-main` currently reports `protected=false`, so owner/admin governance work remains open.
+- **Previous phase:** merged PR #242 added release-bundle freshness, exact deployed-SHA binding, private evidence digest verification and safe report handling. This source phase does not reopen those completed code contracts.
 - **Bundle acceptance:** the source gate requires CI / Quality, Browser E2E, Full Flight and the development monitor to succeed on one commit; preflight and recovery evidence must match that SHA and meet freshness limits; eight operational gates need recent evidence references, and all application acceptance gates must attest to that same `client-main` SHA.
 - **Privacy and scope:** bundle input, evidence directory and report must be outside the repository. On POSIX, the evidence directory must be mode `0700` or stricter and each `<evidenceRef>.evidence` record `0600` or stricter; non-symlink and 10 MiB file-size limits also apply. Report output uses restrictive permissions and never overwrites existing files. Keep bundle and evidence private; fixtures are not live proof. Owner review remains mandatory.
 - **Provenance requirement:** release source checks must be successful push runs on `refs/heads/client-main` from their expected workflow names. The validator checks their supplied run URLs against the repository and numeric run IDs but does not query GitHub; owner/QA must verify the linked run records before accepting evidence.
 - **Operational evidence fingerprints:** each live gate requires a SHA-256 digest for its retained evidence record. The CLI now recomputes the digest from the exact private file named `<evidenceRef>.evidence` and blocks a missing or changed file. The owner/reviewer must still inspect the evidence and verify the reference maps to the intended live check; matching bytes do not authenticate the claim.
 - **Release remains blocked:** staging identities/configuration, live UAT, isolated restore, seven-sheet and receipt reconciliation, production-unchanged evidence, actual host security headers, authorization, offline/reconnect, printing, accessibility and customer acceptance remain owner/operator tasks.
+
+## Staging secret-scope sprint batch — 28 October 2026
+
+- **Security issue:** deploy and UAT jobs previously set staging resource identities, owner/manager credentials, and (for deployment) Clasp OAuth JSON at job level. This exposed them to every step in those jobs, including dependency installation, browser setup, evidence assembly and artifact upload.
+- **Fix:** remove job-level secret environments. Secret references are now scoped to the individual preflight, deploy, target-recheck and UAT steps that need them. UAT-only never receives Clasp OAuth credentials; write consent is passed only to the transactional UAT step.
+- **Regression contract:** `test/test-staging-workflow.js` checks job headers, every secret-free setup/install/evidence/upload step, required per-step inputs, Clasp exclusion from UAT/rechecks, and that explicit write consent reaches only the UAT execution step.
+- **Ten sprint outcomes consolidated:** (1) deploy job no longer inherits secrets; (2) UAT job no longer inherits secrets; (3) deployment preflight gets only its required config; (4) Clasp is limited to deployment preflight/deploy; (5) post-deploy target recheck excludes Clasp; (6) UAT execution receives only UAT/resource config; (7) UAT-only follows the same boundaries; (8) dependency/browser installation receives no staging secrets; (9) evidence generation/upload receives no staging credentials; (10) operator documentation and regression checks enforce these rules.
+- **Release boundary:** this is workflow, test and runbook hardening only. No workflow dispatch, Google API call, Clasp push, deployment, UAT write or production mutation was performed.
+- **Remaining governance risk:** GitHub currently reports `client-main` as unprotected. Step-scoping reduces credential exposure but does not replace owner/admin branch protection, reviewed merges, the protected `staging` Environment, `STAGING-ONLY` confirmation and explicit staging-write consent.
 
 ## Historical checkpoint — 27 October 2026 22:11 IST (superseded by the release-gate bundle phase)
 

@@ -1,11 +1,20 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 28 October 2026 (private evidence digest verification phase)
+**Updated:** 28 October 2026 (staging workflow secret-scope phase)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
-**Current integration SHA:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; the current release remains blocked).
+**Current integration SHA:** `80b83af4bd722557b8889e8082c6e49029bdc311` (PR #242 merged; release remains blocked pending live evidence).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** `client/release-integrity-dependency-hardening-20261027`; add a consolidated validator for exact-SHA source checks, sanitized staging preflight, recovery-drill evidence and live operational evidence references.
+**Current source batch:** `client/staging-secret-scope-release-sprints-20261028`; scope staging deploy/UAT credentials to individual required steps, test the workflow contract and document residual governance risk.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
+
+## Staging secret-scope sprint batch — 28 October 2026
+
+- **Security issue:** deploy and UAT jobs previously set staging resource identities, owner/manager credentials, and (for deployment) Clasp OAuth JSON at job level. This exposed them to every step in those jobs, including dependency installation, browser setup, evidence assembly and artifact upload.
+- **Fix:** remove job-level secret environments. Secret references are now scoped to the individual preflight, deploy, target-recheck and UAT steps that need them. UAT-only never receives Clasp OAuth credentials; write consent is passed only to the transactional UAT step.
+- **Regression contract:** `test/test-staging-workflow.js` checks job headers, every secret-free setup/install/evidence/upload step, required per-step inputs, Clasp exclusion from UAT/rechecks, and that explicit write consent reaches only the UAT execution step.
+- **Ten sprint outcomes consolidated:** (1) deploy job no longer inherits secrets; (2) UAT job no longer inherits secrets; (3) deployment preflight gets only its required config; (4) Clasp is limited to deployment preflight/deploy; (5) post-deploy target recheck excludes Clasp; (6) UAT execution receives only UAT/resource config; (7) UAT-only follows the same boundaries; (8) dependency/browser installation receives no staging secrets; (9) evidence generation/upload receives no staging credentials; (10) operator documentation and regression checks enforce these rules.
+- **Release boundary:** this is workflow, test and runbook hardening only. No workflow dispatch, Google API call, Clasp push, deployment, UAT write or production mutation was performed.
+- **Remaining governance risk:** GitHub currently reports `client-main` as unprotected. Step-scoping reduces credential exposure but does not replace owner/admin branch protection, reviewed merges, the protected `staging` Environment, `STAGING-ONLY` confirmation and explicit staging-write consent.
 
 ## Current release-gate bundle phase — 28 October 2026
 

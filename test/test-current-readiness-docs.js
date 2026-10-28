@@ -27,6 +27,8 @@ const releaseGateBundleDocs = read('docs/RELEASE-GATE-BUNDLE.md');
 const releaseGateBundleValidator = read('scripts/validate-release-gate-bundle.js');
 const releaseGateBundleTest = read('test/test-release-gate-bundle.js');
 const ciWorkflow = read('.github/workflows/ci.yml');
+const stagingWorkflow = read('.github/workflows/staging-uat.yml');
+const stagingWorkflowTest = read('test/test-staging-workflow.js');
 const formatDiffScript = read('scripts/show-format-diff.js');
 const flightWorkflowContract = read('test/test-flight-workflow.js');
 const recoveryEvidenceFixture = read('test/fixtures/recovery-evidence.js');
@@ -40,8 +42,20 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
-const currentIntegrationSha = 'a7421807b9bc2c56618ac1889c43f48ecfb79c81';
+const currentIntegrationSha = '80b83af4bd722557b8889e8082c6e49029bdc311';
 assert.ok(handoff.includes(currentIntegrationSha));
+assert.match(
+  handoff,
+  /^\\*\\*Current integration baseline:\\*\\* `80b83af4bd722557b8889e8082c6e49029bdc311`/m,
+);
+assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
+assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
+assert.ok(executionPlan.includes('Staging secret-scope sprint batch — 28 October 2026'));
+assert.ok(appsScriptRunbook.includes('Staging workflow secret isolation — 28 October 2026'));
+assert.ok(stagingWorkflow.includes('name: Update the existing staging deployment only'));
+assert.ok(stagingWorkflowTest.includes('job header must not expose secrets to every step'));
+assert.ok(stagingWorkflowTest.includes('UAT-only must never receive the Clasp OAuth credential'));
+
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
 assert.ok(
   handoff.includes('recomputes SHA-256 for all eight retained operational evidence records'),
