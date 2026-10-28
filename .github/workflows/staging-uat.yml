@@ -273,6 +273,26 @@ jobs:
           if [ -n "${CV_STAGING_UAT_LOG_DIR}" ]; then
             case "${CV_STAGING_UAT_LOG_DIR}" in
               "${RUNNER_TEMP}"/cash-voucher-staging-uat.*)
+                if [ -L "${CV_STAGING_UAT_LOG_DIR}" ] || [ ! -d "${CV_STAGING_UAT_LOG_DIR}" ]; then
+                  echo "Staging UAT evidence directory was not a real directory."
+                  evidence_status=1
+                else
+                  dir_mode="$(stat -c '%a' "${CV_STAGING_UAT_LOG_DIR}" 2>/dev/null || true)"
+                  uat_log="${CV_STAGING_UAT_LOG_DIR}/uat.log"
+                  server_log="${CV_STAGING_UAT_LOG_DIR}/server.log"
+                  uat_mode=""
+                  server_mode=""
+                  if [ -f "${uat_log}" ] && [ ! -L "${uat_log}" ]; then
+                    uat_mode="$(stat -c '%a' "${uat_log}" 2>/dev/null || true)"
+                  fi
+                  if [ -f "${server_log}" ] && [ ! -L "${server_log}" ]; then
+                    server_mode="$(stat -c '%a' "${server_log}" 2>/dev/null || true)"
+                  fi
+                  if [ "${dir_mode}" != "700" ] || [ "${uat_mode}" != "600" ] || [ "${server_mode}" != "600" ]; then
+                    echo "Staging UAT log directory or files failed privacy checks."
+                    evidence_status=1
+                  fi
+                fi
                 rm -rf -- "${CV_STAGING_UAT_LOG_DIR}" || evidence_status=1
                 ;;
               *)
@@ -381,6 +401,26 @@ jobs:
           if [ -n "${CV_STAGING_UAT_LOG_DIR}" ]; then
             case "${CV_STAGING_UAT_LOG_DIR}" in
               "${RUNNER_TEMP}"/cash-voucher-staging-uat.*)
+                if [ -L "${CV_STAGING_UAT_LOG_DIR}" ] || [ ! -d "${CV_STAGING_UAT_LOG_DIR}" ]; then
+                  echo "Staging UAT evidence directory was not a real directory."
+                  evidence_status=1
+                else
+                  dir_mode="$(stat -c '%a' "${CV_STAGING_UAT_LOG_DIR}" 2>/dev/null || true)"
+                  uat_log="${CV_STAGING_UAT_LOG_DIR}/uat.log"
+                  server_log="${CV_STAGING_UAT_LOG_DIR}/server.log"
+                  uat_mode=""
+                  server_mode=""
+                  if [ -f "${uat_log}" ] && [ ! -L "${uat_log}" ]; then
+                    uat_mode="$(stat -c '%a' "${uat_log}" 2>/dev/null || true)"
+                  fi
+                  if [ -f "${server_log}" ] && [ ! -L "${server_log}" ]; then
+                    server_mode="$(stat -c '%a' "${server_log}" 2>/dev/null || true)"
+                  fi
+                  if [ "${dir_mode}" != "700" ] || [ "${uat_mode}" != "600" ] || [ "${server_mode}" != "600" ]; then
+                    echo "Staging UAT log directory or files failed privacy checks."
+                    evidence_status=1
+                  fi
+                fi
                 rm -rf -- "${CV_STAGING_UAT_LOG_DIR}" || evidence_status=1
                 ;;
               *)
