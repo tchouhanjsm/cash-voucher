@@ -1,18 +1,18 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 28 October 2026 (release gate bundle validation phase)
+**Updated:** 28 October 2026 (release bundle reporting and path-hardening phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
 **Current integration baseline:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; current source baseline verified).
 **Current source batch:** `client/release-integrity-dependency-hardening-20261027` now includes a fail-closed release-gate bundle validator tying exact-SHA source checks, sanitized staging preflight, recovery evidence and operational gate references together.
 **Release boundary:** release-gate validation tooling, dependency-audit policy, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current release-session checkpoint — 28 October 2026 06:04 IST
+## Current release-session checkpoint — 28 October 2026 07:27 IST
 
 - **Integration baseline remains:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PR #242 is an open feature-branch proposal until human-reviewed and merged. Keep legacy `main` read-only.
-- **Current phase:** PR #242 adds consolidated release-gate bundle validation, contract tests and operator instructions on top of recovery evidence validation and dependency-policy cleanup.
+- **Current phase:** PR #242 adds consolidated release-gate bundle validation, private sanitized result reports, strict repository-path guards and negative tests for symlink aliases, source scope and evidence chronology.
 - **Bundle acceptance:** the source gate requires CI / Quality, Browser E2E, Full Flight and the development monitor to succeed on one commit; staging-preflight and recovery evidence must name that same commit; eight operational gates need non-sensitive evidence references.
-- **Privacy and scope:** keep the actual bundle and recovery evidence private and out of Git. Do not use test fixtures as live proof. Validation is structural only; owner review and live evidence remain mandatory.
+- **Privacy and scope:** bundle input and report must be outside the repository. Report output uses restrictive file permissions and rejects repository paths, overwrite attempts and symlink targets. Keep the actual bundle and recovery evidence private; synthetic fixtures are not live proof. Validation is structural only; owner review and live evidence remain mandatory.
 - **Release remains blocked:** staging identities/configuration, live UAT, isolated restore, seven-sheet and receipt reconciliation, production-unchanged evidence, actual host security headers, authorization, offline/reconnect, printing, accessibility and customer acceptance remain owner/operator tasks.
 
 ## Historical checkpoint — 27 October 2026 22:11 IST (superseded by the release-gate bundle phase)
