@@ -17,6 +17,7 @@ const boardStrategy = read('docs/CEO-BOARD-STRATEGY.md');
 const executionPlan = read('docs/EXECUTION-PLAN-2026-10-21.md');
 const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
 const stagingAudit = read('docs/STAGING-RELEASE-AUDIT.md');
+const governanceVerifier = read('scripts/verify-client-main-governance.js');
 
 assert.match(ci, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(ci, /pull_request:\n\s+branches:\s*\[client-main\]/);
@@ -74,6 +75,10 @@ assert.match(executionPlan, /Never dispatch deploy\/UAT from `main`/);
 assert.match(branchPolicy, /\[CEO and board product strategy\]\(CEO-BOARD-STRATEGY\.md\)/);
 assert.match(stagingAudit, /six-step pipeline in \[the execution plan\]/);
 assert.match(stagingAudit, /separate recovery target/);
+assert.match(branchPolicy, /npm run verify:client-main-governance/);
+assert.match(governanceVerifier, /requestGitHubJson/);
+assert.match(governanceVerifier, /MAIN_FREEZE_RULESET_MISSING/);
+assert.doesNotMatch(governanceVerifier, /method:\s*['"](?:POST|PUT|PATCH|DELETE)/i);
 assert.match(
   branchPolicy,
   /\[Client-main engineering and release strategy\]\(CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21\.md\)/,
