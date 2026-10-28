@@ -36,7 +36,7 @@ const administrationFrontend = read('frontend/features/administration.js');
 const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
-assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
+assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
 const currentIntegrationSha = 'a7421807b9bc2c56618ac1889c43f48ecfb79c81';
 assert.ok(handoff.includes(currentIntegrationSha));
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
