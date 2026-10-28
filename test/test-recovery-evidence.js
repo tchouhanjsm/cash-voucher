@@ -1,10 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const {
-  REQUIRED_SHEETS,
-  validateRecoveryEvidence,
-} = require('../scripts/validate-recovery-evidence');
+const { validateRecoveryEvidence } = require('../scripts/validate-recovery-evidence');
 
 const { buildRecoveryEvidence, digest } = require('./fixtures/recovery-evidence');
 
