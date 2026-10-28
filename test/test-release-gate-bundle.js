@@ -182,7 +182,7 @@ assert.ok(hasCode(missingRecoveryProof, 'RECOVERY_RECEIPTS'));
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-bundle-'));
 try {
   const inputPath = path.join(tempDir, 'bundle.json');
-  const passingReportPath = path.join(tempDir, 'passing-report.json');
+  const passingReportPath = path.join(tempDir, 'private-report-output', 'passing-report.json');
   fs.writeFileSync(inputPath, JSON.stringify(buildBundle()), { mode: 0o600 });
 
   const passingRun = spawnSync(
@@ -196,6 +196,7 @@ try {
   );
   assert.equal(passingRun.status, 0, passingRun.stderr);
   assert.equal(fs.statSync(passingReportPath).mode & 0o777, 0o600);
+  assert.equal(fs.statSync(path.dirname(passingReportPath)).mode & 0o777, 0o700);
   const passingReportText = fs.readFileSync(passingReportPath, 'utf8');
   const passingReport = JSON.parse(passingReportText);
   assert.equal(passingReport.outcome, 'contract-pass');
