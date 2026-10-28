@@ -56,11 +56,6 @@ function getChangedFiles() {
 }
 
 function formatWithPrettier(relativePath, source) {
-  const formatted = run(process.execPath, [
-    PRETTIER_CLI,
-    '--stdin-filepath',
-    relativePath,
-  ]);
   const result = spawnSync(process.execPath, [PRETTIER_CLI, '--stdin-filepath', relativePath], {
     cwd: ROOT,
     input: source,
@@ -75,6 +70,7 @@ function formatWithPrettier(relativePath, source) {
 }
 
 function printDiff(relativePath, source, formatted, tempRoot) {
+  fs.mkdirSync(tempRoot, { recursive: true, mode: 0o700 });
   const originalPath = path.join(tempRoot, 'original');
   const formattedPath = path.join(tempRoot, 'formatted');
   fs.writeFileSync(originalPath, source, { mode: 0o600 });
