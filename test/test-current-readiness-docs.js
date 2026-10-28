@@ -61,6 +61,14 @@ assert.ok(releaseGateBundleDocs.includes('--evidence-dir=/private/path/evidence-
 assert.ok(releaseGateBundleDocs.includes('recomputes SHA-256 from the file bytes'));
 assert.ok(releaseGateBundleValidator.includes('verifyOperationalEvidenceDigests'));
 assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_EVIDENCE_HASH_MISMATCH'));
+assert.ok(releaseGateBundleValidator.includes('readBoundedEvidenceBytes'));
+assert.ok(releaseGateBundleValidator.includes('EVIDENCE_DIR_PERMISSIONS'));
+assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_EVIDENCE_FILE_PERMISSIONS'));
+assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_FILE_TOO_LARGE'));
+assert.ok(releaseGateBundleTest.includes('missingEvidenceDirectoryRun'));
+assert.ok(releaseGateBundleDocs.includes('mode `0700` or stricter'));
+assert.ok(releaseGateBundleDocs.includes('mode `0600` or stricter'));
+
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_HASH_MISMATCH'));
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_FILE_UNSAFE'));
 assert.ok(releaseGateBundleTest.includes('missingEvidenceDirectoryRun'));
