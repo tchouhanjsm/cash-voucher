@@ -87,7 +87,6 @@ assert.ok(
   ),
 );
 
-
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
 assert.ok(
   handoff.includes(
