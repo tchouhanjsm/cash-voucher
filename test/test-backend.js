@@ -1753,7 +1753,8 @@ ok(
     historyPage.data.scannedRows <= 500 &&
     historyPage.data.scanDiagnostics.recognizedRows +
       historyPage.data.scanDiagnostics.unstructuredRows +
-      historyPage.data.scanDiagnostics.unsupportedRows === historyPage.data.scannedRows &&
+      historyPage.data.scanDiagnostics.unsupportedRows ===
+      historyPage.data.scannedRows &&
     historyPage.data.scanDiagnostics.recognizedRows >= historyPage.data.rows.length,
   'voucher history returns newest structured events and accounts for every row in its bounded scan',
 );
@@ -1832,7 +1833,8 @@ g.sheets.AuditLog.rows.push([
   }),
 ]);
 const historyWithDiagnostics = as(T, 'voucherHistory', { id: historyVoucherId });
-const historyScanDiagnostics = historyWithDiagnostics.data && historyWithDiagnostics.data.scanDiagnostics;
+const historyScanDiagnostics =
+  historyWithDiagnostics.data && historyWithDiagnostics.data.scanDiagnostics;
 g.sheets.AuditLog.rows.splice(diagnosticsFixtureStart);
 ok(
   historyWithDiagnostics.ok &&
@@ -1841,8 +1843,11 @@ ok(
     historyScanDiagnostics.unsupportedRows >= 1 &&
     historyScanDiagnostics.recognizedRows +
       historyScanDiagnostics.unstructuredRows +
-      historyScanDiagnostics.unsupportedRows === historyWithDiagnostics.data.scannedRows &&
-    !historyWithDiagnostics.data.rows.some((event) => event.eventId === 'unsupported-event-fixture'),
+      historyScanDiagnostics.unsupportedRows ===
+      historyWithDiagnostics.data.scannedRows &&
+    !historyWithDiagnostics.data.rows.some(
+      (event) => event.eventId === 'unsupported-event-fixture',
+    ),
   'voucher history reports legacy and unsupported rows without linking unsupported events',
 );
 const unrelatedHistory = as(T, 'voucherHistory', { id: 'voucher-does-not-exist' });

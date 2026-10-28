@@ -1156,7 +1156,8 @@ export function createRegister({ api, go }) {
         ) ||
         page.scanDiagnostics.recognizedRows +
           page.scanDiagnostics.unstructuredRows +
-          page.scanDiagnostics.unsupportedRows !== page.scannedRows ||
+          page.scanDiagnostics.unsupportedRows !==
+          page.scannedRows ||
         !(
           page.scanRange === null ||
           (isRecord(page.scanRange) &&
