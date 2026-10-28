@@ -345,7 +345,7 @@ assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
 
 assert.ok(staging.includes('source-run provenance verification phase'));
 assert.match(staging, /remote connectivity.*restore were not verified/i);
-assert.ok(executionPlan.includes('source-run provenance verification batch'));
+assert.ok(executionPlan.includes('Source-run provenance verification batch'));
 assert.ok(handoff.includes('source-run provenance verification phase'));
 assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(staging, /Workflow isolation.*only from `client-main`/i);
