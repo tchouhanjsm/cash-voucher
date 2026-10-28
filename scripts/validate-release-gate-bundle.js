@@ -89,6 +89,13 @@ function exactKeys(value, keys, path, errors) {
   });
 }
 
+const SOURCE_CHECK_WORKFLOW_NAMES = Object.freeze({
+  ciQuality: 'CI',
+  browserE2e: 'Browser E2E',
+  fullFlight: 'Full Flight Test',
+  autonomousMonitor: 'Autonomous Development Monitor',
+});
+
 function validateSourceChecks(sourceChecks, commitSha, errors) {
   exactKeys(sourceChecks, REQUIRED_SOURCE_CHECKS, 'sourceChecks', errors);
   if (!isRecord(sourceChecks)) return;
@@ -96,10 +103,44 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
   const runIds = [];
   REQUIRED_SOURCE_CHECKS.forEach((name) => {
     const check = sourceChecks[name];
-    exactKeys(check, ['conclusion', 'headSha', 'runId'], 'sourceChecks.' + name, errors);
+    exactKeys(
+      check,
+      ['conclusion', 'headSha', 'runId', 'repository', 'workflowName', 'event', 'ref', 'runUrl'],
+      'sourceChecks.' + name,
+      errors,
+    );
     if (!isRecord(check)) return;
+
     if (check.conclusion !== 'success') {
       add(errors, 'SOURCE_CHECK_FAILED', 'Every required source check must conclude success.');
+    }
+    if (check.repository !== REPOSITORY) {
+      add(
+        errors,
+        'SOURCE_CHECK_REPOSITORY',
+        'Every source check must belong to the expected repository.',
+      );
+    }
+    if (check.workflowName !== SOURCE_CHECK_WORKFLOW_NAMES[name]) {
+      add(
+        errors,
+        'SOURCE_CHECK_WORKFLOW',
+        'Every source check must identify its expected GitHub Actions workflow.',
+      );
+    }
+    if (check.event !== 'push') {
+      add(
+        errors,
+        'SOURCE_CHECK_EVENT',
+        'Release source checks must come from integration-branch push runs, not pull-request runs.',
+      );
+    }
+    if (check.ref !== SOURCE_REF) {
+      add(
+        errors,
+        'SOURCE_CHECK_REF',
+        'Release source checks must target refs/heads/client-main.',
+      );
     }
     if (typeof check.headSha !== 'string' || !SHA1.test(check.headSha)) {
       add(errors, 'SOURCE_CHECK_SHA', 'Every source check must include a full commit SHA.');
@@ -110,7 +151,8 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
         'All required source checks must match the release SHA.',
       );
     }
-    if (typeof check.runId !== 'string' || !/^\d{1,20}$/.test(check.runId)) {
+
+    if (typeof check.runId !== 'string' || !/^\\d{1,20}$/.test(check.runId)) {
       add(
         errors,
         'SOURCE_CHECK_RUN_ID',
@@ -118,6 +160,15 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
       );
     } else {
       runIds.push(check.runId);
+      const expectedRunUrl =
+        'https://github.com/' + REPOSITORY + '/actions/runs/' + check.runId;
+      if (check.runUrl !== expectedRunUrl) {
+        add(
+          errors,
+          'SOURCE_CHECK_RUN_URL',
+          'Every source check URL must match its repository and workflow run ID.',
+        );
+      }
     }
   });
   if (new Set(runIds).size !== runIds.length) {
