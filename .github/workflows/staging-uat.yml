@@ -148,24 +148,6 @@ jobs:
     timeout-minutes: 35
     environment:
       name: staging
-    env:
-      CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
-      CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
-      CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
-      CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
-      CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
-      CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
-      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
-      CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
-      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
-      CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
-      CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
-      CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
-      CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
-      CV_STAGING_UAT_CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
-      CV_STAGING_DEPLOY_CONFIRMATION: ${{ inputs.confirmation }}
-      CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -191,19 +173,83 @@ jobs:
 
       - name: Validate isolated deployment configuration
         id: deployment_preflight
+        env:
+          CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+          CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+          CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+          CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+          CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+          CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+          CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+          CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+          CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+          CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+          CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
+          CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+          CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
+          CV_STAGING_DEPLOY_CONFIRMATION: ${{ inputs.confirmation }}
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: npm run staging:preflight -- --mode=deploy
 
       - name: Update the existing staging deployment only
         id: update_deployment
+        env:
+          CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+          CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+          CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+          CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+          CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+          CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+          CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+          CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+          CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+          CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+          CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
+          CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+          CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
+          CV_STAGING_DEPLOY_CONFIRMATION: ${{ inputs.confirmation }}
+          CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: npm run staging:deploy
 
       - name: Verify target before testing
         id: target_recheck
+        env:
+          CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+          CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+          CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+          CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+          CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+          CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+          CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+          CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+          CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+          CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+          CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
+          CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+          CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
         run: npm run staging:preflight -- --mode=uat
 
       - name: Run staging UAT
         id: staging_uat
         env:
+          CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+          CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+          CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+          CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+          CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+          CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+          CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+          CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+          CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+          CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+          CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
+          CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+          CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
+          CV_STAGING_UAT_CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
           CV_STAGING_UAT_LOG_FILE: ${{ runner.temp }}/cash-voucher-staging-uat.log
         run: npm run uat:staging
 
@@ -229,6 +275,7 @@ jobs:
           if-no-files-found: error
           retention-days: 90
 
+
   uat:
     name: Test the already deployed staging project
     if: ${{ inputs.operation == 'uat-only' && needs.guard.result == 'success' }}
@@ -237,22 +284,6 @@ jobs:
     timeout-minutes: 25
     environment:
       name: staging
-    env:
-      CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
-      CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
-      CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
-      CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
-      CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
-      CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
-      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
-      CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
-      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
-      CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
-      CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
-      CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
-      CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
-      CV_STAGING_UAT_CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -276,11 +307,41 @@ jobs:
 
       - name: Validate isolated staging target
         id: target_preflight
+        env:
+          CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+          CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+          CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+          CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+          CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+          CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+          CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+          CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+          CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+          CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+          CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
+          CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+          CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
         run: npm run staging:preflight -- --mode=uat
 
       - name: Run staging UAT without deploying
         id: staging_uat
         env:
+          CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
+          CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
+          CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
+          CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
+          CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
+          CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
+          CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+          CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
+          CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+          CV_STAGING_UAT_OWNER_EMAIL: ${{ secrets.CV_STAGING_UAT_OWNER_EMAIL }}
+          CV_STAGING_UAT_OWNER_PASSWORD: ${{ secrets.CV_STAGING_UAT_OWNER_PASSWORD }}
+          CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
+          CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
+          CV_STAGING_UAT_CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
           CV_STAGING_UAT_LOG_FILE: ${{ runner.temp }}/cash-voucher-staging-uat.log
         run: npm run uat:staging
 
