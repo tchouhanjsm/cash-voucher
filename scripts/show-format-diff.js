@@ -18,6 +18,7 @@ const FORMATTED_EXTENSIONS = new Set([
   '.md',
   '.mjs',
   '.scss',
+  '.gs',
   '.ts',
   '.tsx',
   '.yaml',
