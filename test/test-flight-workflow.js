@@ -7,6 +7,7 @@ const path = require('node:path');
 const root = path.resolve(__dirname, '..');
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/flight-test.yml'), 'utf8');
 const browserWorkflow = fs.readFileSync(path.join(root, '.github/workflows/e2e.yml'), 'utf8');
+const ciWorkflow = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
 
 const browserTimeout = Number(
   browserWorkflow.match(/jobs:\s*browser:[\s\S]*?timeout-minutes:\s*(\d+)/)?.[1],
@@ -37,6 +38,13 @@ assert.ok(
 assert.ok(
   flightTimeout >= gateWaitMinutes + 5,
   'Full Flight job timeout must exceed its gate deadline by at least five minutes.',
+);
+
+assert.ok(
+  ciWorkflow.includes(
+    'group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}',
+  ),
+  'CI push and pull_request runs have separate concurrency groups.',
 );
 
 assert.match(workflow, /const transientHttpStatuses = new Set\(\[500, 502, 503, 504\]\);/);
