@@ -98,8 +98,7 @@ delete missingSourceCheck.sourceChecks.fullFlight;
 assert.ok(hasCode(missingSourceCheck, 'MISSING_FIELD'));
 
 const duplicateSourceRun = buildBundle();
-duplicateSourceRun.sourceChecks.browserE2e.runId =
-  duplicateSourceRun.sourceChecks.ciQuality.runId;
+duplicateSourceRun.sourceChecks.browserE2e.runId = duplicateSourceRun.sourceChecks.ciQuality.runId;
 assert.ok(hasCode(duplicateSourceRun, 'SOURCE_CHECK_RUN_ID_DUPLICATE'));
 
 const failedSourceCheck = buildBundle();
