@@ -1,21 +1,31 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 28 October 2026 (client-main governance verifier phase)
+**Updated:** 28 October 2026 (governance evidence binding phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `afeb6376f7be9a1b3f8b5d8e1034a8a476986382` (PR #244 merged; source-run provenance verification is integrated; operational release remains blocked).
-**Current source batch:** `client/verify-client-main-governance-20261028` adds a standalone read-only verifier for client-main review/check enforcement and the legacy-main freeze. No GitHub setting is changed.
+**Current integration baseline:** `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c` (PR #245 merged; governance verification is integrated; operational release remains blocked).
+**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028` emits structured governance evidence and binds it to the private release-bundle operational gate. No GitHub setting is changed.
 **Release boundary:** read-only governance API inspection, deterministic tests and operator documentation only. No default-branch change, branch-protection/ruleset mutation, Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
 ## Current release-session checkpoint — 28 October 2026
 
-- **Integration baseline:** `client-main` at `afeb6376f7be9a1b3f8b5d8e1034a8a476986382`; PRs #242, #243 and #244 are merged. Legacy `main` remains read-only by engineering policy. Repository settings remain uncorrected.
+- **Integration baseline:** `client-main` at `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`; PRs #242 through #245 are merged. Legacy `main` remains read-only by engineering policy. Repository settings remain uncorrected.
 - **Previous phase:** merged PR #242 added release-bundle freshness, exact deployed-SHA binding, private evidence digest verification and safe report handling. This source phase does not reopen those completed code contracts.
 - **Bundle acceptance:** the source gate requires CI / Quality, Browser E2E, Full Flight and the development monitor to succeed on one commit; preflight and recovery evidence must match that SHA and meet freshness limits; eight operational gates need recent evidence references, and all application acceptance gates must attest to that same `client-main` SHA.
 - **Privacy and scope:** bundle input, evidence directory and report must be outside the repository. On POSIX, the evidence directory must be mode `0700` or stricter and each `<evidenceRef>.evidence` record `0600` or stricter; non-symlink and 10 MiB file-size limits also apply. Report output uses restrictive permissions and never overwrites existing files. Keep bundle and evidence private; fixtures are not live proof. Owner review remains mandatory.
 - **Provenance requirement:** the optional GitHub CLI checks actual successful push-run metadata for the four expected source workflows. This proves run identity/metadata, not live operational readiness or witness authenticity.
 - **Operational evidence fingerprints:** each live gate requires a SHA-256 digest for its retained evidence record. The CLI now recomputes the digest from the exact private file named `<evidenceRef>.evidence` and blocks a missing or changed file. The owner/reviewer must still inspect the evidence and verify the reference maps to the intended live check; matching bytes do not authenticate the claim.
 - **Release remains blocked:** staging identities/configuration, live UAT, isolated restore, seven-sheet and receipt reconciliation, production-unchanged evidence, actual host security headers, authorization, offline/reconnect, printing, accessibility and customer acceptance remain owner/operator tasks.
+
+## Governance evidence binding phase — 28 October 2026
+
+- PR #245 is merged into `client-main` at `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`. This is the integration baseline for the next source batch.
+- The read-only live repository check still shows default branch `main`, `client-main` reported `protected=false`, and active ruleset `24624368` scoped to `~DEFAULT_BRANCH` with only `quality` and zero required approvals. The branch policy remains a release blocker; no setting was changed.
+- The governance CLI supports `npm run verify:client-main-governance -- --json`. It emits a single sanitized JSON report with schema version, repository, observation time, default branch, verified check groups, integration policy source, ruleset IDs, read-only marker and blocker codes.
+- The release-bundle validator now parses the private evidence file for `ownerBranchProtectionVerified` after it verifies the file digest. A syntactically valid but blocked/incorrect governance report, wrong default branch, missing required checks, missing separate legacy-main freeze or mismatched `observedAt`/gate `verifiedAt` blocks the bundle.
+- The governance evidence record must be stored as `<evidenceRef>.evidence` under the private evidence directory, with `evidenceSha256` matching exact file bytes and `verifiedAt` exactly matching its `observedAt`. Synthetic fixture records are test-only and cannot stand in for a live owner-reviewed result.
+- CI tests cover structured CLI output, no-token failure, valid governance evidence, digest-consistent forged default-branch state and observation-time mismatch. This check verifies structure and a report produced by the CLI; owner review still must inspect live governance evidence and confirm its origin.
+- Operational release remains blocked until an authorized repository owner/admin changes the default branch and applies a complete `client-main` review/check policy plus a distinct no-bypass update/deletion freeze on legacy `main`, then the verifier and private release bundle are re-run.
 
 ## Client-main governance verifier phase — 28 October 2026
 
@@ -210,7 +220,7 @@ This time-stamped checkpoint supersedes earlier PR-state and baseline snapshots 
 
 ## PR #213 — validation RCA (25 October 2026)
 
-- On a superseded PR #213 head, CI [#40203888544](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203888544) failed in **Run quality gate** at `npm test`. The readiness regression test expected the literal phrase `PR #213 is the only open PR targeting \`client-main\``, while the documentation used a Markdown link label. This was a brittle assertion mismatch, not a product-code or browser-test failure. The test now asserts the stable queue wording independently of link markup.
+- On a superseded PR #213 head, CI [#40203888544](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203888544) failed in **Run quality gate** at `npm test`. The readiness regression test expected the literal phrase `PR #213 is the only open PR targeting `client-main``, while the documentation used a Markdown link label. This was a brittle assertion mismatch, not a product-code or browser-test failure. The test now asserts the stable queue wording independently of link markup.
 - Full Flight Test [#40203888571](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203888571) failed at **Verify CI and Browser E2E on the same commit** because CI failed on that SHA and Browser E2E [#40203888558](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203888558) was cancelled after a later commit superseded the head. This was a deterministic regression-test failure plus a superseded cancellation, not a browser assertion failure or timeout. No manual retry was used.
 - An earlier superseded head also failed CI [#40203359552](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40203359552) at `Run quality gate` / `prettier --check .` because `test/test-current-readiness-docs.js` was not formatted. The formatting correction was made on this same PR branch. Check results for the active head must be read from the live PR description; prior-head results are historical only.
 

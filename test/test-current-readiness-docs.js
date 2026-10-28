@@ -51,11 +51,13 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
-const currentIntegrationSha = 'afeb6376f7be9a1b3f8b5d8e1034a8a476986382';
+const currentIntegrationSha = '2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c';
 assert.ok(handoff.includes(currentIntegrationSha));
+assert.ok(handoff.includes('PR #245 merged'));
+assert.ok(handoff.includes('Governance evidence binding phase — 28 October 2026'));
 assert.match(
   handoff,
-  /^\*\*Current integration baseline:\*\* `afeb6376f7be9a1b3f8b5d8e1034a8a476986382`/m,
+  /^\*\*Current integration baseline:\*\* `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`/m,
 );
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
@@ -123,6 +125,12 @@ assert.ok(
 
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
 assert.ok(handoff.includes('Client-main governance verifier phase — 28 October 2026'));
+assert.ok(governanceVerifier.includes('--json'));
+assert.ok(governanceVerifier.includes('buildGovernanceEvidence'));
+assert.ok(releaseGateBundleValidator.includes('GOVERNANCE_DEFAULT_BRANCH'));
+assert.ok(releaseGateBundleValidator.includes('GOVERNANCE_TIMESTAMP_MISMATCH'));
+assert.ok(releaseGateBundleTest.includes('GOVERNANCE_DEFAULT_BRANCH'));
+assert.ok(releaseGateBundleDocs.includes('machine-readable JSON output of the governance verifier'));
 assert.ok(staging.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.ok(executionPlan.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.ok(branchPolicy.includes('npm run verify:client-main-governance'));

@@ -1,12 +1,25 @@
 # Release Gate Evidence Bundle
 
-## Client-main governance verification
+## Client-main governance verification and evidence binding
 
-Before accepting a release bundle, run the read-only governance check with a token that has repository Administration read-only access:
+The governance check is now a required part of `ownerBranchProtectionVerified`, not just a separate manual step. It must pass against live GitHub repository metadata and active rulesets using a token with repository metadata and **Administration: read-only** permission:
 
-    npm run verify:client-main-governance
+```sh
+npm run verify:client-main-governance
+```
 
-The command must pass in addition to the structural bundle validator and GitHub source-run provenance verifier. It checks the default branch, client-main protection, the four required check groups, independent review, and a separate no-bypass update/deletion freeze on legacy main. It never changes GitHub settings. A passing governance result does not prove staging/UAT, restore, reconciliation or customer acceptance.
+To capture the machine-readable report in the private operational evidence directory after owner/admin settings meet policy:
+
+```sh
+mkdir -m 700 /private/path/evidence-records
+umask 077
+set -o noclobber
+GITHUB_TOKEN="$GH_READ_ONLY_TOKEN" npm run verify:client-main-governance -- --json > /private/path/evidence-records/OPS-60101.evidence
+```
+
+Use a new evidence filename. `set -o noclobber` prevents overwriting an existing record; `umask 077` keeps the file private. The JSON report includes `observedAt`; set `operationalGates.ownerBranchProtectionVerified.verifiedAt` to that exact timestamp and `evidenceSha256` to the SHA-256 digest of the exact file bytes. The release-bundle validator rechecks the digest and then validates the report's schema, repository, `ok: true`, default branch `client-main`, all four required status-check groups, approved integration policy, separate legacy-main freeze, read-only marker and timestamp binding. A digest-consistent report that says blocked or names the wrong default branch is rejected.
+
+If the CLI exits nonzero, the emitted JSON is diagnostic only; it must not be represented as a passed operational gate. The currently observed repository settings remain a blocker, so do not manufacture a successful report. A passing report still requires owner review and does not prove staging/UAT, restore, reconciliation or customer acceptance.
 
 **Purpose:** combine the source-check, staging configuration, recovery-drill and live operational evidence into one internally consistent release record. This is a validation contract, not a release approval or a live-system probe.
 
@@ -25,7 +38,7 @@ npm run validate:release-bundle -- /private/path/release-gate-bundle.json --evid
 GITHUB_TOKEN="$GH_READ_ONLY_TOKEN" npm run validate:release-bundle:github -- /private/path/release-gate-bundle.json --evidence-dir=/private/path/evidence-records --verify-github
 ```
 
-The `--evidence-dir` argument is required. Store the eight exact operational evidence records in that private directory as `<evidenceRef>.evidence`; the reference must be a safe filename identifier and may not contain path separators. The validator rejects missing, non-regular, symlinked or larger-than-10-MiB records and recomputes SHA-256 from the file bytes. It uses bounded reads to avoid a file-growth memory spike. On POSIX systems the evidence directory must be mode `0700` or stricter and each evidence record `0600` or stricter; loosened permissions block validation. The directory and all records must remain outside the repository. Do not put customer rows, credential exports or unredacted sensitive content in the evidence files unless the private handling process explicitly allows it. The evidence directory itself must be a real, non-symlink directory.
+The `--evidence-dir` argument is required. Store the eight exact operational evidence records in that private directory as `<evidenceRef>.evidence`; the `ownerBranchProtectionVerified` record must be the machine-readable JSON output of the governance verifier; the reference must be a safe filename identifier and may not contain path separators. The validator rejects missing, non-regular, symlinked or larger-than-10-MiB records and recomputes SHA-256 from the file bytes. It uses bounded reads to avoid a file-growth memory spike. On POSIX systems the evidence directory must be mode `0700` or stricter and each evidence record `0600` or stricter; loosened permissions block validation. The directory and all records must remain outside the repository. Do not put customer rows, credential exports or unredacted sensitive content in the evidence files unless the private handling process explicitly allows it. The evidence directory itself must be a real, non-symlink directory.
 
 The command reads a bundle file up to 5 MiB and exits nonzero on missing, failed, mismatched or unexpected evidence. With `--report=...`, it writes a sanitized validation report containing the outcome, source SHA, error codes and the count of verified operational digests only. Reports are mode `0600`; newly created output directories use mode `0700`. The input bundle, evidence directory and report must be outside the repository; existing report files are never overwritten, the report may not overwrite the input, and symlink output paths/aliases are rejected. The report is not the bundle and contains no resource fingerprints, evidence references, run URLs, raw evidence, error messages or hashes. Run `npm run validate:recovery-evidence -- /private/path/recovery-evidence.json` separately when preparing the recovery evidence source.
 
@@ -35,12 +48,12 @@ The command reads a bundle file up to 5 MiB and exits nonzero on missing, failed
 - **Four integration-branch checks:** `ciQuality`, `browserE2e`, `fullFlight` and `autonomousMonitor` must conclude `success`, use distinct numeric run IDs, and all reference the same source SHA. Each record must also state the expected GitHub Actions workflow name, repository `tchouhanjsm/cash-voucher`, event `push`, ref `refs/heads/client-main`, and canonical URL `https://github.com/tchouhanjsm/cash-voucher/actions/runs/{runId}`. This rejects PR-head checks and mismatched run metadata at the contract level.
 - **Staging configuration preflight:** include the complete sanitized `cash-voucher-staging-configuration-preflight` report. Its commit/repository/ref must match the bundle, all five categories must pass, the blocker list must be empty, and all declared non-live boundaries must remain false.
 - **Recovery drill:** include the complete `cash-voucher-recovery-drill` evidence object. It must pass `validate-recovery-evidence.js` and name the same integration SHA.
-- **Operational acceptance:** include `status: pass`, a non-sensitive evidence reference, the SHA-256 digest of the exact retained evidence record, and a canonical UTC `verifiedAt` timestamp for each gate. Calculate the digest privately with `shasum -a 256 /private/path/evidence-record.json` (or an equivalent trusted tool) and compare it to the stored record before attesting. All application-level gates must include `testedClientMainSha` matching the release bundle SHA; branch-protection verification is the only gate that does not require an application SHA.
+- **Operational acceptance:** include `status: pass`, a non-sensitive evidence reference, the SHA-256 digest of the exact retained evidence record, and a canonical UTC `verifiedAt` timestamp for each gate. The `ownerBranchProtectionVerified` record must parse as `cash-voucher-client-main-governance` JSON and bind `observedAt` exactly to that gate's `verifiedAt`. Calculate the digest privately with `shasum -a 256 /private/path/evidence-record.json` (or an equivalent trusted tool) and compare it to the stored record before attesting. All application-level gates must include `testedClientMainSha` matching the release bundle SHA; branch-protection verification is the only gate that does not require an application SHA.
 - **Freshness windows:** the bundle itself must be validated within 24 hours of creation and may not be dated more than five minutes into the future. Staging configuration preflight must be no older than 24 hours; recovery-drill evidence no older than 7 days; live staging UAT, security headers, role/receipt authorization and customer acceptance no older than 7 days; branch protection, offline/reconnect, printing/PDF and accessibility no older than 30 days. All evidence timestamps must be at or before the bundle timestamp.
 
 The optional GitHub mode queries each cited Actions run through the read API and verifies its actual run ID, repository, workflow file, `client-main` branch, `push` event, commit SHA, completed/success conclusion and canonical URL. It is read-only and fails closed on unavailable records. Use a token with Actions read permission only; never use a write-capable credential for this check.
 
-The validator recomputes each operational evidence file's SHA-256 and compares it with `evidenceSha256`. This confirms byte-level consistency, not authenticity or correctness; the owner/reviewer must still inspect each record, confirm that the evidenceRef maps to the intended check, and independently verify live-source provenance. Do not place file paths or raw evidence contents in the bundle or Git.
+The validator recomputes each operational evidence file's SHA-256 and compares it with `evidenceSha256`. For `ownerBranchProtectionVerified`, it also parses the exact file bytes as the governance-verifier report and rejects blocked/invalid reports, the wrong repository/default branch, missing required check groups, missing/semi-shared legacy-main freeze, API/policy errors or an observation timestamp that does not exactly match the gate timestamp. This confirms byte-level consistency, not authenticity or correctness; the owner/reviewer must still inspect each record, confirm that the evidenceRef maps to the intended check, and independently verify live-source provenance. Do not place file paths or raw evidence contents in the bundle or Git.
 
 ## Important limitations
 

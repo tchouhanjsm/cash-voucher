@@ -7,6 +7,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const {
+  GOVERNANCE_EVIDENCE_TYPE,
+  REQUIRED_GOVERNANCE_CHECK_GROUPS,
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
   SOURCE_CHECK_WORKFLOW_NAMES,
@@ -380,10 +382,29 @@ assert.ok(hasCode(missingRecoveryProof, 'RECOVERY_RECEIPTS'));
 function writeEvidenceFiles(directory, bundle) {
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const payloads = new Map();
-  Object.values(bundle.operationalGates).forEach((gate) => {
-    const bytes = Buffer.from(
-      'Synthetic evidence fixture for ' + gate.evidenceRef + String.fromCharCode(10),
-    );
+  Object.entries(bundle.operationalGates).forEach(([name, gate]) => {
+    let bytes;
+    if (name === 'ownerBranchProtectionVerified') {
+      const governanceEvidence = {
+        schemaVersion: 1,
+        evidenceType: GOVERNANCE_EVIDENCE_TYPE,
+        repository,
+        observedAt: gate.verifiedAt,
+        ok: true,
+        defaultBranch: 'client-main',
+        integrationPolicy: 'classic-branch-protection',
+        requiredCheckGroups: REQUIRED_GOVERNANCE_CHECK_GROUPS,
+        integrationRulesetIds: [],
+        legacyFreezeRulesetIds: [102],
+        readOnly: true,
+        errors: [],
+      };
+      bytes = Buffer.from(JSON.stringify(governanceEvidence, null, 2) + String.fromCharCode(10));
+    } else {
+      bytes = Buffer.from(
+        'Synthetic evidence fixture for ' + gate.evidenceRef + String.fromCharCode(10),
+      );
+    }
     gate.evidenceSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
     fs.writeFileSync(path.join(directory, gate.evidenceRef + '.evidence'), bytes, {
       mode: 0o600,
@@ -416,6 +437,52 @@ try {
   );
   assert.deepEqual(directDigestCheck.errors, []);
   assert.equal(directDigestCheck.verifiedCount, 8);
+
+  const governanceGate = passingBundle.operationalGates.ownerBranchProtectionVerified;
+  const governancePath = path.join(
+    evidenceDirectory,
+    governanceGate.evidenceRef + '.evidence',
+  );
+  const validGovernanceBytes = fs.readFileSync(governancePath);
+  const badGovernanceBundle = JSON.parse(JSON.stringify(passingBundle));
+  const badGovernanceReport = JSON.parse(validGovernanceBytes.toString('utf8'));
+  badGovernanceReport.defaultBranch = 'main';
+  const badGovernanceBytes = Buffer.from(
+    JSON.stringify(badGovernanceReport, null, 2) + String.fromCharCode(10),
+  );
+  fs.writeFileSync(governancePath, badGovernanceBytes, { mode: 0o600 });
+  badGovernanceBundle.operationalGates.ownerBranchProtectionVerified.evidenceSha256 =
+    crypto.createHash('sha256').update(badGovernanceBytes).digest('hex');
+  const badGovernanceCheck = verifyOperationalEvidenceDigests(
+    badGovernanceBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    badGovernanceCheck.errors.some((error) => error.code === 'GOVERNANCE_DEFAULT_BRANCH'),
+  );
+  assert.equal(badGovernanceCheck.verifiedCount, 7);
+  fs.writeFileSync(governancePath, validGovernanceBytes, { mode: 0o600 });
+
+  const timestampMismatchReport = JSON.parse(validGovernanceBytes.toString('utf8'));
+  timestampMismatchReport.observedAt = '2026-10-27T23:29:00.000Z';
+  const timestampMismatchBytes = Buffer.from(
+    JSON.stringify(timestampMismatchReport, null, 2) + String.fromCharCode(10),
+  );
+  fs.writeFileSync(governancePath, timestampMismatchBytes, { mode: 0o600 });
+  const timestampMismatchBundle = JSON.parse(JSON.stringify(passingBundle));
+  timestampMismatchBundle.operationalGates.ownerBranchProtectionVerified.evidenceSha256 =
+    crypto.createHash('sha256').update(timestampMismatchBytes).digest('hex');
+  const timestampMismatchCheck = verifyOperationalEvidenceDigests(
+    timestampMismatchBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    timestampMismatchCheck.errors.some(
+      (error) => error.code === 'GOVERNANCE_TIMESTAMP_MISMATCH',
+    ),
+  );
+  fs.writeFileSync(governancePath, validGovernanceBytes, { mode: 0o600 });
+
 
   if (process.platform !== 'win32') {
     const permissionGate = passingBundle.operationalGates.liveStagingUatPassed;

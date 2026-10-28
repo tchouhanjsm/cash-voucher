@@ -1,5 +1,15 @@
 # Staging Release Audit and Pending Queue
 
+## Governance evidence binding phase — 28 October 2026
+
+- PR #245 is merged into `client-main` at `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`. This is the integration baseline for the next source batch.
+- The read-only live repository check still shows default branch `main`, `client-main` reported `protected=false`, and active ruleset `24624368` scoped to `~DEFAULT_BRANCH` with only `quality` and zero required approvals. The branch policy remains a release blocker; no setting was changed.
+- The governance CLI supports `npm run verify:client-main-governance -- --json`. It emits a single sanitized JSON report with schema version, repository, observation time, default branch, verified check groups, integration policy source, ruleset IDs, read-only marker and blocker codes.
+- The release-bundle validator now parses the private evidence file for `ownerBranchProtectionVerified` after it verifies the file digest. A syntactically valid but blocked/incorrect governance report, wrong default branch, missing required checks, missing separate legacy-main freeze or mismatched `observedAt`/gate `verifiedAt` blocks the bundle.
+- The governance evidence record must be stored as `<evidenceRef>.evidence` under the private evidence directory, with `evidenceSha256` matching exact file bytes and `verifiedAt` exactly matching its `observedAt`. Synthetic fixture records are test-only and cannot stand in for a live owner-reviewed result.
+- CI tests cover structured CLI output, no-token failure, valid governance evidence, digest-consistent forged default-branch state and observation-time mismatch. This check verifies structure and a report produced by the CLI; owner review still must inspect live governance evidence and confirm its origin.
+- Operational release remains blocked until an authorized repository owner/admin changes the default branch and applies a complete `client-main` review/check policy plus a distinct no-bypass update/deletion freeze on legacy `main`, then the verifier and private release bundle are re-run.
+
 ## Client-main governance verifier phase — 28 October 2026
 
 - The authoritative integration head after merged PR #244 is afeb6376f7be9a1b3f8b5d8e1034a8a476986382. Legacy main remains read-only by engineering policy; no repository settings were changed.
@@ -9,9 +19,9 @@
 - This source verifier only reports governance configuration. The owner/admin must set client-main as default, add complete client-main protection and an explicit main freeze, then rerun the verifier.
 - Source checks passing on a PR do not authenticate live operational evidence or authorize staging, deployment, schema migration, Sheets/Drive writes, cPanel publication or production operation.
 
-**Audit date:** 28 October 2026 (client-main governance verifier phase)
-**Current integration baseline:** `client-main` `afeb6376f7be9a1b3f8b5d8e1034a8a476986382` (PR #244 merged; operational release remains blocked).
-**Current source batch:** `client/verify-client-main-governance-20261028`; inspect active ruleset targets, required checks, review enforcement and legacy-main freeze without changing repository settings.
+**Audit date:** 28 October 2026 (governance evidence binding phase)
+**Current integration baseline:** `client-main` `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c` (PR #245 merged; operational release remains blocked).
+**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028`; require a structured successful governance report in the hashed private owner-branch-protection evidence record.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).

@@ -21,11 +21,13 @@ These are governance blockers, not source-test failures. PR code and green CI do
 
 ## Verify governance without changing settings
 
-Run the read-only verifier from a trusted local shell using a token with repository metadata and **Administration: read-only** permission:
+Run the read-only verifier from a trusted local shell using a token with repository metadata and **Administration: read-only** permission. Use `--json` to emit a single machine-readable report for the private release evidence record:
 
     npm run verify:client-main-governance
 
 Set GITHUB_TOKEN or GH_TOKEN in the shell environment before running the command. Do not put a token in the repository, command output, PR body or evidence file.
+
+For a release bundle, retain the JSON report as the `ownerBranchProtectionVerified` evidence file. The release-bundle validator checks its digest and validates the report's `ok` flag, repository/default branch, four required check groups, integration policy, distinct legacy-main freeze, read-only marker and observation-time binding. This prevents synthetic prose or a hash-only placeholder from passing that gate; it does not authenticate a human witness.
 
 The verifier checks that:
 
