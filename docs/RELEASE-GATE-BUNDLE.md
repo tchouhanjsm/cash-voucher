@@ -1,5 +1,14 @@
 # Release Gate Evidence Bundle
 
+## Client-main governance verification
+
+Before accepting a release bundle, run the read-only governance check with a token that has repository Administration read-only access:
+
+    npm run verify:client-main-governance
+
+The command must pass in addition to the structural bundle validator and GitHub source-run provenance verifier. It checks the default branch, client-main protection, the four required check groups, independent review, and a separate no-bypass update/deletion freeze on legacy main. It never changes GitHub settings. A passing governance result does not prove staging/UAT, restore, reconciliation or customer acceptance.
+
+
 **Purpose:** combine the source-check, staging configuration, recovery-drill and live operational evidence into one internally consistent release record. This is a validation contract, not a release approval or a live-system probe.
 
 ## When to use it

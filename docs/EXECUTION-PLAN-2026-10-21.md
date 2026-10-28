@@ -1,10 +1,20 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 28 October 2026 (staging evidence output and cleanup hardening phase)
+## Client-main governance verifier phase — 28 October 2026
+
+- The authoritative integration head after merged PR #244 is afeb6376f7be9a1b3f8b5d8e1034a8a476986382. Legacy main remains read-only by engineering policy; no repository settings were changed.
+- The live read showed the repository default branch is main, client-main reports protected=false, and active ruleset 24624368 targets ~DEFAULT_BRANCH with only the quality status context and zero required reviews.
+- Add a standalone, read-only governance verifier with injected API fetches and deterministic fixtures. It checks current default branch, client-main branch protection, four required status-check families, approval/stale-review policy, bypass actors, and a distinct main update/deletion freeze.
+- A token without Administration: read-only access fails closed. The verifier does not use write HTTP methods, mutate settings or dispatch workflows.
+- This source verifier only reports governance configuration. The owner/admin must set client-main as default, add complete client-main protection and an explicit main freeze, then rerun the verifier.
+- Source checks passing on a PR do not authenticate live operational evidence or authorize staging, deployment, schema migration, Sheets/Drive writes, cPanel publication or production operation.
+
+
+**Updated:** 28 October 2026 (client-main governance verifier phase)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
-**Current integration SHA:** `68263f48138d782e66428f6c5c19b3dd5b203bc5` (PR #243 merged; PR #244 provenance verification in review; release remains blocked pending live evidence).
+**Current integration SHA:** `afeb6376f7be9a1b3f8b5d8e1034a8a476986382` (PR #244 merged; release remains blocked pending governance and live evidence).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** `client/release-run-provenance-verification-20261028`; verify real source-run metadata, add adversarial regression coverage and reconcile the live handoff.
+**Current source batch:** `client/verify-client-main-governance-20261028`; independently verify the integration protection contract and a separate read-only legacy-main ruleset.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 
 ## Source-run provenance verification batch — 28 October 2026

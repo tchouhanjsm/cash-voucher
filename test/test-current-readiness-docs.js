@@ -26,6 +26,9 @@ const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
 const releaseGateBundleDocs = read('docs/RELEASE-GATE-BUNDLE.md');
 const releaseGateBundleValidator = read('scripts/validate-release-gate-bundle.js');
 const releaseGateBundleTest = read('test/test-release-gate-bundle.js');
+const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
+const governanceVerifier = read('scripts/verify-client-main-governance.js');
+const governanceTest = read('test/test-client-main-governance.js');
 const ciWorkflow = read('.github/workflows/ci.yml');
 const stagingWorkflow = read('.github/workflows/staging-uat.yml');
 const stagingWorkflowTest = read('test/test-staging-workflow.js');
@@ -48,11 +51,11 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
-const currentIntegrationSha = '68263f48138d782e66428f6c5c19b3dd5b203bc5';
+const currentIntegrationSha = 'afeb6376f7be9a1b3f8b5d8e1034a8a476986382';
 assert.ok(handoff.includes(currentIntegrationSha));
 assert.match(
   handoff,
-  /^\*\*Current integration baseline:\*\* `68263f48138d782e66428f6c5c19b3dd5b203bc5`/m,
+  /^\*\*Current integration baseline:\*\* `afeb6376f7be9a1b3f8b5d8e1034a8a476986382`/m,
 );
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
@@ -119,6 +122,15 @@ assert.ok(
 );
 
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
+assert.ok(handoff.includes('Client-main governance verifier phase — 28 October 2026'));
+assert.ok(staging.includes('Client-main governance verifier phase — 28 October 2026'));
+assert.ok(executionPlan.includes('Client-main governance verifier phase — 28 October 2026'));
+assert.ok(branchPolicy.includes('npm run verify:client-main-governance'));
+assert.ok(packageJson.scripts['verify:client-main-governance']);
+assert.ok(governanceVerifier.includes('CLIENT_MAIN_RULESET_REQUIRED_CHECKS_MISSING'));
+assert.ok(governanceVerifier.includes('MAIN_FREEZE_RULESET_MISSING'));
+assert.ok(governanceVerifier.includes('GITHUB_API_FORBIDDEN'));
+assert.ok(governanceTest.includes('default-branch-only rule set does not protect client-main'));
 assert.ok(
   handoff.includes(
     'merged PR #242 added release-bundle freshness, exact deployed-SHA binding, private evidence digest verification and safe report handling',

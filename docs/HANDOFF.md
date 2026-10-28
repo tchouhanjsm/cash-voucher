@@ -1,21 +1,30 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 28 October 2026 (source-run provenance verification phase)
+**Updated:** 28 October 2026 (client-main governance verifier phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `68263f48138d782e66428f6c5c19b3dd5b203bc5` (PR #243 merged; release-gate validation and staging credential-scope hardening are integrated; operational release remains blocked).
-**Current source batch:** `client/release-run-provenance-verification-20261028` adds optional read-only verification of actual GitHub Actions source-run metadata, injected-response regression coverage and handoff reconciliation. No live workflow is dispatched.
-**Release boundary:** read-only source-run provenance verification, regression tests and operator/release documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+**Current integration baseline:** `afeb6376f7be9a1b3f8b5d8e1034a8a476986382` (PR #244 merged; source-run provenance verification is integrated; operational release remains blocked).
+**Current source batch:** `client/verify-client-main-governance-20261028` adds a standalone read-only verifier for client-main review/check enforcement and the legacy-main freeze. No GitHub setting is changed.
+**Release boundary:** read-only governance API inspection, deterministic tests and operator documentation only. No default-branch change, branch-protection/ruleset mutation, Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current release-session checkpoint — 28 October 2026 13:24 IST
+## Current release-session checkpoint — 28 October 2026
 
-- **Integration baseline:** `client-main` at `68263f48138d782e66428f6c5c19b3dd5b203bc5`; PR #242 and PR #243 are merged. Legacy `main` remains read-only. `client-main` currently reports `protected=false`, so owner/admin governance work remains open.
+- **Integration baseline:** `client-main` at `afeb6376f7be9a1b3f8b5d8e1034a8a476986382`; PRs #242, #243 and #244 are merged. Legacy `main` remains read-only by engineering policy. Repository settings remain uncorrected.
 - **Previous phase:** merged PR #242 added release-bundle freshness, exact deployed-SHA binding, private evidence digest verification and safe report handling. This source phase does not reopen those completed code contracts.
 - **Bundle acceptance:** the source gate requires CI / Quality, Browser E2E, Full Flight and the development monitor to succeed on one commit; preflight and recovery evidence must match that SHA and meet freshness limits; eight operational gates need recent evidence references, and all application acceptance gates must attest to that same `client-main` SHA.
 - **Privacy and scope:** bundle input, evidence directory and report must be outside the repository. On POSIX, the evidence directory must be mode `0700` or stricter and each `<evidenceRef>.evidence` record `0600` or stricter; non-symlink and 10 MiB file-size limits also apply. Report output uses restrictive permissions and never overwrites existing files. Keep bundle and evidence private; fixtures are not live proof. Owner review remains mandatory.
-- **Provenance requirement:** release source checks must be successful push runs on `refs/heads/client-main` from their expected workflow names. The validator checks their supplied run URLs against the repository and numeric run IDs but does not query GitHub; owner/QA must verify the linked run records before accepting evidence.
+- **Provenance requirement:** the optional GitHub CLI checks actual successful push-run metadata for the four expected source workflows. This proves run identity/metadata, not live operational readiness or witness authenticity.
 - **Operational evidence fingerprints:** each live gate requires a SHA-256 digest for its retained evidence record. The CLI now recomputes the digest from the exact private file named `<evidenceRef>.evidence` and blocks a missing or changed file. The owner/reviewer must still inspect the evidence and verify the reference maps to the intended live check; matching bytes do not authenticate the claim.
 - **Release remains blocked:** staging identities/configuration, live UAT, isolated restore, seven-sheet and receipt reconciliation, production-unchanged evidence, actual host security headers, authorization, offline/reconnect, printing, accessibility and customer acceptance remain owner/operator tasks.
+
+## Client-main governance verifier phase — 28 October 2026
+
+- The authoritative integration head after merged PR #244 is afeb6376f7be9a1b3f8b5d8e1034a8a476986382. Legacy main remains read-only by engineering policy; no repository settings were changed.
+- The live read showed the repository default branch is main, client-main reports protected=false, and active ruleset 24624368 targets ~DEFAULT_BRANCH with only the quality status context and zero required reviews.
+- Add a standalone, read-only governance verifier with injected API fetches and deterministic fixtures. It checks current default branch, client-main branch protection, four required status-check families, approval/stale-review policy, bypass actors, and a distinct main update/deletion freeze.
+- A token without Administration: read-only access fails closed. The verifier does not use write HTTP methods, mutate settings or dispatch workflows.
+- This source verifier only reports governance configuration. The owner/admin must set client-main as default, add complete client-main protection and an explicit main freeze, then rerun the verifier.
+- Source checks passing on a PR do not authenticate live operational evidence or authorize staging, deployment, schema migration, Sheets/Drive writes, cPanel publication or production operation.
 
 ## Source-run provenance verification batch — 28 October 2026
 
