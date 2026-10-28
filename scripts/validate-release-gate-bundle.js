@@ -375,12 +375,64 @@ function validateReleaseGateBundle(bundle) {
   };
 }
 
+function buildSanitizedValidationReport(result, bundle, generatedAt = new Date().toISOString()) {
+  const rawSha = isRecord(bundle) && isRecord(bundle.source) ? bundle.source.commitSha : null;
+  const sourceSha = typeof rawSha === 'string' && SHA1.test(rawSha) ? rawSha.toLowerCase() : null;
+  const errorCodes = Array.isArray(result.errors)
+    ? [...new Set(result.errors.map((error) => error.code).filter((code) => /^[A-Z0-9_]{1,80}$/.test(code)))].sort()
+    : [];
+
+  return {
+    schemaVersion: 1,
+    evidenceType: 'cash-voucher-release-gate-validation',
+    generatedAt: validTimestamp(generatedAt) ? generatedAt : new Date().toISOString(),
+    outcome: result.ok ? 'contract-pass' : 'blocked',
+    sourceSha,
+    errorCodes,
+    summary: result.ok
+      ? {
+          requiredSourceChecks: result.summary.requiredSourceChecks,
+          stagingConfigurationPass: result.summary.stagingConfigurationPass,
+          recoveryEvidenceContractPass: result.summary.recoveryEvidenceContractPass,
+          operationalGatesPassed: result.summary.operationalGatesPassed,
+          releaseApproval: 'human-review-required',
+        }
+      : {
+          releaseApproval: 'human-review-required',
+        },
+  };
+}
+
+function writeSanitizedValidationReport(reportPath, result, bundle) {
+  if (!reportPath) return null;
+  const resolvedReport = path.resolve(reportPath);
+  fs.mkdirSync(path.dirname(resolvedReport), { recursive: true });
+  const report = buildSanitizedValidationReport(result, bundle);
+  fs.writeFileSync(resolvedReport, JSON.stringify(report, null, 2) + '\n', { mode: 0o600, flag: 'w' });
+  fs.chmodSync(resolvedReport, 0o600);
+  return report;
+}
+
 function main() {
-  const inputPath = String(process.argv[2] || '').trim();
-  if (!inputPath) {
+  const args = process.argv.slice(2);
+  const inputPath = String(args.find((arg) => !arg.startsWith('--')) || '').trim();
+  const reportArgument = args.find((arg) => arg.startsWith('--report='));
+  const reportPath = reportArgument ? reportArgument.slice('--report='.length).trim() : '';
+
+  if (!inputPath || args.some((arg) => arg.startsWith('--') && !arg.startsWith('--report='))) {
     console.error(
-      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json',
+      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json [--report=/private/path/validation-report.json]',
     );
+    process.exitCode = 2;
+    return;
+  }
+  if (reportArgument && !reportPath) {
+    console.error('RELEASE GATE BUNDLE FAILED: report output path is empty.');
+    process.exitCode = 2;
+    return;
+  }
+  if (reportPath && path.resolve(reportPath) === path.resolve(inputPath)) {
+    console.error('RELEASE GATE BUNDLE FAILED: report output must not overwrite the input bundle.');
     process.exitCode = 2;
     return;
   }
@@ -403,6 +455,16 @@ function main() {
   }
 
   const result = validateReleaseGateBundle(bundle);
+  if (reportPath) {
+    try {
+      writeSanitizedValidationReport(reportPath, result, bundle);
+    } catch {
+      console.error('RELEASE GATE BUNDLE FAILED: sanitized validation report could not be written.');
+      process.exitCode = 1;
+      return;
+    }
+  }
+
   if (!result.ok) {
     console.error('RELEASE GATE BUNDLE FAILED: ' + result.errors.length + ' validation issue(s).');
     result.errors.forEach((error) => console.error('- [' + error.code + '] ' + error.message));
@@ -429,5 +491,7 @@ if (require.main === module) main();
 module.exports = {
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
+  buildSanitizedValidationReport,
   validateReleaseGateBundle,
+  writeSanitizedValidationReport,
 };
