@@ -142,8 +142,29 @@ assert.ok(
   ),
   'evidence is written to the runner temporary directory',
 );
-assert.match(uatRunner, /CV_STAGING_UAT_LOG_FILE/);
-assert.match(uatRunner, /tee "\$\{UAT_LOG_FILE\}"/);
+assert.match(uatRunner, /mktemp -d/);
+assert.match(uatRunner, /set -o noclobber/);
+assert.match(uatRunner, /env -i/);
+assert.match(
+  uatRunner,
+  /env -u GITHUB_OUTPUT -u GITHUB_ENV -u GITHUB_PATH -u GITHUB_STEP_SUMMARY/,
+);
+assert.doesNotMatch(uatRunner, /\/tmp\/cash-voucher-staging-(?:uat|server)\.log/);
+assert.doesNotMatch(uatRunner, /tee "\$\{UAT_LOG_FILE\}"/);
+assert.match(uatRunner, /detailed transcript is withheld from workflow logs/);
+assert.equal(
+  (workflow.match(/CV_STAGING_UAT_LOG_FILE: \$\{\{ steps\.staging_uat\.outputs\.uat_log_file \}\}/g) || []).length,
+  2,
+  'deploy and UAT evidence must read only the private generated transcript',
+);
+assert.equal(
+  (workflow.match(/CV_STAGING_UAT_LOG_DIR: \$\{\{ steps\.staging_uat\.outputs\.uat_log_dir \}\}/g) || []).length,
+  2,
+  'deploy and UAT evidence cleanup use only the per-run private directory',
+);
+assert.doesNotMatch(workflow, /CV_STAGING_UAT_LOG_FILE: \$\{\{ runner\.temp \}\}\/cash-voucher-staging-uat\.log/);
+assert.match(localServer, /mode: 'artifact'/);
+assert.doesNotMatch(localServer, /mode: 'uat'/);
 assert.match(localServer, /Cache-Control': 'no-store'/);
 assert.match(localServer, /function stagingServiceWorker/);
 assert.doesNotMatch(localServer, /caches\.open/);
