@@ -663,7 +663,12 @@ function verifyOperationalEvidenceDigests(bundle, evidenceDirectory) {
   if (!isRecord(bundle) || !isRecord(bundle.operationalGates)) {
     return {
       verifiedCount,
-      errors: [{ code: 'OPERATIONAL_EVIDENCE_UNAVAILABLE', message: 'Operational evidence records are unavailable.' }],
+      errors: [
+        {
+          code: 'OPERATIONAL_EVIDENCE_UNAVAILABLE',
+          message: 'Operational evidence records are unavailable.',
+        },
+      ],
     };
   }
 
@@ -810,10 +815,13 @@ function main() {
     )
   ) {
     console.error(
-      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json --evidence-dir=/private/path/evidence',
+      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json ' +
+        '--evidence-dir=/private/path/evidence',
     );
     console.error('Optional private report: --report=/private/path/validation-report.json');
-    console.error('Each evidenceRef requires a matching <evidenceRef>.evidence file in --evidence-dir.');
+    console.error(
+      'Each evidenceRef requires a matching <evidenceRef>.evidence file in --evidence-dir.',
+    );
     process.exitCode = 2;
     return;
   }
@@ -846,7 +854,8 @@ function main() {
     evidenceDirectory = resolveOperationalEvidenceDirectory(evidenceDirectoryPath);
   } catch {
     console.error(
-      'RELEASE GATE BUNDLE FAILED: operational evidence directory must be an existing non-symlink directory outside the repository.',
+      'RELEASE GATE BUNDLE FAILED: operational evidence directory must be an existing ' +
+        'non-symlink directory outside the repository.',
     );
     process.exitCode = 2;
     return;
