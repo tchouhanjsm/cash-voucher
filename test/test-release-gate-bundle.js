@@ -94,7 +94,9 @@ function buildCurrentBundle() {
 }
 
 function hasCode(bundle, code) {
-  return validateReleaseGateBundle(bundle, validationTime).errors.some((error) => error.code === code);
+  return validateReleaseGateBundle(bundle, validationTime).errors.some(
+    (error) => error.code === code,
+  );
 }
 
 const valid = validateReleaseGateBundle(buildBundle(), validationTime);
