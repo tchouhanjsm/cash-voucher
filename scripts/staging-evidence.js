@@ -31,9 +31,7 @@ function resolveSafeExternalFile(rawPath, label) {
   const relative = path.relative(realRoot, target);
   const isInsideRepository =
     relative === '' ||
-    (!path.isAbsolute(relative) &&
-      relative !== '..' &&
-      !relative.startsWith('..' + path.sep));
+    (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith('..' + path.sep));
   if (isInsideRepository) {
     throw new Error('The ' + label + ' must be outside the repository.');
   }
