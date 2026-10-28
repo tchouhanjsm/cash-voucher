@@ -1215,6 +1215,8 @@ with sync_playwright() as p:
         cash_close_vendor_payload in page.locator('#cc-closed-report').inner_text()
         and cash_close_note_payload in page.locator('.cc-corrections').inner_text()
         and 'Unrecognized method' in page.locator('#cc-closed-report').inner_text()
+        and page.locator('#cc-closed-report .cc-method-breakdown .cc-method-item').count() == 1
+        and 'Payment · Unrecognized method' in page.locator('#cc-closed-report .cc-method-breakdown').inner_text()
         and cash_close_method_payload not in page.locator('#cc-closed-report').inner_text()
         and page.locator('#cc-results img, #cc-results svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
@@ -1226,6 +1228,7 @@ with sync_playwright() as p:
     print_text = page.locator('#printArea').text_content() or ''
     check(
         'Unrecognized method' in print_text
+        and 'Payment · Unrecognized method' in print_text
         and cash_close_method_payload not in print_text
         and page.locator('#printArea img, #printArea svg').count() == 0
         and not page.evaluate('window.xss === true'),

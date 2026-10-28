@@ -202,6 +202,74 @@ export function createCashClose({ api }) {
     );
   }
 
+
+  function methodBreakdownMarkup(vouchers) {
+    const snapshot = Array.isArray(vouchers) ? vouchers : [];
+    const groups = new Map();
+
+    snapshot.forEach((item) => {
+      const direction = typeof item.no === 'string' && item.no.startsWith('R-') ? 'Receipt' : 'Payment';
+      const method = paymentMethodLabel(item.paymentMethod);
+      const key = direction + '|' + method;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          direction,
+          method,
+          count: 0,
+          amountPaise: 0,
+          invalidAmount: false,
+          unclassifiedCount: 0,
+        });
+      }
+
+      const group = groups.get(key);
+      group.count++;
+      const amountPaise = Math.round(item.amount * 100);
+      if (
+        typeof item.amount !== 'number' ||
+        !Number.isFinite(item.amount) ||
+        item.amount <= 0 ||
+        !Number.isSafeInteger(amountPaise) ||
+        Math.abs(item.amount * 100 - amountPaise) > 0.000001
+      ) {
+        group.invalidAmount = true;
+      } else {
+        group.amountPaise += amountPaise;
+      }
+      if (item.cashImpact === 'UNCLASSIFIED') group.unclassifiedCount++;
+    });
+
+    const sorted = Array.from(groups.values()).sort((a, b) =>
+      (a.direction === b.direction ? 0 : a.direction === 'Payment' ? -1 : 1) ||
+      a.method.localeCompare(b.method),
+    );
+    return (
+      '<section class="cc-method-breakdown"><h3>Payment-method reconciliation</h3>' +
+      '<p class="muted">Voucher amounts grouped by direction and saved method; these are not physical-cash or bank-balance totals. Pending approval entries remain listed separately. Blank historical methods show as Not recorded.</p>' +
+      (sorted.length
+        ? '<div class="cc-method-grid">' +
+          sorted
+            .map(
+              (group) =>
+                '<div class="cc-method-item"><div class="cc-method-item__label"><strong>' +
+                esc(group.direction + ' · ' + group.method) +
+                '</strong><span class="muted">' +
+                esc(group.count) +
+                (group.count === 1 ? ' voucher' : ' vouchers') +
+                (group.unclassifiedCount
+                  ? ' · ' + esc(group.unclassifiedCount) + ' cash-impact issue(s)'
+                  : '') +
+                '</span></div><strong class="cc-method-item__amount">' +
+                (group.invalidAmount ? 'Amount requires review' : esc(money(group.amountPaise / 100))) +
+                '</strong></div>',
+            )
+            .join('') +
+          '</div>'
+        : '<p class="muted">No voucher rows available for this breakdown.</p>') +
+      '</section>'
+    );
+  }
+
   function render() {
     if (!can('cashClose')) {
       $('#view').replaceChildren(
@@ -316,6 +384,7 @@ export function createCashClose({ api }) {
       metric('Physical count', money(close.countedCash)) +
       metric('Variance (counted − expected)', money(close.variance)) +
       '</div>' +
+      methodBreakdownMarkup(vouchers) +
       '<dl class="cc-meta"><div><dt>Opening source</dt><dd>' +
       esc(
         close.openingSource === 'PREVIOUS_CLOSE'
@@ -511,6 +580,7 @@ export function createCashClose({ api }) {
       metric('NO_CASH vouchers', String(snapshot.noCashCount || 0)) +
       metric('Expected physical cash', expectedValue) +
       '</div>' +
+      methodBreakdownMarkup(snapshot.includedVouchers) +
       issues +
       '<div class="cc-count"><h3>Physical count</h3><div class="filters"><label for="cc-counted">Counted cash (₹)<input id="cc-counted" type="number" min="0" max="10000000" step="0.01" inputmode="decimal" placeholder="Count notes and coins" required></label>' +
       '<label for="cc-variance-reason">Variance reason (required when different)<input id="cc-variance-reason" maxlength="200" placeholder="Explain a non-zero variance"></label></div>' +
@@ -768,6 +838,7 @@ export function createCashClose({ api }) {
       ' — ' +
       esc(close.varianceReason || 'No variance') +
       '</div></div>' +
+      methodBreakdownMarkup(vouchers) +
       '<p>Recorded by ' +
       esc(close.createdBy) +
       ' at ' +
@@ -775,7 +846,7 @@ export function createCashClose({ api }) {
       ' · Close ID: ' +
       esc(close.id) +
       '</p><h3>Included voucher snapshot</h3><table><thead><tr><th>Voucher</th><th>Counterparty</th><th>Payment method</th><th>Cash impact</th><th>Amount</th><th>Voucher ID</th></tr></thead><tbody>' +
-      (rows || '<tr><td colspan="5">No active vouchers in this period.</td></tr>') +
+      (rows || '<tr><td colspan="6">No active vouchers in this period.</td></tr>') +
       '</tbody></table></div>';
     window.print();
   }
