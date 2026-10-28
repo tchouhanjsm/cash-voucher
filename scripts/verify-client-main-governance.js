@@ -338,9 +338,10 @@ function evaluateRepositoryGovernance(snapshot) {
 
   const classic = classicIntegrationPolicy(snapshot && snapshot.integrationProtection);
   const integrationRulesets = integrationRulesetPolicy(rulesets, defaultBranch);
-  const clientMainUpdateRestricted = integrationRulesets.matching.some((ruleset) =>
-    Array.isArray(ruleset.rules) &&
-    ruleset.rules.some((rule) => isRecord(rule) && rule.type === 'update'),
+  const clientMainUpdateRestricted = integrationRulesets.matching.some(
+    (ruleset) =>
+      Array.isArray(ruleset.rules) &&
+      ruleset.rules.some((rule) => isRecord(rule) && rule.type === 'update'),
   );
   if (clientMainUpdateRestricted) {
     addError(
