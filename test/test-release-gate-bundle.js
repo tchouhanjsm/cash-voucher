@@ -325,7 +325,10 @@ try {
   }
 
   const oversizedGate = passingBundle.operationalGates.liveRoleAuthorizationVerified;
-  const oversizedRecordPath = path.join(evidenceDirectory, oversizedGate.evidenceRef + '.evidence');
+  const oversizedRecordPath = path.join(
+    evidenceDirectory,
+    oversizedGate.evidenceRef + '.evidence',
+  );
   const heldOversizedRecord = fs.readFileSync(oversizedRecordPath);
   fs.truncateSync(oversizedRecordPath, 10 * 1024 * 1024 + 1);
   const oversizedCheck = verifyOperationalEvidenceDigests(
@@ -346,7 +349,6 @@ try {
   assert.ok(
     unsafeReferenceCheck.errors.some((error) => error.code === 'OPERATIONAL_EVIDENCE_REF_UNSAFE'),
   );
-
 
   const passingRun = spawnSync(
     process.execPath,
