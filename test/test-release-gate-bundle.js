@@ -439,10 +439,7 @@ try {
   assert.equal(directDigestCheck.verifiedCount, 8);
 
   const governanceGate = passingBundle.operationalGates.ownerBranchProtectionVerified;
-  const governancePath = path.join(
-    evidenceDirectory,
-    governanceGate.evidenceRef + '.evidence',
-  );
+  const governancePath = path.join(evidenceDirectory, governanceGate.evidenceRef + '.evidence');
   const validGovernanceBytes = fs.readFileSync(governancePath);
   const badGovernanceBundle = JSON.parse(JSON.stringify(passingBundle));
   const badGovernanceReport = JSON.parse(validGovernanceBytes.toString('utf8'));
@@ -451,15 +448,15 @@ try {
     JSON.stringify(badGovernanceReport, null, 2) + String.fromCharCode(10),
   );
   fs.writeFileSync(governancePath, badGovernanceBytes, { mode: 0o600 });
-  badGovernanceBundle.operationalGates.ownerBranchProtectionVerified.evidenceSha256 =
-    crypto.createHash('sha256').update(badGovernanceBytes).digest('hex');
+  badGovernanceBundle.operationalGates.ownerBranchProtectionVerified.evidenceSha256 = crypto
+    .createHash('sha256')
+    .update(badGovernanceBytes)
+    .digest('hex');
   const badGovernanceCheck = verifyOperationalEvidenceDigests(
     badGovernanceBundle,
     resolveOperationalEvidenceDirectory(evidenceDirectory),
   );
-  assert.ok(
-    badGovernanceCheck.errors.some((error) => error.code === 'GOVERNANCE_DEFAULT_BRANCH'),
-  );
+  assert.ok(badGovernanceCheck.errors.some((error) => error.code === 'GOVERNANCE_DEFAULT_BRANCH'));
   assert.equal(badGovernanceCheck.verifiedCount, 7);
   fs.writeFileSync(governancePath, validGovernanceBytes, { mode: 0o600 });
 
@@ -470,19 +467,18 @@ try {
   );
   fs.writeFileSync(governancePath, timestampMismatchBytes, { mode: 0o600 });
   const timestampMismatchBundle = JSON.parse(JSON.stringify(passingBundle));
-  timestampMismatchBundle.operationalGates.ownerBranchProtectionVerified.evidenceSha256 =
-    crypto.createHash('sha256').update(timestampMismatchBytes).digest('hex');
+  timestampMismatchBundle.operationalGates.ownerBranchProtectionVerified.evidenceSha256 = crypto
+    .createHash('sha256')
+    .update(timestampMismatchBytes)
+    .digest('hex');
   const timestampMismatchCheck = verifyOperationalEvidenceDigests(
     timestampMismatchBundle,
     resolveOperationalEvidenceDirectory(evidenceDirectory),
   );
   assert.ok(
-    timestampMismatchCheck.errors.some(
-      (error) => error.code === 'GOVERNANCE_TIMESTAMP_MISMATCH',
-    ),
+    timestampMismatchCheck.errors.some((error) => error.code === 'GOVERNANCE_TIMESTAMP_MISMATCH'),
   );
   fs.writeFileSync(governancePath, validGovernanceBytes, { mode: 0o600 });
-
 
   if (process.platform !== 'win32') {
     const permissionGate = passingBundle.operationalGates.liveStagingUatPassed;

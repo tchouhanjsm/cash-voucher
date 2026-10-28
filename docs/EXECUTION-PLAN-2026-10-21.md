@@ -10,7 +10,6 @@
 - CI tests cover structured CLI output, no-token failure, valid governance evidence, digest-consistent forged default-branch state and observation-time mismatch. This check verifies structure and a report produced by the CLI; owner review still must inspect live governance evidence and confirm its origin.
 - Operational release remains blocked until an authorized repository owner/admin changes the default branch and applies a complete `client-main` review/check policy plus a distinct no-bypass update/deletion freeze on legacy `main`, then the verifier and private release bundle are re-run.
 
-
 ## Client-main governance verifier phase — 28 October 2026
 
 - The authoritative integration head after merged PR #244 is afeb6376f7be9a1b3f8b5d8e1034a8a476986382. Legacy main remains read-only by engineering policy; no repository settings were changed.

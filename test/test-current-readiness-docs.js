@@ -130,7 +130,9 @@ assert.ok(governanceVerifier.includes('buildGovernanceEvidence'));
 assert.ok(releaseGateBundleValidator.includes('GOVERNANCE_DEFAULT_BRANCH'));
 assert.ok(releaseGateBundleValidator.includes('GOVERNANCE_TIMESTAMP_MISMATCH'));
 assert.ok(releaseGateBundleTest.includes('GOVERNANCE_DEFAULT_BRANCH'));
-assert.ok(releaseGateBundleDocs.includes('machine-readable JSON output of the governance verifier'));
+assert.ok(
+  releaseGateBundleDocs.includes('machine-readable JSON output of the governance verifier'),
+);
 assert.ok(staging.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.ok(executionPlan.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.ok(branchPolicy.includes('npm run verify:client-main-governance'));

@@ -591,14 +591,16 @@ async function main() {
     if (!result.ok) process.exitCode = 1;
   } catch (error) {
     const status = error && error.status;
-    const code = status === 403
-      ? 'GITHUB_API_FORBIDDEN'
-      : status === 404
-        ? 'GITHUB_RESOURCE_NOT_FOUND'
-        : error && typeof error.message === 'string' &&
-            /^GITHUB_|^INVALID_API_|^GITHUB_RULESET_/.test(error.message)
-          ? error.message
-          : 'GITHUB_API_UNAVAILABLE';
+    const code =
+      status === 403
+        ? 'GITHUB_API_FORBIDDEN'
+        : status === 404
+          ? 'GITHUB_RESOURCE_NOT_FOUND'
+          : error &&
+              typeof error.message === 'string' &&
+              /^GITHUB_|^INVALID_API_|^GITHUB_RULESET_/.test(error.message)
+            ? error.message
+            : 'GITHUB_API_UNAVAILABLE';
     const evidence = buildGovernanceEvidence({
       ok: false,
       observedDefaultBranch: 'unknown',

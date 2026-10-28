@@ -4,7 +4,10 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { validateRecoveryEvidence } = require('./validate-recovery-evidence');
-const { GOVERNANCE_EVIDENCE_TYPE, REQUIRED_CHECK_GROUPS } = require('./verify-client-main-governance');
+const {
+  GOVERNANCE_EVIDENCE_TYPE,
+  REQUIRED_CHECK_GROUPS,
+} = require('./verify-client-main-governance');
 
 const SHA1 = /^[a-f0-9]{40}$/i;
 const SHA256 = /^[a-f0-9]{64}$/i;
@@ -845,11 +848,7 @@ function validateGovernanceEvidence(bytes, gate, errors) {
     );
   }
   if (evidence.defaultBranch !== 'client-main') {
-    add(
-      errors,
-      'GOVERNANCE_DEFAULT_BRANCH',
-      'The repository default branch must be client-main.',
-    );
+    add(errors, 'GOVERNANCE_DEFAULT_BRANCH', 'The repository default branch must be client-main.');
   }
   if (!['classic-branch-protection', 'active-ruleset'].includes(evidence.integrationPolicy)) {
     add(
@@ -860,7 +859,8 @@ function validateGovernanceEvidence(bytes, gate, errors) {
   }
   if (
     !Array.isArray(evidence.requiredCheckGroups) ||
-    JSON.stringify(evidence.requiredCheckGroups) !== JSON.stringify(REQUIRED_GOVERNANCE_CHECK_GROUPS)
+    JSON.stringify(evidence.requiredCheckGroups) !==
+      JSON.stringify(REQUIRED_GOVERNANCE_CHECK_GROUPS)
   ) {
     add(
       errors,
@@ -878,14 +878,20 @@ function validateGovernanceEvidence(bytes, gate, errors) {
       'GOVERNANCE_INTEGRATION_RULESET_IDS',
       'Integration ruleset identifiers are missing or malformed.',
     );
-  } else if (evidence.integrationPolicy === 'active-ruleset' && evidence.integrationRulesetIds.length === 0) {
+  } else if (
+    evidence.integrationPolicy === 'active-ruleset' &&
+    evidence.integrationRulesetIds.length === 0
+  ) {
     add(
       errors,
       'GOVERNANCE_INTEGRATION_RULESET_MISSING',
       'A ruleset-backed integration policy must name at least one applicable ruleset.',
     );
   }
-  if (!validIdList(evidence.legacyFreezeRulesetIds) || evidence.legacyFreezeRulesetIds.length === 0) {
+  if (
+    !validIdList(evidence.legacyFreezeRulesetIds) ||
+    evidence.legacyFreezeRulesetIds.length === 0
+  ) {
     add(
       errors,
       'GOVERNANCE_MAIN_FREEZE_MISSING',
