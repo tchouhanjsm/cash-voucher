@@ -8,7 +8,6 @@ const OPERATIONS = new Set(['deploy-and-uat', 'uat-only', 'validate-only']);
 const OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped', 'in_progress']);
 const ROOT = path.resolve(__dirname, '..');
 
-
 function resolveSafeExternalFile(rawPath, label) {
   const value = String(rawPath || '').trim();
   if (!value) throw new Error('The ' + label + ' path is required.');
