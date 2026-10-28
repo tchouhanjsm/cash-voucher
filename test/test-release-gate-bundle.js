@@ -63,6 +63,8 @@ function buildBundle() {
     operationalGates[name] = {
       status: 'pass',
       evidenceRef: 'OPS-' + String(60101 + index),
+      verifiedAt: '2026-10-27T23:30:00.000Z',
+      ...(name === 'ownerBranchProtectionVerified' ? {} : { testedClientMainSha: commitSha }),
     };
   });
 
@@ -127,9 +129,17 @@ const preflightAfterBundle = buildBundle();
 preflightAfterBundle.stagingPreflight.generatedAt = '2026-10-28T00:02:00.000Z';
 assert.ok(hasCode(preflightAfterBundle, 'PREFLIGHT_AFTER_BUNDLE'));
 
+const stalePreflight = buildBundle();
+stalePreflight.stagingPreflight.generatedAt = '2026-10-26T23:00:00.000Z';
+assert.ok(hasCode(stalePreflight, 'PREFLIGHT_STALE'));
+
 const recoveryAfterBundle = buildBundle();
 recoveryAfterBundle.recoveryEvidence.recordedAt = '2026-10-28T00:02:00.000Z';
 assert.ok(hasCode(recoveryAfterBundle, 'RECOVERY_AFTER_BUNDLE'));
+
+const staleRecoveryEvidence = buildBundle();
+staleRecoveryEvidence.recoveryEvidence.recordedAt = '2026-10-19T00:00:00.000Z';
+assert.ok(hasCode(staleRecoveryEvidence, 'RECOVERY_STALE'));
 
 const malformedPreflightUrl = buildBundle();
 malformedPreflightUrl.stagingPreflight.workflowRun.url = 'https://example.test/fake-run';
@@ -153,6 +163,21 @@ assert.ok(hasCode(recoveryWrongSha, 'RECOVERY_SHA_MISMATCH'));
 const failedOperationalGate = buildBundle();
 failedOperationalGate.operationalGates.liveSecurityHeadersVerified.status = 'blocked';
 assert.ok(hasCode(failedOperationalGate, 'OPERATIONAL_GATE_BLOCKED'));
+
+const staleOperationalGate = buildBundle();
+staleOperationalGate.operationalGates.liveStagingUatPassed.verifiedAt =
+  '2026-10-20T23:00:00.000Z';
+assert.ok(hasCode(staleOperationalGate, 'OPERATIONAL_EVIDENCE_STALE'));
+
+const futureOperationalGate = buildBundle();
+futureOperationalGate.operationalGates.liveSecurityHeadersVerified.verifiedAt =
+  '2026-10-28T00:02:00.000Z';
+assert.ok(hasCode(futureOperationalGate, 'OPERATIONAL_EVIDENCE_AFTER_BUNDLE'));
+
+const staleApplicationSha = buildBundle();
+staleApplicationSha.operationalGates.liveStagingUatPassed.testedClientMainSha =
+  'b'.repeat(40);
+assert.ok(hasCode(staleApplicationSha, 'OPERATIONAL_TEST_SHA_MISMATCH'));
 
 const unsafeOperationalReference = buildBundle();
 unsafeOperationalReference.operationalGates.customerAcceptanceApproved.evidenceRef =
