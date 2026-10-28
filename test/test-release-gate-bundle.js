@@ -97,6 +97,11 @@ const missingSourceCheck = buildBundle();
 delete missingSourceCheck.sourceChecks.fullFlight;
 assert.ok(hasCode(missingSourceCheck, 'MISSING_FIELD'));
 
+const duplicateSourceRun = buildBundle();
+duplicateSourceRun.sourceChecks.browserE2e.runId =
+  duplicateSourceRun.sourceChecks.ciQuality.runId;
+assert.ok(hasCode(duplicateSourceRun, 'SOURCE_CHECK_RUN_ID_DUPLICATE'));
+
 const failedSourceCheck = buildBundle();
 failedSourceCheck.sourceChecks.ciQuality.conclusion = 'failure';
 assert.ok(hasCode(failedSourceCheck, 'SOURCE_CHECK_FAILED'));
@@ -114,6 +119,14 @@ assert.ok(hasCode(falseLiveClaim, 'PREFLIGHT_BOUNDARY'));
 const preflightWrongSha = buildBundle();
 preflightWrongSha.stagingPreflight.source.commitSha = 'b'.repeat(40);
 assert.ok(hasCode(preflightWrongSha, 'PREFLIGHT_SHA_MISMATCH'));
+
+const preflightAfterBundle = buildBundle();
+preflightAfterBundle.stagingPreflight.generatedAt = '2026-10-28T00:02:00.000Z';
+assert.ok(hasCode(preflightAfterBundle, 'PREFLIGHT_AFTER_BUNDLE'));
+
+const recoveryAfterBundle = buildBundle();
+recoveryAfterBundle.recoveryEvidence.recordedAt = '2026-10-28T00:02:00.000Z';
+assert.ok(hasCode(recoveryAfterBundle, 'RECOVERY_AFTER_BUNDLE'));
 
 const malformedPreflightUrl = buildBundle();
 malformedPreflightUrl.stagingPreflight.workflowRun.url = 'https://example.test/fake-run';
