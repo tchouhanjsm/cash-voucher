@@ -205,6 +205,20 @@ try {
   assert.equal(passingReportText.includes('https://github.com'), false);
   assert.equal(passingReportText.includes('scriptFingerprint'), false);
 
+  const previousReportBytes = fs.readFileSync(passingReportPath);
+  const overwriteExistingReport = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--report=' + passingReportPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(overwriteExistingReport.status, 1);
+  assert.match(overwriteExistingReport.stderr, /sanitized validation report could not be written/);
+  assert.deepEqual(fs.readFileSync(passingReportPath), previousReportBytes);
+
   const blockedBundle = buildBundle();
   blockedBundle.sourceChecks.ciQuality.headSha = 'b'.repeat(40);
   blockedBundle.privateNotes = 'SENSITIVE-INTERNAL-NOTE';
