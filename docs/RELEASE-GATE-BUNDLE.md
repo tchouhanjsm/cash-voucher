@@ -1,0 +1,31 @@
+# Release Gate Evidence Bundle
+
+**Purpose:** combine the source-check, staging configuration, recovery-drill and live operational evidence into one internally consistent release record. This is a validation contract, not a release approval or a live-system probe.
+
+## When to use it
+
+Run only after the intended `client-main` integration revision has its own passing CI / Quality, Browser E2E, Full Flight Test and development-monitor runs, and an owner has authorized the staging and recovery activities. Do not reuse PR-head checks or pre-merge artifacts as evidence for a later integration SHA.
+
+Keep the combined JSON in a private operator-controlled location. Do not commit it, upload it to a public artifact, or paste it into chat. The bundle contains the sanitized staging-preflight report and recovery evidence, plus the references for witnessed operational checks.
+
+## Validation command
+
+```sh
+npm run validate:release-bundle -- /private/path/release-gate-bundle.json
+```
+
+The command reads a JSON file up to 5 MiB and exits nonzero on missing, failed, mismatched or unexpected evidence. It prints contract error codes and a minimal summary, not the evidence contents. Run `npm run validate:recovery-evidence -- /private/path/recovery-evidence.json` separately when preparing the recovery evidence source.
+
+## Required contract
+
+- **Source:** repository `tchouhanjsm/cash-voucher`, ref `refs/heads/client-main`, full integration commit SHA.
+- **Four exact-head checks:** `ciQuality`, `browserE2e`, `fullFlight` and `autonomousMonitor`; each must conclude `success`, carry a numeric workflow run ID, and use the same SHA as the bundle.
+- **Staging configuration preflight:** include the complete sanitized `cash-voucher-staging-configuration-preflight` report. Its commit/repository/ref must match the bundle, all five categories must pass, the blocker list must be empty, and all declared non-live boundaries must remain false.
+- **Recovery drill:** include the complete `cash-voucher-recovery-drill` evidence object. It must pass `validate-recovery-evidence.js` and name the same integration SHA.
+- **Operational acceptance:** include a `pass` status and a non-sensitive ticket/change reference for each of branch protection, live staging UAT, actual HTTP security headers, live role/receipt authorization, offline/reconnect, print/PDF, accessibility and customer acceptance.
+
+## Important limitations
+
+A passing bundle means the fields are complete and internally consistent. It does not independently query GitHub, Google Apps Script, Sheets, Drive or the hosting provider; authenticate a human witness; prove a supplied assertion is truthful; or execute UAT/restore. Evidence references must point to separately retained, owner-reviewed records. A fixture-based test pass is not live release evidence.
+
+If any configuration, recovery or operational gate is not ready, do not manufacture a passing report. Fix the blocker and retain an honest blocked record outside the repository. Keep legacy `main` read-only, and do not merge, deploy or change production as a side effect of evidence validation.
