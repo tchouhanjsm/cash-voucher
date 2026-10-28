@@ -66,7 +66,6 @@ assert.ok(
   releaseGateBundleTest.includes('report output must not overwrite the input bundle'),
 );
 
-
 assert.ok(staging.includes(currentIntegrationSha));
 assert.ok(executionPlan.includes(currentIntegrationSha));
 assert.ok(staging.includes('Deep-dive findings — current source disposition'));
