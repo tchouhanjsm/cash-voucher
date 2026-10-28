@@ -372,7 +372,11 @@ function validateReleaseGateBundle(bundle, validationTime = new Date().toISOStri
         'Bundle timestamp is beyond the allowed five-minute clock-skew window.',
       );
     } else if (bundleAgeMs > MAX_RELEASE_BUNDLE_AGE_MS) {
-      add(errors, 'BUNDLE_STALE', 'Release gate bundle must be validated within 24 hours of creation.');
+      add(
+        errors,
+        'BUNDLE_STALE',
+        'Release gate bundle must be validated within 24 hours of creation.',
+      );
     }
   }
 
