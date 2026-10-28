@@ -137,7 +137,6 @@ assert.ok(hasCode(futureBundle, 'BUNDLE_TIMESTAMP_IN_FUTURE'));
 const invalidValidationTime = validateReleaseGateBundle(buildBundle(), 'not-a-timestamp');
 assert.ok(invalidValidationTime.errors.some((error) => error.code === 'VALIDATION_TIMESTAMP'));
 
-
 const blockedPreflight = buildBundle();
 blockedPreflight.stagingPreflight.outcome = 'blocked';
 blockedPreflight.stagingPreflight.blockers.push('configuration is incomplete');
