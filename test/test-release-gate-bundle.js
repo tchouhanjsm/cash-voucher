@@ -159,6 +159,18 @@ const unknownRootField = buildBundle();
 unknownRootField.privateNotes = 'must be rejected';
 assert.ok(hasCode(unknownRootField, 'UNKNOWN_FIELD'));
 
+const invalidBundleTimestamp = buildBundle();
+invalidBundleTimestamp.generatedAt = '2026-02-30T00:00:00.000Z';
+assert.ok(hasCode(invalidBundleTimestamp, 'RECORDED_AT'));
+
+const unexpectedRepository = buildBundle();
+unexpectedRepository.source.repository = 'example/untrusted';
+assert.ok(hasCode(unexpectedRepository, 'SOURCE_REPOSITORY'));
+
+const wrongSourceRef = buildBundle();
+wrongSourceRef.source.ref = 'refs/heads/main';
+assert.ok(hasCode(wrongSourceRef, 'SOURCE_REF'));
+
 const missingRecoveryProof = buildBundle();
 delete missingRecoveryProof.recoveryEvidence.receipts;
 assert.ok(hasCode(missingRecoveryProof, 'RECOVERY_RECEIPTS'));
