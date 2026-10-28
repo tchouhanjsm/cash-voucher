@@ -137,6 +137,7 @@ function cashCloseCalculatePeriod_(date) {
         no: String(voucher.Type === 'RECEIPT' ? 'R-' : 'P-') + String(voucher.VoucherNo || ''),
         date: isoDate_(voucher.Date),
         vendor: String(voucher.Vendor || ''),
+        paymentMethod: String(voucher.PaymentMethod || ''),
         amount: amountValid ? amountPaise / 100 : null,
         cashImpact: impact,
       };
@@ -290,6 +291,8 @@ function cashCloseOut_(row) {
       !validDate_(item.date) ||
       item.date !== closeDate ||
       typeof item.vendor !== 'string' ||
+      (item.paymentMethod !== undefined &&
+        (typeof item.paymentMethod !== 'string' || item.paymentMethod.length > 40)) ||
       typeof item.amount !== 'number' ||
       !isFinite(item.amount) ||
       item.amount <= 0 ||

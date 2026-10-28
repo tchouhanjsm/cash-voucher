@@ -3,6 +3,10 @@ import {
   CASH_IMPACT_CHOICES,
   can,
   categories,
+  PAYMENT_METHODS,
+  PAYMENT_METHOD_LABELS,
+  PAYMENT_METHOD_FILTER_OPTIONS,
+  paymentMethodLabel,
   isIn,
   nm,
   normalizeCashImpact,
@@ -35,6 +39,7 @@ export function createRegister({ api, go }) {
     to: '',
     st: 'ACTIVE',
     approval: 'ALL',
+    paymentMethod: 'ALL',
     limit: 100,
   };
   const receiptCache = {};
@@ -166,6 +171,7 @@ export function createRegister({ api, go }) {
       to: R.to,
       st: R.st,
       approval: R.approval,
+      paymentMethod: R.paymentMethod,
       offset,
       limit,
     };
@@ -358,7 +364,8 @@ export function createRegister({ api, go }) {
                   R.from ||
                   R.to ||
                   R.st !== 'ACTIVE' ||
-                  R.approval !== 'ALL'
+                  R.approval !== 'ALL' ||
+                  R.paymentMethod !== 'ALL'
                 ? 'filtered'
                 : 'first-use';
     }
@@ -429,7 +436,7 @@ export function createRegister({ api, go }) {
             <span class="voucher-vendor">${esc(scalarText(voucher.vendor))}</span>
             <div class="cat">
               ${esc(scalarText(voucher.category))}${scalarText(voucher.notes) ? ' · ' + esc(scalarText(voucher.notes)) : ''}${receiptWarning}${cancelledNote}
-              <div class="cat">Cash impact: ${esc(normalizeCashImpact(voucher.cashImpact))}${approvalNote}</div>
+              <div class="cat">Payment method: ${esc(paymentMethodLabel(voucher.paymentMethod))} · Cash impact: ${esc(normalizeCashImpact(voucher.cashImpact))}${approvalNote}</div>
             </div>
           </td>
           <td class="r nw amt${isIn(voucher) ? ' cash-impact-in' : ''}">
@@ -467,7 +474,8 @@ export function createRegister({ api, go }) {
         R.from ||
         R.to ||
         R.st !== 'ACTIVE' ||
-        R.approval !== 'ALL',
+        R.approval !== 'ALL' ||
+        R.paymentMethod !== 'ALL',
       );
       const firstUse =
         dataAvailable && !pageLoading && !rangeInvalid && pageTotalCount === 0 && !hasActiveFilters;
@@ -576,6 +584,7 @@ export function createRegister({ api, go }) {
     <label class="register-filter-field" for="rfrom">From<input type="date" id="rfrom" value="${esc(R.from)}"></label><label class="register-filter-field" for="rto">To<input type="date" id="rto" value="${esc(R.to)}"></label>
     ${can('viewAll') ? `<label class="register-filter-field" for="ru">User<select id="ru" aria-label="Filter by user"><option value="">All users</option>${users.map((user) => `<option value="${esc(user)}"${user === R.user ? ' selected' : ''}>${esc(nm(user))}</option>`).join('')}</select></label>` : ''}
     <label class="register-filter-field" for="rt">Transaction type<select id="rt" aria-label="Filter by transaction type"><option value="">Paid & received</option><option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option><option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option></select></label>
+    <label class="register-filter-field" for="rpmethod">Payment method<select id="rpmethod" aria-label="Filter by payment method">${PAYMENT_METHOD_FILTER_OPTIONS.map(([key, label]) => '<option value="' + key + '"' + (R.paymentMethod === key ? ' selected' : '') + '>' + esc(label) + '</option>').join('')}</select></label>
     <label class="register-filter-field" for="rs">Status<select id="rs" aria-label="Filter by status">${[
       ['ACTIVE', 'Active'],
       ['CANCELLED', 'Cancelled'],
@@ -616,6 +625,7 @@ export function createRegister({ api, go }) {
       rs: 'st',
       rt: 't',
       rapproval: 'approval',
+      rpmethod: 'paymentMethod',
     };
     const key = mapping[event.target.id];
 
@@ -646,6 +656,7 @@ export function createRegister({ api, go }) {
       to: '',
       st: 'ACTIVE',
       approval: 'ALL',
+      paymentMethod: 'ALL',
       limit: 100,
     });
     render();
@@ -689,6 +700,7 @@ export function createRegister({ api, go }) {
           'Vendor',
           'Category',
           'CashImpact',
+          'PaymentMethod',
           'Notes',
           'Amount',
           'Status',
@@ -719,6 +731,7 @@ export function createRegister({ api, go }) {
             scalarText(voucher.vendor),
             scalarText(voucher.category),
             normalizeCashImpact(voucher.cashImpact),
+            scalarText(voucher.paymentMethod),
             scalarText(voucher.notes),
             voucher.amount,
             voucher.status,
@@ -784,8 +797,8 @@ export function createRegister({ api, go }) {
     category.appendChild(catOptionsNode(scalarText(voucher.category), voucher.type));
     body.appendChild(labeledControl('Category', category));
 
-    const knownPaymentMethods = ['CASH', 'UPI', 'BANK_TRANSFER'];
-    const paymentMethodLabels = { CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank transfer' };
+    const knownPaymentMethods = PAYMENT_METHODS;
+    const paymentMethodLabels = PAYMENT_METHOD_LABELS;
     const storedMethod = scalarText(voucher.paymentMethod).trim();
     const storedMethodKnown = knownPaymentMethods.includes(storedMethod);
     const paymentMethod = document.createElement('select');

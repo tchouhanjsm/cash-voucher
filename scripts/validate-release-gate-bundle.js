@@ -4,6 +4,11 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { validateRecoveryEvidence } = require('./validate-recovery-evidence');
+const {
+  GOVERNANCE_EVIDENCE_TYPE,
+  REQUIRED_CHECK_GROUPS,
+} = require('./verify-client-main-governance');
+const { validateOperationalGateEvidence } = require('./validate-operational-gate-evidence');
 
 const SHA1 = /^[a-f0-9]{40}$/i;
 const SHA256 = /^[a-f0-9]{64}$/i;
@@ -53,6 +58,8 @@ const MAX_OPERATIONAL_EVIDENCE_AGE_MS = {
   accessibilityVerified: 30 * 24 * 60 * 60 * 1000,
   customerAcceptanceApproved: 7 * 24 * 60 * 60 * 1000,
 };
+const REQUIRED_GOVERNANCE_CHECK_GROUPS = REQUIRED_CHECK_GROUPS.map((group) => group.label);
+
 const OPERATIONAL_GATES_REQUIRE_CLIENT_SHA = REQUIRED_OPERATIONAL_GATES.filter(
   (name) => name !== 'ownerBranchProtectionVerified',
 );
@@ -777,6 +784,159 @@ function readBoundedEvidenceBytes(descriptor, maxBytes) {
   return Buffer.concat(chunks, totalBytes);
 }
 
+function validateGovernanceEvidence(bytes, gate, errors) {
+  let evidence;
+  try {
+    evidence = JSON.parse(bytes.toString('utf8'));
+  } catch {
+    add(
+      errors,
+      'GOVERNANCE_EVIDENCE_INVALID_JSON',
+      'Branch-protection evidence must be a valid governance-verifier JSON report.',
+    );
+    return;
+  }
+  if (!isRecord(evidence)) {
+    add(
+      errors,
+      'GOVERNANCE_EVIDENCE_OBJECT_REQUIRED',
+      'Branch-protection evidence must be a JSON object.',
+    );
+    return;
+  }
+
+  exactKeys(
+    evidence,
+    [
+      'schemaVersion',
+      'evidenceType',
+      'repository',
+      'observedAt',
+      'ok',
+      'defaultBranch',
+      'integrationPolicy',
+      'requiredCheckGroups',
+      'integrationRulesetIds',
+      'legacyFreezeRulesetIds',
+      'readOnly',
+      'errors',
+    ],
+    'ownerBranchProtectionEvidence',
+    errors,
+  );
+  if (evidence.schemaVersion !== 1) {
+    add(errors, 'GOVERNANCE_EVIDENCE_VERSION', 'Unsupported governance evidence schema version.');
+  }
+  if (evidence.evidenceType !== GOVERNANCE_EVIDENCE_TYPE) {
+    add(
+      errors,
+      'GOVERNANCE_EVIDENCE_TYPE',
+      'Branch-protection evidence was not produced for the client-main governance contract.',
+    );
+  }
+  if (evidence.repository !== REPOSITORY) {
+    add(
+      errors,
+      'GOVERNANCE_REPOSITORY_MISMATCH',
+      'Branch-protection evidence must identify the expected repository.',
+    );
+  }
+  if (evidence.ok !== true) {
+    add(
+      errors,
+      'GOVERNANCE_NOT_PASSED',
+      'The read-only governance verifier did not report a passing repository policy.',
+    );
+  }
+  if (evidence.defaultBranch !== 'client-main') {
+    add(errors, 'GOVERNANCE_DEFAULT_BRANCH', 'The repository default branch must be client-main.');
+  }
+  if (!['classic-branch-protection', 'active-ruleset'].includes(evidence.integrationPolicy)) {
+    add(
+      errors,
+      'GOVERNANCE_INTEGRATION_POLICY',
+      'client-main must have a complete classic protection or active ruleset policy.',
+    );
+  }
+  if (
+    !Array.isArray(evidence.requiredCheckGroups) ||
+    JSON.stringify(evidence.requiredCheckGroups) !==
+      JSON.stringify(REQUIRED_GOVERNANCE_CHECK_GROUPS)
+  ) {
+    add(
+      errors,
+      'GOVERNANCE_REQUIRED_CHECKS',
+      'Governance evidence must verify all four required integration check groups.',
+    );
+  }
+  const validIdList = (value) =>
+    Array.isArray(value) &&
+    value.every((id) => Number.isInteger(id) && id > 0) &&
+    new Set(value).size === value.length;
+  if (!validIdList(evidence.integrationRulesetIds)) {
+    add(
+      errors,
+      'GOVERNANCE_INTEGRATION_RULESET_IDS',
+      'Integration ruleset identifiers are missing or malformed.',
+    );
+  } else if (
+    evidence.integrationPolicy === 'active-ruleset' &&
+    evidence.integrationRulesetIds.length === 0
+  ) {
+    add(
+      errors,
+      'GOVERNANCE_INTEGRATION_RULESET_MISSING',
+      'A ruleset-backed integration policy must name at least one applicable ruleset.',
+    );
+  }
+  if (
+    !validIdList(evidence.legacyFreezeRulesetIds) ||
+    evidence.legacyFreezeRulesetIds.length === 0
+  ) {
+    add(
+      errors,
+      'GOVERNANCE_MAIN_FREEZE_MISSING',
+      'A distinct active ruleset must freeze legacy main against updates and deletion.',
+    );
+  } else if (
+    Array.isArray(evidence.integrationRulesetIds) &&
+    evidence.legacyFreezeRulesetIds.some((id) => evidence.integrationRulesetIds.includes(id))
+  ) {
+    add(
+      errors,
+      'GOVERNANCE_RULESET_OVERLAP',
+      'The legacy-main freeze must use a separate ruleset from client-main policy.',
+    );
+  }
+  if (evidence.readOnly !== true) {
+    add(
+      errors,
+      'GOVERNANCE_READ_ONLY_REQUIRED',
+      'Governance evidence must declare that the verification used read-only operations.',
+    );
+  }
+  if (!Array.isArray(evidence.errors) || evidence.errors.length !== 0) {
+    add(
+      errors,
+      'GOVERNANCE_ERRORS_PRESENT',
+      'A passing governance report must contain no policy or API errors.',
+    );
+  }
+  if (!validTimestamp(evidence.observedAt)) {
+    add(
+      errors,
+      'GOVERNANCE_TIMESTAMP_INVALID',
+      'Governance evidence must include a canonical UTC observation timestamp.',
+    );
+  } else if (isRecord(gate) && evidence.observedAt !== gate.verifiedAt) {
+    add(
+      errors,
+      'GOVERNANCE_TIMESTAMP_MISMATCH',
+      'The governance report observation time must match operationalGates.ownerBranchProtectionVerified.verifiedAt.',
+    );
+  }
+}
+
 function verifyOperationalEvidenceDigests(bundle, evidenceDirectory) {
   const errors = [];
   let verifiedCount = 0;
@@ -867,6 +1027,22 @@ function verifyOperationalEvidenceDigests(bundle, evidenceDirectory) {
           message: 'An operational evidence record does not match its declared SHA-256 digest.',
         });
         return;
+      }
+      if (name === 'ownerBranchProtectionVerified') {
+        const previousErrorCount = errors.length;
+        validateGovernanceEvidence(bytes, gate, errors);
+        if (errors.length > previousErrorCount) return;
+      } else {
+        const operationalResult = validateOperationalGateEvidence(
+          bytes,
+          name,
+          gate,
+          isRecord(bundle.source) ? bundle.source.commitSha : '',
+        );
+        if (!operationalResult.ok) {
+          operationalResult.errors.forEach((item) => add(errors, item.code, item.message));
+          return;
+        }
       }
       verifiedCount += 1;
     } catch (error) {
@@ -1086,6 +1262,8 @@ if (require.main === module) main();
 
 module.exports = {
   REQUIRED_OPERATIONAL_GATES,
+  REQUIRED_GOVERNANCE_CHECK_GROUPS,
+  GOVERNANCE_EVIDENCE_TYPE,
   REQUIRED_SOURCE_CHECKS,
   SOURCE_CHECK_WORKFLOW_NAMES,
   SOURCE_WORKFLOW_FILES,
@@ -1093,6 +1271,7 @@ module.exports = {
   buildSanitizedValidationReport,
   resolveOperationalEvidenceDirectory,
   verifyOperationalEvidenceDigests,
+  validateGovernanceEvidence,
   isInsideRepository,
   validateReleaseGateBundle,
   writeSanitizedValidationReport,

@@ -26,6 +26,9 @@ const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
 const releaseGateBundleDocs = read('docs/RELEASE-GATE-BUNDLE.md');
 const releaseGateBundleValidator = read('scripts/validate-release-gate-bundle.js');
 const releaseGateBundleTest = read('test/test-release-gate-bundle.js');
+const operationalEvidenceSchema = read('docs/RELEASE-GATE-EVIDENCE-SCHEMA.md');
+const operationalEvidenceValidator = read('scripts/validate-operational-gate-evidence.js');
+const operationalEvidenceTest = read('test/test-operational-gate-evidence.js');
 const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
 const governanceVerifier = read('scripts/verify-client-main-governance.js');
 const governanceTest = read('test/test-client-main-governance.js');
@@ -51,11 +54,20 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
-const currentIntegrationSha = 'afeb6376f7be9a1b3f8b5d8e1034a8a476986382';
+const currentIntegrationSha = '2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c';
 assert.ok(handoff.includes(currentIntegrationSha));
+assert.ok(handoff.includes('PR #245 merged'));
+assert.ok(handoff.includes('Governance evidence binding phase — 28 October 2026'));
+assert.ok(handoff.includes('Operational evidence content-binding phase — 28 October 2026'));
+assert.ok(operationalEvidenceSchema.includes('customerAcceptanceApproved'));
+assert.ok(operationalEvidenceSchema.includes('sourceRecordRefs'));
+assert.ok(operationalEvidenceValidator.includes('OPERATIONAL_RECORD_CHECK_FAILED'));
+assert.ok(operationalEvidenceTest.includes('OPERATIONAL_RECORD_SHA_MISMATCH'));
+assert.ok(releaseGateBundleValidator.includes('validateOperationalGateEvidence'));
+assert.ok(releaseGateBundleTest.includes('digest-consistent operational record'));
 assert.match(
   handoff,
-  /^\*\*Current integration baseline:\*\* `afeb6376f7be9a1b3f8b5d8e1034a8a476986382`/m,
+  /^\*\*Current integration baseline:\*\* `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`/m,
 );
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
@@ -123,6 +135,14 @@ assert.ok(
 
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
 assert.ok(handoff.includes('Client-main governance verifier phase — 28 October 2026'));
+assert.ok(governanceVerifier.includes('--json'));
+assert.ok(governanceVerifier.includes('buildGovernanceEvidence'));
+assert.ok(releaseGateBundleValidator.includes('GOVERNANCE_DEFAULT_BRANCH'));
+assert.ok(releaseGateBundleValidator.includes('GOVERNANCE_TIMESTAMP_MISMATCH'));
+assert.ok(releaseGateBundleTest.includes('GOVERNANCE_DEFAULT_BRANCH'));
+assert.ok(
+  releaseGateBundleDocs.includes('machine-readable JSON output of the governance verifier'),
+);
 assert.ok(staging.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.ok(executionPlan.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.ok(branchPolicy.includes('npm run verify:client-main-governance'));
@@ -165,7 +185,7 @@ assert.ok(releaseGateBundleDocs.includes('each evidence record `0600` or stricte
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_HASH_MISMATCH'));
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_FILE_UNSAFE'));
 assert.ok(releaseGateBundleTest.includes('missingEvidenceDirectoryRun'));
-assert.ok(handoff.includes('Operational evidence fingerprints'));
+assert.ok(handoff.includes('Operational evidence binding'));
 
 assert.ok(releaseGateBundleTest.includes('wrongSourceRunUrl'));
 assert.ok(releaseGateBundleDocs.includes('integration-branch checks'));

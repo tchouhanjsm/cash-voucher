@@ -201,8 +201,9 @@ export function createDashboard({ api }) {
       trendKeys.add(key);
     }
 
-    for (const field of ['topVendors', 'byCategory', 'byTeamMember']) {
+    for (const field of ['topVendors', 'byCategory', 'byTeamMember', 'byPaymentMethod']) {
       const rows = summary[field];
+      if (field === 'byPaymentMethod' && rows === undefined) continue;
       if (!Array.isArray(rows) || rows.length > 10) return field;
       for (const row of rows) {
         if (
@@ -670,6 +671,7 @@ export function createDashboard({ api }) {
       ${dashboardWarnings}
       <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend, from, to)}</div>
       <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors)}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory)}</div></div>
+      <div class="card dashboard-payment-methods"><h2>Approved payments by method</h2><p class="muted">Active approved payments in this period. Historical entries without a saved method appear as Not recorded.</p>${Array.isArray(summary.byPaymentMethod) ? bars(summary.byPaymentMethod, 5) : '<p class="muted">Payment-method breakdown is unavailable for this deployment.</p>'}</div>
       ${
         can('viewAll')
           ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(

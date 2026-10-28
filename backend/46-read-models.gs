@@ -7,6 +7,27 @@
 const READ_MODEL_PAGE_LIMIT = 200;
 const READ_MODEL_BOOTSTRAP_LIMIT = 200;
 const READ_MODEL_APPROVED_STATUSES = ['NOT_REQUIRED', 'APPROVED'];
+const READ_MODEL_PAYMENT_METHOD_FILTERS = [
+  'ALL',
+  'CASH',
+  'UPI',
+  'BANK_TRANSFER',
+  'UNRECORDED',
+  'UNRECOGNIZED',
+];
+
+function readModelPaymentMethodKey_(value) {
+  const method = typeof value === 'string' ? value.trim() : '';
+  if (!method) return 'UNRECORDED';
+  return ['CASH', 'UPI', 'BANK_TRANSFER'].indexOf(method) >= 0 ? method : 'UNRECOGNIZED';
+}
+
+function readModelPaymentMethodLabel_(value) {
+  const key = readModelPaymentMethodKey_(value);
+  if (key === 'UNRECORDED') return 'Not recorded';
+  if (key === 'UNRECOGNIZED') return 'Unrecognized method';
+  return key === 'BANK_TRANSFER' ? 'Bank transfer' : key === 'CASH' ? 'Cash' : 'UPI';
+}
 
 function readModelCanView_(user) {
   return can_(user, 'viewAll') || can_(user, 'viewOwn');
@@ -193,6 +214,7 @@ function registerPage_(user, req) {
   const type = readModelFilterText_(req.t, 'Transaction type', 20);
   const status = readModelFilterText_(req.st, 'Status', 20) || 'ACTIVE';
   const approval = readModelFilterText_(req.approval, 'Approval status', 30) || 'ALL';
+  const paymentMethod = readModelFilterText_(req.paymentMethod, 'Payment method', 20) || 'ALL';
   const createdBy = readModelFilterText_(req.user, 'User', 254).toLowerCase();
   const from = readModelDate_(req.from, 'start');
   const to = readModelDate_(req.to, 'end');
@@ -208,6 +230,9 @@ function registerPage_(user, req) {
     ) < 0
   ) {
     throw err_('Invalid approval status filter.', 'VALIDATION');
+  }
+  if (READ_MODEL_PAYMENT_METHOD_FILTERS.indexOf(paymentMethod) < 0) {
+    throw err_('Invalid payment method filter.', 'VALIDATION');
   }
   if (createdBy && !seeAll) throw err_('You cannot filter other users’ vouchers.', 'FORBIDDEN');
 
@@ -251,6 +276,7 @@ function registerPage_(user, req) {
     const rowType = row.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT';
     const rowStatus = String(row.Status || 'ACTIVE');
     const rowApproval = readModelApproval_(row);
+    const rowPaymentMethod = readModelPaymentMethodKey_(row.PaymentMethod);
     const no = readModelNo_(row).toLowerCase();
     const rowVendor = String(row.Vendor || '');
     const rowCategory = String(row.Category || '');
@@ -259,6 +285,7 @@ function registerPage_(user, req) {
     return (
       (status === 'ALL' || rowStatus === status) &&
       (approval === 'ALL' || rowApproval === approval) &&
+      (paymentMethod === 'ALL' || rowPaymentMethod === paymentMethod) &&
       (!vendor || rowVendor === vendor) &&
       (!category || rowCategory === category) &&
       (!type || rowType === type) &&
@@ -436,6 +463,9 @@ function dashboardSummary_(user, req) {
     byCategory: readModelGroup_(currentPayments, function (row) {
       return row.Category || 'Other';
     }).slice(0, 10),
+    byPaymentMethod: readModelGroup_(currentPayments, function (row) {
+      return readModelPaymentMethodLabel_(row.PaymentMethod);
+    }).slice(0, 5),
     byTeamMember: can_(user, 'viewAll')
       ? readModelGroup_(currentPayments, function (row) {
           return row.CreatedBy || 'Unknown';

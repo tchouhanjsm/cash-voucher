@@ -1,5 +1,5 @@
 import { $ } from '../core/dom.js';
-import { can, S } from '../core/state.js';
+import { can, PAYMENT_METHOD_FILTER_OPTIONS, paymentMethodLabel, S } from '../core/state.js';
 import {
   csvCell,
   dmy,
@@ -18,6 +18,7 @@ export function createReports({ api }) {
     to: today(),
     type: 'ALL',
     status: 'ACTIVE',
+    paymentMethod: 'ALL',
     rows: [],
     summary: null,
     invalidRowCount: 0,
@@ -45,6 +46,7 @@ export function createReports({ api }) {
       'date',
       'voucherNo',
       'type',
+      'paymentMethod',
       'vendor',
       'vendorId',
       'category',
@@ -59,6 +61,7 @@ export function createReports({ api }) {
       'id',
     ];
     const row = Object.fromEntries(fields.map((field) => [field, scalarText(item[field])]));
+    row.paymentMethodAvailable = typeof item.paymentMethod === 'string';
     row.amount = finiteAmount(item.amount) === null ? '' : item.amount;
     return row;
   }
@@ -71,6 +74,7 @@ export function createReports({ api }) {
           <td class="nw">${esc(dmy(scalarText(item.date)))}</td>
           <td class="nw">${esc(scalarText(item.type) === 'RECEIPT' ? 'R-' : '')}${esc(scalarText(item.voucherNo))}</td>
           <td>${esc(scalarText(item.type))}</td>
+          <td>${esc(item.paymentMethodAvailable ? paymentMethodLabel(item.paymentMethod) : 'Unavailable')}</td>
           <td>${esc(scalarText(item.vendor))}</td>
           <td class="nw"><code>${esc(scalarText(item.vendorId)) || '—'}</code></td>
           <td>
@@ -96,6 +100,7 @@ export function createReports({ api }) {
         { label: 'Date', nowrap: true },
         { label: 'Voucher', nowrap: true },
         { label: 'Type' },
+        { label: 'Payment method' },
         { label: 'Counterparty' },
         { label: 'Vendor ID', nowrap: true },
         { label: 'Category / notes' },
@@ -130,6 +135,20 @@ export function createReports({ api }) {
               <option value="ALL"${R.type === 'ALL' ? ' selected' : ''}>Payments and receipts</option>
               <option value="PAYMENT"${R.type === 'PAYMENT' ? ' selected' : ''}>Payments only</option>
               <option value="RECEIPT"${R.type === 'RECEIPT' ? ' selected' : ''}>Receipts only</option>
+            </select>
+          </label>
+          <label>Payment method
+            <select id="movementPaymentMethod">
+              ${PAYMENT_METHOD_FILTER_OPTIONS.map(
+                ([value, label]) =>
+                  '<option value="' +
+                  value +
+                  '"' +
+                  (R.paymentMethod === value ? ' selected' : '') +
+                  '>' +
+                  esc(label) +
+                  '</option>',
+              ).join('')}
             </select>
           </label>
           <label>Status
@@ -183,6 +202,28 @@ export function createReports({ api }) {
             <small class="muted">Cancelled rows excluded</small>
           </div>
         </div>
+        <div class="card report-method-breakdown">
+          <h2>Active approved payments by method</h2>
+          <p class="muted">Payment amounts exclude cancelled and unresolved approvals. Historical entries without a saved method remain visible as Not recorded.</p>
+          <div class="report-method-breakdown-list">
+${
+  Array.isArray(summary.byPaymentMethod) && summary.byPaymentMethod.length
+    ? summary.byPaymentMethod
+        .map(
+          (item) =>
+            '<div class="report-method-breakdown-item"><span>' +
+            esc(item.k) +
+            '</span><strong>' +
+            money(item.s) +
+            '</strong><small class="muted">' +
+            esc(scalarText(item.n)) +
+            ' payment(s)</small></div>',
+        )
+        .join('')
+    : '<p class="muted">Payment-method breakdown is unavailable for this deployment or selection.</p>'
+}
+          </div>
+        </div>
         <div class="card report-results-card">
           ${hasPositiveCount(summary.approvalExceptionCount) ? `<p class="muted" role="status">${esc(scalarText(summary.approvalExceptionCount))} active payment(s) have unresolved approval states. They remain visible below but are excluded from approved payment totals and block daily cash close until approved or cancelled.</p>` : ''}
           ${hasPositiveCount(summary.unmatchedVendorCount) ? `<p class="muted" role="status">${esc(scalarText(summary.unmatchedVendorCount))} report row(s) have no unique saved Vendor ID. IDs are linked only when the counterparty exactly matches one unambiguous saved vendor name; unmatched historical/free-text names remain blank.</p>` : ''}
@@ -223,6 +264,7 @@ export function createReports({ api }) {
       R.to = $('#movementTo').value;
       R.type = $('#movementType').value;
       R.status = $('#movementStatus').value;
+      R.paymentMethod = $('#movementPaymentMethod').value;
       load();
     });
   }
@@ -250,6 +292,7 @@ export function createReports({ api }) {
       to: R.to,
       type: R.type,
       status: R.status,
+      paymentMethod: R.paymentMethod,
     };
     R.dateRangeInvalid = false;
     R.loading = true;
@@ -279,6 +322,30 @@ export function createReports({ api }) {
         throw new Error('The report returned invalid summary counts. Please retry.');
       }
 
+      if (
+        (summary.paymentMethod !== undefined &&
+          summary.paymentMethod !== requestFilters.paymentMethod) ||
+        (requestFilters.paymentMethod !== 'ALL' &&
+          summary.paymentMethod !== requestFilters.paymentMethod) ||
+        (summary.byPaymentMethod !== undefined &&
+          (!Array.isArray(summary.byPaymentMethod) ||
+            !summary.byPaymentMethod.every(
+              (item) =>
+                item !== null &&
+                typeof item === 'object' &&
+                !Array.isArray(item) &&
+                typeof item.k === 'string' &&
+                isValidSummaryCount(item.n) &&
+                typeof item.s === 'number' &&
+                Number.isFinite(item.s) &&
+                item.s >= 0,
+            )))
+      ) {
+        throw new Error(
+          'The report returned invalid payment-method data. Confirm the client and backend versions, then retry.',
+        );
+      }
+
       const reportTextFields = [
         'date',
         'voucherNo',
@@ -301,6 +368,7 @@ export function createReports({ api }) {
         typeof item === 'object' &&
         !Array.isArray(item) &&
         reportTextFields.every((field) => typeof item[field] === 'string') &&
+        (item.paymentMethod === undefined || typeof item.paymentMethod === 'string') &&
         (item.type === 'PAYMENT' || item.type === 'RECEIPT') &&
         (item.status === 'ACTIVE' || item.status === 'CANCELLED') &&
         typeof item.amount === 'number' &&
@@ -341,6 +409,7 @@ export function createReports({ api }) {
         'date',
         'voucherNo',
         'type',
+        'paymentMethod',
         'vendor',
         'vendorId',
         'category',

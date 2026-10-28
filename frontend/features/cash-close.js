@@ -1,5 +1,5 @@
 import { $ } from '../core/dom.js';
-import { can } from '../core/state.js';
+import { can, paymentMethodLabel } from '../core/state.js';
 import { offlineQueue } from '../core/offline-queue.js';
 import { csvCell, download, esc, money, businessDate, uid } from '../core/utils.js';
 import { busy, fail, head, pageNotice, toast } from '../core/ui.js';
@@ -47,6 +47,8 @@ export function createCashClose({ api }) {
       item.date === date &&
       isDate(item.date) &&
       isText(item.vendor) &&
+      (item.paymentMethod === undefined ||
+        (isText(item.paymentMethod) && item.paymentMethod.length <= 40)) &&
       typeof item.amount === 'number' &&
       Number.isFinite(item.amount) &&
       item.amount > 0 &&
@@ -126,6 +128,8 @@ export function createCashClose({ api }) {
       isText(item.no) &&
       isDate(item.date) &&
       isText(item.vendor) &&
+      (item.paymentMethod === undefined ||
+        (isText(item.paymentMethod) && item.paymentMethod.length <= 40)) &&
       (isAmount(item.amount) || item.amount === null) &&
       ['CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'].includes(item.cashImpact)
     );
@@ -195,6 +199,77 @@ export function createCashClose({ api }) {
       (value.expectedCash === null || isAmount(value.expectedCash)) &&
       typeof value.readyToClose === 'boolean' &&
       typeof value.expectedInvalid === 'boolean'
+    );
+  }
+
+  function methodBreakdownMarkup(vouchers) {
+    const snapshot = Array.isArray(vouchers) ? vouchers : [];
+    const groups = new Map();
+
+    snapshot.forEach((item) => {
+      const direction =
+        typeof item.no === 'string' && item.no.startsWith('R-') ? 'Receipt' : 'Payment';
+      const method = paymentMethodLabel(item.paymentMethod);
+      const key = direction + '|' + method;
+      if (!groups.has(key)) {
+        groups.set(key, {
+          direction,
+          method,
+          count: 0,
+          amountPaise: 0,
+          invalidAmount: false,
+          unclassifiedCount: 0,
+        });
+      }
+
+      const group = groups.get(key);
+      group.count++;
+      const amountPaise = Math.round(item.amount * 100);
+      if (
+        typeof item.amount !== 'number' ||
+        !Number.isFinite(item.amount) ||
+        item.amount <= 0 ||
+        !Number.isSafeInteger(amountPaise) ||
+        Math.abs(item.amount * 100 - amountPaise) > 0.000001
+      ) {
+        group.invalidAmount = true;
+      } else {
+        group.amountPaise += amountPaise;
+      }
+      if (item.cashImpact === 'UNCLASSIFIED') group.unclassifiedCount++;
+    });
+
+    const sorted = Array.from(groups.values()).sort(
+      (a, b) =>
+        (a.direction === b.direction ? 0 : a.direction === 'Payment' ? -1 : 1) ||
+        a.method.localeCompare(b.method),
+    );
+    return (
+      '<section class="cc-method-breakdown"><h3>Payment-method reconciliation</h3>' +
+      '<p class="muted">Voucher amounts grouped by direction and saved method; these are not physical-cash or bank-balance totals. Pending approval entries remain listed separately. Blank historical methods show as Not recorded.</p>' +
+      (sorted.length
+        ? '<div class="cc-method-grid">' +
+          sorted
+            .map(
+              (group) =>
+                '<div class="cc-method-item"><div class="cc-method-item__label"><strong>' +
+                esc(group.direction + ' · ' + group.method) +
+                '</strong><span class="muted">' +
+                esc(group.count) +
+                (group.count === 1 ? ' voucher' : ' vouchers') +
+                (group.unclassifiedCount
+                  ? ' · ' + esc(group.unclassifiedCount) + ' cash-impact issue(s)'
+                  : '') +
+                '</span></div><strong class="cc-method-item__amount">' +
+                (group.invalidAmount
+                  ? 'Amount requires review'
+                  : esc(money(group.amountPaise / 100))) +
+                '</strong></div>',
+            )
+            .join('') +
+          '</div>'
+        : '<p class="muted">No voucher rows available for this breakdown.</p>') +
+      '</section>'
     );
   }
 
@@ -280,6 +355,8 @@ export function createCashClose({ api }) {
           '</td><td>' +
           esc(item.vendor) +
           '</td><td>' +
+          esc(paymentMethodLabel(item.paymentMethod)) +
+          '</td><td>' +
           esc(item.cashImpact) +
           '</td><td class="r">' +
           esc(money(item.amount)) +
@@ -310,6 +387,7 @@ export function createCashClose({ api }) {
       metric('Physical count', money(close.countedCash)) +
       metric('Variance (counted − expected)', money(close.variance)) +
       '</div>' +
+      methodBreakdownMarkup(vouchers) +
       '<dl class="cc-meta"><div><dt>Opening source</dt><dd>' +
       esc(
         close.openingSource === 'PREVIOUS_CLOSE'
@@ -332,8 +410,8 @@ export function createCashClose({ api }) {
       esc(close.id) +
       '</dd></div></dl>' +
       '<h3>Included voucher snapshot</h3><p class="muted">NO_CASH entries are listed for traceability but do not affect drawer totals. Cancelled vouchers are excluded.</p>' +
-      '<div class="table-wrap"><table><thead><tr><th>Voucher</th><th>Counterparty</th><th>Cash impact</th><th class="r">Amount</th><th>Voucher ID</th></tr></thead><tbody>' +
-      (rows || '<tr><td colspan="5" class="muted">No active vouchers in this period.</td></tr>') +
+      '<div class="table-wrap"><table><thead><tr><th>Voucher</th><th>Counterparty</th><th>Payment method</th><th>Cash impact</th><th class="r">Amount</th><th>Voucher ID</th></tr></thead><tbody>' +
+      (rows || '<tr><td colspan="6" class="muted">No active vouchers in this period.</td></tr>') +
       '</tbody></table></div>' +
       overflow +
       '</section>' +
@@ -505,6 +583,7 @@ export function createCashClose({ api }) {
       metric('NO_CASH vouchers', String(snapshot.noCashCount || 0)) +
       metric('Expected physical cash', expectedValue) +
       '</div>' +
+      methodBreakdownMarkup(snapshot.includedVouchers) +
       issues +
       '<div class="cc-count"><h3>Physical count</h3><div class="filters"><label for="cc-counted">Counted cash (₹)<input id="cc-counted" type="number" min="0" max="10000000" step="0.01" inputmode="decimal" placeholder="Count notes and coins" required></label>' +
       '<label for="cc-variance-reason">Variance reason (required when different)<input id="cc-variance-reason" maxlength="200" placeholder="Explain a non-zero variance"></label></div>' +
@@ -683,10 +762,11 @@ export function createCashClose({ api }) {
       ['Created at', close.createdAt],
       ['Close ID', close.id],
       [],
-      ['Voucher', 'Counterparty', 'Cash impact', 'Amount', 'Date', 'Voucher ID'],
+      ['Voucher', 'Counterparty', 'Payment method', 'Cash impact', 'Amount', 'Date', 'Voucher ID'],
       ...(close.includedVouchers || []).map((voucher) => [
         voucher.no,
         voucher.vendor,
+        paymentMethodLabel(voucher.paymentMethod),
         voucher.cashImpact,
         voucher.amount,
         voucher.date,
@@ -725,6 +805,8 @@ export function createCashClose({ api }) {
           '</td><td>' +
           esc(item.vendor) +
           '</td><td>' +
+          esc(paymentMethodLabel(item.paymentMethod)) +
+          '</td><td>' +
           esc(item.cashImpact) +
           '</td><td>' +
           esc(money(item.amount)) +
@@ -759,14 +841,15 @@ export function createCashClose({ api }) {
       ' — ' +
       esc(close.varianceReason || 'No variance') +
       '</div></div>' +
+      methodBreakdownMarkup(vouchers) +
       '<p>Recorded by ' +
       esc(close.createdBy) +
       ' at ' +
       esc(close.createdAt) +
       ' · Close ID: ' +
       esc(close.id) +
-      '</p><h3>Included voucher snapshot</h3><table><thead><tr><th>Voucher</th><th>Counterparty</th><th>Cash impact</th><th>Amount</th><th>Voucher ID</th></tr></thead><tbody>' +
-      (rows || '<tr><td colspan="5">No active vouchers in this period.</td></tr>') +
+      '</p><h3>Included voucher snapshot</h3><table><thead><tr><th>Voucher</th><th>Counterparty</th><th>Payment method</th><th>Cash impact</th><th>Amount</th><th>Voucher ID</th></tr></thead><tbody>' +
+      (rows || '<tr><td colspan="6">No active vouchers in this period.</td></tr>') +
       '</tbody></table></div>';
     window.print();
   }

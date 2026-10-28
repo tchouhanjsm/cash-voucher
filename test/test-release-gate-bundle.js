@@ -7,6 +7,8 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const {
+  GOVERNANCE_EVIDENCE_TYPE,
+  REQUIRED_GOVERNANCE_CHECK_GROUPS,
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
   SOURCE_CHECK_WORKFLOW_NAMES,
@@ -17,6 +19,12 @@ const {
   SOURCE_WORKFLOW_FILES,
 } = require('../scripts/validate-release-gate-bundle');
 const { buildRecoveryEvidence } = require('./fixtures/recovery-evidence');
+const {
+  OPERATIONAL_GATE_CHECKS,
+  OPERATIONAL_GATE_REVIEWER_ROLES,
+  OPERATIONAL_GATE_VERIFICATION_METHODS,
+  OPERATIONAL_GATE_EVIDENCE_TYPE,
+} = require('../scripts/validate-operational-gate-evidence');
 
 const repository = 'tchouhanjsm/cash-voucher';
 const ref = 'refs/heads/client-main';
@@ -380,10 +388,45 @@ assert.ok(hasCode(missingRecoveryProof, 'RECOVERY_RECEIPTS'));
 function writeEvidenceFiles(directory, bundle) {
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const payloads = new Map();
-  Object.values(bundle.operationalGates).forEach((gate) => {
-    const bytes = Buffer.from(
-      'Synthetic evidence fixture for ' + gate.evidenceRef + String.fromCharCode(10),
-    );
+  Object.entries(bundle.operationalGates).forEach(([name, gate]) => {
+    let bytes;
+    if (name === 'ownerBranchProtectionVerified') {
+      const governanceEvidence = {
+        schemaVersion: 1,
+        evidenceType: GOVERNANCE_EVIDENCE_TYPE,
+        repository,
+        observedAt: gate.verifiedAt,
+        ok: true,
+        defaultBranch: 'client-main',
+        integrationPolicy: 'classic-branch-protection',
+        requiredCheckGroups: REQUIRED_GOVERNANCE_CHECK_GROUPS,
+        integrationRulesetIds: [],
+        legacyFreezeRulesetIds: [102],
+        readOnly: true,
+        errors: [],
+      };
+      bytes = Buffer.from(JSON.stringify(governanceEvidence, null, 2) + String.fromCharCode(10));
+    } else {
+      const index = Object.keys(bundle.operationalGates).indexOf(name);
+      const operationalEvidence = {
+        schemaVersion: 1,
+        evidenceType: OPERATIONAL_GATE_EVIDENCE_TYPE,
+        repository,
+        gate: name,
+        outcome: 'pass',
+        evidenceRef: gate.evidenceRef,
+        verifiedAt: gate.verifiedAt,
+        testedClientMainSha: bundle.source.commitSha,
+        reviewerRole: OPERATIONAL_GATE_REVIEWER_ROLES[name][0],
+        verificationMethod: OPERATIONAL_GATE_VERIFICATION_METHODS[name],
+        sourceRecordRefs: [
+          'RUN-' + String(71200 + index).padStart(5, '0'),
+          'QA-' + String(71300 + index).padStart(5, '0'),
+        ],
+        checks: Object.fromEntries(OPERATIONAL_GATE_CHECKS[name].map((check) => [check, true])),
+      };
+      bytes = Buffer.from(JSON.stringify(operationalEvidence, null, 2) + String.fromCharCode(10));
+    }
     gate.evidenceSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
     fs.writeFileSync(path.join(directory, gate.evidenceRef + '.evidence'), bytes, {
       mode: 0o600,
@@ -416,6 +459,138 @@ try {
   );
   assert.deepEqual(directDigestCheck.errors, []);
   assert.equal(directDigestCheck.verifiedCount, 8);
+
+  const governanceGate = passingBundle.operationalGates.ownerBranchProtectionVerified;
+  const governancePath = path.join(evidenceDirectory, governanceGate.evidenceRef + '.evidence');
+  const validGovernanceBytes = fs.readFileSync(governancePath);
+  const badGovernanceBundle = JSON.parse(JSON.stringify(passingBundle));
+  const badGovernanceReport = JSON.parse(validGovernanceBytes.toString('utf8'));
+  badGovernanceReport.defaultBranch = 'main';
+  const badGovernanceBytes = Buffer.from(
+    JSON.stringify(badGovernanceReport, null, 2) + String.fromCharCode(10),
+  );
+  fs.writeFileSync(governancePath, badGovernanceBytes, { mode: 0o600 });
+  badGovernanceBundle.operationalGates.ownerBranchProtectionVerified.evidenceSha256 = crypto
+    .createHash('sha256')
+    .update(badGovernanceBytes)
+    .digest('hex');
+  const badGovernanceCheck = verifyOperationalEvidenceDigests(
+    badGovernanceBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(badGovernanceCheck.errors.some((error) => error.code === 'GOVERNANCE_DEFAULT_BRANCH'));
+  assert.equal(badGovernanceCheck.verifiedCount, 7);
+  fs.writeFileSync(governancePath, validGovernanceBytes, { mode: 0o600 });
+
+  const timestampMismatchReport = JSON.parse(validGovernanceBytes.toString('utf8'));
+  timestampMismatchReport.observedAt = '2026-10-27T23:29:00.000Z';
+  const timestampMismatchBytes = Buffer.from(
+    JSON.stringify(timestampMismatchReport, null, 2) + String.fromCharCode(10),
+  );
+  fs.writeFileSync(governancePath, timestampMismatchBytes, { mode: 0o600 });
+  const timestampMismatchBundle = JSON.parse(JSON.stringify(passingBundle));
+  timestampMismatchBundle.operationalGates.ownerBranchProtectionVerified.evidenceSha256 = crypto
+    .createHash('sha256')
+    .update(timestampMismatchBytes)
+    .digest('hex');
+  const timestampMismatchCheck = verifyOperationalEvidenceDigests(
+    timestampMismatchBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    timestampMismatchCheck.errors.some((error) => error.code === 'GOVERNANCE_TIMESTAMP_MISMATCH'),
+  );
+  fs.writeFileSync(governancePath, validGovernanceBytes, { mode: 0o600 });
+
+  const operationalGate = passingBundle.operationalGates.liveStagingUatPassed;
+  const operationalPath = path.join(evidenceDirectory, operationalGate.evidenceRef + '.evidence');
+  const validOperationalBytes = fs.readFileSync(operationalPath);
+  const wrongGateBundle = JSON.parse(JSON.stringify(passingBundle));
+  const wrongGateRecord = JSON.parse(validOperationalBytes.toString('utf8'));
+  wrongGateRecord.gate = 'liveSecurityHeadersVerified';
+  const wrongGateBytes = Buffer.from(
+    JSON.stringify(wrongGateRecord, null, 2) + String.fromCharCode(10),
+  );
+  fs.writeFileSync(operationalPath, wrongGateBytes, { mode: 0o600 });
+  wrongGateBundle.operationalGates.liveStagingUatPassed.evidenceSha256 = crypto
+    .createHash('sha256')
+    .update(wrongGateBytes)
+    .digest('hex');
+  const wrongGateCheck = verifyOperationalEvidenceDigests(
+    wrongGateBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    wrongGateCheck.errors.some((error) => error.code === 'OPERATIONAL_RECORD_GATE_MISMATCH'),
+    'digest-consistent operational record must fail when its gate identifier is altered',
+  );
+  assert.equal(wrongGateCheck.verifiedCount, 7);
+  fs.writeFileSync(operationalPath, validOperationalBytes, { mode: 0o600 });
+
+  const falseCheckBundle = JSON.parse(JSON.stringify(passingBundle));
+  const falseCheckRecord = JSON.parse(validOperationalBytes.toString('utf8'));
+  falseCheckRecord.checks.voucherCreateReadback = false;
+  const falseCheckBytes = Buffer.from(
+    JSON.stringify(falseCheckRecord, null, 2) + String.fromCharCode(10),
+  );
+  fs.writeFileSync(operationalPath, falseCheckBytes, { mode: 0o600 });
+  falseCheckBundle.operationalGates.liveStagingUatPassed.evidenceSha256 = crypto
+    .createHash('sha256')
+    .update(falseCheckBytes)
+    .digest('hex');
+  const falseCheckResult = verifyOperationalEvidenceDigests(
+    falseCheckBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    falseCheckResult.errors.some((error) => error.code === 'OPERATIONAL_RECORD_CHECK_FAILED'),
+  );
+  assert.equal(falseCheckResult.verifiedCount, 7);
+  fs.writeFileSync(operationalPath, validOperationalBytes, { mode: 0o600 });
+
+  const wrongOperationalShaBundle = JSON.parse(JSON.stringify(passingBundle));
+  const wrongShaRecord = JSON.parse(validOperationalBytes.toString('utf8'));
+  wrongShaRecord.testedClientMainSha = 'b'.repeat(40);
+  const wrongShaBytes = Buffer.from(
+    JSON.stringify(wrongShaRecord, null, 2) + String.fromCharCode(10),
+  );
+  fs.writeFileSync(operationalPath, wrongShaBytes, { mode: 0o600 });
+  wrongOperationalShaBundle.operationalGates.liveStagingUatPassed.evidenceSha256 = crypto
+    .createHash('sha256')
+    .update(wrongShaBytes)
+    .digest('hex');
+  const wrongOperationalShaResult = verifyOperationalEvidenceDigests(
+    wrongOperationalShaBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    wrongOperationalShaResult.errors.some(
+      (error) => error.code === 'OPERATIONAL_RECORD_SHA_MISMATCH',
+    ),
+  );
+  fs.writeFileSync(operationalPath, validOperationalBytes, { mode: 0o600 });
+
+  const wrongOperationalTimestampBundle = JSON.parse(JSON.stringify(passingBundle));
+  const wrongTimestampRecord = JSON.parse(validOperationalBytes.toString('utf8'));
+  wrongTimestampRecord.verifiedAt = '2026-10-27T23:29:00.000Z';
+  const wrongTimestampBytes = Buffer.from(
+    JSON.stringify(wrongTimestampRecord, null, 2) + String.fromCharCode(10),
+  );
+  fs.writeFileSync(operationalPath, wrongTimestampBytes, { mode: 0o600 });
+  wrongOperationalTimestampBundle.operationalGates.liveStagingUatPassed.evidenceSha256 = crypto
+    .createHash('sha256')
+    .update(wrongTimestampBytes)
+    .digest('hex');
+  const wrongOperationalTimestampResult = verifyOperationalEvidenceDigests(
+    wrongOperationalTimestampBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    wrongOperationalTimestampResult.errors.some(
+      (error) => error.code === 'OPERATIONAL_RECORD_TIMESTAMP_MISMATCH',
+    ),
+  );
+  fs.writeFileSync(operationalPath, validOperationalBytes, { mode: 0o600 });
 
   if (process.platform !== 'win32') {
     const permissionGate = passingBundle.operationalGates.liveStagingUatPassed;

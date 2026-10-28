@@ -1,8 +1,11 @@
 'use strict';
 
 const assert = require('node:assert/strict');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 const {
   REQUIRED_CHECK_GROUPS,
+  buildGovernanceEvidence,
   evaluateRepositoryGovernance,
   patternMatches,
   requestGitHubJson,
@@ -108,6 +111,45 @@ async function main() {
   ];
   const validJobNames = evaluateRepositoryGovernance(jobNamedChecks);
   assert.equal(validJobNames.ok, true, JSON.stringify(validJobNames.errors));
+
+  const passingEvidence = buildGovernanceEvidence(
+    evaluateRepositoryGovernance(goodSnapshot()),
+    '2026-10-28T09:30:00.000Z',
+  );
+  assert.equal(passingEvidence.evidenceType, 'cash-voucher-client-main-governance');
+  assert.equal(passingEvidence.repository, repositoryName);
+  assert.equal(passingEvidence.observedAt, '2026-10-28T09:30:00.000Z');
+  assert.equal(passingEvidence.ok, true);
+  assert.equal(passingEvidence.defaultBranch, 'client-main');
+  assert.equal(passingEvidence.readOnly, true);
+  assert.equal(passingEvidence.errors.length, 0);
+
+  const blockedEvidence = buildGovernanceEvidence({
+    ok: false,
+    observedDefaultBranch: 'main',
+    integrationPolicy: 'none',
+    integrationRulesetIds: [],
+    legacyFreezeRulesetIds: [],
+    errors: [{ code: 'DEFAULT_BRANCH_NOT_CLIENT_MAIN', message: 'expected test blocker' }],
+  });
+  assert.equal(blockedEvidence.ok, false);
+  assert.equal(blockedEvidence.errors[0].code, 'DEFAULT_BRANCH_NOT_CLIENT_MAIN');
+  assert.equal(JSON.stringify(blockedEvidence).includes('test-token'), false);
+
+  const noTokenJson = spawnSync(
+    process.execPath,
+    [path.join(__dirname, '..', 'scripts', 'verify-client-main-governance.js'), '--json'],
+    {
+      encoding: 'utf8',
+      env: { ...process.env, GITHUB_TOKEN: '', GH_TOKEN: '' },
+    },
+  );
+  assert.equal(noTokenJson.status, 2);
+  assert.equal(noTokenJson.stderr, '');
+  const noTokenEvidence = JSON.parse(noTokenJson.stdout);
+  assert.equal(noTokenEvidence.evidenceType, 'cash-voucher-client-main-governance');
+  assert.equal(noTokenEvidence.ok, false);
+  assert.equal(noTokenEvidence.errors[0].code, 'TOKEN_REQUIRED');
 
   const validClassic = evaluateRepositoryGovernance(goodSnapshot());
   assert.equal(validClassic.ok, true, JSON.stringify(validClassic.errors));

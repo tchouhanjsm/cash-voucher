@@ -2052,7 +2052,7 @@ const cashCloseNonCash = as(T, 'createVouchers', {
       vendor: 'Close noncash',
       amount: 30,
       category: 'Other',
-      cashImpact: 'NO_CASH',
+      paymentMethod: 'UPI',
     },
   ],
 });
@@ -2093,6 +2093,13 @@ const dayThree = as(T, 'createCashClose', {
 ok(
   dayThree.ok && dayThree.data.includedVoucherCount === 3,
   'saved close includes voucher snapshot',
+);
+ok(
+  dayThree.data.includedVouchers.some(
+    (voucher) =>
+      voucher.id === cashCloseNonCash.data.created[0].id && voucher.paymentMethod === 'UPI',
+  ),
+  'saved cash-close voucher snapshot retains payment method for later reconciliation',
 );
 const cashCloseAuditRow = [...g.sheets.AuditLog.rows]
   .reverse()
@@ -3390,6 +3397,111 @@ ok(
     ambiguousRetry.data.skipped === 1 &&
     Object.keys(g.files).length === filesBeforeAmbiguousRetry,
   'ambiguous post-commit voucher write preserves referenced receipts and retry creates no duplicates',
+);
+
+const paymentMethodReconciliationUpi = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'method-reconciliation-upi',
+      date: today,
+      vendor: 'Method Reconciliation Payee',
+      amount: 275,
+      category: 'Other',
+      type: 'PAYMENT',
+      paymentMethod: 'UPI',
+    },
+  ],
+});
+ok(
+  paymentMethodReconciliationUpi.ok &&
+    paymentMethodReconciliationUpi.data.created[0].paymentMethod === 'UPI' &&
+    paymentMethodReconciliationUpi.data.created[0].cashImpact === 'NO_CASH',
+  'UPI entry remains non-cash and retains its payment method',
+);
+const paymentMethodReconciliationReport = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'ALL',
+  status: 'ALL',
+  paymentMethod: 'UPI',
+});
+ok(
+  paymentMethodReconciliationReport.ok &&
+    paymentMethodReconciliationReport.data.paymentMethod === 'UPI' &&
+    paymentMethodReconciliationReport.data.items.some(
+      (item) =>
+        item.id === paymentMethodReconciliationUpi.data.created[0].id &&
+        item.paymentMethod === 'UPI',
+    ) &&
+    paymentMethodReconciliationReport.data.items.every((item) => item.paymentMethod === 'UPI'),
+  'movement report filters to UPI and returns method on every row',
+);
+const paymentMethodReconciliationLegacy = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'method-reconciliation-legacy',
+      date: today,
+      vendor: 'Legacy Method Reconciliation Payee',
+      amount: 95,
+      category: 'Other',
+      type: 'PAYMENT',
+      paymentMethod: 'CASH',
+    },
+  ],
+});
+ok(paymentMethodReconciliationLegacy.ok, 'legacy blank-method fixture is created');
+const paymentMethodReconciliationColumn = g.sheets.Vouchers.rows[0].indexOf('PaymentMethod');
+const paymentMethodReconciliationLegacyRow = g.sheets.Vouchers.rows.find(
+  (row) => row[0] === paymentMethodReconciliationLegacy.data.created[0].id,
+);
+paymentMethodReconciliationLegacyRow[paymentMethodReconciliationColumn] = '';
+const paymentMethodReconciliationUnrecorded = as(T, 'recordedMovementReport', {
+  from: today,
+  to: today,
+  type: 'ALL',
+  status: 'ALL',
+  paymentMethod: 'UNRECORDED',
+});
+ok(
+  paymentMethodReconciliationUnrecorded.ok &&
+    paymentMethodReconciliationUnrecorded.data.items.some(
+      (item) =>
+        item.id === paymentMethodReconciliationLegacy.data.created[0].id &&
+        item.paymentMethod === '',
+    ) &&
+    paymentMethodReconciliationUnrecorded.data.items.every((item) => item.paymentMethod === ''),
+  'legacy blank methods remain filterable without inventing a method',
+);
+ok(
+  as(T, 'recordedMovementReport', {
+    from: today,
+    to: today,
+    type: 'ALL',
+    status: 'ALL',
+    paymentMethod: 'INVALID',
+  }).code === 'VALIDATION',
+  'invalid payment-method report filters are rejected',
+);
+const paymentMethodReconciliationRegister = as(T, 'registerPage', {
+  paymentMethod: 'UPI',
+  st: 'ALL',
+  limit: 200,
+});
+ok(
+  paymentMethodReconciliationRegister.ok &&
+    paymentMethodReconciliationRegister.data.items.some(
+      (item) => item.id === paymentMethodReconciliationUpi.data.created[0].id,
+    ) &&
+    paymentMethodReconciliationRegister.data.items.every((item) => item.paymentMethod === 'UPI'),
+  'Register read model filters by payment method',
+);
+const paymentMethodReconciliationDashboard = as(T, 'dashboardSummary', { from: today, to: today });
+ok(
+  paymentMethodReconciliationDashboard.ok &&
+    paymentMethodReconciliationDashboard.data.byPaymentMethod.some(
+      (item) => item.k === 'UPI' && item.n >= 1 && item.s >= 275,
+    ),
+  'Dashboard summarizes approved payments by method',
 );
 
 console.log('backend OK — ' + n + ' checks passed');

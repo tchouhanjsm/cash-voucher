@@ -4,10 +4,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 
 const editor = fs.readFileSync('frontend/features/register.js', 'utf8');
+const state = fs.readFileSync('frontend/core/state.js', 'utf8');
 const backend = fs.readFileSync('backend/50-vouchers.gs', 'utf8');
 
 assert.match(editor, /paymentMethod\.id = 'epm'/);
-assert.match(editor, /knownPaymentMethods = \['CASH', 'UPI', 'BANK_TRANSFER'\]/);
+assert.ok(editor.includes('knownPaymentMethods = PAYMENT_METHODS'));
+assert.ok(state.includes("export const PAYMENT_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER'];"));
 assert.match(editor, /paymentMethod\.addEventListener\('change', updateCashImpactHint\)/);
 assert.match(editor, /cashImpact\.disabled = true/);
 assert.match(editor, /fields\.paymentMethod = selectedMethod/);

@@ -1,6 +1,7 @@
 'use strict';
 
 const REPOSITORY = 'tchouhanjsm/cash-voucher';
+const GOVERNANCE_EVIDENCE_TYPE = 'cash-voucher-client-main-governance';
 const INTEGRATION_BRANCH = 'client-main';
 const LEGACY_BRANCH = 'main';
 const REQUIRED_CHECK_GROUPS = Object.freeze([
@@ -470,20 +471,102 @@ async function readActiveBranchRulesets(token) {
   return details;
 }
 
+function buildGovernanceEvidence(result, observedAt = new Date().toISOString()) {
+  return {
+    schemaVersion: 1,
+    evidenceType: GOVERNANCE_EVIDENCE_TYPE,
+    repository: REPOSITORY,
+    observedAt,
+    ok: result.ok === true,
+    defaultBranch: result.observedDefaultBranch || 'unknown',
+    integrationPolicy: result.integrationPolicy || 'none',
+    requiredCheckGroups: REQUIRED_CHECK_GROUPS.map((group) => group.label),
+    integrationRulesetIds: Array.isArray(result.integrationRulesetIds)
+      ? result.integrationRulesetIds
+      : [],
+    legacyFreezeRulesetIds: Array.isArray(result.legacyFreezeRulesetIds)
+      ? result.legacyFreezeRulesetIds
+      : [],
+    readOnly: true,
+    errors: Array.isArray(result.errors)
+      ? result.errors.map((error) => ({
+          code:
+            error && typeof error.code === 'string' && /^[A-Z0-9_]{1,80}$/.test(error.code)
+              ? error.code
+              : 'GOVERNANCE_BLOCKED',
+          message:
+            error && typeof error.message === 'string'
+              ? error.message
+              : 'Repository governance could not be verified.',
+        }))
+      : [],
+  };
+}
+
+function writeGovernanceEvidence(evidence, jsonOutput) {
+  if (jsonOutput) {
+    console.log(JSON.stringify(evidence, null, 2));
+    return;
+  }
+  console.log('Repository governance verification: ' + (evidence.ok ? 'PASS' : 'BLOCKED'));
+  console.log('Default branch observed: ' + evidence.defaultBranch);
+  console.log('Integration policy source: ' + evidence.integrationPolicy);
+  console.log(
+    'Matching client-main rulesets: ' + (evidence.integrationRulesetIds.join(', ') || 'none'),
+  );
+  console.log(
+    'Matching legacy-main freeze rulesets: ' +
+      (evidence.legacyFreezeRulesetIds.join(', ') || 'none'),
+  );
+  if (!evidence.ok) {
+    evidence.errors.forEach((error) => console.error('- [' + error.code + '] ' + error.message));
+    console.error(
+      'Read-only diagnosis only. Correct settings through an authorized repository owner/admin, then run this check again.',
+    );
+    return;
+  }
+  console.log(
+    'client-main requires reviewed, up-to-date checks; main has an active no-bypass update/deletion freeze.',
+  );
+  console.log('The checker issues GET requests only and does not change GitHub settings.');
+}
+
 async function main() {
-  if (process.argv.slice(2).length) {
-    console.error('Usage: npm run verify:client-main-governance');
+  const args = process.argv.slice(2);
+  const jsonOutput = args.length === 1 && args[0] === '--json';
+  if (args.length && !jsonOutput) {
+    console.error('Usage: npm run verify:client-main-governance [-- --json]');
     process.exitCode = 2;
     return;
   }
+
   const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN || '';
   if (!token) {
-    console.error(
-      'GOVERNANCE VERIFICATION BLOCKED [TOKEN_REQUIRED]: set GITHUB_TOKEN or GH_TOKEN with repository Administration read-only access.',
-    );
+    const evidence = buildGovernanceEvidence({
+      ok: false,
+      observedDefaultBranch: 'unknown',
+      integrationPolicy: 'none',
+      integrationRulesetIds: [],
+      legacyFreezeRulesetIds: [],
+      errors: [
+        {
+          code: 'TOKEN_REQUIRED',
+          message:
+            'Set GITHUB_TOKEN or GH_TOKEN with repository metadata and Administration read-only access.',
+        },
+      ],
+    });
+    if (jsonOutput) {
+      writeGovernanceEvidence(evidence, true);
+    } else {
+      console.error(
+        'GOVERNANCE VERIFICATION BLOCKED [TOKEN_REQUIRED]: set GITHUB_TOKEN or GH_TOKEN with repository metadata and Administration read-only access.',
+      );
+    }
     process.exitCode = 2;
     return;
   }
+
   try {
     const repository = await requestGitHubJson('/repos/' + REPOSITORY, token);
     const integrationBranch = await requestGitHubJson(
@@ -503,28 +586,9 @@ async function main() {
       integrationProtection,
       rulesets,
     });
-    console.log('Repository governance verification: ' + (result.ok ? 'PASS' : 'BLOCKED'));
-    console.log('Default branch observed: ' + result.observedDefaultBranch);
-    console.log('Integration policy source: ' + result.integrationPolicy);
-    console.log(
-      'Matching client-main rulesets: ' + (result.integrationRulesetIds.join(', ') || 'none'),
-    );
-    console.log(
-      'Matching legacy-main freeze rulesets: ' +
-        (result.legacyFreezeRulesetIds.join(', ') || 'none'),
-    );
-    if (!result.ok) {
-      result.errors.forEach((error) => console.error('- [' + error.code + '] ' + error.message));
-      console.error(
-        'Read-only diagnosis only. Correct settings through an authorized repository owner/admin, then run this check again.',
-      );
-      process.exitCode = 1;
-      return;
-    }
-    console.log(
-      'client-main requires reviewed, up-to-date checks; main has an active no-bypass update/deletion freeze.',
-    );
-    console.log('The checker issues GET requests only and does not change GitHub settings.');
+    const evidence = buildGovernanceEvidence(result);
+    writeGovernanceEvidence(evidence, jsonOutput);
+    if (!result.ok) process.exitCode = 1;
   } catch (error) {
     const status = error && error.status;
     const code =
@@ -537,23 +601,44 @@ async function main() {
               /^GITHUB_|^INVALID_API_|^GITHUB_RULESET_/.test(error.message)
             ? error.message
             : 'GITHUB_API_UNAVAILABLE';
-    console.error('GOVERNANCE VERIFICATION BLOCKED [' + code + '].');
-    console.error(
-      'The GitHub governance API could not be verified safely; response bodies and credentials are not logged.',
-    );
-    if (status === 403) {
+    const evidence = buildGovernanceEvidence({
+      ok: false,
+      observedDefaultBranch: 'unknown',
+      integrationPolicy: 'none',
+      integrationRulesetIds: [],
+      legacyFreezeRulesetIds: [],
+      errors: [
+        {
+          code,
+          message:
+            status === 403
+              ? 'GitHub denied read-only governance access; verify repository Administration read-only permission.'
+              : 'The GitHub governance API could not be verified safely; response bodies and credentials are not included.',
+        },
+      ],
+    });
+    if (jsonOutput) {
+      writeGovernanceEvidence(evidence, true);
+    } else {
+      console.error('GOVERNANCE VERIFICATION BLOCKED [' + code + '].');
       console.error(
-        'Use a token with repository Administration read-only permission; do not grant write permission.',
+        'The GitHub governance API could not be verified safely; response bodies and credentials are not logged.',
       );
+      if (status === 403) {
+        console.error(
+          'Use a token with repository Administration read-only permission; do not grant write permission.',
+        );
+      }
     }
     process.exitCode = 2;
   }
 }
-
 if (require.main === module) main();
 
 module.exports = {
+  GOVERNANCE_EVIDENCE_TYPE,
   REQUIRED_CHECK_GROUPS,
+  buildGovernanceEvidence,
   matchingActiveBranchRulesets,
   patternMatches,
   evaluateRepositoryGovernance,

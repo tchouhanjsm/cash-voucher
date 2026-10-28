@@ -21,11 +21,13 @@ These are governance blockers, not source-test failures. PR code and green CI do
 
 ## Verify governance without changing settings
 
-Run the read-only verifier from a trusted local shell using a token with repository metadata and **Administration: read-only** permission:
+Run the read-only verifier from a trusted local shell using a token with repository metadata and **Administration: read-only** permission. Use `--json` to emit a single machine-readable report for the private release evidence record:
 
     npm run verify:client-main-governance
 
 Set GITHUB_TOKEN or GH_TOKEN in the shell environment before running the command. Do not put a token in the repository, command output, PR body or evidence file.
+
+For a release bundle, retain the JSON report as the `ownerBranchProtectionVerified` evidence file. The release-bundle validator checks its digest and validates the report's `ok` flag, repository/default branch, four required check groups, integration policy, distinct legacy-main freeze, read-only marker and observation-time binding. This prevents synthetic prose or a hash-only placeholder from passing that gate; it does not authenticate a human witness.
 
 The verifier checks that:
 
@@ -45,6 +47,12 @@ It uses GET requests only, logs sanitized error codes instead of API bodies, and
 4. Rerun the verifier and retain its sanitized result for owner review. Confirm the exact required check contexts in the GitHub UI before enabling release operations.
 
 Do not let engineering automation change owner/admin governance settings. The checker is diagnostic; only the repository owner/admin can apply and verify the required settings.
+
+## Operational gate evidence contract — 28 October 2026
+
+The private release bundle uses two evidence contracts: ownerBranchProtectionVerified must be the JSON output of the read-only governance verifier; the other seven gates must follow docs/RELEASE-GATE-EVIDENCE-SCHEMA.md. All records are exact-byte hashed and bound to the gate, repository, integration SHA and timestamp. Required checks and reviewer/method fields must conform, so a text placeholder or digest-consistent mismatched JSON cannot pass. Supporting record IDs are pointers only and require independent owner/reviewer inspection; schema validation does not prove identity or truth.
+
+The source contract does not resolve the live governance blocker. An authorized owner/admin must correct GitHub settings, and authorized operators must gather real staging/UAT/restore/reconciliation/device/accessibility/customer-acceptance evidence.
 
 ## Release boundary
 

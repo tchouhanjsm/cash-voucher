@@ -1153,7 +1153,9 @@ with sync_playwright() as p:
     # Cash-close snapshots and correction notes are API output, so the renderer must keep hostile text inert.
     cash_close_vendor_payload = '<svg onload=window.__xssFired=true></svg>'
     cash_close_note_payload = '<img src=x onerror=window.__xssFired=true>'
+    cash_close_method_payload = '<img src=x onerror=window.xss=1>'
     page.evaluate('window.__xssFired = false')
+    page.evaluate('window.xss = false')
 
     def inject_cash_close_markup(route):
         try:
@@ -1179,6 +1181,7 @@ with sync_playwright() as p:
             'no': 'P-XSS',
             'date': '2020-01-01',
             'vendor': cash_close_vendor_payload,
+            'paymentMethod': cash_close_method_payload,
             'amount': 1,
             'cashImpact': 'CASH_OUT',
         }
@@ -1211,11 +1214,78 @@ with sync_playwright() as p:
     check(
         cash_close_vendor_payload in page.locator('#cc-closed-report').inner_text()
         and cash_close_note_payload in page.locator('.cc-corrections').inner_text()
+        and 'Unrecognized method' in page.locator('#cc-closed-report').inner_text()
+        and page.locator('#cc-closed-report .cc-method-breakdown .cc-method-item').count() == 1
+        and 'Payment · Unrecognized method' in page.locator('#cc-closed-report .cc-method-breakdown').inner_text()
+        and cash_close_method_payload not in page.locator('#cc-closed-report').inner_text()
         and page.locator('#cc-results img, #cc-results svg').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'cash-close snapshot and correction text render literally without creating executable markup',
+        'cash-close snapshot normalizes hostile payment methods and keeps text inert',
+    )
+    page.evaluate('window.print = () => {}')
+    page.locator('[data-act=closePrint]').click()
+    page.wait_for_selector('#printArea .pv', state='attached')
+    print_text = page.locator('#printArea').text_content() or ''
+    check(
+        'Unrecognized method' in print_text
+        and 'Payment · Unrecognized method' in print_text
+        and cash_close_method_payload not in print_text
+        and page.locator('#printArea img, #printArea svg').count() == 0
+        and not page.evaluate('window.xss === true'),
+        'cash-close print sink normalizes hostile method values before rendering',
     )
     page.unroute('**/api?*', inject_cash_close_markup)
+
+    # The open preview uses the same method-label rendering and must keep hostile values inert.
+    cash_close_preview_method_payload = '<img src=x onerror=window.xss=1>'
+
+    def inject_open_cash_close_method(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if (
+            request_data.get('action') != 'cashClosePreview'
+            or request_data.get('date') != '2020-01-02'
+        ):
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data') if payload.get('ok') else None
+        if not isinstance(data, dict) or data.get('closed') is not False:
+            route.fulfill(response=response)
+            return
+        data['includedVouchers'] = [
+            {
+                'id': 'cash-close-xss-open-preview-voucher',
+                'no': 'P-XSS-OPEN',
+                'date': '2020-01-02',
+                'vendor': 'Open preview vendor',
+                'paymentMethod': cash_close_preview_method_payload,
+                'amount': 1,
+                'cashImpact': 'CASH_OUT',
+            }
+        ]
+        data['activeVoucherCount'] = 1
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    page.route('**/api?*', inject_open_cash_close_method)
+    page.fill('#cc-date', '2020-01-02')
+    page.click('[data-act=closePreview]')
+    page.wait_for_function(
+        "document.querySelector('#cc-results .cc-method-breakdown')?.innerText.includes('Payment · Unrecognized method')"
+    )
+    open_preview_text = page.locator('#cc-results').inner_text()
+    check(
+        'Payment · Unrecognized method' in open_preview_text
+        and cash_close_preview_method_payload not in open_preview_text
+        and page.locator('#cc-results img, #cc-results svg').count() == 0
+        and not page.evaluate('window.xss === true'),
+        'open cash-close preview normalizes hostile payment methods before rendering',
+    )
+    page.unroute('**/api?*', inject_open_cash_close_method)
 
     # A server-provided error message is untrusted text, not an HTML template.
     cash_close_error_payload = '<svg onload=window.__xssFired=true></svg>'
@@ -1240,6 +1310,8 @@ with sync_playwright() as p:
         route.continue_()
 
     page.route('**/api?*', inject_cash_close_error)
+    # The preceding case left this date on 2020-01-02; this test targets the saved 2020-01-01 report.
+    page.fill('#cc-date', '2020-01-01')
     page.evaluate('window.__xssFired = false')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-results .cc-error[role=alert]')
@@ -1387,19 +1459,22 @@ with sync_playwright() as p:
         and page.locator('[data-v=dash]').get_attribute('aria-current') is None,
         'active route state stays synchronized across primary and More navigation',
     )
-    for name, email, role, password in [
+    for index, (name, email, role, password) in enumerate([
         ('Mona', 'm@test.com', 'manager', 'Manager#Start2026'),
         ('Sam', 's@test.com', 'staff', 'Staff#Start2026'),
         ('Nina Accountant', 'accountant@test.com', 'accountant', 'Account#Start2026'),
         ('Approval Manager', 'approval-manager@test.com', 'manager', 'Lock#Start2026'),
-    ]:
+    ]):
         page.fill('#un', name)
         page.fill('#ue', email)
         page.select_option('#ur', role)
         page.fill('#up', password)
         page.click('#uf .primary')
-        page.wait_for_timeout(300)
-    check(page.locator('tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
+        page.wait_for_function(
+            "(expected) => document.querySelectorAll('#view tbody tr').length === expected",
+            arg=index + 2,
+        )
+    check(page.locator('#view tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
     go_view(page, 'new')
@@ -1868,6 +1943,7 @@ with sync_playwright() as p:
     # Phase 7: valid report rows are still untrusted HTML and CSV content.
     report_markup_payloads = {
         'vendorId': '<svg data-xss-field="vendorId" onload=window.__xssFired=true></svg>',
+        'paymentMethod': '<svg data-xss-field="paymentMethod" onload=window.__xssFired=true></svg>',
         'category': '<svg data-xss-field="category" onload=window.__xssFired=true></svg>',
         'notes': '<svg data-xss-field="notes" onload=window.__xssFired=true></svg>',
         'cancelReason': '<svg data-xss-field="cancelReason" onload=window.__xssFired=true></svg>',
@@ -1900,6 +1976,7 @@ with sync_playwright() as p:
             'date': date_text,
             'voucherNo': 'P-REPORT-OUTPUT-TEST',
             'type': 'PAYMENT',
+            'paymentMethod': report_markup_payloads['paymentMethod'],
             'vendor': formula_payload,
             'vendorId': report_markup_payloads['vendorId'],
             'category': report_markup_payloads['category'],
@@ -1943,8 +2020,9 @@ with sync_playwright() as p:
         and all(
             value in report_text
             for field, value in report_markup_payloads.items()
-            if field != 'approvedAt'
+            if field not in ('approvedAt', 'paymentMethod')
         )
+        and 'Unrecognized method' in report_text
         and formula_payload in report_text
         and accountant_page.locator('#view img, #view svg').count() == 0
         and not accountant_page.evaluate('window.__xssFired === true'),
@@ -3545,6 +3623,8 @@ with sync_playwright() as p:
         and page.locator('#rc').get_attribute('aria-label') == 'Filter by category'
         and page.locator('#rt').get_attribute('aria-label') == 'Filter by transaction type'
         and page.locator('#rs').get_attribute('aria-label') == 'Filter by status'
+        and page.locator('#rpmethod').get_attribute('aria-label') == 'Filter by payment method'
+        and page.locator('#rf label[for=rpmethod]').inner_text().startswith('Payment method')
         and page.locator('#rf label[for=rv]').inner_text().startswith('Vendor')
         and page.locator('#rf label[for=rc]').inner_text().startswith('Category')
         and page.locator('#rf label[for=rfrom]').inner_text().startswith('From')
@@ -3798,6 +3878,7 @@ with sync_playwright() as p:
             items = data.get('items', [])
             if items:
                 items[0]['no'] = number_payload
+                items[0]['paymentMethod'] = number_payload
         route.fulfill(response=response, json=payload)
 
     page.route('**/api?*', tamper_register_page_voucher_number)
@@ -3808,8 +3889,9 @@ with sync_playwright() as p:
     check(
         page.locator('#rbody svg').count() == 0
         and number_payload in page.locator('#rbody').inner_text()
+        and 'Unrecognized method' in page.locator('#rbody').inner_text()
         and not page.evaluate('window.__xssFired === true'),
-        'malformed persisted voucher number remains inert text in the register',
+        'malformed voucher number and payment method remain inert in the register',
     )
     page.locator('#rbody [data-act=print]').first.click()
     page.wait_for_function("document.querySelector('#printArea .pv') !== null")
@@ -5786,7 +5868,7 @@ with sync_playwright() as p:
         "el => ({display:getComputedStyle(el).display, columns:getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0})"
     )
     check(
-        report_layout['display'] == 'grid' and report_layout['columns'] == 6,
+        report_layout['display'] == 'grid' and report_layout['columns'] == 7,
         'movement report filters align in a six-column desktop workspace',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
@@ -5837,8 +5919,25 @@ with sync_playwright() as p:
         'Guest Room 5' in report_text
         and 'RECEIPT' in report_text
         and report_rows.count() >= 1
-        and all(row.locator('td').nth(6).inner_text() == 'ACTIVE' for row in report_rows.all()),
+        and all(row.locator('td').nth(7).inner_text() == 'ACTIVE' for row in report_rows.all()),
         'default active report lists active source vouchers and excludes cancelled records',
+    )
+
+    page.select_option('#movementPaymentMethod', 'CASH')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view .report-results-card')?.innerText.includes('Source vouchers')"
+    )
+    cash_method_rows = page.locator('#view table tbody tr')
+    check(
+        cash_method_rows.count() > 0
+        and all(row.locator('td').nth(3).inner_text() == 'Cash' for row in cash_method_rows.all()),
+        'Recorded Movement Report filters rows by payment method',
+    )
+    page.select_option('#movementPaymentMethod', 'ALL')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view .report-results-card')?.innerText.includes('Source vouchers')"
     )
 
     # Hold a report request while navigating away. Its late response must not steal the route.
