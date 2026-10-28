@@ -1773,7 +1773,8 @@ const approvedHistory = as(T, 'voucherHistory', {
 });
 const receiptHistory = as(T, 'voucherHistory', { id: id2, eventCategory: 'RECEIPT_ATTACHED' });
 ok(
-  cancelledHistory.ok && cancelledHistory.data.rows.some((row) => row.eventType === 'VOUCHER_CANCELLED') &&
+  cancelledHistory.ok &&
+    cancelledHistory.data.rows.some((row) => row.eventType === 'VOUCHER_CANCELLED') &&
     approvedHistory.ok &&
     approvedHistory.data.rows.some((row) => row.eventType === 'PAYMENT_VOUCHER_APPROVED') &&
     receiptHistory.ok &&

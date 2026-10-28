@@ -1249,7 +1249,8 @@ export function createRegister({ api, go }) {
             page.auditHealth.status.replace(/_/g, ' ').toLowerCase() +
             '. This view cannot prove that every audit event was saved.';
         } else if (page.rows.length) {
-          const categoryLabel = filter.options[filter.selectedIndex]?.textContent || 'selected event type';
+          const categoryLabel =
+            filter.options[filter.selectedIndex]?.textContent || 'selected event type';
           status.textContent =
             'Loaded ' +
             loadedEventCount +
@@ -1261,7 +1262,9 @@ export function createRegister({ api, go }) {
         } else if (beforeRow !== null && loadedEventCount === 0) {
           status.textContent =
             'No matching ' +
-            (filter.options[filter.selectedIndex]?.textContent || 'selected event type').toLowerCase() +
+            (
+              filter.options[filter.selectedIndex]?.textContent || 'selected event type'
+            ).toLowerCase() +
             ' events were found for this voucher in the ' +
             page.scannedRows +
             ' most recently scanned audit row(s). Load older events to continue.';
