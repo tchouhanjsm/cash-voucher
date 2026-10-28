@@ -310,10 +310,7 @@ try {
 
   if (process.platform !== 'win32') {
     const permissionGate = passingBundle.operationalGates.liveStagingUatPassed;
-    const permissionPath = path.join(
-      evidenceDirectory,
-      permissionGate.evidenceRef + '.evidence',
-    );
+    const permissionPath = path.join(evidenceDirectory, permissionGate.evidenceRef + '.evidence');
     fs.chmodSync(permissionPath, 0o644);
     const permissionCheck = verifyOperationalEvidenceDigests(
       passingBundle,
@@ -328,10 +325,7 @@ try {
   }
 
   const oversizedGate = passingBundle.operationalGates.liveRoleAuthorizationVerified;
-  const oversizedRecordPath = path.join(
-    evidenceDirectory,
-    oversizedGate.evidenceRef + '.evidence',
-  );
+  const oversizedRecordPath = path.join(evidenceDirectory, oversizedGate.evidenceRef + '.evidence');
   const heldOversizedRecord = fs.readFileSync(oversizedRecordPath);
   fs.truncateSync(oversizedRecordPath, 10 * 1024 * 1024 + 1);
   const oversizedCheck = verifyOperationalEvidenceDigests(
@@ -339,9 +333,7 @@ try {
     resolveOperationalEvidenceDirectory(evidenceDirectory),
   );
   assert.ok(
-    oversizedCheck.errors.some(
-      (error) => error.code === 'OPERATIONAL_EVIDENCE_FILE_TOO_LARGE',
-    ),
+    oversizedCheck.errors.some((error) => error.code === 'OPERATIONAL_EVIDENCE_FILE_TOO_LARGE'),
   );
   fs.writeFileSync(oversizedRecordPath, heldOversizedRecord, { mode: 0o600 });
 
@@ -352,9 +344,7 @@ try {
     resolveOperationalEvidenceDirectory(evidenceDirectory),
   );
   assert.ok(
-    unsafeReferenceCheck.errors.some(
-      (error) => error.code === 'OPERATIONAL_EVIDENCE_REF_UNSAFE',
-    ),
+    unsafeReferenceCheck.errors.some((error) => error.code === 'OPERATIONAL_EVIDENCE_REF_UNSAFE'),
   );
 
   const passingRun = spawnSync(
