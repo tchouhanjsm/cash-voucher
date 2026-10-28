@@ -1147,6 +1147,16 @@ export function createRegister({ api, go }) {
       if (
         !isRecord(page) ||
         page.eventCategory !== eventCategory ||
+        !(
+          page.scanRange === null ||
+          (isRecord(page.scanRange) &&
+            Number.isSafeInteger(page.scanRange.firstRow) &&
+            page.scanRange.firstRow >= 2 &&
+            Number.isSafeInteger(page.scanRange.lastRow) &&
+            page.scanRange.lastRow >= page.scanRange.firstRow &&
+            page.scanRange.lastRow - page.scanRange.firstRow + 1 === page.scannedRows &&
+            typeof page.scanRange.hasOlderPage === 'boolean')
+        ) ||
         !Array.isArray(page.rows) ||
         page.rows.length > 50 ||
         !Number.isSafeInteger(page.scannedRows) ||
@@ -1276,6 +1286,17 @@ export function createRegister({ api, go }) {
             'No structured events could be linked to this voucher. Legacy audit rows may not contain a stable voucher ID.';
         } else {
           status.textContent = 'Reached the oldest available audit rows.';
+        }
+        if (page.scanRange) {
+          status.textContent +=
+            ' Searched AuditLog rows ' +
+            page.scanRange.firstRow +
+            '–' +
+            page.scanRange.lastRow +
+            '. ' +
+            (page.scanRange.hasOlderPage ? 'Older rows remain available.' : 'No older rows remain.');
+        } else if (page.scannedRows === 0) {
+          status.textContent += ' No AuditLog rows were available to search.';
         }
       } catch (error) {
         status.className = 'error voucher-history-status';

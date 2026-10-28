@@ -1566,11 +1566,13 @@ with sync_playwright() as p:
     page.wait_for_function(
         "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"
     )
+    history_status = page.locator('.voucher-history-status').inner_text()
     check(
         history_requests[-1] == 'CREATED'
         and 'VOUCHER_CREATED' in page.locator('#modal').inner_text()
-        and 'Loaded 1 structured event(s) matching created' in page.locator('#modal').inner_text(),
-        'Register sends the selected lifecycle category to the server and refreshes the filtered history',
+        and 'Loaded 1 structured event(s) matching created' in history_status
+        and 'Searched AuditLog rows ' in history_status,
+        'Register filters lifecycle events and discloses the exact AuditLog coverage range',
     )
     page.click('#modal [data-x]')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")

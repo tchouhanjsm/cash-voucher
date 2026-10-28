@@ -1742,6 +1742,11 @@ ok(
     historyPage.data.rows[0].reason === 'Audit timeline regression' &&
     historyPage.data.rows[1].eventType === 'VOUCHER_CREATED' &&
     historyPage.data.eventCategory === 'ALL' &&
+    historyPage.data.scanRange.firstRow >= 2 &&
+    historyPage.data.scanRange.lastRow >= historyPage.data.scanRange.firstRow &&
+    historyPage.data.scanRange.lastRow - historyPage.data.scanRange.firstRow + 1 ===
+      historyPage.data.scannedRows &&
+    typeof historyPage.data.scanRange.hasOlderPage === 'boolean' &&
     historyPage.data.rows[1].changes.some(
       (change) => change.field === 'amount' && change.before === 'Not set' && change.after === '47',
     ) &&
@@ -1785,6 +1790,17 @@ ok(
   as(T, 'voucherHistory', { id: historyVoucherId, eventCategory: 'SCRIPT_TEXT' }).code ===
     'VALIDATION',
   'voucher history rejects unrecognized event category filters',
+);
+const emptyOlderPage = as(T, 'voucherHistory', {
+  id: historyVoucherId,
+  beforeRow: 2,
+});
+ok(
+  emptyOlderPage.ok &&
+    emptyOlderPage.data.scannedRows === 0 &&
+    emptyOlderPage.data.scanRange === null &&
+    emptyOlderPage.data.nextBeforeRow === null,
+  'voucher history reports an empty coverage range when a valid cursor has no older rows',
 );
 const unrelatedHistory = as(T, 'voucherHistory', { id: 'voucher-does-not-exist' });
 ok(

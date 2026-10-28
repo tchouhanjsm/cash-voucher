@@ -204,6 +204,7 @@ function voucherAuditHistory_(user, req) {
       rows: [],
       nextBeforeRow: null,
       scannedRows: 0,
+      scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
     };
@@ -227,6 +228,7 @@ function voucherAuditHistory_(user, req) {
       rows: [],
       nextBeforeRow: null,
       scannedRows: 0,
+      scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
     };
@@ -301,10 +303,16 @@ function voucherAuditHistory_(user, req) {
     }
   }
 
+  const pageCursor = stoppedAtMatchLimit ? nextBeforeRow : startRow > 2 ? startRow : null;
   return {
     rows: rows,
-    nextBeforeRow: stoppedAtMatchLimit ? nextBeforeRow : startRow > 2 ? startRow : null,
+    nextBeforeRow: pageCursor,
     scannedRows: scannedRows,
+    scanRange: {
+      firstRow: endRow - scannedRows + 1,
+      lastRow: endRow,
+      hasOlderPage: pageCursor !== null,
+    },
     eventCategory: eventCategory,
     auditHealth: auditWriteHealth_(),
   };
