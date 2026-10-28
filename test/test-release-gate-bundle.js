@@ -165,8 +165,7 @@ failedOperationalGate.operationalGates.liveSecurityHeadersVerified.status = 'blo
 assert.ok(hasCode(failedOperationalGate, 'OPERATIONAL_GATE_BLOCKED'));
 
 const staleOperationalGate = buildBundle();
-staleOperationalGate.operationalGates.liveStagingUatPassed.verifiedAt =
-  '2026-10-20T23:00:00.000Z';
+staleOperationalGate.operationalGates.liveStagingUatPassed.verifiedAt = '2026-10-20T23:00:00.000Z';
 assert.ok(hasCode(staleOperationalGate, 'OPERATIONAL_EVIDENCE_STALE'));
 
 const futureOperationalGate = buildBundle();
@@ -175,8 +174,7 @@ futureOperationalGate.operationalGates.liveSecurityHeadersVerified.verifiedAt =
 assert.ok(hasCode(futureOperationalGate, 'OPERATIONAL_EVIDENCE_AFTER_BUNDLE'));
 
 const staleApplicationSha = buildBundle();
-staleApplicationSha.operationalGates.liveStagingUatPassed.testedClientMainSha =
-  'b'.repeat(40);
+staleApplicationSha.operationalGates.liveStagingUatPassed.testedClientMainSha = 'b'.repeat(40);
 assert.ok(hasCode(staleApplicationSha, 'OPERATIONAL_TEST_SHA_MISMATCH'));
 
 const unsafeOperationalReference = buildBundle();
