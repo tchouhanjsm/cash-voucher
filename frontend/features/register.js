@@ -1143,7 +1143,7 @@ export function createRegister({ api, go }) {
     let loading = false;
     let eventCategory = 'ALL';
     let loadedEventCount = 0;
-    const isValidPage = (page) => {
+    const isValidPage = (page, requestedBeforeRow) => {
       if (
         !isRecord(page) ||
         page.eventCategory !== eventCategory ||
@@ -1176,7 +1176,22 @@ export function createRegister({ api, go }) {
         !(
           page.nextBeforeRow === null ||
           (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2)
-        )
+        ) ||
+        (page.scannedRows === 0) !== (page.scanRange === null) ||
+        (page.scanRange !== null &&
+          page.scanRange.hasOlderPage !== (page.nextBeforeRow !== null)) ||
+        (page.scanRange !== null &&
+          page.nextBeforeRow !== null &&
+          (page.nextBeforeRow < page.scanRange.firstRow ||
+            page.nextBeforeRow > page.scanRange.lastRow)) ||
+        (requestedBeforeRow !== null &&
+          requestedBeforeRow !== undefined &&
+          page.nextBeforeRow !== null &&
+          page.nextBeforeRow >= requestedBeforeRow) ||
+        (requestedBeforeRow !== null &&
+          requestedBeforeRow !== undefined &&
+          page.scanRange !== null &&
+          page.scanRange.lastRow >= requestedBeforeRow)
       ) {
         return false;
       }
@@ -1250,12 +1265,13 @@ export function createRegister({ api, go }) {
       filter.disabled = true;
       older.textContent = 'Loading older events…';
       try {
+        const requestedBeforeRow = beforeRow;
         const page = await api('voucherHistory', {
           id: voucher.id,
-          beforeRow,
+          beforeRow: requestedBeforeRow,
           eventCategory,
         });
-        if (!isValidPage(page)) {
+        if (!isValidPage(page, requestedBeforeRow)) {
           throw new Error('The server returned invalid voucher-history data.');
         }
         if (!append) list.replaceChildren();

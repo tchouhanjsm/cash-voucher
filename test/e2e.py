@@ -1511,6 +1511,7 @@ with sync_playwright() as p:
     page.evaluate('window.__voucherHistoryXssFired = false')
 
     history_requests = []
+    inject_invalid_history_page = {'enabled': False}
     history_route_states = []
     history_page_errors = []
     page.on('pageerror', lambda error: history_page_errors.append(str(error)))
@@ -1538,6 +1539,8 @@ with sync_playwright() as p:
             rows[0]['reason'] = history_xss_payload
             if isinstance(rows[0].get('changes'), list) and rows[0]['changes']:
                 rows[0]['changes'][0]['after'] = history_xss_payload
+        if inject_invalid_history_page['enabled'] and isinstance(data.get('scanRange'), dict):
+            data['scanRange'] = None
         route.fulfill(response=response, body=json.dumps(payload))
         route_state['phase'] = 'response-fulfilled'
 
@@ -1607,6 +1610,15 @@ with sync_playwright() as p:
         and 'Searched AuditLog rows ' in history_status
         and 'Coverage diagnostics:' in history_status,
         'Register filters lifecycle events and discloses the exact AuditLog coverage range',
+    )
+    inject_invalid_history_page['enabled'] = True
+    history_filter.select_option('ALL')
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.includes('invalid voucher-history data')"
+    )
+    check(
+        'invalid voucher-history data' in page.locator('.voucher-history-status').inner_text().lower(),
+        'Register rejects internally inconsistent pagination coverage instead of rendering an untrustworthy page',
     )
     page.click('#modal [data-x]')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
