@@ -18,6 +18,30 @@ The root frontend `config.js` contains a production/legacy Apps Script URL. **Do
 
 The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. Keep local Clasp configuration/authentication in protected secrets or local files; never commit them.
 
+## Staging workflow secret isolation — 28 October 2026
+
+The manual `.github/workflows/staging-uat.yml` workflow must not put resource IDs, UAT account credentials or Clasp OAuth JSON in job-level `env`. Job-level values are inherited by every command in that job; dependency installation and artifact/reporting steps must not receive staging credentials.
+
+The current contract scopes credentials as follows:
+
+- **Deploy configuration preflight:** receives the resource inventory, dedicated UAT accounts, `STAGING-ONLY` confirmation and Clasp credential shape input needed to validate before mutation.
+- **Deploy step:** receives the same target inputs and Clasp OAuth JSON only while `scripts/deploy-staging.js` updates the existing dedicated staging deployment.
+- **Post-deploy target recheck:** receives resource inventory and UAT account configuration, but no Clasp OAuth JSON.
+- **Transactional UAT steps:** receive the resource inventory and dedicated UAT accounts; only the UAT execution step receives `confirm_staging_writes`. UAT-only must never receive Clasp OAuth JSON or deployment confirmation.
+- **No-secret steps:** checkout, Node/Python setup, `npm ci`, Playwright installation, evidence assembly and artifact upload run without staging secrets.
+
+The workflow regression test enforces these boundaries. Do not weaken it to accommodate a workflow refactor; update the test only when the step dependency is reviewed and the new scope remains least-privilege.
+
+This protects credentials from unnecessary step exposure; it does not protect a deployment if an authorized but unsafe command is placed inside a secret-bearing step. Keep such steps narrow, reviewed and auditable. Require manual dispatch from `client-main`, owner/admin branch protection, the protected `staging` Environment, exact `STAGING-ONLY` confirmation and explicit write consent. **Step scoping is not a substitute for branch protection**, and it does not authorize a deployment by itself.
+
+## Staging evidence files and temporary credential cleanup — 28 October 2026
+
+The staging evidence writer accepts only an existing parent directory outside the repository, rejects symlinks/non-regular targets and refuses to overwrite existing evidence. JSON evidence is created exclusively with mode `0600`; the GitHub summary path is checked separately and receives only sanitized status data. Keep downloaded artifacts and live recovery evidence in a private operator-controlled location; do not commit them.
+
+The deployment wrapper runs Clasp from a temporary project workspace with an isolated temporary home containing `.clasprc.json`. On every exit, it attempts to remove both locations and verifies removal. A cleanup failure is a stop condition: inspect the isolated runner securely before any retry, and do not publish temporary path names or credential contents in chat or artifacts.
+
+UAT execution uses a separate per-run private transcript directory. Raw UAT output is retained only long enough for sanitized evidence assembly; the transcript reader enforces its dedicated-directory contract, private permissions, no-symlink policy and a 2 MiB size limit. The local static server receives only the resource/configuration values it needs, not owner/manager credentials or write consent. Treat any transcript-validation or cleanup error as a failed evidence step; do not bypass it to obtain a green workflow.
+
 ## Staging resource isolation policy (current)
 
 The isolation attestation `OWNER-VERIFIED-STAGING-ONLY` is permitted **only for the non-mutating artifact preflight** when all four production resource reference IDs are intentionally omitted. It records an operator assertion; it does not independently prove resource identity.

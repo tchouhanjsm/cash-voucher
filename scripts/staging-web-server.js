@@ -72,7 +72,7 @@ function resolveStaticPath(urlPath, root = ROOT) {
 }
 
 function createStagingServer(env = process.env, root = ROOT) {
-  const preflight = validateStagingConfiguration(env, { mode: 'uat', root });
+  const preflight = validateStagingConfiguration(env, { mode: 'artifact', root });
   if (!preflight.ok) {
     throw new Error('Staging web server preflight failed: ' + preflight.errors.join('; '));
   }

@@ -46,7 +46,29 @@ async function run() {
   assert.ok(!sw.includes('respondWith'));
   assert.ok(!sw.includes('config.js'));
 
-  const server = createStagingServer(fixture, root);
+  const serverEnv = { ...fixture };
+  delete serverEnv.CV_STAGING_UAT_OWNER_EMAIL;
+  delete serverEnv.CV_STAGING_UAT_OWNER_PASSWORD;
+  delete serverEnv.CV_STAGING_UAT_MANAGER_EMAIL;
+  delete serverEnv.CV_STAGING_UAT_MANAGER_PASSWORD;
+  assert.doesNotThrow(
+    () => createStagingServer(serverEnv, root),
+    'static staging server must not require UAT account credentials',
+  );
+  assert.throws(
+    () =>
+      createStagingServer(
+        {
+          ...serverEnv,
+          CV_STAGING_SCRIPT_ID: serverEnv.CV_PRODUCTION_SCRIPT_ID,
+        },
+        root,
+      ),
+    /configured as a production resource/,
+    'static server must still reject staging/production resource collisions',
+  );
+
+  const server = createStagingServer(serverEnv, root);
   await new Promise((resolve, reject) => {
     server.once('error', reject);
     server.listen(0, '127.0.0.1', resolve);

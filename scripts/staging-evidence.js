@@ -6,6 +6,110 @@ const path = require('node:path');
 
 const OPERATIONS = new Set(['deploy-and-uat', 'uat-only', 'validate-only']);
 const OUTCOMES = new Set(['success', 'failure', 'cancelled', 'skipped', 'in_progress']);
+const ROOT = path.resolve(__dirname, '..');
+
+function resolveSafeExternalFile(rawPath, label) {
+  const value = String(rawPath || '').trim();
+  if (!value) throw new Error('The ' + label + ' path is required.');
+
+  const requested = path.resolve(value);
+  const basename = path.basename(requested);
+  if (!basename || basename === '.' || basename === path.sep) {
+    throw new Error('The ' + label + ' path must name a file.');
+  }
+
+  let realParent;
+  let realRoot;
+  try {
+    realParent = fs.realpathSync(path.dirname(requested));
+    realRoot = fs.realpathSync(ROOT);
+  } catch {
+    throw new Error('The ' + label + ' parent directory must already exist.');
+  }
+
+  const target = path.join(realParent, basename);
+  const relative = path.relative(realRoot, target);
+  const isInsideRepository =
+    relative === '' ||
+    (!path.isAbsolute(relative) && relative !== '..' && !relative.startsWith('..' + path.sep));
+  if (isInsideRepository) {
+    throw new Error('The ' + label + ' must be outside the repository.');
+  }
+
+  let stat = null;
+  try {
+    stat = fs.lstatSync(target);
+  } catch (error) {
+    if (!error || error.code !== 'ENOENT') {
+      throw new Error('The ' + label + ' cannot be inspected safely.');
+    }
+  }
+  if (stat && (stat.isSymbolicLink() || !stat.isFile())) {
+    throw new Error('The ' + label + ' must be a regular, non-symlink file.');
+  }
+  return { path: target, exists: Boolean(stat) };
+}
+
+function writeNewPrivateEvidenceFile(rawPath, content) {
+  const target = resolveSafeExternalFile(rawPath, 'staging evidence output');
+  let descriptor;
+  let created = false;
+  const flags =
+    fs.constants.O_WRONLY |
+    fs.constants.O_CREAT |
+    fs.constants.O_EXCL |
+    (fs.constants.O_NOFOLLOW || 0);
+  try {
+    descriptor = fs.openSync(target.path, flags, 0o600);
+    created = true;
+    fs.fchmodSync(descriptor, 0o600);
+    fs.writeFileSync(descriptor, content, 'utf8');
+  } catch {
+    if (created) {
+      if (descriptor !== undefined) {
+        try {
+          fs.closeSync(descriptor);
+        } catch {
+          // Preserve the original write failure; cleanup below still attempts unlink.
+        }
+        descriptor = undefined;
+      }
+      try {
+        fs.unlinkSync(target.path);
+      } catch {
+        // The caller receives a generic error; avoid exposing low-level paths or errors.
+      }
+    }
+    throw new Error(
+      'Staging evidence output could not be created safely; existing files are never overwritten.',
+    );
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
+
+function appendPrivateStepSummary(rawPath, content) {
+  if (!String(rawPath || '').trim()) return;
+  const target = resolveSafeExternalFile(rawPath, 'GitHub step summary');
+  let descriptor;
+  const flags =
+    fs.constants.O_WRONLY |
+    fs.constants.O_APPEND |
+    fs.constants.O_CREAT |
+    (fs.constants.O_NOFOLLOW || 0);
+  try {
+    descriptor = fs.openSync(target.path, flags, 0o600);
+    if (!fs.fstatSync(descriptor).isFile()) {
+      throw new Error('summary is not a regular file');
+    }
+    fs.fchmodSync(descriptor, 0o600);
+    fs.writeFileSync(descriptor, content, 'utf8');
+  } catch {
+    throw new Error('The GitHub step summary could not be appended safely.');
+  } finally {
+    if (descriptor !== undefined) fs.closeSync(descriptor);
+  }
+}
 
 function normalizeOutcome(value) {
   const outcome = String(value || '')
@@ -156,11 +260,58 @@ function buildStagingEvidence(env = process.env, log = '') {
 function readTranscript(env) {
   const logPath = String(env.CV_STAGING_UAT_LOG_FILE || '').trim();
   if (!logPath) return '';
+
+  let target;
   try {
-    return fs.readFileSync(logPath, 'utf8');
-  } catch (error) {
-    if (error && error.code === 'ENOENT') return '';
-    throw new Error('Unable to read the staging UAT transcript.');
+    target = resolveSafeExternalFile(logPath, 'staging UAT transcript');
+  } catch {
+    throw new Error('The staging UAT transcript path failed safety validation.');
+  }
+  if (!target.exists) return '';
+
+  let directoryStat;
+  try {
+    directoryStat = fs.lstatSync(path.dirname(target.path));
+  } catch {
+    throw new Error('The staging UAT transcript directory is unavailable.');
+  }
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+    throw new Error('The staging UAT transcript directory must be a real directory.');
+  }
+  if (
+    !/^cash-voucher-staging-uat\.[A-Za-z0-9_-]+$/.test(path.basename(path.dirname(target.path)))
+  ) {
+    throw new Error('The staging UAT transcript must live in a dedicated per-run directory.');
+  }
+  if (process.platform !== 'win32' && (directoryStat.mode & 0o077) !== 0) {
+    throw new Error('The staging UAT transcript directory permissions are too broad.');
+  }
+
+  const maxTranscriptBytes = 2 * 1024 * 1024;
+  let descriptor;
+  try {
+    const flags = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0);
+    descriptor = fs.openSync(target.path, flags);
+    const fileStat = fs.fstatSync(descriptor);
+    if (!fileStat.isFile() || (process.platform !== 'win32' && (fileStat.mode & 0o077) !== 0)) {
+      throw new Error('unsafe transcript file');
+    }
+    if (fileStat.size > maxTranscriptBytes) {
+      throw new Error('transcript exceeds size limit');
+    }
+    return fs.readFileSync(descriptor, 'utf8');
+  } catch {
+    throw new Error(
+      'The staging UAT transcript could not be read safely; oversized, symlinked or non-private files are rejected.',
+    );
+  } finally {
+    if (descriptor !== undefined) {
+      try {
+        fs.closeSync(descriptor);
+      } catch {
+        // Preserve the primary result; the runner removes the isolated log directory.
+      }
+    }
   }
 }
 
@@ -169,9 +320,7 @@ function writeStagingEvidence(env = process.env, logOverride = null) {
   if (!outputPath) throw new Error('The staging evidence output path is required.');
   const log = logOverride === null ? readTranscript(env) : String(logOverride);
   const evidence = buildStagingEvidence(env, log);
-  fs.mkdirSync(path.dirname(path.resolve(outputPath)), { recursive: true });
-  fs.writeFileSync(outputPath, JSON.stringify(evidence, null, 2) + '\n', { mode: 0o600 });
-  fs.chmodSync(outputPath, 0o600);
+  writeNewPrivateEvidenceFile(outputPath, JSON.stringify(evidence, null, 2) + '\n');
 
   const summaryPath = String(env.GITHUB_STEP_SUMMARY || '').trim();
   if (summaryPath) {
@@ -197,7 +346,7 @@ function writeStagingEvidence(env = process.env, logOverride = null) {
       'The JSON artifact excludes credentials, resource identifiers, API endpoint URLs and raw transcript text.',
       '',
     ].join('\n');
-    fs.appendFileSync(summaryPath, markdown, { mode: 0o600 });
+    appendPrivateStepSummary(summaryPath, markdown);
   }
   return evidence;
 }
@@ -234,6 +383,7 @@ if (require.main === module) main();
 module.exports = {
   buildStagingEvidence,
   normalizeOutcome,
+  readTranscript,
   summarizeUat,
   writeStagingEvidence,
 };

@@ -111,8 +111,10 @@ assert.match(deploy, /path\.join\(tempHome, '\.clasprc\.json'\)/);
 assert.match(deploy, /path\.join\(projectRoot, '\.clasp\.json'\)/);
 assert.match(deploy, /list-deployments/);
 assert.match(deploy, /create-deployment/);
-assert.match(deploy, /fs\.rmSync\(workspace, \{ recursive: true, force: true \}\)/);
-assert.match(deploy, /fs\.rmSync\(tempHome, \{ recursive: true, force: true \}\)/);
+assert.ok(deploy.includes('function cleanupTemporaryDirectories(directories, fileSystem = fs)'));
+assert.ok(deploy.includes('fileSystem.rmSync(directory, { recursive: true, force: true })'));
+assert.ok(deploy.includes('if (fileSystem.existsSync(directory)) successful = false;'));
+assert.ok(deploy.includes('cleanupTemporaryDirectories([workspace, tempHome])'));
 assert.match(uat, /deploymentReadiness/);
 assert.match(uat, /dashboardSummary/);
 assert.match(uat, /registerPage/);
@@ -142,8 +144,61 @@ assert.ok(
   ),
   'evidence is written to the runner temporary directory',
 );
-assert.match(uatRunner, /CV_STAGING_UAT_LOG_FILE/);
-assert.match(uatRunner, /tee "\$\{UAT_LOG_FILE\}"/);
+assert.match(uatRunner, /mktemp -d/);
+assert.match(uatRunner, /set -o noclobber/);
+assert.match(uatRunner, /env -i/);
+assert.match(uatRunner, /env -u GITHUB_OUTPUT -u GITHUB_ENV -u GITHUB_PATH -u GITHUB_STEP_SUMMARY/);
+assert.doesNotMatch(uatRunner, /\/tmp\/cash-voucher-staging-(?:uat|server)\.log/);
+assert.doesNotMatch(uatRunner, /tee "\$\{UAT_LOG_FILE\}"/);
+assert.match(uatRunner, /detailed transcript is withheld from workflow logs/);
+assert.equal(
+  (
+    workflow.match(
+      /CV_STAGING_UAT_LOG_FILE: \$\{\{ steps\.staging_uat\.outputs\.uat_log_file \}\}/g,
+    ) || []
+  ).length,
+  2,
+  'deploy and UAT evidence must read only the private generated transcript',
+);
+assert.equal(
+  (
+    workflow.match(
+      /CV_STAGING_UAT_LOG_DIR: \$\{\{ steps\.staging_uat\.outputs\.uat_log_dir \}\}/g,
+    ) || []
+  ).length,
+  2,
+  'deploy and UAT evidence cleanup use only the per-run private directory',
+);
+assert.doesNotMatch(
+  workflow,
+  /CV_STAGING_UAT_LOG_FILE: \$\{\{ runner\.temp \}\}\/cash-voucher-staging-uat\.log/,
+);
+assert.equal(
+  (
+    workflow.match(
+      /if \[ -L "\$\{CV_STAGING_UAT_LOG_DIR\}" \] \|\| \[ ! -d "\$\{CV_STAGING_UAT_LOG_DIR\}" \]/g,
+    ) || []
+  ).length,
+  2,
+  'deploy and UAT-only cleanup must reject a symlink or missing evidence directory',
+);
+assert.equal(
+  (workflow.match(/stat -c '%a' "\$\{CV_STAGING_UAT_LOG_DIR\}"/g) || []).length,
+  2,
+  'deploy and UAT-only cleanup must verify directory permissions',
+);
+assert.equal(
+  (workflow.match(/uat_mode="\$\(stat -c '%a' "\$\{uat_log\}"/g) || []).length,
+  2,
+  'deploy and UAT-only cleanup must verify transcript permissions',
+);
+assert.equal(
+  (workflow.match(/server_mode="\$\(stat -c '%a' "\$\{server_log\}"/g) || []).length,
+  2,
+  'deploy and UAT-only cleanup must verify server log permissions',
+);
+assert.match(localServer, /mode: 'artifact'/);
+assert.doesNotMatch(localServer, /mode: 'uat'/);
 assert.match(localServer, /Cache-Control': 'no-store'/);
 assert.match(localServer, /function stagingServiceWorker/);
 assert.doesNotMatch(localServer, /caches\.open/);
@@ -291,6 +346,133 @@ assert.match(
   /do not rerun it or relax preflight/,
   'staging recovery instructions must not bypass safety gates',
 );
+
+function extractWorkflowJob(name, nextName) {
+  const start = workflow.indexOf('  ' + name + ':\n');
+  const end = nextName ? workflow.indexOf('  ' + nextName + ':\n', start + 1) : workflow.length;
+  assert.ok(start >= 0 && end > start, 'workflow job exists: ' + name);
+  return workflow.slice(start, end);
+}
+
+function extractWorkflowStep(job, name) {
+  const marker = '      - name: ' + name + '\n';
+  const start = job.indexOf(marker);
+  assert.ok(start >= 0, 'workflow step exists: ' + name);
+  const end = job.indexOf('\n      - name: ', start + marker.length);
+  return job.slice(start, end < 0 ? job.length : end);
+}
+
+function assertNoStepSecrets(step, description) {
+  assert.doesNotMatch(step, /\$\{\{\s*secrets\./, description);
+}
+
+const deployJob = extractWorkflowJob('deploy', 'uat');
+const uatOnlyJob = extractWorkflowJob('uat');
+const deployHeader = deployJob.split('    steps:\n')[0];
+const uatOnlyHeader = uatOnlyJob.split('    steps:\n')[0];
+assertNoStepSecrets(deployHeader, 'deploy job header must not expose secrets to every step');
+assertNoStepSecrets(uatOnlyHeader, 'uat job header must not expose secrets to every step');
+assert.doesNotMatch(
+  uatOnlyJob,
+  /CLASPRC_JSON|secrets\.CLASPRC_JSON/,
+  'UAT-only must never receive the Clasp OAuth credential',
+);
+
+for (const stepName of [
+  'Checkout',
+  'Setup Node.js',
+  'Setup Python',
+  'Install dependencies',
+  'Install Playwright',
+  'Assemble sanitized staging execution evidence',
+  'Upload sanitized staging evidence',
+]) {
+  assertNoStepSecrets(
+    extractWorkflowStep(deployJob, stepName),
+    'deploy job step must be credential-free: ' + stepName,
+  );
+}
+for (const stepName of [
+  'Checkout',
+  'Setup Node.js',
+  'Setup Python',
+  'Install dependencies',
+  'Assemble sanitized staging execution evidence',
+  'Upload sanitized staging evidence',
+]) {
+  assertNoStepSecrets(
+    extractWorkflowStep(uatOnlyJob, stepName),
+    'UAT-only job step must be credential-free: ' + stepName,
+  );
+}
+
+const deployConfigPreflight = extractWorkflowStep(
+  deployJob,
+  'Validate isolated deployment configuration',
+);
+const deployMutation = extractWorkflowStep(
+  deployJob,
+  'Update the existing staging deployment only',
+);
+const deployTargetRecheck = extractWorkflowStep(deployJob, 'Verify target before testing');
+const deployUatStep = extractWorkflowStep(deployJob, 'Run staging UAT');
+const uatTargetPreflight = extractWorkflowStep(uatOnlyJob, 'Validate isolated staging target');
+const uatOnlyStep = extractWorkflowStep(uatOnlyJob, 'Run staging UAT without deploying');
+
+for (const key of [
+  'CV_STAGING_SCRIPT_ID',
+  'CV_PRODUCTION_SCRIPT_ID',
+  'CV_STAGING_DEPLOYMENT_ID',
+  'CV_STAGING_API_URL',
+  'CV_STAGING_SPREADSHEET_ID',
+  'CV_PRODUCTION_SPREADSHEET_ID',
+  'CV_STAGING_RECEIPT_FOLDER_ID',
+  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
+  'CV_STAGING_BACKUP_FOLDER_ID',
+  'CV_PRODUCTION_BACKUP_FOLDER_ID',
+]) {
+  assert.ok(
+    deployConfigPreflight.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'deploy preflight receives required resource-isolation input: ' + key,
+  );
+  assert.ok(
+    deployMutation.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'deployment step receives required target identity input: ' + key,
+  );
+  assert.ok(
+    deployTargetRecheck.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'post-deploy target recheck receives required resource input: ' + key,
+  );
+  assert.ok(
+    deployUatStep.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'deploy UAT step receives required target input: ' + key,
+  );
+  assert.ok(
+    uatTargetPreflight.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'UAT-only preflight receives required target input: ' + key,
+  );
+  assert.ok(
+    uatOnlyStep.includes(key + ': ${{ secrets.' + key + ' }}'),
+    'UAT-only execution receives required target input: ' + key,
+  );
+}
+assert.match(deployConfigPreflight, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
+assert.match(deployMutation, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
+assert.doesNotMatch(deployTargetRecheck, /CLASPRC_JSON/);
+assert.doesNotMatch(deployUatStep, /CLASPRC_JSON/);
+assert.doesNotMatch(uatTargetPreflight, /CLASPRC_JSON/);
+assert.doesNotMatch(uatOnlyStep, /CLASPRC_JSON/);
+assert.match(
+  deployUatStep,
+  /CV_STAGING_UAT_CONFIRM_WRITES: \$\{\{ inputs\.confirm_staging_writes \}\}/,
+);
+assert.match(
+  uatOnlyStep,
+  /CV_STAGING_UAT_CONFIRM_WRITES: \$\{\{ inputs\.confirm_staging_writes \}\}/,
+);
+assert.doesNotMatch(deployConfigPreflight, /CV_STAGING_UAT_CONFIRM_WRITES/);
+assert.doesNotMatch(deployTargetRecheck, /CV_STAGING_UAT_CONFIRM_WRITES/);
+assert.doesNotMatch(uatTargetPreflight, /CV_STAGING_UAT_CONFIRM_WRITES/);
 
 const readinessJob = workflow.split('  preflight-readiness:\n')[1].split('  guard:\n')[0];
 assert.match(readinessJob, /github\.ref == 'refs\/heads\/client-main'/);

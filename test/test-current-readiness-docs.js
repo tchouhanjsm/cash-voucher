@@ -27,6 +27,14 @@ const releaseGateBundleDocs = read('docs/RELEASE-GATE-BUNDLE.md');
 const releaseGateBundleValidator = read('scripts/validate-release-gate-bundle.js');
 const releaseGateBundleTest = read('test/test-release-gate-bundle.js');
 const ciWorkflow = read('.github/workflows/ci.yml');
+const stagingWorkflow = read('.github/workflows/staging-uat.yml');
+const stagingWorkflowTest = read('test/test-staging-workflow.js');
+const stagingEvidenceWriter = read('scripts/staging-evidence.js');
+const stagingEvidenceTests = read('test/test-staging-evidence.js');
+const stagingDeployScript = read('scripts/deploy-staging.js');
+const stagingPipelineTests = read('test/test-staging-pipeline.js');
+const stagingUatRunner = read('scripts/run-staging-uat.sh');
+const stagingWebServer = read('scripts/staging-web-server.js');
 const formatDiffScript = read('scripts/show-format-diff.js');
 const flightWorkflowContract = read('test/test-flight-workflow.js');
 const recoveryEvidenceFixture = read('test/fixtures/recovery-evidence.js');
@@ -40,11 +48,81 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
-const currentIntegrationSha = 'a7421807b9bc2c56618ac1889c43f48ecfb79c81';
+const currentIntegrationSha = '80b83af4bd722557b8889e8082c6e49029bdc311';
 assert.ok(handoff.includes(currentIntegrationSha));
+assert.match(
+  handoff,
+  /^\*\*Current integration baseline:\*\* `80b83af4bd722557b8889e8082c6e49029bdc311`/m,
+);
+assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
+assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
+assert.ok(executionPlan.includes('Staging secret-scope sprint batch — 28 October 2026'));
+assert.ok(appsScriptRunbook.includes('Staging workflow secret isolation — 28 October 2026'));
+assert.ok(stagingWorkflow.includes('name: Update the existing staging deployment only'));
+assert.ok(stagingWorkflowTest.includes('job header must not expose secrets to every step'));
+assert.ok(stagingWorkflowTest.includes('UAT-only must never receive the Clasp OAuth credential'));
+assert.ok(staging.includes('Staging evidence output and cleanup hardening — 28 October 2026'));
+assert.ok(
+  executionPlan.includes(
+    'Evidence artifact and temporary credential cleanup sprint — 28 October 2026',
+  ),
+);
+assert.ok(
+  appsScriptRunbook.includes(
+    'Staging evidence files and temporary credential cleanup — 28 October 2026',
+  ),
+);
+assert.ok(stagingEvidenceWriter.includes('fs.constants.O_EXCL'));
+assert.ok(stagingEvidenceWriter.includes('fs.constants.O_NOFOLLOW'));
+assert.ok(stagingUatRunner.includes('umask 077'));
+assert.ok(stagingUatRunner.includes('detailed transcript is withheld from workflow logs'));
+assert.ok(stagingUatRunner.includes('env -i'));
+assert.ok(stagingWebServer.includes("{ mode: 'artifact', root }"));
+assert.doesNotMatch(stagingWebServer, /mode: 'uat'/);
+assert.ok(stagingWorkflow.includes('steps.staging_uat.outputs.uat_log_file'));
+assert.ok(stagingWorkflow.includes('steps.staging_uat.outputs.uat_log_dir'));
+assert.ok(stagingWorkflow.includes('dir_mode="$(stat -c'));
+assert.ok(stagingWorkflow.includes('server_mode="$(stat -c'));
+assert.ok(stagingWorkflow.includes('UAT log directory or files failed privacy checks'));
+assert.ok(stagingUatRunner.includes('cash-voucher-staging-uat.XXXXXX'));
+assert.ok(stagingUatRunner.includes('chmod 700 "${UAT_LOG_DIR}"'));
+assert.ok(
+  stagingEvidenceWriter.includes('staging UAT transcript directory permissions are too broad'),
+);
+
+assert.ok(stagingEvidenceWriter.includes('must be outside the repository'));
+assert.ok(stagingEvidenceWriter.includes('function readTranscript(env)'));
+assert.ok(stagingEvidenceWriter.includes('dedicated per-run directory'));
+assert.ok(stagingEvidenceWriter.includes('maxTranscriptBytes = 2 * 1024 * 1024'));
+assert.ok(stagingEvidenceWriter.includes('O_NOFOLLOW'));
+assert.ok(stagingEvidenceTests.includes('oversizedTranscript'));
+assert.ok(stagingEvidenceTests.includes('transcriptLink'));
+assert.ok(staging.includes('UAT transcript isolation'));
+assert.ok(executionPlan.includes('UAT transcripts private in unique per-run directories'));
+assert.ok(
+  appsScriptRunbook.includes('transcript reader enforces its dedicated-directory contract'),
+);
+assert.ok(stagingWorkflowTest.includes('private generated transcript'));
+
+assert.ok(
+  stagingEvidenceTests.includes('a rerun must not overwrite an existing evidence artifact'),
+);
+assert.ok(stagingEvidenceTests.includes('summaryLink'));
+assert.ok(stagingDeployScript.includes('cleanupTemporaryDirectories([workspace, tempHome])'));
+assert.ok(
+  stagingDeployScript.includes('temporary workspace/credential cleanup could not be verified'),
+);
+assert.ok(
+  stagingPipelineTests.includes(
+    'cleanup must attempt credential-home removal even if workspace removal fails',
+  ),
+);
+
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
 assert.ok(
-  handoff.includes('recomputes SHA-256 for all eight retained operational evidence records'),
+  handoff.includes(
+    'merged PR #242 added release-bundle freshness, exact deployed-SHA binding, private evidence digest verification and safe report handling',
+  ),
 );
 assert.ok(staging.includes('Current release-gate bundle phase — 28 October 2026'));
 assert.ok(executionPlan.includes('Current release-gate bundle phase — 28 October 2026'));
@@ -261,10 +339,10 @@ assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
 assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
 
-assert.ok(staging.includes('private evidence digest verification phase'));
+assert.ok(staging.includes('staging evidence output and cleanup hardening phase'));
 assert.match(staging, /remote connectivity.*restore were not verified/i);
-assert.ok(executionPlan.includes('private evidence digest verification phase'));
-assert.ok(handoff.includes('private evidence digest verification phase'));
+assert.ok(executionPlan.includes('staging evidence output and cleanup hardening phase'));
+assert.ok(handoff.includes('staging evidence output and cleanup hardening phase'));
 assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(staging, /Workflow isolation.*only from `client-main`/i);
 assert.match(executionPlan, /Secrets are scoped to the one validation step/i);
