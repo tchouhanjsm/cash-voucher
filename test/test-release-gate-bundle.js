@@ -19,6 +19,12 @@ const {
   SOURCE_WORKFLOW_FILES,
 } = require('../scripts/validate-release-gate-bundle');
 const { buildRecoveryEvidence } = require('./fixtures/recovery-evidence');
+const {
+  OPERATIONAL_GATE_CHECKS,
+  OPERATIONAL_GATE_REVIEWER_ROLES,
+  OPERATIONAL_GATE_VERIFICATION_METHODS,
+  OPERATIONAL_GATE_EVIDENCE_TYPE,
+} = require('../scripts/validate-operational-gate-evidence');
 
 const repository = 'tchouhanjsm/cash-voucher';
 const ref = 'refs/heads/client-main';
@@ -401,9 +407,25 @@ function writeEvidenceFiles(directory, bundle) {
       };
       bytes = Buffer.from(JSON.stringify(governanceEvidence, null, 2) + String.fromCharCode(10));
     } else {
-      bytes = Buffer.from(
-        'Synthetic evidence fixture for ' + gate.evidenceRef + String.fromCharCode(10),
-      );
+      const index = Object.keys(bundle.operationalGates).indexOf(name);
+      const operationalEvidence = {
+        schemaVersion: 1,
+        evidenceType: OPERATIONAL_GATE_EVIDENCE_TYPE,
+        repository,
+        gate: name,
+        outcome: 'pass',
+        evidenceRef: gate.evidenceRef,
+        verifiedAt: gate.verifiedAt,
+        testedClientMainSha: bundle.source.commitSha,
+        reviewerRole: OPERATIONAL_GATE_REVIEWER_ROLES[name][0],
+        verificationMethod: OPERATIONAL_GATE_VERIFICATION_METHODS[name],
+        sourceRecordRefs: [
+          'RUN-' + String(71200 + index).padStart(5, '0'),
+          'QA-' + String(71300 + index).padStart(5, '0'),
+        ],
+        checks: Object.fromEntries(OPERATIONAL_GATE_CHECKS[name].map((check) => [check, true])),
+      };
+      bytes = Buffer.from(JSON.stringify(operationalEvidence, null, 2) + String.fromCharCode(10));
     }
     gate.evidenceSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
     fs.writeFileSync(path.join(directory, gate.evidenceRef + '.evidence'), bytes, {
@@ -479,6 +501,58 @@ try {
     timestampMismatchCheck.errors.some((error) => error.code === 'GOVERNANCE_TIMESTAMP_MISMATCH'),
   );
   fs.writeFileSync(governancePath, validGovernanceBytes, { mode: 0o600 });
+
+  const operationalGate = passingBundle.operationalGates.liveStagingUatPassed;
+  const operationalPath = path.join(evidenceDirectory, operationalGate.evidenceRef + '.evidence');
+  const validOperationalBytes = fs.readFileSync(operationalPath);
+  const wrongGateBundle = JSON.parse(JSON.stringify(passingBundle));
+  const wrongGateRecord = JSON.parse(validOperationalBytes.toString('utf8'));
+  wrongGateRecord.gate = 'liveSecurityHeadersVerified';
+  const wrongGateBytes = Buffer.from(JSON.stringify(wrongGateRecord, null, 2) + String.fromCharCode(10));
+  fs.writeFileSync(operationalPath, wrongGateBytes, { mode: 0o600 });
+  wrongGateBundle.operationalGates.liveStagingUatPassed.evidenceSha256 = crypto
+    .createHash('sha256').update(wrongGateBytes).digest('hex');
+  const wrongGateCheck = verifyOperationalEvidenceDigests(wrongGateBundle, resolveOperationalEvidenceDirectory(evidenceDirectory));
+  assert.ok(
+    wrongGateCheck.errors.some((error) => error.code === 'OPERATIONAL_RECORD_GATE_MISMATCH'),
+    'digest-consistent operational record must fail when its gate identifier is altered',
+  );
+  assert.equal(wrongGateCheck.verifiedCount, 7);
+  fs.writeFileSync(operationalPath, validOperationalBytes, { mode: 0o600 });
+
+  const falseCheckBundle = JSON.parse(JSON.stringify(passingBundle));
+  const falseCheckRecord = JSON.parse(validOperationalBytes.toString('utf8'));
+  falseCheckRecord.checks.voucherCreateReadback = false;
+  const falseCheckBytes = Buffer.from(JSON.stringify(falseCheckRecord, null, 2) + String.fromCharCode(10));
+  fs.writeFileSync(operationalPath, falseCheckBytes, { mode: 0o600 });
+  falseCheckBundle.operationalGates.liveStagingUatPassed.evidenceSha256 = crypto
+    .createHash('sha256').update(falseCheckBytes).digest('hex');
+  const falseCheckResult = verifyOperationalEvidenceDigests(falseCheckBundle, resolveOperationalEvidenceDirectory(evidenceDirectory));
+  assert.ok(falseCheckResult.errors.some((error) => error.code === 'OPERATIONAL_RECORD_CHECK_FAILED'));
+  assert.equal(falseCheckResult.verifiedCount, 7);
+  fs.writeFileSync(operationalPath, validOperationalBytes, { mode: 0o600 });
+
+  const wrongOperationalShaBundle = JSON.parse(JSON.stringify(passingBundle));
+  const wrongShaRecord = JSON.parse(validOperationalBytes.toString('utf8'));
+  wrongShaRecord.testedClientMainSha = 'b'.repeat(40);
+  const wrongShaBytes = Buffer.from(JSON.stringify(wrongShaRecord, null, 2) + String.fromCharCode(10));
+  fs.writeFileSync(operationalPath, wrongShaBytes, { mode: 0o600 });
+  wrongOperationalShaBundle.operationalGates.liveStagingUatPassed.evidenceSha256 = crypto
+    .createHash('sha256').update(wrongShaBytes).digest('hex');
+  const wrongOperationalShaResult = verifyOperationalEvidenceDigests(wrongOperationalShaBundle, resolveOperationalEvidenceDirectory(evidenceDirectory));
+  assert.ok(wrongOperationalShaResult.errors.some((error) => error.code === 'OPERATIONAL_RECORD_SHA_MISMATCH'));
+  fs.writeFileSync(operationalPath, validOperationalBytes, { mode: 0o600 });
+
+  const wrongOperationalTimestampBundle = JSON.parse(JSON.stringify(passingBundle));
+  const wrongTimestampRecord = JSON.parse(validOperationalBytes.toString('utf8'));
+  wrongTimestampRecord.verifiedAt = '2026-10-27T23:29:00.000Z';
+  const wrongTimestampBytes = Buffer.from(JSON.stringify(wrongTimestampRecord, null, 2) + String.fromCharCode(10));
+  fs.writeFileSync(operationalPath, wrongTimestampBytes, { mode: 0o600 });
+  wrongOperationalTimestampBundle.operationalGates.liveStagingUatPassed.evidenceSha256 = crypto
+    .createHash('sha256').update(wrongTimestampBytes).digest('hex');
+  const wrongOperationalTimestampResult = verifyOperationalEvidenceDigests(wrongOperationalTimestampBundle, resolveOperationalEvidenceDirectory(evidenceDirectory));
+  assert.ok(wrongOperationalTimestampResult.errors.some((error) => error.code === 'OPERATIONAL_RECORD_TIMESTAMP_MISMATCH'));
+  fs.writeFileSync(operationalPath, validOperationalBytes, { mode: 0o600 });
 
   if (process.platform !== 'win32') {
     const permissionGate = passingBundle.operationalGates.liveStagingUatPassed;

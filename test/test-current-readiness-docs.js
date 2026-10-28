@@ -26,6 +26,9 @@ const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
 const releaseGateBundleDocs = read('docs/RELEASE-GATE-BUNDLE.md');
 const releaseGateBundleValidator = read('scripts/validate-release-gate-bundle.js');
 const releaseGateBundleTest = read('test/test-release-gate-bundle.js');
+const operationalEvidenceSchema = read('docs/RELEASE-GATE-EVIDENCE-SCHEMA.md');
+const operationalEvidenceValidator = read('scripts/validate-operational-gate-evidence.js');
+const operationalEvidenceTest = read('test/test-operational-gate-evidence.js');
 const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
 const governanceVerifier = read('scripts/verify-client-main-governance.js');
 const governanceTest = read('test/test-client-main-governance.js');
@@ -55,6 +58,13 @@ const currentIntegrationSha = '2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c';
 assert.ok(handoff.includes(currentIntegrationSha));
 assert.ok(handoff.includes('PR #245 merged'));
 assert.ok(handoff.includes('Governance evidence binding phase — 28 October 2026'));
+assert.ok(handoff.includes('Operational evidence content-binding phase — 28 October 2026'));
+assert.ok(operationalEvidenceSchema.includes('customerAcceptanceApproved'));
+assert.ok(operationalEvidenceSchema.includes('sourceRecordRefs'));
+assert.ok(operationalEvidenceValidator.includes('OPERATIONAL_RECORD_CHECK_FAILED'));
+assert.ok(operationalEvidenceTest.includes('OPERATIONAL_RECORD_SHA_MISMATCH'));
+assert.ok(releaseGateBundleValidator.includes('validateOperationalGateEvidence'));
+assert.ok(releaseGateBundleTest.includes('digest-consistent operational record'));
 assert.match(
   handoff,
   /^\*\*Current integration baseline:\*\* `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`/m,

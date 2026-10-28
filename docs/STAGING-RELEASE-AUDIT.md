@@ -1,5 +1,13 @@
 # Staging Release Audit and Pending Queue
 
+## Operational evidence content-binding phase — 28 October 2026
+
+- PR #246 is being extended in place; no second PR is created for this evidence-contract hardening.
+- The bundle validator requires schema-validated evidence for all seven non-governance gates as well as the separately validated governance report.
+- Each record binds an exact gate key, repository, evidence reference, client-main SHA, verification timestamp, reviewer role/method and required boolean checklist. Digest-consistent mismatches fail closed.
+- Supporting IDs remain pointers for owner/QA review, not independently fetched artifacts; this source phase does not authenticate the reporter or complete live tests.
+- Live default-branch/protection blockers remain. Staging UAT, isolated restore, reconciliation, production-unchanged proof and customer acceptance remain outstanding.
+
 ## Governance evidence binding phase — 28 October 2026
 
 - PR #245 is merged into `client-main` at `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`. This is the integration baseline for the next source batch.
@@ -19,9 +27,9 @@
 - This source verifier only reports governance configuration. The owner/admin must set client-main as default, add complete client-main protection and an explicit main freeze, then rerun the verifier.
 - Source checks passing on a PR do not authenticate live operational evidence or authorize staging, deployment, schema migration, Sheets/Drive writes, cPanel publication or production operation.
 
-**Audit date:** 28 October 2026 (governance evidence binding phase)
+**Audit date:** 28 October 2026 (operational evidence content-binding phase)
 **Current integration baseline:** `client-main` `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c` (PR #245 merged; operational release remains blocked).
-**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028`; require a structured successful governance report in the hashed private owner-branch-protection evidence record.
+**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028`; require a structured governance report plus schema-bound JSON records for the other operational gates.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).
@@ -52,7 +60,7 @@
 - The staging preflight report must be a configuration pass for the same repository/ref/SHA, with all required categories passing, no blockers, and no assertion of live connectivity, identity verification, deployment or restore.
 - Recovery-drill evidence is passed through the existing recovery contract and must reference the same SHA. The bundle also requires non-sensitive evidence references for branch protection, live UAT, actual security headers, live role/receipt authorization, offline/reconnect, print/PDF, accessibility and customer acceptance.
 - A passing bundle means internal consistency only. It does not authenticate evidence or approve release; the CLI summary always says human review is required.
-- **Private evidence digest verification:** `--evidence-dir` is required; each `<evidenceRef>.evidence` file is hashed from disk and compared with its declared SHA-256. Missing, tampered, unsafe, symlinked and oversized files fail the contract. Evidence authenticity remains a human review responsibility. On POSIX, the evidence directory must be `0700` or stricter and each evidence file `0600` or stricter.
+- **Private evidence verification:** --evidence-dir is required; each file is hashed from exact bytes, then the gate-specific schema is validated. Missing, tampered, unrelated, misbound, unsafe, symlinked and oversized files fail. Source-record contents and witness identity still require human review. On POSIX, the evidence directory must be 0700 or stricter and each file 0600 or stricter.
 - No actual release bundle, live staging operation, restore, deployment or customer acceptance has been performed by this source phase.
 
 ## Historical checkpoint — 27 October 2026 22:11 IST (superseded by release-gate bundle phase)

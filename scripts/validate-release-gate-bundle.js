@@ -8,6 +8,7 @@ const {
   GOVERNANCE_EVIDENCE_TYPE,
   REQUIRED_CHECK_GROUPS,
 } = require('./verify-client-main-governance');
+const { validateOperationalGateEvidence } = require('./validate-operational-gate-evidence');
 
 const SHA1 = /^[a-f0-9]{40}$/i;
 const SHA256 = /^[a-f0-9]{64}$/i;
@@ -1031,6 +1032,17 @@ function verifyOperationalEvidenceDigests(bundle, evidenceDirectory) {
         const previousErrorCount = errors.length;
         validateGovernanceEvidence(bytes, gate, errors);
         if (errors.length > previousErrorCount) return;
+      } else {
+        const operationalResult = validateOperationalGateEvidence(
+          bytes,
+          name,
+          gate,
+          isRecord(bundle.source) ? bundle.source.commitSha : '',
+        );
+        if (!operationalResult.ok) {
+          operationalResult.errors.forEach((item) => add(errors, item.code, item.message));
+          return;
+        }
       }
       verifiedCount += 1;
     } catch (error) {

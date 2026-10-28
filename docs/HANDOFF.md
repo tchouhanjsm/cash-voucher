@@ -1,11 +1,11 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 28 October 2026 (governance evidence binding phase)
+**Updated:** 28 October 2026 (operational evidence content-binding phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
 **Current integration baseline:** `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c` (PR #245 merged; governance verification is integrated; operational release remains blocked).
-**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028` emits structured governance evidence and binds it to the private release-bundle operational gate. No GitHub setting is changed.
-**Release boundary:** read-only governance API inspection, deterministic tests and operator documentation only. No default-branch change, branch-protection/ruleset mutation, Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
+**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028` binds governance evidence and validates gate-specific JSON content for the other seven operational gates. Source/tests/docs only; no GitHub setting or live resource is changed.
+**Release boundary:** deterministic source/test/docs work only. No default-branch change, branch-protection/ruleset mutation, workflow dispatch, Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, live UAT, cPanel publication or production operation.
 
 ## Current release-session checkpoint — 28 October 2026
 
@@ -14,8 +14,17 @@
 - **Bundle acceptance:** the source gate requires CI / Quality, Browser E2E, Full Flight and the development monitor to succeed on one commit; preflight and recovery evidence must match that SHA and meet freshness limits; eight operational gates need recent evidence references, and all application acceptance gates must attest to that same `client-main` SHA.
 - **Privacy and scope:** bundle input, evidence directory and report must be outside the repository. On POSIX, the evidence directory must be mode `0700` or stricter and each `<evidenceRef>.evidence` record `0600` or stricter; non-symlink and 10 MiB file-size limits also apply. Report output uses restrictive permissions and never overwrites existing files. Keep bundle and evidence private; fixtures are not live proof. Owner review remains mandatory.
 - **Provenance requirement:** the optional GitHub CLI checks actual successful push-run metadata for the four expected source workflows. This proves run identity/metadata, not live operational readiness or witness authenticity.
-- **Operational evidence fingerprints:** each live gate requires a SHA-256 digest for its retained evidence record. The CLI now recomputes the digest from the exact private file named `<evidenceRef>.evidence` and blocks a missing or changed file. The owner/reviewer must still inspect the evidence and verify the reference maps to the intended live check; matching bytes do not authenticate the claim.
+- **Operational evidence binding:** all evidence files are rehashed from exact private bytes. The governance report keeps its dedicated schema; the other seven gates require strict JSON contracts binding repository, gate name, evidence reference, exact source SHA/timestamp, permitted reviewer role/method, safe source-record IDs and all required checks. A recomputed digest cannot make mismatched content pass. IDs are not fetched/authenticated; owner/QA review remains mandatory.
 - **Release remains blocked:** staging identities/configuration, live UAT, isolated restore, seven-sheet and receipt reconciliation, production-unchanged evidence, actual host security headers, authorization, offline/reconnect, printing, accessibility and customer acceptance remain owner/operator tasks.
+
+## Operational evidence content-binding phase — 28 October 2026
+
+- PR #246 remains the single open implementation batch. The governance report binding is preserved; this phase adds content contracts for the other seven operational gates.
+- A dedicated validator now covers UAT, security headers, role/receipt authorization, offline/reconnect, print/PDF, accessibility and customer acceptance. Each record binds to its exact gate, evidence reference, expected repository, release SHA and timestamp, gate-specific reviewer role/method, supporting record IDs and explicit required checks.
+- docs/RELEASE-GATE-EVIDENCE-SCHEMA.md defines the contracts. Digest-consistent altered gate, SHA, timestamp or check values are rejected. JSON records do not replace source captures; supporting IDs are syntax-checked only and a human must inspect the underlying records.
+- Regression tests cover all seven positive schemas and negative schema/SHA/time/reference/check cases, including digest-consistent forgery attempts in the bundle-level suite.
+- Private evidence handling stays unchanged: exact-byte SHA-256, storage outside the repository, restrictive POSIX permissions, non-symlink regular files, size limits and freshness windows.
+- Release remains blocked. The repository default branch remains main and client-main remains reported unprotected. This source phase does not claim live UAT, restore, reconciliation, security/accessibility/device tests or customer sign-off.
 
 ## Governance evidence binding phase — 28 October 2026
 

@@ -1,5 +1,14 @@
 # Cash Voucher — Execution Plan
 
+## Operational evidence content-binding phase — 28 October 2026
+
+- Continue PR #246 and the existing private release-gate bundle; preserve the current governance report validator.
+- Add exact content contracts for the seven other operational gates, each with fixed required checks, reviewer-role options and method identifier.
+- Bind records to the expected repository, bundle gate/evidence reference, source client-main SHA and exact verifiedAt timestamp. A matching file digest is necessary but insufficient.
+- Cover positive contracts and digest-consistent mutations in standalone and bundle-level regression tests. Keep fixtures test-only.
+- Document the source-record limitation: supporting IDs are syntax-checked, not retrieved or authenticated; owner/reviewer must inspect actual captures/sign-offs.
+- No live UAT, staging deployment, restore, Sheets/Drive write, migration or production operation is part of this source batch.
+
 ## Governance evidence binding phase — 28 October 2026
 
 - PR #245 is merged into `client-main` at `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`. This is the integration baseline for the next source batch.
@@ -19,11 +28,11 @@
 - This source verifier only reports governance configuration. The owner/admin must set client-main as default, add complete client-main protection and an explicit main freeze, then rerun the verifier.
 - Source checks passing on a PR do not authenticate live operational evidence or authorize staging, deployment, schema migration, Sheets/Drive writes, cPanel publication or production operation.
 
-**Updated:** 28 October 2026 (governance evidence binding phase)
+**Updated:** 28 October 2026 (operational evidence content-binding phase)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
 **Current integration SHA:** `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c` (PR #245 merged; release remains blocked pending governance and live evidence).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028`; bind machine-readable live governance evidence into the existing private release bundle without changing the offline validation contract.
+**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028`; bind governance evidence and seven gate-specific operational evidence schemas into the existing private release bundle without changing the offline/remote provenance boundary.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 
 ## Source-run provenance verification batch — 28 October 2026

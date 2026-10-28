@@ -48,6 +48,12 @@ It uses GET requests only, logs sanitized error codes instead of API bodies, and
 
 Do not let engineering automation change owner/admin governance settings. The checker is diagnostic; only the repository owner/admin can apply and verify the required settings.
 
+## Operational gate evidence contract — 28 October 2026
+
+The private release bundle uses two evidence contracts: ownerBranchProtectionVerified must be the JSON output of the read-only governance verifier; the other seven gates must follow docs/RELEASE-GATE-EVIDENCE-SCHEMA.md. All records are exact-byte hashed and bound to the gate, repository, integration SHA and timestamp. Required checks and reviewer/method fields must conform, so a text placeholder or digest-consistent mismatched JSON cannot pass. Supporting record IDs are pointers only and require independent owner/reviewer inspection; schema validation does not prove identity or truth.
+
+The source contract does not resolve the live governance blocker. An authorized owner/admin must correct GitHub settings, and authorized operators must gather real staging/UAT/restore/reconciliation/device/accessibility/customer-acceptance evidence.
+
 ## Release boundary
 
 Branch-governance verification does not prove staging identities, credential correctness, deployment version, UAT, isolated restore, seven-sheet/header/count reconciliation, voucher/receipt reconciliation, unchanged production state, live security headers, live authorization, offline/reconnect, print/PDF, accessibility or customer acceptance. Those gates remain blocked until independently witnessed and recorded.
