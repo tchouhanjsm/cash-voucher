@@ -63,6 +63,13 @@ assert.ok(
 assert.ok(releaseGateBundleTest.includes('repository-alias'));
 assert.ok(releaseGateBundleTest.includes('SENSITIVE-INTERNAL-NOTE'));
 assert.ok(releaseGateBundleValidator.includes('report output must not overwrite the input bundle'));
+assert.ok(releaseGateBundleValidator.includes('MAX_STAGING_PREFLIGHT_AGE_MS'));
+assert.ok(releaseGateBundleValidator.includes('MAX_RECOVERY_EVIDENCE_AGE_MS'));
+assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_TEST_SHA_MISMATCH'));
+assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_STALE'));
+assert.ok(releaseGateBundleTest.includes('PREFLIGHT_STALE'));
+assert.ok(releaseGateBundleTest.includes('RECOVERY_STALE'));
+assert.ok(releaseGateBundleDocs.includes('Freshness windows'));
 
 assert.ok(staging.includes(currentIntegrationSha));
 assert.ok(executionPlan.includes(currentIntegrationSha));
