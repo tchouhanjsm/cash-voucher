@@ -272,7 +272,9 @@ function writeEvidenceFiles(directory, bundle) {
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   const payloads = new Map();
   Object.values(bundle.operationalGates).forEach((gate) => {
-    const bytes = Buffer.from('Synthetic evidence fixture for ' + gate.evidenceRef + String.fromCharCode(10));
+    const bytes = Buffer.from(
+      'Synthetic evidence fixture for ' + gate.evidenceRef + String.fromCharCode(10),
+    );
     gate.evidenceSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
     fs.writeFileSync(path.join(directory, gate.evidenceRef + '.evidence'), bytes, {
       mode: 0o600,
@@ -315,7 +317,9 @@ try {
       resolveOperationalEvidenceDirectory(evidenceDirectory),
     );
     assert.ok(
-      permissionCheck.errors.some((error) => error.code === 'OPERATIONAL_EVIDENCE_FILE_PERMISSIONS'),
+      permissionCheck.errors.some(
+        (error) => error.code === 'OPERATIONAL_EVIDENCE_FILE_PERMISSIONS',
+      ),
     );
     fs.chmodSync(permissionPath, 0o600);
   }
@@ -418,7 +422,10 @@ try {
   });
 
   const missingRecordGate = passingBundle.operationalGates.printPdfVerified;
-  const missingRecordPath = path.join(evidenceDirectory, missingRecordGate.evidenceRef + '.evidence');
+  const missingRecordPath = path.join(
+    evidenceDirectory,
+    missingRecordGate.evidenceRef + '.evidence',
+  );
   const heldMissingRecord = fs.readFileSync(missingRecordPath);
   fs.unlinkSync(missingRecordPath);
   const missingRecordReportPath = path.join(tempDir, 'missing-record-report.json');
@@ -441,7 +448,10 @@ try {
   fs.writeFileSync(missingRecordPath, heldMissingRecord, { mode: 0o600 });
 
   const symlinkRecordGate = passingBundle.operationalGates.accessibilityVerified;
-  const symlinkRecordPath = path.join(evidenceDirectory, symlinkRecordGate.evidenceRef + '.evidence');
+  const symlinkRecordPath = path.join(
+    evidenceDirectory,
+    symlinkRecordGate.evidenceRef + '.evidence',
+  );
   const symlinkRecordTarget = path.join(tempDir, 'outside-evidence-target');
   fs.renameSync(symlinkRecordPath, symlinkRecordTarget);
   fs.symlinkSync(symlinkRecordTarget, symlinkRecordPath);
