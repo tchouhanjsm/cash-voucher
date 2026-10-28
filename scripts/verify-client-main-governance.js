@@ -364,9 +364,10 @@ function evaluateRepositoryGovernance(snapshot) {
 }
 
 async function requestGitHubJson(endpoint, token, fetchImpl = fetch) {
+  const repositoryPrefix = '/repos/' + REPOSITORY;
   if (
     typeof endpoint !== 'string' ||
-    !endpoint.startsWith('/repos/' + REPOSITORY) ||
+    (endpoint !== repositoryPrefix && !endpoint.startsWith(repositoryPrefix + '/')) ||
     endpoint.includes('..')
   ) {
     throw new Error('INVALID_API_ENDPOINT');
@@ -374,6 +375,7 @@ async function requestGitHubJson(endpoint, token, fetchImpl = fetch) {
   let response;
   try {
     response = await fetchImpl(API_BASE + endpoint, {
+      method: 'GET',
       headers: {
         Accept: 'application/vnd.github+json',
         Authorization: 'Bearer ' + token,

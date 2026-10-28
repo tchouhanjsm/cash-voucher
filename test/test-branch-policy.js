@@ -78,7 +78,7 @@ assert.match(stagingAudit, /separate recovery target/);
 assert.match(branchPolicy, /npm run verify:client-main-governance/);
 assert.match(governanceVerifier, /requestGitHubJson/);
 assert.match(governanceVerifier, /MAIN_FREEZE_RULESET_MISSING/);
-assert.doesNotMatch(governanceVerifier, /method:\s*['\"](?:POST|PUT|PATCH|DELETE)/i);
+assert.doesNotMatch(governanceVerifier, /method:\s*['"](?:POST|PUT|PATCH|DELETE)/i);
 assert.match(
   branchPolicy,
   /\[Client-main engineering and release strategy\]\(CLIENT-MAIN-ENGINEERING-STRATEGY-2026-10-21\.md\)/,

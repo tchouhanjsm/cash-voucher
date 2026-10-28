@@ -145,6 +145,7 @@ async function main() {
   assert.ok(errorCodes(forcePush).includes('CLIENT_MAIN_CLASSIC_FORCE_PUSH_ENABLED'));
 
   const mainNotFrozen = goodSnapshot();
+  mainNotFrozen.repository.default_branch = 'main';
   mainNotFrozen.rulesets = [
     ruleSet(
       'legacy-default-only',
@@ -173,6 +174,7 @@ async function main() {
   assert.ok(errorCodes(bypassedMain).includes('MAIN_FREEZE_BYPASS_PRESENT'));
 
   const onlyDefaultRuleset = goodSnapshot();
+  onlyDefaultRuleset.repository.default_branch = 'main';
   onlyDefaultRuleset.integrationProtection = null;
   onlyDefaultRuleset.rulesets = [legacyFreezeRuleSet(['~DEFAULT_BRANCH'])];
   const onlyDefaultCodes = errorCodes(onlyDefaultRuleset);
@@ -186,11 +188,22 @@ async function main() {
       assert.equal(url, 'https://api.github.com/repos/' + repositoryName);
       assert.equal(options.headers.Authorization, 'Bearer test-token');
       assert.equal(options.headers.Accept, 'application/vnd.github+json');
-      assert.equal(options.method, undefined);
+      assert.equal(options.method, 'GET');
       return { ok: true, json: async () => ({ full_name: repositoryName }) };
     },
   );
   assert.equal(request.full_name, repositoryName);
+  await assert.rejects(
+    requestGitHubJson(
+      '/repos/' + repositoryName + '-evil/branches/main',
+      'test-token',
+      async () => ({
+        ok: true,
+        json: async () => ({}),
+      }),
+    ),
+    /INVALID_API_ENDPOINT/,
+  );
   await assert.rejects(
     requestGitHubJson('/repos/other/repo', 'test-token', async () => ({
       ok: true,
