@@ -172,7 +172,11 @@ assert.doesNotMatch(
   /CV_STAGING_UAT_LOG_FILE: \$\{\{ runner\.temp \}\}\/cash-voucher-staging-uat\.log/,
 );
 assert.equal(
-  (workflow.match(/if \[ -L "\$\{CV_STAGING_UAT_LOG_DIR\}" \] \|\| \[ ! -d "\$\{CV_STAGING_UAT_LOG_DIR\}" \]/g) || []).length,
+  (
+    workflow.match(
+      /if \[ -L "\$\{CV_STAGING_UAT_LOG_DIR\}" \] \|\| \[ ! -d "\$\{CV_STAGING_UAT_LOG_DIR\}" \]/g,
+    ) || []
+  ).length,
   2,
   'deploy and UAT-only cleanup must reject a symlink or missing evidence directory',
 );
