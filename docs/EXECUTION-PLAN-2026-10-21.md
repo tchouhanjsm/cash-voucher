@@ -1,13 +1,21 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 27 October 2026 (release integrity and dependency policy phase)
+**Updated:** 28 October 2026 (release gate bundle validation phase)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
 **Current integration SHA:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; the current release remains blocked).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** `client/release-integrity-dependency-hardening-20261027`; tighten recovery-evidence validation, remove a withdrawn advisory exception and reconcile release checkpoints.
+**Current source batch:** `client/release-integrity-dependency-hardening-20261027`; add a consolidated validator for exact-SHA source checks, sanitized staging preflight, recovery-drill evidence and live operational evidence references.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 
-## Current release-session checkpoint — 27 October 2026 22:11 IST
+## Current release-gate bundle phase — 28 October 2026
+
+- Added `npm run validate:release-bundle -- /private/path/release-gate-bundle.json`.
+- The evidence contract rejects mixed source SHAs, failed/missing source workflows, blocked or mis-scoped staging preflight, invalid recovery evidence, non-passing operational gates and unsafe evidence references.
+- Source workflow run IDs must be distinct; staging and recovery evidence must precede the bundle creation timestamp. The CLI reads a bounded JSON file and emits codes/sanitized summary only.
+- A passing contract remains subject to owner/QA witness review; it does not call GitHub or Google services, deploy, run UAT, restore data or independently authenticate evidence.
+- Release is still blocked until the live staging and operational gates are separately evidenced by authorized operators.
+
+## Historical checkpoint — 27 October 2026 22:11 IST (superseded by release-gate bundle phase)
 
 - **Integration baseline:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PRs #240 and #241 are merged. Legacy `main` remains frozen/read-only.
 - **Current consolidated source batch:** `client/release-integrity-dependency-hardening-20261027`. It tightens recovery-evidence version labels, removes an exception for a withdrawn advisory, adds regression coverage, and refreshes current release/handoff checkpoints. It does not deploy or access live resources.
@@ -193,3 +201,4 @@ The monitor may observe CI, Browser E2E, Full Flight Test, PR reviews/checks, st
 - **Recovery evidence:** version labels now require a constrained safe prefix and reject URLs, emails, path-like strings and arbitrary IDs.
 - **Dependencies:** remove the braces advisory exception because GitHub withdrew it on 23 October 2026. The Zod compatibility exception remains narrowly scoped with review due 9 November 2026.
 - **Still blocked:** actual staging identity/UAT, a real isolated restore, receipt read-back, production-unchanged evidence, live HTTP headers, offline/device/accessibility checks and customer acceptance. Source validation is not release approval.
+- **Release evidence bundle:** use `docs/RELEASE-GATE-BUNDLE.md` after the intended integration SHA has its own passing checks and authorized operators have completed the required live evidence. Keep the JSON private.
