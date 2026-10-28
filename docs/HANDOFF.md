@@ -1,18 +1,19 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 28 October 2026 (release evidence freshness and deployed-SHA binding phase)
+**Updated:** 28 October 2026 (release gate bundle validation phase and provenance hardening)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
 **Current integration baseline:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; current source baseline verified).
-**Current source batch:** `client/release-integrity-dependency-hardening-20261027` now includes a fail-closed release-gate bundle validator tying exact-SHA source checks, sanitized staging preflight, recovery evidence and operational gate references together.
+**Current source batch:** `client/release-integrity-dependency-hardening-20261027` ties exact-SHA source checks, sanitized staging preflight, recovery evidence and operational gate references together. Source check records now bind expected workflow identity, repository, push event, `client-main` ref, SHA and canonical run URL. Temporary PR-specific formatting mutation was removed from CI and regression-guarded.
 **Release boundary:** release-gate validation tooling, dependency-audit policy, regression tests and release checkpoint documentation only. No Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, write-capable UAT, cPanel publication or production operation.
 
-## Current release-session checkpoint — 28 October 2026 07:27 IST
+## Current release-session checkpoint — 28 October 2026 09:26 IST
 
 - **Integration baseline remains:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PR #242 is an open feature-branch proposal until human-reviewed and merged. Keep legacy `main` read-only.
 - **Current phase:** PR #242 extends the release-gate bundle with a 24-hour validation-age limit (five-minute future clock-skew tolerance), freshness windows (24h preflight, 7d recovery and selected live gates, 30d stable acceptance checks), timestamps on every operational gate, and exact deployed `client-main` SHA binding for application-level acceptance.
 - **Bundle acceptance:** the source gate requires CI / Quality, Browser E2E, Full Flight and the development monitor to succeed on one commit; preflight and recovery evidence must match that SHA and meet freshness limits; eight operational gates need recent evidence references, and all application acceptance gates must attest to that same `client-main` SHA.
 - **Privacy and scope:** bundle input and report must be outside the repository. Report output uses restrictive file permissions, never overwrites existing files, and rejects repository paths, overwrite attempts and symlink targets/aliases. Keep the actual bundle and recovery evidence private; synthetic fixtures are not live proof. Validation is structural only; owner review and live evidence remain mandatory.
+- **Provenance requirement:** release source checks must be successful push runs on `refs/heads/client-main` from their expected workflow names. The validator checks their supplied run URLs against the repository and numeric run IDs but does not query GitHub; owner/QA must verify the linked run records before accepting evidence.
 - **Release remains blocked:** staging identities/configuration, live UAT, isolated restore, seven-sheet and receipt reconciliation, production-unchanged evidence, actual host security headers, authorization, offline/reconnect, printing, accessibility and customer acceptance remain owner/operator tasks.
 
 ## Historical checkpoint — 27 October 2026 22:11 IST (superseded by the release-gate bundle phase)
