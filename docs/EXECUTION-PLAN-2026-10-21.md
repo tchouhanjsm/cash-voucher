@@ -13,6 +13,7 @@
 - Treat `GITHUB_STEP_SUMMARY` as an output path: reject unsafe aliases and append only sanitized metadata through a no-follow descriptor.
 - On deployment completion or failure, attempt removal of both temporary project source and temporary Clasp credential home, then verify neither remains. If cleanup cannot be confirmed, stop with a sanitized hard failure and do not retry deployment automatically.
 - Verify negative cases with sentinel target files, symlink destinations, duplicate output attempts and simulated cleanup failure.
+- Keep UAT transcripts private in unique per-run directories; reject symlinked, misplaced, broadly permissioned and oversized input logs before parsing. Do not stream raw UAT output to GitHub logs. Run the local static server with a credential-minimal environment.
 - This phase does not change staging deployment semantics, dispatch a workflow, or access live Google resources.
 
 ## Staging secret-scope sprint batch — 28 October 2026
