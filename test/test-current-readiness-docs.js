@@ -48,11 +48,11 @@ const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
-const currentIntegrationSha = '80b83af4bd722557b8889e8082c6e49029bdc311';
+const currentIntegrationSha = '68263f48138d782e66428f6c5c19b3dd5b203bc5';
 assert.ok(handoff.includes(currentIntegrationSha));
 assert.match(
   handoff,
-  /^\*\*Current integration baseline:\*\* `80b83af4bd722557b8889e8082c6e49029bdc311`/m,
+  /^\*\*Current integration baseline:\*\* `68263f48138d782e66428f6c5c19b3dd5b203bc5`/m,
 );
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
@@ -173,7 +173,9 @@ assert.ok(releaseGateBundleValidator.includes("releaseApproval: 'human-review-re
 assert.ok(releaseGateBundleTest.includes('SOURCE_CHECK_SHA_MISMATCH'));
 assert.ok(releaseGateBundleTest.includes('unsafeOperationalReference'));
 assert.ok(recoveryEvidenceFixture.includes('function buildRecoveryEvidence'));
-assert.ok(releaseGateBundleDocs.includes('does not independently query GitHub'));
+assert.ok(releaseGateBundleDocs.includes('--verify-github'));
+assert.ok(releaseGateBundleValidator.includes('verifySourceRunProvenance'));
+assert.ok(read('scripts/validate-release-gate-bundle-github.js').includes('Actions API lookup failed'));
 assert.ok(releaseGateBundleDocs.includes('--report=/private/path/release-gate-validation.json'));
 assert.ok(releaseGateBundleDocs.includes('must be outside the repository'));
 assert.ok(releaseGateBundleDocs.includes('existing report files are never overwritten'));

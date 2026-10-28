@@ -550,6 +550,51 @@ function validateReleaseGateBundle(bundle, validationTime = new Date().toISOStri
   };
 }
 
+
+const SOURCE_WORKFLOW_FILES = Object.freeze({
+  ciQuality: 'ci.yml',
+  browserE2e: 'e2e.yml',
+  fullFlight: 'flight-test.yml',
+  autonomousMonitor: 'autonomous-development-monitor.yml',
+});
+
+/** Read-only verification of actual GitHub Actions run records. */
+async function verifySourceRunProvenance(bundle, getRun) {
+  const errors = [];
+  if (typeof getRun !== 'function') {
+    return { ok: false, verifiedCount: 0, errors: [{ code: 'SOURCE_PROVENANCE_CLIENT_REQUIRED', message: 'A read-only GitHub Actions run reader is required.' }] };
+  }
+  const structural = validateReleaseGateBundle(bundle);
+  if (!structural.ok) {
+    return { ok: false, verifiedCount: 0, errors: [{ code: 'SOURCE_PROVENANCE_STRUCTURE_BLOCKED', message: 'Fix bundle contract errors before querying source run provenance.' }] };
+  }
+  for (const key of REQUIRED_SOURCE_CHECKS) {
+    const evidence = bundle.sourceChecks[key];
+    let run;
+    try { run = await getRun(evidence.runId); }
+    catch {
+      errors.push({ code: 'SOURCE_PROVENANCE_LOOKUP_FAILED', message: 'A required GitHub Actions run could not be retrieved; verify connectivity, permissions and run ID.' });
+      continue;
+    }
+    if (!isRecord(run)) {
+      errors.push({ code: 'SOURCE_PROVENANCE_RUN_MISSING', message: 'A required GitHub Actions run record was not found.' });
+      continue;
+    }
+    const workflowPath = typeof run.path === 'string' ? run.path.replace(/^\\.github\\/workflows\\//, '') : '';
+    const actualRepository = isRecord(run.repository) && typeof run.repository.full_name === 'string' ? run.repository.full_name : '';
+    if (String(run.id || '') !== String(evidence.runId)) errors.push({ code: 'SOURCE_PROVENANCE_RUN_ID_MISMATCH', message: 'GitHub returned a different run ID than the bundle references.' });
+    if (actualRepository.toLowerCase() !== REPOSITORY.toLowerCase()) errors.push({ code: 'SOURCE_PROVENANCE_REPOSITORY_MISMATCH', message: 'A source run belongs to a different repository.' });
+    if (workflowPath !== SOURCE_WORKFLOW_FILES[key]) errors.push({ code: 'SOURCE_PROVENANCE_WORKFLOW_MISMATCH', message: 'A source run does not belong to its expected workflow file.' });
+    if (run.head_branch !== 'client-main') errors.push({ code: 'SOURCE_PROVENANCE_REF_MISMATCH', message: 'A source run was not recorded for client-main.' });
+    if (run.event !== 'push') errors.push({ code: 'SOURCE_PROVENANCE_EVENT_MISMATCH', message: 'A source run was not triggered by a push event.' });
+    if (String(run.head_sha || '').toLowerCase() !== String(bundle.source.commitSha).toLowerCase()) errors.push({ code: 'SOURCE_PROVENANCE_SHA_MISMATCH', message: 'A source run does not match the release bundle SHA.' });
+    if (run.status !== 'completed' || run.conclusion !== 'success') errors.push({ code: 'SOURCE_PROVENANCE_NOT_SUCCESSFUL', message: 'A required source run is not completed successfully.' });
+    const expectedUrl = 'https://github.com/' + REPOSITORY + '/actions/runs/' + evidence.runId;
+    if (run.html_url !== expectedUrl) errors.push({ code: 'SOURCE_PROVENANCE_URL_MISMATCH', message: 'GitHub run URL does not match the canonical referenced run.' });
+  }
+  return { ok: errors.length === 0, verifiedCount: errors.length === 0 ? REQUIRED_SOURCE_CHECKS.length : 0, errors };
+}
+
 function buildSanitizedValidationReport(result, bundle, generatedAt = new Date().toISOString()) {
   const rawSha = isRecord(bundle) && isRecord(bundle.source) ? bundle.source.commitSha : null;
   const sourceSha = typeof rawSha === 'string' && SHA1.test(rawSha) ? rawSha.toLowerCase() : null;
@@ -968,6 +1013,8 @@ module.exports = {
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
   SOURCE_CHECK_WORKFLOW_NAMES,
+  SOURCE_WORKFLOW_FILES,
+  verifySourceRunProvenance,
   buildSanitizedValidationReport,
   resolveOperationalEvidenceDirectory,
   verifyOperationalEvidenceDigests,
