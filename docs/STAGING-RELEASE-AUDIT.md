@@ -11,6 +11,7 @@
 ## Current release-gate bundle phase — 28 October 2026
 
 - `scripts/validate-release-gate-bundle.js` requires CI / Quality, Browser E2E, Full Flight and Autonomous Development Monitor to succeed on the same `client-main` SHA, with distinct workflow run IDs.
+- Staging preflight must be at most 24 hours old and recovery evidence at most 7 days old. Each operational gate now needs a canonical UTC verification time within its 7-day or 30-day policy window; app-level acceptance must include the exact tested `client-main` SHA.
 - The staging preflight report must be a configuration pass for the same repository/ref/SHA, with all required categories passing, no blockers, and no assertion of live connectivity, identity verification, deployment or restore.
 - Recovery-drill evidence is passed through the existing recovery contract and must reference the same SHA. The bundle also requires non-sensitive evidence references for branch protection, live UAT, actual security headers, live role/receipt authorization, offline/reconnect, print/PDF, accessibility and customer acceptance.
 - A passing bundle means internal consistency only. It does not authenticate evidence or approve release; the CLI summary always says human review is required.
