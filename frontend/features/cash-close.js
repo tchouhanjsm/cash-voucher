@@ -202,13 +202,13 @@ export function createCashClose({ api }) {
     );
   }
 
-
   function methodBreakdownMarkup(vouchers) {
     const snapshot = Array.isArray(vouchers) ? vouchers : [];
     const groups = new Map();
 
     snapshot.forEach((item) => {
-      const direction = typeof item.no === 'string' && item.no.startsWith('R-') ? 'Receipt' : 'Payment';
+      const direction =
+        typeof item.no === 'string' && item.no.startsWith('R-') ? 'Receipt' : 'Payment';
       const method = paymentMethodLabel(item.paymentMethod);
       const key = direction + '|' + method;
       if (!groups.has(key)) {
@@ -239,9 +239,10 @@ export function createCashClose({ api }) {
       if (item.cashImpact === 'UNCLASSIFIED') group.unclassifiedCount++;
     });
 
-    const sorted = Array.from(groups.values()).sort((a, b) =>
-      (a.direction === b.direction ? 0 : a.direction === 'Payment' ? -1 : 1) ||
-      a.method.localeCompare(b.method),
+    const sorted = Array.from(groups.values()).sort(
+      (a, b) =>
+        (a.direction === b.direction ? 0 : a.direction === 'Payment' ? -1 : 1) ||
+        a.method.localeCompare(b.method),
     );
     return (
       '<section class="cc-method-breakdown"><h3>Payment-method reconciliation</h3>' +
@@ -260,7 +261,9 @@ export function createCashClose({ api }) {
                   ? ' · ' + esc(group.unclassifiedCount) + ' cash-impact issue(s)'
                   : '') +
                 '</span></div><strong class="cc-method-item__amount">' +
-                (group.invalidAmount ? 'Amount requires review' : esc(money(group.amountPaise / 100))) +
+                (group.invalidAmount
+                  ? 'Amount requires review'
+                  : esc(money(group.amountPaise / 100))) +
                 '</strong></div>',
             )
             .join('') +
