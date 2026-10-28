@@ -69,6 +69,7 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
   exactKeys(sourceChecks, REQUIRED_SOURCE_CHECKS, 'sourceChecks', errors);
   if (!isRecord(sourceChecks)) return;
 
+  const runIds = [];
   REQUIRED_SOURCE_CHECKS.forEach((name) => {
     const check = sourceChecks[name];
     exactKeys(check, ['conclusion', 'headSha', 'runId'], 'sourceChecks.' + name, errors);
@@ -83,8 +84,13 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
     }
     if (typeof check.runId !== 'string' || !/^\d{1,20}$/.test(check.runId)) {
       add(errors, 'SOURCE_CHECK_RUN_ID', 'Every source check must include a numeric workflow run ID.');
+    } else {
+      runIds.push(check.runId);
     }
   });
+  if (new Set(runIds).size !== runIds.length) {
+    add(errors, 'SOURCE_CHECK_RUN_ID_DUPLICATE', 'Required source checks must reference distinct workflow runs.');
+  }
 }
 
 function validateStagingPreflight(preflight, source, errors) {
@@ -252,6 +258,23 @@ function validateReleaseGateBundle(bundle) {
     bundle.recoveryEvidence.source.clientMainSha.toLowerCase() !== commitSha.toLowerCase()
   ) {
     add(errors, 'RECOVERY_SHA_MISMATCH', 'Recovery drill evidence must reference the release commit SHA.');
+  }
+
+  if (
+    validTimestamp(bundle.generatedAt) &&
+    isRecord(bundle.stagingPreflight) &&
+    validTimestamp(bundle.stagingPreflight.generatedAt) &&
+    Date.parse(bundle.stagingPreflight.generatedAt) > Date.parse(bundle.generatedAt)
+  ) {
+    add(errors, 'PREFLIGHT_AFTER_BUNDLE', 'Bundle generation cannot precede its staging preflight.');
+  }
+  if (
+    validTimestamp(bundle.generatedAt) &&
+    isRecord(bundle.recoveryEvidence) &&
+    validTimestamp(bundle.recoveryEvidence.recordedAt) &&
+    Date.parse(bundle.recoveryEvidence.recordedAt) > Date.parse(bundle.generatedAt)
+  ) {
+    add(errors, 'RECOVERY_AFTER_BUNDLE', 'Bundle generation cannot precede its recovery evidence.');
   }
 
   validateOperationalGates(bundle.operationalGates, errors);
