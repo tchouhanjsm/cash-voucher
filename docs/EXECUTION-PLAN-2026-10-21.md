@@ -11,7 +11,7 @@
 
 - Added `npm run validate:release-bundle -- /private/path/release-gate-bundle.json`.
 - The evidence contract rejects mixed source SHAs, failed/missing source workflows, blocked or mis-scoped staging preflight, invalid recovery evidence, non-passing operational gates and unsafe evidence references.
-- Freshness policy: staging preflight ≤24 hours; recovery drill ≤7 days; live staging UAT, security headers, live authorization and customer acceptance ≤7 days; branch protection, offline/reconnect, print/PDF and accessibility ≤30 days. App-level operational evidence must bind to the same tested `client-main` SHA.
+- Freshness policy: validate the bundle within 24 hours of generation (five-minute future clock-skew tolerance); staging preflight ≤24 hours; recovery drill ≤7 days; live staging UAT, security headers, live authorization and customer acceptance ≤7 days; branch protection, offline/reconnect, print/PDF and accessibility ≤30 days. App-level operational evidence must bind to the same tested `client-main` SHA.
 - Source workflow run IDs must be distinct; staging and recovery evidence must precede the bundle creation timestamp. The CLI reads a bounded JSON file and emits codes/sanitized summary only.
 - A passing contract remains subject to owner/QA witness review; it does not call GitHub or Google services, deploy, run UAT, restore data or independently authenticate evidence.
 - Release is still blocked until the live staging and operational gates are separately evidenced by authorized operators.
