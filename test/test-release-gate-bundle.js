@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict');
 const { spawnSync } = require('node:child_process');
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
@@ -265,17 +266,36 @@ const missingRecoveryProof = buildBundle();
 delete missingRecoveryProof.recoveryEvidence.receipts;
 assert.ok(hasCode(missingRecoveryProof, 'RECOVERY_RECEIPTS'));
 
+function writeEvidenceFiles(directory, bundle) {
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const payloads = new Map();
+  Object.values(bundle.operationalGates).forEach((gate) => {
+    const bytes = Buffer.from('Synthetic evidence fixture for ' + gate.evidenceRef + String.fromCharCode(10));
+    gate.evidenceSha256 = crypto.createHash('sha256').update(bytes).digest('hex');
+    fs.writeFileSync(path.join(directory, gate.evidenceRef + '.evidence'), bytes, {
+      mode: 0o600,
+      flag: 'wx',
+    });
+    payloads.set(gate.evidenceRef, bytes);
+  });
+  return payloads;
+}
+
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-bundle-'));
 try {
   const inputPath = path.join(tempDir, 'bundle.json');
+  const evidenceDirectory = path.join(tempDir, 'private-evidence');
   const passingReportPath = path.join(tempDir, 'private-report-output', 'passing-report.json');
-  fs.writeFileSync(inputPath, JSON.stringify(buildCurrentBundle()), { mode: 0o600 });
+  const passingBundle = buildCurrentBundle();
+  const evidencePayloads = writeEvidenceFiles(evidenceDirectory, passingBundle);
+  fs.writeFileSync(inputPath, JSON.stringify(passingBundle), { mode: 0o600 });
 
   const passingRun = spawnSync(
     process.execPath,
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       inputPath,
+      '--evidence-dir=' + evidenceDirectory,
       '--report=' + passingReportPath,
     ],
     { encoding: 'utf8' },
@@ -288,6 +308,7 @@ try {
   assert.equal(passingReport.outcome, 'contract-pass');
   assert.equal(passingReport.sourceSha, commitSha);
   assert.equal(passingReport.summary.releaseApproval, 'human-review-required');
+  assert.equal(passingReport.summary.operationalEvidenceDigestsVerified, 8);
   assert.deepEqual(passingReport.errorCodes, []);
   assert.equal(passingReportText.includes('https://github.com'), false);
   assert.equal(passingReportText.includes('scriptFingerprint'), false);
@@ -298,6 +319,7 @@ try {
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       inputPath,
+      '--evidence-dir=' + evidenceDirectory,
       '--report=' + passingReportPath,
     ],
     { encoding: 'utf8' },
@@ -316,6 +338,7 @@ try {
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       inputPath,
+      '--evidence-dir=' + evidenceDirectory,
       '--report=' + blockedReportPath,
     ],
     { encoding: 'utf8' },
@@ -335,6 +358,7 @@ try {
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       inputPath,
+      '--evidence-dir=' + evidenceDirectory,
       '--report=' + inputPath,
     ],
     { encoding: 'utf8' },
@@ -359,6 +383,7 @@ try {
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       inputPath,
+      '--evidence-dir=' + evidenceDirectory,
       '--report=' + repositoryReportPath,
     ],
     { encoding: 'utf8' },
@@ -386,6 +411,7 @@ try {
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       inputPath,
+      '--evidence-dir=' + evidenceDirectory,
       '--report=' + symlinkReport,
     ],
     { encoding: 'utf8' },
@@ -402,6 +428,7 @@ try {
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       inputPath,
+      '--evidence-dir=' + evidenceDirectory,
       '--report=' + aliasedReportPath,
     ],
     { encoding: 'utf8' },
@@ -421,6 +448,7 @@ try {
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       inputPath,
+      '--evidence-dir=' + evidenceDirectory,
       '--report=' + danglingReport,
     ],
     { encoding: 'utf8' },
