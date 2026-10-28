@@ -47,6 +47,12 @@ assert.ok(
   'CI push and pull_request runs have separate concurrency groups.',
 );
 
+assert.doesNotMatch(
+  ciWorkflow,
+  /Temporary formatting diagnostic for PR 242|npx prettier --write/,
+  'CI must not mutate source files with a PR-specific formatting workaround.',
+);
+
 assert.match(workflow, /const transientHttpStatuses = new Set\(\[500, 502, 503, 504\]\);/);
 assert.match(workflow, /const maxTransientRetries = 2;/);
 assert.match(workflow, /let transientRetriesUsed = 0;/);
