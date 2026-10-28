@@ -10,6 +10,12 @@
 - This is a source-side data-minimization guard. A passing validator still does not authenticate the operator or independently prove that live resources were inspected.
 - PRs #240 and #241 are merged. Current integration SHA: `a7421807b9bc2c56618ac1889c43f48ecfb79c81`. Keep `main` read-only and preserve owner-approved isolated restore requirements.
 
+## Consolidated release gate bundle — 28 October 2026
+
+The new `scripts/validate-release-gate-bundle.js` validates the same-SHA source workflow set, the sanitized staging configuration report, this recovery-drill contract and non-sensitive references for all live operational release gates. The full schema and invocation are in `docs/RELEASE-GATE-BUNDLE.md`.
+
+The bundle should be created only after the intended `client-main` integration SHA has its own exact-head checks and authorized live steps have produced private evidence. It must not be generated from fixtures or from pre-merge PR checks as evidence for a later integration SHA. The command never makes live API calls or grants release approval.
+
 ## Current staging preflight boundary — 27 October 2026
 
 Merged PR #241 adds a configuration-only check to the manual `validate-only` workflow. The readiness job is restricted to `client-main` and uses the protected `staging` Environment. Secrets are bound to its one validation step only; checkout, Node setup and artifact upload do not inherit them. The artifact is configuration evidence, not a recovery drill: it does not query Google resources, authenticate resource ownership, deploy, run UAT, or prove a restore.
