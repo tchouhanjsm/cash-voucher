@@ -34,9 +34,7 @@ function run(command, args) {
 
 function getChangedFiles() {
   const requestedBase = String(process.env.GITHUB_BASE_REF || '').trim();
-  const baseBranch = /^[A-Za-z0-9._/-]+$/.test(requestedBase)
-    ? requestedBase
-    : 'client-main';
+  const baseBranch = /^[A-Za-z0-9._/-]+$/.test(requestedBase) ? requestedBase : 'client-main';
   const comparison = run('git', [
     'diff',
     '--name-only',
