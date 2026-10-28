@@ -245,11 +245,7 @@ function voucherAuditHistory_(user, req) {
 
   return {
     rows: rows,
-    nextBeforeRow: stoppedAtMatchLimit
-      ? nextBeforeRow
-      : startRow > 2
-        ? startRow
-        : null,
+    nextBeforeRow: stoppedAtMatchLimit ? nextBeforeRow : startRow > 2 ? startRow : null,
     scannedRows: scannedRows,
     auditHealth: auditWriteHealth_(),
   };
