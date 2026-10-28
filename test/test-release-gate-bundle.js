@@ -291,6 +291,31 @@ try {
   const passingBundle = buildCurrentBundle();
   const evidencePayloads = writeEvidenceFiles(evidenceDirectory, passingBundle);
   fs.writeFileSync(inputPath, JSON.stringify(passingBundle), { mode: 0o600 });
+  const missingEvidenceDirectoryRun = spawnSync(
+    process.execPath,
+    [path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'), inputPath],
+    { encoding: 'utf8' },
+  );
+  assert.equal(missingEvidenceDirectoryRun.status, 2);
+  assert.match(missingEvidenceDirectoryRun.stderr, /--evidence-dir/);
+
+  const directDigestCheck = verifyOperationalEvidenceDigests(
+    passingBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.deepEqual(directDigestCheck.errors, []);
+  assert.equal(directDigestCheck.verifiedCount, 8);
+
+  const unsafeReferenceBundle = buildCurrentBundle();
+  unsafeReferenceBundle.operationalGates.liveStagingUatPassed.evidenceRef = '../../escape';
+  const unsafeReferenceCheck = verifyOperationalEvidenceDigests(
+    unsafeReferenceBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    unsafeReferenceCheck.errors.some((error) => error.code === 'OPERATIONAL_EVIDENCE_REF_UNSAFE'),
+  );
+
 
   const passingRun = spawnSync(
     process.execPath,
