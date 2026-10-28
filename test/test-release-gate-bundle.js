@@ -10,7 +10,9 @@ const {
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
   SOURCE_CHECK_WORKFLOW_NAMES,
+  resolveOperationalEvidenceDirectory,
   validateReleaseGateBundle,
+  verifyOperationalEvidenceDigests,
 } = require('../scripts/validate-release-gate-bundle');
 const { buildRecoveryEvidence } = require('./fixtures/recovery-evidence');
 
@@ -313,6 +315,95 @@ try {
   assert.equal(passingReportText.includes('https://github.com'), false);
   assert.equal(passingReportText.includes('scriptFingerprint'), false);
 
+  assert.equal(passingReport.summary.operationalEvidenceDigestsVerified, 8);
+  assert.throws(
+    () => resolveOperationalEvidenceDirectory(path.join(__dirname, 'fixtures')),
+    /EVIDENCE_DIR_INSIDE_REPOSITORY/,
+  );
+
+  const evidenceDirectoryAlias = path.join(tempDir, 'evidence-directory-alias');
+  fs.symlinkSync(evidenceDirectory, evidenceDirectoryAlias, 'dir');
+  assert.throws(
+    () => resolveOperationalEvidenceDirectory(evidenceDirectoryAlias),
+    /EVIDENCE_DIR_UNSAFE/,
+  );
+
+  const digestMismatchGate = passingBundle.operationalGates.liveStagingUatPassed;
+  const digestMismatchPath = path.join(
+    evidenceDirectory,
+    digestMismatchGate.evidenceRef + '.evidence',
+  );
+  fs.writeFileSync(digestMismatchPath, 'tampered operational record', { mode: 0o600 });
+  const digestMismatchReportPath = path.join(tempDir, 'digest-mismatch-report.json');
+  const digestMismatchRun = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--evidence-dir=' + evidenceDirectory,
+      '--report=' + digestMismatchReportPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(digestMismatchRun.status, 1);
+  const digestMismatchReportText = fs.readFileSync(digestMismatchReportPath, 'utf8');
+  const digestMismatchReport = JSON.parse(digestMismatchReportText);
+  assert.equal(digestMismatchReport.outcome, 'blocked');
+  assert.ok(digestMismatchReport.errorCodes.includes('OPERATIONAL_EVIDENCE_HASH_MISMATCH'));
+  assert.equal(digestMismatchReportText.includes(digestMismatchGate.evidenceRef), false);
+  assert.equal(digestMismatchReportText.includes(digestMismatchGate.evidenceSha256), false);
+  fs.writeFileSync(digestMismatchPath, evidencePayloads.get(digestMismatchGate.evidenceRef), {
+    mode: 0o600,
+  });
+
+  const missingRecordGate = passingBundle.operationalGates.printPdfVerified;
+  const missingRecordPath = path.join(evidenceDirectory, missingRecordGate.evidenceRef + '.evidence');
+  const heldMissingRecord = fs.readFileSync(missingRecordPath);
+  fs.unlinkSync(missingRecordPath);
+  const missingRecordReportPath = path.join(tempDir, 'missing-record-report.json');
+  const missingRecordRun = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--evidence-dir=' + evidenceDirectory,
+      '--report=' + missingRecordReportPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(missingRecordRun.status, 1);
+  assert.ok(
+    JSON.parse(fs.readFileSync(missingRecordReportPath, 'utf8')).errorCodes.includes(
+      'OPERATIONAL_EVIDENCE_FILE_MISSING',
+    ),
+  );
+  fs.writeFileSync(missingRecordPath, heldMissingRecord, { mode: 0o600 });
+
+  const symlinkRecordGate = passingBundle.operationalGates.accessibilityVerified;
+  const symlinkRecordPath = path.join(evidenceDirectory, symlinkRecordGate.evidenceRef + '.evidence');
+  const symlinkRecordTarget = path.join(tempDir, 'outside-evidence-target');
+  fs.renameSync(symlinkRecordPath, symlinkRecordTarget);
+  fs.symlinkSync(symlinkRecordTarget, symlinkRecordPath);
+  const symlinkRecordReportPath = path.join(tempDir, 'symlink-record-report.json');
+  const symlinkRecordRun = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--evidence-dir=' + evidenceDirectory,
+      '--report=' + symlinkRecordReportPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(symlinkRecordRun.status, 1);
+  assert.ok(
+    JSON.parse(fs.readFileSync(symlinkRecordReportPath, 'utf8')).errorCodes.includes(
+      'OPERATIONAL_EVIDENCE_FILE_UNSAFE',
+    ),
+  );
+  fs.unlinkSync(symlinkRecordPath);
+  fs.renameSync(symlinkRecordTarget, symlinkRecordPath);
+
   const previousReportBytes = fs.readFileSync(passingReportPath);
   const overwriteExistingReport = spawnSync(
     process.execPath,
@@ -371,6 +462,7 @@ try {
     [
       path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
       path.join(__dirname, 'fixtures', 'recovery-evidence.js'),
+      '--evidence-dir=' + evidenceDirectory,
     ],
     { encoding: 'utf8' },
   );
@@ -396,7 +488,11 @@ try {
   fs.symlinkSync(inputPath, inputSymlink);
   const symlinkInputRun = spawnSync(
     process.execPath,
-    [path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'), inputSymlink],
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputSymlink,
+      '--evidence-dir=' + evidenceDirectory,
+    ],
     { encoding: 'utf8' },
   );
   assert.equal(symlinkInputRun.status, 2);
