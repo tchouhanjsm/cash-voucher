@@ -70,7 +70,7 @@ assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_EVIDENCE_FILE_PERMISS
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_FILE_TOO_LARGE'));
 assert.ok(releaseGateBundleTest.includes('missingEvidenceDirectoryRun'));
 assert.ok(releaseGateBundleDocs.includes('mode `0700` or stricter'));
-assert.ok(releaseGateBundleDocs.includes('mode `0600` or stricter'));
+assert.ok(releaseGateBundleDocs.includes('each evidence record `0600` or stricter'));
 
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_HASH_MISMATCH'));
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_FILE_UNSAFE'));
