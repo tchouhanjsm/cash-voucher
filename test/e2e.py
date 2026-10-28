@@ -1310,6 +1310,8 @@ with sync_playwright() as p:
         route.continue_()
 
     page.route('**/api?*', inject_cash_close_error)
+    # The preceding case left this date on 2020-01-02; this test targets the saved 2020-01-01 report.
+    page.fill('#cc-date', '2020-01-01')
     page.evaluate('window.__xssFired = false')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-results .cc-error[role=alert]')
