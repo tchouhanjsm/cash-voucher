@@ -54,6 +54,12 @@ assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_WORKFLOW'));
 assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_EVENT'));
 assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_REF'));
 assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_RUN_URL'));
+assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_EVIDENCE_DIGEST'));
+assert.ok(releaseGateBundleTest.includes('malformedOperationalDigest'));
+assert.ok(releaseGateBundleDocs.includes('evidenceSha256'));
+assert.ok(releaseGateBundleDocs.includes('shasum -a 256'));
+assert.ok(handoff.includes('Operational evidence fingerprints'));
+
 assert.ok(releaseGateBundleTest.includes('wrongSourceRunUrl'));
 assert.ok(releaseGateBundleDocs.includes('integration-branch checks'));
 assert.ok(releaseGateBundleDocs.includes('refs/heads/client-main'));
