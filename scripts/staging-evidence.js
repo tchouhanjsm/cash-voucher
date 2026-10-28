@@ -262,11 +262,56 @@ function buildStagingEvidence(env = process.env, log = '') {
 function readTranscript(env) {
   const logPath = String(env.CV_STAGING_UAT_LOG_FILE || '').trim();
   if (!logPath) return '';
+
+  let target;
   try {
-    return fs.readFileSync(logPath, 'utf8');
-  } catch (error) {
-    if (error && error.code === 'ENOENT') return '';
-    throw new Error('Unable to read the staging UAT transcript.');
+    target = resolveSafeExternalFile(logPath, 'staging UAT transcript');
+  } catch {
+    throw new Error('The staging UAT transcript path failed safety validation.');
+  }
+  if (!target.exists) return '';
+
+  let directoryStat;
+  try {
+    directoryStat = fs.lstatSync(path.dirname(target.path));
+  } catch {
+    throw new Error('The staging UAT transcript directory is unavailable.');
+  }
+  if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
+    throw new Error('The staging UAT transcript directory must be a real directory.');
+  }
+  if (!/^cash-voucher-staging-uat\.[A-Za-z0-9_-]+$/.test(path.basename(path.dirname(target.path)))) {
+    throw new Error('The staging UAT transcript must live in a dedicated per-run directory.');
+  }
+  if (process.platform !== 'win32' && (directoryStat.mode & 0o077) !== 0) {
+    throw new Error('The staging UAT transcript directory permissions are too broad.');
+  }
+
+  const maxTranscriptBytes = 2 * 1024 * 1024;
+  let descriptor;
+  try {
+    const flags = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW || 0);
+    descriptor = fs.openSync(target.path, flags);
+    const fileStat = fs.fstatSync(descriptor);
+    if (!fileStat.isFile() || (process.platform !== 'win32' && (fileStat.mode & 0o077) !== 0)) {
+      throw new Error('unsafe transcript file');
+    }
+    if (fileStat.size > maxTranscriptBytes) {
+      throw new Error('transcript exceeds size limit');
+    }
+    return fs.readFileSync(descriptor, 'utf8');
+  } catch {
+    throw new Error(
+      'The staging UAT transcript could not be read safely; oversized, symlinked or non-private files are rejected.',
+    );
+  } finally {
+    if (descriptor !== undefined) {
+      try {
+        fs.closeSync(descriptor);
+      } catch {
+        // Preserve the primary result; the runner removes the isolated log directory.
+      }
+    }
   }
 }
 
@@ -338,6 +383,7 @@ if (require.main === module) main();
 module.exports = {
   buildStagingEvidence,
   normalizeOutcome,
+  readTranscript,
   summarizeUat,
   writeStagingEvidence,
 };
