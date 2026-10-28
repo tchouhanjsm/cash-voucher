@@ -459,9 +459,9 @@ function writeSanitizedValidationReport(reportPath, result, bundle) {
     throw new Error('REPORT_PATH_INSIDE_REPOSITORY');
   }
   try {
-    if (fs.lstatSync(resolvedReport).isSymbolicLink()) {
-      throw new Error('REPORT_PATH_SYMLINK');
-    }
+    const existing = fs.lstatSync(resolvedReport);
+    if (existing.isSymbolicLink()) throw new Error('REPORT_PATH_SYMLINK');
+    throw new Error('REPORT_PATH_EXISTS');
   } catch (error) {
     if (error.code !== 'ENOENT') throw error;
   }
@@ -469,7 +469,7 @@ function writeSanitizedValidationReport(reportPath, result, bundle) {
   const report = buildSanitizedValidationReport(result, bundle);
   fs.writeFileSync(resolvedReport, JSON.stringify(report, null, 2) + '\n', {
     mode: 0o600,
-    flag: 'w',
+    flag: 'wx',
   });
   fs.chmodSync(resolvedReport, 0o600);
   return report;
