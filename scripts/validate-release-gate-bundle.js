@@ -764,6 +764,7 @@ if (require.main === module) main();
 module.exports = {
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
+  SOURCE_CHECK_WORKFLOW_NAMES,
   buildSanitizedValidationReport,
   isInsideRepository,
   validateReleaseGateBundle,
