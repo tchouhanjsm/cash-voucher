@@ -70,6 +70,24 @@ function sanitized(value, env = process.env) {
   return text.slice(0, 5000);
 }
 
+
+function cleanupTemporaryDirectories(directories, fileSystem = fs) {
+  let successful = true;
+  for (const directory of directories) {
+    if (typeof directory !== 'string' || !directory.trim()) {
+      successful = false;
+      continue;
+    }
+    try {
+      fileSystem.rmSync(directory, { recursive: true, force: true });
+      if (fileSystem.existsSync(directory)) successful = false;
+    } catch {
+      successful = false;
+    }
+  }
+  return successful;
+}
+
 function runClasp(args, options = {}) {
   const root = options.root || ROOT;
   const tempHome = options.tempHome;
@@ -122,6 +140,8 @@ function deployStaging(env = process.env, root = ROOT) {
 
   const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-staging-project-'));
   const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-staging-home-'));
+  let deploymentResult;
+  let deploymentError;
   try {
     const projectRoot = path.join(workspace, 'project');
     fs.mkdirSync(projectRoot, { recursive: true, mode: 0o700 });
@@ -196,11 +216,24 @@ function deployStaging(env = process.env, root = ROOT) {
     console.log(
       'Staging deployment updated. The deployment ID and URL were intentionally not printed.',
     );
-    return { ok: true };
-  } finally {
-    fs.rmSync(workspace, { recursive: true, force: true });
-    fs.rmSync(tempHome, { recursive: true, force: true });
+    deploymentResult = { ok: true };
+  } catch (error) {
+    deploymentError = error;
   }
+
+  const cleanupSucceeded = cleanupTemporaryDirectories([workspace, tempHome]);
+  if (!cleanupSucceeded) {
+    if (deploymentError) {
+      throw new Error(
+        'Staging deployment failed and temporary workspace/credential cleanup could not be verified; stop this runner and inspect it before retrying.',
+      );
+    }
+    throw new Error(
+      'Temporary staging workspace/credential cleanup could not be verified; stop this runner and inspect it before retrying.',
+    );
+  }
+  if (deploymentError) throw deploymentError;
+  return deploymentResult;
 }
 
 function main() {
@@ -214,4 +247,4 @@ function main() {
 
 if (require.main === module) main();
 
-module.exports = { deployStaging, runClasp, sanitized };
+module.exports = { cleanupTemporaryDirectories, deployStaging, runClasp, sanitized };
