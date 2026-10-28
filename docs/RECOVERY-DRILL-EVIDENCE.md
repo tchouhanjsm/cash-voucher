@@ -14,7 +14,7 @@
 
 The new `scripts/validate-release-gate-bundle.js` validates the same-SHA source workflow set, the sanitized staging configuration report, this recovery-drill contract and non-sensitive references for all live operational release gates. The full schema and invocation are in `docs/RELEASE-GATE-BUNDLE.md`.
 
-The bundle validator now recomputes SHA-256 for each operational record from `<evidenceRef>.evidence` files under a required private `--evidence-dir`; missing, changed, symlinked, unsafe or oversized files block the contract. This verifies bytes only and does not authenticate the witness.
+The bundle validator now recomputes SHA-256 for each operational record from `<evidenceRef>.evidence` files under a required private `--evidence-dir`; missing, changed, symlinked, unsafe or oversized files block the contract. This verifies bytes only and does not authenticate the witness. On POSIX, the directory must be mode `0700` or stricter and each record `0600` or stricter.
 
 The bundle should be created only after the intended `client-main` integration SHA has its own exact-head checks and authorized live steps have produced private evidence. It must not be generated from fixtures or from pre-merge PR checks as evidence for a later integration SHA. The command never makes live API calls or grants release approval. Recovery-drill evidence must be no older than seven days when included in a release bundle, and the staging configuration preflight must be no older than 24 hours. The application-level UAT/security/authorization/customer gates must also identify the same tested `client-main` SHA as the bundle.
 
