@@ -306,6 +306,19 @@ try {
   assert.deepEqual(directDigestCheck.errors, []);
   assert.equal(directDigestCheck.verifiedCount, 8);
 
+  const oversizedGate = passingBundle.operationalGates.liveRoleAuthorizationVerified;
+  const oversizedRecordPath = path.join(evidenceDirectory, oversizedGate.evidenceRef + '.evidence');
+  const heldOversizedRecord = fs.readFileSync(oversizedRecordPath);
+  fs.truncateSync(oversizedRecordPath, 10 * 1024 * 1024 + 1);
+  const oversizedCheck = verifyOperationalEvidenceDigests(
+    passingBundle,
+    resolveOperationalEvidenceDirectory(evidenceDirectory),
+  );
+  assert.ok(
+    oversizedCheck.errors.some((error) => error.code === 'OPERATIONAL_EVIDENCE_FILE_TOO_LARGE'),
+  );
+  fs.writeFileSync(oversizedRecordPath, heldOversizedRecord, { mode: 0o600 });
+
   const unsafeReferenceBundle = buildCurrentBundle();
   unsafeReferenceBundle.operationalGates.liveStagingUatPassed.evidenceRef = '../../escape';
   const unsafeReferenceCheck = verifyOperationalEvidenceDigests(
