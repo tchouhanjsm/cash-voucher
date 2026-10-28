@@ -1510,6 +1510,8 @@ with sync_playwright() as p:
     history_xss_payload = '<svg onload=window.__voucherHistoryXssFired=true></svg>'
     page.evaluate('window.__voucherHistoryXssFired = false')
 
+    history_requests = []
+
     def inject_hostile_voucher_history(route):
         try:
             request_data = json.loads(route.request.post_data or '{}')
@@ -1518,6 +1520,7 @@ with sync_playwright() as p:
         if request_data.get('action') != 'voucherHistory':
             route.continue_()
             return
+        history_requests.append(request_data.get('eventCategory'))
         response = route.fetch()
         payload = response.json()
         data = payload.get('data', {}) if payload.get('ok') else {}
@@ -1556,6 +1559,18 @@ with sync_playwright() as p:
     check(
         'amount:' in history_text.lower() and '10000' in history_text,
         'voucher history displays the payment amount change from its structured audit event',
+    )
+    history_filter = page.locator('#voucherHistoryEventCategory')
+    check(history_filter.count() == 1, 'voucher history exposes a lifecycle event filter')
+    history_filter.select_option('CREATED')
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"
+    )
+    check(
+        history_requests[-1] == 'CREATED'
+        and 'VOUCHER_CREATED' in page.locator('#modal').inner_text()
+        and 'Loaded 1 structured event(s) matching created' in page.locator('#modal').inner_text(),
+        'Register sends the selected lifecycle category to the server and refreshes the filtered history',
     )
     page.click('#modal [data-x]')
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")

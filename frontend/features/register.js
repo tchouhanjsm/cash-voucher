@@ -1103,6 +1103,28 @@ export function createRegister({ api, go }) {
     note.className = 'muted voucher-history-intro';
     note.textContent =
       'Structured events are matched by stable voucher ID. Some legacy audit entries lack a reliable ID and cannot be linked safely. This is an operational view, not a tamper-evident ledger.';
+    const filterLabel = document.createElement('label');
+    filterLabel.className = 'voucher-history-filter';
+    filterLabel.append('Event type ');
+    const filter = document.createElement('select');
+    filter.id = 'voucherHistoryEventCategory';
+    filter.setAttribute('aria-label', 'Filter voucher history by event type');
+    [
+      ['ALL', 'All events'],
+      ['CREATED', 'Created'],
+      ['UPDATED', 'Updated'],
+      ['CANCELLED', 'Cancelled'],
+      ['APPROVED', 'Payment approved'],
+      ['REJECTED', 'Payment rejected'],
+      ['RECEIPT_ATTACHED', 'Receipt attached'],
+      ['OTHER', 'Other structured events'],
+    ].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      filter.appendChild(option);
+    });
+    filterLabel.appendChild(filter);
     const status = document.createElement('p');
     status.className = 'muted voucher-history-status';
     status.setAttribute('role', 'status');
@@ -1115,14 +1137,16 @@ export function createRegister({ api, go }) {
     older.className = 'btn voucher-history-older';
     older.textContent = 'Load older events';
     older.hidden = true;
-    body.append(note, status, list, older);
+    body.append(note, filterLabel, status, list, older);
 
     let beforeRow = null;
     let loading = false;
+    let eventCategory = 'ALL';
     let loadedEventCount = 0;
     const isValidPage = (page) => {
       if (
         !isRecord(page) ||
+        page.eventCategory !== eventCategory ||
         !Array.isArray(page.rows) ||
         page.rows.length > 50 ||
         !Number.isSafeInteger(page.scannedRows) ||
@@ -1202,9 +1226,14 @@ export function createRegister({ api, go }) {
       if (loading) return;
       loading = true;
       older.disabled = true;
+      filter.disabled = true;
       older.textContent = 'Loading older events…';
       try {
-        const page = await api('voucherHistory', { id: voucher.id, beforeRow });
+        const page = await api('voucherHistory', {
+          id: voucher.id,
+          beforeRow,
+          eventCategory,
+        });
         if (!isValidPage(page)) {
           throw new Error('The server returned invalid voucher-history data.');
         }
@@ -1220,15 +1249,20 @@ export function createRegister({ api, go }) {
             page.auditHealth.status.replace(/_/g, ' ').toLowerCase() +
             '. This view cannot prove that every audit event was saved.';
         } else if (page.rows.length) {
+          const categoryLabel = filter.options[filter.selectedIndex]?.textContent || 'selected event type';
           status.textContent =
             'Loaded ' +
             loadedEventCount +
-            ' structured voucher event(s). This page scanned ' +
+            ' structured event(s) matching ' +
+            categoryLabel.toLowerCase() +
+            '. This page scanned ' +
             page.scannedRows +
             ' audit row(s).';
         } else if (beforeRow !== null && loadedEventCount === 0) {
           status.textContent =
-            'No structured events for this voucher were found in the ' +
+            'No matching ' +
+            (filter.options[filter.selectedIndex]?.textContent || 'selected event type').toLowerCase() +
+            ' events were found for this voucher in the ' +
             page.scannedRows +
             ' most recently scanned audit row(s). Load older events to continue.';
         } else if (beforeRow !== null) {
@@ -1249,11 +1283,22 @@ export function createRegister({ api, go }) {
       } finally {
         loading = false;
         older.disabled = false;
+        filter.disabled = false;
         older.textContent = 'Load older events';
         older.hidden = beforeRow === null;
       }
     };
 
+    filter.addEventListener('change', () => {
+      if (loading) return;
+      eventCategory = filter.value;
+      beforeRow = null;
+      loadedEventCount = 0;
+      list.replaceChildren();
+      status.className = 'muted voucher-history-status';
+      status.textContent = 'Loading voucher history…';
+      loadPage(false);
+    });
     older.addEventListener('click', () => loadPage(true));
     dialog('Voucher history for ' + voucherNo(voucher), body, null);
     loadPage(false);

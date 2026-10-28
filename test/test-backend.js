@@ -1741,11 +1741,49 @@ ok(
     historyPage.data.rows[0].eventType === 'VOUCHER_UPDATED' &&
     historyPage.data.rows[0].reason === 'Audit timeline regression' &&
     historyPage.data.rows[1].eventType === 'VOUCHER_CREATED' &&
+    historyPage.data.eventCategory === 'ALL' &&
     historyPage.data.rows[1].changes.some(
       (change) => change.field === 'amount' && change.before === 'Not set' && change.after === '47',
     ) &&
     historyPage.data.scannedRows <= 500,
   'voucher history returns newest structured events for the exact stable voucher ID in a bounded scan',
+);
+const updatedHistoryOnly = as(T, 'voucherHistory', {
+  id: historyVoucherId,
+  eventCategory: 'UPDATED',
+});
+const createdHistoryOnly = as(T, 'voucherHistory', {
+  id: historyVoucherId,
+  eventCategory: 'CREATED',
+});
+ok(
+  updatedHistoryOnly.ok &&
+    updatedHistoryOnly.data.eventCategory === 'UPDATED' &&
+    updatedHistoryOnly.data.rows.length === 1 &&
+    updatedHistoryOnly.data.rows[0].eventType === 'VOUCHER_UPDATED' &&
+    createdHistoryOnly.ok &&
+    createdHistoryOnly.data.rows.length === 1 &&
+    createdHistoryOnly.data.rows[0].eventType === 'VOUCHER_CREATED',
+  'voucher history filters lifecycle categories server-side without mixing events',
+);
+const cancelledHistory = as(T, 'voucherHistory', { id: id1, eventCategory: 'CANCELLED' });
+const approvedHistory = as(T, 'voucherHistory', {
+  id: managerOwnedHighVoucher.id,
+  eventCategory: 'APPROVED',
+});
+const receiptHistory = as(T, 'voucherHistory', { id: id2, eventCategory: 'RECEIPT_ATTACHED' });
+ok(
+  cancelledHistory.ok && cancelledHistory.data.rows.some((row) => row.eventType === 'VOUCHER_CANCELLED') &&
+    approvedHistory.ok &&
+    approvedHistory.data.rows.some((row) => row.eventType === 'PAYMENT_VOUCHER_APPROVED') &&
+    receiptHistory.ok &&
+    receiptHistory.data.rows.some((row) => row.eventType === 'VOUCHER_RECEIPT_ATTACHED'),
+  'voucher history finds cancellation, approval and receipt lifecycle events by stable voucher ID',
+);
+ok(
+  as(T, 'voucherHistory', { id: historyVoucherId, eventCategory: 'SCRIPT_TEXT' }).code ===
+    'VALIDATION',
+  'voucher history rejects unrecognized event category filters',
 );
 const unrelatedHistory = as(T, 'voucherHistory', { id: 'voucher-does-not-exist' });
 ok(

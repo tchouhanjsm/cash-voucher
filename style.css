@@ -3031,3 +3031,10 @@ nav .ic {
 .voucher-history-older {
   margin-top: 0.625rem;
 }
+.voucher-history-filter {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  margin: 0.5rem 0;
+  max-width: 100%;
+}

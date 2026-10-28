@@ -148,6 +148,37 @@ function voucherAuditValue_(value) {
   return '[complex value omitted]';
 }
 
+const VOUCHER_HISTORY_CATEGORIES_ = [
+  'ALL',
+  'CREATED',
+  'UPDATED',
+  'CANCELLED',
+  'APPROVED',
+  'REJECTED',
+  'RECEIPT_ATTACHED',
+  'OTHER',
+];
+
+function voucherAuditEventCategory_(eventType) {
+  switch (String(eventType || '')) {
+    case 'VOUCHER_CREATED':
+    case 'VOUCHER_BULK_CREATED':
+      return 'CREATED';
+    case 'VOUCHER_UPDATED':
+      return 'UPDATED';
+    case 'VOUCHER_CANCELLED':
+      return 'CANCELLED';
+    case 'PAYMENT_VOUCHER_APPROVED':
+      return 'APPROVED';
+    case 'PAYMENT_VOUCHER_REJECTED':
+      return 'REJECTED';
+    case 'VOUCHER_RECEIPT_ATTACHED':
+      return 'RECEIPT_ATTACHED';
+    default:
+      return 'OTHER';
+  }
+}
+
 // Owner-only, bounded, read-only history matched by the stable voucher ID.
 // Each call scans at most 500 AuditLog rows and returns at most 50 events.
 function voucherAuditHistory_(user, req) {
@@ -156,11 +187,26 @@ function voucherAuditHistory_(user, req) {
   if (!id || id.length > 100) {
     throw err_('A valid voucher ID is required.', 'VALIDATION');
   }
+  const eventCategory =
+    req.eventCategory === undefined
+      ? 'ALL'
+      : typeof req.eventCategory === 'string'
+        ? req.eventCategory.trim()
+        : '';
+  if (VOUCHER_HISTORY_CATEGORIES_.indexOf(eventCategory) < 0) {
+    throw err_('Choose a valid voucher-history event filter.', 'VALIDATION');
+  }
 
   const sheet = sheet_('AuditLog');
   const lastRow = sheet.getLastRow();
   if (lastRow < 2) {
-    return { rows: [], nextBeforeRow: null, scannedRows: 0, auditHealth: auditWriteHealth_() };
+    return {
+      rows: [],
+      nextBeforeRow: null,
+      scannedRows: 0,
+      eventCategory: eventCategory,
+      auditHealth: auditWriteHealth_(),
+    };
   }
 
   let beforeRow = lastRow + 1;
@@ -177,7 +223,13 @@ function voucherAuditHistory_(user, req) {
 
   const endRow = Math.min(lastRow, beforeRow - 1);
   if (endRow < 2) {
-    return { rows: [], nextBeforeRow: null, scannedRows: 0, auditHealth: auditWriteHealth_() };
+    return {
+      rows: [],
+      nextBeforeRow: null,
+      scannedRows: 0,
+      eventCategory: eventCategory,
+      auditHealth: auditWriteHealth_(),
+    };
   }
 
   const scanLimit = 500;
@@ -204,6 +256,12 @@ function voucherAuditHistory_(user, req) {
       details.version !== 1 ||
       details.entityType !== 'voucher' ||
       details.entityId !== id
+    ) {
+      continue;
+    }
+    if (
+      eventCategory !== 'ALL' &&
+      voucherAuditEventCategory_(details.eventType) !== eventCategory
     ) {
       continue;
     }
@@ -247,6 +305,7 @@ function voucherAuditHistory_(user, req) {
     rows: rows,
     nextBeforeRow: stoppedAtMatchLimit ? nextBeforeRow : startRow > 2 ? startRow : null,
     scannedRows: scannedRows,
+    eventCategory: eventCategory,
     auditHealth: auditWriteHealth_(),
   };
 }
