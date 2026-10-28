@@ -11,10 +11,10 @@ Keep the combined JSON in a private operator-controlled location. Do not commit 
 ## Validation command
 
 ```sh
-npm run validate:release-bundle -- /private/path/release-gate-bundle.json
+npm run validate:release-bundle -- /private/path/release-gate-bundle.json --report=/private/path/release-gate-validation.json
 ```
 
-The command reads a JSON file up to 5 MiB and exits nonzero on missing, failed, mismatched or unexpected evidence. It prints contract error codes and a minimal summary, not the evidence contents. Run `npm run validate:recovery-evidence -- /private/path/recovery-evidence.json` separately when preparing the recovery evidence source.
+The command reads a JSON file up to 5 MiB and exits nonzero on missing, failed, mismatched or unexpected evidence. With `--report=...`, it writes a sanitized validation report containing the outcome, source SHA and error codes only. Reports are mode `0600`; newly created output directories use mode `0700`. Both the input bundle and report must be outside the repository, the report may not overwrite the input, and symbolic-link output paths are rejected. The report is not the bundle and contains no resource fingerprints, run URLs, raw evidence or error messages. Run `npm run validate:recovery-evidence -- /private/path/recovery-evidence.json` separately when preparing the recovery evidence source.
 
 ## Required contract
 
