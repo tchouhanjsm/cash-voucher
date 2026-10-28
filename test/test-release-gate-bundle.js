@@ -323,7 +323,10 @@ try {
     { encoding: 'utf8' },
   );
   assert.equal(aliasedRepositoryOutput.status, 2);
-  assert.match(aliasedRepositoryOutput.stderr, /validation report must be stored outside the repository/);
+  assert.match(
+    aliasedRepositoryOutput.stderr,
+    /validation report must be stored outside the repository/,
+  );
   assert.equal(fs.existsSync(path.join(__dirname, '..', 'private-release-report.json')), false);
 
   const danglingReportTarget = path.join(__dirname, '..', 'dangling-release-report-test.json');
