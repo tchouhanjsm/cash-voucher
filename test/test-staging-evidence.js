@@ -156,8 +156,7 @@ try {
 
   const originalEvidenceBytes = fs.readFileSync(outputPath, 'utf8');
   assert.throws(
-    () =>
-      writeStagingEvidence({ ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: outputPath }, successfulLog),
+    () => writeStagingEvidence({ ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: outputPath }, successfulLog),
     /existing files are never overwritten/,
   );
   assert.equal(
