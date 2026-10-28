@@ -135,15 +135,60 @@ async function runProvenanceTests() {
   assert.equal(passing.verifiedCount, 4);
 
   const cases = [
-    [(run) => { run.repository.full_name = 'attacker/fork'; }, 'SOURCE_PROVENANCE_REPOSITORY_MISMATCH'],
-    [(run) => { run.path = '.github/workflows/release.yml'; }, 'SOURCE_PROVENANCE_WORKFLOW_MISMATCH'],
-    [(run) => { run.head_branch = 'main'; }, 'SOURCE_PROVENANCE_REF_MISMATCH'],
-    [(run) => { run.event = 'pull_request'; }, 'SOURCE_PROVENANCE_EVENT_MISMATCH'],
-    [(run) => { run.head_sha = 'b'.repeat(40); }, 'SOURCE_PROVENANCE_SHA_MISMATCH'],
-    [(run) => { run.conclusion = 'failure'; }, 'SOURCE_PROVENANCE_NOT_SUCCESSFUL'],
-    [(run) => { run.status = 'in_progress'; }, 'SOURCE_PROVENANCE_NOT_SUCCESSFUL'],
-    [(run) => { run.html_url = 'https://example.test/forged'; }, 'SOURCE_PROVENANCE_URL_MISMATCH'],
-    [(run) => { run.id = 99999; }, 'SOURCE_PROVENANCE_RUN_ID_MISMATCH'],
+    [
+      (run) => {
+        run.repository.full_name = 'attacker/fork';
+      },
+      'SOURCE_PROVENANCE_REPOSITORY_MISMATCH',
+    ],
+    [
+      (run) => {
+        run.path = '.github/workflows/release.yml';
+      },
+      'SOURCE_PROVENANCE_WORKFLOW_MISMATCH',
+    ],
+    [
+      (run) => {
+        run.head_branch = 'main';
+      },
+      'SOURCE_PROVENANCE_REF_MISMATCH',
+    ],
+    [
+      (run) => {
+        run.event = 'pull_request';
+      },
+      'SOURCE_PROVENANCE_EVENT_MISMATCH',
+    ],
+    [
+      (run) => {
+        run.head_sha = 'b'.repeat(40);
+      },
+      'SOURCE_PROVENANCE_SHA_MISMATCH',
+    ],
+    [
+      (run) => {
+        run.conclusion = 'failure';
+      },
+      'SOURCE_PROVENANCE_NOT_SUCCESSFUL',
+    ],
+    [
+      (run) => {
+        run.status = 'in_progress';
+      },
+      'SOURCE_PROVENANCE_NOT_SUCCESSFUL',
+    ],
+    [
+      (run) => {
+        run.html_url = 'https://example.test/forged';
+      },
+      'SOURCE_PROVENANCE_URL_MISMATCH',
+    ],
+    [
+      (run) => {
+        run.id = 99999;
+      },
+      'SOURCE_PROVENANCE_RUN_ID_MISMATCH',
+    ],
   ];
   for (const [mutate, expected] of cases) {
     const result = await verifySourceRunProvenance(bundle, async (runId) => {
@@ -153,17 +198,26 @@ async function runProvenanceTests() {
       return run;
     });
     assert.equal(result.ok, false);
-    assert.ok(result.errors.some((error) => error.code === expected), expected);
+    assert.ok(
+      result.errors.some((error) => error.code === expected),
+      expected,
+    );
   }
   const missing = await verifySourceRunProvenance(bundle, async () => null);
   assert.ok(missing.errors.some((error) => error.code === 'SOURCE_PROVENANCE_RUN_MISSING'));
-  const lookupFailure = await verifySourceRunProvenance(bundle, async () => { throw new Error('sensitive API detail'); });
+  const lookupFailure = await verifySourceRunProvenance(bundle, async () => {
+    throw new Error('sensitive API detail');
+  });
   assert.ok(lookupFailure.errors.some((error) => error.code === 'SOURCE_PROVENANCE_LOOKUP_FAILED'));
   assert.equal(JSON.stringify(lookupFailure).includes('sensitive API detail'), false);
   const malformed = buildBundle();
   malformed.sourceChecks.fullFlight.headSha = 'b'.repeat(40);
-  const shouldNotQuery = await verifySourceRunProvenance(malformed, async () => { throw new Error('must not query'); });
-  assert.ok(shouldNotQuery.errors.some((error) => error.code === 'SOURCE_PROVENANCE_STRUCTURE_BLOCKED'));
+  const shouldNotQuery = await verifySourceRunProvenance(malformed, async () => {
+    throw new Error('must not query');
+  });
+  assert.ok(
+    shouldNotQuery.errors.some((error) => error.code === 'SOURCE_PROVENANCE_STRUCTURE_BLOCKED'),
+  );
 }
 
 const valid = validateReleaseGateBundle(buildBundle(), validationTime);
@@ -682,9 +736,14 @@ try {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
 
-runProvenanceTests().then(() => {
-console.log(
-  'Release gate bundle contract OK — same-SHA source checks, staging preflight boundaries,',
-  'recovery evidence and all operational gate references are required.',
-);
-}).catch((error) => { console.error(error); process.exitCode = 1; });
+runProvenanceTests()
+  .then(() => {
+    console.log(
+      'Release gate bundle contract OK — same-SHA source checks, staging preflight boundaries,',
+      'recovery evidence and all operational gate references are required.',
+    );
+  })
+  .catch((error) => {
+    console.error(error);
+    process.exitCode = 1;
+  });

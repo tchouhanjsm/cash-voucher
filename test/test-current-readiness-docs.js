@@ -175,7 +175,9 @@ assert.ok(releaseGateBundleTest.includes('unsafeOperationalReference'));
 assert.ok(recoveryEvidenceFixture.includes('function buildRecoveryEvidence'));
 assert.ok(releaseGateBundleDocs.includes('--verify-github'));
 assert.ok(releaseGateBundleValidator.includes('verifySourceRunProvenance'));
-assert.ok(read('scripts/validate-release-gate-bundle-github.js').includes('Actions API lookup failed'));
+assert.ok(
+  read('scripts/validate-release-gate-bundle-github.js').includes('Actions API lookup failed'),
+);
 assert.ok(releaseGateBundleDocs.includes('--report=/private/path/release-gate-validation.json'));
 assert.ok(releaseGateBundleDocs.includes('must be outside the repository'));
 assert.ok(releaseGateBundleDocs.includes('existing report files are never overwritten'));

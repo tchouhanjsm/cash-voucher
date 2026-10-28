@@ -580,7 +580,7 @@ async function verifySourceRunProvenance(bundle, getRun) {
       errors.push({ code: 'SOURCE_PROVENANCE_RUN_MISSING', message: 'A required GitHub Actions run record was not found.' });
       continue;
     }
-    const workflowPath = typeof run.path === 'string' ? run.path.replace(/^\.github\/workflows\//, '') : '';
+    const workflowPath = typeof run.path === 'string' ? run.path.replace('.github/workflows/', '') : '';
     const actualRepository = isRecord(run.repository) && typeof run.repository.full_name === 'string' ? run.repository.full_name : '';
     if (String(run.id || '') !== String(evidence.runId)) errors.push({ code: 'SOURCE_PROVENANCE_RUN_ID_MISMATCH', message: 'GitHub returned a different run ID than the bundle references.' });
     if (actualRepository.toLowerCase() !== REPOSITORY.toLowerCase()) errors.push({ code: 'SOURCE_PROVENANCE_REPOSITORY_MISMATCH', message: 'A source run belongs to a different repository.' });
