@@ -153,7 +153,9 @@ function voucherAuditValue_(value) {
 function voucherAuditHistory_(user, req) {
   need_(user, 'audit');
   const id = typeof req.id === 'string' ? req.id.trim() : '';
-  if (!id || id.length > 100) throw err_('A valid voucher ID is required.', 'VALIDATION');
+  if (!id || id.length > 100) {
+    throw err_('A valid voucher ID is required.', 'VALIDATION');
+  }
 
   const sheet = sheet_('AuditLog');
   const lastRow = sheet.getLastRow();
@@ -164,7 +166,9 @@ function voucherAuditHistory_(user, req) {
   let beforeRow = lastRow + 1;
   if (req.beforeRow !== undefined && req.beforeRow !== null && req.beforeRow !== '') {
     const rawCursor = String(req.beforeRow);
-    if (!/^\d+$/.test(rawCursor)) throw err_('Invalid voucher-history page cursor.', 'VALIDATION');
+    if (!/^\d+$/.test(rawCursor)) {
+      throw err_('Invalid voucher-history page cursor.', 'VALIDATION');
+    }
     beforeRow = Number(rawCursor);
     if (!Number.isSafeInteger(beforeRow) || beforeRow < 2 || beforeRow > lastRow + 1) {
       throw err_('Invalid voucher-history page cursor.', 'VALIDATION');
@@ -175,6 +179,7 @@ function voucherAuditHistory_(user, req) {
   if (endRow < 2) {
     return { rows: [], nextBeforeRow: null, scannedRows: 0, auditHealth: auditWriteHealth_() };
   }
+
   const scanLimit = 500;
   const matchLimit = 50;
   const startRow = Math.max(2, endRow - scanLimit + 1);
@@ -199,7 +204,9 @@ function voucherAuditHistory_(user, req) {
       details.version !== 1 ||
       details.entityType !== 'voucher' ||
       details.entityId !== id
-    ) continue;
+    ) {
+      continue;
+    }
 
     const changes = Array.isArray(details.changes)
       ? details.changes
@@ -238,7 +245,11 @@ function voucherAuditHistory_(user, req) {
 
   return {
     rows: rows,
-    nextBeforeRow: stoppedAtMatchLimit ? nextBeforeRow : startRow > 2 ? startRow : null,
+    nextBeforeRow: stoppedAtMatchLimit
+      ? nextBeforeRow
+      : startRow > 2
+        ? startRow
+        : null,
     scannedRows: scannedRows,
     auditHealth: auditWriteHealth_(),
   };

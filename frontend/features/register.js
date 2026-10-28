@@ -1128,27 +1128,40 @@ export function createRegister({ api, go }) {
         !Number.isSafeInteger(page.scannedRows) ||
         page.scannedRows < 0 ||
         page.scannedRows > 500 ||
-        !(page.nextBeforeRow === null ||
-          (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2))
-      ) return false;
+        !(
+          page.nextBeforeRow === null ||
+          (Number.isSafeInteger(page.nextBeforeRow) && page.nextBeforeRow >= 2)
+        )
+      ) {
+        return false;
+      }
       if (
         page.auditHealth !== undefined &&
         (!isRecord(page.auditHealth) ||
-          !['NO_KNOWN_FAILURE', 'DEGRADED', 'MONITORING_UNAVAILABLE'].includes(page.auditHealth.status))
-      ) return false;
-      return page.rows.every((event) =>
-        isRecord(event) &&
-        ['time', 'user', 'action', 'target', 'eventId', 'eventType', 'summary', 'reason'].every(
-          (field) => typeof event[field] === 'string' && event[field].length <= 500,
-        ) &&
-        Array.isArray(event.changes) &&
-        event.changes.length <= 30 &&
-        event.changes.every((change) =>
-          isRecord(change) &&
-          typeof change.field === 'string' && change.field.length <= 100 &&
-          typeof change.before === 'string' && change.before.length <= 300 &&
-          typeof change.after === 'string' && change.after.length <= 300,
-        ),
+          !['NO_KNOWN_FAILURE', 'DEGRADED', 'MONITORING_UNAVAILABLE'].includes(
+            page.auditHealth.status,
+          ))
+      ) {
+        return false;
+      }
+      return page.rows.every(
+        (event) =>
+          isRecord(event) &&
+          ['time', 'user', 'action', 'target', 'eventId', 'eventType', 'summary', 'reason'].every(
+            (field) => typeof event[field] === 'string' && event[field].length <= 500,
+          ) &&
+          Array.isArray(event.changes) &&
+          event.changes.length <= 30 &&
+          event.changes.every(
+            (change) =>
+              isRecord(change) &&
+              typeof change.field === 'string' &&
+              change.field.length <= 100 &&
+              typeof change.before === 'string' &&
+              change.before.length <= 300 &&
+              typeof change.after === 'string' &&
+              change.after.length <= 300,
+          ),
       );
     };
 
@@ -1192,7 +1205,9 @@ export function createRegister({ api, go }) {
       older.textContent = 'Loading older events…';
       try {
         const page = await api('voucherHistory', { id: voucher.id, beforeRow });
-        if (!isValidPage(page)) throw new Error('The server returned invalid voucher-history data.');
+        if (!isValidPage(page)) {
+          throw new Error('The server returned invalid voucher-history data.');
+        }
         if (!append) list.replaceChildren();
         appendEvents(page.rows);
         beforeRow = page.nextBeforeRow;
@@ -1201,15 +1216,20 @@ export function createRegister({ api, go }) {
         if (page.auditHealth && page.auditHealth.status !== 'NO_KNOWN_FAILURE') {
           status.className = 'error voucher-history-status';
           status.textContent =
-            'Audit monitoring is ' + page.auditHealth.status.replace(/_/g, ' ').toLowerCase() +
+            'Audit monitoring is ' +
+            page.auditHealth.status.replace(/_/g, ' ').toLowerCase() +
             '. This view cannot prove that every audit event was saved.';
         } else if (page.rows.length) {
           status.textContent =
-            'Loaded ' + loadedEventCount + ' structured voucher event(s). This page scanned ' +
-            page.scannedRows + ' audit row(s).';
+            'Loaded ' +
+            loadedEventCount +
+            ' structured voucher event(s). This page scanned ' +
+            page.scannedRows +
+            ' audit row(s).';
         } else if (beforeRow !== null && loadedEventCount === 0) {
           status.textContent =
-            'No structured events for this voucher were found in the ' + page.scannedRows +
+            'No structured events for this voucher were found in the ' +
+            page.scannedRows +
             ' most recently scanned audit row(s). Load older events to continue.';
         } else if (beforeRow !== null) {
           status.textContent =
@@ -1222,9 +1242,10 @@ export function createRegister({ api, go }) {
         }
       } catch (error) {
         status.className = 'error voucher-history-status';
-        status.textContent = error && typeof error.message === 'string'
-          ? error.message.slice(0, 300)
-          : 'Voucher history could not be loaded. Check the connection and retry.';
+        status.textContent =
+          error && typeof error.message === 'string'
+            ? error.message.slice(0, 300)
+            : 'Voucher history could not be loaded. Check the connection and retry.';
       } finally {
         loading = false;
         older.disabled = false;

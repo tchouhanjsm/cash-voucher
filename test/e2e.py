@@ -1532,10 +1532,21 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_hostile_voucher_history)
     history_row.locator('[data-act=history]').click()
     page.wait_for_function(
-        "document.querySelector('#modal')?.innerText.includes('VOUCHER_CREATED')",
+        """() => {
+          const modal = document.querySelector('#modal');
+          if (!modal) return false;
+          const text = modal.innerText || '';
+          const status = modal.querySelector('.voucher-history-status')?.innerText || '';
+          return text.includes('VOUCHER_CREATED')
+            || (status && status !== 'Loading voucher history…');
+        }""",
         timeout=10000,
     )
     history_text = page.locator('#modal').inner_text()
+    check(
+        'VOUCHER_CREATED' in history_text,
+        'voucher history returns a structured creation event; modal was: ' + history_text[:240],
+    )
     check(
         history_xss_payload in history_text
         and page.locator('#modal svg[onload], #modal img[onerror]').count() == 0

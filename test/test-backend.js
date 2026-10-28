@@ -1723,7 +1723,10 @@ const historyFixture = as(T, 'createVouchers', {
     },
   ],
 });
-ok(historyFixture.ok && historyFixture.data.created.length === 1, 'voucher history fixture is created');
+ok(
+  historyFixture.ok && historyFixture.data.created.length === 1,
+  'voucher history fixture is created',
+);
 const historyVoucherId = historyFixture.data.created[0].id;
 const historyFixtureUpdate = as(T, 'updateVoucher', {
   id: historyVoucherId,
@@ -1752,7 +1755,8 @@ ok(
 );
 ok(
   as(T, 'voucherHistory', { id: '' }).code === 'VALIDATION' &&
-    as(T, 'voucherHistory', { id: historyVoucherId, beforeRow: 'not-a-cursor' }).code === 'VALIDATION' &&
+    as(T, 'voucherHistory', { id: historyVoucherId, beforeRow: 'not-a-cursor' }).code ===
+      'VALIDATION' &&
     as(T, 'voucherHistory', {
       id: historyVoucherId,
       beforeRow: String(g.sheets.AuditLog.rows.length + 5),
