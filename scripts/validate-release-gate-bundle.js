@@ -1,5 +1,6 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 const { validateRecoveryEvidence } = require('./validate-recovery-evidence');
@@ -36,7 +37,8 @@ const REQUIRED_OPERATIONAL_GATES = [
   'accessibilityVerified',
   'customerAcceptanceApproved',
 ];
-const SAFE_EVIDENCE_REFERENCE = /^[A-Z][A-Z0-9]{1,11}-[A-Z0-9][A-Z0-9._/-]{1,70}$/;
+const SAFE_EVIDENCE_REFERENCE = /^[A-Z][A-Z0-9]{1,11}-[A-Z0-9][A-Z0-9._-]{1,70}$/;
+const MAX_OPERATIONAL_EVIDENCE_FILE_BYTES = 10 * 1024 * 1024;
 const MAX_STAGING_PREFLIGHT_AGE_MS = 24 * 60 * 60 * 1000;
 const MAX_RELEASE_BUNDLE_AGE_MS = 24 * 60 * 60 * 1000;
 const MAX_RELEASE_BUNDLE_FUTURE_SKEW_MS = 5 * 60 * 1000;
@@ -620,6 +622,114 @@ function isInsideRepository(candidatePath) {
   );
 }
 
+function resolveOperationalEvidenceDirectory(candidatePath) {
+  const resolvedPath = path.resolve(candidatePath);
+  const linkStats = fs.lstatSync(resolvedPath);
+  if (linkStats.isSymbolicLink() || !linkStats.isDirectory()) {
+    throw new Error('EVIDENCE_DIR_UNSAFE');
+  }
+  const canonicalPath = fs.realpathSync(resolvedPath);
+  if (isInsideRepository(canonicalPath)) {
+    throw new Error('EVIDENCE_DIR_INSIDE_REPOSITORY');
+  }
+  return canonicalPath;
+}
+
+function verifyOperationalEvidenceDigests(bundle, evidenceDirectory) {
+  const errors = [];
+  let verifiedCount = 0;
+  if (!isRecord(bundle) || !isRecord(bundle.operationalGates)) {
+    return {
+      verifiedCount,
+      errors: [{ code: 'OPERATIONAL_EVIDENCE_UNAVAILABLE', message: 'Operational evidence records are unavailable.' }],
+    };
+  }
+
+  REQUIRED_OPERATIONAL_GATES.forEach((name) => {
+    const gate = bundle.operationalGates[name];
+    if (!isRecord(gate) || typeof gate.evidenceRef !== 'string') {
+      errors.push({
+        code: 'OPERATIONAL_EVIDENCE_REF_UNAVAILABLE',
+        message: 'An operational evidence reference is unavailable.',
+      });
+      return;
+    }
+    if (!SAFE_EVIDENCE_REFERENCE.test(gate.evidenceRef)) {
+      errors.push({
+        code: 'OPERATIONAL_EVIDENCE_REF_UNSAFE',
+        message: 'Operational evidence references must be safe file identifiers.',
+      });
+      return;
+    }
+    if (typeof gate.evidenceSha256 !== 'string' || !SHA256.test(gate.evidenceSha256)) {
+      errors.push({
+        code: 'OPERATIONAL_EVIDENCE_DIGEST',
+        message: 'Operational evidence requires a full SHA-256 digest.',
+      });
+      return;
+    }
+
+    const evidencePath = path.join(evidenceDirectory, gate.evidenceRef + '.evidence');
+    let descriptor;
+    try {
+      const linkStats = fs.lstatSync(evidencePath);
+      if (linkStats.isSymbolicLink() || !linkStats.isFile()) {
+        errors.push({
+          code: 'OPERATIONAL_EVIDENCE_FILE_UNSAFE',
+          message: 'An operational evidence record is not a regular non-symlink file.',
+        });
+        return;
+      }
+
+      const noFollow = fs.constants.O_NOFOLLOW || 0;
+      descriptor = fs.openSync(evidencePath, fs.constants.O_RDONLY | noFollow);
+      const fileStats = fs.fstatSync(descriptor);
+      if (!fileStats.isFile()) {
+        errors.push({
+          code: 'OPERATIONAL_EVIDENCE_FILE_UNSAFE',
+          message: 'An operational evidence record is not a regular file.',
+        });
+        return;
+      }
+      if (fileStats.size > MAX_OPERATIONAL_EVIDENCE_FILE_BYTES) {
+        errors.push({
+          code: 'OPERATIONAL_EVIDENCE_FILE_TOO_LARGE',
+          message: 'An operational evidence record exceeds the 10 MiB limit.',
+        });
+        return;
+      }
+      const bytes = fs.readFileSync(descriptor);
+      const actualDigest = crypto.createHash('sha256').update(bytes).digest('hex');
+      if (actualDigest.toLowerCase() !== gate.evidenceSha256.toLowerCase()) {
+        errors.push({
+          code: 'OPERATIONAL_EVIDENCE_HASH_MISMATCH',
+          message: 'An operational evidence record does not match its declared SHA-256 digest.',
+        });
+        return;
+      }
+      verifiedCount += 1;
+    } catch (error) {
+      errors.push({
+        code:
+          error && error.code === 'ENOENT'
+            ? 'OPERATIONAL_EVIDENCE_FILE_MISSING'
+            : 'OPERATIONAL_EVIDENCE_FILE_UNREADABLE',
+        message: 'An operational evidence record is missing or cannot be safely read.',
+      });
+    } finally {
+      if (descriptor !== undefined) {
+        try {
+          fs.closeSync(descriptor);
+        } catch {
+          // Preserve the original validation result if descriptor cleanup fails.
+        }
+      }
+    }
+  });
+
+  return { verifiedCount, errors };
+}
+
 function writeSanitizedValidationReport(reportPath, result, bundle) {
   if (!reportPath) return null;
   const resolvedReport = path.resolve(reportPath);
@@ -648,12 +758,21 @@ function main() {
   const inputPath = String(args.find((arg) => !arg.startsWith('--')) || '').trim();
   const reportArgument = args.find((arg) => arg.startsWith('--report='));
   const reportPath = reportArgument ? reportArgument.slice('--report='.length).trim() : '';
+  const evidenceDirectoryArgument = args.find((arg) => arg.startsWith('--evidence-dir='));
+  const evidenceDirectoryPath = evidenceDirectoryArgument
+    ? evidenceDirectoryArgument.slice('--evidence-dir='.length).trim()
+    : '';
 
   if (!inputPath || args.some((arg) => arg.startsWith('--') && !arg.startsWith('--report='))) {
     console.error(
-      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json',
+      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json --evidence-dir=/private/path/evidence',
     );
     console.error('Optional private report: --report=/private/path/validation-report.json');
+    process.exitCode = 2;
+    return;
+  }
+  if (evidenceDirectoryArgument && !evidenceDirectoryPath) {
+    console.error('RELEASE GATE BUNDLE FAILED: operational evidence directory path is empty.');
     process.exitCode = 2;
     return;
   }
@@ -673,6 +792,21 @@ function main() {
     console.error(
       'RELEASE GATE BUNDLE FAILED: input bundle must be stored outside the repository.',
     );
+    process.exitCode = 2;
+    return;
+  }
+  let evidenceDirectory;
+  try {
+    evidenceDirectory = resolveOperationalEvidenceDirectory(evidenceDirectoryPath);
+  } catch {
+    console.error(
+      'RELEASE GATE BUNDLE FAILED: operational evidence directory must be an existing non-symlink directory outside the repository.',
+    );
+    process.exitCode = 2;
+    return;
+  }
+  if (path.resolve(evidenceDirectoryPath) === path.resolve(inputPath)) {
+    console.error('RELEASE GATE BUNDLE FAILED: evidence directory must not be the input bundle.');
     process.exitCode = 2;
     return;
   }
@@ -713,6 +847,16 @@ function main() {
   }
 
   const result = validateReleaseGateBundle(bundle);
+  if (result.ok) {
+    const evidenceVerification = verifyOperationalEvidenceDigests(bundle, evidenceDirectory);
+    result.errors.push(...evidenceVerification.errors);
+    result.ok = result.errors.length === 0;
+    if (result.ok) {
+      result.summary.operationalEvidenceDigestsVerified = evidenceVerification.verifiedCount;
+    } else {
+      result.summary = undefined;
+    }
+  }
   if (reportPath && fs.existsSync(reportPath)) {
     try {
       const existingReport = fs.lstatSync(reportPath);
@@ -755,7 +899,9 @@ function main() {
       result.summary.requiredSourceChecks +
       ' source checks, staging configuration, recovery evidence and ' +
       result.summary.operationalGatesPassed +
-      ' live operational gate references were internally consistent.',
+      ' live operational gate references and ' +
+      result.summary.operationalEvidenceDigestsVerified +
+      ' retained evidence digests were verified.',
   );
   console.log(
     'Structure/consistency only: evidence is not authenticated and live checks are not executed.',
@@ -770,6 +916,8 @@ module.exports = {
   REQUIRED_SOURCE_CHECKS,
   SOURCE_CHECK_WORKFLOW_NAMES,
   buildSanitizedValidationReport,
+  resolveOperationalEvidenceDirectory,
+  verifyOperationalEvidenceDigests,
   isInsideRepository,
   validateReleaseGateBundle,
   writeSanitizedValidationReport,
