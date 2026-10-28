@@ -46,7 +46,7 @@ const currentIntegrationSha = '80b83af4bd722557b8889e8082c6e49029bdc311';
 assert.ok(handoff.includes(currentIntegrationSha));
 assert.match(
   handoff,
-  /^\\*\\*Current integration baseline:\\*\\* `80b83af4bd722557b8889e8082c6e49029bdc311`/m,
+  /^\*\*Current integration baseline:\*\* `80b83af4bd722557b8889e8082c6e49029bdc311`/m,
 );
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
