@@ -361,17 +361,14 @@ assert.equal(
 );
 
 const removedDirectories = new Set(['/tmp/workspace', '/tmp/credential-home']);
-const successfulCleanup = cleanupTemporaryDirectories(
-  [...removedDirectories],
-  {
-    rmSync(directory) {
-      removedDirectories.delete(directory);
-    },
-    existsSync(directory) {
-      return removedDirectories.has(directory);
-    },
+const successfulCleanup = cleanupTemporaryDirectories([...removedDirectories], {
+  rmSync(directory) {
+    removedDirectories.delete(directory);
   },
-);
+  existsSync(directory) {
+    return removedDirectories.has(directory);
+  },
+});
 assert.equal(successfulCleanup, true);
 assert.equal(removedDirectories.size, 0);
 
