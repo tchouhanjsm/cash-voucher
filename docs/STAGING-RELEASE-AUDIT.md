@@ -1,6 +1,6 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 28 October 2026 (release gate bundle validation phase)
+**Audit date:** 28 October 2026 (private evidence digest verification phase)
 **Current integration baseline:** `client-main` `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; operational release remains blocked).
 **Current source batch:** `client/release-integrity-dependency-hardening-20261027`; consolidate exact-SHA source checks, sanitized staging preflight, recovery evidence and operational gate references into one fail-closed contract.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
@@ -15,6 +15,7 @@
 - The staging preflight report must be a configuration pass for the same repository/ref/SHA, with all required categories passing, no blockers, and no assertion of live connectivity, identity verification, deployment or restore.
 - Recovery-drill evidence is passed through the existing recovery contract and must reference the same SHA. The bundle also requires non-sensitive evidence references for branch protection, live UAT, actual security headers, live role/receipt authorization, offline/reconnect, print/PDF, accessibility and customer acceptance.
 - A passing bundle means internal consistency only. It does not authenticate evidence or approve release; the CLI summary always says human review is required.
+- **Private evidence digest verification:** `--evidence-dir` is required; each `<evidenceRef>.evidence` file is hashed from disk and compared with its declared SHA-256. Missing, tampered, unsafe, symlinked and oversized files fail the contract. Evidence authenticity remains a human review responsibility.
 - No actual release bundle, live staging operation, restore, deployment or customer acceptance has been performed by this source phase.
 
 ## Historical checkpoint — 27 October 2026 22:11 IST (superseded by release-gate bundle phase)
