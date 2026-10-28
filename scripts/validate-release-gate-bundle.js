@@ -574,6 +574,7 @@ function buildSanitizedValidationReport(result, bundle, generatedAt = new Date()
           stagingConfigurationPass: result.summary.stagingConfigurationPass,
           recoveryEvidenceContractPass: result.summary.recoveryEvidenceContractPass,
           operationalGatesPassed: result.summary.operationalGatesPassed,
+          operationalEvidenceDigestsVerified: result.summary.operationalEvidenceDigestsVerified,
           releaseApproval: 'human-review-required',
         }
       : {
@@ -768,6 +769,7 @@ function main() {
       'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json --evidence-dir=/private/path/evidence',
     );
     console.error('Optional private report: --report=/private/path/validation-report.json');
+    console.error('Each evidenceRef requires a matching <evidenceRef>.evidence file in --evidence-dir.');
     process.exitCode = 2;
     return;
   }
