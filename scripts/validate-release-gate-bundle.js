@@ -415,17 +415,20 @@ function resolvePathForSafety(candidatePath) {
   const suffix = [];
 
   while (true) {
+    let stats;
     try {
-      const stats = fs.lstatSync(cursor);
-      const resolved = stats.isSymbolicLink() ? fs.realpathSync(cursor) : fs.realpathSync(cursor);
-      return path.join(resolved, ...suffix);
+      stats = fs.lstatSync(cursor);
     } catch (error) {
       if (error.code !== 'ENOENT') throw error;
       suffix.unshift(path.basename(cursor));
       const parent = path.dirname(cursor);
       if (parent === cursor) throw error;
       cursor = parent;
+      continue;
     }
+
+    const resolved = fs.realpathSync(cursor);
+    return path.join(resolved, ...suffix);
   }
 }
 
