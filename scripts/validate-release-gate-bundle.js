@@ -764,7 +764,16 @@ function main() {
     ? evidenceDirectoryArgument.slice('--evidence-dir='.length).trim()
     : '';
 
-  if (!inputPath || args.some((arg) => arg.startsWith('--') && !arg.startsWith('--report='))) {
+  if (
+    !inputPath ||
+    !evidenceDirectoryArgument ||
+    args.some(
+      (arg) =>
+        arg.startsWith('--') &&
+        !arg.startsWith('--report=') &&
+        !arg.startsWith('--evidence-dir='),
+    )
+  ) {
     console.error(
       'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json --evidence-dir=/private/path/evidence',
     );
