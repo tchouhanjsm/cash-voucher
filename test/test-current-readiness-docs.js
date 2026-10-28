@@ -81,6 +81,13 @@ assert.ok(stagingWebServer.includes("{ mode: 'artifact', root }"));
 assert.doesNotMatch(stagingWebServer, /mode: 'uat'/);
 assert.ok(stagingWorkflow.includes('steps.staging_uat.outputs.uat_log_file'));
 assert.ok(stagingWorkflow.includes('steps.staging_uat.outputs.uat_log_dir'));
+assert.ok(stagingWorkflow.includes('dir_mode="$(stat -c'));
+assert.ok(stagingWorkflow.includes('server_mode="$(stat -c'));
+assert.ok(stagingWorkflow.includes('UAT log directory or files failed privacy checks'));
+assert.ok(stagingUatRunner.includes('cash-voucher-staging-uat.XXXXXX'));
+assert.ok(stagingUatRunner.includes('chmod 700 "${UAT_LOG_DIR}"'));
+assert.ok(stagingEvidenceWriter.includes('staging UAT transcript directory permissions are too broad'));
+
 assert.ok(stagingEvidenceWriter.includes('must be outside the repository'));
 assert.ok(stagingEvidenceWriter.includes('function readTranscript(env)'));
 assert.ok(stagingEvidenceWriter.includes('dedicated per-run directory'));
