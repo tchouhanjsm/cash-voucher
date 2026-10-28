@@ -295,6 +295,38 @@ try {
   assert.equal(symlinkReportRun.status, 2);
   assert.match(symlinkReportRun.stderr, /report output path is unsafe/);
   assert.equal(fs.readFileSync(symlinkTarget, 'utf8'), 'leave this file unchanged');
+
+  const repositoryAlias = path.join(tempDir, 'repository-alias');
+  fs.symlinkSync(path.join(__dirname, '..'), repositoryAlias, 'dir');
+  const aliasedReportPath = path.join(repositoryAlias, 'private-release-report.json');
+  const aliasedRepositoryOutput = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--report=' + aliasedReportPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(aliasedRepositoryOutput.status, 2);
+  assert.match(aliasedRepositoryOutput.stderr, /validation report must be stored outside the repository/);
+  assert.equal(fs.existsSync(path.join(__dirname, '..', 'private-release-report.json')), false);
+
+  const danglingReportTarget = path.join(__dirname, '..', 'dangling-release-report-test.json');
+  const danglingReport = path.join(tempDir, 'dangling-report.json');
+  fs.symlinkSync(danglingReportTarget, danglingReport);
+  const danglingReportRun = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--report=' + danglingReport,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(danglingReportRun.status, 1);
+  assert.match(danglingReportRun.stderr, /sanitized validation report could not be written/);
+  assert.equal(fs.existsSync(danglingReportTarget), false);
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
