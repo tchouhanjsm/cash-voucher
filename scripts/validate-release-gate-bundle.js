@@ -136,11 +136,7 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
       );
     }
     if (check.ref !== SOURCE_REF) {
-      add(
-        errors,
-        'SOURCE_CHECK_REF',
-        'Release source checks must target refs/heads/client-main.',
-      );
+      add(errors, 'SOURCE_CHECK_REF', 'Release source checks must target refs/heads/client-main.');
     }
     if (typeof check.headSha !== 'string' || !SHA1.test(check.headSha)) {
       add(errors, 'SOURCE_CHECK_SHA', 'Every source check must include a full commit SHA.');
