@@ -42,7 +42,7 @@ assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
 const currentIntegrationSha = 'a7421807b9bc2c56618ac1889c43f48ecfb79c81';
 assert.ok(handoff.includes(currentIntegrationSha));
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
-assert.ok(handoff.includes('release-gate bundle validator'));
+assert.ok(handoff.includes('Source check records now bind expected workflow identity'));
 assert.ok(staging.includes('Current release-gate bundle phase — 28 October 2026'));
 assert.ok(executionPlan.includes('Current release-gate bundle phase — 28 October 2026'));
 assert.ok(recoveryEvidence.includes('Consolidated release gate bundle — 28 October 2026'));
