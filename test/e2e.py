@@ -1403,19 +1403,22 @@ with sync_playwright() as p:
         and page.locator('[data-v=dash]').get_attribute('aria-current') is None,
         'active route state stays synchronized across primary and More navigation',
     )
-    for name, email, role, password in [
+    for index, (name, email, role, password) in enumerate([
         ('Mona', 'm@test.com', 'manager', 'Manager#Start2026'),
         ('Sam', 's@test.com', 'staff', 'Staff#Start2026'),
         ('Nina Accountant', 'accountant@test.com', 'accountant', 'Account#Start2026'),
         ('Approval Manager', 'approval-manager@test.com', 'manager', 'Lock#Start2026'),
-    ]:
+    ]):
         page.fill('#un', name)
         page.fill('#ue', email)
         page.select_option('#ur', role)
         page.fill('#up', password)
         page.click('#uf .primary')
-        page.wait_for_timeout(300)
-    check(page.locator('tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
+        page.wait_for_function(
+            "(expected) => document.querySelectorAll('#view tbody tr').length === expected",
+            arg=index + 2,
+        )
+    check(page.locator('#view tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
     go_view(page, 'new')
