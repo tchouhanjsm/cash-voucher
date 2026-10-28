@@ -355,10 +355,10 @@ assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
 assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
 
-assert.ok(staging.includes('source-run provenance verification phase'));
+assert.ok(staging.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.match(staging, /remote connectivity.*restore were not verified/i);
 assert.ok(executionPlan.includes('Source-run provenance verification batch'));
-assert.ok(handoff.includes('source-run provenance verification phase'));
+assert.ok(handoff.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(staging, /Workflow isolation.*only from `client-main`/i);
 assert.match(executionPlan, /Secrets are scoped to the one validation step/i);
