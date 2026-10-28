@@ -119,6 +119,16 @@ const malformedPreflightUrl = buildBundle();
 malformedPreflightUrl.stagingPreflight.workflowRun.url = 'https://example.test/fake-run';
 assert.ok(hasCode(malformedPreflightUrl, 'PREFLIGHT_RUN_URL'));
 
+const duplicatePreflightRun = buildBundle();
+duplicatePreflightRun.stagingPreflight.workflowRun.runId =
+  duplicatePreflightRun.sourceChecks.ciQuality.runId;
+duplicatePreflightRun.stagingPreflight.workflowRun.url =
+  'https://github.com/' +
+  repository +
+  '/actions/runs/' +
+  duplicatePreflightRun.stagingPreflight.workflowRun.runId;
+assert.ok(hasCode(duplicatePreflightRun, 'PREFLIGHT_RUN_ID_DUPLICATE'));
+
 const recoveryWrongSha = buildBundle();
 recoveryWrongSha.recoveryEvidence.source.clientMainSha = 'b'.repeat(40);
 recoveryWrongSha.recoveryEvidence.restore.deployedClientMainSha = 'b'.repeat(40);
