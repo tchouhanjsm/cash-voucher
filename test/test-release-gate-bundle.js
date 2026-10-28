@@ -285,10 +285,7 @@ try {
   fs.symlinkSync(inputPath, inputSymlink);
   const symlinkInputRun = spawnSync(
     process.execPath,
-    [
-      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
-      inputSymlink,
-    ],
+    [path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'), inputSymlink],
     { encoding: 'utf8' },
   );
   assert.equal(symlinkInputRun.status, 2);
