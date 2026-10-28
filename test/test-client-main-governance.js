@@ -23,6 +23,7 @@ function classicProtection() {
       required_approving_review_count: 1,
       dismiss_stale_reviews: true,
     },
+    required_conversation_resolution: { enabled: true },
     enforce_admins: { enabled: true },
     allow_force_pushes: { enabled: false },
     allow_deletions: { enabled: false },
@@ -146,6 +147,13 @@ async function main() {
   missingReview.integrationProtection.required_pull_request_reviews.required_approving_review_count = 0;
   missingReview.rulesets = [legacyFreezeRuleSet()];
   assert.ok(errorCodes(missingReview).includes('CLIENT_MAIN_CLASSIC_REVIEW_POLICY_MISSING'));
+
+  const missingThreadResolution = goodSnapshot();
+  delete missingThreadResolution.integrationProtection.required_conversation_resolution;
+  missingThreadResolution.rulesets = [legacyFreezeRuleSet()];
+  assert.ok(
+    errorCodes(missingThreadResolution).includes('CLIENT_MAIN_CLASSIC_THREAD_RESOLUTION_MISSING'),
+  );
 
   const missingCheck = goodSnapshot();
   missingCheck.integrationProtection.required_status_checks.contexts = ['quality'];

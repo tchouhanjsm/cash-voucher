@@ -141,6 +141,14 @@ function classicIntegrationPolicy(protection) {
       'Stale approvals must be dismissed after a new push.',
     );
   }
+  const conversationResolution = protection.required_conversation_resolution;
+  if (!isRecord(conversationResolution) || conversationResolution.enabled !== true) {
+    addError(
+      errors,
+      'CLIENT_MAIN_CLASSIC_THREAD_RESOLUTION_MISSING',
+      'Classic protection must require resolution of all review conversations.',
+    );
+  }
   if (!isRecord(protection.enforce_admins) || protection.enforce_admins.enabled !== true) {
     addError(
       errors,
