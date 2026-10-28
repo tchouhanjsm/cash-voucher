@@ -112,7 +112,6 @@ function hasCode(bundle, code) {
   );
 }
 
-
 async function runProvenanceTests() {
   const bundle = buildBundle();
   const fakeRun = (key, evidence) => ({

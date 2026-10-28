@@ -59,7 +59,9 @@ async function main() {
       throw new Error('unsafe bundle');
     }
     bundle = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
-    evidenceDirectory = resolveOperationalEvidenceDirectory(evidenceArgument.slice('--evidence-dir='.length));
+    evidenceDirectory = resolveOperationalEvidenceDirectory(
+      evidenceArgument.slice('--evidence-dir='.length),
+    );
   } catch {
     console.error(
       'RELEASE GATE BUNDLE FAILED: bundle or evidence directory is unsafe or unreadable.',

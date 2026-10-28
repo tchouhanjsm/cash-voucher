@@ -561,11 +561,29 @@ const SOURCE_WORKFLOW_FILES = Object.freeze({
 async function verifySourceRunProvenance(bundle, getRun) {
   const errors = [];
   if (typeof getRun !== 'function') {
-    return { ok: false, verifiedCount: 0, errors: [{ code: 'SOURCE_PROVENANCE_CLIENT_REQUIRED', message: 'A read-only GitHub Actions run reader is required.' }] };
+    return {
+      ok: false,
+      verifiedCount: 0,
+      errors: [
+        {
+          code: 'SOURCE_PROVENANCE_CLIENT_REQUIRED',
+          message: 'A read-only GitHub Actions run reader is required.',
+        },
+      ],
+    };
   }
   const structural = validateReleaseGateBundle(bundle);
   if (!structural.ok) {
-    return { ok: false, verifiedCount: 0, errors: [{ code: 'SOURCE_PROVENANCE_STRUCTURE_BLOCKED', message: 'Fix bundle contract errors before querying source run provenance.' }] };
+    return {
+      ok: false,
+      verifiedCount: 0,
+      errors: [
+        {
+          code: 'SOURCE_PROVENANCE_STRUCTURE_BLOCKED',
+          message: 'Fix bundle contract errors before querying source run provenance.',
+        },
+      ],
+    };
   }
   for (const key of REQUIRED_SOURCE_CHECKS) {
     const evidence = bundle.sourceChecks[key];
@@ -575,7 +593,8 @@ async function verifySourceRunProvenance(bundle, getRun) {
     } catch {
       errors.push({
         code: 'SOURCE_PROVENANCE_LOOKUP_FAILED',
-        message: 'A required GitHub Actions run could not be retrieved; verify connectivity, permissions and run ID.',
+        message:
+          'A required GitHub Actions run could not be retrieved; verify connectivity, permissions and run ID',
       });
       continue;
     }
@@ -586,8 +605,12 @@ async function verifySourceRunProvenance(bundle, getRun) {
       });
       continue;
     }
-    const workflowPath = typeof run.path === 'string' ? run.path.replace('.github/workflows/', '') : '';
-    const actualRepository = isRecord(run.repository) && typeof run.repository.full_name === 'string' ? run.repository.full_name : '';
+    const workflowPath =
+      typeof run.path === 'string' ? run.path.replace('.github/workflows/', '') : '';
+    const actualRepository =
+      isRecord(run.repository) && typeof run.repository.full_name === 'string'
+        ? run.repository.full_name
+        : '';
     if (String(run.id || '') !== String(evidence.runId)) {
       errors.push({
         code: 'SOURCE_PROVENANCE_RUN_ID_MISMATCH',
@@ -618,7 +641,9 @@ async function verifySourceRunProvenance(bundle, getRun) {
         message: 'A source run was not triggered by a push event.',
       });
     }
-    if (String(run.head_sha || '').toLowerCase() !== String(bundle.source.commitSha).toLowerCase()) {
+    if (
+      String(run.head_sha || '').toLowerCase() !== String(bundle.source.commitSha).toLowerCase()
+    ) {
       errors.push({
         code: 'SOURCE_PROVENANCE_SHA_MISMATCH',
         message: 'A source run does not match the release bundle SHA.',
