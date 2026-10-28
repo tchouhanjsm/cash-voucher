@@ -185,7 +185,7 @@ assert.ok(releaseGateBundleDocs.includes('each evidence record `0600` or stricte
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_HASH_MISMATCH'));
 assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_FILE_UNSAFE'));
 assert.ok(releaseGateBundleTest.includes('missingEvidenceDirectoryRun'));
-assert.ok(handoff.includes('Operational evidence fingerprints'));
+assert.ok(handoff.includes('Operational evidence binding'));
 
 assert.ok(releaseGateBundleTest.includes('wrongSourceRunUrl'));
 assert.ok(releaseGateBundleDocs.includes('integration-branch checks'));
