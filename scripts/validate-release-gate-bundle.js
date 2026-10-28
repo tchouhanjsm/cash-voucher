@@ -5,6 +5,7 @@ const path = require('node:path');
 const { validateRecoveryEvidence } = require('./validate-recovery-evidence');
 
 const SHA1 = /^[a-f0-9]{40}$/i;
+const SHA256 = /^[a-f0-9]{64}$/i;
 const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const REPOSITORY = 'tchouhanjsm/cash-voucher';
 const SOURCE_REF = 'refs/heads/client-main';
@@ -312,8 +313,8 @@ function validateOperationalGates(gates, generatedAt, commitSha, errors) {
   REQUIRED_OPERATIONAL_GATES.forEach((name) => {
     const requiresClientSha = OPERATIONAL_GATES_REQUIRE_CLIENT_SHA.includes(name);
     const allowedKeys = requiresClientSha
-      ? ['status', 'evidenceRef', 'verifiedAt', 'testedClientMainSha']
-      : ['status', 'evidenceRef', 'verifiedAt'];
+      ? ['status', 'evidenceRef', 'evidenceSha256', 'verifiedAt', 'testedClientMainSha']
+      : ['status', 'evidenceRef', 'evidenceSha256', 'verifiedAt'];
     const gate = gates[name];
     exactKeys(gate, allowedKeys, 'operationalGates.' + name, errors);
     if (!isRecord(gate)) return;
@@ -330,6 +331,14 @@ function validateOperationalGates(gates, generatedAt, commitSha, errors) {
         errors,
         'OPERATIONAL_EVIDENCE_REFERENCE',
         'Each live operational gate requires a non-sensitive ticket/change reference.',
+      );
+    }
+
+    if (typeof gate.evidenceSha256 !== 'string' || !SHA256.test(gate.evidenceSha256)) {
+      add(
+        errors,
+        'OPERATIONAL_EVIDENCE_DIGEST',
+        'Each live operational gate requires a full SHA-256 digest of its retained evidence record.',
       );
     }
 
