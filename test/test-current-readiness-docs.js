@@ -90,7 +90,9 @@ assert.ok(stagingEvidenceTests.includes('oversizedTranscript'));
 assert.ok(stagingEvidenceTests.includes('transcriptLink'));
 assert.ok(staging.includes('UAT transcript isolation'));
 assert.ok(executionPlan.includes('UAT transcripts private in unique per-run directories'));
-assert.ok(appsScriptRunbook.includes('transcript reader enforces its dedicated-directory contract'));
+assert.ok(
+  appsScriptRunbook.includes('transcript reader enforces its dedicated-directory contract'),
+);
 assert.ok(stagingWorkflowTest.includes('private generated transcript'));
 
 assert.ok(
