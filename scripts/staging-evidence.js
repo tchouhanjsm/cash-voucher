@@ -280,7 +280,9 @@ function readTranscript(env) {
   if (!directoryStat.isDirectory() || directoryStat.isSymbolicLink()) {
     throw new Error('The staging UAT transcript directory must be a real directory.');
   }
-  if (!/^cash-voucher-staging-uat\.[A-Za-z0-9_-]+$/.test(path.basename(path.dirname(target.path)))) {
+  if (
+    !/^cash-voucher-staging-uat\.[A-Za-z0-9_-]+$/.test(path.basename(path.dirname(target.path)))
+  ) {
     throw new Error('The staging UAT transcript must live in a dedicated per-run directory.');
   }
   if (process.platform !== 'win32' && (directoryStat.mode & 0o077) !== 0) {
