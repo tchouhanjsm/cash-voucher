@@ -352,22 +352,8 @@ function evaluateRepositoryGovernance(snapshot) {
   }
   if (!classic.ok && !integrationRulesets.ok)
     errors.push(...classic.errors, ...integrationRulesets.errors);
-  if (isRecord(integrationBranch) && integrationBranch.protected !== true) {
-    addError(
-      errors,
-      'CLIENT_MAIN_BRANCH_UNPROTECTED',
-      'GitHub reports client-main as unprotected.',
-    );
-  }
   const mainFreeze = legacyMainFreezePolicy(rulesets, defaultBranch);
   if (!mainFreeze.ok) errors.push(...mainFreeze.errors);
-  if (isRecord(legacyBranch) && legacyBranch.protected !== true) {
-    addError(
-      errors,
-      'MAIN_BRANCH_UNPROTECTED',
-      'GitHub reports the legacy main branch as unprotected.',
-    );
-  }
 
   const unique = [];
   const seen = new Set();

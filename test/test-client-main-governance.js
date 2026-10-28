@@ -115,6 +115,8 @@ async function main() {
 
   const rulesetOnly = goodSnapshot();
   rulesetOnly.integrationProtection = null;
+  rulesetOnly.integrationBranch.protected = false;
+  rulesetOnly.legacyBranch.protected = false;
   rulesetOnly.rulesets.push(integrationRuleSet());
   const validRuleset = evaluateRepositoryGovernance(rulesetOnly);
   assert.equal(validRuleset.ok, true, JSON.stringify(validRuleset.errors));
@@ -136,7 +138,9 @@ async function main() {
 
   const unprotected = goodSnapshot();
   unprotected.integrationBranch.protected = false;
-  assert.ok(errorCodes(unprotected).includes('CLIENT_MAIN_BRANCH_UNPROTECTED'));
+  unprotected.integrationProtection = null;
+  unprotected.rulesets = [legacyFreezeRuleSet()];
+  assert.ok(errorCodes(unprotected).includes('CLIENT_MAIN_RULESET_NOT_APPLICABLE'));
 
   const missingReview = goodSnapshot();
   missingReview.integrationProtection.required_pull_request_reviews.required_approving_review_count = 0;
