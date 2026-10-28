@@ -1,6 +1,7 @@
 'use strict';
 
 const fs = require('node:fs');
+const path = require('node:path');
 const { validateRecoveryEvidence } = require('./validate-recovery-evidence');
 
 const SHA1 = /^[a-f0-9]{40}$/i;
