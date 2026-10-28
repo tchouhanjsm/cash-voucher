@@ -257,7 +257,21 @@ function integrationRulesetPolicy(rulesets, defaultBranch) {
 }
 
 function legacyMainFreezePolicy(rulesets, defaultBranch) {
-  const matching = matchingActiveBranchRulesets(rulesets, LEGACY_BRANCH, defaultBranch);
+  const matching = matchingActiveBranchRulesets(
+    rulesets,
+    LEGACY_BRANCH,
+    defaultBranch,
+  ).filter((ruleset) => {
+    const refNames = ruleset.conditions && ruleset.conditions.ref_name;
+    return (
+      isRecord(refNames) &&
+      Array.isArray(refNames.include) &&
+      refNames.include.some(
+        (pattern) =>
+          pattern === LEGACY_BRANCH || pattern === 'refs/heads/' + LEGACY_BRANCH,
+      )
+    );
+  });
   const errors = [];
   const freeze = matching.filter((ruleset) => {
     const rules = Array.isArray(ruleset.rules) ? ruleset.rules : [];
