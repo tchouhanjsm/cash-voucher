@@ -6,6 +6,7 @@ const os = require('node:os');
 const path = require('node:path');
 const {
   buildStagingEvidence,
+  readTranscript,
   summarizeUat,
   writeStagingEvidence,
 } = require('../scripts/staging-evidence');
@@ -143,6 +144,42 @@ assert.throws(
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-evidence-test-'));
 try {
+  const transcriptDir = path.join(tempDir, 'cash-voucher-staging-uat.fixture');
+  fs.mkdirSync(transcriptDir, { mode: 0o700 });
+  fs.chmodSync(transcriptDir, 0o700);
+  const transcriptPath = path.join(transcriptDir, 'uat.log');
+  fs.writeFileSync(transcriptPath, successfulLog, { mode: 0o600 });
+  fs.chmodSync(transcriptPath, 0o600);
+  assert.equal(
+    readTranscript({ CV_STAGING_UAT_LOG_FILE: transcriptPath }),
+    successfulLog,
+  );
+  assert.equal(readTranscript({}), '');
+
+  const alternateParent = path.join(tempDir, 'other-run');
+  fs.mkdirSync(alternateParent, { mode: 0o700 });
+  const wrongDirectoryLog = path.join(alternateParent, 'uat.log');
+  fs.writeFileSync(wrongDirectoryLog, successfulLog, { mode: 0o600 });
+  assert.throws(
+    () => readTranscript({ CV_STAGING_UAT_LOG_FILE: wrongDirectoryLog }),
+    /dedicated per-run directory/,
+  );
+
+  const transcriptLink = path.join(transcriptDir, 'uat-link.log');
+  fs.symlinkSync(transcriptPath, transcriptLink);
+  assert.throws(
+    () => readTranscript({ CV_STAGING_UAT_LOG_FILE: transcriptLink }),
+    /path failed safety validation|read safely/,
+  );
+
+  const oversizedTranscript = path.join(transcriptDir, 'oversized.log');
+  fs.writeFileSync(oversizedTranscript, Buffer.alloc(2 * 1024 * 1024 + 1), { mode: 0o600 });
+  fs.chmodSync(oversizedTranscript, 0o600);
+  assert.throws(
+    () => readTranscript({ CV_STAGING_UAT_LOG_FILE: oversizedTranscript }),
+    /oversized/,
+  );
+
   const outputPath = path.join(tempDir, 'staging-evidence.json');
   const summaryPath = path.join(tempDir, 'summary.md');
   const evidence = writeStagingEvidence(
