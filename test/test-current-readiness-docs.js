@@ -57,10 +57,14 @@ assert.ok(releaseGateBundleDocs.includes('--report=/private/path/release-gate-va
 assert.ok(releaseGateBundleDocs.includes('must be outside the repository'));
 assert.ok(releaseGateBundleDocs.includes('existing report files are never overwritten'));
 assert.ok(releaseGateBundleValidator.includes('isInsideRepository'));
-assert.ok(releaseGateBundleValidator.includes('input bundle must be stored outside the repository'));
+assert.ok(
+  releaseGateBundleValidator.includes('input bundle must be stored outside the repository'),
+);
 assert.ok(releaseGateBundleTest.includes('repository-alias'));
 assert.ok(releaseGateBundleTest.includes('SENSITIVE-INTERNAL-NOTE'));
-assert.ok(releaseGateBundleTest.includes('report output must not overwrite the input bundle'));
+assert.ok(
+  releaseGateBundleTest.includes('report output must not overwrite the input bundle'),
+);
 
 
 assert.ok(staging.includes(currentIntegrationSha));
