@@ -33,6 +33,8 @@ const stagingEvidenceWriter = read('scripts/staging-evidence.js');
 const stagingEvidenceTests = read('test/test-staging-evidence.js');
 const stagingDeployScript = read('scripts/deploy-staging.js');
 const stagingPipelineTests = read('test/test-staging-pipeline.js');
+const stagingUatRunner = read('scripts/run-staging-uat.sh');
+const stagingWebServer = read('scripts/staging-web-server.js');
 const formatDiffScript = read('scripts/show-format-diff.js');
 const flightWorkflowContract = read('test/test-flight-workflow.js');
 const recoveryEvidenceFixture = read('test/fixtures/recovery-evidence.js');
@@ -72,6 +74,13 @@ assert.ok(
 );
 assert.ok(stagingEvidenceWriter.includes('fs.constants.O_EXCL'));
 assert.ok(stagingEvidenceWriter.includes('fs.constants.O_NOFOLLOW'));
+assert.ok(stagingUatRunner.includes('umask 077'));
+assert.ok(stagingUatRunner.includes('detailed transcript is withheld from workflow logs'));
+assert.ok(stagingUatRunner.includes('env -i'));
+assert.ok(stagingWebServer.includes("{ mode: 'artifact', root }"));
+assert.doesNotMatch(stagingWebServer, /mode: 'uat'/);
+assert.ok(stagingWorkflow.includes('steps.staging_uat.outputs.uat_log_file'));
+assert.ok(stagingWorkflow.includes('steps.staging_uat.outputs.uat_log_dir'));
 assert.ok(stagingEvidenceWriter.includes('must be outside the repository'));
 assert.ok(
   stagingEvidenceTests.includes('a rerun must not overwrite an existing evidence artifact'),
