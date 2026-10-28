@@ -80,16 +80,28 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
     if (typeof check.headSha !== 'string' || !SHA1.test(check.headSha)) {
       add(errors, 'SOURCE_CHECK_SHA', 'Every source check must include a full commit SHA.');
     } else if (check.headSha.toLowerCase() !== String(commitSha || '').toLowerCase()) {
-      add(errors, 'SOURCE_CHECK_SHA_MISMATCH', 'All required source checks must match the release SHA.');
+      add(
+        errors,
+        'SOURCE_CHECK_SHA_MISMATCH',
+        'All required source checks must match the release SHA.',
+      );
     }
     if (typeof check.runId !== 'string' || !/^\d{1,20}$/.test(check.runId)) {
-      add(errors, 'SOURCE_CHECK_RUN_ID', 'Every source check must include a numeric workflow run ID.');
+      add(
+        errors,
+        'SOURCE_CHECK_RUN_ID',
+        'Every source check must include a numeric workflow run ID.',
+      );
     } else {
       runIds.push(check.runId);
     }
   });
   if (new Set(runIds).size !== runIds.length) {
-    add(errors, 'SOURCE_CHECK_RUN_ID_DUPLICATE', 'Required source checks must reference distinct workflow runs.');
+    add(
+      errors,
+      'SOURCE_CHECK_RUN_ID_DUPLICATE',
+      'Required source checks must reference distinct workflow runs.',
+    );
   }
 }
 
@@ -112,7 +124,9 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
   );
   if (!isRecord(preflight)) return;
 
-  if (preflight.schemaVersion !== 1) add(errors, 'PREFLIGHT_VERSION', 'Unsupported staging preflight version.');
+  if (preflight.schemaVersion !== 1) {
+    add(errors, 'PREFLIGHT_VERSION', 'Unsupported staging preflight version.');
+  }
   if (preflight.evidenceType !== 'cash-voucher-staging-configuration-preflight') {
     add(errors, 'PREFLIGHT_TYPE', 'Unexpected staging preflight evidence type.');
   }
@@ -120,10 +134,19 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
     add(errors, 'PREFLIGHT_TIMESTAMP', 'Staging preflight timestamp is not canonical UTC.');
   }
 
-  exactKeys(preflight.source, ['repository', 'ref', 'commitSha'], 'stagingPreflight.source', errors);
+  exactKeys(
+    preflight.source,
+    ['repository', 'ref', 'commitSha'],
+    'stagingPreflight.source',
+    errors,
+  );
   if (isRecord(preflight.source)) {
     if (preflight.source.repository !== REPOSITORY || source.repository !== REPOSITORY) {
-      add(errors, 'PREFLIGHT_REPOSITORY', 'Staging preflight and release bundle must identify the expected repository.');
+      add(
+        errors,
+        'PREFLIGHT_REPOSITORY',
+        'Staging preflight and release bundle must identify the expected repository.',
+      );
     }
     if (preflight.source.ref !== SOURCE_REF || source.ref !== SOURCE_REF) {
       add(errors, 'PREFLIGHT_REF', 'Staging preflight must be scoped to client-main.');
@@ -138,13 +161,20 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
 
   exactKeys(preflight.workflowRun, ['runId', 'url'], 'stagingPreflight.workflowRun', errors);
   if (isRecord(preflight.workflowRun)) {
-    if (typeof preflight.workflowRun.runId !== 'string' || !/^\d{1,20}$/.test(preflight.workflowRun.runId)) {
+    if (
+      typeof preflight.workflowRun.runId !== 'string' ||
+      !/^\d{1,20}$/.test(preflight.workflowRun.runId)
+    ) {
       add(errors, 'PREFLIGHT_RUN_ID', 'Staging preflight must include a numeric workflow run ID.');
     } else if (
       preflight.workflowRun.url !==
       'https://github.com/' + REPOSITORY + '/actions/runs/' + preflight.workflowRun.runId
     ) {
-      add(errors, 'PREFLIGHT_RUN_URL', 'Staging preflight run URL must match its repository and run ID.');
+      add(
+        errors,
+        'PREFLIGHT_RUN_URL',
+        'Staging preflight run URL must match its repository and run ID.',
+      );
     }
   }
 
@@ -155,23 +185,40 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
           .map((check) => check.runId)
       : [];
     if (sourceRunIds.includes(preflight.workflowRun.runId)) {
-      add(errors, 'PREFLIGHT_RUN_ID_DUPLICATE', 'Staging preflight must reference a distinct workflow run.');
+      add(
+        errors,
+        'PREFLIGHT_RUN_ID_DUPLICATE',
+        'Staging preflight must reference a distinct workflow run.',
+      );
     }
   }
 
   if (preflight.outcome !== 'configuration-pass') {
     add(errors, 'PREFLIGHT_BLOCKED', 'Staging configuration preflight did not pass.');
   }
-  exactKeys(preflight.categories, REQUIRED_PREFLIGHT_CATEGORIES, 'stagingPreflight.categories', errors);
+  exactKeys(
+    preflight.categories,
+    REQUIRED_PREFLIGHT_CATEGORIES,
+    'stagingPreflight.categories',
+    errors,
+  );
   if (isRecord(preflight.categories)) {
     REQUIRED_PREFLIGHT_CATEGORIES.forEach((category) => {
       if (preflight.categories[category] !== 'pass') {
-        add(errors, 'PREFLIGHT_CATEGORY', 'Every required staging configuration category must pass.');
+        add(
+          errors,
+          'PREFLIGHT_CATEGORY',
+          'Every required staging configuration category must pass.',
+        );
       }
     });
   }
   if (!Array.isArray(preflight.blockers) || preflight.blockers.length !== 0) {
-    add(errors, 'PREFLIGHT_BLOCKERS', 'Passing staging preflight must contain an empty blocker list.');
+    add(
+      errors,
+      'PREFLIGHT_BLOCKERS',
+      'Passing staging preflight must contain an empty blocker list.',
+    );
   }
 
   exactKeys(preflight.boundaries, REQUIRED_FALSE_BOUNDARIES, 'stagingPreflight.boundaries', errors);
@@ -197,7 +244,11 @@ function validateOperationalGates(gates, errors) {
     exactKeys(gate, ['status', 'evidenceRef'], 'operationalGates.' + name, errors);
     if (!isRecord(gate)) return;
     if (gate.status !== 'pass') {
-      add(errors, 'OPERATIONAL_GATE_BLOCKED', 'Every live operational release gate must be explicitly passed.');
+      add(
+        errors,
+        'OPERATIONAL_GATE_BLOCKED',
+        'Every live operational release gate must be explicitly passed.',
+      );
     }
     if (typeof gate.evidenceRef !== 'string' || !SAFE_EVIDENCE_REFERENCE.test(gate.evidenceRef)) {
       add(
@@ -266,14 +317,22 @@ function validateReleaseGateBundle(bundle) {
   const recovery = validateRecoveryEvidence(bundle.recoveryEvidence);
   if (!recovery.ok) {
     recovery.errors.forEach((item) => {
-      add(errors, 'RECOVERY_' + item.code, 'Recovery drill evidence failed its independent contract check.');
+      add(
+        errors,
+        'RECOVERY_' + item.code,
+        'Recovery drill evidence failed its independent contract check.',
+      );
     });
   } else if (
     isRecord(bundle.recoveryEvidence.source) &&
     typeof commitSha === 'string' &&
     bundle.recoveryEvidence.source.clientMainSha.toLowerCase() !== commitSha.toLowerCase()
   ) {
-    add(errors, 'RECOVERY_SHA_MISMATCH', 'Recovery drill evidence must reference the release commit SHA.');
+    add(
+      errors,
+      'RECOVERY_SHA_MISMATCH',
+      'Recovery drill evidence must reference the release commit SHA.',
+    );
   }
 
   if (
@@ -282,7 +341,11 @@ function validateReleaseGateBundle(bundle) {
     validTimestamp(bundle.stagingPreflight.generatedAt) &&
     Date.parse(bundle.stagingPreflight.generatedAt) > Date.parse(bundle.generatedAt)
   ) {
-    add(errors, 'PREFLIGHT_AFTER_BUNDLE', 'Bundle generation cannot precede its staging preflight.');
+    add(
+      errors,
+      'PREFLIGHT_AFTER_BUNDLE',
+      'Bundle generation cannot precede its staging preflight.',
+    );
   }
   if (
     validTimestamp(bundle.generatedAt) &&
@@ -315,7 +378,9 @@ function validateReleaseGateBundle(bundle) {
 function main() {
   const inputPath = String(process.argv[2] || '').trim();
   if (!inputPath) {
-    console.error('Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json');
+    console.error(
+      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json',
+    );
     process.exitCode = 2;
     return;
   }
@@ -324,7 +389,9 @@ function main() {
   try {
     const stats = fs.statSync(inputPath);
     if (!stats.isFile() || stats.size > 5 * 1024 * 1024) {
-      console.error('RELEASE GATE BUNDLE FAILED: input must be a regular JSON file no larger than 5 MiB.');
+      console.error(
+        'RELEASE GATE BUNDLE FAILED: input must be a regular JSON file no larger than 5 MiB.',
+      );
       process.exitCode = 1;
       return;
     }
