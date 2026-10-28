@@ -478,6 +478,10 @@ function recordedMovementReport_(user, req) {
   if (status !== 'ALL' && status !== 'ACTIVE' && status !== 'CANCELLED') {
     throw err_('Choose a valid voucher status.', 'VALIDATION');
   }
+  const paymentMethod = String(req.paymentMethod || 'ALL').trim();
+  if (READ_MODEL_PAYMENT_METHOD_FILTERS.indexOf(paymentMethod) < 0) {
+    throw err_('Choose a valid payment method.', 'VALIDATION');
+  }
 
   const vendorLookup = vendorIdLookup_();
   const items = readAll_('Vouchers')
@@ -487,7 +491,9 @@ function recordedMovementReport_(user, req) {
         date >= from &&
         date <= to &&
         (type === 'ALL' || voucher.Type === type) &&
-        (status === 'ALL' || voucher.Status === status)
+        (status === 'ALL' || voucher.Status === status) &&
+        (paymentMethod === 'ALL' ||
+          readModelPaymentMethodKey_(voucher.PaymentMethod) === paymentMethod)
       );
     })
     .sort(function (a, b) {
@@ -504,6 +510,7 @@ function recordedMovementReport_(user, req) {
         date: isoDate_(voucher.Date),
         vendor: String(voucher.Vendor || ''),
         vendorId: String(voucher.VendorID || '') || vendorIdForName_(voucher.Vendor, vendorLookup),
+        paymentMethod: String(voucher.PaymentMethod || ''),
         category: String(voucher.Category || ''),
         notes: String(voucher.Notes || ''),
         type: String(voucher.Type || ''),
@@ -538,6 +545,31 @@ function recordedMovementReport_(user, req) {
       }, 0);
   };
 
+  const paymentMethodTotals = Object.create(null);
+  eligiblePayments(active)
+    .filter(function (item) {
+      return item.type === 'PAYMENT';
+    })
+    .forEach(function (item) {
+      const key = readModelPaymentMethodLabel_(item.paymentMethod);
+      if (!Object.prototype.hasOwnProperty.call(paymentMethodTotals, key)) {
+        paymentMethodTotals[key] = { k: key, n: 0, paise: 0 };
+      }
+      paymentMethodTotals[key].n++;
+      const amount = Number(item.amount);
+      if (isFinite(amount) && amount >= 0 && amount <= CFG.MAX_AMOUNT) {
+        paymentMethodTotals[key].paise += Math.round(amount * 100);
+      }
+    });
+  const byPaymentMethod = Object.keys(paymentMethodTotals)
+    .map(function (key) {
+      const item = paymentMethodTotals[key];
+      return { k: item.k, n: item.n, s: item.paise / 100 };
+    })
+    .sort(function (a, b) {
+      return b.s - a.s || a.k.localeCompare(b.k);
+    });
+
   const isAmbiguousVendorRow = function (item) {
     const key = String(item.vendor || '')
       .trim()
@@ -560,6 +592,7 @@ function recordedMovementReport_(user, req) {
     to: to,
     type: type,
     status: status,
+    paymentMethod: paymentMethod,
     count: items.length,
     activeCount: active.length,
     cancelledCount: items.length - active.length,
@@ -581,6 +614,7 @@ function recordedMovementReport_(user, req) {
     receiptTotal: sum(items, 'RECEIPT'),
     activePaymentTotal: sum(active, 'PAYMENT'),
     activeReceiptTotal: sum(active, 'RECEIPT'),
+    byPaymentMethod: byPaymentMethod,
     items: items,
   };
 }

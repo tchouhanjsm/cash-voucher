@@ -5786,7 +5786,7 @@ with sync_playwright() as p:
         "el => ({display:getComputedStyle(el).display, columns:getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0})"
     )
     check(
-        report_layout['display'] == 'grid' and report_layout['columns'] == 6,
+        report_layout['display'] == 'grid' and report_layout['columns'] == 7,
         'movement report filters align in a six-column desktop workspace',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
@@ -5837,8 +5837,25 @@ with sync_playwright() as p:
         'Guest Room 5' in report_text
         and 'RECEIPT' in report_text
         and report_rows.count() >= 1
-        and all(row.locator('td').nth(6).inner_text() == 'ACTIVE' for row in report_rows.all()),
+        and all(row.locator('td').nth(7).inner_text() == 'ACTIVE' for row in report_rows.all()),
         'default active report lists active source vouchers and excludes cancelled records',
+    )
+
+    page.select_option('#movementPaymentMethod', 'CASH')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view .report-results-card')?.innerText.includes('Source vouchers')"
+    )
+    cash_method_rows = page.locator('#view table tbody tr')
+    check(
+        cash_method_rows.count() > 0
+        and all(row.locator('td').nth(3).inner_text() == 'Cash' for row in cash_method_rows.all()),
+        'Recorded Movement Report filters rows by payment method',
+    )
+    page.select_option('#movementPaymentMethod', 'ALL')
+    page.locator('#movementFilters button[type=submit]').click()
+    page.wait_for_function(
+        "document.querySelector('#view .report-results-card')?.innerText.includes('Source vouchers')"
     )
 
     # Hold a report request while navigating away. Its late response must not steal the route.

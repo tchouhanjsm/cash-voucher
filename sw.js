@@ -1,5 +1,5 @@
 // Cache only the public application shell. Never cache arbitrary same-origin GETs.
-const C = 'cv2-v35';
+const C = 'cv2-v36';
 const F = [
   './',
   'index.html',

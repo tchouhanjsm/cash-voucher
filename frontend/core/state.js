@@ -24,6 +24,27 @@ export const S = {
 
 export const PAYMENT_METHODS = ['CASH', 'UPI', 'BANK_TRANSFER'];
 export const PAYMENT_METHOD_LABELS = { CASH: 'Cash', UPI: 'UPI', BANK_TRANSFER: 'Bank transfer' };
+export const PAYMENT_METHOD_FILTER_OPTIONS = [
+  ['ALL', 'All methods'],
+  ['CASH', 'Cash'],
+  ['UPI', 'UPI'],
+  ['BANK_TRANSFER', 'Bank transfer'],
+  ['UNRECORDED', 'Not recorded'],
+  ['UNRECOGNIZED', 'Unrecognized method'],
+];
+
+export function paymentMethodKey(value) {
+  const method = typeof value === 'string' ? value.trim() : '';
+  if (!method) return 'UNRECORDED';
+  return PAYMENT_METHODS.includes(method) ? method : 'UNRECOGNIZED';
+}
+
+export function paymentMethodLabel(value) {
+  const key = paymentMethodKey(value);
+  if (key === 'UNRECORDED') return 'Not recorded';
+  if (key === 'UNRECOGNIZED') return 'Unrecognized method';
+  return PAYMENT_METHOD_LABELS[key];
+}
 export const CASH_IMPACT_CHOICES = ['CASH_IN', 'CASH_OUT', 'NO_CASH'];
 export const CASH_IMPACT_LABELS = {
   CASH_IN: 'Cash received into the drawer',
