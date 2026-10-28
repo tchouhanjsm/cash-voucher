@@ -160,8 +160,7 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
       );
     } else {
       runIds.push(check.runId);
-      const expectedRunUrl =
-        'https://github.com/' + REPOSITORY + '/actions/runs/' + check.runId;
+      const expectedRunUrl = 'https://github.com/' + REPOSITORY + '/actions/runs/' + check.runId;
       if (check.runUrl !== expectedRunUrl) {
         add(
           errors,
