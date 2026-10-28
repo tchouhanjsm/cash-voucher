@@ -6,6 +6,20 @@ const {
   validateStagingConfiguration,
 } = require('../scripts/staging-preflight');
 const { cleanupTemporaryDirectories, sanitized } = require('../scripts/deploy-staging');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const runStagingUatScript = fs.readFileSync(
+  path.resolve(__dirname, '../scripts/run-staging-uat.sh'),
+  'utf8',
+);
+assert.match(runStagingUatScript, /mktemp -d/);
+assert.match(runStagingUatScript, /set -o noclobber/);
+assert.match(runStagingUatScript, /env -i/);
+assert.match(runStagingUatScript, /env -u GITHUB_OUTPUT -u GITHUB_ENV -u GITHUB_PATH -u GITHUB_STEP_SUMMARY/);
+assert.doesNotMatch(runStagingUatScript, /\/tmp\/cash-voucher-staging-(?:uat|server)\.log/);
+assert.doesNotMatch(runStagingUatScript, /tee "\$\{UAT_LOG_FILE\}"/);
+assert.match(runStagingUatScript, /detailed transcript is withheld from workflow logs/);
 
 const productionApiUrl = readProductionApiUrl();
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
