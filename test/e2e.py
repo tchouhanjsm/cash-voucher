@@ -1511,6 +1511,9 @@ with sync_playwright() as p:
     page.evaluate('window.__voucherHistoryXssFired = false')
 
     history_requests = []
+    history_route_states = []
+    history_page_errors = []
+    page.on('pageerror', lambda error: history_page_errors.append(str(error)))
 
     def inject_hostile_voucher_history(route):
         try:
@@ -1521,8 +1524,13 @@ with sync_playwright() as p:
             route.continue_()
             return
         history_requests.append(request_data.get('eventCategory'))
+        route_state = {'eventCategory': request_data.get('eventCategory'), 'phase': 'fetch-started'}
+        history_route_states.append(route_state)
         response = route.fetch()
+        route_state['phase'] = 'response-received'
+        route_state['status'] = response.status
         payload = response.json()
+        route_state['phase'] = 'json-decoded'
         data = payload.get('data', {}) if payload.get('ok') else {}
         rows = data.get('rows')
         if isinstance(rows, list) and rows:
@@ -1531,20 +1539,45 @@ with sync_playwright() as p:
             if isinstance(rows[0].get('changes'), list) and rows[0]['changes']:
                 rows[0]['changes'][0]['after'] = history_xss_payload
         route.fulfill(response=response, body=json.dumps(payload))
+        route_state['phase'] = 'response-fulfilled'
 
     page.route('**/api?*', inject_hostile_voucher_history)
     history_row.locator('[data-act=history]').click()
-    page.wait_for_function(
-        """() => {
-          const modal = document.querySelector('#modal');
-          if (!modal) return false;
-          const text = modal.innerText || '';
-          const status = modal.querySelector('.voucher-history-status')?.innerText || '';
-          return text.includes('VOUCHER_CREATED')
-            || (status && status !== 'Loading voucher history…');
-        }""",
-        timeout=10000,
-    )
+    try:
+        page.wait_for_function(
+            """() => {
+              const modal = document.querySelector('#modal');
+              if (!modal) return false;
+              const text = modal.innerText || '';
+              const status = modal.querySelector('.voucher-history-status')?.innerText || '';
+              return text.includes('VOUCHER_CREATED')
+                || (status && status !== 'Loading voucher history…');
+            }""",
+            timeout=10000,
+        )
+    except Exception:
+        history_state = page.evaluate(
+            """() => ({
+              modalExists: Boolean(document.querySelector('#modal')),
+              modalText: (document.querySelector('#modal')?.innerText || '').slice(0, 500),
+              status: document.querySelector('#modal .voucher-history-status')?.innerText || '',
+              apiResources: performance.getEntriesByType('resource')
+                .filter((entry) => entry.name.includes('/api'))
+                .slice(-8)
+                .map((entry) => ({ name: entry.name, duration: entry.duration, transferSize: entry.transferSize }))
+            })"""
+        )
+        print(
+            'VOUCHER HISTORY LOAD DIAGNOSTIC:',
+            json.dumps({
+                'historyRequests': history_requests,
+                'routeStates': history_route_states,
+                'pageErrors': history_page_errors,
+                'browserState': history_state,
+            }, sort_keys=True),
+            flush=True,
+        )
+        raise
     history_text = page.locator('#modal').inner_text()
     check(
         'VOUCHER_CREATED' in history_text,
