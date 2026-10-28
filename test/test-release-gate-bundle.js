@@ -240,6 +240,61 @@ try {
   );
   assert.equal(overwriteAttempt.status, 2);
   assert.match(overwriteAttempt.stderr, /must not overwrite the input bundle/);
+
+  const repositoryInput = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      path.join(__dirname, 'fixtures', 'recovery-evidence.js'),
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(repositoryInput.status, 2);
+  assert.match(repositoryInput.stderr, /input bundle must be stored outside the repository/);
+
+  const repositoryReportPath = path.join(__dirname, '..', 'release-validation-test-report.json');
+  const repositoryOutput = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--report=' + repositoryReportPath,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(repositoryOutput.status, 2);
+  assert.match(repositoryOutput.stderr, /validation report must be stored outside the repository/);
+  assert.equal(fs.existsSync(repositoryReportPath), false);
+
+  const inputSymlink = path.join(tempDir, 'bundle-link.json');
+  fs.symlinkSync(inputPath, inputSymlink);
+  const symlinkInputRun = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputSymlink,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(symlinkInputRun.status, 2);
+  assert.match(symlinkInputRun.stderr, /input bundle must not be a symbolic link/);
+
+  const symlinkTarget = path.join(tempDir, 'report-target.json');
+  const symlinkReport = path.join(tempDir, 'report-link.json');
+  fs.writeFileSync(symlinkTarget, 'leave this file unchanged', { mode: 0o600 });
+  fs.symlinkSync(symlinkTarget, symlinkReport);
+  const symlinkReportRun = spawnSync(
+    process.execPath,
+    [
+      path.join(__dirname, '..', 'scripts', 'validate-release-gate-bundle.js'),
+      inputPath,
+      '--report=' + symlinkReport,
+    ],
+    { encoding: 'utf8' },
+  );
+  assert.equal(symlinkReportRun.status, 2);
+  assert.match(symlinkReportRun.stderr, /report output path is unsafe/);
+  assert.equal(fs.readFileSync(symlinkTarget, 'utf8'), 'leave this file unchanged');
 } finally {
   fs.rmSync(tempDir, { recursive: true, force: true });
 }
