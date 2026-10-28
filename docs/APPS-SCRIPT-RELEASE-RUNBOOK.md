@@ -34,6 +34,12 @@ The workflow regression test enforces these boundaries. Do not weaken it to acco
 
 This protects credentials from unnecessary step exposure; it does not protect a deployment if an authorized but unsafe command is placed inside a secret-bearing step. Keep such steps narrow, reviewed and auditable. Require manual dispatch from `client-main`, owner/admin branch protection, the protected `staging` Environment, exact `STAGING-ONLY` confirmation and explicit write consent. **Step scoping is not a substitute for branch protection**, and it does not authorize a deployment by itself.
 
+## Staging evidence files and temporary credential cleanup — 28 October 2026
+
+The staging evidence writer accepts only an existing parent directory outside the repository, rejects symlinks/non-regular targets and refuses to overwrite existing evidence. JSON evidence is created exclusively with mode `0600`; the GitHub summary path is checked separately and receives only sanitized status data. Keep downloaded artifacts and live recovery evidence in a private operator-controlled location; do not commit them.
+
+The deployment wrapper runs Clasp from a temporary project workspace with an isolated temporary home containing `.clasprc.json`. On every exit, it attempts to remove both locations and verifies removal. A cleanup failure is a stop condition: inspect the isolated runner securely before any retry, and do not publish temporary path names or credential contents in chat or artifacts.
+
 ## Staging resource isolation policy (current)
 
 The isolation attestation `OWNER-VERIFIED-STAGING-ONLY` is permitted **only for the non-mutating artifact preflight** when all four production resource reference IDs are intentionally omitted. It records an operator assertion; it does not independently prove resource identity.
