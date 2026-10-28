@@ -86,7 +86,9 @@ assert.ok(stagingWorkflow.includes('server_mode="$(stat -c'));
 assert.ok(stagingWorkflow.includes('UAT log directory or files failed privacy checks'));
 assert.ok(stagingUatRunner.includes('cash-voucher-staging-uat.XXXXXX'));
 assert.ok(stagingUatRunner.includes('chmod 700 "${UAT_LOG_DIR}"'));
-assert.ok(stagingEvidenceWriter.includes('staging UAT transcript directory permissions are too broad'));
+assert.ok(
+  stagingEvidenceWriter.includes('staging UAT transcript directory permissions are too broad'),
+);
 
 assert.ok(stagingEvidenceWriter.includes('must be outside the repository'));
 assert.ok(stagingEvidenceWriter.includes('function readTranscript(env)'));
