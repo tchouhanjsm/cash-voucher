@@ -55,6 +55,7 @@ assert.ok(recoveryEvidenceFixture.includes('function buildRecoveryEvidence'));
 assert.ok(releaseGateBundleDocs.includes('does not independently query GitHub'));
 assert.ok(releaseGateBundleDocs.includes('--report=/private/path/release-gate-validation.json'));
 assert.ok(releaseGateBundleDocs.includes('must be outside the repository'));
+assert.ok(releaseGateBundleDocs.includes('existing report files are never overwritten'));
 assert.ok(releaseGateBundleValidator.includes('isInsideRepository'));
 assert.ok(releaseGateBundleValidator.includes('input bundle must be stored outside the repository'));
 assert.ok(releaseGateBundleTest.includes('repository-alias'));
