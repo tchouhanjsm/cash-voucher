@@ -10,34 +10,34 @@ This validates record integrity and consistency. It does not fetch supporting so
 
 Every non-governance record has exactly these fields and no extras:
 
-| Field | Required value |
-|---|---|
-| schemaVersion | Number 1 |
-| evidenceType | cash-voucher-operational-gate-evidence |
-| repository | tchouhanjsm/cash-voucher |
-| gate | Exact gate key from the bundle |
-| outcome | pass |
-| evidenceRef | Exact evidenceRef from that bundle gate |
-| verifiedAt | Canonical UTC time, exactly equal to the bundle gate verifiedAt |
-| testedClientMainSha | Full 40-character SHA-1 commit ID matching the bundle source and gate |
-| reviewerRole | An allowed role for that gate |
-| verificationMethod | Exact method ID assigned to that gate |
-| sourceRecordRefs | One to eight unique safe IDs for separately retained supporting records; no URL, path, email, credential or self-reference |
-| checks | Precisely the gate-specific keys below; every value must be boolean true |
+| Field               | Required value                                                                                                             |
+| ------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| schemaVersion       | Number 1                                                                                                                   |
+| evidenceType        | cash-voucher-operational-gate-evidence                                                                                     |
+| repository          | tchouhanjsm/cash-voucher                                                                                                   |
+| gate                | Exact gate key from the bundle                                                                                             |
+| outcome             | pass                                                                                                                       |
+| evidenceRef         | Exact evidenceRef from that bundle gate                                                                                    |
+| verifiedAt          | Canonical UTC time, exactly equal to the bundle gate verifiedAt                                                            |
+| testedClientMainSha | Full 40-character SHA-1 commit ID matching the bundle source and gate                                                      |
+| reviewerRole        | An allowed role for that gate                                                                                              |
+| verificationMethod  | Exact method ID assigned to that gate                                                                                      |
+| sourceRecordRefs    | One to eight unique safe IDs for separately retained supporting records; no URL, path, email, credential or self-reference |
+| checks              | Precisely the gate-specific keys below; every value must be boolean true                                                   |
 
 Safe source IDs use an uppercase type and identifier separated by a hyphen, such as QA-12345 or RUN-71234. The validator checks only ID syntax. It does not retrieve those records or check their contents. Retain the raw captures, UAT output, approval or sign-off privately under appropriate operational controls; never put credentials, customer rows or unredacted logs in these JSON records.
 
 ## Gate-specific evidence contracts
 
-| Bundle gate | Required checks (all true) | Allowed reviewerRole | verificationMethod |
-|---|---|---|---|
-| liveStagingUatPassed | dedicatedAccounts, roleMatrix, voucherCreateReadback, editAndVoid, refreshPersistence, receiptConsistency, noProductionMutation | owner, qa, staging-operator | manual-live-uat |
-| liveSecurityHeadersVerified | httpsRedirect, strictTransportSecurity, contentSecurityPolicy, frameAncestors, nosniff, referrerPolicy | owner, security-reviewer | http-header-capture |
-| liveRoleAuthorizationVerified | ownerAccess, managerAccess, staffRestrictions, crossRoleDenial, receiptAccessControl, safeUnauthorizedResponses | owner, qa, security-reviewer | authorization-matrix |
-| offlineReconnectVerified | offlineIndicator, offlineReadOnlyBehavior, queuedWriteVisibility, reconnectSync, duplicatePrevention, conflictHandling | owner, qa, customer-representative | device-reconnect-test |
-| printPdfVerified | voucherPreview, paperLayout, currencyAndDates, pageBreaks, browserPrint, pdfOutput | owner, qa, customer-representative | browser-print-pdf-test |
-| accessibilityVerified | keyboardNavigation, visibleFocus, labelsAndNames, contrast, zoomAndReflow, screenReaderSmoke | owner, qa, accessibility-reviewer | automated-and-manual-accessibility |
-| customerAcceptanceApproved | scopeReviewed, criticalWorkflowsAccepted, knownLimitationsAccepted, dataOwnershipAccepted, supportHandoverAccepted | customer-representative only | customer-signoff |
+| Bundle gate                   | Required checks (all true)                                                                                                      | Allowed reviewerRole               | verificationMethod                 |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------- | ---------------------------------- |
+| liveStagingUatPassed          | dedicatedAccounts, roleMatrix, voucherCreateReadback, editAndVoid, refreshPersistence, receiptConsistency, noProductionMutation | owner, qa, staging-operator        | manual-live-uat                    |
+| liveSecurityHeadersVerified   | httpsRedirect, strictTransportSecurity, contentSecurityPolicy, frameAncestors, nosniff, referrerPolicy                          | owner, security-reviewer           | http-header-capture                |
+| liveRoleAuthorizationVerified | ownerAccess, managerAccess, staffRestrictions, crossRoleDenial, receiptAccessControl, safeUnauthorizedResponses                 | owner, qa, security-reviewer       | authorization-matrix               |
+| offlineReconnectVerified      | offlineIndicator, offlineReadOnlyBehavior, queuedWriteVisibility, reconnectSync, duplicatePrevention, conflictHandling          | owner, qa, customer-representative | device-reconnect-test              |
+| printPdfVerified              | voucherPreview, paperLayout, currencyAndDates, pageBreaks, browserPrint, pdfOutput                                              | owner, qa, customer-representative | browser-print-pdf-test             |
+| accessibilityVerified         | keyboardNavigation, visibleFocus, labelsAndNames, contrast, zoomAndReflow, screenReaderSmoke                                    | owner, qa, accessibility-reviewer  | automated-and-manual-accessibility |
+| customerAcceptanceApproved    | scopeReviewed, criticalWorkflowsAccepted, knownLimitationsAccepted, dataOwnershipAccepted, supportHandoverAccepted              | customer-representative only       | customer-signoff                   |
 
 The reviewer role is self-declared, not authenticated. Customer acceptance must name the customer-representative role, but an owner/reviewer must independently verify the real sign-off source. Mark a check true only after the stated procedure has passed; do not use default-true templates to manufacture a pass.
 

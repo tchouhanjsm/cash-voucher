@@ -8,32 +8,60 @@ const SAFE_REFERENCE = /^[A-Z][A-Z0-9]{1,11}-[A-Z0-9][A-Z0-9._-]{1,70}$/;
 
 const OPERATIONAL_GATE_CHECKS = Object.freeze({
   liveStagingUatPassed: Object.freeze([
-    'dedicatedAccounts', 'roleMatrix', 'voucherCreateReadback', 'editAndVoid',
-    'refreshPersistence', 'receiptConsistency', 'noProductionMutation',
+    'dedicatedAccounts',
+    'roleMatrix',
+    'voucherCreateReadback',
+    'editAndVoid',
+    'refreshPersistence',
+    'receiptConsistency',
+    'noProductionMutation',
   ]),
   liveSecurityHeadersVerified: Object.freeze([
-    'httpsRedirect', 'strictTransportSecurity', 'contentSecurityPolicy',
-    'frameAncestors', 'nosniff', 'referrerPolicy',
+    'httpsRedirect',
+    'strictTransportSecurity',
+    'contentSecurityPolicy',
+    'frameAncestors',
+    'nosniff',
+    'referrerPolicy',
   ]),
   liveRoleAuthorizationVerified: Object.freeze([
-    'ownerAccess', 'managerAccess', 'staffRestrictions', 'crossRoleDenial',
-    'receiptAccessControl', 'safeUnauthorizedResponses',
+    'ownerAccess',
+    'managerAccess',
+    'staffRestrictions',
+    'crossRoleDenial',
+    'receiptAccessControl',
+    'safeUnauthorizedResponses',
   ]),
   offlineReconnectVerified: Object.freeze([
-    'offlineIndicator', 'offlineReadOnlyBehavior', 'queuedWriteVisibility',
-    'reconnectSync', 'duplicatePrevention', 'conflictHandling',
+    'offlineIndicator',
+    'offlineReadOnlyBehavior',
+    'queuedWriteVisibility',
+    'reconnectSync',
+    'duplicatePrevention',
+    'conflictHandling',
   ]),
   printPdfVerified: Object.freeze([
-    'voucherPreview', 'paperLayout', 'currencyAndDates', 'pageBreaks',
-    'browserPrint', 'pdfOutput',
+    'voucherPreview',
+    'paperLayout',
+    'currencyAndDates',
+    'pageBreaks',
+    'browserPrint',
+    'pdfOutput',
   ]),
   accessibilityVerified: Object.freeze([
-    'keyboardNavigation', 'visibleFocus', 'labelsAndNames', 'contrast',
-    'zoomAndReflow', 'screenReaderSmoke',
+    'keyboardNavigation',
+    'visibleFocus',
+    'labelsAndNames',
+    'contrast',
+    'zoomAndReflow',
+    'screenReaderSmoke',
   ]),
   customerAcceptanceApproved: Object.freeze([
-    'scopeReviewed', 'criticalWorkflowsAccepted', 'knownLimitationsAccepted',
-    'dataOwnershipAccepted', 'supportHandoverAccepted',
+    'scopeReviewed',
+    'criticalWorkflowsAccepted',
+    'knownLimitationsAccepted',
+    'dataOwnershipAccepted',
+    'supportHandoverAccepted',
   ]),
 });
 
@@ -58,9 +86,18 @@ const OPERATIONAL_GATE_VERIFICATION_METHODS = Object.freeze({
 });
 
 const REQUIRED_EVIDENCE_FIELDS = [
-  'schemaVersion', 'evidenceType', 'repository', 'gate', 'outcome', 'evidenceRef',
-  'verifiedAt', 'testedClientMainSha', 'reviewerRole', 'verificationMethod',
-  'sourceRecordRefs', 'checks',
+  'schemaVersion',
+  'evidenceType',
+  'repository',
+  'gate',
+  'outcome',
+  'evidenceRef',
+  'verifiedAt',
+  'testedClientMainSha',
+  'reviewerRole',
+  'verificationMethod',
+  'sourceRecordRefs',
+  'checks',
 ];
 
 function isRecord(value) {
@@ -104,10 +141,12 @@ function validateOperationalGateEvidence(bytes, gateName, gate, commitSha) {
   if (!expectedChecks) {
     return {
       ok: false,
-      errors: [{
-        code: 'OPERATIONAL_RECORD_GATE_UNSUPPORTED',
-        message: 'No operational evidence contract exists for the requested gate.',
-      }],
+      errors: [
+        {
+          code: 'OPERATIONAL_RECORD_GATE_UNSUPPORTED',
+          message: 'No operational evidence contract exists for the requested gate.',
+        },
+      ],
     };
   }
 
@@ -117,19 +156,23 @@ function validateOperationalGateEvidence(bytes, gateName, gate, commitSha) {
   } catch {
     return {
       ok: false,
-      errors: [{
-        code: 'OPERATIONAL_RECORD_INVALID_JSON',
-        message: 'Operational gate evidence must be a valid JSON record.',
-      }],
+      errors: [
+        {
+          code: 'OPERATIONAL_RECORD_INVALID_JSON',
+          message: 'Operational gate evidence must be a valid JSON record.',
+        },
+      ],
     };
   }
   if (!isRecord(evidence)) {
     return {
       ok: false,
-      errors: [{
-        code: 'OPERATIONAL_RECORD_OBJECT_REQUIRED',
-        message: 'Operational gate evidence must be a JSON object.',
-      }],
+      errors: [
+        {
+          code: 'OPERATIONAL_RECORD_OBJECT_REQUIRED',
+          message: 'Operational gate evidence must be a JSON object.',
+        },
+      ],
     };
   }
 
@@ -141,53 +184,118 @@ function validateOperationalGateEvidence(bytes, gateName, gate, commitSha) {
     add(errors, 'OPERATIONAL_RECORD_TYPE', 'Unexpected operational evidence type.');
   }
   if (evidence.repository !== REPOSITORY) {
-    add(errors, 'OPERATIONAL_RECORD_REPOSITORY_MISMATCH', 'Operational evidence must identify the expected repository.');
+    add(
+      errors,
+      'OPERATIONAL_RECORD_REPOSITORY_MISMATCH',
+      'Operational evidence must identify the expected repository.',
+    );
   }
   if (evidence.gate !== gateName) {
-    add(errors, 'OPERATIONAL_RECORD_GATE_MISMATCH', 'Operational evidence must identify the exact gate it supports.');
+    add(
+      errors,
+      'OPERATIONAL_RECORD_GATE_MISMATCH',
+      'Operational evidence must identify the exact gate it supports.',
+    );
   }
   if (!isRecord(gate) || evidence.evidenceRef !== gate.evidenceRef) {
-    add(errors, 'OPERATIONAL_RECORD_REFERENCE_MISMATCH', 'Operational evidence reference must match the bundle gate.');
+    add(
+      errors,
+      'OPERATIONAL_RECORD_REFERENCE_MISMATCH',
+      'Operational evidence reference must match the bundle gate.',
+    );
   }
   if (evidence.outcome !== 'pass') {
     add(errors, 'OPERATIONAL_RECORD_NOT_PASSED', 'Operational evidence outcome must be pass.');
   }
   if (!validTimestamp(evidence.verifiedAt)) {
-    add(errors, 'OPERATIONAL_RECORD_TIMESTAMP_INVALID', 'Operational evidence must use a canonical UTC verification timestamp.');
+    add(
+      errors,
+      'OPERATIONAL_RECORD_TIMESTAMP_INVALID',
+      'Operational evidence must use a canonical UTC verification timestamp.',
+    );
   } else if (!isRecord(gate) || evidence.verifiedAt !== gate.verifiedAt) {
-    add(errors, 'OPERATIONAL_RECORD_TIMESTAMP_MISMATCH', 'Operational evidence timestamp must exactly match the bundle gate.');
+    add(
+      errors,
+      'OPERATIONAL_RECORD_TIMESTAMP_MISMATCH',
+      'Operational evidence timestamp must exactly match the bundle gate.',
+    );
   }
-  if (typeof evidence.testedClientMainSha !== 'string' || !SHA1.test(evidence.testedClientMainSha)) {
-    add(errors, 'OPERATIONAL_RECORD_SHA_INVALID', 'Operational evidence must include a full client-main SHA.');
+  if (
+    typeof evidence.testedClientMainSha !== 'string' ||
+    !SHA1.test(evidence.testedClientMainSha)
+  ) {
+    add(
+      errors,
+      'OPERATIONAL_RECORD_SHA_INVALID',
+      'Operational evidence must include a full client-main SHA.',
+    );
   } else if (evidence.testedClientMainSha.toLowerCase() !== String(commitSha || '').toLowerCase()) {
-    add(errors, 'OPERATIONAL_RECORD_SHA_MISMATCH', 'Operational evidence must match the release bundle SHA.');
-  } else if (isRecord(gate) && evidence.testedClientMainSha.toLowerCase() !== String(gate.testedClientMainSha || '').toLowerCase()) {
-    add(errors, 'OPERATIONAL_RECORD_GATE_SHA_MISMATCH', 'Operational evidence SHA must match the bundle gate SHA.');
+    add(
+      errors,
+      'OPERATIONAL_RECORD_SHA_MISMATCH',
+      'Operational evidence must match the release bundle SHA.',
+    );
+  } else if (
+    isRecord(gate) &&
+    evidence.testedClientMainSha.toLowerCase() !==
+      String(gate.testedClientMainSha || '').toLowerCase()
+  ) {
+    add(
+      errors,
+      'OPERATIONAL_RECORD_GATE_SHA_MISMATCH',
+      'Operational evidence SHA must match the bundle gate SHA.',
+    );
   }
 
   if (!OPERATIONAL_GATE_REVIEWER_ROLES[gateName].includes(evidence.reviewerRole)) {
-    add(errors, 'OPERATIONAL_RECORD_REVIEWER_ROLE', 'Operational evidence reviewer role is not allowed for this gate.');
+    add(
+      errors,
+      'OPERATIONAL_RECORD_REVIEWER_ROLE',
+      'Operational evidence reviewer role is not allowed for this gate.',
+    );
   }
   if (evidence.verificationMethod !== OPERATIONAL_GATE_VERIFICATION_METHODS[gateName]) {
-    add(errors, 'OPERATIONAL_RECORD_METHOD_MISMATCH', 'Operational evidence must use the gate-specific verification method.');
+    add(
+      errors,
+      'OPERATIONAL_RECORD_METHOD_MISMATCH',
+      'Operational evidence must use the gate-specific verification method.',
+    );
   }
 
-  if (!Array.isArray(evidence.sourceRecordRefs) ||
-      evidence.sourceRecordRefs.length < 1 ||
-      evidence.sourceRecordRefs.length > 8) {
-    add(errors, 'OPERATIONAL_RECORD_SOURCE_REFS', 'Operational evidence must reference one to eight supporting records.');
+  if (
+    !Array.isArray(evidence.sourceRecordRefs) ||
+    evidence.sourceRecordRefs.length < 1 ||
+    evidence.sourceRecordRefs.length > 8
+  ) {
+    add(
+      errors,
+      'OPERATIONAL_RECORD_SOURCE_REFS',
+      'Operational evidence must reference one to eight supporting records.',
+    );
   } else {
     const referencesValid = evidence.sourceRecordRefs.every(
       (reference) => typeof reference === 'string' && SAFE_REFERENCE.test(reference),
     );
     if (!referencesValid) {
-      add(errors, 'OPERATIONAL_RECORD_SOURCE_REF_UNSAFE', 'Supporting record references must be safe non-path identifiers.');
+      add(
+        errors,
+        'OPERATIONAL_RECORD_SOURCE_REF_UNSAFE',
+        'Supporting record references must be safe non-path identifiers.',
+      );
     }
     if (new Set(evidence.sourceRecordRefs).size !== evidence.sourceRecordRefs.length) {
-      add(errors, 'OPERATIONAL_RECORD_SOURCE_REF_DUPLICATE', 'Supporting record references must be distinct.');
+      add(
+        errors,
+        'OPERATIONAL_RECORD_SOURCE_REF_DUPLICATE',
+        'Supporting record references must be distinct.',
+      );
     }
     if (isRecord(gate) && evidence.sourceRecordRefs.includes(gate.evidenceRef)) {
-      add(errors, 'OPERATIONAL_RECORD_SOURCE_REF_SELF', 'A record cannot list itself as supporting evidence.');
+      add(
+        errors,
+        'OPERATIONAL_RECORD_SOURCE_REF_SELF',
+        'A record cannot list itself as supporting evidence.',
+      );
     }
   }
 
@@ -195,7 +303,11 @@ function validateOperationalGateEvidence(bytes, gateName, gate, commitSha) {
   if (isRecord(evidence.checks)) {
     expectedChecks.forEach((check) => {
       if (evidence.checks[check] !== true) {
-        add(errors, 'OPERATIONAL_RECORD_CHECK_FAILED', 'Every required gate-specific check must be explicitly true.');
+        add(
+          errors,
+          'OPERATIONAL_RECORD_CHECK_FAILED',
+          'Every required gate-specific check must be explicitly true.',
+        );
       }
     });
   }
