@@ -82,6 +82,17 @@ assert.doesNotMatch(stagingWebServer, /mode: 'uat'/);
 assert.ok(stagingWorkflow.includes('steps.staging_uat.outputs.uat_log_file'));
 assert.ok(stagingWorkflow.includes('steps.staging_uat.outputs.uat_log_dir'));
 assert.ok(stagingEvidenceWriter.includes('must be outside the repository'));
+assert.ok(stagingEvidenceWriter.includes('function readTranscript(env)'));
+assert.ok(stagingEvidenceWriter.includes('dedicated per-run directory'));
+assert.ok(stagingEvidenceWriter.includes('maxTranscriptBytes = 2 * 1024 * 1024'));
+assert.ok(stagingEvidenceWriter.includes('O_NOFOLLOW'));
+assert.ok(stagingEvidenceTests.includes('oversizedTranscript'));
+assert.ok(stagingEvidenceTests.includes('transcriptLink'));
+assert.ok(staging.includes('UAT transcript isolation'));
+assert.ok(executionPlan.includes('UAT transcripts private in unique per-run directories'));
+assert.ok(appsScriptRunbook.includes('transcript reader enforces its dedicated-directory contract'));
+assert.ok(stagingWorkflowTest.includes('private generated transcript'));
+
 assert.ok(
   stagingEvidenceTests.includes('a rerun must not overwrite an existing evidence artifact'),
 );
