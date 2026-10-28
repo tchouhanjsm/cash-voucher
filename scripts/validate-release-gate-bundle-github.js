@@ -85,7 +85,7 @@ async function main() {
     const response = await fetch(
       'https://api.github.com/repos/' + REPOSITORY + '/actions/runs/' + runId,
       {
-      headers: {
+        headers: {
         Accept: 'application/vnd.github+json',
         Authorization: 'Bearer ' + token,
         'X-GitHub-Api-Version': '2022-11-28',
