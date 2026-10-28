@@ -121,6 +121,15 @@ async function main() {
   assert.equal(validRuleset.integrationPolicy, 'active-ruleset');
   assert.deepEqual(validRuleset.integrationRulesetIds, [101]);
 
+  const clientMainUpdateRestricted = goodSnapshot();
+  clientMainUpdateRestricted.integrationProtection = null;
+  const restrictedRuleset = integrationRuleSet();
+  restrictedRuleset.rules.push({ type: 'update' });
+  clientMainUpdateRestricted.rulesets.push(restrictedRuleset);
+  assert.ok(
+    errorCodes(clientMainUpdateRestricted).includes('CLIENT_MAIN_RULESET_UPDATES_RESTRICTED'),
+  );
+
   const wrongDefault = goodSnapshot();
   wrongDefault.repository.default_branch = 'main';
   assert.ok(errorCodes(wrongDefault).includes('DEFAULT_BRANCH_NOT_CLIENT_MAIN'));
@@ -178,6 +187,10 @@ async function main() {
     errorCodes(mainNotFrozen).includes('MAIN_FREEZE_RULESET_MISSING'),
     'default-branch-only rule set does not protect client-main',
   );
+
+  const sharedMainFreeze = goodSnapshot();
+  sharedMainFreeze.rulesets = [legacyFreezeRuleSet(['main', 'client-main'])];
+  assert.ok(errorCodes(sharedMainFreeze).includes('MAIN_FREEZE_RULESET_MISSING'));
 
   const bypassedMain = goodSnapshot();
   bypassedMain.rulesets = [legacyFreezeRuleSet(['main'], [{ actor_id: 1, bypass_mode: 'always' }])];

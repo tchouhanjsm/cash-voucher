@@ -263,7 +263,8 @@ function legacyMainFreezePolicy(rulesets, defaultBranch) {
       return (
         isRecord(refNames) &&
         Array.isArray(refNames.include) &&
-        refNames.include.some(
+        refNames.include.length > 0 &&
+        refNames.include.every(
           (pattern) => pattern === LEGACY_BRANCH || pattern === 'refs/heads/' + LEGACY_BRANCH,
         )
       );
@@ -337,6 +338,17 @@ function evaluateRepositoryGovernance(snapshot) {
 
   const classic = classicIntegrationPolicy(snapshot && snapshot.integrationProtection);
   const integrationRulesets = integrationRulesetPolicy(rulesets, defaultBranch);
+  const clientMainUpdateRestricted = integrationRulesets.matching.some((ruleset) =>
+    Array.isArray(ruleset.rules) &&
+    ruleset.rules.some((rule) => isRecord(rule) && rule.type === 'update'),
+  );
+  if (clientMainUpdateRestricted) {
+    addError(
+      errors,
+      'CLIENT_MAIN_RULESET_UPDATES_RESTRICTED',
+      'An integration ruleset must not restrict all updates to client-main.',
+    );
+  }
   if (!classic.ok && !integrationRulesets.ok)
     errors.push(...classic.errors, ...integrationRulesets.errors);
   if (isRecord(integrationBranch) && integrationBranch.protected !== true) {
