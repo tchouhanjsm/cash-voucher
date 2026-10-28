@@ -8,14 +8,7 @@ const path = require('node:path');
 const test = require('node:test');
 
 const auditScript = path.join(__dirname, '..', 'scripts', 'dependency-audit.js');
-const allowedUrl = 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm';
 const allowedZodUrl = 'https://github.com/advisories/GHSA-mrhx-c7xc-m3w5';
-const allowedAdvisory = {
-  title: 'braces stack-exhaustion denial of service',
-  url: allowedUrl,
-  severity: 'high',
-  range: '<=3.0.3',
-};
 const allowedZodAdvisory = {
   title: 'Zod uncontrolled resource consumption via container validation',
   url: allowedZodUrl,
@@ -33,9 +26,9 @@ function baselineReport() {
   return {
     metadata: {
       vulnerabilities: {
-        total: 4,
+        total: 2,
         critical: 0,
-        high: 4,
+        high: 2,
         moderate: 0,
         low: 0,
         info: 0,
@@ -48,7 +41,7 @@ function baselineReport() {
         range: '>=3.0.0-alpha1',
         nodes: ['node_modules/@google/clasp'],
         fixAvailable,
-        via: ['micromatch', 'zod'],
+        via: ['zod'],
       },
       zod: {
         severity: 'high',
@@ -57,22 +50,6 @@ function baselineReport() {
         nodes: ['node_modules/zod'],
         fixAvailable,
         via: [{ ...allowedZodAdvisory }],
-      },
-      braces: {
-        severity: 'high',
-        isDirect: false,
-        range: '*',
-        nodes: ['node_modules/braces'],
-        fixAvailable,
-        via: [{ ...allowedAdvisory }],
-      },
-      micromatch: {
-        severity: 'high',
-        isDirect: false,
-        range: '>=0.2.0',
-        nodes: ['node_modules/micromatch'],
-        fixAvailable,
-        via: ['braces'],
       },
     },
   };
@@ -115,11 +92,11 @@ function runAudit(report, exitCode = 1, options = {}) {
   }
 }
 
-test('permits only the documented unpatched braces advisory chain', () => {
+test('permits only the documented temporary Zod advisory chain', () => {
   const result = runAudit(baselineReport());
 
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /REVIEWED EXCEPTION: GHSA-vfj7-8cjw-p6xm/);
+  assert.doesNotMatch(result.stdout, /REVIEWED EXCEPTION: GHSA-vfj7-8cjw-p6xm/);
   assert.match(result.stdout, /REVIEWED EXCEPTION: GHSA-mrhx-c7xc-m3w5/);
   assert.match(result.stdout, /Dependency security gate passed/);
 });
@@ -209,20 +186,49 @@ test('blocks an unrelated high-severity advisory', () => {
   assert.match(result.stderr, /new-package/);
 });
 
-test('does not blanket-allow a second advisory on an exempted package', () => {
+test('does not allow a stale audit result to revive the withdrawn braces advisory', () => {
   const report = baselineReport();
-  report.vulnerabilities.braces.via.push({
-    title: 'second braces advisory',
-    url: 'https://github.com/advisories/GHSA-aaaa-bbbb-cccc',
+  report.metadata.vulnerabilities.total += 2;
+  report.metadata.vulnerabilities.high += 2;
+  report.vulnerabilities['@google/clasp'].via = ['micromatch', 'zod'];
+  report.vulnerabilities.micromatch = {
     severity: 'high',
-    range: '<=3.0.3',
-  });
+    isDirect: false,
+    range: '>=0.2.0',
+    nodes: ['node_modules/micromatch'],
+    fixAvailable: {
+      name: '@google/clasp',
+      version: '2.5.0',
+      isSemVerMajor: true,
+    },
+    via: ['braces'],
+  };
+  report.vulnerabilities.braces = {
+    severity: 'high',
+    isDirect: false,
+    range: '*',
+    nodes: ['node_modules/braces'],
+    fixAvailable: {
+      name: '@google/clasp',
+      version: '2.5.0',
+      isSemVerMajor: true,
+    },
+    via: [
+      {
+        title: 'withdrawn braces stack-exhaustion advisory',
+        url: 'https://github.com/advisories/GHSA-vfj7-8cjw-p6xm',
+        severity: 'high',
+        range: '<=3.0.3',
+      },
+    ],
+  };
 
   const result = runAudit(report);
 
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Dependency security gate failed/);
   assert.doesNotMatch(result.stdout, /REVIEWED EXCEPTION: GHSA-vfj7-8cjw-p6xm/);
+  assert.match(result.stdout, /braces: severity=high/);
 });
 
 test('reports but does not block moderate-only findings', () => {

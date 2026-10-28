@@ -14,6 +14,8 @@ const REQUIRED_SHEETS = [
 const SHA1 = /^[a-f0-9]{40}$/i;
 const SHA256 = /^[a-f0-9]{64}$/i;
 const UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
+const SAFE_DEPLOYED_VERSION =
+  /^(?:v\d|version-\d|recovery-v\d|staging-v\d|release-v\d)[A-Za-z0-9._+-]{0,80}$/i;
 const SENSITIVE_KEY = new RegExp(
   [
     'password',
@@ -290,10 +292,12 @@ function validateRecoveryEvidence(evidence) {
     }
     if (
       typeof restore.deployedVersion !== 'string' ||
-      !restore.deployedVersion.trim() ||
-      restore.deployedVersion.length > 100
+      !SAFE_DEPLOYED_VERSION.test(restore.deployedVersion)
     ) {
-      add('DEPLOYED_VERSION', 'A bounded deployed version label is required.');
+      add(
+        'DEPLOYED_VERSION',
+        'A safe version label is required (for example recovery-v2026-10-27-1); URLs, email addresses and arbitrary identifiers are not accepted.',
+      );
     }
   }
 

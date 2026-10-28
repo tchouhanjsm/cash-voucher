@@ -8,7 +8,7 @@ on:
     types: [opened, synchronize, reopened]
 
 concurrency:
-  group: ci-${{ github.workflow }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}
+  group: ci-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}
   cancel-in-progress: true
 
 permissions:
@@ -50,7 +50,12 @@ jobs:
           if-no-files-found: error
 
       - name: Run quality gate
+        id: quality
         run: npm run check
+
+      - name: Print non-mutating Prettier diff for changed files
+        if: failure() && steps.quality.outcome == 'failure'
+        run: node scripts/show-format-diff.js
 
       - name: Validate PR handoff evidence
         if: github.event_name == 'pull_request'

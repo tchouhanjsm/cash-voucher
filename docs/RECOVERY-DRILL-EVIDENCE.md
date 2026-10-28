@@ -2,11 +2,25 @@
 
 **Purpose:** standardize the evidence required to accept a backup restore into a separate recovery destination. This is a source-side evidence validator, not a restore implementation.
 
-**Historical baseline at original selection:** `client-main` at `2b8120789811f27410f0542c29c7436fcc5f190c` (PR #232). The current integration baseline is `1dba1b008eb2303ffddf069285fbb22efc76a8cb` after PR #240 merged.
+**Historical baseline at original selection:** `client-main` at `2b8120789811f27410f0542c29c7436fcc5f190c` (PR #232). The current integration baseline is `a7421807b9bc2c56618ac1889c43f48ecfb79c81` after PRs #240 and #241 merged.
+
+## Current release-integrity checkpoint — 27 October 2026
+
+- The evidence validator now treats `restore.deployedVersion` as a version label rather than unrestricted text. URL, email, path-like and arbitrary identifier values are rejected; valid examples include `recovery-v2026-10-27-1` and `version-42`.
+- This is a source-side data-minimization guard. A passing validator still does not authenticate the operator or independently prove that live resources were inspected.
+- PRs #240 and #241 are merged. Current integration SHA: `a7421807b9bc2c56618ac1889c43f48ecfb79c81`. Keep `main` read-only and preserve owner-approved isolated restore requirements.
+
+## Consolidated release gate bundle — 28 October 2026
+
+The new `scripts/validate-release-gate-bundle.js` validates the same-SHA source workflow set, the sanitized staging configuration report, this recovery-drill contract and non-sensitive references for all live operational release gates. The full schema and invocation are in `docs/RELEASE-GATE-BUNDLE.md`.
+
+The bundle validator now recomputes SHA-256 for each operational record from `<evidenceRef>.evidence` files under a required private `--evidence-dir`; missing, changed, symlinked, unsafe or oversized files block the contract. This verifies bytes only and does not authenticate the witness. On POSIX, the directory must be mode `0700` or stricter and each record `0600` or stricter.
+
+The bundle should be created only after the intended `client-main` integration SHA has its own exact-head checks and authorized live steps have produced private evidence. It must not be generated from fixtures or from pre-merge PR checks as evidence for a later integration SHA. The command never makes live API calls or grants release approval. Recovery-drill evidence must be no older than seven days when included in a release bundle, and the staging configuration preflight must be no older than 24 hours. The application-level UAT/security/authorization/customer gates must also identify the same tested `client-main` SHA as the bundle.
 
 ## Current staging preflight boundary — 27 October 2026
 
-PR #241 adds a configuration-only check to the manual `validate-only` workflow. The readiness job is restricted to `client-main` and uses the protected `staging` Environment. Secrets are bound to its one validation step only; checkout, Node setup and artifact upload do not inherit them. The artifact is configuration evidence, not a recovery drill: it does not query Google resources, authenticate resource ownership, deploy, run UAT, or prove a restore.
+Merged PR #241 adds a configuration-only check to the manual `validate-only` workflow. The readiness job is restricted to `client-main` and uses the protected `staging` Environment. Secrets are bound to its one validation step only; checkout, Node setup and artifact upload do not inherit them. The artifact is configuration evidence, not a recovery drill: it does not query Google resources, authenticate resource ownership, deploy, run UAT, or prove a restore.
 
 Continue to require owner-approved verification of the intended production and recovery identities, a passing backup-integrity report, restore into separate recovery resources, full seven-sheet/header/count reconciliation, voucher and receipt reconciliation, and evidence that production remained unchanged.
 

@@ -23,6 +23,14 @@ const handoff = read('docs/HANDOFF.md');
 const recoveryEvidence = read('docs/RECOVERY-DRILL-EVIDENCE.md');
 const recoveryValidator = read('scripts/validate-recovery-evidence.js');
 const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
+const releaseGateBundleDocs = read('docs/RELEASE-GATE-BUNDLE.md');
+const releaseGateBundleValidator = read('scripts/validate-release-gate-bundle.js');
+const releaseGateBundleTest = read('test/test-release-gate-bundle.js');
+const ciWorkflow = read('.github/workflows/ci.yml');
+const formatDiffScript = read('scripts/show-format-diff.js');
+const flightWorkflowContract = read('test/test-flight-workflow.js');
+const recoveryEvidenceFixture = read('test/fixtures/recovery-evidence.js');
+const packageJson = JSON.parse(read('package.json'));
 const dashboard = read('frontend/features/dashboard.js');
 const auditHelpers = read('backend/25-helpers.gs');
 const backupHelpers = read('backend/20-backup.gs');
@@ -31,9 +39,96 @@ const administrationFrontend = read('frontend/features/administration.js');
 const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
-assert.match(handoff, /^\*\*Updated:\*\* 27 October 2026/m);
-assert.match(handoff, /Current integration baseline.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
-assert.match(handoff, /Current release-session checkpoint.*27 October 2026/);
+assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
+const currentIntegrationSha = 'a7421807b9bc2c56618ac1889c43f48ecfb79c81';
+assert.ok(handoff.includes(currentIntegrationSha));
+assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
+assert.ok(
+  handoff.includes('recomputes SHA-256 for all eight retained operational evidence records'),
+);
+assert.ok(staging.includes('Current release-gate bundle phase — 28 October 2026'));
+assert.ok(executionPlan.includes('Current release-gate bundle phase — 28 October 2026'));
+assert.ok(recoveryEvidence.includes('Consolidated release gate bundle — 28 October 2026'));
+assert.ok(packageJson.scripts['validate:release-bundle']);
+assert.ok(packageJson.scripts.test.includes('test/test-release-gate-bundle.js'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_SHA_MISMATCH'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_REPOSITORY'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_WORKFLOW'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_EVENT'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_REF'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_RUN_URL'));
+assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_EVIDENCE_DIGEST'));
+assert.ok(releaseGateBundleTest.includes('malformedOperationalDigest'));
+assert.ok(releaseGateBundleDocs.includes('evidenceSha256'));
+assert.ok(releaseGateBundleDocs.includes('--evidence-dir=/private/path/evidence-records'));
+assert.ok(releaseGateBundleDocs.includes('recomputes SHA-256 from the file bytes'));
+assert.ok(releaseGateBundleValidator.includes('verifyOperationalEvidenceDigests'));
+assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_EVIDENCE_HASH_MISMATCH'));
+assert.ok(releaseGateBundleValidator.includes('readBoundedEvidenceBytes'));
+assert.ok(releaseGateBundleValidator.includes('EVIDENCE_DIR_PERMISSIONS'));
+assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_EVIDENCE_FILE_PERMISSIONS'));
+assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_FILE_TOO_LARGE'));
+assert.ok(releaseGateBundleTest.includes('missingEvidenceDirectoryRun'));
+assert.ok(releaseGateBundleDocs.includes('mode `0700` or stricter'));
+assert.ok(releaseGateBundleDocs.includes('each evidence record `0600` or stricter'));
+
+assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_HASH_MISMATCH'));
+assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_FILE_UNSAFE'));
+assert.ok(releaseGateBundleTest.includes('missingEvidenceDirectoryRun'));
+assert.ok(handoff.includes('Operational evidence fingerprints'));
+
+assert.ok(releaseGateBundleTest.includes('wrongSourceRunUrl'));
+assert.ok(releaseGateBundleDocs.includes('integration-branch checks'));
+assert.ok(releaseGateBundleDocs.includes('refs/heads/client-main'));
+assert.doesNotMatch(ciWorkflow, /Temporary formatting diagnostic for PR 242|npx prettier --write/);
+assert.ok(ciWorkflow.includes('Print non-mutating Prettier diff for changed files'));
+assert.ok(ciWorkflow.includes("if: failure() && steps.quality.outcome == 'failure'"));
+assert.ok(formatDiffScript.includes("'--stdin-filepath'"));
+assert.ok(formatDiffScript.includes("'diff'"));
+assert.ok(formatDiffScript.includes('fs.mkdtempSync'));
+assert.ok(formatDiffScript.includes('fs.rmSync(tempRoot'));
+assert.doesNotMatch(formatDiffScript, /--write/);
+assert.ok(flightWorkflowContract.includes('PR-specific formatting workaround'));
+
+assert.ok(releaseGateBundleValidator.includes('PREFLIGHT_BOUNDARY'));
+assert.ok(releaseGateBundleValidator.includes("releaseApproval: 'human-review-required'"));
+assert.ok(releaseGateBundleTest.includes('SOURCE_CHECK_SHA_MISMATCH'));
+assert.ok(releaseGateBundleTest.includes('unsafeOperationalReference'));
+assert.ok(recoveryEvidenceFixture.includes('function buildRecoveryEvidence'));
+assert.ok(releaseGateBundleDocs.includes('does not independently query GitHub'));
+assert.ok(releaseGateBundleDocs.includes('--report=/private/path/release-gate-validation.json'));
+assert.ok(releaseGateBundleDocs.includes('must be outside the repository'));
+assert.ok(releaseGateBundleDocs.includes('existing report files are never overwritten'));
+assert.ok(releaseGateBundleValidator.includes('isInsideRepository'));
+assert.ok(
+  releaseGateBundleValidator.includes('input bundle must be stored outside the repository'),
+);
+assert.ok(releaseGateBundleTest.includes('repository-alias'));
+assert.ok(releaseGateBundleTest.includes('SENSITIVE-INTERNAL-NOTE'));
+assert.ok(releaseGateBundleValidator.includes('report output must not overwrite the input bundle'));
+assert.ok(releaseGateBundleValidator.includes('MAX_STAGING_PREFLIGHT_AGE_MS'));
+assert.ok(releaseGateBundleValidator.includes('MAX_RELEASE_BUNDLE_AGE_MS'));
+assert.ok(releaseGateBundleTest.includes('BUNDLE_STALE'));
+assert.ok(releaseGateBundleTest.includes('BUNDLE_TIMESTAMP_IN_FUTURE'));
+assert.ok(releaseGateBundleValidator.includes('MAX_RECOVERY_EVIDENCE_AGE_MS'));
+assert.ok(releaseGateBundleValidator.includes('OPERATIONAL_TEST_SHA_MISMATCH'));
+assert.ok(releaseGateBundleTest.includes('OPERATIONAL_EVIDENCE_STALE'));
+assert.ok(releaseGateBundleTest.includes('PREFLIGHT_STALE'));
+assert.ok(releaseGateBundleTest.includes('RECOVERY_STALE'));
+assert.ok(releaseGateBundleDocs.includes('Freshness windows'));
+
+assert.ok(staging.includes(currentIntegrationSha));
+assert.ok(executionPlan.includes(currentIntegrationSha));
+assert.ok(staging.includes('Deep-dive findings — current source disposition'));
+assert.ok(staging.includes('previous pending-code finding is resolved in the merged baseline'));
+assert.ok(staging.includes('GHSA-vfj7-8cjw-p6xm was withdrawn'));
+assert.ok(recoveryValidator.includes('SAFE_DEPLOYED_VERSION'));
+assert.ok(recoveryEvidenceTest.includes('private-id/exec'));
+assert.doesNotMatch(
+  handoff,
+  /\*\*Current integration baseline:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
+);
+assert.match(handoff, /Current release-session checkpoint.*28 October 2026/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);
@@ -92,11 +187,11 @@ assert.match(roadmap, /PR #169/);
 assert.match(release, /Verified main baseline.*8b14adc72c146589149a33d793ca9e55af5da13a/);
 assert.match(release, /Password hash and session protection/);
 assert.doesNotMatch(release, /PIN hash and session protection|Verify login, PIN change/);
-assert.match(
+assert.doesNotMatch(
   staging,
-  /Current integration baseline.*client-main.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
+  /\*\*Current integration baseline:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
 );
-assert.match(staging, /Current source batch.*client\/staging-config-preflight-20261027/);
+assert.ok(staging.includes('client/release-integrity-dependency-hardening-20261027'));
 assert.match(staging, /PR #208/);
 assert.match(staging, /Historical follow-up.*PR #229.*fix-business-date-arithmetic-20261027/);
 assert.doesNotMatch(staging, /1304a6555ccdd777f447a63eb648df84a257f6ec/);
@@ -149,8 +244,11 @@ assert.match(
   securityAudit,
   /Latest merged review baseline.*8e18b4f3ed8601f70e192b6d32587675ad4cdb7b/,
 );
-assert.match(executionPlan, /Current integration SHA.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/);
-assert.match(executionPlan, /Current source batch.*client\/staging-config-preflight-20261027/);
+assert.doesNotMatch(
+  executionPlan,
+  /\*\*Current integration SHA:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
+);
+assert.ok(executionPlan.includes('client/release-integrity-dependency-hardening-20261027'));
 assert.match(executionPlan, /e97c4e080b3f6903e16ef77f571822f9844faeed/);
 assert.match(executionPlan, /PR #211/);
 assert.match(executionPlan, /PRs #209–#213 are merged/);
@@ -163,10 +261,10 @@ assert.match(p0ReleaseBatch, /B2 — staging schema, backup and restore/);
 assert.match(p0ReleaseBatch, /B3 — security, authorization and real-device acceptance/);
 assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
 
-assert.match(staging, /read-only staging configuration readiness phase/i);
+assert.ok(staging.includes('private evidence digest verification phase'));
 assert.match(staging, /remote connectivity.*restore were not verified/i);
-assert.match(executionPlan, /read-only staging configuration readiness phase/i);
-assert.match(handoff, /staging configuration preflight phase/i);
+assert.ok(executionPlan.includes('private evidence digest verification phase'));
+assert.ok(handoff.includes('private evidence digest verification phase'));
 assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(staging, /Workflow isolation.*only from `client-main`/i);
 assert.match(executionPlan, /Secrets are scoped to the one validation step/i);
