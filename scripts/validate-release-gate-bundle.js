@@ -380,7 +380,13 @@ function buildSanitizedValidationReport(result, bundle, generatedAt = new Date()
   const rawSha = isRecord(bundle) && isRecord(bundle.source) ? bundle.source.commitSha : null;
   const sourceSha = typeof rawSha === 'string' && SHA1.test(rawSha) ? rawSha.toLowerCase() : null;
   const errorCodes = Array.isArray(result.errors)
-    ? [...new Set(result.errors.map((error) => error.code).filter((code) => /^[A-Z0-9_]{1,80}$/.test(code)))].sort()
+    ? [
+        ...new Set(
+          result.errors
+            .map((error) => error.code)
+            .filter((code) => /^[A-Z0-9_]{1,80}$/.test(code)),
+        ),
+      ].sort()
     : [];
 
   return {
@@ -404,9 +410,29 @@ function buildSanitizedValidationReport(result, bundle, generatedAt = new Date()
   };
 }
 
+function resolvePathForSafety(candidatePath) {
+  let cursor = path.resolve(candidatePath);
+  const suffix = [];
+
+  while (true) {
+    try {
+      const stats = fs.lstatSync(cursor);
+      const resolved = stats.isSymbolicLink() ? fs.realpathSync(cursor) : fs.realpathSync(cursor);
+      return path.join(resolved, ...suffix);
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error;
+      suffix.unshift(path.basename(cursor));
+      const parent = path.dirname(cursor);
+      if (parent === cursor) throw error;
+      cursor = parent;
+    }
+  }
+}
+
 function isInsideRepository(candidatePath) {
-  const repositoryRoot = path.resolve(__dirname, '..');
-  const relative = path.relative(repositoryRoot, path.resolve(candidatePath));
+  const repositoryRoot = fs.realpathSync(path.resolve(__dirname, '..'));
+  const resolvedCandidate = resolvePathForSafety(candidatePath);
+  const relative = path.relative(repositoryRoot, resolvedCandidate);
   return (
     relative === '' ||
     (relative !== '..' &&
@@ -442,7 +468,10 @@ function main() {
 
   if (!inputPath || args.some((arg) => arg.startsWith('--') && !arg.startsWith('--report='))) {
     console.error(
-      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json [--report=/private/path/validation-report.json]',
+      'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json',
+    );
+    console.error(
+      'Optional private report: --report=/private/path/validation-report.json',
     );
     process.exitCode = 2;
     return;
@@ -453,17 +482,23 @@ function main() {
     return;
   }
   if (path.resolve(inputPath) === path.resolve(__filename)) {
-    console.error('RELEASE GATE BUNDLE FAILED: validator source cannot be used as an evidence bundle.');
+    console.error(
+      'RELEASE GATE BUNDLE FAILED: validator source cannot be used as an evidence bundle.',
+    );
     process.exitCode = 2;
     return;
   }
   if (isInsideRepository(inputPath)) {
-    console.error('RELEASE GATE BUNDLE FAILED: input bundle must be stored outside the repository.');
+    console.error(
+      'RELEASE GATE BUNDLE FAILED: input bundle must be stored outside the repository.',
+    );
     process.exitCode = 2;
     return;
   }
   if (reportPath && isInsideRepository(reportPath)) {
-    console.error('RELEASE GATE BUNDLE FAILED: validation report must be stored outside the repository.');
+    console.error(
+      'RELEASE GATE BUNDLE FAILED: validation report must be stored outside the repository.',
+    );
     process.exitCode = 2;
     return;
   }
@@ -517,7 +552,9 @@ function main() {
     try {
       writeSanitizedValidationReport(reportPath, result, bundle);
     } catch {
-      console.error('RELEASE GATE BUNDLE FAILED: sanitized validation report could not be written.');
+      console.error(
+        'RELEASE GATE BUNDLE FAILED: sanitized validation report could not be written.',
+      );
       process.exitCode = 1;
       return;
     }
@@ -540,8 +577,9 @@ function main() {
       ' live operational gate references were internally consistent.',
   );
   console.log(
-    'This validates structure and consistency only. It does not authenticate evidence, execute live checks, or replace owner/QA approval.',
+    'Structure/consistency only: evidence is not authenticated and live checks are not executed.',
   );
+  console.log('Human review and owner/QA approval are still required.');
 }
 
 if (require.main === module) main();
@@ -550,6 +588,7 @@ module.exports = {
   REQUIRED_OPERATIONAL_GATES,
   REQUIRED_SOURCE_CHECKS,
   buildSanitizedValidationReport,
+  isInsideRepository,
   validateReleaseGateBundle,
   writeSanitizedValidationReport,
 };
