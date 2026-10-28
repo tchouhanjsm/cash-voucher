@@ -37,6 +37,8 @@ const REQUIRED_OPERATIONAL_GATES = [
 ];
 const SAFE_EVIDENCE_REFERENCE = /^[A-Z][A-Z0-9]{1,11}-[A-Z0-9][A-Z0-9._/-]{1,70}$/;
 const MAX_STAGING_PREFLIGHT_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_RELEASE_BUNDLE_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_RELEASE_BUNDLE_FUTURE_SKEW_MS = 5 * 60 * 1000;
 const MAX_RECOVERY_EVIDENCE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
 const MAX_OPERATIONAL_EVIDENCE_AGE_MS = {
   ownerBranchProtectionVerified: 30 * 24 * 60 * 60 * 1000,
@@ -328,7 +330,7 @@ function validateOperationalGates(gates, generatedAt, commitSha, errors) {
   });
 }
 
-function validateReleaseGateBundle(bundle) {
+function validateReleaseGateBundle(bundle, validationTime = new Date().toISOString()) {
   const errors = [];
   if (!isRecord(bundle)) {
     return {
@@ -358,6 +360,20 @@ function validateReleaseGateBundle(bundle) {
   }
   if (!validTimestamp(bundle.generatedAt)) {
     add(errors, 'RECORDED_AT', 'Bundle timestamp must be canonical UTC.');
+  }
+  if (!validTimestamp(validationTime)) {
+    add(errors, 'VALIDATION_TIMESTAMP', 'Validation time must be a canonical UTC timestamp.');
+  } else if (validTimestamp(bundle.generatedAt)) {
+    const bundleAgeMs = Date.parse(validationTime) - Date.parse(bundle.generatedAt);
+    if (bundleAgeMs < -MAX_RELEASE_BUNDLE_FUTURE_SKEW_MS) {
+      add(
+        errors,
+        'BUNDLE_TIMESTAMP_IN_FUTURE',
+        'Bundle timestamp is beyond the allowed five-minute clock-skew window.',
+      );
+    } else if (bundleAgeMs > MAX_RELEASE_BUNDLE_AGE_MS) {
+      add(errors, 'BUNDLE_STALE', 'Release gate bundle must be validated within 24 hours of creation.');
+    }
   }
 
   exactKeys(bundle.source, ['repository', 'ref', 'commitSha'], 'source', errors);
