@@ -52,6 +52,12 @@ jobs:
       - name: Run quality gate
         run: npm run check
 
+      - name: One-run formatter diff for PR 242
+        if: always() && github.event_name == 'pull_request' && github.event.pull_request.number == 242
+        run: |
+          npx prettier --write scripts/validate-release-gate-bundle.js
+          git diff --unified=0 -- scripts/validate-release-gate-bundle.js
+
       - name: Validate PR handoff evidence
         if: github.event_name == 'pull_request'
         run: npm run check:pr-quality
