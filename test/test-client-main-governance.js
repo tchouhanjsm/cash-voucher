@@ -98,6 +98,16 @@ async function main() {
   assert.equal(patternMatches('client/*', 'client/fix', 'main'), true);
   assert.equal(patternMatches('client/*', 'client/deep/fix', 'main'), false);
 
+  const jobNamedChecks = goodSnapshot();
+  jobNamedChecks.integrationProtection.required_status_checks.contexts = [
+    'quality',
+    'browser',
+    'flight',
+    'Inspect exact-head delivery state',
+  ];
+  const validJobNames = evaluateRepositoryGovernance(jobNamedChecks);
+  assert.equal(validJobNames.ok, true, JSON.stringify(validJobNames.errors));
+
   const validClassic = evaluateRepositoryGovernance(goodSnapshot());
   assert.equal(validClassic.ok, true, JSON.stringify(validClassic.errors));
   assert.equal(validClassic.integrationPolicy, 'classic-branch-protection');

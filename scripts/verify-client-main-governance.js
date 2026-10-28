@@ -5,9 +5,12 @@ const INTEGRATION_BRANCH = 'client-main';
 const LEGACY_BRANCH = 'main';
 const REQUIRED_CHECK_GROUPS = Object.freeze([
   { label: 'CI / Quality', aliases: ['ciquality', 'quality'] },
-  { label: 'Browser E2E', aliases: ['browsere2e'] },
-  { label: 'Full Flight Test', aliases: ['fullflighttest'] },
-  { label: 'Autonomous Development Monitor', aliases: ['autonomousdevelopmentmonitor'] },
+  { label: 'Browser E2E', aliases: ['browsere2e', 'browser'] },
+  { label: 'Full Flight Test', aliases: ['fullflighttest', 'flight'] },
+  {
+    label: 'Autonomous Development Monitor',
+    aliases: ['autonomousdevelopmentmonitor', 'inspectexactheaddeliverystate'],
+  },
 ]);
 const API_BASE = 'https://api.github.com';
 const API_TIMEOUT_MS = 10000;
