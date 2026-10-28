@@ -15,6 +15,7 @@ const { buildRecoveryEvidence } = require('./fixtures/recovery-evidence');
 const repository = 'tchouhanjsm/cash-voucher';
 const ref = 'refs/heads/client-main';
 const commitSha = 'a'.repeat(40);
+const validationTime = '2026-10-28T00:05:00.000Z';
 
 function buildPreflight() {
   const runId = '50105';
@@ -80,11 +81,23 @@ function buildBundle() {
   };
 }
 
-function hasCode(bundle, code) {
-  return validateReleaseGateBundle(bundle).errors.some((error) => error.code === code);
+function buildCurrentBundle() {
+  const bundle = buildBundle();
+  const now = Date.now();
+  bundle.generatedAt = new Date(now).toISOString();
+  bundle.stagingPreflight.generatedAt = new Date(now - 5 * 60 * 1000).toISOString();
+  bundle.recoveryEvidence.recordedAt = new Date(now - 60 * 60 * 1000).toISOString();
+  Object.values(bundle.operationalGates).forEach((gate) => {
+    gate.verifiedAt = new Date(now - 10 * 60 * 1000).toISOString();
+  });
+  return bundle;
 }
 
-const valid = validateReleaseGateBundle(buildBundle());
+function hasCode(bundle, code) {
+  return validateReleaseGateBundle(bundle, validationTime).errors.some((error) => error.code === code);
+}
+
+const valid = validateReleaseGateBundle(buildBundle(), validationTime);
 assert.equal(valid.ok, true, JSON.stringify(valid.errors));
 assert.deepEqual(valid.summary, {
   sourceSha: commitSha,
@@ -110,6 +123,18 @@ assert.ok(hasCode(duplicateSourceRun, 'SOURCE_CHECK_RUN_ID_DUPLICATE'));
 const failedSourceCheck = buildBundle();
 failedSourceCheck.sourceChecks.ciQuality.conclusion = 'failure';
 assert.ok(hasCode(failedSourceCheck, 'SOURCE_CHECK_FAILED'));
+
+const staleBundle = buildBundle();
+staleBundle.generatedAt = '2026-10-27T00:00:00.000Z';
+assert.ok(hasCode(staleBundle, 'BUNDLE_STALE'));
+
+const futureBundle = buildBundle();
+futureBundle.generatedAt = '2026-10-28T00:11:00.000Z';
+assert.ok(hasCode(futureBundle, 'BUNDLE_TIMESTAMP_IN_FUTURE'));
+
+const invalidValidationTime = validateReleaseGateBundle(buildBundle(), 'not-a-timestamp');
+assert.ok(invalidValidationTime.errors.some((error) => error.code === 'VALIDATION_TIMESTAMP'));
+
 
 const blockedPreflight = buildBundle();
 blockedPreflight.stagingPreflight.outcome = 'blocked';
@@ -206,7 +231,7 @@ const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'release-gate-bundle-'));
 try {
   const inputPath = path.join(tempDir, 'bundle.json');
   const passingReportPath = path.join(tempDir, 'private-report-output', 'passing-report.json');
-  fs.writeFileSync(inputPath, JSON.stringify(buildBundle()), { mode: 0o600 });
+  fs.writeFileSync(inputPath, JSON.stringify(buildCurrentBundle()), { mode: 0o600 });
 
   const passingRun = spawnSync(
     process.execPath,
@@ -243,7 +268,7 @@ try {
   assert.match(overwriteExistingReport.stderr, /sanitized validation report could not be written/);
   assert.deepEqual(fs.readFileSync(passingReportPath), previousReportBytes);
 
-  const blockedBundle = buildBundle();
+  const blockedBundle = buildCurrentBundle();
   blockedBundle.sourceChecks.ciQuality.headSha = 'b'.repeat(40);
   blockedBundle.privateNotes = 'SENSITIVE-INTERNAL-NOTE';
   fs.writeFileSync(inputPath, JSON.stringify(blockedBundle), { mode: 0o600 });
