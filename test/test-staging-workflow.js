@@ -407,8 +407,14 @@ assert.doesNotMatch(deployTargetRecheck, /CLASPRC_JSON/);
 assert.doesNotMatch(deployUatStep, /CLASPRC_JSON/);
 assert.doesNotMatch(uatTargetPreflight, /CLASPRC_JSON/);
 assert.doesNotMatch(uatOnlyStep, /CLASPRC_JSON/);
-assert.match(deployUatStep, /CV_STAGING_UAT_CONFIRM_WRITES: \$\{\{ inputs\.confirm_staging_writes \}\}/);
-assert.match(uatOnlyStep, /CV_STAGING_UAT_CONFIRM_WRITES: \$\{\{ inputs\.confirm_staging_writes \}\}/);
+assert.match(
+  deployUatStep,
+  /CV_STAGING_UAT_CONFIRM_WRITES: \$\{\{ inputs\.confirm_staging_writes \}\}/,
+);
+assert.match(
+  uatOnlyStep,
+  /CV_STAGING_UAT_CONFIRM_WRITES: \$\{\{ inputs\.confirm_staging_writes \}\}/,
+);
 assert.doesNotMatch(deployConfigPreflight, /CV_STAGING_UAT_CONFIRM_WRITES/);
 assert.doesNotMatch(deployTargetRecheck, /CV_STAGING_UAT_CONFIRM_WRITES/);
 assert.doesNotMatch(uatTargetPreflight, /CV_STAGING_UAT_CONFIRM_WRITES/);
