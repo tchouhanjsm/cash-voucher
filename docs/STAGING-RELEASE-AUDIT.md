@@ -15,7 +15,7 @@
 - The staging preflight report must be a configuration pass for the same repository/ref/SHA, with all required categories passing, no blockers, and no assertion of live connectivity, identity verification, deployment or restore.
 - Recovery-drill evidence is passed through the existing recovery contract and must reference the same SHA. The bundle also requires non-sensitive evidence references for branch protection, live UAT, actual security headers, live role/receipt authorization, offline/reconnect, print/PDF, accessibility and customer acceptance.
 - A passing bundle means internal consistency only. It does not authenticate evidence or approve release; the CLI summary always says human review is required.
-- **Private evidence digest verification:** `--evidence-dir` is required; each `<evidenceRef>.evidence` file is hashed from disk and compared with its declared SHA-256. Missing, tampered, unsafe, symlinked and oversized files fail the contract. Evidence authenticity remains a human review responsibility.
+- **Private evidence digest verification:** `--evidence-dir` is required; each `<evidenceRef>.evidence` file is hashed from disk and compared with its declared SHA-256. Missing, tampered, unsafe, symlinked and oversized files fail the contract. Evidence authenticity remains a human review responsibility. On POSIX, the evidence directory must be `0700` or stricter and each evidence file `0600` or stricter.
 - No actual release bundle, live staging operation, restore, deployment or customer acceptance has been performed by this source phase.
 
 ## Historical checkpoint — 27 October 2026 22:11 IST (superseded by release-gate bundle phase)
