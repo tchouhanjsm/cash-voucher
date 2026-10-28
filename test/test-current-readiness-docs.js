@@ -26,6 +26,8 @@ const recoveryEvidenceTest = read('test/test-recovery-evidence.js');
 const releaseGateBundleDocs = read('docs/RELEASE-GATE-BUNDLE.md');
 const releaseGateBundleValidator = read('scripts/validate-release-gate-bundle.js');
 const releaseGateBundleTest = read('test/test-release-gate-bundle.js');
+const ciWorkflow = read('.github/workflows/ci.yml');
+const flightWorkflowContract = read('test/test-flight-workflow.js');
 const recoveryEvidenceFixture = read('test/fixtures/recovery-evidence.js');
 const packageJson = JSON.parse(read('package.json'));
 const dashboard = read('frontend/features/dashboard.js');
@@ -47,6 +49,17 @@ assert.ok(recoveryEvidence.includes('Consolidated release gate bundle — 28 Oct
 assert.ok(packageJson.scripts['validate:release-bundle']);
 assert.ok(packageJson.scripts.test.includes('test/test-release-gate-bundle.js'));
 assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_SHA_MISMATCH'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_REPOSITORY'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_WORKFLOW'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_EVENT'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_REF'));
+assert.ok(releaseGateBundleValidator.includes('SOURCE_CHECK_RUN_URL'));
+assert.ok(releaseGateBundleTest.includes('wrongSourceRunUrl'));
+assert.ok(releaseGateBundleDocs.includes('integration-branch checks'));
+assert.ok(releaseGateBundleDocs.includes('refs/heads/client-main'));
+assert.doesNotMatch(ciWorkflow, /Temporary formatting diagnostic for PR 242|npx prettier --write/);
+assert.ok(flightWorkflowContract.includes('PR-specific formatting workaround'));
+
 assert.ok(releaseGateBundleValidator.includes('PREFLIGHT_BOUNDARY'));
 assert.ok(releaseGateBundleValidator.includes("releaseApproval: 'human-review-required'"));
 assert.ok(releaseGateBundleTest.includes('SOURCE_CHECK_SHA_MISMATCH'));
