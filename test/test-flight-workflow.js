@@ -47,6 +47,19 @@ assert.ok(
   'CI push and pull_request runs have separate concurrency groups.',
 );
 
+assert.ok(
+  browserWorkflow.includes(
+    'group: e2e-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}',
+  ),
+  'Browser E2E push and pull_request runs have separate concurrency groups.',
+);
+
+assert.match(
+  ciWorkflow,
+  /types: \[opened, synchronize, reopened, edited\]/,
+  'CI reruns the PR handoff contract when the description is edited.',
+);
+
 assert.doesNotMatch(
   ciWorkflow,
   /Temporary formatting diagnostic for PR 242|npx prettier --write/,

@@ -2,10 +2,17 @@
 
 **Updated:** 28 October 2026 (staging evidence output and cleanup hardening phase)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
-**Current integration SHA:** `80b83af4bd722557b8889e8082c6e49029bdc311` (PR #242 merged; release remains blocked pending live evidence).
+**Current integration SHA:** `68263f48138d782e66428f6c5c19b3dd5b203bc5` (PR #243 merged; PR #244 provenance verification in review; release remains blocked pending live evidence).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** `client/staging-secret-scope-release-sprints-20261028`; combine step-scoped staging credentials, safe sanitized evidence outputs, resilient temporary credential cleanup and regression tests.
+**Current source batch:** `client/release-run-provenance-verification-20261028`; verify real source-run metadata, add adversarial regression coverage and reconcile the live handoff.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
+
+## Source-run provenance verification batch — 28 October 2026
+
+- Add a read-only GitHub Actions provenance verifier for four source workflows, checking actual run ID, repository, workflow file, branch, push event, integration SHA, completed/success conclusion and canonical URL.
+- Inject the run reader for deterministic tests covering matching records, mismatched metadata, missing records, lookup failure and malformed-bundle blocking.
+- Keep ordinary local bundle validation offline; remote checks use a separate CLI and a token with read-only Actions access.
+- Provenance metadata is not evidence of live staging/UAT, restore/reconciliation, production-unchanged status or customer acceptance.
 
 ## Evidence artifact and temporary credential cleanup sprint — 28 October 2026
 

@@ -1,8 +1,8 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 28 October 2026 (staging evidence output and cleanup hardening phase)
-**Current integration baseline:** `client-main` `80b83af4bd722557b8889e8082c6e49029bdc311` (PR #242 merged; operational release remains blocked).
-**Current source batch:** `client/staging-secret-scope-release-sprints-20261028`; enforce least-privilege staging secrets, safe sanitized evidence output, and cleanup verification for temporary Clasp credential directories.
+**Audit date:** 28 October 2026 (source-run provenance verification phase)
+**Current integration baseline:** `client-main` `68263f48138d782e66428f6c5c19b3dd5b203bc5` (PR #243 merged; operational release remains blocked).
+**Current source batch:** `client/release-run-provenance-verification-20261028`; verify source workflow-run provenance against the GitHub Actions read API and keep operational release blocked until live gates are satisfied.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).

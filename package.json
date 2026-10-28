@@ -42,7 +42,8 @@
     "build:web": "node scripts/build-web.js",
     "build:template": "node scripts/build-template.js",
     "validate:recovery-evidence": "node scripts/validate-recovery-evidence.js",
-    "validate:release-bundle": "node scripts/validate-release-gate-bundle.js"
+    "validate:release-bundle": "node scripts/validate-release-gate-bundle.js",
+    "validate:release-bundle:github": "node scripts/validate-release-gate-bundle-github.js"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
