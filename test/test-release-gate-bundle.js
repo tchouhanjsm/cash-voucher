@@ -306,6 +306,20 @@ try {
   assert.deepEqual(directDigestCheck.errors, []);
   assert.equal(directDigestCheck.verifiedCount, 8);
 
+  if (process.platform !== 'win32') {
+    const permissionGate = passingBundle.operationalGates.liveStagingUatPassed;
+    const permissionPath = path.join(evidenceDirectory, permissionGate.evidenceRef + '.evidence');
+    fs.chmodSync(permissionPath, 0o644);
+    const permissionCheck = verifyOperationalEvidenceDigests(
+      passingBundle,
+      resolveOperationalEvidenceDirectory(evidenceDirectory),
+    );
+    assert.ok(
+      permissionCheck.errors.some((error) => error.code === 'OPERATIONAL_EVIDENCE_FILE_PERMISSIONS'),
+    );
+    fs.chmodSync(permissionPath, 0o600);
+  }
+
   const oversizedGate = passingBundle.operationalGates.liveRoleAuthorizationVerified;
   const oversizedRecordPath = path.join(evidenceDirectory, oversizedGate.evidenceRef + '.evidence');
   const heldOversizedRecord = fs.readFileSync(oversizedRecordPath);
@@ -365,6 +379,15 @@ try {
     () => resolveOperationalEvidenceDirectory(evidenceDirectoryAlias),
     /EVIDENCE_DIR_UNSAFE/,
   );
+
+  if (process.platform !== 'win32') {
+    fs.chmodSync(evidenceDirectory, 0o755);
+    assert.throws(
+      () => resolveOperationalEvidenceDirectory(evidenceDirectory),
+      /EVIDENCE_DIR_PERMISSIONS/,
+    );
+    fs.chmodSync(evidenceDirectory, 0o700);
+  }
 
   const digestMismatchGate = passingBundle.operationalGates.liveStagingUatPassed;
   const digestMismatchPath = path.join(
