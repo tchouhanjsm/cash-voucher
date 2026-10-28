@@ -1,6 +1,6 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 28 October 2026 (release gate bundle validation phase)
+**Updated:** 28 October 2026 (release gate bundle validation phase and provenance hardening)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
 **Current integration SHA:** `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; the current release remains blocked).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
@@ -13,6 +13,7 @@
 - The evidence contract rejects mixed source SHAs, failed/missing source workflows, blocked or mis-scoped staging preflight, invalid recovery evidence, non-passing operational gates and unsafe evidence references.
 - Freshness policy: validate the bundle within 24 hours of generation (five-minute future clock-skew tolerance); staging preflight ≤24 hours; recovery drill ≤7 days; live staging UAT, security headers, live authorization and customer acceptance ≤7 days; branch protection, offline/reconnect, print/PDF and accessibility ≤30 days. App-level operational evidence must bind to the same tested `client-main` SHA.
 - Source workflow run IDs must be distinct; staging and recovery evidence must precede the bundle creation timestamp. The CLI reads a bounded JSON file and emits codes/sanitized summary only.
+- Each source-check record must identify the canonical workflow name, repository, `push` event, `refs/heads/client-main` ref and matching Actions run URL in addition to the successful conclusion, run ID and full SHA. This catches accidental reuse of PR-head, wrong-workflow or wrong-repository evidence before the owner reviews it against GitHub.
 - A passing contract remains subject to owner/QA witness review; it does not call GitHub or Google services, deploy, run UAT, restore data or independently authenticate evidence.
 - Release is still blocked until the live staging and operational gates are separately evidenced by authorized operators.
 
