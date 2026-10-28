@@ -152,7 +152,7 @@ function validateSourceChecks(sourceChecks, commitSha, errors) {
       );
     }
 
-    if (typeof check.runId !== 'string' || !/^\\d{1,20}$/.test(check.runId)) {
+    if (typeof check.runId !== 'string' || !/^\d{1,20}$/.test(check.runId)) {
       add(
         errors,
         'SOURCE_CHECK_RUN_ID',
