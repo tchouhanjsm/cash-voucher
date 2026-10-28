@@ -427,7 +427,15 @@ function resolvePathForSafety(candidatePath) {
       continue;
     }
 
-    const resolved = fs.realpathSync(cursor);
+    let resolved;
+    try {
+      resolved = fs.realpathSync(cursor);
+    } catch (error) {
+      if (stats.isSymbolicLink() && error.code === 'ENOENT') {
+        return path.join(path.resolve(cursor), ...suffix);
+      }
+      throw error;
+    }
     return path.join(resolved, ...suffix);
   }
 }
@@ -450,8 +458,12 @@ function writeSanitizedValidationReport(reportPath, result, bundle) {
   if (isInsideRepository(resolvedReport)) {
     throw new Error('REPORT_PATH_INSIDE_REPOSITORY');
   }
-  if (fs.existsSync(resolvedReport) && fs.lstatSync(resolvedReport).isSymbolicLink()) {
-    throw new Error('REPORT_PATH_SYMLINK');
+  try {
+    if (fs.lstatSync(resolvedReport).isSymbolicLink()) {
+      throw new Error('REPORT_PATH_SYMLINK');
+    }
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
   }
   fs.mkdirSync(path.dirname(resolvedReport), { recursive: true, mode: 0o700 });
   const report = buildSanitizedValidationReport(result, bundle);
