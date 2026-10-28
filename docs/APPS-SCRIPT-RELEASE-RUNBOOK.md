@@ -40,6 +40,8 @@ The staging evidence writer accepts only an existing parent directory outside th
 
 The deployment wrapper runs Clasp from a temporary project workspace with an isolated temporary home containing `.clasprc.json`. On every exit, it attempts to remove both locations and verifies removal. A cleanup failure is a stop condition: inspect the isolated runner securely before any retry, and do not publish temporary path names or credential contents in chat or artifacts.
 
+UAT execution uses a separate per-run private transcript directory. Raw UAT output is retained only long enough for sanitized evidence assembly; the transcript reader enforces its dedicated-directory contract, private permissions, no-symlink policy and a 2 MiB size limit. The local static server receives only the resource/configuration values it needs, not owner/manager credentials or write consent. Treat any transcript-validation or cleanup error as a failed evidence step; do not bypass it to obtain a green workflow.
+
 ## Staging resource isolation policy (current)
 
 The isolation attestation `OWNER-VERIFIED-STAGING-ONLY` is permitted **only for the non-mutating artifact preflight** when all four production resource reference IDs are intentionally omitted. It records an operator assertion; it does not independently prove resource identity.
