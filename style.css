@@ -2902,7 +2902,6 @@ nav .ic {
   height: 17px;
 }
 
-
 /* Payment-method reconciliation surfaces */
 .dashboard-payment-methods,
 .report-method-breakdown {
@@ -2927,17 +2926,20 @@ nav .ic {
   font-variant-numeric: tabular-nums;
 }
 @media (min-width: 1001px) {
-  .report-filters {
+  .filters.report-filters {
+    display: grid;
     grid-template-columns: repeat(7, minmax(0, 1fr));
   }
 }
 @media (max-width: 1000px) {
-  .report-filters {
+  .filters.report-filters {
+    display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 @media (max-width: 600px) {
-  .report-filters {
+  .filters.report-filters {
+    display: grid;
     grid-template-columns: minmax(0, 1fr);
   }
 }

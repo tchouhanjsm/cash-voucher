@@ -2096,7 +2096,8 @@ ok(
 );
 ok(
   dayThree.data.includedVouchers.some(
-    (voucher) => voucher.id === cashCloseNonCash.data.created[0].id && voucher.paymentMethod === 'UPI',
+    (voucher) =>
+      voucher.id === cashCloseNonCash.data.created[0].id && voucher.paymentMethod === 'UPI',
   ),
   'saved cash-close voucher snapshot retains payment method for later reconciliation',
 );
@@ -3465,7 +3466,8 @@ ok(
   paymentMethodReconciliationUnrecorded.ok &&
     paymentMethodReconciliationUnrecorded.data.items.some(
       (item) =>
-        item.id === paymentMethodReconciliationLegacy.data.created[0].id && item.paymentMethod === '',
+        item.id === paymentMethodReconciliationLegacy.data.created[0].id &&
+        item.paymentMethod === '',
     ) &&
     paymentMethodReconciliationUnrecorded.data.items.every((item) => item.paymentMethod === ''),
   'legacy blank methods remain filterable without inventing a method',

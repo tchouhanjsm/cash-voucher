@@ -1,10 +1,5 @@
 import { $ } from '../core/dom.js';
-import {
-  can,
-  PAYMENT_METHOD_FILTER_OPTIONS,
-  paymentMethodLabel,
-  S,
-} from '../core/state.js';
+import { can, PAYMENT_METHOD_FILTER_OPTIONS, paymentMethodLabel, S } from '../core/state.js';
 import {
   csvCell,
   dmy,
@@ -146,7 +141,13 @@ export function createReports({ api }) {
             <select id="movementPaymentMethod">
               ${PAYMENT_METHOD_FILTER_OPTIONS.map(
                 ([value, label]) =>
-                  '<option value="' + value + '"' + (R.paymentMethod === value ? ' selected' : '') + '>' + esc(label) + '</option>',
+                  '<option value="' +
+                  value +
+                  '"' +
+                  (R.paymentMethod === value ? ' selected' : '') +
+                  '>' +
+                  esc(label) +
+                  '</option>',
               ).join('')}
             </select>
           </label>
@@ -205,13 +206,22 @@ export function createReports({ api }) {
           <h2>Active approved payments by method</h2>
           <p class="muted">Payment amounts exclude cancelled and unresolved approvals. Historical entries without a saved method remain visible as Not recorded.</p>
           <div class="report-method-breakdown-list">
-            ${Array.isArray(summary.byPaymentMethod) && summary.byPaymentMethod.length
-              ? summary.byPaymentMethod
-                  .map((item) =>
-                    '<div class="report-method-breakdown-item"><span>' + esc(item.k) + '</span><strong>' + money(item.s) + '</strong><small class="muted">' + esc(scalarText(item.n)) + ' payment(s)</small></div>',
-                  )
-                  .join('')
-              : '<p class="muted">Payment-method breakdown is unavailable for this deployment or selection.</p>'}
+${ 
+              Array.isArray(summary.byPaymentMethod) && summary.byPaymentMethod.length
+                ? summary.byPaymentMethod
+                    .map(
+                      (item) =>
+                        '<div class="report-method-breakdown-item"><span>' +
+                        esc(item.k) +
+                        '</span><strong>' +
+                        money(item.s) +
+                        '</strong><small class="muted">' +
+                        esc(scalarText(item.n)) +
+                        ' payment(s)</small></div>',
+                    )
+                    .join('')
+                : '<p class="muted">Payment-method breakdown is unavailable for this deployment or selection.</p>'
+            }
           </div>
         </div>
         <div class="card report-results-card">
@@ -313,8 +323,10 @@ export function createReports({ api }) {
       }
 
       if (
-        (summary.paymentMethod !== undefined && summary.paymentMethod !== requestFilters.paymentMethod) ||
-        (requestFilters.paymentMethod !== 'ALL' && summary.paymentMethod !== requestFilters.paymentMethod) ||
+        (summary.paymentMethod !== undefined &&
+          summary.paymentMethod !== requestFilters.paymentMethod) ||
+        (requestFilters.paymentMethod !== 'ALL' &&
+          summary.paymentMethod !== requestFilters.paymentMethod) ||
         (summary.byPaymentMethod !== undefined &&
           (!Array.isArray(summary.byPaymentMethod) ||
             !summary.byPaymentMethod.every(
@@ -329,7 +341,9 @@ export function createReports({ api }) {
                 item.s >= 0,
             )))
       ) {
-        throw new Error('The report returned invalid payment-method data. Confirm the client and backend versions, then retry.');
+        throw new Error(
+          'The report returned invalid payment-method data. Confirm the client and backend versions, then retry.',
+        );
       }
 
       const reportTextFields = [
