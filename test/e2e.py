@@ -1236,6 +1236,57 @@ with sync_playwright() as p:
     )
     page.unroute('**/api?*', inject_cash_close_markup)
 
+    # The open preview uses the same method-label rendering and must keep hostile values inert.
+    cash_close_preview_method_payload = '<img src=x onerror=window.xss=1>'
+
+    def inject_open_cash_close_method(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if (
+            request_data.get('action') != 'cashClosePreview'
+            or request_data.get('date') != '2020-01-02'
+        ):
+            route.continue_()
+            return
+
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data') if payload.get('ok') else None
+        if not isinstance(data, dict) or data.get('closed') is not False:
+            route.fulfill(response=response)
+            return
+        data['includedVouchers'] = [
+            {
+                'id': 'cash-close-xss-open-preview-voucher',
+                'no': 'P-XSS-OPEN',
+                'date': '2020-01-02',
+                'vendor': 'Open preview vendor',
+                'paymentMethod': cash_close_preview_method_payload,
+                'amount': 1,
+                'cashImpact': 'CASH_OUT',
+            }
+        ]
+        data['activeVoucherCount'] = 1
+        route.fulfill(response=response, body=json.dumps(payload))
+
+    page.route('**/api?*', inject_open_cash_close_method)
+    page.fill('#cc-date', '2020-01-02')
+    page.click('[data-act=closePreview]')
+    page.wait_for_function(
+        "document.querySelector('#cc-results .cc-method-breakdown')?.innerText.includes('Payment · Unrecognized method')"
+    )
+    open_preview_text = page.locator('#cc-results').inner_text()
+    check(
+        'Payment · Unrecognized method' in open_preview_text
+        and cash_close_preview_method_payload not in open_preview_text
+        and page.locator('#cc-results img, #cc-results svg').count() == 0
+        and not page.evaluate('window.xss === true'),
+        'open cash-close preview normalizes hostile payment methods before rendering',
+    )
+    page.unroute('**/api?*', inject_open_cash_close_method)
+
     # A server-provided error message is untrusted text, not an HTML template.
     cash_close_error_payload = '<svg onload=window.__xssFired=true></svg>'
 
