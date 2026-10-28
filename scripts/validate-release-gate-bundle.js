@@ -301,11 +301,7 @@ function validateOperationalGates(gates, generatedAt, commitSha, errors) {
         'Bundle generation cannot precede an operational gate verification.',
       );
     } else if (
-      !isEvidenceWithinAge(
-        generatedAt,
-        gate.verifiedAt,
-        MAX_OPERATIONAL_EVIDENCE_AGE_MS[name],
-      )
+      !isEvidenceWithinAge(generatedAt, gate.verifiedAt, MAX_OPERATIONAL_EVIDENCE_AGE_MS[name])
     ) {
       add(
         errors,
@@ -315,10 +311,7 @@ function validateOperationalGates(gates, generatedAt, commitSha, errors) {
     }
 
     if (requiresClientSha) {
-      if (
-        typeof gate.testedClientMainSha !== 'string' ||
-        !SHA1.test(gate.testedClientMainSha)
-      ) {
+      if (typeof gate.testedClientMainSha !== 'string' || !SHA1.test(gate.testedClientMainSha)) {
         add(
           errors,
           'OPERATIONAL_TEST_SHA',
@@ -458,19 +451,10 @@ function validateReleaseGateBundle(bundle) {
       MAX_RECOVERY_EVIDENCE_AGE_MS,
     )
   ) {
-    add(
-      errors,
-      'RECOVERY_STALE',
-      'Recovery drill evidence must be no older than seven days.',
-    );
+    add(errors, 'RECOVERY_STALE', 'Recovery drill evidence must be no older than seven days.');
   }
 
-  validateOperationalGates(
-    bundle.operationalGates,
-    bundle.generatedAt,
-    commitSha,
-    errors,
-  );
+  validateOperationalGates(bundle.operationalGates, bundle.generatedAt, commitSha, errors);
 
   return {
     ok: errors.length === 0,
