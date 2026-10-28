@@ -71,6 +71,7 @@ function buildBundle() {
     operationalGates[name] = {
       status: 'pass',
       evidenceRef: 'OPS-' + String(60101 + index),
+      evidenceSha256: String(index + 1).padStart(64, '0'),
       verifiedAt: '2026-10-27T23:30:00.000Z',
       ...(name === 'ownerBranchProtectionVerified' ? {} : { testedClientMainSha: commitSha }),
     };
@@ -234,6 +235,15 @@ const unsafeOperationalReference = buildBundle();
 unsafeOperationalReference.operationalGates.customerAcceptanceApproved.evidenceRef =
   'owner@example.com';
 assert.ok(hasCode(unsafeOperationalReference, 'OPERATIONAL_EVIDENCE_REFERENCE'));
+
+const missingOperationalDigest = buildBundle();
+delete missingOperationalDigest.operationalGates.liveStagingUatPassed.evidenceSha256;
+assert.ok(hasCode(missingOperationalDigest, 'MISSING_FIELD'));
+
+const malformedOperationalDigest = buildBundle();
+malformedOperationalDigest.operationalGates.customerAcceptanceApproved.evidenceSha256 =
+  'not-a-sha256-digest';
+assert.ok(hasCode(malformedOperationalDigest, 'OPERATIONAL_EVIDENCE_DIGEST'));
 
 const unknownRootField = buildBundle();
 unknownRootField.privateNotes = 'must be rejected';
