@@ -157,10 +157,7 @@ try {
   const originalEvidenceBytes = fs.readFileSync(outputPath, 'utf8');
   assert.throws(
     () =>
-      writeStagingEvidence(
-        { ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: outputPath },
-        successfulLog,
-      ),
+      writeStagingEvidence({ ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: outputPath }, successfulLog),
     /existing files are never overwritten/,
   );
   assert.equal(
@@ -176,10 +173,7 @@ try {
   );
   assert.throws(
     () =>
-      writeStagingEvidence(
-        { ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: repoOutputPath },
-        successfulLog,
-      ),
+      writeStagingEvidence({ ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: repoOutputPath }, successfulLog),
     /outside the repository/,
   );
   assert.equal(fs.existsSync(repoOutputPath), false);
@@ -200,10 +194,7 @@ try {
   fs.symlinkSync(protectedTarget, symlinkOutput);
   assert.throws(
     () =>
-      writeStagingEvidence(
-        { ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: symlinkOutput },
-        successfulLog,
-      ),
+      writeStagingEvidence({ ...baseEnv, CV_EVIDENCE_OUTPUT_PATH: symlinkOutput }, successfulLog),
     /regular, non-symlink file/,
   );
   assert.equal(fs.readFileSync(protectedTarget, 'utf8'), 'keep-target-unchanged');
