@@ -73,10 +73,7 @@ function sanitized(value, env = process.env) {
 function cleanupTemporaryDirectories(directories, fileSystem = fs) {
   let successful = true;
   for (const directory of directories) {
-    if (typeof directory !== 'string' || !directory.trim()) {
-      successful = false;
-      continue;
-    }
+    if (typeof directory !== 'string' || !directory.trim()) continue;
     try {
       fileSystem.rmSync(directory, { recursive: true, force: true });
       if (fileSystem.existsSync(directory)) successful = false;
@@ -137,11 +134,13 @@ function deployStaging(env = process.env, root = ROOT) {
     throw new Error('Expected backend/appsscript.json was not found.');
   }
 
-  const workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-staging-project-'));
-  const tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-staging-home-'));
+  let workspace;
+  let tempHome;
   let deploymentResult;
   let deploymentError;
   try {
+    workspace = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-staging-project-'));
+    tempHome = fs.mkdtempSync(path.join(os.tmpdir(), 'cash-voucher-staging-home-'));
     const projectRoot = path.join(workspace, 'project');
     fs.mkdirSync(projectRoot, { recursive: true, mode: 0o700 });
     fs.cpSync(sourceBackend, path.join(projectRoot, 'backend'), {
