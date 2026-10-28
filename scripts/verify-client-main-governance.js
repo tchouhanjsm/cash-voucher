@@ -46,11 +46,16 @@ function patternMatches(pattern, branch, defaultBranch) {
   if (pieces.length !== 2) return false;
   const prefix = pieces[0];
   const suffix = pieces[1];
-  return (
-    branch.startsWith(prefix) &&
-    branch.endsWith(suffix) &&
-    branch.length >= prefix.length + suffix.length
-  );
+  if (
+    !branch.startsWith(prefix) ||
+    !branch.endsWith(suffix) ||
+    branch.length < prefix.length + suffix.length
+  ) {
+    return false;
+  }
+  // GitHub ruleset fnmatch uses FNM_PATHNAME: a single star cannot cross '/'.
+  const wildcardValue = branch.slice(prefix.length, branch.length - suffix.length);
+  return !wildcardValue.includes('/');
 }
 
 function matchingActiveBranchRulesets(rulesets, branch, defaultBranch) {
