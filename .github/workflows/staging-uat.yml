@@ -358,7 +358,6 @@ jobs:
           CV_STAGING_UAT_MANAGER_EMAIL: ${{ secrets.CV_STAGING_UAT_MANAGER_EMAIL }}
           CV_STAGING_UAT_MANAGER_PASSWORD: ${{ secrets.CV_STAGING_UAT_MANAGER_PASSWORD }}
           CV_STAGING_UAT_CONFIRM_WRITES: ${{ inputs.confirm_staging_writes }}
-          CV_STAGING_UAT_LOG_FILE: ${{ runner.temp }}/cash-voucher-staging-uat.log
         run: npm run uat:staging
 
       - name: Assemble sanitized staging execution evidence
