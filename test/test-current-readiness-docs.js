@@ -218,7 +218,7 @@ assert.match(recoveryEvidence, /cash-voucher-recovery-drill/);
 assert.ok(staging.includes('release gate bundle validation phase'));
 assert.match(staging, /remote connectivity.*restore were not verified/i);
 assert.ok(executionPlan.includes('release gate bundle validation phase'));
-assert.ok(handoff.includes('release gate bundle validation phase'));
+assert.ok(handoff.includes('release evidence freshness and deployed-SHA binding phase'));
 assert.match(recoveryEvidence, /configuration-only check.*validate-only.*workflow/i);
 assert.match(staging, /Workflow isolation.*only from `client-main`/i);
 assert.match(executionPlan, /Secrets are scoped to the one validation step/i);
