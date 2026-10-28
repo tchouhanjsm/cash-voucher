@@ -1,11 +1,19 @@
 # Cash Voucher — Execution Plan
 
-**Updated:** 28 October 2026 (staging workflow secret-scope phase)
+**Updated:** 28 October 2026 (staging evidence output and cleanup hardening phase)
 **Integration branch:** `client-main`; `main` remains legacy/read-only.
 **Current integration SHA:** `80b83af4bd722557b8889e8082c6e49029bdc311` (PR #242 merged; release remains blocked pending live evidence).
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b`.
-**Current source batch:** `client/staging-secret-scope-release-sprints-20261028`; scope staging deploy/UAT credentials to individual required steps, test the workflow contract and document residual governance risk.
+**Current source batch:** `client/staging-secret-scope-release-sprints-20261028`; combine step-scoped staging credentials, safe sanitized evidence outputs, resilient temporary credential cleanup and regression tests.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
+
+## Evidence artifact and temporary credential cleanup sprint — 28 October 2026
+
+- Use exclusive, private evidence-file creation; refuse in-repository paths, symlinks, non-regular files, existing artifact destinations and missing parent directories.
+- Treat `GITHUB_STEP_SUMMARY` as an output path: reject unsafe aliases and append only sanitized metadata through a no-follow descriptor.
+- On deployment completion or failure, attempt removal of both temporary project source and temporary Clasp credential home, then verify neither remains. If cleanup cannot be confirmed, stop with a sanitized hard failure and do not retry deployment automatically.
+- Verify negative cases with sentinel target files, symlink destinations, duplicate output attempts and simulated cleanup failure.
+- This phase does not change staging deployment semantics, dispatch a workflow, or access live Google resources.
 
 ## Staging secret-scope sprint batch — 28 October 2026
 
