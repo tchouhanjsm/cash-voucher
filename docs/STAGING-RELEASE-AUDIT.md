@@ -1,14 +1,22 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 27 October 2026 (release integrity and dependency policy phase)
+**Audit date:** 28 October 2026 (release gate bundle validation phase)
 **Current integration baseline:** `client-main` `a7421807b9bc2c56618ac1889c43f48ecfb79c81` (PRs #240 and #241 merged; operational release remains blocked).
-**Current source batch:** `client/release-integrity-dependency-hardening-20261027`; harden recovery evidence, dependency policy and current release-state accuracy.
+**Current source batch:** `client/release-integrity-dependency-hardening-20261027`; consolidate exact-SHA source checks, sanitized staging preflight, recovery evidence and operational gate references into one fail-closed contract.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
 
-## Current release-session checkpoint — 27 October 2026 22:11 IST
+## Current release-gate bundle phase — 28 October 2026
+
+- `scripts/validate-release-gate-bundle.js` requires CI / Quality, Browser E2E, Full Flight and Autonomous Development Monitor to succeed on the same `client-main` SHA, with distinct workflow run IDs.
+- The staging preflight report must be a configuration pass for the same repository/ref/SHA, with all required categories passing, no blockers, and no assertion of live connectivity, identity verification, deployment or restore.
+- Recovery-drill evidence is passed through the existing recovery contract and must reference the same SHA. The bundle also requires non-sensitive evidence references for branch protection, live UAT, actual security headers, live role/receipt authorization, offline/reconnect, print/PDF, accessibility and customer acceptance.
+- A passing bundle means internal consistency only. It does not authenticate evidence or approve release; the CLI summary always says human review is required.
+- No actual release bundle, live staging operation, restore, deployment or customer acceptance has been performed by this source phase.
+
+## Historical checkpoint — 27 October 2026 22:11 IST (superseded by release-gate bundle phase)
 
 - **Integration baseline:** `client-main` at `a7421807b9bc2c56618ac1889c43f48ecfb79c81`; PRs #240 and #241 are merged. Legacy `main` remains frozen/read-only.
 - **Current consolidated source batch:** `client/release-integrity-dependency-hardening-20261027`. It tightens recovery-evidence version labels, removes an exception for a withdrawn advisory, adds regression coverage, and refreshes current release/handoff checkpoints. It does not deploy or access live resources.
@@ -263,3 +271,4 @@ Automatic recovery is limited to timed-out source-validation runs, validated aga
 - **Recovery-evidence sanitization:** the current batch restricts `restore.deployedVersion` to a safe version-label pattern so this allowed field cannot carry a URL, email address, path or arbitrary identifier string.
 - **Dependency policy:** GHSA-vfj7-8cjw-p6xm was withdrawn by GitHub on 23 October 2026 and is removed from the accepted exceptions; the active Zod advisory remains a scoped developer-tooling exception with a 9 November 2026 review date.
 - **Still operational:** live staging identity/UAT, actual response headers, real isolated backup/restore, migration need, device/offline recovery, printing, accessibility and customer acceptance remain unverified. Green CI/mock tests must not close those gates.
+- **Bundle validation:** `docs/RELEASE-GATE-BUNDLE.md` documents the private evidence bundle contract and how to validate it. Do not commit the actual bundle or substitute mock fixtures for operational evidence.
