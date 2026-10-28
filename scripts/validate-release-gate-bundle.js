@@ -636,6 +636,24 @@ function resolveOperationalEvidenceDirectory(candidatePath) {
   return canonicalPath;
 }
 
+function readBoundedEvidenceBytes(descriptor, maxBytes) {
+  const chunks = [];
+  const chunk = Buffer.allocUnsafe(64 * 1024);
+  let totalBytes = 0;
+
+  while (true) {
+    const remaining = maxBytes + 1 - totalBytes;
+    if (remaining <= 0) return null;
+    const bytesRead = fs.readSync(descriptor, chunk, 0, Math.min(chunk.length, remaining), null);
+    if (bytesRead === 0) break;
+    totalBytes += bytesRead;
+    if (totalBytes > maxBytes) return null;
+    chunks.push(Buffer.from(chunk.subarray(0, bytesRead)));
+  }
+
+  return Buffer.concat(chunks, totalBytes);
+}
+
 function verifyOperationalEvidenceDigests(bundle, evidenceDirectory) {
   const errors = [];
   let verifiedCount = 0;
@@ -699,7 +717,14 @@ function verifyOperationalEvidenceDigests(bundle, evidenceDirectory) {
         });
         return;
       }
-      const bytes = fs.readFileSync(descriptor);
+      const bytes = readBoundedEvidenceBytes(descriptor, MAX_OPERATIONAL_EVIDENCE_FILE_BYTES);
+      if (bytes === null) {
+        errors.push({
+          code: 'OPERATIONAL_EVIDENCE_FILE_TOO_LARGE',
+          message: 'An operational evidence record exceeds the 10 MiB limit.',
+        });
+        return;
+      }
       const actualDigest = crypto.createHash('sha256').update(bytes).digest('hex');
       if (actualDigest.toLowerCase() !== gate.evidenceSha256.toLowerCase()) {
         errors.push({
