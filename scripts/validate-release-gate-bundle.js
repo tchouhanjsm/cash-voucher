@@ -382,9 +382,7 @@ function buildSanitizedValidationReport(result, bundle, generatedAt = new Date()
   const errorCodes = Array.isArray(result.errors)
     ? [
         ...new Set(
-          result.errors
-            .map((error) => error.code)
-            .filter((code) => /^[A-Z0-9_]{1,80}$/.test(code)),
+          result.errors.map((error) => error.code).filter((code) => /^[A-Z0-9_]{1,80}$/.test(code)),
         ),
       ].sort()
     : [];
@@ -446,9 +444,7 @@ function isInsideRepository(candidatePath) {
   const relative = path.relative(repositoryRoot, resolvedCandidate);
   return (
     relative === '' ||
-    (relative !== '..' &&
-      !relative.startsWith('..' + path.sep) &&
-      !path.isAbsolute(relative))
+    (relative !== '..' && !relative.startsWith('..' + path.sep) && !path.isAbsolute(relative))
   );
 }
 
@@ -485,9 +481,7 @@ function main() {
     console.error(
       'Usage: npm run validate:release-bundle -- /private/path/release-gate-bundle.json',
     );
-    console.error(
-      'Optional private report: --report=/private/path/validation-report.json',
-    );
+    console.error('Optional private report: --report=/private/path/validation-report.json');
     process.exitCode = 2;
     return;
   }
