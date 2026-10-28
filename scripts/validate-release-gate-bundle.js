@@ -647,13 +647,7 @@ function readBoundedEvidenceBytes(descriptor, maxBytes) {
   while (true) {
     const remaining = maxBytes + 1 - totalBytes;
     if (remaining <= 0) return null;
-    const bytesRead = fs.readSync(
-      descriptor,
-      chunk,
-      0,
-      Math.min(chunk.length, remaining),
-      null,
-    );
+    const bytesRead = fs.readSync(descriptor, chunk, 0, Math.min(chunk.length, remaining), null);
     if (bytesRead === 0) break;
     totalBytes += bytesRead;
     if (totalBytes > maxBytes) return null;
@@ -815,9 +809,7 @@ function main() {
     !evidenceDirectoryArgument ||
     args.some(
       (arg) =>
-        arg.startsWith('--') &&
-        !arg.startsWith('--report=') &&
-        !arg.startsWith('--evidence-dir='),
+        arg.startsWith('--') && !arg.startsWith('--report=') && !arg.startsWith('--evidence-dir='),
     )
   ) {
     console.error(
