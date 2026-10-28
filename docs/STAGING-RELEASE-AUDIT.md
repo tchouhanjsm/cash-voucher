@@ -1,12 +1,20 @@
 # Staging Release Audit and Pending Queue
 
-**Audit date:** 28 October 2026 (staging workflow secret-scope phase)
+**Audit date:** 28 October 2026 (staging evidence output and cleanup hardening phase)
 **Current integration baseline:** `client-main` `80b83af4bd722557b8889e8082c6e49029bdc311` (PR #242 merged; operational release remains blocked).
-**Current source batch:** `client/staging-secret-scope-release-sprints-20261028`; remove job-level staging secrets and enforce least-privilege per-step exposure in deploy/UAT.
+**Current source batch:** `client/staging-secret-scope-release-sprints-20261028`; enforce least-privilege staging secrets, safe sanitized evidence output, and cleanup verification for temporary Clasp credential directories.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).
 **Scope:** source/workflow audit only. No live deployment, restore, customer acceptance or production operation is claimed.
+
+## Staging evidence output and cleanup hardening — 28 October 2026
+
+- Evidence JSON is now created with exclusive-create semantics and restrictive file permissions; existing files are not overwritten. The writer refuses repository-contained destinations, symlinks, non-regular files and nonexistent parent directories.
+- The GitHub step summary is appended through a no-follow file descriptor and must remain outside the repository. It contains only sanitized outcome metadata.
+- Staging deployment cleanup attempts both the temporary project workspace and the isolated Clasp credential home even when one removal fails. Failure to verify cleanup produces a generic stop-and-inspect error instead of silently continuing.
+- Regression tests verify existing-file preservation, symlink target preservation, repo-path rejection, output-parent failures and cleanup attempts after a simulated removal failure.
+- These checks protect artifact handling and local runner residue; they do not authenticate the staging target or prove deployment/UAT/restore.
 
 ## Staging secret-scope sprint batch — 28 October 2026
 
