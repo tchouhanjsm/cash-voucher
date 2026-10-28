@@ -62,7 +62,7 @@ assert.ok(
 );
 assert.ok(releaseGateBundleTest.includes('repository-alias'));
 assert.ok(releaseGateBundleTest.includes('SENSITIVE-INTERNAL-NOTE'));
-assert.ok(releaseGateBundleTest.includes('report output must not overwrite the input bundle'));
+assert.ok(releaseGateBundleValidator.includes('report output must not overwrite the input bundle'));
 
 assert.ok(staging.includes(currentIntegrationSha));
 assert.ok(executionPlan.includes(currentIntegrationSha));
