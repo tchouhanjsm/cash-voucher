@@ -404,12 +404,32 @@ function buildSanitizedValidationReport(result, bundle, generatedAt = new Date()
   };
 }
 
+function isInsideRepository(candidatePath) {
+  const repositoryRoot = path.resolve(__dirname, '..');
+  const relative = path.relative(repositoryRoot, path.resolve(candidatePath));
+  return (
+    relative === '' ||
+    (relative !== '..' &&
+      !relative.startsWith('..' + path.sep) &&
+      !path.isAbsolute(relative))
+  );
+}
+
 function writeSanitizedValidationReport(reportPath, result, bundle) {
   if (!reportPath) return null;
   const resolvedReport = path.resolve(reportPath);
-  fs.mkdirSync(path.dirname(resolvedReport), { recursive: true });
+  if (isInsideRepository(resolvedReport)) {
+    throw new Error('REPORT_PATH_INSIDE_REPOSITORY');
+  }
+  if (fs.existsSync(resolvedReport) && fs.lstatSync(resolvedReport).isSymbolicLink()) {
+    throw new Error('REPORT_PATH_SYMLINK');
+  }
+  fs.mkdirSync(path.dirname(resolvedReport), { recursive: true, mode: 0o700 });
   const report = buildSanitizedValidationReport(result, bundle);
-  fs.writeFileSync(resolvedReport, JSON.stringify(report, null, 2) + '\n', { mode: 0o600, flag: 'w' });
+  fs.writeFileSync(resolvedReport, JSON.stringify(report, null, 2) + '\n', {
+    mode: 0o600,
+    flag: 'w',
+  });
   fs.chmodSync(resolvedReport, 0o600);
   return report;
 }
@@ -432,6 +452,21 @@ function main() {
     process.exitCode = 2;
     return;
   }
+  if (path.resolve(inputPath) === path.resolve(__filename)) {
+    console.error('RELEASE GATE BUNDLE FAILED: validator source cannot be used as an evidence bundle.');
+    process.exitCode = 2;
+    return;
+  }
+  if (isInsideRepository(inputPath)) {
+    console.error('RELEASE GATE BUNDLE FAILED: input bundle must be stored outside the repository.');
+    process.exitCode = 2;
+    return;
+  }
+  if (reportPath && isInsideRepository(reportPath)) {
+    console.error('RELEASE GATE BUNDLE FAILED: validation report must be stored outside the repository.');
+    process.exitCode = 2;
+    return;
+  }
   if (reportPath && path.resolve(reportPath) === path.resolve(inputPath)) {
     console.error('RELEASE GATE BUNDLE FAILED: report output must not overwrite the input bundle.');
     process.exitCode = 2;
@@ -439,7 +474,15 @@ function main() {
   }
 
   let bundle;
+  let inputStats;
   try {
+    const linkStats = fs.lstatSync(inputPath);
+    if (linkStats.isSymbolicLink()) {
+      console.error('RELEASE GATE BUNDLE FAILED: input bundle must not be a symbolic link.');
+      process.exitCode = 2;
+      return;
+    }
+    inputStats = linkStats;
     const stats = fs.statSync(inputPath);
     if (!stats.isFile() || stats.size > 5 * 1024 * 1024) {
       console.error(
@@ -456,6 +499,22 @@ function main() {
   }
 
   const result = validateReleaseGateBundle(bundle);
+  if (reportPath && fs.existsSync(reportPath)) {
+    try {
+      const existingReport = fs.lstatSync(reportPath);
+      const inputResolved = fs.statSync(inputPath);
+      if (existingReport.isSymbolicLink()) {
+        throw new Error('REPORT_PATH_SYMLINK');
+      }
+      if (existingReport.dev === inputResolved.dev && existingReport.ino === inputResolved.ino) {
+        throw new Error('REPORT_OVERWRITES_INPUT');
+      }
+    } catch {
+      console.error('RELEASE GATE BUNDLE FAILED: report output path is unsafe.');
+      process.exitCode = 2;
+      return;
+    }
+  }
   if (reportPath) {
     try {
       writeSanitizedValidationReport(reportPath, result, bundle);
