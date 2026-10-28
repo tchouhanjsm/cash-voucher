@@ -293,33 +293,33 @@ assert.match(
 );
 
 function extractWorkflowJob(name, nextName) {
-  const start = workflow.indexOf('  ' + name + ':\\n');
-  const end = nextName ? workflow.indexOf('  ' + nextName + ':\\n', start + 1) : workflow.length;
+  const start = workflow.indexOf('  ' + name + ':\n');
+  const end = nextName ? workflow.indexOf('  ' + nextName + ':\n', start + 1) : workflow.length;
   assert.ok(start >= 0 && end > start, 'workflow job exists: ' + name);
   return workflow.slice(start, end);
 }
 
 function extractWorkflowStep(job, name) {
-  const marker = '      - name: ' + name + '\\n';
+  const marker = '      - name: ' + name + '\n';
   const start = job.indexOf(marker);
   assert.ok(start >= 0, 'workflow step exists: ' + name);
-  const end = job.indexOf('\\n      - name: ', start + marker.length);
+  const end = job.indexOf('\n      - name: ', start + marker.length);
   return job.slice(start, end < 0 ? job.length : end);
 }
 
 function assertNoStepSecrets(step, description) {
-  assert.doesNotMatch(step, /\\$\\{\\{\\s*secrets\\./, description);
+  assert.doesNotMatch(step, /\$\{\{\s*secrets\./, description);
 }
 
 const deployJob = extractWorkflowJob('deploy', 'uat');
 const uatOnlyJob = extractWorkflowJob('uat');
-const deployHeader = deployJob.split('    steps:\\n')[0];
-const uatOnlyHeader = uatOnlyJob.split('    steps:\\n')[0];
+const deployHeader = deployJob.split('    steps:\n')[0];
+const uatOnlyHeader = uatOnlyJob.split('    steps:\n')[0];
 assertNoStepSecrets(deployHeader, 'deploy job header must not expose secrets to every step');
 assertNoStepSecrets(uatOnlyHeader, 'uat job header must not expose secrets to every step');
 assert.doesNotMatch(
   uatOnlyJob,
-  /CLASPRC_JSON|secrets\\.CLASPRC_JSON/,
+  /CLASPRC_JSON|secrets\.CLASPRC_JSON/,
   'UAT-only must never receive the Clasp OAuth credential',
 );
 
@@ -401,14 +401,14 @@ for (const key of [
     'UAT-only execution receives required target input: ' + key,
   );
 }
-assert.match(deployConfigPreflight, /CLASPRC_JSON: \\$\\{\\{ secrets\\.CLASPRC_JSON \\}\\}/);
-assert.match(deployMutation, /CLASPRC_JSON: \\$\\{\\{ secrets\\.CLASPRC_JSON \\}\\}/);
+assert.match(deployConfigPreflight, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
+assert.match(deployMutation, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
 assert.doesNotMatch(deployTargetRecheck, /CLASPRC_JSON/);
 assert.doesNotMatch(deployUatStep, /CLASPRC_JSON/);
 assert.doesNotMatch(uatTargetPreflight, /CLASPRC_JSON/);
 assert.doesNotMatch(uatOnlyStep, /CLASPRC_JSON/);
-assert.match(deployUatStep, /CV_STAGING_UAT_CONFIRM_WRITES: \\$\\{\\{ inputs\\.confirm_staging_writes \\}\\}/);
-assert.match(uatOnlyStep, /CV_STAGING_UAT_CONFIRM_WRITES: \\$\\{\\{ inputs\\.confirm_staging_writes \\}\\}/);
+assert.match(deployUatStep, /CV_STAGING_UAT_CONFIRM_WRITES: \$\{\{ inputs\.confirm_staging_writes \}\}/);
+assert.match(uatOnlyStep, /CV_STAGING_UAT_CONFIRM_WRITES: \$\{\{ inputs\.confirm_staging_writes \}\}/);
 assert.doesNotMatch(deployConfigPreflight, /CV_STAGING_UAT_CONFIRM_WRITES/);
 assert.doesNotMatch(deployTargetRecheck, /CV_STAGING_UAT_CONFIRM_WRITES/);
 assert.doesNotMatch(uatTargetPreflight, /CV_STAGING_UAT_CONFIRM_WRITES/);
