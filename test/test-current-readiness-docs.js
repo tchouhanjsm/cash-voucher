@@ -58,7 +58,9 @@ assert.ok(stagingWorkflowTest.includes('UAT-only must never receive the Clasp OA
 
 assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
 assert.ok(
-  handoff.includes('recomputes SHA-256 for all eight retained operational evidence records'),
+  handoff.includes(
+    'merged PR #242 added release-bundle freshness, exact deployed-SHA binding, private evidence digest verification and safe report handling',
+  ),
 );
 assert.ok(staging.includes('Current release-gate bundle phase — 28 October 2026'));
 assert.ok(executionPlan.includes('Current release-gate bundle phase — 28 October 2026'));
