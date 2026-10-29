@@ -1867,6 +1867,52 @@ ok(
     ),
   'voucher history reports legacy and unsupported rows without linking unsupported events',
 );
+const crossPageFixtureStart = g.sheets.AuditLog.rows.length;
+const repeatedBoundaryEventId = 'cross-page-duplicate-history-fixture';
+for (let index = 0; index < 51; index++) {
+  const eventId = index < 2 ? repeatedBoundaryEventId : 'cross-page-history-event-' + index;
+  g.sheets.AuditLog.rows.push([
+    new Date(Date.now() + index),
+    'history-pagination@test.com',
+    'STRUCTURED_AUDIT',
+    'voucher-history',
+    JSON.stringify({
+      version: 1,
+      entityType: 'voucher',
+      entityId: historyVoucherId,
+      eventId: eventId,
+      eventType: 'VOUCHER_UPDATED',
+      summary: 'Pagination fixture ' + index,
+      changes: [],
+    }),
+  ]);
+}
+const newestBoundaryPage = as(T, 'voucherHistory', { id: historyVoucherId });
+const olderBoundaryPage =
+  newestBoundaryPage.ok && newestBoundaryPage.data.nextBeforeRow !== null
+    ? as(T, 'voucherHistory', {
+        id: historyVoucherId,
+        beforeRow: newestBoundaryPage.data.nextBeforeRow,
+      })
+    : { ok: false, data: { rows: [], scanRange: null, scanDiagnostics: {} } };
+const duplicateBoundaryRows =
+  newestBoundaryPage.ok &&
+  olderBoundaryPage.ok &&
+  newestBoundaryPage.data.rows.some((event) => event.eventId === repeatedBoundaryEventId) &&
+  olderBoundaryPage.data.rows.some((event) => event.eventId === repeatedBoundaryEventId);
+const boundaryRangesDoNotOverlap =
+  newestBoundaryPage.ok &&
+  olderBoundaryPage.ok &&
+  newestBoundaryPage.data.rows.length === 50 &&
+  newestBoundaryPage.data.nextBeforeRow !== null &&
+  olderBoundaryPage.data.scanRange.lastRow < newestBoundaryPage.data.scanRange.firstRow &&
+  newestBoundaryPage.data.scanDiagnostics.duplicateEventRows === 0 &&
+  olderBoundaryPage.data.scanDiagnostics.duplicateEventRows === 0;
+g.sheets.AuditLog.rows.splice(crossPageFixtureStart);
+ok(
+  duplicateBoundaryRows && boundaryRangesDoNotOverlap,
+  'voucher history pages have disjoint scan ranges while exposing a duplicate event ID split across the page boundary',
+);
 const unrelatedHistory = as(T, 'voucherHistory', { id: 'voucher-does-not-exist' });
 ok(
   unrelatedHistory.ok &&

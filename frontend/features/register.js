@@ -1143,6 +1143,8 @@ export function createRegister({ api, go }) {
     let loading = false;
     let eventCategory = 'ALL';
     let loadedEventCount = 0;
+    const seenEventIds = new Set();
+    const repeatedEventIdsAcrossPages = new Set();
     const isValidPage = (page, requestedBeforeRow) => {
       if (
         !isRecord(page) ||
@@ -1226,7 +1228,15 @@ export function createRegister({ api, go }) {
     };
 
     const appendEvents = (events) => {
+      const eventIdsFromEarlierPages = new Set(seenEventIds);
+      const repeatedOnThisPage = new Set();
       events.forEach((event) => {
+        if (event.eventId) {
+          if (eventIdsFromEarlierPages.has(event.eventId)) {
+            repeatedOnThisPage.add(event.eventId);
+          }
+          seenEventIds.add(event.eventId);
+        }
         const card = document.createElement('article');
         card.className = 'voucher-history-event';
         const title = document.createElement('h3');
@@ -1256,6 +1266,8 @@ export function createRegister({ api, go }) {
         list.appendChild(card);
         loadedEventCount++;
       });
+      repeatedOnThisPage.forEach((eventId) => repeatedEventIdsAcrossPages.add(eventId));
+      return repeatedEventIdsAcrossPages.size;
     };
 
     const loadPage = async (append) => {
@@ -1275,7 +1287,7 @@ export function createRegister({ api, go }) {
           throw new Error('The server returned invalid voucher-history data.');
         }
         if (!append) list.replaceChildren();
-        appendEvents(page.rows);
+        const repeatedAcrossPagesCount = appendEvents(page.rows);
         beforeRow = page.nextBeforeRow;
         older.hidden = beforeRow === null;
         status.className = 'muted voucher-history-status';
@@ -1347,6 +1359,13 @@ export function createRegister({ api, go }) {
             ' duplicate row(s) in this scan. The rows remain visible; review the audit log before relying on completeness.';
           status.className = 'error voucher-history-status';
         }
+        if (repeatedAcrossPagesCount) {
+          status.textContent +=
+            ' Repeated event identifiers across loaded pages: ' +
+            repeatedAcrossPagesCount +
+            ' unique event ID(s). Rows remain visible; review the audit log before relying on completeness.';
+          status.className = 'error voucher-history-status';
+        }
       } catch (error) {
         status.className = 'error voucher-history-status';
         status.textContent =
@@ -1367,6 +1386,8 @@ export function createRegister({ api, go }) {
       eventCategory = filter.value;
       beforeRow = null;
       loadedEventCount = 0;
+      seenEventIds.clear();
+      repeatedEventIdsAcrossPages.clear();
       list.replaceChildren();
       status.className = 'muted voucher-history-status';
       status.textContent = 'Loading voucher history…';

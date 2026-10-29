@@ -1512,6 +1512,7 @@ with sync_playwright() as p:
 
     history_requests = []
     inject_invalid_history_page = {'enabled': False}
+    inject_history_overlap = {'stage': 'disabled', 'event': None}
     history_route_states = []
     history_page_errors = []
     page.on('pageerror', lambda error: history_page_errors.append(str(error)))
@@ -1541,6 +1542,32 @@ with sync_playwright() as p:
             rows[0]['reason'] = history_xss_payload
             if isinstance(rows[0].get('changes'), list) and rows[0]['changes']:
                 rows[0]['changes'][0]['after'] = history_xss_payload
+        if inject_history_overlap['stage'] == 'first' and isinstance(rows, list) and rows:
+            prior_page_event = dict(rows[0])
+            inject_history_overlap['event'] = prior_page_event
+            data['rows'] = [prior_page_event]
+            data['scannedRows'] = 1
+            data['scanDiagnostics'] = {
+                'recognizedRows': 1,
+                'unstructuredRows': 0,
+                'unsupportedRows': 0,
+                'duplicateEventRows': 0,
+            }
+            data['scanRange'] = {'firstRow': 100, 'lastRow': 100, 'hasOlderPage': True}
+            data['nextBeforeRow'] = 100
+            inject_history_overlap['stage'] = 'older'
+        elif inject_history_overlap['stage'] == 'older' and isinstance(inject_history_overlap['event'], dict):
+            data['rows'] = [dict(inject_history_overlap['event'])]
+            data['scannedRows'] = 1
+            data['scanDiagnostics'] = {
+                'recognizedRows': 1,
+                'unstructuredRows': 0,
+                'unsupportedRows': 0,
+                'duplicateEventRows': 0,
+            }
+            data['scanRange'] = {'firstRow': 99, 'lastRow': 99, 'hasOlderPage': False}
+            data['nextBeforeRow'] = None
+            inject_history_overlap['stage'] = 'disabled'
         if inject_invalid_history_page['enabled'] and isinstance(data.get('scanRange'), dict):
             data['scanRange'] = None
         route.fulfill(response=response, body=json.dumps(payload))
@@ -1613,6 +1640,25 @@ with sync_playwright() as p:
         and 'Coverage diagnostics:' in history_status
         and 'Repeated event identifiers found: 1 duplicate row(s)' in history_status,
         'Register filters lifecycle events and surfaces repeated event-ID diagnostics',
+    )
+    inject_history_overlap['stage'] = 'first'
+    history_filter.select_option('ALL')
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"
+    )
+    page.click('#modal [data-act=history-older]') if page.locator('#modal [data-act=history-older]').count() else page.locator('.voucher-history-older').click()
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.includes('Repeated event identifiers across loaded pages: 1 unique event ID(s)')"
+    )
+    check(
+        'Repeated event identifiers across loaded pages: 1 unique event ID(s)'
+        in page.locator('.voucher-history-status').inner_text()
+        and page.locator('#modal .voucher-history-event').count() == 2,
+        'Register flags repeated audit event IDs across separately loaded history pages without hiding either row',
+    )
+    history_filter.select_option('CREATED')
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"
     )
     inject_invalid_history_page['enabled'] = True
     history_filter.select_option('ALL')
