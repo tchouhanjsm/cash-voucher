@@ -733,6 +733,7 @@ with sync_playwright() as p:
         report_submit.is_enabled() and page.locator('#rs').input_value() == '',
         'report can be retried successfully after an error',
     )
+    page.unroute('**/api?*', retry_support_report)
     page.set_viewport_size({'width': 1280, 'height': 800})
     account_columns = page.locator('.account-password-controls').evaluate(
         "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"
