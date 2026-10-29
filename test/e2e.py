@@ -1547,19 +1547,27 @@ with sync_playwright() as p:
         if (
             inject_history_overlap['stage'] == 'disabled'
             and isinstance(rows, list)
-            and len(rows) > 1
-            and all(isinstance(row, dict) and isinstance(row.get('auditRow'), int) for row in rows[:2])
+            and rows
+            and isinstance(rows[0], dict)
+            and isinstance(rows[0].get('auditRow'), int)
+            and isinstance(data.get('scanRange'), dict)
         ):
-            data['integrityFindings'] = {
-                'items': [{
-                    'code': 'DUPLICATE_EVENT_ID',
-                    'auditRow': rows[0]['auditRow'],
-                    'relatedAuditRow': rows[1]['auditRow'],
-                    'eventId': rows[0].get('eventId', 'e2e-duplicate-finding'),
-                    'eventType': rows[0].get('eventType', 'VOUCHER_UPDATED'),
-                }],
-                'truncated': False,
-            }
+            scan_range = data['scanRange']
+            first_row = scan_range.get('firstRow')
+            last_row = scan_range.get('lastRow')
+            source_row = rows[0]['auditRow']
+            related_row = last_row if source_row != last_row else first_row
+            if isinstance(first_row, int) and isinstance(last_row, int) and first_row < last_row:
+                data['integrityFindings'] = {
+                    'items': [{
+                        'code': 'DUPLICATE_EVENT_ID',
+                        'auditRow': source_row,
+                        'relatedAuditRow': related_row,
+                        'eventId': rows[0].get('eventId', 'e2e-duplicate-finding'),
+                        'eventType': rows[0].get('eventType', 'VOUCHER_UPDATED'),
+                    }],
+                    'truncated': False,
+                }
         if (
             inject_history_overlap['stage'] == 'first'
             and isinstance(rows, list)
