@@ -55,7 +55,7 @@ const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
 assert.match(handoff, /^\*\*Updated:\*\* 29 October 2026/m);
 const currentIntegrationSha = '2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c';
-const handoffIntegrationSha = 'b36c0212c541b92ba45347d67b0ed7e2c5185562';
+const handoffIntegrationSha = '474097a8075303b9f44aa970dfd79bc3f6b78852';
 assert.ok(handoff.includes(handoffIntegrationSha));
 assert.ok(handoff.includes('PR #247 is merged'));
 assert.ok(handoff.includes('Governance evidence binding phase — 28 October 2026'));
@@ -68,7 +68,7 @@ assert.ok(releaseGateBundleValidator.includes('validateOperationalGateEvidence')
 assert.ok(releaseGateBundleTest.includes('digest-consistent operational record'));
 assert.match(
   handoff,
-  /^\*\*Current integration baseline:\*\* `b36c0212c541b92ba45347d67b0ed7e2c5185562`/m,
+  /^\*\*Current integration baseline:\*\* `474097a8075303b9f44aa970dfd79bc3f6b78852`/m,
 );
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
