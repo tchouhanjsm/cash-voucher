@@ -605,6 +605,38 @@ with sync_playwright() as p:
         and page.locator('#accountReportStatus').get_attribute('aria-live') == 'polite',
         'support report controls expose visible associated labels and an accessible lifecycle status',
     )
+    # Keyboard navigation must produce a visible focus indicator in each theme,
+    # using the same token-driven focus treatment as the rest of the application.
+    for support_theme in ['light', 'dark']:
+        page.evaluate(
+            "theme => document.documentElement.setAttribute('data-theme', theme)",
+            support_theme,
+        )
+        page.locator('#rc').focus()
+        page.keyboard.press('Tab')
+        report_focus = page.locator('#rs').evaluate(
+            """element => ({
+                focused: document.activeElement === element,
+                focusVisible: element.matches(':focus-visible'),
+                outlineStyle: getComputedStyle(element).outlineStyle,
+                outlineWidth: getComputedStyle(element).outlineWidth,
+                boxShadow: getComputedStyle(element).boxShadow,
+                focusColor: getComputedStyle(document.documentElement).getPropertyValue('--focus').trim(),
+            })"""
+        )
+        check(
+            report_focus['focused']
+            and report_focus['focusVisible']
+            and (
+                (report_focus['outlineStyle'] != 'none'
+                 and float(report_focus['outlineWidth'].replace('px', '')) > 0)
+                or report_focus['boxShadow'] != 'none'
+            )
+            and bool(report_focus['focusColor']),
+            f'support report subject has visible keyboard focus in {support_theme} theme',
+        )
+    page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+    page.locator('#rs').evaluate('element => element.blur()')
     mobile_report_layout = report_form.locator('.account-report-controls').evaluate(
         "el => ({columns: getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, buttonFullWidth: Math.abs(el.querySelector('button[type=submit]').getBoundingClientRect().width - el.getBoundingClientRect().width) < 2})"
     )

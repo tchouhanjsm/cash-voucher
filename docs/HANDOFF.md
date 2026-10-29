@@ -12,8 +12,10 @@
 
 - The report form rejects duplicate submit events while a request is in flight, exposes `aria-busy`, and announces pending/success/failure states through a polite live region. The submit action is restored in `finally` after both outcomes.
 - Successful reports keep the existing `reportIssue` payload contract, clear fields, and show the returned reference. Failed requests preserve the reporter's draft and use generic recovery copy rather than displaying exception/internal details.
-- Browser E2E covers 320px, mobile, tablet and desktop layout; pending/duplicate submission, success/reference/reset, failure recovery, and retry with mocked responses only. Real support delivery remains untested.
-- **Verification status:** the first new-head run exposed a lint/format error and a deterministic browser mock failure; both are being corrected in a follow-up commit. All gates must pass on that later exact head before merge. Prior green workflow jobs identified `c9892b7591190eaafae9f09a89f6db9760094baf`, not the then-current PR head.
+- Browser E2E covers 320px, mobile, tablet and desktop layout; visible associated labels; keyboard-visible focus in light and dark themes; pending/duplicate submission; success/reference/reset; failure recovery; and retry with mocked responses only. The report mocks are removed before later Register scenarios. Real support delivery remains untested.
+- **Verified head:** `6c00f71ba41794e7f13258d6ba674f4cc4090ad7` passed CI/Quality, Browser E2E (**1,555 checks passed, 0 failed**), Full Flight and the Autonomous Development Monitor. Evidence: [CI #40871134229](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871134229), [Browser E2E #40871134207](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871134207), [Full Flight #40871134256](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871134256), [Monitor #40871134232](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871134232).
+- These results verify the source head before the additional explicit light/dark keyboard-focus assertion was added. Fresh exact-head validation is required for that final test-only increment before merge.
+
 
 ## Current release-session checkpoint — 29 October 2026
 
