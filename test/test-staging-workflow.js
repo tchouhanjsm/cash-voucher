@@ -319,7 +319,7 @@ assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
 assert.match(clientDistWorkflow, /artifactVersion: 2/);
 assert.match(
   clientDistWorkflow,
-  /fileCount: files\\.length \\+ 2/,
+  /fileCount: files\.length \+ 2/,
   'ZIP release manifest counts both the generated manifest and SHA256SUMS file',
 );
 assert.match(clientDistWorkflow, /checksumAlgorithm: 'SHA-256'/);
