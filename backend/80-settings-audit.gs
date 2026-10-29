@@ -192,6 +192,26 @@ function voucherAuditDiagnostics_() {
   };
 }
 
+const VOUCHER_HISTORY_FINDING_SAMPLE_LIMIT_ = 25;
+
+function voucherAuditFindings_() {
+  return { items: [], truncated: false };
+}
+
+function voucherAuditRecordFinding_(findings, code, auditRow, eventType, eventId, relatedAuditRow) {
+  if (findings.items.length >= VOUCHER_HISTORY_FINDING_SAMPLE_LIMIT_) {
+    findings.truncated = true;
+    return;
+  }
+  findings.items.push({
+    code: code,
+    auditRow: auditRow,
+    relatedAuditRow: Number.isSafeInteger(relatedAuditRow) ? relatedAuditRow : null,
+    eventId: typeof eventId === 'string' ? clean_(eventId, 100) : '',
+    eventType: typeof eventType === 'string' ? clean_(eventType, 100) : '',
+  });
+}
+
 // Owner-only, bounded, read-only history matched by the stable voucher ID.
 // Each call scans at most 500 AuditLog rows and returns at most 50 events.
 function voucherAuditHistory_(user, req) {
@@ -218,6 +238,7 @@ function voucherAuditHistory_(user, req) {
       nextBeforeRow: null,
       scannedRows: 0,
       scanDiagnostics: voucherAuditDiagnostics_(),
+      integrityFindings: voucherAuditFindings_(),
       scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
@@ -243,6 +264,7 @@ function voucherAuditHistory_(user, req) {
       nextBeforeRow: null,
       scannedRows: 0,
       scanDiagnostics: voucherAuditDiagnostics_(),
+      integrityFindings: voucherAuditFindings_(),
       scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
@@ -256,6 +278,7 @@ function voucherAuditHistory_(user, req) {
   const rows = [];
   let scannedRows = 0;
   const scanDiagnostics = voucherAuditDiagnostics_();
+  const integrityFindings = voucherAuditFindings_();
   const seenEventIds = Object.create(null);
   let nextBeforeRow = startRow > 2 ? startRow : null;
   let stoppedAtMatchLimit = false;
@@ -293,10 +316,15 @@ function voucherAuditHistory_(user, req) {
 
     // Compute integrity findings before filtering so unknown event types and
     // cross-category duplicate IDs remain detectable in a filtered history view.
+    const auditRow = startRow + i;
     const eventId = typeof details.eventId === 'string' ? clean_(details.eventId, 100) : '';
-    if (!eventId) scanDiagnostics.missingEventIdRows++;
+    if (!eventId) {
+      scanDiagnostics.missingEventIdRows++;
+      voucherAuditRecordFinding_(integrityFindings, 'MISSING_EVENT_ID', auditRow, details.eventType, '', null);
+    }
     if (voucherAuditEventCategory_(details.eventType) === 'OTHER') {
       scanDiagnostics.unknownEventTypeRows++;
+      voucherAuditRecordFinding_(integrityFindings, 'UNKNOWN_EVENT_TYPE', auditRow, details.eventType, eventId, null);
     }
 
     const rawChanges = details.changes;
@@ -324,14 +352,28 @@ function voucherAuditHistory_(user, req) {
           !isScalarAuditValue(change.after)
         );
       });
-    if (malformedChanges) scanDiagnostics.malformedChangeRows++;
-    if (changesList.length > 30) scanDiagnostics.truncatedChangeRows++;
+    if (malformedChanges) {
+      scanDiagnostics.malformedChangeRows++;
+      voucherAuditRecordFinding_(integrityFindings, 'MALFORMED_CHANGES', auditRow, details.eventType, eventId, null);
+    }
+    if (changesList.length > 30) {
+      scanDiagnostics.truncatedChangeRows++;
+      voucherAuditRecordFinding_(integrityFindings, 'TRUNCATED_CHANGES', auditRow, details.eventType, eventId, null);
+    }
 
     if (eventId) {
       if (Object.prototype.hasOwnProperty.call(seenEventIds, eventId)) {
         scanDiagnostics.duplicateEventRows++;
+        voucherAuditRecordFinding_(
+          integrityFindings,
+          'DUPLICATE_EVENT_ID',
+          auditRow,
+          details.eventType,
+          eventId,
+          seenEventIds[eventId],
+        );
       } else {
-        seenEventIds[eventId] = true;
+        seenEventIds[eventId] = auditRow;
       }
     }
     if (
@@ -355,7 +397,7 @@ function voucherAuditHistory_(user, req) {
       });
 
     rows.push({
-      auditRow: startRow + i,
+      auditRow: auditRow,
       time: tsStr_(values[i][0]),
       user: clean_(String(values[i][1] || ''), 254),
       action: clean_(String(values[i][2] || ''), 80),
@@ -381,6 +423,7 @@ function voucherAuditHistory_(user, req) {
     nextBeforeRow: pageCursor,
     scannedRows: scannedRows,
     scanDiagnostics: scanDiagnostics,
+    integrityFindings: integrityFindings,
     scanRange: {
       firstRow: endRow - scannedRows + 1,
       lastRow: endRow,

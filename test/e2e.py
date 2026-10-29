@@ -1545,6 +1545,22 @@ with sync_playwright() as p:
             if isinstance(rows[0].get('changes'), list) and rows[0]['changes']:
                 rows[0]['changes'][0]['after'] = history_xss_payload
         if (
+            inject_history_overlap['stage'] == 'disabled'
+            and isinstance(rows, list)
+            and len(rows) > 1
+            and all(isinstance(row, dict) and isinstance(row.get('auditRow'), int) for row in rows[:2])
+        ):
+            data['integrityFindings'] = {
+                'items': [{
+                    'code': 'DUPLICATE_EVENT_ID',
+                    'auditRow': rows[0]['auditRow'],
+                    'relatedAuditRow': rows[1]['auditRow'],
+                    'eventId': rows[0].get('eventId', 'e2e-duplicate-finding'),
+                    'eventType': rows[0].get('eventType', 'VOUCHER_UPDATED'),
+                }],
+                'truncated': False,
+            }
+        if (
             inject_history_overlap['stage'] == 'first'
             and isinstance(rows, list)
             and rows
@@ -1569,6 +1585,7 @@ with sync_playwright() as p:
                     'malformedChangeRows': 0,
                     'truncatedChangeRows': 0,
                 }
+                data['integrityFindings'] = {'items': [], 'truncated': False}
                 data['scanRange'] = {
                     'firstRow': cursor,
                     'lastRow': cursor,
@@ -1596,6 +1613,7 @@ with sync_playwright() as p:
                 'malformedChangeRows': 0,
                 'truncatedChangeRows': 0,
             }
+            data['integrityFindings'] = {'items': [], 'truncated': False}
             data['scanRange'] = {
                 'firstRow': older_row,
                 'lastRow': older_row,
@@ -1667,6 +1685,13 @@ with sync_playwright() as p:
         and page.locator('#modal svg[onload], #modal img[onerror]').count() == 0
         and not page.evaluate('window.__voucherHistoryXssFired === true'),
         'voucher history renders hostile summary, reason and field values as inert text',
+    )
+    check(
+        page.locator('.voucher-history-findings').is_visible()
+        and 'Integrity findings to reconcile' in page.locator('.voucher-history-findings').inner_text()
+        and 'AuditLog row #' in page.locator('.voucher-history-findings').inner_text()
+        and 'Preserve the original rows' in page.locator('.voucher-history-findings').inner_text(),
+        'Register gives owners bounded source-row evidence and non-destructive reconciliation guidance',
     )
     check(
         'amount:' in history_text.lower() and '10000' in history_text,
@@ -1745,6 +1770,7 @@ with sync_playwright() as p:
                     malformedChangeRows: 0,
                     truncatedChangeRows: 0,
                   },
+                  integrityFindings: { items: [], truncated: false },
                   scanRange: null,
                   eventCategory: 'ALL',
                   auditHealth: { status: 'NO_KNOWN_FAILURE' }

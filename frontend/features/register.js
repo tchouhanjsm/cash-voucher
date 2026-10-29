@@ -1131,6 +1131,18 @@ export function createRegister({ api, go }) {
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     status.textContent = 'Loading voucher history…';
+    const findingsPanel = document.createElement('section');
+    findingsPanel.className = 'voucher-history-findings';
+    findingsPanel.hidden = true;
+    findingsPanel.setAttribute('aria-label', 'Audit integrity findings to reconcile');
+    const findingsHeading = document.createElement('h3');
+    findingsHeading.textContent = 'Integrity findings to reconcile';
+    const findingsList = document.createElement('ul');
+    findingsList.className = 'voucher-history-finding-list';
+    const findingsGuidance = document.createElement('p');
+    findingsGuidance.textContent =
+      'Inspect each referenced AuditLog row against the source voucher, approval or receipt record. Preserve the original rows; document corrections separately and escalate unknown event types or malformed payloads to an owner/admin before relying on this history as complete.';
+    findingsPanel.append(findingsHeading, findingsList, findingsGuidance);
     const list = document.createElement('div');
     list.className = 'voucher-history-list';
     const older = document.createElement('button');
@@ -1138,7 +1150,7 @@ export function createRegister({ api, go }) {
     older.className = 'btn voucher-history-older';
     older.textContent = 'Load older events';
     older.hidden = true;
-    body.append(note, filterLabel, status, list, older);
+    body.append(note, filterLabel, status, findingsPanel, list, older);
 
     let beforeRow = null;
     let loading = false;
@@ -1146,6 +1158,46 @@ export function createRegister({ api, go }) {
     let loadedEventCount = 0;
     const seenEventRows = new Map();
     const repeatedEventRowsAcrossPages = new Map();
+    const observedIntegrityFindings = new Map();
+    let integrityFindingsTruncated = false;
+    const findingLabels = {
+      DUPLICATE_EVENT_ID: 'Duplicate event ID',
+      MISSING_EVENT_ID: 'Missing event ID',
+      UNKNOWN_EVENT_TYPE: 'Unrecognized event type',
+      MALFORMED_CHANGES: 'Malformed change payload',
+      TRUNCATED_CHANGES: 'Change list capped at 30 entries',
+    };
+    const renderIntegrityFindings = (pageFindings) => {
+      pageFindings.items.forEach((finding) => {
+        const key = finding.code + ':' + finding.auditRow + ':' + String(finding.relatedAuditRow || '');
+        if (observedIntegrityFindings.has(key)) return;
+        if (observedIntegrityFindings.size >= 50) {
+          integrityFindingsTruncated = true;
+          return;
+        }
+        observedIntegrityFindings.set(key, finding);
+      });
+      integrityFindingsTruncated = integrityFindingsTruncated || pageFindings.truncated;
+      findingsList.replaceChildren();
+      observedIntegrityFindings.forEach((finding) => {
+        const item = document.createElement('li');
+        let label = findingLabels[finding.code] + ' — AuditLog row #' + finding.auditRow;
+        if (finding.relatedAuditRow !== null) {
+          label += ' (same event ID also appears at AuditLog row #' + finding.relatedAuditRow + ')';
+        }
+        if (finding.eventType) label += ' · ' + finding.eventType;
+        if (finding.eventId) label += ' · Event ID ' + finding.eventId;
+        item.textContent = label;
+        findingsList.appendChild(item);
+      });
+      if (integrityFindingsTruncated) {
+        const noteItem = document.createElement('li');
+        noteItem.textContent =
+          'Additional findings were omitted by the sample limit. Continue through older ranges and record follow-up for each scan.';
+        findingsList.appendChild(noteItem);
+      }
+      findingsPanel.hidden = observedIntegrityFindings.size === 0 && !integrityFindingsTruncated;
+    };
     const isValidPage = (page, requestedBeforeRow) => {
       if (
         !isRecord(page) ||
@@ -1170,6 +1222,27 @@ export function createRegister({ api, go }) {
           page.scanDiagnostics.unstructuredRows +
           page.scanDiagnostics.unsupportedRows !==
           page.scannedRows ||
+        !isRecord(page.integrityFindings) ||
+        !Array.isArray(page.integrityFindings.items) ||
+        page.integrityFindings.items.length > 25 ||
+        typeof page.integrityFindings.truncated !== 'boolean' ||
+        !page.integrityFindings.items.every(
+          (finding) =>
+            isRecord(finding) &&
+            Object.prototype.hasOwnProperty.call(findingLabels, finding.code) &&
+            Number.isSafeInteger(finding.auditRow) &&
+            isRecord(page.scanRange) &&
+            finding.auditRow >= page.scanRange.firstRow &&
+            finding.auditRow <= page.scanRange.lastRow &&
+            (finding.relatedAuditRow === null ||
+              (Number.isSafeInteger(finding.relatedAuditRow) &&
+                finding.relatedAuditRow >= page.scanRange.firstRow &&
+                finding.relatedAuditRow <= page.scanRange.lastRow)) &&
+            typeof finding.eventId === 'string' &&
+            finding.eventId.length <= 100 &&
+            typeof finding.eventType === 'string' &&
+            finding.eventType.length <= 100,
+        ) ||
         !(
           page.scanRange === null ||
           (isRecord(page.scanRange) &&
@@ -1324,6 +1397,7 @@ export function createRegister({ api, go }) {
         }
         if (!append) list.replaceChildren();
         const repeatedAcrossPages = appendEvents(page.rows);
+        renderIntegrityFindings(page.integrityFindings);
         beforeRow = page.nextBeforeRow;
         older.hidden = beforeRow === null;
         status.className = 'muted voucher-history-status';
@@ -1448,6 +1522,10 @@ export function createRegister({ api, go }) {
       loadedEventCount = 0;
       seenEventRows.clear();
       repeatedEventRowsAcrossPages.clear();
+      observedIntegrityFindings.clear();
+      integrityFindingsTruncated = false;
+      findingsList.replaceChildren();
+      findingsPanel.hidden = true;
       list.replaceChildren();
       status.className = 'muted voucher-history-status';
       status.textContent = 'Loading voucher history…';

@@ -1820,7 +1820,9 @@ ok(
     emptyOlderPage.data.scanDiagnostics.missingEventIdRows === 0 &&
     emptyOlderPage.data.scanDiagnostics.unknownEventTypeRows === 0 &&
     emptyOlderPage.data.scanDiagnostics.malformedChangeRows === 0 &&
-    emptyOlderPage.data.scanDiagnostics.truncatedChangeRows === 0,
+    emptyOlderPage.data.scanDiagnostics.truncatedChangeRows === 0 &&
+    emptyOlderPage.data.integrityFindings.items.length === 0 &&
+    emptyOlderPage.data.integrityFindings.truncated === false,
   'voucher history reports an empty coverage range when a valid cursor has no older rows',
 );
 const diagnosticsFixtureStart = g.sheets.AuditLog.rows.length;
@@ -1940,6 +1942,13 @@ g.sheets.AuditLog.rows.push([
 const historyWithDiagnostics = as(T, 'voucherHistory', { id: historyVoucherId });
 const historyScanDiagnostics =
   historyWithDiagnostics.data && historyWithDiagnostics.data.scanDiagnostics;
+const historyIntegrityFindings =
+  historyWithDiagnostics.data && historyWithDiagnostics.data.integrityFindings;
+const hasIntegrityFinding = (code) =>
+  Boolean(
+    historyIntegrityFindings &&
+      historyIntegrityFindings.items.some((finding) => finding.code === code),
+  );
 const filteredCrossTypeDuplicate = as(T, 'voucherHistory', {
   id: historyVoucherId,
   eventCategory: 'UPDATED',
@@ -1965,7 +1974,26 @@ ok(
     historyWithDiagnostics.data.rows.find((event) => event.eventId === 'malformed-change-fixture')
       ?.changes.length === 0 &&
     historyWithDiagnostics.data.rows.find((event) => event.eventId === 'truncated-change-fixture')
-      ?.changes.length === 30,
+      ?.changes.length === 30 &&
+    historyIntegrityFindings &&
+    historyIntegrityFindings.items.length <= 25 &&
+    historyIntegrityFindings.items.every(
+      (finding) =>
+        Number.isSafeInteger(finding.auditRow) &&
+        finding.auditRow >= historyWithDiagnostics.data.scanRange.firstRow &&
+        finding.auditRow <= historyWithDiagnostics.data.scanRange.lastRow,
+    ) &&
+    hasIntegrityFinding('MISSING_EVENT_ID') &&
+    hasIntegrityFinding('UNKNOWN_EVENT_TYPE') &&
+    hasIntegrityFinding('MALFORMED_CHANGES') &&
+    hasIntegrityFinding('TRUNCATED_CHANGES') &&
+    historyIntegrityFindings.items.some(
+      (finding) =>
+        finding.code === 'DUPLICATE_EVENT_ID' &&
+        Number.isSafeInteger(finding.relatedAuditRow) &&
+        finding.relatedAuditRow >= historyWithDiagnostics.data.scanRange.firstRow &&
+        finding.relatedAuditRow <= historyWithDiagnostics.data.scanRange.lastRow,
+    ),
   'voucher history reports missing IDs, unknown types and malformed/truncated change payloads without dropping supported rows',
 );
 ok(
@@ -1973,6 +2001,33 @@ ok(
     filteredCrossTypeDuplicate.data.eventCategory === 'UPDATED' &&
     filteredCrossTypeDuplicate.data.scanDiagnostics.duplicateEventRows >= 1,
   'duplicate event IDs are detected before event-type filtering, including cross-category duplicates',
+);
+const findingSampleFixtureStart = g.sheets.AuditLog.rows.length;
+for (let index = 0; index < 15; index++) {
+  g.sheets.AuditLog.rows.push([
+    new Date(Date.now() + index),
+    'finding-sample-cap@test.com',
+    'STRUCTURED_AUDIT',
+    'voucher-history',
+    JSON.stringify({
+      version: 1,
+      entityType: 'voucher',
+      entityId: historyVoucherId,
+      eventType: 'VOUCHER_FUTURE_CAP_EVENT',
+      summary: 'Bounded finding fixture ' + index,
+      changes: [],
+    }),
+  ]);
+}
+const cappedFindingHistory = as(T, 'voucherHistory', { id: historyVoucherId });
+g.sheets.AuditLog.rows.splice(findingSampleFixtureStart);
+ok(
+  cappedFindingHistory.ok &&
+    cappedFindingHistory.data.integrityFindings.items.length === 25 &&
+    cappedFindingHistory.data.integrityFindings.truncated === true &&
+    cappedFindingHistory.data.scanDiagnostics.unknownEventTypeRows >= 15 &&
+    cappedFindingHistory.data.scanDiagnostics.missingEventIdRows >= 15,
+  'voucher history caps detailed integrity samples at 25 while retaining aggregate finding counts',
 );
 const crossPageFixtureStart = g.sheets.AuditLog.rows.length;
 const repeatedBoundaryEventId = 'cross-page-duplicate-history-fixture';
