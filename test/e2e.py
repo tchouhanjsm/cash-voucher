@@ -1711,7 +1711,8 @@ with sync_playwright() as p:
     with open(audit_export_download.path(), encoding='utf-8-sig') as audit_export_file:
         audit_export_text = audit_export_file.read()
     check(
-        '"SCAN_SUMMARY"' in audit_export_text
+        '"recordType","schemaVersion","exportedAt"' in audit_export_text
+        and '"SCAN_SUMMARY","1",' in audit_export_text
         and '"FINDING"' in audit_export_text
         and '"DUPLICATE_EVENT_ID"' in audit_export_text
         and "'=HYPERLINK" in audit_export_text

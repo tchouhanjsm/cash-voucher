@@ -34,6 +34,8 @@ async function run() {
   const csv = createAuditReconciliationCsv([validScan], '2026-10-29T06:00:00.000Z');
 
   assert.ok(csv.startsWith('\uFEFF'));
+  assert.match(csv, /"recordType","schemaVersion","exportedAt"/);
+  assert.match(csv, /"SCAN_SUMMARY","1","2026-10-29T06:00:00[.]000Z"/);
   assert.match(csv, /recordType.*scanFirstRow/);
   assert.match(csv, /scanHasOlderPage/);
   assert.match(csv, /"SCAN_SUMMARY".*"true"/);
@@ -71,33 +73,53 @@ async function run() {
       ]),
     /invalid finding or source-row reference/,
   );
-  const olderScan = {
+  const newerScan = {
     ...validScan,
-    scanRange: { firstRow: 81, lastRow: 90, hasOlderPage: true },
+    scanRange: { firstRow: 91, lastRow: 100, hasOlderPage: true },
     integrityFindings: { items: [], truncated: false },
   };
-  const newerScanWithCrossPageDuplicate = {
+  const olderScanWithCrossPageDuplicate = {
     ...validScan,
-    scanRange: { firstRow: 91, lastRow: 100, hasOlderPage: false },
+    scanRange: { firstRow: 81, lastRow: 90, hasOlderPage: false },
     integrityFindings: {
       items: [
         {
           ...validScan.integrityFindings.items[0],
-          auditRow: 100,
-          relatedAuditRow: 90,
+          auditRow: 90,
+          relatedAuditRow: 100,
         },
       ],
       truncated: false,
     },
   };
   const crossPageCsv = createAuditReconciliationCsv(
-    [olderScan, newerScanWithCrossPageDuplicate],
+    [newerScan, olderScanWithCrossPageDuplicate],
     '2026-10-29T06:00:00.000Z',
   );
-  assert.match(crossPageCsv, /"DUPLICATE_EVENT_ID","100","90"/);
+  assert.match(crossPageCsv, /"DUPLICATE_EVENT_ID","90","100"/);
   assert.throws(
-    () => createAuditReconciliationCsv([newerScanWithCrossPageDuplicate]),
+    () => createAuditReconciliationCsv([olderScanWithCrossPageDuplicate, newerScan]),
+    /ordered newest to oldest, contiguous and non-overlapping/,
+  );
+  assert.throws(
+    () =>
+      createAuditReconciliationCsv([
+        newerScan,
+        {
+          ...validScan,
+          scanRange: { firstRow: 90, lastRow: 99, hasOlderPage: false },
+          integrityFindings: { items: [], truncated: false },
+        },
+      ]),
+    /ordered newest to oldest, contiguous and non-overlapping/,
+  );
+  assert.throws(
+    () => createAuditReconciliationCsv([newerScan]),
     /related source-row reference outside exported scan ranges/,
+  );
+  assert.throws(
+    () => createAuditReconciliationCsv([validScan], '2026-10-29'),
+    /valid export timestamp/,
   );
   assert.throws(
     () => createAuditReconciliationCsv(Array.from({ length: 101 }, () => validScan)),

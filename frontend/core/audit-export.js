@@ -1,6 +1,8 @@
 import { csvCell } from './utils.js';
 
 const MAX_SCAN_RANGES = 100;
+const SCHEMA_VERSION = 1;
+const UTC_TIMESTAMP = /^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}[.][0-9]{3}Z$/;
 const MAX_FINDINGS_PER_RANGE = 25;
 const EVENT_CATEGORIES = new Set([
   'ALL',
@@ -31,6 +33,7 @@ const DIAGNOSTIC_FIELDS = [
 ];
 const HEADERS = [
   'recordType',
+  'schemaVersion',
   'exportedAt',
   'eventCategory',
   'scanIndex',
@@ -123,15 +126,28 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
     scans.length < 1 ||
     scans.length > MAX_SCAN_RANGES ||
     typeof exportedAt !== 'string' ||
-    !Number.isFinite(Date.parse(exportedAt))
+    !UTC_TIMESTAMP.test(exportedAt) ||
+    !Number.isFinite(Date.parse(exportedAt)) ||
+    new Date(exportedAt).toISOString() !== exportedAt
   ) {
     throw new TypeError(
       'Export one to 100 validated audit scan ranges with a valid export timestamp.',
     );
   }
 
-  scans.forEach(validateScan);
-  const coveredRanges = scans.map((scan) => scan.scanRange).filter(Boolean);
+  let previousRange = null;
+  const coveredRanges = [];
+  scans.forEach((scan) => {
+    validateScan(scan);
+    if (!scan.scanRange) return;
+    if (previousRange && scan.scanRange.lastRow + 1 !== previousRange.firstRow) {
+      throw new TypeError(
+        'Audit review scan ranges must be ordered newest to oldest, contiguous and non-overlapping.',
+      );
+    }
+    previousRange = scan.scanRange;
+    coveredRanges.push(scan.scanRange);
+  });
   scans.forEach((scan) => {
     scan.integrityFindings.items.forEach((finding) => {
       if (
@@ -152,6 +168,7 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
     const diagnostics = DIAGNOSTIC_FIELDS.map((field) => scan.scanDiagnostics[field]);
     const range = scan.scanRange;
     const common = [
+      SCHEMA_VERSION,
       exportedAt,
       scan.eventCategory,
       index + 1,
