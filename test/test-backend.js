@@ -1822,6 +1822,20 @@ ok(
 const diagnosticsFixtureStart = g.sheets.AuditLog.rows.length;
 g.sheets.AuditLog.rows.push([
   new Date(),
+  'malformed-envelope-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: '',
+    eventId: 'malformed-event-fixture',
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Missing stable entity identity',
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
   'legacy-history-fixture@test.com',
   'LEGACY_AUDIT',
   'voucher-history',
@@ -1864,7 +1878,7 @@ ok(
   historyWithDiagnostics.ok &&
     historyScanDiagnostics &&
     historyScanDiagnostics.unstructuredRows >= 1 &&
-    historyScanDiagnostics.unsupportedRows >= 1 &&
+    historyScanDiagnostics.unsupportedRows >= 2 &&
     historyScanDiagnostics.duplicateEventRows >= 1 &&
     historyScanDiagnostics.recognizedRows +
       historyScanDiagnostics.unstructuredRows +
