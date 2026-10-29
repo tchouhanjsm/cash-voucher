@@ -1513,7 +1513,7 @@ with sync_playwright() as p:
     history_requests = []
     api_action_requests = []
     inject_invalid_history_page = {'enabled': False}
-    inject_history_overlap = {'stage': 'disabled', 'event': None}
+    inject_history_overlap = {'stage': 'disabled', 'event': None, 'cursor': None}
     history_route_states = []
     history_page_errors = []
     page.on('pageerror', lambda error: history_page_errors.append(str(error)))
@@ -1544,21 +1544,38 @@ with sync_playwright() as p:
             rows[0]['reason'] = history_xss_payload
             if isinstance(rows[0].get('changes'), list) and rows[0]['changes']:
                 rows[0]['changes'][0]['after'] = history_xss_payload
-        if inject_history_overlap['stage'] == 'first' and isinstance(rows, list) and rows:
+        if (
+            inject_history_overlap['stage'] == 'first'
+            and isinstance(rows, list)
+            and rows
+            and isinstance(data.get('scanRange'), dict)
+        ):
             prior_page_event = dict(rows[0])
-            inject_history_overlap['event'] = prior_page_event
-            data['rows'] = [prior_page_event]
-            data['scannedRows'] = 1
-            data['scanDiagnostics'] = {
-                'recognizedRows': 1,
-                'unstructuredRows': 0,
-                'unsupportedRows': 0,
-                'duplicateEventRows': 0,
-            }
-            data['scanRange'] = {'firstRow': 100, 'lastRow': 100, 'hasOlderPage': True}
-            data['nextBeforeRow'] = 100
-            inject_history_overlap['stage'] = 'older'
-        elif inject_history_overlap['stage'] == 'older' and isinstance(inject_history_overlap['event'], dict):
+            cursor = data['scanRange'].get('lastRow')
+            if isinstance(cursor, int) and cursor > 2:
+                inject_history_overlap['event'] = prior_page_event
+                inject_history_overlap['cursor'] = cursor
+                data['rows'] = [prior_page_event]
+                data['scannedRows'] = 1
+                data['scanDiagnostics'] = {
+                    'recognizedRows': 1,
+                    'unstructuredRows': 0,
+                    'unsupportedRows': 0,
+                    'duplicateEventRows': 0,
+                }
+                data['scanRange'] = {
+                    'firstRow': cursor,
+                    'lastRow': cursor,
+                    'hasOlderPage': True,
+                }
+                data['nextBeforeRow'] = cursor
+                inject_history_overlap['stage'] = 'older'
+        elif (
+            inject_history_overlap['stage'] == 'older'
+            and isinstance(inject_history_overlap['event'], dict)
+            and isinstance(inject_history_overlap['cursor'], int)
+        ):
+            older_row = inject_history_overlap['cursor'] - 1
             data['rows'] = [dict(inject_history_overlap['event'])]
             data['scannedRows'] = 1
             data['scanDiagnostics'] = {
@@ -1567,7 +1584,11 @@ with sync_playwright() as p:
                 'unsupportedRows': 0,
                 'duplicateEventRows': 0,
             }
-            data['scanRange'] = {'firstRow': 99, 'lastRow': 99, 'hasOlderPage': False}
+            data['scanRange'] = {
+                'firstRow': older_row,
+                'lastRow': older_row,
+                'hasOlderPage': False,
+            }
             data['nextBeforeRow'] = None
             inject_history_overlap['stage'] = 'disabled'
         if inject_invalid_history_page['enabled'] and isinstance(data.get('scanRange'), dict):
