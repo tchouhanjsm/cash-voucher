@@ -5,6 +5,7 @@
 **Integration branch:** `client-main`; legacy `main` remains read-only.
 **Current integration baseline:** `b36c0212c541b92ba45347d67b0ed7e2c5185562` (PR #247 merged; owner-only voucher audit history and bounded integrity findings are integrated).
 **Current source batch:** `client/export-voucher-audit-reconciliation-20261029` adds a bounded CSV export for loaded audit scan ranges and finding samples. The export contains diagnostic counts and source-row references only, not voucher field contents or user identities.
+**Active review PR:** [#248 — Export voucher audit reconciliation evidence](https://github.com/tchouhanjsm/cash-voucher/pull/248) on `client/export-voucher-audit-reconciliation-20261029`.
 **Release boundary:** source/test/docs only. No default-branch or branch-protection change, workflow dispatch, Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
 
 ## Current release-session checkpoint — 29 October 2026
