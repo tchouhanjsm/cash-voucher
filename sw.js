@@ -1,5 +1,5 @@
 // Cache only the public application shell. Never cache arbitrary same-origin GETs.
-const C = 'cv2-v39';
+const C = 'cv2-v40';
 const F = [
   './',
   'index.html',
@@ -9,6 +9,7 @@ const F = [
   'manifest.webmanifest',
   'frontend/main.js',
   'frontend/core/actions.js',
+  'frontend/core/audit-export.js',
   'frontend/core/api.js',
   'frontend/core/dom.js',
   'frontend/core/form-options.js',
