@@ -1815,8 +1815,14 @@ export function createAdministration({ api, getNavigation, signOut }) {
       reportSubmit.type = 'submit';
       reportSubmit.className = 'btn primary';
       reportSubmit.textContent = 'Send to support';
+      const reportStatus = document.createElement('p');
+      reportStatus.id = 'accountReportStatus';
+      reportStatus.className = 'account-report-status';
+      reportStatus.setAttribute('role', 'status');
+      reportStatus.setAttribute('aria-live', 'polite');
+      reportStatus.setAttribute('aria-atomic', 'true');
       reportControls.append(categoryField, subjectField, messageField, reportSubmit);
-      report.append(reportHeading, reportIntro, reportControls);
+      report.append(reportHeading, reportIntro, reportControls, reportStatus);
       fragment.appendChild(report);
       view.replaceChildren(fragment);
     })();
@@ -1839,8 +1845,19 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
   async function reportProblem(event) {
     const form = event.target;
+    if (form.dataset.submitting === 'true') return;
+
     const button = form.querySelector('button[type="submit"]');
-    if (button) button.disabled = true;
+    const status = form.querySelector('#accountReportStatus');
+    if (!button || !status) return;
+
+    form.dataset.submitting = 'true';
+    form.setAttribute('aria-busy', 'true');
+    button.disabled = true;
+    button.setAttribute('aria-disabled', 'true');
+    button.textContent = 'Sending…';
+    status.textContent = 'Sending your report to support…';
+
     try {
       const data = await api('reportIssue', {
         category: $('#rc').value,
@@ -1855,11 +1872,18 @@ export function createAdministration({ api, getNavigation, signOut }) {
           String(navigator.userAgent || ''),
       });
       form.reset();
-      toast('Sent to support. Reference ' + data.ref + '.', 'ok');
+      status.textContent = 'Your report was sent successfully. Reference ' + scalarText(data?.ref) + '.';
+      toast('Sent to support. Reference ' + scalarText(data?.ref) + '.', 'ok');
     } catch (error) {
-      fail(error);
+      // Network and server errors must not echo request data or internal details.
+      status.textContent = 'Your report could not be sent. Check your connection and try again.';
+      toast('Your report could not be sent. Please try again.', 'err');
     } finally {
-      if (button) button.disabled = false;
+      delete form.dataset.submitting;
+      form.removeAttribute('aria-busy');
+      button.disabled = false;
+      button.removeAttribute('aria-disabled');
+      button.textContent = 'Send to support';
     }
   }
 

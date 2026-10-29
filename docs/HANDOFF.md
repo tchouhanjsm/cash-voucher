@@ -8,6 +8,13 @@
 **Active review PR:** [#249 — Isolate account support form from register styles](https://github.com/tchouhanjsm/cash-voucher/pull/249).
 **Release boundary:** focused frontend selector and test change. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
 
+## Account support submission lifecycle refinement — 29 October 2026
+
+- The report form rejects duplicate submit events while a request is in flight, exposes `aria-busy`, and announces pending/success/failure states through a polite live region. The submit action is restored in `finally` after both outcomes.
+- Successful reports keep the existing `reportIssue` payload contract, clear fields, and show the returned reference. Failed requests preserve the reporter's draft and use generic recovery copy rather than displaying exception/internal details.
+- Browser E2E covers 320px, mobile, tablet and desktop layout; pending/duplicate submission, success/reference/reset, failure recovery, and retry with mocked responses only. Real support delivery remains untested.
+- **Verification pending:** fresh Quality/CI, Browser E2E, Full Flight and monitor runs must complete on the new exact PR head before merge. Prior green workflow jobs identified `c9892b7591190eaafae9f09a89f6db9760094baf`, not the then-current PR head.
+
 ## Current release-session checkpoint — 29 October 2026
 
 - **Integration baseline:** `client-main` remains at `474097a8075303b9f44aa970dfd79bc3f6b78852`; PR #248 is merged. PR #249 remains the active review batch. The combined selector-isolation and responsive/accessibility source changes passed exact-head Quality/CI, Browser E2E and Full Flight at `9d4c9ec253da9442656401c8205af1d375d6df64`; the subsequent handoff evidence refresh at `f312b4c0e7961ebab6d2a02273217e42c7db365c` also passed exact-head checks. Keep owner review pending and verify live checks for any later commit before merge.
