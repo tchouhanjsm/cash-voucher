@@ -269,18 +269,21 @@ function voucherAuditHistory_(user, req) {
       unstructuredRows++;
       continue;
     }
-    const supportedEnvelope =
-      details &&
-      typeof details === 'object' &&
-      !Array.isArray(details) &&
-      details.version === 1 &&
-      typeof details.entityType === 'string' &&
-      details.entityType.trim() &&
-      typeof details.entityId === 'string' &&
-      details.entityId.length > 0 &&
-      typeof details.eventType === 'string' &&
-      details.eventType.trim();
-    if (!supportedEnvelope) {
+    const envelopeObject =
+      details && typeof details === 'object' && !Array.isArray(details);
+    if (!envelopeObject) {
+      unsupportedRows++;
+      continue;
+    }
+    if (
+      details.version !== 1 ||
+      typeof details.entityType !== 'string' ||
+      !details.entityType.trim() ||
+      typeof details.entityId !== 'string' ||
+      !details.entityId.trim() ||
+      typeof details.eventType !== 'string' ||
+      !details.eventType.trim()
+    ) {
       unsupportedRows++;
       continue;
     }
