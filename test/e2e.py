@@ -634,8 +634,10 @@ with sync_playwright() as p:
     )
 
     # Browser-only mocks guarantee that no real support report is delivered.
+    # Deterministic route mocks: the action is in the JSON POST body, not the URL.
     report_requests = []
     pending_route = {'route': None}
+
     def mock_support_report(route):
         payload = route.request.post_data_json or {}
         if payload.get('action') != 'reportIssue':
@@ -650,8 +652,8 @@ with sync_playwright() as p:
             content_type='application/json',
             body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}),
         )
-    page.route('**/api?*', mock_support_report)
 
+    page.route('**/api?*', mock_support_report)
     page.set_viewport_size({'width': 390, 'height': 800})
     page.fill('#rs', 'E2E problem report')
     page.fill('#rm', 'Synthetic report from browser tests only; please ignore.')
@@ -695,6 +697,7 @@ with sync_playwright() as p:
             content_type='application/json',
             body=json.dumps({'ok': False, 'error': 'INTERNAL_TEST_SECRET Do not reveal'}),
         )
+
     page.unroute('**/api?*', mock_support_report)
     page.route('**/api?*', fail_support_report)
     page.fill('#rs', 'Retry after failure')
@@ -709,7 +712,9 @@ with sync_playwright() as p:
         and 'INTERNAL_TEST_SECRET' not in page.locator('#accountReportForm').inner_text(),
         'failure restores controls, preserves input and never displays internal error details',
     )
+
     page.unroute('**/api?*', fail_support_report)
+
     def retry_support_report(route):
         payload = route.request.post_data_json or {}
         if payload.get('action') == 'reportIssue':
@@ -720,6 +725,7 @@ with sync_playwright() as p:
             )
         else:
             route.continue_()
+
     page.route('**/api?*', retry_support_report)
     report_submit.click(timeout=10000)
     page.wait_for_function("document.querySelector('#accountReportStatus')?.innerText.includes('E2E67890')")

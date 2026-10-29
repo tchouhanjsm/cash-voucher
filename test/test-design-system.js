@@ -405,7 +405,7 @@ assert.match(
 );
 assert.match(
   administration,
-  /Your report could not be sent\.Check your connection and try again\./,
+  /Your report could not be sent\\. Check your connection and try again\\./
   'support failures use safe recovery copy',
 );
 assert.match(
