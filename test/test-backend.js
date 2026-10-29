@@ -1947,7 +1947,7 @@ const historyIntegrityFindings =
 const hasIntegrityFinding = (code) =>
   Boolean(
     historyIntegrityFindings &&
-      historyIntegrityFindings.items.some((finding) => finding.code === code),
+    historyIntegrityFindings.items.some((finding) => finding.code === code),
   );
 const filteredCrossTypeDuplicate = as(T, 'voucherHistory', {
   id: historyVoucherId,

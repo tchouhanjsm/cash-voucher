@@ -1169,7 +1169,8 @@ export function createRegister({ api, go }) {
     };
     const renderIntegrityFindings = (pageFindings) => {
       pageFindings.items.forEach((finding) => {
-        const key = finding.code + ':' + finding.auditRow + ':' + String(finding.relatedAuditRow || '');
+        const key =
+          finding.code + ':' + finding.auditRow + ':' + String(finding.relatedAuditRow || '');
         if (observedIntegrityFindings.has(key)) return;
         if (observedIntegrityFindings.size >= 50) {
           integrityFindingsTruncated = true;

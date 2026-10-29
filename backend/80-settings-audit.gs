@@ -320,11 +320,25 @@ function voucherAuditHistory_(user, req) {
     const eventId = typeof details.eventId === 'string' ? clean_(details.eventId, 100) : '';
     if (!eventId) {
       scanDiagnostics.missingEventIdRows++;
-      voucherAuditRecordFinding_(integrityFindings, 'MISSING_EVENT_ID', auditRow, details.eventType, '', null);
+      voucherAuditRecordFinding_(
+        integrityFindings,
+        'MISSING_EVENT_ID',
+        auditRow,
+        details.eventType,
+        '',
+        null,
+      );
     }
     if (voucherAuditEventCategory_(details.eventType) === 'OTHER') {
       scanDiagnostics.unknownEventTypeRows++;
-      voucherAuditRecordFinding_(integrityFindings, 'UNKNOWN_EVENT_TYPE', auditRow, details.eventType, eventId, null);
+      voucherAuditRecordFinding_(
+        integrityFindings,
+        'UNKNOWN_EVENT_TYPE',
+        auditRow,
+        details.eventType,
+        eventId,
+        null,
+      );
     }
 
     const rawChanges = details.changes;
@@ -354,11 +368,25 @@ function voucherAuditHistory_(user, req) {
       });
     if (malformedChanges) {
       scanDiagnostics.malformedChangeRows++;
-      voucherAuditRecordFinding_(integrityFindings, 'MALFORMED_CHANGES', auditRow, details.eventType, eventId, null);
+      voucherAuditRecordFinding_(
+        integrityFindings,
+        'MALFORMED_CHANGES',
+        auditRow,
+        details.eventType,
+        eventId,
+        null,
+      );
     }
     if (changesList.length > 30) {
       scanDiagnostics.truncatedChangeRows++;
-      voucherAuditRecordFinding_(integrityFindings, 'TRUNCATED_CHANGES', auditRow, details.eventType, eventId, null);
+      voucherAuditRecordFinding_(
+        integrityFindings,
+        'TRUNCATED_CHANGES',
+        auditRow,
+        details.eventType,
+        eventId,
+        null,
+      );
     }
 
     if (eventId) {
