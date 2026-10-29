@@ -3,7 +3,7 @@
 **Updated:** 29 October 2026 (account support form/E2E reliability fix)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `474097a8075303b9f44aa970dfd79bc3f6b78852` (PR #248 merged; bounded voucher audit reconciliation CSV export integrated).
+**Current integration baseline:** `474097a8075303b9f44aa970dfd79bc3f6b78852` (PR #247 is merged; PR #248 is also merged; bounded voucher audit reconciliation CSV export integrated).
 **Current source batch:** `client/fix-account-report-form-e2e-20261029` isolates the My Account support form from Register filter CSS by replacing the shared `rf` ID with `accountReportForm`; E2E now validates a unique visible form and enabled submit control with a bounded click timeout.
 **Active review PR:** [#249 — Isolate account support form from register styles](https://github.com/tchouhanjsm/cash-voucher/pull/249).
 **Release boundary:** focused frontend selector and test change. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
