@@ -1563,7 +1563,7 @@ with sync_playwright() as p:
                         'code': 'DUPLICATE_EVENT_ID',
                         'auditRow': source_row,
                         'relatedAuditRow': related_row,
-                        'eventId': rows[0].get('eventId', 'e2e-duplicate-finding'),
+                        'eventId': '=HYPERLINK("https://example.invalid","audit")',
                         'eventType': rows[0].get('eventType', 'VOUCHER_UPDATED'),
                     }],
                     'truncated': False,
@@ -1700,6 +1700,25 @@ with sync_playwright() as p:
         and 'AuditLog row #' in page.locator('.voucher-history-findings').inner_text()
         and 'Preserve the original rows' in page.locator('.voucher-history-findings').inner_text(),
         'Register gives owners bounded source-row evidence and non-destructive reconciliation guidance',
+    )
+    check(
+        page.locator('.voucher-history-export').is_enabled(),
+        'CSV export is enabled only after a validated audit scan is loaded',
+    )
+    with page.expect_download() as audit_export_download_info:
+        page.click('.voucher-history-export')
+    audit_export_download = audit_export_download_info.value
+    with open(audit_export_download.path(), encoding='utf-8-sig') as audit_export_file:
+        audit_export_text = audit_export_file.read()
+    check(
+        '"SCAN_SUMMARY"' in audit_export_text
+        and '"FINDING"' in audit_export_text
+        and '"DUPLICATE_EVENT_ID"' in audit_export_text
+        and "'=HYPERLINK" in audit_export_text
+        and 'Approval E2E vendor' not in audit_export_text
+        and '10000' not in audit_export_text
+        and 'receipt base64' not in audit_export_text.lower(),
+        'CSV evidence export records bounded scan/finding data, neutralizes spreadsheet formulas and omits voucher/user payloads',
     )
     check(
         'amount:' in history_text.lower() and '10000' in history_text,

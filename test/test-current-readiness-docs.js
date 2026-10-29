@@ -53,9 +53,10 @@ const administrationFrontend = read('frontend/features/administration.js');
 const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
-assert.match(handoff, /^\*\*Updated:\*\* 28 October 2026/m);
+assert.match(handoff, /^\*\*Updated:\*\* 29 October 2026/m);
 const currentIntegrationSha = '2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c';
-assert.ok(handoff.includes(currentIntegrationSha));
+const handoffIntegrationSha = 'b36c0212c541b92ba45347d67b0ed7e2c5185562';
+assert.ok(handoff.includes(handoffIntegrationSha));
 assert.ok(handoff.includes('PR #245 merged'));
 assert.ok(handoff.includes('Governance evidence binding phase — 28 October 2026'));
 assert.ok(handoff.includes('Operational evidence content-binding phase — 28 October 2026'));
@@ -67,7 +68,7 @@ assert.ok(releaseGateBundleValidator.includes('validateOperationalGateEvidence')
 assert.ok(releaseGateBundleTest.includes('digest-consistent operational record'));
 assert.match(
   handoff,
-  /^\*\*Current integration baseline:\*\* `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`/m,
+  /^\*\*Current integration baseline:\*\* `b36c0212c541b92ba45347d67b0ed7e2c5185562`/m,
 );
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
@@ -133,7 +134,7 @@ assert.ok(
   ),
 );
 
-assert.ok(handoff.includes('Current release-session checkpoint — 28 October 2026'));
+assert.ok(handoff.includes('Historical release-session checkpoint — 28 October 2026'));
 assert.ok(handoff.includes('Client-main governance verifier phase — 28 October 2026'));
 assert.ok(governanceVerifier.includes('--json'));
 assert.ok(governanceVerifier.includes('buildGovernanceEvidence'));
@@ -242,7 +243,7 @@ assert.doesNotMatch(
   handoff,
   /\*\*Current integration baseline:\*\*.*1dba1b008eb2303ffddf069285fbb22efc76a8cb/,
 );
-assert.match(handoff, /Current release-session checkpoint.*28 October 2026/);
+assert.match(handoff, /Historical release-session checkpoint.*28 October 2026/);
 assert.match(handoff, /Historical checkpoint — 27 October 2026 09:59 IST/);
 assert.match(handoff, /client\/p0-recovery-drill-evidence-20261027/);
 assert.match(handoff, /40443448972/);

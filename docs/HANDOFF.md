@@ -1,13 +1,20 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 28 October 2026 (operational evidence content-binding phase)
+**Updated:** 29 October 2026 (voucher audit reconciliation export phase)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c` (PR #245 merged; governance verification is integrated; operational release remains blocked).
-**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028` binds governance evidence and validates gate-specific JSON content for the other seven operational gates. Source/tests/docs only; no GitHub setting or live resource is changed.
-**Release boundary:** deterministic source/test/docs work only. No default-branch change, branch-protection/ruleset mutation, workflow dispatch, Clasp push, Apps Script deployment, migration, Sheets/Drive mutation, live UAT, cPanel publication or production operation.
+**Current integration baseline:** `b36c0212c541b92ba45347d67b0ed7e2c5185562` (PR #247 merged; owner-only voucher audit history and bounded integrity findings are integrated).
+**Current source batch:** `client/export-voucher-audit-reconciliation-20261029` adds a bounded CSV export for loaded audit scan ranges and finding samples. The export contains diagnostic counts and source-row references only, not voucher field contents or user identities.
+**Release boundary:** source/test/docs only. No default-branch or branch-protection change, workflow dispatch, Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
 
-## Current release-session checkpoint — 28 October 2026
+## Current release-session checkpoint — 29 October 2026
+
+- **Integration baseline:** `client-main` at `b36c0212c541b92ba45347d67b0ed7e2c5185562`; PR #247 is merged. This phase builds on the owner-only voucher history, per-range integrity counters and source-row findings.
+- **Current source batch:** `client/export-voucher-audit-reconciliation-20261029`. The owner can export the scan ranges actually loaded in Register as a CSV with scan summary rows and bounded detailed finding rows. The serializer validates counters, row bounds and finding codes; CSV cells use the existing formula-injection-safe encoder. Voucher field values, receipt contents, actors and voucher identifiers are excluded from the export.
+- **Verification boundary:** mock/backend and browser tests verify export schema and safety behavior. This does not prove live Apps Script execution, complete ledger history or completed real-world reconciliation.
+- **Release remains blocked:** `client-main` is reported unprotected and the default branch remains `main`; staging/UAT, live Apps Script verification, backup/restore rehearsal, reconciliation sign-off, security review and customer acceptance remain outstanding.
+
+## Historical release-session checkpoint — 28 October 2026
 
 - **Integration baseline:** `client-main` at `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c`; PRs #242 through #245 are merged. Legacy `main` remains read-only by engineering policy. Repository settings remain uncorrected.
 - **Previous phase:** merged PR #242 added release-bundle freshness, exact deployed-SHA binding, private evidence digest verification and safe report handling. This source phase does not reopen those completed code contracts.
