@@ -1872,9 +1872,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
           String(navigator.userAgent || ''),
       });
       form.reset();
-      status.textContent = 'Your report was sent successfully. Reference ' + scalarText(data?.ref) + '.';
+      status.textContent =
+        'Your report was sent successfully. Reference ' + scalarText(data?.ref) + '.';
       toast('Sent to support. Reference ' + scalarText(data?.ref) + '.', 'ok');
-    } catch (error) {
+    } catch {
       // Network and server errors must not echo request data or internal details.
       status.textContent = 'Your report could not be sent. Check your connection and try again.';
       toast('Your report could not be sent. Please try again.', 'err');

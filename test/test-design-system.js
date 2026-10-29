@@ -393,12 +393,36 @@ assert.match(
   /className = 'account-report-field account-report-field--message'/,
   'support report message has a visible label and a scoped field wrapper',
 );
-assert.match(administration, /form\.dataset\.submitting === 'true'/, 'support report rejects duplicate submit events while in flight');
-assert.match(administration, /setAttribute\('aria-busy', 'true'\)/, 'support report exposes an accessible pending state');
-assert.match(administration, /Your report could not be sent\. Check your connection and try again\./, 'support failures use safe recovery copy');
-assert.match(administration, /finally \{[\s\S]*?button\.disabled = false;[\s\S]*?button\.textContent = 'Send to support';/, 'support submit control is restored after success or failure');
-assert.match(components, /\.app #view \.account-report-status\s*\{[\s\S]*?overflow-wrap:\s*anywhere;/, 'support lifecycle feedback wraps within the account form');
-assert.doesNotMatch(components, /#rf[^}]*account-report/, 'support form styling does not leak into Register filter selectors');
+assert.match(
+  administration,
+  /form\.dataset\.submitting === 'true'/,
+  'support report rejects duplicate submit events while in flight',
+);
+assert.match(
+  administration,
+  /setAttribute\('aria-busy', 'true'\)/,
+  'support report exposes an accessible pending state',
+);
+assert.match(
+  administration,
+  /Your report could not be sent\. Check your connection and try again\./,
+  'support failures use safe recovery copy',
+);
+assert.match(
+  administration,
+  /finally \{[\s\S]*?button\.disabled = false;[\s\S]*?button\.textContent = 'Send to support';/,
+  'support submit control is restored after success or failure',
+);
+assert.match(
+  components,
+  /\.app #view \.account-report-status\s*\{[\s\S]*?overflow-wrap:\s*anywhere;/,
+  'support lifecycle feedback wraps within the account form',
+);
+assert.doesNotMatch(
+  components,
+  /#rf[^}]*account-report/,
+  'support form styling does not leak into Register filter selectors',
+);
 
 assert.match(
   components,
