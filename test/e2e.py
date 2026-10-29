@@ -1564,6 +1564,10 @@ with sync_playwright() as p:
                     'unstructuredRows': 0,
                     'unsupportedRows': 0,
                     'duplicateEventRows': 0,
+                    'missingEventIdRows': 0,
+                    'unknownEventTypeRows': 0,
+                    'malformedChangeRows': 0,
+                    'truncatedChangeRows': 0,
                 }
                 data['scanRange'] = {
                     'firstRow': cursor,
@@ -1587,6 +1591,10 @@ with sync_playwright() as p:
                 'unstructuredRows': 0,
                 'unsupportedRows': 0,
                 'duplicateEventRows': 0,
+                'missingEventIdRows': 0,
+                'unknownEventTypeRows': 0,
+                'malformedChangeRows': 0,
+                'truncatedChangeRows': 0,
             }
             data['scanRange'] = {
                 'firstRow': older_row,
@@ -1732,6 +1740,10 @@ with sync_playwright() as p:
                     unstructuredRows: 0,
                     unsupportedRows: 0,
                     duplicateEventRows: 0,
+                    missingEventIdRows: 0,
+                    unknownEventTypeRows: 0,
+                    malformedChangeRows: 0,
+                    truncatedChangeRows: 0,
                   },
                   scanRange: null,
                   eventCategory: 'ALL',
