@@ -581,7 +581,17 @@ with sync_playwright() as p:
     )
     page.fill('#rs', 'E2E problem report')
     page.fill('#rm', 'Synthetic report from the browser test; please ignore.')
-    page.click('#rf button[type=submit]')
+    report_form = page.locator('#accountReportForm')
+    check(
+        report_form.count() == 1 and report_form.is_visible(),
+        'account support report form has a unique visible target at mobile width',
+    )
+    report_submit = report_form.locator('button[type=submit]')
+    check(
+        report_submit.count() == 1 and report_submit.is_enabled(),
+        'account support report submit control is unique and enabled',
+    )
+    report_submit.click(timeout=10000)
     page.wait_for_function("document.body.innerText.includes('Sent to support. Reference')")
     check(
         page.locator('#rs').input_value() == '' and page.locator('#rm').input_value() == '',

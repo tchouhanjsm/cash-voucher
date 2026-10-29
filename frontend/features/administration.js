@@ -1751,7 +1751,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       fragment.appendChild(form);
 
       const report = document.createElement('form');
-      report.id = 'rf';
+      report.id = 'accountReportForm';
       report.className = 'card account-report-form';
       report.autocomplete = 'off';
       const reportHeading = document.createElement('h2');
@@ -1865,7 +1865,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       return changePassword(event);
     }
 
-    if (event.target.id === 'rf') {
+    if (event.target.id === 'accountReportForm') {
       event.preventDefault();
       return reportProblem(event);
     }
