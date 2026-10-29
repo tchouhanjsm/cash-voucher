@@ -403,9 +403,10 @@ assert.match(
   /setAttribute\('aria-busy', 'true'\)/,
   'support report exposes an accessible pending state',
 );
-assert.match(
-  administration,
-  /Your report could not be sent\\. Check your connection and try again\\./,
+assert.ok(
+  administration.includes(
+    'Your report could not be sent. Check your connection and try again.',
+  ),
   'support failures use safe recovery copy',
 );
 assert.match(
