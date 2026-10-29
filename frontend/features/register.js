@@ -1091,8 +1091,9 @@ export function createRegister({ api, go }) {
   }
 
   function history(id) {
-    const voucher = voucherRows().find((item) => item.id === id);
-    if (!voucher || !can('audit')) {
+    const voucherId = typeof id === 'string' ? id.trim() : '';
+    const voucher = voucherRows().find((item) => item.id === voucherId);
+    if (!voucherId || voucherId.length > 100 || !can('audit')) {
       fail(new Error('Voucher history is unavailable for this account. Refresh and retry.'));
       return;
     }
@@ -1279,7 +1280,7 @@ export function createRegister({ api, go }) {
       try {
         const requestedBeforeRow = beforeRow;
         const page = await api('voucherHistory', {
-          id: voucher.id,
+          id: voucherId,
           beforeRow: requestedBeforeRow,
           eventCategory,
         });
@@ -1394,7 +1395,11 @@ export function createRegister({ api, go }) {
       loadPage(false);
     });
     older.addEventListener('click', () => loadPage(true));
-    dialog('Voucher history for ' + voucherNo(voucher), body, null);
+    dialog(
+      voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history',
+      body,
+      null,
+    );
     loadPage(false);
   }
 

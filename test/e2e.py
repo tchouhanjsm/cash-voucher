@@ -1701,6 +1701,60 @@ with sync_playwright() as p:
     page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
     page.unroute('**/api?*', inject_hostile_voucher_history)
 
+    history_cache_miss = page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          const { createRegister } = await import('/frontend/features/register.js');
+          const calls = [];
+          const originalMe = S.me;
+          try {
+            const register = createRegister({
+              api: async (action, payload) => {
+                calls.push({ action, id: payload?.id });
+                return {
+                  rows: [],
+                  nextBeforeRow: null,
+                  scannedRows: 0,
+                  scanDiagnostics: {
+                    recognizedRows: 0,
+                    unstructuredRows: 0,
+                    unsupportedRows: 0,
+                    duplicateEventRows: 0,
+                  },
+                  scanRange: null,
+                  eventCategory: 'ALL',
+                  auditHealth: { status: 'NO_KNOWN_FAILURE' }
+                };
+              },
+              go: () => {}
+            });
+            register.history('voucher-cache-miss-fixture');
+            return {
+              calls,
+              modalTitle: document.querySelector('#modalTitle')?.textContent || ''
+            };
+          } finally {
+            S.me = originalMe;
+          }
+        }"""
+    )
+    page.wait_for_function(
+        """() => {
+          const status = document.querySelector('#modal .voucher-history-status')?.innerText || '';
+          return status && !status.includes('Loading voucher history…');
+        }"""
+    )
+    history_cache_miss_status = page.locator('#modal .voucher-history-status').inner_text()
+    check(
+        history_cache_miss.get('calls', [{}])[0].get('action') == 'voucherHistory'
+        and history_cache_miss['calls'][0].get('id') == 'voucher-cache-miss-fixture'
+        and history_cache_miss['modalTitle'] == 'Voucher history'
+        and 'No structured events could be linked to this voucher' in history_cache_miss_status,
+        'History remains operable by stable voucher ID when the Register page cache no longer contains the row',
+    )
+    page.click('#modal [data-x]')
+    page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+
     go_view(page, 'dash')
     page.wait_for_selector('[data-v=dash][aria-current=page]')
     page.wait_for_function(
