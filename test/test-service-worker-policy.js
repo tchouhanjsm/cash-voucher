@@ -145,6 +145,7 @@ function createHarness({ failAddAll = false } = {}) {
   assert.ok(currentCache.has('https://example.test/app/index.html'));
   assert.ok(currentCache.has('https://example.test/app/frontend/core/pwa.js'));
   for (const asset of [
+    'frontend/core/audit-export.js',
     'frontend/core/offline-queue.js',
     'frontend/core/offline-auth.js',
     'frontend/core/recovery-validation.js',

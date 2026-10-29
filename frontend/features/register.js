@@ -15,6 +15,7 @@ import {
   suggestCashImpact,
 } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
+import { createAuditReconciliationCsv } from '../core/audit-export.js';
 import {
   compress,
   csvCell,
@@ -1131,6 +1132,15 @@ export function createRegister({ api, go }) {
     status.setAttribute('role', 'status');
     status.setAttribute('aria-live', 'polite');
     status.textContent = 'Loading voucher history…';
+    const exportEvidence = document.createElement('button');
+    exportEvidence.type = 'button';
+    exportEvidence.className = 'btn sm voucher-history-export';
+    exportEvidence.textContent = 'Export review CSV';
+    exportEvidence.disabled = true;
+    exportEvidence.setAttribute(
+      'aria-label',
+      'Export loaded voucher audit coverage and integrity findings as CSV',
+    );
     const findingsPanel = document.createElement('section');
     findingsPanel.className = 'voucher-history-findings';
     findingsPanel.hidden = true;
@@ -1150,12 +1160,14 @@ export function createRegister({ api, go }) {
     older.className = 'btn voucher-history-older';
     older.textContent = 'Load older events';
     older.hidden = true;
-    body.append(note, filterLabel, status, findingsPanel, list, older);
+    body.append(note, filterLabel, status, exportEvidence, findingsPanel, list, older);
 
     let beforeRow = null;
     let loading = false;
     let eventCategory = 'ALL';
     let loadedEventCount = 0;
+    const loadedAuditScans = [];
+    const maxAuditExportScans = 100;
     const seenEventRows = new Map();
     const repeatedEventRowsAcrossPages = new Map();
     const observedIntegrityFindings = new Map();
@@ -1325,6 +1337,7 @@ export function createRegister({ api, go }) {
             repeatedOnThisPage.set(event.eventId, {
               firstRow: eventRowsFromEarlierPages.get(event.eventId),
               repeatedRow: event.auditRow,
+              eventType: event.eventType,
             });
           } else if (!seenEventRows.has(event.eventId)) {
             seenEventRows.set(event.eventId, event.auditRow);
@@ -1374,9 +1387,17 @@ export function createRegister({ api, go }) {
           ([eventId, rows]) =>
             eventId + ': AuditLog rows #' + rows.firstRow + ' and #' + rows.repeatedRow,
         );
+      const findings = Array.from(repeatedOnThisPage.entries()).map(([eventId, rows]) => ({
+        code: 'DUPLICATE_EVENT_ID',
+        auditRow: rows.repeatedRow,
+        relatedAuditRow: rows.firstRow,
+        eventId: eventId,
+        eventType: rows.eventType || '',
+      }));
       return {
         count: repeatedEventRowsAcrossPages.size,
         rowReferences: rowReferences,
+        findings: findings,
       };
     };
 
@@ -1396,9 +1417,50 @@ export function createRegister({ api, go }) {
         if (!isValidPage(page, requestedBeforeRow)) {
           throw new Error('The server returned invalid voucher-history data.');
         }
-        if (!append) list.replaceChildren();
+        if (!append) {
+          list.replaceChildren();
+          loadedAuditScans.length = 0;
+        }
+        if (loadedAuditScans.length >= maxAuditExportScans) {
+          throw new Error(
+            'This review reached the 100-range export limit. Export the loaded evidence before starting a new review.',
+          );
+        }
         const repeatedAcrossPages = appendEvents(page.rows);
-        renderIntegrityFindings(page.integrityFindings);
+        const exportFindingCandidates = [
+          ...page.integrityFindings.items,
+          ...repeatedAcrossPages.findings,
+        ];
+        const exportFindingSamples = exportFindingCandidates.slice(0, 25).map((finding) => ({
+          code: finding.code,
+          auditRow: finding.auditRow,
+          relatedAuditRow: finding.relatedAuditRow,
+          eventId: finding.eventId,
+          eventType: finding.eventType,
+        }));
+        const exportFindingsTruncated =
+          page.integrityFindings.truncated || exportFindingCandidates.length > 25;
+        loadedAuditScans.push({
+          eventCategory: page.eventCategory,
+          scannedRows: page.scannedRows,
+          scanRange: page.scanRange
+            ? {
+                firstRow: page.scanRange.firstRow,
+                lastRow: page.scanRange.lastRow,
+                hasOlderPage: page.scanRange.hasOlderPage,
+              }
+            : null,
+          scanDiagnostics: { ...page.scanDiagnostics },
+          integrityFindings: {
+            items: exportFindingSamples,
+            truncated: exportFindingsTruncated,
+          },
+        });
+        exportEvidence.disabled = false;
+        renderIntegrityFindings({
+          items: exportFindingCandidates,
+          truncated: page.integrityFindings.truncated || exportFindingCandidates.length > 50,
+        });
         beforeRow = page.nextBeforeRow;
         older.hidden = beforeRow === null;
         status.className = 'muted voucher-history-status';
@@ -1490,6 +1552,10 @@ export function createRegister({ api, go }) {
             ' duplicate row(s) in this scan. The rows remain visible; review the audit log before relying on completeness.';
           status.className = 'error voucher-history-status';
         }
+        if (beforeRow !== null && loadedAuditScans.length >= maxAuditExportScans) {
+          status.textContent +=
+            ' The review reached the 100-range export limit. Export current evidence before restarting with another filter.';
+        }
         if (repeatedAcrossPages.count) {
           status.textContent +=
             ' Repeated event identifiers across loaded pages: ' +
@@ -1509,18 +1575,35 @@ export function createRegister({ api, go }) {
             : 'Voucher history could not be loaded. Check the connection and retry.';
       } finally {
         loading = false;
-        older.disabled = false;
+        older.disabled = beforeRow === null || loadedAuditScans.length >= maxAuditExportScans;
         filter.disabled = false;
         older.textContent = 'Load older events';
         older.hidden = beforeRow === null;
       }
     };
 
+    exportEvidence.addEventListener('click', () => {
+      try {
+        const exportedAt = new Date().toISOString();
+        const csv = createAuditReconciliationCsv(loadedAuditScans, exportedAt);
+        const timestamp = exportedAt.replace(/[:.]/g, '-');
+        download(
+          'voucher-audit-reconciliation-' + timestamp + '.csv',
+          csv,
+          'text/csv;charset=utf-8',
+        );
+        toast('Audit reconciliation evidence exported.', 'ok');
+      } catch (error) {
+        fail(error);
+      }
+    });
     filter.addEventListener('change', () => {
       if (loading) return;
       eventCategory = filter.value;
       beforeRow = null;
       loadedEventCount = 0;
+      loadedAuditScans.length = 0;
+      exportEvidence.disabled = true;
       seenEventRows.clear();
       repeatedEventRowsAcrossPages.clear();
       observedIntegrityFindings.clear();

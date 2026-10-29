@@ -1563,7 +1563,7 @@ with sync_playwright() as p:
                         'code': 'DUPLICATE_EVENT_ID',
                         'auditRow': source_row,
                         'relatedAuditRow': related_row,
-                        'eventId': rows[0].get('eventId', 'e2e-duplicate-finding'),
+                        'eventId': '=HYPERLINK("https://example.invalid","audit")',
                         'eventType': rows[0].get('eventType', 'VOUCHER_UPDATED'),
                     }],
                     'truncated': False,
@@ -1702,6 +1702,26 @@ with sync_playwright() as p:
         'Register gives owners bounded source-row evidence and non-destructive reconciliation guidance',
     )
     check(
+        page.locator('.voucher-history-export').is_enabled(),
+        'CSV export is enabled only after a validated audit scan is loaded',
+    )
+    with page.expect_download() as audit_export_download_info:
+        page.click('.voucher-history-export')
+    audit_export_download = audit_export_download_info.value
+    with open(audit_export_download.path(), encoding='utf-8-sig') as audit_export_file:
+        audit_export_text = audit_export_file.read()
+    check(
+        '"recordType","schemaVersion","exportedAt"' in audit_export_text
+        and '"SCAN_SUMMARY","1",' in audit_export_text
+        and '"FINDING"' in audit_export_text
+        and '"DUPLICATE_EVENT_ID"' in audit_export_text
+        and "'=HYPERLINK" in audit_export_text
+        and 'Approval E2E vendor' not in audit_export_text
+        and '10000' not in audit_export_text
+        and 'receipt base64' not in audit_export_text.lower(),
+        'CSV evidence export records bounded scan/finding data, neutralizes spreadsheet formulas and omits voucher/user payloads',
+    )
+    check(
         'amount:' in history_text.lower() and '10000' in history_text,
         'voucher history displays the payment amount change from its structured audit event',
     )
@@ -1736,6 +1756,29 @@ with sync_playwright() as p:
         and 'AuditLog rows #' in page.locator('.voucher-history-status').inner_text()
         and page.locator('#modal .voucher-history-event').count() == 2,
         'Register flags repeated audit event IDs with source-row references without hiding either row',
+    )
+    with page.expect_download() as cross_page_export_info:
+        page.click('.voucher-history-export')
+    cross_page_export = cross_page_export_info.value
+    with open(cross_page_export.path(), encoding='utf-8-sig', newline='') as cross_page_export_file:
+        exported_rows = list(csv.DictReader(cross_page_export_file))
+    exported_cross_page_findings = [
+        row for row in exported_rows
+        if row['recordType'] == 'FINDING' and row['findingCode'] == 'DUPLICATE_EVENT_ID'
+    ]
+    check(
+        bool(exported_cross_page_findings)
+        and any(
+            finding['auditRow']
+            and finding['relatedAuditRow']
+            and finding['auditRow'] != finding['relatedAuditRow']
+            for finding in exported_cross_page_findings
+        )
+        and any(
+            row['recordType'] == 'SCAN_SUMMARY' and row['scanHasOlderPage'] == 'true'
+            for row in exported_rows
+        ),
+        'reconciliation CSV carries cross-page duplicate row references and explicitly marks ranges with older rows',
     )
     history_filter.select_option('CREATED')
     page.wait_for_function(
