@@ -13,11 +13,11 @@
 - The report form rejects duplicate submit events while a request is in flight, exposes `aria-busy`, and announces pending/success/failure states through a polite live region. The submit action is restored in `finally` after both outcomes.
 - Successful reports keep the existing `reportIssue` payload contract, clear fields, and show the returned reference. Failed requests preserve the reporter's draft and use generic recovery copy rather than displaying exception/internal details.
 - Browser E2E covers 320px, mobile, tablet and desktop layout; visible associated labels; keyboard-visible focus in light and dark themes; pending/duplicate submission; success/reference/reset; failure recovery; and retry with mocked responses only. The report mocks are removed before later Register scenarios. Real support delivery remains untested.
-- **Verified current head:** `37ce9723ee464e91a193bdad33db7a26de2100c1` passed CI/Quality, Browser E2E (**1,557 checks passed, 0 failed**), Full Flight and the Autonomous Development Monitor:
-  - [CI #40872631287](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40872631287)
-  - [Browser E2E #40872631291](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40872631291)
-  - [Full Flight #40872631227](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40872631227)
-  - [Autonomous Development Monitor #40872631276](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40872631276)
+- **Verified current head:** `58112803966517966f20e94ef29c7e59a55ff7d6` passed CI/Quality, Browser E2E (**1,557 checks passed, 0 failed**), Full Flight and the Autonomous Development Monitor:
+  - [CI #40873202366](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40873202366)
+  - [Browser E2E #40873202472](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40873202472)
+  - [Full Flight #40873202458](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40873202458)
+  - [Autonomous Development Monitor #40873202350](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40873202350)
 - **Local checks:** no local Mac commands were run during this session. The above results are GitHub Actions evidence for the exact head only.
 
 ## Current release-session checkpoint — 29 October 2026
