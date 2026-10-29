@@ -636,6 +636,7 @@ with sync_playwright() as p:
     # Browser-only mocks guarantee that no real support report is delivered.
     report_requests = []
     pending_request = {'route': None}
+    pending_event = threading.Event()
     def mock_support_report(route):
         if 'reportIssue' not in route.request.url:
             route.continue_()
@@ -643,6 +644,10 @@ with sync_playwright() as p:
         report_requests.append(route.request.post_data or '')
         if pending_request['route'] is None:
             pending_request['route'] = route
+            pending_event.set()
+            pending_event.wait(timeout=10)
+            if pending_request['route'] is not None:
+                route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}))
             return
         route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}))
     page.route('**/api?*', mock_support_report)
@@ -652,6 +657,7 @@ with sync_playwright() as p:
     page.fill('#rm', 'Synthetic report from browser tests only; please ignore.')
     report_submit.click(timeout=10000)
     page.wait_for_function("document.querySelector('#accountReportForm')?.getAttribute('aria-busy') === 'true'")
+    assert pending_event.wait(timeout=5), 'mock support request reached pending state'
     check(
         report_submit.is_disabled()
         and report_submit.inner_text() == 'Sending…'

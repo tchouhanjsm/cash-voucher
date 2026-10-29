@@ -13,7 +13,7 @@
 - The report form rejects duplicate submit events while a request is in flight, exposes `aria-busy`, and announces pending/success/failure states through a polite live region. The submit action is restored in `finally` after both outcomes.
 - Successful reports keep the existing `reportIssue` payload contract, clear fields, and show the returned reference. Failed requests preserve the reporter's draft and use generic recovery copy rather than displaying exception/internal details.
 - Browser E2E covers 320px, mobile, tablet and desktop layout; pending/duplicate submission, success/reference/reset, failure recovery, and retry with mocked responses only. Real support delivery remains untested.
-- **Verification pending:** fresh Quality/CI, Browser E2E, Full Flight and monitor runs must complete on the new exact PR head before merge. Prior green workflow jobs identified `c9892b7591190eaafae9f09a89f6db9760094baf`, not the then-current PR head.
+- **Verification status:** the first new-head run exposed a lint/format error and a deterministic browser mock failure; both are being corrected in a follow-up commit. All gates must pass on that later exact head before merge. Prior green workflow jobs identified `c9892b7591190eaafae9f09a89f6db9760094baf`, not the then-current PR head.
 
 ## Current release-session checkpoint — 29 October 2026
 
