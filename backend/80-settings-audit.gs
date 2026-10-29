@@ -269,8 +269,7 @@ function voucherAuditHistory_(user, req) {
       unstructuredRows++;
       continue;
     }
-    const envelopeObject =
-      details && typeof details === 'object' && !Array.isArray(details);
+    const envelopeObject = details && typeof details === 'object' && !Array.isArray(details);
     if (!envelopeObject) {
       unsupportedRows++;
       continue;
