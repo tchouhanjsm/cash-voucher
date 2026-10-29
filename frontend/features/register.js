@@ -1395,11 +1395,7 @@ export function createRegister({ api, go }) {
       loadPage(false);
     });
     older.addEventListener('click', () => loadPage(true));
-    dialog(
-      voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history',
-      body,
-      null,
-    );
+    dialog(voucher ? 'Voucher history for ' + voucherNo(voucher) : 'Voucher history', body, null);
     loadPage(false);
   }
 
