@@ -1539,7 +1539,7 @@ export function createRegister({ api, go }) {
         }
         if (repeatedAcrossPages.count) {
           status.textContent +=
-            ' Repeated event identifiers across loaded pages: '
+            ' Repeated event identifiers across loaded pages: ' +
             repeatedAcrossPages.count +
             ' unique event ID(s). Rows remain visible; review the audit log before relying on completeness.';
           if (repeatedAcrossPages.rowReferences.length) {
@@ -1556,8 +1556,7 @@ export function createRegister({ api, go }) {
             : 'Voucher history could not be loaded. Check the connection and retry.';
       } finally {
         loading = false;
-        older.disabled =
-          beforeRow === null || loadedAuditScans.length >= maxAuditExportScans;
+        older.disabled = beforeRow === null || loadedAuditScans.length >= maxAuditExportScans;
         filter.disabled = false;
         older.textContent = 'Load older events';
         older.hidden = beforeRow === null;

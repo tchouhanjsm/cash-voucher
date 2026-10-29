@@ -3,19 +3,47 @@ import { csvCell } from './utils.js';
 const MAX_SCAN_RANGES = 100;
 const MAX_FINDINGS_PER_RANGE = 25;
 const EVENT_CATEGORIES = new Set([
-  'ALL', 'CREATED', 'UPDATED', 'CANCELLED', 'APPROVED', 'REJECTED', 'RECEIPT_ATTACHED', 'OTHER',
+  'ALL',
+  'CREATED',
+  'UPDATED',
+  'CANCELLED',
+  'APPROVED',
+  'REJECTED',
+  'RECEIPT_ATTACHED',
+  'OTHER',
 ]);
 const FINDING_CODES = new Set([
-  'DUPLICATE_EVENT_ID', 'MISSING_EVENT_ID', 'UNKNOWN_EVENT_TYPE', 'MALFORMED_CHANGES', 'TRUNCATED_CHANGES',
+  'DUPLICATE_EVENT_ID',
+  'MISSING_EVENT_ID',
+  'UNKNOWN_EVENT_TYPE',
+  'MALFORMED_CHANGES',
+  'TRUNCATED_CHANGES',
 ]);
 const DIAGNOSTIC_FIELDS = [
-  'recognizedRows', 'unstructuredRows', 'unsupportedRows', 'duplicateEventRows',
-  'missingEventIdRows', 'unknownEventTypeRows', 'malformedChangeRows', 'truncatedChangeRows',
+  'recognizedRows',
+  'unstructuredRows',
+  'unsupportedRows',
+  'duplicateEventRows',
+  'missingEventIdRows',
+  'unknownEventTypeRows',
+  'malformedChangeRows',
+  'truncatedChangeRows',
 ];
 const HEADERS = [
-  'recordType', 'exportedAt', 'eventCategory', 'scanIndex', 'scanFirstRow', 'scanLastRow',
-  'scannedRows', ...DIAGNOSTIC_FIELDS, 'findingSamplesTruncated', 'findingCode', 'auditRow',
-  'relatedAuditRow', 'eventId', 'eventType',
+  'recordType',
+  'exportedAt',
+  'eventCategory',
+  'scanIndex',
+  'scanFirstRow',
+  'scanLastRow',
+  'scannedRows',
+  ...DIAGNOSTIC_FIELDS,
+  'findingSamplesTruncated',
+  'findingCode',
+  'auditRow',
+  'relatedAuditRow',
+  'eventId',
+  'eventType',
 ];
 
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value);
@@ -28,13 +56,16 @@ function validateScan(scan) {
     scan.scannedRows < 0 ||
     scan.scannedRows > 500 ||
     !isRecord(scan.scanDiagnostics) ||
-    !DIAGNOSTIC_FIELDS.every((field) =>
-      Number.isSafeInteger(scan.scanDiagnostics[field]) &&
-      scan.scanDiagnostics[field] >= 0 &&
-      scan.scanDiagnostics[field] <= 500
+    !DIAGNOSTIC_FIELDS.every(
+      (field) =>
+        Number.isSafeInteger(scan.scanDiagnostics[field]) &&
+        scan.scanDiagnostics[field] >= 0 &&
+        scan.scanDiagnostics[field] <= 500,
     ) ||
-    scan.scanDiagnostics.recognizedRows + scan.scanDiagnostics.unstructuredRows +
-      scan.scanDiagnostics.unsupportedRows !== scan.scannedRows ||
+    scan.scanDiagnostics.recognizedRows +
+      scan.scanDiagnostics.unstructuredRows +
+      scan.scanDiagnostics.unsupportedRows !==
+      scan.scannedRows ||
     !isRecord(scan.integrityFindings) ||
     !Array.isArray(scan.integrityFindings.items) ||
     scan.integrityFindings.items.length > MAX_FINDINGS_PER_RANGE ||
@@ -67,16 +98,20 @@ function validateScan(scan) {
       !scan.scanRange ||
       finding.auditRow < scan.scanRange.firstRow ||
       finding.auditRow > scan.scanRange.lastRow ||
-      !(finding.relatedAuditRow === null ||
+      !(
+        finding.relatedAuditRow === null ||
         (Number.isSafeInteger(finding.relatedAuditRow) &&
           finding.relatedAuditRow >= scan.scanRange.firstRow &&
-          finding.relatedAuditRow <= scan.scanRange.lastRow)) ||
+          finding.relatedAuditRow <= scan.scanRange.lastRow)
+      ) ||
       typeof finding.eventId !== 'string' ||
       finding.eventId.length > 100 ||
       typeof finding.eventType !== 'string' ||
       finding.eventType.length > 100
     ) {
-      throw new TypeError('Audit review evidence contains an invalid finding or source-row reference.');
+      throw new TypeError(
+        'Audit review evidence contains an invalid finding or source-row reference.',
+      );
     }
   });
 }
@@ -89,7 +124,9 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
     typeof exportedAt !== 'string' ||
     !Number.isFinite(Date.parse(exportedAt))
   ) {
-    throw new TypeError('Export one to 100 validated audit scan ranges with a valid export timestamp.');
+    throw new TypeError(
+      'Export one to 100 validated audit scan ranges with a valid export timestamp.',
+    );
   }
 
   scans.forEach(validateScan);
@@ -98,15 +135,25 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
     const diagnostics = DIAGNOSTIC_FIELDS.map((field) => scan.scanDiagnostics[field]);
     const range = scan.scanRange;
     const common = [
-      exportedAt, scan.eventCategory, index + 1, range ? range.firstRow : '',
-      range ? range.lastRow : '', scan.scannedRows, ...diagnostics, scan.integrityFindings.truncated,
+      exportedAt,
+      scan.eventCategory,
+      index + 1,
+      range ? range.firstRow : '',
+      range ? range.lastRow : '',
+      scan.scannedRows,
+      ...diagnostics,
+      scan.integrityFindings.truncated,
     ];
     csvRows.push(['SCAN_SUMMARY', ...common, '', '', '', '', '']);
     scan.integrityFindings.items.forEach((finding) => {
       csvRows.push([
-        'FINDING', ...common, finding.code, finding.auditRow,
+        'FINDING',
+        ...common,
+        finding.code,
+        finding.auditRow,
         finding.relatedAuditRow === null ? '' : finding.relatedAuditRow,
-        finding.eventId, finding.eventType,
+        finding.eventId,
+        finding.eventType,
       ]);
     });
   });
