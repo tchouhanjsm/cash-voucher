@@ -121,7 +121,7 @@ function hasCode(bundle, code) {
 }
 
 async function runProvenanceTests() {
-  const bundle = buildBundle();
+  const bundle = buildCurrentBundle();
   const fakeRun = (key, evidence) => ({
     id: Number(evidence.runId),
     path: '.github/workflows/' + SOURCE_WORKFLOW_FILES[key],

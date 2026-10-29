@@ -58,6 +58,7 @@ for (const readAction of [
   'dashboardSummary',
   'dailyOperationsSummary',
   'auditLog',
+  'voucherHistory',
   'recordedMovementReport',
   'dataQualityReport',
   'backupStatus',

@@ -1711,6 +1711,400 @@ ok(
     auditPage.data.totalCount > 10,
   'audit log returns a bounded page and total record count',
 );
+const historyFixture = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'voucher-history-timeline-fixture',
+      date: today,
+      vendor: 'Voucher History Timeline Fixture',
+      amount: 47,
+      category: 'Other',
+      paymentMethod: 'CASH',
+    },
+  ],
+});
+ok(
+  historyFixture.ok && historyFixture.data.created.length === 1,
+  'voucher history fixture is created',
+);
+const historyVoucherId = historyFixture.data.created[0].id;
+const historyFixtureUpdate = as(T, 'updateVoucher', {
+  id: historyVoucherId,
+  fields: { notes: 'History note corrected' },
+  reason: 'Audit timeline regression',
+});
+ok(historyFixtureUpdate.ok, 'voucher history fixture update is saved');
+const historyPage = as(T, 'voucherHistory', { id: historyVoucherId });
+ok(
+  historyPage.ok &&
+    historyPage.data.rows.length === 2 &&
+    historyPage.data.rows[0].eventType === 'VOUCHER_UPDATED' &&
+    Number.isSafeInteger(historyPage.data.rows[0].auditRow) &&
+    Number.isSafeInteger(historyPage.data.rows[1].auditRow) &&
+    historyPage.data.rows[0].auditRow > historyPage.data.rows[1].auditRow &&
+    historyPage.data.rows.every(
+      (event) =>
+        event.auditRow >= historyPage.data.scanRange.firstRow &&
+        event.auditRow <= historyPage.data.scanRange.lastRow,
+    ) &&
+    historyPage.data.rows[0].reason === 'Audit timeline regression' &&
+    historyPage.data.rows[1].eventType === 'VOUCHER_CREATED' &&
+    historyPage.data.eventCategory === 'ALL' &&
+    historyPage.data.scanRange.firstRow >= 2 &&
+    historyPage.data.scanRange.lastRow >= historyPage.data.scanRange.firstRow &&
+    historyPage.data.scanRange.lastRow - historyPage.data.scanRange.firstRow + 1 ===
+      historyPage.data.scannedRows &&
+    typeof historyPage.data.scanRange.hasOlderPage === 'boolean' &&
+    historyPage.data.rows[1].changes.some(
+      (change) => change.field === 'amount' && change.before === 'Not set' && change.after === '47',
+    ) &&
+    historyPage.data.scannedRows <= 500 &&
+    historyPage.data.scanDiagnostics.recognizedRows +
+      historyPage.data.scanDiagnostics.unstructuredRows +
+      historyPage.data.scanDiagnostics.unsupportedRows ===
+      historyPage.data.scannedRows &&
+    historyPage.data.scanDiagnostics.recognizedRows >= historyPage.data.rows.length,
+  'voucher history returns newest structured events and accounts for every row in its bounded scan',
+);
+const updatedHistoryOnly = as(T, 'voucherHistory', {
+  id: historyVoucherId,
+  eventCategory: 'UPDATED',
+});
+const createdHistoryOnly = as(T, 'voucherHistory', {
+  id: historyVoucherId,
+  eventCategory: 'CREATED',
+});
+ok(
+  updatedHistoryOnly.ok &&
+    updatedHistoryOnly.data.eventCategory === 'UPDATED' &&
+    updatedHistoryOnly.data.rows.length === 1 &&
+    updatedHistoryOnly.data.rows[0].eventType === 'VOUCHER_UPDATED' &&
+    createdHistoryOnly.ok &&
+    createdHistoryOnly.data.rows.length === 1 &&
+    createdHistoryOnly.data.rows[0].eventType === 'VOUCHER_CREATED',
+  'voucher history filters lifecycle categories server-side without mixing events',
+);
+const cancelledHistory = as(T, 'voucherHistory', { id: id1, eventCategory: 'CANCELLED' });
+const approvedHistory = as(T, 'voucherHistory', {
+  id: managerOwnedHighVoucher.id,
+  eventCategory: 'APPROVED',
+});
+const receiptHistory = as(T, 'voucherHistory', { id: id2, eventCategory: 'RECEIPT_ATTACHED' });
+ok(
+  cancelledHistory.ok &&
+    cancelledHistory.data.rows.some((row) => row.eventType === 'VOUCHER_CANCELLED') &&
+    approvedHistory.ok &&
+    approvedHistory.data.rows.some((row) => row.eventType === 'PAYMENT_VOUCHER_APPROVED') &&
+    receiptHistory.ok &&
+    receiptHistory.data.rows.some((row) => row.eventType === 'VOUCHER_RECEIPT_ATTACHED'),
+  'voucher history finds cancellation, approval and receipt lifecycle events by stable voucher ID',
+);
+ok(
+  as(T, 'voucherHistory', { id: historyVoucherId, eventCategory: 'SCRIPT_TEXT' }).code ===
+    'VALIDATION',
+  'voucher history rejects unrecognized event category filters',
+);
+const emptyOlderPage = as(T, 'voucherHistory', {
+  id: historyVoucherId,
+  beforeRow: 2,
+});
+ok(
+  emptyOlderPage.ok &&
+    emptyOlderPage.data.scannedRows === 0 &&
+    emptyOlderPage.data.scanRange === null &&
+    emptyOlderPage.data.nextBeforeRow === null &&
+    emptyOlderPage.data.scanDiagnostics.recognizedRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.unstructuredRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.unsupportedRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.duplicateEventRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.missingEventIdRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.unknownEventTypeRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.malformedChangeRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.truncatedChangeRows === 0 &&
+    emptyOlderPage.data.integrityFindings.items.length === 0 &&
+    emptyOlderPage.data.integrityFindings.truncated === false,
+  'voucher history reports an empty coverage range when a valid cursor has no older rows',
+);
+const diagnosticsFixtureStart = g.sheets.AuditLog.rows.length;
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'malformed-envelope-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: '',
+    eventId: 'malformed-event-fixture',
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Missing stable entity identity',
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'legacy-history-fixture@test.com',
+  'LEGACY_AUDIT',
+  'voucher-history',
+  'legacy details without structured JSON',
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'unsupported-history-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 2,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: 'unsupported-event-fixture',
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Unsupported fixture',
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'duplicate-history-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: historyPage.data.rows[0].eventId,
+    eventType: 'VOUCHER_CREATED',
+    summary: 'Duplicate ID with a different event type',
+    changes: [],
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'missing-event-id-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Missing event ID fixture',
+    changes: [],
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'unknown-event-type-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: 'unknown-event-type-fixture',
+    eventType: 'VOUCHER_FUTURE_EVENT',
+    summary: 'Unknown event type fixture',
+    changes: [],
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'malformed-change-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: 'malformed-change-fixture',
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Malformed changes fixture',
+    changes: { field: 'amount', before: 1, after: 2 },
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'truncated-change-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: 'truncated-change-fixture',
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Oversized changes fixture',
+    changes: Array.from({ length: 31 }, (_, index) => ({
+      field: 'change' + index,
+      before: index,
+      after: index + 1,
+    })),
+  }),
+]);
+const historyWithDiagnostics = as(T, 'voucherHistory', { id: historyVoucherId });
+const historyScanDiagnostics =
+  historyWithDiagnostics.data && historyWithDiagnostics.data.scanDiagnostics;
+const historyIntegrityFindings =
+  historyWithDiagnostics.data && historyWithDiagnostics.data.integrityFindings;
+const hasIntegrityFinding = (code) =>
+  Boolean(
+    historyIntegrityFindings &&
+    historyIntegrityFindings.items.some((finding) => finding.code === code),
+  );
+const filteredCrossTypeDuplicate = as(T, 'voucherHistory', {
+  id: historyVoucherId,
+  eventCategory: 'UPDATED',
+});
+g.sheets.AuditLog.rows.splice(diagnosticsFixtureStart);
+ok(
+  historyWithDiagnostics.ok &&
+    historyScanDiagnostics &&
+    historyScanDiagnostics.unstructuredRows >= 1 &&
+    historyScanDiagnostics.unsupportedRows >= 2 &&
+    historyScanDiagnostics.duplicateEventRows >= 1 &&
+    historyScanDiagnostics.missingEventIdRows >= 1 &&
+    historyScanDiagnostics.unknownEventTypeRows >= 1 &&
+    historyScanDiagnostics.malformedChangeRows >= 1 &&
+    historyScanDiagnostics.truncatedChangeRows >= 1 &&
+    historyScanDiagnostics.recognizedRows +
+      historyScanDiagnostics.unstructuredRows +
+      historyScanDiagnostics.unsupportedRows ===
+      historyWithDiagnostics.data.scannedRows &&
+    !historyWithDiagnostics.data.rows.some(
+      (event) => event.eventId === 'unsupported-event-fixture',
+    ) &&
+    historyWithDiagnostics.data.rows.find((event) => event.eventId === 'malformed-change-fixture')
+      ?.changes.length === 0 &&
+    historyWithDiagnostics.data.rows.find((event) => event.eventId === 'truncated-change-fixture')
+      ?.changes.length === 30 &&
+    historyIntegrityFindings &&
+    historyIntegrityFindings.items.length <= 25 &&
+    historyIntegrityFindings.items.every(
+      (finding) =>
+        Number.isSafeInteger(finding.auditRow) &&
+        finding.auditRow >= historyWithDiagnostics.data.scanRange.firstRow &&
+        finding.auditRow <= historyWithDiagnostics.data.scanRange.lastRow,
+    ) &&
+    hasIntegrityFinding('MISSING_EVENT_ID') &&
+    hasIntegrityFinding('UNKNOWN_EVENT_TYPE') &&
+    hasIntegrityFinding('MALFORMED_CHANGES') &&
+    hasIntegrityFinding('TRUNCATED_CHANGES') &&
+    historyIntegrityFindings.items.some(
+      (finding) =>
+        finding.code === 'DUPLICATE_EVENT_ID' &&
+        Number.isSafeInteger(finding.relatedAuditRow) &&
+        finding.relatedAuditRow >= historyWithDiagnostics.data.scanRange.firstRow &&
+        finding.relatedAuditRow <= historyWithDiagnostics.data.scanRange.lastRow,
+    ),
+  'voucher history reports missing IDs, unknown types and malformed/truncated change payloads without dropping supported rows',
+);
+ok(
+  filteredCrossTypeDuplicate.ok &&
+    filteredCrossTypeDuplicate.data.eventCategory === 'UPDATED' &&
+    filteredCrossTypeDuplicate.data.scanDiagnostics.duplicateEventRows >= 1,
+  'duplicate event IDs are detected before event-type filtering, including cross-category duplicates',
+);
+const findingSampleFixtureStart = g.sheets.AuditLog.rows.length;
+for (let index = 0; index < 15; index++) {
+  g.sheets.AuditLog.rows.push([
+    new Date(Date.now() + index),
+    'finding-sample-cap@test.com',
+    'STRUCTURED_AUDIT',
+    'voucher-history',
+    JSON.stringify({
+      version: 1,
+      entityType: 'voucher',
+      entityId: historyVoucherId,
+      eventType: 'VOUCHER_FUTURE_CAP_EVENT',
+      summary: 'Bounded finding fixture ' + index,
+      changes: [],
+    }),
+  ]);
+}
+const cappedFindingHistory = as(T, 'voucherHistory', { id: historyVoucherId });
+g.sheets.AuditLog.rows.splice(findingSampleFixtureStart);
+ok(
+  cappedFindingHistory.ok &&
+    cappedFindingHistory.data.integrityFindings.items.length === 25 &&
+    cappedFindingHistory.data.integrityFindings.truncated === true &&
+    cappedFindingHistory.data.scanDiagnostics.unknownEventTypeRows >= 15 &&
+    cappedFindingHistory.data.scanDiagnostics.missingEventIdRows >= 15,
+  'voucher history caps detailed integrity samples at 25 while retaining aggregate finding counts',
+);
+const crossPageFixtureStart = g.sheets.AuditLog.rows.length;
+const repeatedBoundaryEventId = 'cross-page-duplicate-history-fixture';
+for (let index = 0; index < 51; index++) {
+  const eventId = index < 2 ? repeatedBoundaryEventId : 'cross-page-history-event-' + index;
+  g.sheets.AuditLog.rows.push([
+    new Date(Date.now() + index),
+    'history-pagination@test.com',
+    'STRUCTURED_AUDIT',
+    'voucher-history',
+    JSON.stringify({
+      version: 1,
+      entityType: 'voucher',
+      entityId: historyVoucherId,
+      eventId: eventId,
+      eventType: 'VOUCHER_UPDATED',
+      summary: 'Pagination fixture ' + index,
+      changes: [],
+    }),
+  ]);
+}
+const newestBoundaryPage = as(T, 'voucherHistory', { id: historyVoucherId });
+const olderBoundaryPage =
+  newestBoundaryPage.ok && newestBoundaryPage.data.nextBeforeRow !== null
+    ? as(T, 'voucherHistory', {
+        id: historyVoucherId,
+        beforeRow: newestBoundaryPage.data.nextBeforeRow,
+      })
+    : { ok: false, data: { rows: [], scanRange: null, scanDiagnostics: {} } };
+const duplicateBoundaryRows =
+  newestBoundaryPage.ok &&
+  olderBoundaryPage.ok &&
+  newestBoundaryPage.data.rows.some((event) => event.eventId === repeatedBoundaryEventId) &&
+  olderBoundaryPage.data.rows.some((event) => event.eventId === repeatedBoundaryEventId);
+const boundaryRangesDoNotOverlap =
+  newestBoundaryPage.ok &&
+  olderBoundaryPage.ok &&
+  newestBoundaryPage.data.rows.length === 50 &&
+  newestBoundaryPage.data.rows.every(
+    (event, index, events) =>
+      Number.isSafeInteger(event.auditRow) &&
+      event.auditRow >= newestBoundaryPage.data.scanRange.firstRow &&
+      event.auditRow <= newestBoundaryPage.data.scanRange.lastRow &&
+      (index === 0 || events[index - 1].auditRow > event.auditRow),
+  ) &&
+  olderBoundaryPage.data.rows.every(
+    (event) =>
+      Number.isSafeInteger(event.auditRow) &&
+      event.auditRow >= olderBoundaryPage.data.scanRange.firstRow &&
+      event.auditRow <= olderBoundaryPage.data.scanRange.lastRow,
+  ) &&
+  newestBoundaryPage.data.nextBeforeRow !== null &&
+  olderBoundaryPage.data.scanRange &&
+  olderBoundaryPage.data.scanRange.lastRow < newestBoundaryPage.data.scanRange.firstRow &&
+  newestBoundaryPage.data.scanDiagnostics.duplicateEventRows === 0 &&
+  olderBoundaryPage.data.scanDiagnostics.duplicateEventRows === 0;
+g.sheets.AuditLog.rows.splice(crossPageFixtureStart);
+ok(
+  duplicateBoundaryRows && boundaryRangesDoNotOverlap,
+  'voucher history pages have disjoint scan ranges while exposing a duplicate event ID split across the page boundary',
+);
+const unrelatedHistory = as(T, 'voucherHistory', { id: 'voucher-does-not-exist' });
+ok(
+  unrelatedHistory.ok &&
+    !unrelatedHistory.data.rows.some((row) => row.eventId === historyPage.data.rows[0]?.eventId),
+  'voucher history never leaks events that reference another stable voucher ID',
+);
+ok(
+  as(T, 'voucherHistory', { id: '' }).code === 'VALIDATION' &&
+    as(T, 'voucherHistory', { id: historyVoucherId, beforeRow: 'not-a-cursor' }).code ===
+      'VALIDATION' &&
+    as(T, 'voucherHistory', {
+      id: historyVoucherId,
+      beforeRow: String(g.sheets.AuditLog.rows.length + 5),
+    }).code === 'VALIDATION',
+  'voucher history rejects blank IDs, malformed cursors and out-of-range cursors',
+);
 const auditRowsBeforeFixture = g.sheets.AuditLog.rows.length;
 for (let i = 0; i < 205; i++) {
   g.sheets.AuditLog.rows.push([

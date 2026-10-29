@@ -19,6 +19,7 @@ const ACTIONS = {
   changePassword: changePassword_,
   saveSettings: saveSettings_,
   auditLog: auditLog_,
+  voucherHistory: voucherAuditHistory_,
   backupStatus: backupStatus_,
   backupIntegrityReport: backupIntegrityReport_,
   deploymentReadiness: deploymentReadiness_,

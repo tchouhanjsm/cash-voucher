@@ -1501,6 +1501,318 @@ with sync_playwright() as p:
         and page.locator('#rbody [data-act=reject]').count() == 0,
         'voucher creator cannot self-approve or self-reject from the Register',
     )
+
+    history_row = page.locator('#rbody tr').filter(has_text='Approval E2E vendor').first
+    check(
+        history_row.locator('[data-act=history]').count() == 1,
+        'owner sees the voucher-specific history action in Register',
+    )
+    history_xss_payload = '<svg onload=window.__voucherHistoryXssFired=true></svg>'
+    page.evaluate('window.__voucherHistoryXssFired = false')
+
+    history_requests = []
+    api_action_requests = []
+    inject_invalid_history_page = {'enabled': False}
+    inject_history_overlap = {'stage': 'disabled', 'event': None, 'cursor': None}
+    history_route_states = []
+    history_page_errors = []
+    page.on('pageerror', lambda error: history_page_errors.append(str(error)))
+
+    def inject_hostile_voucher_history(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        api_action_requests.append(request_data.get('action', ''))
+        if request_data.get('action') != 'voucherHistory':
+            route.continue_()
+            return
+        history_requests.append(request_data.get('eventCategory'))
+        route_state = {'eventCategory': request_data.get('eventCategory'), 'phase': 'fetch-started'}
+        history_route_states.append(route_state)
+        response = route.fetch()
+        route_state['phase'] = 'response-received'
+        route_state['status'] = response.status
+        payload = response.json()
+        route_state['phase'] = 'json-decoded'
+        data = payload.get('data', {}) if payload.get('ok') else {}
+        if isinstance(data, dict):
+            data.setdefault('scanDiagnostics', {})['duplicateEventRows'] = 1
+        rows = data.get('rows')
+        if isinstance(rows, list) and rows:
+            rows[0]['summary'] = history_xss_payload
+            rows[0]['reason'] = history_xss_payload
+            if isinstance(rows[0].get('changes'), list) and rows[0]['changes']:
+                rows[0]['changes'][0]['after'] = history_xss_payload
+        if (
+            inject_history_overlap['stage'] == 'disabled'
+            and isinstance(rows, list)
+            and rows
+            and isinstance(rows[0], dict)
+            and isinstance(rows[0].get('auditRow'), int)
+            and isinstance(data.get('scanRange'), dict)
+        ):
+            scan_range = data['scanRange']
+            first_row = scan_range.get('firstRow')
+            last_row = scan_range.get('lastRow')
+            source_row = rows[0]['auditRow']
+            related_row = last_row if source_row != last_row else first_row
+            if isinstance(first_row, int) and isinstance(last_row, int) and first_row < last_row:
+                data['integrityFindings'] = {
+                    'items': [{
+                        'code': 'DUPLICATE_EVENT_ID',
+                        'auditRow': source_row,
+                        'relatedAuditRow': related_row,
+                        'eventId': rows[0].get('eventId', 'e2e-duplicate-finding'),
+                        'eventType': rows[0].get('eventType', 'VOUCHER_UPDATED'),
+                    }],
+                    'truncated': False,
+                }
+        if (
+            inject_history_overlap['stage'] == 'first'
+            and isinstance(rows, list)
+            and rows
+            and isinstance(data.get('scanRange'), dict)
+        ):
+            prior_page_event = dict(rows[0])
+            cursor = data['scanRange'].get('lastRow')
+            if isinstance(cursor, int):
+                prior_page_event['auditRow'] = cursor
+            if isinstance(cursor, int) and cursor > 2:
+                inject_history_overlap['event'] = prior_page_event
+                inject_history_overlap['cursor'] = cursor
+                data['rows'] = [prior_page_event]
+                data['scannedRows'] = 1
+                data['scanDiagnostics'] = {
+                    'recognizedRows': 1,
+                    'unstructuredRows': 0,
+                    'unsupportedRows': 0,
+                    'duplicateEventRows': 0,
+                    'missingEventIdRows': 0,
+                    'unknownEventTypeRows': 0,
+                    'malformedChangeRows': 0,
+                    'truncatedChangeRows': 0,
+                }
+                data['integrityFindings'] = {'items': [], 'truncated': False}
+                data['scanRange'] = {
+                    'firstRow': cursor,
+                    'lastRow': cursor,
+                    'hasOlderPage': True,
+                }
+                data['nextBeforeRow'] = cursor
+                inject_history_overlap['stage'] = 'older'
+        elif (
+            inject_history_overlap['stage'] == 'older'
+            and isinstance(inject_history_overlap['event'], dict)
+            and isinstance(inject_history_overlap['cursor'], int)
+        ):
+            older_row = inject_history_overlap['cursor'] - 1
+            repeated_event = dict(inject_history_overlap['event'])
+            repeated_event['auditRow'] = older_row
+            data['rows'] = [repeated_event]
+            data['scannedRows'] = 1
+            data['scanDiagnostics'] = {
+                'recognizedRows': 1,
+                'unstructuredRows': 0,
+                'unsupportedRows': 0,
+                'duplicateEventRows': 0,
+                'missingEventIdRows': 0,
+                'unknownEventTypeRows': 0,
+                'malformedChangeRows': 0,
+                'truncatedChangeRows': 0,
+            }
+            data['integrityFindings'] = {'items': [], 'truncated': False}
+            data['scanRange'] = {
+                'firstRow': older_row,
+                'lastRow': older_row,
+                'hasOlderPage': False,
+            }
+            data['nextBeforeRow'] = None
+            inject_history_overlap['stage'] = 'disabled'
+        if inject_invalid_history_page['enabled'] and isinstance(data.get('scanRange'), dict):
+            data['scanRange'] = None
+        route.fulfill(response=response, body=json.dumps(payload))
+        route_state['phase'] = 'response-fulfilled'
+
+    page.route('**/api?*', inject_hostile_voucher_history)
+    history_row.locator('[data-act=history]').click()
+    try:
+        page.wait_for_function(
+            """() => {
+              const modal = document.querySelector('#modal');
+              if (!modal) return false;
+              const text = modal.innerText || '';
+              const status = modal.querySelector('.voucher-history-status')?.innerText || '';
+              return text.includes('VOUCHER_CREATED')
+                || (status && status !== 'Loading voucher history…');
+            }""",
+            timeout=10000,
+        )
+    except Exception:
+        history_state = page.evaluate(
+            """() => ({
+              modalExists: Boolean(document.querySelector('#modal')),
+              modalHidden: Boolean(document.querySelector('#modal')?.classList.contains('hidden')),
+              modalText: (document.querySelector('#modal')?.innerText || '').slice(0, 500),
+              status: document.querySelector('#modal .voucher-history-status')?.innerText || '',
+              historyButtonCount: document.querySelectorAll('#rbody [data-act=history]').length,
+              historyButtonId: document.querySelector('#rbody [data-act=history]')?.dataset.id || '',
+              registerRowCount: document.querySelectorAll('#rbody tr').length,
+              apiResources: performance.getEntriesByType('resource')
+                .filter((entry) => entry.name.includes('/api'))
+                .slice(-8)
+                .map((entry) => ({ name: entry.name, duration: entry.duration, transferSize: entry.transferSize }))
+            })"""
+        )
+        print(
+            'VOUCHER HISTORY LOAD DIAGNOSTIC:',
+            json.dumps({
+                'historyRequests': history_requests,
+                'apiActions': api_action_requests,
+                'routeStates': history_route_states,
+                'pageErrors': history_page_errors,
+                'browserState': history_state,
+            }, sort_keys=True),
+            flush=True,
+        )
+        raise
+    history_text = page.locator('#modal').inner_text()
+    check(
+        'VOUCHER_CREATED' in history_text and 'AuditLog row #' in history_text,
+        'voucher history returns a structured creation event with its exact AuditLog source row; modal was: ' + history_text[:240],
+    )
+    check(
+        'Integrity diagnostics:' in history_text
+        and 'missing event ID' in history_text
+        and 'unrecognized event type' in history_text
+        and 'malformed change payload' in history_text,
+        'voucher history states missing IDs, unknown event types and malformed change payload counts',
+    )
+    check(
+        history_xss_payload in history_text
+        and page.locator('#modal svg[onload], #modal img[onerror]').count() == 0
+        and not page.evaluate('window.__voucherHistoryXssFired === true'),
+        'voucher history renders hostile summary, reason and field values as inert text',
+    )
+    check(
+        page.locator('.voucher-history-findings').is_visible()
+        and 'Integrity findings to reconcile' in page.locator('.voucher-history-findings').inner_text()
+        and 'AuditLog row #' in page.locator('.voucher-history-findings').inner_text()
+        and 'Preserve the original rows' in page.locator('.voucher-history-findings').inner_text(),
+        'Register gives owners bounded source-row evidence and non-destructive reconciliation guidance',
+    )
+    check(
+        'amount:' in history_text.lower() and '10000' in history_text,
+        'voucher history displays the payment amount change from its structured audit event',
+    )
+    history_filter = page.locator('#voucherHistoryEventCategory')
+    check(history_filter.count() == 1, 'voucher history exposes a lifecycle event filter')
+    history_filter.select_option('CREATED')
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"
+    )
+    history_status = page.locator('.voucher-history-status').inner_text()
+    check(
+        history_requests[-1] == 'CREATED'
+        and 'VOUCHER_CREATED' in page.locator('#modal').inner_text()
+        and 'Loaded 1 structured event(s) matching created' in history_status
+        and 'Searched AuditLog rows ' in history_status
+        and 'Coverage diagnostics:' in history_status
+        and 'Repeated event identifiers found: 1 duplicate row(s)' in history_status,
+        'Register filters lifecycle events and surfaces repeated event-ID diagnostics',
+    )
+    inject_history_overlap['stage'] = 'first'
+    history_filter.select_option('ALL')
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"
+    )
+    page.locator('.voucher-history-older').click()
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.includes('Repeated event identifiers across loaded pages: 1 unique event ID(s)')"
+    )
+    check(
+        'Repeated event identifiers across loaded pages: 1 unique event ID(s)'
+        in page.locator('.voucher-history-status').inner_text()
+        and 'AuditLog rows #' in page.locator('.voucher-history-status').inner_text()
+        and page.locator('#modal .voucher-history-event').count() == 2,
+        'Register flags repeated audit event IDs with source-row references without hiding either row',
+    )
+    history_filter.select_option('CREATED')
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"
+    )
+    inject_invalid_history_page['enabled'] = True
+    history_filter.select_option('ALL')
+    page.wait_for_function(
+        "document.querySelector('.voucher-history-status')?.innerText.includes('invalid voucher-history data')"
+    )
+    check(
+        'invalid voucher-history data' in page.locator('.voucher-history-status').inner_text().lower(),
+        'Register rejects internally inconsistent pagination coverage instead of rendering an untrustworthy page',
+    )
+    page.click('#modal [data-x]')
+    page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+    page.unroute('**/api?*', inject_hostile_voucher_history)
+
+    history_cache_miss = page.evaluate(
+        """async () => {
+          const { S } = await import('/frontend/core/state.js');
+          const { createRegister } = await import('/frontend/features/register.js');
+          const calls = [];
+          const originalMe = S.me;
+          try {
+            const register = createRegister({
+              api: async (action, payload) => {
+                calls.push({ action, id: payload?.id });
+                return {
+                  rows: [],
+                  nextBeforeRow: null,
+                  scannedRows: 0,
+                  scanDiagnostics: {
+                    recognizedRows: 0,
+                    unstructuredRows: 0,
+                    unsupportedRows: 0,
+                    duplicateEventRows: 0,
+                    missingEventIdRows: 0,
+                    unknownEventTypeRows: 0,
+                    malformedChangeRows: 0,
+                    truncatedChangeRows: 0,
+                  },
+                  integrityFindings: { items: [], truncated: false },
+                  scanRange: null,
+                  eventCategory: 'ALL',
+                  auditHealth: { status: 'NO_KNOWN_FAILURE' }
+                };
+              },
+              go: () => {}
+            });
+            register.history('voucher-cache-miss-fixture');
+            return {
+              calls,
+              modalTitle: document.querySelector('#modalTitle')?.textContent || ''
+            };
+          } finally {
+            S.me = originalMe;
+          }
+        }"""
+    )
+    page.wait_for_function(
+        """() => {
+          const status = document.querySelector('#modal .voucher-history-status')?.innerText || '';
+          return status && !status.includes('Loading voucher history…');
+        }"""
+    )
+    history_cache_miss_status = page.locator('#modal .voucher-history-status').inner_text()
+    check(
+        history_cache_miss.get('calls', [{}])[0].get('action') == 'voucherHistory'
+        and history_cache_miss['calls'][0].get('id') == 'voucher-cache-miss-fixture'
+        and history_cache_miss['modalTitle'] == 'Voucher history'
+        and 'No structured events could be linked to this voucher' in history_cache_miss_status,
+        'History remains operable by stable voucher ID when the Register page cache no longer contains the row',
+    )
+    page.click('#modal [data-x]')
+    page.wait_for_function("document.querySelector('#modal').classList.contains('hidden')")
+
     go_view(page, 'dash')
     page.wait_for_selector('[data-v=dash][aria-current=page]')
     page.wait_for_function(
