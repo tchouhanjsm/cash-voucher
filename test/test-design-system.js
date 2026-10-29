@@ -367,6 +367,52 @@ assert.match(
   /className = 'card account-password-form'/,
   'account password form uses the shared workflow styling',
 );
+
+assert.match(
+  administration,
+  /report\.setAttribute\('aria-labelledby', 'accountReportHeading'\)/,
+  'account support form exposes its visible heading as the accessible name',
+);
+assert.match(
+  administration,
+  /report\.setAttribute\('aria-describedby', 'accountReportHelp'\)/,
+  'account support form references the explanation that warns users never to submit passwords',
+);
+assert.match(
+  administration,
+  /className = 'account-report-field account-report-field--category'/,
+  'support report category has a visible label and a scoped field wrapper',
+);
+assert.match(
+  administration,
+  /className = 'account-report-field account-report-field--subject'/,
+  'support report subject has a visible label and a scoped field wrapper',
+);
+assert.match(
+  administration,
+  /className = 'account-report-field account-report-field--message'/,
+  'support report message has a visible label and a scoped field wrapper',
+);
+assert.match(
+  components,
+  /\.app #view \.account-report-controls\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+  'account support form uses two equal responsive columns on desktop',
+);
+assert.match(
+  components,
+  /\.app #view \.account-report-field--message\s*\{[^}]*grid-column:\s*1 \/ -1;/,
+  'account support message occupies the full desktop form width',
+);
+assert.match(
+  components,
+  /\.app #view \.account-report-controls > \.btn\s*\{[^}]*min-height:\s*44px/,
+  'account support submission target meets the 44px minimum touch size',
+);
+assert.match(
+  components,
+  /@media \(max-width:\s*560px\)[\s\S]*?\.app #view \.account-report-controls\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  'account support form changes to a single-column layout on narrow screens',
+);
 assert.match(
   components,
   /\.audit-panel > \.audit-filters\s*\{[\s\S]*?display:\s*grid/,

@@ -579,8 +579,7 @@ with sync_playwright() as p:
         and page.locator('.account-password-form#pf').count() == 1,
         'My Account uses shared page context and a dedicated profile/password layout',
     )
-    page.fill('#rs', 'E2E problem report')
-    page.fill('#rm', 'Synthetic report from the browser test; please ignore.')
+    page.set_viewport_size({'width': 390, 'height': 800})
     report_form = page.locator('#accountReportForm')
     check(
         report_form.count() == 1 and report_form.is_visible(),
@@ -591,6 +590,34 @@ with sync_playwright() as p:
         report_submit.count() == 1 and report_submit.is_enabled(),
         'account support report submit control is unique and enabled',
     )
+    check(
+        page.get_by_label('Type of report').count() == 1
+        and page.get_by_label('Subject').count() == 1
+        and page.get_by_label('Describe the problem').count() == 1,
+        'support report controls expose persistent, correctly associated visible labels',
+    )
+    mobile_report_layout = report_form.locator('.account-report-controls').evaluate(
+        "el => ({columns: el.getBoundingClientRect().width > 0 ? getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0 : 0, buttonFullWidth: Math.abs(el.querySelector('button[type=submit]').getBoundingClientRect().width - el.getBoundingClientRect().width) < 2})"
+    )
+    check(
+        mobile_report_layout['columns'] == 1
+        and mobile_report_layout['buttonFullWidth']
+        and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
+        'support report form stacks into one mobile column with a full-width action and no page overflow',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    desktop_report_layout = report_form.locator('.account-report-controls').evaluate(
+        "el => ({columns: getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, messageSpansColumns: (() => { const s = getComputedStyle(el.querySelector('.account-report-field--message')); return s.gridColumnStart === '1' && s.gridColumnEnd === '-1'; })(), buttonHeight: Number.parseFloat(getComputedStyle(el.querySelector('button[type=submit]')).minHeight)})"
+    )
+    check(
+        desktop_report_layout['columns'] == 2
+        and desktop_report_layout['messageSpansColumns']
+        and desktop_report_layout['buttonHeight'] >= 44,
+        'support report form uses two desktop columns, full-row message and touch-sized submit action',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    page.fill('#rs', 'E2E problem report')
+    page.fill('#rm', 'Synthetic report from the browser test; please ignore.')
     report_submit.click(timeout=10000)
     page.wait_for_function("document.body.innerText.includes('Sent to support. Reference')")
     check(

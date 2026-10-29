@@ -1754,17 +1754,25 @@ export function createAdministration({ api, getNavigation, signOut }) {
       report.id = 'accountReportForm';
       report.className = 'card account-report-form';
       report.autocomplete = 'off';
+      report.setAttribute('aria-labelledby', 'accountReportHeading');
+      report.setAttribute('aria-describedby', 'accountReportHelp');
       const reportHeading = document.createElement('h2');
+      reportHeading.id = 'accountReportHeading';
       reportHeading.textContent = 'Report a problem or ask for help';
       const reportIntro = document.createElement('p');
+      reportIntro.id = 'accountReportHelp';
       reportIntro.className = 'muted';
       reportIntro.textContent =
         'Your message is emailed to support with your name and email so they can reply. Never type a password.';
       const reportControls = document.createElement('div');
       reportControls.className = 'filters account-report-controls';
+      const categoryField = document.createElement('label');
+      categoryField.className = 'account-report-field account-report-field--category';
+      categoryField.htmlFor = 'rc';
+      const categoryLabel = document.createElement('span');
+      categoryLabel.textContent = 'Type of report';
       const category = document.createElement('select');
       category.id = 'rc';
-      category.setAttribute('aria-label', 'Type of report');
       [
         ['bug', 'Something is not working'],
         ['question', 'I have a question'],
@@ -1776,6 +1784,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
         option.textContent = label;
         category.appendChild(option);
       });
+      categoryField.append(categoryLabel, category);
+      const subjectField = document.createElement('label');
+      subjectField.className = 'account-report-field account-report-field--subject';
+      subjectField.htmlFor = 'rs';
+      const subjectLabel = document.createElement('span');
+      subjectLabel.textContent = 'Subject';
       const subject = document.createElement('input');
       subject.id = 'rs';
       subject.type = 'text';
@@ -1783,7 +1797,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
       subject.minLength = 3;
       subject.required = true;
       subject.placeholder = 'Short subject';
-      subject.setAttribute('aria-label', 'Subject');
+      subjectField.append(subjectLabel, subject);
+      const messageField = document.createElement('label');
+      messageField.className = 'account-report-field account-report-field--message';
+      messageField.htmlFor = 'rm';
+      const messageLabel = document.createElement('span');
+      messageLabel.textContent = 'Describe the problem';
       const message = document.createElement('textarea');
       message.id = 'rm';
       message.maxLength = 2000;
@@ -1791,12 +1810,13 @@ export function createAdministration({ api, getNavigation, signOut }) {
       message.required = true;
       message.rows = 5;
       message.placeholder = 'What were you doing, what did you expect, and what happened instead?';
+      messageField.append(messageLabel, message);
       message.setAttribute('aria-label', 'Describe the problem');
       const reportSubmit = document.createElement('button');
       reportSubmit.type = 'submit';
       reportSubmit.className = 'btn primary';
       reportSubmit.textContent = 'Send to support';
-      reportControls.append(category, subject, message, reportSubmit);
+      reportControls.append(categoryField, subjectField, messageField, reportSubmit);
       report.append(reportHeading, reportIntro, reportControls);
       fragment.appendChild(report);
       view.replaceChildren(fragment);
