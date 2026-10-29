@@ -1,19 +1,19 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 29 October 2026 (voucher audit reconciliation export phase)
+**Updated:** 29 October 2026 (account support form/E2E reliability fix)
 **Repository:** tchouhanjsm/cash-voucher
-**Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `b36c0212c541b92ba45347d67b0ed7e2c5185562` (PR #247 merged; owner-only voucher audit history and bounded integrity findings are integrated).
-**Current source batch:** `client/export-voucher-audit-reconciliation-20261029` adds a bounded CSV export for loaded audit scan ranges and finding samples. The export contains diagnostic counts and source-row references only, not voucher field contents or user identities.
-**Active review PR:** [#248 — Export voucher audit reconciliation evidence](https://github.com/tchouhanjsm/cash-voucher/pull/248) on `client/export-voucher-audit-reconciliation-20261029`.
-**Release boundary:** source/test/docs only. No default-branch or branch-protection change, workflow dispatch, Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+**Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
+**Current integration baseline:** `474097a8075303b9f44aa970dfd79bc3f6b78852` (PR #248 merged; bounded voucher audit reconciliation CSV export integrated).
+**Current source batch:** `client/fix-account-report-form-e2e-20261029` isolates the My Account support form from Register filter CSS by replacing the shared `rf` ID with `accountReportForm`; E2E now validates a unique visible form and enabled submit control with a bounded click timeout.
+**Active review PR:** [#249 — Isolate account support form from register styles](https://github.com/tchouhanjsm/cash-voucher/pull/249).
+**Release boundary:** focused frontend selector and test change. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
 
 ## Current release-session checkpoint — 29 October 2026
 
-- **Integration baseline:** `client-main` at `b36c0212c541b92ba45347d67b0ed7e2c5185562`; PR #247 is merged. This phase builds on the owner-only voucher history, per-range integrity counters and source-row findings.
-- **Current source batch:** `client/export-voucher-audit-reconciliation-20261029`. The owner can export the scan ranges actually loaded in Register as a CSV with scan summary rows and bounded detailed finding rows. The serializer validates counters, row bounds and finding codes; CSV cells use the existing formula-injection-safe encoder. Voucher field values, receipt contents, actors and voucher identifiers are excluded from the export.
-- **Verification boundary:** mock/backend and browser tests verify export schema and safety behavior. This does not prove live Apps Script execution, complete ledger history or completed real-world reconciliation.
-- **Release remains blocked:** `client-main` is reported unprotected and the default branch remains `main`; staging/UAT, live Apps Script verification, backup/restore rehearsal, reconciliation sign-off, security review and customer acceptance remain outstanding.
+- **Integration baseline:** `client-main` at `474097a8075303b9f44aa970dfd79bc3f6b78852`; PR #248 is merged. PR #249 is the active review batch and must remain open until exact-head checks and owner review pass.
+- **Current source batch:** the account support report form and its delegated submit handler now use `accountReportForm`, keeping it separate from the Register filter panel's `#rf` selectors. The browser E2E asserts the report form is unique/visible and its submit button is unique/enabled at the mobile viewport, then gives the click a 10-second bound.
+- **Verification boundary:** the owner-provided `npm run check` passed on the PR's parent commit under Node 22.23.4. Playwright 1.58.0 and Chromium installed successfully on macOS 13; the local E2E run was interrupted at the report-submit step, so it is not a passing run. Exact-head Browser E2E and Flight checks still need to complete successfully.
+- **Release remains blocked:** the read-only staging configuration preflight on [run #40840202447](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40840202447) reported missing staging resource IDs/API URL, missing production resource reference IDs, and invalid/missing Clasp credential shape. Correct the protected GitHub `staging` Environment before running deploy/UAT or building a release ZIP. Live UAT, backup/restore rehearsal, reconciliation sign-off and customer acceptance remain outstanding.
 
 ## Historical release-session checkpoint — 28 October 2026
 
