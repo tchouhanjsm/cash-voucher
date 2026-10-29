@@ -1811,7 +1811,6 @@ export function createAdministration({ api, getNavigation, signOut }) {
       message.rows = 5;
       message.placeholder = 'What were you doing, what did you expect, and what happened instead?';
       messageField.append(messageLabel, message);
-      message.setAttribute('aria-label', 'Describe the problem');
       const reportSubmit = document.createElement('button');
       reportSubmit.type = 'submit';
       reportSubmit.className = 'btn primary';

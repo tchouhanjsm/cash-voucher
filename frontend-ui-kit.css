@@ -3449,6 +3449,7 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   .app #view .account-report-controls > .btn {
+    grid-column: 1 / -1;
     justify-self: end;
     min-height: 44px;
   }

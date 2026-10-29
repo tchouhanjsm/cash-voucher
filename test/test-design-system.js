@@ -405,7 +405,7 @@ assert.match(
 );
 assert.match(
   components,
-  /\.app #view \.account-report-controls > \.btn\s*\{[^}]*min-height:\s*44px/,
+  /\.app #view \.account-report-controls > \.btn\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*min-height:\s*44px/,
   'account support submission target meets the 44px minimum touch size',
 );
 assert.match(

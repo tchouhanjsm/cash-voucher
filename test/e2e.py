@@ -607,11 +607,12 @@ with sync_playwright() as p:
     )
     page.set_viewport_size({'width': 1280, 'height': 800})
     desktop_report_layout = report_form.locator('.account-report-controls').evaluate(
-        "el => ({columns: getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, messageSpansColumns: (() => { const s = getComputedStyle(el.querySelector('.account-report-field--message')); return s.gridColumnStart === '1' && s.gridColumnEnd === '-1'; })(), buttonHeight: Number.parseFloat(getComputedStyle(el.querySelector('button[type=submit]')).minHeight)})"
+        "el => ({columns: getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, messageSpansColumns: (() => { const s = getComputedStyle(el.querySelector('.account-report-field--message')); return s.gridColumnStart === '1' && s.gridColumnEnd === '-1'; })(), actionSpansColumns: (() => { const s = getComputedStyle(el.querySelector('button[type=submit]')); return s.gridColumnStart === '1' && s.gridColumnEnd === '-1'; })(), buttonHeight: Number.parseFloat(getComputedStyle(el.querySelector('button[type=submit]')).minHeight)})"
     )
     check(
         desktop_report_layout['columns'] == 2
         and desktop_report_layout['messageSpansColumns']
+        and desktop_report_layout['actionSpansColumns']
         and desktop_report_layout['buttonHeight'] >= 44,
         'support report form uses two desktop columns, full-row message and touch-sized submit action',
     )
