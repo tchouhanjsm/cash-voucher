@@ -1337,6 +1337,7 @@ export function createRegister({ api, go }) {
             repeatedOnThisPage.set(event.eventId, {
               firstRow: eventRowsFromEarlierPages.get(event.eventId),
               repeatedRow: event.auditRow,
+              eventType: event.eventType,
             });
           } else if (!seenEventRows.has(event.eventId)) {
             seenEventRows.set(event.eventId, event.auditRow);
@@ -1386,9 +1387,17 @@ export function createRegister({ api, go }) {
           ([eventId, rows]) =>
             eventId + ': AuditLog rows #' + rows.firstRow + ' and #' + rows.repeatedRow,
         );
+      const findings = Array.from(repeatedOnThisPage.entries()).map(([eventId, rows]) => ({
+        code: 'DUPLICATE_EVENT_ID',
+        auditRow: rows.repeatedRow,
+        relatedAuditRow: rows.firstRow,
+        eventId: eventId,
+        eventType: rows.eventType || '',
+      }));
       return {
         count: repeatedEventRowsAcrossPages.size,
         rowReferences: rowReferences,
+        findings: findings,
       };
     };
 
@@ -1417,6 +1426,20 @@ export function createRegister({ api, go }) {
             'This review reached the 100-range export limit. Export the loaded evidence before starting a new review.',
           );
         }
+        const repeatedAcrossPages = appendEvents(page.rows);
+        const exportFindingCandidates = [
+          ...page.integrityFindings.items,
+          ...repeatedAcrossPages.findings,
+        ];
+        const exportFindingSamples = exportFindingCandidates.slice(0, 25).map((finding) => ({
+          code: finding.code,
+          auditRow: finding.auditRow,
+          relatedAuditRow: finding.relatedAuditRow,
+          eventId: finding.eventId,
+          eventType: finding.eventType,
+        }));
+        const exportFindingsTruncated =
+          page.integrityFindings.truncated || exportFindingCandidates.length > 25;
         loadedAuditScans.push({
           eventCategory: page.eventCategory,
           scannedRows: page.scannedRows,
@@ -1429,19 +1452,15 @@ export function createRegister({ api, go }) {
             : null,
           scanDiagnostics: { ...page.scanDiagnostics },
           integrityFindings: {
-            items: page.integrityFindings.items.map((finding) => ({
-              code: finding.code,
-              auditRow: finding.auditRow,
-              relatedAuditRow: finding.relatedAuditRow,
-              eventId: finding.eventId,
-              eventType: finding.eventType,
-            })),
-            truncated: page.integrityFindings.truncated,
+            items: exportFindingSamples,
+            truncated: exportFindingsTruncated,
           },
         });
         exportEvidence.disabled = false;
-        const repeatedAcrossPages = appendEvents(page.rows);
-        renderIntegrityFindings(page.integrityFindings);
+        renderIntegrityFindings({
+          items: exportFindingCandidates,
+          truncated: page.integrityFindings.truncated || exportFindingCandidates.length > 50,
+        });
         beforeRow = page.nextBeforeRow;
         older.hidden = beforeRow === null;
         status.className = 'muted voucher-history-status';

@@ -36,6 +36,7 @@ const HEADERS = [
   'scanIndex',
   'scanFirstRow',
   'scanLastRow',
+  'scanHasOlderPage',
   'scannedRows',
   ...DIAGNOSTIC_FIELDS,
   'findingSamplesTruncated',
@@ -101,8 +102,8 @@ function validateScan(scan) {
       !(
         finding.relatedAuditRow === null ||
         (Number.isSafeInteger(finding.relatedAuditRow) &&
-          finding.relatedAuditRow >= scan.scanRange.firstRow &&
-          finding.relatedAuditRow <= scan.scanRange.lastRow)
+          finding.relatedAuditRow >= 2 &&
+          finding.relatedAuditRow !== finding.auditRow)
       ) ||
       typeof finding.eventId !== 'string' ||
       finding.eventId.length > 100 ||
@@ -130,6 +131,25 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
   }
 
   scans.forEach(validateScan);
+  const coveredRanges = scans
+    .map((scan) => scan.scanRange)
+    .filter(Boolean);
+  scans.forEach((scan) => {
+    scan.integrityFindings.items.forEach((finding) => {
+      if (
+        finding.relatedAuditRow !== null &&
+        !coveredRanges.some(
+          (range) =>
+            finding.relatedAuditRow >= range.firstRow &&
+            finding.relatedAuditRow <= range.lastRow,
+        )
+      ) {
+        throw new TypeError(
+          'Audit review evidence contains a related source-row reference outside exported scan ranges.',
+        );
+      }
+    });
+  });
   const csvRows = [HEADERS];
   scans.forEach((scan, index) => {
     const diagnostics = DIAGNOSTIC_FIELDS.map((field) => scan.scanDiagnostics[field]);
@@ -140,6 +160,7 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
       index + 1,
       range ? range.firstRow : '',
       range ? range.lastRow : '',
+      range ? range.hasOlderPage : '',
       scan.scannedRows,
       ...diagnostics,
       scan.integrityFindings.truncated,

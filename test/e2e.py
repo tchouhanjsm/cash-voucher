@@ -1756,6 +1756,29 @@ with sync_playwright() as p:
         and page.locator('#modal .voucher-history-event').count() == 2,
         'Register flags repeated audit event IDs with source-row references without hiding either row',
     )
+    with page.expect_download() as cross_page_export_info:
+        page.click('.voucher-history-export')
+    cross_page_export = cross_page_export_info.value
+    with open(cross_page_export.path(), encoding='utf-8-sig', newline='') as cross_page_export_file:
+        exported_rows = list(csv.DictReader(cross_page_export_file))
+    exported_cross_page_findings = [
+        row for row in exported_rows
+        if row['recordType'] == 'FINDING' and row['findingCode'] == 'DUPLICATE_EVENT_ID'
+    ]
+    check(
+        bool(exported_cross_page_findings)
+        and any(
+            finding['auditRow']
+            and finding['relatedAuditRow']
+            and finding['auditRow'] != finding['relatedAuditRow']
+            for finding in exported_cross_page_findings
+        )
+        and any(
+            row['recordType'] == 'SCAN_SUMMARY' and row['scanHasOlderPage'] == 'true'
+            for row in exported_rows
+        ),
+        'reconciliation CSV carries cross-page duplicate row references and explicitly marks ranges with older rows',
+    )
     history_filter.select_option('CREATED')
     page.wait_for_function(
         "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"

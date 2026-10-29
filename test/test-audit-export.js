@@ -35,6 +35,8 @@ async function run() {
 
   assert.ok(csv.startsWith('\uFEFF'));
   assert.match(csv, /recordType.*scanFirstRow/);
+  assert.match(csv, /scanHasOlderPage/);
+  assert.match(csv, /"SCAN_SUMMARY".*"true"/);
   assert.match(csv, /"SCAN_SUMMARY"/);
   assert.match(csv, /"FINDING"/);
   assert.match(csv, /"DUPLICATE_EVENT_ID","100","96"/);
@@ -68,6 +70,34 @@ async function run() {
         },
       ]),
     /invalid finding or source-row reference/,
+  );
+  const olderScan = {
+    ...validScan,
+    scanRange: { firstRow: 81, lastRow: 90, hasOlderPage: true },
+    integrityFindings: { items: [], truncated: false },
+  };
+  const newerScanWithCrossPageDuplicate = {
+    ...validScan,
+    scanRange: { firstRow: 91, lastRow: 100, hasOlderPage: false },
+    integrityFindings: {
+      items: [
+        {
+          ...validScan.integrityFindings.items[0],
+          auditRow: 100,
+          relatedAuditRow: 90,
+        },
+      ],
+      truncated: false,
+    },
+  };
+  const crossPageCsv = createAuditReconciliationCsv(
+    [olderScan, newerScanWithCrossPageDuplicate],
+    '2026-10-29T06:00:00.000Z',
+  );
+  assert.match(crossPageCsv, /"DUPLICATE_EVENT_ID","100","90"/);
+  assert.throws(
+    () => createAuditReconciliationCsv([newerScanWithCrossPageDuplicate]),
+    /related source-row reference outside exported scan ranges/,
   );
   assert.throws(
     () => createAuditReconciliationCsv(Array.from({ length: 101 }, () => validScan)),
