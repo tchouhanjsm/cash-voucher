@@ -635,21 +635,21 @@ with sync_playwright() as p:
 
     # Browser-only mocks guarantee that no real support report is delivered.
     report_requests = []
-    pending_request = {'route': None}
-    pending_event = threading.Event()
+    pending_route = {'route': None}
     def mock_support_report(route):
-        if 'reportIssue' not in route.request.url:
+        payload = route.request.post_data_json or {}
+        if payload.get('action') != 'reportIssue':
             route.continue_()
             return
-        report_requests.append(route.request.post_data or '')
-        if pending_request['route'] is None:
-            pending_request['route'] = route
-            pending_event.set()
-            pending_event.wait(timeout=10)
-            if pending_request['route'] is not None:
-                route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}))
+        report_requests.append(payload)
+        if pending_route['route'] is None:
+            pending_route['route'] = route
             return
-        route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}))
+        route.fulfill(
+            status=200,
+            content_type='application/json',
+            body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}),
+        )
     page.route('**/api?*', mock_support_report)
 
     page.set_viewport_size({'width': 390, 'height': 800})
@@ -657,12 +657,12 @@ with sync_playwright() as p:
     page.fill('#rm', 'Synthetic report from browser tests only; please ignore.')
     report_submit.click(timeout=10000)
     page.wait_for_function("document.querySelector('#accountReportForm')?.getAttribute('aria-busy') === 'true'")
-    assert pending_event.wait(timeout=5), 'mock support request reached pending state'
     check(
-        report_submit.is_disabled()
+        pending_route['route'] is not None
+        and report_submit.is_disabled()
         and report_submit.inner_text() == 'Sending…'
         and page.locator('#accountReportStatus').inner_text() == 'Sending your report to support…',
-        'submission announces its pending state and disables the submit control',
+        'submission is intercepted by a JSON-action mock, announces pending state and disables submit',
     )
     page.locator('#accountReportForm').evaluate("form => form.requestSubmit()")
     page.wait_for_timeout(150)
@@ -670,7 +670,11 @@ with sync_playwright() as p:
         len(report_requests) == 1,
         'a second submit while pending cannot dispatch a concurrent support request',
     )
-    pending_request['route'].fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}))
+    pending_route['route'].fulfill(
+        status=200,
+        content_type='application/json',
+        body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}),
+    )
     page.wait_for_function("document.querySelector('#accountReportStatus')?.innerText.includes('E2E12345')")
     check(
         report_submit.is_enabled()
@@ -681,12 +685,16 @@ with sync_playwright() as p:
         'success exposes a safe reference, resets fields and restores the submit control',
     )
 
-    # A mocked server failure preserves the draft without rendering internal details.
     def fail_support_report(route):
-        if 'reportIssue' not in route.request.url:
+        payload = route.request.post_data_json or {}
+        if payload.get('action') != 'reportIssue':
             route.continue_()
             return
-        route.fulfill(status=500, content_type='application/json', body=json.dumps({'ok': False, 'error': {'message': 'INTERNAL_TEST_SECRET Do not reveal'}}))
+        route.fulfill(
+            status=500,
+            content_type='application/json',
+            body=json.dumps({'ok': False, 'error': 'INTERNAL_TEST_SECRET Do not reveal'}),
+        )
     page.unroute('**/api?*', mock_support_report)
     page.route('**/api?*', fail_support_report)
     page.fill('#rs', 'Retry after failure')
@@ -703,8 +711,13 @@ with sync_playwright() as p:
     )
     page.unroute('**/api?*', fail_support_report)
     def retry_support_report(route):
-        if 'reportIssue' in route.request.url:
-            route.fulfill(status=200, content_type='application/json', body=json.dumps({'ok': True, 'data': {'ref': 'E2E67890'}}))
+        payload = route.request.post_data_json or {}
+        if payload.get('action') == 'reportIssue':
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({'ok': True, 'data': {'ref': 'E2E67890'}}),
+            )
         else:
             route.continue_()
     page.route('**/api?*', retry_support_report)
