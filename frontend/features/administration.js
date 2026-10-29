@@ -1751,20 +1751,28 @@ export function createAdministration({ api, getNavigation, signOut }) {
       fragment.appendChild(form);
 
       const report = document.createElement('form');
-      report.id = 'rf';
+      report.id = 'accountReportForm';
       report.className = 'card account-report-form';
       report.autocomplete = 'off';
+      report.setAttribute('aria-labelledby', 'accountReportHeading');
+      report.setAttribute('aria-describedby', 'accountReportHelp');
       const reportHeading = document.createElement('h2');
+      reportHeading.id = 'accountReportHeading';
       reportHeading.textContent = 'Report a problem or ask for help';
       const reportIntro = document.createElement('p');
+      reportIntro.id = 'accountReportHelp';
       reportIntro.className = 'muted';
       reportIntro.textContent =
         'Your message is emailed to support with your name and email so they can reply. Never type a password.';
       const reportControls = document.createElement('div');
       reportControls.className = 'filters account-report-controls';
+      const categoryField = document.createElement('label');
+      categoryField.className = 'account-report-field account-report-field--category';
+      categoryField.htmlFor = 'rc';
+      const categoryLabel = document.createElement('span');
+      categoryLabel.textContent = 'Type of report';
       const category = document.createElement('select');
       category.id = 'rc';
-      category.setAttribute('aria-label', 'Type of report');
       [
         ['bug', 'Something is not working'],
         ['question', 'I have a question'],
@@ -1776,6 +1784,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
         option.textContent = label;
         category.appendChild(option);
       });
+      categoryField.append(categoryLabel, category);
+      const subjectField = document.createElement('label');
+      subjectField.className = 'account-report-field account-report-field--subject';
+      subjectField.htmlFor = 'rs';
+      const subjectLabel = document.createElement('span');
+      subjectLabel.textContent = 'Subject';
       const subject = document.createElement('input');
       subject.id = 'rs';
       subject.type = 'text';
@@ -1783,7 +1797,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
       subject.minLength = 3;
       subject.required = true;
       subject.placeholder = 'Short subject';
-      subject.setAttribute('aria-label', 'Subject');
+      subjectField.append(subjectLabel, subject);
+      const messageField = document.createElement('label');
+      messageField.className = 'account-report-field account-report-field--message';
+      messageField.htmlFor = 'rm';
+      const messageLabel = document.createElement('span');
+      messageLabel.textContent = 'Describe the problem';
       const message = document.createElement('textarea');
       message.id = 'rm';
       message.maxLength = 2000;
@@ -1791,13 +1810,19 @@ export function createAdministration({ api, getNavigation, signOut }) {
       message.required = true;
       message.rows = 5;
       message.placeholder = 'What were you doing, what did you expect, and what happened instead?';
-      message.setAttribute('aria-label', 'Describe the problem');
+      messageField.append(messageLabel, message);
       const reportSubmit = document.createElement('button');
       reportSubmit.type = 'submit';
       reportSubmit.className = 'btn primary';
       reportSubmit.textContent = 'Send to support';
-      reportControls.append(category, subject, message, reportSubmit);
-      report.append(reportHeading, reportIntro, reportControls);
+      const reportStatus = document.createElement('p');
+      reportStatus.id = 'accountReportStatus';
+      reportStatus.className = 'account-report-status';
+      reportStatus.setAttribute('role', 'status');
+      reportStatus.setAttribute('aria-live', 'polite');
+      reportStatus.setAttribute('aria-atomic', 'true');
+      reportControls.append(categoryField, subjectField, messageField, reportSubmit);
+      report.append(reportHeading, reportIntro, reportControls, reportStatus);
       fragment.appendChild(report);
       view.replaceChildren(fragment);
     })();
@@ -1820,8 +1845,19 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
   async function reportProblem(event) {
     const form = event.target;
+    if (form.dataset.submitting === 'true') return;
+
     const button = form.querySelector('button[type="submit"]');
-    if (button) button.disabled = true;
+    const status = form.querySelector('#accountReportStatus');
+    if (!button || !status) return;
+
+    form.dataset.submitting = 'true';
+    form.setAttribute('aria-busy', 'true');
+    button.disabled = true;
+    button.setAttribute('aria-disabled', 'true');
+    button.textContent = 'Sending…';
+    status.textContent = 'Sending your report to support…';
+
     try {
       const data = await api('reportIssue', {
         category: $('#rc').value,
@@ -1836,11 +1872,19 @@ export function createAdministration({ api, getNavigation, signOut }) {
           String(navigator.userAgent || ''),
       });
       form.reset();
-      toast('Sent to support. Reference ' + data.ref + '.', 'ok');
-    } catch (error) {
-      fail(error);
+      status.textContent =
+        'Your report was sent successfully. Reference ' + scalarText(data?.ref) + '.';
+      toast('Sent to support. Reference ' + scalarText(data?.ref) + '.', 'ok');
+    } catch {
+      // Network and server errors must not echo request data or internal details.
+      status.textContent = 'Your report could not be sent. Check your connection and try again.';
+      toast('Your report could not be sent. Please try again.', 'err');
     } finally {
-      if (button) button.disabled = false;
+      delete form.dataset.submitting;
+      form.removeAttribute('aria-busy');
+      button.disabled = false;
+      button.removeAttribute('aria-disabled');
+      button.textContent = 'Send to support';
     }
   }
 
@@ -1865,7 +1909,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       return changePassword(event);
     }
 
-    if (event.target.id === 'rf') {
+    if (event.target.id === 'accountReportForm') {
       event.preventDefault();
       return reportProblem(event);
     }

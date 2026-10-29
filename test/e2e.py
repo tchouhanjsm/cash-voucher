@@ -579,14 +579,193 @@ with sync_playwright() as p:
         and page.locator('.account-password-form#pf').count() == 1,
         'My Account uses shared page context and a dedicated profile/password layout',
     )
-    page.fill('#rs', 'E2E problem report')
-    page.fill('#rm', 'Synthetic report from the browser test; please ignore.')
-    page.click('#rf button[type=submit]')
-    page.wait_for_function("document.body.innerText.includes('Sent to support. Reference')")
+    report_form = page.locator('#accountReportForm')
+    page.set_viewport_size({'width': 320, 'height': 800})
     check(
-        page.locator('#rs').input_value() == '' and page.locator('#rm').input_value() == '',
-        'Report a problem form sends to support and clears itself',
+        report_form.count() == 1 and report_form.is_visible()
+        and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
+        'support report remains visible without page-level horizontal overflow at narrow 320px width',
     )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    check(
+        report_form.count() == 1 and report_form.is_visible(),
+        'account support report form has a unique visible target at mobile width',
+    )
+    report_submit = report_form.locator('button[type=submit]')
+    check(
+        report_submit.count() == 1 and report_submit.is_enabled(),
+        'account support report submit control is unique and enabled',
+    )
+    check(
+        page.get_by_label('Type of report').count() == 1
+        and page.get_by_label('Subject').count() == 1
+        and page.get_by_label('Describe the problem').count() == 1
+        and page.locator('#accountReportHeading').count() == 1
+        and page.locator('#accountReportHelp').count() == 1
+        and page.locator('#accountReportStatus').get_attribute('aria-live') == 'polite',
+        'support report controls expose visible associated labels and an accessible lifecycle status',
+    )
+    # Keyboard navigation must produce a visible focus indicator in each theme,
+    # using the same token-driven focus treatment as the rest of the application.
+    for support_theme in ['light', 'dark']:
+        page.evaluate(
+            "theme => document.documentElement.setAttribute('data-theme', theme)",
+            support_theme,
+        )
+        page.locator('#rc').focus()
+        page.keyboard.press('Tab')
+        report_focus = page.locator('#rs').evaluate(
+            """element => ({
+                focused: document.activeElement === element,
+                focusVisible: element.matches(':focus-visible'),
+                outlineStyle: getComputedStyle(element).outlineStyle,
+                outlineWidth: getComputedStyle(element).outlineWidth,
+                boxShadow: getComputedStyle(element).boxShadow,
+                focusColor: getComputedStyle(document.documentElement).getPropertyValue('--focus').trim(),
+            })"""
+        )
+        check(
+            report_focus['focused']
+            and report_focus['focusVisible']
+            and (
+                (report_focus['outlineStyle'] != 'none'
+                 and float(report_focus['outlineWidth'].replace('px', '')) > 0)
+                or report_focus['boxShadow'] != 'none'
+            )
+            and bool(report_focus['focusColor']),
+            f'support report subject has visible keyboard focus in {support_theme} theme',
+        )
+    page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+    page.locator('#rs').evaluate('element => element.blur()')
+    mobile_report_layout = report_form.locator('.account-report-controls').evaluate(
+        "el => ({columns: getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, buttonFullWidth: Math.abs(el.querySelector('button[type=submit]').getBoundingClientRect().width - el.getBoundingClientRect().width) < 2})"
+    )
+    check(
+        mobile_report_layout['columns'] == 1
+        and mobile_report_layout['buttonFullWidth']
+        and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
+        'support report form stacks into one mobile column with a full-width action and no page overflow',
+    )
+    page.set_viewport_size({'width': 768, 'height': 800})
+    check(
+        page.locator('.account-report-controls').evaluate("el => getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0") == 2
+        and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
+        'support report layout is usable at tablet width without page-level overflow',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    desktop_report_layout = report_form.locator('.account-report-controls').evaluate(
+        "el => ({columns: getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, messageSpansColumns: (() => { const s = getComputedStyle(el.querySelector('.account-report-field--message')); return s.gridColumnStart === '1' && s.gridColumnEnd === '-1'; })(), actionSpansColumns: (() => { const s = getComputedStyle(el.querySelector('button[type=submit]')); return s.gridColumnStart === '1' && s.gridColumnEnd === '-1'; })(), buttonHeight: Number.parseFloat(getComputedStyle(el.querySelector('button[type=submit]')).minHeight)})"
+    )
+    check(
+        desktop_report_layout['columns'] == 2
+        and desktop_report_layout['messageSpansColumns']
+        and desktop_report_layout['actionSpansColumns']
+        and desktop_report_layout['buttonHeight'] >= 44
+        and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
+        'support report form uses two desktop columns, full-row message and touch-sized submit action',
+    )
+
+    # Browser-only mocks guarantee that no real support report is delivered.
+    # Deterministic route mocks: the action is in the JSON POST body, not the URL.
+    report_requests = []
+    pending_route = {'route': None}
+
+    def mock_support_report(route):
+        payload = route.request.post_data_json or {}
+        if payload.get('action') != 'reportIssue':
+            route.fallback()
+            return
+        report_requests.append(payload)
+        if pending_route['route'] is None:
+            pending_route['route'] = route
+            return
+        route.fulfill(
+            status=200,
+            content_type='application/json',
+            body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}),
+        )
+
+    page.route('**/api?*', mock_support_report)
+    page.set_viewport_size({'width': 390, 'height': 800})
+    page.fill('#rs', 'E2E problem report')
+    page.fill('#rm', 'Synthetic report from browser tests only; please ignore.')
+    report_submit.click(timeout=10000)
+    page.wait_for_function("document.querySelector('#accountReportForm')?.getAttribute('aria-busy') === 'true'")
+    check(
+        pending_route['route'] is not None
+        and report_submit.is_disabled()
+        and report_submit.inner_text() == 'Sending…'
+        and page.locator('#accountReportStatus').inner_text() == 'Sending your report to support…',
+        'submission is intercepted by a JSON-action mock, announces pending state and disables submit',
+    )
+    page.locator('#accountReportForm').evaluate("form => form.requestSubmit()")
+    page.wait_for_timeout(150)
+    check(
+        len(report_requests) == 1,
+        'a second submit while pending cannot dispatch a concurrent support request',
+    )
+    pending_route['route'].fulfill(
+        status=200,
+        content_type='application/json',
+        body=json.dumps({'ok': True, 'data': {'ref': 'E2E12345'}}),
+    )
+    page.wait_for_function("document.querySelector('#accountReportStatus')?.innerText.includes('E2E12345')")
+    check(
+        report_submit.is_enabled()
+        and page.locator('#accountReportForm').get_attribute('aria-busy') is None
+        and page.locator('#rs').input_value() == ''
+        and page.locator('#rm').input_value() == ''
+        and 'E2E12345' in page.locator('#accountReportStatus').inner_text(),
+        'success exposes a safe reference, resets fields and restores the submit control',
+    )
+
+    def fail_support_report(route):
+        payload = route.request.post_data_json or {}
+        if payload.get('action') != 'reportIssue':
+            route.fallback()
+            return
+        route.fulfill(
+            status=200,
+            content_type='application/json',
+            body=json.dumps({'ok': False, 'error': 'INTERNAL_TEST_SECRET Do not reveal'}),
+        )
+
+    page.unroute('**/api?*', mock_support_report)
+    page.route('**/api?*', fail_support_report)
+    page.fill('#rs', 'Retry after failure')
+    page.fill('#rm', 'Preserve this synthetic report after a simulated failure.')
+    report_submit.click(timeout=10000)
+    page.wait_for_function("document.querySelector('#accountReportStatus')?.innerText.includes('could not be sent')")
+    check(
+        report_submit.is_enabled()
+        and page.locator('#accountReportForm').get_attribute('aria-busy') is None
+        and page.locator('#rs').input_value() == 'Retry after failure'
+        and 'Preserve this synthetic report' in page.locator('#rm').input_value()
+        and 'INTERNAL_TEST_SECRET' not in page.locator('#accountReportForm').inner_text(),
+        'failure restores controls, preserves input and never displays internal error details',
+    )
+
+    page.unroute('**/api?*', fail_support_report)
+
+    def retry_support_report(route):
+        payload = route.request.post_data_json or {}
+        if payload.get('action') == 'reportIssue':
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({'ok': True, 'data': {'ref': 'E2E67890'}}),
+            )
+        else:
+            route.fallback()
+
+    page.route('**/api?*', retry_support_report)
+    report_submit.click(timeout=10000)
+    page.wait_for_function("document.querySelector('#accountReportStatus')?.innerText.includes('E2E67890')")
+    check(
+        report_submit.is_enabled() and page.locator('#rs').input_value() == '',
+        'report can be retried successfully after an error',
+    )
+    page.unroute('**/api?*', retry_support_report)
     page.set_viewport_size({'width': 1280, 'height': 800})
     account_columns = page.locator('.account-password-controls').evaluate(
         "el => getComputedStyle(el).gridTemplateColumns.match(/\\d+(?:\\.\\d+)?px/g)?.length || 0"

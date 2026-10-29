@@ -1,19 +1,32 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 29 October 2026 (voucher audit reconciliation export phase)
+**Updated:** 29 October 2026 (account support form/E2E reliability fix)
 **Repository:** tchouhanjsm/cash-voucher
-**Integration branch:** `client-main`; legacy `main` remains read-only.
-**Current integration baseline:** `b36c0212c541b92ba45347d67b0ed7e2c5185562` (PR #247 merged; owner-only voucher audit history and bounded integrity findings are integrated).
-**Current source batch:** `client/export-voucher-audit-reconciliation-20261029` adds a bounded CSV export for loaded audit scan ranges and finding samples. The export contains diagnostic counts and source-row references only, not voucher field contents or user identities.
-**Active review PR:** [#248 — Export voucher audit reconciliation evidence](https://github.com/tchouhanjsm/cash-voucher/pull/248) on `client/export-voucher-audit-reconciliation-20261029`.
-**Release boundary:** source/test/docs only. No default-branch or branch-protection change, workflow dispatch, Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+**Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
+**Current integration baseline:** `474097a8075303b9f44aa970dfd79bc3f6b78852` (PR #247 is merged; PR #248 is also merged; bounded voucher audit reconciliation CSV export integrated).
+**Current source batch:** `client/fix-account-report-form-e2e-20261029` isolates the My Account support form from Register filter CSS with a dedicated `accountReportForm` ID. The follow-on adds visible associated field labels, a responsive desktop/mobile grid, full-row message field, touch-sized submission action and viewport-level regression checks.
+**Active review PR:** [#249 — Isolate account support form from register styles](https://github.com/tchouhanjsm/cash-voucher/pull/249).
+**Release boundary:** focused frontend selector and test change. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+
+## Account support submission lifecycle refinement — 29 October 2026
+
+- The report form rejects duplicate submit events while a request is in flight, exposes `aria-busy`, and announces pending/success/failure states through a polite live region. The submit action is restored in `finally` after both outcomes.
+- Successful reports keep the existing `reportIssue` payload contract, clear fields, and show the returned reference. Failed requests preserve the reporter's draft and use generic recovery copy rather than displaying exception/internal details.
+- Browser E2E covers 320px, mobile, tablet and desktop layout; visible associated labels; keyboard-visible focus in light and dark themes; pending/duplicate submission; success/reference/reset; failure recovery; and retry with mocked responses only. The report mocks are removed before later Register scenarios. Real support delivery remains untested.
+- **Verified source/test head:** `58112803966517966f20e94ef29c7e59a55ff7d6` passed CI/Quality, Browser E2E (**1,557 checks passed, 0 failed**), Full Flight and the Autonomous Development Monitor:
+  - [CI #40873202366](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40873202366)
+  - [Browser E2E #40873202472](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40873202472)
+  - [Full Flight #40873202458](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40873202458)
+  - [Autonomous Development Monitor #40873202350](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40873202350)
+- The later commits reconcile handoff wording and verification metadata only; application and test code are unchanged after this verified source/test head. Check the live PR for the latest documentation-head checks before merge.
+- **Local checks:** no local Mac commands were run during this session. The above results are GitHub Actions evidence for the exact head only.
 
 ## Current release-session checkpoint — 29 October 2026
 
-- **Integration baseline:** `client-main` at `b36c0212c541b92ba45347d67b0ed7e2c5185562`; PR #247 is merged. This phase builds on the owner-only voucher history, per-range integrity counters and source-row findings.
-- **Current source batch:** `client/export-voucher-audit-reconciliation-20261029`. The owner can export the scan ranges actually loaded in Register as a CSV with scan summary rows and bounded detailed finding rows. The serializer validates counters, row bounds and finding codes; CSV cells use the existing formula-injection-safe encoder. Voucher field values, receipt contents, actors and voucher identifiers are excluded from the export.
-- **Verification boundary:** mock/backend and browser tests verify export schema and safety behavior. This does not prove live Apps Script execution, complete ledger history or completed real-world reconciliation.
-- **Release remains blocked:** `client-main` is reported unprotected and the default branch remains `main`; staging/UAT, live Apps Script verification, backup/restore rehearsal, reconciliation sign-off, security review and customer acceptance remain outstanding.
+- **Integration baseline:** `client-main` remains at `474097a8075303b9f44aa970dfd79bc3f6b78852`; PR #248 is merged. PR #249 remains the active review batch. The combined selector-isolation and responsive/accessibility source changes passed exact-head Quality/CI, Browser E2E and Full Flight at `9d4c9ec253da9442656401c8205af1d375d6df64`; the subsequent handoff evidence refresh at `f312b4c0e7961ebab6d2a02273217e42c7db365c` also passed exact-head checks. Keep owner review pending and verify live checks for any later commit before merge.
+- **Current source batch:** the My Account support form uses the dedicated `accountReportForm` ID, visible labels associated with the report category, subject and message controls, and an accessible heading/help relationship. It uses two columns on desktop and one column on narrow screens, with the message and submit action spanning the desktop grid and a 44px-minimum submission target. Browser E2E verifies accessible labels, responsive geometry, mobile overflow and successful mock-backed submission.
+- **Verification boundary:** Quality/CI, Browser E2E (**1,549 checks passed, 0 failed**) and Full Flight all passed on the handoff evidence-refresh head `f312b4c0e7961ebab6d2a02273217e42c7db365c`; the source-code head immediately before it, `9d4c9ec253da9442656401c8205af1d375d6df64`, also passed all three exact-head gates. The owner-provided local `npm run check` previously passed under Node 22.23.4 with 0 lint errors and 17 warnings, and local Browser E2E reported 1,546 checks passed and 0 failed on the earlier selector-isolation baseline. Always check live Quality/CI, Browser E2E and Full Flight statuses for the latest PR head before merge; earlier green SHAs do not substitute for later-head verification. Mock-backed E2E does not verify real support email delivery.
+- **Release remains blocked:** the read-only staging configuration preflight on [run #40840202447](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40840202447) reported missing staging resource IDs/API URL, missing production resource reference IDs, and invalid/missing Clasp credential shape. Correct the protected GitHub `staging` Environment before running deploy/UAT or building a release ZIP. Live UAT, backup/restore rehearsal, reconciliation sign-off and customer acceptance remain outstanding.
 
 ## Historical release-session checkpoint — 28 October 2026
 

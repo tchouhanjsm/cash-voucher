@@ -367,6 +367,82 @@ assert.match(
   /className = 'card account-password-form'/,
   'account password form uses the shared workflow styling',
 );
+
+assert.match(
+  administration,
+  /report\.setAttribute\('aria-labelledby', 'accountReportHeading'\)/,
+  'account support form exposes its visible heading as the accessible name',
+);
+assert.match(
+  administration,
+  /report\.setAttribute\('aria-describedby', 'accountReportHelp'\)/,
+  'account support form references the explanation that warns users never to submit passwords',
+);
+assert.match(
+  administration,
+  /className = 'account-report-field account-report-field--category'/,
+  'support report category has a visible label and a scoped field wrapper',
+);
+assert.match(
+  administration,
+  /className = 'account-report-field account-report-field--subject'/,
+  'support report subject has a visible label and a scoped field wrapper',
+);
+assert.match(
+  administration,
+  /className = 'account-report-field account-report-field--message'/,
+  'support report message has a visible label and a scoped field wrapper',
+);
+assert.match(
+  administration,
+  /form\.dataset\.submitting === 'true'/,
+  'support report rejects duplicate submit events while in flight',
+);
+assert.match(
+  administration,
+  /setAttribute\('aria-busy', 'true'\)/,
+  'support report exposes an accessible pending state',
+);
+assert.ok(
+  administration.includes('Your report could not be sent. Check your connection and try again.'),
+  'support failures use safe recovery copy',
+);
+assert.match(
+  administration,
+  /finally \{[\s\S]*?button\.disabled = false;[\s\S]*?button\.textContent = 'Send to support';/,
+  'support submit control is restored after success or failure',
+);
+assert.match(
+  components,
+  /\.app #view \.account-report-status\s*\{[\s\S]*?overflow-wrap:\s*anywhere;/,
+  'support lifecycle feedback wraps within the account form',
+);
+assert.doesNotMatch(
+  components,
+  /#rf[^}]*account-report/,
+  'support form styling does not leak into Register filter selectors',
+);
+
+assert.match(
+  components,
+  /\.app #view \.account-report-controls\s*\{[^}]*grid-template-columns:\s*repeat\(2,\s*minmax\(0,\s*1fr\)\)/,
+  'account support form uses two equal responsive columns on desktop',
+);
+assert.match(
+  components,
+  /\.app #view \.account-report-field--message\s*\{[^}]*grid-column:\s*1 \/ -1;/,
+  'account support message occupies the full desktop form width',
+);
+assert.match(
+  components,
+  /\.app #view \.account-report-controls > \.btn\s*\{[^}]*grid-column:\s*1 \/ -1;[^}]*min-height:\s*44px/,
+  'account support submission target meets the 44px minimum touch size',
+);
+assert.match(
+  components,
+  /@media \(max-width:\s*560px\)[\s\S]*?\.app #view \.account-report-controls\s*\{[^}]*grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  'account support form changes to a single-column layout on narrow screens',
+);
 assert.match(
   components,
   /\.audit-panel > \.audit-filters\s*\{[\s\S]*?display:\s*grid/,
