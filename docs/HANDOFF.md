@@ -20,7 +20,6 @@
   - [Autonomous Development Monitor #40871927291](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871927291)
 - **Local checks:** no local Mac commands were run during this session. The above results are GitHub Actions evidence for the exact head only.
 
-
 ## Current release-session checkpoint — 29 October 2026
 
 - **Integration baseline:** `client-main` remains at `474097a8075303b9f44aa970dfd79bc3f6b78852`; PR #248 is merged. PR #249 remains the active review batch. The combined selector-isolation and responsive/accessibility source changes passed exact-head Quality/CI, Browser E2E and Full Flight at `9d4c9ec253da9442656401c8205af1d375d6df64`; the subsequent handoff evidence refresh at `f312b4c0e7961ebab6d2a02273217e42c7db365c` also passed exact-head checks. Keep owner review pending and verify live checks for any later commit before merge.
