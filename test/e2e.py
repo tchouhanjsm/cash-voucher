@@ -641,7 +641,7 @@ with sync_playwright() as p:
     def mock_support_report(route):
         payload = route.request.post_data_json or {}
         if payload.get('action') != 'reportIssue':
-            route.continue_()
+            route.fallback()
             return
         report_requests.append(payload)
         if pending_route['route'] is None:
@@ -690,10 +690,10 @@ with sync_playwright() as p:
     def fail_support_report(route):
         payload = route.request.post_data_json or {}
         if payload.get('action') != 'reportIssue':
-            route.continue_()
+            route.fallback()
             return
         route.fulfill(
-            status=500,
+            status=200,
             content_type='application/json',
             body=json.dumps({'ok': False, 'error': 'INTERNAL_TEST_SECRET Do not reveal'}),
         )
@@ -724,7 +724,7 @@ with sync_playwright() as p:
                 body=json.dumps({'ok': True, 'data': {'ref': 'E2E67890'}}),
             )
         else:
-            route.continue_()
+            route.fallback()
 
     page.route('**/api?*', retry_support_report)
     report_submit.click(timeout=10000)
