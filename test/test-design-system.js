@@ -404,9 +404,7 @@ assert.match(
   'support report exposes an accessible pending state',
 );
 assert.ok(
-  administration.includes(
-    'Your report could not be sent. Check your connection and try again.',
-  ),
+  administration.includes('Your report could not be sent. Check your connection and try again.'),
   'support failures use safe recovery copy',
 );
 assert.match(
