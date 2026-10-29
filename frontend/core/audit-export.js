@@ -131,17 +131,14 @@ export function createAuditReconciliationCsv(scans, exportedAt = new Date().toIS
   }
 
   scans.forEach(validateScan);
-  const coveredRanges = scans
-    .map((scan) => scan.scanRange)
-    .filter(Boolean);
+  const coveredRanges = scans.map((scan) => scan.scanRange).filter(Boolean);
   scans.forEach((scan) => {
     scan.integrityFindings.items.forEach((finding) => {
       if (
         finding.relatedAuditRow !== null &&
         !coveredRanges.some(
           (range) =>
-            finding.relatedAuditRow >= range.firstRow &&
-            finding.relatedAuditRow <= range.lastRow,
+            finding.relatedAuditRow >= range.firstRow && finding.relatedAuditRow <= range.lastRow,
         )
       ) {
         throw new TypeError(
