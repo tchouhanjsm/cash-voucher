@@ -1962,12 +1962,10 @@ ok(
     !historyWithDiagnostics.data.rows.some(
       (event) => event.eventId === 'unsupported-event-fixture',
     ) &&
-    historyWithDiagnostics.data.rows.find(
-      (event) => event.eventId === 'malformed-change-fixture',
-    )?.changes.length === 0 &&
-    historyWithDiagnostics.data.rows.find(
-      (event) => event.eventId === 'truncated-change-fixture',
-    )?.changes.length === 30,
+    historyWithDiagnostics.data.rows.find((event) => event.eventId === 'malformed-change-fixture')
+      ?.changes.length === 0 &&
+    historyWithDiagnostics.data.rows.find((event) => event.eventId === 'truncated-change-fixture')
+      ?.changes.length === 30,
   'voucher history reports missing IDs, unknown types and malformed/truncated change payloads without dropping supported rows',
 );
 ok(
