@@ -1552,6 +1552,8 @@ with sync_playwright() as p:
         ):
             prior_page_event = dict(rows[0])
             cursor = data['scanRange'].get('lastRow')
+            if isinstance(cursor, int):
+                prior_page_event['auditRow'] = cursor
             if isinstance(cursor, int) and cursor > 2:
                 inject_history_overlap['event'] = prior_page_event
                 inject_history_overlap['cursor'] = cursor
@@ -1576,7 +1578,9 @@ with sync_playwright() as p:
             and isinstance(inject_history_overlap['cursor'], int)
         ):
             older_row = inject_history_overlap['cursor'] - 1
-            data['rows'] = [dict(inject_history_overlap['event'])]
+            repeated_event = dict(inject_history_overlap['event'])
+            repeated_event['auditRow'] = older_row
+            data['rows'] = [repeated_event]
             data['scannedRows'] = 1
             data['scanDiagnostics'] = {
                 'recognizedRows': 1,
@@ -1640,8 +1644,8 @@ with sync_playwright() as p:
         raise
     history_text = page.locator('#modal').inner_text()
     check(
-        'VOUCHER_CREATED' in history_text,
-        'voucher history returns a structured creation event; modal was: ' + history_text[:240],
+        'VOUCHER_CREATED' in history_text and 'AuditLog row #' in history_text,
+        'voucher history returns a structured creation event with its exact AuditLog source row; modal was: ' + history_text[:240],
     )
     check(
         history_xss_payload in history_text
@@ -1681,8 +1685,9 @@ with sync_playwright() as p:
     check(
         'Repeated event identifiers across loaded pages: 1 unique event ID(s)'
         in page.locator('.voucher-history-status').inner_text()
+        and 'AuditLog rows #' in page.locator('.voucher-history-status').inner_text()
         and page.locator('#modal .voucher-history-event').count() == 2,
-        'Register flags repeated audit event IDs across separately loaded history pages without hiding either row',
+        'Register flags repeated audit event IDs with source-row references without hiding either row',
     )
     history_filter.select_option('CREATED')
     page.wait_for_function(

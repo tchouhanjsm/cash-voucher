@@ -319,6 +319,7 @@ function voucherAuditHistory_(user, req) {
       : [];
 
     rows.push({
+      auditRow: startRow + i,
       time: tsStr_(values[i][0]),
       user: clean_(String(values[i][1] || ''), 254),
       action: clean_(String(values[i][2] || ''), 80),

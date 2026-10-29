@@ -1739,6 +1739,14 @@ ok(
   historyPage.ok &&
     historyPage.data.rows.length === 2 &&
     historyPage.data.rows[0].eventType === 'VOUCHER_UPDATED' &&
+    Number.isSafeInteger(historyPage.data.rows[0].auditRow) &&
+    Number.isSafeInteger(historyPage.data.rows[1].auditRow) &&
+    historyPage.data.rows[0].auditRow > historyPage.data.rows[1].auditRow &&
+    historyPage.data.rows.every(
+      (event) =>
+        event.auditRow >= historyPage.data.scanRange.firstRow &&
+        event.auditRow <= historyPage.data.scanRange.lastRow,
+    ) &&
     historyPage.data.rows[0].reason === 'Audit timeline regression' &&
     historyPage.data.rows[1].eventType === 'VOUCHER_CREATED' &&
     historyPage.data.eventCategory === 'ALL' &&
@@ -1904,6 +1912,19 @@ const boundaryRangesDoNotOverlap =
   newestBoundaryPage.ok &&
   olderBoundaryPage.ok &&
   newestBoundaryPage.data.rows.length === 50 &&
+  newestBoundaryPage.data.rows.every(
+    (event, index, events) =>
+      Number.isSafeInteger(event.auditRow) &&
+      event.auditRow >= newestBoundaryPage.data.scanRange.firstRow &&
+      event.auditRow <= newestBoundaryPage.data.scanRange.lastRow &&
+      (index === 0 || events[index - 1].auditRow > event.auditRow),
+  ) &&
+  olderBoundaryPage.data.rows.every(
+    (event) =>
+      Number.isSafeInteger(event.auditRow) &&
+      event.auditRow >= olderBoundaryPage.data.scanRange.firstRow &&
+      event.auditRow <= olderBoundaryPage.data.scanRange.lastRow,
+  ) &&
   newestBoundaryPage.data.nextBeforeRow !== null &&
   olderBoundaryPage.data.scanRange &&
   olderBoundaryPage.data.scanRange.lastRow < newestBoundaryPage.data.scanRange.firstRow &&
