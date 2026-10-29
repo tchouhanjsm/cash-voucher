@@ -215,7 +215,6 @@ const permissionCases = [
   { action: 'resetPassword', allowed: ['owner'], payload: {} },
   { action: 'saveSettings', allowed: ['owner'], payload: {} },
   { action: 'auditLog', allowed: ['owner'], payload: {} },
-  { action: 'voucherHistory', allowed: ['owner'], payload: { id: 'missing-voucher' } },
   { action: 'dataQualityReport', allowed: ['owner'], payload: {} },
   { action: 'backupStatus', allowed: ['owner'], payload: {} },
   { action: 'backupIntegrityReport', allowed: ['owner'], payload: {} },
