@@ -114,7 +114,7 @@ async function run() {
     /ordered newest to oldest, contiguous and non-overlapping/,
   );
   assert.throws(
-    () => createAuditReconciliationCsv([newerScan]),
+    () => createAuditReconciliationCsv([olderScanWithCrossPageDuplicate]),
     /related source-row reference outside exported scan ranges/,
   );
   assert.throws(
