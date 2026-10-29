@@ -1648,6 +1648,13 @@ with sync_playwright() as p:
         'voucher history returns a structured creation event with its exact AuditLog source row; modal was: ' + history_text[:240],
     )
     check(
+        'Integrity diagnostics:' in history_text
+        and 'missing event ID' in history_text
+        and 'unrecognized event type' in history_text
+        and 'malformed change payload' in history_text,
+        'voucher history states missing IDs, unknown event types and malformed change payload counts',
+    )
+    check(
         history_xss_payload in history_text
         and page.locator('#modal svg[onload], #modal img[onerror]').count() == 0
         and not page.evaluate('window.__voucherHistoryXssFired === true'),

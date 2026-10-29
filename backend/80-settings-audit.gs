@@ -179,6 +179,19 @@ function voucherAuditEventCategory_(eventType) {
   }
 }
 
+function voucherAuditDiagnostics_() {
+  return {
+    recognizedRows: 0,
+    unstructuredRows: 0,
+    unsupportedRows: 0,
+    duplicateEventRows: 0,
+    missingEventIdRows: 0,
+    unknownEventTypeRows: 0,
+    malformedChangeRows: 0,
+    truncatedChangeRows: 0,
+  };
+}
+
 // Owner-only, bounded, read-only history matched by the stable voucher ID.
 // Each call scans at most 500 AuditLog rows and returns at most 50 events.
 function voucherAuditHistory_(user, req) {
@@ -204,12 +217,7 @@ function voucherAuditHistory_(user, req) {
       rows: [],
       nextBeforeRow: null,
       scannedRows: 0,
-      scanDiagnostics: {
-        recognizedRows: 0,
-        unstructuredRows: 0,
-        unsupportedRows: 0,
-        duplicateEventRows: 0,
-      },
+      scanDiagnostics: voucherAuditDiagnostics_(),
       scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
@@ -234,12 +242,7 @@ function voucherAuditHistory_(user, req) {
       rows: [],
       nextBeforeRow: null,
       scannedRows: 0,
-      scanDiagnostics: {
-        recognizedRows: 0,
-        unstructuredRows: 0,
-        unsupportedRows: 0,
-        duplicateEventRows: 0,
-      },
+      scanDiagnostics: voucherAuditDiagnostics_(),
       scanRange: null,
       eventCategory: eventCategory,
       auditHealth: auditWriteHealth_(),
@@ -252,10 +255,7 @@ function voucherAuditHistory_(user, req) {
   const values = sheet.getRange(startRow, 1, endRow - startRow + 1, 5).getValues();
   const rows = [];
   let scannedRows = 0;
-  let recognizedRows = 0;
-  let unstructuredRows = 0;
-  let unsupportedRows = 0;
-  let duplicateEventRows = 0;
+  const scanDiagnostics = voucherAuditDiagnostics_();
   const seenEventIds = Object.create(null);
   let nextBeforeRow = startRow > 2 ? startRow : null;
   let stoppedAtMatchLimit = false;
@@ -266,12 +266,12 @@ function voucherAuditHistory_(user, req) {
     try {
       details = JSON.parse(String(values[i][4] || ''));
     } catch (_) {
-      unstructuredRows++;
+      scanDiagnostics.unstructuredRows++;
       continue;
     }
     const envelopeObject = details && typeof details === 'object' && !Array.isArray(details);
     if (!envelopeObject) {
-      unsupportedRows++;
+      scanDiagnostics.unsupportedRows++;
       continue;
     }
     if (
@@ -283,12 +283,56 @@ function voucherAuditHistory_(user, req) {
       typeof details.eventType !== 'string' ||
       !details.eventType.trim()
     ) {
-      unsupportedRows++;
+      scanDiagnostics.unsupportedRows++;
       continue;
     }
-    recognizedRows++;
+    scanDiagnostics.recognizedRows++;
     if (details.entityType !== 'voucher' || details.entityId !== id) {
       continue;
+    }
+
+    // Compute integrity findings before filtering so unknown event types and
+    // cross-category duplicate IDs remain detectable in a filtered history view.
+    const eventId = typeof details.eventId === 'string' ? clean_(details.eventId, 100) : '';
+    if (!eventId) scanDiagnostics.missingEventIdRows++;
+    if (voucherAuditEventCategory_(details.eventType) === 'OTHER') {
+      scanDiagnostics.unknownEventTypeRows++;
+    }
+
+    const rawChanges = details.changes;
+    const changesList = Array.isArray(rawChanges) ? rawChanges : [];
+    const isScalarAuditValue = function (value) {
+      return (
+        value === null ||
+        typeof value === 'string' ||
+        typeof value === 'boolean' ||
+        (typeof value === 'number' && isFinite(value))
+      );
+    };
+    const malformedChanges =
+      !Array.isArray(rawChanges) ||
+      rawChanges.some(function (change) {
+        return (
+          !change ||
+          typeof change !== 'object' ||
+          Array.isArray(change) ||
+          typeof change.field !== 'string' ||
+          !change.field.trim() ||
+          !Object.prototype.hasOwnProperty.call(change, 'before') ||
+          !Object.prototype.hasOwnProperty.call(change, 'after') ||
+          !isScalarAuditValue(change.before) ||
+          !isScalarAuditValue(change.after)
+        );
+      });
+    if (malformedChanges) scanDiagnostics.malformedChangeRows++;
+    if (changesList.length > 30) scanDiagnostics.truncatedChangeRows++;
+
+    if (eventId) {
+      if (Object.prototype.hasOwnProperty.call(seenEventIds, eventId)) {
+        scanDiagnostics.duplicateEventRows++;
+      } else {
+        seenEventIds[eventId] = true;
+      }
     }
     if (
       eventCategory !== 'ALL' &&
@@ -296,29 +340,19 @@ function voucherAuditHistory_(user, req) {
     ) {
       continue;
     }
-    const eventId = typeof details.eventId === 'string' ? clean_(details.eventId, 100) : '';
-    if (eventId) {
-      if (Object.prototype.hasOwnProperty.call(seenEventIds, eventId)) {
-        duplicateEventRows++;
-      } else {
-        seenEventIds[eventId] = true;
-      }
-    }
 
-    const changes = Array.isArray(details.changes)
-      ? details.changes
-          .filter(function (change) {
-            return change && typeof change === 'object' && !Array.isArray(change);
-          })
-          .slice(0, 30)
-          .map(function (change) {
-            return {
-              field: clean_(String(change.field || 'Field'), 80),
-              before: voucherAuditValue_(change.before),
-              after: voucherAuditValue_(change.after),
-            };
-          })
-      : [];
+    const changes = changesList
+      .filter(function (change) {
+        return change && typeof change === 'object' && !Array.isArray(change);
+      })
+      .slice(0, 30)
+      .map(function (change) {
+        return {
+          field: clean_(String(change.field || 'Field'), 80),
+          before: voucherAuditValue_(change.before),
+          after: voucherAuditValue_(change.after),
+        };
+      });
 
     rows.push({
       auditRow: startRow + i,
@@ -346,12 +380,7 @@ function voucherAuditHistory_(user, req) {
     rows: rows,
     nextBeforeRow: pageCursor,
     scannedRows: scannedRows,
-    scanDiagnostics: {
-      recognizedRows: recognizedRows,
-      unstructuredRows: unstructuredRows,
-      unsupportedRows: unsupportedRows,
-      duplicateEventRows: duplicateEventRows,
-    },
+    scanDiagnostics: scanDiagnostics,
     scanRange: {
       firstRow: endRow - scannedRows + 1,
       lastRow: endRow,

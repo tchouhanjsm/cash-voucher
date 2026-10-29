@@ -1816,7 +1816,11 @@ ok(
     emptyOlderPage.data.scanDiagnostics.recognizedRows === 0 &&
     emptyOlderPage.data.scanDiagnostics.unstructuredRows === 0 &&
     emptyOlderPage.data.scanDiagnostics.unsupportedRows === 0 &&
-    emptyOlderPage.data.scanDiagnostics.duplicateEventRows === 0,
+    emptyOlderPage.data.scanDiagnostics.duplicateEventRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.missingEventIdRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.unknownEventTypeRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.malformedChangeRows === 0 &&
+    emptyOlderPage.data.scanDiagnostics.truncatedChangeRows === 0,
   'voucher history reports an empty coverage range when a valid cursor has no older rows',
 );
 const diagnosticsFixtureStart = g.sheets.AuditLog.rows.length;
@@ -1865,14 +1869,81 @@ g.sheets.AuditLog.rows.push([
     entityType: 'voucher',
     entityId: historyVoucherId,
     eventId: historyPage.data.rows[0].eventId,
-    eventType: historyPage.data.rows[0].eventType,
-    summary: 'Duplicate event ID fixture',
+    eventType: 'VOUCHER_CREATED',
+    summary: 'Duplicate ID with a different event type',
     changes: [],
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'missing-event-id-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Missing event ID fixture',
+    changes: [],
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'unknown-event-type-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: 'unknown-event-type-fixture',
+    eventType: 'VOUCHER_FUTURE_EVENT',
+    summary: 'Unknown event type fixture',
+    changes: [],
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'malformed-change-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: 'malformed-change-fixture',
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Malformed changes fixture',
+    changes: { field: 'amount', before: 1, after: 2 },
+  }),
+]);
+g.sheets.AuditLog.rows.push([
+  new Date(),
+  'truncated-change-fixture@test.com',
+  'STRUCTURED_AUDIT',
+  'voucher-history',
+  JSON.stringify({
+    version: 1,
+    entityType: 'voucher',
+    entityId: historyVoucherId,
+    eventId: 'truncated-change-fixture',
+    eventType: 'VOUCHER_UPDATED',
+    summary: 'Oversized changes fixture',
+    changes: Array.from({ length: 31 }, (_, index) => ({
+      field: 'change' + index,
+      before: index,
+      after: index + 1,
+    })),
   }),
 ]);
 const historyWithDiagnostics = as(T, 'voucherHistory', { id: historyVoucherId });
 const historyScanDiagnostics =
   historyWithDiagnostics.data && historyWithDiagnostics.data.scanDiagnostics;
+const filteredCrossTypeDuplicate = as(T, 'voucherHistory', {
+  id: historyVoucherId,
+  eventCategory: 'UPDATED',
+});
 g.sheets.AuditLog.rows.splice(diagnosticsFixtureStart);
 ok(
   historyWithDiagnostics.ok &&
@@ -1880,14 +1951,30 @@ ok(
     historyScanDiagnostics.unstructuredRows >= 1 &&
     historyScanDiagnostics.unsupportedRows >= 2 &&
     historyScanDiagnostics.duplicateEventRows >= 1 &&
+    historyScanDiagnostics.missingEventIdRows >= 1 &&
+    historyScanDiagnostics.unknownEventTypeRows >= 1 &&
+    historyScanDiagnostics.malformedChangeRows >= 1 &&
+    historyScanDiagnostics.truncatedChangeRows >= 1 &&
     historyScanDiagnostics.recognizedRows +
       historyScanDiagnostics.unstructuredRows +
       historyScanDiagnostics.unsupportedRows ===
       historyWithDiagnostics.data.scannedRows &&
     !historyWithDiagnostics.data.rows.some(
       (event) => event.eventId === 'unsupported-event-fixture',
-    ),
-  'voucher history reports legacy and unsupported rows without linking unsupported events',
+    ) &&
+    historyWithDiagnostics.data.rows.find(
+      (event) => event.eventId === 'malformed-change-fixture',
+    )?.changes.length === 0 &&
+    historyWithDiagnostics.data.rows.find(
+      (event) => event.eventId === 'truncated-change-fixture',
+    )?.changes.length === 30,
+  'voucher history reports missing IDs, unknown types and malformed/truncated change payloads without dropping supported rows',
+);
+ok(
+  filteredCrossTypeDuplicate.ok &&
+    filteredCrossTypeDuplicate.data.eventCategory === 'UPDATED' &&
+    filteredCrossTypeDuplicate.data.scanDiagnostics.duplicateEventRows >= 1,
+  'duplicate event IDs are detected before event-type filtering, including cross-category duplicates',
 );
 const crossPageFixtureStart = g.sheets.AuditLog.rows.length;
 const repeatedBoundaryEventId = 'cross-page-duplicate-history-fixture';

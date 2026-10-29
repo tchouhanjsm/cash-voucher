@@ -1151,7 +1151,16 @@ export function createRegister({ api, go }) {
         !isRecord(page) ||
         page.eventCategory !== eventCategory ||
         !isRecord(page.scanDiagnostics) ||
-        !['recognizedRows', 'unstructuredRows', 'unsupportedRows', 'duplicateEventRows'].every(
+        ![
+          'recognizedRows',
+          'unstructuredRows',
+          'unsupportedRows',
+          'duplicateEventRows',
+          'missingEventIdRows',
+          'unknownEventTypeRows',
+          'malformedChangeRows',
+          'truncatedChangeRows',
+        ].every(
           (field) =>
             Number.isSafeInteger(page.scanDiagnostics[field]) &&
             page.scanDiagnostics[field] >= 0 &&
@@ -1378,6 +1387,26 @@ export function createRegister({ api, go }) {
         if (scanDiagnostics.unstructuredRows || scanDiagnostics.unsupportedRows) {
           status.textContent +=
             ' Unstructured and unsupported rows were not used to link events to this voucher.';
+        }
+        status.textContent +=
+          ' Integrity diagnostics: ' +
+          scanDiagnostics.missingEventIdRows +
+          ' missing event ID(s), ' +
+          scanDiagnostics.unknownEventTypeRows +
+          ' unrecognized event type(s), ' +
+          scanDiagnostics.malformedChangeRows +
+          ' malformed change payload(s), ' +
+          scanDiagnostics.truncatedChangeRows +
+          ' change list(s) capped at 30 entries.';
+        if (
+          scanDiagnostics.missingEventIdRows ||
+          scanDiagnostics.unknownEventTypeRows ||
+          scanDiagnostics.malformedChangeRows ||
+          scanDiagnostics.truncatedChangeRows
+        ) {
+          status.textContent +=
+            ' Missing IDs prevent duplicate checks for those rows; unrecognized and malformed payloads need review before relying on completeness.';
+          status.className = 'error voucher-history-status';
         }
         if (scanDiagnostics.duplicateEventRows) {
           status.textContent +=
