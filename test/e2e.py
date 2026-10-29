@@ -1511,6 +1511,7 @@ with sync_playwright() as p:
     page.evaluate('window.__voucherHistoryXssFired = false')
 
     history_requests = []
+    api_action_requests = []
     inject_invalid_history_page = {'enabled': False}
     inject_history_overlap = {'stage': 'disabled', 'event': None}
     history_route_states = []
@@ -1522,6 +1523,7 @@ with sync_playwright() as p:
             request_data = json.loads(route.request.post_data or '{}')
         except json.JSONDecodeError:
             request_data = {}
+        api_action_requests.append(request_data.get('action', ''))
         if request_data.get('action') != 'voucherHistory':
             route.continue_()
             return
@@ -1591,8 +1593,12 @@ with sync_playwright() as p:
         history_state = page.evaluate(
             """() => ({
               modalExists: Boolean(document.querySelector('#modal')),
+              modalHidden: Boolean(document.querySelector('#modal')?.classList.contains('hidden')),
               modalText: (document.querySelector('#modal')?.innerText || '').slice(0, 500),
               status: document.querySelector('#modal .voucher-history-status')?.innerText || '',
+              historyButtonCount: document.querySelectorAll('#rbody [data-act=history]').length,
+              historyButtonId: document.querySelector('#rbody [data-act=history]')?.dataset.id || '',
+              registerRowCount: document.querySelectorAll('#rbody tr').length,
               apiResources: performance.getEntriesByType('resource')
                 .filter((entry) => entry.name.includes('/api'))
                 .slice(-8)
@@ -1603,6 +1609,7 @@ with sync_playwright() as p:
             'VOUCHER HISTORY LOAD DIAGNOSTIC:',
             json.dumps({
                 'historyRequests': history_requests,
+                'apiActions': api_action_requests,
                 'routeStates': history_route_states,
                 'pageErrors': history_page_errors,
                 'browserState': history_state,
@@ -1646,7 +1653,7 @@ with sync_playwright() as p:
     page.wait_for_function(
         "document.querySelector('.voucher-history-status')?.innerText.startsWith('Loaded ')"
     )
-    page.click('#modal [data-act=history-older]') if page.locator('#modal [data-act=history-older]').count() else page.locator('.voucher-history-older').click()
+    page.locator('.voucher-history-older').click()
     page.wait_for_function(
         "document.querySelector('.voucher-history-status')?.innerText.includes('Repeated event identifiers across loaded pages: 1 unique event ID(s)')"
     )

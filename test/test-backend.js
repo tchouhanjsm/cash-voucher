@@ -1905,6 +1905,7 @@ const boundaryRangesDoNotOverlap =
   olderBoundaryPage.ok &&
   newestBoundaryPage.data.rows.length === 50 &&
   newestBoundaryPage.data.nextBeforeRow !== null &&
+  olderBoundaryPage.data.scanRange &&
   olderBoundaryPage.data.scanRange.lastRow < newestBoundaryPage.data.scanRange.firstRow &&
   newestBoundaryPage.data.scanDiagnostics.duplicateEventRows === 0 &&
   olderBoundaryPage.data.scanDiagnostics.duplicateEventRows === 0;
