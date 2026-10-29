@@ -16,7 +16,6 @@
 - **Verified head:** `6c00f71ba41794e7f13258d6ba674f4cc4090ad7` passed CI/Quality, Browser E2E (**1,555 checks passed, 0 failed**), Full Flight and the Autonomous Development Monitor. Evidence: [CI #40871134229](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871134229), [Browser E2E #40871134207](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871134207), [Full Flight #40871134256](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871134256), [Monitor #40871134232](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40871134232).
 - These results verify the source head before the additional explicit light/dark keyboard-focus assertion was added. Fresh exact-head validation is required for that final test-only increment before merge.
 
-
 ## Current release-session checkpoint — 29 October 2026
 
 - **Integration baseline:** `client-main` remains at `474097a8075303b9f44aa970dfd79bc3f6b78852`; PR #248 is merged. PR #249 remains the active review batch. The combined selector-isolation and responsive/accessibility source changes passed exact-head Quality/CI, Browser E2E and Full Flight at `9d4c9ec253da9442656401c8205af1d375d6df64`; the subsequent handoff evidence refresh at `f312b4c0e7961ebab6d2a02273217e42c7db365c` also passed exact-head checks. Keep owner review pending and verify live checks for any later commit before merge.
