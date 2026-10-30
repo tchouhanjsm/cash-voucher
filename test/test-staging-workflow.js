@@ -214,7 +214,7 @@ assert.doesNotMatch(
   'client ZIP generation must not run automatically on pushes or PRs',
 );
 assert.match(clientDistWorkflow, /CV_ENVIRONMENT: staging/);
-assert.match(clientDistWorkflow, /CV_API_URL: \$\{\{ secrets\.CV_STAGING_API_URL \}\}/);
+assert.match(clientDistWorkflow, /CV_API_URL: \$\{\{ vars\.CV_STAGING_API_URL \}\}/);
 assert.doesNotMatch(clientDistWorkflow, /inputs\.api_url/);
 assert.match(clientDistWorkflow, /name: Require client-main for staging artifact/);
 assert.ok(clientDistWorkflow.includes('if [ "$ACTION_REF" != "refs/heads/client-main" ]'));
