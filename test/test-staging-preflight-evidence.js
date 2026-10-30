@@ -31,9 +31,7 @@ const extractedProductionApiUrl = withProductionConfig(readProductionApiUrl);
 assert.equal(extractedProductionApiUrl, productionApiUrl);
 
 function validateWithProductionConfig(env, options) {
-  return withProductionConfig((root) =>
-    validateStagingConfiguration(env, { ...options, root }),
-  );
+  return withProductionConfig((root) => validateStagingConfiguration(env, { ...options, root }));
 }
 const ownerEmail = 'staging-owner@example.test';
 const managerEmail = 'staging-manager@example.test';
