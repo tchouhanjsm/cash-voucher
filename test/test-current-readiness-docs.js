@@ -58,7 +58,7 @@ assert.match(handoff, /^\*\*Updated:\*\* 30 October 2026/m);
 const currentIntegrationSha = '2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c';
 const handoffIntegrationSha = '474097a8075303b9f44aa970dfd79bc3f6b78852';
 assert.ok(handoff.includes(handoffIntegrationSha));
-assert.ok(handoff.includes('PR #247 is merged'));
+assert.ok(handoff.includes('PR #249 merged'));
 assert.ok(handoff.includes('Governance evidence binding phase — 28 October 2026'));
 assert.ok(handoff.includes('Operational evidence content-binding phase — 28 October 2026'));
 assert.ok(operationalEvidenceSchema.includes('customerAcceptanceApproved'));
