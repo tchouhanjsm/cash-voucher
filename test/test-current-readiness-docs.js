@@ -53,7 +53,7 @@ const administrationFrontend = read('frontend/features/administration.js');
 const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
-assert.match(handoff, /^\*\*Updated:\*\* 29 October 2026/m);
+assert.match(handoff, /^\*\*Updated:\*\* 30 October 2026/m);
 const currentIntegrationSha = '2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c';
 const handoffIntegrationSha = '474097a8075303b9f44aa970dfd79bc3f6b78852';
 assert.ok(handoff.includes(handoffIntegrationSha));
@@ -68,8 +68,11 @@ assert.ok(releaseGateBundleValidator.includes('validateOperationalGateEvidence')
 assert.ok(releaseGateBundleTest.includes('digest-consistent operational record'));
 assert.match(
   handoff,
-  /^\*\*Current integration baseline:\*\* `474097a8075303b9f44aa970dfd79bc3f6b78852`/m,
+  /^\*\*Current integration baseline:\*\* `730a8c39e3117adfefe97e520d4ab332d4d8d4ef`/m,
 );
+assert.ok(handoff.includes('six staging API/resource settings remain Environment variables'));
+assert.ok(handoff.includes('Clasp OAuth JSON and dedicated owner/manager UAT credentials remain Environment secrets'));
+assert.ok(staging.includes('Staging Configuration Source-of-Truth RCA — 30 October 2026'));
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(executionPlan.includes('Staging secret-scope sprint batch — 28 October 2026'));
