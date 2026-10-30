@@ -498,7 +498,19 @@ const readinessValidationStep = readinessJob
   .split('      - name: Validate configuration only (no remote access or writes)\n')[1]
   .split('      - name: Upload sanitized preflight evidence\n')[0];
 assert.match(readinessValidationStep, /secrets\.CLASPRC_JSON/);
-assert.match(readinessValidationStep, /secrets\.CV_STAGING_SCRIPT_ID/);
+for (const key of [
+  'CV_STAGING_SCRIPT_ID',
+  'CV_STAGING_DEPLOYMENT_ID',
+  'CV_STAGING_API_URL',
+  'CV_STAGING_SPREADSHEET_ID',
+  'CV_STAGING_RECEIPT_FOLDER_ID',
+  'CV_STAGING_BACKUP_FOLDER_ID',
+]) {
+  assert.ok(readinessValidationStep.includes(key + ': ${{ vars.' + key + ' }}'));
+}
+assert.ok(readinessValidationStep.includes('CV_STAGING_ONLY_MODE: ${{ vars.CV_STAGING_ONLY_MODE }}'));
+assert.ok(readinessValidationStep.includes('CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}'));
+assert.doesNotMatch(readinessValidationStep, /secrets\.CV_STAGING_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/);
 assert.doesNotMatch(readinessJob, /npm ci|npm run staging:preflight/);
 const readinessUploadStep = readinessJob.split(
   '      - name: Upload sanitized preflight evidence\n',
