@@ -6,6 +6,7 @@ const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/staging-uat.yml'), 'utf8');
+const clientConfig = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
 const deploy = fs.readFileSync(path.join(root, 'scripts/deploy-staging.js'), 'utf8');
 const preflight = fs.readFileSync(path.join(root, 'scripts/staging-preflight.js'), 'utf8');
 const uat = fs.readFileSync(path.join(root, 'test/uat_staging.py'), 'utf8');
@@ -24,6 +25,12 @@ assert.doesNotMatch(
   'staging workflow must not deploy on push or PR',
 );
 assert.match(workflow, /ACTION_REF: \$\{\{ github\.ref \}\}/);
+assert.match(clientConfig, /API_URL:\s*localApiOverride\s*\|\|\s*''/);
+assert.doesNotMatch(
+  clientConfig,
+  /https:\/\/script\.google\.com\/macros\/s\/[^'"\s]+\/exec/,
+  'source config must never silently select an Apps Script deployment',
+);
 assert.match(workflow, /name: Require client-main, staging-only confirmation and write consent/);
 assert.match(stagingAudit, /staging Environment must restrict deployments to .*client-main/);
 assert.match(stagingAudit, /dispatch deploy-and-uat or uat-only from client-main/i);

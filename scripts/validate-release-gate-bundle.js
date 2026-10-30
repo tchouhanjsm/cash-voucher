@@ -22,6 +22,7 @@ const REQUIRED_PREFLIGHT_CATEGORIES = [
   'stagingEndpoint',
   'dedicatedUatAccounts',
   'claspCredentialShape',
+  'stagingOnlyMode',
 ];
 const REQUIRED_FALSE_BOUNDARIES = [
   'credentialValuesIncluded',
@@ -31,6 +32,11 @@ const REQUIRED_FALSE_BOUNDARIES = [
   'ownershipIndependentlyVerified',
   'deploymentChanged',
   'backupRestoreVerified',
+];
+const REQUIRED_PREFLIGHT_BOUNDARIES = [
+  ...REQUIRED_FALSE_BOUNDARIES,
+  'productionResourceCrossCheckPerformed',
+  'productionEnvironmentConfigured',
 ];
 const REQUIRED_OPERATIONAL_GATES = [
   'ownerBranchProtectionVerified',
@@ -195,6 +201,7 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
       'source',
       'workflowRun',
       'outcome',
+      'deploymentScope',
       'categories',
       'blockers',
       'boundaries',
@@ -209,6 +216,14 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
   }
   if (preflight.evidenceType !== 'cash-voucher-staging-configuration-preflight') {
     add(errors, 'PREFLIGHT_TYPE', 'Unexpected staging preflight evidence type.');
+  }
+  const validDeploymentScopes = ['staging-only', 'staging-with-production-comparison'];
+  if (!validDeploymentScopes.includes(preflight.deploymentScope)) {
+    add(
+      errors,
+      'PREFLIGHT_SCOPE',
+      'Staging preflight must explicitly declare staging-only or complete production-comparison scope.',
+    );
   }
   if (!validTimestamp(preflight.generatedAt)) {
     add(errors, 'PREFLIGHT_TIMESTAMP', 'Staging preflight timestamp is not canonical UTC.');
@@ -283,12 +298,21 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
     errors,
   );
   if (isRecord(preflight.categories)) {
+    const productionComparison = preflight.deploymentScope === 'staging-with-production-comparison';
+    const expectedStatuses = {
+      stagingResourceSeparation: 'pass',
+      productionResourceInventory: productionComparison ? 'pass' : 'not-configured-staging-only',
+      stagingEndpoint: 'pass',
+      dedicatedUatAccounts: 'pass',
+      claspCredentialShape: 'pass',
+      stagingOnlyMode: productionComparison ? 'not-applicable-production-inventory' : 'pass',
+    };
     REQUIRED_PREFLIGHT_CATEGORIES.forEach((category) => {
-      if (preflight.categories[category] !== 'pass') {
+      if (preflight.categories[category] !== expectedStatuses[category]) {
         add(
           errors,
           'PREFLIGHT_CATEGORY',
-          'Every required staging configuration category must pass.',
+          'Preflight category state does not match its declared deployment scope.',
         );
       }
     });
@@ -301,17 +325,35 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
     );
   }
 
-  exactKeys(preflight.boundaries, REQUIRED_FALSE_BOUNDARIES, 'stagingPreflight.boundaries', errors);
+  exactKeys(
+    preflight.boundaries,
+    REQUIRED_PREFLIGHT_BOUNDARIES,
+    'stagingPreflight.boundaries',
+    errors,
+  );
   if (isRecord(preflight.boundaries)) {
     REQUIRED_FALSE_BOUNDARIES.forEach((boundary) => {
       if (preflight.boundaries[boundary] !== false) {
         add(
           errors,
           'PREFLIGHT_BOUNDARY',
-          'Preflight evidence must not claim live connectivity, ownership, deployment or restore.',
+          'Preflight evidence must not claim credential disclosure, resource disclosure, remote connectivity, ownership, deployment or restore.',
         );
       }
     });
+    const productionComparison = preflight.deploymentScope === 'staging-with-production-comparison';
+    for (const boundary of [
+      'productionResourceCrossCheckPerformed',
+      'productionEnvironmentConfigured',
+    ]) {
+      if (preflight.boundaries[boundary] !== productionComparison) {
+        add(
+          errors,
+          'PREFLIGHT_BOUNDARY',
+          'Production cross-check evidence must agree with the declared deployment scope.',
+        );
+      }
+    }
   }
 }
 

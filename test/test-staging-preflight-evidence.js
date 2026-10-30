@@ -50,6 +50,7 @@ assert.equal(result.ok, true, result.errors.join('; '));
 assert.equal(readProductionApiUrl(fixture), '');
 const evidence = buildStagingPreflightEvidence(result, fixture);
 assert.equal(evidence.outcome, 'configuration-pass');
+assert.equal(evidence.deploymentScope, 'staging-only');
 assert.equal(evidence.source.ref, 'refs/heads/client-main');
 assert.equal(evidence.source.commitSha, 'a'.repeat(40));
 assert.equal(
@@ -133,6 +134,18 @@ const productionCompared = validateStagingConfiguration(productionInventoryFixtu
 });
 assert.equal(productionCompared.ok, true, productionCompared.errors.join('; '));
 assert.equal(productionCompared.checks.productionCrossCheckPerformed, true);
+const productionComparisonEvidence = buildStagingPreflightEvidence(
+  productionCompared,
+  productionInventoryFixture,
+);
+assert.equal(productionComparisonEvidence.deploymentScope, 'staging-with-production-comparison');
+assert.equal(productionComparisonEvidence.categories.productionResourceInventory, 'pass');
+assert.equal(
+  productionComparisonEvidence.categories.stagingOnlyMode,
+  'not-applicable-production-inventory',
+);
+assert.equal(productionComparisonEvidence.boundaries.productionResourceCrossCheckPerformed, true);
+assert.equal(productionComparisonEvidence.boundaries.productionEnvironmentConfigured, true);
 
 const blockedProductionOverlap = validateStagingConfiguration(
   {
@@ -156,6 +169,23 @@ const blockedSameDeployment = validateStagingConfiguration(
 );
 assert.equal(blockedSameDeployment.ok, false);
 assert.match(blockedSameDeployment.errors.join('; '), /matches the production deployment ID/);
+
+const blockedProductionConfigWhileStagingOnly = validateStagingConfiguration(
+  {
+    ...fixture,
+    CV_PRODUCTION_API_URL: productionApiUrl,
+    CV_PRODUCTION_SCRIPT_ID: 'PRODUCTION-SCRIPT-ID',
+    CV_PRODUCTION_SPREADSHEET_ID: 'PRODUCTION-SHEET-ID',
+    CV_PRODUCTION_RECEIPT_FOLDER_ID: 'PRODUCTION-RECEIPT-ID',
+    CV_PRODUCTION_BACKUP_FOLDER_ID: 'PRODUCTION-BACKUP-ID',
+  },
+  { mode: 'readiness' },
+);
+assert.equal(blockedProductionConfigWhileStagingOnly.ok, false);
+assert.match(
+  blockedProductionConfigWhileStagingOnly.errors.join('; '),
+  /CV_STAGING_ONLY_MODE=true cannot be combined with production resource settings/,
+);
 
 const blockedProductionUrlWithoutInventory = validateStagingConfiguration(
   { ...fixture, CV_PRODUCTION_API_URL: productionApiUrl },

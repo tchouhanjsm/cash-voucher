@@ -115,6 +115,12 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   const hasAnyProductionConfiguration = hasAnyProductionReferenceValue || hasProductionApiUrl;
   const hasCompleteProductionConfiguration = hasAllProductionReferenceValues && hasProductionApiUrl;
 
+  const stagingOnlyConfigurationConflict = stagingOnlyMode && hasAnyProductionConfiguration;
+  if (stagingOnlyConfigurationConflict) {
+    errors.push(
+      'CV_STAGING_ONLY_MODE=true cannot be combined with production resource settings; switch deployment scope only through a reviewed workflow change after production is provisioned.',
+    );
+  }
   if (hasAnyProductionConfiguration && !hasCompleteProductionConfiguration) {
     errors.push(
       'Production comparison is optional for staging-only operation; when any production reference is configured, all four CV_PRODUCTION_* resource IDs and CV_PRODUCTION_API_URL must be supplied together.',
@@ -156,6 +162,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   ];
   const productionReferenceInventoryValid =
     hasCompleteProductionConfiguration &&
+    Boolean(parsedProduction) &&
     productionValues.every(Boolean) &&
     new Set(productionValues).size === productionValues.length;
   const productionInventoryIncomplete =
@@ -251,6 +258,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   const targetIdsAreSeparated =
     stagingIdsUnique &&
     !productionInventoryIncomplete &&
+    !stagingOnlyConfigurationConflict &&
     (stagingOnlyMode || productionReferenceInventoryValid) &&
     !stageValues.some((value) => value && productionSet.has(value));
 
@@ -258,9 +266,11 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     ok: errors.length === 0,
     errors,
     productionApiUrl,
+    deploymentScope: stagingOnlyMode ? 'staging-only' : 'staging-with-production-comparison',
     checks: {
       claspCredentialShapeValid,
       stagingOnlyMode,
+      stagingOnlyConfigurationConflict,
       targetIdsAreSeparated,
       productionResourceReferencesPresent: productionReferenceInventoryValid,
       productionInventoryIncomplete,
@@ -295,6 +305,7 @@ function buildStagingPreflightEvidence(result, env = process.env) {
     schemaVersion: 1,
     evidenceType: 'cash-voucher-staging-configuration-preflight',
     generatedAt: new Date().toISOString(),
+    deploymentScope: result.deploymentScope,
     source: {
       repository: safeRepo,
       ref:
@@ -324,7 +335,9 @@ function buildStagingPreflightEvidence(result, env = process.env) {
       dedicatedUatAccounts: status(checks.dedicatedUatAccountsPresent),
       claspCredentialShape: status(checks.claspCredentialShapeValid),
       stagingOnlyMode: checks.stagingOnlyMode
-        ? 'pass'
+        ? checks.stagingOnlyConfigurationConflict
+          ? 'blocked'
+          : 'pass'
         : checks.productionResourceReferencesPresent
           ? 'not-applicable-production-inventory'
           : 'blocked',
