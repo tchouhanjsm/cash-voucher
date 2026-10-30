@@ -12,7 +12,7 @@
 
 - The root frontend `config.js` leaves `API_URL` blank unless a localhost `?api=` override is supplied. A legacy Apps Script deployment is no longer selected implicitly from committed source.
 - The client staging ZIP workflow continues to inject the validated `CV_STAGING_API_URL` from the protected `staging` Environment and checks the generated `dist/config.js` against that URL before packaging.
-- Regression coverage asserts that the committed source config has no hard-coded Apps Script `/exec` endpoint. The existing login flow remains available for an operator-entered endpoint.
+- Regression coverage asserts that the committed source config has no hard-coded Apps Script `/exec` endpoint. The existing login flow remains available for an operator-entered endpoint. The staging preflight evidence and static-server regression tests use synthetic endpoint fixtures and the attested staging-only contract; they do not depend on a configured production URL in the committed root config.
 - This change does not alter the merged staging preflight contract, the owner isolation attestation, authentication, API behavior, database schema or live resources.
 
 ## Staging-only Environment source of truth and RCA — 30 October 2026
