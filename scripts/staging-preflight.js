@@ -48,9 +48,7 @@ function parseAppsScriptDeploymentUrl(value, label, errors) {
       url.hash ||
       !match
     ) {
-      errors.push(
-        label + ' must be a plain HTTPS Apps Script /macros/s/<deployment-id>/exec URL.',
-      );
+      errors.push(label + ' must be a plain HTTPS Apps Script /macros/s/<deployment-id>/exec URL.');
       return null;
     }
     return { url, deploymentId: match[1] };
@@ -85,11 +83,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   }
 
   const stagingApiUrl = String(env.CV_STAGING_API_URL || '').trim();
-  const parsedStaging = parseAppsScriptDeploymentUrl(
-    stagingApiUrl,
-    'The staging API URL',
-    errors,
-  );
+  const parsedStaging = parseAppsScriptDeploymentUrl(stagingApiUrl, 'The staging API URL', errors);
   if (parsedStaging) {
     stagingUrl = parsedStaging.url;
     const expectedDeploymentId = String(env.CV_STAGING_DEPLOYMENT_ID || '').trim();
@@ -100,8 +94,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
 
   const stageValues = STAGING_ID_KEYS.map((key) => String(env[key] || '').trim());
   const stagingIdsComplete = stageValues.every((value) => !isPlaceholder(value));
-  const stagingIdsUnique =
-    stagingIdsComplete && new Set(stageValues).size === stageValues.length;
+  const stagingIdsUnique = stagingIdsComplete && new Set(stageValues).size === stageValues.length;
   if (stagingIdsComplete && !stagingIdsUnique) {
     errors.push(
       'Staging Script, deployment, Sheet, receipt folder and backup folder must be five distinct resources.',
@@ -119,10 +112,8 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   );
   productionApiUrl = readProductionApiUrl(env);
   const hasProductionApiUrl = !isPlaceholder(productionApiUrl);
-  const hasAnyProductionConfiguration =
-    hasAnyProductionReferenceValue || hasProductionApiUrl;
-  const hasCompleteProductionConfiguration =
-    hasAllProductionReferenceValues && hasProductionApiUrl;
+  const hasAnyProductionConfiguration = hasAnyProductionReferenceValue || hasProductionApiUrl;
+  const hasCompleteProductionConfiguration = hasAllProductionReferenceValues && hasProductionApiUrl;
 
   if (hasAnyProductionConfiguration && !hasCompleteProductionConfiguration) {
     errors.push(
@@ -221,10 +212,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
 
   let claspCredentialShapeValid = null;
   if (mode === 'deploy' || mode === 'readiness') {
-    if (
-      mode === 'deploy' &&
-      String(env.CV_STAGING_DEPLOY_CONFIRMATION || '') !== 'STAGING-ONLY'
-    ) {
+    if (mode === 'deploy' && String(env.CV_STAGING_DEPLOY_CONFIRMATION || '') !== 'STAGING-ONLY') {
       errors.push('Deployment requires the exact STAGING-ONLY confirmation.');
     }
     let claspConfig;

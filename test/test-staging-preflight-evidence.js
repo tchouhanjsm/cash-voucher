@@ -16,8 +16,7 @@ const managerEmail = 'staging-manager@example.test';
 const ownerPassword = 'OWNER-PASSWORD-MUST-NOT-LEAK';
 const managerPassword = 'MANAGER-PASSWORD-MUST-NOT-LEAK';
 const apiUrl = 'https://script.google.com/macros/s/staging-deployment-fixture/exec';
-const productionApiUrl =
-  'https://script.google.com/macros/s/production-deployment-fixture/exec';
+const productionApiUrl = 'https://script.google.com/macros/s/production-deployment-fixture/exec';
 const clasp = JSON.stringify({
   tokens: {
     default: {
@@ -143,7 +142,10 @@ const blockedProductionOverlap = validateStagingConfiguration(
   { mode: 'readiness' },
 );
 assert.equal(blockedProductionOverlap.ok, false);
-assert.match(blockedProductionOverlap.errors.join('; '), /also configured as a production resource/);
+assert.match(
+  blockedProductionOverlap.errors.join('; '),
+  /also configured as a production resource/,
+);
 
 const blockedSameDeployment = validateStagingConfiguration(
   {

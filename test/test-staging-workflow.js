@@ -77,8 +77,12 @@ assert.equal(
   'staging-only mode has one correctly indented mapping per protected staging step',
 );
 assert.equal(
-  (workflow.match(/^ {10}CV_PRODUCTION_API_URL: \$\{\{ vars\.CV_PRODUCTION_API_URL \}\}$/gm) || []).length,
-  (workflow.match(/^ {10}CV_PRODUCTION_SCRIPT_ID: \$\{\{ vars\.CV_PRODUCTION_SCRIPT_ID \}\}$/gm) || []).length,
+  (workflow.match(/^ {10}CV_PRODUCTION_API_URL: \\$\\{\\{ vars\\.CV_PRODUCTION_API_URL \\}\\}$/gm) || [])
+    .length,
+  (
+    workflow.match(/^ {10}CV_PRODUCTION_SCRIPT_ID: \\$\\{\\{ vars\\.CV_PRODUCTION_SCRIPT_ID \\}\\}$/gm) ||
+    []
+  ).length,
   'optional production endpoint and resource inventory mappings stay paired',
 );
 assert.doesNotMatch(
