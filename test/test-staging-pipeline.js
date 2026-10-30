@@ -264,31 +264,31 @@ assert.ok(safeClaspDiagnostic.includes('[redacted]'));
 
 const sameScript = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_SCRIPT_ID: fixture.CV_PRODUCTION_SCRIPT_ID,
+  CV_STAGING_SCRIPT_ID: fixture.CV_STAGING_SPREADSHEET_ID,
 });
 assert.equal(sameScript.ok, false);
-assert.ok(sameScript.errors.some((message) => message.includes('production resource')));
+assert.ok(sameScript.errors.some((message) => message.includes('five distinct resources')));
 
 const sameSheet = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_SPREADSHEET_ID: fixture.CV_PRODUCTION_SPREADSHEET_ID,
+  CV_STAGING_SPREADSHEET_ID: fixture.CV_STAGING_SCRIPT_ID,
 });
 assert.equal(sameSheet.ok, false);
-assert.ok(sameSheet.errors.some((message) => message.includes('production resource')));
+assert.ok(sameSheet.errors.some((message) => message.includes('five distinct resources')));
 
 const sameReceiptFolder = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_RECEIPT_FOLDER_ID: fixture.CV_PRODUCTION_RECEIPT_FOLDER_ID,
+  CV_STAGING_RECEIPT_FOLDER_ID: fixture.CV_STAGING_BACKUP_FOLDER_ID,
 });
 assert.equal(sameReceiptFolder.ok, false);
-assert.ok(sameReceiptFolder.errors.some((message) => message.includes('production resource')));
+assert.ok(sameReceiptFolder.errors.some((message) => message.includes('five distinct resources')));
 
 const sameBackupFolder = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_BACKUP_FOLDER_ID: fixture.CV_PRODUCTION_BACKUP_FOLDER_ID,
+  CV_STAGING_BACKUP_FOLDER_ID: fixture.CV_STAGING_RECEIPT_FOLDER_ID,
 });
 assert.equal(sameBackupFolder.ok, false);
-assert.ok(sameBackupFolder.errors.some((message) => message.includes('production resource')));
+assert.ok(sameBackupFolder.errors.some((message) => message.includes('five distinct resources')));
 
 const productionDeployment = validateStagingConfiguration({
   ...fixture,
