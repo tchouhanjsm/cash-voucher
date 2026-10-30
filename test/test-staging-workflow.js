@@ -457,8 +457,12 @@ for (const step of [
   uatTargetPreflight,
   uatOnlyStep,
 ]) {
-  assert.match(step, /CV_STAGING_ONLY_MODE: \\$\\{\\{ vars\\.CV_STAGING_ONLY_MODE \\}\\}/);
-  assert.match(step, /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: \\$\\{\\{ vars\\.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION \\}\\}/);
+  assert.ok(step.includes('CV_STAGING_ONLY_MODE: ${{ vars.CV_STAGING_ONLY_MODE }}'));
+  assert.ok(
+    step.includes(
+      'CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}',
+    ),
+  );
   assert.doesNotMatch(step, /CV_PRODUCTION_(?:SCRIPT_ID|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID):/);
 }
 assert.match(deployConfigPreflight, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
