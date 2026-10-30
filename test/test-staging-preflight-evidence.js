@@ -11,8 +11,19 @@ const {
   writeStagingPreflightEvidence,
 } = require('../scripts/staging-preflight');
 
-const productionApiUrl = readProductionApiUrl();
+const configFixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'staging-production-config-'));
+const productionApiUrl =
+  'https://script.google.com/macros/s/production-deployment-fixture/exec';
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
+try {
+  fs.writeFileSync(
+    path.join(configFixtureRoot, 'config.js'),
+    "window.CV_CONFIG = { API_URL: '" + productionApiUrl + "' };\\n",
+  );
+  assert.equal(readProductionApiUrl(configFixtureRoot), productionApiUrl);
+} finally {
+  fs.rmSync(configFixtureRoot, { recursive: true, force: true });
+}
 const ownerEmail = 'staging-owner@example.test';
 const managerEmail = 'staging-manager@example.test';
 const ownerPassword = 'OWNER-PASSWORD-MUST-NOT-LEAK';
