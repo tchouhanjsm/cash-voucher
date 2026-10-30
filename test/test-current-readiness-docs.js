@@ -77,7 +77,11 @@ assert.doesNotMatch(
   /https:\/\/script\.google\.com\/macros\/s\/[^'"\s]+\/exec/,
   'root config must not embed a legacy or production Apps Script endpoint',
 );
-assert.ok(handoff.includes('Environment variables (six values visible in Settings → Environments → staging)'));
+assert.ok(
+  handoff.includes(
+    'Environment variables (six values visible in Settings → Environments → staging)',
+  ),
+);
 assert.ok(handoff.includes('Environment secrets (five values visible in the screenshot)'));
 assert.ok(staging.includes('Staging-only source-of-truth and preflight RCA — 30 October 2026'));
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
