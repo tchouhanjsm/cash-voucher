@@ -11,16 +11,18 @@ const {
 
 const root = path.resolve(__dirname, '..');
 const fixture = {
+  CV_STAGING_ONLY_MODE: 'true',
+  CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
   CV_STAGING_SCRIPT_ID: 'staging-script-fixture',
-  CV_PRODUCTION_SCRIPT_ID: 'production-script-fixture',
   CV_STAGING_DEPLOYMENT_ID: 'staging-deployment-fixture',
   CV_STAGING_API_URL: 'https://script.google.com/macros/s/staging-deployment-fixture/exec',
   CV_STAGING_SPREADSHEET_ID: 'staging-sheet-fixture',
-  CV_PRODUCTION_SPREADSHEET_ID: 'production-sheet-fixture',
   CV_STAGING_RECEIPT_FOLDER_ID: 'staging-receipts-fixture',
-  CV_PRODUCTION_RECEIPT_FOLDER_ID: 'production-receipts-fixture',
   CV_STAGING_BACKUP_FOLDER_ID: 'staging-backups-fixture',
-  CV_PRODUCTION_BACKUP_FOLDER_ID: 'production-backups-fixture',
+  CV_PRODUCTION_SCRIPT_ID: '',
+  CV_PRODUCTION_SPREADSHEET_ID: '',
+  CV_PRODUCTION_RECEIPT_FOLDER_ID: '',
+  CV_PRODUCTION_BACKUP_FOLDER_ID: '',
   CV_STAGING_UAT_OWNER_EMAIL: 'uat-owner@example.test',
   CV_STAGING_UAT_OWNER_PASSWORD: 'UAT#Owner2026',
   CV_STAGING_UAT_MANAGER_EMAIL: 'uat-manager@example.test',
@@ -60,12 +62,12 @@ async function run() {
       createStagingServer(
         {
           ...serverEnv,
-          CV_STAGING_SCRIPT_ID: serverEnv.CV_PRODUCTION_SCRIPT_ID,
+          CV_PRODUCTION_SCRIPT_ID: 'unexpected-production-script-fixture',
         },
         root,
       ),
-    /configured as a production resource/,
-    'static server must still reject staging/production resource collisions',
+    /must not receive production resource reference IDs/,
+    'static staging server must reject production references while staging-only mode is attested',
   );
 
   const server = createStagingServer(serverEnv, root);
