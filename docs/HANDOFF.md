@@ -1,12 +1,22 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 29 October 2026 (account support form/E2E reliability fix)
+**Updated:** 30 October 2026 (staging-only Environment source-of-truth/RCA correction)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `474097a8075303b9f44aa970dfd79bc3f6b78852` (PR #247 is merged; PR #248 is also merged; bounded voucher audit reconciliation CSV export integrated).
-**Current source batch:** `client/fix-account-report-form-e2e-20261029` isolates the My Account support form from Register filter CSS with a dedicated `accountReportForm` ID. The follow-on adds visible associated field labels, a responsive desktop/mobile grid, full-row message field, touch-sized submission action and viewport-level regression checks.
-**Active review PR:** [#249 — Isolate account support form from register styles](https://github.com/tchouhanjsm/cash-voucher/pull/249).
-**Release boundary:** focused frontend selector and test change. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+**Current integration baseline:** `730a8c39e3117adfefe97e520d4ab332d4d8d4ef` (PR #249 merged; legacy `main` remains read-only).
+**Current source batch:** `client/staging-only-environment-contract-20261030` corrects the staging Environment variable/secret mapping and introduces explicit staging-only preflight without fictitious production resource references.
+**Active review PR:** [#251 — Make staging-only Environment configuration authoritative](https://github.com/tchouhanjsm/cash-voucher/pull/251).
+**Release boundary:** configuration/workflow/preflight/tests/docs only. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+
+## Staging-only Environment source of truth and RCA — 30 October 2026
+
+- The owner's 30 October screenshot is authoritative. The six existing staging values (`CV_STAGING_API_URL`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_SCRIPT_ID`, `CV_STAGING_SPREADSHEET_ID`) remain GitHub Environment **variables**. Do not move them into secrets or rename them.
+- `CLASPRC_JSON` and the owner/manager UAT email/password values remain Environment **secrets**.
+- RCA for run [#40910344511](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511), job #123577554801: all six resource values were configured as Environment variables, but the workflow read them from `secrets.*`, so Actions supplied empty strings. The preflight also incorrectly required production API/resource references even though no production environment exists. Source/mock validation passed; readiness stopped before Google API access; deploy and UAT jobs were skipped. No remote writes or deployment occurred.
+- PR #251 maps the six existing values from `vars.*`, retains OAuth/UAT credentials in `secrets.*`, and adds an explicit staging-only mode with owner attestation. It does not inject production IDs into staging workflows. Preflight continues to reject duplicate staging resources, mismatched API/deployment IDs, missing attestation, and accidental production references in staging-only mode.
+- After merge, the owner must add two Environment variables only after manually verifying the actual Google targets: `CV_STAGING_ONLY_MODE=true` and `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION=OWNER-VERIFIED-STAGING-ONLY`. Keep the six existing screenshot values unchanged. Do not add production IDs.
+- Exact-head checks and review state are in PR #251. CI has passed on an earlier same-head run; later duplicate/current runs must be reconciled with the PR's live check status. Do not merge until CI, Browser E2E, Full Flight and the development monitor pass on the final PR head.
+- Remaining release gates: owner-configured staging-only variables, read-only `validate-only` readiness, live staging deployment/UAT with explicit consent, artifact ZIP generation/checksum verification, backup/restore rehearsal and operator acceptance. No live staging operation was performed by this change.
 
 ## Account support submission lifecycle refinement — 29 October 2026
 
