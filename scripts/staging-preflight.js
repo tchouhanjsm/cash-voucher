@@ -125,10 +125,7 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   let claspCredentialShapeValid = null;
 
   if (mode === 'deploy' || mode === 'readiness') {
-    if (
-      mode === 'deploy' &&
-      String(env.CV_STAGING_DEPLOY_CONFIRMATION || '') !== 'STAGING-ONLY'
-    ) {
+    if (mode === 'deploy' && String(env.CV_STAGING_DEPLOY_CONFIRMATION || '') !== 'STAGING-ONLY') {
       errors.push('Deployment requires the explicit STAGING-ONLY confirmation.');
     }
 
@@ -296,7 +293,9 @@ function main() {
   );
 
   if (mode === 'artifact') {
-    console.log('Artifact target configuration passed; no UAT accounts or remote writes were tested.');
+    console.log(
+      'Artifact target configuration passed; no UAT accounts or remote writes were tested.',
+    );
   } else if (mode === 'readiness') {
     console.log(
       'Configuration-only readiness passed. No Google API calls, deployments, UAT writes or restore verification were performed.',

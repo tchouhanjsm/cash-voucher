@@ -10,10 +10,7 @@ const runner = fs.readFileSync(path.resolve(__dirname, '../scripts/run-staging-u
 assert.match(runner, /mktemp -d/);
 assert.match(runner, /set -o noclobber/);
 assert.match(runner, /env -i/);
-assert.match(
-  runner,
-  /env -u GITHUB_OUTPUT -u GITHUB_ENV -u GITHUB_PATH -u GITHUB_STEP_SUMMARY/,
-);
+assert.match(runner, /env -u GITHUB_OUTPUT -u GITHUB_ENV -u GITHUB_PATH -u GITHUB_STEP_SUMMARY/);
 assert.doesNotMatch(runner, /\/tmp\/cash-voucher-staging-(?:uat|server)\.log/);
 assert.doesNotMatch(runner, /tee "\$\{UAT_LOG_FILE\}"/);
 assert.match(runner, /detailed transcript is withheld from workflow logs/);
@@ -97,8 +94,10 @@ assert.equal(invalidClasp.ok, false);
 assert.ok(invalidClasp.errors.some((message) => message.includes('CLASPRC_JSON')));
 
 assert.equal(
-  validateStagingConfiguration({ ...fixture, CV_STAGING_DEPLOY_CONFIRMATION: '' }, { mode: 'deploy' })
-    .ok,
+  validateStagingConfiguration(
+    { ...fixture, CV_STAGING_DEPLOY_CONFIRMATION: '' },
+    { mode: 'deploy' },
+  ).ok,
   false,
 );
 assert.equal(
@@ -109,8 +108,10 @@ assert.equal(
   false,
 );
 assert.equal(
-  validateStagingConfiguration({ ...fixture, CV_STAGING_UAT_OWNER_PASSWORD: 'short' }, { mode: 'uat' })
-    .ok,
+  validateStagingConfiguration(
+    { ...fixture, CV_STAGING_UAT_OWNER_PASSWORD: 'short' },
+    { mode: 'uat' },
+  ).ok,
   false,
 );
 
