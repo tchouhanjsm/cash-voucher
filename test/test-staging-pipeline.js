@@ -213,7 +213,7 @@ const partialProductionReferenceIds = validateStagingConfiguration(
 assert.equal(partialProductionReferenceIds.ok, false);
 assert.ok(
   partialProductionReferenceIds.errors.some((message) =>
-    message.includes('all four production resource reference IDs'),
+    message.includes('must not receive production resource reference IDs'),
   ),
 );
 
