@@ -59,17 +59,13 @@ assert.match(workflow, /confirm_staging_writes/);
 assert.match(workflow, /CV_STAGING_DEPLOY_CONFIRMATION/);
 assert.equal(
   (workflow.match(/CV_STAGING_RESOURCE_ISOLATION_ATTESTATION:/g) || []).length,
-  0,
-  'write-capable staging jobs must not receive the artifact-only isolation attestation',
+  7,
+  'each staging preflight/deploy/UAT step must receive the explicit staging-only attestation',
 );
-assert.match(
-  preflight,
-  /Write-capable staging operations \(deploy and UAT\) require all four production resource reference IDs; OWNER-VERIFIED-STAGING-ONLY attestation is not sufficient/,
-);
-assert.match(
-  releaseRunbook,
-  /Write-capable `deploy` and `uat` preflight[\s\S]*owner attestation is not a substitute for the inventory/i,
-);
+assert.match(preflight, /Staging-only mode requires CV_STAGING_RESOURCE_ISOLATION_ATTESTATION/);
+assert.match(preflight, /must not receive production resource reference IDs/);
+assert.match(releaseRunbook, /staging-only mode/);
+assert.match(releaseRunbook, /OWNER-VERIFIED-STAGING-ONLY/);
 assert.match(preflight, /tokens\.default/);
 assert.match(preflight, /OWNER-VERIFIED-STAGING-ONLY/);
 assert.match(releaseRunbook, /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION/);
