@@ -76,13 +76,13 @@ assert.equal(
   stagingScriptMappings.length,
   'staging-only mode has one correctly indented mapping per protected staging step',
 );
+const countWorkflowEnvironmentMapping = (key) =>
+  workflow
+    .split('\n')
+    .filter((line) => line.trim() === key + ': ${{ vars.' + key + ' }}').length;
 assert.equal(
-  (workflow.match(/^ {10}CV_PRODUCTION_API_URL: \\$\\{\\{ vars\\.CV_PRODUCTION_API_URL \\}\\}$/gm) || [])
-    .length,
-  (
-    workflow.match(/^ {10}CV_PRODUCTION_SCRIPT_ID: \\$\\{\\{ vars\\.CV_PRODUCTION_SCRIPT_ID \\}\\}$/gm) ||
-    []
-  ).length,
+  countWorkflowEnvironmentMapping('CV_PRODUCTION_API_URL'),
+  countWorkflowEnvironmentMapping('CV_PRODUCTION_SCRIPT_ID'),
   'optional production endpoint and resource inventory mappings stay paired',
 );
 assert.doesNotMatch(
