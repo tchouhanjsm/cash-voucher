@@ -4,9 +4,7 @@ const localApiOverride = ['localhost', '127.0.0.1'].includes(location.hostname)
   : '';
 
 window.CV_CONFIG = {
-  API_URL:
-    localApiOverride ||
-    '',
+  API_URL: localApiOverride || '',
   ENVIRONMENT: localApiOverride ? 'staging' : '',
   DEPLOYMENT_ID: localApiOverride ? 'MOCK_DEPLOYMENT' : '',
 };

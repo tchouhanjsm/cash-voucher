@@ -212,7 +212,11 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
     add(errors, 'PREFLIGHT_TYPE', 'Unexpected staging preflight evidence type.');
   }
   if (preflight.deploymentScope !== 'staging-only') {
-    add(errors, 'PREFLIGHT_SCOPE', 'Staging preflight must explicitly declare the staging-only deployment scope.');
+    add(
+      errors,
+      'PREFLIGHT_SCOPE',
+      'Staging preflight must explicitly declare the staging-only deployment scope.',
+    );
   }
   if (!validTimestamp(preflight.generatedAt)) {
     add(errors, 'PREFLIGHT_TIMESTAMP', 'Staging preflight timestamp is not canonical UTC.');
