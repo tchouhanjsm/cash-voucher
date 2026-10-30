@@ -190,7 +190,21 @@ assert.ok(releaseGateBundleDocs.includes('integration-branch checks'));
 assert.ok(releaseGateBundleDocs.includes('refs/heads/client-main'));
 assert.doesNotMatch(ciWorkflow, /Temporary formatting diagnostic for PR 242|npx prettier --write/);
 assert.ok(ciWorkflow.includes('Print non-mutating Prettier diff for changed files'));
-assert.ok(ciWorkflow.includes("if: failure() && steps.quality.outcome == 'failure'"));
+assert.ok(ciWorkflow.includes('- name: Lint source'));
+assert.ok(ciWorkflow.includes('- name: Check formatting'));
+assert.ok(ciWorkflow.includes("if: ${{ always() && steps.dependencies.outcome == 'success' }}"));
+assert.ok(
+  ciWorkflow.includes(
+    "if: ${{ always() && steps.dependencies.outcome == 'success' && steps.format.outcome == 'failure' }}",
+  ),
+);
+assert.ok(
+  ciWorkflow.includes(
+    "if: ${{ always() && github.event_name == 'pull_request' && steps.dependencies.outcome == 'success' }}",
+  ),
+);
+assert.ok(ciWorkflow.includes('- name: Run unit and regression tests'));
+assert.ok(ciWorkflow.includes('npm run audit:deps'));
 assert.ok(formatDiffScript.includes("'--stdin-filepath'"));
 assert.ok(formatDiffScript.includes("'diff'"));
 assert.ok(formatDiffScript.includes('fs.mkdtempSync'));
