@@ -12,8 +12,7 @@ const {
 } = require('../scripts/staging-preflight');
 
 const configFixtureRoot = fs.mkdtempSync(path.join(os.tmpdir(), 'staging-production-config-'));
-const productionApiUrl =
-  'https://script.google.com/macros/s/production-deployment-fixture/exec';
+const productionApiUrl = 'https://script.google.com/macros/s/production-deployment-fixture/exec';
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
 try {
   fs.writeFileSync(
