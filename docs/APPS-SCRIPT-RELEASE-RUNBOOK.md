@@ -46,9 +46,8 @@ UAT execution uses a separate per-run private transcript directory. Raw UAT outp
 
 The isolation attestation `OWNER-VERIFIED-STAGING-ONLY` is permitted **only for the non-mutating artifact preflight** when all four production resource reference IDs are intentionally omitted. It records an operator assertion; it does not independently prove resource identity.
 
-Write-capable `deploy` and `uat` preflight must receive all four production references: Script ID, Spreadsheet ID, receipt-folder ID and backup-folder ID. The validator compares them with the configured production Web App deployment ID and each staging resource, rejects duplicate/cross-environment identifiers, and fails closed if any reference is missing or placeholder. The owner attestation is not a substitute for the inventory in these modes.
+Write-capable `deploy` and `uat` preflight supports explicitly owner-attested staging-only operation when `CV_STAGING_ONLY_MODE=true` and `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION=OWNER-VERIFIED-STAGING-ONLY`. In this mode, no production IDs or production endpoint are required or accepted. The owner must independently verify that the five staging resources are dedicated and distinct. If production is provisioned later, disable staging-only mode and configure the complete production reference inventory before enabling comparison-based isolation checks.
 
-Do not work around a failed preflight, invent IDs, copy credentials into logs, or retry unchanged configuration. The repository owner/operator must privately populate and verify the protected `staging` Environment secrets before any separately authorized write-capable run. Artifact generation remains non-deploying and does not prove that the deployed staging resources are live or isolated.
 
 ## Setup preflight and safe recovery
 

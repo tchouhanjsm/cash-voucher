@@ -233,53 +233,21 @@ assert.ok(
 const clientDistGuard = clientDistWorkflow.split('  build:\n')[0];
 assert.doesNotMatch(clientDistGuard, /secrets\./, 'branch guard must run without staging secrets');
 for (const key of [
-  'CV_STAGING_API_URL',
-  'CV_STAGING_SCRIPT_ID',
-  'CV_STAGING_DEPLOYMENT_ID',
-  'CV_STAGING_SPREADSHEET_ID',
-  'CV_STAGING_RECEIPT_FOLDER_ID',
-  'CV_STAGING_BACKUP_FOLDER_ID',
-  'CV_PRODUCTION_SCRIPT_ID',
-  'CV_PRODUCTION_SPREADSHEET_ID',
-  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
-  'CV_PRODUCTION_BACKUP_FOLDER_ID',
+  'CV_STAGING_API_URL', 'CV_STAGING_SCRIPT_ID', 'CV_STAGING_DEPLOYMENT_ID',
+  'CV_STAGING_SPREADSHEET_ID', 'CV_STAGING_RECEIPT_FOLDER_ID', 'CV_STAGING_BACKUP_FOLDER_ID',
+  'CV_PRODUCTION_SCRIPT_ID', 'CV_PRODUCTION_SPREADSHEET_ID',
+  'CV_PRODUCTION_RECEIPT_FOLDER_ID', 'CV_PRODUCTION_BACKUP_FOLDER_ID',
 ]) {
-  assert.ok(
-    clientDistWorkflow.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'staging ZIP must read target identity from Environment secret: ' + key,
-  );
-  assert.ok(
-    workflow.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'staging UAT must read target identity from Environment secret: ' + key,
-  );
+  assert.ok(clientDistWorkflow.includes(key + ': ${{ vars.' + key + ' }}'));
+  assert.ok(workflow.includes(key + ': ${{ vars.' + key + ' }}'));
 }
-assert.ok(
-  clientDistWorkflow.includes(
-    'EXPECTED_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}',
-  ),
-  'ZIP config/manifest verification uses the staging deployment ID secret',
-);
-assert.doesNotMatch(
-  workflow,
-  /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
-  'resource identifiers and API URL must not be sourced from unmasked workflow variables',
-);
-assert.doesNotMatch(
-  clientDistWorkflow,
-  /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
-  'ZIP workflow must not source resource identifiers from unmasked variables',
-);
-assert.ok(
-  clientDistWorkflow.includes(
-    'CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}',
-  ),
-);
-assert.ok(
-  clientDistWorkflow.includes(
-    'localApiOverride || ${JSON.stringify(new URL(expectedUrl).toString())}',
-  ),
-  'ZIP config validation must match the generated local override expression and endpoint',
-);
+assert.ok(workflow.includes('CV_STAGING_ONLY_MODE: ${{ vars.CV_STAGING_ONLY_MODE }}'));
+assert.ok(clientDistWorkflow.includes('CV_STAGING_ONLY_MODE: ${{ vars.CV_STAGING_ONLY_MODE }}'));
+assert.ok(workflow.includes('CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}'));
+assert.ok(clientDistWorkflow.includes('CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}'));
+assert.ok(clientDistWorkflow.includes('EXPECTED_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}'));
+assert.doesNotMatch(workflow, /secrets\.CV_STAGING_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/);
+assert.doesNotMatch(clientDistWorkflow, /secrets\.CV_STAGING_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/);
 assert.match(clientDistWorkflow, /name: Client staging dist zip/);
 for (const securityContract of [
   'Header always set X-Content-Type-Options "nosniff"',

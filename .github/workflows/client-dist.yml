@@ -1,7 +1,7 @@
 name: Client staging dist zip
 
 # Manual, staging-only static artifact builder.
-# The target comes from the staging Environment secret and is preflighted before packaging.
+# The target comes from the staging Environment variables and is preflighted before packaging.
 # It never deploys to cPanel or changes Apps Script / Sheets / Drive.
 on:
   workflow_dispatch:
@@ -40,18 +40,19 @@ jobs:
     env:
       CLIENT_CODE: ${{ inputs.client_code }}
       CV_ENVIRONMENT: staging
-      CV_API_URL: ${{ secrets.CV_STAGING_API_URL }}
-      CV_STAGING_API_URL: ${{ secrets.CV_STAGING_API_URL }}
-      CV_STAGING_SCRIPT_ID: ${{ secrets.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
-      EXPECTED_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}
-      CV_STAGING_SPREADSHEET_ID: ${{ secrets.CV_STAGING_SPREADSHEET_ID }}
-      CV_STAGING_RECEIPT_FOLDER_ID: ${{ secrets.CV_STAGING_RECEIPT_FOLDER_ID }}
-      CV_STAGING_BACKUP_FOLDER_ID: ${{ secrets.CV_STAGING_BACKUP_FOLDER_ID }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ secrets.CV_PRODUCTION_SCRIPT_ID }}
-      CV_PRODUCTION_SPREADSHEET_ID: ${{ secrets.CV_PRODUCTION_SPREADSHEET_ID }}
-      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ secrets.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
-      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ secrets.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+      CV_API_URL: ${{ vars.CV_STAGING_API_URL }}
+      CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
+      CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
+      CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
+      EXPECTED_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
+      CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
+      CV_STAGING_RECEIPT_FOLDER_ID: ${{ vars.CV_STAGING_RECEIPT_FOLDER_ID }}
+      CV_STAGING_BACKUP_FOLDER_ID: ${{ vars.CV_STAGING_BACKUP_FOLDER_ID }}
+      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+      CV_PRODUCTION_SPREADSHEET_ID: ${{ vars.CV_PRODUCTION_SPREADSHEET_ID }}
+      CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ vars.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
+      CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ vars.CV_PRODUCTION_BACKUP_FOLDER_ID }}
+      CV_STAGING_ONLY_MODE: ${{ vars.CV_STAGING_ONLY_MODE }}
       CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}
       RELEASE_COMMIT: ${{ github.sha }}
     steps:
