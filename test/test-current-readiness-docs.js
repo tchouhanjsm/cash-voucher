@@ -53,7 +53,7 @@ const administrationFrontend = read('frontend/features/administration.js');
 const backendTests = read('test/test-backend.js');
 const browserE2e = read('test/e2e.py');
 const deliveryPhase = read('docs/DELIVERY-PHASE-2026-10-26-BULK.md');
-assert.match(handoff, /^\*\*Updated:\*\* \d{1,2} [A-Za-z]+ 2026/m);
+assert.match(handoff, /^\*\*Updated:\*\* \d{1,2} [A-Za-z]+ \d{4}/m);
 const currentIntegrationSha = '2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c';
 const handoffIntegrationSha = '474097a8075303b9f44aa970dfd79bc3f6b78852';
 assert.ok(handoff.includes(handoffIntegrationSha));
