@@ -1,12 +1,28 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 29 October 2026 (account support form/E2E reliability fix)
+**Updated:** 30 October 2026 (staging-only Environment source-of-truth and preflight RCA)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `474097a8075303b9f44aa970dfd79bc3f6b78852` (PR #247 is merged; PR #248 is also merged; bounded voucher audit reconciliation CSV export integrated).
-**Current source batch:** `client/fix-account-report-form-e2e-20261029` isolates the My Account support form from Register filter CSS with a dedicated `accountReportForm` ID. The follow-on adds visible associated field labels, a responsive desktop/mobile grid, full-row message field, touch-sized submission action and viewport-level regression checks.
-**Active review PR:** [#249 — Isolate account support form from register styles](https://github.com/tchouhanjsm/cash-voucher/pull/249).
-**Release boundary:** focused frontend selector and test change. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+**Current integration baseline:** `730a8c39e3117adfefe97e520d4ab332d4d8d4ef` (PR #249 merged).
+**Current source batch:** `client/staging-only-sot-and-preflight-20261030`; correct the mismatch between screenshot-defined Environment variables and workflow secret mappings, and remove the false requirement for an unprovisioned production environment.
+**Release boundary:** workflow/preflight/test/runbook hardening. No Clasp push, Apps Script deployment, live UAT, Sheets/Drive mutation, cPanel publication or production operation was performed by this source batch.
+
+## Staging-only configuration RCA and permanent correction — 30 October 2026
+
+- The failed read-only preflight [run #40910344511](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511), job [#123577554801](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511/job/123577554801), showed all six staging target values empty even though they existed in the GitHub Environment screenshot. The workflows referenced `secrets.*`, while the screenshot's values were stored under Environment variables. They must be read using `vars.*`.
+- The old preflight also assumed production already existed: it required a production URL inferred from root `config.js` and all four `CV_PRODUCTION_*` IDs for deploy/UAT. The current product lifecycle has staging resources only. Production IDs must not be invented or copied from staging.
+- The workflow regression test had encoded both defects by forbidding `vars.*` and demanding production IDs for write-capable staging flows.
+- Permanent source correction: six screenshot-defined staging variables are injected from `vars.*`; `CLASPRC_JSON` and both UAT account emails/passwords remain secrets. Workflows declare a code-owned `CV_STAGING_ONLY_MODE=true` only inside the protected staging Environment jobs. The validator requires all five staging resources, enforces uniqueness, checks the exact URL/deployment ID match and explicitly reports that no production cross-comparison was made.
+- Production comparison becomes available later only when all four production resource IDs and an explicit production Web App URL are supplied together. Partial configuration, duplicate IDs and endpoint/resource collisions remain blocking.
+- Branch, environment, manual dispatch, `STAGING-ONLY` confirmation and write-consent guards remain unchanged. ZIP remains artifact-only. No live configuration values are copied into source, logs, PR text or this handoff.
+- **Next operator sequence after this PR's exact-head checks pass:** merge only after review; manually run staging UAT `validate-only` from `client-main`; inspect sanitized preflight categories; independently verify the staging Script, deployment, Sheet, receipt folder and backup folder; only then dispatch `deploy-and-uat` with `STAGING-ONLY` and explicit staging-write consent. The synthetic INR 10,000 test transaction is created/cancelled only in staging.
+- **Current verification status:** source CI, Browser E2E and Full Flight for this new branch have not yet been verified; do not treat the previous PR #249 checks as validation of this change.
+
+## Current stage settings contract
+
+- **Environment variables (six values visible in Settings → Environments → staging):** `CV_STAGING_API_URL`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_SCRIPT_ID`, `CV_STAGING_SPREADSHEET_ID`.
+- **Environment secrets (five values visible in the screenshot):** `CLASPRC_JSON`, `CV_STAGING_UAT_MANAGER_EMAIL`, `CV_STAGING_UAT_MANAGER_PASSWORD`, `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PASSWORD`.
+- No production values are required or expected while the system is staging-only. Do not create placeholder production values. The workflow supports optional future production comparison only as a complete inventory.
 
 ## Account support submission lifecycle refinement — 29 October 2026
 

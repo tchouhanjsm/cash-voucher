@@ -57,22 +57,15 @@ assert.match(workflow, /environment:\n {6}name: staging/m);
 assert.match(workflow, /needs: \[validate, guard\]/);
 assert.match(workflow, /confirm_staging_writes/);
 assert.match(workflow, /CV_STAGING_DEPLOY_CONFIRMATION/);
-assert.equal(
-  (workflow.match(/CV_STAGING_RESOURCE_ISOLATION_ATTESTATION:/g) || []).length,
-  0,
-  'write-capable staging jobs must not receive the artifact-only isolation attestation',
-);
+assert.match(workflow, /CV_STAGING_ONLY_MODE: 'true'/);
+assert.match(preflight, /Production comparison is optional for staging-only operation/);
 assert.match(
   preflight,
-  /Write-capable staging operations \(deploy and UAT\) require all four production resource reference IDs; OWNER-VERIFIED-STAGING-ONLY attestation is not sufficient/,
-);
-assert.match(
-  releaseRunbook,
-  /Write-capable `deploy` and `uat` preflight[\s\S]*owner attestation is not a substitute for the inventory/i,
+  /when any production reference is configured, all four CV_PRODUCTION_\* resource IDs and CV_PRODUCTION_API_URL must be supplied together/,
 );
 assert.match(preflight, /tokens\.default/);
-assert.match(preflight, /OWNER-VERIFIED-STAGING-ONLY/);
-assert.match(releaseRunbook, /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION/);
+assert.match(releaseRunbook, /CV_STAGING_ONLY_MODE/);
+assert.match(releaseRunbook, /six staging target values shown .*Environment variables/i);
 assert.match(releaseRunbook, /git switch client-main/);
 assert.match(releaseRunbook, /git pull --ff-only origin client-main/);
 assert.doesNotMatch(releaseRunbook, /git switch main/);
@@ -101,7 +94,7 @@ assert.doesNotMatch(
   'validation job must not receive staging endpoint configuration',
 );
 
-assert.match(preflight, /The staging API URL resolves to the production endpoint/);
+assert.match(preflight, /The staging API URL resolves to the configured production endpoint/);
 assert.match(
   preflight,
   /At least one staging resource identifier is also configured as a production resource/,
@@ -218,7 +211,7 @@ assert.doesNotMatch(
   'client ZIP generation must not run automatically on pushes or PRs',
 );
 assert.match(clientDistWorkflow, /CV_ENVIRONMENT: staging/);
-assert.match(clientDistWorkflow, /CV_API_URL: \$\{\{ secrets\.CV_STAGING_API_URL \}\}/);
+assert.match(clientDistWorkflow, /CV_API_URL: \$\{\{ vars\.CV_STAGING_API_URL \}\}/);
 assert.doesNotMatch(clientDistWorkflow, /inputs\.api_url/);
 assert.match(clientDistWorkflow, /name: Require client-main for staging artifact/);
 assert.ok(clientDistWorkflow.includes('if [ "$ACTION_REF" != "refs/heads/client-main" ]'));
@@ -239,41 +232,33 @@ for (const key of [
   'CV_STAGING_SPREADSHEET_ID',
   'CV_STAGING_RECEIPT_FOLDER_ID',
   'CV_STAGING_BACKUP_FOLDER_ID',
+]) {
+  assert.ok(
+    clientDistWorkflow.includes(key + ': ${{ vars.' + key + ' }}'),
+    'staging ZIP reads screenshot-defined Environment variable: ' + key,
+  );
+  assert.ok(
+    workflow.includes(key + ': ${{ vars.' + key + ' }}'),
+    'staging UAT reads screenshot-defined Environment variable: ' + key,
+  );
+}
+for (const key of [
+  'CV_PRODUCTION_API_URL',
   'CV_PRODUCTION_SCRIPT_ID',
   'CV_PRODUCTION_SPREADSHEET_ID',
   'CV_PRODUCTION_RECEIPT_FOLDER_ID',
   'CV_PRODUCTION_BACKUP_FOLDER_ID',
 ]) {
-  assert.ok(
-    clientDistWorkflow.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'staging ZIP must read target identity from Environment secret: ' + key,
-  );
-  assert.ok(
-    workflow.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'staging UAT must read target identity from Environment secret: ' + key,
-  );
+  assert.ok(clientDistWorkflow.includes(key + ': ${{ vars.' + key + ' }}'));
+  assert.ok(workflow.includes(key + ': ${{ vars.' + key + ' }}'));
 }
 assert.ok(
   clientDistWorkflow.includes(
-    'EXPECTED_STAGING_DEPLOYMENT_ID: ${{ secrets.CV_STAGING_DEPLOYMENT_ID }}',
+    'EXPECTED_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}',
   ),
-  'ZIP config/manifest verification uses the staging deployment ID secret',
+  'ZIP config/manifest verification uses the screenshot-defined staging deployment variable',
 );
-assert.doesNotMatch(
-  workflow,
-  /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
-  'resource identifiers and API URL must not be sourced from unmasked workflow variables',
-);
-assert.doesNotMatch(
-  clientDistWorkflow,
-  /vars\.CV_(?:STAGING|PRODUCTION)_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
-  'ZIP workflow must not source resource identifiers from unmasked variables',
-);
-assert.ok(
-  clientDistWorkflow.includes(
-    'CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}',
-  ),
-);
+assert.match(clientDistWorkflow, /CV_STAGING_ONLY_MODE: 'true'/);
 assert.ok(
   clientDistWorkflow.includes(
     'localApiOverride || ${JSON.stringify(new URL(expectedUrl).toString())}',
@@ -426,40 +411,40 @@ const uatOnlyStep = extractWorkflowStep(uatOnlyJob, 'Run staging UAT without dep
 
 for (const key of [
   'CV_STAGING_SCRIPT_ID',
-  'CV_PRODUCTION_SCRIPT_ID',
   'CV_STAGING_DEPLOYMENT_ID',
   'CV_STAGING_API_URL',
   'CV_STAGING_SPREADSHEET_ID',
-  'CV_PRODUCTION_SPREADSHEET_ID',
   'CV_STAGING_RECEIPT_FOLDER_ID',
-  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
   'CV_STAGING_BACKUP_FOLDER_ID',
+  'CV_PRODUCTION_API_URL',
+  'CV_PRODUCTION_SCRIPT_ID',
+  'CV_PRODUCTION_SPREADSHEET_ID',
+  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
   'CV_PRODUCTION_BACKUP_FOLDER_ID',
 ]) {
-  assert.ok(
-    deployConfigPreflight.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'deploy preflight receives required resource-isolation input: ' + key,
-  );
-  assert.ok(
-    deployMutation.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'deployment step receives required target identity input: ' + key,
-  );
-  assert.ok(
-    deployTargetRecheck.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'post-deploy target recheck receives required resource input: ' + key,
-  );
-  assert.ok(
-    deployUatStep.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'deploy UAT step receives required target input: ' + key,
-  );
-  assert.ok(
-    uatTargetPreflight.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'UAT-only preflight receives required target input: ' + key,
-  );
-  assert.ok(
-    uatOnlyStep.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'UAT-only execution receives required target input: ' + key,
-  );
+  for (const [stepName, step] of [
+    ['deploy preflight', deployConfigPreflight],
+    ['deployment', deployMutation],
+    ['post-deploy target recheck', deployTargetRecheck],
+    ['deploy UAT', deployUatStep],
+    ['UAT-only preflight', uatTargetPreflight],
+    ['UAT-only execution', uatOnlyStep],
+  ]) {
+    assert.ok(
+      step.includes(key + ': ${{ vars.' + key + ' }}'),
+      stepName + ' receives Environment variable ' + key,
+    );
+  }
+}
+for (const [stepName, step] of [
+  ['deploy preflight', deployConfigPreflight],
+  ['deployment', deployMutation],
+  ['post-deploy target recheck', deployTargetRecheck],
+  ['deploy UAT', deployUatStep],
+  ['UAT-only preflight', uatTargetPreflight],
+  ['UAT-only execution', uatOnlyStep],
+]) {
+  assert.match(step, /CV_STAGING_ONLY_MODE: 'true'/, stepName + ' is explicitly staging-only');
 }
 assert.match(deployConfigPreflight, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
 assert.match(deployMutation, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
@@ -491,7 +476,9 @@ const readinessValidationStep = readinessJob
   .split('      - name: Validate configuration only (no remote access or writes)\n')[1]
   .split('      - name: Upload sanitized preflight evidence\n')[0];
 assert.match(readinessValidationStep, /secrets\.CLASPRC_JSON/);
-assert.match(readinessValidationStep, /secrets\.CV_STAGING_SCRIPT_ID/);
+assert.match(readinessValidationStep, /vars\.CV_STAGING_SCRIPT_ID/);
+assert.match(readinessValidationStep, /vars\.CV_STAGING_API_URL/);
+assert.match(readinessValidationStep, /CV_STAGING_ONLY_MODE: 'true'/);
 assert.doesNotMatch(readinessJob, /npm ci|npm run staging:preflight/);
 const readinessUploadStep = readinessJob.split(
   '      - name: Upload sanitized preflight evidence\n',

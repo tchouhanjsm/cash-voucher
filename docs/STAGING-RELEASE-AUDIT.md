@@ -1,5 +1,16 @@
 # Staging Release Audit and Pending Queue
 
+## Staging-only source-of-truth and preflight RCA — 30 October 2026
+
+- **Observed failure:** Staging UAT run [#40910344511](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511), job [#123577554801](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511/job/123577554801), failed in **Inspect protected staging configuration (read-only)**. Source/mock validation passed; deploy and UAT jobs were skipped. The sanitized log reported the six staging target values as empty, then reported that production reference IDs were mandatory.
+- **RCA 1 — configuration source mismatch:** the Environment screenshot stores the six staging target values as GitHub Environment variables, but the readiness/deploy/UAT/ZIP workflow steps injected them with `secrets.*`. The runner therefore received empty strings despite the values being present in the Environment UI. This was a systematic workflow mapping defect, not a missing Apps Script resource.
+- **RCA 2 — lifecycle assumption defect:** preflight required a production Web App URL inferred from the root `config.js` fallback plus four production resource IDs for write-capable staging. The repository has not provisioned or supplied a production environment. The implementation and its tests incorrectly modelled production as mandatory and rejected the intended staging-only lifecycle.
+- **RCA 3 — regression protection encoded the wrong contract:** `test/test-staging-workflow.js` explicitly forbade `vars.*` resource mappings and required production inventory for deploy/UAT. That prevented the screenshot-aligned configuration model from being implemented safely.
+- **Permanent correction in this source batch:** all six staging target values are consumed via `vars.*` in readiness, deploy, target recheck, UAT-only and ZIP workflows. Clasp OAuth JSON and dedicated owner/manager account emails/passwords remain `secrets.*`. The legacy/default `config.js` endpoint is no longer treated as production evidence. The preflight supports an explicit staging-only lifecycle with a code-owned `CV_STAGING_ONLY_MODE=true` flag, validates all five staging resource IDs are non-empty and distinct, validates the staging URL exactly matches the deployment ID, and emits evidence that states production cross-comparison was not performed.
+- **Future production behavior:** production comparison remains available only when all four production resource IDs and an explicit production Web App URL are supplied together. Partial production configuration, duplicated identities, a staging/production endpoint collision or cross-environment resource overlap fails closed. No placeholder production IDs are required now.
+- **Security boundary:** these changes do not grant deployment permission. Staging workflows remain manual and client-main-only, retain the `STAGING-ONLY` confirmation and explicit staging-write consent, and scope credentials to the steps that need them. ZIP generation remains artifact-only.
+- **Validation boundary:** the failing run did not deploy Apps Script, modify Sheets/Drive, or execute transactional UAT. The new source checks and regression tests must pass on the exact PR head; then rerun `validate-only`. Only a successful read-only preflight and independent owner verification of the staging Script, spreadsheet and Drive folders can precede a separately authorized `deploy-and-uat` run.
+
 ## Operational evidence content-binding phase — 28 October 2026
 
 - PR #246 is being extended in place; no second PR is created for this evidence-contract hardening.
@@ -27,9 +38,9 @@
 - This source verifier only reports governance configuration. The owner/admin must set client-main as default, add complete client-main protection and an explicit main freeze, then rerun the verifier.
 - Source checks passing on a PR do not authenticate live operational evidence or authorize staging, deployment, schema migration, Sheets/Drive writes, cPanel publication or production operation.
 
-**Audit date:** 28 October 2026 (operational evidence content-binding phase)
+**Audit date:** 30 October 2026 (staging-only source-of-truth and preflight RCA phase)
 **Current integration baseline:** `client-main` `2ffaf61b5d5e7ed8f81a582b7b1161f2aee2399c` (PR #245 merged; operational release remains blocked).
-**Current source batch:** `client/bind-governance-evidence-into-release-gate-20261028`; require a structured governance report plus schema-bound JSON records for the other operational gates.
+**Current source batch:** `client/staging-only-sot-and-preflight-20261030`; make GitHub Environment variables the single source of truth for staging target IDs/URL and support a real staging-only lifecycle.
 **Historical follow-up:** PR #229, `client/fix-business-date-arithmetic-20261027`, merged at 03:18:35Z; its exact-head source checks were red.
 **Historical PR #227 baseline:** `524a5280c9a1aa49eccb2f3ee6f5f8f75ca73a8b` (superseded).
 **Legacy branch:** `main` (read-only by engineering policy).
