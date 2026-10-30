@@ -94,7 +94,11 @@ const readinessWithoutProductionInventory = validateStagingConfiguration(
   },
   { mode: 'readiness' },
 );
-assert.equal(readinessWithoutProductionInventory.ok, true, readinessWithoutProductionInventory.errors.join('; '));
+assert.equal(
+  readinessWithoutProductionInventory.ok,
+  true,
+  readinessWithoutProductionInventory.errors.join('; '),
+);
 assert.equal(readinessWithoutProductionInventory.checks.productionResourceReferencesPresent, false);
 assert.equal(readinessWithoutProductionInventory.checks.ownerAttestedIsolationUsed, true);
 
@@ -420,14 +424,33 @@ assert.deepEqual(
   'cleanup must attempt credential-home removal even if workspace removal fails',
 );
 
-const missingAttestation = validateStagingConfiguration({ ...fixture, CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: '' }, { mode: 'deploy' });
+const missingAttestation = validateStagingConfiguration(
+  { ...fixture, CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: '' },
+  { mode: 'deploy' },
+);
 assert.equal(missingAttestation.ok, false);
 assert.ok(missingAttestation.errors.some((message) => /staging-only mode requires/i.test(message)));
-const productionIdsRejected = validateStagingConfiguration({ ...fixture, CV_PRODUCTION_SCRIPT_ID: 'unexpected-prod-id' }, { mode: 'deploy' });
+const productionIdsRejected = validateStagingConfiguration(
+  { ...fixture, CV_PRODUCTION_SCRIPT_ID: 'unexpected-prod-id' },
+  { mode: 'deploy' },
+);
 assert.equal(productionIdsRejected.ok, false);
-assert.ok(productionIdsRejected.errors.some((message) => /must not receive production resource reference IDs/i.test(message)));
-const stagingOnlyFlagRequired = validateStagingConfiguration({ ...fixture, CV_STAGING_ONLY_MODE: '' }, { mode: 'deploy' });
+assert.ok(
+  productionIdsRejected.errors.some((message) =>
+    /must not receive production resource reference IDs/i.test(message),
+  ),
+);
+const stagingOnlyFlagRequired = validateStagingConfiguration(
+  { ...fixture, CV_STAGING_ONLY_MODE: '' },
+  { mode: 'deploy' },
+);
 assert.equal(stagingOnlyFlagRequired.ok, false);
-assert.ok(stagingOnlyFlagRequired.errors.some((message) => /production resource reference IDs/i.test(message)));
+assert.ok(
+  stagingOnlyFlagRequired.errors.some((message) =>
+    /production resource reference IDs/i.test(message),
+  ),
+);
 
-console.log('Staging preflight OK — explicit staging-only isolation, unique target resources, URL matching and fail-closed cases.');
+console.log(
+  'Staging preflight OK — explicit staging-only isolation, unique target resources, URL matching and fail-closed cases.',
+);
