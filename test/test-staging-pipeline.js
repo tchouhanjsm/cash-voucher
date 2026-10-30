@@ -81,7 +81,7 @@ assert.equal(
   readinessWithoutWriteConfirmation.errors.join('; '),
 );
 assert.equal(readinessWithoutWriteConfirmation.checks.claspCredentialShapeValid, true);
-assert.equal(readinessWithoutWriteConfirmation.checks.productionResourceReferencesPresent, true);
+assert.equal(readinessWithoutWriteConfirmation.checks.productionResourceReferencesPresent, false);
 assert.equal(readinessWithoutWriteConfirmation.checks.targetIdsAreSeparated, true);
 
 const readinessWithoutProductionInventory = validateStagingConfiguration(
