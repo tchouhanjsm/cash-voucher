@@ -7,12 +7,7 @@ function normalizeApiEndpoint(value) {
 
   try {
     const url = new URL(value.trim());
-    if (
-      !['http:', 'https:'].includes(url.protocol) ||
-      url.username ||
-      url.password ||
-      url.hash
-    ) {
+    if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || url.hash) {
       return '';
     }
     return url.href;
@@ -31,17 +26,13 @@ export function resolveApiSession({
   token,
   tokenEndpoint,
 } = {}) {
-  const configured =
-    typeof configuredEndpoint === 'string' ? configuredEndpoint.trim() : '';
+  const configured = typeof configuredEndpoint === 'string' ? configuredEndpoint.trim() : '';
   const stored = typeof storedEndpoint === 'string' ? storedEndpoint.trim() : '';
   const endpoint = configured || stored;
   const normalizedEndpoint = normalizeApiEndpoint(endpoint);
   const normalizedTokenEndpoint = normalizeApiEndpoint(tokenEndpoint);
   const hasToken = typeof token === 'string' && token.length > 0;
-  const autoResume =
-    hasToken &&
-    Boolean(normalizedEndpoint) &&
-    normalizedEndpoint === normalizedTokenEndpoint;
+  const autoResume = hasToken && Boolean(normalizedEndpoint) && normalizedEndpoint === normalizedTokenEndpoint;
 
   return {
     endpoint,

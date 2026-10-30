@@ -6,10 +6,7 @@ import {
   saveOfflineCredential,
   verifyOfflineCredential,
 } from '../core/offline-auth.js';
-import {
-  clearPersistedApiSessionToken,
-  persistApiSessionToken,
-} from '../core/session.js';
+import { clearPersistedApiSessionToken, persistApiSessionToken } from '../core/session.js';
 
 export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
   let idleT;

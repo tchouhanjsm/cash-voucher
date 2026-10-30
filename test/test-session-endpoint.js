@@ -121,7 +121,10 @@ async function run() {
     true,
   );
 
-  const failedValues = new Map([['cv.token', 'older-token'], [SESSION_ENDPOINT_STORAGE_KEY, previousEndpoint]]);
+  const failedValues = new Map([
+    ['cv.token', 'older-token'],
+    [SESSION_ENDPOINT_STORAGE_KEY, previousEndpoint],
+  ]);
   const failingStorage = {
     set(key, value) {
       if (key === 'cv.token') return false;
@@ -133,7 +136,11 @@ async function run() {
     },
   };
   assert.equal(
-    persistApiSessionToken({ token: 'new-token', endpoint: configuredEndpoint, storage: failingStorage }),
+    persistApiSessionToken({
+      token: 'new-token',
+      endpoint: configuredEndpoint,
+      storage: failingStorage,
+    }),
     false,
     'a token is not left persisted unless its endpoint binding is also stored',
   );
