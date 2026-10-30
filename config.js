@@ -1,4 +1,4 @@
-// Paste your Apps Script Web app URL here after deploying (or leave blank and enter it on the login screen once).
+// Staging builds inject the validated API URL; local development may use ?api=... or login entry.
 const localApiOverride = ['localhost', '127.0.0.1'].includes(location.hostname)
   ? new URLSearchParams(location.search).get('api')
   : '';

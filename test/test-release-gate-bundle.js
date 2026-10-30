@@ -43,14 +43,12 @@ function buildPreflight() {
       url: 'https://github.com/' + repository + '/actions/runs/' + runId,
     },
     outcome: 'configuration-pass',
-    deploymentScope: 'staging-only',
     categories: {
       stagingResourceSeparation: 'pass',
-      productionResourceInventory: 'not-configured-staging-only',
+      productionResourceInventory: 'pass',
       stagingEndpoint: 'pass',
       dedicatedUatAccounts: 'pass',
       claspCredentialShape: 'pass',
-      stagingOnlyMode: 'pass',
     },
     blockers: [],
     boundaries: {
@@ -59,8 +57,6 @@ function buildPreflight() {
       endpointIncluded: false,
       remoteConnectivityTested: false,
       ownershipIndependentlyVerified: false,
-      productionResourceCrossCheckPerformed: false,
-      productionEnvironmentConfigured: false,
       deploymentChanged: false,
       backupRestoreVerified: false,
     },
@@ -241,31 +237,6 @@ assert.deepEqual(valid.summary, {
   operationalGatesPassed: 8,
   releaseApproval: 'human-review-required',
 });
-
-const productionInventoryClaim = buildBundle();
-productionInventoryClaim.stagingPreflight.categories.productionResourceInventory = 'pass';
-assert.ok(hasCode(productionInventoryClaim, 'PREFLIGHT_CATEGORY'));
-
-const wrongPreflightScope = buildBundle();
-wrongPreflightScope.stagingPreflight.deploymentScope = 'production';
-assert.ok(hasCode(wrongPreflightScope, 'PREFLIGHT_SCOPE'));
-
-const falseProductionCrossCheck = buildBundle();
-falseProductionCrossCheck.stagingPreflight.boundaries.productionResourceCrossCheckPerformed = true;
-assert.ok(hasCode(falseProductionCrossCheck, 'PREFLIGHT_BOUNDARY'));
-
-const productionComparisonBundle = buildBundle();
-productionComparisonBundle.stagingPreflight.deploymentScope = 'staging-with-production-comparison';
-productionComparisonBundle.stagingPreflight.categories.productionResourceInventory = 'pass';
-productionComparisonBundle.stagingPreflight.categories.stagingOnlyMode =
-  'not-applicable-production-inventory';
-productionComparisonBundle.stagingPreflight.boundaries.productionResourceCrossCheckPerformed = true;
-productionComparisonBundle.stagingPreflight.boundaries.productionEnvironmentConfigured = true;
-assert.equal(
-  validateReleaseGateBundle(productionComparisonBundle, validationTime).ok,
-  true,
-  'complete production comparison evidence is accepted only under its explicit scope',
-);
 
 const shaMismatch = buildBundle();
 shaMismatch.sourceChecks.browserE2e.headSha = 'b'.repeat(40);

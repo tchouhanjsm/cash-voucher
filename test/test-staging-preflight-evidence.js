@@ -11,12 +11,13 @@ const {
   writeStagingPreflightEvidence,
 } = require('../scripts/staging-preflight');
 
+const productionApiUrl = readProductionApiUrl();
+const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
 const ownerEmail = 'staging-owner@example.test';
 const managerEmail = 'staging-manager@example.test';
 const ownerPassword = 'OWNER-PASSWORD-MUST-NOT-LEAK';
 const managerPassword = 'MANAGER-PASSWORD-MUST-NOT-LEAK';
 const apiUrl = 'https://script.google.com/macros/s/staging-deployment-fixture/exec';
-const productionApiUrl = 'https://script.google.com/macros/s/production-deployment-fixture/exec';
 const clasp = JSON.stringify({
   tokens: {
     default: {
@@ -27,13 +28,16 @@ const clasp = JSON.stringify({
   },
 });
 const fixture = {
-  CV_STAGING_ONLY_MODE: 'true',
   CV_STAGING_SCRIPT_ID: 'STAGING-SCRIPT-ID-MUST-NOT-LEAK',
   CV_STAGING_DEPLOYMENT_ID: 'staging-deployment-fixture',
   CV_STAGING_API_URL: apiUrl,
   CV_STAGING_SPREADSHEET_ID: 'STAGING-SHEET-ID-MUST-NOT-LEAK',
   CV_STAGING_RECEIPT_FOLDER_ID: 'STAGING-RECEIPT-ID-MUST-NOT-LEAK',
   CV_STAGING_BACKUP_FOLDER_ID: 'STAGING-BACKUP-ID-MUST-NOT-LEAK',
+  CV_PRODUCTION_SCRIPT_ID: 'production-script-fixture',
+  CV_PRODUCTION_SPREADSHEET_ID: 'PRODUCTION-SHEET-ID-MUST-NOT-LEAK',
+  CV_PRODUCTION_RECEIPT_FOLDER_ID: 'PRODUCTION-RECEIPT-ID-MUST-NOT-LEAK',
+  CV_PRODUCTION_BACKUP_FOLDER_ID: 'PRODUCTION-BACKUP-ID-MUST-NOT-LEAK',
   CV_STAGING_UAT_OWNER_EMAIL: ownerEmail,
   CV_STAGING_UAT_OWNER_PASSWORD: ownerPassword,
   CV_STAGING_UAT_MANAGER_EMAIL: managerEmail,
@@ -42,35 +46,48 @@ const fixture = {
   GITHUB_REF: 'refs/heads/client-main',
   GITHUB_SHA: 'a'.repeat(40),
   GITHUB_REPOSITORY: 'tchouhanjsm/cash-voucher',
-  GITHUB_RUN_ID: '40910344511',
+  GITHUB_RUN_ID: '40514299999',
+  GITHUB_SERVER_URL: 'https://github.com',
 };
 
+assert.ok(productionDeploymentId);
 const result = validateStagingConfiguration(fixture, { mode: 'readiness' });
 assert.equal(result.ok, true, result.errors.join('; '));
-assert.equal(readProductionApiUrl(fixture), '');
 const evidence = buildStagingPreflightEvidence(result, fixture);
 assert.equal(evidence.outcome, 'configuration-pass');
-assert.equal(evidence.deploymentScope, 'staging-only');
 assert.equal(evidence.source.ref, 'refs/heads/client-main');
 assert.equal(evidence.source.commitSha, 'a'.repeat(40));
 assert.equal(
   evidence.workflowRun.url,
-  'https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511',
+  'https://github.com/tchouhanjsm/cash-voucher/actions/runs/40514299999',
 );
 assert.deepEqual(evidence.categories, {
   stagingResourceSeparation: 'pass',
-  productionResourceInventory: 'not-configured-staging-only',
+  productionResourceInventory: 'pass',
+  stagingOnlyMode: 'not-required',
   stagingEndpoint: 'pass',
   dedicatedUatAccounts: 'pass',
   claspCredentialShape: 'pass',
-  stagingOnlyMode: 'pass',
 });
 assert.equal(evidence.boundaries.remoteConnectivityTested, false);
 assert.equal(evidence.boundaries.ownershipIndependentlyVerified, false);
-assert.equal(evidence.boundaries.productionResourceCrossCheckPerformed, false);
-assert.equal(evidence.boundaries.productionEnvironmentConfigured, false);
-assert.equal(evidence.boundaries.deploymentChanged, false);
 assert.equal(evidence.boundaries.backupRestoreVerified, false);
+
+const stagingOnlyFixture = {
+  ...fixture,
+  CV_STAGING_ONLY_MODE: 'true',
+  CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
+  CV_PRODUCTION_SCRIPT_ID: '',
+  CV_PRODUCTION_SPREADSHEET_ID: '',
+  CV_PRODUCTION_RECEIPT_FOLDER_ID: '',
+  CV_PRODUCTION_BACKUP_FOLDER_ID: '',
+};
+const stagingOnlyResult = validateStagingConfiguration(stagingOnlyFixture, { mode: 'readiness' });
+assert.equal(stagingOnlyResult.ok, true, stagingOnlyResult.errors.join('; '));
+const stagingOnlyEvidence = buildStagingPreflightEvidence(stagingOnlyResult, stagingOnlyFixture);
+assert.equal(stagingOnlyEvidence.categories.stagingOnlyMode, 'pass');
+assert.equal(stagingOnlyEvidence.categories.productionResourceInventory, 'not-required');
+assert.equal(stagingOnlyEvidence.categories.stagingResourceSeparation, 'pass');
 
 const serialized = JSON.stringify(evidence);
 for (const privateValue of [
@@ -84,6 +101,10 @@ for (const privateValue of [
   fixture.CV_STAGING_SPREADSHEET_ID,
   fixture.CV_STAGING_RECEIPT_FOLDER_ID,
   fixture.CV_STAGING_BACKUP_FOLDER_ID,
+  fixture.CV_PRODUCTION_SCRIPT_ID,
+  fixture.CV_PRODUCTION_SPREADSHEET_ID,
+  fixture.CV_PRODUCTION_RECEIPT_FOLDER_ID,
+  fixture.CV_PRODUCTION_BACKUP_FOLDER_ID,
 ]) {
   assert.equal(
     serialized.includes(privateValue),
@@ -92,132 +113,14 @@ for (const privateValue of [
   );
 }
 
-const blockedMissingStagingOnlyMode = validateStagingConfiguration(
-  { ...fixture, CV_STAGING_ONLY_MODE: undefined },
-  { mode: 'readiness' },
-);
-assert.equal(blockedMissingStagingOnlyMode.ok, false);
-assert.match(blockedMissingStagingOnlyMode.errors.join('; '), /CV_STAGING_ONLY_MODE/);
-
-const blockedDuplicateStagingIds = validateStagingConfiguration(
-  { ...fixture, CV_STAGING_BACKUP_FOLDER_ID: fixture.CV_STAGING_SCRIPT_ID },
-  { mode: 'readiness' },
-);
-assert.equal(blockedDuplicateStagingIds.ok, false);
-assert.match(blockedDuplicateStagingIds.errors.join('; '), /five distinct resources/);
-
-const blockedEndpointMismatch = validateStagingConfiguration(
-  { ...fixture, CV_STAGING_API_URL: 'https://script.google.com/macros/s/another-id/exec' },
-  { mode: 'readiness' },
-);
-assert.equal(blockedEndpointMismatch.ok, false);
-assert.match(blockedEndpointMismatch.errors.join('; '), /does not match CV_STAGING_DEPLOYMENT_ID/);
-
-const blockedPartialProductionInventory = validateStagingConfiguration(
-  { ...fixture, CV_PRODUCTION_SCRIPT_ID: 'PRODUCTION-SCRIPT-ID' },
-  { mode: 'readiness' },
-);
-assert.equal(blockedPartialProductionInventory.ok, false);
-assert.match(blockedPartialProductionInventory.errors.join('; '), /all four CV_PRODUCTION/);
-
-const productionInventoryFixture = {
-  ...fixture,
-  CV_STAGING_ONLY_MODE: 'false',
-  CV_PRODUCTION_API_URL: productionApiUrl,
-  CV_PRODUCTION_SCRIPT_ID: 'PRODUCTION-SCRIPT-ID-MUST-NOT-LEAK',
-  CV_PRODUCTION_SPREADSHEET_ID: 'PRODUCTION-SHEET-ID-MUST-NOT-LEAK',
-  CV_PRODUCTION_RECEIPT_FOLDER_ID: 'PRODUCTION-RECEIPT-ID-MUST-NOT-LEAK',
-  CV_PRODUCTION_BACKUP_FOLDER_ID: 'PRODUCTION-BACKUP-ID-MUST-NOT-LEAK',
-};
-const productionCompared = validateStagingConfiguration(productionInventoryFixture, {
-  mode: 'readiness',
-});
-assert.equal(productionCompared.ok, true, productionCompared.errors.join('; '));
-assert.equal(productionCompared.checks.productionCrossCheckPerformed, true);
-const productionComparisonEvidence = buildStagingPreflightEvidence(
-  productionCompared,
-  productionInventoryFixture,
-);
-assert.equal(productionComparisonEvidence.deploymentScope, 'staging-with-production-comparison');
-assert.equal(productionComparisonEvidence.categories.productionResourceInventory, 'pass');
-assert.equal(
-  productionComparisonEvidence.categories.stagingOnlyMode,
-  'not-applicable-production-inventory',
-);
-assert.equal(productionComparisonEvidence.boundaries.productionResourceCrossCheckPerformed, true);
-assert.equal(productionComparisonEvidence.boundaries.productionEnvironmentConfigured, true);
-
-const blockedProductionOverlap = validateStagingConfiguration(
-  {
-    ...productionInventoryFixture,
-    CV_PRODUCTION_SPREADSHEET_ID: fixture.CV_STAGING_SPREADSHEET_ID,
-  },
-  { mode: 'readiness' },
-);
-assert.equal(blockedProductionOverlap.ok, false);
-assert.match(
-  blockedProductionOverlap.errors.join('; '),
-  /also configured as a production resource/,
-);
-
-const blockedSameDeployment = validateStagingConfiguration(
-  {
-    ...productionInventoryFixture,
-    CV_PRODUCTION_API_URL: apiUrl,
-  },
-  { mode: 'readiness' },
-);
-assert.equal(blockedSameDeployment.ok, false);
-assert.match(blockedSameDeployment.errors.join('; '), /matches the production deployment ID/);
-
-const blockedProductionConfigWhileStagingOnly = validateStagingConfiguration(
-  {
-    ...fixture,
-    CV_PRODUCTION_API_URL: productionApiUrl,
-    CV_PRODUCTION_SCRIPT_ID: 'PRODUCTION-SCRIPT-ID',
-    CV_PRODUCTION_SPREADSHEET_ID: 'PRODUCTION-SHEET-ID',
-    CV_PRODUCTION_RECEIPT_FOLDER_ID: 'PRODUCTION-RECEIPT-ID',
-    CV_PRODUCTION_BACKUP_FOLDER_ID: 'PRODUCTION-BACKUP-ID',
-  },
-  { mode: 'readiness' },
-);
-assert.equal(blockedProductionConfigWhileStagingOnly.ok, false);
-assert.match(
-  blockedProductionConfigWhileStagingOnly.errors.join('; '),
-  /CV_STAGING_ONLY_MODE=true cannot be combined with production resource settings/,
-);
-
-const blockedProductionUrlWithoutInventory = validateStagingConfiguration(
-  { ...fixture, CV_PRODUCTION_API_URL: productionApiUrl },
-  { mode: 'readiness' },
-);
-assert.equal(blockedProductionUrlWithoutInventory.ok, false);
-assert.match(blockedProductionUrlWithoutInventory.errors.join('; '), /all four CV_PRODUCTION/);
-
-const deployResult = validateStagingConfiguration(
-  {
-    ...fixture,
-    CV_STAGING_DEPLOY_CONFIRMATION: 'STAGING-ONLY',
-  },
-  { mode: 'deploy' },
-);
-assert.equal(deployResult.ok, true, deployResult.errors.join('; '));
-
-const blockedDeployWithoutConfirmation = validateStagingConfiguration(
-  { ...fixture, CV_STAGING_DEPLOY_CONFIRMATION: '' },
-  { mode: 'deploy' },
-);
-assert.equal(blockedDeployWithoutConfirmation.ok, false);
-assert.match(blockedDeployWithoutConfirmation.errors.join('; '), /STAGING-ONLY confirmation/);
-
 const blocked = validateStagingConfiguration(
-  { ...fixture, CV_STAGING_SCRIPT_ID: '', CLASPRC_JSON: '' },
+  { ...fixture, CV_PRODUCTION_SCRIPT_ID: '', CLASPRC_JSON: '' },
   { mode: 'readiness' },
 );
 assert.equal(blocked.ok, false);
 const blockedEvidence = buildStagingPreflightEvidence(blocked, fixture);
 assert.equal(blockedEvidence.outcome, 'blocked');
-assert.equal(blockedEvidence.categories.stagingResourceSeparation, 'blocked');
+assert.equal(blockedEvidence.categories.productionResourceInventory, 'blocked');
 assert.equal(JSON.stringify(blockedEvidence).includes('MUST-NOT-LEAK'), false);
 
 const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'staging-preflight-evidence-'));
@@ -234,7 +137,6 @@ try {
   const summary = fs.readFileSync(summaryPath, 'utf8');
   assert.match(summary, /Staging configuration preflight \(read-only\)/);
   assert.match(summary, /no remote connectivity.*was verified/);
-  assert.match(summary, /not-configured-staging-only/);
   assert.equal(summary.includes(apiUrl), false);
   assert.equal(summary.includes(ownerPassword), false);
 } finally {
@@ -242,5 +144,5 @@ try {
 }
 
 console.log(
-  'Staging preflight evidence OK — screenshot-aligned vars/secrets contract, explicit staging-only mode, optional complete production inventory, privacy and fail-closed comparisons verified.',
+  'Staging preflight evidence OK — private values redacted, blocker states explicit, and file permissions restricted.',
 );

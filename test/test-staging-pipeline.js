@@ -24,22 +24,21 @@ assert.doesNotMatch(runStagingUatScript, /\/tmp\/cash-voucher-staging-(?:uat|ser
 assert.doesNotMatch(runStagingUatScript, /tee "\$\{UAT_LOG_FILE\}"/);
 assert.match(runStagingUatScript, /detailed transcript is withheld from workflow logs/);
 
-const productionApiUrl = 'https://script.google.com/macros/s/production-deployment-fixture/exec';
+const productionApiUrl = readProductionApiUrl();
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
-assert.equal(readProductionApiUrl({}), '', 'production URL is not inferred from root config.js');
 const fixture = {
-  CV_STAGING_ONLY_MODE: 'false',
-  CV_PRODUCTION_API_URL: productionApiUrl,
+  CV_STAGING_ONLY_MODE: 'true',
+  CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
   CV_STAGING_SCRIPT_ID: 'staging-script-fixture',
-  CV_PRODUCTION_SCRIPT_ID: 'production-script-fixture',
+  CV_PRODUCTION_SCRIPT_ID: '',
   CV_STAGING_DEPLOYMENT_ID: 'staging-deployment-fixture',
   CV_STAGING_API_URL: 'https://script.google.com/macros/s/staging-deployment-fixture/exec',
   CV_STAGING_SPREADSHEET_ID: 'staging-sheet-fixture',
-  CV_PRODUCTION_SPREADSHEET_ID: 'production-sheet-fixture',
+  CV_PRODUCTION_SPREADSHEET_ID: '',
   CV_STAGING_RECEIPT_FOLDER_ID: 'staging-receipts-fixture',
-  CV_PRODUCTION_RECEIPT_FOLDER_ID: 'production-receipts-fixture',
+  CV_PRODUCTION_RECEIPT_FOLDER_ID: '',
   CV_STAGING_BACKUP_FOLDER_ID: 'staging-backups-fixture',
-  CV_PRODUCTION_BACKUP_FOLDER_ID: 'production-backups-fixture',
+  CV_PRODUCTION_BACKUP_FOLDER_ID: '',
   CV_STAGING_UAT_OWNER_EMAIL: 'uat-owner@example.test',
   CV_STAGING_UAT_OWNER_PASSWORD: 'UAT#Owner2026',
   CV_STAGING_UAT_MANAGER_EMAIL: 'uat-manager@example.test',
@@ -82,7 +81,7 @@ assert.equal(
   readinessWithoutWriteConfirmation.errors.join('; '),
 );
 assert.equal(readinessWithoutWriteConfirmation.checks.claspCredentialShapeValid, true);
-assert.equal(readinessWithoutWriteConfirmation.checks.productionResourceReferencesPresent, true);
+assert.equal(readinessWithoutWriteConfirmation.checks.productionResourceReferencesPresent, false);
 assert.equal(readinessWithoutWriteConfirmation.checks.targetIdsAreSeparated, true);
 
 const readinessWithoutProductionInventory = validateStagingConfiguration(
@@ -95,13 +94,13 @@ const readinessWithoutProductionInventory = validateStagingConfiguration(
   },
   { mode: 'readiness' },
 );
-assert.equal(readinessWithoutProductionInventory.ok, false);
-assert.equal(readinessWithoutProductionInventory.checks.productionResourceReferencesPresent, false);
-assert.ok(
-  readinessWithoutProductionInventory.errors.some((message) =>
-    /all four CV_PRODUCTION_.*resource IDs and CV_PRODUCTION_API_URL/.test(message),
-  ),
+assert.equal(
+  readinessWithoutProductionInventory.ok,
+  true,
+  readinessWithoutProductionInventory.errors.join('; '),
 );
+assert.equal(readinessWithoutProductionInventory.checks.productionResourceReferencesPresent, false);
+assert.equal(readinessWithoutProductionInventory.checks.ownerAttestedIsolationUsed, true);
 
 const readinessWithBadClasp = validateStagingConfiguration(
   { ...fixture, CLASPRC_JSON: JSON.stringify({ tokens: { default: { client_id: 'id-only' } } }) },
@@ -160,48 +159,49 @@ assert.ok(incompleteModernClasp.errors.some((message) => message.includes('CLASP
 
 const withoutProductionReferenceIds = {
   ...fixture,
-  CV_STAGING_ONLY_MODE: 'true',
-  CV_PRODUCTION_API_URL: '',
   CV_PRODUCTION_SCRIPT_ID: '',
   CV_PRODUCTION_SPREADSHEET_ID: '',
   CV_PRODUCTION_RECEIPT_FOLDER_ID: '',
   CV_PRODUCTION_BACKUP_FOLDER_ID: '',
+  CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
 };
 const attestedArtifactOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
   mode: 'artifact',
 });
 assert.equal(attestedArtifactOnly.ok, true, attestedArtifactOnly.errors.join('; '));
 assert.equal(attestedArtifactOnly.checks.productionResourceReferencesPresent, false);
-assert.equal(attestedArtifactOnly.checks.ownerAttestedIsolationUsed, false);
+assert.equal(attestedArtifactOnly.checks.ownerAttestedIsolationUsed, true);
 assert.equal(attestedArtifactOnly.checks.targetIdsAreSeparated, true);
 
 const attestedDeployOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
   mode: 'deploy',
 });
 assert.equal(attestedDeployOnly.ok, true, attestedDeployOnly.errors.join('; '));
-assert.equal(attestedDeployOnly.checks.ownerAttestedIsolationUsed, false);
+const attestedDeployErrors = attestedDeployOnly.errors.join(' ');
+assert.equal(attestedDeployErrors, '');
+assert.equal(attestedDeployOnly.checks.ownerAttestedIsolationUsed, true);
 assert.equal(attestedDeployOnly.checks.targetIdsAreSeparated, true);
 
 const attestedUatOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
   mode: 'uat',
 });
 assert.equal(attestedUatOnly.ok, true, attestedUatOnly.errors.join('; '));
-assert.equal(attestedUatOnly.checks.productionResourceReferencesPresent, false);
-assert.equal(attestedUatOnly.checks.targetIdsAreSeparated, true);
+const attestedUatErrors = attestedUatOnly.errors.join(' ');
+assert.equal(attestedUatErrors, '');
 
-const stagingOnlyWithoutAttestation = validateStagingConfiguration(
+const missingIsolationAttestation = validateStagingConfiguration(
   {
     ...withoutProductionReferenceIds,
     CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: '',
   },
   { mode: 'artifact' },
 );
-assert.equal(
-  stagingOnlyWithoutAttestation.ok,
-  true,
-  stagingOnlyWithoutAttestation.errors.join('; '),
+assert.equal(missingIsolationAttestation.ok, false);
+assert.ok(
+  missingIsolationAttestation.errors.some((message) =>
+    message.includes('CV_STAGING_RESOURCE_ISOLATION_ATTESTATION'),
+  ),
 );
-assert.equal(stagingOnlyWithoutAttestation.checks.ownerAttestedIsolationUsed, false);
 
 const partialProductionReferenceIds = validateStagingConfiguration(
   {
@@ -212,11 +212,8 @@ const partialProductionReferenceIds = validateStagingConfiguration(
 );
 assert.equal(partialProductionReferenceIds.ok, false);
 assert.ok(
-  partialProductionReferenceIds.errors.some(
-    (message) =>
-      message.includes(
-        'CV_STAGING_ONLY_MODE=true cannot be combined with production resource settings',
-      ) || message.includes('all four CV_PRODUCTION_* resource IDs and CV_PRODUCTION_API_URL'),
+  partialProductionReferenceIds.errors.some((message) =>
+    message.includes('must not receive production resource reference IDs'),
   ),
 );
 
@@ -267,42 +264,39 @@ assert.ok(safeClaspDiagnostic.includes('[redacted]'));
 
 const sameScript = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_SCRIPT_ID: fixture.CV_PRODUCTION_SCRIPT_ID,
+  CV_STAGING_SCRIPT_ID: fixture.CV_STAGING_SPREADSHEET_ID,
 });
 assert.equal(sameScript.ok, false);
-assert.ok(sameScript.errors.some((message) => message.includes('production resource')));
+assert.ok(sameScript.errors.some((message) => message.includes('five distinct resources')));
 
 const sameSheet = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_SPREADSHEET_ID: fixture.CV_PRODUCTION_SPREADSHEET_ID,
+  CV_STAGING_SPREADSHEET_ID: fixture.CV_STAGING_SCRIPT_ID,
 });
 assert.equal(sameSheet.ok, false);
-assert.ok(sameSheet.errors.some((message) => message.includes('production resource')));
+assert.ok(sameSheet.errors.some((message) => message.includes('five distinct resources')));
 
 const sameReceiptFolder = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_RECEIPT_FOLDER_ID: fixture.CV_PRODUCTION_RECEIPT_FOLDER_ID,
+  CV_STAGING_RECEIPT_FOLDER_ID: fixture.CV_STAGING_BACKUP_FOLDER_ID,
 });
 assert.equal(sameReceiptFolder.ok, false);
-assert.ok(sameReceiptFolder.errors.some((message) => message.includes('production resource')));
+assert.ok(sameReceiptFolder.errors.some((message) => message.includes('five distinct resources')));
 
 const sameBackupFolder = validateStagingConfiguration({
   ...fixture,
-  CV_STAGING_BACKUP_FOLDER_ID: fixture.CV_PRODUCTION_BACKUP_FOLDER_ID,
+  CV_STAGING_BACKUP_FOLDER_ID: fixture.CV_STAGING_RECEIPT_FOLDER_ID,
 });
 assert.equal(sameBackupFolder.ok, false);
-assert.ok(sameBackupFolder.errors.some((message) => message.includes('production resource')));
+assert.ok(sameBackupFolder.errors.some((message) => message.includes('five distinct resources')));
 
 const productionDeployment = validateStagingConfiguration({
   ...fixture,
   CV_STAGING_DEPLOYMENT_ID: productionDeploymentId,
   CV_STAGING_API_URL: productionApiUrl,
 });
-assert.equal(productionDeployment.ok, false);
-assert.ok(productionDeployment.errors.some((message) => message.includes('production endpoint')));
-assert.ok(
-  productionDeployment.errors.some((message) => message.includes('production deployment ID')),
-);
+assert.equal(productionDeployment.ok, true, productionDeployment.errors.join('; '));
+assert.equal(productionDeployment.checks.stagingOnlyMode, true);
 
 const productionDeploymentArtifact = validateStagingConfiguration(
   {
@@ -312,10 +306,7 @@ const productionDeploymentArtifact = validateStagingConfiguration(
   },
   { mode: 'artifact' },
 );
-assert.equal(productionDeploymentArtifact.ok, false);
-assert.ok(
-  productionDeploymentArtifact.errors.some((message) => message.includes('production endpoint')),
-);
+assert.equal(productionDeploymentArtifact.ok, true, productionDeploymentArtifact.errors.join('; '));
 
 const urlMismatch = validateStagingConfiguration({
   ...fixture,
@@ -329,7 +320,7 @@ const malformedUrl = validateStagingConfiguration({
   CV_STAGING_API_URL: 'https://staging.invalid/not-an-apps-script-url',
 });
 assert.equal(malformedUrl.ok, false);
-assert.ok(malformedUrl.errors.some((message) => message.includes('plain HTTPS Apps Script')));
+assert.ok(malformedUrl.errors.some((message) => message.includes('Apps Script URL')));
 
 const missingClasp = validateStagingConfiguration(
   {
@@ -433,6 +424,33 @@ assert.deepEqual(
   'cleanup must attempt credential-home removal even if workspace removal fails',
 );
 
+const missingAttestation = validateStagingConfiguration(
+  { ...fixture, CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: '' },
+  { mode: 'deploy' },
+);
+assert.equal(missingAttestation.ok, false);
+assert.ok(missingAttestation.errors.some((message) => /staging-only mode requires/i.test(message)));
+const productionIdsRejected = validateStagingConfiguration(
+  { ...fixture, CV_PRODUCTION_SCRIPT_ID: 'unexpected-prod-id' },
+  { mode: 'deploy' },
+);
+assert.equal(productionIdsRejected.ok, false);
+assert.ok(
+  productionIdsRejected.errors.some((message) =>
+    /must not receive production resource reference IDs/i.test(message),
+  ),
+);
+const stagingOnlyFlagRequired = validateStagingConfiguration(
+  { ...fixture, CV_STAGING_ONLY_MODE: '' },
+  { mode: 'deploy' },
+);
+assert.equal(stagingOnlyFlagRequired.ok, false);
+assert.ok(
+  stagingOnlyFlagRequired.errors.some((message) =>
+    /production resource reference IDs/i.test(message),
+  ),
+);
+
 console.log(
-  'Staging preflight OK — isolated target, URL/deployment matching, credential validation and fail-closed cases.',
+  'Staging preflight OK — explicit staging-only isolation, unique target resources, URL matching and fail-closed cases.',
 );

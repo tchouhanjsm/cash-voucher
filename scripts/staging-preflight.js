@@ -3,6 +3,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
+const ROOT = path.resolve(__dirname, '..');
 const STAGING_ID_KEYS = [
   'CV_STAGING_SCRIPT_ID',
   'CV_STAGING_DEPLOYMENT_ID',
@@ -16,9 +17,21 @@ const PRODUCTION_REFERENCE_KEYS = [
   'CV_PRODUCTION_RECEIPT_FOLDER_ID',
   'CV_PRODUCTION_BACKUP_FOLDER_ID',
 ];
+const RESOURCE_ISOLATION_ATTESTATION = 'OWNER-VERIFIED-STAGING-ONLY';
 
-function readProductionApiUrl(env = process.env) {
-  return String(env.CV_PRODUCTION_API_URL || '').trim();
+function readProductionApiUrl(root = ROOT) {
+  const configPath = path.join(root, 'config.js');
+  const source = fs.readFileSync(configPath, 'utf8');
+  const matches = [...source.matchAll(/https:\/\/script\.google\.com\/macros\/s\/[^'"\s]+\/exec/g)];
+  const urls = [...new Set(matches.map((match) => match[0]))];
+
+  if (urls.length !== 1) {
+    throw new Error(
+      'The production API URL must be a single explicit Apps Script /exec URL in config.js.',
+    );
+  }
+
+  return urls[0];
 }
 
 function normalizeUrl(value) {
@@ -34,73 +47,98 @@ function isStrongPassword(value) {
   return typeof value === 'string' && value.length >= 8 && value.length <= 128;
 }
 
-function parseAppsScriptDeploymentUrl(value, label, errors) {
-  if (!value || isPlaceholder(value)) return null;
-  try {
-    const url = new URL(value);
-    const match = url.pathname.match(/^\/macros\/s\/([^/]+)\/exec$/);
-    if (
-      url.protocol !== 'https:' ||
-      url.hostname !== 'script.google.com' ||
-      url.username ||
-      url.password ||
-      url.search ||
-      url.hash ||
-      !match
-    ) {
-      errors.push(label + ' must be a plain HTTPS Apps Script /macros/s/<deployment-id>/exec URL.');
-      return null;
-    }
-    return { url, deploymentId: match[1] };
-  } catch {
-    errors.push(label + ' is not a valid URL.');
-    return null;
-  }
-}
-
 function validateStagingConfiguration(env = process.env, options = {}) {
   const mode = options.mode || 'uat';
+  const root = options.root || ROOT;
   const errors = [];
+  const stagingOnlyMode = String(env.CV_STAGING_ONLY_MODE || '').trim() === 'true';
+  const isolationAttestation = String(env.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION || '').trim();
   let productionApiUrl = '';
   let productionDeploymentId = '';
-  let stagingUrl = null;
 
-  if (!['uat', 'deploy', 'artifact', 'readiness'].includes(mode)) {
+  if (!['uat', 'deploy', 'artifact', 'readiness'].includes(mode))
     errors.push('Unsupported preflight mode.');
-  }
-
-  const stagingOnlyMode = String(env.CV_STAGING_ONLY_MODE || '').trim() === 'true';
-  if (!['true', 'false'].includes(String(env.CV_STAGING_ONLY_MODE || '').trim())) {
-    errors.push(
-      'CV_STAGING_ONLY_MODE must be explicitly set to true for the staging-only lifecycle or false when a production inventory is configured.',
-    );
-  }
-
   for (const key of STAGING_ID_KEYS) {
-    if (isPlaceholder(String(env[key] || '').trim())) {
+    if (isPlaceholder(String(env[key] || '').trim()))
       errors.push('Missing or placeholder environment value: ' + key + '.');
+  }
+
+  if (stagingOnlyMode) {
+    if (isolationAttestation !== RESOURCE_ISOLATION_ATTESTATION) {
+      errors.push(
+        'Staging-only mode requires CV_STAGING_RESOURCE_ISOLATION_ATTESTATION=OWNER-VERIFIED-STAGING-ONLY after the owner independently verifies all five staging resources.',
+      );
+    }
+    if (PRODUCTION_REFERENCE_KEYS.some((key) => String(env[key] || '').trim())) {
+      errors.push(
+        'Staging-only mode must not receive production resource reference IDs; remove production references until a production environment exists.',
+      );
+    }
+  } else {
+    try {
+      productionApiUrl = readProductionApiUrl(root);
+      const productionUrl = new URL(productionApiUrl);
+      const match = productionUrl.pathname.match(/^\/macros\/s\/([^/]+)\/exec\/?$/);
+      if (!match) throw new Error('Configured production URL shape is invalid.');
+      productionDeploymentId = match[1];
+    } catch {
+      errors.push(
+        'Could not identify one valid production Apps Script Web App URL from config.js.',
+      );
     }
   }
 
+  let stagingUrl;
   const stagingApiUrl = String(env.CV_STAGING_API_URL || '').trim();
-  const parsedStaging = parseAppsScriptDeploymentUrl(stagingApiUrl, 'The staging API URL', errors);
-  if (parsedStaging) {
-    stagingUrl = parsedStaging.url;
-    const expectedDeploymentId = String(env.CV_STAGING_DEPLOYMENT_ID || '').trim();
-    if (parsedStaging.deploymentId !== expectedDeploymentId) {
-      errors.push('The staging API URL does not match CV_STAGING_DEPLOYMENT_ID.');
+  const stagingDeploymentId = String(env.CV_STAGING_DEPLOYMENT_ID || '').trim();
+  if (!stagingApiUrl || isPlaceholder(stagingApiUrl)) {
+    errors.push('Missing or placeholder environment value: CV_STAGING_API_URL.');
+  } else {
+    try {
+      stagingUrl = new URL(stagingApiUrl);
+      if (
+        stagingUrl.protocol !== 'https:' ||
+        stagingUrl.hostname !== 'script.google.com' ||
+        stagingUrl.username ||
+        stagingUrl.password ||
+        stagingUrl.search ||
+        stagingUrl.hash
+      ) {
+        errors.push(
+          'The staging API URL must be a plain HTTPS Apps Script URL without query or fragment.',
+        );
+      }
+      const match = stagingUrl.pathname.match(/^\/macros\/s\/([^/]+)\/exec\/?$/);
+      if (stagingUrl.pathname !== '/macros/s/' + stagingDeploymentId + '/exec') {
+        errors.push(
+          'The staging API URL path must be the exact configured /exec endpoint without a trailing slash.',
+        );
+      }
+      if (!match || match[1] !== stagingDeploymentId)
+        errors.push('The staging API URL does not match CV_STAGING_DEPLOYMENT_ID.');
+      if (
+        !stagingOnlyMode &&
+        productionApiUrl &&
+        normalizeUrl(stagingApiUrl) === normalizeUrl(productionApiUrl)
+      ) {
+        errors.push(
+          'The staging API URL resolves to the production endpoint; refusing to continue.',
+        );
+      }
+      if (
+        !stagingOnlyMode &&
+        match &&
+        productionDeploymentId &&
+        match[1] === productionDeploymentId
+      ) {
+        errors.push('The staging deployment ID matches the production URL deployment ID.');
+      }
+    } catch {
+      errors.push('The staging API URL is not a valid URL.');
     }
   }
 
   const stageValues = STAGING_ID_KEYS.map((key) => String(env[key] || '').trim());
-  const stagingIdsComplete = stageValues.every((value) => !isPlaceholder(value));
-  const stagingIdsUnique = stagingIdsComplete && new Set(stageValues).size === stageValues.length;
-  if (stagingIdsComplete && !stagingIdsUnique) {
-    errors.push(
-      'Staging Script, deployment, Sheet, receipt folder and backup folder must be five distinct resources.',
-    );
-  }
-
   const productionReferenceValues = Object.fromEntries(
     PRODUCTION_REFERENCE_KEYS.map((key) => [key, String(env[key] || '').trim()]),
   );
@@ -110,49 +148,6 @@ function validateStagingConfiguration(env = process.env, options = {}) {
   const hasAllProductionReferenceValues = Object.values(productionReferenceValues).every(
     (value) => !isPlaceholder(value),
   );
-  productionApiUrl = readProductionApiUrl(env);
-  const hasProductionApiUrl = !isPlaceholder(productionApiUrl);
-  const hasAnyProductionConfiguration = hasAnyProductionReferenceValue || hasProductionApiUrl;
-  const hasCompleteProductionConfiguration = hasAllProductionReferenceValues && hasProductionApiUrl;
-
-  const stagingOnlyConfigurationConflict = stagingOnlyMode && hasAnyProductionConfiguration;
-  if (stagingOnlyConfigurationConflict) {
-    errors.push(
-      'CV_STAGING_ONLY_MODE=true cannot be combined with production resource settings; switch deployment scope only through a reviewed workflow change after production is provisioned.',
-    );
-  }
-  if (hasAnyProductionConfiguration && !hasCompleteProductionConfiguration) {
-    errors.push(
-      'Production comparison is optional for staging-only operation; when any production reference is configured, all four CV_PRODUCTION_* resource IDs and CV_PRODUCTION_API_URL must be supplied together.',
-    );
-  }
-  if (!hasAnyProductionConfiguration && !stagingOnlyMode) {
-    errors.push(
-      'Production resource comparison is unavailable. Set CV_STAGING_ONLY_MODE=true for the current staging-only lifecycle; do not create placeholder production IDs.',
-    );
-  }
-
-  let parsedProduction = null;
-  if (hasProductionApiUrl) {
-    parsedProduction = parseAppsScriptDeploymentUrl(
-      productionApiUrl,
-      'CV_PRODUCTION_API_URL',
-      errors,
-    );
-    if (parsedProduction) productionDeploymentId = parsedProduction.deploymentId;
-  }
-
-  if (parsedStaging && parsedProduction) {
-    if (normalizeUrl(stagingApiUrl) === normalizeUrl(productionApiUrl)) {
-      errors.push(
-        'The staging API URL resolves to the configured production endpoint; refusing to continue.',
-      );
-    }
-    if (parsedStaging.deploymentId === productionDeploymentId) {
-      errors.push('The staging deployment ID matches the production deployment ID.');
-    }
-  }
-
   const productionValues = [
     productionReferenceValues.CV_PRODUCTION_SCRIPT_ID,
     productionDeploymentId,
@@ -160,16 +155,40 @@ function validateStagingConfiguration(env = process.env, options = {}) {
     productionReferenceValues.CV_PRODUCTION_RECEIPT_FOLDER_ID,
     productionReferenceValues.CV_PRODUCTION_BACKUP_FOLDER_ID,
   ];
+  const productionSet = new Set(productionValues.filter(Boolean));
   const productionReferenceInventoryValid =
-    hasCompleteProductionConfiguration &&
-    Boolean(parsedProduction) &&
+    !stagingOnlyMode &&
+    hasAllProductionReferenceValues &&
     productionValues.every(Boolean) &&
     new Set(productionValues).size === productionValues.length;
-  const productionInventoryIncomplete =
-    hasAnyProductionConfiguration && !productionReferenceInventoryValid;
 
+  if (mode === 'artifact') {
+    if (!stagingOnlyMode && hasAnyProductionReferenceValue && !hasAllProductionReferenceValues) {
+      errors.push(
+        'Artifact preflight requires all four production resource reference IDs together when any production reference is provided.',
+      );
+    } else if (
+      !stagingOnlyMode &&
+      !hasAnyProductionReferenceValue &&
+      isolationAttestation !== RESOURCE_ISOLATION_ATTESTATION
+    ) {
+      errors.push(
+        'For artifact-only builds without production resource reference IDs, CV_STAGING_RESOURCE_ISOLATION_ATTESTATION must equal OWNER-VERIFIED-STAGING-ONLY after independently verifying staging resources outside this workflow.',
+      );
+    }
+  } else if (!stagingOnlyMode && !productionReferenceInventoryValid) {
+    errors.push(
+      'Write-capable staging operations require all four production resource reference IDs unless explicit staging-only mode is enabled and owner-attested.',
+    );
+  }
+
+  if (stageValues.every(Boolean) && new Set(stageValues).size !== stageValues.length) {
+    errors.push(
+      'Staging Script, deployment, Sheet, receipt folder and backup folder must be five distinct resources.',
+    );
+  }
   if (
-    hasCompleteProductionConfiguration &&
+    productionReferenceInventoryValid &&
     productionValues.every(Boolean) &&
     new Set(productionValues).size !== productionValues.length
   ) {
@@ -177,13 +196,17 @@ function validateStagingConfiguration(env = process.env, options = {}) {
       'Production Script, deployment, Sheet, receipt folder and backup folder must be distinct resources.',
     );
   }
-
-  const productionSet = new Set(productionValues.filter(Boolean));
   if (stageValues.some((value) => value && productionSet.has(value))) {
     errors.push(
       'At least one staging resource identifier is also configured as a production resource.',
     );
   }
+
+  const ownerAttestedIsolation = stagingOnlyMode
+    ? isolationAttestation === RESOURCE_ISOLATION_ATTESTATION
+    : mode === 'artifact' &&
+      !hasAnyProductionReferenceValue &&
+      isolationAttestation === RESOURCE_ISOLATION_ATTESTATION;
 
   let ownerEmail = '';
   let managerEmail = '';
@@ -198,23 +221,18 @@ function validateStagingConfiguration(env = process.env, options = {}) {
       .toLowerCase();
     ownerPassword = String(env.CV_STAGING_UAT_OWNER_PASSWORD || '');
     managerPassword = String(env.CV_STAGING_UAT_MANAGER_PASSWORD || '');
-
-    if (!/^\S+@\S+\.\S+$/.test(ownerEmail)) {
+    if (!/^\S+@\S+\.\S+$/.test(ownerEmail))
       errors.push('A valid dedicated staging owner email is required.');
-    }
-    if (!/^\S+@\S+\.\S+$/.test(managerEmail)) {
+    if (!/^\S+@\S+\.\S+$/.test(managerEmail))
       errors.push('A valid dedicated staging manager email is required.');
-    }
-    if (ownerEmail && managerEmail && ownerEmail === managerEmail) {
+    if (ownerEmail && managerEmail && ownerEmail === managerEmail)
       errors.push('The staging owner and manager UAT accounts must be different accounts.');
-    }
     if (!isStrongPassword(ownerPassword))
       errors.push('The staging owner UAT password must be 8–128 characters.');
     if (!isStrongPassword(managerPassword))
       errors.push('The staging manager UAT password must be 8–128 characters.');
-    if (ownerPassword && managerPassword && ownerPassword === managerPassword) {
+    if (ownerPassword && managerPassword && ownerPassword === managerPassword)
       errors.push('Use different passwords for the staging owner and manager UAT accounts.');
-    }
   }
 
   let claspCredentialShapeValid = null;
@@ -246,41 +264,33 @@ function validateStagingConfiguration(env = process.env, options = {}) {
       hasText(modernDefaultCredential.refresh_token) &&
       hasText(modernDefaultCredential.client_id) &&
       hasText(modernDefaultCredential.client_secret);
-
     claspCredentialShapeValid = legacyFormatValid || modernFormatValid;
-    if (!claspCredentialShapeValid) {
+    if (!claspCredentialShapeValid)
       errors.push(
         'CLASPRC_JSON must be valid Clasp credentials in either legacy token/oauth2ClientSettings format or Clasp 3.x tokens.default format.',
       );
-    }
   }
-
-  const targetIdsAreSeparated =
-    stagingIdsUnique &&
-    !productionInventoryIncomplete &&
-    !stagingOnlyConfigurationConflict &&
-    (stagingOnlyMode || productionReferenceInventoryValid) &&
-    !stageValues.some((value) => value && productionSet.has(value));
 
   return {
     ok: errors.length === 0,
     errors,
     productionApiUrl,
-    deploymentScope: stagingOnlyMode ? 'staging-only' : 'staging-with-production-comparison',
     checks: {
       claspCredentialShapeValid,
       stagingOnlyMode,
-      stagingOnlyConfigurationConflict,
-      targetIdsAreSeparated,
+      targetIdsAreSeparated:
+        stageValues.every(Boolean) &&
+        new Set(stageValues).size === stageValues.length &&
+        (stagingOnlyMode
+          ? ownerAttestedIsolation
+          : stageValues.every((value) => !productionSet.has(value)) &&
+            (productionReferenceInventoryValid || ownerAttestedIsolation)),
       productionResourceReferencesPresent: productionReferenceInventoryValid,
-      productionInventoryIncomplete,
-      productionCrossCheckPerformed: productionReferenceInventoryValid,
-      ownerAttestedIsolationUsed: false,
+      ownerAttestedIsolationUsed: ownerAttestedIsolation,
       stagingApiUrlMatchesConfiguredDeployment:
         Boolean(stagingUrl) &&
         stagingUrl.hostname === 'script.google.com' &&
-        stagingUrl.pathname ===
-          '/macros/s/' + String(env.CV_STAGING_DEPLOYMENT_ID || '').trim() + '/exec',
+        stagingUrl.pathname === '/macros/s/' + stagingDeploymentId + '/exec',
       dedicatedUatAccountsPresent:
         mode === 'artifact'
           ? null
@@ -305,7 +315,6 @@ function buildStagingPreflightEvidence(result, env = process.env) {
     schemaVersion: 1,
     evidenceType: 'cash-voucher-staging-configuration-preflight',
     generatedAt: new Date().toISOString(),
-    deploymentScope: result.deploymentScope,
     source: {
       repository: safeRepo,
       ref:
@@ -324,23 +333,17 @@ function buildStagingPreflightEvidence(result, env = process.env) {
     outcome: result.ok ? 'configuration-pass' : 'blocked',
     categories: {
       stagingResourceSeparation: status(checks.targetIdsAreSeparated),
-      productionResourceInventory: checks.productionResourceReferencesPresent
-        ? 'pass'
-        : checks.productionInventoryIncomplete
-          ? 'blocked'
-          : checks.stagingOnlyMode
-            ? 'not-configured-staging-only'
-            : 'blocked',
+      productionResourceInventory: checks.stagingOnlyMode
+        ? 'not-required'
+        : status(checks.productionResourceReferencesPresent),
+      stagingOnlyMode: checks.stagingOnlyMode
+        ? checks.ownerAttestedIsolationUsed && checks.targetIdsAreSeparated
+          ? 'pass'
+          : 'blocked'
+        : 'not-required',
       stagingEndpoint: status(checks.stagingApiUrlMatchesConfiguredDeployment),
       dedicatedUatAccounts: status(checks.dedicatedUatAccountsPresent),
       claspCredentialShape: status(checks.claspCredentialShapeValid),
-      stagingOnlyMode: checks.stagingOnlyMode
-        ? checks.stagingOnlyConfigurationConflict
-          ? 'blocked'
-          : 'pass'
-        : checks.productionResourceReferencesPresent
-          ? 'not-applicable-production-inventory'
-          : 'blocked',
     },
     blockers: result.errors.map((message) => String(message)),
     boundaries: {
@@ -349,8 +352,6 @@ function buildStagingPreflightEvidence(result, env = process.env) {
       endpointIncluded: false,
       remoteConnectivityTested: false,
       ownershipIndependentlyVerified: false,
-      productionResourceCrossCheckPerformed: Boolean(checks.productionCrossCheckPerformed),
-      productionEnvironmentConfigured: Boolean(checks.productionResourceReferencesPresent),
       deploymentChanged: false,
       backupRestoreVerified: false,
     },
@@ -397,18 +398,21 @@ function main() {
     return;
   }
 
-  if (result.checks.productionCrossCheckPerformed) {
+  console.log(
+    'Staging preflight passed: staging target identity and API URL/deployment consistency are valid.',
+  );
+  if (result.checks.productionResourceReferencesPresent) {
     console.log(
-      'Staging preflight passed: the staging endpoint and all configured staging resources were compared with the complete production inventory.',
+      'Staging resource IDs were compared with the configured production resource inventory.',
     );
   } else {
     console.log(
-      'Staging-only preflight passed: all five staging resource identifiers are present and distinct, and the staging API URL matches its deployment ID. No production environment/inventory is configured or assumed.',
+      'Staging-only mode is owner-attested; production resources are not part of this deployment stage.',
     );
   }
   if (mode === 'artifact') {
     console.log(
-      'Artifact target configuration passed; no UAT accounts, remote connectivity or remote writes were tested.',
+      'Artifact target URL and resource-isolation preflight passed; no UAT accounts or remote writes were tested.',
     );
   } else if (mode === 'readiness') {
     console.log(
@@ -416,7 +420,7 @@ function main() {
     );
     console.log('Sanitized category evidence was written when an output path was supplied.');
   } else {
-    console.log('Dedicated staging owner/manager UAT account configuration is valid.');
+    console.log('Staging URL shape and dedicated owner/manager UAT credentials are valid.');
   }
   if (mode === 'deploy') {
     console.log('Clasp OAuth configuration is present; credential values are not printed.');
