@@ -28,6 +28,13 @@ No production deployment, production Apps Script project, production spreadsheet
 4. Do not add production references.
 5. Run `validate-only` from `client-main`. Only after it passes and the owner verifies the target should `deploy-and-uat` be manually authorized with `STAGING-ONLY` and explicit staging-write consent.
 
+## PR validation follow-up — 30 October 2026
+
+- The initial PR #251 code-quality run completed `npm run check`, including lint, formatting and the full unit/regression suite. A later CI handoff step then failed because the pull-request description did not yet contain the six required template sections. The PR description has since been updated to include Outcome, Acceptance criteria, Verification evidence, Security and failure review, Release boundary, and Residual risks / not verified.
+- The current-readiness documentation regression test had three stale assumptions: a fixed 29 October handoff date, a fixed PR #247 merged marker, and a fixed integration baseline SHA from before PR #249 merged. These were generalized to validate a structured handoff date, the presence of a merged-PR marker, and a 40-character hexadecimal integration SHA. This prevents routine handoff refreshes from failing unrelated staging changes.
+- The generalized baseline assertion was formatted with Prettier. On the latest recorded head `e3c1a2e23122f3ae75a50383d93cbedd46969ef1`, source/unit CI and Browser E2E/Full Flight exact-head revalidation are required; an earlier PR CI job passed the code-quality gate but failed the PR-body evidence step before the description correction.
+- No staging deployment, Clasp push, Google API call, Sheets/Drive write, synthetic UAT transaction or ZIP publication was performed during these fixes.
+
 ---
 
 # Staging Release Audit and Pending Queue
