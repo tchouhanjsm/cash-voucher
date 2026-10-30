@@ -29,6 +29,7 @@ No production deployment, production Apps Script project, production spreadsheet
 5. Run `validate-only` from `client-main`. Only after it passes and the owner verifies the target should `deploy-and-uat` be manually authorized with `STAGING-ONLY` and explicit staging-write consent.
 
 ## PR validation follow-up — 30 October 2026
+
 - The PR-quality parser treats unchecked Markdown task markers (`[ ]`) as unresolved placeholders. Owner actions that remain after source acceptance are therefore written as explicit prose rather than unchecked boxes in the required PR sections; completed acceptance checks may use `[x]`.
 
 - The initial PR #251 code-quality run completed `npm run check`, including lint, formatting and the full unit/regression suite. A later CI handoff step then failed because the pull-request description did not yet contain the six required template sections. The PR description has since been updated to include Outcome, Acceptance criteria, Verification evidence, Security and failure review, Release boundary, and Residual risks / not verified.
