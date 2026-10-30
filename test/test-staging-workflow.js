@@ -58,6 +58,34 @@ assert.match(workflow, /needs: \[validate, guard\]/);
 assert.match(workflow, /confirm_staging_writes/);
 assert.match(workflow, /CV_STAGING_DEPLOY_CONFIRMATION/);
 assert.match(workflow, /CV_STAGING_ONLY_MODE: 'true'/);
+const stagingWorkflowLines = workflow.split('\n');
+const stagingScriptMappings = stagingWorkflowLines
+  .map((line, index) => ({ line, index }))
+  .filter(({ line }) => line.trim() === 'CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}');
+assert.ok(stagingScriptMappings.length >= 1);
+for (const { line, index } of stagingScriptMappings) {
+  const indent = line.match(/^\s*/)[0];
+  assert.equal(
+    stagingWorkflowLines[index + 1],
+    indent + "CV_STAGING_ONLY_MODE: 'true'",
+    'staging-only mode must remain correctly indented beside each staging target mapping',
+  );
+}
+assert.equal(
+  (workflow.match(/^ {10}CV_STAGING_ONLY_MODE: 'true'$/gm) || []).length,
+  stagingScriptMappings.length,
+  'staging-only mode has one correctly indented mapping per protected staging step',
+);
+assert.equal(
+  (workflow.match(/^ {10}CV_PRODUCTION_API_URL: \$\{\{ vars\.CV_PRODUCTION_API_URL \}\}$/gm) || []).length,
+  (workflow.match(/^ {10}CV_PRODUCTION_SCRIPT_ID: \$\{\{ vars\.CV_PRODUCTION_SCRIPT_ID \}\}$/gm) || []).length,
+  'optional production endpoint and resource inventory mappings stay paired',
+);
+assert.doesNotMatch(
+  workflow,
+  /^ {0,9}CV_STAGING_ONLY_MODE:|^ {0,9}CV_PRODUCTION_API_URL:/m,
+  'staging workflow environment mappings must not be misindented at job/root scope',
+);
 assert.match(preflight, /Production comparison is optional for staging-only operation/);
 assert.match(
   preflight,

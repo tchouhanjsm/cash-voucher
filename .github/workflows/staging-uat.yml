@@ -87,7 +87,6 @@ jobs:
       - name: Validate configuration only (no remote access or writes)
         env:
           CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_ONLY_MODE: 'true'
           CV_STAGING_ONLY_MODE: 'true'
           CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
           CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
@@ -95,8 +94,7 @@ jobs:
           CV_STAGING_RECEIPT_FOLDER_ID: ${{ vars.CV_STAGING_RECEIPT_FOLDER_ID }}
           CV_STAGING_BACKUP_FOLDER_ID: ${{ vars.CV_STAGING_BACKUP_FOLDER_ID }}
           CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-          CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
           CV_PRODUCTION_SPREADSHEET_ID: ${{ vars.CV_PRODUCTION_SPREADSHEET_ID }}
           CV_PRODUCTION_RECEIPT_FOLDER_ID: ${{ vars.CV_PRODUCTION_RECEIPT_FOLDER_ID }}
           CV_PRODUCTION_BACKUP_FOLDER_ID: ${{ vars.CV_PRODUCTION_BACKUP_FOLDER_ID }}
@@ -179,11 +177,9 @@ jobs:
         id: deployment_preflight
         env:
           CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_ONLY_MODE: 'true'
           CV_STAGING_ONLY_MODE: 'true'
           CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-          CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
           CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
           CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
           CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
@@ -204,11 +200,9 @@ jobs:
         id: update_deployment
         env:
           CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_ONLY_MODE: 'true'
           CV_STAGING_ONLY_MODE: 'true'
           CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-          CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
           CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
           CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
           CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
@@ -229,11 +223,9 @@ jobs:
         id: target_recheck
         env:
           CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_ONLY_MODE: 'true'
           CV_STAGING_ONLY_MODE: 'true'
           CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-          CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
           CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
           CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
           CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
@@ -252,11 +244,9 @@ jobs:
         id: staging_uat
         env:
           CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_ONLY_MODE: 'true'
           CV_STAGING_ONLY_MODE: 'true'
           CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-          CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
           CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
           CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
           CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
@@ -365,11 +355,9 @@ jobs:
         id: target_preflight
         env:
           CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_ONLY_MODE: 'true'
           CV_STAGING_ONLY_MODE: 'true'
           CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-          CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
           CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
           CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
           CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
@@ -388,11 +376,9 @@ jobs:
         id: staging_uat
         env:
           CV_STAGING_SCRIPT_ID: ${{ vars.CV_STAGING_SCRIPT_ID }}
-      CV_STAGING_ONLY_MODE: 'true'
           CV_STAGING_ONLY_MODE: 'true'
           CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-          CV_PRODUCTION_API_URL: ${{ vars.CV_PRODUCTION_API_URL }}
-      CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
+          CV_PRODUCTION_SCRIPT_ID: ${{ vars.CV_PRODUCTION_SCRIPT_ID }}
           CV_STAGING_DEPLOYMENT_ID: ${{ vars.CV_STAGING_DEPLOYMENT_ID }}
           CV_STAGING_API_URL: ${{ vars.CV_STAGING_API_URL }}
           CV_STAGING_SPREADSHEET_ID: ${{ vars.CV_STAGING_SPREADSHEET_ID }}
