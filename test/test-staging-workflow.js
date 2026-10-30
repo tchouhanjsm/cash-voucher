@@ -463,7 +463,10 @@ for (const step of [
       'CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}',
     ),
   );
-  assert.doesNotMatch(step, /CV_PRODUCTION_(?:SCRIPT_ID|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID):/);
+  assert.doesNotMatch(
+    step,
+    /CV_PRODUCTION_(?:SCRIPT_ID|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID):/,
+  );
 }
 assert.match(deployConfigPreflight, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
 assert.match(deployMutation, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
