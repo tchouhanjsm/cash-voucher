@@ -1,10 +1,7 @@
 'use strict';
 
 const assert = require('node:assert/strict');
-const {
-  readProductionApiUrl,
-  validateStagingConfiguration,
-} = require('../scripts/staging-preflight');
+const { validateStagingConfiguration } = require('../scripts/staging-preflight');
 const { cleanupTemporaryDirectories, sanitized } = require('../scripts/deploy-staging');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -24,8 +21,9 @@ assert.doesNotMatch(runStagingUatScript, /\/tmp\/cash-voucher-staging-(?:uat|ser
 assert.doesNotMatch(runStagingUatScript, /tee "\$\{UAT_LOG_FILE\}"/);
 assert.match(runStagingUatScript, /detailed transcript is withheld from workflow logs/);
 
-const productionApiUrl = readProductionApiUrl();
-const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
+// Production URL comparison fixtures must not depend on a committed deployment endpoint.
+const productionDeploymentId = 'production-deployment-fixture';
+const productionApiUrl = 'https://script.google.com/macros/s/' + productionDeploymentId + '/exec';
 const fixture = {
   CV_STAGING_ONLY_MODE: 'true',
   CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
@@ -56,10 +54,10 @@ const fixture = {
   }),
 };
 
-assert.ok(productionApiUrl.startsWith('https://script.google.com/macros/s/'));
-assert.ok(
-  productionDeploymentId,
-  'production deployment ID is extracted from the configured /exec URL',
+assert.equal(
+  new URL(productionApiUrl).pathname,
+  '/macros/s/' + productionDeploymentId + '/exec',
+  'production-comparison test fixture uses a deterministic synthetic /exec URL',
 );
 
 const validUat = validateStagingConfiguration(fixture, { mode: 'uat' });
