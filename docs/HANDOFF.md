@@ -1,6 +1,6 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 30 October 2026 (client API endpoint default hardening)
+**Updated:** 30 October 2026 (API endpoint hardening and endpoint-bound session restoration)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
 **Current integration baseline:** `ec3a8aa59fb4f5615af32d467739e93a130c0f52` (PR #251 merged; legacy `main` remains read-only).
@@ -14,6 +14,14 @@
 - The client staging ZIP workflow continues to inject the validated `CV_STAGING_API_URL` from the protected `staging` Environment and checks the generated `dist/config.js` against that URL before packaging.
 - Regression coverage asserts that the committed source config has no hard-coded Apps Script `/exec` endpoint. The existing login flow remains available for an operator-entered endpoint. The staging preflight evidence and static-server regression tests use synthetic endpoint fixtures and the attested staging-only contract; they do not depend on a configured production URL in the committed root config.
 - This change does not alter the merged staging preflight contract, the owner isolation attestation, authentication, API behavior, database schema or live resources.
+
+## Endpoint-bound session restoration — milestone 2
+
+- Persisted API session tokens now carry a canonical endpoint binding. Startup resumes a token only when its binding matches the configured endpoint (or the saved endpoint when no build endpoint is configured).
+- A changed endpoint, missing binding from an older client, malformed binding, or incomplete token/binding write clears the persisted token and returns the user to login. The saved endpoint remains available to prefill the manual login field when no build endpoint is configured.
+- The modular frontend and legacy `app.js` entry point use the same resolver. Online login and password-change token persistence write the endpoint binding before the token; sign-out and reauthentication clear both values.
+- Offline credential verification remains separately bound to account and endpoint. This change does not alter server token format, API behavior, account data, or deployment configuration.
+- Regression coverage exercises endpoint changes, old unbound sessions, matching restores, query mismatch and storage-write failure.
 
 ## Staging-only Environment source of truth and RCA — 30 October 2026
 

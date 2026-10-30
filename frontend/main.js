@@ -5,6 +5,11 @@ import { registerActions, installActionDelegation } from './core/actions.js';
 import { S } from './core/state.js';
 import { registerPwa } from './core/pwa.js';
 import { ls } from './core/storage.js';
+import {
+  clearPersistedApiSessionToken,
+  resolveApiSession,
+  SESSION_ENDPOINT_STORAGE_KEY,
+} from './core/session.js';
 import { initTheme } from './core/theme.js';
 import { busy, closeModal, dialog, fail, toast } from './core/ui.js';
 
@@ -256,16 +261,22 @@ function bindFeatures() {
 }
 
 function init() {
-  S.url = (window.CV_CONFIG && CV_CONFIG.API_URL) || ls.get('cv.url') || '';
-
-  S.token = ls.get('cv.token') || '';
+  const session = resolveApiSession({
+    configuredEndpoint: window.CV_CONFIG?.API_URL,
+    storedEndpoint: ls.get('cv.url'),
+    token: ls.get('cv.token'),
+    tokenEndpoint: ls.get(SESSION_ENDPOINT_STORAGE_KEY),
+  });
+  S.url = session.endpoint;
+  S.token = session.token;
+  if (session.clearPersistedToken) clearPersistedApiSessionToken(ls);
 
   registerPwa({ confirmDiscardUnsavedWork: unsavedWork.confirmDiscard });
 
   bindFeatures();
   payments.showBanner();
 
-  if (S.token && S.url) {
+  if (session.autoResume) {
     $('#login').classList.add('hidden');
     navigation.start();
   } else {
