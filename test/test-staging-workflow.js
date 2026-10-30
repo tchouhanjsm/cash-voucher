@@ -418,40 +418,48 @@ const uatOnlyStep = extractWorkflowStep(uatOnlyJob, 'Run staging UAT without dep
 
 for (const key of [
   'CV_STAGING_SCRIPT_ID',
-  'CV_PRODUCTION_SCRIPT_ID',
   'CV_STAGING_DEPLOYMENT_ID',
   'CV_STAGING_API_URL',
   'CV_STAGING_SPREADSHEET_ID',
-  'CV_PRODUCTION_SPREADSHEET_ID',
   'CV_STAGING_RECEIPT_FOLDER_ID',
-  'CV_PRODUCTION_RECEIPT_FOLDER_ID',
   'CV_STAGING_BACKUP_FOLDER_ID',
-  'CV_PRODUCTION_BACKUP_FOLDER_ID',
 ]) {
   assert.ok(
-    deployConfigPreflight.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'deploy preflight receives required resource-isolation input: ' + key,
+    deployConfigPreflight.includes(key + ': ${{ vars.' + key + ' }}'),
+    'deploy preflight receives required staging variable: ' + key,
   );
   assert.ok(
-    deployMutation.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'deployment step receives required target identity input: ' + key,
+    deployMutation.includes(key + ': ${{ vars.' + key + ' }}'),
+    'deployment step receives required staging variable: ' + key,
   );
   assert.ok(
-    deployTargetRecheck.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'post-deploy target recheck receives required resource input: ' + key,
+    deployTargetRecheck.includes(key + ': ${{ vars.' + key + ' }}'),
+    'post-deploy target recheck receives required staging variable: ' + key,
   );
   assert.ok(
-    deployUatStep.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'deploy UAT step receives required target input: ' + key,
+    deployUatStep.includes(key + ': ${{ vars.' + key + ' }}'),
+    'deploy UAT step receives required staging variable: ' + key,
   );
   assert.ok(
-    uatTargetPreflight.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'UAT-only preflight receives required target input: ' + key,
+    uatTargetPreflight.includes(key + ': ${{ vars.' + key + ' }}'),
+    'UAT-only preflight receives required staging variable: ' + key,
   );
   assert.ok(
-    uatOnlyStep.includes(key + ': ${{ secrets.' + key + ' }}'),
-    'UAT-only execution receives required target input: ' + key,
+    uatOnlyStep.includes(key + ': ${{ vars.' + key + ' }}'),
+    'UAT-only execution receives required staging variable: ' + key,
   );
+}
+for (const step of [
+  deployConfigPreflight,
+  deployMutation,
+  deployTargetRecheck,
+  deployUatStep,
+  uatTargetPreflight,
+  uatOnlyStep,
+]) {
+  assert.match(step, /CV_STAGING_ONLY_MODE: \\$\\{\\{ vars\\.CV_STAGING_ONLY_MODE \\}\\}/);
+  assert.match(step, /CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: \\$\\{\\{ vars\\.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION \\}\\}/);
+  assert.doesNotMatch(step, /CV_PRODUCTION_(?:SCRIPT_ID|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID):/);
 }
 assert.match(deployConfigPreflight, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
 assert.match(deployMutation, /CLASPRC_JSON: \$\{\{ secrets\.CLASPRC_JSON \}\}/);
