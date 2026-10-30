@@ -32,7 +32,8 @@ export function resolveApiSession({
   const normalizedEndpoint = normalizeApiEndpoint(endpoint);
   const normalizedTokenEndpoint = normalizeApiEndpoint(tokenEndpoint);
   const hasToken = typeof token === 'string' && token.length > 0;
-  const autoResume = hasToken && Boolean(normalizedEndpoint) && normalizedEndpoint === normalizedTokenEndpoint;
+  const autoResume =
+    hasToken && Boolean(normalizedEndpoint) && normalizedEndpoint === normalizedTokenEndpoint;
 
   return {
     endpoint,

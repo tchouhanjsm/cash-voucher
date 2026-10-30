@@ -149,6 +149,7 @@ function createHarness({ failAddAll = false } = {}) {
     'frontend/core/offline-queue.js',
     'frontend/core/offline-auth.js',
     'frontend/core/recovery-validation.js',
+    'frontend/core/session.js',
   ]) {
     assert.ok(
       currentCache.has(`https://example.test/app/${asset}`),
