@@ -508,9 +508,18 @@ for (const key of [
 ]) {
   assert.ok(readinessValidationStep.includes(key + ': ${{ vars.' + key + ' }}'));
 }
-assert.ok(readinessValidationStep.includes('CV_STAGING_ONLY_MODE: ${{ vars.CV_STAGING_ONLY_MODE }}'));
-assert.ok(readinessValidationStep.includes('CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}'));
-assert.doesNotMatch(readinessValidationStep, /secrets\.CV_STAGING_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/);
+assert.ok(
+  readinessValidationStep.includes('CV_STAGING_ONLY_MODE: ${{ vars.CV_STAGING_ONLY_MODE }}'),
+);
+assert.ok(
+  readinessValidationStep.includes(
+    'CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: ${{ vars.CV_STAGING_RESOURCE_ISOLATION_ATTESTATION }}',
+  ),
+);
+assert.doesNotMatch(
+  readinessValidationStep,
+  /secrets\.CV_STAGING_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
+);
 assert.doesNotMatch(readinessJob, /npm ci|npm run staging:preflight/);
 const readinessUploadStep = readinessJob.split(
   '      - name: Upload sanitized preflight evidence\n',
