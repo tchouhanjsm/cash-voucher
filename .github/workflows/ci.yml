@@ -40,13 +40,14 @@ jobs:
         run: npm run audit:secrets
 
       - name: Capture seeded mock performance baseline
+        id: performance
         if: ${{ always() && steps.dependencies.outcome == 'success' }}
         env:
           CV_PERFORMANCE_BASELINE_OUT: ${{ runner.temp }}/cash-voucher-performance-baseline.json
         run: npm run measure:performance-baseline
 
       - name: Upload seeded mock performance baseline
-        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        if: ${{ always() && steps.dependencies.outcome == 'success' && steps.performance.outcome == 'success' }}
         uses: actions/upload-artifact@v7
         with:
           name: cash-voucher-performance-baseline-${{ github.run_id }}
