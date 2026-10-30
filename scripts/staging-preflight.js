@@ -333,8 +333,14 @@ function buildStagingPreflightEvidence(result, env = process.env) {
     outcome: result.ok ? 'configuration-pass' : 'blocked',
     categories: {
       stagingResourceSeparation: status(checks.targetIdsAreSeparated),
-      productionResourceInventory: status(checks.productionResourceReferencesPresent),
-      stagingOnlyMode: status(checks.stagingOnlyMode),
+      productionResourceInventory: checks.stagingOnlyMode
+        ? 'not-required'
+        : status(checks.productionResourceReferencesPresent),
+      stagingOnlyMode: checks.stagingOnlyMode
+        ? checks.ownerAttestedIsolationUsed && checks.targetIdsAreSeparated
+          ? 'pass'
+          : 'blocked'
+        : 'not-required',
       stagingEndpoint: status(checks.stagingApiUrlMatchesConfiguredDeployment),
       dedicatedUatAccounts: status(checks.dedicatedUatAccountsPresent),
       claspCredentialShape: status(checks.claspCredentialShapeValid),
