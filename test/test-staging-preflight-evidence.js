@@ -64,6 +64,7 @@ assert.equal(
 assert.deepEqual(evidence.categories, {
   stagingResourceSeparation: 'pass',
   productionResourceInventory: 'pass',
+  stagingOnlyMode: 'not-required',
   stagingEndpoint: 'pass',
   dedicatedUatAccounts: 'pass',
   claspCredentialShape: 'pass',
@@ -71,6 +72,22 @@ assert.deepEqual(evidence.categories, {
 assert.equal(evidence.boundaries.remoteConnectivityTested, false);
 assert.equal(evidence.boundaries.ownershipIndependentlyVerified, false);
 assert.equal(evidence.boundaries.backupRestoreVerified, false);
+
+const stagingOnlyFixture = {
+  ...fixture,
+  CV_STAGING_ONLY_MODE: 'true',
+  CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
+  CV_PRODUCTION_SCRIPT_ID: '',
+  CV_PRODUCTION_SPREADSHEET_ID: '',
+  CV_PRODUCTION_RECEIPT_FOLDER_ID: '',
+  CV_PRODUCTION_BACKUP_FOLDER_ID: '',
+};
+const stagingOnlyResult = validateStagingConfiguration(stagingOnlyFixture, { mode: 'readiness' });
+assert.equal(stagingOnlyResult.ok, true, stagingOnlyResult.errors.join('; '));
+const stagingOnlyEvidence = buildStagingPreflightEvidence(stagingOnlyResult, stagingOnlyFixture);
+assert.equal(stagingOnlyEvidence.categories.stagingOnlyMode, 'pass');
+assert.equal(stagingOnlyEvidence.categories.productionResourceInventory, 'not-required');
+assert.equal(stagingOnlyEvidence.categories.stagingResourceSeparation, 'pass');
 
 const serialized = JSON.stringify(evidence);
 for (const privateValue of [

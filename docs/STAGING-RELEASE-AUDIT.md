@@ -1,3 +1,44 @@
+# Staging-only configuration source of truth and RCA — 30 October 2026
+
+## Authoritative configuration contract
+
+The GitHub Environment screenshot supplied by the owner on 30 October 2026 is the source of truth for current staging configuration. Its six target values are Environment variables: `CV_STAGING_API_URL`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_SCRIPT_ID`, and `CV_STAGING_SPREADSHEET_ID`.
+
+The following remain Environment secrets: `CLASPRC_JSON`, `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PASSWORD`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PASSWORD`.
+
+Add two Environment variables after the owner has independently checked the actual Google resources: `CV_STAGING_ONLY_MODE=true` and `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION=OWNER-VERIFIED-STAGING-ONLY`. This declaration means the owner has verified that the five staging resource IDs are dedicated, distinct and not shared with another environment. It is not cryptographic proof of ownership or a substitute for checking Google project and Drive folder access.
+
+No production deployment, production Apps Script project, production spreadsheet or production Drive folders exist in the current release stage. Do not create, invent, populate or require `CV_PRODUCTION_*` identifiers. If any production reference value is supplied while staging-only mode is enabled, preflight fails closed. The committed `config.js` endpoint is not treated as a production inventory in staging-only mode; the staging ZIP build overrides it with the validated Environment staging URL.
+
+## RCA — staging readiness failure #40910344511
+
+- **Observed failure:** job `123577554801`, “Inspect protected staging configuration (read-only)”, failed during `node scripts/staging-preflight.js --mode=readiness`.
+- **Direct cause:** all six staging resource values were present in GitHub Environment variables, while `.github/workflows/staging-uat.yml` read them from `${{ secrets.* }}`. GitHub injected empty strings. The job log showed the six target values empty; no secret values were exposed.
+- **Contributing design defect:** `scripts/staging-preflight.js` treated a production endpoint in source `config.js` and all four production reference IDs as mandatory prerequisites for staging deploy/UAT. That assumption does not match the product's current staging-only lifecycle.
+- **Why prior instructions were wrong:** they told the owner to create production references that do not exist and did not respect the screenshot's Environment variables/Environment secrets split. The screenshot is now the authoritative configuration contract.
+- **Impact:** source and mock journey validation passed; read-only staging readiness failed before remote Google access. Deploy and UAT jobs were skipped. No Clasp push, Apps Script deployment, Sheets/Drive write, synthetic payment, production operation or cPanel publication occurred.
+- **Permanent correction:** map all six staging target values from `vars`; keep Clasp OAuth and UAT credentials in `secrets`; add explicit staging-only mode and owner attestation; skip production endpoint/inventory assumptions only in that explicit mode; reject production references in that mode; enforce five distinct staging resource IDs, exact API/deployment matching, manual `STAGING-ONLY` confirmation, explicit write consent, client-main guard and per-step secret scope.
+- **Evidence boundary:** passing configuration preflight proves input shape, endpoint/deployment consistency and the declared owner attestation only. It does not prove remote connectivity, independent resource ownership, deployed version, backup/restore or successful live UAT.
+
+## Operator action after merge
+
+1. Keep the six existing staging values in Environment variables exactly as shown in the owner's screenshot.
+2. Add `CV_STAGING_ONLY_MODE=true` and `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION=OWNER-VERIFIED-STAGING-ONLY` as Environment variables only after personally verifying the five resource identities in Google.
+3. Keep Clasp OAuth and the four UAT account credentials in Environment secrets.
+4. Do not add production references.
+5. Run `validate-only` from `client-main`. Only after it passes and the owner verifies the target should `deploy-and-uat` be manually authorized with `STAGING-ONLY` and explicit staging-write consent.
+
+## PR validation follow-up — 30 October 2026
+
+- The PR-quality parser treats unchecked Markdown task markers (`[ ]`) as unresolved placeholders. Owner actions that remain after source acceptance are therefore written as explicit prose rather than unchecked boxes in the required PR sections; completed acceptance checks may use `[x]`.
+
+- The initial PR #251 code-quality run completed `npm run check`, including lint, formatting and the full unit/regression suite. A later CI handoff step then failed because the pull-request description did not yet contain the six required template sections. The PR description has since been updated to include Outcome, Acceptance criteria, Verification evidence, Security and failure review, Release boundary, and Residual risks / not verified.
+- The current-readiness documentation regression test had three stale assumptions: a fixed 29 October handoff date, a fixed PR #247 merged marker, and a fixed integration baseline SHA from before PR #249 merged. These were generalized to validate a structured handoff date, the presence of a merged-PR marker, and a 40-character hexadecimal integration SHA. This prevents routine handoff refreshes from failing unrelated staging changes.
+- The generalized baseline assertion was formatted with Prettier. On the latest recorded head `e3c1a2e23122f3ae75a50383d93cbedd46969ef1`, source/unit CI and Browser E2E/Full Flight exact-head revalidation are required; an earlier PR CI job passed the code-quality gate but failed the PR-body evidence step before the description correction.
+- No staging deployment, Clasp push, Google API call, Sheets/Drive write, synthetic UAT transaction or ZIP publication was performed during these fixes.
+
+---
+
 # Staging Release Audit and Pending Queue
 
 ## Operational evidence content-binding phase — 28 October 2026
