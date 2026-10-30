@@ -196,7 +196,11 @@ const stagingOnlyWithoutAttestation = validateStagingConfiguration(
   },
   { mode: 'artifact' },
 );
-assert.equal(stagingOnlyWithoutAttestation.ok, true, stagingOnlyWithoutAttestation.errors.join('; '));
+assert.equal(
+  stagingOnlyWithoutAttestation.ok,
+  true,
+  stagingOnlyWithoutAttestation.errors.join('; '),
+);
 assert.equal(stagingOnlyWithoutAttestation.checks.ownerAttestedIsolationUsed, false);
 
 const partialProductionReferenceIds = validateStagingConfiguration(
@@ -208,9 +212,11 @@ const partialProductionReferenceIds = validateStagingConfiguration(
 );
 assert.equal(partialProductionReferenceIds.ok, false);
 assert.ok(
-  partialProductionReferenceIds.errors.some((message) =>
-    message.includes('CV_STAGING_ONLY_MODE=true cannot be combined with production resource settings') ||
-    message.includes('all four CV_PRODUCTION_* resource IDs and CV_PRODUCTION_API_URL'),
+  partialProductionReferenceIds.errors.some(
+    (message) =>
+      message.includes(
+        'CV_STAGING_ONLY_MODE=true cannot be combined with production resource settings',
+      ) || message.includes('all four CV_PRODUCTION_* resource IDs and CV_PRODUCTION_API_URL'),
   ),
 );
 
@@ -295,7 +301,7 @@ const productionDeployment = validateStagingConfiguration({
 assert.equal(productionDeployment.ok, false);
 assert.ok(productionDeployment.errors.some((message) => message.includes('production endpoint')));
 assert.ok(
-  productionDeployment.errors.some((message) => message.includes('production URL deployment ID')),
+  productionDeployment.errors.some((message) => message.includes('production deployment ID')),
 );
 
 const productionDeploymentArtifact = validateStagingConfiguration(
