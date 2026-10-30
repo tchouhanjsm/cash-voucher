@@ -24,9 +24,12 @@ assert.doesNotMatch(runStagingUatScript, /\/tmp\/cash-voucher-staging-(?:uat|ser
 assert.doesNotMatch(runStagingUatScript, /tee "\$\{UAT_LOG_FILE\}"/);
 assert.match(runStagingUatScript, /detailed transcript is withheld from workflow logs/);
 
-const productionApiUrl = readProductionApiUrl();
+const productionApiUrl = 'https://script.google.com/macros/s/production-deployment-fixture/exec';
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
+assert.equal(readProductionApiUrl({}), '', 'production URL is not inferred from root config.js');
 const fixture = {
+  CV_STAGING_ONLY_MODE: 'false',
+  CV_PRODUCTION_API_URL: productionApiUrl,
   CV_STAGING_SCRIPT_ID: 'staging-script-fixture',
   CV_PRODUCTION_SCRIPT_ID: 'production-script-fixture',
   CV_STAGING_DEPLOYMENT_ID: 'staging-deployment-fixture',
@@ -96,7 +99,7 @@ assert.equal(readinessWithoutProductionInventory.ok, false);
 assert.equal(readinessWithoutProductionInventory.checks.productionResourceReferencesPresent, false);
 assert.ok(
   readinessWithoutProductionInventory.errors.some((message) =>
-    /all four production resource reference IDs/.test(message),
+    /all four CV_PRODUCTION_.*resource IDs and CV_PRODUCTION_API_URL/.test(message),
   ),
 );
 
@@ -157,50 +160,44 @@ assert.ok(incompleteModernClasp.errors.some((message) => message.includes('CLASP
 
 const withoutProductionReferenceIds = {
   ...fixture,
+  CV_STAGING_ONLY_MODE: 'true',
+  CV_PRODUCTION_API_URL: '',
   CV_PRODUCTION_SCRIPT_ID: '',
   CV_PRODUCTION_SPREADSHEET_ID: '',
   CV_PRODUCTION_RECEIPT_FOLDER_ID: '',
   CV_PRODUCTION_BACKUP_FOLDER_ID: '',
-  CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: 'OWNER-VERIFIED-STAGING-ONLY',
 };
 const attestedArtifactOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
   mode: 'artifact',
 });
 assert.equal(attestedArtifactOnly.ok, true, attestedArtifactOnly.errors.join('; '));
 assert.equal(attestedArtifactOnly.checks.productionResourceReferencesPresent, false);
-assert.equal(attestedArtifactOnly.checks.ownerAttestedIsolationUsed, true);
+assert.equal(attestedArtifactOnly.checks.ownerAttestedIsolationUsed, false);
 assert.equal(attestedArtifactOnly.checks.targetIdsAreSeparated, true);
 
 const attestedDeployOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
   mode: 'deploy',
 });
-assert.equal(attestedDeployOnly.ok, false);
-const attestedDeployErrors = attestedDeployOnly.errors.join(' ');
-assert.match(attestedDeployErrors, /write-capable staging operations/i);
-assert.match(attestedDeployErrors, /not sufficient/);
+assert.equal(attestedDeployOnly.ok, true, attestedDeployOnly.errors.join('; '));
 assert.equal(attestedDeployOnly.checks.ownerAttestedIsolationUsed, false);
-assert.equal(attestedDeployOnly.checks.targetIdsAreSeparated, false);
+assert.equal(attestedDeployOnly.checks.targetIdsAreSeparated, true);
 
 const attestedUatOnly = validateStagingConfiguration(withoutProductionReferenceIds, {
   mode: 'uat',
 });
-assert.equal(attestedUatOnly.ok, false);
-const attestedUatErrors = attestedUatOnly.errors.join(' ');
-assert.match(attestedUatErrors, /all four production resource reference IDs/);
+assert.equal(attestedUatOnly.ok, true, attestedUatOnly.errors.join('; '));
+assert.equal(attestedUatOnly.checks.productionResourceReferencesPresent, false);
+assert.equal(attestedUatOnly.checks.targetIdsAreSeparated, true);
 
-const missingIsolationAttestation = validateStagingConfiguration(
+const stagingOnlyWithoutAttestation = validateStagingConfiguration(
   {
     ...withoutProductionReferenceIds,
     CV_STAGING_RESOURCE_ISOLATION_ATTESTATION: '',
   },
   { mode: 'artifact' },
 );
-assert.equal(missingIsolationAttestation.ok, false);
-assert.ok(
-  missingIsolationAttestation.errors.some((message) =>
-    message.includes('CV_STAGING_RESOURCE_ISOLATION_ATTESTATION'),
-  ),
-);
+assert.equal(stagingOnlyWithoutAttestation.ok, true, stagingOnlyWithoutAttestation.errors.join('; '));
+assert.equal(stagingOnlyWithoutAttestation.checks.ownerAttestedIsolationUsed, false);
 
 const partialProductionReferenceIds = validateStagingConfiguration(
   {
@@ -212,7 +209,8 @@ const partialProductionReferenceIds = validateStagingConfiguration(
 assert.equal(partialProductionReferenceIds.ok, false);
 assert.ok(
   partialProductionReferenceIds.errors.some((message) =>
-    message.includes('all four production resource reference IDs'),
+    message.includes('CV_STAGING_ONLY_MODE=true cannot be combined with production resource settings') ||
+    message.includes('all four CV_PRODUCTION_* resource IDs and CV_PRODUCTION_API_URL'),
   ),
 );
 
