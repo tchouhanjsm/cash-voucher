@@ -43,9 +43,10 @@ function buildPreflight() {
       url: 'https://github.com/' + repository + '/actions/runs/' + runId,
     },
     outcome: 'configuration-pass',
+    deploymentScope: 'staging-only',
     categories: {
       stagingResourceSeparation: 'pass',
-      productionResourceInventory: 'pass',
+      productionResourceInventory: 'not-applicable',
       stagingEndpoint: 'pass',
       dedicatedUatAccounts: 'pass',
       claspCredentialShape: 'pass',
@@ -285,6 +286,12 @@ assert.ok(hasCode(futureBundle, 'BUNDLE_TIMESTAMP_IN_FUTURE'));
 const invalidValidationTime = validateReleaseGateBundle(buildBundle(), 'not-a-timestamp');
 assert.ok(invalidValidationTime.errors.some((error) => error.code === 'VALIDATION_TIMESTAMP'));
 
+const productionInventoryClaim = buildBundle();
+productionInventoryClaim.stagingPreflight.categories.productionResourceInventory = 'pass';
+assert.ok(hasCode(productionInventoryClaim, 'PREFLIGHT_CATEGORY'));
+const wrongPreflightScope = buildBundle();
+wrongPreflightScope.stagingPreflight.deploymentScope = 'production';
+assert.ok(hasCode(wrongPreflightScope, 'PREFLIGHT_SCOPE'));
 const blockedPreflight = buildBundle();
 blockedPreflight.stagingPreflight.outcome = 'blocked';
 blockedPreflight.stagingPreflight.blockers.push('configuration is incomplete');

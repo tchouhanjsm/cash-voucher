@@ -6,7 +6,7 @@ const localApiOverride = ['localhost', '127.0.0.1'].includes(location.hostname)
 window.CV_CONFIG = {
   API_URL:
     localApiOverride ||
-    'https://script.google.com/macros/s/AKfycbys21L1jrEYXmdjN5lf1dYlAQJnqGRU3WjGQrvpPwjW7_zVJNb7w6ExRDnmbrkkFdM/exec',
+    '',
   ENVIRONMENT: localApiOverride ? 'staging' : '',
   DEPLOYMENT_ID: localApiOverride ? 'MOCK_DEPLOYMENT' : '',
 };

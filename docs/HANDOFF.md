@@ -1,12 +1,22 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 29 October 2026 (account support form/E2E reliability fix)
+**Updated:** 30 October 2026 (staging Environment SOT and readiness RCA)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `474097a8075303b9f44aa970dfd79bc3f6b78852` (PR #247 is merged; PR #248 is also merged; bounded voucher audit reconciliation CSV export integrated).
-**Current source batch:** `client/fix-account-report-form-e2e-20261029` isolates the My Account support form from Register filter CSS with a dedicated `accountReportForm` ID. The follow-on adds visible associated field labels, a responsive desktop/mobile grid, full-row message field, touch-sized submission action and viewport-level regression checks.
-**Active review PR:** [#249 — Isolate account support form from register styles](https://github.com/tchouhanjsm/cash-voucher/pull/249).
-**Release boundary:** focused frontend selector and test change. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+**Current integration baseline:** `730a8c39e3117adfefe97e520d4ab332d4d8d4ef` (PR #249 merged).
+**Current source batch:** `client/staging-config-sot-rCA-20261030` corrects workflow variable/secret mappings, removes the absent-production dependency, establishes an explicit staging-only preflight/evidence contract, and updates regression tests and release documentation.
+**Failed readiness RCA:** [workflow #40910344511](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511), [job #123577554801](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511/job/123577554801). Root causes and corrective actions are recorded at the top of `docs/STAGING-RELEASE-AUDIT.md`.
+**Environment SOT:** six staging API/resource settings remain Environment variables; Clasp OAuth JSON and dedicated owner/manager UAT credentials remain Environment secrets. No production URL or production resource IDs are configured or required at this stage.
+**Release boundary:** this source phase changes workflows, preflight, release-evidence validation, tests and documentation only. It does not push with Clasp, deploy Apps Script, create UAT transactions, publish cPanel assets or modify production.
+
+## Current staging configuration contract — 30 October 2026
+
+- The six staging values in the screenshot are consumed through GitHub Actions `vars`: `CV_STAGING_API_URL`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_SCRIPT_ID`, and `CV_STAGING_SPREADSHEET_ID`.
+- The five authentication values remain GitHub Environment secrets: `CLASPRC_JSON`, `CV_STAGING_UAT_MANAGER_EMAIL`, `CV_STAGING_UAT_MANAGER_PASSWORD`, `CV_STAGING_UAT_OWNER_EMAIL`, and `CV_STAGING_UAT_OWNER_PASSWORD`.
+- Preflight declares `staging-only`, validates the five staging IDs are present and pairwise distinct, and checks the API URL/deployment ID match. Production inventory is `not-applicable`; no production placeholders are invented.
+- Root `config.js` has no hard-coded Apps Script endpoint. The generated staging build injects the endpoint into `dist/config.js`.
+- Screenshot configuration is not independent proof of Google resource ownership or connectivity. Before `deploy-and-uat`, the operator must inspect the Apps Script project, deployment, Sheet and Drive folders and confirm the intended staging target.
+- Preserve manual dispatch from `client-main`, exact `STAGING-ONLY` confirmation, explicit staging-write consent and existing-deployment-only Clasp update. No staging write was performed by this source phase.
 
 ## Account support submission lifecycle refinement — 29 October 2026
 

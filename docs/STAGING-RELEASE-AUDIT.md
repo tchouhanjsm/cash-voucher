@@ -1,3 +1,33 @@
+# Staging Configuration Source-of-Truth RCA — 30 October 2026
+
+## Incident
+
+Read-only staging readiness workflow [#40910344511](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511), job [#123577554801](https://github.com/tchouhanjsm/cash-voucher/actions/runs/40910344511/job/123577554801), failed during `node scripts/staging-preflight.js --mode=readiness`. Source and mock browser validation succeeded. The staging preflight failed before Google API access, Clasp push, deployment, Sheets/Drive writes or transactional UAT; deploy and UAT jobs were skipped. A sanitized preflight artifact was uploaded.
+
+## Root causes
+
+1. **Environment context mismatch.** The owner-provided Settings screenshot is the SOT. Six staging URL/resource values are Environment variables, while `CLASPRC_JSON` and the four owner/manager UAT account fields are Environment secrets. Both staging workflows incorrectly read the six values from `secrets.CV_STAGING_*`, so GitHub supplied empty values even though the variables existed.
+2. **Premature production dependency.** `scripts/staging-preflight.js` required a production Apps Script Web App URL extracted from root `config.js` and four production Script/Sheet/Drive reference IDs. No production deployment or resource inventory exists at this milestone. This was an incorrect release-stage assumption, not an operator omission.
+3. **Misleading source default.** Root `config.js` retained a fixed Apps Script endpoint, which preflight interpreted as production. It made a not-yet-provisioned production target an implicit staging prerequisite.
+
+## Corrective actions
+
+- Read the six screenshot-defined values through GitHub Actions `vars` in both Staging UAT and Client staging ZIP workflows.
+- Keep Clasp OAuth JSON and owner/manager emails/passwords in Environment secrets, exactly as shown in the screenshot.
+- Make preflight explicitly `staging-only`: require all five staging resource IDs, verify pairwise distinctness, and validate that the HTTPS Apps Script `/exec` URL matches the configured staging deployment ID.
+- Remove production URL and production resource inventory as current prerequisites. Reject unexpected `CV_PRODUCTION_*` inputs rather than silently mixing release scopes.
+- Keep root source `config.js` API fallback blank. Generated staging `dist/config.js` receives the endpoint during the staging build.
+- Bind sanitized preflight evidence to `deploymentScope: staging-only` and report production inventory as `not-applicable`. The release-bundle validator accepts this exact state and rejects a false production-inventory pass.
+- Update regression tests, release runbook and engineering handoff. Preserve manual `client-main` dispatch, exact `STAGING-ONLY` confirmation, explicit transactional write consent and the existing-deployment-only Clasp update.
+
+## Limits and acceptance
+
+The screenshot establishes GitHub Environment setting names and storage classes; it does not independently authenticate Google resource ownership or prove endpoint reachability. The updated readiness check remains configuration-only. Before any deploy/UAT write, the owner/operator must privately verify that the Script project, Web App deployment, spreadsheet, receipt folder and backup folder are the intended dedicated staging resources.
+
+No production IDs, URLs, credentials or placeholders are required or introduced. This source change does not dispatch staging writes. After merge, first rerun `validate-only` on `client-main`; deploy/UAT remains gated on a passing preflight and the owner's independent target verification.
+
+---
+
 # Staging Release Audit and Pending Queue
 
 ## Operational evidence content-binding phase — 28 October 2026

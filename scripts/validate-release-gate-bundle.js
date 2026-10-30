@@ -195,6 +195,7 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
       'source',
       'workflowRun',
       'outcome',
+      'deploymentScope',
       'categories',
       'blockers',
       'boundaries',
@@ -209,6 +210,9 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
   }
   if (preflight.evidenceType !== 'cash-voucher-staging-configuration-preflight') {
     add(errors, 'PREFLIGHT_TYPE', 'Unexpected staging preflight evidence type.');
+  }
+  if (preflight.deploymentScope !== 'staging-only') {
+    add(errors, 'PREFLIGHT_SCOPE', 'Staging preflight must explicitly declare the staging-only deployment scope.');
   }
   if (!validTimestamp(preflight.generatedAt)) {
     add(errors, 'PREFLIGHT_TIMESTAMP', 'Staging preflight timestamp is not canonical UTC.');
@@ -284,11 +288,15 @@ function validateStagingPreflight(preflight, source, sourceChecks, errors) {
   );
   if (isRecord(preflight.categories)) {
     REQUIRED_PREFLIGHT_CATEGORIES.forEach((category) => {
-      if (preflight.categories[category] !== 'pass') {
+      const expectedStatus =
+        category === 'productionResourceInventory' && preflight.deploymentScope === 'staging-only'
+          ? 'not-applicable'
+          : 'pass';
+      if (preflight.categories[category] !== expectedStatus) {
         add(
           errors,
           'PREFLIGHT_CATEGORY',
-          'Every required staging configuration category must pass.',
+          'Every applicable staging configuration category must pass; production inventory must be not-applicable in staging-only scope.',
         );
       }
     });

@@ -12,7 +12,7 @@ PR #175 adds authenticated Account → Report a problem through Apps Script acti
 
 The staging/UAT workflow and server-backed onboarding gates are source-complete. Dedicated staging Google resources, the first Web App deployment, protected GitHub `staging` Environment, secrets and a static staging hostname are not evidenced as provisioned. The repository is private; confirm the existing host integration can still read it before triggering a rebuild or changing DNS. A merge is distinct from Clasp upload, Web App deployment, static publication, live UAT and customer acceptance. Local checks and mock Browser E2E do not prove live Google Sheets/Drive behavior.
 
-The root frontend `config.js` contains a production/legacy Apps Script URL. **Do not reuse or overwrite it for staging.** Live GitHub metadata currently reports this repository as public, so Actions logs, issue/PR text and artifacts must be treated as publicly visible. The client ZIP workflow no longer accepts a free-form API URL: it reads the endpoint and resource identities from the `staging` Environment secrets and runs `staging:preflight -- --mode=artifact` before packaging. The generated client config necessarily embeds the selected staging endpoint so the app can call it; that endpoint is not an authentication credential. Publish only generated `dist/`, and never place resource IDs or credentials in unmasked variables, logs or chat.
+The root frontend `config.js` intentionally has a blank API fallback until a generated client build injects a target endpoint. No production endpoint is configured or inferred. The client ZIP workflow reads the staging endpoint and resource identities from the `staging` Environment variables shown in the owner-provided Settings screenshot and runs `staging:preflight -- --mode=artifact` before packaging. Generated staging `dist/config.js` embeds the selected staging endpoint so the app can call it; this URL is deployment configuration, not an authentication credential. Publish only generated `dist/`. Keep Clasp OAuth and UAT account credentials in Environment secrets, never in repository files, logs or chat.
 
 **Current staging boundary (18 October 2026):** PR #155's manual workflow, PR #156's credential redaction and PR #173's server-backed environment gate are merged. The owner must provision isolated resources, build the frontend for the verified staging endpoint, then execute the protected workflow. The workflow deploys the Apps Script backend and runs UAT; it does **not** publish the frontend `dist/` to the staging subdomain. UAT creates and cancels one tagged INR 10,000 test payment in staging; its cancelled row and audit trace remain. The customer instance is separate and follows `docs/CUSTOMER-ONBOARDING-RUNBOOK.md`.
 
@@ -42,14 +42,13 @@ The deployment wrapper runs Clasp from a temporary project workspace with an iso
 
 UAT execution uses a separate per-run private transcript directory. Raw UAT output is retained only long enough for sanitized evidence assembly; the transcript reader enforces its dedicated-directory contract, private permissions, no-symlink policy and a 2 MiB size limit. The local static server receives only the resource/configuration values it needs, not owner/manager credentials or write consent. Treat any transcript-validation or cleanup error as a failed evidence step; do not bypass it to obtain a green workflow.
 
-## Staging resource isolation policy (current)
+## Staging-only resource policy (current)
 
-The isolation attestation `OWNER-VERIFIED-STAGING-ONLY` is permitted **only for the non-mutating artifact preflight** when all four production resource reference IDs are intentionally omitted. It records an operator assertion; it does not independently prove resource identity.
+All current staging workflows are deliberately scoped to staging. No production target is configured or required. The workflows pass only the six screenshot-defined Environment variables for the staging API URL and five resource IDs; no production IDs are passed to the preflight or deployer. The preflight rejects unexpected `CV_PRODUCTION_*` inputs, missing/placeholder staging identifiers, duplicate staging identifiers, malformed endpoints and a URL/deployment-ID mismatch.
 
-Write-capable `deploy` and `uat` preflight must receive all four production references: Script ID, Spreadsheet ID, receipt-folder ID and backup-folder ID. The validator compares them with the configured production Web App deployment ID and each staging resource, rejects duplicate/cross-environment identifiers, and fails closed if any reference is missing or placeholder. The owner attestation is not a substitute for the inventory in these modes.
+The owner/operator must independently confirm in Google Apps Script, Sheets and Drive that the five configured resources identify the intended dedicated staging resources. The screenshot confirms GitHub Environment variable/secret names and storage classes; it does not independently prove Google resource ownership, deployment reachability, data isolation or backup restorability. Manual deploy/UAT still requires `client-main`, exact `STAGING-ONLY` confirmation, explicit write consent and the protected staging Environment. Production must be handled through a separate reviewed release mode once production is actually provisioned.
 
-Do not work around a failed preflight, invent IDs, copy credentials into logs, or retry unchanged configuration. The repository owner/operator must privately populate and verify the protected `staging` Environment secrets before any separately authorized write-capable run. Artifact generation remains non-deploying and does not prove that the deployed staging resources are live or isolated.
-
+Do not invent production IDs, reuse a static source config as a production endpoint, move screenshot variables into secrets, copy credentials into logs, or retry a failed preflight unchanged. Artifact generation remains non-deploying and does not prove that deployed staging resources are live.
 ## Setup preflight and safe recovery
 
 Run `setup()` only after the operator has privately verified that the Script project and `SS_ID` identify the intended empty staging Sheet and configured the staging-only owner properties. Before its first write, preflight checks the target and any existing application tab headers/data. A new instance must have no app tabs or initialization markers and valid initial Owner credentials. A completely initialized instance is detected as a read-only no-op; a partial/legacy schema is rejected before setup rewrites headers or formats sheets. The preflight also rejects data rows without a `UserID`, incomplete/invalid account rows, an application without an active Owner, invalid/missing initial-owner credentials, or an inaccessible target. Use a separately documented and backed-up migration for legacy schemas.
@@ -245,16 +244,32 @@ The repository now provides a manually dispatched staging workflow at `.github/w
 
 Create a GitHub Environment named `staging`, restrict its deployment branch to `client-main`, and, where available, require reviewer approval. To set the restriction, open **Settings → Environments → staging**; click the deployment branch dropdown currently labelled **No restriction**, choose **Selected branches and tags**, add the exact branch `client-main`, and save. The workflow separately refuses deploy/UAT runs unless the ref is `refs/heads/client-main`.
 
-Configure these `staging` Environment **secrets**: `CV_STAGING_SCRIPT_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_API_URL`, `CV_STAGING_SPREADSHEET_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, and `CV_STAGING_BACKUP_FOLDER_ID`. The client ZIP workflow uses `CV_STAGING_API_URL` from this Environment; it does not accept a manually supplied URL. Both the ZIP and UAT workflows use the secret values so GitHub masks them in public workflow logs. The production Web App deployment ID is extracted from the existing production `config.js` URL and is always checked against the staging URL/deployment.
+The owner-provided Settings screenshot is the **source of truth (SOT)** for GitHub Environment configuration. Preserve these six values as `staging` Environment **variables**:
 
-For the four production resource references—`CV_PRODUCTION_SCRIPT_ID`, `CV_PRODUCTION_SPREADSHEET_ID`, `CV_PRODUCTION_RECEIPT_FOLDER_ID`, and `CV_PRODUCTION_BACKUP_FOLDER_ID`—choose **one** of these safe configurations:
+- `CV_STAGING_API_URL`
+- `CV_STAGING_BACKUP_FOLDER_ID`
+- `CV_STAGING_DEPLOYMENT_ID`
+- `CV_STAGING_RECEIPT_FOLDER_ID`
+- `CV_STAGING_SCRIPT_ID`
+- `CV_STAGING_SPREADSHEET_ID`
 
-- **Automated inventory comparison (preferred):** enter all four real, independently verified production resource IDs as `staging` Environment secrets. These are reference values only; deployment commands target the configured staging Script ID. Do not copy staging IDs into these fields.
-- **Staging-only owner attestation:** leave all four values unset/empty and add `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION` with the exact value `OWNER-VERIFIED-STAGING-ONLY`, but only after independently verifying that the staging Script, Sheet, receipt folder, and backup folder are distinct from production. In this mode, automated checks still enforce distinct staging resources and block matching the production Web App URL/deployment, but the four absent Script/Sheet/Drive comparisons are an explicit owner-attested gap.
+Both `.github/workflows/staging-uat.yml` and `.github/workflows/client-dist.yml` must read these exact names through the GitHub Actions `vars` context. Keep their names and storage class aligned with the screenshot.
 
-Do **not** provide only some production reference IDs: partial inventory fails closed. Empty production reference values by themselves are not sufficient; the explicit attestation is required when all four are omitted.
+Preserve these five values as `staging` Environment **secrets**:
 
-Configure these environment **secrets**: `CLASPRC_JSON`, `CV_STAGING_UAT_OWNER_EMAIL`, `CV_STAGING_UAT_OWNER_PASSWORD`, `CV_STAGING_UAT_MANAGER_EMAIL`, and `CV_STAGING_UAT_MANAGER_PASSWORD`. `CLASPRC_JSON` may use the legacy Clasp format (`token` plus `oauth2ClientSettings`) or the Clasp 3.x format (`tokens.default` with non-empty `refresh_token`, `client_id`, and `client_secret`). Do not paste or commit the JSON. A local structural diagnostic should print only key names and boolean field-presence checks, never values. The deployer's diagnostic sanitizer must redact the complete document and nested OAuth credentials. If Clasp credentials are invalid, stop and generate/verify the local Clasp credential file; do not expose it in chat or logs.
+- `CLASPRC_JSON`
+- `CV_STAGING_UAT_MANAGER_EMAIL`
+- `CV_STAGING_UAT_MANAGER_PASSWORD`
+- `CV_STAGING_UAT_OWNER_EMAIL`
+- `CV_STAGING_UAT_OWNER_PASSWORD`
+
+Clasp OAuth JSON and UAT account credentials are authentication material and remain secrets. The client ZIP workflow needs only the six staging variables; it must not receive Clasp or UAT credentials.
+
+**Current deployment scope is staging-only.** There is no production Web App URL, production Script/Sheet/Drive resource inventory, or production release workflow configured at this milestone. Production reference IDs are not required and must not be fabricated. The staging preflight validates that all five configured staging resource identifiers are present and pairwise distinct, and that the HTTPS Apps Script `/exec` URL matches the configured staging deployment ID. It reports production resource inventory as `not-applicable`, not as a verified pass. Configuration preflight does not independently authenticate Google resource ownership, remote reachability, or backup restorability.
+
+The root source `config.js` keeps a blank API fallback. Only the generated staging build injects the configured endpoint into `dist/config.js`. A future production rollout must introduce a separate, explicitly reviewed deployment mode, production resource inventory and release workflow; do not silently repurpose the staging contract.
+
+`CLASPRC_JSON` may use the legacy Clasp format (`token` plus `oauth2ClientSettings`) or the Clasp 3.x format (`tokens.default` with non-empty `refresh_token`, `client_id`, and `client_secret`). Do not paste or commit the JSON. A local structural diagnostic should print only key names and boolean field-presence checks, never values. The deployer's diagnostic sanitizer must redact the complete document and nested OAuth credentials. If Clasp credentials are invalid, stop and generate/verify the local Clasp credential file; do not expose it in chat or logs.
 
 ### Running the phases
 
