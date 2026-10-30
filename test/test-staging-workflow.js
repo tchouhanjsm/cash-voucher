@@ -26,7 +26,7 @@ assert.match(
 );
 assert.doesNotMatch(
   clientConfig,
-  /https:\/\/script\.google\.com\/macros\/s\/[^'\"\s]+\/exec/,
+  /https:\/\/script\.google\.com\/macros\/s\/[^'"\s]+\/exec/,
   'source config must not embed a legacy Apps Script deployment URL',
 );
 assert.doesNotMatch(
