@@ -264,8 +264,14 @@ assert.doesNotMatch(
   clientDistWorkflow,
   /secrets\.CV_STAGING_(?:SCRIPT_ID|DEPLOYMENT_ID|API_URL|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID)/,
 );
-assert.doesNotMatch(workflow, /CV_PRODUCTION_(?:SCRIPT_ID|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID):/);
-assert.doesNotMatch(clientDistWorkflow, /CV_PRODUCTION_(?:SCRIPT_ID|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID):/);
+assert.doesNotMatch(
+  workflow,
+  /CV_PRODUCTION_(?:SCRIPT_ID|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID):/,
+);
+assert.doesNotMatch(
+  clientDistWorkflow,
+  /CV_PRODUCTION_(?:SCRIPT_ID|SPREADSHEET_ID|RECEIPT_FOLDER_ID|BACKUP_FOLDER_ID):/,
+);
 assert.match(clientDistWorkflow, /name: Client staging dist zip/);
 for (const securityContract of [
   'Header always set X-Content-Type-Options "nosniff"',
