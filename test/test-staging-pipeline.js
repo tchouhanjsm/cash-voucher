@@ -329,7 +329,7 @@ const malformedUrl = validateStagingConfiguration({
   CV_STAGING_API_URL: 'https://staging.invalid/not-an-apps-script-url',
 });
 assert.equal(malformedUrl.ok, false);
-assert.ok(malformedUrl.errors.some((message) => message.includes('Apps Script URL')));
+assert.ok(malformedUrl.errors.some((message) => message.includes('plain HTTPS Apps Script')));
 
 const missingClasp = validateStagingConfiguration(
   {
