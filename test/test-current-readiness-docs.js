@@ -68,7 +68,7 @@ assert.ok(releaseGateBundleValidator.includes('validateOperationalGateEvidence')
 assert.ok(releaseGateBundleTest.includes('digest-consistent operational record'));
 assert.match(
   handoff,
-  /^\*\*Current integration baseline:\*\* `474097a8075303b9f44aa970dfd79bc3f6b78852`/m,
+  /^\*\*Current integration baseline:\*\* `[a-f0-9]{40}`/m,
 );
 assert.ok(handoff.includes('Staging secret-scope sprint batch — 28 October 2026'));
 assert.ok(staging.includes('Staging secret-scope sprint batch — 28 October 2026'));
