@@ -77,9 +77,7 @@ assert.equal(
   'staging-only mode has one correctly indented mapping per protected staging step',
 );
 const countWorkflowEnvironmentMapping = (key) =>
-  workflow
-    .split('\n')
-    .filter((line) => line.trim() === key + ': ${{ vars.' + key + ' }}').length;
+  workflow.split('\n').filter((line) => line.trim() === key + ': ${{ vars.' + key + ' }}').length;
 assert.equal(
   countWorkflowEnvironmentMapping('CV_PRODUCTION_API_URL'),
   countWorkflowEnvironmentMapping('CV_PRODUCTION_SCRIPT_ID'),
