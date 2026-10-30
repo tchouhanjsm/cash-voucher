@@ -15,7 +15,6 @@
 - Regression coverage asserts that the committed source config has no hard-coded Apps Script `/exec` endpoint. The existing login flow remains available for an operator-entered endpoint.
 - This change does not alter the merged staging preflight contract, the owner isolation attestation, authentication, API behavior, database schema or live resources.
 
-
 ## Staging-only Environment source of truth and RCA — 30 October 2026
 
 - The owner's 30 October screenshot is authoritative. The six existing staging values (`CV_STAGING_API_URL`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_SCRIPT_ID`, `CV_STAGING_SPREADSHEET_ID`) remain GitHub Environment **variables**. Do not move them into secrets or rename them.
