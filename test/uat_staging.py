@@ -4,6 +4,7 @@ import os
 import uuid
 from zoneinfo import ZoneInfo
 
+from staging_uat_config import configured_production_resource_ids
 from playwright.sync_api import TimeoutError as PlaywrightTimeoutError
 from playwright.sync_api import sync_playwright
 
@@ -207,12 +208,7 @@ def staging_target_check(page):
         "receiptFolderId": os.environ["CV_STAGING_RECEIPT_FOLDER_ID"].strip(),
         "backupFolderId": os.environ["CV_STAGING_BACKUP_FOLDER_ID"].strip(),
     }
-    production = {
-        os.environ["CV_PRODUCTION_SCRIPT_ID"].strip(),
-        os.environ["CV_PRODUCTION_SPREADSHEET_ID"].strip(),
-        os.environ["CV_PRODUCTION_RECEIPT_FOLDER_ID"].strip(),
-        os.environ["CV_PRODUCTION_BACKUP_FOLDER_ID"].strip(),
-    }
+    production = configured_production_resource_ids(os.environ)
     for field, expected in stage.items():
         check(target.get(field) == expected, "deployed readiness probe matches a configured staging resource")
         check(expected not in production, "staging target does not match a configured production resource")

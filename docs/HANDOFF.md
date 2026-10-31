@@ -1,14 +1,25 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 31 October 2026 (PR #254 staging UAT runner correction in review)
+**Updated:** 31 October 2026 (PR #254 merged; staging UAT target-check follow-up in review)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `ef0e90bd39ca263a95929414fd4c5581d51abde8` (PR #253 merged).
-**Current source batch:** `client/fix-staging-uat-env-isolation-20261031` fixes the staging-only UAT runner environment boundary and adds an execution-level regression harness.
-**Active review PR:** [PR #254 — restore staging-only UAT runner isolation](https://github.com/tchouhanjsm/cash-voucher/pull/254), based on `client-main`.
-**Release boundary:** runner/test/docs changes only. The existing staging Apps Script deployment from workflow #16 is unchanged by this PR; no cPanel upload or production operation has been performed.
+**Current integration baseline:** `0cd7207959098da58d8e45ce77a2bc28d221b0fe` (PR #254 merged).
+**Current source batch:** `client/fix-staging-uat-optional-prod-refs-20261031` makes the live UAT target check compatible with a production-free staging-only environment and adds direct regression coverage.
+**Active review PR:** [PR #255 — allow production-free staging UAT target checks](https://github.com/tchouhanjsm/cash-voucher/pull/255), based on `client-main`.
+**Release boundary:** The existing staging Apps Script deployment was updated successfully from SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe`; post-deployment target recheck passed, but live UAT stopped before financial test writes. The client ZIP from this SHA is verified but must be regenerated after the follow-up PR merge to bind its manifest to the final integration SHA. No cPanel upload or production action has been performed.
 
-## Active staging UAT runner correction — 31 October 2026
+## Current staging UAT target-check follow-up — 31 October 2026
+
+- **Integration baseline:** `client-main` at `0cd7207959098da58d8e45ce77a2bc28d221b0fe`, the squash merge of PR #254. All four required PR #254 workflows passed on final reviewed head `e56fc5a647c72259706ed9f661b48ab144bbc890`: [CI #3449](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191716492), [Browser E2E #3176](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191716419), [Full Flight #2751](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191716427), and [Autonomous Development Monitor #594](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191716418).
+- **Staging backend:** [workflow #17](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41192063930) passed source/mock validation and the staging-only guard, updated the existing version-5 Apps Script deployment, and passed its target recheck.
+- **Live UAT failure:** owner authentication and `deploymentReadiness` succeeded (four checks passed). `test/uat_staging.py::staging_target_check` then raised a `KeyError` when it directly indexed intentionally absent `CV_PRODUCTION_*` variables. The failure occurred before the test-payment creation path; no financial UAT voucher was created or cancelled. Details and the corrected logic are in the staging audit/runbook.
+- **Current follow-up source batch:** `client/fix-staging-uat-optional-prod-refs-20261031` introduces a pure Python helper that treats absent/blank production resource IDs as absent while preserving checks for any configured IDs; stdlib tests cover absent, blank and configured values and are part of `npm test`.
+- **Next live UAT:** after follow-up PR merge and exact-head gates, run protected `uat-only` on `client-main` with `STAGING-ONLY` and explicit staging-write confirmation. The backend already deployed at SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe` has not changed, so do not repeat the Clasp push for this test-only correction.
+- **Client ZIP:** artifact-only [workflow #12](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41192147486) produced a verified `GARH-JAISAL` staging package at SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe` (42 internal files passed SHA-256). It is interim because the follow-up PR changes the final integration SHA; regenerate after merge and give the owner the final ZIP plus detached checksum for manual cPanel staging `dist` upload.
+- **Clasp:** local CLI `3.4.1`, `rootDir: backend`, and existing staging deployment identity remain correct. No CLI version update or local `.clasp.json` edit is required. Keep `.clasp.json` and `.clasprc.json` private/ignored.
+- **Production:** no production project or production resources exist in this lifecycle. Keep all work staging-only.
+
+## Historical staging UAT runner correction (PR #254 merged) — 31 October 2026
 
 - **Integration base:** `client-main` at `ef0e90bd39ca263a95929414fd4c5581d51abde8`, PR #253 merge. Legacy `main` remains read-only.
 - **Live staging deployment:** workflow [#16](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41172002009) successfully uploaded the backend source and updated the existing version-5 staging deployment at the base SHA. The subsequent UAT phase failed before its browser assertions began.
