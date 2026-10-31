@@ -122,6 +122,13 @@ assert.ok(deploy.includes('function cleanupTemporaryDirectories(directories, fil
 assert.ok(deploy.includes('fileSystem.rmSync(directory, { recursive: true, force: true })'));
 assert.ok(deploy.includes('if (fileSystem.existsSync(directory)) successful = false;'));
 assert.ok(deploy.includes('cleanupTemporaryDirectories([workspace, tempHome])'));
+assert.match(uat, /from staging_uat_config import configured_production_resource_ids/);
+assert.match(uat, /production = configured_production_resource_ids\\(os\\.environ\\)/);
+assert.doesNotMatch(
+  uat,
+  /os\\.environ\\[["']CV_PRODUCTION_/,
+  'staging UAT must not require production resource variables to exist',
+);
 assert.match(uat, /deploymentReadiness/);
 assert.match(uat, /dashboardSummary/);
 assert.match(uat, /registerPage/);
