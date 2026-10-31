@@ -43,7 +43,6 @@
 - Final cPanel staging ZIP: pending rebuild from the post-merge integration SHA.
 - Production: out of scope; no production deployment or resource use is authorized.
 
-
 ## Authoritative configuration contract
 
 The GitHub Environment screenshot supplied by the owner on 30 October 2026 is the source of truth for current staging configuration. Its six target values are Environment variables: `CV_STAGING_API_URL`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_SCRIPT_ID`, and `CV_STAGING_SPREADSHEET_ID`.
