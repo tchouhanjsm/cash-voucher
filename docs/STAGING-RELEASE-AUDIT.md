@@ -1,5 +1,49 @@
 # Staging-only configuration source of truth and RCA — 30 October 2026
 
+## 31 October 2026 — workflow #16 deployment succeeded; UAT runner RCA
+
+### Verified baseline
+
+- Authoritative integration branch at the start of this correction: `client-main`, SHA `ef0e90bd39ca263a95929414fd4c5581d51abde8`.
+- The owner confirmed the local checkout is clean and aligned with `origin/client-main`.
+- Local Clasp CLI: `3.4.1`; local `.clasp.json` has `rootDir: backend`. The file remains ignored and is not committed.
+- `clasp list-deployments` from that local configuration returned the version-5 deployment created by workflow #16: `Cash Voucher staging UAT ef0e90bd39ca`. The exact deployment ID also matches the deployment shown by the prior run's Clasp listing.
+- Staging-only GitHub Environment declarations remain `CV_STAGING_ONLY_MODE=true` and `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION=OWNER-VERIFIED-STAGING-ONLY`. No production Apps Script, Sheet, receipt-folder or backup-folder resources exist or are required for this owner-attested staging-only operation.
+
+### Workflow #16 evidence and root cause
+
+- [Staging UAT workflow #16](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41172002009) passed source/security/regression gates, mock browser E2E, protected staging deployment preflight and the actual staging Apps Script source upload/deployment update.
+- The failure occurred in `scripts/run-staging-uat.sh` while constructing the `env -i` environment for `scripts/staging-web-server.js`. The browser UAT assertions did not start.
+- **Root cause A — nounset expansion:** the shell enables `set -u`, but directly expands `CV_PRODUCTION_SCRIPT_ID`, `CV_PRODUCTION_SPREADSHEET_ID`, `CV_PRODUCTION_RECEIPT_FOLDER_ID` and `CV_PRODUCTION_BACKUP_FOLDER_ID`. These variables are intentionally unset in this staging-only environment. Bash therefore aborts before launching the child process.
+- **Root cause B — incomplete allowlist:** the isolated child environment does not forward `CV_STAGING_ONLY_MODE` or `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION`. The static staging web server invokes artifact-mode preflight and requires both declarations. Fixing only Root cause A would still leave the child server unable to pass preflight.
+- This is a shell runner/environment propagation defect. It is not evidence that the deployed Apps Script code or browser application assertions failed.
+
+### Permanent source correction in this PR
+
+- Retain `set -euo pipefail`, the `env -i` isolation boundary, parent UAT preflight, private logs and evidence cleanup.
+- Remove all production reference variables from the isolated server allowlist rather than expanding empty/placeholder production references.
+- Forward the two staging-only declaration variables explicitly along with required staging resource configuration.
+- Add an execution-level shell harness at `test/test-staging-uat-runner.js`. It runs the real runner with stubbed Node/Python/curl commands and no production variables, verifies the child environment contains both staging-only declarations and the staging target values, and asserts unrelated parent variables and production keys are not forwarded.
+- Add the new runner harness to `npm test`; retain the existing staging workflow contract tests. Do not alter or weaken staging preflight validation.
+
+### Clasp and publication controls
+
+- No local Clasp credential or configuration change is required. `.clasp.json` stays local/ignored, and `.clasprc.json` remains private. The workflow's deployment wrapper creates a temporary project config and temporary OAuth home.
+- The installed Clasp CLI version `3.4.1` is retained; this incident did not involve a CLI-version defect.
+- After PR review/merge, update the existing staging Apps Script deployment only through the manual protected `deploy-and-uat` workflow. Its UAT phase creates and cancels one tagged INR 10,000 staging test payment and leaves the cancelled row/audit trace; this requires explicit write consent.
+- The separate client ZIP workflow is artifact-only and must remain staging-bound. No cPanel upload or production publication is performed by automation. Regenerate the client ZIP from the post-merge integration SHA, validate its manifest and detached SHA-256 checksum, then hand it to the owner for manual upload to the staging cPanel `dist` directory.
+- A previous ZIP from workflow #11 was verified against its detached SHA-256, but it targets the pre-correction SHA `ef0e90bd39ca263a95929414fd4c5581d51abde8`; regenerate after merge to keep the package manifest on the final integration commit.
+
+### Release status after this RCA
+
+- Backend staging deployment at SHA `ef0e90bd39ca263a95929414fd4c5581d51abde8`: succeeded.
+- Live staging browser UAT: not completed; workflow runner defect prevented browser assertions.
+- Permanent runner fix: in review on branch `client/fix-staging-uat-env-isolation-20261031`.
+- Post-merge Apps Script staging update and live UAT: pending protected workflow execution and its explicit staging-write guard.
+- Final cPanel staging ZIP: pending rebuild from the post-merge integration SHA.
+- Production: out of scope; no production deployment or resource use is authorized.
+
+
 ## Authoritative configuration contract
 
 The GitHub Environment screenshot supplied by the owner on 30 October 2026 is the source of truth for current staging configuration. Its six target values are Environment variables: `CV_STAGING_API_URL`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_SCRIPT_ID`, and `CV_STAGING_SPREADSHEET_ID`.
