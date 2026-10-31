@@ -201,6 +201,15 @@ assert.equal(
   0,
   'a committed voucher with the same client transaction ID is treated as an idempotent retry',
 );
+const conflictingClientIdReuse = call('createVouchers', {
+  entries: [{ ...pendingDuplicate, amount: 126 }],
+});
+assert.equal(conflictingClientIdReuse.ok, false);
+assert.equal(
+  conflictingClientIdReuse.code,
+  'CONFLICT',
+  'reusing a client transaction ID with a different payload is rejected',
+);
 
 // The candidate set changes when another matching payment is committed. The old
 // confirmation token must no longer authorize a third payment.
@@ -256,7 +265,26 @@ const inactiveCreate = call('saveVendor', {
   mobile: '',
 });
 assert.equal(inactiveCreate.ok, true);
+const committedBeforeDeactivation = entry('identity-inactive-retry-001', {
+  vendor: 'Inactive Identity Vendor',
+  vendorId: inactiveCreate.data.vendorId,
+  amount: 44,
+});
+const inactiveCommittedVoucher = call('createVouchers', {
+  entries: [committedBeforeDeactivation],
+});
+assert.equal(inactiveCommittedVoucher.ok, true);
 assert.equal(call('toggleVendor', { id: inactiveCreate.data.vendorId }).ok, true);
+const inactiveRetryPreflight = call('checkPaymentDuplicates', {
+  entries: [{ index: 0, ...committedBeforeDeactivation }],
+});
+assert.equal(inactiveRetryPreflight.ok, true);
+assert.equal(inactiveRetryPreflight.data.results[0].duplicateCount, 0);
+const inactiveRetry = call('createVouchers', {
+  entries: [committedBeforeDeactivation],
+});
+assert.equal(inactiveRetry.ok, true, 'committed transaction retry succeeds after vendor deactivation');
+assert.equal(inactiveRetry.data.skipped, 1);
 const inactiveVoucher = call('createVouchers', {
   entries: [
     entry('identity-inactive-001', {

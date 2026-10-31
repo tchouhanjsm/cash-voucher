@@ -352,6 +352,24 @@ function checkPaymentDuplicates_(user, req) {
     if (!vendor) throw err_('Payee is required.', 'VALIDATION');
     const amount = Math.round(finiteNumber_(source.amount, 'amount') * 100) / 100;
     if (amount <= 0 || amount > CFG.MAX_AMOUNT) throw err_('Invalid amount.', 'VALIDATION');
+    const clientId = clientId_(source.clientId);
+    const committedClientIdVoucher = clientId
+      ? existing.find(function (voucher) {
+          return String(voucher.ClientID || '') === clientId;
+        })
+      : null;
+    if (committedClientIdVoucher) {
+      // The create route performs the authoritative payload equality check before returning
+      // the previously committed voucher. Do not surface other matching ledger records again.
+      return {
+        index: index,
+        duplicateCount: 0,
+        hiddenCount: 0,
+        matches: [],
+        confirmationToken: '',
+        idempotent: true,
+      };
+    }
     const identity = resolveVendorIdentity_(vendor, source.vendorId, source.vendorType, lookup);
     const entry = {
       type: type,
@@ -360,7 +378,7 @@ function checkPaymentDuplicates_(user, req) {
       vendorId: identity.vendorId,
       vendorType: identity.vendorType,
       amount: amount,
-      clientId: clientId_(source.clientId),
+      clientId: clientId,
     };
     // Entries submitted together are governed by the existing payee/day approval aggregation;
     // duplicate review compares each candidate only with persisted ledger records.

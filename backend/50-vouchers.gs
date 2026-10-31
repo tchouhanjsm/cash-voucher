@@ -191,7 +191,24 @@ function createVouchers_(user, req) {
     const impact = method
       ? cashImpactForPaymentMethod_(method, type)
       : cashImpact_(en.cashImpact, row);
-    const identity = resolveVendorIdentity_(vendor, en.vendorId, en.vendorType, vendorLookup);
+    const clientId = clientId_(en.clientId);
+    const previousClientVoucher = clientId ? byClient[clientId] : null;
+    const identity = previousClientVoucher
+      ? {
+          vendor: vendor,
+          vendorId:
+            en.vendorId === undefined
+              ? String(previousClientVoucher.VendorID || '')
+              : String(en.vendorId || ''),
+          vendorType:
+            en.vendorType === undefined || en.vendorType === null || en.vendorType === ''
+              ? String(
+                  previousClientVoucher.VendorType ||
+                    (previousClientVoucher.VendorID ? 'REGISTERED' : 'UNVERIFIED'),
+                )
+              : String(en.vendorType),
+        }
+      : resolveVendorIdentity_(vendor, en.vendorId, en.vendorType, vendorLookup);
     clean.push({
       type: type,
       date: date,

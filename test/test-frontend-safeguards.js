@@ -20,11 +20,14 @@ assert.match(formOptions, /vendor\.id/);
 assert.doesNotMatch(formOptions, /S\.vouchers|cv\.cache|cache\.vn/);
 assert.match(formOptions, /esc\(name\)/, 'vendor option values use the shared HTML escaper');
 
-const escDefinition = utils.match(/export const esc = \(value\) =>[\s\S]*?\n  \);/);
-assert.ok(escDefinition, 'the shared production HTML escaper is present');
+const escStart = utils.indexOf('export const esc = (value) =>');
+const escEndMarker = '\n  );';
+const escEnd = utils.indexOf(escEndMarker, escStart);
+assert.ok(escStart >= 0 && escEnd > escStart, 'the shared production HTML escaper is present');
+const escDefinition = utils.slice(escStart, escEnd + escEndMarker.length);
 const escSandbox = {};
 vm.runInNewContext(
-  escDefinition[0].replace('export const esc =', 'const esc =') + '\nglobalThis.esc = esc;',
+  escDefinition.replace('export const esc =', 'const esc =') + '\nglobalThis.esc = esc;',
   escSandbox,
 );
 assert.equal(

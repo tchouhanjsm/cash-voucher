@@ -1,35 +1,10 @@
 {
-  "frontend/features/administration.js": [
-    "98582163",
-    "dca567c2",
-    "75deee14",
-    "309ab6bc"
-  ],
-  "frontend/features/bulk.js": [
-    "f0afcb75",
-    "c3e0e3e9"
-  ],
-  "frontend/features/cash-close.js": [
-    "8b83b045",
-    "269d5b33",
-    "34b62b64",
-    "e292b23f"
-  ],
-  "frontend/features/dashboard.js": [
-    "eaf1e51b"
-  ],
-  "frontend/features/payments.js": [
-    "10273aa0",
-    "86fe0972"
-  ],
-  "frontend/features/register.js": [
-    "4124babe",
-    "21910161"
-  ],
-  "frontend/features/reports.js": [
-    "e3958601"
-  ],
-  "frontend/features/printing.js": [
-    "192002f4"
-  ]
+  "frontend/features/administration.js": ["98582163", "dca567c2", "75deee14", "309ab6bc"],
+  "frontend/features/bulk.js": ["f0afcb75", "c3e0e3e9"],
+  "frontend/features/cash-close.js": ["8b83b045", "269d5b33", "34b62b64", "e292b23f"],
+  "frontend/features/dashboard.js": ["eaf1e51b"],
+  "frontend/features/payments.js": ["10273aa0", "86fe0972"],
+  "frontend/features/register.js": ["4124babe", "21910161"],
+  "frontend/features/reports.js": ["e3958601"],
+  "frontend/features/printing.js": ["192002f4"]
 }
