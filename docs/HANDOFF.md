@@ -5,7 +5,7 @@
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
 **Current integration baseline:** `0cd7207959098da58d8e45ce77a2bc28d221b0fe` (PR #254 merged).
 **Current source batch:** `client/fix-staging-uat-optional-prod-refs-20261031` makes the live UAT target check compatible with a production-free staging-only environment and adds direct regression coverage.
-**Active review PR:** Follow-up UAT configuration correction on `client/fix-staging-uat-optional-prod-refs-20261031` (PR number/link to be recorded when opened).
+**Active review PR:** [PR #255 — allow production-free staging UAT target checks](https://github.com/tchouhanjsm/cash-voucher/pull/255), based on `client-main`.
 **Release boundary:** The existing staging Apps Script deployment was updated successfully from SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe`; post-deployment target recheck passed, but live UAT stopped before financial test writes. The client ZIP from this SHA is verified but must be regenerated after the follow-up PR merge to bind its manifest to the final integration SHA. No cPanel upload or production action has been performed.
 
 ## Current staging UAT target-check follow-up — 31 October 2026
