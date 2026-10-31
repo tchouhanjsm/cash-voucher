@@ -50,3 +50,7 @@ No spreadsheet migration, production data correction, production deployment, or 
 ## Scope boundaries
 
 The Register's established server-side pagination and totals are retained rather than replaced. The service-worker fallback implementation is retained. This batch does not claim that every HTML sink, every screen's WCAG conformance, or the full production Lighthouse matrix has been independently verified; those need the full browser/device and deployed-environment QA gates.
+
+- Duplicate preflight compares each submitted payment to the persisted ledger, not to sibling rows in the same submission. This preserves same-batch split-payment aggregation for approval thresholds.
+- A row with the same client transaction ID is excluded from duplicate prompts; the create route continues to validate the exact transaction payload before returning an idempotent result.
+- The New Entry vendor-option HTML sink was reviewed after its source fingerprint changed. The generated datalist option value passes through the shared `esc()` helper; a focused adversarial HTML/Unicode test exercises that production helper before the fingerprint baseline is advanced.

@@ -63,7 +63,8 @@ assert.equal(vendorTypeVouchers.rows[1][23] || '', '');
 assert.match(vendorTypeMock.migrateVoucherVendorTypeField(), /already exists/);
 
 const vendorTypeConflictMock = setupMock();
-vendorTypeConflictMock.sheets.Vouchers.rows[0] = vendorTypeConflictMock.sheets.Vouchers.rows[0].slice(0, 23);
+vendorTypeConflictMock.sheets.Vouchers.rows[0] =
+  vendorTypeConflictMock.sheets.Vouchers.rows[0].slice(0, 23);
 vendorTypeConflictMock.sheets.Vouchers.rows[1] ||= [];
 vendorTypeConflictMock.sheets.Vouchers.rows[1][23] = 'occupied';
 assert.throws(

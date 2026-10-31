@@ -68,6 +68,30 @@ assert.equal(oneTime.ok, true, 'one-time payee can be saved without a master rec
 assert.equal(oneTime.data.created[0].vendorId, '');
 assert.equal(oneTime.data.created[0].vendorType, 'ONE_TIME');
 
+const oneTimeMatchingRegisteredName = call('createVouchers', {
+  entries: [
+    entry('identity-one-time-matching-name-001', {
+      vendor: 'Identity Test Supplier',
+      vendorId: null,
+      vendorType: 'ONE_TIME',
+      amount: 66,
+    }),
+  ],
+});
+assert.equal(oneTimeMatchingRegisteredName.ok, true);
+assert.equal(oneTimeMatchingRegisteredName.data.created[0].vendorType, 'ONE_TIME');
+const oneTimeNoOpPayeeEdit = call('updateVoucher', {
+  id: oneTimeMatchingRegisteredName.data.created[0].id,
+  fields: {
+    vendor: 'Identity Test Supplier',
+    notes: 'Receipt verified',
+  },
+  reason: 'Preserve one-time payee classification',
+});
+assert.equal(oneTimeNoOpPayeeEdit.ok, true);
+assert.equal(oneTimeNoOpPayeeEdit.data.vendorType, 'ONE_TIME');
+assert.equal(oneTimeNoOpPayeeEdit.data.vendorId, '');
+
 const mismatch = call('createVouchers', {
   entries: [
     entry('identity-mismatch-001', {
@@ -120,9 +144,7 @@ assert.equal(reviewed.data.results[0].confirmationToken, check.data.results[0].c
 
 // The same voucher ID remains a candidate, but a material edit to that voucher
 // must also invalidate the signed review.
-const matchedVoucherRow = g.sheets.Vouchers.rows.find(
-  (row) => row[0] === first.data.created[0].id,
-);
+const matchedVoucherRow = g.sheets.Vouchers.rows.find((row) => row[0] === first.data.created[0].id);
 assert.ok(matchedVoucherRow, 'created voucher is present in the mock ledger');
 matchedVoucherRow[2] = '2026-10-29';
 const candidateEditRejected = call('createVouchers', {
@@ -171,6 +193,14 @@ const idempotentRetry = call('createVouchers', { entries: [pendingDuplicate] });
 assert.equal(idempotentRetry.ok, true);
 assert.equal(idempotentRetry.data.skipped, 1);
 assert.equal(idempotentRetry.data.created[0].id, acceptedDuplicate.data.created[0].id);
+const idempotentPreflight = call('checkPaymentDuplicates', {
+  entries: [{ index: 0, ...pendingDuplicate }],
+});
+assert.equal(
+  idempotentPreflight.data.results[0].duplicateCount,
+  0,
+  'a committed voucher with the same client transaction ID is treated as an idempotent retry',
+);
 
 // The candidate set changes when another matching payment is committed. The old
 // confirmation token must no longer authorize a third payment.

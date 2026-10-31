@@ -109,10 +109,12 @@ async function run() {
   );
 
   const registeredIdentity = validateRecoveryRecords(
-    [{
-      ...validRecord,
-      entry: { ...validRecord.entry, vendorId: 'vendor-123', vendorType: 'REGISTERED' },
-    }],
+    [
+      {
+        ...validRecord,
+        entry: { ...validRecord.entry, vendorId: 'vendor-123', vendorType: 'REGISTERED' },
+      },
+    ],
     ownerKey,
     maxDate,
   );
@@ -127,19 +129,13 @@ async function run() {
   assert.equal(oneTimeIdentity.records[0].entry.vendorType, 'ONE_TIME');
   assert.equal('vendorId' in oneTimeIdentity.records[0].entry, false);
 
-  expectInvalid(
-    (item) => {
-      item.entry.vendorId = 'vendor-123';
-      item.entry.vendorType = 'ONE_TIME';
-    },
-    /invalid vendor identity/i,
-  );
-  expectInvalid(
-    (item) => {
-      item.entry.vendorType = 'REGISTERED';
-    },
-    /invalid vendor identity/i,
-  );
+  expectInvalid((item) => {
+    item.entry.vendorId = 'vendor-123';
+    item.entry.vendorType = 'ONE_TIME';
+  }, /invalid vendor identity/i);
+  expectInvalid((item) => {
+    item.entry.vendorType = 'REGISTERED';
+  }, /invalid vendor identity/i);
   expectInvalid((item) => (item.entry.vendorId = 'invalid id'), /invalid vendor identity/i);
 
   const withMethod = validateRecoveryRecords(

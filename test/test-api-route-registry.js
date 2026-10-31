@@ -67,7 +67,6 @@ for (const readAction of [
   'onboardingState',
   'checkVoucherDuplicates',
   'checkPaymentDuplicates',
-  'checkPaymentDuplicates',
 ]) {
   assert.ok(actions.includes(readAction), readAction + ' must remain explicitly registered');
   assert.ok(!writes.includes(readAction), readAction + ' must not be classified as a write');

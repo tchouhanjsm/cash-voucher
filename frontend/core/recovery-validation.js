@@ -113,7 +113,8 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
       throw new Error('Recovery file contains an invalid payment amount.');
     }
 
-    const hasVendorId = entry.vendorId !== undefined && entry.vendorId !== null && entry.vendorId !== '';
+    const hasVendorId =
+      entry.vendorId !== undefined && entry.vendorId !== null && entry.vendorId !== '';
     const vendorId = hasVendorId ? entry.vendorId : '';
     if (
       (hasVendorId &&

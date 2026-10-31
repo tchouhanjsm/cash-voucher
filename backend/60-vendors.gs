@@ -1,5 +1,7 @@
 function vendorIsActive_(vendor) {
-  return !!vendor && (vendor.Active === true || String(vendor.Active || '').toUpperCase() === 'TRUE');
+  return (
+    !!vendor && (vendor.Active === true || String(vendor.Active || '').toUpperCase() === 'TRUE')
+  );
 }
 
 function vendorIdLookup_() {
@@ -36,7 +38,9 @@ function vendorIdLookup_() {
 }
 
 function vendorIdForName_(name, lookup) {
-  const key = String(name || '').trim().toLowerCase();
+  const key = String(name || '')
+    .trim()
+    .toLowerCase();
   const index = lookup || vendorIdLookup_();
   if (!key || index.ambiguous[key]) return '';
   return String(index.byName[key] || '');
@@ -46,7 +50,9 @@ function resolveVendorIdentity_(name, suppliedId, suppliedType, lookup) {
   const displayName = String(name || '').trim();
   const normalizedName = displayName.toLowerCase();
   const id = String(suppliedId || '').trim();
-  const type = String(suppliedType || '').trim().toUpperCase();
+  const type = String(suppliedType || '')
+    .trim()
+    .toUpperCase();
   const index = lookup || vendorIdLookup_();
 
   if (type && type !== 'REGISTERED' && type !== 'ONE_TIME') {
@@ -60,22 +66,30 @@ function resolveVendorIdentity_(name, suppliedId, suppliedType, lookup) {
 
   if (type === 'REGISTERED' || id) {
     if (!id || index.ambiguousIds[id] || !index.byId[id]) {
-      throw err_('The selected vendor no longer exists. Refresh vendors and choose an active vendor or a one-time payee.', 'VENDOR_INVALID');
+      throw err_(
+        'The selected vendor no longer exists. Refresh vendors and choose an active vendor or a one-time payee.',
+        'VENDOR_INVALID',
+      );
     }
     const vendor = index.byId[id];
     if (!vendorIsActive_(vendor)) {
-      throw err_('This vendor is inactive. Choose another active vendor or enter a one-time payee.', 'VENDOR_INACTIVE');
+      throw err_(
+        'This vendor is inactive. Choose another active vendor or enter a one-time payee.',
+        'VENDOR_INACTIVE',
+      );
     }
     const canonicalName = String(vendor.Name || '').trim();
     if (!canonicalName || canonicalName.toLowerCase() !== normalizedName) {
-      throw err_('The selected vendor identity does not match the payee name. Select the vendor again.', 'VENDOR_MISMATCH');
+      throw err_(
+        'The selected vendor identity does not match the payee name. Select the vendor again.',
+        'VENDOR_MISMATCH',
+      );
     }
     return { vendor: displayName, vendorId: id, vendorType: 'REGISTERED' };
   }
 
   const matchedId = vendorIdForName_(displayName, index);
   if (matchedId) {
-    const vendor = index.byId[matchedId];
     return {
       vendor: displayName,
       vendorId: matchedId,

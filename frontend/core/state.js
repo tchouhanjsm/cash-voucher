@@ -118,7 +118,13 @@ export function normalizeVoucherCollection(value) {
     'updatedAt',
     'cancelReason',
   ];
-  const optionalVoucherTextFields = ['vendorId', 'vendorType', 'approvedBy', 'approvedAt', 'approvalReason'];
+  const optionalVoucherTextFields = [
+    'vendorId',
+    'vendorType',
+    'approvedBy',
+    'approvedAt',
+    'approvalReason',
+  ];
 
   value.forEach((voucher) => {
     if (

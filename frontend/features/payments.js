@@ -49,7 +49,12 @@ export function createPayments({ api, refresh }) {
   }
 
   function isRecordRejection(error) {
-    if (['VALIDATION', 'CONFLICT', 'DUPLICATE_CONFIRMATION_REQUIRED'].includes(String(error?.code || ''))) return true;
+    if (
+      ['VALIDATION', 'CONFLICT', 'DUPLICATE_CONFIRMATION_REQUIRED'].includes(
+        String(error?.code || ''),
+      )
+    )
+      return true;
     return error?.code === 'SERVER' && /^\[\d+\]\s/.test(String(error?.message || ''));
   }
 
@@ -115,9 +120,10 @@ export function createPayments({ api, refresh }) {
       return;
     }
     const record = vendorRecordForName(name);
-    status.textContent = record && !record.active
-      ? 'One-time payee · the matching vendor record is inactive and will not be linked.'
-      : 'One-time payee · not linked to the vendor master.';
+    status.textContent =
+      record && !record.active
+        ? 'One-time payee · the matching vendor record is inactive and will not be linked.'
+        : 'One-time payee · not linked to the vendor master.';
     status.dataset.kind = 'one-time';
   }
 
@@ -468,7 +474,8 @@ export function createPayments({ api, refresh }) {
     const lastUsed = new Map();
 
     vouchers.forEach((voucher) => {
-      if (!voucher || voucher.status !== 'ACTIVE' || voucher.type !== NT || !voucher.vendorId) return;
+      if (!voucher || voucher.status !== 'ACTIVE' || voucher.type !== NT || !voucher.vendorId)
+        return;
       const key = String(voucher.vendorId);
       const stamp = String(voucher.date || '') + '|' + String(voucher.no || '').padStart(12, '0');
       if (stamp > (lastUsed.get(key) || '')) lastUsed.set(key, stamp);
@@ -490,9 +497,10 @@ export function createPayments({ api, refresh }) {
     });
 
     return [...byName.values()]
-      .sort((a, b) =>
-        (lastUsed.get(b.id) || '').localeCompare(lastUsed.get(a.id) || '') ||
-        a.name.localeCompare(b.name, 'en-IN'),
+      .sort(
+        (a, b) =>
+          (lastUsed.get(b.id) || '').localeCompare(lastUsed.get(a.id) || '') ||
+          a.name.localeCompare(b.name, 'en-IN'),
       )
       .slice(0, limit);
   }
@@ -555,9 +563,12 @@ export function createPayments({ api, refresh }) {
       })),
     });
     if (!Array.isArray(response?.results) || response.results.length !== entries.length) {
-      throw Object.assign(new Error('The server did not return a complete duplicate-check result.'), {
-        code: 'BAD',
-      });
+      throw Object.assign(
+        new Error('The server did not return a complete duplicate-check result.'),
+        {
+          code: 'BAD',
+        },
+      );
     }
 
     let ready = true;
@@ -579,7 +590,11 @@ export function createPayments({ api, refresh }) {
       const previousFingerprint = row.dataset.duplicateConfirmationFingerprint || '';
       const previousToken = row.dataset.duplicateConfirmationToken || '';
       if (!token) {
-        showRowError(row, $('.ra', row), 'A possible duplicate was found, but its confirmation could not be prepared. Retry the check before saving.');
+        showRowError(
+          row,
+          $('.ra', row),
+          'A possible duplicate was found, but its confirmation could not be prepared. Retry the check before saving.',
+        );
         ready = false;
         return;
       }
@@ -593,14 +608,23 @@ export function createPayments({ api, refresh }) {
             : 'voucher ' + (match.voucherNo || 'on record') + ' dated ' + dmy(match.date),
         );
         if (Number(result.hiddenCount) > 0) {
-          details.push(Number(result.hiddenCount) + ' additional match(es) not visible to this account');
+          details.push(
+            Number(result.hiddenCount) + ' additional match(es) not visible to this account',
+          );
         }
         const suffix = details.length ? ' Matches: ' + details.join('; ') + '.' : '';
         showRowError(
           row,
           $('.ra', row),
-          'Possible duplicate: ' + money(entry.amount) + ' to ' + entry.vendor + ' near ' +
-            dmy(entry.date) + '.' + suffix + ' Review the existing record(s). Save again only if this is a separate transaction.',
+          'Possible duplicate: ' +
+            money(entry.amount) +
+            ' to ' +
+            entry.vendor +
+            ' near ' +
+            dmy(entry.date) +
+            '.' +
+            suffix +
+            ' Review the existing record(s). Save again only if this is a separate transaction.',
         );
         ready = false;
         return;

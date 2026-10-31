@@ -205,14 +205,15 @@ function checkVoucherDuplicates_(user, req) {
   };
 }
 
-
 function paymentDuplicateFingerprint_(entry) {
   return JSON.stringify([
     'PAYMENT',
     String(entry.date || ''),
     String(entry.vendorId || ''),
     String(entry.vendorType || ''),
-    String(entry.vendor || '').trim().toLowerCase(),
+    String(entry.vendor || '')
+      .trim()
+      .toLowerCase(),
     Math.round(Number(entry.amount) * 100),
   ]);
 }
@@ -234,12 +235,18 @@ function paymentDuplicateCandidates_(rows, entry) {
     if (!voucher || String(voucher.Status || 'ACTIVE') !== 'ACTIVE' || voucher.Type !== 'PAYMENT') {
       return false;
     }
+    // A committed row with the same client ID is an idempotent retry, not a duplicate candidate.
+    if (entry.clientId && String(voucher.ClientID || '') === String(entry.clientId)) return false;
     const existingVendorId = String(voucher.VendorID || '');
     const sameIdentity =
       expectedVendorId && existingVendorId
         ? expectedVendorId === existingVendorId
-        : String(voucher.Vendor || '').trim().toLowerCase() ===
-          String(entry.vendor || '').trim().toLowerCase();
+        : String(voucher.Vendor || '')
+            .trim()
+            .toLowerCase() ===
+          String(entry.vendor || '')
+            .trim()
+            .toLowerCase();
     if (!sameIdentity) return false;
     if (Math.round(Number(voucher.Amount) * 100) !== Math.round(Number(entry.amount) * 100)) {
       return false;
@@ -261,7 +268,9 @@ function paymentDuplicateCandidateFingerprint_(voucher) {
     key: paymentDuplicateCandidateKey_(voucher),
     date: isoDate_(voucher.Date),
     vendorId: String(voucher.VendorID || ''),
-    vendor: String(voucher.Vendor || '').trim().toLowerCase(),
+    vendor: String(voucher.Vendor || '')
+      .trim()
+      .toLowerCase(),
     amountPaise: Math.round(Number(voucher.Amount) * 100),
     type: String(voucher.Type || ''),
     status: String(voucher.Status || 'ACTIVE'),
@@ -273,16 +282,23 @@ function paymentDuplicateConfirmationToken_(user, entry, candidates, expiresAt) 
   const expiry = Number(expiresAt) || Date.now() + 5 * 60 * 1000;
   const candidateFingerprints = candidates
     .map(paymentDuplicateCandidateFingerprint_)
-    .filter(function (candidate) { return !!candidate.key; })
-    .sort(function (a, b) { return a.key.localeCompare(b.key); });
+    .filter(function (candidate) {
+      return !!candidate.key;
+    })
+    .sort(function (a, b) {
+      return a.key.localeCompare(b.key);
+    });
   const payload = JSON.stringify({
-    user: String(user.email || '').trim().toLowerCase(),
+    user: String(user.email || '')
+      .trim()
+      .toLowerCase(),
     fingerprint: paymentDuplicateFingerprint_(entry),
     candidates: candidateFingerprints,
     expiresAt: expiry,
   });
   const pepper = String(props_().getProperty('PEPPER') || '');
-  if (!pepper) throw err_('Duplicate confirmation is unavailable. Contact an administrator.', 'SERVER');
+  if (!pepper)
+    throw err_('Duplicate confirmation is unavailable. Contact an administrator.', 'SERVER');
   const signature = Utilities.base64EncodeWebSafe(
     Utilities.computeHmacSha256Signature(payload, pepper),
   ).replace(/=+$/g, '');
@@ -302,20 +318,26 @@ function paymentDuplicateConfirmationValid_(token, user, entry, candidates) {
 function checkPaymentDuplicates_(user, req) {
   need_(user, 'create');
   if (!Array.isArray(req.entries) || !req.entries.length || req.entries.length > CFG.MAX_NORMAL) {
-    throw err_('Duplicate check requires between 1 and ' + CFG.MAX_NORMAL + ' entry rows.', 'VALIDATION');
+    throw err_(
+      'Duplicate check requires between 1 and ' + CFG.MAX_NORMAL + ' entry rows.',
+      'VALIDATION',
+    );
   }
 
   const lookup = vendorIdLookup_();
   const existing = readAll_('Vouchers');
   const seenIndexes = Object.create(null);
-  const batchRows = [];
   const results = req.entries.map(function (source, position) {
     if (!source || typeof source !== 'object' || Array.isArray(source)) {
       throw err_('Invalid duplicate-check entry.', 'VALIDATION');
     }
     const index = source.index === undefined ? position : Number(source.index);
-    if (!Number.isSafeInteger(index) || index < 0 || index >= CFG.MAX_NORMAL ||
-        Object.prototype.hasOwnProperty.call(seenIndexes, String(index))) {
+    if (
+      !Number.isSafeInteger(index) ||
+      index < 0 ||
+      index >= CFG.MAX_NORMAL ||
+      Object.prototype.hasOwnProperty.call(seenIndexes, String(index))
+    ) {
       throw err_('Invalid or duplicate entry index.', 'VALIDATION');
     }
     seenIndexes[String(index)] = true;
@@ -340,8 +362,12 @@ function checkPaymentDuplicates_(user, req) {
       amount: amount,
       clientId: clientId_(source.clientId),
     };
-    const candidates = paymentDuplicateCandidates_(existing.concat(batchRows), entry);
-    const visible = candidates.filter(function (candidate) { return canSee_(user, candidate); });
+    // Entries submitted together are governed by the existing payee/day approval aggregation;
+    // duplicate review compares each candidate only with persisted ledger records.
+    const candidates = paymentDuplicateCandidates_(existing, entry);
+    const visible = candidates.filter(function (candidate) {
+      return canSee_(user, candidate);
+    });
     const result = {
       index: index,
       duplicateCount: candidates.length,
@@ -352,8 +378,8 @@ function checkPaymentDuplicates_(user, req) {
           date: isoDate_(candidate.Date),
           vendor: String(candidate.Vendor || ''),
           amount: Number(candidate.Amount),
-          inBatch: candidate._duplicateBatch === true,
-          row: candidate._batchIndex || 0,
+          inBatch: false,
+          row: 0,
         };
       }),
       confirmationToken: candidates.length
@@ -362,21 +388,6 @@ function checkPaymentDuplicates_(user, req) {
           : paymentDuplicateConfirmationToken_(user, entry, candidates)
         : '',
     };
-    if (type === 'PAYMENT') {
-      batchRows.push({
-        _duplicateBatch: true,
-        _batchIndex: index + 1,
-        ClientID: entry.clientId || 'CHECK-ROW-' + index,
-        Date: entry.date,
-        Vendor: entry.vendor,
-        VendorID: entry.vendorId,
-        VendorType: entry.vendorType,
-        Amount: entry.amount,
-        Type: 'PAYMENT',
-        Status: 'ACTIVE',
-        CreatedBy: user.email,
-      });
-    }
     return result;
   });
   return { results: results };

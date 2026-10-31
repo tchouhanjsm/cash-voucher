@@ -282,8 +282,12 @@ async function init() {
     if (session.autoResume) {
       $('#login').classList.add('hidden');
       const started = await navigation.start();
-      if (!started && $('#login').classList.contains('hidden') &&
-          $('#app').classList.contains('hidden') && !$('#modal')?.classList.contains('open')) {
+      if (
+        !started &&
+        $('#login').classList.contains('hidden') &&
+        $('#app').classList.contains('hidden') &&
+        !$('#modal')?.classList.contains('open')
+      ) {
         auth.showLogin('Your session could not be restored. Sign in again to continue.');
       }
     } else {

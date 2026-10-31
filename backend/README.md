@@ -28,7 +28,6 @@ Apps Script loads every `.gs` file into **one global scope**, in file-name order
 4. **No top-level code that runs at load time** except constant tables in `00-config.gs` and `99-routes.gs`.
 5. `clasp push` uploads the folder as is. The tests, lint and syntax check read `backend/*.gs` in the same sorted order.
 
-
 ## Vendor identity schema migration
 
 The voucher schema now appends `VendorType` in column X. Before deploying the matching Apps Script version:

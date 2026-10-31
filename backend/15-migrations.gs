@@ -154,7 +154,7 @@ function migrateVoucherPaymentMethodField() {
 }
 
 /** Append VendorType to Vouchers column X; never infer classifications for historical vouchers. */
- // eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line no-unused-vars
 function migrateVoucherVendorTypeField() {
   const id = props_().getProperty('SS_ID');
   if (!id) throw new Error('Missing SS_ID Script Property; no changes were made.');
@@ -164,8 +164,14 @@ function migrateVoucherVendorTypeField() {
 
   const prior = CFG.H.Vouchers.slice(0, 23);
   const actual = sheet.getRange(1, 1, 1, prior.length).getValues()[0];
-  if (!prior.every(function (header, index) { return actual[index] === header; })) {
-    throw new Error('Vouchers must have the reviewed A:W schema including PaymentMethod before VendorType migration; no changes were made.');
+  if (
+    !prior.every(function (header, index) {
+      return actual[index] === header;
+    })
+  ) {
+    throw new Error(
+      'Vouchers must have the reviewed A:W schema including PaymentMethod before VendorType migration; no changes were made.',
+    );
   }
 
   const lastRow = Math.max(sheet.getLastRow(), 1);
@@ -173,7 +179,11 @@ function migrateVoucherVendorTypeField() {
   if (trailing[0][0] === 'VendorType') {
     return 'VendorType column already exists; no changes were made.';
   }
-  if (trailing.some(function (row) { return row[0] !== '' && row[0] !== null; })) {
+  if (
+    trailing.some(function (row) {
+      return row[0] !== '' && row[0] !== null;
+    })
+  ) {
     throw new Error('Vouchers column X already contains data; no changes were made.');
   }
 

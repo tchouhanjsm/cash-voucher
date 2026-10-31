@@ -121,8 +121,10 @@ function sameClientVoucherPayload_(voucher, entry) {
   return (
     isoDate_(voucher.Date) === entry.date &&
     String(voucher.Vendor || '') === entry.vendor &&
-    (!String(voucher.VendorID || '') || String(voucher.VendorID) === String(entry.vendorId || '')) &&
-    (!String(voucher.VendorType || '') || String(voucher.VendorType) === String(entry.vendorType || '')) &&
+    (!String(voucher.VendorID || '') ||
+      String(voucher.VendorID) === String(entry.vendorId || '')) &&
+    (!String(voucher.VendorType || '') ||
+      String(voucher.VendorType) === String(entry.vendorType || '')) &&
     Number(voucher.Amount) === Number(entry.amount) &&
     String(voucher.Category || '') === entry.category &&
     String(voucher.Notes || '') === entry.notes &&
@@ -232,11 +234,13 @@ function createVouchers_(user, req) {
       }
 
       // The write route holds the Apps Script lock: recalculate matches against the current
-      // ledger and previously accepted rows in this same batch before saving any payment.
+      // persisted ledger immediately before saving each payment.
       if (!req.bulk && c.type === 'PAYMENT') {
-        const candidates = paymentDuplicateCandidates_(existing.concat(newObjs), c);
-        if (candidates.length &&
-            !paymentDuplicateConfirmationValid_(c.duplicateConfirmationToken, user, c, candidates)) {
+        const candidates = paymentDuplicateCandidates_(existing, c);
+        if (
+          candidates.length &&
+          !paymentDuplicateConfirmationValid_(c.duplicateConfirmationToken, user, c, candidates)
+        ) {
           throw err_(
             'A possible duplicate payment was found. Review the matching payment(s), then save again only if this is a separate transaction.',
             'DUPLICATE_CONFIRMATION_REQUIRED',
@@ -450,10 +454,15 @@ function updateVoucher_(user, req) {
   if (f.vendor !== undefined) {
     const vendor = nameText_(f.vendor, 'Vendor name', 200);
     if (!vendor) throw err_('Vendor is required.', 'VALIDATION');
-    recordChange('vendor', 'Vendor', String(o.Vendor || ''), vendor);
-    const identity = resolveVendorIdentity_(vendor, '', '', vendorIdLookup_());
-    recordChange('vendorId', 'VendorID', String(o.VendorID || ''), identity.vendorId);
-    recordChange('vendorType', 'VendorType', String(o.VendorType || ''), identity.vendorType);
+    const previousVendor = String(o.Vendor || '');
+    recordChange('vendor', 'Vendor', previousVendor, vendor);
+    // A no-op payee re-save must never infer or rewrite an existing identity.
+    // Re-link only when the user intentionally changes the display name.
+    if (vendor !== previousVendor) {
+      const identity = resolveVendorIdentity_(vendor, '', '', vendorIdLookup_());
+      recordChange('vendorId', 'VendorID', String(o.VendorID || ''), identity.vendorId);
+      recordChange('vendorType', 'VendorType', String(o.VendorType || ''), identity.vendorType);
+    }
   }
   if (f.amount !== undefined) {
     const amount = Math.round(Number(f.amount) * 100) / 100;

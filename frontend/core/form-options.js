@@ -19,7 +19,12 @@ function vendorNames() {
   const ambiguous = new Set();
 
   (Array.isArray(S.vendors) ? S.vendors : []).forEach((vendor) => {
-    if (!isRecord(vendor) || !vendor.active || typeof vendor.id !== 'string' || !vendor.id.trim()) {
+    if (
+      !isRecord(vendor) ||
+      !vendor.active ||
+      typeof vendor.id !== 'string' ||
+      !vendor.id.trim()
+    ) {
       return;
     }
     const name = vendorName(vendor.name);
@@ -34,7 +39,7 @@ function vendorNames() {
   });
 
   return [...named.values()];
-}}
+}
 
 export const vendorList = () =>
   `<datalist id="vlist">${vendorNames()
