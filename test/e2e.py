@@ -1714,9 +1714,39 @@ with sync_playwright() as p:
     page.locator('#rows .ra').first.fill('10000')
     choose_cash_impact_for_current_rows()
     page.click('#nsave')
-    page.wait_for_function(
-        "document.querySelector('#nres')?.innerText.includes('pending owner/manager approval')"
-    )
+    try:
+        page.wait_for_function(
+            "document.querySelector('#nres')?.innerText.includes('pending owner/manager approval')"
+        )
+    except Exception:
+        print(
+            'E2E PAYMENT-CREATE DIAGNOSTICS:',
+            json.dumps(
+                {
+                    'page_url': page.url,
+                    'result_text': (
+                        page.locator('#nres').inner_text()
+                        if page.locator('#nres').count()
+                        else ''
+                    ),
+                    'form_text': (
+                        page.locator('#nf').inner_text()
+                        if page.locator('#nf').count()
+                        else ''
+                    ),
+                    'entry_rows': page.locator('#rows .erow').count(),
+                    'payee': page.locator('#rows .rv').first.input_value(),
+                    'amount': page.locator('#rows .ra').first.input_value(),
+                    'save_disabled': page.locator('#nsave').is_disabled(),
+                    'api_events': api_events[-25:],
+                    'console_errors': logs[-25:],
+                },
+                ensure_ascii=False,
+                default=str,
+            ),
+            flush=True,
+        )
+        raise
     check(
         'excluded from approved totals and Daily Cash Close' in page.locator('#nres').inner_text(),
         'new payment at INR 10,000 clearly explains the approval requirement and financial treatment',
