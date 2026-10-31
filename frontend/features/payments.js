@@ -888,7 +888,7 @@ export function createPayments({ api, refresh }) {
   async function saveNew(btn) {
     const date = $('#nd').value;
     const entries = [];
-    const rows = $('#rows .erow');
+    const rows = $$('#rows .erow');
     const entryRows = [];
     rows.forEach(clearRowError);
 

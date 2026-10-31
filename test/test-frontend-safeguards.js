@@ -64,8 +64,12 @@ assert.match(payments, /DUPLICATE_CONFIRMATION_REQUIRED/);
 assert.doesNotMatch(payments, /duplicateConfirmed/);
 assert.match(payments, /vendorType: selectedVendor \? 'REGISTERED' : 'ONE_TIME'/);
 assert.match(payments, /vendor-identity/);
-assert.match(payments, /const rows = \$\$\('#rows \.erow'\);/);
-assert.match(payments, /rows\.forEach\(clearRowError\)/);
+const saveStart = payments.indexOf('async function saveNew');
+const saveNext = payments.indexOf('\n  async function ', saveStart + 1);
+assert.ok(saveStart >= 0 && saveNext > saveStart, 'New Entry save handler is present');
+const saveSource = payments.slice(saveStart, saveNext);
+assert.match(saveSource, /const rows = \$\$\('#rows \.erow'\);/);
+assert.match(saveSource, /rows\.forEach\(clearRowError\)/);
 assert.match(state, /'vendorType'/);
 
 assert.match(main, /async function init\(\)/);
