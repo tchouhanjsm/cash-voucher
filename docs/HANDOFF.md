@@ -1,12 +1,24 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 31 October 2026 (PR #252 merged; post-merge dependency-audit RCA)
+**Updated:** 31 October 2026 (PR #254 staging UAT runner correction in review)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `c82fa8cd3e156bb11e1b8179312fba65df688ae3` (PR #252 merged; legacy `main` remains read-only).
-**Current source batch:** `client/fix-transitive-dependency-audit-policy-20261031` corrects severity-aware transitive advisory handling while retaining the exact time-bounded Zod exception.
-**Active review PR:** dependency-audit policy correction, based on `client-main`.
-**Release boundary:** source, regression tests and security documentation only. No local sync, Clasp push, Apps Script deployment, live UAT, Google data mutation, staging ZIP build or cPanel publication.
+**Current integration baseline:** `ef0e90bd39ca263a95929414fd4c5581d51abde8` (PR #253 merged).
+**Current source batch:** `client/fix-staging-uat-env-isolation-20261031` fixes the staging-only UAT runner environment boundary and adds an execution-level regression harness.
+**Active review PR:** [PR #254 — restore staging-only UAT runner isolation](https://github.com/tchouhanjsm/cash-voucher/pull/254), based on `client-main`.
+**Release boundary:** runner/test/docs changes only. The existing staging Apps Script deployment from workflow #16 is unchanged by this PR; no cPanel upload or production operation has been performed.
+
+## Active staging UAT runner correction — 31 October 2026
+
+- **Integration base:** `client-main` at `ef0e90bd39ca263a95929414fd4c5581d51abde8`, PR #253 merge. Legacy `main` remains read-only.
+- **Live staging deployment:** workflow [#16](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41172002009) successfully uploaded the backend source and updated the existing version-5 staging deployment at the base SHA. The subsequent UAT phase failed before its browser assertions began.
+- **UAT runner RCA:** `scripts/run-staging-uat.sh` ran with `set -u` and expanded four intentionally absent `CV_PRODUCTION_*` values inside its `env -i` child allowlist. Bash aborted before the child server started. The allowlist also omitted `CV_STAGING_ONLY_MODE` and `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION`, which the child web server requires for artifact-mode preflight. Details and permanent resolution are in `docs/STAGING-RELEASE-AUDIT.md` and `docs/APPS-SCRIPT-RELEASE-RUNBOOK.md`.
+- **PR #254 scope:** five-file runner/test/package/docs correction at the time of opening; the final PR also updates this handoff. It preserves strict shell mode, `env -i`, preflight and private evidence controls; removes production keys from the child allowlist; forwards the two staging-only declarations; and adds a real-runner stub harness to `npm test`.
+- **Clasp:** owner-confirmed local `.clasp.json` root is `backend`; local `clasp list-deployments` returned the same version-5 deployment recorded from workflow #16. Local CLI version is `3.4.1`. No CLI upgrade or local `clasp push` is needed. Keep `.clasp.json` / `.clasprc.json` uncommitted; use the protected staging deploy workflow and its temporary credentials workspace.
+- **Next steps after PR #254 exact-head gates and human review:** merge only after CI/Quality, Browser E2E, Full Flight and Autonomous Development Monitor pass on the final PR head. Then run the protected `deploy-and-uat` workflow on `client-main` to update the existing staging deployment and execute live UAT. The operation requires `STAGING-ONLY` and explicit staging-write consent; transactional UAT creates and cancels one tagged INR 10,000 staging payment and retains the cancelled row/audit trace.
+- **Client package:** rebuild the client ZIP from the post-merge `client-main` SHA, verify `release-manifest.json` and detached SHA-256, then hand it to the owner for manual upload into the staging cPanel `dist` directory. Preserve a backup and the existing `.htaccess`; do not upload to production.
+- **Production boundary:** no production Apps Script project, Spreadsheet, receipt folder or backup folder exists for this lifecycle. Do not add fake production IDs or weaken staging-only preflight to satisfy this operation.
+- **PR handoff/checkpoint:** the PR description now contains all six required quality-gate sections (`Outcome`, `Acceptance criteria`, `Verification evidence`, `Security and failure review`, `Release boundary`, `Residual risks / not verified`). Initial exact-head CI run [#41191567329](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191567329) passed formatting and the full regression suite, but its event snapshot still contained the earlier incomplete PR description and therefore failed only the PR-description quality gate. A new push after the description correction is required so CI receives the populated event payload; all checks must then be reconciled against that new final head.
 
 ## Post-merge stability RCA — 31 October 2026
 

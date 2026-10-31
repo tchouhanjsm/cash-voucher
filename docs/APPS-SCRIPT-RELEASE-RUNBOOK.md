@@ -18,6 +18,32 @@ The root frontend `config.js` intentionally leaves `API_URL` blank by default; n
 
 The root `.gitignore` excludes `.clasp.json` and `.clasprc.json` intentionally. Keep local Clasp configuration/authentication in protected secrets or local files; never commit them.
 
+## Staging UAT runner RCA and permanent correction — 31 October 2026
+
+### Observed failure
+
+Workflow [#16](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41172002009) passed the protected staging preflight and updated the existing dedicated Apps Script staging deployment from source SHA `ef0e90bd39ca263a95929414fd4c5581d51abde8`. The run then stopped while starting the isolated UAT web server; the browser UAT assertions did not begin. Treat this as a runner/environment failure, not an application assertion failure.
+
+Two independent defects caused the stop:
+
+1. `scripts/run-staging-uat.sh` uses `set -euo pipefail` and expanded four `CV_PRODUCTION_*` variables directly while building the `env -i` allowlist. Those values are intentionally absent in the owner-attested staging-only environment, so Bash nounset terminated the script before the child server started.
+2. The same `env -i` allowlist omitted `CV_STAGING_ONLY_MODE` and `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION`. Even after making unset production variables safe, the child web server would fail its artifact-mode preflight because it did not receive the required staging-only attestation.
+
+### Permanent correction contract
+
+- Keep strict shell mode and `env -i`; do not inherit the runner's complete environment.
+- Do not expand, synthesize or forward production resource references in the isolated server environment while staging-only mode is active.
+- Explicitly forward `CV_STAGING_ONLY_MODE` and `CV_STAGING_RESOURCE_ISOLATION_ATTESTATION` together with the six required staging target variables.
+- Retain the parent UAT preflight before starting the web server. Do not weaken `scripts/staging-preflight.js`, skip its checks, or add placeholder production IDs.
+- Execute `test/test-staging-uat-runner.js` as part of `npm test`. Its stubbed runner integration test removes all production references, proves the isolated server receives the staging-only declaration/attestation, and verifies unrelated parent variables do not cross the `env -i` boundary.
+- Continue to retain the private transcript, no-symlink checks, restrictive permissions and sanitized evidence assembly.
+
+### Clasp and deployment boundary
+
+The owner's local `.clasp.json` uses `rootDir: backend` and the local Clasp project lists the same version-5 staging deployment created by workflow #16. The local file is ignored by Git and must remain uncommitted. The owner reported Clasp CLI `3.4.1`; no CLI upgrade is required for this correction. A reviewed backend release is uploaded and the existing staging deployment is updated through the protected GitHub workflow, which uses a temporary Clasp workspace and temporary OAuth home. Do not use an unreviewed local `clasp push`, commit `.clasp.json` or `.clasprc.json`, or create a parallel deployment.
+
+After the correction is merged to `client-main`, use the protected `deploy-and-uat` operation to update the existing staging deployment and execute live UAT. The manual guard must receive `STAGING-ONLY` and explicit staging-write consent. Transactional UAT creates and cancels one tagged INR 10,000 test payment in staging; its cancelled row and audit trace remain. Record deployment and UAT outcomes separately. A successful deployment with a failed or skipped UAT is not a release pass.
+
 ## Staging workflow secret isolation — 28 October 2026
 
 The manual `.github/workflows/staging-uat.yml` workflow must not put resource IDs, UAT account credentials or Clasp OAuth JSON in job-level `env`. Job-level values are inherited by every command in that job; dependency installation and artifact/reporting steps must not receive staging credentials.
