@@ -108,6 +108,40 @@ async function run() {
     /500-payment limit/i,
   );
 
+  const registeredIdentity = validateRecoveryRecords(
+    [{
+      ...validRecord,
+      entry: { ...validRecord.entry, vendorId: 'vendor-123', vendorType: 'REGISTERED' },
+    }],
+    ownerKey,
+    maxDate,
+  );
+  assert.equal(registeredIdentity.records[0].entry.vendorId, 'vendor-123');
+  assert.equal(registeredIdentity.records[0].entry.vendorType, 'REGISTERED');
+
+  const oneTimeIdentity = validateRecoveryRecords(
+    [{ ...validRecord, entry: { ...validRecord.entry, vendorType: 'ONE_TIME' } }],
+    ownerKey,
+    maxDate,
+  );
+  assert.equal(oneTimeIdentity.records[0].entry.vendorType, 'ONE_TIME');
+  assert.equal('vendorId' in oneTimeIdentity.records[0].entry, false);
+
+  expectInvalid(
+    (item) => {
+      item.entry.vendorId = 'vendor-123';
+      item.entry.vendorType = 'ONE_TIME';
+    },
+    /invalid vendor identity/i,
+  );
+  expectInvalid(
+    (item) => {
+      item.entry.vendorType = 'REGISTERED';
+    },
+    /invalid vendor identity/i,
+  );
+  expectInvalid((item) => (item.entry.vendorId = 'invalid id'), /invalid vendor identity/i);
+
   const withMethod = validateRecoveryRecords(
     [{ ...validRecord, entry: { ...validRecord.entry, paymentMethod: 'UPI' } }],
     ownerKey,

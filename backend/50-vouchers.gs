@@ -121,6 +121,8 @@ function sameClientVoucherPayload_(voucher, entry) {
   return (
     isoDate_(voucher.Date) === entry.date &&
     String(voucher.Vendor || '') === entry.vendor &&
+    (!String(voucher.VendorID || '') || String(voucher.VendorID) === String(entry.vendorId || '')) &&
+    (!String(voucher.VendorType || '') || String(voucher.VendorType) === String(entry.vendorType || '')) &&
     Number(voucher.Amount) === Number(entry.amount) &&
     String(voucher.Category || '') === entry.category &&
     String(voucher.Notes || '') === entry.notes &&
@@ -187,11 +189,14 @@ function createVouchers_(user, req) {
     const impact = method
       ? cashImpactForPaymentMethod_(method, type)
       : cashImpact_(en.cashImpact, row);
+    const identity = resolveVendorIdentity_(vendor, en.vendorId, en.vendorType, vendorLookup);
     clean.push({
       type: type,
       date: date,
-      vendor: vendor,
-      vendorId: vendorIdForName_(vendor, vendorLookup),
+      vendor: identity.vendor,
+      vendorId: identity.vendorId,
+      vendorType: identity.vendorType,
+      duplicateConfirmationToken: String(en.duplicateConfirmationToken || ''),
       amount: amount,
       category: cats.indexOf(en.category) >= 0 ? en.category : 'Other',
       paymentMethod: method,
@@ -225,6 +230,20 @@ function createVouchers_(user, req) {
         created.push(vOut_(duplicate));
         return;
       }
+
+      // The write route holds the Apps Script lock: recalculate matches against the current
+      // ledger and previously accepted rows in this same batch before saving any payment.
+      if (!req.bulk && c.type === 'PAYMENT') {
+        const candidates = paymentDuplicateCandidates_(existing.concat(newObjs), c);
+        if (candidates.length &&
+            !paymentDuplicateConfirmationValid_(c.duplicateConfirmationToken, user, c, candidates)) {
+          throw err_(
+            'A possible duplicate payment was found. Review the matching payment(s), then save again only if this is a separate transaction.',
+            'DUPLICATE_CONFIRMATION_REQUIRED',
+          );
+        }
+      }
+
       const no = c.type === 'RECEIPT' ? nextR++ : next++,
         ids = [];
       c.receipts.forEach(function (r, i) {
@@ -248,6 +267,7 @@ function createVouchers_(user, req) {
         Date: c.date,
         Vendor: c.vendor,
         VendorID: c.vendorId,
+        VendorType: c.vendorType,
         Amount: c.amount,
         Category: c.category,
         Notes: c.notes,
@@ -347,6 +367,7 @@ function createVouchers_(user, req) {
       { field: 'date', before: null, after: voucher.Date },
       { field: 'vendor', before: null, after: String(voucher.Vendor || '') },
       { field: 'vendorId', before: null, after: String(voucher.VendorID || '') },
+      { field: 'vendorType', before: null, after: String(voucher.VendorType || '') },
       { field: 'amount', before: null, after: Number(voucher.Amount) },
       { field: 'category', before: null, after: String(voucher.Category || '') },
       { field: 'notes', before: null, after: String(voucher.Notes || '') },
@@ -430,7 +451,9 @@ function updateVoucher_(user, req) {
     const vendor = nameText_(f.vendor, 'Vendor name', 200);
     if (!vendor) throw err_('Vendor is required.', 'VALIDATION');
     recordChange('vendor', 'Vendor', String(o.Vendor || ''), vendor);
-    recordChange('vendorId', 'VendorID', String(o.VendorID || ''), vendorIdForName_(vendor));
+    const identity = resolveVendorIdentity_(vendor, '', '', vendorIdLookup_());
+    recordChange('vendorId', 'VendorID', String(o.VendorID || ''), identity.vendorId);
+    recordChange('vendorType', 'VendorType', String(o.VendorType || ''), identity.vendorType);
   }
   if (f.amount !== undefined) {
     const amount = Math.round(Number(f.amount) * 100) / 100;

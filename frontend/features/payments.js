@@ -49,7 +49,7 @@ export function createPayments({ api, refresh }) {
   }
 
   function isRecordRejection(error) {
-    if (['VALIDATION', 'CONFLICT'].includes(String(error?.code || ''))) return true;
+    if (['VALIDATION', 'CONFLICT', 'DUPLICATE_CONFIRMATION_REQUIRED'].includes(String(error?.code || ''))) return true;
     return error?.code === 'SERVER' && /^\[\d+\]\s/.test(String(error?.message || ''));
   }
 
@@ -76,22 +76,49 @@ export function createPayments({ api, refresh }) {
     ).join('');
   }
   function vendorForName(name) {
-    const normalized = scalarText(name).trim().toLowerCase();
-    return (
-      (Array.isArray(S.vendors) ? S.vendors : []).find(
-        (vendor) =>
-          vendor && vendor.active && scalarText(vendor.name).trim().toLowerCase() === normalized,
-      ) || null
+    const normalized = scalarText(name).trim().toLocaleLowerCase('en-IN');
+    if (!normalized) return null;
+    const matches = (Array.isArray(S.vendors) ? S.vendors : []).filter(
+      (vendor) =>
+        vendor &&
+        vendor.active &&
+        typeof vendor.id === 'string' &&
+        vendor.id.trim() &&
+        scalarText(vendor.name).trim().toLocaleLowerCase('en-IN') === normalized,
     );
+    return matches.length === 1 ? matches[0] : null;
   }
   function vendorRecordForName(name) {
-    const normalized = scalarText(name).trim().toLowerCase();
+    const normalized = scalarText(name).trim().toLocaleLowerCase('en-IN');
     if (!normalized) return null;
     return (
       (Array.isArray(S.vendors) ? S.vendors : []).find(
-        (vendor) => vendor && scalarText(vendor.name).trim().toLowerCase() === normalized,
+        (vendor) =>
+          vendor && scalarText(vendor.name).trim().toLocaleLowerCase('en-IN') === normalized,
       ) || null
     );
+  }
+
+  function updateVendorIdentity(row) {
+    const status = $('.vendor-identity', row);
+    if (!status) return;
+    const name = scalarText($('.rv', row)?.value).trim();
+    if (!name) {
+      status.textContent = 'Choose a saved vendor or enter a one-time payee.';
+      status.dataset.kind = 'empty';
+      return;
+    }
+    const vendor = vendorForName(name);
+    if (vendor) {
+      status.textContent = 'Verified vendor · linked to the vendor master';
+      status.dataset.kind = 'verified';
+      return;
+    }
+    const record = vendorRecordForName(name);
+    status.textContent = record && !record.active
+      ? 'One-time payee · the matching vendor record is inactive and will not be linked.'
+      : 'One-time payee · not linked to the vendor master.';
+    status.dataset.kind = 'one-time';
   }
 
   function canSavePayeeDefaults() {
@@ -140,42 +167,19 @@ export function createPayments({ api, refresh }) {
       vendor?.defaultCategory &&
       Array.isArray(allowed) &&
       allowed.includes(vendor.defaultCategory)
-    )
+    ) {
       return vendor.defaultCategory;
-    const normalized = scalarText(name).trim().toLowerCase();
-    const recent = [...(Array.isArray(S.vouchers) ? S.vouchers : [])]
-      .filter(
-        (voucher) =>
-          voucher &&
-          voucher.status === 'ACTIVE' &&
-          voucher.type === NT &&
-          scalarText(voucher.vendor).trim().toLowerCase() === normalized &&
-          voucher.category,
-      )
-      .sort(
-        (a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no),
-      )[0];
-    return recent?.category || 'Other';
+    }
+    return 'Other';
   }
+
   function methodForPayee(name) {
     const vendor = vendorForName(name);
-    if (vendor?.defaultPaymentMethod && PAYMENT_METHODS.includes(vendor.defaultPaymentMethod))
-      return vendor.defaultPaymentMethod;
-    const normalized = scalarText(name).trim().toLowerCase();
-    const recent = [...(Array.isArray(S.vouchers) ? S.vouchers : [])]
-      .filter(
-        (voucher) =>
-          voucher &&
-          voucher.status === 'ACTIVE' &&
-          voucher.type === NT &&
-          scalarText(voucher.vendor).trim().toLowerCase() === normalized &&
-          PAYMENT_METHODS.includes(voucher.paymentMethod),
-      )
-      .sort(
-        (a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no),
-      )[0];
-    return recent?.paymentMethod || 'CASH';
+    return vendor?.defaultPaymentMethod && PAYMENT_METHODS.includes(vendor.defaultPaymentMethod)
+      ? vendor.defaultPaymentMethod
+      : 'CASH';
   }
+
   function applyPayeeDefaults(row) {
     const category = categoryForPayee($('.rv', row).value);
     const categorySelect = $('.rc', row);
@@ -193,7 +197,7 @@ export function createPayments({ api, refresh }) {
       "<div class='top'>" +
       "<label class='entry-row-field entry-payee-field'><span>" +
       (NT === 'RECEIPT' ? 'Received from' : 'Paid to') +
-      "</span><input class='rv' list='vlist' placeholder='Vendor or recipient' autocapitalize='words' autocomplete='off'></label>" +
+      "</span><input class='rv' list='vlist' placeholder='Vendor or recipient' autocapitalize='words' autocomplete='off'><small class='vendor-identity' role='status' aria-live='polite'>Choose a saved vendor or enter a one-time payee.</small></label>" +
       "<label class='entry-row-field entry-amount-field'><span>Amount (₹)</span><input class='ra' inputmode='decimal' placeholder='0.00'></label>" +
       "<label class='entry-row-field entry-note-field'><span>Note</span><input class='rn' placeholder='Optional' aria-label='Note, optional' maxlength='500'></label>" +
       "<button type='button' class='x' data-act='delrow' title='Remove payment' aria-label='Remove payment'>✕</button></div>" +
@@ -441,7 +445,7 @@ export function createPayments({ api, refresh }) {
           'Record a payment or receipt, attach supporting evidence, and confirm how the money moved.',
       }) +
       `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" autocomplete="off">${vendorList()}
-    <label class="entry-date-field">Date<input type="date" id="nd" value="${businessDate()}" max="${addDays(businessDate(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="Recent payees"></div><div id="rows"></div>
+    <label class="entry-date-field">Date<input type="date" id="nd" value="${businessDate()}" max="${addDays(businessDate(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="${NT === 'RECEIPT' ? 'Recent verified payers' : 'Recent verified payees'}" hidden></div><div id="rows"></div>
     <section id="entrySummary" class="entry-summary" aria-label="Current batch totals">
       <div class="entry-summary__head"><strong>Current batch</strong><span id="batchCount" aria-live="polite">0 ready entries</span></div>
       <div class="entry-summary__grid">
@@ -460,31 +464,53 @@ export function createPayments({ api, refresh }) {
   }
 
   function recentVendors(limit = 6) {
-    const seen = new Set();
-    const names = [];
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
-    [...vouchers]
-      .filter((voucher) => voucher && voucher.status === 'ACTIVE' && voucher.type === NT)
-      .sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.no) - Number(a.no))
-      .forEach((voucher) => {
-        const name = scalarText(voucher.vendor).trim();
-        const key = name.toLowerCase();
-        if (!hasPayeeLetter(name) || seen.has(key) || names.length >= limit) return;
-        seen.add(key);
-        names.push(name);
-      });
-    return names;
+    const lastUsed = new Map();
+
+    vouchers.forEach((voucher) => {
+      if (!voucher || voucher.status !== 'ACTIVE' || voucher.type !== NT || !voucher.vendorId) return;
+      const key = String(voucher.vendorId);
+      const stamp = String(voucher.date || '') + '|' + String(voucher.no || '').padStart(12, '0');
+      if (stamp > (lastUsed.get(key) || '')) lastUsed.set(key, stamp);
+    });
+
+    const byName = new Map();
+    const ambiguous = new Set();
+    (Array.isArray(S.vendors) ? S.vendors : []).forEach((vendor) => {
+      if (!vendor || !vendor.active || typeof vendor.id !== 'string' || !vendor.id.trim()) return;
+      const name = scalarText(vendor.name).trim();
+      if (!hasPayeeLetter(name)) return;
+      const key = name.toLocaleLowerCase('en-IN');
+      if (byName.has(key)) {
+        byName.delete(key);
+        ambiguous.add(key);
+      } else if (!ambiguous.has(key)) {
+        byName.set(key, { id: vendor.id, name });
+      }
+    });
+
+    return [...byName.values()]
+      .sort((a, b) =>
+        (lastUsed.get(b.id) || '').localeCompare(lastUsed.get(a.id) || '') ||
+        a.name.localeCompare(b.name, 'en-IN'),
+      )
+      .slice(0, limit);
   }
 
   function renderRecentVendors() {
     const holder = $('#recentVendors');
     if (!holder) return;
+    const vendors = recentVendors();
+    holder.hidden = vendors.length === 0;
     holder.replaceChildren(
-      ...recentVendors().map((name) => {
+      ...vendors.map((vendor) => {
         const chip = document.createElement('button');
         chip.type = 'button';
         chip.className = 'btn sm vchip';
-        chip.textContent = name;
+        chip.textContent = vendor.name;
+        chip.title = vendor.name;
+        chip.setAttribute('aria-label', 'Use verified vendor ' + vendor.name);
+        chip.dataset.vendorId = vendor.id;
         return chip;
       }),
     );
@@ -497,28 +523,93 @@ export function createPayments({ api, refresh }) {
     const row = rows.find((item) => !$('.rv', item).value.trim()) || rows[rows.length - 1];
     if (!row) return;
     $('.rv', row).value = chip.textContent;
+    $('.rv', row).dispatchEvent(new Event('input', { bubbles: true }));
+    $('.rv', row).dispatchEvent(new Event('change', { bubbles: true }));
     clearRowError(row);
     $('.ra', row).focus();
   });
 
-  // Same payee, same amount, within 3 days: ask for a second tap before saving.
-  function findPossibleDuplicate(entry) {
-    if (entry.type !== 'PAYMENT') return null;
-    const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
-    const target = new Date(entry.date + 'T12:00:00').getTime();
-    return (
-      vouchers.find((voucher) => {
-        if (!voucher || voucher.status !== 'ACTIVE' || voucher.type !== 'PAYMENT') return false;
-        if (scalarText(voucher.vendor).trim().toLowerCase() !== entry.vendor.toLowerCase()) {
-          return false;
+  function duplicateFingerprint(entry) {
+    return JSON.stringify([
+      entry.type,
+      entry.date,
+      entry.vendorId || '',
+      entry.vendorType,
+      scalarText(entry.vendor).trim().toLowerCase(),
+      Math.round(Number(entry.amount) * 100),
+    ]);
+  }
+
+  async function requestDuplicateConfirmations(entries, entryRows) {
+    const response = await api('checkPaymentDuplicates', {
+      entries: entries.map((entry, index) => ({
+        index,
+        clientId: entry.clientId,
+        date: entry.date,
+        type: entry.type,
+        vendor: entry.vendor,
+        vendorId: entry.vendorId,
+        vendorType: entry.vendorType,
+        amount: entry.amount,
+        confirmationToken: entryRows[index].dataset.duplicateConfirmationToken || '',
+      })),
+    });
+    if (!Array.isArray(response?.results) || response.results.length !== entries.length) {
+      throw Object.assign(new Error('The server did not return a complete duplicate-check result.'), {
+        code: 'BAD',
+      });
+    }
+
+    let ready = true;
+    response.results.forEach((result) => {
+      const entry = entries[result.index];
+      const row = entryRows[result.index];
+      if (!entry || !row) {
+        ready = false;
+        return;
+      }
+      if (!(Number(result.duplicateCount) > 0)) {
+        delete row.dataset.duplicateConfirmationFingerprint;
+        delete row.dataset.duplicateConfirmationToken;
+        return;
+      }
+
+      const fingerprint = duplicateFingerprint(entry);
+      const token = String(result.confirmationToken || '');
+      const previousFingerprint = row.dataset.duplicateConfirmationFingerprint || '';
+      const previousToken = row.dataset.duplicateConfirmationToken || '';
+      if (!token) {
+        showRowError(row, $('.ra', row), 'A possible duplicate was found, but its confirmation could not be prepared. Retry the check before saving.');
+        ready = false;
+        return;
+      }
+
+      if (previousFingerprint !== fingerprint || previousToken !== token) {
+        row.dataset.duplicateConfirmationFingerprint = fingerprint;
+        row.dataset.duplicateConfirmationToken = token;
+        const details = (Array.isArray(result.matches) ? result.matches : []).map((match) =>
+          match.inBatch
+            ? 'another row in this batch (row ' + match.row + ')'
+            : 'voucher ' + (match.voucherNo || 'on record') + ' dated ' + dmy(match.date),
+        );
+        if (Number(result.hiddenCount) > 0) {
+          details.push(Number(result.hiddenCount) + ' additional match(es) not visible to this account');
         }
-        if (Math.round(Number(voucher.amount) * 100) !== Math.round(entry.amount * 100)) {
-          return false;
-        }
-        const days = Math.abs(new Date(voucher.date + 'T12:00:00').getTime() - target) / 864e5;
-        return days <= 3;
-      }) || null
-    );
+        const suffix = details.length ? ' Matches: ' + details.join('; ') + '.' : '';
+        showRowError(
+          row,
+          $('.ra', row),
+          'Possible duplicate: ' + money(entry.amount) + ' to ' + entry.vendor + ' near ' +
+            dmy(entry.date) + '.' + suffix + ' Review the existing record(s). Save again only if this is a separate transaction.',
+        );
+        ready = false;
+        return;
+      }
+
+      entry.duplicateConfirmationToken = token;
+    });
+
+    return ready;
   }
 
   function open(type = 'PAYMENT') {
@@ -628,10 +719,18 @@ export function createPayments({ api, refresh }) {
   });
 
   document.addEventListener('change', (event) => {
+    if (event.target.matches('#nd')) {
+      $$('#rows .erow').forEach((row) => {
+        delete row.dataset.duplicateConfirmationFingerprint;
+        delete row.dataset.duplicateConfirmationToken;
+      });
+      return;
+    }
     const row = event.target.closest('.erow');
     if (!row) return;
     if (event.target.matches('.rv')) {
       applyPayeeDefaults(row);
+      updateVendorIdentity(row);
       updateQuickSavePayee(row);
     }
     if (event.target.matches('.rci, .rc, .rn')) clearRowError(row);
@@ -642,6 +741,7 @@ export function createPayments({ api, refresh }) {
     const row = event.target.closest('.erow');
     if (row && event.target.value.trim()) {
       applyPayeeDefaults(row);
+      updateVendorIdentity(row);
       updateQuickSavePayee(row);
     }
   });
@@ -659,13 +759,26 @@ export function createPayments({ api, refresh }) {
   });
 
   document.addEventListener('input', (event) => {
+    if (event.target.matches('#nd')) {
+      $$('#rows .erow').forEach((row) => {
+        delete row.dataset.duplicateConfirmationFingerprint;
+        delete row.dataset.duplicateConfirmationToken;
+      });
+      return;
+    }
     if (!event.target.matches('.rv, .ra, .rn')) return;
 
     const row = event.target.closest('.erow');
     if (row) {
       clearRowError(row);
-      if (event.target.matches('.rv, .ra')) delete row.dataset.duplicateConfirmed;
-      if (event.target.matches('.rv')) updateQuickSavePayee(row);
+      if (event.target.matches('.rv, .ra')) {
+        delete row.dataset.duplicateConfirmationFingerprint;
+        delete row.dataset.duplicateConfirmationToken;
+      }
+      if (event.target.matches('.rv')) {
+        updateVendorIdentity(row);
+        updateQuickSavePayee(row);
+      }
     }
     $('#nres .form-error')?.remove();
     updateSaveLabel();
@@ -751,7 +864,8 @@ export function createPayments({ api, refresh }) {
   async function saveNew(btn) {
     const date = $('#nd').value;
     const entries = [];
-    const rows = $$('#rows .erow');
+    const rows = $('#rows .erow');
+    const entryRows = [];
     rows.forEach(clearRowError);
 
     for (const [index, r] of rows.entries()) {
@@ -789,22 +903,15 @@ export function createPayments({ api, refresh }) {
       const cashImpact =
         paymentMethod === 'CASH' ? (NT === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT') : 'NO_CASH';
 
-      const duplicate = findPossibleDuplicate({ type: NT, vendor, amount, date });
-      if (duplicate && r.dataset.duplicateConfirmed !== 'true') {
-        r.dataset.duplicateConfirmed = 'true';
-        showRowError(
-          r,
-          $('.ra', r),
-          `Possible duplicate: ${money(amount)} to ${vendor} on ${dmy(duplicate.date)} (${vno(duplicate)}). Tap Save again if this is a separate payment.`,
-        );
-        return;
-      }
+      const selectedVendor = vendorForName(vendor);
 
       entries.push({
         clientId: r._cid || (r._cid = uid()),
         date,
         type: NT,
         vendor,
+        vendorId: selectedVendor ? selectedVendor.id : null,
+        vendorType: selectedVendor ? 'REGISTERED' : 'ONE_TIME',
         amount,
         category: $('.rc', r).value,
         cashImpact,
@@ -812,6 +919,7 @@ export function createPayments({ api, refresh }) {
         notes: note,
         receipts: r._rec.map((x) => ({ mime: x.mime, data: x.data })),
       });
+      entryRows.push(r);
     }
 
     if (!date) {
@@ -847,6 +955,8 @@ export function createPayments({ api, refresh }) {
       }
 
       try {
+        const duplicatesConfirmed = await requestDuplicateConfirmations(entries, entryRows);
+        if (!duplicatesConfirmed) return;
         const d = await api('createVouchers', { entries });
         d.created.forEach((c) => {
           if (!S.vouchers.find((v) => v.id === c.id)) S.vouchers.push(c);
@@ -858,6 +968,14 @@ export function createPayments({ api, refresh }) {
         $('#nf').classList.add('hidden');
         renderServerSaveResult(d.created, pendingApprovalCount);
       } catch (e) {
+        if (e?.code === 'DUPLICATE_CONFIRMATION_REQUIRED') {
+          try {
+            await requestDuplicateConfirmations(entries, entryRows);
+          } catch (checkError) {
+            fail(checkError);
+          }
+          return;
+        }
         // A lost connection or non-JSON response can happen after the server committed the voucher.
         // Preserve each original client ID locally, then retry those same IDs once through the outbox.
         if (!['NET', 'BAD'].includes(String(e?.code || ''))) return fail(e);

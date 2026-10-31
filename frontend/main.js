@@ -260,31 +260,45 @@ function bindFeatures() {
   installActionDelegation();
 }
 
-function init() {
-  const session = resolveApiSession({
-    configuredEndpoint: window.CV_CONFIG?.API_URL,
-    storedEndpoint: ls.get('cv.url'),
-    token: ls.get('cv.token'),
-    tokenEndpoint: ls.get(SESSION_ENDPOINT_STORAGE_KEY),
-  });
-  S.url = session.endpoint;
-  S.token = session.token;
-  if (session.clearPersistedToken) clearPersistedApiSessionToken(ls);
+async function init() {
+  try {
+    const session = resolveApiSession({
+      configuredEndpoint: window.CV_CONFIG?.API_URL,
+      storedEndpoint: ls.get('cv.url'),
+      token: ls.get('cv.token'),
+      tokenEndpoint: ls.get(SESSION_ENDPOINT_STORAGE_KEY),
+    });
+    S.url = session.endpoint;
+    S.token = session.token;
+    if (session.clearPersistedToken) clearPersistedApiSessionToken(ls);
 
-  registerPwa({ confirmDiscardUnsavedWork: unsavedWork.confirmDiscard });
+    registerPwa({ confirmDiscardUnsavedWork: unsavedWork.confirmDiscard });
 
-  bindFeatures();
-  payments.showBanner();
+    bindFeatures();
+    void payments.showBanner().catch((error) => {
+      console.error('Could not restore the offline queue banner:', error);
+    });
 
-  if (session.autoResume) {
-    $('#login').classList.add('hidden');
-    navigation.start();
-  } else {
-    auth.showLogin();
+    if (session.autoResume) {
+      $('#login').classList.add('hidden');
+      const started = await navigation.start();
+      if (!started && $('#login').classList.contains('hidden') &&
+          $('#app').classList.contains('hidden') && !$('#modal')?.classList.contains('open')) {
+        auth.showLogin('Your session could not be restored. Sign in again to continue.');
+      }
+    } else {
+      auth.showLogin();
+    }
+  } catch (error) {
+    console.error('Application startup failed:', error);
+    if ($('#login').classList.contains('hidden') && $('#app').classList.contains('hidden')) {
+      auth.showLogin('The workspace could not be loaded. Sign in again or retry your connection.');
+    }
+  } finally {
+    // Keep the boot status visible until session recovery has reached a real login or app state.
+    $('#boot').classList.add('hidden');
   }
-
-  $('#boot').classList.add('hidden');
 }
 
 initTheme();
-init();
+void init();

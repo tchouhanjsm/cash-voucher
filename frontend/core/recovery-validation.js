@@ -113,6 +113,24 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
       throw new Error('Recovery file contains an invalid payment amount.');
     }
 
+    const hasVendorId = entry.vendorId !== undefined && entry.vendorId !== null && entry.vendorId !== '';
+    const vendorId = hasVendorId ? entry.vendorId : '';
+    if (
+      (hasVendorId &&
+        (typeof vendorId !== 'string' ||
+          vendorId.length > 120 ||
+          !/^[A-Za-z0-9_-]+$/.test(vendorId))) ||
+      (entry.vendorType !== undefined &&
+        entry.vendorType !== null &&
+        !['REGISTERED', 'ONE_TIME'].includes(entry.vendorType)) ||
+      (entry.vendorType === 'ONE_TIME' && hasVendorId) ||
+      (entry.vendorType === 'REGISTERED' && !hasVendorId)
+    ) {
+      throw new Error('Recovery file contains an invalid vendor identity.');
+    }
+    const hasVendorType =
+      entry.vendorType !== undefined && entry.vendorType !== null && entry.vendorType !== '';
+
     const category =
       entry.category === undefined || entry.category === null ? 'Other' : entry.category;
     const notes = entry.notes === undefined || entry.notes === null ? '' : entry.notes;
@@ -171,6 +189,8 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
         date: dateText,
         type: entry.type,
         vendor: entry.vendor.trim(),
+        ...(hasVendorId ? { vendorId } : {}),
+        ...(hasVendorType ? { vendorType: entry.vendorType } : {}),
         amount: entry.amount,
         category,
         cashImpact,

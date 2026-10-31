@@ -2196,6 +2196,7 @@ here and in the production app. It requires no JS or remote assets. */
     gap: 12px;
   }
 
+
   #nf.entry-form #rows > .erow {
     margin: 0;
     padding: 16px;
@@ -3485,4 +3486,28 @@ here and in the production app. It requires no JS or remote assets. */
       width: 100%;
     }
   }
+}
+
+/* Verified payee feedback and forgiving touch targets apply at every viewport. */
+#nf.entry-form .vendor-identity {
+  display: block;
+  min-height: 1.35em;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+#nf.entry-form .vendor-identity[data-kind='verified'] {
+  color: var(--success, var(--accent));
+}
+
+#nf.entry-form #recentVendors .vchip {
+  min-height: 44px;
+  max-width: 100%;
+  padding: 8px 12px;
+  text-align: left;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }

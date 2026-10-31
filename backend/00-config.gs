@@ -28,7 +28,7 @@ const CFG = {
   ],
   TEXT_COLS: {
     Users: ['A:D', 'F:G', 'I:J'],
-    Vouchers: ['A:A', 'C:D', 'F:W'],
+    Vouchers: ['A:A', 'C:D', 'F:X'],
     Vendors: ['A:D', 'F:I'],
     Settings: ['A:B'],
     AuditLog: ['A:E'],
@@ -100,6 +100,7 @@ const CFG = {
       'ApprovalReason',
       'VendorID',
       'PaymentMethod',
+      'VendorType',
     ],
     Vendors: [
       'VendorID',

@@ -205,6 +205,183 @@ function checkVoucherDuplicates_(user, req) {
   };
 }
 
+
+function paymentDuplicateFingerprint_(entry) {
+  return JSON.stringify([
+    'PAYMENT',
+    String(entry.date || ''),
+    String(entry.vendorId || ''),
+    String(entry.vendorType || ''),
+    String(entry.vendor || '').trim().toLowerCase(),
+    Math.round(Number(entry.amount) * 100),
+  ]);
+}
+
+function paymentDuplicateCandidateKey_(voucher) {
+  const clientId = String(voucher.ClientID || '').trim();
+  if (clientId) return 'CLIENT:' + clientId;
+  const voucherId = String(voucher.VoucherID || '').trim();
+  if (voucherId) return 'VOUCHER:' + voucherId;
+  return voucher._row ? 'ROW:' + String(voucher._row) : '';
+}
+
+function paymentDuplicateCandidates_(rows, entry) {
+  if (entry.type !== 'PAYMENT') return [];
+  const target = new Date(entry.date + 'T12:00:00Z').getTime();
+  const expectedVendorId = String(entry.vendorId || '');
+
+  return rows.filter(function (voucher) {
+    if (!voucher || String(voucher.Status || 'ACTIVE') !== 'ACTIVE' || voucher.Type !== 'PAYMENT') {
+      return false;
+    }
+    const existingVendorId = String(voucher.VendorID || '');
+    const sameIdentity =
+      expectedVendorId && existingVendorId
+        ? expectedVendorId === existingVendorId
+        : String(voucher.Vendor || '').trim().toLowerCase() ===
+          String(entry.vendor || '').trim().toLowerCase();
+    if (!sameIdentity) return false;
+    if (Math.round(Number(voucher.Amount) * 100) !== Math.round(Number(entry.amount) * 100)) {
+      return false;
+    }
+    const date = isoDate_(voucher.Date);
+    const timestamp = new Date(date + 'T12:00:00Z').getTime();
+    return (
+      date &&
+      isFinite(timestamp) &&
+      isFinite(target) &&
+      Math.abs(timestamp - target) / 86400000 <= 3 &&
+      !!paymentDuplicateCandidateKey_(voucher)
+    );
+  });
+}
+
+function paymentDuplicateCandidateFingerprint_(voucher) {
+  return {
+    key: paymentDuplicateCandidateKey_(voucher),
+    date: isoDate_(voucher.Date),
+    vendorId: String(voucher.VendorID || ''),
+    vendor: String(voucher.Vendor || '').trim().toLowerCase(),
+    amountPaise: Math.round(Number(voucher.Amount) * 100),
+    type: String(voucher.Type || ''),
+    status: String(voucher.Status || 'ACTIVE'),
+    voucherNo: String(voucher.VoucherNo || ''),
+  };
+}
+
+function paymentDuplicateConfirmationToken_(user, entry, candidates, expiresAt) {
+  const expiry = Number(expiresAt) || Date.now() + 5 * 60 * 1000;
+  const candidateFingerprints = candidates
+    .map(paymentDuplicateCandidateFingerprint_)
+    .filter(function (candidate) { return !!candidate.key; })
+    .sort(function (a, b) { return a.key.localeCompare(b.key); });
+  const payload = JSON.stringify({
+    user: String(user.email || '').trim().toLowerCase(),
+    fingerprint: paymentDuplicateFingerprint_(entry),
+    candidates: candidateFingerprints,
+    expiresAt: expiry,
+  });
+  const pepper = String(props_().getProperty('PEPPER') || '');
+  if (!pepper) throw err_('Duplicate confirmation is unavailable. Contact an administrator.', 'SERVER');
+  const signature = Utilities.base64EncodeWebSafe(
+    Utilities.computeHmacSha256Signature(payload, pepper),
+  ).replace(/=+$/g, '');
+  return String(expiry) + '.' + signature;
+}
+
+function paymentDuplicateConfirmationValid_(token, user, entry, candidates) {
+  if (typeof token !== 'string') return false;
+  const parts = token.split('.');
+  if (parts.length !== 2 || !/^\d+$/.test(parts[0])) return false;
+  const expiry = Number(parts[0]);
+  const now = Date.now();
+  if (!isFinite(expiry) || expiry <= now || expiry > now + 5 * 60 * 1000 + 5000) return false;
+  return token === paymentDuplicateConfirmationToken_(user, entry, candidates, expiry);
+}
+
+function checkPaymentDuplicates_(user, req) {
+  need_(user, 'create');
+  if (!Array.isArray(req.entries) || !req.entries.length || req.entries.length > CFG.MAX_NORMAL) {
+    throw err_('Duplicate check requires between 1 and ' + CFG.MAX_NORMAL + ' entry rows.', 'VALIDATION');
+  }
+
+  const lookup = vendorIdLookup_();
+  const existing = readAll_('Vouchers');
+  const seenIndexes = Object.create(null);
+  const batchRows = [];
+  const results = req.entries.map(function (source, position) {
+    if (!source || typeof source !== 'object' || Array.isArray(source)) {
+      throw err_('Invalid duplicate-check entry.', 'VALIDATION');
+    }
+    const index = source.index === undefined ? position : Number(source.index);
+    if (!Number.isSafeInteger(index) || index < 0 || index >= CFG.MAX_NORMAL ||
+        Object.prototype.hasOwnProperty.call(seenIndexes, String(index))) {
+      throw err_('Invalid or duplicate entry index.', 'VALIDATION');
+    }
+    seenIndexes[String(index)] = true;
+
+    const type = source.type === undefined || source.type === '' ? 'PAYMENT' : source.type;
+    if (type !== 'PAYMENT' && type !== 'RECEIPT') {
+      throw err_('Invalid transaction type.', 'VALIDATION');
+    }
+    const date = String(source.date || '');
+    if (!validDate_(date)) throw err_('Invalid entry date.', 'VALIDATION');
+    const vendor = nameText_(source.vendor, 'Vendor name', 200);
+    if (!vendor) throw err_('Payee is required.', 'VALIDATION');
+    const amount = Math.round(finiteNumber_(source.amount, 'amount') * 100) / 100;
+    if (amount <= 0 || amount > CFG.MAX_AMOUNT) throw err_('Invalid amount.', 'VALIDATION');
+    const identity = resolveVendorIdentity_(vendor, source.vendorId, source.vendorType, lookup);
+    const entry = {
+      type: type,
+      date: date,
+      vendor: identity.vendor,
+      vendorId: identity.vendorId,
+      vendorType: identity.vendorType,
+      amount: amount,
+      clientId: clientId_(source.clientId),
+    };
+    const candidates = paymentDuplicateCandidates_(existing.concat(batchRows), entry);
+    const visible = candidates.filter(function (candidate) { return canSee_(user, candidate); });
+    const result = {
+      index: index,
+      duplicateCount: candidates.length,
+      hiddenCount: candidates.length - visible.length,
+      matches: visible.slice(0, 4).map(function (candidate) {
+        return {
+          voucherNo: candidate.VoucherNo ? String(candidate.VoucherNo) : '',
+          date: isoDate_(candidate.Date),
+          vendor: String(candidate.Vendor || ''),
+          amount: Number(candidate.Amount),
+          inBatch: candidate._duplicateBatch === true,
+          row: candidate._batchIndex || 0,
+        };
+      }),
+      confirmationToken: candidates.length
+        ? paymentDuplicateConfirmationValid_(source.confirmationToken, user, entry, candidates)
+          ? source.confirmationToken
+          : paymentDuplicateConfirmationToken_(user, entry, candidates)
+        : '',
+    };
+    if (type === 'PAYMENT') {
+      batchRows.push({
+        _duplicateBatch: true,
+        _batchIndex: index + 1,
+        ClientID: entry.clientId || 'CHECK-ROW-' + index,
+        Date: entry.date,
+        Vendor: entry.vendor,
+        VendorID: entry.vendorId,
+        VendorType: entry.vendorType,
+        Amount: entry.amount,
+        Type: 'PAYMENT',
+        Status: 'ACTIVE',
+        CreatedBy: user.email,
+      });
+    }
+    return result;
+  });
+  return { results: results };
+}
+
 function registerPage_(user, req) {
   const seeAll = can_(user, 'viewAll');
   let rows = readModelRows_(user);

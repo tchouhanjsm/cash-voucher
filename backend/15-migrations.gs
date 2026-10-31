@@ -153,6 +153,35 @@ function migrateVoucherPaymentMethodField() {
   return 'Added PaymentMethod in W. Historical methods remain blank.';
 }
 
+/** Append VendorType to Vouchers column X; never infer classifications for historical vouchers. */
+ // eslint-disable-next-line no-unused-vars
+function migrateVoucherVendorTypeField() {
+  const id = props_().getProperty('SS_ID');
+  if (!id) throw new Error('Missing SS_ID Script Property; no changes were made.');
+  const spreadsheet = SpreadsheetApp.openById(id);
+  const sheet = spreadsheet.getSheetByName('Vouchers');
+  if (!sheet) throw new Error('Vouchers sheet is missing; no changes were made.');
+
+  const prior = CFG.H.Vouchers.slice(0, 23);
+  const actual = sheet.getRange(1, 1, 1, prior.length).getValues()[0];
+  if (!prior.every(function (header, index) { return actual[index] === header; })) {
+    throw new Error('Vouchers must have the reviewed A:W schema including PaymentMethod before VendorType migration; no changes were made.');
+  }
+
+  const lastRow = Math.max(sheet.getLastRow(), 1);
+  const trailing = sheet.getRange(1, 24, lastRow, 1).getValues();
+  if (trailing[0][0] === 'VendorType') {
+    return 'VendorType column already exists; no changes were made.';
+  }
+  if (trailing.some(function (row) { return row[0] !== '' && row[0] !== null; })) {
+    throw new Error('Vouchers column X already contains data; no changes were made.');
+  }
+
+  sheet.getRange(1, 24, 1, 1).setValues([['VendorType']]);
+  sheet.getRange('X:X').setNumberFormat('@');
+  return 'Added VendorType in X. Historical values remain blank and are treated as UNVERIFIED; no voucher was backfilled.';
+}
+
 /** Append vendor defaults to empty H:I without rewriting existing vendor rows. */
 // eslint-disable-next-line no-unused-vars
 function migrateVendorDefaultsSchema() {
