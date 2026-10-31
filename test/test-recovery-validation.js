@@ -129,6 +129,26 @@ async function run() {
   assert.equal(oneTimeIdentity.records[0].entry.vendorType, 'ONE_TIME');
   assert.equal('vendorId' in oneTimeIdentity.records[0].entry, false);
 
+  const nullableOneTimeIdentity = validateRecoveryRecords(
+    [
+      {
+        ...validRecord,
+        entry: { ...validRecord.entry, vendorId: null, vendorType: 'ONE_TIME' },
+      },
+    ],
+    ownerKey,
+    maxDate,
+  );
+  assert.equal(nullableOneTimeIdentity.records[0].entry.vendorId, null);
+  assert.equal(nullableOneTimeIdentity.records[0].entry.vendorType, 'ONE_TIME');
+
+  const nullableLegacyIdentity = validateRecoveryRecords(
+    [{ ...validRecord, entry: { ...validRecord.entry, vendorId: null } }],
+    ownerKey,
+    maxDate,
+  );
+  assert.equal(nullableLegacyIdentity.records[0].entry.vendorId, null);
+
   expectInvalid((item) => {
     item.entry.vendorId = 'vendor-123';
     item.entry.vendorType = 'ONE_TIME';

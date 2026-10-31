@@ -113,6 +113,7 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
       throw new Error('Recovery file contains an invalid payment amount.');
     }
 
+    const hasVendorIdField = Object.prototype.hasOwnProperty.call(entry, 'vendorId');
     const hasVendorId =
       entry.vendorId !== undefined && entry.vendorId !== null && entry.vendorId !== '';
     const vendorId = hasVendorId ? entry.vendorId : '';
@@ -190,7 +191,7 @@ export function validateRecoveryRecords(records, ownerKey, maxDate) {
         date: dateText,
         type: entry.type,
         vendor: entry.vendor.trim(),
-        ...(hasVendorId ? { vendorId } : {}),
+        ...(hasVendorIdField ? { vendorId: entry.vendorId } : {}),
         ...(hasVendorType ? { vendorType: entry.vendorType } : {}),
         amount: entry.amount,
         category,
