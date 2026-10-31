@@ -101,6 +101,72 @@ test('permits only the documented temporary Zod advisory chain', () => {
   assert.match(result.stdout, /Dependency security gate passed/);
 });
 
+test('permits moderate transitive branches beside the exact reviewed Zod exception', () => {
+  const report = baselineReport();
+  report.metadata.vulnerabilities.total = 4;
+  report.metadata.vulnerabilities.moderate = 2;
+  report.vulnerabilities['@google/clasp'].via = ['googleapis-common', 'zod'];
+  report.vulnerabilities['googleapis-common'] = {
+    severity: 'moderate',
+    isDirect: false,
+    range: '8.0.2-rc.0 - 9.0.1',
+    nodes: ['node_modules/googleapis-common'],
+    fixAvailable: true,
+    via: ['gaxios'],
+  };
+  report.vulnerabilities.gaxios = {
+    severity: 'moderate',
+    isDirect: false,
+    range: '7.1.3',
+    nodes: ['node_modules/googleapis-common/node_modules/gaxios'],
+    fixAvailable: true,
+    via: [
+      {
+        title: 'moderate transitive advisory',
+        url: 'https://github.com/advisories/GHSA-aaaa-bbbb-cccc',
+        severity: 'moderate',
+        range: '*',
+      },
+    ],
+  };
+
+  const result = runAudit(report);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.match(result.stdout, /googleapis-common: severity=moderate/);
+  assert.match(result.stdout, /gaxios: severity=moderate/);
+  assert.match(result.stdout, /REVIEWED EXCEPTION: GHSA-mrhx-c7xc-m3w5/);
+  assert.match(result.stdout, /Dependency security gate passed/);
+});
+
+test('blocks a new unexcepted high-severity transitive branch under clasp', () => {
+  const report = baselineReport();
+  report.metadata.vulnerabilities.total += 1;
+  report.metadata.vulnerabilities.high += 1;
+  report.vulnerabilities['@google/clasp'].via = ['zod', 'unsafe-transitive-package'];
+  report.vulnerabilities['unsafe-transitive-package'] = {
+    severity: 'high',
+    isDirect: false,
+    range: '*',
+    nodes: ['node_modules/unsafe-transitive-package'],
+    fixAvailable: false,
+    via: [
+      {
+        title: 'unrelated high severity advisory',
+        url: 'https://github.com/advisories/GHSA-dddd-eeee-ffff',
+        severity: 'high',
+        range: '*',
+      },
+    ],
+  };
+
+  const result = runAudit(report);
+
+  assert.equal(result.status, 1);
+  assert.match(result.stderr, /Dependency security gate failed/);
+  assert.match(result.stdout, /unsafe-transitive-package: severity=high/);
+});
+
 test('retries a transient npm audit service error and then enforces the returned report', () => {
   const result = runAudit(baselineReport(), 1, { failOnce: true });
 

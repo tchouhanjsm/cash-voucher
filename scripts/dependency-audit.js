@@ -141,22 +141,35 @@ function advisoryId(advisory) {
   return text.match(/GHSA-[a-z0-9-]+/i)?.[0] || null;
 }
 
+function isBlockingSeverity(value) {
+  return ['high', 'critical'].includes(String(value || '').toLowerCase());
+}
+
 function coveredByReviewedException(packageName, ancestors = []) {
   if (ancestors.includes(packageName)) return null;
 
   const item = report.vulnerabilities?.[packageName];
-  if (!item || !Array.isArray(item.via) || item.via.length === 0) return null;
+  if (!item || !Array.isArray(item.via)) return null;
+  if (!isBlockingSeverity(item.severity)) return [];
 
   const nextAncestors = [...ancestors, packageName];
   const covered = [];
 
   for (const entry of item.via) {
     if (typeof entry === 'string') {
+      const nestedItem = report.vulnerabilities?.[entry];
+      if (!nestedItem) return null;
+      if (!isBlockingSeverity(nestedItem.severity)) continue;
+
       const nested = coveredByReviewedException(entry, nextAncestors);
       if (!nested) return null;
       covered.push(...nested);
       continue;
     }
+
+    // npm can attach moderate/low advisory objects to a high-severity parent.
+    // Report them, but only high/critical advisories are blocking release checks.
+    if (entry.severity && !isBlockingSeverity(entry.severity)) continue;
 
     const id = advisoryId(entry);
     const exception = id && exceptions[id];
