@@ -5459,6 +5459,16 @@ with sync_playwright() as p:
             else:
                 vendors = data.get('vendors', [])
                 if isinstance(vendors, list):
+                    for index, name in enumerate(prototype_group_values):
+                        vendors.append({
+                            'id': 'prototype-vendor-' + str(index),
+                            'name': name,
+                            'company': '',
+                            'mobile': '',
+                            'active': True,
+                            'defaultCategory': '',
+                            'defaultPaymentMethod': '',
+                        })
                     vendors.extend([
                         None,
                         {
