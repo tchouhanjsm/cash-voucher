@@ -64,6 +64,8 @@ assert.match(payments, /DUPLICATE_CONFIRMATION_REQUIRED/);
 assert.doesNotMatch(payments, /duplicateConfirmed/);
 assert.match(payments, /vendorType: selectedVendor \? 'REGISTERED' : 'ONE_TIME'/);
 assert.match(payments, /vendor-identity/);
+assert.match(payments, /const rows = \$\$\('#rows \.erow'\);/);
+assert.match(payments, /rows\.forEach\(clearRowError\)/);
 assert.match(state, /'vendorType'/);
 
 assert.match(main, /async function init\(\)/);
