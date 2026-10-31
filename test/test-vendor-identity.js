@@ -283,7 +283,11 @@ assert.equal(inactiveRetryPreflight.data.results[0].duplicateCount, 0);
 const inactiveRetry = call('createVouchers', {
   entries: [committedBeforeDeactivation],
 });
-assert.equal(inactiveRetry.ok, true, 'committed transaction retry succeeds after vendor deactivation');
+assert.equal(
+  inactiveRetry.ok,
+  true,
+  'committed transaction retry succeeds after vendor deactivation',
+);
 assert.equal(inactiveRetry.data.skipped, 1);
 const inactiveVoucher = call('createVouchers', {
   entries: [

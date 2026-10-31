@@ -1,14 +1,25 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 31 October 2026 (PR #254 merged; staging UAT target-check follow-up in review)
+**Updated:** 31 October 2026 (PR #255 merged; PR #256 frontend reliability and vendor identity work in review)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `0cd7207959098da58d8e45ce77a2bc28d221b0fe` (PR #254 merged).
-**Current source batch:** `client/fix-staging-uat-optional-prod-refs-20261031` makes the live UAT target check compatible with a production-free staging-only environment and adds direct regression coverage.
-**Active review PR:** [PR #255 — allow production-free staging UAT target checks](https://github.com/tchouhanjsm/cash-voucher/pull/255), based on `client-main`.
-**Release boundary:** The existing staging Apps Script deployment was updated successfully from SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe`; post-deployment target recheck passed, but live UAT stopped before financial test writes. The client ZIP from this SHA is verified but must be regenerated after the follow-up PR merge to bind its manifest to the final integration SHA. No cPanel upload or production action has been performed.
+**Current integration baseline:** `12fbea69ff4df6728651d772d264411942367de1` (PR #255 merged).
+**Current source batch:** `client/frontend-reliability-vendor-identity-20261031` adds the registered/one-time vendor identity contract, server-confirmed payment duplicate review, awaited startup restoration and regression coverage.
+**Active review PR:** [PR #256 — harden startup, vendor identity and duplicate payments](https://github.com/tchouhanjsm/cash-voucher/pull/256), based on `client-main`.
+**Release boundary:** PR #256 is source-only and unmerged. No spreadsheet migration, Apps Script deployment, staging/production deployment, cPanel upload or historical accounting-data correction has been performed.
 
-## Current staging UAT target-check follow-up — 31 October 2026
+## Current frontend reliability and vendor identity batch — 31 October 2026
+
+- **Confirmed findings:** recent payee suggestions were derived from arbitrary historical voucher text; server vendor resolution did not consistently enforce active vendor IDs; duplicate confirmation was a persistent client boolean rather than an authoritative server-reviewed transaction; and startup hid the boot state before asynchronous session restoration completed.
+- **Vendor model:** new vouchers explicitly distinguish `REGISTERED` and `ONE_TIME`. Registered IDs must resolve to an active, unambiguous vendor and match the submitted payee name. One-time recipients do not require permanent vendor records. Historic rows stay blank/UNVERIFIED; no Mukesh name correction or historic classification is inferred.
+- **Schema gate:** the change appends `VendorType` to Vouchers column X. Before deploying the matching backend/frontend release, take and verify a full backup, confirm A:W matches the reviewed schema (including PaymentMethod), run `migrateVoucherVendorTypeField()` once, and verify X1 is VendorType. The migration refuses occupied X and does not write historic data.
+- **Duplicate protection:** authenticated server preflight checks the persisted ledger; short-lived HMAC tokens bind the payment fields and exact candidate details; the create path rechecks under the existing write lock. Same-client-ID retries remain idempotent, conflicting reuse is rejected, and same-batch split-payment approval aggregation is preserved.
+- **Startup/offline:** startup awaits session restoration; app-shell cache advances without clearing IndexedDB/outbox. Existing Register server-side paging and correct service-worker navigation/static-resource fallback are retained.
+- **Exact-head verification:** commit `68f2c8cf8a5296eb2b86017753b2e5244c83d74a` is not accepted as release-ready: CI/Quality failed on test formatting and the escaper test harness; Browser E2E timed out during user creation without diagnostic response details. A follow-up commit must fix these and re-run CI, Browser E2E and Full Flight on the same exact head.
+- **Next steps:** repair the test harness; use the newly added password-free browser API diagnostics if user creation remains blocked; reconcile all exact-head checks; complete human review; then perform the guarded staging migration/deploy/UAT. Do not merge or deploy until the owner authorizes the release.
+- **Scope boundary:** the Register's existing pagination/totals and the service worker's existing navigation-only HTML fallback are not rewritten. Full WCAG 2.2 AA, all-screen dynamic HTML sinks, fresh Lighthouse metrics, device verification and live Google Sheets behavior remain separate verification work.
+
+## Staging UAT target-check follow-up (PR #255 merged) — 31 October 2026
 
 - **Integration baseline:** `client-main` at `0cd7207959098da58d8e45ce77a2bc28d221b0fe`, the squash merge of PR #254. All four required PR #254 workflows passed on final reviewed head `e56fc5a647c72259706ed9f661b48ab144bbc890`: [CI #3449](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191716492), [Browser E2E #3176](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191716419), [Full Flight #2751](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191716427), and [Autonomous Development Monitor #594](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41191716418).
 - **Staging backend:** [workflow #17](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41192063930) passed source/mock validation and the staging-only guard, updated the existing version-5 Apps Script deployment, and passed its target recheck.

@@ -108,6 +108,7 @@ with sync_playwright() as p:
             page.locator('#bprev .bci').nth(index).select_option(impact)
 
     logs = []
+    api_events = []
     page.add_init_script(
         """window.__xssFired = false;
         window.__createdObjectUrls = [];
@@ -143,8 +144,29 @@ with sync_playwright() as p:
         if 'content security policy' in message.text.lower():
             csp_violations.append(message.text)
 
+    def capture_api_response(response):
+        if urllib.parse.urlparse(response.url).path != '/api':
+            return
+        try:
+            request_payload = json.loads(response.request.post_data or '{}')
+        except (TypeError, ValueError):
+            request_payload = {}
+        event = {
+            'action': request_payload.get('action'),
+            'status': response.status,
+        }
+        try:
+            result = response.json()
+            event['ok'] = result.get('ok') if isinstance(result, dict) else None
+            event['code'] = result.get('code') if isinstance(result, dict) else None
+            event['error'] = result.get('error') if isinstance(result, dict) else None
+        except Exception as error:
+            event['response_error'] = str(error)
+        api_events.append(event)
+
     page.on('console', capture_console)
     page.on('pageerror', lambda error: logs.append('PAGEERR ' + str(error)))
+    page.on('response', capture_api_response)
 
     # FrontUI Studio is a static, same-origin design reference. Keep it independent
     # from authentication and verify the shared kit is present without inline assets.
@@ -1649,10 +1671,40 @@ with sync_playwright() as p:
         page.select_option('#ur', role)
         page.fill('#up', password)
         page.click('#uf .primary')
-        page.wait_for_function(
-            "(expected) => document.querySelectorAll('#view tbody tr').length === expected",
-            arg=index + 2,
-        )
+        try:
+            page.wait_for_function(
+                "(expected) => document.querySelectorAll('#view tbody tr').length === expected",
+                arg=index + 2,
+            )
+        except Exception:
+            print(
+                'E2E USER-CREATE DIAGNOSTICS:',
+                json.dumps(
+                    {
+                        'attempt': index + 1,
+                        'email': email,
+                        'role': role,
+                        'page_url': page.url,
+                        'user_rows': page.locator('#view tbody tr').count(),
+                        'user_table': (
+                            page.locator('#view').inner_text()
+                            if page.locator('#view').count()
+                            else ''
+                        ),
+                        'form_text': (
+                            page.locator('#uf').inner_text()
+                            if page.locator('#uf').count()
+                            else ''
+                        ),
+                        'api_events': api_events[-20:],
+                        'console_errors': logs[-20:],
+                    },
+                    ensure_ascii=False,
+                    default=str,
+                ),
+                flush=True,
+            )
+            raise
     check(page.locator('#view tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.

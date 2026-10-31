@@ -20,6 +20,14 @@ assert.match(formOptions, /vendor\.id/);
 assert.doesNotMatch(formOptions, /S\.vouchers|cv\.cache|cache\.vn/);
 assert.match(formOptions, /esc\(name\)/, 'vendor option values use the shared HTML escaper');
 
+const scalarStart = utils.indexOf('export const scalarText = (value) =>');
+const scalarEndMarker = '\n};';
+const scalarEnd = utils.indexOf(scalarEndMarker, scalarStart);
+assert.ok(
+  scalarStart >= 0 && scalarEnd > scalarStart,
+  'the shared production text normalizer is present',
+);
+const scalarDefinition = utils.slice(scalarStart, scalarEnd + scalarEndMarker.length);
 const escStart = utils.indexOf('export const esc = (value) =>');
 const escEndMarker = '\n  );';
 const escEnd = utils.indexOf(escEndMarker, escStart);
@@ -27,7 +35,10 @@ assert.ok(escStart >= 0 && escEnd > escStart, 'the shared production HTML escape
 const escDefinition = utils.slice(escStart, escEnd + escEndMarker.length);
 const escSandbox = {};
 vm.runInNewContext(
-  escDefinition.replace('export const esc =', 'const esc =') + '\nglobalThis.esc = esc;',
+  scalarDefinition.replace('export const scalarText =', 'const scalarText =') +
+    '\n' +
+    escDefinition.replace('export const esc =', 'const esc =') +
+    '\nglobalThis.esc = esc;',
   escSandbox,
 );
 assert.equal(
