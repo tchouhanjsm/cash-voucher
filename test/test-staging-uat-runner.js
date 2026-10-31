@@ -123,11 +123,7 @@ try {
     'CV_PRODUCTION_BACKUP_FOLDER_ID',
     'CV_TEST_PARENT_ONLY',
   ]) {
-    assert.equal(
-      childEnvironment[key],
-      undefined,
-      `isolated server must not receive ${key}`,
-    );
+    assert.equal(childEnvironment[key], undefined, `isolated server must not receive ${key}`);
   }
 
   console.log(
