@@ -497,6 +497,7 @@ export function createPayments({ api, refresh }) {
     });
 
     return [...byName.values()]
+      .filter((vendor) => lastUsed.has(vendor.id))
       .sort(
         (a, b) =>
           (lastUsed.get(b.id) || '').localeCompare(lastUsed.get(a.id) || '') ||

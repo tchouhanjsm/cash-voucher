@@ -55,6 +55,7 @@ assert.match(recentSource, /S\.vendors/);
 assert.match(recentSource, /vendor\.active/);
 assert.match(recentSource, /vendor\.id/);
 assert.match(recentSource, /voucher\.vendorId/);
+assert.match(recentSource, /lastUsed\.has\(vendor\.id\)/);
 assert.doesNotMatch(recentSource, /voucher\.vendor\)/);
 
 assert.match(payments, /checkPaymentDuplicates/);
