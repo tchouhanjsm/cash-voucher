@@ -54,6 +54,10 @@ if [ -n "${GITHUB_OUTPUT:-}" ]; then
   unset GITHUB_OUTPUT GITHUB_ENV GITHUB_PATH GITHUB_STEP_SUMMARY
 fi
 
+# Keep this child environment explicitly allowlisted. Production references are
+# intentionally absent for owner-attested staging-only operation; passing unset
+# production variables here both broke nounset shells and violated the isolation
+# contract enforced by scripts/staging-preflight.js.
 env -i \
   PATH="${PATH:-/usr/bin:/bin}" \
   HOME="${HOME:-}" \
@@ -64,10 +68,8 @@ env -i \
   CV_STAGING_SPREADSHEET_ID="${CV_STAGING_SPREADSHEET_ID}" \
   CV_STAGING_RECEIPT_FOLDER_ID="${CV_STAGING_RECEIPT_FOLDER_ID}" \
   CV_STAGING_BACKUP_FOLDER_ID="${CV_STAGING_BACKUP_FOLDER_ID}" \
-  CV_PRODUCTION_SCRIPT_ID="${CV_PRODUCTION_SCRIPT_ID}" \
-  CV_PRODUCTION_SPREADSHEET_ID="${CV_PRODUCTION_SPREADSHEET_ID}" \
-  CV_PRODUCTION_RECEIPT_FOLDER_ID="${CV_PRODUCTION_RECEIPT_FOLDER_ID}" \
-  CV_PRODUCTION_BACKUP_FOLDER_ID="${CV_PRODUCTION_BACKUP_FOLDER_ID}" \
+  CV_STAGING_ONLY_MODE="${CV_STAGING_ONLY_MODE:-}" \
+  CV_STAGING_RESOURCE_ISOLATION_ATTESTATION="${CV_STAGING_RESOURCE_ISOLATION_ATTESTATION:-}" \
   node scripts/staging-web-server.js > "${SERVER_LOG_FILE}" 2>&1 &
 SERVER_PID=$!
 
