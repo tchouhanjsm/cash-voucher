@@ -1,20 +1,42 @@
+function vendorIsActive_(vendor) {
+  return (
+    !!vendor && (vendor.Active === true || String(vendor.Active || '').toUpperCase() === 'TRUE')
+  );
+}
+
 function vendorIdLookup_() {
   const byName = Object.create(null);
   const ambiguous = Object.create(null);
+  const byId = Object.create(null);
+  const ambiguousIds = Object.create(null);
+
   readAll_('Vendors').forEach(function (vendor) {
-    const key = String(vendor.Name || '')
-      .trim()
-      .toLowerCase();
-    if (!key || ambiguous[key]) return;
+    const id = String(vendor.VendorID || '').trim();
+    const name = String(vendor.Name || '').trim();
+    const key = name.toLowerCase();
+
+    if (id && !ambiguousIds[id]) {
+      if (Object.prototype.hasOwnProperty.call(byId, id)) {
+        delete byId[id];
+        ambiguousIds[id] = true;
+      } else {
+        byId[id] = vendor;
+      }
+    }
+
+    // Inactive records remain addressable by ID for history, but never appear as new-entry choices.
+    if (!vendorIsActive_(vendor) || !key || ambiguous[key]) return;
     if (Object.prototype.hasOwnProperty.call(byName, key)) {
       delete byName[key];
       ambiguous[key] = true;
     } else {
-      byName[key] = String(vendor.VendorID || '');
+      byName[key] = id;
     }
   });
-  return { byName: byName, ambiguous: ambiguous };
+
+  return { byName: byName, ambiguous: ambiguous, byId: byId, ambiguousIds: ambiguousIds };
 }
+
 function vendorIdForName_(name, lookup) {
   const key = String(name || '')
     .trim()
@@ -22,6 +44,59 @@ function vendorIdForName_(name, lookup) {
   const index = lookup || vendorIdLookup_();
   if (!key || index.ambiguous[key]) return '';
   return String(index.byName[key] || '');
+}
+
+function resolveVendorIdentity_(name, suppliedId, suppliedType, lookup) {
+  const displayName = String(name || '').trim();
+  const normalizedName = displayName.toLowerCase();
+  const id = String(suppliedId || '').trim();
+  const type = String(suppliedType || '')
+    .trim()
+    .toUpperCase();
+  const index = lookup || vendorIdLookup_();
+
+  if (type && type !== 'REGISTERED' && type !== 'ONE_TIME') {
+    throw err_('Choose a registered vendor or a one-time payee.', 'VALIDATION');
+  }
+
+  if (type === 'ONE_TIME') {
+    if (id) throw err_('A one-time payee cannot include a registered vendor ID.', 'VALIDATION');
+    return { vendor: displayName, vendorId: '', vendorType: 'ONE_TIME' };
+  }
+
+  if (type === 'REGISTERED' || id) {
+    if (!id || index.ambiguousIds[id] || !index.byId[id]) {
+      throw err_(
+        'The selected vendor no longer exists. Refresh vendors and choose an active vendor or a one-time payee.',
+        'VENDOR_INVALID',
+      );
+    }
+    const vendor = index.byId[id];
+    if (!vendorIsActive_(vendor)) {
+      throw err_(
+        'This vendor is inactive. Choose another active vendor or enter a one-time payee.',
+        'VENDOR_INACTIVE',
+      );
+    }
+    const canonicalName = String(vendor.Name || '').trim();
+    if (!canonicalName || canonicalName.toLowerCase() !== normalizedName) {
+      throw err_(
+        'The selected vendor identity does not match the payee name. Select the vendor again.',
+        'VENDOR_MISMATCH',
+      );
+    }
+    return { vendor: displayName, vendorId: id, vendorType: 'REGISTERED' };
+  }
+
+  const matchedId = vendorIdForName_(displayName, index);
+  if (matchedId) {
+    return {
+      vendor: displayName,
+      vendorId: matchedId,
+      vendorType: 'REGISTERED',
+    };
+  }
+  return { vendor: displayName, vendorId: '', vendorType: 'ONE_TIME' };
 }
 /* ============ vendors ============ */
 function saveVendor_(user, req) {

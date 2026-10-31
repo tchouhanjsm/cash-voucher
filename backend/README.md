@@ -27,3 +27,14 @@ Apps Script loads every `.gs` file into **one global scope**, in file-name order
 3. **No duplicate top-level names across files.** Apps Script silently keeps the last one. `npm run check:backend` fails the build if this happens.
 4. **No top-level code that runs at load time** except constant tables in `00-config.gs` and `99-routes.gs`.
 5. `clasp push` uploads the folder as is. The tests, lint and syntax check read `backend/*.gs` in the same sorted order.
+
+## Vendor identity schema migration
+
+The voucher schema now appends `VendorType` in column X. Before deploying the matching Apps Script version:
+
+1. Run and verify a complete backup using the existing backup workflow.
+2. Confirm the Vouchers sheet has the reviewed A:W headers, including `PaymentMethod`.
+3. Run `migrateVoucherVendorTypeField()` once in the Apps Script editor.
+4. Verify X1 is `VendorType` before deploying the new API/frontend bundle.
+
+The migration is additive and idempotent. It refuses to overwrite any occupied X column and never classifies or rewrites historical voucher rows. Blank historical values are reported as `UNVERIFIED`; do not infer a registered vendor or correct a historical payee name without audited source evidence.

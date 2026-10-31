@@ -6,6 +6,7 @@ function vOut_(o) {
     date: isoDate_(o.Date),
     vendor: String(o.Vendor),
     vendorId: String(o.VendorID || ''),
+    vendorType: String(o.VendorType || (o.VendorID ? 'REGISTERED' : 'UNVERIFIED')),
     paymentMethod: String(o.PaymentMethod || ''),
     amount: Number(o.Amount),
     category: String(o.Category || ''),

@@ -80,6 +80,12 @@ function validateSheetSchema_(s, name) {
           'SCHEMA_MIGRATION',
         );
       }
+      if (name === 'Vouchers' && i === 23 && (actual[i] === '' || actual[i] === null)) {
+        throw err_(
+          'Vouchers is missing VendorType. After a verified backup, run migrateVoucherVendorTypeField() once in the Apps Script editor. Historical vouchers remain unverified.',
+          'SCHEMA_MIGRATION',
+        );
+      }
       if (name === 'Vendors' && i >= 7 && i <= 8 && (actual[i] === '' || actual[i] === null)) {
         throw err_(
           'Vendors is missing default fields. After a verified backup, run migrateVendorDefaultsSchema() in the Apps Script editor.',

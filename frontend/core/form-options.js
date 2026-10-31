@@ -1,5 +1,4 @@
 import { categories, rcats, S } from './state.js';
-import { ls } from './storage.js';
 import { esc, hasPayeeLetter } from './utils.js';
 
 export const catOpts = (selected, type) =>
@@ -16,31 +15,25 @@ function vendorName(value) {
 }
 
 function vendorNames() {
-  const counts = new Map();
-  const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
+  const named = new Map();
+  const ambiguous = new Set();
 
-  vouchers.forEach((voucher) => {
-    if (!isRecord(voucher)) return;
-    const name = vendorName(voucher.vendor);
+  (Array.isArray(S.vendors) ? S.vendors : []).forEach((vendor) => {
+    if (!isRecord(vendor) || !vendor.active || typeof vendor.id !== 'string' || !vendor.id.trim()) {
+      return;
+    }
+    const name = vendorName(vendor.name);
     if (!name) return;
-    counts.set(name, (counts.get(name) || 0) + 1);
+    const key = name.trim().toLocaleLowerCase('en-IN');
+    if (named.has(key)) {
+      named.delete(key);
+      ambiguous.add(key);
+      return;
+    }
+    if (!ambiguous.has(key)) named.set(key, name);
   });
 
-  let cache = {};
-
-  try {
-    const saved = JSON.parse(ls.get('cv.cache') || '{}');
-    cache = isRecord(saved) ? saved : {};
-  } catch {}
-
-  const activeVendors = (Array.isArray(S.vendors) ? S.vendors : [])
-    .filter((vendor) => isRecord(vendor) && vendor.active)
-    .map((vendor) => vendorName(vendor.name))
-    .filter(Boolean);
-  const cachedVendors = Array.isArray(cache.vn) ? cache.vn.map(vendorName).filter(Boolean) : [];
-  const frequentVendors = [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
-
-  return [...new Set([...frequentVendors, ...activeVendors, ...cachedVendors])];
+  return [...named.values()];
 }
 
 export const vendorList = () =>

@@ -45,6 +45,33 @@ assert.throws(
   /Vouchers column W already contains data/,
 );
 
+// VendorType must be additive, idempotent and must never infer historical classifications.
+const vendorTypeMock = setupMock();
+const vendorTypeVouchers = vendorTypeMock.sheets.Vouchers;
+vendorTypeVouchers.rows[0] = vendorTypeVouchers.rows[0].slice(0, 23);
+const historicalVoucher = new Array(23).fill('');
+historicalVoucher[0] = 'historical-unverified-voucher';
+historicalVoucher[3] = 'Historical Payee';
+historicalVoucher[4] = 250;
+historicalVoucher[15] = 'PAYMENT';
+historicalVoucher[16] = 'CASH_OUT';
+vendorTypeVouchers.rows.push(historicalVoucher.slice());
+assert.match(vendorTypeMock.migrateVoucherVendorTypeField(), /Added VendorType in X/);
+assert.equal(vendorTypeVouchers.rows[0][23], 'VendorType');
+assert.deepEqual(vendorTypeVouchers.rows[1].slice(0, 23), historicalVoucher);
+assert.equal(vendorTypeVouchers.rows[1][23] || '', '');
+assert.match(vendorTypeMock.migrateVoucherVendorTypeField(), /already exists/);
+
+const vendorTypeConflictMock = setupMock();
+vendorTypeConflictMock.sheets.Vouchers.rows[0] =
+  vendorTypeConflictMock.sheets.Vouchers.rows[0].slice(0, 23);
+vendorTypeConflictMock.sheets.Vouchers.rows[1] ||= [];
+vendorTypeConflictMock.sheets.Vouchers.rows[1][23] = 'occupied';
+assert.throws(
+  () => vendorTypeConflictMock.migrateVoucherVendorTypeField(),
+  /Vouchers column X already contains data/,
+);
+
 // Vendor defaults must be additive, idempotent and fail closed on occupied H:I.
 const vendorMock = setupMock();
 const vendors = vendorMock.sheets.Vendors;

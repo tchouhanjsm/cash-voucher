@@ -218,7 +218,10 @@ function create(options = {}) {
       computeHmacSha256Signature: (m, k) =>
         [...crypto.createHmac('sha256', k).update(m).digest()].map((b) => (b > 127 ? b - 256 : b)),
       base64Decode: (s) => [...Buffer.from(s, 'base64')],
-      base64Encode: (b) => Buffer.from(b).toString('base64'),
+      base64Encode: (b) =>
+        Buffer.from(b.map((value) => (value < 0 ? value + 256 : value))).toString('base64'),
+      base64EncodeWebSafe: (b) =>
+        Buffer.from(b.map((value) => (value < 0 ? value + 256 : value))).toString('base64url'),
       newBlob: (bytes, mime, name) => ({ bytes, mime, name }),
       formatDate: (d, tz, fmt) => {
         const p = Object.fromEntries(
@@ -258,7 +261,7 @@ function create(options = {}) {
   vm.createContext(ctx);
   vm.runInContext(
     backendSource() +
-      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,migrateVoucherPaymentMethodField,migrateVendorDefaultsSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_,inspectReceiptManifest_};',
+      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,migrateVoucherPaymentMethodField,migrateVoucherVendorTypeField,migrateVendorDefaultsSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_,inspectReceiptManifest_};',
     ctx,
   );
   return {
@@ -326,6 +329,7 @@ function create(options = {}) {
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),
     migrateVoucherPaymentMethodField: () => ctx.__api.migrateVoucherPaymentMethodField(),
+    migrateVoucherVendorTypeField: () => ctx.__api.migrateVoucherVendorTypeField(),
     migrateVendorDefaultsSchema: () => ctx.__api.migrateVendorDefaultsSchema(),
     call: (action, payload = {}) => {
       const defaults = withOnboardingEnvironment

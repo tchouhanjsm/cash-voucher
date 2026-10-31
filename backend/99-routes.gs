@@ -2,6 +2,7 @@ const ACTIONS = {
   bootstrap: bootstrap_,
   registerPage: registerPage_,
   checkVoucherDuplicates: checkVoucherDuplicates_,
+  checkPaymentDuplicates: checkPaymentDuplicates_,
   dashboardSummary: dashboardSummary_,
   dailyOperationsSummary: dailyOperationsSummary_,
   createVouchers: createVouchers_,

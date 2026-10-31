@@ -108,6 +108,7 @@ with sync_playwright() as p:
             page.locator('#bprev .bci').nth(index).select_option(impact)
 
     logs = []
+    api_events = []
     page.add_init_script(
         """window.__xssFired = false;
         window.__createdObjectUrls = [];
@@ -143,8 +144,29 @@ with sync_playwright() as p:
         if 'content security policy' in message.text.lower():
             csp_violations.append(message.text)
 
+    def capture_api_response(response):
+        if urllib.parse.urlparse(response.url).path != '/api':
+            return
+        try:
+            request_payload = json.loads(response.request.post_data or '{}')
+        except (TypeError, ValueError):
+            request_payload = {}
+        event = {
+            'action': request_payload.get('action'),
+            'status': response.status,
+        }
+        try:
+            result = response.json()
+            event['ok'] = result.get('ok') if isinstance(result, dict) else None
+            event['code'] = result.get('code') if isinstance(result, dict) else None
+            event['error'] = result.get('error') if isinstance(result, dict) else None
+        except Exception as error:
+            event['response_error'] = str(error)
+        api_events.append(event)
+
     page.on('console', capture_console)
     page.on('pageerror', lambda error: logs.append('PAGEERR ' + str(error)))
+    page.on('response', capture_api_response)
 
     # FrontUI Studio is a static, same-origin design reference. Keep it independent
     # from authentication and verify the shared kit is present without inline assets.
@@ -1649,10 +1671,40 @@ with sync_playwright() as p:
         page.select_option('#ur', role)
         page.fill('#up', password)
         page.click('#uf .primary')
-        page.wait_for_function(
-            "(expected) => document.querySelectorAll('#view tbody tr').length === expected",
-            arg=index + 2,
-        )
+        try:
+            page.wait_for_function(
+                "(expected) => document.querySelectorAll('#view tbody tr').length === expected",
+                arg=index + 2,
+            )
+        except Exception:
+            print(
+                'E2E USER-CREATE DIAGNOSTICS:',
+                json.dumps(
+                    {
+                        'attempt': index + 1,
+                        'email': email,
+                        'role': role,
+                        'page_url': page.url,
+                        'user_rows': page.locator('#view tbody tr').count(),
+                        'user_table': (
+                            page.locator('#view').inner_text()
+                            if page.locator('#view').count()
+                            else ''
+                        ),
+                        'form_text': (
+                            page.locator('#uf').inner_text()
+                            if page.locator('#uf').count()
+                            else ''
+                        ),
+                        'api_events': api_events[-20:],
+                        'console_errors': logs[-20:],
+                    },
+                    ensure_ascii=False,
+                    default=str,
+                ),
+                flush=True,
+            )
+            raise
     check(page.locator('#view tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
@@ -1662,9 +1714,39 @@ with sync_playwright() as p:
     page.locator('#rows .ra').first.fill('10000')
     choose_cash_impact_for_current_rows()
     page.click('#nsave')
-    page.wait_for_function(
-        "document.querySelector('#nres')?.innerText.includes('pending owner/manager approval')"
-    )
+    try:
+        page.wait_for_function(
+            "document.querySelector('#nres')?.innerText.includes('pending owner/manager approval')"
+        )
+    except Exception:
+        print(
+            'E2E PAYMENT-CREATE DIAGNOSTICS:',
+            json.dumps(
+                {
+                    'page_url': page.url,
+                    'result_text': (
+                        page.locator('#nres').inner_text()
+                        if page.locator('#nres').count()
+                        else ''
+                    ),
+                    'form_text': (
+                        page.locator('#nf').inner_text()
+                        if page.locator('#nf').count()
+                        else ''
+                    ),
+                    'entry_rows': page.locator('#rows .erow').count(),
+                    'payee': page.locator('#rows .rv').first.input_value(),
+                    'amount': page.locator('#rows .ra').first.input_value(),
+                    'save_disabled': page.locator('#nsave').is_disabled(),
+                    'api_events': api_events[-25:],
+                    'console_errors': logs[-25:],
+                },
+                ensure_ascii=False,
+                default=str,
+            ),
+            flush=True,
+        )
+        raise
     check(
         'excluded from approved totals and Daily Cash Close' in page.locator('#nres').inner_text(),
         'new payment at INR 10,000 clearly explains the approval requirement and financial treatment',
@@ -5377,6 +5459,16 @@ with sync_playwright() as p:
             else:
                 vendors = data.get('vendors', [])
                 if isinstance(vendors, list):
+                    for index, name in enumerate(prototype_group_values):
+                        vendors.append({
+                            'id': 'prototype-vendor-' + str(index),
+                            'name': name,
+                            'company': '',
+                            'mobile': '',
+                            'active': True,
+                            'defaultCategory': '',
+                            'defaultPaymentMethod': '',
+                        })
                     vendors.extend([
                         None,
                         {
@@ -8106,18 +8198,28 @@ with sync_playwright() as p:
     page.wait_for_selector('#nf')
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'new cash receipt action preserves the selected mode')
 
-    # Seed an unsafe legacy API value in client state to test rendering without making
-    # an unsafe financial write through the server.
+    # Active vendor-master names are trusted suggestions but must remain inert text.
+    # Historical free-text values without a matching active vendor identity must not surface.
     click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
     page.evaluate(
         """async (payload) => {
           const { S } = await import('/frontend/core/state.js');
+          S.vendors.push({
+            id: 'xss-recent-vendor',
+            name: payload,
+            company: '',
+            mobile: '',
+            active: true,
+            defaultCategory: '',
+            defaultPaymentMethod: ''
+          });
           S.vouchers.push({
             id: 'xss-recent-payee-fixture',
             no: 998878,
             date: new Date().toISOString().slice(0, 10),
             vendor: payload,
             vendorId: 'xss-recent-vendor',
+            vendorType: 'REGISTERED',
             paymentMethod: 'CASH',
             amount: 11,
             category: 'Other',
@@ -8137,8 +8239,32 @@ with sync_playwright() as p:
             approvalReason: ''
           });
           S.vouchers.push({
-            id: 'invalid-numeric-recent-payee-fixture',
+            id: 'legacy-free-text-recent-payee-fixture',
             no: 998879,
+            date: new Date().toISOString().slice(0, 10),
+            vendor: 'Legacy Free-text History Only',
+            vendorId: '',
+            paymentMethod: 'CASH',
+            amount: 12,
+            category: 'Other',
+            notes: '',
+            type: 'PAYMENT',
+            status: 'ACTIVE',
+            createdBy: S.me.email,
+            createdAt: new Date().toISOString(),
+            updatedBy: '',
+            updatedAt: '',
+            receipts: [],
+            cancelReason: '',
+            cashImpact: 'CASH_OUT',
+            approvalStatus: 'NOT_REQUIRED',
+            approvedBy: '',
+            approvedAt: '',
+            approvalReason: ''
+          });
+          S.vouchers.push({
+            id: 'invalid-numeric-recent-payee-fixture',
+            no: 998880,
             date: new Date().toISOString().slice(0, 10),
             vendor: '6777767777888(+----+;;;)',
             vendorId: '',
@@ -8163,34 +8289,80 @@ with sync_playwright() as p:
         }""",
         xss_payload,
     )
+
+    def inject_verified_xss_duplicate_review(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') == 'checkPaymentDuplicates':
+            entries = request_data.get('entries', [])
+            if any(entry.get('vendor') == xss_payload for entry in entries if isinstance(entry, dict)):
+                route.fulfill(
+                    status=200,
+                    content_type='application/json',
+                    body=json.dumps({
+                        'ok': True,
+                        'data': {
+                            'results': [{
+                                'index': 0,
+                                'duplicateCount': 1,
+                                'hiddenCount': 0,
+                                'matches': [{
+                                    'voucherNo': 'E2E-XSS-998878',
+                                    'date': datetime.date.today().isoformat(),
+                                    'vendor': xss_payload,
+                                    'amount': 11,
+                                    'inBatch': False,
+                                    'row': 0,
+                                }],
+                                'confirmationToken': 'e2e-hostile-vendor-review',
+                            }],
+                        },
+                    }),
+                )
+                return
+        route.continue_()
+
+    page.route('**/api?*', inject_verified_xss_duplicate_review)
     click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
     page.wait_for_selector('#recentVendors .vchip')
+    before_xss_api_events = len(api_events)
     page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
     page.fill('.erow .ra', '11')
     choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('#rows .erow .row-error')
+    xss_api_events = api_events[before_xss_api_events:]
+    vendor_chips = page.locator('#recentVendors .vchip').all_text_contents()
+    vendor_options = page.locator('#vlist option').evaluate_all(
+        "options => options.map(option => option.value)"
+    )
     check(
-        page.locator('#recentVendors .vchip', has_text='svg onload').count() >= 1
-        and not any(
-            '6777767777888(+----+;;;)' in name
-            for name in page.locator('#recentVendors .vchip').all_text_contents()
-        )
-        and '6777767777888(+----+;;;)' not in page.locator('#vlist option').evaluate_all(
-            "options => options.map(option => option.value)"
-        )
+        page.locator('#recentVendors .vchip', has_text='svg onload').count() == 1
+        and 'Legacy Free-text History Only' not in vendor_chips
+        and '6777767777888(+----+;;;)' not in vendor_chips
+        and 'Legacy Free-text History Only' not in vendor_options
+        and '6777767777888(+----+;;;)' not in vendor_options
+        and xss_payload in vendor_options
         and page.locator('#recentVendors svg, #recentVendors img').count() == 0
         and page.locator('#rows .erow .row-error').inner_text().startswith('Possible duplicate')
         and page.locator('#rows svg:not(.i), #rows img').count() == 0
+        and any(event.get('action') == 'checkPaymentDuplicates' for event in xss_api_events)
+        and not any(event.get('action') == 'createVouchers' for event in xss_api_events)
         and not page.evaluate('window.__xssFired === true'),
-        'legacy payee names remain inert in recent-payee chips and duplicate warnings',
+        'verified hostile vendor names remain inert; historical-only free text is excluded from recent chips and datalist',
     )
+    page.unroute('**/api?*', inject_verified_xss_duplicate_review)
     page.evaluate(
         """async () => {
           const { S } = await import('/frontend/core/state.js');
           S.vouchers = (S.vouchers || []).filter(
-            (item) =>
-              !['xss-recent-payee-fixture', 'invalid-numeric-recent-payee-fixture'].includes(item.id)
+            (item) => ![
+              'xss-recent-payee-fixture',
+              'legacy-free-text-recent-payee-fixture',
+              'invalid-numeric-recent-payee-fixture'
+            ].includes(item.id)
+          );
+          S.vendors = (S.vendors || []).filter(
+            (item) => item.id !== 'xss-recent-vendor'
           );
         }"""
     )
