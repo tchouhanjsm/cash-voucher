@@ -43,6 +43,18 @@
 - Final cPanel staging ZIP: pending rebuild from the post-merge integration SHA.
 - Production: out of scope; no production deployment or resource use is authorized.
 
+## 31 October 2026 — workflow #17 deployed staging backend; UAT target check still blocked
+
+- [Workflow #17](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41192063930) ran on merged `client-main` SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe`. Source/mock validation and the explicit staging-only guard passed.
+- `scripts/deploy-staging.js` successfully updated the existing version-5 staging deployment. The post-deployment staging target recheck also passed.
+- The isolated UAT shell runner now starts. Owner login, authenticated token and the `deploymentReadiness` API response succeeded; the sanitized evidence records four passed checks.
+- **Second RCA:** `test/uat_staging.py::staging_target_check` directly indexed four `CV_PRODUCTION_*` environment variables. They are intentionally absent in owner-attested staging-only mode, so Python raised `KeyError` before target comparisons, live read-model assertions or the synthetic voucher write.
+- **No financial UAT payment was created.** The exception happened while constructing the production resource set, before `target_verified` is set and before the later `#nsave` action. Sanitized evidence has `checksPassed: 4`, `summaryPresent: false`, `cleanupStatus: not-confirmed`; the latter means no cleanup marker was emitted, not that a test payment cancellation failed.
+- **PR #255 correction:** add a pure optional-resource helper; treat missing/blank production refs as absent; retain any nonempty configured refs for overlap rejection; add stdlib Python regression tests and execute them from `npm test`; assert the live UAT script no longer indexes production env variables directly. No preflight guard is relaxed.
+- **Next live validation:** because this PR changes only the Python UAT test/config helper and tests/docs—not Apps Script backend source—use the guarded `uat-only` workflow after merge to test the backend already deployed at SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe`. The UAT transaction still needs explicit consent and will create, approve and cancel one INR 10,000 tagged staging payment.
+- The artifact-only client ZIP workflow [#12](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41192147486) succeeded from SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe`; its detached checksum and 42 file checksums pass. It is an interim package and will be regenerated from the final post-PR #255 SHA before cPanel upload.
+- No cPanel upload or production action was performed.
+
 ## Authoritative configuration contract
 
 The GitHub Environment screenshot supplied by the owner on 30 October 2026 is the source of truth for current staging configuration. Its six target values are Environment variables: `CV_STAGING_API_URL`, `CV_STAGING_BACKUP_FOLDER_ID`, `CV_STAGING_DEPLOYMENT_ID`, `CV_STAGING_RECEIPT_FOLDER_ID`, `CV_STAGING_SCRIPT_ID`, and `CV_STAGING_SPREADSHEET_ID`.
