@@ -1,12 +1,23 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 30 October 2026 (API endpoint hardening and endpoint-bound session restoration)
+**Updated:** 31 October 2026 (PR #252 merged; post-merge dependency-audit RCA)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `ec3a8aa59fb4f5615af32d467739e93a130c0f52` (PR #251 merged; legacy `main` remains read-only).
-**Current source batch:** `client/staging-only-sot-and-preflight-20261030` is narrowed to removing the hard-coded legacy Apps Script endpoint fallback; PR #251's staging variable/secret mapping and owner-attestation contract remain authoritative.
-**Active review PR:** [#252 — Remove hard-coded Apps Script endpoint fallback](https://github.com/tchouhanjsm/cash-voucher/pull/252).
-**Release boundary:** source configuration, regression test and handoff/runbook only. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+**Current integration baseline:** `c82fa8cd3e156bb11e1b8179312fba65df688ae3` (PR #252 merged; legacy `main` remains read-only).
+**Current source batch:** `client/fix-transitive-dependency-audit-policy-20261031` corrects severity-aware transitive advisory handling while retaining the exact time-bounded Zod exception.
+**Active review PR:** dependency-audit policy correction, based on `client-main`.
+**Release boundary:** source, regression tests and security documentation only. No local sync, Clasp push, Apps Script deployment, live UAT, Google data mutation, staging ZIP build or cPanel publication.
+
+## Post-merge stability RCA — 31 October 2026
+
+- **Integration commit:** `c82fa8cd3e156bb11e1b8179312fba65df688ae3`, created by merging PR #252.
+- **CI / Quality:** [run #3428](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41163480092) failed only at the dependency advisory step. Lint, Prettier, JSON, syntax, backend layout, contrast, frontend release-safety, DOM-sink checks and the full regression suite passed.
+- **Browser E2E:** [run #3157](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41163480080) passed.
+- **Full Flight:** [run #2732](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41163480081) correctly failed because exact-commit CI was red.
+- **Root cause:** `npm audit` returned a high-severity `@google/clasp` aggregate path containing the reviewed high-severity Zod finding plus a moderate `googleapis-common` branch. `scripts/dependency-audit.js` traversed every child below a high parent and demanded exceptions for moderate/low child advisories too. This contradicted the documented policy that only high/critical findings block. The Zod GHSA remains a narrowly documented high-severity exception; the braces GHSA was withdrawn on 23 October and is not an active exception.
+- **Permanent correction in review:** assess severity at every transitive branch; moderate/low findings remain reported, while every high/critical path still needs the exact, unexpired, package-bound exception. Regression tests cover the clasp → moderate googleapis-common/gaxios plus reviewed Zod shape and prove an additional unexcepted high child still fails.
+- **Clasp status:** lockfile remains on `@google/clasp@3.4.1`. Its declared Zod 3.x range does not include patched Zod 4.6.6; no blind major downgrade or override is applied. The Zod exception remains time-limited to 9 November 2026.
+- **Release boundary:** source/CI validation only. No workflow dispatch, staging resource read, Clasp push, Apps Script deployment, UAT, Google data mutation, ZIP download/build or cPanel publication was performed. Fresh exact-head CI, Browser E2E and Full Flight results are required before read-only staging preflight.
 
 ## Client API endpoint default hardening — 30 October 2026
 
