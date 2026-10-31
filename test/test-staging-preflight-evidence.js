@@ -11,8 +11,28 @@ const {
   writeStagingPreflightEvidence,
 } = require('../scripts/staging-preflight');
 
-const productionApiUrl = readProductionApiUrl();
+const productionApiUrl = 'https://script.google.com/macros/s/production-deployment-fixture/exec';
 const productionDeploymentId = new URL(productionApiUrl).pathname.split('/')[3];
+
+function withProductionConfig(callback) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'staging-production-config-'));
+  try {
+    fs.writeFileSync(
+      path.join(root, 'config.js'),
+      "window.CV_CONFIG = { API_URL: '" + productionApiUrl + "' };\\n",
+    );
+    return callback(root);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+}
+
+const extractedProductionApiUrl = withProductionConfig(readProductionApiUrl);
+assert.equal(extractedProductionApiUrl, productionApiUrl);
+
+function validateWithProductionConfig(env, options) {
+  return withProductionConfig((root) => validateStagingConfiguration(env, { ...options, root }));
+}
 const ownerEmail = 'staging-owner@example.test';
 const managerEmail = 'staging-manager@example.test';
 const ownerPassword = 'OWNER-PASSWORD-MUST-NOT-LEAK';
@@ -51,7 +71,7 @@ const fixture = {
 };
 
 assert.ok(productionDeploymentId);
-const result = validateStagingConfiguration(fixture, { mode: 'readiness' });
+const result = validateWithProductionConfig(fixture, { mode: 'readiness' });
 assert.equal(result.ok, true, result.errors.join('; '));
 const evidence = buildStagingPreflightEvidence(result, fixture);
 assert.equal(evidence.outcome, 'configuration-pass');
@@ -113,7 +133,7 @@ for (const privateValue of [
   );
 }
 
-const blocked = validateStagingConfiguration(
+const blocked = validateWithProductionConfig(
   { ...fixture, CV_PRODUCTION_SCRIPT_ID: '', CLASPRC_JSON: '' },
   { mode: 'readiness' },
 );

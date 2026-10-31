@@ -1,4 +1,9 @@
 import { createApi } from './frontend/core/api.js';
+import {
+  clearPersistedApiSessionToken,
+  resolveApiSession,
+  SESSION_ENDPOINT_STORAGE_KEY,
+} from './frontend/core/session.js';
 import { createAuth } from './frontend/features/auth.js';
 import { createPayments } from './frontend/features/payments.js';
 import { businessDate, isBusinessDate, addDays as addBusinessDays } from './frontend/core/utils.js';
@@ -1310,15 +1315,22 @@ import { businessDate, isBusinessDate, addDays as addBusinessDays } from './fron
 
   /* ---------------- init ---------------- */
   function init() {
-    S.url = (window.CV_CONFIG && CV_CONFIG.API_URL) || ls.get('cv.url') || '';
-    S.token = ls.get('cv.token') || '';
+    const session = resolveApiSession({
+      configuredEndpoint: window.CV_CONFIG?.API_URL,
+      storedEndpoint: ls.get('cv.url'),
+      token: ls.get('cv.token'),
+      tokenEndpoint: ls.get(SESSION_ENDPOINT_STORAGE_KEY),
+    });
+    S.url = session.endpoint;
+    S.token = session.token;
+    if (session.clearPersistedToken) clearPersistedApiSessionToken(ls);
 
     if (location.protocol.startsWith('http') && 'serviceWorker' in navigator)
       navigator.serviceWorker.register('sw.js').catch(() => {});
 
     payments.showBanner();
 
-    if (S.token && S.url) {
+    if (session.autoResume) {
       $('#login').classList.add('hidden');
       start();
     } else {

@@ -5,6 +5,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 
 const root = path.resolve(__dirname, '..');
+const clientConfig = fs.readFileSync(path.join(root, 'config.js'), 'utf8');
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/staging-uat.yml'), 'utf8');
 const deploy = fs.readFileSync(path.join(root, 'scripts/deploy-staging.js'), 'utf8');
 const preflight = fs.readFileSync(path.join(root, 'scripts/staging-preflight.js'), 'utf8');
@@ -18,6 +19,16 @@ const releaseRunbook = fs.readFileSync(
 const stagingAudit = fs.readFileSync(path.join(root, 'docs/STAGING-RELEASE-AUDIT.md'), 'utf8');
 
 assert.match(workflow, /^on:\n {2}workflow_dispatch:/m, 'staging workflow must be manual-only');
+assert.match(
+  clientConfig,
+  /API_URL:\s*localApiOverride\s*\|\|\s*''/,
+  'source config must leave the API target unset unless a local override is provided',
+);
+assert.doesNotMatch(
+  clientConfig,
+  /https:\/\/script\.google\.com\/macros\/s\/[^'"\s]+\/exec/,
+  'source config must not embed a legacy Apps Script deployment URL',
+);
 assert.doesNotMatch(
   workflow,
   /^\s+(push|pull_request):/m,

@@ -6,6 +6,7 @@ import {
   saveOfflineCredential,
   verifyOfflineCredential,
 } from '../core/offline-auth.js';
+import { clearPersistedApiSessionToken, persistApiSessionToken } from '../core/session.js';
 
 export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
   let idleT;
@@ -72,7 +73,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     }
 
     S.token = '';
-    ls.del('cv.token');
+    clearPersistedApiSessionToken(ls);
 
     const tryOfflineUnlock = async () => {
       const verified = await verifyOfflineCredential({
@@ -87,7 +88,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
       if (resumed) return true;
 
       S.token = '';
-      ls.del('cv.token');
+      clearPersistedApiSessionToken(ls);
       return false;
     };
 
@@ -103,8 +104,8 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
         const data = await api('login', { email, password });
 
         S.token = data.token;
-        ls.set('cv.token', data.token);
         ls.set('cv.url', S.url);
+        persistApiSessionToken({ token: data.token, endpoint: S.url, storage: ls });
         ls.set('cv.email', email);
 
         if (data.user?.mustChangePassword) clearOfflineCredential(ls);
@@ -116,7 +117,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
         } else if (!started && !data.user.mustChangePassword) {
           // A server token must never be paired with a cached identity from another account.
           S.token = '';
-          ls.del('cv.token');
+          clearPersistedApiSessionToken(ls);
         }
       } catch (error) {
         if (error.code === 'NET') {
@@ -138,7 +139,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     S.me = null;
     S.offlineMode = false;
 
-    ls.del('cv.token');
+    clearPersistedApiSessionToken(ls);
     if (!expired) {
       clearOfflineCredential(ls);
       ls.del('cv.cache');
@@ -190,7 +191,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
         });
 
         S.token = data.token;
-        ls.set('cv.token', data.token);
+        persistApiSessionToken({ token: data.token, endpoint: S.url, storage: ls });
 
         closeModal();
         toast('Password changed.', 'ok');
@@ -207,7 +208,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
           });
         } else if (!started) {
           S.token = '';
-          ls.del('cv.token');
+          clearPersistedApiSessionToken(ls);
         }
       },
       'Change password',
@@ -220,7 +221,7 @@ export function createAuth({ S, api, busy, dialog, closeModal, toast, start }) {
     S.token = '';
     S.me = null;
     S.offlineMode = false;
-    ls.del('cv.token');
+    clearPersistedApiSessionToken(ls);
     closeModal();
     showLogin(
       'Sign in while connected to synchronize pending entries. Your local queue will be preserved.',

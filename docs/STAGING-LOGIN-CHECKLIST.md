@@ -66,6 +66,7 @@ Intended staging origin: `https://cashvoucher-staging.hotelgarhjaisal.com`. Re-v
 ## Gate 6 — Owner login and onboarding
 
 - [ ] Open the staging HTTPS URL in a clean/private browser window; confirm the browser origin is the staging host.
+- [ ] After the endpoint-bound session update, expect one reauthentication for legacy cached sessions without endpoint metadata. A saved token resumes only when its stored endpoint binding matches the active client configuration.
 - [ ] Sign in with the staging Owner's registered email and temporary password. Never put credentials in PRs/logs.
 - [ ] Confirm the mandatory password-change flow; sign out and back in with the new password.
 - [ ] Verify the expected in-app onboarding checklist appears for first-run Owner and identifies the intended environment.

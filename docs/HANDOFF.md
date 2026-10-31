@@ -1,12 +1,27 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 30 October 2026 (staging-only Environment source-of-truth/RCA correction)
+**Updated:** 30 October 2026 (API endpoint hardening and endpoint-bound session restoration)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `730a8c39e3117adfefe97e520d4ab332d4d8d4ef` (PR #249 merged; legacy `main` remains read-only).
-**Current source batch:** `client/staging-only-environment-contract-20261030` corrects the staging Environment variable/secret mapping and introduces explicit staging-only preflight without fictitious production resource references.
-**Active review PR:** [#251 — Make staging-only Environment configuration authoritative](https://github.com/tchouhanjsm/cash-voucher/pull/251).
-**Release boundary:** configuration/workflow/preflight/tests/docs only. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+**Current integration baseline:** `ec3a8aa59fb4f5615af32d467739e93a130c0f52` (PR #251 merged; legacy `main` remains read-only).
+**Current source batch:** `client/staging-only-sot-and-preflight-20261030` is narrowed to removing the hard-coded legacy Apps Script endpoint fallback; PR #251's staging variable/secret mapping and owner-attestation contract remain authoritative.
+**Active review PR:** [#252 — Remove hard-coded Apps Script endpoint fallback](https://github.com/tchouhanjsm/cash-voucher/pull/252).
+**Release boundary:** source configuration, regression test and handoff/runbook only. No Clasp push, Apps Script deployment, live UAT, backup/restore, Sheets/Drive mutation, cPanel publication or production operation.
+
+## Client API endpoint default hardening — 30 October 2026
+
+- The root frontend `config.js` leaves `API_URL` blank unless a localhost `?api=` override is supplied. A legacy Apps Script deployment is no longer selected implicitly from committed source.
+- The client staging ZIP workflow continues to inject the validated `CV_STAGING_API_URL` from the protected `staging` Environment and checks the generated `dist/config.js` against that URL before packaging.
+- Regression coverage asserts that the committed source config has no hard-coded Apps Script `/exec` endpoint. The existing login flow remains available for an operator-entered endpoint. The staging preflight evidence and static-server regression tests use synthetic endpoint fixtures and the attested staging-only contract; they do not depend on a configured production URL in the committed root config.
+- This change does not alter the merged staging preflight contract, the owner isolation attestation, authentication, API behavior, database schema or live resources.
+
+## Endpoint-bound session restoration — milestone 2
+
+- Persisted API session tokens now carry a canonical endpoint binding. Startup resumes a token only when its binding matches the configured endpoint (or the saved endpoint when no build endpoint is configured).
+- A changed endpoint, missing binding from an older client, malformed binding, or incomplete token/binding write clears the persisted token and returns the user to login. The saved endpoint remains available to prefill the manual login field when no build endpoint is configured.
+- The modular frontend and legacy `app.js` entry point use the same resolver. Online login and password-change token persistence write the endpoint binding before the token; sign-out and reauthentication clear both values.
+- Offline credential verification remains separately bound to account and endpoint. This change does not alter server token format, API behavior, account data, or deployment configuration.
+- Regression coverage exercises endpoint changes, old unbound sessions, matching restores, query mismatch and storage-write failure.
 
 ## Staging-only Environment source of truth and RCA — 30 October 2026
 
@@ -383,3 +398,12 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - **Root cause:** the integration workflow still permits `push` events on `client/**` and runs the chained gate for any non-manual event. A feature-branch creation push at the base SHA was superseded by later PR commits; the Full Flight gate consumed the cancelled Browser E2E result. This is a concurrency/event-selection defect, not a timeout or demonstrated application regression.
 - **Correction integrated by PR #210:** `.github/workflows/flight-test.yml` runs the chained gate only for PR events targeting `client-main` and pushes to `client-main`. This preserves exact-head validation and never treats cancellation as success; it removes the redundant feature-branch push gate. The resulting integration SHA `f9188ede9dd83f5e12c563bfa5b8f3082c0765b8` passed the current integration checks listed above.
 - **Recovery:** no manual retry. Retrying the cancelled feature-branch run would not correct the event-selection defect. Do not treat the cancelled run as passing evidence.
+
+## PR #252 offline session bootstrap and CI diagnostics RCA — 30 October 2026
+
+- **Affected PR head:** `797411acf9fd3c51b67301cc408cd590f8719c2b`. Browser E2E run [#3152](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41059826855) failed at the offline reload in `test/e2e.py`: Playwright found `#loginForm` in the DOM but it remained hidden.
+- **Root cause:** the session-security change introduced `frontend/core/session.js`, imported by `frontend/main.js` and `frontend/features/auth.js`, but the service-worker app-shell list in `sw.js` did not precache that module. The offline reload could serve the cached app shell and entry point but not the newly imported session module; module evaluation stopped before the login screen was shown. The existing service-worker policy test did not assert that this module was part of the offline shell.
+- **Permanent correction:** precache `frontend/core/session.js`, advance the app-shell cache from `cv2-v40` to `cv2-v41`, and assert the module is present in `test/test-service-worker-policy.js`. The existing browser E2E offline-login scenario remains the end-to-end regression gate.
+- **CI diagnostics RCA:** CI / Quality runs [#3417](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41059826943) and [#3418](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41059928222) stopped at `prettier --check .` because `frontend/core/session.js` still had a line-wrap mismatch. The chained `npm run check` consequently did not execute later checks; the PR handoff and dependency advisory steps were skipped by the workflow's implicit success condition. Full Flight [#2727](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41059826924) correctly failed because exact-head CI and Browser E2E were not green. Monitor success is not release evidence.
+- **CI correction:** format, lint, JSON, syntax, backend, contrast, frontend, DOM-sink, regression-test, PR-handoff and dependency-audit checks are now separate steps. They run independently after dependency installation even when an earlier check fails, so failures remain visible instead of being hidden behind skipped steps. The job still fails closed if any required gate fails.
+- **Expected conditional skips:** the manual-only Full Flight job is skipped on pull-request events by design; it is not a passing result and is not the PR Full Flight release gate. No staging UAT or deployment was performed while these failures remained open. Fresh exact-head CI, Browser E2E and Full Flight evidence is required before UAT.
