@@ -44,6 +44,39 @@ The owner's local `.clasp.json` uses `rootDir: backend` and the local Clasp proj
 
 After the correction is merged to `client-main`, use the protected `deploy-and-uat` operation to update the existing staging deployment and execute live UAT. The manual guard must receive `STAGING-ONLY` and explicit staging-write consent. Transactional UAT creates and cancels one tagged INR 10,000 test payment in staging; its cancelled row and audit trace remain. Record deployment and UAT outcomes separately. A successful deployment with a failed or skipped UAT is not a release pass.
 
+## Staging-only UAT target-check RCA — workflow #17 (31 October 2026)
+
+### Observed result
+
+Workflow [#17](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41192063930) ran on merged `client-main` SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe`. Source/mock gates and the explicit staging-only guard passed. The controlled deployment updated the existing staging Apps Script deployment successfully, and the post-deployment target recheck passed. The live UAT runner then started successfully, authenticated the staging owner, received a token and received a successful `deploymentReadiness` API response (four UAT checks passed).
+
+### Root cause
+
+`test/uat_staging.py::staging_target_check` built a set of production resource IDs by direct indexing four `os.environ["CV_PRODUCTION_*"]` keys. In the intentionally production-free staging-only workflow those keys are absent. The first lookup raised `KeyError` before the target comparison, live read-model checks, or any synthetic financial test payment.
+
+This is a second, independent production-reference assumption after the shell runner defect fixed by PR #254. The staging preflight is correct to require that production resource variables are absent in staging-only mode; the UAT test must model the same optional inventory rather than require fake production IDs.
+
+### Permanent correction in PR #255
+
+- Introduce the pure helper `test/staging_uat_config.py::configured_production_resource_ids`. It returns only non-empty configured production identifiers and treats missing/blank production values as absent.
+- Use the helper in `staging_target_check`. Any configured production values are still retained for the existing staging-versus-production overlap checks; no safety comparison is removed.
+- Add standard-library Python unit tests for a fully absent staging-only production inventory, whitespace/empty values, and non-empty configured references.
+- Run the Python regression from `npm test` and extend `test/test-staging-workflow.js` so direct indexing of `CV_PRODUCTION_*` in the live UAT script is rejected.
+- Keep staging preflight, environment isolation, target identity checks, UAT account separation and the transactional approval/cancellation scenario unchanged.
+
+### Write and cleanup assessment
+
+The failure occurred in `staging_target_check`, before `target_verified` is set and before the script reaches the `recordedMovementReport` baseline or the `#nsave` action. The UAT payment was therefore **not created** and no financial UAT write or cancellation was attempted in workflow #17. The sanitized evidence reports `checksPassed: 4`, `summaryPresent: false` and `cleanupStatus: not-confirmed`; that cleanup field is a generic no-marker state and is not proof of a failed cancellation. The test code order and four-check boundary confirm that the UAT voucher-creation path was not reached.
+
+### Recovery sequence
+
+- PR #254 is merged at `0cd7207959098da58d8e45ce77a2bc28d221b0fe`. Its shell runner fix allowed the live UAT process to start.
+- PR #255 contains only the Python UAT configuration handling, its regression tests and operational documentation; it does not alter `backend/*.gs`. The Apps Script backend at the existing staging deployment is already updated from SHA `0cd7207959098da58d8e45ce77a2bc28d221b0fe`.
+- After PR #255 is reviewed and merged, run protected `uat-only` from `client-main` with `STAGING-ONLY` and explicit staging-write consent. This avoids another unnecessary Clasp push while the deployed backend source is unchanged. The expected transactional test is one tagged INR 10,000 payment, independently approved then cancelled, with a retained audit trace.
+- Rebuild the client staging ZIP from the final post-PR #255 `client-main` SHA, and verify its manifest and detached SHA-256 before manual upload to the staging cPanel `dist` directory.
+
+Production remains out of scope. Do not introduce placeholder production resource IDs or weaken staging-only preflight to suppress this failure.
+
 ## Staging workflow secret isolation — 28 October 2026
 
 The manual `.github/workflows/staging-uat.yml` workflow must not put resource IDs, UAT account credentials or Clasp OAuth JSON in job-level `env`. Job-level values are inherited by every command in that job; dependency installation and artifact/reporting steps must not receive staging credentials.
