@@ -125,10 +125,7 @@ async function run() {
   const preflightOnly = preflightWithoutRecoverySecrets.g.passwordRecoveryPreflight();
   assert.equal(preflightOnly.ready, true);
   assert.equal(preflightOnly.readOnly, true);
-  assert.equal(
-    JSON.stringify(preflightWithoutRecoverySecrets.g.props),
-    preflightOnlyPropsBefore,
-  );
+  assert.equal(JSON.stringify(preflightWithoutRecoverySecrets.g.props), preflightOnlyPropsBefore);
   assert.equal(
     Object.prototype.hasOwnProperty.call(
       preflightWithoutRecoverySecrets.g.props,
