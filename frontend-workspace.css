@@ -1025,7 +1025,6 @@
   }
 }
 
-
 /* Screen-level finance workflows: real feature surfaces, not a decorative shell. */
 @media screen {
   .dashboard-analysis-grid {
@@ -1054,7 +1053,7 @@
     gap: 8px;
   }
 
-  .entry-form-workspace {
+  #nf[data-workspace='entry-form-workspace'] {
     display: grid;
     grid-template-columns: minmax(0, 1.55fr) minmax(280px, 0.72fr);
     align-items: start;
@@ -1093,20 +1092,20 @@
     font-size: 13px;
     line-height: 1.55;
   }
-  .entry-form-workspace .entry-date-field {
+  #nf[data-workspace='entry-form-workspace'] .entry-date-field {
     max-width: 280px;
   }
-  .entry-form-workspace #recentVendors:not([hidden]) {
+  #nf[data-workspace='entry-form-workspace'] #recentVendors:not([hidden]) {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
     padding: 2px 0 7px;
   }
-  .entry-form-workspace #rows {
+  #nf[data-workspace='entry-form-workspace'] #rows {
     display: grid;
     gap: 13px;
   }
-  .entry-form-workspace .erow {
+  #nf[data-workspace='entry-form-workspace'] .erow {
     margin: 0;
     padding: 17px;
     border: 1px solid var(--workspace-border);
@@ -1416,7 +1415,7 @@
       grid-template-columns: repeat(2, minmax(0, 1fr));
       align-items: start;
     }
-    .entry-form-workspace {
+    #nf[data-workspace='entry-form-workspace'] {
       grid-template-columns: minmax(0, 1fr);
     }
     .entry-workspace__aside {

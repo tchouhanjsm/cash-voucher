@@ -167,7 +167,7 @@ export function createReports({ api }) {
           })
           .join('')
       : '<p class="muted">Payment-method breakdown is unavailable for this deployment or selection.</p>';
-    const filters = \`
+    const filters = `
       <div class="card report-filter-panel">
         <div class="report-filter-heading"><div><p class="page-eyebrow">MONEY · REPORTING</p><h2>Movement filters</h2><p class="muted report-scope-note">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p></div><div class="report-range-summary"><span>Selected window</span><strong>${esc(dmy(R.from))} – ${esc(dmy(R.to))}</strong></div></div>
         <form id="movementFilters" class="filters report-filters" autocomplete="off">

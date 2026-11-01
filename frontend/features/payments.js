@@ -450,11 +450,11 @@ export function createPayments({ api, refresh }) {
         description:
           'Record a payment or receipt, attach supporting evidence, and confirm how the money moved.',
       }) +
-      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form entry-form-workspace" autocomplete="off">\${vendorList()}
+      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" data-workspace="entry-form-workspace" autocomplete="off">${vendorList()}
     <div class="entry-workspace__main">
       <div class="entry-section-heading">
         <p class="page-eyebrow">ENTRY DETAILS</p>
-        <h2>\${NT === 'RECEIPT' ? 'Record incoming cash' : 'Record an outgoing payment'}</h2>
+        <h2>${NT === 'RECEIPT' ? 'Record incoming cash' : 'Record an outgoing payment'}</h2>
         <p>Capture the business date, counterparty, value and supporting evidence for every line.</p>
       </div>
     <label class="entry-date-field">Date<input type="date" id="nd" value="${businessDate()}" max="${addDays(businessDate(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="${NT === 'RECEIPT' ? 'Recent verified payers' : 'Recent verified payees'}" hidden></div><div id="rows"></div>

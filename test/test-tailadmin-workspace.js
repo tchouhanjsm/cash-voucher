@@ -123,12 +123,36 @@ assert.match(
   /dashboard-analysis-grid/,
   'dashboard analytics use a deliberate primary/secondary analysis layout',
 );
-assert.match(payments, /entry-form-workspace/, 'new voucher uses a real multi-column entry workspace');
-assert.match(payments, /entry-guidance/, 'new voucher presents cash-impact controls beside the live batch summary');
-assert.match(register, /register-filter-grid/, 'register separates search from structured server-side refinements');
-assert.match(register, /register-results-summary/, 'register gives server totals and results a dedicated hierarchy');
-assert.match(reports, /data-report-range/, 'reports expose working quick date-range presets');
-assert.match(reports, /report-method-bar/, 'reports visualize server-derived payment-method totals');
+assert.match(
+  payments,
+  /entry-form-workspace/,
+  'new voucher uses a real multi-column entry workspace',
+);
+assert.match(
+  payments,
+  /entry-guidance/,
+  'new voucher presents cash-impact controls beside the live batch summary',
+);
+assert.match(
+  register,
+  /register-filter-grid/,
+  'register separates search from structured server-side refinements',
+);
+assert.match(
+  register,
+  /register-results-summary/,
+  'register gives server totals and results a dedicated hierarchy',
+);
+assert.match(
+  reports,
+  /data-report-range/,
+  'reports expose working quick date-range presets',
+);
+assert.match(
+  reports,
+  /report-method-bar/,
+  'reports visualize server-derived payment-method totals',
+);
 
 // Dashboard amounts and chart data remain owned by the validated server read model.
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');
