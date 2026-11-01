@@ -655,12 +655,25 @@ with sync_playwright() as p:
         'validPaymentCount': 1, 'largest': {'amount': 3200, 'vendor': 'Monthly test'},
         'trendAmount': 3200,
     }
+    requests_before_custom = len(comparison_requests)
     page.click('[data-act=range][data-k="cus"]')
     page.wait_for_selector('#dFrom')
+    check(
+        len(comparison_requests) == requests_before_custom
+        and page.locator('.dashboard-custom-range-prompt').count() == 1,
+        'opening Custom does not fetch fallback totals or allow an async redraw to overwrite the date form',
+    )
     page.fill('#dFrom', '2026-08-01')
     page.fill('#dTo', '2026-11-01')
+    check(
+        page.locator('#dFrom').input_value() == '2026-08-01'
+        and page.locator('#dTo').input_value() == '2026-11-01',
+        'custom date draft retains both user-selected business dates before apply',
+    )
     page.click('[data-act=cus]')
-    page.wait_for_timeout(500)
+    page.wait_for_function(
+        "Number(document.querySelector('.dashboard-trend-chart')?.dataset.chartPoints || 0) === 4"
+    )
     monthly_metrics = page.evaluate("""() => {
         const svg = document.querySelector('.dashboard-trend-chart');
         const heading = document.querySelector('.dashboard-trend h2');

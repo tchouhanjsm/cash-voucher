@@ -14,7 +14,7 @@ import {
 import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard({ api }) {
-  const D = { r: '30d', from: '', to: '' };
+  const D = { r: '30d', from: '', to: '', customDraft: false };
 
   function range() {
     const current = today();
@@ -581,6 +581,18 @@ export function createDashboard({ api }) {
         body,
         reason + ' No financial totals or charts are shown until voucher data is available.',
         { title: 'Dashboard totals unavailable', role: 'alert' },
+      );
+      return;
+    }
+
+    if (D.r === 'cus' && D.customDraft) {
+      appendStatusCard(
+        body,
+        'Choose the From and To dates, then apply the range. Dashboard totals stay unchanged until the custom selection is applied.',
+        {
+          className: 'card dashboard-custom-range-prompt',
+          title: 'Custom date range not applied',
+        },
       );
       return;
     }

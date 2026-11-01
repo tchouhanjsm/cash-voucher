@@ -244,6 +244,16 @@ assert.match(
 );
 assert.match(
   dashboard,
+  /customDraft/,
+  'custom dashboard ranges wait for an explicit Apply before loading summary data',
+);
+assert.match(
+  dashboard,
+  /Custom date range not applied/,
+  'unapplied custom dashboard selections have a clear pending state',
+);
+assert.match(
+  dashboard,
   /percentage change unavailable/,
   'zero previous-period totals do not claim no historical data',
 );
