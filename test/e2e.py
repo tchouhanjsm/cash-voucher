@@ -660,13 +660,13 @@ with sync_playwright() as p:
     page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
     page.locator('#rs').evaluate('element => element.blur()')
     mobile_report_layout = report_form.locator('.account-report-controls').evaluate(
-        "el => ({columns: getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, buttonFullWidth: Math.abs(el.querySelector('button[type=submit]').getBoundingClientRect().width - el.getBoundingClientRect().width) < 2})"
+        "el => { const style = getComputedStyle(el); const button = el.querySelector('button[type=submit]'); const controlsRect = el.getBoundingClientRect(); const buttonRect = button.getBoundingClientRect(); const buttonStyle = getComputedStyle(button); return {display: style.display, columns: style.gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, gridTemplateColumns: style.gridTemplateColumns, buttonFullWidth: Math.abs(buttonRect.width - controlsRect.width) < 2, buttonWidth: buttonRect.width, controlsWidth: controlsRect.width, buttonGridColumn: buttonStyle.gridColumnStart + '/' + buttonStyle.gridColumnEnd, buttonJustifySelf: buttonStyle.justifySelf, viewportWidth: document.documentElement.clientWidth, documentWidth: document.documentElement.scrollWidth}; }"
     )
     check(
         mobile_report_layout['columns'] == 1
         and mobile_report_layout['buttonFullWidth']
         and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
-        'support report form stacks into one mobile column with a full-width action and no page overflow',
+        f'support report form stacks into one mobile column with a full-width action and no page overflow; metrics={mobile_report_layout}',
     )
     page.set_viewport_size({'width': 768, 'height': 800})
     check(

@@ -81,12 +81,12 @@ assert.match(
 );
 assert.match(
   styles,
-  /account-report-form \.account-report-controls[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
-  'support report form retains a single-column phone layout',
+  /#accountReportForm \.account-report-controls[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
+  'support report form retains a specific single-column phone layout',
 );
 assert.match(
   styles,
-  /account-report-controls > button\[type='submit'\][\s\S]*?width: 100%/,
+  /#accountReportForm \.account-report-controls > button\[type='submit'\][\s\S]*?width: 100%/,
   'support report submit action fills its mobile control column',
 );
 assert.match(

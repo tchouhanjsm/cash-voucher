@@ -1001,3 +1001,22 @@
     box-sizing: border-box;
   }
 }
+
+/* Keep the support form's phone layout authoritative over the generic filters row. */
+@media screen and (max-width: 560px) {
+  #accountReportForm .account-report-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    width: 100%;
+    min-width: 0;
+  }
+  #accountReportForm .account-report-controls > button[type='submit'] {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-self: stretch;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+}
