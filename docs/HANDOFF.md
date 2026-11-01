@@ -520,7 +520,7 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - **CI correction:** format, lint, JSON, syntax, backend, contrast, frontend, DOM-sink, regression-test, PR-handoff and dependency-audit checks are now separate steps. They run independently after dependency installation even when an earlier check fails, so failures remain visible instead of being hidden behind skipped steps. The job still fails closed if any required gate fails.
 - **Expected conditional skips:** the manual-only Full Flight job is skipped on pull-request events by design; it is not a passing result and is not the PR Full Flight release gate. No staging UAT or deployment was performed while these failures remained open. Fresh exact-head CI, Browser E2E and Full Flight evidence is required before UAT.
 
-## Phase 5 — IAM break-glass Owner recovery
+## Phase 5 — IAM Password Recovery Tool
 
 - [x] Add a private recovery backend with project/Sheet identity checks, exact existing-Owner validation, existing hash reuse, ScriptLock, salt-based session invalidation, mandatory password rotation and temporary-property cleanup.
 - [x] Add read-only preflight checks for PEPPER, exact Users/AuditLog schema and readable backup infrastructure.
