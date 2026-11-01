@@ -91,6 +91,11 @@ assert.match(
 );
 assert.match(
   styles,
+  /#accountReportForm \.account-report-controls[\s\S]*?padding: 0;[\s\S]*?border: 0;/,
+  'support form does not add nested filter padding around its full-width phone action',
+);
+assert.match(
+  styles,
   /@media \(prefers-reduced-motion:\s*reduce\)/,
   'workspace honors reduced-motion preferences',
 );
