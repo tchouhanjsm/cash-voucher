@@ -442,8 +442,7 @@ function recoverExistingOwnerPasswordOnce_() {
           let savedOwner = null;
           try {
             const savedMatches = readAll_('Users').filter(function (user) {
-              return user.UserID === owner.UserID &&
-                ownerRecoveryEmail_(user.Email) === ownerEmail;
+              return user.UserID === owner.UserID && ownerRecoveryEmail_(user.Email) === ownerEmail;
             });
             savedOwner = savedMatches.length === 1 ? savedMatches[0] : null;
           } catch (_) {
@@ -522,15 +521,16 @@ function recoverExistingOwnerPasswordOnce_() {
         'The recovery lock could not be acquired. No credential changes were made.',
       );
       } catch (error) {
-        result = error && error.code === 'BUSY'
-          ? ownerRecoveryResult_(
-              'LOCK_ACQUISITION_FAILED',
-              'The recovery lock could not be acquired. No credential changes were made.',
-            )
-          : ownerRecoveryResult_(
-              'RECOVERY_NOT_PERFORMED',
-              'Recovery stopped unexpectedly. Review sanitized execution evidence and the Owner row before retrying.',
-            );
+        result =
+          error && error.code === 'BUSY'
+            ? ownerRecoveryResult_(
+                'LOCK_ACQUISITION_FAILED',
+                'The recovery lock could not be acquired. No credential changes were made.',
+              )
+            : ownerRecoveryResult_(
+                'RECOVERY_NOT_PERFORMED',
+                'Recovery stopped unexpectedly. Review sanitized execution evidence and the Owner row before retrying.',
+              );
       }
     }
   } catch (_) {
