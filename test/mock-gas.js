@@ -80,6 +80,7 @@ function create(options = {}) {
       name,
       rows,
       getLastRow: () => rows.length,
+      getLastColumn: () => rows.reduce((max, row) => Math.max(max, row.length), 0),
       getDataRange: () => ({ getValues: () => rows.map((r) => r.slice()) }),
       getRange: (a, b, c, d) =>
         typeof a === 'string'
@@ -261,7 +262,7 @@ function create(options = {}) {
   vm.createContext(ctx);
   vm.runInContext(
     backendSource() +
-      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,migrateVoucherPaymentMethodField,migrateVoucherVendorTypeField,migrateVendorDefaultsSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_,inspectReceiptManifest_};',
+      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,migrateVoucherPaymentMethodField,migrateVoucherVendorTypeField,migrateVendorDefaultsSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_,inspectReceiptManifest_,ownerRecoveryPreflight_,recoverExistingOwnerPasswordOnce_,hashPassword_};',
     ctx,
   );
   return {
@@ -326,6 +327,10 @@ function create(options = {}) {
       return result;
     },
     triggerCount: () => scriptTriggers.length,
+    ownerRecoveryPreflight: () => ctx.__api.ownerRecoveryPreflight_(),
+    recoverOwnerPassword: () => ctx.__api.recoverExistingOwnerPasswordOnce_(),
+    expectedPasswordHash: (salt, password) => ctx.__api.hashPassword_(salt, password),
+    failNextLock: () => { lockStats.failNextWait = true; },
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),
     migrateVoucherPaymentMethodField: () => ctx.__api.migrateVoucherPaymentMethodField(),

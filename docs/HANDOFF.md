@@ -520,6 +520,16 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - **CI correction:** format, lint, JSON, syntax, backend, contrast, frontend, DOM-sink, regression-test, PR-handoff and dependency-audit checks are now separate steps. They run independently after dependency installation even when an earlier check fails, so failures remain visible instead of being hidden behind skipped steps. The job still fails closed if any required gate fails.
 - **Expected conditional skips:** the manual-only Full Flight job is skipped on pull-request events by design; it is not a passing result and is not the PR Full Flight release gate. No staging UAT or deployment was performed while these failures remained open. Fresh exact-head CI, Browser E2E and Full Flight evidence is required before UAT.
 
+## Phase 5 — IAM break-glass Owner recovery
+
+- [x] Add a private recovery backend with project/Sheet identity checks, exact existing-Owner validation, existing hash reuse, ScriptLock, salt-based session invalidation, mandatory password rotation and temporary-property cleanup.
+- [x] Add read-only preflight checks for PEPPER, exact Users/AuditLog schema and readable backup infrastructure.
+- [x] Verify credential write-back and audit-event persistence separately; report audit degradation as partial success.
+- [x] Add automated tests for read-only behavior, user isolation, safeguards, lock failures, audit degradation, cleanup and sign-in/password-change flow.
+- [ ] Resolve Apps Script private-function invocation: underscore-private functions are not browser-callable but are omitted from the editor Run list in this project. No public wrapper was added.
+- [x] Keep recovery unregistered in ACTIONS; no unauthenticated reset API or Owner creation path.
+- [x] Source-only; no Clasp push, deployment, staging-data write or production activity.
+
 ## Phase 4 follow-up — dashboard range and chart behavior
 
 - The SVG trend now remains at a readable minimum width inside a keyboard-focusable, labelled horizontal scroll region. Horizontal movement is contained within that chart; it does not widen the document on narrow screens.
