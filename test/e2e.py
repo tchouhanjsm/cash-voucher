@@ -1217,6 +1217,22 @@ with sync_playwright() as p:
       const top = row?.querySelector('.top');
       const note = row?.querySelector('.rn');
       const remove = row?.querySelector('.x');
+      const layoutElements = ['.app', '.main', '#view', '#nf', '.entry-workspace__main', '.entry-workspace__aside', '#rows', '.erow']
+        .map((selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return {selector, missing: true};
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            selector,
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            minWidth: style.minWidth,
+            widthStyle: style.width,
+            gridTemplateColumns: style.gridTemplateColumns,
+          };
+        });
       const overflowElements = [...document.querySelectorAll('body *')]
         .map((element) => {
           const rect = element.getBoundingClientRect();
@@ -1242,6 +1258,8 @@ with sync_playwright() as p:
         horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
         viewportWidth: window.innerWidth,
         documentWidth: document.documentElement.scrollWidth,
+        scrollX: window.scrollX,
+        layoutElements,
         overflowElements,
       };
     }""")
@@ -1714,7 +1732,7 @@ with sync_playwright() as p:
     }""")
     user_label_queries = {
         label: page.locator('#uf').get_by_label(label, exact=True).count()
-        for label in ['Name', 'Email address', 'Role', 'Temporary password']
+        for label in ['Name', 'Email address', 'User role', 'Temporary password']
     }
     check(
         all(value == 1 for value in user_label_queries.values())
@@ -3074,6 +3092,10 @@ with sync_playwright() as p:
         and page.locator('#vf').get_by_label('Company name (optional)', exact=True).count() == 1
         and page.locator('#vf').get_by_label('Mobile number (optional)', exact=True).count() == 1,
         'vendor form fields have explicit accessible names',
+    )    check(
+        page.locator('#vf').get_by_label('Default category', exact=True).count() == 1
+        and page.locator('#vf').get_by_label('Default payment method', exact=True).count() == 1,
+        'vendor default selectors have concise accessible names independent of option lists',
     )
     page.fill('#vn', xss_vendor)
     page.fill('#vc', xss_company)

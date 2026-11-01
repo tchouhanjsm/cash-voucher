@@ -1690,7 +1690,9 @@
     gap: 14px;
   }
   .vendor-form-fields > label,
+  .vendor-form-fields > .vendor-select-field,
   .user-form-fields > label,
+  .user-form-fields > .user-select-field,
   .settings-property-form > label,
   .settings-property-form .grid label,
   .audit-filters > label,
@@ -1704,7 +1706,9 @@
     font-weight: 720;
   }
   .vendor-form-fields > label :is(input, select),
+  .vendor-form-fields > .vendor-select-field select,
   .user-form-fields > label :is(input, select),
+  .user-form-fields > .user-select-field select,
   .settings-property-form :is(input, select, textarea),
   .audit-filters :is(input, select),
   .bulk-import-panel :is(textarea, select) {
