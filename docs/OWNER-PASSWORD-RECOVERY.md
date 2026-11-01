@@ -81,6 +81,7 @@ A `recovered: true` result means credentials were read-back verified. It does no
 ## Post-recovery verification
 
 Once a secure invocation mechanism is approved:
+
 1. Verify the same Owner UserID, name, email, role and active status remain.
 2. Verify only Salt, PasswordHash and MustChangePassword changed. Do not display or export credential values.
 3. Confirm `MustChangePassword=true`.
