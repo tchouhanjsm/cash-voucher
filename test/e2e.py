@@ -1267,6 +1267,10 @@ with sync_playwright() as p:
         desktop_entry_metrics['columns'] >= 4
         and desktop_entry_metrics['noteWidth'] >= 140
         and desktop_entry_metrics['removeWidth'] >= 44
+        and desktop_entry_metrics['layoutElements'][4]['left']
+        < desktop_entry_metrics['layoutElements'][5]['left']
+        and desktop_entry_metrics['layoutElements'][4]['width']
+        > desktop_entry_metrics['layoutElements'][5]['width']
         and not desktop_entry_metrics['horizontalOverflow'],
         f'desktop payment row allocates four distinct tracks without stretched remove controls or overflow; metrics={desktop_entry_metrics}',
     )
