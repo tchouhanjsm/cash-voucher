@@ -31,8 +31,8 @@ The credential mutation remains in the private `recoverExistingOwnerPasswordOnce
 
 In the intended staging Apps Script project, configure this persistent Script Property once:
 
-| Property | Value |
-|---|---|
+| Property                        | Value                                                             |
+| ------------------------------- | ----------------------------------------------------------------- |
 | `OWNER_RECOVERY_OPERATOR_EMAIL` | Exact Google account email of the authorized Apps Script operator |
 
 Use the same Google account that has editor access and will execute the function from the Apps Script editor. Keep this property in place between recovery events. Change it only through an authorized project editor and a reviewed operator-identity change.
@@ -43,13 +43,13 @@ The tool requires both the active and effective user email to equal this propert
 
 Before each recovery, configure these five temporary Script Properties in the same staging project:
 
-| Property | Value |
-|---|---|
+| Property                            | Value                                                 |
+| ----------------------------------- | ----------------------------------------------------- |
 | `OWNER_RECOVERY_EXPECTED_SCRIPT_ID` | Independently verified staging Apps Script project ID |
-| `OWNER_RECOVERY_EXPECTED_SS_ID` | Independently verified staging spreadsheet ID |
-| `OWNER_RECOVERY_EMAIL` | Email of the existing Owner account to recover |
-| `OWNER_RECOVERY_PASSWORD` | Unique temporary random password (8–128 characters) |
-| `OWNER_RECOVERY_CONFIRM` | Exact text `RESET_EXISTING_OWNER_ONLY` |
+| `OWNER_RECOVERY_EXPECTED_SS_ID`     | Independently verified staging spreadsheet ID         |
+| `OWNER_RECOVERY_EMAIL`              | Email of the existing Owner account to recover        |
+| `OWNER_RECOVERY_PASSWORD`           | Unique temporary random password (8–128 characters)   |
+| `OWNER_RECOVERY_CONFIRM`            | Exact text `RESET_EXISTING_OWNER_ONLY`                |
 
 Generate the temporary password in an approved password manager. Do not put it in source code, shell history, logs, issue comments, PR descriptions or chat. Do not add the password to the persistent operator property.
 
@@ -75,6 +75,7 @@ Do not rerun the recovery tool merely because the audit result is unverified or 
 Under the existing Apps Script ScriptLock, it revalidates operator identity, project ID, spreadsheet ID, PEPPER, Users/AuditLog schemas, folder readability, target email uniqueness, Owner role/status, existing identity fields, confirmation and password policy.
 
 It then:
+
 1. Generates a fresh UUID salt and uses the existing HMAC-SHA256 `hashPassword_()` implementation with the unchanged PEPPER.
 2. Patches only `Salt`, `PasswordHash` and `MustChangePassword=true` on the existing Owner row.
 3. Reads back the row and verifies the credential values and preservation of UserID, name, email, role and active status.

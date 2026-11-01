@@ -253,16 +253,16 @@ function ownerRecoveryOperatorContext_() {
   const operatorParts = expectedOperator.split('@');
   const expectedOperatorValid = Boolean(
     operatorParts.length === 2 &&
-      operatorParts[0] &&
-      operatorParts[1] &&
-      operatorParts[1].indexOf('.') > 0,
+    operatorParts[0] &&
+    operatorParts[1] &&
+    operatorParts[1].indexOf('.') > 0,
   );
   const authorized = Boolean(
     expectedOperatorValid &&
-      activeEmail &&
-      effectiveEmail &&
-      activeEmail === expectedOperator &&
-      effectiveEmail === expectedOperator,
+    activeEmail &&
+    effectiveEmail &&
+    activeEmail === expectedOperator &&
+    effectiveEmail === expectedOperator,
   );
   return { authorized: authorized, email: authorized ? expectedOperator : '' };
 }
@@ -283,10 +283,12 @@ function passwordRecoveryPreflight() {
         {
           key: 'operator_identity',
           passed: false,
-          message: 'The active and effective Google identities could not be verified against the configured recovery operator.',
+          message:
+            'The active and effective Google identities could not be verified against the configured recovery operator.',
         },
       ],
-      message: 'Recovery operator identity was not verified. No application data or recovery properties were changed.',
+      message:
+        'Recovery operator identity was not verified. No application data or recovery properties were changed.',
     };
     console.log('Password recovery preflight: ' + JSON.stringify(denied));
     return denied;
@@ -611,7 +613,7 @@ function recoverExistingOwnerPasswordOnce_(authorizedOperatorEmail) {
           }
           try {
             auditEvent_(
-              { email: 'operator-authorized-recovery' },
+              { email: operatorEmail },
               'PASSWORD_RESET',
               ownerEmail,
               'USER_PASSWORD_RESET',
