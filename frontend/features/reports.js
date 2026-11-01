@@ -160,10 +160,13 @@ export function createReports({ api }) {
       plottedRows += 1;
     });
 
-    const maximum = Math.max(1, ...keys.map((key) => {
-      const values = buckets.get(key);
-      return Math.max(values.payments, values.receipts);
-    }));
+    const maximum = Math.max(
+      1,
+      ...keys.map((key) => {
+        const values = buckets.get(key);
+        return Math.max(values.payments, values.receipts);
+      }),
+    );
     const width = Math.max(720, 74 + keys.length * 44);
     const height = 232;
     const left = 76;
@@ -176,47 +179,99 @@ export function createReports({ api }) {
     const barWidth = Math.min(12, slotWidth * 0.26);
     const barGap = Math.min(7, slotWidth * 0.12);
     const labelStep = Math.max(1, Math.ceil(keys.length / 12));
-    const grid = [0, 0.25, 0.5, 0.75, 1].map((fraction) => {
-      const y = top + plotHeight - fraction * plotHeight;
-      return (
-        '<line class="report-trend-grid" x1="' + left + '" y1="' + y + '" x2="' + (width - right) +
-        '" y2="' + y + '"></line><text class="report-trend-axis" x="' + (left - 8) + '" y="' +
-        (y + 3) + '" text-anchor="end">' + esc(money(maximum * fraction)) + '</text>'
-      );
-    }).join('');
+    const grid = [0, 0.25, 0.5, 0.75, 1]
+      .map((fraction) => {
+        const y = top + plotHeight - fraction * plotHeight;
+        return (
+          '<line class="report-trend-grid" x1="' +
+          left +
+          '" y1="' +
+          y +
+          '" x2="' +
+          (width - right) +
+          '" y2="' +
+          y +
+          '"></line><text class="report-trend-axis" x="' +
+          (left - 8) +
+          '" y="' +
+          (y + 3) +
+          '" text-anchor="end">' +
+          esc(money(maximum * fraction)) +
+          '</text>'
+        );
+      })
+      .join('');
 
-    const bars = keys.map((key, index) => {
-      const values = buckets.get(key);
-      const center = left + index * slotWidth + slotWidth / 2;
-      const paymentHeight = (values.payments / maximum) * plotHeight;
-      const receiptHeight = (values.receipts / maximum) * plotHeight;
-      const paymentX = center - barGap / 2 - barWidth;
-      const receiptX = center + barGap / 2;
-      const paymentY = top + plotHeight - paymentHeight;
-      const receiptY = top + plotHeight - receiptHeight;
-      const label = monthly ? key.slice(5, 7) + '/' + key.slice(2, 4) : key.slice(8, 10) + '/' + key.slice(5, 7);
-      const paymentBar =
-        '<rect class="report-trend-bar report-trend-payment" x="' + paymentX + '" y="' + paymentY +
-        '" width="' + barWidth + '" height="' + paymentHeight + '" rx="3"><title>' + esc(label) +
-        ' · Approved payments: ' + esc(money(values.payments)) + '</title></rect>';
-      const receiptBar =
-        '<rect class="report-trend-bar report-trend-receipt" x="' + receiptX + '" y="' + receiptY +
-        '" width="' + barWidth + '" height="' + receiptHeight + '" rx="3"><title>' + esc(label) +
-        ' · Receipts: ' + esc(money(values.receipts)) + '</title></rect>';
-      const axisLabel = index % labelStep === 0
-        ? '<text class="report-trend-axis report-trend-x-label" x="' + center + '" y="' +
-          (height - 12) + '" text-anchor="middle">' + esc(label) + '</text>'
-        : '';
-      return paymentBar + receiptBar + axisLabel;
-    }).join('');
+    const bars = keys
+      .map((key, index) => {
+        const values = buckets.get(key);
+        const center = left + index * slotWidth + slotWidth / 2;
+        const paymentHeight = (values.payments / maximum) * plotHeight;
+        const receiptHeight = (values.receipts / maximum) * plotHeight;
+        const paymentX = center - barGap / 2 - barWidth;
+        const receiptX = center + barGap / 2;
+        const paymentY = top + plotHeight - paymentHeight;
+        const receiptY = top + plotHeight - receiptHeight;
+        const label = monthly
+          ? key.slice(5, 7) + '/' + key.slice(2, 4)
+          : key.slice(8, 10) + '/' + key.slice(5, 7);
+        const paymentBar =
+          '<rect class="report-trend-bar report-trend-payment" x="' +
+          paymentX +
+          '" y="' +
+          paymentY +
+          '" width="' +
+          barWidth +
+          '" height="' +
+          paymentHeight +
+          '" rx="3"><title>' +
+          esc(label) +
+          ' · Approved payments: ' +
+          esc(money(values.payments)) +
+          '</title></rect>';
+        const receiptBar =
+          '<rect class="report-trend-bar report-trend-receipt" x="' +
+          receiptX +
+          '" y="' +
+          receiptY +
+          '" width="' +
+          barWidth +
+          '" height="' +
+          receiptHeight +
+          '" rx="3"><title>' +
+          esc(label) +
+          ' · Receipts: ' +
+          esc(money(values.receipts)) +
+          '</title></rect>';
+        const axisLabel =
+          index % labelStep === 0
+            ? '<text class="report-trend-axis report-trend-x-label" x="' +
+              center +
+              '" y="' +
+              (height - 12) +
+              '" text-anchor="middle">' +
+              esc(label) +
+              '</text>'
+            : '';
+        return paymentBar + receiptBar + axisLabel;
+      })
+      .join('');
 
     const svg =
-      '<svg class="report-trend-svg" width="' + width + '" height="' + height +
-      '" viewBox="0 0 ' + width + ' ' + height +
+      '<svg class="report-trend-svg" width="' +
+      width +
+      '" height="' +
+      height +
+      '" viewBox="0 0 ' +
+      width +
+      ' ' +
+      height +
       '" role="img" aria-labelledby="reportTrendSvgTitle reportTrendSvgDescription">' +
       '<title id="reportTrendSvgTitle">Payments and receipts over the selected report period</title>' +
       '<desc id="reportTrendSvgDescription">Grouped daily or monthly bars compare approved payments with recorded receipts. Pending and rejected payments are excluded from the payment series.</desc>' +
-      grid + bars + '</svg>';
+      grid +
+      bars +
+      '</svg>';
     const emptyMessage = plottedRows
       ? ''
       : '<p class="report-trend-empty" role="status">No reportable payment or receipt amounts appear in this selection.</p>';
@@ -225,11 +280,16 @@ export function createReports({ api }) {
       '<section id="report-movement-trend" class="card report-trend-panel" aria-labelledby="reportMovementTrendTitle">' +
       '<div class="report-trend-heading"><div><p class="page-eyebrow">OVER TIME</p><h2 id="reportMovementTrendTitle">Payment &amp; receipt movement</h2><p class="muted">Daily view for shorter periods; monthly view for ranges over 62 days.</p></div>' +
       '<div class="report-trend-legend" aria-label="Chart legend"><span><i class="report-trend-legend-payment"></i>Approved payments</span><span><i class="report-trend-legend-receipt"></i>Receipts</span></div></div>' +
-      '<div class="report-trend-totals"><div><span>Approved payments</span><strong>' + money(paymentTotal) +
-      '</strong></div><div><span>Recorded receipts</span><strong>' + money(receiptTotal) +
+      '<div class="report-trend-totals"><div><span>Approved payments</span><strong>' +
+      money(paymentTotal) +
+      '</strong></div><div><span>Recorded receipts</span><strong>' +
+      money(receiptTotal) +
       '</strong></div></div>' +
       '<div id="reportMovementTrendScroll" class="report-trend-scroll" role="region" aria-label="Scrollable payment and receipt trend chart" tabindex="0">' +
-      svg + '</div>' + emptyMessage + '</section>'
+      svg +
+      '</div>' +
+      emptyMessage +
+      '</section>'
     );
   }
 

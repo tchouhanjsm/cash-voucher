@@ -456,18 +456,24 @@ export function createPayments({ api, refresh }) {
       if (!rowCount) {
         readiness.textContent = 'Add an entry to begin this batch.';
       } else if (!incompleteCount) {
-        readiness.textContent = rowCount === 1
-          ? 'This entry is ready to save.'
-          : 'All ' + rowCount + ' entries are ready to save.';
+        readiness.textContent =
+          rowCount === 1
+            ? 'This entry is ready to save.'
+            : 'All ' + rowCount + ' entries are ready to save.';
       } else {
         const issues = [];
         if (missingPayeeCount) issues.push(missingPayeeCount + ' missing payee');
         if (invalidAmountCount) issues.push(invalidAmountCount + ' need a valid positive amount');
         if (invalidMethodCount) issues.push(invalidMethodCount + ' need a payment method');
         readiness.textContent =
-          incompleteCount + ' of ' + rowCount + ' ' +
+          incompleteCount +
+          ' of ' +
+          rowCount +
+          ' ' +
           (rowCount === 1 ? 'entry needs' : 'entries need') +
-          ' attention: ' + issues.join('; ') + '.';
+          ' attention: ' +
+          issues.join('; ') +
+          '.';
       }
     }
     if (progress) {
