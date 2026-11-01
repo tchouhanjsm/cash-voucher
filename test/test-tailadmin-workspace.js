@@ -194,12 +194,23 @@ for (const [source, pattern, description] of [
   [bulk, /bulk-review-panel/, 'bulk import has a distinct review workspace'],
   [cashClose, /cc-metrics/, 'cash close retains reconciliation metrics'],
   [onboarding, /onboarding-summary/, 'onboarding exposes readiness summaries'],
-]) assert.match(source, pattern, description);
+])
+  assert.match(source, pattern, description);
 for (const selector of [
-  '.settings-layout', '.settings-diagnostics', '.audit-panel', '.audit-filters',
-  '.bulk-import-panel', '.bulk-review-panel', '.cc-preview', '.cc-metrics',
-  '.cc-method-grid', '.onboarding-page', '.onboarding-summary', '.onboarding-steps'
-]) assert.ok(styles.includes(selector), 'workspace styling covers ' + selector);
+  '.settings-layout',
+  '.settings-diagnostics',
+  '.audit-panel',
+  '.audit-filters',
+  '.bulk-import-panel',
+  '.bulk-review-panel',
+  '.cc-preview',
+  '.cc-metrics',
+  '.cc-method-grid',
+  '.onboarding-page',
+  '.onboarding-summary',
+  '.onboarding-steps',
+])
+  assert.ok(styles.includes(selector), 'workspace styling covers ' + selector);
 
 // Dashboard amounts and chart data remain owned by the validated server read model.
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');

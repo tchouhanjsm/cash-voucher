@@ -203,12 +203,17 @@ assert.match(
 );
 assert.match(
   payments,
-  /entry-payee-field'><span>[\s\S]*?entry-amount-field'><span>Amount \(₹\)<\/span>/,
-  'New Entry includes persistent visible payee and amount labels',
+  /payeeCaption\.textContent = NT === 'RECEIPT' \? 'Received from' : 'Paid to'/,
+  'New Entry includes a visible, contextual payee label',
 );
 assert.match(
   payments,
-  /entry-note-field'><span>Note<\/span>/,
+  /amountCaption\.textContent = 'Amount \(₹\)'/,
+  'New Entry includes a persistent visible amount label',
+);
+assert.match(
+  payments,
+  /noteCaption\.textContent = 'Note'/,
   'New Entry includes a visible note label instead of relying on its placeholder',
 );
 assert.match(

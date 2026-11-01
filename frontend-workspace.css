@@ -1680,7 +1680,6 @@
   }
 }
 
-
 /* Phase 3 — extend the local finance workspace system to administration and operations. */
 @media screen {
   .vendor-form-fields,
@@ -1773,7 +1772,9 @@
     font-size: 18px;
     font-weight: 790;
   }
-  .settings-property-form .grid { gap: 13px; }
+  .settings-property-form .grid {
+    gap: 13px;
+  }
   .settings-diagnostics {
     display: grid;
     min-width: 0;
@@ -1790,7 +1791,9 @@
     padding: 20px;
   }
   .audit-panel > h2,
-  .audit-panel h3 { color: var(--workspace-ink); }
+  .audit-panel h3 {
+    color: var(--workspace-ink);
+  }
   .audit-filters {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1798,7 +1801,9 @@
     gap: 12px;
     margin: 0;
   }
-  .audit-filters > button { min-height: 44px; }
+  .audit-filters > button {
+    min-height: 44px;
+  }
   .audit-panel #aud-count {
     margin: 0;
     padding: 10px 12px;
@@ -1819,7 +1824,9 @@
     font-size: 18px;
     font-weight: 790;
   }
-  .bulk-import-panel > .actions { align-items: center; }
+  .bulk-import-panel > .actions {
+    align-items: center;
+  }
   .bulk-file-label {
     display: inline-flex !important;
     min-height: 44px;
@@ -1835,7 +1842,9 @@
     overflow: hidden;
     clip-path: inset(50%);
   }
-  .bulk-entry-kind { max-width: 360px; }
+  .bulk-entry-kind {
+    max-width: 360px;
+  }
   .bulk-review-summary {
     display: flex;
     flex-wrap: wrap;
@@ -1853,9 +1862,13 @@
     color: var(--workspace-ink);
     font-variant-numeric: tabular-nums;
   }
-  .bulk-review-panel .actions { justify-content: flex-end; }
+  .bulk-review-panel .actions {
+    justify-content: flex-end;
+  }
   .bulk-review-panel .btn,
-  .bulk-import-panel .btn { min-height: 44px; }
+  .bulk-import-panel .btn {
+    min-height: 44px;
+  }
   .cc-intro {
     margin: 0 0 16px;
     padding: 12px 15px;
@@ -1886,7 +1899,9 @@
   .cc-controls button,
   .cc-preview button,
   .cc-report button,
-  .cc-corrections-card button { min-height: 44px; }
+  .cc-corrections-card button {
+    min-height: 44px;
+  }
   .cc-report-heading {
     display: flex;
     align-items: flex-start;
@@ -1928,7 +1943,11 @@
     font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
   }
-  .cc-method-breakdown { display: grid; gap: 12px; margin: 18px 0; }
+  .cc-method-breakdown {
+    display: grid;
+    gap: 12px;
+    margin: 18px 0;
+  }
   .cc-method-grid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1968,13 +1987,18 @@
     background: var(--workspace-soft);
   }
   .cc-history > h2,
-  .cc-corrections-card > h2 { margin-top: 0; }
+  .cc-corrections-card > h2 {
+    margin-top: 0;
+  }
   .onboarding-page {
     display: grid;
     gap: 20px;
     padding: clamp(18px, 3vw, 28px);
   }
-  .onboarding-header { display: grid; gap: 7px; }
+  .onboarding-header {
+    display: grid;
+    gap: 7px;
+  }
   .onboarding-header h1,
   .onboarding-page h2,
   .onboarding-page h3 {
@@ -2102,15 +2126,34 @@
   .app #view .bulk-review-panel button,
   .app #view .cc-controls button,
   .app #view .cc-preview button,
-  .app #view .onboarding-page button { min-height: 44px; }
-  .app #view :is(.settings-property-form, .audit-panel, .bulk-import-panel, .bulk-review-panel, .cc-preview, .cc-report, .onboarding-page) :is(input, select, textarea) {
+  .app #view .onboarding-page button {
+    min-height: 44px;
+  }
+  .app
+    #view
+    :is(
+      .settings-property-form,
+      .audit-panel,
+      .bulk-import-panel,
+      .bulk-review-panel,
+      .cc-preview,
+      .cc-report,
+      .onboarding-page
+    )
+    :is(input, select, textarea) {
     max-width: 100%;
     font: inherit;
   }
   @media (max-width: 1050px) {
-    .settings-layout { grid-template-columns: minmax(0, 1fr); }
-    .cc-metrics { grid-template-columns: repeat(3, minmax(0, 1fr)); }
-    .audit-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .settings-layout {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .cc-metrics {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .audit-filters {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
   }
   @media (max-width: 760px) {
     .vendor-form-fields,
@@ -2119,12 +2162,22 @@
     .cc-controls .filters,
     .cc-correction-form,
     .cc-count .filters,
-    .cc-opening .filters { grid-template-columns: minmax(0, 1fr); }
-    .onboarding-summary { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .cc-opening .filters {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .onboarding-summary {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
     .onboarding-steps,
-    .cc-method-grid { grid-template-columns: minmax(0, 1fr); }
-    .cc-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-    .cc-report-heading { flex-direction: column; }
+    .cc-method-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .cc-metrics {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .cc-report-heading {
+      flex-direction: column;
+    }
     .management-results-card,
     .audit-panel,
     .bulk-import-panel,
@@ -2133,11 +2186,15 @@
     .cc-preview,
     .cc-report,
     .cc-history,
-    .cc-corrections-card { padding: 15px; }
+    .cc-corrections-card {
+      padding: 15px;
+    }
   }
   @media (max-width: 420px) {
     .cc-metrics,
-    .onboarding-summary { grid-template-columns: minmax(0, 1fr); }
+    .onboarding-summary {
+      grid-template-columns: minmax(0, 1fr);
+    }
     .bulk-review-summary {
       align-items: flex-start;
       flex-direction: column;

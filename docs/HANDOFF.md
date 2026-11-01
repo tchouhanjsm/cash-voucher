@@ -3,6 +3,7 @@
 ## Current implementation batch — PR #258
 
 ### Scope delivered in this source candidate
+
 - Replaced the repeatable New Entry row's HTML-string parser with native DOM construction. Input labels, category options, payment methods, receipt inputs and remove actions are created as nodes; existing classes/data-action contracts and payment semantics remain unchanged.
 - Removed one active `innerHTML` assignment from `frontend/features/payments.js`; the checked sink count moves from 17 to 16. The remaining 16 assignments still require contextual review and are not represented as XSS-certified.
 - Added visible, programmatically associated labels to Vendor and User management fields while preserving their existing IDs and backend payloads.
@@ -10,11 +11,13 @@
 - Added a deterministic public asset manifest to customer builds with raw/gzip byte sizes and SHA-256 per asset. Generated customer endpoint configuration and host policy files are excluded. This measures the existing modular output; it does not bundle/minify it or claim a load-time improvement.
 
 ### Verification required on the exact PR head
+
 - CI / Quality, Browser E2E, Full Flight and Autonomous Development Monitor.
 - Browser assertions for DOM-built repeatable rows, label association, add/remove flow, mobile touch geometry and the responsive visual review matrix.
 - Static DOM sink count/source fingerprint, customer build manifest, CSP, service-worker and theme/layout contracts.
 
 ### Operational items intentionally not performed
+
 - No staging Google Sheet backup, VendorType migration, Apps Script deployment, cPanel upload, staging transaction or historical correction.
 - No production resource or financial data access.
 - No Lighthouse scores, WCAG certification, live Sheets concurrency/export metrics or deployed security-header claim is made by this source PR. These remain release/UAT acceptance gates.

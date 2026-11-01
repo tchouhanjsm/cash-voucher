@@ -250,7 +250,9 @@ export function createPayments({ api, refresh }) {
 
     const methodLabel = document.createElement('label');
     methodLabel.className = 'cash-impact-control payment-method-control';
-    methodLabel.appendChild(document.createTextNode(NT === 'RECEIPT' ? 'Received via' : 'Paid via'));
+    methodLabel.appendChild(
+      document.createTextNode(NT === 'RECEIPT' ? 'Received via' : 'Paid via'),
+    );
     const methodSelect = document.createElement('select');
     methodSelect.className = 'rci';
     methodSelect.required = true;

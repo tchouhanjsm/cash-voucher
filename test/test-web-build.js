@@ -86,14 +86,23 @@ try {
   assert.equal(result.assetManifest.files, assetManifest.summary.files);
   assert.ok(assetManifest.assets.some((asset) => asset.path === 'frontend-workspace.css'));
   assert.ok(assetManifest.assets.some((asset) => asset.path === 'frontend/features/dashboard.js'));
-  assert.ok(assetManifest.assets.every((asset) =>
-    Number.isSafeInteger(asset.bytes) && asset.bytes > 0 &&
-    Number.isSafeInteger(asset.gzipBytes) && asset.gzipBytes > 0 &&
-    /^[a-f0-9]{64}$/.test(asset.sha256)
-  ), 'every public asset has raw/gzip byte counts and a SHA-256 digest');
-  assert.ok(assetManifest.assets.every((asset) =>
-    !['config.js', '_headers', '.htaccess'].includes(asset.path)
-  ), 'generated endpoint configuration and host policy files are excluded');
+  assert.ok(
+    assetManifest.assets.every(
+      (asset) =>
+        Number.isSafeInteger(asset.bytes) &&
+        asset.bytes > 0 &&
+        Number.isSafeInteger(asset.gzipBytes) &&
+        asset.gzipBytes > 0 &&
+        /^[a-f0-9]{64}$/.test(asset.sha256),
+    ),
+    'every public asset has raw/gzip byte counts and a SHA-256 digest',
+  );
+  assert.ok(
+    assetManifest.assets.every(
+      (asset) => !['config.js', '_headers', '.htaccess'].includes(asset.path),
+    ),
+    'generated endpoint configuration and host policy files are excluded',
+  );
   assert.ok(!JSON.stringify(assetManifest).includes('TEST_CUSTOMER_DEPLOYMENT_ID'));
   assert.equal(result.files, assetManifest.summary.files + 5);
   for (const file of [
