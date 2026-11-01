@@ -24,6 +24,12 @@ assert.match(
   /--workspace-accent:\s*var\(--accent\)/,
   'the existing user-selected palette remains the source of the workspace accent',
 );
+assert.match(styles, /--workspace-muted:\s*var\(--muted\)/,
+  'workspace secondary text retains the audited contrast token');
+assert.match(styles, /background:\s*var\(--nav-bg\)/,
+  'navigation surfaces preserve the saved login palette');
+assert.match(styles, /background:\s*var\(--nav-active\)/,
+  'selected navigation state preserves the saved login palette');
 assert.match(styles, /:root\[data-theme='dark'\]/, 'workspace defines dark-theme surfaces');
 assert.match(styles, /\.app > \.side\s*\{/, 'desktop navigation rail receives the workspace skin');
 assert.match(styles, /\.app > \.topbar\s*\{/, 'topbar receives the workspace skin');
@@ -44,6 +50,12 @@ assert.match(
 );
 assert.match(styles, /min-height:\s*44px/, 'workspace preserves the 44px touch target baseline');
 assert.match(styles, /@media \(max-width:\s*800px\)/, 'workspace defines a mobile shell');
+assert.match(styles, /dashboard-stats--owner[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)/,
+  'owner dashboard uses two KPI columns below the tablet breakpoint');
+assert.match(styles, /dashboard-stats--staff[\s\S]*?repeat\(5, minmax\(0, 1fr\)\)/,
+  'staff dashboard uses five KPI columns on wide desktop');
+assert.match(styles, /@media screen and \(max-width: 560px\)[\s\S]*?\.account-report-controls[\s\S]*?minmax\(0, 1fr\)/,
+  'support report form retains a single-column phone layout');
 assert.match(
   styles,
   /@media \(prefers-reduced-motion:\s*reduce\)/,

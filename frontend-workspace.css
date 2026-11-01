@@ -10,7 +10,7 @@
   --workspace-muted-surface: #f2f4f7;
   --workspace-border: #e4e7ec;
   --workspace-ink: #101828;
-  --workspace-muted: #667085;
+  --workspace-muted: var(--muted);
   --workspace-accent: var(--accent);
   --workspace-accent-ink: var(--status-ink);
   --workspace-shadow: 0 1px 2px rgb(16 24 40 / 4%), 0 8px 24px rgb(16 24 40 / 4%);
@@ -43,7 +43,7 @@
     max-height: 100dvh;
     padding: 24px 16px 20px;
     overflow: auto;
-    background: var(--workspace-surface);
+    background: var(--nav-bg);
     color: var(--workspace-ink);
     border-right: 1px solid var(--workspace-border);
     box-shadow: none;
@@ -78,7 +78,7 @@
   .app > .side .nav-label {
     margin: 19px 0 5px;
     padding: 0 12px;
-    color: var(--workspace-muted);
+    color: var(--nav-secondary);
     font-size: 10px;
     font-weight: 800;
     letter-spacing: 0.12em;
@@ -92,7 +92,7 @@
     border: 1px solid transparent;
     border-radius: 11px;
     background: transparent;
-    color: var(--workspace-muted);
+    color: var(--nav-secondary);
     font-size: 13px;
     font-weight: 620;
     line-height: 1.25;
@@ -103,14 +103,14 @@
   }
   .app > .side #nav button:hover {
     border-color: var(--workspace-border);
-    background: var(--workspace-soft);
+    background: var(--nav-surface-hover);
     color: var(--workspace-ink);
   }
   .app > .side #nav button.on {
     border-color: color-mix(in srgb, var(--workspace-accent) 18%, var(--workspace-border));
-    background: color-mix(in srgb, var(--workspace-accent) 10%, var(--workspace-surface));
+    background: var(--nav-active);
     box-shadow: inset 3px 0 0 var(--workspace-accent);
-    color: var(--workspace-ink);
+    color: var(--nav-active-ink);
     font-weight: 760;
   }
   .app > .side #nav .ic {
@@ -430,7 +430,7 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .dashboard-view .dashboard-stats--staff {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
   .dashboard-view .stat {
     display: grid;
@@ -697,13 +697,16 @@
       padding-left: 26px;
     }
   }
-  @media (max-width: 980px) {
+  @media (max-width: 1100px) {
+    .dashboard-view .dashboard-stats--staff {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (max-width: 800px) {
     .dashboard-view .dashboard-stats--owner,
     .dashboard-view .dashboard-stats--staff {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
-  }
-  @media (max-width: 800px) {
     .app {
       display: block;
       min-height: 100vh;
@@ -727,7 +730,7 @@
       overflow: visible;
       border-top: 1px solid var(--workspace-border);
       border-right: 0;
-      background: var(--workspace-surface);
+      background: var(--nav-bg);
       box-shadow: 0 -8px 24px rgb(16 24 40 / 6%);
     }
     .app > .side .brand,
@@ -786,8 +789,8 @@
       font-size: 10px;
     }
     .app > .side .mobile-more-btn.on {
-      background: color-mix(in srgb, var(--workspace-accent) 10%, var(--workspace-surface));
-      color: var(--workspace-ink);
+      background: var(--nav-active);
+      color: var(--nav-active-ink);
     }
     .app > .topbar {
       min-height: 64px;
@@ -845,8 +848,6 @@
     .page-header-actions .btn {
       width: 100%;
     }
-    .dashboard-view .dashboard-stats--owner,
-    .dashboard-view .dashboard-stats--staff,
     .dashboard-view .dashboard-breakdowns {
       grid-template-columns: minmax(0, 1fr);
     }
@@ -909,5 +910,19 @@
     .app :focus-visible {
       outline: 2px solid Highlight;
     }
+  }
+}
+
+@media screen and (max-width: 560px) {
+  .app #view .account-report-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .account-report-field--message {
+    grid-column: 1;
+  }
+  .app #view .account-report-controls > .btn {
+    width: 100%;
+    justify-self: stretch;
   }
 }
