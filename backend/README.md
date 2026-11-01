@@ -3,7 +3,7 @@
 Apps Script loads every `.gs` file into **one global scope**, in file-name order. The files are numbered so the order is explicit.
 
 | File                   | Owns                                                                                                      |
-| ---------------------- | ----------------------------------------------------------------------------------------------------      |
+| ---------------------- | --------------------------------------------------------------------------------------------------------- |
 | `00-config.gs`         | `CFG`, `PERMS`. Loaded first.                                                                             |
 | `10-setup.gs`          | One-time `setup()`.                                                                                       |
 | `15-migrations.gs`     | Guarded, owner-run schema migrations.                                                                     |
