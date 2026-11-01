@@ -1229,7 +1229,7 @@ with sync_playwright() as p:
         and desktop_entry_metrics['noteWidth'] >= 140
         and desktop_entry_metrics['removeWidth'] >= 44
         and not desktop_entry_metrics['horizontalOverflow'],
-        'desktop payment row allocates four distinct tracks without stretched remove controls or overflow',
+        f'desktop payment row allocates four distinct tracks without stretched remove controls or overflow; metrics={desktop_entry_metrics}',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
     page.locator('#rows .erow .rv').first.fill('<img src=x onerror="window.__batchXssFired=true">')
@@ -1680,9 +1680,9 @@ with sync_playwright() as p:
     go_view(page, 'users')
     page.wait_for_selector('#uf')
     check(
-        page.locator('#un').get_attribute('aria-label') == 'User name'
-        and page.locator('#uf #ue').get_attribute('aria-label') == 'Email address'
-        and page.locator('#ur').get_attribute('aria-label') == 'New user role',
+        page.locator('#uf').get_by_label('Name', exact=True).count() == 1
+        and page.locator('#uf').get_by_label('Email address', exact=True).count() == 1
+        and page.locator('#uf').get_by_label('Role', exact=True).count() == 1,
         'add-user form fields have explicit accessible names',
     )
     check(
@@ -3034,9 +3034,9 @@ with sync_playwright() as p:
     )
     page.set_viewport_size({'width': 390, 'height': 800})
     check(
-        page.locator('#vn').get_attribute('aria-label') == 'Vendor name'
-        and page.locator('#vc').get_attribute('aria-label') == 'Company name (optional)'
-        and page.locator('#vm').get_attribute('aria-label') == 'Mobile number (optional)',
+        page.locator('#vf').get_by_label('Vendor name', exact=True).count() == 1
+        and page.locator('#vf').get_by_label('Company name (optional)', exact=True).count() == 1
+        and page.locator('#vf').get_by_label('Mobile number (optional)', exact=True).count() == 1,
         'vendor form fields have explicit accessible names',
     )
     page.fill('#vn', xss_vendor)

@@ -1685,7 +1685,7 @@
   .vendor-form-fields,
   .user-form-fields {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     align-items: end;
     gap: 14px;
   }
@@ -1886,7 +1886,13 @@
     margin-bottom: 16px;
     padding: 20px;
   }
-  .cc-controls .filters,
+  .cc-controls .filters {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: end;
+    gap: 13px;
+    margin: 0;
+  }
   .cc-correction-form,
   .cc-count .filters,
   .cc-opening .filters {
