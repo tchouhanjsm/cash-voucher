@@ -3,7 +3,7 @@
   "frontend/features/bulk.js": 2,
   "frontend/features/cash-close.js": 4,
   "frontend/features/dashboard.js": 1,
-  "frontend/features/payments.js": 2,
+  "frontend/features/payments.js": 1,
   "frontend/features/register.js": 2,
   "frontend/features/reports.js": 1,
   "frontend/features/printing.js": 1

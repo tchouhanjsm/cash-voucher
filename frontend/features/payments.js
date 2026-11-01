@@ -1,5 +1,5 @@
 import { $, $$ } from '../core/dom.js';
-import { catOpts, vendorList } from '../core/form-options.js';
+import { catOptionsNode, vendorList } from '../core/form-options.js';
 import { offlineQueue } from '../core/offline-queue.js';
 import {
   CASH_IMPACT_CHOICES,
@@ -68,18 +68,6 @@ export function createPayments({ api, refresh }) {
     }
   });
 
-  function paymentMethodOptions(selected = 'CASH') {
-    return PAYMENT_METHODS.map(
-      (method) =>
-        "<option value='" +
-        method +
-        "'" +
-        (method === selected ? ' selected' : '') +
-        '>' +
-        PAYMENT_METHOD_LABELS[method] +
-        '</option>',
-    ).join('');
-  }
   function vendorForName(name) {
     const normalized = scalarText(name).trim().toLocaleLowerCase('en-IN');
     if (!normalized) return null;
@@ -197,29 +185,107 @@ export function createPayments({ api, refresh }) {
     row.dataset.paymentMethod = method;
     updateBatchSummary();
   }
-  function rowHtml() {
-    return (
-      "<div class='erow'>" +
-      "<div class='top'>" +
-      "<label class='entry-row-field entry-payee-field'><span>" +
-      (NT === 'RECEIPT' ? 'Received from' : 'Paid to') +
-      "</span><input class='rv' list='vlist' placeholder='Vendor or recipient' autocapitalize='words' autocomplete='off'><small class='vendor-identity' role='status' aria-live='polite'>Choose a saved vendor or enter a one-time payee.</small></label>" +
-      "<label class='entry-row-field entry-amount-field'><span>Amount (₹)</span><input class='ra' inputmode='decimal' placeholder='0.00'></label>" +
-      "<label class='entry-row-field entry-note-field'><span>Note</span><input class='rn' placeholder='Optional' aria-label='Note, optional' maxlength='500'></label>" +
-      "<button type='button' class='x' data-act='delrow' title='Remove payment' aria-label='Remove payment'>✕</button></div>" +
-      "<div class='bot'>" +
-      "<label class='category-field'>Category<select class='rc'>" +
-      catOpts('Other', NT) +
-      '</select></label>' +
-      "<label class='cash-impact-control payment-method-control'>" +
-      (NT === 'RECEIPT' ? 'Received via' : 'Paid via') +
-      "<select class='rci' required>" +
-      paymentMethodOptions('CASH') +
-      '</select></label></div>' +
-      "<div class='chips'><label class='btn sm receipt-upload-label'>" +
-      icon('receipt') +
-      " Receipt<input type='file' class='rf' accept='image/*' multiple hidden></label><span class='rp'></span></div></div>"
-    );
+  function createEntryRow() {
+    const row = document.createElement('div');
+    row.className = 'erow';
+    const top = document.createElement('div');
+    top.className = 'top';
+
+    const payeeLabel = document.createElement('label');
+    payeeLabel.className = 'entry-row-field entry-payee-field';
+    const payeeCaption = document.createElement('span');
+    payeeCaption.textContent = NT === 'RECEIPT' ? 'Received from' : 'Paid to';
+    const payeeInput = document.createElement('input');
+    payeeInput.className = 'rv';
+    payeeInput.setAttribute('list', 'vlist');
+    payeeInput.placeholder = 'Vendor or recipient';
+    payeeInput.autocapitalize = 'words';
+    payeeInput.autocomplete = 'off';
+    const identity = document.createElement('small');
+    identity.className = 'vendor-identity';
+    identity.setAttribute('role', 'status');
+    identity.setAttribute('aria-live', 'polite');
+    identity.textContent = 'Choose a saved vendor or enter a one-time payee.';
+    payeeLabel.append(payeeCaption, payeeInput, identity);
+
+    const amountLabel = document.createElement('label');
+    amountLabel.className = 'entry-row-field entry-amount-field';
+    const amountCaption = document.createElement('span');
+    amountCaption.textContent = 'Amount (₹)';
+    const amountInput = document.createElement('input');
+    amountInput.className = 'ra';
+    amountInput.inputMode = 'decimal';
+    amountInput.placeholder = '0.00';
+    amountLabel.append(amountCaption, amountInput);
+
+    const noteLabel = document.createElement('label');
+    noteLabel.className = 'entry-row-field entry-note-field';
+    const noteCaption = document.createElement('span');
+    noteCaption.textContent = 'Note';
+    const noteInput = document.createElement('input');
+    noteInput.className = 'rn';
+    noteInput.placeholder = 'Optional';
+    noteInput.setAttribute('aria-label', 'Note, optional');
+    noteInput.maxLength = 500;
+    noteLabel.append(noteCaption, noteInput);
+
+    const remove = document.createElement('button');
+    remove.type = 'button';
+    remove.className = 'x';
+    remove.dataset.act = 'delrow';
+    remove.title = NT === 'RECEIPT' ? 'Remove receipt' : 'Remove payment';
+    remove.setAttribute('aria-label', remove.title);
+    remove.textContent = '✕';
+    top.append(payeeLabel, amountLabel, noteLabel, remove);
+
+    const bottom = document.createElement('div');
+    bottom.className = 'bot';
+    const categoryLabel = document.createElement('label');
+    categoryLabel.className = 'category-field';
+    categoryLabel.appendChild(document.createTextNode('Category'));
+    const categorySelect = document.createElement('select');
+    categorySelect.className = 'rc';
+    categorySelect.appendChild(catOptionsNode('Other', NT));
+    categoryLabel.appendChild(categorySelect);
+
+    const methodLabel = document.createElement('label');
+    methodLabel.className = 'cash-impact-control payment-method-control';
+    methodLabel.appendChild(document.createTextNode(NT === 'RECEIPT' ? 'Received via' : 'Paid via'));
+    const methodSelect = document.createElement('select');
+    methodSelect.className = 'rci';
+    methodSelect.required = true;
+    PAYMENT_METHODS.forEach((method) => {
+      const option = document.createElement('option');
+      option.value = method;
+      option.textContent = PAYMENT_METHOD_LABELS[method] || method;
+      option.selected = method === 'CASH';
+      methodSelect.appendChild(option);
+    });
+    methodLabel.appendChild(methodSelect);
+    bottom.append(categoryLabel, methodLabel);
+
+    const chips = document.createElement('div');
+    chips.className = 'chips';
+    const receiptLabel = document.createElement('label');
+    receiptLabel.className = 'btn sm receipt-upload-label';
+    const receiptIcon = document.createElement('span');
+    receiptIcon.className = 'receipt-upload-icon';
+    receiptIcon.setAttribute('aria-hidden', 'true');
+    receiptIcon.textContent = '▤';
+    const receiptInput = document.createElement('input');
+    receiptInput.type = 'file';
+    receiptInput.className = 'rf';
+    receiptInput.accept = 'image/*';
+    receiptInput.multiple = true;
+    receiptInput.hidden = true;
+    receiptInput.setAttribute('aria-label', 'Receipt images');
+    receiptLabel.append(receiptIcon, document.createTextNode(' Receipt'), receiptInput);
+    const preview = document.createElement('span');
+    preview.className = 'rp';
+    chips.append(receiptLabel, preview);
+
+    row.append(top, bottom, chips);
+    return row;
   }
 
   function labelRows() {
@@ -731,9 +797,7 @@ export function createPayments({ api, refresh }) {
         return;
       }
     }
-    const d = document.createElement('div');
-    d.innerHTML = rowHtml();
-    const r = d.firstElementChild;
+    const r = createEntryRow();
     r._rec = [];
     r._receiptRevision = 0;
     $('#rows').appendChild(r);
