@@ -249,8 +249,8 @@ function ownerRecoveryAuditVerified_(rowCountBefore, ownerEmail, ownerId, operat
             details.eventType === 'USER_PASSWORD_RESET' &&
             details.entityType === 'user' &&
             details.entityId === ownerId &&
-            details.summary === 'Editor-authorized break-glass recovery; mandatory password change required.' &&
-            details.eventId === operationId,
+            details.reason === 'EDITOR_AUTHORIZED_OWNER_RECOVERY|' + operationId &&
+            details.summary === 'Editor-authorized break-glass recovery; mandatory password change required.',
         );
       } catch (_) {
         return false;
