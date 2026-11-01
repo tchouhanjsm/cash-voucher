@@ -278,6 +278,32 @@ async function run() {
   assert.equal(recoveryPropertiesCleared(lockFailure.g), true);
   assert.equal(lockFailure.g.lockStats.releases, 0);
 
+  const identityChangedUnderLock = makeReady();
+  const identityChangedOwnerBefore = credentialSnapshot(identityChangedUnderLock.owner);
+  const identityChangedAuditBefore = JSON.stringify(identityChangedUnderLock.g.sheets.AuditLog.rows);
+  const identityChangedCacheBefore = JSON.stringify(identityChangedUnderLock.g.cache);
+  identityChangedUnderLock.g.lockStats.afterAcquire = () => {
+    identityChangedUnderLock.g.setSessionEmails('intruder@test.com', 'owner-google@test.com');
+  };
+  const deniedAfterLock = identityChangedUnderLock.g.passwordRecoveryTool();
+  assert.equal(deniedAfterLock.status, 'OPERATOR_NOT_AUTHORIZED');
+  assert.equal(deniedAfterLock.cleanupComplete, false);
+  assert.deepEqual(
+    credentialSnapshot(matchingRow(identityChangedUnderLock.g, 'owner@test.com')),
+    identityChangedOwnerBefore,
+  );
+  assert.equal(JSON.stringify(identityChangedUnderLock.g.sheets.AuditLog.rows), identityChangedAuditBefore);
+  assert.equal(JSON.stringify(identityChangedUnderLock.g.cache), identityChangedCacheBefore);
+  assert.equal(recoveryPropertiesCleared(identityChangedUnderLock.g), false);
+  for (const key of recoveryKeys()) {
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(identityChangedUnderLock.g.props, key),
+      true,
+      key + ' preserved after lock-time authorization denial',
+    );
+  }
+  assert.equal(identityChangedUnderLock.g.lockStats.releases, 1);
+
   const auditDegraded = makeReady();
   auditDegraded.g.failNextAuditWrite();
   const partial = auditDegraded.g.passwordRecoveryTool();

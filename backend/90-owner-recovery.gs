@@ -393,6 +393,7 @@ function recoverExistingOwnerPasswordOnce_(authorizedOperatorEmail) {
   let credentialWriteVerified = false;
   let credentialOwner = null;
   let operationId = '';
+  let operatorAuthorizationRevoked = false;
 
   try {
     const expectedScriptId = String(
@@ -421,9 +422,10 @@ function recoverExistingOwnerPasswordOnce_(authorizedOperatorEmail) {
         result = withScriptLock_(function () {
           const lockedOperator = ownerRecoveryOperatorContext_();
           if (!lockedOperator.authorized || lockedOperator.email !== operatorEmail) {
+            operatorAuthorizationRevoked = true;
             return ownerRecoveryResult_(
               'OPERATOR_NOT_AUTHORIZED',
-              'Recovery operator identity changed or could not be verified under the lock. No credential changes were made.',
+              'Recovery operator identity changed or could not be verified under the lock. No credential changes or property cleanup were performed.',
             );
           }
 
@@ -663,19 +665,24 @@ function recoverExistingOwnerPasswordOnce_(authorizedOperatorEmail) {
       'Recovery stopped unexpectedly. No credential changes were confirmed.',
     );
   } finally {
-    let cleanupComplete = true;
-    OWNER_RECOVERY_PROPERTY_KEYS_.forEach(function (key) {
-      try {
-        p.deleteProperty(key);
-      } catch (_) {
-        cleanupComplete = false;
+    if (operatorAuthorizationRevoked) {
+      // A failed under-lock identity recheck is a denial, not an authorized attempt.
+      result.cleanupComplete = false;
+    } else {
+      let cleanupComplete = true;
+      OWNER_RECOVERY_PROPERTY_KEYS_.forEach(function (key) {
+        try {
+          p.deleteProperty(key);
+        } catch (_) {
+          cleanupComplete = false;
+        }
+      });
+      result.cleanupComplete = cleanupComplete;
+      if (!cleanupComplete) {
+        result.status = 'TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE';
+        result.message +=
+          ' At least one temporary recovery property could not be removed; an authorized editor must remove only the named recovery properties.';
       }
-    });
-    result.cleanupComplete = cleanupComplete;
-    if (!cleanupComplete) {
-      result.status = 'TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE';
-      result.message +=
-        ' At least one temporary recovery property could not be removed; an authorized editor must remove only the named recovery properties.';
     }
   }
 
