@@ -6032,6 +6032,7 @@ with sync_playwright() as p:
     page.wait_for_selector('[data-act=edit]')
     page.set_viewport_size({'width': 390, 'height': 844})
     manager_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
+    manager_voucher_number = manager_row.locator('td').nth(0).locator('b').inner_text()
     check(
         manager_row.locator('.voucher-kind').inner_text() == 'Payment',
         'manager register identifies cash-paid voucher rows explicitly',
@@ -6080,7 +6081,7 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'stored vendor values remain inert text in register filter options',
     )
-    note_row = page.locator('#rbody tr', has_text='Ram Traders').first
+    note_row = page.locator('#rbody tr').filter(has_text=manager_voucher_number)
     edit_trigger = note_row.locator('[data-act=edit]')
     edit_trigger.evaluate("(element) => element.dataset.focusRestoreProbe = 'edit-dialog-trigger'")
     edit_trigger.click()
@@ -6201,10 +6202,12 @@ with sync_playwright() as p:
         and update_requests[0].get('fields', {}).get('amount') == 177.77,
         'voucher edit sends its reason alongside the actual field changes',
     )
+    corrected_row = page.locator('#rbody tr').filter(has_text=manager_voucher_number)
     check(
-        page.locator('#rbody tr', has_text='Ram Traders').locator('.voucher-amount').inner_text()
-        and '177.77' in page.locator('#rbody tr', has_text='Ram Traders').inner_text(),
-        'corrected amount appears in the register after saving',
+        corrected_row.count() == 1
+        and corrected_row.locator('.voucher-amount').count() == 1
+        and '177.77' in corrected_row.inner_text(),
+        'corrected amount appears on the exact edited voucher after saving',
     )
 
     audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
@@ -8324,6 +8327,14 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_verified_xss_duplicate_review)
     click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
     page.wait_for_selector('#recentVendors .vchip')
+    recent_payee_chip_heights = page.locator('#recentVendors .vchip').evaluate_all(
+        "elements => elements.map(element => element.getBoundingClientRect().height)"
+    )
+    check(
+        len(recent_payee_chip_heights) > 0
+        and all(height >= 44 for height in recent_payee_chip_heights),
+        'recent verified payee chips meet the 44px touch-target requirement',
+    )
     before_xss_api_events = len(api_events)
     page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
     page.fill('.erow .ra', '11')
