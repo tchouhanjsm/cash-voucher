@@ -32,7 +32,8 @@ function create(options = {}) {
     mailLog = [],
     auditDiagnostics = [],
     lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false, afterAcquire: null },
-    scriptTriggers = [];
+    scriptTriggers = [],
+    sessionState = { activeEmail: 'owner-google@test.com', effectiveEmail: 'owner-google@test.com' };
   const mockConsole = Object.create(console);
   mockConsole.error = (...args) => {
     auditDiagnostics.push(args.map((value) => (value && value.stack) || String(value)).join(' '));
@@ -254,7 +255,8 @@ function create(options = {}) {
       },
     },
     Session: {
-      getEffectiveUser: () => ({ getEmail: () => 'owner-google@test.com' }),
+      getActiveUser: () => ({ getEmail: () => sessionState.activeEmail }),
+      getEffectiveUser: () => ({ getEmail: () => sessionState.effectiveEmail }),
       getScriptTimeZone: () => 'Asia/Kolkata',
     },
     Logger: { log() {} },
@@ -262,7 +264,7 @@ function create(options = {}) {
   vm.createContext(ctx);
   vm.runInContext(
     backendSource() +
-      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,migrateVoucherPaymentMethodField,migrateVoucherVendorTypeField,migrateVendorDefaultsSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_,inspectReceiptManifest_,ownerRecoveryPreflight_,recoverExistingOwnerPasswordOnce_,hashPassword_};',
+      '\n;this.__api={setup,doPost,PERMS,ACTIONS,WRITES,migrateVoucherApprovalFields,migrateVoucherVendorIdField,migratePinAuthToPasswordSchema,migrateVoucherPaymentMethodField,migrateVoucherVendorTypeField,migrateVendorDefaultsSchema,pruneBackups_,backupManifestCsv_,trashIncompleteBackup_,recordBackupFailure_,backupDataWithServices_,backupIntegrityReportWithServices_,inspectReceiptManifest_,ownerRecoveryPreflight_,recoverExistingOwnerPasswordOnce_,passwordRecoveryPreflight,passwordRecoveryTool,hashPassword_};',
     ctx,
   );
   return {
@@ -327,8 +329,14 @@ function create(options = {}) {
       return result;
     },
     triggerCount: () => scriptTriggers.length,
-    ownerRecoveryPreflight: () => ctx.__api.ownerRecoveryPreflight_(),
-    recoverOwnerPassword: () => ctx.__api.recoverExistingOwnerPasswordOnce_(),
+    ownerRecoveryPreflight: () => ctx.__api.passwordRecoveryPreflight(),
+    recoverOwnerPassword: () => ctx.__api.passwordRecoveryTool(),
+    passwordRecoveryPreflight: () => ctx.__api.passwordRecoveryPreflight(),
+    passwordRecoveryTool: () => ctx.__api.passwordRecoveryTool(),
+    setSessionEmails: (activeEmail, effectiveEmail) => {
+      sessionState.activeEmail = activeEmail;
+      sessionState.effectiveEmail = effectiveEmail;
+    },
     expectedPasswordHash: (salt, password) => ctx.__api.hashPassword_(salt, password),
     failNextLock: () => {
       lockStats.failNextWait = true;
