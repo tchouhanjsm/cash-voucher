@@ -231,11 +231,7 @@ assert.match(
   /dashboard-trend__gridline/,
   'dashboard trend exposes horizontal value guides',
 );
-assert.match(
-  dashboard,
-  /dashboard-trend__point/,
-  'dashboard trend exposes exact-value SVG points',
-);
+assert.match(dashboard, /dashboard-trend__point/, 'dashboard trend exposes exact-value SVG points');
 assert.match(
   dashboard,
   /aria-labelledby="dashboardTrendChartTitle dashboardTrendChartDescription"/,
