@@ -87,7 +87,6 @@ The repository default branch remains main; the active ruleset 24624368 targets 
 
 **Release decision:** this audit and its follow-up PR are source-level work only. No merge, production deployment, spreadsheet migration, historic correction, or financial record write is authorized or performed by this work.
 
-
 ## TailAdmin-inspired finance workspace implementation — 1 November 2026
 
 The follow-up frontend batch on PR #257 adds a local, dependency-free visual layer informed by the TailAdmin free dashboard reference.

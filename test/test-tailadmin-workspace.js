@@ -58,7 +58,11 @@ assert.doesNotMatch(
 );
 
 assert.match(worker, /const C = 'cv2-v43'/, 'visual change advances the app-shell cache');
-assert.match(worker, /'frontend-workspace\.css'/, 'new stylesheet is in the offline shell allowlist');
+assert.match(
+  worker,
+  /'frontend-workspace\.css'/,
+  'new stylesheet is in the offline shell allowlist',
+);
 assert.match(build, /'frontend-workspace\.css'/, 'static customer build publishes the stylesheet');
 
 // Dashboard amounts and chart data remain owned by the validated server read model.

@@ -36,6 +36,7 @@ The design is adapted from the public reference; it is not a wholesale copy of t
 ## Validation
 
 The batch adds a dedicated workspace design-contract test and extends:
+
 - static customer build asset inclusion,
 - service-worker cache and offline shell allowlist,
 - the npm regression test chain,
