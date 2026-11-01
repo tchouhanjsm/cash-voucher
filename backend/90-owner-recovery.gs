@@ -450,14 +450,14 @@ function recoverExistingOwnerPasswordOnce_() {
           }
           credentialWriteVerified = Boolean(
             savedOwner &&
-              savedOwner.Salt === newSalt &&
-              savedOwner.PasswordHash === newHash &&
-              savedOwner.MustChangePassword === true &&
-              ownerRecoveryActive_(savedOwner.Active) &&
-              String(savedOwner.Role || '').toLowerCase() === 'owner' &&
-              savedOwner.Name === owner.Name &&
-              savedOwner.Email === owner.Email &&
-              savedOwner.UserID === owner.UserID,
+            savedOwner.Salt === newSalt &&
+            savedOwner.PasswordHash === newHash &&
+            savedOwner.MustChangePassword === true &&
+            ownerRecoveryActive_(savedOwner.Active) &&
+            String(savedOwner.Role || '').toLowerCase() === 'owner' &&
+            savedOwner.Name === owner.Name &&
+            savedOwner.Email === owner.Email &&
+            savedOwner.UserID === owner.UserID,
           );
           if (!credentialWriteVerified) {
             return ownerRecoveryResult_(
@@ -517,9 +517,7 @@ function recoverExistingOwnerPasswordOnce_() {
           completed.owner = credentialOwner;
           completed.userId = userId;
           return completed;
-        },
-        'The recovery lock could not be acquired. No credential changes were made.',
-      );
+        }, 'The recovery lock could not be acquired. No credential changes were made.');
       } catch (error) {
         result =
           error && error.code === 'BUSY'
