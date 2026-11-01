@@ -590,6 +590,66 @@ with sync_playwright() as p:
         'dashboard recovers after the controlled empty-summary response is removed',
     )
 
+    comparison_case = {'paid': 1250, 'previousPaid': 1000}
+    def inject_dashboard_comparison(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        from_date = request_data.get('from', '2026-10-20')
+        to_date = request_data.get('to', '2026-10-26')
+        from_value = datetime.date.fromisoformat(from_date)
+        to_value = datetime.date.fromisoformat(to_date)
+        period_days = (to_value - from_value).days + 1
+        monthly = period_days > 62
+        trend_key = to_date[:7] if monthly else to_date
+        paid = comparison_case['paid']
+        payload = {
+            'ok': True,
+            'data': {
+                'from': from_date, 'to': to_date, 'periodDays': period_days,
+                'trendMonthly': monthly, 'trend': [{'date': trend_key, 'amount': paid}],
+                'paid': paid, 'previousPaid': comparison_case['previousPaid'],
+                'paymentCount': 1, 'validPaymentCount': 1,
+                'largest': {'amount': paid, 'vendor': 'Comparison test'},
+                'todayPaid': 0, 'todayPaymentCount': 0,
+                'received': 0, 'receiptCount': 0, 'bookBalance': 0,
+                'topVendors': [{'k': 'Comparison test', 'n': 1, 's': paid}],
+                'byCategory': [], 'byTeamMember': [], 'byPaymentMethod': [],
+                'approvalExceptionCount': 0, 'invalidAmountCount': 0,
+                'malformedRecordCount': 0, 'malformedFieldCount': 0,
+            },
+        }
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
+
+    page.route('**/api?*', inject_dashboard_comparison)
+    for case in [
+        {'paid': 1250, 'previousPaid': 0, 'direction': 'zero-baseline', 'copy': 'percentage change unavailable'},
+        {'paid': 1000, 'previousPaid': 1000, 'direction': 'flat', 'copy': 'No change vs previous 7 days'},
+        {'paid': 1250, 'previousPaid': 1000, 'direction': 'increase', 'copy': '↑ 25% vs previous 7 days'},
+        {'paid': 750, 'previousPaid': 1000, 'direction': 'decrease', 'copy': '↓ 25% vs previous 7 days'},
+    ]:
+        comparison_case = case
+        page.click('[data-act=range][data-k="7d"]')
+        page.wait_for_function(
+            "direction => document.querySelector('.dashboard-period-comparison')?.dataset.direction === direction",
+            case['direction'],
+        )
+        comparison = page.locator('.dashboard-period-comparison')
+        check(
+            case['copy'] in comparison.inner_text()
+            and comparison.get_attribute('data-direction') == case['direction']
+            and 'up' not in (comparison.get_attribute('class') or '')
+            and 'down' not in (comparison.get_attribute('class') or ''),
+            'dashboard comparison reports ' + case['direction'] + ' without implying business-good/bad status',
+        )
+    page.unroute('**/api?*', inject_dashboard_comparison)
+    go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-trend-chart', state='visible')
+
     page.click('#userBtn')
     page.locator('#userPop button[data-go="acct"]').first.click()
     page.wait_for_selector('#pf')
@@ -872,6 +932,32 @@ with sync_playwright() as p:
         else:
             go_view(page, route_id)
         page.wait_for_selector(ready_selector, state='visible', timeout=10000)
+        if route_id == 'dash':
+            page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
+            chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
+                role: svg.getAttribute('role'),
+                title: svg.querySelector('title')?.textContent || '',
+                description: svg.querySelector('desc')?.textContent || '',
+                labelledBy: svg.getAttribute('aria-labelledby') || '',
+                pointCount: svg.querySelectorAll('.dashboard-trend__point').length,
+                guideCount: svg.querySelectorAll('.dashboard-trend__gridline').length,
+                hasArea: Boolean(svg.querySelector('.dashboard-trend__area[d]')),
+                hasLine: Boolean(svg.querySelector('.dashboard-trend__line[d]')),
+                viewBox: svg.getAttribute('viewBox') || '',
+                pointBuckets: Number(svg.dataset.chartPoints || 0),
+            })""")
+            check(
+                chart_metrics['role'] == 'img'
+                and chart_metrics['title'] == 'Approved payment trend'
+                and chart_metrics['description']
+                and chart_metrics['labelledBy'] == 'dashboardTrendChartTitle dashboardTrendChartDescription'
+                and chart_metrics['hasArea'] and chart_metrics['hasLine']
+                and chart_metrics['pointCount'] == chart_metrics['pointBuckets']
+                and chart_metrics['pointBuckets'] > 0
+                and chart_metrics['guideCount'] >= 1
+                and chart_metrics['viewBox'] == '0 0 920 260',
+                f'dashboard trend is a responsive, titled SVG with exact-value points; metrics={chart_metrics}',
+            )
         page.wait_for_selector('#view .page-header h1', state='visible', timeout=10000)
         check(
             page.locator('#view .page-header h1').count() == 1

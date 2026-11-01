@@ -55,3 +55,11 @@ Source-only implementation. No merge, deployment, Apps Script push, spreadsheet 
 - Replace the repeatable New Entry row's HTML-string parser with DOM construction. Keep the active vendor master, ONE_TIME payee and `vendorId` contracts intact.
 - Add customer build measurement metadata for public assets (raw bytes, gzip bytes and SHA-256) so a later bundling/minification decision can be made from exact build output rather than an unsupported claim.
 - Tailwind's multi-framework reference remains a visual/design reference. No React/Next/Shadcn runtime or CDN assets are introduced.
+
+## Phase 4 — Premium dashboard analytics (PR #258 candidate)
+
+- Replace the simple spending bar strip with a responsive SVG area/line view, including daily/monthly buckets, value guides, point tooltips, and a named chart title/description for assistive technology.
+- Make previous-period comparisons truthful at a zero baseline and explicitly neutral when unchanged. Directional arrows communicate movement; they are not green/red financial-good or financial-bad judgements.
+- Keep all amounts and trend buckets sourced from the validated dashboard summary API. Do not infer metrics from the browser, add template values, or change financial definitions.
+- Advance the service-worker public-shell cache to `cv2-v46` and test update/precache integration.
+- Add Browser E2E coverage for zero-baseline, flat, increasing and decreasing comparisons, chart accessibility and the existing desktop/mobile light/dark visual matrix.

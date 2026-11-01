@@ -2,6 +2,14 @@
 
 ## Current implementation batch — PR #258
 
+## Phase 4 — Premium dashboard analytics (PR #258)
+
+- Replaced the dashboard's compact bar strip with a scalable SVG area/line trend that includes value guides, daily/monthly labels, exact-value point tooltips and a programmatic title/description. Buckets continue to be derived from the validated `dashboardSummary.trend` read model; no client-generated financial values were added.
+- Reworked the Total paid comparison copy: zero previous-period totals now show the zero baseline and explain why a percentage is unavailable; unchanged periods are described as unchanged; increases/decreases use neutral directional copy rather than green/red business-success semantics.
+- Bumped the public-shell service-worker revision to `cv2-v46` so the dashboard module and local design layer refresh together after update approval.
+- Browser E2E now covers zero baseline, flat, increase and decrease comparisons, and verifies the chart's accessible SVG semantics, area/line paths, points, guide lines and responsive visual states.
+- No dashboard API, backend calculation, permission boundary, accounting rule or report/export behavior is changed.
+
 ### Scope delivered in this source candidate
 
 - Replaced the repeatable New Entry row's HTML-string parser with native DOM construction. Input labels, category options, payment methods, receipt inputs and remove actions are created as nodes; existing classes/data-action contracts and payment semantics remain unchanged.

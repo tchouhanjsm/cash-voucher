@@ -27,3 +27,10 @@ Fresh CI / Quality, Browser E2E, Full Flight and Autonomous Development Monitor 
 ## Not performed
 
 No spreadsheet backup/migration, Apps Script deployment, staging/production financial write, cPanel upload, Lighthouse run, real-device accessibility certification, live Sheets concurrency test or production security-header verification was performed. These remain controlled release gates.
+
+## Phase 4 — Dashboard analytics
+
+- The Dashboard trend now renders a responsive SVG area/line chart with axis guides, daily/monthly labels and exact-value point tooltips. Its `title`/`desc` relationship provides a programmatic accessible name and description.
+- Total paid comparison copy now distinguishes a zero baseline, an unchanged period, an increase and a decrease without treating spending movement as a success/failure status.
+- The trend still uses only `dashboardSummary.trend`; the KPI still uses validated `paid` and `previousPaid`. No backend or financial formulas were changed.
+- Service-worker revision is `cv2-v46`; exact-head Quality and Browser E2E are required before this batch is considered complete.
