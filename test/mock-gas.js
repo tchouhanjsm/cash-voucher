@@ -330,7 +330,9 @@ function create(options = {}) {
     ownerRecoveryPreflight: () => ctx.__api.ownerRecoveryPreflight_(),
     recoverOwnerPassword: () => ctx.__api.recoverExistingOwnerPasswordOnce_(),
     expectedPasswordHash: (salt, password) => ctx.__api.hashPassword_(salt, password),
-    failNextLock: () => { lockStats.failNextWait = true; },
+    failNextLock: () => {
+      lockStats.failNextWait = true;
+    },
     migrateVoucherApprovalFields: () => ctx.__api.migrateVoucherApprovalFields(),
     migrateVoucherVendorIdField: () => ctx.__api.migrateVoucherVendorIdField(),
     migrateVoucherPaymentMethodField: () => ctx.__api.migrateVoucherPaymentMethodField(),
