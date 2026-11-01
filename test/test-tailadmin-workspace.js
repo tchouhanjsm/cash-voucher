@@ -143,11 +143,7 @@ assert.match(
   /register-results-summary/,
   'register gives server totals and results a dedicated hierarchy',
 );
-assert.match(
-  reports,
-  /data-report-range/,
-  'reports expose working quick date-range presets',
-);
+assert.match(reports, /data-report-range/, 'reports expose quick date presets');
 assert.match(
   reports,
   /report-method-bar/,
