@@ -269,10 +269,7 @@ function ownerRecoveryAuditVerified_(rowCountBefore, ownerEmail, ownerId, operat
  * Temporary properties are deleted on all paths, including validation failures.
  */
 function recoverExistingOwnerPasswordOnce_() {
-  let result = ownerRecoveryResult_(
-    'RECOVERY_NOT_PERFORMED',
-    'Owner recovery was not performed.',
-  );
+  let result = ownerRecoveryResult_('RECOVERY_NOT_PERFORMED', 'Owner recovery was not performed.');
   const p = props_();
   let ownerEmail = '';
   let temporaryPassword = '';
@@ -304,226 +301,226 @@ function recoverExistingOwnerPasswordOnce_() {
       );
     } else {
       try {
-        result = withScriptLock_(
-          function () {
-            const actualScriptId =
-              typeof ScriptApp !== 'undefined' && typeof ScriptApp.getScriptId === 'function'
-                ? String(ScriptApp.getScriptId() || '')
-                : '';
-            if (!actualScriptId || actualScriptId !== expectedScriptId) {
-              return ownerRecoveryResult_(
-                'ENVIRONMENT_VALIDATION_FAILED',
-                'The current Apps Script project does not match the expected project. No credential changes were made.',
-              );
-            }
+        result = withScriptLock_(function () {
+          const actualScriptId =
+          const actualScriptId =
+            typeof ScriptApp !== 'undefined' && typeof ScriptApp.getScriptId === 'function'
+              ? String(ScriptApp.getScriptId() || '')
+              : '';
+          if (!actualScriptId || actualScriptId !== expectedScriptId) {
+            return ownerRecoveryResult_(
+              'ENVIRONMENT_VALIDATION_FAILED',
+              'The current Apps Script project does not match the expected project. No credential changes were made.',
+            );
+          }
 
-            const configuredSpreadsheetId = String(p.getProperty('SS_ID') || '').trim();
-            if (!configuredSpreadsheetId || configuredSpreadsheetId !== expectedSpreadsheetId) {
-              return ownerRecoveryResult_(
-                'ENVIRONMENT_VALIDATION_FAILED',
-                'SS_ID does not match the expected staging spreadsheet. No credential changes were made.',
-              );
-            }
-            let spreadsheet = null;
-            try {
-              spreadsheet = SpreadsheetApp.openById(expectedSpreadsheetId);
-            } catch (_) {
-              spreadsheet = null;
-            }
-            if (
-              !spreadsheet ||
-              typeof spreadsheet.getId !== 'function' ||
-              spreadsheet.getId() !== expectedSpreadsheetId
-            ) {
-              return ownerRecoveryResult_(
-                'ENVIRONMENT_VALIDATION_FAILED',
-                'The expected spreadsheet could not be identity-verified. No credential changes were made.',
-              );
-            }
-            if (!p.getProperty('PEPPER')) {
-              return ownerRecoveryResult_(
-                'ENVIRONMENT_VALIDATION_FAILED',
-                'The existing PEPPER property is missing. No credential changes were made.',
-              );
-            }
-            if (
-              !ownerRecoverySheetSchema_(spreadsheet, 'Users') ||
-              !ownerRecoverySheetSchema_(spreadsheet, 'AuditLog')
-            ) {
-              return ownerRecoveryResult_(
-                'ENVIRONMENT_VALIDATION_FAILED',
-                'Users or AuditLog schema validation failed. No credential changes were made.',
-              );
-            }
+          const configuredSpreadsheetId = String(p.getProperty('SS_ID') || '').trim();
+          if (!configuredSpreadsheetId || configuredSpreadsheetId !== expectedSpreadsheetId) {
+            return ownerRecoveryResult_(
+              'ENVIRONMENT_VALIDATION_FAILED',
+              'SS_ID does not match the expected staging spreadsheet. No credential changes were made.',
+            );
+          }
+          let spreadsheet = null;
+          try {
+            spreadsheet = SpreadsheetApp.openById(expectedSpreadsheetId);
+          } catch (_) {
+            spreadsheet = null;
+          }
+          if (
+            !spreadsheet ||
+            typeof spreadsheet.getId !== 'function' ||
+            spreadsheet.getId() !== expectedSpreadsheetId
+          ) {
+            return ownerRecoveryResult_(
+              'ENVIRONMENT_VALIDATION_FAILED',
+              'The expected spreadsheet could not be identity-verified. No credential changes were made.',
+            );
+          }
+          if (!p.getProperty('PEPPER')) {
+            return ownerRecoveryResult_(
+              'ENVIRONMENT_VALIDATION_FAILED',
+              'The existing PEPPER property is missing. No credential changes were made.',
+            );
+          }
+          if (
+            !ownerRecoverySheetSchema_(spreadsheet, 'Users') ||
+            !ownerRecoverySheetSchema_(spreadsheet, 'AuditLog')
+          ) {
+            return ownerRecoveryResult_(
+              'ENVIRONMENT_VALIDATION_FAILED',
+              'Users or AuditLog schema validation failed. No credential changes were made.',
+            );
+          }
 
-            const receiptFolderId = String(p.getProperty('RECEIPT_FOLDER_ID') || '').trim();
-            const backupFolderId = String(p.getProperty('BACKUP_FOLDER_ID') || '').trim();
-            if (
-              !ownerRecoveryFolderReadable_(receiptFolderId) ||
-              !ownerRecoveryFolderReadable_(backupFolderId)
-            ) {
-              return ownerRecoveryResult_(
-                'ENVIRONMENT_VALIDATION_FAILED',
-                'Receipt or backup infrastructure could not be verified. No credential changes were made.',
-              );
-            }
-            if (!passwordOk_(temporaryPassword)) {
-              return ownerRecoveryResult_(
-                'VALIDATION_FAILED',
-                'The temporary password does not meet the existing password policy. No credential changes were made.',
-              );
-            }
+          const receiptFolderId = String(p.getProperty('RECEIPT_FOLDER_ID') || '').trim();
+          const backupFolderId = String(p.getProperty('BACKUP_FOLDER_ID') || '').trim();
+          if (
+            !ownerRecoveryFolderReadable_(receiptFolderId) ||
+            !ownerRecoveryFolderReadable_(backupFolderId)
+          ) {
+            return ownerRecoveryResult_(
+              'ENVIRONMENT_VALIDATION_FAILED',
+              'Receipt or backup infrastructure could not be verified. No credential changes were made.',
+            );
+          }
+          if (!passwordOk_(temporaryPassword)) {
+            return ownerRecoveryResult_(
+              'VALIDATION_FAILED',
+              'The temporary password does not meet the existing password policy. No credential changes were made.',
+            );
+          }
 
-            const matches = readAll_('Users').filter(function (user) {
-              return ownerRecoveryEmail_(user.Email) === ownerEmail;
+          const matches = readAll_('Users').filter(function (user) {
+            return ownerRecoveryEmail_(user.Email) === ownerEmail;
+          });
+          if (matches.length !== 1) {
+            return ownerRecoveryResult_(
+              'ACCOUNT_VALIDATION_FAILED',
+              matches.length > 1
+                ? 'Multiple accounts match the recovery email. No credential changes were made.'
+                : 'No existing account matches the recovery email. No credential changes were made.',
+            );
+          }
+          const owner = matches[0];
+          if (String(owner.Role || '').toLowerCase() !== 'owner') {
+            return ownerRecoveryResult_(
+              'ACCOUNT_VALIDATION_FAILED',
+              'The matching account is not an Owner. No credential changes were made.',
+            );
+          }
+          if (!ownerRecoveryActive_(owner.Active)) {
+            return ownerRecoveryResult_(
+              'ACCOUNT_VALIDATION_FAILED',
+              'The matching Owner account is inactive. No credential changes were made.',
+            );
+          }
+          if (
+            !String(owner.UserID || '').trim() ||
+            !String(owner.Salt || '').trim() ||
+            !String(owner.PasswordHash || '').trim()
+          ) {
+            return ownerRecoveryResult_(
+              'ACCOUNT_VALIDATION_FAILED',
+              'The matching Owner credential record is incomplete. No credential changes were made.',
+            );
+          }
+
+          const userId = String(owner.UserID);
+          operationId = Utilities.getUuid();
+          const newSalt = Utilities.getUuid();
+          let newHash;
+          try {
+            newHash = hashPassword_(newSalt, temporaryPassword);
+          } catch (_) {
+            return ownerRecoveryResult_(
+              'RECOVERY_NOT_PERFORMED',
+              'The existing password hashing operation failed. No credential changes were made.',
+            );
+          }
+          if (!newSalt || !newHash) {
+            return ownerRecoveryResult_(
+              'RECOVERY_NOT_PERFORMED',
+              'A replacement credential could not be prepared. No credential changes were made.',
+            );
+          }
+
+          const mustChangeBefore =
+            owner.MustChangePassword === true || owner.MustChangePassword === 'TRUE';
+          try {
+            updateRow_('Users', owner._row, {
+              Salt: newSalt,
+              PasswordHash: newHash,
+              MustChangePassword: true,
             });
-            if (matches.length !== 1) {
-              return ownerRecoveryResult_(
-                'ACCOUNT_VALIDATION_FAILED',
-                matches.length > 1
-                  ? 'Multiple accounts match the recovery email. No credential changes were made.'
-                  : 'No existing account matches the recovery email. No credential changes were made.',
-              );
-            }
-            const owner = matches[0];
-            if (String(owner.Role || '').toLowerCase() !== 'owner') {
-              return ownerRecoveryResult_(
-                'ACCOUNT_VALIDATION_FAILED',
-                'The matching account is not an Owner. No credential changes were made.',
-              );
-            }
-            if (!ownerRecoveryActive_(owner.Active)) {
-              return ownerRecoveryResult_(
-                'ACCOUNT_VALIDATION_FAILED',
-                'The matching Owner account is inactive. No credential changes were made.',
-              );
-            }
-            if (
-              !String(owner.UserID || '').trim() ||
-              !String(owner.Salt || '').trim() ||
-              !String(owner.PasswordHash || '').trim()
-            ) {
-              return ownerRecoveryResult_(
-                'ACCOUNT_VALIDATION_FAILED',
-                'The matching Owner credential record is incomplete. No credential changes were made.',
-              );
-            }
-
-            const userId = String(owner.UserID);
-            operationId = Utilities.getUuid();
-            const newSalt = Utilities.getUuid();
-            let newHash;
-            try {
-              newHash = hashPassword_(newSalt, temporaryPassword);
-            } catch (_) {
-              return ownerRecoveryResult_(
-                'RECOVERY_NOT_PERFORMED',
-                'The existing password hashing operation failed. No credential changes were made.',
-              );
-            }
-            if (!newSalt || !newHash) {
-              return ownerRecoveryResult_(
-                'RECOVERY_NOT_PERFORMED',
-                'A replacement credential could not be prepared. No credential changes were made.',
-              );
-            }
-
-            const mustChangeBefore =
-              owner.MustChangePassword === true || owner.MustChangePassword === 'TRUE';
-            try {
-              updateRow_('Users', owner._row, {
-                Salt: newSalt,
-                PasswordHash: newHash,
-                MustChangePassword: true,
-              });
-            } catch (_) {
-              return ownerRecoveryResult_(
-                'CREDENTIAL_WRITE_VERIFICATION_FAILED',
-                'The Owner credential write could not be confirmed. Inspect the existing Owner row before retrying.',
-              );
-            }
-
-            let savedOwner = null;
-            try {
-              const savedMatches = readAll_('Users').filter(function (user) {
-                return user.UserID === owner.UserID &&
-                  ownerRecoveryEmail_(user.Email) === ownerEmail;
-              });
-              savedOwner = savedMatches.length === 1 ? savedMatches[0] : null;
-            } catch (_) {
-              savedOwner = null;
-            }
-            credentialWriteVerified = Boolean(
-              savedOwner &&
-                savedOwner.Salt === newSalt &&
-                savedOwner.PasswordHash === newHash &&
-                savedOwner.MustChangePassword === true &&
-                ownerRecoveryActive_(savedOwner.Active) &&
-                String(savedOwner.Role || '').toLowerCase() === 'owner' &&
-                savedOwner.Name === owner.Name &&
-                savedOwner.Email === owner.Email &&
-                savedOwner.UserID === owner.UserID,
+          } catch (_) {
+            return ownerRecoveryResult_(
+              'CREDENTIAL_WRITE_VERIFICATION_FAILED',
+              'The Owner credential write could not be confirmed. Inspect the existing Owner row before retrying.',
             );
-            if (!credentialWriteVerified) {
-              return ownerRecoveryResult_(
-                'CREDENTIAL_WRITE_VERIFICATION_FAILED',
-                'The Owner credential update did not pass read-back verification. Do not retry until the stored row is inspected.',
-              );
-            }
-            credentialOwner = {
-              email: ownerRecoveryMaskEmail_(ownerEmail),
-              userId: userId,
-            };
+          }
 
-            let cacheCountersCleared = false;
-            try {
-              const cache = CacheService.getScriptCache();
-              cache.remove('f:' + ownerEmail);
-              cache.remove('pf:' + userId);
-              cacheCountersCleared = true;
-            } catch (_) {
-              cacheCountersCleared = false;
-            }
-
-            let auditRowsBefore = null;
-            try {
-              auditRowsBefore = readAll_('AuditLog').length;
-            } catch (_) {
-              auditRowsBefore = null;
-            }
-            try {
-              auditEvent_(
-                { email: 'editor-authorized-recovery' },
-                'PASSWORD_RESET',
-                ownerEmail,
-                'USER_PASSWORD_RESET',
-                'user',
-                userId,
-                'EDITOR_AUTHORIZED_OWNER_RECOVERY|' + operationId,
-                [{ field: 'mustChangePassword', before: mustChangeBefore, after: true }],
-                'Editor-authorized break-glass recovery; mandatory password change required.',
-              );
-            } catch (_) {
-              // auditEvent_ is deliberately best-effort in this application.
-            }
-            const auditVerified =
-              auditRowsBefore !== null &&
-              ownerRecoveryAuditVerified_(auditRowsBefore, ownerEmail, userId, operationId);
-
-            const completed = ownerRecoveryResult_(
-              auditVerified ? 'RECOVERY_COMPLETED' : 'RECOVERY_COMPLETED_AUDIT_UNVERIFIED',
-              auditVerified
-                ? 'The existing Owner password was reset. The Owner must change it after signing in.'
-                : 'The Owner credential reset succeeded, but the security audit event could not be verified. Reconcile AuditLog before considering the incident closed.',
+          let savedOwner = null;
+          try {
+            const savedMatches = readAll_('Users').filter(function (user) {
+              return user.UserID === owner.UserID &&
+                ownerRecoveryEmail_(user.Email) === ownerEmail;
+            });
+            savedOwner = savedMatches.length === 1 ? savedMatches[0] : null;
+          } catch (_) {
+            savedOwner = null;
+          }
+          credentialWriteVerified = Boolean(
+            savedOwner &&
+              savedOwner.Salt === newSalt &&
+              savedOwner.PasswordHash === newHash &&
+              savedOwner.MustChangePassword === true &&
+              ownerRecoveryActive_(savedOwner.Active) &&
+              String(savedOwner.Role || '').toLowerCase() === 'owner' &&
+              savedOwner.Name === owner.Name &&
+              savedOwner.Email === owner.Email &&
+              savedOwner.UserID === owner.UserID,
+          );
+          if (!credentialWriteVerified) {
+            return ownerRecoveryResult_(
+              'CREDENTIAL_WRITE_VERIFICATION_FAILED',
+              'The Owner credential update did not pass read-back verification. Do not retry until the stored row is inspected.',
             );
-            completed.recovered = true;
-            completed.auditVerified = auditVerified;
-            completed.cacheCountersCleared = cacheCountersCleared;
-            completed.owner = credentialOwner;
-            completed.userId = userId;
-            return completed;
-          },
-          'The recovery lock could not be acquired. No credential changes were made.',
+          }
+          credentialOwner = {
+            email: ownerRecoveryMaskEmail_(ownerEmail),
+            userId: userId,
+          };
+
+          let cacheCountersCleared = false;
+          try {
+            const cache = CacheService.getScriptCache();
+            cache.remove('f:' + ownerEmail);
+            cache.remove('pf:' + userId);
+            cacheCountersCleared = true;
+          } catch (_) {
+            cacheCountersCleared = false;
+          }
+
+          let auditRowsBefore = null;
+          try {
+            auditRowsBefore = readAll_('AuditLog').length;
+          } catch (_) {
+            auditRowsBefore = null;
+          }
+          try {
+            auditEvent_(
+              { email: 'editor-authorized-recovery' },
+              'PASSWORD_RESET',
+              ownerEmail,
+              'USER_PASSWORD_RESET',
+              'user',
+              userId,
+              'EDITOR_AUTHORIZED_OWNER_RECOVERY|' + operationId,
+              [{ field: 'mustChangePassword', before: mustChangeBefore, after: true }],
+              'Editor-authorized break-glass recovery; mandatory password change required.',
+            );
+          } catch (_) {
+            // auditEvent_ is deliberately best-effort in this application.
+          }
+          const auditVerified =
+            auditRowsBefore !== null &&
+            ownerRecoveryAuditVerified_(auditRowsBefore, ownerEmail, userId, operationId);
+
+          const completed = ownerRecoveryResult_(
+            auditVerified ? 'RECOVERY_COMPLETED' : 'RECOVERY_COMPLETED_AUDIT_UNVERIFIED',
+            auditVerified
+              ? 'The existing Owner password was reset. The Owner must change it after signing in.'
+              : 'The Owner credential reset succeeded, but the security audit event could not be verified. Reconcile AuditLog before considering the incident closed.',
+          );
+          completed.recovered = true;
+          completed.auditVerified = auditVerified;
+          completed.cacheCountersCleared = cacheCountersCleared;
+          completed.owner = credentialOwner;
+          completed.userId = userId;
+          return completed;
+        },
+        'The recovery lock could not be acquired. No credential changes were made.',
         );
       } catch (error) {
         result = error && error.code === 'BUSY'
