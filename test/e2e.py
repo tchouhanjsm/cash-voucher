@@ -611,13 +611,15 @@ with sync_playwright() as p:
             'ok': True,
             'data': {
                 'from': from_date, 'to': to_date, 'periodDays': period_days,
-                'trendMonthly': monthly, 'trend': [{'date': trend_key, 'amount': paid}],
+                'trendMonthly': monthly,
+                'trend': [{'date': trend_key, 'amount': comparison_case.get('trendAmount', paid)}],
                 'paid': paid, 'previousPaid': comparison_case['previousPaid'],
-                'paymentCount': 1, 'validPaymentCount': 1,
-                'largest': {'amount': paid, 'vendor': 'Comparison test'},
+                'paymentCount': comparison_case.get('paymentCount', 1),
+                'validPaymentCount': comparison_case.get('validPaymentCount', 1),
+                'largest': comparison_case.get('largest', {'amount': paid, 'vendor': 'Comparison test'}),
                 'todayPaid': 0, 'todayPaymentCount': 0,
-                'received': 0, 'receiptCount': 0, 'bookBalance': 0,
-                'topVendors': [{'k': 'Comparison test', 'n': 1, 's': paid}],
+                'received': 0, 'receiptCount': comparison_case.get('receiptCount', 0), 'bookBalance': 0,
+                'topVendors': [] if comparison_case.get('paymentCount', 1) == 0 else [{'k': 'Comparison test', 'n': 1, 's': paid}],
                 'byCategory': [], 'byTeamMember': [], 'byPaymentMethod': [],
                 'approvalExceptionCount': 0, 'invalidAmountCount': 0,
                 'malformedRecordCount': 0, 'malformedFieldCount': 0,
@@ -636,7 +638,7 @@ with sync_playwright() as p:
         page.click('[data-act=range][data-k="7d"]')
         page.wait_for_function(
             "direction => document.querySelector('.dashboard-period-comparison')?.dataset.direction === direction",
-            case['direction'],
+            arg=case['direction'],
         )
         comparison = page.locator('.dashboard-period-comparison')
         check(
@@ -646,6 +648,50 @@ with sync_playwright() as p:
             and 'down' not in (comparison.get_attribute('class') or ''),
             'dashboard comparison reports ' + case['direction'] + ' without implying business-good/bad status',
         )
+    comparison_case = {
+        'paid': 3200, 'previousPaid': 0, 'paymentCount': 1,
+        'validPaymentCount': 1, 'largest': {'amount': 3200, 'vendor': 'Monthly test'},
+        'trendAmount': 3200,
+    }
+    page.click('[data-act=range][data-k="cus"]')
+    page.wait_for_selector('#dFrom')
+    page.fill('#dFrom', '2026-08-01')
+    page.fill('#dTo', '2026-11-01')
+    page.click('[data-act=cus]')
+    page.wait_for_function(
+        "Number(document.querySelector('.dashboard-trend-chart')?.dataset.chartPoints || 0) === 4"
+    )
+    monthly_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
+        points: Number(svg.dataset.chartPoints || 0),
+        first: svg.querySelector('.dashboard-trend__x-label')?.textContent || '',
+        last: [...svg.querySelectorAll('.dashboard-trend__x-label')].at(-1)?.textContent || '',
+        description: svg.querySelector('desc')?.textContent || '',
+    })""")
+    check(
+        monthly_metrics['points'] == 4
+        and monthly_metrics['first'] == '08/2026'
+        and monthly_metrics['last'] == '11/2026'
+        and 'by month' in monthly_metrics['description'],
+        f'dashboard ranges over 62 days use monthly buckets and labels; metrics={monthly_metrics}',
+    )
+
+    comparison_case = {
+        'paid': 0, 'previousPaid': 0, 'paymentCount': 0,
+        'validPaymentCount': 0, 'largest': None, 'receiptCount': 1,
+        'trendAmount': 0,
+    }
+    page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_function(
+        "document.querySelector('.dashboard-trend-chart')?.dataset.empty === 'true'"
+    )
+    zero_chart = page.locator('.dashboard-trend-chart')
+    zero_description = zero_chart.locator('desc').inner_text()
+    check(
+        zero_chart.get_attribute('data-empty') == 'true'
+        and zero_chart.locator('.dashboard-trend__point').count() == 7
+        and 'No approved payment amount' in zero_description,
+        'receipt-only periods render a truthful zero-baseline payment trend without invented movement',
+    )
     page.unroute('**/api?*', inject_dashboard_comparison)
     go_view(page, 'dash')
     page.wait_for_selector('.dashboard-trend-chart', state='visible')

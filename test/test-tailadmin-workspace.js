@@ -226,11 +226,36 @@ for (const selector of [
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
-assert.match(dashboard, /dashboard-trend__gridline/, 'dashboard trend exposes horizontal value guides');
-assert.match(dashboard, /dashboard-trend__point/, 'dashboard trend exposes exact-value SVG points');
-assert.match(dashboard, /aria-labelledby="dashboardTrendChartTitle dashboardTrendChartDescription"/, 'dashboard chart has a title and descriptive accessible name');
-assert.match(dashboard, /percentage change unavailable/, 'zero previous-period totals do not claim no historical data');
-assert.match(dashboard, /No change vs previous/, 'flat period comparisons are not presented as downward movement');
+assert.match(
+  dashboard,
+  /dashboard-trend__gridline/,
+  'dashboard trend exposes horizontal value guides',
+);
+assert.match(
+  dashboard,
+  /dashboard-trend__point/,
+  'dashboard trend exposes exact-value SVG points',
+);
+assert.match(
+  dashboard,
+  /aria-labelledby="dashboardTrendChartTitle dashboardTrendChartDescription"/,
+  'dashboard chart has a title and descriptive accessible name',
+);
+assert.match(
+  dashboard,
+  /dashboard-trend__scroll/,
+  'dashboard chart remains legible in a keyboard-scrollable region',
+);
+assert.match(
+  dashboard,
+  /percentage change unavailable/,
+  'zero previous-period totals do not claim no historical data',
+);
+assert.match(
+  dashboard,
+  /No change vs previous/,
+  'flat period comparisons are not presented as downward movement',
+);
 
 console.log(
   'TailAdmin-inspired workspace OK — local design layer, responsive states, data integrity and PWA integration.',
