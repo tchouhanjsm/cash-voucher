@@ -1,12 +1,24 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 1 November 2026 (PR #256 merged; audit follow-up is isolated on a `client/*` branch)
+**Updated:** 1 November 2026 (TailAdmin-inspired finance workspace batch added to PR #257; exact-head validation pending)
 **Repository:** tchouhanjsm/cash-voucher
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
 **Current integration baseline:** `05402ba9e8b811ea4f479f37617ab6f3b0fdb4ac` (PR #256 merge commit, 31 October 2026).
 **PR #256 implementation source SHA:** `9c43758e713fe67baa684204543f30f33284527f` on `client/frontend-reliability-vendor-identity-20261031` (pre-merge implementation snapshot; historical gate evidence follows below).
 **Most recent merged PR:** [PR #256 — harden startup, vendor identity and duplicate payments](https://github.com/tchouhanjsm/cash-voucher/pull/256), merged into `client-main` at `05402ba9e8b811ea4f479f37617ab6f3b0fdb4ac`.
 **Release boundary:** PR #256 is integrated in source. This audit did not run a spreadsheet migration, deploy Apps Script, write financial data, or publish a cPanel package. The live staging login page was inspected without authentication; it was not tied to this source SHA.
+
+## TailAdmin-inspired finance workspace milestone — PR #257
+
+- **Reference:** [TailAdmin free Tailwind admin dashboard template](https://github.com/Tailwind-Admin/free-tailwind-admin-dashboard-template). Cash Voucher adapts its clean admin-shell, sidebar, compact header, surface, card, table and responsive-dashboard visual language to the existing finance product; it does not import the demo application or its external asset stack.
+- **Implementation:** a local `frontend-workspace.css` design layer loads after the existing application styles. It provides a unified light-first workspace palette, explicit dark-theme surfaces, the current user-selected accent, a wider desktop navigation rail, compact sticky topbar, refined page/action hierarchy, coherent cards/forms/tables, and dashboard KPI/chart treatment.
+- **Product fit:** the dashboard continues to render the existing validated API/read-model figures. No illustrative balances, sample transactions, invented chart points or template demo values were introduced.
+- **Responsive/accessibility:** permission-filtered navigation and the existing mobile bottom-navigation/More sheet remain intact. The visual layer retains the 44px control baseline, visible keyboard focus, reduced-motion handling and screen-only scope so printed vouchers remain unchanged.
+- **Static/PWA integration:** `build:web` publishes the local stylesheet. Service-worker cache advances from `cv2-v42` to `cv2-v43` and precaches the new CSS as a public shell asset. API privacy and navigation-only HTML fallback behavior are unchanged.
+- **Regression coverage:** the dedicated workspace test checks design tokens, responsive/dark-mode/accessibility hooks, local-only assets and dashboard data contracts. Static build and service-worker tests assert stylesheet publication and offline availability.
+- **Dependency decision:** no Tailwind compiler, Preline, jQuery, Iconify, third-party icon font, remote Google Font, CDN script or external runtime was added. This is a TailAdmin-inspired local CSS implementation; the Cash Voucher runtime is still the existing Vanilla JS application and does not claim to use Tailwind utility classes.
+- **Prior-head evidence only:** PR #257 checkpoint `32294a15b02e6a2251cf7a349ed9ad31b9e92306` passed Quality ([run 41267276065](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41267276065)), Browser E2E ([run 41267247522](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41267247522), 1,558 checks, 0 failures), Full Flight ([run 41267247428](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41267247428)) and Autonomous Development Monitor ([run 41267247519](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41267247519)). These results predate the workspace batch and do not validate the new PR head.
+- **Current gate:** fresh Quality, Browser E2E and Full Flight results are required on the latest PR #257 head. No merge, Apps Script deployment, spreadsheet migration, staging write, cPanel publication or production change is included in this frontend source milestone.
 
 ## Current frontend audit checkpoint — 1 November 2026
 

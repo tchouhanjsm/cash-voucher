@@ -7,6 +7,7 @@ const STATIC_FILES = [
   'index.html',
   'style.css',
   'frontend-ui-kit.css',
+  'frontend-workspace.css',
   'manifest.webmanifest',
   'sw.js',
 ];

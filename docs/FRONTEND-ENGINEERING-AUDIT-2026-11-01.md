@@ -86,3 +86,29 @@ The repository default branch remains main; the active ruleset 24624368 targets 
 6. Before staging release, back up and verify the Google Sheet, validate A:W headers, run the guarded VendorType migration in column X once, deploy matching backend/frontend source, and execute tagged staging UAT. No production project/resources were present in this review, so production changes are out of scope.
 
 **Release decision:** this audit and its follow-up PR are source-level work only. No merge, production deployment, spreadsheet migration, historic correction, or financial record write is authorized or performed by this work.
+
+
+## TailAdmin-inspired finance workspace implementation — 1 November 2026
+
+The follow-up frontend batch on PR #257 adds a local, dependency-free visual layer informed by the TailAdmin free dashboard reference.
+
+### Delivered source changes
+
+- Added `frontend-workspace.css`, loaded after the base palette and UI kit, to establish a consistent finance-workspace presentation across the existing shell and feature views.
+- Refined the desktop rail and topbar, navigation grouping and active state, page hierarchy, action buttons, surface elevation, forms, filters, tables, dashboard metrics, trend chart, breakdown panels, attention/empty states, login panel, modal and mobile sheet.
+- Added light-first workspace tokens and dark-theme tokens; existing palette selection remains the source of the accent color.
+- Preserved the 44px interaction baseline, visible focus, responsive bottom navigation/More sheet, reduced-motion handling and voucher print isolation.
+- Kept all feature renderers and the validated dashboard API/read-model contract. No template metrics or client-side financial totals were added.
+
+### Build, offline and regression integration
+
+- Added the stylesheet to the static customer build allowlist.
+- Advanced the service-worker shell cache from `cv2-v42` to `cv2-v43` and added the stylesheet to its exact precache allowlist.
+- Added a dedicated workspace regression test and extended static-build and service-worker policy assertions.
+- Introduced no external fonts, CDN resources, Tailwind runtime, Preline plugins, jQuery, remote icon fonts or third-party JavaScript.
+
+### Verification and release boundary
+
+PR #257 head `32294a15b02e6a2251cf7a349ed9ad31b9e92306` previously passed Quality, Browser E2E (1,558 checks), Full Flight and Autonomous Development Monitor. Those results predate this implementation and are historical only. The new head requires fresh exact-head CI, Browser E2E and Full Flight results and a visual review before merge.
+
+This is source-level frontend work only. No backend/API contract, Apps Script source or deployment, spreadsheet schema or records, authentication policy, financial logic, offline transaction queue, staging data or production resource was modified.
