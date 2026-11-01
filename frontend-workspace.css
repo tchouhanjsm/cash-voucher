@@ -553,17 +553,63 @@
   .dashboard-view .dashboard-trend .chart {
     display: block;
     width: 100%;
-    max-height: 250px;
+    height: auto;
+    max-height: none;
     margin-top: 10px;
+    overflow: visible;
   }
-  .dashboard-view .dashboard-trend .chart .b {
-    fill: var(--workspace-accent);
-    opacity: 0.82;
+  .dashboard-view .dashboard-trend__gridline {
+    stroke: var(--workspace-border);
+    stroke-dasharray: 3 5;
+    stroke-width: 1;
   }
-  .dashboard-view .dashboard-trend .chart text {
+  .dashboard-view .dashboard-trend__axis-label {
     fill: var(--workspace-muted);
     font-size: 10px;
     font-family: inherit;
+  }
+  .dashboard-view .dashboard-trend__area {
+    fill: url(#dashboardTrendFill);
+    stroke: none;
+  }
+  .dashboard-view .dashboard-trend__gradient-start {
+    stop-color: var(--workspace-accent);
+    stop-opacity: 0.24;
+  }
+  .dashboard-view .dashboard-trend__gradient-end {
+    stop-color: var(--workspace-accent);
+    stop-opacity: 0.015;
+  }
+  .dashboard-view .dashboard-trend__line {
+    fill: none;
+    stroke: var(--workspace-accent);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+  .dashboard-view .dashboard-trend__point {
+    fill: var(--workspace-surface);
+    stroke: var(--workspace-accent);
+    stroke-width: 2;
+    vector-effect: non-scaling-stroke;
+  }
+  .dashboard-view .dashboard-period-comparison {
+    display: inline-flex;
+    width: fit-content;
+    max-width: 100%;
+    align-items: center;
+    margin-top: 7px;
+    padding: 5px 8px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 999px;
+    background: var(--workspace-soft);
+    color: var(--workspace-muted);
+    font-size: 10px;
+    font-weight: 720;
+    line-height: 1.4;
+    white-space: normal;
+    font-variant-numeric: tabular-nums;
   }
   .dashboard-view .dashboard-breakdowns {
     display: grid;

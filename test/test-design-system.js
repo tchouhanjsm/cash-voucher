@@ -91,6 +91,16 @@ assert.match(
   'dashboard trend has a dedicated chart treatment',
 );
 assert.match(
+  dashboard,
+  /data-chart-points=/,
+  'dashboard charts record their validated daily or monthly bucket count',
+);
+assert.match(
+  dashboard,
+  /aria-labelledby="dashboardTrendChartTitle dashboardTrendChartDescription"/,
+  'dashboard trend SVG has a programmatic title and description',
+);
+assert.match(
   theme,
   /updateTheme\(storedTheme\(\)\s*\|\|\s*'light'\)/,
   'new sessions open in light theme unless the user saved a preference',

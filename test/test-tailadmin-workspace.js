@@ -61,8 +61,18 @@ assert.match(
 );
 assert.match(
   styles,
-  /\.dashboard-view \.dashboard-trend \.chart \.b/,
-  'trend chart bars use the workspace accent',
+  /\.dashboard-view \.dashboard-trend__line/,
+  'dashboard trend line uses the workspace accent',
+);
+assert.match(
+  styles,
+  /\.dashboard-view \.dashboard-trend__area/,
+  'dashboard trend surface has a token-driven area fill',
+);
+assert.match(
+  styles,
+  /\.dashboard-view \.dashboard-period-comparison/,
+  'period comparisons use neutral semantics instead of green/red financial judgement',
 );
 assert.match(styles, /min-height:\s*44px/, 'workspace preserves the 44px touch target baseline');
 assert.match(styles, /@media \(max-width:\s*800px\)/, 'workspace defines a mobile shell');
@@ -116,7 +126,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v45'/,
+  /const C = 'cv2-v46'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -216,6 +226,11 @@ for (const selector of [
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
+assert.match(dashboard, /dashboard-trend__gridline/, 'dashboard trend exposes horizontal value guides');
+assert.match(dashboard, /dashboard-trend__point/, 'dashboard trend exposes exact-value SVG points');
+assert.match(dashboard, /aria-labelledby="dashboardTrendChartTitle dashboardTrendChartDescription"/, 'dashboard chart has a title and descriptive accessible name');
+assert.match(dashboard, /percentage change unavailable/, 'zero previous-period totals do not claim no historical data');
+assert.match(dashboard, /No change vs previous/, 'flat period comparisons are not presented as downward movement');
 
 console.log(
   'TailAdmin-inspired workspace OK — local design layer, responsive states, data integrity and PWA integration.',
