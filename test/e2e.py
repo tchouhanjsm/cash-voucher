@@ -3092,7 +3092,8 @@ with sync_playwright() as p:
         and page.locator('#vf').get_by_label('Company name (optional)', exact=True).count() == 1
         and page.locator('#vf').get_by_label('Mobile number (optional)', exact=True).count() == 1,
         'vendor form fields have explicit accessible names',
-    )    check(
+    )
+    check(
         page.locator('#vf').get_by_label('Default category', exact=True).count() == 1
         and page.locator('#vf').get_by_label('Default payment method', exact=True).count() == 1,
         'vendor default selectors have concise accessible names independent of option lists',

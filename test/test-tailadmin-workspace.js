@@ -176,7 +176,7 @@ assert.match(administration, /<label for="vn">Vendor name/);
 assert.match(administration, /<label for="vdcat">Default category/);
 assert.match(administration, /<label for="un">Name/);
 assert.match(administration, /<label for="ue">Email address/);
-assert.match(administration, /<label for="ur">Role/);
+assert.match(administration, /<label for="ur">User role/);
 assert.match(administration, /<label for="up">Temporary password/);
 assert.match(
   register,
