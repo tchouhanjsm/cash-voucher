@@ -6498,6 +6498,15 @@ with sync_playwright() as p:
         and update_requests[0].get('fields', {}).get('amount') == 177.77,
         'voucher edit sends its reason alongside the actual field changes',
     )
+    page.wait_for_function(
+        """({number, amount}) => {
+            const row = [...document.querySelectorAll('#rbody tr')].find((element) =>
+                element.querySelector('td b')?.textContent.trim() === number
+            );
+            return Boolean(row?.querySelector('.voucher-amount')?.textContent.includes(amount));
+        }""",
+        arg={'number': manager_voucher_number, 'amount': '177.77'},
+    )
     corrected_row = page.locator('#rbody tr').filter(has_text=manager_voucher_number)
     check(
         corrected_row.count() == 1
