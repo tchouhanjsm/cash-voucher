@@ -280,7 +280,9 @@ async function run() {
 
   const identityChangedUnderLock = makeReady();
   const identityChangedOwnerBefore = credentialSnapshot(identityChangedUnderLock.owner);
-  const identityChangedAuditBefore = JSON.stringify(identityChangedUnderLock.g.sheets.AuditLog.rows);
+  const identityChangedAuditBefore = JSON.stringify(
+    identityChangedUnderLock.g.sheets.AuditLog.rows,
+  );
   const identityChangedCacheBefore = JSON.stringify(identityChangedUnderLock.g.cache);
   identityChangedUnderLock.g.lockStats.afterAcquire = () => {
     identityChangedUnderLock.g.setSessionEmails('intruder@test.com', 'owner-google@test.com');
@@ -292,7 +294,10 @@ async function run() {
     credentialSnapshot(matchingRow(identityChangedUnderLock.g, 'owner@test.com')),
     identityChangedOwnerBefore,
   );
-  assert.equal(JSON.stringify(identityChangedUnderLock.g.sheets.AuditLog.rows), identityChangedAuditBefore);
+  assert.equal(
+    JSON.stringify(identityChangedUnderLock.g.sheets.AuditLog.rows),
+    identityChangedAuditBefore,
+  );
   assert.equal(JSON.stringify(identityChangedUnderLock.g.cache), identityChangedCacheBefore);
   assert.equal(recoveryPropertiesCleared(identityChangedUnderLock.g), false);
   for (const key of recoveryKeys()) {
