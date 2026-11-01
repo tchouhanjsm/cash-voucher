@@ -2652,7 +2652,7 @@ with sync_playwright() as p:
         )
         and 'Unrecognized method' in report_text
         and formula_payload in report_text
-        and accountant_page.locator('#view img, #view svg').count() == 0
+        and accountant_page.locator('#view .report-results-card img, #view .report-results-card svg').count() == 0
         and not accountant_page.evaluate('window.__xssFired === true'),
         'valid hostile report row fields remain inert text across vendor, category, notes, cancellation and approval contexts',
     )
@@ -2682,7 +2682,7 @@ with sync_playwright() as p:
     check(
         'P-REPORT-OUTPUT-TEST' not in accountant_page.locator('#view').inner_text()
         and all(value not in accountant_page.locator('#view').inner_text() for value in report_markup_payloads.values())
-        and accountant_page.locator('#view img, #view svg').count() == 0,
+        and accountant_page.locator('#view .report-results-card img, #view .report-results-card svg').count() == 0,
         'report rendering recovers to the normal server response after hostile fixture removal',
     )
     report_table_region = accountant_page.locator('#view .table-wrap[role=region][tabindex="0"]')
@@ -2696,11 +2696,21 @@ with sync_playwright() as p:
     check(
         accountant_page.evaluate("""() => {
             const active = document.activeElement;
+            if (!active?.matches('#reportMovementTrendScroll:focus-visible')) return false;
+            const style = getComputedStyle(active);
+            return style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
+        }"""),
+        'payment and receipt chart is keyboard reachable with a visible focus indicator',
+    )
+    accountant_page.keyboard.press('Tab')
+    check(
+        accountant_page.evaluate("""() => {
+            const active = document.activeElement;
             if (!active?.matches('#view .table-wrap[role="region"][tabindex="0"]:focus-visible')) return false;
             const style = getComputedStyle(active);
             return style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
         }"""),
-        'Reports source-voucher table is keyboard reachable with a visible focus indicator',
+        'Reports source-voucher table remains keyboard reachable after the chart',
     )
     for width in [320, 360, 390, 768, 801, 1024, 1280]:
         accountant_page.set_viewport_size({'width': width, 'height': 800})
@@ -6697,7 +6707,7 @@ with sync_playwright() as p:
         '4 malformed report row(s) omitted' in report_text
         and 'MALFORMED_REPORT_ROW_MARKER' not in report_text
         and 'MALFORMED_AMOUNT_ROW_MARKER' not in report_text
-        and page.locator('#view svg, #view img').count() == 0,
+        and page.locator('#view .report-results-card svg, #view .report-results-card img').count() == 0,
         'report omits null, primitive, wrong-field-type and nonnumeric-amount rows with a visible count',
     )
     page.unroute('**/api?*', tamper_report_rows)
@@ -6748,7 +6758,7 @@ with sync_playwright() as p:
         and report_active_count_payload in report_text
         and report_cancelled_count_payload in report_text
         and '2 report row(s) have ambiguous vendor names' in report_text
-        and page.locator('#view svg, #view img').count() == 0
+        and page.locator('#view .report-results-card svg, #view .report-results-card img').count() == 0
         and not page.evaluate('window.__reportCountXss === true'),
         'hostile report summary count fields remain literal text without markup or execution',
     )
