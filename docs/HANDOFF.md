@@ -8,7 +8,6 @@
 **Most recent merged PR:** [PR #256 — harden startup, vendor identity and duplicate payments](https://github.com/tchouhanjsm/cash-voucher/pull/256), merged into `client-main` at `05402ba9e8b811ea4f479f37617ab6f3b0fdb4ac`.
 **Release boundary:** PR #256 is integrated in source. This audit did not run a spreadsheet migration, deploy Apps Script, write financial data, or publish a cPanel package. The live staging login page was inspected without authentication; it was not tied to this source SHA.
 
-
 ## Current frontend audit checkpoint — 1 November 2026
 
 - **Current integration:** `client-main` at `05402ba9e8b811ea4f479f37617ab6f3b0fdb4ac`; PR #256 is merged. The active project policy requires short-lived `client/*` branches with PRs targeting `client-main`; this follow-up follows that policy. No changes were made to `main`.
