@@ -71,8 +71,23 @@ assert.match(
 );
 assert.match(
   styles,
-  /@media screen and \(max-width: 560px\)[\s\S]*?\.account-report-controls[\s\S]*?minmax\(0, 1fr\)/,
+  /@media screen and \(max-width: 440px\)[\s\S]*?dashboard-stats--owner > \.stat[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
+  'small-screen KPI cards use a full-width content row inside the two-column grid',
+);
+assert.match(
+  styles,
+  /@media screen and \(max-width: 440px\)[\s\S]*?dashboard-stats--staff > \.stat > b[\s\S]*?overflow-wrap: anywhere/,
+  'long staff INR values can wrap without widening the viewport',
+);
+assert.match(
+  styles,
+  /account-report-form \.account-report-controls[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
   'support report form retains a single-column phone layout',
+);
+assert.match(
+  styles,
+  /account-report-controls > button\[type='submit'\][\s\S]*?width: 100%/,
+  'support report submit action fills its mobile control column',
 );
 assert.match(
   styles,
