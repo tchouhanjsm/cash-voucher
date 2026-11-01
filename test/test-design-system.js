@@ -647,7 +647,7 @@ assert.match(
 );
 assert.match(
   payments,
-  /function paymentMethodOptions\(selected = 'CASH'\)/,
+  /option\.selected = method === 'CASH'/,
   'staff payment entry defaults to Cash',
 );
 assert.match(
