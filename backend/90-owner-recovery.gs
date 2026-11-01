@@ -303,7 +303,6 @@ function recoverExistingOwnerPasswordOnce_() {
       try {
         result = withScriptLock_(function () {
           const actualScriptId =
-          const actualScriptId =
             typeof ScriptApp !== 'undefined' && typeof ScriptApp.getScriptId === 'function'
               ? String(ScriptApp.getScriptId() || '')
               : '';
@@ -521,7 +520,7 @@ function recoverExistingOwnerPasswordOnce_() {
           return completed;
         },
         'The recovery lock could not be acquired. No credential changes were made.',
-        );
+      );
       } catch (error) {
         result = error && error.code === 'BUSY'
           ? ownerRecoveryResult_(
