@@ -87,20 +87,20 @@ The temporary password, new salt and hash are never returned, logged or written 
 
 ## Result handling
 
-| Status | Meaning |
-|---|---|
-| `PREFLIGHT_READY` | Read-only validation passed; no data was changed. |
-| `PREFLIGHT_BLOCKED` | One or more environment/account checks failed; do not run recovery. |
-| `OPERATOR_NOT_AUTHORIZED` | Active/effective Google identities are missing or do not exactly match the persistent operator allowlist. No recovery properties are consumed. |
-| `RECOVERY_COMPLETED` | Credential write and matching audit-event read-back verified. |
-| `RECOVERY_COMPLETED_AUDIT_UNVERIFIED` | Credential write verified; audit persistence could not be verified. Reconcile AuditLog before closing the incident. |
-| `LOCK_ACQUISITION_FAILED` | ScriptLock timeout; credential mutation did not run. |
-| `ENVIRONMENT_VALIDATION_FAILED` | Project, spreadsheet, PEPPER, schema or backup infrastructure validation failed. |
-| `ACCOUNT_VALIDATION_FAILED` | No unique active Owner or incomplete existing Owner record. |
-| `VALIDATION_FAILED` | Temporary configuration, confirmation or password policy failed. |
-| `CREDENTIAL_WRITE_VERIFICATION_FAILED` | Credential write/read-back failed. Inspect the row before retrying. |
-| `TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE` | One or more temporary properties could not be removed; an authorized editor must remove only the named temporary properties. |
-| `RECOVERY_NOT_PERFORMED` | Unexpected failure; inspect sanitized execution evidence and the stored Owner row before retrying. |
+| Status                                  | Meaning                                                                                                                                        |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PREFLIGHT_READY`                       | Read-only validation passed; no data was changed.                                                                                              |
+| `PREFLIGHT_BLOCKED`                     | One or more environment/account checks failed; do not run recovery.                                                                            |
+| `OPERATOR_NOT_AUTHORIZED`               | Active/effective Google identities are missing or do not exactly match the persistent operator allowlist. No recovery properties are consumed. |
+| `RECOVERY_COMPLETED`                    | Credential write and matching audit-event read-back verified.                                                                                  |
+| `RECOVERY_COMPLETED_AUDIT_UNVERIFIED`   | Credential write verified; audit persistence could not be verified. Reconcile AuditLog before closing the incident.                            |
+| `LOCK_ACQUISITION_FAILED`               | ScriptLock timeout; credential mutation did not run.                                                                                           |
+| `ENVIRONMENT_VALIDATION_FAILED`         | Project, spreadsheet, PEPPER, schema or backup infrastructure validation failed.                                                               |
+| `ACCOUNT_VALIDATION_FAILED`             | No unique active Owner or incomplete existing Owner record.                                                                                    |
+| `VALIDATION_FAILED`                     | Temporary configuration, confirmation or password policy failed.                                                                               |
+| `CREDENTIAL_WRITE_VERIFICATION_FAILED`  | Credential write/read-back failed. Inspect the row before retrying.                                                                            |
+| `TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE` | One or more temporary properties could not be removed; an authorized editor must remove only the named temporary properties.                   |
+| `RECOVERY_NOT_PERFORMED`                | Unexpected failure; inspect sanitized execution evidence and the stored Owner row before retrying.                                             |
 
 ## Failure handling and release boundary
 

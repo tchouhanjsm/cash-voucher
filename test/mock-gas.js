@@ -33,7 +33,10 @@ function create(options = {}) {
     auditDiagnostics = [],
     lockStats = { attempts: 0, waits: 0, releases: 0, failNextWait: false, afterAcquire: null },
     scriptTriggers = [],
-    sessionState = { activeEmail: 'owner-google@test.com', effectiveEmail: 'owner-google@test.com' };
+    sessionState = {
+      activeEmail: 'owner-google@test.com',
+      effectiveEmail: 'owner-google@test.com',
+    };
   const mockConsole = Object.create(console);
   mockConsole.error = (...args) => {
     auditDiagnostics.push(args.map((value) => (value && value.stack) || String(value)).join(' '));
