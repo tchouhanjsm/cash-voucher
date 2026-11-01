@@ -18,6 +18,7 @@ Apps Script loads every `.gs` file into **one global scope**, in file-name order
 | `60-vendors.gs`        | Vendors and vendor identity.                                                                         |
 | `70-users.gs`          | Users and password management.                                                                       |
 | `80-settings-audit.gs` | Settings and audit log.                                                                              |
+| `90-owner-recovery.gs` | Operator-authorized Owner password recovery; public preflight/run entrypoints, private credential worker. |
 | `99-routes.gs`         | `ACTIONS` and `WRITES`. Loaded last.                                                                 |
 
 ## Rules
