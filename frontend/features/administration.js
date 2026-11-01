@@ -300,7 +300,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       '<label for="ur">Role<select id="ur">',
       roles.map((role) => '<option>' + esc(role) + '</option>').join(''),
       '</select></label>',
-      '<label for="up">Temporary password<input id="up" type="password" inputmode="text" minlength="8" maxlength="128" title="Use 8 to 128 characters" autocomplete="new-password" placeholder="Temporary password (8–128 characters)" required></label>,
+      '<label for="up">Temporary password<input id="up" type="password" inputmode="text" minlength="8" maxlength="128" title="Use 8 to 128 characters" autocomplete="new-password" placeholder="Temporary password (8–128 characters)" required></label>',
       '<button class="btn primary">Add</button>',
     ].join('');
 
