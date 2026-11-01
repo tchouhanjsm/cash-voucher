@@ -1,6 +1,7 @@
 import { $ } from '../core/dom.js';
 import { can, PAYMENT_METHOD_FILTER_OPTIONS, paymentMethodLabel, S } from '../core/state.js';
 import {
+  addDays,
   csvCell,
   dmy,
   download,
@@ -124,10 +125,53 @@ export function createReports({ api }) {
     }
 
     const summary = R.summary;
-    const filters = `
+    const reportToday = today();
+    const quickRanges = [
+      { key: '7d', label: 'Last 7 days', from: addDays(reportToday, -6) },
+      { key: '30d', label: 'Last 30 days', from: addDays(reportToday, -29) },
+      { key: 'mtd', label: 'Month to date', from: reportToday.slice(0, 7) + '-01' },
+    ];
+    const quickRangeControls =
+      '<div class="report-period-presets" role="group" aria-label="Quick report date ranges">' +
+      quickRanges
+        .map(
+          (range) =>
+            '<button type="button" data-report-range="' +
+            range.key +
+            '" class="' +
+            (R.from === range.from && R.to === reportToday ? 'on' : '') +
+            '">' +
+            range.label +
+            '</button>',
+        )
+        .join('') +
+      '</div>';
+    const methodRows = Array.isArray(summary?.byPaymentMethod) ? summary.byPaymentMethod : [];
+    const methodMax = Math.max(1, ...methodRows.map((item) => item.s));
+    const methodBreakdown = methodRows.length
+      ? methodRows
+          .map((item) => {
+            const amount = finiteAmount(item.s) ?? 0;
+            const width = Math.min(100, Math.max(0, (amount / methodMax) * 100));
+            return (
+              '<div class="report-method-breakdown-item"><div class="report-method-breakdown-item__top"><span>' +
+              esc(item.k) +
+              '</span><strong>' +
+              money(amount) +
+              '</strong></div><div class="report-method-bar" aria-hidden="true"><i style="width:' +
+              width +
+              '%"></i></div><small class="muted">' +
+              esc(scalarText(item.n)) +
+              ' payment(s)</small></div>'
+            );
+          })
+          .join('')
+      : '<p class="muted">Payment-method breakdown is unavailable for this deployment or selection.</p>';
+    const filters = \`
       <div class="card report-filter-panel">
-        <p class="muted report-scope-note">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p>
+        <div class="report-filter-heading"><div><p class="page-eyebrow">MONEY · REPORTING</p><h2>Movement filters</h2><p class="muted report-scope-note">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p></div><div class="report-range-summary"><span>Selected window</span><strong>${esc(dmy(R.from))} – ${esc(dmy(R.to))}</strong></div></div>
         <form id="movementFilters" class="filters report-filters" autocomplete="off">
+          ${quickRangeControls}
           <label>From<input id="movementFrom" type="date" value="${esc(R.from)}" required${R.dateRangeInvalid ? ' aria-invalid="true" aria-describedby="report-date-range-error"' : ''}></label>
           <label>To<input id="movementTo" type="date" value="${esc(R.to)}" required${R.dateRangeInvalid ? ' aria-invalid="true" aria-describedby="report-date-range-error"' : ''}></label>
           <label>Type
@@ -206,22 +250,7 @@ export function createReports({ api }) {
           <h2>Active approved payments by method</h2>
           <p class="muted">Payment amounts exclude cancelled and unresolved approvals. Historical entries without a saved method remain visible as Not recorded.</p>
           <div class="report-method-breakdown-list">
-${
-  Array.isArray(summary.byPaymentMethod) && summary.byPaymentMethod.length
-    ? summary.byPaymentMethod
-        .map(
-          (item) =>
-            '<div class="report-method-breakdown-item"><span>' +
-            esc(item.k) +
-            '</span><strong>' +
-            money(item.s) +
-            '</strong><small class="muted">' +
-            esc(scalarText(item.n)) +
-            ' payment(s)</small></div>',
-        )
-        .join('')
-    : '<p class="muted">Payment-method breakdown is unavailable for this deployment or selection.</p>'
-}
+${methodBreakdown}
           </div>
         </div>
         <div class="card report-results-card">
@@ -258,6 +287,15 @@ ${
       error +
       results +
       '</div>';
+    $('#movementFilters')?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-report-range]');
+      if (!button) return;
+      const range = quickRanges.find((item) => item.key === button.dataset.reportRange);
+      if (!range) return;
+      R.from = range.from;
+      R.to = reportToday;
+      load();
+    });
     $('#movementFilters')?.addEventListener('submit', (event) => {
       event.preventDefault();
       R.from = $('#movementFrom').value;

@@ -10,6 +10,9 @@ const styles = read('frontend-workspace.css');
 const worker = read('sw.js');
 const build = read('scripts/build-web.js');
 const dashboard = read('frontend/features/dashboard.js');
+const payments = read('frontend/features/payments.js');
+const register = read('frontend/features/register.js');
+const reports = read('frontend/features/reports.js');
 
 const uiKitPosition = html.indexOf('frontend-ui-kit.css');
 const workspacePosition = html.indexOf('frontend-workspace.css');
@@ -107,13 +110,25 @@ assert.doesNotMatch(
   'workspace adds no remote font, CDN or icon runtime',
 );
 
-assert.match(worker, /const C = 'cv2-v43'/, 'visual change advances the app-shell cache');
+assert.match(worker, /const C = 'cv2-v44'/, 'core screen change advances the app-shell cache');
 assert.match(
   worker,
   /'frontend-workspace\.css'/,
   'new stylesheet is in the offline shell allowlist',
 );
 assert.match(build, /'frontend-workspace\.css'/, 'static customer build publishes the stylesheet');
+
+assert.match(
+  dashboard,
+  /dashboard-analysis-grid/,
+  'dashboard analytics use a deliberate primary/secondary analysis layout',
+);
+assert.match(payments, /entry-form-workspace/, 'new voucher uses a real multi-column entry workspace');
+assert.match(payments, /entry-guidance/, 'new voucher presents cash-impact controls beside the live batch summary');
+assert.match(register, /register-filter-grid/, 'register separates search from structured server-side refinements');
+assert.match(register, /register-results-summary/, 'register gives server totals and results a dedicated hierarchy');
+assert.match(reports, /data-report-range/, 'reports expose working quick date-range presets');
+assert.match(reports, /report-method-bar/, 'reports visualize server-derived payment-method totals');
 
 // Dashboard amounts and chart data remain owned by the validated server read model.
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');

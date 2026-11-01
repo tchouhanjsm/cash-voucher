@@ -669,8 +669,12 @@ export function createDashboard({ api }) {
         ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance</span><b>${money(summary.bookBalance)}</b><small class="muted">opening balance + recorded receipts − approved recorded payments; not a physical cash count</small></div>` : ''}
       </div>
       ${dashboardWarnings}
+      <div class="dashboard-analysis-grid">
+        <div class="dashboard-analysis-primary">
       <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend, from, to)}</div>
       <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors)}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory)}</div></div>
+        </div>
+        <aside class="dashboard-analysis-secondary" aria-label="Payment analysis">
       <div class="card dashboard-payment-methods"><h2>Approved payments by method</h2><p class="muted">Active approved payments in this period. Historical entries without a saved method appear as Not recorded.</p>${Array.isArray(summary.byPaymentMethod) ? bars(summary.byPaymentMethod, 5) : '<p class="muted">Payment-method breakdown is unavailable for this deployment.</p>'}</div>
       ${
         can('viewAll')
@@ -680,6 +684,8 @@ export function createDashboard({ api }) {
             )}</div>`
           : ''
       }
+      </aside>
+      </div>
     `;
 
     const dashboardContent = periodIsEmpty

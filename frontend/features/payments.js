@@ -450,8 +450,16 @@ export function createPayments({ api, refresh }) {
         description:
           'Record a payment or receipt, attach supporting evidence, and confirm how the money moved.',
       }) +
-      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" autocomplete="off">${vendorList()}
+      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form entry-form-workspace" autocomplete="off">\${vendorList()}
+    <div class="entry-workspace__main">
+      <div class="entry-section-heading">
+        <p class="page-eyebrow">ENTRY DETAILS</p>
+        <h2>\${NT === 'RECEIPT' ? 'Record incoming cash' : 'Record an outgoing payment'}</h2>
+        <p>Capture the business date, counterparty, value and supporting evidence for every line.</p>
+      </div>
     <label class="entry-date-field">Date<input type="date" id="nd" value="${businessDate()}" max="${addDays(businessDate(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="${NT === 'RECEIPT' ? 'Recent verified payers' : 'Recent verified payees'}" hidden></div><div id="rows"></div>
+    </div>
+    <aside class="entry-workspace__aside" aria-label="Batch review and save">
     <section id="entrySummary" class="entry-summary" aria-label="Current batch totals">
       <div class="entry-summary__head"><strong>Current batch</strong><span id="batchCount" aria-live="polite">0 ready entries</span></div>
       <div class="entry-summary__grid">
@@ -462,8 +470,14 @@ export function createPayments({ api, refresh }) {
       </div>
       <p class="entry-summary__note">Totals include rows with a payee and valid amount. Only Cash counts toward drawer movement; UPI and bank transfer stay separate.</p>
     </section>
+    <section class="entry-guidance" aria-labelledby="entryGuidanceTitle">
+      <p class="page-eyebrow">CONTROL CHECK</p>
+      <h3 id="entryGuidanceTitle">Keep the movement traceable</h3>
+      <p>Use the exact counterparty name, verify the payment method and attach a receipt image when available.</p>
+      <p class="entry-guidance__note">Cash affects drawer movement. UPI and bank transfers remain non-cash movements.</p>
+    </section>
     <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button><button type="button" class="btn" data-act="import-pending">Import recovery file</button></div>
-    <p class="muted">Tip: tap “Receipt” to take a photo or pick a screenshot (up to 3 per payment).</p></form><div id="nres"></div>`;
+    <p class="muted">Tip: tap “Receipt” to take a photo or pick a screenshot (up to 3 per payment).</p></aside></form><div id="nres"></div>`;
     addRow();
     renderRecentVendors();
     updateBatchSummary();
