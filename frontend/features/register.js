@@ -344,6 +344,23 @@ export function createRegister({ api, go }) {
       malformedFieldCount,
       totalCount: pageTotalCount,
     });
+    const pageMeta = $('#registerPageMeta');
+    if (pageMeta) {
+      if (!dataAvailable) {
+        pageMeta.textContent = 'Server results unavailable';
+      } else if (rangeInvalid) {
+        pageMeta.textContent = 'Correct the date range to load results';
+      } else if (pageLoading) {
+        pageMeta.textContent = 'Loading matching vouchers…';
+      } else {
+        pageMeta.textContent =
+          'Loaded ' +
+          pageRows.length.toLocaleString('en-IN') +
+          ' of ' +
+          pageTotalCount.toLocaleString('en-IN') +
+          ' matching vouchers';
+      }
+    }
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
     const resultsCard = $('.register-results-card');
@@ -613,7 +630,7 @@ export function createRegister({ api, go }) {
       )
       .join('')}</select></label>
     <div class="register-filter-actions"><button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div></div></section>
-    <div class="card register-results-card"><div class="register-results-summary"><div><p class="page-eyebrow">REGISTER</p><h2>Voucher activity</h2><p class="muted">Authoritative entries and totals from the server-filtered register.</p></div><div id="rtot" class="register-totals"></div></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Voucher register entries" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
+    <div class="card register-results-card"><div class="register-results-summary"><div><p class="page-eyebrow">REGISTER</p><h2>Voucher activity</h2><p class="muted">Authoritative entries and totals from the server-filtered register.</p><p id="registerPageMeta" class="register-page-meta" role="status" aria-live="polite">Loading matching vouchers…</p></div><div id="rtot" class="register-totals"></div></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Voucher register entries" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
 
     return renderRows();
   }

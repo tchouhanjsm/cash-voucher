@@ -110,7 +110,7 @@ assert.doesNotMatch(
   'workspace adds no remote font, CDN or icon runtime',
 );
 
-assert.match(worker, /const C = 'cv2-v44'/, 'core screen change advances the app-shell cache');
+assert.match(worker, /const C = 'cv2-v45'/, 'phase two screen implementation advances the app-shell cache');
 assert.match(
   worker,
   /'frontend-workspace\.css'/,
@@ -144,6 +144,15 @@ assert.match(
   'register gives server totals and results a dedicated hierarchy',
 );
 assert.match(reports, /data-report-range/, 'reports expose quick date presets');
+assert.match(
+  reports,
+  /report-movement-trend/,
+  'reports render an actual movement trend from selected rows',
+);
+assert.match(reports, /isBusinessDate\(row.date\)/, 'report chart groups only validated business dates');
+assert.match(payments, /batchProgress/, 'new voucher exposes batch completion progress');
+assert.match(payments, /batchReadiness/, 'new voucher explains incomplete entry rows');
+assert.match(register, /registerPageMeta/, 'register exposes loaded versus server-matched page totals');
 assert.match(
   reports,
   /report-method-bar/,

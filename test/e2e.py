@@ -1211,6 +1211,12 @@ with sync_playwright() as p:
     page.locator('#rows .erow .ra').first.fill('42')
     page.wait_for_function("document.querySelector('#batchTotal')?.dataset.value === '42.00'")
     check(
+        page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
+        and page.locator('#batchProgress').get_attribute('aria-valuemax') == '1'
+        and 'ready to save' in page.locator('#batchReadiness').inner_text().lower(),
+        'batch progress announces when every entry is complete',
+    )
+    check(
         page.locator('#batchCount').inner_text() == '1 ready entry'
         and page.locator('#batchTotal').get_attribute('data-value') == '42.00'
         and page.locator('#batchCash').get_attribute('data-value') == '42.00'
@@ -1223,6 +1229,12 @@ with sync_playwright() as p:
         "document.querySelectorAll('#rows .erow').length === 2 && "
         "document.activeElement?.classList.contains('rv') && "
         "document.activeElement.closest('.erow') === document.querySelectorAll('#rows .erow')[1]"
+    )
+    check(
+        page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
+        and page.locator('#batchProgress').get_attribute('aria-valuemax') == '2'
+        and '1 of 2' in page.locator('#batchReadiness').inner_text(),
+        'an appended blank row reduces batch completion without changing ready totals',
     )
     check(
         page.locator('#batchTotal').get_attribute('data-value') == '42.00'
@@ -4232,6 +4244,10 @@ with sync_playwright() as p:
     go_view(page, 'reg')
     page.wait_for_selector('#rbody tr')
     check(
+        page.locator('#registerPageMeta').inner_text() == 'Loaded 2 of 2 matching vouchers',
+        'Register shows the loaded page against the authoritative server match count',
+    )
+    check(
         page.locator('#rq').get_attribute('aria-label') == 'Search vouchers by number, payee or note'
         and page.locator('#view .page-header h1').inner_text() == 'Voucher Register'
         and page.locator('.register-search-field').inner_text().startswith('Search vouchers')
@@ -6534,6 +6550,23 @@ with sync_playwright() as p:
         and page.locator('#view .table-wrap[role=region]').count() == 1,
         'movement report uses the accessible shared table component',
     )
+    check(
+        page.locator('#report-movement-trend').count() == 1
+        and page.locator('#report-movement-trend .report-trend-svg').count() == 1
+        and page.locator('#report-movement-trend .report-trend-payment').count() > 0
+        and page.locator('#report-movement-trend .report-trend-receipt').count() > 0,
+        'movement report compares approved payments and receipts over the selected period',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    trend_scroll = page.locator('#reportMovementTrendScroll').evaluate(
+        "el => ({clientWidth:el.clientWidth, scrollWidth:el.scrollWidth, pageOverflow:document.documentElement.scrollWidth > document.documentElement.clientWidth})"
+    )
+    check(
+        trend_scroll['scrollWidth'] >= trend_scroll['clientWidth']
+        and not trend_scroll['pageOverflow'],
+        'trend chart scrolls inside its panel without creating page-level mobile overflow',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
     check(
         page.locator('#report-output').get_attribute('aria-busy') == 'false'
         and page.locator('#report-output .report-results-card').count() == 1,

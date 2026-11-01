@@ -114,6 +114,125 @@ export function createReports({ api }) {
     });
   }
 
+  function movementTrend() {
+    if (!isBusinessDate(R.from) || !isBusinessDate(R.to) || R.from > R.to) return '';
+
+    const start = new Date(R.from + 'T00:00:00.000Z');
+    const end = new Date(R.to + 'T00:00:00.000Z');
+    const periodDays = Math.round((end.getTime() - start.getTime()) / 86400000) + 1;
+    const monthly = periodDays > 62;
+    const keys = [];
+
+    if (monthly) {
+      const cursor = new Date(R.from.slice(0, 7) + '-01T00:00:00.000Z');
+      const finalMonth = R.to.slice(0, 7);
+      while (cursor.toISOString().slice(0, 7) <= finalMonth) {
+        keys.push(cursor.toISOString().slice(0, 7));
+        cursor.setUTCMonth(cursor.getUTCMonth() + 1);
+      }
+    } else {
+      for (let index = 0; index < periodDays; index += 1) keys.push(addDays(R.from, index));
+    }
+
+    const buckets = new Map(keys.map((key) => [key, { payments: 0, receipts: 0 }]));
+    let paymentTotal = 0;
+    let receiptTotal = 0;
+    let plottedRows = 0;
+
+    R.rows.forEach((row) => {
+      if (!isBusinessDate(row.date) || row.date < R.from || row.date > R.to) return;
+      const amount = finiteAmount(row.amount);
+      if (amount === null || amount < 0) return;
+      const key = monthly ? row.date.slice(0, 7) : row.date;
+      const bucket = buckets.get(key);
+      if (!bucket) return;
+
+      if (row.type === 'PAYMENT') {
+        if (!['NOT_REQUIRED', 'APPROVED'].includes(row.approvalStatus)) return;
+        bucket.payments += amount;
+        paymentTotal += amount;
+      } else if (row.type === 'RECEIPT') {
+        bucket.receipts += amount;
+        receiptTotal += amount;
+      } else {
+        return;
+      }
+      plottedRows += 1;
+    });
+
+    const maximum = Math.max(1, ...keys.map((key) => {
+      const values = buckets.get(key);
+      return Math.max(values.payments, values.receipts);
+    }));
+    const width = Math.max(720, 74 + keys.length * 44);
+    const height = 232;
+    const left = 76;
+    const right = 18;
+    const top = 16;
+    const bottom = 42;
+    const plotHeight = height - top - bottom;
+    const plotWidth = width - left - right;
+    const slotWidth = plotWidth / keys.length;
+    const barWidth = Math.min(12, slotWidth * 0.26);
+    const barGap = Math.min(7, slotWidth * 0.12);
+    const labelStep = Math.max(1, Math.ceil(keys.length / 12));
+    const grid = [0, 0.25, 0.5, 0.75, 1].map((fraction) => {
+      const y = top + plotHeight - fraction * plotHeight;
+      return (
+        '<line class="report-trend-grid" x1="' + left + '" y1="' + y + '" x2="' + (width - right) +
+        '" y2="' + y + '"></line><text class="report-trend-axis" x="' + (left - 8) + '" y="' +
+        (y + 3) + '" text-anchor="end">' + esc(money(maximum * fraction)) + '</text>'
+      );
+    }).join('');
+
+    const bars = keys.map((key, index) => {
+      const values = buckets.get(key);
+      const center = left + index * slotWidth + slotWidth / 2;
+      const paymentHeight = (values.payments / maximum) * plotHeight;
+      const receiptHeight = (values.receipts / maximum) * plotHeight;
+      const paymentX = center - barGap / 2 - barWidth;
+      const receiptX = center + barGap / 2;
+      const paymentY = top + plotHeight - paymentHeight;
+      const receiptY = top + plotHeight - receiptHeight;
+      const label = monthly ? key.slice(5, 7) + '/' + key.slice(2, 4) : key.slice(8, 10) + '/' + key.slice(5, 7);
+      const paymentBar =
+        '<rect class="report-trend-bar report-trend-payment" x="' + paymentX + '" y="' + paymentY +
+        '" width="' + barWidth + '" height="' + paymentHeight + '" rx="3"><title>' + esc(label) +
+        ' · Approved payments: ' + esc(money(values.payments)) + '</title></rect>';
+      const receiptBar =
+        '<rect class="report-trend-bar report-trend-receipt" x="' + receiptX + '" y="' + receiptY +
+        '" width="' + barWidth + '" height="' + receiptHeight + '" rx="3"><title>' + esc(label) +
+        ' · Receipts: ' + esc(money(values.receipts)) + '</title></rect>';
+      const axisLabel = index % labelStep === 0
+        ? '<text class="report-trend-axis report-trend-x-label" x="' + center + '" y="' +
+          (height - 12) + '" text-anchor="middle">' + esc(label) + '</text>'
+        : '';
+      return paymentBar + receiptBar + axisLabel;
+    }).join('');
+
+    const svg =
+      '<svg class="report-trend-svg" width="' + width + '" height="' + height +
+      '" viewBox="0 0 ' + width + ' ' + height +
+      '" role="img" aria-labelledby="reportTrendSvgTitle reportTrendSvgDescription">' +
+      '<title id="reportTrendSvgTitle">Payments and receipts over the selected report period</title>' +
+      '<desc id="reportTrendSvgDescription">Grouped daily or monthly bars compare approved payments with recorded receipts. Pending and rejected payments are excluded from the payment series.</desc>' +
+      grid + bars + '</svg>';
+    const emptyMessage = plottedRows
+      ? ''
+      : '<p class="report-trend-empty" role="status">No reportable payment or receipt amounts appear in this selection.</p>';
+
+    return (
+      '<section id="report-movement-trend" class="card report-trend-panel" aria-labelledby="reportMovementTrendTitle">' +
+      '<div class="report-trend-heading"><div><p class="page-eyebrow">OVER TIME</p><h2 id="reportMovementTrendTitle">Payment &amp; receipt movement</h2><p class="muted">Daily view for shorter periods; monthly view for ranges over 62 days.</p></div>' +
+      '<div class="report-trend-legend" aria-label="Chart legend"><span><i class="report-trend-legend-payment"></i>Approved payments</span><span><i class="report-trend-legend-receipt"></i>Receipts</span></div></div>' +
+      '<div class="report-trend-totals"><div><span>Approved payments</span><strong>' + money(paymentTotal) +
+      '</strong></div><div><span>Recorded receipts</span><strong>' + money(receiptTotal) +
+      '</strong></div></div>' +
+      '<div id="reportMovementTrendScroll" class="report-trend-scroll" role="region" aria-label="Scrollable payment and receipt trend chart" tabindex="0">' +
+      svg + '</div>' + emptyMessage + '</section>'
+    );
+  }
+
   function render() {
     if (!can('reports')) {
       $('#view').replaceChildren(
@@ -249,6 +368,7 @@ export function createReports({ api }) {
             <small class="muted">Cancelled rows excluded</small>
           </div>
         </div>
+        ${movementTrend()}
         <div class="card report-method-breakdown">
           <h2>Active approved payments by method</h2>
           <p class="muted">Payment amounts exclude cancelled and unresolved approvals. Historical entries without a saved method remain visible as Not recorded.</p>

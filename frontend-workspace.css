@@ -1493,3 +1493,166 @@
     }
   }
 }
+
+
+/* Phase 2: analysis, entry-readiness and server-page context. */
+:root { --workspace-receipt: #15803d; }
+:root[data-theme='dark'] { --workspace-receipt: #34d399; }
+@media screen {
+  .entry-workspace__aside .entry-summary__progress {
+    height: 8px;
+    margin: 0 0 8px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: var(--workspace-muted-surface);
+  }
+  .entry-summary__progress span {
+    display: block;
+    width: 0;
+    height: 100%;
+    border-radius: inherit;
+    background: var(--workspace-accent);
+    transition: width 140ms ease;
+  }
+  .entry-summary__readiness {
+    min-height: 18px;
+    margin: 0 0 14px;
+    color: var(--workspace-muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  .entry-workspace__aside .entry-summary__head { margin-bottom: 13px; }
+  .register-page-meta {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-top: 9px !important;
+    padding: 6px 9px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 999px;
+    background: var(--workspace-soft);
+    color: var(--workspace-muted);
+    font-size: 10px !important;
+    font-weight: 720;
+    font-variant-numeric: tabular-nums;
+  }
+  .report-trend-panel {
+    display: grid;
+    min-width: 0;
+    gap: 16px;
+    padding: 21px;
+  }
+  .report-trend-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 18px;
+  }
+  .report-trend-heading .page-eyebrow { margin-bottom: 6px; }
+  .report-trend-heading h2 {
+    margin: 0;
+    color: var(--workspace-ink);
+    font-size: 17px;
+    font-weight: 790;
+    letter-spacing: -0.03em;
+  }
+  .report-trend-heading p:not(.page-eyebrow) {
+    margin: 6px 0 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .report-trend-legend {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 13px;
+    color: var(--workspace-muted);
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .report-trend-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+  }
+  .report-trend-legend i {
+    width: 9px;
+    height: 9px;
+    border-radius: 3px;
+  }
+  .report-trend-legend-payment,
+  .report-trend-payment {
+    background: var(--workspace-accent);
+    fill: var(--workspace-accent);
+  }
+  .report-trend-legend-receipt,
+  .report-trend-receipt {
+    background: var(--workspace-receipt);
+    fill: var(--workspace-receipt);
+  }
+  .report-trend-totals {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  .report-trend-totals > div {
+    display: grid;
+    gap: 5px;
+    min-width: 0;
+    padding: 12px 14px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 12px;
+    background: var(--workspace-soft);
+  }
+  .report-trend-totals span {
+    color: var(--workspace-muted);
+    font-size: 10px;
+    font-weight: 720;
+  }
+  .report-trend-totals strong {
+    color: var(--workspace-ink);
+    font-size: clamp(16px, 2vw, 21px);
+    font-variant-numeric: tabular-nums;
+    overflow-wrap: anywhere;
+  }
+  .report-trend-scroll {
+    min-width: 0;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    border: 1px solid var(--workspace-border);
+    border-radius: 12px;
+    background: var(--workspace-surface);
+    scrollbar-width: thin;
+  }
+  .report-trend-scroll:focus-visible {
+    outline: 2px solid var(--workspace-accent);
+    outline-offset: 2px;
+  }
+  .report-trend-svg { display: block; max-width: none; }
+  .report-trend-grid {
+    stroke: var(--workspace-border);
+    stroke-dasharray: 3 5;
+    stroke-width: 1;
+  }
+  .report-trend-axis {
+    fill: var(--workspace-muted);
+    font-size: 10px;
+    font-family: inherit;
+  }
+  .report-trend-bar { stroke: none; opacity: 0.92; }
+  .report-trend-bar:hover { opacity: 1; }
+  .report-trend-empty {
+    margin: 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+  }
+  @media (max-width: 700px) {
+    .report-trend-panel { padding: 15px; }
+    .report-trend-heading { flex-direction: column; }
+    .report-trend-legend { gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .entry-summary__progress span { transition: none; }
+  }
+}

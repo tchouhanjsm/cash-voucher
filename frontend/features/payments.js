@@ -419,10 +419,17 @@ export function createPayments({ api, refresh }) {
     if (!summary) return;
     const totals = { CASH: 0, UPI: 0, BANK_TRANSFER: 0 };
     let readyCount = 0;
-    $$('#rows .erow').forEach((row) => {
+    let missingPayeeCount = 0;
+    let invalidAmountCount = 0;
+    let invalidMethodCount = 0;
+    const rows = $$('#rows .erow');
+    rows.forEach((row) => {
       const payee = $('.rv', row).value.trim();
       const amount = parseAmt($('.ra', row).value.trim());
       const method = $('.rci', row).value;
+      if (!payee) missingPayeeCount += 1;
+      if (!(amount > 0)) invalidAmountCount += 1;
+      if (!PAYMENT_METHODS.includes(method)) invalidMethodCount += 1;
       if (!payee || !(amount > 0) || !PAYMENT_METHODS.includes(method)) return;
       readyCount += 1;
       totals[method] += amount;
@@ -440,7 +447,40 @@ export function createPayments({ api, refresh }) {
     writeMetric('batchCash', totals.CASH);
     writeMetric('batchUpi', totals.UPI);
     writeMetric('batchBank', totals.BANK_TRANSFER);
+    const rowCount = rows.length;
+    const incompleteCount = Math.max(0, rowCount - readyCount);
+    const readiness = $('#batchReadiness');
+    const progress = $('#batchProgress');
+    const progressFill = $('#batchProgressFill');
+    if (readiness) {
+      if (!rowCount) {
+        readiness.textContent = 'Add an entry to begin this batch.';
+      } else if (!incompleteCount) {
+        readiness.textContent = rowCount === 1
+          ? 'This entry is ready to save.'
+          : 'All ' + rowCount + ' entries are ready to save.';
+      } else {
+        const issues = [];
+        if (missingPayeeCount) issues.push(missingPayeeCount + ' missing payee');
+        if (invalidAmountCount) issues.push(invalidAmountCount + ' need a valid positive amount');
+        if (invalidMethodCount) issues.push(invalidMethodCount + ' need a payment method');
+        readiness.textContent =
+          incompleteCount + ' of ' + rowCount + ' ' +
+          (rowCount === 1 ? 'entry needs' : 'entries need') +
+          ' attention: ' + issues.join('; ') + '.';
+      }
+    }
+    if (progress) {
+      progress.setAttribute('aria-valuemin', '0');
+      progress.setAttribute('aria-valuemax', String(rowCount));
+      progress.setAttribute('aria-valuenow', String(readyCount));
+      progress.setAttribute('aria-valuetext', readyCount + ' of ' + rowCount + ' entries ready');
+    }
+    if (progressFill) {
+      progressFill.style.width = (rowCount ? (readyCount / rowCount) * 100 : 0) + '%';
+    }
     summary.dataset.readyCount = String(readyCount);
+    summary.dataset.incompleteCount = String(incompleteCount);
   }
 
   function vNew() {
@@ -462,6 +502,8 @@ export function createPayments({ api, refresh }) {
     <aside class="entry-workspace__aside" aria-label="Batch review and save">
     <section id="entrySummary" class="entry-summary" aria-label="Current batch totals">
       <div class="entry-summary__head"><strong>Current batch</strong><span id="batchCount" aria-live="polite">0 ready entries</span></div>
+      <div id="batchProgress" class="entry-summary__progress" role="progressbar" aria-label="Batch completion" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" aria-valuetext="0 of 1 entries ready"><span id="batchProgressFill"></span></div>
+      <p id="batchReadiness" class="entry-summary__readiness" role="status" aria-live="polite">Complete the payee and amount to ready this entry.</p>
       <div class="entry-summary__grid">
         <div class="entry-summary__metric entry-summary__metric--total"><span>Total</span><strong id="batchTotal" data-value="0.00">₹0</strong></div>
         <div class="entry-summary__metric"><span>Cash method</span><strong id="batchCash" data-value="0.00">₹0</strong></div>
