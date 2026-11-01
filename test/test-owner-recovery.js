@@ -165,10 +165,20 @@ async function run() {
     newPassword: 'Final-Owner-Password-2026',
   });
   assert.equal(changed.ok, true);
-  assert.equal(success.g.call('dashboardSummary', { token: changed.data.token }).ok, true);
+  assert.ok(changed.data.token, 'password change returns a fresh authenticated session');
+  assert.equal(
+    success.g.call('dashboardSummary', { token: changed.data.token }).ok,
+    true,
+  );
+  assert.equal(
+    success.g.call('dashboardSummary', { token: login.data.token }).code,
+    'SESSION',
+    'the pre-password-change session is invalidated',
+  );
   assert.equal(
     success.g.call('dashboardSummary', { token: 'preexisting-owner-session' }).code,
     'SESSION',
+    'the pre-recovery session remains invalidated',
   );
 
   const preflightCases = [
