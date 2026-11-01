@@ -75,6 +75,27 @@ try {
   assert.equal(result.apiUrl, customerApiUrl);
   assert.equal(result.environment, 'production');
   assert.equal(result.deploymentId, 'TEST_CUSTOMER_DEPLOYMENT_ID');
+  const assetManifestPath = path.join(outDir, 'asset-manifest.json');
+  assert.ok(fs.existsSync(assetManifestPath), 'customer build emits a public asset manifest');
+  const assetManifest = JSON.parse(fs.readFileSync(assetManifestPath, 'utf8'));
+  assert.equal(assetManifest.schemaVersion, 1);
+  assert.equal(assetManifest.scope, 'public-static-client-assets');
+  assert.ok(assetManifest.summary.files > 0);
+  assert.ok(assetManifest.summary.bytes > 0);
+  assert.ok(assetManifest.summary.gzipBytes > 0);
+  assert.equal(result.assetManifest.files, assetManifest.summary.files);
+  assert.ok(assetManifest.assets.some((asset) => asset.path === 'frontend-workspace.css'));
+  assert.ok(assetManifest.assets.some((asset) => asset.path === 'frontend/features/dashboard.js'));
+  assert.ok(assetManifest.assets.every((asset) =>
+    Number.isSafeInteger(asset.bytes) && asset.bytes > 0 &&
+    Number.isSafeInteger(asset.gzipBytes) && asset.gzipBytes > 0 &&
+    /^[a-f0-9]{64}$/.test(asset.sha256)
+  ), 'every public asset has raw/gzip byte counts and a SHA-256 digest');
+  assert.ok(assetManifest.assets.every((asset) =>
+    !['config.js', '_headers', '.htaccess'].includes(asset.path)
+  ), 'generated endpoint configuration and host policy files are excluded');
+  assert.ok(!JSON.stringify(assetManifest).includes('TEST_CUSTOMER_DEPLOYMENT_ID'));
+  assert.equal(result.files, assetManifest.summary.files + 5);
   for (const file of [
     'index.html',
     'style.css',
@@ -83,6 +104,7 @@ try {
     'manifest.webmanifest',
     'sw.js',
     'config.js',
+    'asset-manifest.json',
     '_headers',
     '.htaccess',
     '.nojekyll',

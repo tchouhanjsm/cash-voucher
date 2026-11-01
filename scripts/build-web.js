@@ -1,6 +1,8 @@
 'use strict';
 
+const crypto = require('node:crypto');
 const fs = require('node:fs');
+const { gzipSync } = require('node:zlib');
 const path = require('node:path');
 
 const STATIC_FILES = [
@@ -196,6 +198,13 @@ window.CV_CONFIG = {
   fs.writeFileSync(path.join(outDir, '.htaccess'), APACHE_SECURITY_HEADERS, 'utf8');
   fs.writeFileSync(path.join(outDir, '.nojekyll'), '', 'utf8');
 
+  const assetManifest = createAssetManifest(outDir);
+  fs.writeFileSync(
+    path.join(outDir, 'asset-manifest.json'),
+    JSON.stringify(assetManifest, null, 2) + '\n',
+    'utf8',
+  );
+
   validateSecurityHeaders(fs.readFileSync(path.join(outDir, '_headers'), 'utf8'), 'pages');
   validateSecurityHeaders(fs.readFileSync(path.join(outDir, '.htaccess'), 'utf8'), 'apache');
 
@@ -204,11 +213,54 @@ window.CV_CONFIG = {
     apiUrl,
     environment,
     deploymentId,
+    assetManifest: assetManifest.summary,
     files:
       STATIC_FILES.length +
-      4 +
+      5 +
       countFiles(path.join(outDir, 'frontend')) +
       countFiles(path.join(outDir, 'icons')),
+  };
+}
+
+function collectRelativeFiles(directory, prefix) {
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const relative = prefix + '/' + entry.name;
+    const absolute = path.join(directory, entry.name);
+    if (entry.isDirectory()) return collectRelativeFiles(absolute, relative);
+    return entry.isFile() ? [relative.split(path.sep).join('/')] : [];
+  });
+}
+
+function createAssetManifest(outDir) {
+  const publicFiles = [
+    ...STATIC_FILES,
+    ...collectRelativeFiles(path.join(outDir, 'frontend'), 'frontend'),
+    ...collectRelativeFiles(path.join(outDir, 'icons'), 'icons'),
+  ].sort();
+
+  const assets = publicFiles.map((relativePath) => {
+    const content = fs.readFileSync(path.join(outDir, relativePath));
+    return {
+      path: relativePath,
+      bytes: content.length,
+      gzipBytes: gzipSync(content, { level: 9 }).length,
+      sha256: crypto.createHash('sha256').update(content).digest('hex'),
+    };
+  });
+  const summary = assets.reduce(
+    (total, asset) => ({
+      files: total.files + 1,
+      bytes: total.bytes + asset.bytes,
+      gzipBytes: total.gzipBytes + asset.gzipBytes,
+    }),
+    { files: 0, bytes: 0, gzipBytes: 0 },
+  );
+
+  return {
+    schemaVersion: 1,
+    scope: 'public-static-client-assets',
+    summary,
+    assets,
   };
 }
 

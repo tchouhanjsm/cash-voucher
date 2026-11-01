@@ -1131,6 +1131,37 @@ with sync_playwright() as p:
         'New Entry adopts the shared header, labelled type switch and dedicated form layout',
     )
     page.wait_for_selector('#rows .erow .payment-method-control', state='visible')
+    row_semantics = page.evaluate("""() => {
+      const row = document.querySelector('#rows .erow');
+      const labelled = (selector) => {
+        const field = row?.querySelector(selector);
+        return Boolean(field && field.closest('label')?.textContent.trim());
+      };
+      return {
+        payeeLabelled: labelled('.rv'), amountLabelled: labelled('.ra'),
+        noteLabelled: labelled('.rn'), categoryLabelled: labelled('.rc'),
+        methodLabelled: labelled('.rci'),
+        receiptInputPresent: Boolean(row?.querySelector('.rf[type="file"][multiple]')),
+        removeActionPresent: Boolean(row?.querySelector('button.x[data-act="delrow"]')),
+      };
+    }""")
+    check(
+        all(row_semantics.values()),
+        f'New Entry row uses labelled native controls and receipt/remove actions; semantics={row_semantics}',
+    )
+    first_entry_row = page.locator('#rows .erow').first
+    first_entry_row.locator('.rv').fill('DOM row renderer probe')
+    first_entry_row.locator('.ra').fill('1')
+    page.locator('#nf [data-act="addrow"]').click()
+    check(
+        page.locator('#rows .erow').count() == 2
+        and page.locator('#rows .erow').nth(1).locator('.rv').get_attribute('aria-label') == 'Paid to, row 2',
+        'repeatable New Entry rows append with accessible row numbering',
+    )
+    page.locator('#rows .erow').nth(1).locator('button.x[data-act="delrow"]').click()
+    first_entry_row.locator('.rv').fill('')
+    first_entry_row.locator('.ra').fill('')
+    check(page.locator('#rows .erow').count() == 1, 'removing a repeatable row preserves the original row')
     entry_style_metrics = page.evaluate("""() => {
       const form = document.querySelector('#nf.entry-form');
       const save = document.querySelector('#nsave');
