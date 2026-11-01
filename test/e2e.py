@@ -591,6 +591,7 @@ with sync_playwright() as p:
     )
 
     comparison_case = {'paid': 1250, 'previousPaid': 1000}
+    comparison_requests = []
     def inject_dashboard_comparison(route):
         try:
             request_data = json.loads(route.request.post_data or '{}')
@@ -601,6 +602,7 @@ with sync_playwright() as p:
             return
         from_date = request_data.get('from', '2026-10-20')
         to_date = request_data.get('to', '2026-10-26')
+        comparison_requests.append({'from': from_date, 'to': to_date, 'case': dict(comparison_case)})
         from_value = datetime.date.fromisoformat(from_date)
         to_value = datetime.date.fromisoformat(to_date)
         period_days = (to_value - from_value).days + 1
@@ -658,21 +660,29 @@ with sync_playwright() as p:
     page.fill('#dFrom', '2026-08-01')
     page.fill('#dTo', '2026-11-01')
     page.click('[data-act=cus]')
-    page.wait_for_function(
-        "Number(document.querySelector('.dashboard-trend-chart')?.dataset.chartPoints || 0) === 4"
-    )
-    monthly_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
-        points: Number(svg.dataset.chartPoints || 0),
-        first: svg.querySelector('.dashboard-trend__x-label')?.textContent || '',
-        last: [...svg.querySelectorAll('.dashboard-trend__x-label')].at(-1)?.textContent || '',
-        description: svg.querySelector('desc')?.textContent || '',
-    })""")
+    page.wait_for_timeout(500)
+    monthly_metrics = page.evaluate("""() => {
+        const svg = document.querySelector('.dashboard-trend-chart');
+        const heading = document.querySelector('.dashboard-trend h2');
+        return {
+            chartPresent: Boolean(svg),
+            points: Number(svg?.dataset.chartPoints || 0),
+            first: svg?.querySelector('.dashboard-trend__x-label')?.textContent || '',
+            last: [...(svg?.querySelectorAll('.dashboard-trend__x-label') || [])].at(-1)?.textContent || '',
+            description: svg?.querySelector('desc')?.textContent || '',
+            title: heading?.innerText || '',
+            body: document.querySelector('#view')?.innerText.slice(0, 700) || '',
+        };
+    }""")
     check(
-        monthly_metrics['points'] == 4
+        monthly_metrics['chartPresent']
+        and monthly_metrics['points'] == 4
         and monthly_metrics['first'] == '08/2026'
         and monthly_metrics['last'] == '11/2026'
-        and 'by month' in monthly_metrics['description'],
-        f'dashboard ranges over 62 days use monthly buckets and labels; metrics={monthly_metrics}',
+        and 'by month' in monthly_metrics['description']
+        and comparison_requests[-1]['from'] == '2026-08-01'
+        and comparison_requests[-1]['to'] == '2026-11-01',
+        f'dashboard ranges over 62 days use monthly buckets and labels; metrics={monthly_metrics}; requests={comparison_requests[-2:]}',
     )
 
     comparison_case = {
@@ -681,16 +691,19 @@ with sync_playwright() as p:
         'trendAmount': 0,
     }
     page.click('[data-act=range][data-k="7d"]')
-    page.wait_for_function(
-        "document.querySelector('.dashboard-trend-chart')?.dataset.empty === 'true'"
-    )
+    page.wait_for_timeout(350)
     zero_chart = page.locator('.dashboard-trend-chart')
-    zero_description = zero_chart.locator('desc').inner_text()
+    zero_metrics = zero_chart.evaluate("""svg => ({
+        empty: svg.dataset.empty,
+        points: svg.querySelectorAll('.dashboard-trend__point').length,
+        description: svg.querySelector('desc')?.textContent || '',
+    })""")
+    zero_description = zero_metrics['description']
     check(
-        zero_chart.get_attribute('data-empty') == 'true'
-        and zero_chart.locator('.dashboard-trend__point').count() == 7
+        zero_metrics['empty'] == 'true'
+        and zero_metrics['points'] == 7
         and 'No approved payment amount' in zero_description,
-        'receipt-only periods render a truthful zero-baseline payment trend without invented movement',
+        'receipt-only periods render a truthful zero-baseline payment trend without invented movement; metrics=' + str(zero_metrics),
     )
     page.unroute('**/api?*', inject_dashboard_comparison)
     go_view(page, 'dash')
