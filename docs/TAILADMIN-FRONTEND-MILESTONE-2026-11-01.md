@@ -47,3 +47,11 @@ Fresh Quality, Browser E2E and Full Flight results must be produced on the lates
 ## Release boundary
 
 Source-only implementation. No merge, deployment, Apps Script push, spreadsheet migration, staging financial write, cPanel publication or production change is part of this milestone.
+
+## Extended workspace adoption — PR #258 candidate
+
+- Extend the same local TailAdmin-inspired tokens and screen-scoped component language across Vendor Management, User Management, Settings, Audit, Bulk Upload, Daily Cash Close and Onboarding. Forms use visible labels; operational panels use consistent card, table, metric, status and responsive layouts.
+- Preserve source-of-truth business data and actions: no demo values, new finance formulas, role changes, route changes or backend API mutations.
+- Replace the repeatable New Entry row's HTML-string parser with DOM construction. Keep the active vendor master, ONE_TIME payee and `vendorId` contracts intact.
+- Add customer build measurement metadata for public assets (raw bytes, gzip bytes and SHA-256) so a later bundling/minification decision can be made from exact build output rather than an unsupported claim.
+- Tailwind's multi-framework reference remains a visual/design reference. No React/Next/Shadcn runtime or CDN assets are introduced.

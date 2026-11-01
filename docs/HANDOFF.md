@@ -1,12 +1,32 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 1 November 2026 (TailAdmin-inspired finance workspace batch added to PR #257; exact-head validation pending)
-**Repository:** tchouhanjsm/cash-voucher
+## Current implementation batch — PR #258
+
+### Scope delivered in this source candidate
+- Replaced the repeatable New Entry row's HTML-string parser with native DOM construction. Input labels, category options, payment methods, receipt inputs and remove actions are created as nodes; existing classes/data-action contracts and payment semantics remain unchanged.
+- Removed one active `innerHTML` assignment from `frontend/features/payments.js`; the checked sink count moves from 17 to 16. The remaining 16 assignments still require contextual review and are not represented as XSS-certified.
+- Added visible, programmatically associated labels to Vendor and User management fields while preserving their existing IDs and backend payloads.
+- Extended the TailAdmin-inspired local design system to Vendor/User management, Settings, Audit, Bulk Upload, Daily Cash Close and Onboarding.
+- Added a deterministic public asset manifest to customer builds with raw/gzip byte sizes and SHA-256 per asset. Generated customer endpoint configuration and host policy files are excluded. This measures the existing modular output; it does not bundle/minify it or claim a load-time improvement.
+
+### Verification required on the exact PR head
+- CI / Quality, Browser E2E, Full Flight and Autonomous Development Monitor.
+- Browser assertions for DOM-built repeatable rows, label association, add/remove flow, mobile touch geometry and the responsive visual review matrix.
+- Static DOM sink count/source fingerprint, customer build manifest, CSP, service-worker and theme/layout contracts.
+
+### Operational items intentionally not performed
+- No staging Google Sheet backup, VendorType migration, Apps Script deployment, cPanel upload, staging transaction or historical correction.
+- No production resource or financial data access.
+- No Lighthouse scores, WCAG certification, live Sheets concurrency/export metrics or deployed security-header claim is made by this source PR. These remain release/UAT acceptance gates.
+- Repository governance remains an owner/admin action: verify protection for `client-main`; this batch does not alter branch/ruleset settings.
+
+**Updated:** 1 November 2026 — consolidated finance workspace, security and measurement batch in PR #258 (source branch; not merged).
+**Repository:** `tchouhanjsm/cash-voucher`
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `05402ba9e8b811ea4f479f37617ab6f3b0fdb4ac` (PR #256 merge commit, 31 October 2026).
-**PR #256 implementation source SHA:** `9c43758e713fe67baa684204543f30f33284527f` on `client/frontend-reliability-vendor-identity-20261031` (pre-merge implementation snapshot; historical gate evidence follows below).
-**Most recent merged PR:** [PR #256 — harden startup, vendor identity and duplicate payments](https://github.com/tchouhanjsm/cash-voucher/pull/256), merged into `client-main` at `05402ba9e8b811ea4f479f37617ab6f3b0fdb4ac`.
-**Release boundary:** PR #256 is integrated in source. This audit did not run a spreadsheet migration, deploy Apps Script, write financial data, or publish a cPanel package. The live staging login page was inspected without authentication; it was not tied to this source SHA.
+**Current integration baseline:** `fea102d7aa1dc6d3a0724005c03bd67ef7734c67` (PR #257 merge commit).
+**Active implementation branch:** `client/finance-workspace-security-ux-performance-20261101`, based on the integration baseline above.
+**Most recent merged PR:** [PR #257 — TailAdmin-inspired finance workspace foundation](https://github.com/tchouhanjsm/cash-voucher/pull/257), merged into `client-main` at `fea102d7aa1dc6d3a0724005c03bd67ef7734c67`.
+**Release boundary:** This batch is source-only. It does not deploy Apps Script, run a spreadsheet migration, write staging/production financial data, upload a cPanel package or change `main`.
 
 ## TailAdmin-inspired finance workspace milestone — PR #257
 
