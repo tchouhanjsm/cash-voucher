@@ -18,7 +18,9 @@ function ownerRecoveryCheck_(checks, key, passed, message) {
   checks.push({ key: String(key), passed: Boolean(passed), message: String(message) });
 }
 function ownerRecoveryEmail_(value) {
-  return String(value === undefined || value === null ? '' : value).trim().toLowerCase();
+  return String(value === undefined || value === null ? '' : value)
+    .trim()
+    .toLowerCase();
 }
 function ownerRecoveryMaskEmail_(email) {
   const parts = String(email || '').split('@');
@@ -32,7 +34,12 @@ function ownerRecoverySheetSchema_(spreadsheet, name) {
   const sheet = spreadsheet.getSheetByName(name);
   if (!sheet || sheet.getLastRow() < 1) return false;
   const actual = sheet.getRange(1, 1, 1, expected.length).getValues()[0];
-  if (!expected.every(function (header, index) { return actual[index] === header; })) return false;
+  if (
+    !expected.every(function (header, index) {
+      return actual[index] === header;
+    })
+  )
+    return false;
   if (typeof sheet.getLastColumn === 'function' && sheet.getLastColumn() !== expected.length) {
     return false;
   }
@@ -97,8 +104,8 @@ function ownerRecoveryPreflight_() {
   try {
     spreadsheetReadable = Boolean(
       spreadsheet &&
-        typeof spreadsheet.getId === 'function' &&
-        spreadsheet.getId() === expectedSpreadsheetId,
+      typeof spreadsheet.getId === 'function' &&
+      spreadsheet.getId() === expectedSpreadsheetId,
     );
   } catch (_) {
     spreadsheetReadable = false;
@@ -122,9 +129,7 @@ function ownerRecoveryPreflight_() {
       : 'The existing password PEPPER is missing.',
   );
 
-  const usersSchemaValid = Boolean(
-    spreadsheet && ownerRecoverySheetSchema_(spreadsheet, 'Users'),
-  );
+  const usersSchemaValid = Boolean(spreadsheet && ownerRecoverySheetSchema_(spreadsheet, 'Users'));
   ownerRecoveryCheck_(
     checks,
     'users_schema',
