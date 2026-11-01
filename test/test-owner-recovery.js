@@ -117,6 +117,33 @@ async function run() {
   assert.equal(JSON.stringify(success.g.cache), cacheBeforePreflight);
   assert.equal(success.g.lockStats.attempts, locksBeforePreflight);
 
+  // Read-only preflight must not require a temporary password or destructive confirmation.
+  const preflightWithoutRecoverySecrets = makeReady();
+  delete preflightWithoutRecoverySecrets.g.props.OWNER_RECOVERY_PASSWORD;
+  delete preflightWithoutRecoverySecrets.g.props.OWNER_RECOVERY_CONFIRM;
+  const preflightOnlyPropsBefore = JSON.stringify(preflightWithoutRecoverySecrets.g.props);
+  const preflightOnly = preflightWithoutRecoverySecrets.g.passwordRecoveryPreflight();
+  assert.equal(preflightOnly.ready, true);
+  assert.equal(preflightOnly.readOnly, true);
+  assert.equal(
+    JSON.stringify(preflightWithoutRecoverySecrets.g.props),
+    preflightOnlyPropsBefore,
+  );
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(
+      preflightWithoutRecoverySecrets.g.props,
+      'OWNER_RECOVERY_PASSWORD',
+    ),
+    false,
+  );
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(
+      preflightWithoutRecoverySecrets.g.props,
+      'OWNER_RECOVERY_CONFIRM',
+    ),
+    false,
+  );
+
   const recovered = success.g.passwordRecoveryTool();
   assert.equal(recovered.status, 'RECOVERY_COMPLETED');
   assert.equal(recovered.recovered, true);
