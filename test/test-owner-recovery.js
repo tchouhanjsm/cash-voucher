@@ -11,9 +11,9 @@ function configureRecovery(g, overrides = {}) {
 }
 function matchingRow(g, email) {
   const emailColumn = g.sheets.Users.rows[0].indexOf('Email');
-  return g.sheets.Users.rows.slice(1).find(
-    (row) => String(row[emailColumn]).toLowerCase() === email.toLowerCase(),
-  );
+  return g.sheets.Users.rows
+    .slice(1)
+    .find((row) => String(row[emailColumn]).toLowerCase() === email.toLowerCase());
 }
 function credentialSnapshot(row) {
   return {
@@ -99,12 +99,17 @@ async function run() {
   const preflight = success.g.ownerRecoveryPreflight();
   assert.equal(preflight.ready, true);
   assert.equal(preflight.readOnly, true);
-  assert.equal(preflight.checks.every((check) => check.passed), true);
+  assert.equal(
+    preflight.checks.every((check) => check.passed),
+    true,
+  );
   assert.equal(preflight.owner.email, 'ow***@test.com');
   assert.equal(JSON.stringify(success.g.props), propsBeforePreflight);
   assert.equal(
     JSON.stringify(
-      Object.fromEntries(Object.entries(success.g.sheets).map(([name, sheet]) => [name, sheet.rows])),
+      Object.fromEntries(
+        Object.entries(success.g.sheets).map(([name, sheet]) => [name, sheet.rows]),
+      ),
     ),
     rowsBeforePreflight,
   );
@@ -128,10 +133,13 @@ async function run() {
   assert.equal(success.g.cache['f:other@test.com'], '2');
   assert.equal(success.g.cache['pf:other-user'], '1');
   assert.ok(success.g.cache['s:preexisting-owner-session']);
-  assert.equal(after.hash, success.g.expectedPasswordHash(after.salt, 'Secure-Temporary-Password-2026'));
-  const auditEvent = success.g.sheets.AuditLog.rows.slice(auditStart).find(
-    (row) => row[2] === 'PASSWORD_RESET',
+  assert.equal(
+    after.hash,
+    success.g.expectedPasswordHash(after.salt, 'Secure-Temporary-Password-2026'),
   );
+  const auditEvent = success.g.sheets.AuditLog.rows
+    .slice(auditStart)
+    .find((row) => row[2] === 'PASSWORD_RESET');
   assert.ok(auditEvent);
   const auditDetails = JSON.parse(auditEvent[4]);
   assert.equal(auditDetails.eventType, 'USER_PASSWORD_RESET');
@@ -158,7 +166,10 @@ async function run() {
   });
   assert.equal(changed.ok, true);
   assert.equal(success.g.call('dashboardSummary', { token: changed.data.token }).ok, true);
-  assert.equal(success.g.call('dashboardSummary', { token: 'preexisting-owner-session' }).code, 'SESSION');
+  assert.equal(
+    success.g.call('dashboardSummary', { token: 'preexisting-owner-session' }).code,
+    'SESSION',
+  );
 
   const preflightCases = [
     [makeReady({ scriptId: 'WRONG_SCRIPT' }), 'script identity'],
@@ -195,7 +206,9 @@ async function run() {
   for (const [fixture, label] of preflightCases) {
     const propsBefore = JSON.stringify(fixture.g.props);
     const rowsBefore = JSON.stringify(
-      Object.fromEntries(Object.entries(fixture.g.sheets).map(([name, sheet]) => [name, sheet.rows])),
+      Object.fromEntries(
+        Object.entries(fixture.g.sheets).map(([name, sheet]) => [name, sheet.rows]),
+      ),
     );
     const cacheBefore = JSON.stringify(fixture.g.cache);
     const locksBefore = fixture.g.lockStats.attempts;
