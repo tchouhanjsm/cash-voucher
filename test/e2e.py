@@ -6190,22 +6190,35 @@ with sync_playwright() as p:
         ),
         'dashboard bars clamp computed widths to finite 0–100% values',
     )
-    trend_geometry = page.locator('svg.chart rect.b').evaluate_all(
-        "elements => elements.map(element => ({y: element.getAttribute('y'), height: element.getAttribute('height')}))"
-    )
+    trend_geometry = page.locator('.dashboard-trend-chart').evaluate("""svg => {
+        const numeric = value => value !== null && value.trim() !== '' && Number.isFinite(Number(value));
+        const viewBox = (svg.getAttribute('viewBox') || '').split(/\\s+/).map(Number);
+        const points = [...svg.querySelectorAll('.dashboard-trend__point')].map(point => ({
+            cx: point.getAttribute('cx'), cy: point.getAttribute('cy'), radius: point.getAttribute('r'),
+        }));
+        const paths = [...svg.querySelectorAll('.dashboard-trend__area, .dashboard-trend__line')].map(path => {
+            const d = path.getAttribute('d') || '';
+            const values = d.match(/[-+]?(?:\\d*\\.)?\\d+(?:[eE][-+]?\\d+)?/g) || [];
+            return {hasPath: /[MLZ]/.test(d), values, finite: values.length > 0 && values.every(value => Number.isFinite(Number(value)))};
+        });
+        const guides = [...svg.querySelectorAll('.dashboard-trend__gridline')].map(line =>
+            ['x1', 'y1', 'x2', 'y2'].map(key => line.getAttribute(key))
+        );
+        return {
+            viewBox, points, paths, guides,
+            pointsValid: points.length > 0 && points.every(point =>
+                numeric(point.cx) && numeric(point.cy) && numeric(point.radius) &&
+                Number(point.cx) >= 0 && Number(point.cx) <= viewBox[2] &&
+                Number(point.cy) >= 0 && Number(point.cy) <= viewBox[3] && Number(point.radius) >= 0
+            ),
+            guidesValid: guides.length > 0 && guides.every(values => values.every(numeric)),
+            pathsValid: paths.length === 2 && paths.every(path => path.hasPath && path.finite),
+        };
+    }""")
     check(
-        bool(trend_geometry)
-        and all(
-            value['y'] is not None
-            and value['height'] is not None
-            and all(
-                part.lower() != 'nan' and part.lower() not in ('infinity', '-infinity')
-                for part in (value['y'], value['height'])
-            )
-            and float(value['height']) >= 0
-            for value in trend_geometry
-        ),
-        'dashboard SVG trend bars keep finite non-negative vertical geometry',
+        trend_geometry['pointsValid'] and trend_geometry['guidesValid'] and trend_geometry['pathsValid']
+        and trend_geometry['viewBox'] == [0, 0, 920, 260],
+        f'dashboard SVG trend keeps finite, in-bounds point/path/grid geometry; metrics={trend_geometry}',
     )
     vendor_texts = page.locator('.hb-l').all_inner_texts()
     hostile_vendor_visible = any(hostile_vendor in label for label in vendor_texts)
