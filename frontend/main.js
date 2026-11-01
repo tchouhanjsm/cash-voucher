@@ -115,6 +115,7 @@ registerActions({
 
   range: ({ key }) => {
     dashboard.state.r = key;
+    dashboard.state.customDraft = key === 'cus';
     dashboard.render();
   },
 
@@ -130,6 +131,7 @@ registerActions({
     dashboard.state.from = from;
     dashboard.state.to = to;
     dashboard.state.r = 'cus';
+    dashboard.state.customDraft = false;
     dashboard.render();
   },
 

@@ -14,7 +14,7 @@ import {
 import { head, icon, refreshBtn } from '../core/ui.js';
 
 export function createDashboard({ api }) {
-  const D = { r: '30d', from: '', to: '' };
+  const D = { r: '30d', from: '', to: '', customDraft: false };
 
   function range() {
     const current = today();
@@ -68,48 +68,154 @@ export function createDashboard({ api }) {
     });
 
     const keys = [];
-
     if (monthly) {
-      const date = new Date(from.slice(0, 7) + '-01T00:00:00.000Z');
+      const cursor = new Date(from.slice(0, 7) + '-01T00:00:00.000Z');
       const end = to.slice(0, 7);
-
-      while (iso(date).slice(0, 7) <= end) {
-        keys.push(iso(date).slice(0, 7));
-        date.setUTCMonth(date.getUTCMonth() + 1);
+      while (iso(cursor).slice(0, 7) <= end) {
+        keys.push(iso(cursor).slice(0, 7));
+        cursor.setUTCMonth(cursor.getUTCMonth() + 1);
       }
     } else {
-      for (let index = 0; index < days; index++) {
-        keys.push(addDays(from, index));
-      }
+      for (let index = 0; index < days; index += 1) keys.push(addDays(from, index));
     }
 
     const values = keys.map((key) => amounts.get(key) || 0);
-    const max = Math.max(1, ...values);
-    const width = Math.max(280, Math.min(1100, innerWidth - (innerWidth > 800 ? 262 : 24) - 34));
-    const height = 190;
-    const left = 8;
-    const bottom = 22;
-    const barWidth = (width - left * 2) / keys.length;
-    const step = Math.ceil(keys.length / Math.max(3, Math.floor(width / 70)));
+    const maximum = Math.max(0, ...values);
+    const scaleMaximum = maximum || 1;
+    const width = 920;
+    const height = 260;
+    const left = 76;
+    const right = 22;
+    const top = 22;
+    const bottom = 40;
+    const plotWidth = width - left - right;
+    const plotHeight = height - top - bottom;
+    const baseline = top + plotHeight;
+    const xAt = (index) =>
+      keys.length === 1 ? left + plotWidth / 2 : left + (index / (keys.length - 1)) * plotWidth;
+    const yAt = (amount) => top + plotHeight - (amount / scaleMaximum) * plotHeight;
+    const points = values.map((amount, index) => ({
+      x: xAt(index),
+      y: yAt(amount),
+      amount,
+      key: keys[index],
+      label: monthly ? keys[index].slice(5, 7) + '/' + keys[index].slice(0, 4) : dmy(keys[index]),
+      axisLabel: monthly
+        ? keys[index].slice(5, 7) + '/' + keys[index].slice(0, 4)
+        : keys[index].slice(8, 10) + '/' + keys[index].slice(5, 7),
+    }));
+    const pointPath = points
+      .map(
+        (point, index) =>
+          (index === 0 ? 'M ' : 'L ') + point.x.toFixed(2) + ' ' + point.y.toFixed(2),
+      )
+      .join(' ');
+    const firstPoint = points[0];
+    const lastPoint = points[points.length - 1];
+    const areaPath =
+      pointPath +
+      ' L ' +
+      lastPoint.x.toFixed(2) +
+      ' ' +
+      baseline.toFixed(2) +
+      ' L ' +
+      firstPoint.x.toFixed(2) +
+      ' ' +
+      baseline.toFixed(2) +
+      ' Z';
+
+    const tickFractions = maximum > 0 ? [0, 0.5, 1] : [0];
+    const grid = tickFractions
+      .map((fraction) => {
+        const y = top + plotHeight - fraction * plotHeight;
+        return (
+          '<line class="dashboard-trend__gridline" x1="' +
+          left +
+          '" y1="' +
+          y.toFixed(2) +
+          '" x2="' +
+          (width - right) +
+          '" y2="' +
+          y.toFixed(2) +
+          '"></line><text class="dashboard-trend__axis-label" x="' +
+          (left - 10) +
+          '" y="' +
+          (y + 4).toFixed(2) +
+          '" text-anchor="end">' +
+          esc(money(maximum * fraction)) +
+          '</text>'
+        );
+      })
+      .join('');
+
+    const labelStep = Math.max(1, Math.ceil(keys.length / 9));
+    const axisLabels = points
+      .map((point, index) =>
+        index % labelStep === 0 || index === points.length - 1
+          ? '<text class="dashboard-trend__axis-label dashboard-trend__x-label" x="' +
+            point.x.toFixed(2) +
+            '" y="' +
+            (height - 12) +
+            '" text-anchor="middle">' +
+            esc(point.axisLabel) +
+            '</text>'
+          : '',
+      )
+      .join('');
+    const pointMarks = points
+      .map(
+        (point) =>
+          '<circle class="dashboard-trend__point" cx="' +
+          point.x.toFixed(2) +
+          '" cy="' +
+          point.y.toFixed(2) +
+          '" r="3"><title>' +
+          esc(point.label) +
+          ': ' +
+          esc(money(point.amount)) +
+          '</title></circle>',
+      )
+      .join('');
+    const description =
+      maximum > 0
+        ? 'Approved payment amounts are grouped ' +
+          (monthly ? 'by month' : 'by business date') +
+          ' from ' +
+          dmy(from) +
+          ' through ' +
+          dmy(to) +
+          '. Each point includes its exact amount.'
+        : 'No approved payment amount appears in the trend buckets for the selected period.';
 
     return (
-      `<svg class="chart" viewBox="0 0 ${width} ${height}" role="img" aria-label="Spending trend">` +
-      keys
-        .map((key, index) => {
-          const barHeight = Math.max(
-            values[index] ? 2 : 0,
-            (values[index] / max) * (height - bottom - 18),
-          );
-
-          return (
-            `<rect class="b" x="${left + index * barWidth + 1}" y="${height - bottom - barHeight}" width="${Math.max(1, barWidth - 2)}" height="${barHeight}" rx="2"><title>${esc(monthly ? key : dmy(key))}: ${money(values[index])}</title></rect>` +
-            (index % step === 0
-              ? `<text x="${left + index * barWidth}" y="${height - 6}">${esc(monthly ? key : key.slice(8) + '/' + key.slice(5, 7))}</text>`
-              : '')
-          );
-        })
-        .join('') +
-      `<text x="${left}" y="11">Peak ${money(max)}</text></svg>`
+      '<div class="dashboard-trend__scroll" role="region" aria-label="Scrollable approved payment trend" tabindex="0">' +
+      '<svg class="chart dashboard-trend-chart" width="' +
+      width +
+      '" height="' +
+      height +
+      '" viewBox="0 0 ' +
+      width +
+      ' ' +
+      height +
+      '" role="img" aria-labelledby="dashboardTrendChartTitle dashboardTrendChartDescription" data-chart-points="' +
+      keys.length +
+      '" data-empty="' +
+      (maximum === 0 ? 'true' : 'false') +
+      '">' +
+      '<title id="dashboardTrendChartTitle">Approved payment trend</title>' +
+      '<desc id="dashboardTrendChartDescription">' +
+      esc(description) +
+      '</desc>' +
+      '<defs><linearGradient id="dashboardTrendFill" x1="0" y1="0" x2="0" y2="1"><stop class="dashboard-trend__gradient-start" offset="0%"></stop><stop class="dashboard-trend__gradient-end" offset="100%"></stop></linearGradient></defs>' +
+      grid +
+      '<path class="dashboard-trend__area" d="' +
+      areaPath +
+      '"></path><path class="dashboard-trend__line" d="' +
+      pointPath +
+      '"></path>' +
+      pointMarks +
+      axisLabels +
+      '</svg></div>'
     );
   }
 
@@ -479,6 +585,18 @@ export function createDashboard({ api }) {
       return;
     }
 
+    if (D.r === 'cus' && D.customDraft) {
+      appendStatusCard(
+        body,
+        'Choose the From and To dates, then apply the range. Dashboard totals stay unchanged until the custom selection is applied.',
+        {
+          className: 'card dashboard-custom-range-prompt',
+          title: 'Custom date range not applied',
+        },
+      );
+      return;
+    }
+
     if (!from || !to || from > to) {
       appendStatusCard(body, 'Choose a valid date range before loading dashboard totals.', {
         className: 'card error',
@@ -534,7 +652,19 @@ export function createDashboard({ api }) {
     const length = summary.periodDays;
     const total = summary.paid;
     const previousTotal = summary.previousPaid;
-    const delta = previousTotal ? ((total - previousTotal) / previousTotal) * 100 : null;
+    const delta = previousTotal > 0 ? ((total - previousTotal) / previousTotal) * 100 : null;
+    const comparisonDirection =
+      delta === null ? 'zero-baseline' : delta === 0 ? 'flat' : delta > 0 ? 'increase' : 'decrease';
+    const comparisonText =
+      delta === null
+        ? 'Previous period paid ' + money(previousTotal) + ' · percentage change unavailable'
+        : delta === 0
+          ? 'No change vs previous ' + length + ' days'
+          : (delta > 0 ? '↑ ' : '↓ ') +
+            Math.abs(delta).toFixed(0) +
+            '% vs previous ' +
+            length +
+            ' days';
     const paymentCountValid =
       Number.isSafeInteger(summary.paymentCount) && summary.paymentCount >= 0;
     const paymentCount = summary.paymentCount;
@@ -661,7 +791,7 @@ export function createDashboard({ api }) {
       ? ''
       : `
       <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--staff'}">
-        <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="${delta === null ? 'muted' : delta > 0 ? 'up' : 'down'}">${delta === null ? 'no earlier data' : (delta > 0 ? '▲ ' : '▼ ') + Math.abs(delta).toFixed(0) + '% vs previous ' + length + ' days'}</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Total paid</span><b>${money(total)}</b><small class="dashboard-period-comparison" data-direction="${comparisonDirection}">${esc(comparisonText)}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small></div>

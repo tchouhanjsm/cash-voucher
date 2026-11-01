@@ -13,6 +13,10 @@ const dashboard = read('frontend/features/dashboard.js');
 const payments = read('frontend/features/payments.js');
 const register = read('frontend/features/register.js');
 const reports = read('frontend/features/reports.js');
+const administration = read('frontend/features/administration.js');
+const cashClose = read('frontend/features/cash-close.js');
+const bulk = read('frontend/features/bulk.js');
+const onboarding = read('frontend/features/onboarding.js');
 
 const uiKitPosition = html.indexOf('frontend-ui-kit.css');
 const workspacePosition = html.indexOf('frontend-workspace.css');
@@ -57,8 +61,18 @@ assert.match(
 );
 assert.match(
   styles,
-  /\.dashboard-view \.dashboard-trend \.chart \.b/,
-  'trend chart bars use the workspace accent',
+  /\.dashboard-view \.dashboard-trend__line/,
+  'dashboard trend line uses the workspace accent',
+);
+assert.match(
+  styles,
+  /\.dashboard-view \.dashboard-trend__area/,
+  'dashboard trend surface has a token-driven area fill',
+);
+assert.match(
+  styles,
+  /\.dashboard-view \.dashboard-period-comparison/,
+  'period comparisons use neutral semantics instead of green/red financial judgement',
 );
 assert.match(styles, /min-height:\s*44px/, 'workspace preserves the 44px touch target baseline');
 assert.match(styles, /@media \(max-width:\s*800px\)/, 'workspace defines a mobile shell');
@@ -112,7 +126,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v45'/,
+  /const C = 'cv2-v46'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -160,6 +174,20 @@ assert.match(
 );
 assert.match(payments, /batchProgress/, 'new voucher exposes batch completion progress');
 assert.match(payments, /batchReadiness/, 'new voucher explains incomplete entry rows');
+const rowRendererStart = payments.indexOf('function createEntryRow()');
+const rowRendererEnd = payments.indexOf('function labelRows()', rowRendererStart);
+assert.ok(rowRendererStart >= 0 && rowRendererEnd > rowRendererStart);
+const rowRenderer = payments.slice(rowRendererStart, rowRendererEnd);
+assert.doesNotMatch(rowRenderer, /innerHTML|insertAdjacentHTML|outerHTML/);
+assert.match(rowRenderer, /textContent\s*=/);
+assert.match(rowRenderer, /catOptionsNode\('Other', NT\)/);
+assert.match(rowRenderer, /option\.textContent = PAYMENT_METHOD_LABELS\[method\]/);
+assert.match(administration, /<label for="vn">Vendor name/);
+assert.match(administration, /<label for="vdcat">Default category/);
+assert.match(administration, /<label for="un">Name/);
+assert.match(administration, /<label for="ue">Email address/);
+assert.match(administration, /<label for="ur">User role/);
+assert.match(administration, /<label for="up">Temporary password/);
 assert.match(
   register,
   /registerPageMeta/,
@@ -170,11 +198,70 @@ assert.match(
   /report-method-bar/,
   'reports visualize server-derived payment-method totals',
 );
+for (const [source, pattern, description] of [
+  [administration, /settings-layout/, 'settings use an organized workspace layout'],
+  [administration, /audit-panel/, 'audit uses a records workspace'],
+  [bulk, /bulk-review-panel/, 'bulk import has a distinct review workspace'],
+  [cashClose, /cc-metrics/, 'cash close retains reconciliation metrics'],
+  [onboarding, /onboarding-summary/, 'onboarding exposes readiness summaries'],
+])
+  assert.match(source, pattern, description);
+for (const selector of [
+  '.settings-layout',
+  '.settings-diagnostics',
+  '.audit-panel',
+  '.audit-filters',
+  '.bulk-import-panel',
+  '.bulk-review-panel',
+  '.cc-preview',
+  '.cc-metrics',
+  '.cc-method-grid',
+  '.onboarding-page',
+  '.onboarding-summary',
+  '.onboarding-steps',
+])
+  assert.ok(styles.includes(selector), 'workspace styling covers ' + selector);
 
 // Dashboard amounts and chart data remain owned by the validated server read model.
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
+assert.match(
+  dashboard,
+  /dashboard-trend__gridline/,
+  'dashboard trend exposes horizontal value guides',
+);
+assert.match(dashboard, /dashboard-trend__point/, 'dashboard trend exposes exact-value SVG points');
+assert.match(
+  dashboard,
+  /aria-labelledby="dashboardTrendChartTitle dashboardTrendChartDescription"/,
+  'dashboard chart has a title and descriptive accessible name',
+);
+assert.match(
+  dashboard,
+  /dashboard-trend__scroll/,
+  'dashboard chart remains legible in a keyboard-scrollable region',
+);
+assert.match(
+  dashboard,
+  /customDraft/,
+  'custom dashboard ranges wait for an explicit Apply before loading summary data',
+);
+assert.match(
+  dashboard,
+  /Custom date range not applied/,
+  'unapplied custom dashboard selections have a clear pending state',
+);
+assert.match(
+  dashboard,
+  /percentage change unavailable/,
+  'zero previous-period totals do not claim no historical data',
+);
+assert.match(
+  dashboard,
+  /No change vs previous/,
+  'flat period comparisons are not presented as downward movement',
+);
 
 console.log(
   'TailAdmin-inspired workspace OK — local design layer, responsive states, data integrity and PWA integration.',

@@ -590,6 +590,139 @@ with sync_playwright() as p:
         'dashboard recovers after the controlled empty-summary response is removed',
     )
 
+    comparison_case = {'paid': 1250, 'previousPaid': 1000}
+    comparison_requests = []
+    def inject_dashboard_comparison(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        if request_data.get('action') != 'dashboardSummary':
+            route.continue_()
+            return
+        from_date = request_data.get('from', '2026-10-20')
+        to_date = request_data.get('to', '2026-10-26')
+        comparison_requests.append({'from': from_date, 'to': to_date, 'case': dict(comparison_case)})
+        from_value = datetime.date.fromisoformat(from_date)
+        to_value = datetime.date.fromisoformat(to_date)
+        period_days = (to_value - from_value).days + 1
+        monthly = period_days > 62
+        trend_key = to_date[:7] if monthly else to_date
+        paid = comparison_case['paid']
+        payload = {
+            'ok': True,
+            'data': {
+                'from': from_date, 'to': to_date, 'periodDays': period_days,
+                'trendMonthly': monthly,
+                'trend': [{'date': trend_key, 'amount': comparison_case.get('trendAmount', paid)}],
+                'paid': paid, 'previousPaid': comparison_case['previousPaid'],
+                'paymentCount': comparison_case.get('paymentCount', 1),
+                'validPaymentCount': comparison_case.get('validPaymentCount', 1),
+                'largest': comparison_case.get('largest', {'amount': paid, 'vendor': 'Comparison test'}),
+                'todayPaid': 0, 'todayPaymentCount': 0,
+                'received': 0, 'receiptCount': comparison_case.get('receiptCount', 0), 'bookBalance': 0,
+                'topVendors': [] if comparison_case.get('paymentCount', 1) == 0 else [{'k': 'Comparison test', 'n': 1, 's': paid}],
+                'byCategory': [], 'byTeamMember': [], 'byPaymentMethod': [],
+                'approvalExceptionCount': 0, 'invalidAmountCount': 0,
+                'malformedRecordCount': 0, 'malformedFieldCount': 0,
+            },
+        }
+        route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
+
+    page.route('**/api?*', inject_dashboard_comparison)
+    for case in [
+        {'paid': 1250, 'previousPaid': 0, 'direction': 'zero-baseline', 'copy': 'percentage change unavailable'},
+        {'paid': 1000, 'previousPaid': 1000, 'direction': 'flat', 'copy': 'No change vs previous 7 days'},
+        {'paid': 1250, 'previousPaid': 1000, 'direction': 'increase', 'copy': '↑ 25% vs previous 7 days'},
+        {'paid': 750, 'previousPaid': 1000, 'direction': 'decrease', 'copy': '↓ 25% vs previous 7 days'},
+    ]:
+        comparison_case = case
+        page.click('[data-act=range][data-k="7d"]')
+        page.wait_for_function(
+            "direction => document.querySelector('.dashboard-period-comparison')?.dataset.direction === direction",
+            arg=case['direction'],
+        )
+        comparison = page.locator('.dashboard-period-comparison')
+        check(
+            case['copy'] in comparison.inner_text()
+            and comparison.get_attribute('data-direction') == case['direction']
+            and 'up' not in (comparison.get_attribute('class') or '')
+            and 'down' not in (comparison.get_attribute('class') or ''),
+            'dashboard comparison reports ' + case['direction'] + ' without implying business-good/bad status',
+        )
+    comparison_case = {
+        'paid': 3200, 'previousPaid': 0, 'paymentCount': 1,
+        'validPaymentCount': 1, 'largest': {'amount': 3200, 'vendor': 'Monthly test'},
+        'trendAmount': 3200,
+    }
+    requests_before_custom = len(comparison_requests)
+    page.click('[data-act=range][data-k="cus"]')
+    page.wait_for_selector('#dFrom')
+    check(
+        len(comparison_requests) == requests_before_custom
+        and page.locator('.dashboard-custom-range-prompt').count() == 1,
+        'opening Custom does not fetch fallback totals or allow an async redraw to overwrite the date form',
+    )
+    page.fill('#dFrom', '2026-08-01')
+    page.fill('#dTo', '2026-11-01')
+    check(
+        page.locator('#dFrom').input_value() == '2026-08-01'
+        and page.locator('#dTo').input_value() == '2026-11-01',
+        'custom date draft retains both user-selected business dates before apply',
+    )
+    page.click('[data-act=cus]')
+    page.wait_for_function(
+        "Number(document.querySelector('.dashboard-trend-chart')?.dataset.chartPoints || 0) === 4"
+    )
+    monthly_metrics = page.evaluate("""() => {
+        const svg = document.querySelector('.dashboard-trend-chart');
+        const heading = document.querySelector('.dashboard-trend h2');
+        return {
+            chartPresent: Boolean(svg),
+            points: Number(svg?.dataset.chartPoints || 0),
+            first: svg?.querySelector('.dashboard-trend__x-label')?.textContent || '',
+            last: [...(svg?.querySelectorAll('.dashboard-trend__x-label') || [])].at(-1)?.textContent || '',
+            description: svg?.querySelector('desc')?.textContent || '',
+            title: heading?.innerText || '',
+            body: document.querySelector('#view')?.innerText.slice(0, 700) || '',
+        };
+    }""")
+    check(
+        monthly_metrics['chartPresent']
+        and monthly_metrics['points'] == 4
+        and monthly_metrics['first'] == '08/2026'
+        and monthly_metrics['last'] == '11/2026'
+        and 'by month' in monthly_metrics['description']
+        and comparison_requests[-1]['from'] == '2026-08-01'
+        and comparison_requests[-1]['to'] == '2026-11-01',
+        f'dashboard ranges over 62 days use monthly buckets and labels; metrics={monthly_metrics}; requests={comparison_requests[-2:]}',
+    )
+
+    comparison_case = {
+        'paid': 0, 'previousPaid': 0, 'paymentCount': 0,
+        'validPaymentCount': 0, 'largest': None, 'receiptCount': 1,
+        'trendAmount': 0,
+    }
+    page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_timeout(350)
+    zero_chart = page.locator('.dashboard-trend-chart')
+    zero_metrics = zero_chart.evaluate("""svg => ({
+        empty: svg.dataset.empty,
+        points: svg.querySelectorAll('.dashboard-trend__point').length,
+        description: svg.querySelector('desc')?.textContent || '',
+    })""")
+    zero_description = zero_metrics['description']
+    check(
+        zero_metrics['empty'] == 'true'
+        and zero_metrics['points'] == 7
+        and 'No approved payment amount' in zero_description,
+        'receipt-only periods render a truthful zero-baseline payment trend without invented movement; metrics=' + str(zero_metrics),
+    )
+    comparison_case = {'paid': 1250, 'previousPaid': 1000}
+    page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_selector('.dashboard-trend-chart', state='visible')
+    page.unroute('**/api?*', inject_dashboard_comparison)
+
     page.click('#userBtn')
     page.locator('#userPop button[data-go="acct"]').first.click()
     page.wait_for_selector('#pf')
@@ -872,6 +1005,32 @@ with sync_playwright() as p:
         else:
             go_view(page, route_id)
         page.wait_for_selector(ready_selector, state='visible', timeout=10000)
+        if route_id == 'dash':
+            page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
+            chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
+                role: svg.getAttribute('role'),
+                title: svg.querySelector('title')?.textContent || '',
+                description: svg.querySelector('desc')?.textContent || '',
+                labelledBy: svg.getAttribute('aria-labelledby') || '',
+                pointCount: svg.querySelectorAll('.dashboard-trend__point').length,
+                guideCount: svg.querySelectorAll('.dashboard-trend__gridline').length,
+                hasArea: Boolean(svg.querySelector('.dashboard-trend__area[d]')),
+                hasLine: Boolean(svg.querySelector('.dashboard-trend__line[d]')),
+                viewBox: svg.getAttribute('viewBox') || '',
+                pointBuckets: Number(svg.dataset.chartPoints || 0),
+            })""")
+            check(
+                chart_metrics['role'] == 'img'
+                and chart_metrics['title'] == 'Approved payment trend'
+                and chart_metrics['description']
+                and chart_metrics['labelledBy'] == 'dashboardTrendChartTitle dashboardTrendChartDescription'
+                and chart_metrics['hasArea'] and chart_metrics['hasLine']
+                and chart_metrics['pointCount'] == chart_metrics['pointBuckets']
+                and chart_metrics['pointBuckets'] > 0
+                and chart_metrics['guideCount'] >= 1
+                and chart_metrics['viewBox'] == '0 0 920 260',
+                f'dashboard trend is a responsive, titled SVG with exact-value points; metrics={chart_metrics}',
+            )
         page.wait_for_selector('#view .page-header h1', state='visible', timeout=10000)
         check(
             page.locator('#view .page-header h1').count() == 1
@@ -1131,6 +1290,37 @@ with sync_playwright() as p:
         'New Entry adopts the shared header, labelled type switch and dedicated form layout',
     )
     page.wait_for_selector('#rows .erow .payment-method-control', state='visible')
+    row_semantics = page.evaluate("""() => {
+      const row = document.querySelector('#rows .erow');
+      const labelled = (selector) => {
+        const field = row?.querySelector(selector);
+        return Boolean(field && field.closest('label')?.textContent.trim());
+      };
+      return {
+        payeeLabelled: labelled('.rv'), amountLabelled: labelled('.ra'),
+        noteLabelled: labelled('.rn'), categoryLabelled: labelled('.rc'),
+        methodLabelled: labelled('.rci'),
+        receiptInputPresent: Boolean(row?.querySelector('.rf[type="file"][multiple]')),
+        removeActionPresent: Boolean(row?.querySelector('button.x[data-act="delrow"]')),
+      };
+    }""")
+    check(
+        all(row_semantics.values()),
+        f'New Entry row uses labelled native controls and receipt/remove actions; semantics={row_semantics}',
+    )
+    first_entry_row = page.locator('#rows .erow').first
+    first_entry_row.locator('.rv').fill('DOM row renderer probe')
+    first_entry_row.locator('.ra').fill('1')
+    page.locator('#nf [data-act="addrow"]').click()
+    check(
+        page.locator('#rows .erow').count() == 2
+        and page.locator('#rows .erow').nth(1).locator('.rv').get_attribute('aria-label') == 'Paid to, row 2',
+        'repeatable New Entry rows append with accessible row numbering',
+    )
+    page.locator('#rows .erow').nth(1).locator('button.x[data-act="delrow"]').click()
+    first_entry_row.locator('.rv').fill('')
+    first_entry_row.locator('.ra').fill('')
+    check(page.locator('#rows .erow').count() == 1, 'removing a repeatable row preserves the original row')
     entry_style_metrics = page.evaluate("""() => {
       const form = document.querySelector('#nf.entry-form');
       const save = document.querySelector('#nsave');
@@ -1186,19 +1376,62 @@ with sync_playwright() as p:
       const top = row?.querySelector('.top');
       const note = row?.querySelector('.rn');
       const remove = row?.querySelector('.x');
+      const layoutElements = ['.app', '.main', '#view', '#nf', '.entry-workspace__main', '.entry-workspace__aside', '#rows', '.erow']
+        .map((selector) => {
+          const element = document.querySelector(selector);
+          if (!element) return {selector, missing: true};
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            selector,
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            minWidth: style.minWidth,
+            widthStyle: style.width,
+            gridTemplateColumns: style.gridTemplateColumns,
+          };
+        });
+      const overflowElements = [...document.querySelectorAll('body *')]
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            tag: element.tagName.toLowerCase(),
+            id: element.id,
+            className: typeof element.className === 'string' ? element.className : '',
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            overflowX: style.overflowX,
+            display: style.display,
+          };
+        })
+        .filter((item) => item.display !== 'none' && item.width > 0 && (item.left < -1 || item.right > window.innerWidth + 1))
+        .sort((left, right) => right.right - left.right)
+        .slice(0, 12);
       return {
         columns: top ? getComputedStyle(top).gridTemplateColumns.trim().split(/\\s+/).length : 0,
         noteWidth: note?.getBoundingClientRect().width || 0,
         removeWidth: remove?.getBoundingClientRect().width || 0,
         horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        scrollX: window.scrollX,
+        layoutElements,
+        overflowElements,
       };
     }""")
     check(
         desktop_entry_metrics['columns'] >= 4
         and desktop_entry_metrics['noteWidth'] >= 140
         and desktop_entry_metrics['removeWidth'] >= 44
+        and desktop_entry_metrics['layoutElements'][4]['left']
+        < desktop_entry_metrics['layoutElements'][5]['left']
+        and desktop_entry_metrics['layoutElements'][4]['width']
+        > desktop_entry_metrics['layoutElements'][5]['width']
         and not desktop_entry_metrics['horizontalOverflow'],
-        'desktop payment row allocates four distinct tracks without stretched remove controls or overflow',
+        f'desktop payment row allocates four distinct tracks without stretched remove controls or overflow; metrics={desktop_entry_metrics}',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
     page.locator('#rows .erow .rv').first.fill('<img src=x onerror="window.__batchXssFired=true">')
@@ -1648,11 +1881,26 @@ with sync_playwright() as p:
 
     go_view(page, 'users')
     page.wait_for_selector('#uf')
+    user_label_metrics = page.locator('#uf').evaluate("""(form) => {
+        const controls = [...form.querySelectorAll('input, select, textarea')].map((field) => ({
+            id: field.id,
+            type: field.type || field.tagName.toLowerCase(),
+            labelCount: field.labels?.length || 0,
+            labels: [...(field.labels || [])].map((label) => label.textContent.trim()),
+        }));
+        return {
+            labels: [...form.querySelectorAll('label[for]')].map((label) => ({for:label.htmlFor,text:label.textContent.trim()})),
+            controls,
+        };
+    }""")
+    user_label_queries = {
+        label: page.locator('#uf').get_by_label(label, exact=True).count()
+        for label in ['Name', 'Email address', 'User role', 'Temporary password']
+    }
     check(
-        page.locator('#un').get_attribute('aria-label') == 'User name'
-        and page.locator('#uf #ue').get_attribute('aria-label') == 'Email address'
-        and page.locator('#ur').get_attribute('aria-label') == 'New user role',
-        'add-user form fields have explicit accessible names',
+        all(value == 1 for value in user_label_queries.values())
+        and all(item['labelCount'] == 1 for item in user_label_metrics['controls']),
+        f'add-user form fields have explicit accessible names; queries={user_label_queries}, markup={user_label_metrics}',
     )
     check(
         page.locator('#up').get_attribute('type') == 'password'
@@ -3003,10 +3251,15 @@ with sync_playwright() as p:
     )
     page.set_viewport_size({'width': 390, 'height': 800})
     check(
-        page.locator('#vn').get_attribute('aria-label') == 'Vendor name'
-        and page.locator('#vc').get_attribute('aria-label') == 'Company name (optional)'
-        and page.locator('#vm').get_attribute('aria-label') == 'Mobile number (optional)',
+        page.locator('#vf').get_by_label('Vendor name', exact=True).count() == 1
+        and page.locator('#vf').get_by_label('Company name (optional)', exact=True).count() == 1
+        and page.locator('#vf').get_by_label('Mobile number (optional)', exact=True).count() == 1,
         'vendor form fields have explicit accessible names',
+    )
+    check(
+        page.locator('#vf').get_by_label('Default category', exact=True).count() == 1
+        and page.locator('#vf').get_by_label('Default payment method', exact=True).count() == 1,
+        'vendor default selectors have concise accessible names independent of option lists',
     )
     page.fill('#vn', xss_vendor)
     page.fill('#vc', xss_company)
@@ -5937,22 +6190,35 @@ with sync_playwright() as p:
         ),
         'dashboard bars clamp computed widths to finite 0–100% values',
     )
-    trend_geometry = page.locator('svg.chart rect.b').evaluate_all(
-        "elements => elements.map(element => ({y: element.getAttribute('y'), height: element.getAttribute('height')}))"
-    )
+    trend_geometry = page.locator('.dashboard-trend-chart').evaluate("""svg => {
+        const numeric = value => value !== null && value.trim() !== '' && Number.isFinite(Number(value));
+        const viewBox = (svg.getAttribute('viewBox') || '').split(/\\s+/).map(Number);
+        const points = [...svg.querySelectorAll('.dashboard-trend__point')].map(point => ({
+            cx: point.getAttribute('cx'), cy: point.getAttribute('cy'), radius: point.getAttribute('r'),
+        }));
+        const paths = [...svg.querySelectorAll('.dashboard-trend__area, .dashboard-trend__line')].map(path => {
+            const d = path.getAttribute('d') || '';
+            const values = d.match(/[-+]?(?:\\d*\\.)?\\d+(?:[eE][-+]?\\d+)?/g) || [];
+            return {hasPath: /[MLZ]/.test(d), values, finite: values.length > 0 && values.every(value => Number.isFinite(Number(value)))};
+        });
+        const guides = [...svg.querySelectorAll('.dashboard-trend__gridline')].map(line =>
+            ['x1', 'y1', 'x2', 'y2'].map(key => line.getAttribute(key))
+        );
+        return {
+            viewBox, points, paths, guides,
+            pointsValid: points.length > 0 && points.every(point =>
+                numeric(point.cx) && numeric(point.cy) && numeric(point.radius) &&
+                Number(point.cx) >= 0 && Number(point.cx) <= viewBox[2] &&
+                Number(point.cy) >= 0 && Number(point.cy) <= viewBox[3] && Number(point.radius) >= 0
+            ),
+            guidesValid: guides.length > 0 && guides.every(values => values.every(numeric)),
+            pathsValid: paths.length === 2 && paths.every(path => path.hasPath && path.finite),
+        };
+    }""")
     check(
-        bool(trend_geometry)
-        and all(
-            value['y'] is not None
-            and value['height'] is not None
-            and all(
-                part.lower() != 'nan' and part.lower() not in ('infinity', '-infinity')
-                for part in (value['y'], value['height'])
-            )
-            and float(value['height']) >= 0
-            for value in trend_geometry
-        ),
-        'dashboard SVG trend bars keep finite non-negative vertical geometry',
+        trend_geometry['pointsValid'] and trend_geometry['guidesValid'] and trend_geometry['pathsValid']
+        and trend_geometry['viewBox'] == [0, 0, 920, 260],
+        f'dashboard SVG trend keeps finite, in-bounds point/path/grid geometry; metrics={trend_geometry}',
     )
     vendor_texts = page.locator('.hb-l').all_inner_texts()
     hostile_vendor_visible = any(hostile_vendor in label for label in vendor_texts)

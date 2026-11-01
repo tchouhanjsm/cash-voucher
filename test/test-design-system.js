@@ -91,6 +91,16 @@ assert.match(
   'dashboard trend has a dedicated chart treatment',
 );
 assert.match(
+  dashboard,
+  /data-chart-points=/,
+  'dashboard charts record their validated daily or monthly bucket count',
+);
+assert.match(
+  dashboard,
+  /aria-labelledby="dashboardTrendChartTitle dashboardTrendChartDescription"/,
+  'dashboard trend SVG has a programmatic title and description',
+);
+assert.match(
   theme,
   /updateTheme\(storedTheme\(\)\s*\|\|\s*'light'\)/,
   'new sessions open in light theme unless the user saved a preference',
@@ -203,12 +213,17 @@ assert.match(
 );
 assert.match(
   payments,
-  /entry-payee-field'><span>[\s\S]*?entry-amount-field'><span>Amount \(₹\)<\/span>/,
-  'New Entry includes persistent visible payee and amount labels',
+  /payeeCaption\.textContent = NT === 'RECEIPT' \? 'Received from' : 'Paid to'/,
+  'New Entry includes a visible, contextual payee label',
 );
 assert.match(
   payments,
-  /entry-note-field'><span>Note<\/span>/,
+  /amountCaption\.textContent = 'Amount \(₹\)'/,
+  'New Entry includes a persistent visible amount label',
+);
+assert.match(
+  payments,
+  /noteCaption\.textContent = 'Note'/,
   'New Entry includes a visible note label instead of relying on its placeholder',
 );
 assert.match(
@@ -642,7 +657,7 @@ assert.match(
 );
 assert.match(
   payments,
-  /function paymentMethodOptions\(selected = 'CASH'\)/,
+  /option\.selected = method === 'CASH'/,
   'staff payment entry defaults to Cash',
 );
 assert.match(

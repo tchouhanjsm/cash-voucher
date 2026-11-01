@@ -47,3 +47,26 @@ Fresh Quality, Browser E2E and Full Flight results must be produced on the lates
 ## Release boundary
 
 Source-only implementation. No merge, deployment, Apps Script push, spreadsheet migration, staging financial write, cPanel publication or production change is part of this milestone.
+
+## Extended workspace adoption — PR #258 candidate
+
+- Extend the same local TailAdmin-inspired tokens and screen-scoped component language across Vendor Management, User Management, Settings, Audit, Bulk Upload, Daily Cash Close and Onboarding. Forms use visible labels; operational panels use consistent card, table, metric, status and responsive layouts.
+- Preserve source-of-truth business data and actions: no demo values, new finance formulas, role changes, route changes or backend API mutations.
+- Replace the repeatable New Entry row's HTML-string parser with DOM construction. Keep the active vendor master, ONE_TIME payee and `vendorId` contracts intact.
+- Add customer build measurement metadata for public assets (raw bytes, gzip bytes and SHA-256) so a later bundling/minification decision can be made from exact build output rather than an unsupported claim.
+- Tailwind's multi-framework reference remains a visual/design reference. No React/Next/Shadcn runtime or CDN assets are introduced.
+
+## Phase 4 — Premium dashboard analytics (PR #258 candidate)
+
+- Replace the simple spending bar strip with a responsive SVG area/line view, including daily/monthly buckets, value guides, point tooltips, and a named chart title/description for assistive technology.
+- Make previous-period comparisons truthful at a zero baseline and explicitly neutral when unchanged. Directional arrows communicate movement; they are not green/red financial-good or financial-bad judgements.
+- Keep all amounts and trend buckets sourced from the validated dashboard summary API. Do not infer metrics from the browser, add template values, or change financial definitions.
+- Advance the service-worker public-shell cache to `cv2-v46` and test update/precache integration.
+- Add Browser E2E coverage for zero-baseline, flat, increasing and decreasing comparisons, chart accessibility and the existing desktop/mobile light/dark visual matrix.
+
+## Phase 4 follow-up — responsive trend and custom-range stability
+
+- A labelled, focusable horizontal scroll region retains a readable 720px minimum chart width on narrow viewports without creating document-level horizontal overflow.
+- Custom range controls use a draft state. Selecting Custom does not fetch the fallback date range; Apply commits the selected From/To values and refreshes the dashboard.
+- This prevents an asynchronous summary response from rebuilding the dashboard while the user is editing dates.
+- E2E coverage checks pending draft behavior, both retained dates, exact monthly buckets beyond 62 days and an all-zero payment trend for a receipts-only period.

@@ -78,3 +78,10 @@ PR #146's Browser E2E on exact head `c1c56053cee6f1daaa028ee3acc3a5696c15821c` r
 ## Phase 14 candidate — keyboard-accessible Register table region
 
 The Register table wrapper now declares a concise accessible name, `role="region"`, and `tabindex="0"`. This makes the horizontally scrollable table reachable by keyboard and activates the existing `.table-wrap[role='region']:focus-visible` focus indicator. The change adds no HTML assignment site and introduces no API-derived value into the template; the source fingerprint was updated only after reviewing the exact static-attribute change and paired Browser E2E coverage. The expected active sink count remains 17 assignments across eight frontend modules.
+
+## PR #258 candidate — New Entry row renderer retirement (1 November 2026)
+
+- The repeatable payment/receipt row was previously constructed by assigning a row HTML string into a detached element's `innerHTML`. This candidate replaces that parser path with `createEntryRow()`, which creates labels, inputs, selects, buttons and receipt controls using DOM APIs, text properties and `append`.
+- The payments module count changes from two assignments to one. Total active inventory changes from 17 to 16 across the same eight modules; no other sink is removed or reclassified in this batch.
+- `scripts/dom-sink-baseline.json` and `scripts/dom-sink-source-baseline.json` are updated only for this reviewed deletion. Browser E2E checks label relationships, receipt input, row numbering, add and remove behavior.
+- The remaining 16 assignments still require contextual source-to-sink review and hostile-input coverage. Fingerprints and a lower sink count are drift controls, not XSS certification.

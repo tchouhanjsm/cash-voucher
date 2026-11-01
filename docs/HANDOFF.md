@@ -1,12 +1,43 @@
 # Engineering Handoff — Cash Voucher
 
-**Updated:** 1 November 2026 (TailAdmin-inspired finance workspace batch added to PR #257; exact-head validation pending)
-**Repository:** tchouhanjsm/cash-voucher
+## Current implementation batch — PR #258
+
+## Phase 4 — Premium dashboard analytics (PR #258)
+
+- Replaced the dashboard's compact bar strip with a scalable SVG area/line trend that includes value guides, daily/monthly labels, exact-value point tooltips and a programmatic title/description. Buckets continue to be derived from the validated `dashboardSummary.trend` read model; no client-generated financial values were added.
+- Reworked the Total paid comparison copy: zero previous-period totals now show the zero baseline and explain why a percentage is unavailable; unchanged periods are described as unchanged; increases/decreases use neutral directional copy rather than green/red business-success semantics.
+- Bumped the public-shell service-worker revision to `cv2-v46` so the dashboard module and local design layer refresh together after update approval.
+- Browser E2E now covers zero baseline, flat, increase and decrease comparisons, and verifies the chart's accessible SVG semantics, area/line paths, points, guide lines and responsive visual states.
+- No dashboard API, backend calculation, permission boundary, accounting rule or report/export behavior is changed.
+
+### Scope delivered in this source candidate
+
+- Replaced the repeatable New Entry row's HTML-string parser with native DOM construction. Input labels, category options, payment methods, receipt inputs and remove actions are created as nodes; existing classes/data-action contracts and payment semantics remain unchanged.
+- Removed one active `innerHTML` assignment from `frontend/features/payments.js`; the checked sink count moves from 17 to 16. The remaining 16 assignments still require contextual review and are not represented as XSS-certified.
+- Added visible, programmatically associated labels to Vendor and User management fields while preserving their existing IDs and backend payloads.
+- Extended the TailAdmin-inspired local design system to Vendor/User management, Settings, Audit, Bulk Upload, Daily Cash Close and Onboarding.
+- Added a deterministic public asset manifest to customer builds with raw/gzip byte sizes and SHA-256 per asset. Generated customer endpoint configuration and host policy files are excluded. This measures the existing modular output; it does not bundle/minify it or claim a load-time improvement.
+
+### Verification required on the exact PR head
+
+- CI / Quality, Browser E2E, Full Flight and Autonomous Development Monitor.
+- Browser assertions for DOM-built repeatable rows, label association, add/remove flow, mobile touch geometry and the responsive visual review matrix.
+- Static DOM sink count/source fingerprint, customer build manifest, CSP, service-worker and theme/layout contracts.
+
+### Operational items intentionally not performed
+
+- No staging Google Sheet backup, VendorType migration, Apps Script deployment, cPanel upload, staging transaction or historical correction.
+- No production resource or financial data access.
+- No Lighthouse scores, WCAG certification, live Sheets concurrency/export metrics or deployed security-header claim is made by this source PR. These remain release/UAT acceptance gates.
+- Repository governance remains an owner/admin action: verify protection for `client-main`; this batch does not alter branch/ruleset settings.
+
+**Updated:** 1 November 2026 — consolidated finance workspace, security and measurement batch in PR #258 (source branch; not merged).
+**Repository:** `tchouhanjsm/cash-voucher`
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `05402ba9e8b811ea4f479f37617ab6f3b0fdb4ac` (PR #256 merge commit, 31 October 2026).
-**PR #256 implementation source SHA:** `9c43758e713fe67baa684204543f30f33284527f` on `client/frontend-reliability-vendor-identity-20261031` (pre-merge implementation snapshot; historical gate evidence follows below).
-**Most recent merged PR:** [PR #256 — harden startup, vendor identity and duplicate payments](https://github.com/tchouhanjsm/cash-voucher/pull/256), merged into `client-main` at `05402ba9e8b811ea4f479f37617ab6f3b0fdb4ac`.
-**Release boundary:** PR #256 is integrated in source. This audit did not run a spreadsheet migration, deploy Apps Script, write financial data, or publish a cPanel package. The live staging login page was inspected without authentication; it was not tied to this source SHA.
+**Current integration baseline:** `fea102d7aa1dc6d3a0724005c03bd67ef7734c67` (PR #257 merge commit).
+**Active implementation branch:** `client/finance-workspace-security-ux-performance-20261101`, based on the integration baseline above.
+**Most recent merged PR:** [PR #257 — TailAdmin-inspired finance workspace foundation](https://github.com/tchouhanjsm/cash-voucher/pull/257), merged into `client-main` at `fea102d7aa1dc6d3a0724005c03bd67ef7734c67`.
+**Release boundary:** This batch is source-only. It does not deploy Apps Script, run a spreadsheet migration, write staging/production financial data, upload a cPanel package or change `main`.
 
 ## TailAdmin-inspired finance workspace milestone — PR #257
 
@@ -488,3 +519,21 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - **CI diagnostics RCA:** CI / Quality runs [#3417](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41059826943) and [#3418](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41059928222) stopped at `prettier --check .` because `frontend/core/session.js` still had a line-wrap mismatch. The chained `npm run check` consequently did not execute later checks; the PR handoff and dependency advisory steps were skipped by the workflow's implicit success condition. Full Flight [#2727](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41059826924) correctly failed because exact-head CI and Browser E2E were not green. Monitor success is not release evidence.
 - **CI correction:** format, lint, JSON, syntax, backend, contrast, frontend, DOM-sink, regression-test, PR-handoff and dependency-audit checks are now separate steps. They run independently after dependency installation even when an earlier check fails, so failures remain visible instead of being hidden behind skipped steps. The job still fails closed if any required gate fails.
 - **Expected conditional skips:** the manual-only Full Flight job is skipped on pull-request events by design; it is not a passing result and is not the PR Full Flight release gate. No staging UAT or deployment was performed while these failures remained open. Fresh exact-head CI, Browser E2E and Full Flight evidence is required before UAT.
+
+## Phase 5 — IAM break-glass Owner recovery
+
+- [x] Add a private recovery backend with project/Sheet identity checks, exact existing-Owner validation, existing hash reuse, ScriptLock, salt-based session invalidation, mandatory password rotation and temporary-property cleanup.
+- [x] Add read-only preflight checks for PEPPER, exact Users/AuditLog schema and readable backup infrastructure.
+- [x] Verify credential write-back and audit-event persistence separately; report audit degradation as partial success.
+- [x] Add automated tests for read-only behavior, user isolation, safeguards, lock failures, audit degradation, cleanup and sign-in/password-change flow.
+- [ ] Resolve Apps Script private-function invocation: underscore-private functions are not browser-callable but are omitted from the editor Run list in this project. No public wrapper was added.
+- [x] Keep recovery unregistered in ACTIONS; no unauthenticated reset API or Owner creation path.
+- [x] Source-only; no Clasp push, deployment, staging-data write or production activity.
+
+## Phase 4 follow-up — dashboard range and chart behavior
+
+- The SVG trend now remains at a readable minimum width inside a keyboard-focusable, labelled horizontal scroll region. Horizontal movement is contained within that chart; it does not widen the document on narrow screens.
+- Selecting Custom opens a draft-only state. It does not request totals for the fallback 30-day range while the user is editing dates, so a late response cannot redraw the dashboard and overwrite the inputs.
+- Only Apply commits the selected From/To dates and requests the new summary. Reopening Custom seeds the form from the last applied custom range.
+- Browser coverage asserts there is no summary request while opening the custom-date draft, the selected dates survive until Apply, a 93-day period uses four monthly buckets, and a receipts-only period displays an actual zero approved-payment trend.
+- This remains a presentation/read-model integration change. No server aggregation, accounting definition, cash-close calculation, or permission rule changed.

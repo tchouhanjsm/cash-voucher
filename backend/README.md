@@ -22,7 +22,7 @@ Apps Script loads every `.gs` file into **one global scope**, in file-name order
 
 ## Rules
 
-1. **A new feature gets its own file** with the next free number between its neighbours, for example `55-reports.gs`.
+1. **A new feature gets its own file** with the next free number between its neighbours, for example `55-reports.gs`. Owner recovery stays private and must never receive a public client wrapper.
 2. **Register routes only in `99-routes.gs`.** It reads every handler when it loads, so it must come last.
 3. **No duplicate top-level names across files.** Apps Script silently keeps the last one. `npm run check:backend` fails the build if this happens.
 4. **No top-level code that runs at load time** except constant tables in `00-config.gs` and `99-routes.gs`.

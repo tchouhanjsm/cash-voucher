@@ -113,15 +113,15 @@ export function createAdministration({ api, getNavigation, signOut }) {
         title: 'Vendor details',
         fields: [
           '<input type="hidden" id="vid">',
-          '<input id="vn" aria-label="Vendor name" autocomplete="organization" placeholder="Vendor name" required>',
-          '<input id="vc" aria-label="Company name (optional)" placeholder="Company (optional)">',
-          '<input id="vm" aria-label="Mobile number (optional)" type="tel" placeholder="Mobile (optional)" inputmode="tel">',
-          '<select id="vdcat" aria-label="Default category"><option value="">Use recent category / Other</option>' +
+          '<label for="vn">Vendor name<input id="vn" autocomplete="organization" placeholder="Vendor name" required></label>',
+          '<label for="vc">Company name (optional)<input id="vc" placeholder="Company (optional)"></label>',
+          '<label for="vm">Mobile number (optional)<input id="vm" type="tel" placeholder="Mobile (optional)" inputmode="tel"></label>',
+          '<div class="vendor-select-field"><label for="vdcat">Default category</label><select id="vdcat"><option value="">Use recent category / Other</option>' +
             categories()
               .map((category) => `<option value="${esc(category)}">${esc(category)}</option>`)
               .join('') +
-            '</select>',
-          '<select id="vdmethod" aria-label="Default payment method"><option value="">Default to Cash / recent choice</option><option value="CASH">Cash</option><option value="UPI">UPI</option><option value="BANK_TRANSFER">Bank transfer</option></select>',
+            '</select></div>',
+          '<div class="vendor-select-field"><label for="vdmethod">Default payment method</label><select id="vdmethod"><option value="">Default to Cash / recent choice</option><option value="CASH">Cash</option><option value="UPI">UPI</option><option value="BANK_TRANSFER">Bank transfer</option></select></div>',
           '<button class="btn primary">Save vendor</button>',
           '<button type="button" class="btn" data-act="vclr">Clear</button>',
         ].join(''),
@@ -295,12 +295,12 @@ export function createAdministration({ api, getNavigation, signOut }) {
       emptyMessage: 'No users yet.',
     });
     const userFormFields = [
-      '<input id="un" aria-label="User name" autocomplete="name" placeholder="Name" required>',
-      '<input id="ue" aria-label="Email address" autocomplete="email" type="email" placeholder="Email" required>',
-      '<select id="ur" aria-label="New user role">',
+      '<label for="un">Name<input id="un" autocomplete="name" placeholder="Name" required></label>',
+      '<label for="ue">Email address<input id="ue" autocomplete="email" type="email" placeholder="Email" required></label>',
+      '<div class="user-select-field"><label for="ur">User role</label><select id="ur">',
       roles.map((role) => '<option>' + esc(role) + '</option>').join(''),
-      '</select>',
-      '<input id="up" aria-label="Temporary password (8–128 characters)" type="password" inputmode="text" minlength="8" maxlength="128" title="Use 8 to 128 characters" autocomplete="new-password" placeholder="Temporary password (8–128 characters)" required>',
+      '</select></div>',
+      '<label for="up">Temporary password<input id="up" type="password" inputmode="text" minlength="8" maxlength="128" title="Use 8 to 128 characters" autocomplete="new-password" placeholder="Temporary password (8–128 characters)" required></label>',
       '<button class="btn primary">Add</button>',
     ].join('');
 
