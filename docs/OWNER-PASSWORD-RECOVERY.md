@@ -43,11 +43,9 @@ The tool requires both the active and effective user email to equal this propert
 
 Configure only these three temporary Script Properties before the read-only preflight:
 
-| Property                            | Value                                                  |
-| ----------------------------------- | ------------------------------------------------------ |
-| `OWNER_RECOVERY_EXPECTED_SCRIPT_ID` | Independently verified staging Apps Script project ID |
-| `OWNER_RECOVERY_EXPECTED_SS_ID`     | Independently verified staging spreadsheet ID        |
-| `OWNER_RECOVERY_EMAIL`              | Email of the existing Owner account to recover        |
+- `OWNER_RECOVERY_EXPECTED_SCRIPT_ID` — independently verified staging Apps Script project ID.
+- `OWNER_RECOVERY_EXPECTED_SS_ID` — independently verified staging spreadsheet ID.
+- `OWNER_RECOVERY_EMAIL` — email of the existing Owner account to recover.
 
 The preflight reads these target values, the persistent `OWNER_RECOVERY_OPERATOR_EMAIL`, the existing `SS_ID`, `PEPPER`, Users/AuditLog schemas and receipt/backup folder properties. It does **not** read the temporary password or destructive confirmation.
 
@@ -55,10 +53,8 @@ The preflight reads these target values, the persistent `OWNER_RECOVERY_OPERATOR
 
 Set these two properties **only after** `passwordRecoveryPreflight()` returns `PREFLIGHT_READY` and every check has been reviewed:
 
-| Property                     | Value                                               |
-| ---------------------------- | --------------------------------------------------- |
-| `OWNER_RECOVERY_PASSWORD`    | Unique temporary random password (8–128 characters) |
-| `OWNER_RECOVERY_CONFIRM`     | Exact text `RESET_EXISTING_OWNER_ONLY`              |
+- `OWNER_RECOVERY_PASSWORD` — unique temporary random password (8–128 characters).
+- `OWNER_RECOVERY_CONFIRM` — exact text `RESET_EXISTING_OWNER_ONLY`.
 
 Generate the temporary password in an approved password manager. Do not put it in source code, shell history, logs, issue comments, PR descriptions or chat. Do not add the password to the persistent operator property. Minimize its time in Script Properties: create it after preflight and immediately run the recovery entrypoint once.
 
