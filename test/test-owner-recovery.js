@@ -166,10 +166,7 @@ async function run() {
   });
   assert.equal(changed.ok, true);
   assert.ok(changed.data.token, 'password change returns a fresh authenticated session');
-  assert.equal(
-    success.g.call('dashboardSummary', { token: changed.data.token }).ok,
-    true,
-  );
+  assert.equal(success.g.call('dashboardSummary', { token: changed.data.token }).ok, true);
   assert.equal(
     success.g.call('dashboardSummary', { token: login.data.token }).code,
     'SESSION',
