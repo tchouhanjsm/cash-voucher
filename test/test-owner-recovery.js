@@ -216,7 +216,9 @@ async function run() {
     assert.equal(JSON.stringify(fixture.g.props), propsBefore);
     assert.equal(
       JSON.stringify(
-        Object.fromEntries(Object.entries(fixture.g.sheets).map(([name, sheet]) => [name, sheet.rows])),
+        Object.fromEntries(
+          Object.entries(fixture.g.sheets).map(([name, sheet]) => [name, sheet.rows]),
+        ),
       ),
       rowsBefore,
     );
@@ -254,7 +256,10 @@ async function run() {
   const lockOwnerBefore = credentialSnapshot(lockFailure.owner);
   lockFailure.g.failNextLock();
   assert.equal(lockFailure.g.recoverOwnerPassword().status, 'LOCK_ACQUISITION_FAILED');
-  assert.deepEqual(credentialSnapshot(matchingRow(lockFailure.g, 'owner@test.com')), lockOwnerBefore);
+  assert.deepEqual(
+    credentialSnapshot(matchingRow(lockFailure.g, 'owner@test.com')),
+    lockOwnerBefore,
+  );
   assert.equal(recoveryPropertiesCleared(lockFailure.g), true);
   assert.equal(lockFailure.g.lockStats.releases, 0);
 
@@ -270,7 +275,9 @@ async function run() {
   routes.setup();
   assert.equal(routes.registeredActions().includes('recoverExistingOwnerPasswordOnce_'), false);
   assert.equal(routes.registeredActions().includes('ownerRecoveryPreflight_'), false);
-  console.log('Owner recovery tests passed: preflight, safeguards, identity isolation, hashing, sessions, forced password change, audit and cleanup.');
+  console.log(
+    'Owner recovery tests passed: preflight, safeguards, identity isolation, hashing, sessions, forced password change, audit and cleanup.',
+  );
 }
 run().catch((error) => {
   console.error(error);
