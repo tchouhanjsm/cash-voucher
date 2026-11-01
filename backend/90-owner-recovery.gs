@@ -175,9 +175,9 @@ function ownerRecoveryPreflight_() {
   );
   const ownerCredentialsPresent = Boolean(
     uniqueOwner &&
-      String(matches[0].UserID || '').trim() &&
-      String(matches[0].Salt || '').trim() &&
-      String(matches[0].PasswordHash || '').trim(),
+    String(matches[0].UserID || '').trim() &&
+    String(matches[0].Salt || '').trim() &&
+    String(matches[0].PasswordHash || '').trim(),
   );
   ownerRecoveryCheck_(
     checks,
@@ -240,22 +240,20 @@ function ownerRecoveryAuditVerified_(rowCountBefore, ownerEmail, ownerId, operat
   try {
     const rows = readAll_('AuditLog');
     return rows.slice(rowCountBefore).some(function (row) {
-      if (
-        row.Action !== 'PASSWORD_RESET' ||
-        ownerRecoveryEmail_(row.Target) !== ownerEmail
-      ) {
+      if (row.Action !== 'PASSWORD_RESET' || ownerRecoveryEmail_(row.Target) !== ownerEmail) {
         return false;
       }
       try {
         const details = JSON.parse(String(row.Details || ''));
         return Boolean(
           details &&
-            details.version === 1 &&
-            details.eventType === 'USER_PASSWORD_RESET' &&
-            details.entityType === 'user' &&
-            details.entityId === ownerId &&
-            details.reason === 'EDITOR_AUTHORIZED_OWNER_RECOVERY|' + operationId &&
-            details.summary === 'Editor-authorized break-glass recovery; mandatory password change required.',
+          details.version === 1 &&
+          details.eventType === 'USER_PASSWORD_RESET' &&
+          details.entityType === 'user' &&
+          details.entityId === ownerId &&
+          details.reason === 'EDITOR_AUTHORIZED_OWNER_RECOVERY|' + operationId &&
+          details.summary ===
+            'Editor-authorized break-glass recovery; mandatory password change required.',
         );
       } catch (_) {
         return false;
