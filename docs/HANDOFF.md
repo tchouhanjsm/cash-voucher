@@ -520,15 +520,17 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - **CI correction:** format, lint, JSON, syntax, backend, contrast, frontend, DOM-sink, regression-test, PR-handoff and dependency-audit checks are now separate steps. They run independently after dependency installation even when an earlier check fails, so failures remain visible instead of being hidden behind skipped steps. The job still fails closed if any required gate fails.
 - **Expected conditional skips:** the manual-only Full Flight job is skipped on pull-request events by design; it is not a passing result and is not the PR Full Flight release gate. No staging UAT or deployment was performed while these failures remained open. Fresh exact-head CI, Browser E2E and Full Flight evidence is required before UAT.
 
-## Phase 5 — IAM Password Recovery Tool
+## Phase 5 — IAM Password Recovery Tool (PR #259)
 
-- [x] Add a private recovery backend with project/Sheet identity checks, exact existing-Owner validation, existing hash reuse, ScriptLock, salt-based session invalidation, mandatory password rotation and temporary-property cleanup.
-- [x] Add read-only preflight checks for PEPPER, exact Users/AuditLog schema and readable backup infrastructure.
-- [x] Verify credential write-back and audit-event persistence separately; report audit degradation as partial success.
-- [x] Add automated tests for read-only behavior, user isolation, safeguards, lock failures, audit degradation, cleanup and sign-in/password-change flow.
-- [ ] Resolve Apps Script private-function invocation: underscore-private functions are not browser-callable but are omitted from the editor Run list in this project. No public wrapper was added.
-- [x] Keep recovery unregistered in ACTIONS; no unauthenticated reset API or Owner creation path.
-- [x] Source-only; no Clasp push, deployment, staging-data write or production activity.
+- [x] Add `backend/90-owner-recovery.gs` with a private credential-mutation worker; validate the exact Apps Script project, configured spreadsheet, existing PEPPER, Users/AuditLog schemas, backup-folder readability and one existing active Owner.
+- [x] Add `passwordRecoveryPreflight()` as a read-only Apps Script editor entrypoint and `passwordRecoveryTool()` as the one-time recovery entrypoint. Keep both outside `ACTIONS` and `WRITES`; keep the credential mutation in private `recoverExistingOwnerPasswordOnce_()`.
+- [x] Require both server-resolved active and effective Google account emails to match persistent `OWNER_RECOVERY_OPERATOR_EMAIL`; repeat the check after ScriptLock acquisition. Missing or mismatched identity fails closed without credential mutation or temporary-property cleanup.
+- [x] Rotate only the existing Owner's salt/hash and set mandatory password change; verify credential read-back, invalidate old sessions through salt mismatch, clear only the target Owner's failed-attempt counters, and verify the structured audit event separately.
+- [x] Attribute the audit event to the actual authorized Google operator; represent audit persistence failure as partial success; retain the persistent operator allowlist and remove only the five temporary recovery properties after an authorized attempt.
+- [x] Cover read-only preflight, operator identity variants, denial paths, lock-time identity changes, property preservation, user isolation, recovery, audit degradation, cleanup and sign-in/password-change behavior in regression tests.
+- [x] Document the invocation boundary: public Apps Script functions are technically callable through `google.script.run`; the server-side Google identity check is the authorization control, not function visibility or absence from `ACTIONS`. This is not a strict editor-origin isolation guarantee.
+- [x] Keep the change source-only. No Clasp push, Apps Script deployment, staging spreadsheet write, real Owner reset, production access or merge was performed.
+- [ ] Complete a controlled, read-only staging identity/preflight run from the exact staging Apps Script editor. Do not run `passwordRecoveryTool()` or reset an Owner until identity and target checks have been independently verified.
 
 ## Phase 4 follow-up — dashboard range and chart behavior
 
