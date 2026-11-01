@@ -1952,6 +1952,10 @@ button {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.btn.sm.vchip {
+  min-height: 44px;
+  padding: 8px 12px;
+}
 
 /* Tabler-inspired refinements: local SVG icons, KPI tiles and scoped attention panel. */
 .i {

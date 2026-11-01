@@ -344,6 +344,23 @@ export function createRegister({ api, go }) {
       malformedFieldCount,
       totalCount: pageTotalCount,
     });
+    const pageMeta = $('#registerPageMeta');
+    if (pageMeta) {
+      if (!dataAvailable) {
+        pageMeta.textContent = 'Server results unavailable';
+      } else if (rangeInvalid) {
+        pageMeta.textContent = 'Correct the date range to load results';
+      } else if (pageLoading) {
+        pageMeta.textContent = 'Loading matching vouchers…';
+      } else {
+        pageMeta.textContent =
+          'Loaded ' +
+          pageRows.length.toLocaleString('en-IN') +
+          ' of ' +
+          pageTotalCount.toLocaleString('en-IN') +
+          ' matching vouchers';
+      }
+    }
     const exportButton = $('#view [data-act="csv"]');
     if (exportButton) exportButton.disabled = rangeInvalid || !dataAvailable;
     const resultsCard = $('.register-results-card');
@@ -577,8 +594,8 @@ export function createRegister({ api, go }) {
           description: 'Search payments and receipts, review status, and open voucher details.',
         },
       ) +
-      `<div class="card filters" id="rf">
-    <label class="register-search-field" for="rq">Search vouchers<input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}"></label>
+      `<section class="card filters register-filter-panel" id="rf" aria-labelledby="registerFiltersTitle"><div class="register-panel-heading"><div><p class="page-eyebrow">FIND A MOVEMENT</p><h2 id="registerFiltersTitle">Search and refine</h2><p class="muted">Filters are applied by the server within your account permissions.</p></div><span class="register-server-label">SERVER FILTERED</span></div>
+    <div class="register-search-row"><label class="register-search-field" for="rq">Search vouchers<input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}"></label><span class="register-search-hint">Search voucher number, counterparty or note</span></div><div class="register-filter-grid">
     <label class="register-filter-field" for="rv">Vendor<select id="rv" aria-label="Filter by vendor"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select></label>
     <label class="register-filter-field" for="rc">Category<select id="rc" aria-label="Filter by category"><option value="">All categories</option>${categories()
       .map(
@@ -612,8 +629,8 @@ export function createRegister({ api, go }) {
           `<option value="${key}"${R.approval === key ? ' selected' : ''}>${label}</option>`,
       )
       .join('')}</select></label>
-    <button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div>
-    <div class="card register-results-card"><div id="rtot" class="register-totals"></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Voucher register entries" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
+    <div class="register-filter-actions"><button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div></div></section>
+    <div class="card register-results-card"><div class="register-results-summary"><div><p class="page-eyebrow">REGISTER</p><h2>Voucher activity</h2><p class="muted">Authoritative entries and totals from the server-filtered register.</p><p id="registerPageMeta" class="register-page-meta" role="status" aria-live="polite">Loading matching vouchers…</p></div><div id="rtot" class="register-totals"></div></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Voucher register entries" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
 
     return renderRows();
   }

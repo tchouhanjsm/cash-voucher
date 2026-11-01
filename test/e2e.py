@@ -481,7 +481,7 @@ with sync_playwright() as p:
         'page heading uses one consistent page-header component without breadcrumb noise',
     )
     check(
-        page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
+        page.locator('#view .page-eyebrow').first.text_content().strip() == 'Work'
         and page.locator('#view .page-description').count() == 1,
         'page context and description are rendered in the shared production header',
     )
@@ -660,13 +660,13 @@ with sync_playwright() as p:
     page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
     page.locator('#rs').evaluate('element => element.blur()')
     mobile_report_layout = report_form.locator('.account-report-controls').evaluate(
-        "el => ({columns: getComputedStyle(el).gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, buttonFullWidth: Math.abs(el.querySelector('button[type=submit]').getBoundingClientRect().width - el.getBoundingClientRect().width) < 2})"
+        "el => { const style = getComputedStyle(el); const button = el.querySelector('button[type=submit]'); const controlsRect = el.getBoundingClientRect(); const buttonRect = button.getBoundingClientRect(); const buttonStyle = getComputedStyle(button); return {display: style.display, columns: style.gridTemplateColumns.match(/[0-9.]+px/g)?.length || 0, gridTemplateColumns: style.gridTemplateColumns, buttonFullWidth: Math.abs(buttonRect.width - controlsRect.width) < 2, buttonWidth: buttonRect.width, controlsWidth: controlsRect.width, buttonGridColumn: buttonStyle.gridColumnStart + '/' + buttonStyle.gridColumnEnd, buttonJustifySelf: buttonStyle.justifySelf, viewportWidth: document.documentElement.clientWidth, documentWidth: document.documentElement.scrollWidth}; }"
     )
     check(
         mobile_report_layout['columns'] == 1
         and mobile_report_layout['buttonFullWidth']
         and page.evaluate('document.documentElement.scrollWidth <= document.documentElement.clientWidth'),
-        'support report form stacks into one mobile column with a full-width action and no page overflow',
+        f'support report form stacks into one mobile column with a full-width action and no page overflow; metrics={mobile_report_layout}',
     )
     page.set_viewport_size({'width': 768, 'height': 800})
     check(
@@ -1123,7 +1123,7 @@ with sync_playwright() as p:
     go_view(page, 'dash')
     go_view(page, 'new')
     check(
-        page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
+        page.locator('#view .page-eyebrow').first.text_content().strip() == 'Work'
         and page.locator('#view .page-header h1').inner_text() == 'New Cash Payment'
         and page.locator('#nf.entry-form').count() == 1
         and page.locator('.entry-type-switch[role="group"]').count() == 1
@@ -1211,6 +1211,12 @@ with sync_playwright() as p:
     page.locator('#rows .erow .ra').first.fill('42')
     page.wait_for_function("document.querySelector('#batchTotal')?.dataset.value === '42.00'")
     check(
+        page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
+        and page.locator('#batchProgress').get_attribute('aria-valuemax') == '1'
+        and 'ready to save' in page.locator('#batchReadiness').inner_text().lower(),
+        'batch progress announces when every entry is complete',
+    )
+    check(
         page.locator('#batchCount').inner_text() == '1 ready entry'
         and page.locator('#batchTotal').get_attribute('data-value') == '42.00'
         and page.locator('#batchCash').get_attribute('data-value') == '42.00'
@@ -1223,6 +1229,12 @@ with sync_playwright() as p:
         "document.querySelectorAll('#rows .erow').length === 2 && "
         "document.activeElement?.classList.contains('rv') && "
         "document.activeElement.closest('.erow') === document.querySelectorAll('#rows .erow')[1]"
+    )
+    check(
+        page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
+        and page.locator('#batchProgress').get_attribute('aria-valuemax') == '2'
+        and '1 of 2' in page.locator('#batchReadiness').inner_text(),
+        'an appended blank row reduces batch completion without changing ready totals',
     )
     check(
         page.locator('#batchTotal').get_attribute('data-value') == '42.00'
@@ -2640,7 +2652,7 @@ with sync_playwright() as p:
         )
         and 'Unrecognized method' in report_text
         and formula_payload in report_text
-        and accountant_page.locator('#view img, #view svg').count() == 0
+        and accountant_page.locator('#view .report-results-card img, #view .report-results-card svg').count() == 0
         and not accountant_page.evaluate('window.__xssFired === true'),
         'valid hostile report row fields remain inert text across vendor, category, notes, cancellation and approval contexts',
     )
@@ -2670,7 +2682,7 @@ with sync_playwright() as p:
     check(
         'P-REPORT-OUTPUT-TEST' not in accountant_page.locator('#view').inner_text()
         and all(value not in accountant_page.locator('#view').inner_text() for value in report_markup_payloads.values())
-        and accountant_page.locator('#view img, #view svg').count() == 0,
+        and accountant_page.locator('#view .report-results-card img, #view .report-results-card svg').count() == 0,
         'report rendering recovers to the normal server response after hostile fixture removal',
     )
     report_table_region = accountant_page.locator('#view .table-wrap[role=region][tabindex="0"]')
@@ -2684,11 +2696,21 @@ with sync_playwright() as p:
     check(
         accountant_page.evaluate("""() => {
             const active = document.activeElement;
+            if (!active?.matches('#reportMovementTrendScroll:focus-visible')) return false;
+            const style = getComputedStyle(active);
+            return style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
+        }"""),
+        'payment and receipt chart is keyboard reachable with a visible focus indicator',
+    )
+    accountant_page.keyboard.press('Tab')
+    check(
+        accountant_page.evaluate("""() => {
+            const active = document.activeElement;
             if (!active?.matches('#view .table-wrap[role="region"][tabindex="0"]:focus-visible')) return false;
             const style = getComputedStyle(active);
             return style.outlineStyle !== 'none' && Number.parseFloat(style.outlineWidth) >= 2;
         }"""),
-        'Reports source-voucher table is keyboard reachable with a visible focus indicator',
+        'Reports source-voucher table remains keyboard reachable after the chart',
     )
     for width in [320, 360, 390, 768, 801, 1024, 1280]:
         accountant_page.set_viewport_size({'width': width, 'height': 800})
@@ -4231,6 +4253,10 @@ with sync_playwright() as p:
 
     go_view(page, 'reg')
     page.wait_for_selector('#rbody tr')
+    check(
+        page.locator('#registerPageMeta').inner_text() == 'Loaded 2 of 2 matching vouchers',
+        'Register shows the loaded page against the authoritative server match count',
+    )
     check(
         page.locator('#rq').get_attribute('aria-label') == 'Search vouchers by number, payee or note'
         and page.locator('#view .page-header h1').inner_text() == 'Voucher Register'
@@ -6032,6 +6058,7 @@ with sync_playwright() as p:
     page.wait_for_selector('[data-act=edit]')
     page.set_viewport_size({'width': 390, 'height': 844})
     manager_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
+    manager_voucher_number = manager_row.locator('td').nth(0).locator('b').inner_text()
     check(
         manager_row.locator('.voucher-kind').inner_text() == 'Payment',
         'manager register identifies cash-paid voucher rows explicitly',
@@ -6080,7 +6107,7 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'stored vendor values remain inert text in register filter options',
     )
-    note_row = page.locator('#rbody tr', has_text='Ram Traders').first
+    note_row = page.locator('#rbody tr').filter(has_text=manager_voucher_number)
     edit_trigger = note_row.locator('[data-act=edit]')
     edit_trigger.evaluate("(element) => element.dataset.focusRestoreProbe = 'edit-dialog-trigger'")
     edit_trigger.click()
@@ -6201,10 +6228,12 @@ with sync_playwright() as p:
         and update_requests[0].get('fields', {}).get('amount') == 177.77,
         'voucher edit sends its reason alongside the actual field changes',
     )
+    corrected_row = page.locator('#rbody tr').filter(has_text=manager_voucher_number)
     check(
-        page.locator('#rbody tr', has_text='Ram Traders').locator('.voucher-amount').inner_text()
-        and '177.77' in page.locator('#rbody tr', has_text='Ram Traders').inner_text(),
-        'corrected amount appears in the register after saving',
+        corrected_row.count() == 1
+        and corrected_row.locator('.voucher-amount').count() == 1
+        and '177.77' in corrected_row.inner_text(),
+        'corrected amount appears on the exact edited voucher after saving',
     )
 
     audit_context = browser.new_context(viewport={'width': 1280, 'height': 800})
@@ -6532,6 +6561,23 @@ with sync_playwright() as p:
         'movement report uses the accessible shared table component',
     )
     check(
+        page.locator('#report-movement-trend').count() == 1
+        and page.locator('#report-movement-trend .report-trend-svg').count() == 1
+        and page.locator('#report-movement-trend .report-trend-payment').count() > 0
+        and page.locator('#report-movement-trend .report-trend-receipt').count() > 0,
+        'movement report compares approved payments and receipts over the selected period',
+    )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    trend_scroll = page.locator('#reportMovementTrendScroll').evaluate(
+        "el => ({clientWidth:el.clientWidth, scrollWidth:el.scrollWidth, pageOverflow:document.documentElement.scrollWidth > document.documentElement.clientWidth})"
+    )
+    check(
+        trend_scroll['scrollWidth'] >= trend_scroll['clientWidth']
+        and not trend_scroll['pageOverflow'],
+        'trend chart scrolls inside its panel without creating page-level mobile overflow',
+    )
+    page.set_viewport_size({'width': 1280, 'height': 800})
+    check(
         page.locator('#report-output').get_attribute('aria-busy') == 'false'
         and page.locator('#report-output .report-results-card').count() == 1,
         'report output exposes a settled, non-busy state after successful loading',
@@ -6661,7 +6707,7 @@ with sync_playwright() as p:
         '4 malformed report row(s) omitted' in report_text
         and 'MALFORMED_REPORT_ROW_MARKER' not in report_text
         and 'MALFORMED_AMOUNT_ROW_MARKER' not in report_text
-        and page.locator('#view svg, #view img').count() == 0,
+        and page.locator('#view .report-results-card svg, #view .report-results-card img').count() == 0,
         'report omits null, primitive, wrong-field-type and nonnumeric-amount rows with a visible count',
     )
     page.unroute('**/api?*', tamper_report_rows)
@@ -6712,7 +6758,7 @@ with sync_playwright() as p:
         and report_active_count_payload in report_text
         and report_cancelled_count_payload in report_text
         and '2 report row(s) have ambiguous vendor names' in report_text
-        and page.locator('#view svg, #view img').count() == 0
+        and page.locator('#view .report-results-card svg, #view .report-results-card img').count() == 0
         and not page.evaluate('window.__reportCountXss === true'),
         'hostile report summary count fields remain literal text without markup or execution',
     )
@@ -8324,6 +8370,14 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_verified_xss_duplicate_review)
     click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
     page.wait_for_selector('#recentVendors .vchip')
+    recent_payee_chip_heights = page.locator('#recentVendors .vchip').evaluate_all(
+        "elements => elements.map(element => element.getBoundingClientRect().height)"
+    )
+    check(
+        len(recent_payee_chip_heights) > 0
+        and all(height >= 44 for height in recent_payee_chip_heights),
+        'recent verified payee chips meet the 44px touch-target requirement',
+    )
     before_xss_api_events = len(api_events)
     page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
     page.fill('.erow .ra', '11')

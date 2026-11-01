@@ -11,6 +11,7 @@ function read(path) {
 const formOptions = read('../frontend/core/form-options.js');
 const utils = read('../frontend/core/utils.js');
 const payments = read('../frontend/features/payments.js');
+const register = read('../frontend/features/register.js');
 const main = read('../frontend/main.js');
 const state = read('../frontend/core/state.js');
 const css = read('../frontend-ui-kit.css');
@@ -80,6 +81,40 @@ assert.match(main, /\$\('#boot'\)\.classList\.add\('hidden'\)/);
 
 assert.match(css, /#nf\.entry-form #recentVendors \.vchip[\s\S]*?min-height: 44px/);
 assert.match(css, /vendor-identity/);
+
+assert.match(
+  payments,
+  /<form id="nf" class="card entry-form" data-workspace="entry-form-workspace"/,
+);
+assert.match(
+  payments,
+  /\$\{vendorList\(\)\}/,
+  'vendor option markup uses the shared escaped renderer',
+);
+const recentRenderStart = payments.indexOf('function renderRecentVendors()');
+const recentRenderEnd = payments.indexOf('\n  document.addEventListener', recentRenderStart);
+assert.ok(
+  recentRenderStart >= 0 && recentRenderEnd > recentRenderStart,
+  'recent payee chips use a dedicated renderer',
+);
+const recentRenderSource = payments.slice(recentRenderStart, recentRenderEnd);
+assert.match(recentRenderSource, /chip\.textContent = vendor\.name/);
+assert.doesNotMatch(
+  recentRenderSource,
+  /innerHTML/,
+  'recent vendor names never enter an HTML parser',
+);
+assert.match(
+  register,
+  /value="\$\{esc\(R\.q\)\}"/,
+  'register search terms are escaped before rendering',
+);
+assert.match(register, /\$\{esc\(vendor\)\}/, 'register vendor facet values are escaped');
+assert.match(register, /\$\{esc\(category\)\}/, 'register category facet values are escaped');
+assert.match(register, /value="\$\{esc\(R\.from\)\}"/, 'register start dates are escaped');
+assert.match(register, /value="\$\{esc\(R\.to\)\}"/, 'register end dates are escaped');
+assert.match(register, /value="\$\{esc\(user\)\}"/, 'register user facet values are escaped');
+assert.match(register, /\$\{esc\(nm\(user\)\)\}/, 'register user labels are escaped');
 
 console.log(
   'Frontend reliability contracts: verified vendor-only suggestions, row-bound duplicate confirmation, explicit payee type, and awaited session startup.',

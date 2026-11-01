@@ -1,10 +1,11 @@
 // Cache only the public application shell. Never cache arbitrary same-origin GETs.
-const C = 'cv2-v42';
+const C = 'cv2-v45';
 const F = [
   './',
   'index.html',
   'style.css',
   'frontend-ui-kit.css',
+  'frontend-workspace.css',
   'config.js',
   'manifest.webmanifest',
   'frontend/main.js',
