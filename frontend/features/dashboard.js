@@ -99,9 +99,7 @@ export function createDashboard({ api }) {
       y: yAt(amount),
       amount,
       key: keys[index],
-      label: monthly
-        ? keys[index].slice(5, 7) + '/' + keys[index].slice(0, 4)
-        : dmy(keys[index]),
+      label: monthly ? keys[index].slice(5, 7) + '/' + keys[index].slice(0, 4) : dmy(keys[index]),
       axisLabel: monthly
         ? keys[index].slice(5, 7) + '/' + keys[index].slice(0, 4)
         : keys[index].slice(8, 10) + '/' + keys[index].slice(5, 7),
@@ -178,17 +176,19 @@ export function createDashboard({ api }) {
           '</title></circle>',
       )
       .join('');
-    const description = maximum > 0
-      ? 'Approved payment amounts are grouped ' +
-        (monthly ? 'by month' : 'by business date') +
-        ' from ' +
-        dmy(from) +
-        ' through ' +
-        dmy(to) +
-        '. Each point includes its exact amount.'
-      : 'No approved payment amount appears in the trend buckets for the selected period.';
+    const description =
+      maximum > 0
+        ? 'Approved payment amounts are grouped ' +
+          (monthly ? 'by month' : 'by business date') +
+          ' from ' +
+          dmy(from) +
+          ' through ' +
+          dmy(to) +
+          '. Each point includes its exact amount.'
+        : 'No approved payment amount appears in the trend buckets for the selected period.';
 
     return (
+      '<div class="dashboard-trend__scroll" role="region" aria-label="Scrollable approved payment trend" tabindex="0">' +
       '<svg class="chart dashboard-trend-chart" width="' +
       width +
       '" height="' +
@@ -215,7 +215,7 @@ export function createDashboard({ api }) {
       '"></path>' +
       pointMarks +
       axisLabels +
-      '</svg>'
+      '</svg></div>'
     );
   }
 
