@@ -481,7 +481,7 @@ with sync_playwright() as p:
         'page heading uses one consistent page-header component without breadcrumb noise',
     )
     check(
-        page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
+        page.locator('#view .page-eyebrow').first.text_content().strip() == 'Work'
         and page.locator('#view .page-description').count() == 1,
         'page context and description are rendered in the shared production header',
     )
@@ -1123,7 +1123,7 @@ with sync_playwright() as p:
     go_view(page, 'dash')
     go_view(page, 'new')
     check(
-        page.locator('#view .page-eyebrow').text_content().strip() == 'Work'
+        page.locator('#view .page-eyebrow').first.text_content().strip() == 'Work'
         and page.locator('#view .page-header h1').inner_text() == 'New Cash Payment'
         and page.locator('#nf.entry-form').count() == 1
         and page.locator('.entry-type-switch[role="group"]').count() == 1

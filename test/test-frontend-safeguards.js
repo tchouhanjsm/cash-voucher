@@ -82,15 +82,33 @@ assert.match(main, /\$\('#boot'\)\.classList\.add\('hidden'\)/);
 assert.match(css, /#nf\.entry-form #recentVendors \.vchip[\s\S]*?min-height: 44px/);
 assert.match(css, /vendor-identity/);
 
-assert.match(payments, /<form id="nf" class="card entry-form" data-workspace="entry-form-workspace"/);
-assert.match(payments, /\$\{vendorList\(\)\}/, 'vendor option markup uses the shared escaped renderer');
+assert.match(
+  payments,
+  /<form id="nf" class="card entry-form" data-workspace="entry-form-workspace"/,
+);
+assert.match(
+  payments,
+  /\$\{vendorList\(\)\}/,
+  'vendor option markup uses the shared escaped renderer',
+);
 const recentRenderStart = payments.indexOf('function renderRecentVendors()');
 const recentRenderEnd = payments.indexOf('\n  document.addEventListener', recentRenderStart);
-assert.ok(recentRenderStart >= 0 && recentRenderEnd > recentRenderStart, 'recent payee chips use a dedicated renderer');
+assert.ok(
+  recentRenderStart >= 0 && recentRenderEnd > recentRenderStart,
+  'recent payee chips use a dedicated renderer',
+);
 const recentRenderSource = payments.slice(recentRenderStart, recentRenderEnd);
 assert.match(recentRenderSource, /chip\.textContent = vendor\.name/);
-assert.doesNotMatch(recentRenderSource, /innerHTML/, 'recent vendor names never enter an HTML parser');
-assert.match(register, /value="\$\{esc\(R\.q\)\}"/, 'register search terms are escaped before rendering');
+assert.doesNotMatch(
+  recentRenderSource,
+  /innerHTML/,
+  'recent vendor names never enter an HTML parser',
+);
+assert.match(
+  register,
+  /value="\$\{esc\(R\.q\)\}"/,
+  'register search terms are escaped before rendering',
+);
 assert.match(register, /\$\{esc\(vendor\)\}/, 'register vendor facet values are escaped');
 assert.match(register, /\$\{esc\(category\)\}/, 'register category facet values are escaped');
 assert.match(register, /value="\$\{esc\(R\.from\)\}"/, 'register start dates are escaped');
