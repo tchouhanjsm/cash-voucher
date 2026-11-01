@@ -652,7 +652,7 @@ export function createDashboard({ api }) {
             Math.abs(delta).toFixed(0) +
             '% vs previous ' +
             length +
-            ' days;
+            ' days';
     const paymentCountValid =
       Number.isSafeInteger(summary.paymentCount) && summary.paymentCount >= 0;
     const paymentCount = summary.paymentCount;
