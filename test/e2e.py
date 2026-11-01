@@ -718,9 +718,10 @@ with sync_playwright() as p:
         and 'No approved payment amount' in zero_description,
         'receipt-only periods render a truthful zero-baseline payment trend without invented movement; metrics=' + str(zero_metrics),
     )
-    page.unroute('**/api?*', inject_dashboard_comparison)
-    go_view(page, 'dash')
+    comparison_case = {'paid': 1250, 'previousPaid': 1000}
+    page.click('[data-act=range][data-k="7d"]')
     page.wait_for_selector('.dashboard-trend-chart', state='visible')
+    page.unroute('**/api?*', inject_dashboard_comparison)
 
     page.click('#userBtn')
     page.locator('#userPop button[data-go="acct"]').first.click()
