@@ -146,6 +146,9 @@ export function createReports({ api }) {
         )
         .join('') +
       '</div>';
+    const reportRangeLabel = R.dateRangeInvalid
+      ? 'Invalid date selection'
+      : esc(dmy(R.from)) + ' – ' + esc(dmy(R.to));
     const methodRows = Array.isArray(summary?.byPaymentMethod) ? summary.byPaymentMethod : [];
     const methodMax = Math.max(1, ...methodRows.map((item) => item.s));
     const methodBreakdown = methodRows.length
@@ -169,7 +172,7 @@ export function createReports({ api }) {
       : '<p class="muted">Payment-method breakdown is unavailable for this deployment or selection.</p>';
     const filters = `
       <div class="card report-filter-panel">
-        <div class="report-filter-heading"><div><p class="page-eyebrow">MONEY · REPORTING</p><h2>Movement filters</h2><p class="muted report-scope-note">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p></div><div class="report-range-summary"><span>Selected window</span><strong>${esc(dmy(R.from))} – ${esc(dmy(R.to))}</strong></div></div>
+        <div class="report-filter-heading"><div><p class="page-eyebrow">MONEY · REPORTING</p><h2>Movement filters</h2><p class="muted report-scope-note">Recorded voucher movement only. This report does not establish physical cash, profit, bank balance or tax liability.</p></div><div class="report-range-summary"><span>Selected window</span><strong>${reportRangeLabel}</strong></div></div>
         <form id="movementFilters" class="filters report-filters" autocomplete="off">
           ${quickRangeControls}
           <label>From<input id="movementFrom" type="date" value="${esc(R.from)}" required${R.dateRangeInvalid ? ' aria-invalid="true" aria-describedby="report-date-range-error"' : ''}></label>
