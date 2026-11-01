@@ -27,13 +27,13 @@ The procedure also requires explicit confirmation, unchanged `PEPPER`, exact `Us
 
 The operator configures the following five properties only in the independently verified staging project:
 
-| Property | Value |
-|---|---|
-| `OWNER_RECOVERY_EXPECTED_SCRIPT_ID` | Verified staging Apps Script project ID |
-| `OWNER_RECOVERY_EXPECTED_SS_ID` | Verified staging spreadsheet ID |
-| `OWNER_RECOVERY_EMAIL` | Email of the existing Owner |
-| `OWNER_RECOVERY_PASSWORD` | Unique temporary random password (8–128 characters) |
-| `OWNER_RECOVERY_CONFIRM` | `RESET_EXISTING_OWNER_ONLY` |
+| Property                            | Value                                               |
+| ----------------------------------- | --------------------------------------------------- |
+| `OWNER_RECOVERY_EXPECTED_SCRIPT_ID` | Verified staging Apps Script project ID             |
+| `OWNER_RECOVERY_EXPECTED_SS_ID`     | Verified staging spreadsheet ID                     |
+| `OWNER_RECOVERY_EMAIL`              | Email of the existing Owner                         |
+| `OWNER_RECOVERY_PASSWORD`           | Unique temporary random password (8–128 characters) |
+| `OWNER_RECOVERY_CONFIRM`            | `RESET_EXISTING_OWNER_ONLY`                         |
 
 Generate the temporary password with an approved password manager. Never put it in source, shell history, logs, issue comments, or chat. The procedure deletes all five properties on each recovery attempt, including validation and lock failures.
 
@@ -50,6 +50,7 @@ The backup property requirement follows the actual implementation: `SS_ID`, `REC
 ## Recovery behavior
 
 When invoked through an approved private mechanism, the function:
+
 1. Acquires the existing Apps Script ScriptLock and rechecks environment, schema and account safeguards inside the lock.
 2. Rejects a project/Sheet mismatch, missing PEPPER, malformed schemas, unreadable backup infrastructure, invalid confirmation/password, duplicate target email, non-Owner/inactive account or incomplete existing credentials.
 3. Generates a fresh UUID salt and uses the existing HMAC-SHA256 `hashPassword_()` implementation with the existing PEPPER.
@@ -63,17 +64,17 @@ The code never returns, logs or audits the temporary password, salt or hash. It 
 
 ## Result handling
 
-| Status | Meaning |
-|---|---|
-| `RECOVERY_COMPLETED` | Credential write verified and matching audit event read back; Owner must immediately change the temporary password. |
-| `RECOVERY_COMPLETED_AUDIT_UNVERIFIED` | Credential write succeeded, but audit persistence could not be verified. Reconcile AuditLog before closing the security incident. |
-| `LOCK_ACQUISITION_FAILED` | ScriptLock timeout; credential mutation did not run. |
-| `ENVIRONMENT_VALIDATION_FAILED` | Project, spreadsheet, PEPPER, schema or backup folder validation failed. |
-| `ACCOUNT_VALIDATION_FAILED` | Owner not uniquely found, not active/owner, or required existing credentials missing. |
-| `VALIDATION_FAILED` | Temporary configuration, confirmation or password policy failed. |
-| `CREDENTIAL_WRITE_VERIFICATION_FAILED` | Credential write/read-back failed. Inspect the existing row before retrying. |
+| Status                                  | Meaning                                                                                                                           |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `RECOVERY_COMPLETED`                    | Credential write verified and matching audit event read back; Owner must immediately change the temporary password.               |
+| `RECOVERY_COMPLETED_AUDIT_UNVERIFIED`   | Credential write succeeded, but audit persistence could not be verified. Reconcile AuditLog before closing the security incident. |
+| `LOCK_ACQUISITION_FAILED`               | ScriptLock timeout; credential mutation did not run.                                                                              |
+| `ENVIRONMENT_VALIDATION_FAILED`         | Project, spreadsheet, PEPPER, schema or backup folder validation failed.                                                          |
+| `ACCOUNT_VALIDATION_FAILED`             | Owner not uniquely found, not active/owner, or required existing credentials missing.                                             |
+| `VALIDATION_FAILED`                     | Temporary configuration, confirmation or password policy failed.                                                                  |
+| `CREDENTIAL_WRITE_VERIFICATION_FAILED`  | Credential write/read-back failed. Inspect the existing row before retrying.                                                      |
 | `TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE` | One or more named temporary properties could not be removed; an authorized editor must remove those specific properties manually. |
-| `RECOVERY_NOT_PERFORMED` | Unexpected failure; review sanitized execution evidence and the stored Owner row before retrying. |
+| `RECOVERY_NOT_PERFORMED`                | Unexpected failure; review sanitized execution evidence and the stored Owner row before retrying.                                 |
 
 A `recovered: true` result means credentials were read-back verified. It does not imply that audit persistence is confirmed or a deployment was performed.
 
