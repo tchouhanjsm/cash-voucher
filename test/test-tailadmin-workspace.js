@@ -13,6 +13,10 @@ const dashboard = read('frontend/features/dashboard.js');
 const payments = read('frontend/features/payments.js');
 const register = read('frontend/features/register.js');
 const reports = read('frontend/features/reports.js');
+const administration = read('frontend/features/administration.js');
+const cashClose = read('frontend/features/cash-close.js');
+const bulk = read('frontend/features/bulk.js');
+const onboarding = read('frontend/features/onboarding.js');
 
 const uiKitPosition = html.indexOf('frontend-ui-kit.css');
 const workspacePosition = html.indexOf('frontend-workspace.css');
@@ -160,6 +164,20 @@ assert.match(
 );
 assert.match(payments, /batchProgress/, 'new voucher exposes batch completion progress');
 assert.match(payments, /batchReadiness/, 'new voucher explains incomplete entry rows');
+const rowRendererStart = payments.indexOf('function createEntryRow()');
+const rowRendererEnd = payments.indexOf('function labelRows()', rowRendererStart);
+assert.ok(rowRendererStart >= 0 && rowRendererEnd > rowRendererStart);
+const rowRenderer = payments.slice(rowRendererStart, rowRendererEnd);
+assert.doesNotMatch(rowRenderer, /innerHTML|insertAdjacentHTML|outerHTML/);
+assert.match(rowRenderer, /textContent\s*=/);
+assert.match(rowRenderer, /catOptionsNode\('Other', NT\)/);
+assert.match(rowRenderer, /option\.textContent = PAYMENT_METHOD_LABELS\[method\]/);
+assert.match(administration, /<label for="vn">Vendor name/);
+assert.match(administration, /<label for="vdcat">Default category/);
+assert.match(administration, /<label for="un">Name/);
+assert.match(administration, /<label for="ue">Email address/);
+assert.match(administration, /<label for="ur">Role/);
+assert.match(administration, /<label for="up">Temporary password/);
 assert.match(
   register,
   /registerPageMeta/,
@@ -170,6 +188,18 @@ assert.match(
   /report-method-bar/,
   'reports visualize server-derived payment-method totals',
 );
+for (const [source, pattern, description] of [
+  [administration, /settings-layout/, 'settings use an organized workspace layout'],
+  [administration, /audit-panel/, 'audit uses a records workspace'],
+  [bulk, /bulk-review-panel/, 'bulk import has a distinct review workspace'],
+  [cashClose, /cc-metrics/, 'cash close retains reconciliation metrics'],
+  [onboarding, /onboarding-summary/, 'onboarding exposes readiness summaries'],
+]) assert.match(source, pattern, description);
+for (const selector of [
+  '.settings-layout', '.settings-diagnostics', '.audit-panel', '.audit-filters',
+  '.bulk-import-panel', '.bulk-review-panel', '.cc-preview', '.cc-metrics',
+  '.cc-method-grid', '.onboarding-page', '.onboarding-summary', '.onboarding-steps'
+]) assert.ok(styles.includes(selector), 'workspace styling covers ' + selector);
 
 // Dashboard amounts and chart data remain owned by the validated server read model.
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');
