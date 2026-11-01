@@ -5,10 +5,14 @@ import json
 import math
 import os
 import urllib.parse
+from zoneinfo import ZoneInfo
 
 from playwright.sync_api import sync_playwright
 
 BASE = os.environ.get('E2E_BASE', 'http://127.0.0.1:8765').rstrip('/')
+
+# CI runners use UTC; the application business day is Asia/Kolkata.
+BUSINESS_TODAY = datetime.datetime.now(ZoneInfo('Asia/Kolkata')).date()
 API = BASE + '/api?' + urllib.parse.urlencode({
     'drop_vendor': 'Offline Vendor',
     'count_vendor': 'Multi-tab Vendor',
@@ -5489,7 +5493,7 @@ with sync_playwright() as p:
 
     go_view(page, 'bulk')
     page.wait_for_selector('#bt')
-    today = datetime.date.today()
+    today = BUSINESS_TODAY
     date_text = today.strftime('%d/%m/%Y')
 
     file_accept = page.locator('#bf').get_attribute('accept') or ''
@@ -5671,7 +5675,7 @@ with sync_playwright() as p:
             template = vouchers[0].copy() if vouchers else {
                 'id': '',
                 'no': 0,
-                'date': datetime.date.today().isoformat(),
+                'date': BUSINESS_TODAY.isoformat(),
                 'vendor': '',
                 'amount': 1,
                 'category': '',
@@ -5690,7 +5694,7 @@ with sync_playwright() as p:
                 entry.update({
                     'id': 'prototype-dashboard-' + str(index),
                     'no': 900001 + index,
-                    'date': datetime.date.today().isoformat(),
+                    'date': BUSINESS_TODAY.isoformat(),
                     'vendor': value,
                     'category': value,
                     'amount': 900001 + index,
@@ -5707,7 +5711,7 @@ with sync_playwright() as p:
                     **template,
                     'id': {'unexpected': 'object id'},
                     'no': 900010,
-                    'date': datetime.date.today().isoformat(),
+                    'date': BUSINESS_TODAY.isoformat(),
                     'vendor': 'BAD_CORE_ROW',
                     'amount': 30,
                     'type': 'PAYMENT',
@@ -5717,7 +5721,7 @@ with sync_playwright() as p:
                     **template,
                     'id': 'malformed-voucher-metadata',
                     'no': 900011,
-                    'date': datetime.date.today().isoformat(),
+                    'date': BUSINESS_TODAY.isoformat(),
                     'vendor': {'toString': None, 'valueOf': None},
                     'category': {'toString': None, 'valueOf': None},
                     'notes': {'toString': None, 'valueOf': None},
@@ -6044,7 +6048,7 @@ with sync_playwright() as p:
             template = vouchers[0].copy() if vouchers else {
                 'id': '',
                 'no': 0,
-                'date': datetime.date.today().isoformat(),
+                'date': BUSINESS_TODAY.isoformat(),
                 'vendor': '',
                 'amount': 1,
                 'category': 'Other',
@@ -6063,7 +6067,7 @@ with sync_playwright() as p:
                 entry.update({
                     'id': suffix,
                     'no': 910001 + index,
-                    'date': datetime.date.today().isoformat(),
+                    'date': BUSINESS_TODAY.isoformat(),
                     'vendor': vendor,
                     'category': 'Rendering boundary',
                     'amount': amount,
@@ -6104,7 +6108,7 @@ with sync_playwright() as p:
             template = items[0].copy() if items else {
                 'id': '',
                 'no': 0,
-                'date': datetime.date.today().isoformat(),
+                'date': BUSINESS_TODAY.isoformat(),
                 'vendor': '',
                 'amount': 1,
                 'category': 'Other',
@@ -6129,7 +6133,7 @@ with sync_playwright() as p:
                 entry.update({
                     'id': suffix,
                     'no': 910001 + index,
-                    'date': datetime.date.today().isoformat(),
+                    'date': BUSINESS_TODAY.isoformat(),
                     'vendor': vendor,
                     'category': 'Rendering boundary',
                     'notes': '',
@@ -6287,7 +6291,7 @@ with sync_playwright() as p:
                 items.append({
                     'id': 'xss-render-voucher-fixture',
                     'no': 998877,
-                    'date': datetime.date.today().isoformat(),
+                    'date': BUSINESS_TODAY.isoformat(),
                     'vendor': xss_payload,
                     'vendorId': 'xss-render-vendor-fixture',
                     'paymentMethod': 'CASH',
@@ -6942,7 +6946,7 @@ with sync_playwright() as p:
                 },
                 {
                     'id': 'malformed-report-amount',
-                    'date': datetime.date.today().isoformat(),
+                    'date': BUSINESS_TODAY.isoformat(),
                     'voucherNo': '999',
                     'type': 'PAYMENT',
                     'vendor': 'MALFORMED_AMOUNT_ROW_MARKER',
@@ -7217,7 +7221,7 @@ with sync_playwright() as p:
         'invalid date range marks both fields and programmatically links them to one alert',
     )
     # Restore a valid month-to-date filter before continuing the report workflow.
-    page.locator('#movementFrom').fill(datetime.date.today().replace(day=1).isoformat())
+    page.locator('#movementFrom').fill(BUSINESS_TODAY.replace(day=1).isoformat())
     page.locator('#movementFilters button[type=submit]').click()
     page.wait_for_function(
         "document.querySelector('#movementFilters button[type=submit]').innerText.trim() === 'Run report'"
@@ -7336,7 +7340,7 @@ with sync_playwright() as p:
                 items.append({
                     'id': 'malformed-register-fixture',
                     'no': 999991,
-                    'date': datetime.date.today().isoformat(),
+                    'date': BUSINESS_TODAY.isoformat(),
                     'vendor': None,
                     'category': 'Other',
                     'notes': {'toString': None, 'valueOf': None},
@@ -7619,7 +7623,7 @@ with sync_playwright() as p:
     check(not real_errors, 'no console errors: ' + '; '.join(real_errors[:3]))
 
     legacy_entry = {
-        'date': datetime.date.today().isoformat(),
+        'date': BUSINESS_TODAY.isoformat(),
         'type': 'PAYMENT',
         'vendor': 'Legacy Migration Vendor',
         'amount': 321,
@@ -8619,7 +8623,7 @@ with sync_playwright() as p:
                                 'hiddenCount': 0,
                                 'matches': [{
                                     'voucherNo': 'E2E-XSS-998878',
-                                    'date': datetime.date.today().isoformat(),
+                                    'date': BUSINESS_TODAY.isoformat(),
                                     'vendor': xss_payload,
                                     'amount': 11,
                                     'inBatch': False,
