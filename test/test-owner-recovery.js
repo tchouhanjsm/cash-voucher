@@ -284,6 +284,8 @@ async function run() {
   assert.equal(recoveryPropertiesCleared(auditDegraded.g), true);
 
   const routes = create();
+  routes.props.OWNER_EMAIL = 'owner@test.com';
+  routes.props.OWNER_PASSWORD = 'Initial-Owner-Password-2026';
   routes.setup();
   assert.equal(routes.registeredActions().includes('recoverExistingOwnerPasswordOnce_'), false);
   assert.equal(routes.registeredActions().includes('ownerRecoveryPreflight_'), false);
