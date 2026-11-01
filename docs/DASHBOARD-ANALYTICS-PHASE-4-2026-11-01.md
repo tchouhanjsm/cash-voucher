@@ -30,3 +30,11 @@
 ## Release boundary
 
 Source-only. No Apps Script deployment, spreadsheet migration, financial write, cPanel release or production change.
+## Additional Phase 4 stability and responsive behavior
+
+- Put the SVG in a labelled, keyboard-focusable horizontal scroll region. The chart uses a 720px minimum width so axis text remains legible on mobile; scrolling is contained inside the dashboard card.
+- Add a custom range draft flag. Entering Custom does not trigger a request for a fallback 30-day period. Only Apply writes the selected dates into dashboard state and requests a new server summary.
+- Retain the previously applied dates when reopening the custom date editor.
+- Browser regression tests assert no fetch while the date draft is open, date-value persistence through editing, monthly aggregation beyond 62 days and a zero payment trend when the period contains receipts but no payments.
+- No backend/API changes, new client-side financial aggregation or financial-definition changes.
+

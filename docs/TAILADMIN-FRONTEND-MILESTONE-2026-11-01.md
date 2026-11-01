@@ -63,3 +63,10 @@ Source-only implementation. No merge, deployment, Apps Script push, spreadsheet 
 - Keep all amounts and trend buckets sourced from the validated dashboard summary API. Do not infer metrics from the browser, add template values, or change financial definitions.
 - Advance the service-worker public-shell cache to `cv2-v46` and test update/precache integration.
 - Add Browser E2E coverage for zero-baseline, flat, increasing and decreasing comparisons, chart accessibility and the existing desktop/mobile light/dark visual matrix.
+## Phase 4 follow-up — responsive trend and custom-range stability
+
+- A labelled, focusable horizontal scroll region retains a readable 720px minimum chart width on narrow viewports without creating document-level horizontal overflow.
+- Custom range controls use a draft state. Selecting Custom does not fetch the fallback date range; Apply commits the selected From/To values and refreshes the dashboard.
+- This prevents an asynchronous summary response from rebuilding the dashboard while the user is editing dates.
+- E2E coverage checks pending draft behavior, both retained dates, exact monthly buckets beyond 62 days and an all-zero payment trend for a receipts-only period.
+

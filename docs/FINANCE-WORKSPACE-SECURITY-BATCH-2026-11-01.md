@@ -34,3 +34,10 @@ No spreadsheet backup/migration, Apps Script deployment, staging/production fina
 - Total paid comparison copy now distinguishes a zero baseline, an unchanged period, an increase and a decrease without treating spending movement as a success/failure status.
 - The trend still uses only `dashboardSummary.trend`; the KPI still uses validated `paid` and `previousPaid`. No backend or financial formulas were changed.
 - Service-worker revision is `cv2-v46`; exact-head Quality and Browser E2E are required before this batch is considered complete.
+## Phase 4 follow-up — custom-date request race
+
+- The dashboard marks the Custom selector as a draft until the user explicitly applies the date range.
+- A pending custom draft renders an explanatory status and sends no dashboardSummary request. This eliminates the observed 30-day fallback response race that previously reset unsubmitted date inputs.
+- Apply clears the draft flag, stores the date range and loads the server-owned summary. The previous applied custom range is retained when reopening the editor.
+- The trend chart is keyboard-scrollable and named for assistive technology; its SVG remains readable at mobile widths rather than scaling all labels to a few pixels.
+
