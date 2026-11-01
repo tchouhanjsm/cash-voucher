@@ -1217,11 +1217,32 @@ with sync_playwright() as p:
       const top = row?.querySelector('.top');
       const note = row?.querySelector('.rn');
       const remove = row?.querySelector('.x');
+      const overflowElements = [...document.querySelectorAll('body *')]
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          const style = getComputedStyle(element);
+          return {
+            tag: element.tagName.toLowerCase(),
+            id: element.id,
+            className: typeof element.className === 'string' ? element.className : '',
+            left: Math.round(rect.left),
+            right: Math.round(rect.right),
+            width: Math.round(rect.width),
+            overflowX: style.overflowX,
+            display: style.display,
+          };
+        })
+        .filter((item) => item.display !== 'none' && item.width > 0 && (item.left < -1 || item.right > window.innerWidth + 1))
+        .sort((left, right) => right.right - left.right)
+        .slice(0, 12);
       return {
         columns: top ? getComputedStyle(top).gridTemplateColumns.trim().split(/\\s+/).length : 0,
         noteWidth: note?.getBoundingClientRect().width || 0,
         removeWidth: remove?.getBoundingClientRect().width || 0,
         horizontalOverflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        viewportWidth: window.innerWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        overflowElements,
       };
     }""")
     check(
@@ -1679,11 +1700,26 @@ with sync_playwright() as p:
 
     go_view(page, 'users')
     page.wait_for_selector('#uf')
+    user_label_metrics = page.locator('#uf').evaluate("""(form) => {
+        const controls = [...form.querySelectorAll('input, select, textarea')].map((field) => ({
+            id: field.id,
+            type: field.type || field.tagName.toLowerCase(),
+            labelCount: field.labels?.length || 0,
+            labels: [...(field.labels || [])].map((label) => label.textContent.trim()),
+        }));
+        return {
+            labels: [...form.querySelectorAll('label[for]')].map((label) => ({for:label.htmlFor,text:label.textContent.trim()})),
+            controls,
+        };
+    }""")
+    user_label_queries = {
+        label: page.locator('#uf').get_by_label(label, exact=True).count()
+        for label in ['Name', 'Email address', 'Role', 'Temporary password']
+    }
     check(
-        page.locator('#uf').get_by_label('Name', exact=True).count() == 1
-        and page.locator('#uf').get_by_label('Email address', exact=True).count() == 1
-        and page.locator('#uf').get_by_label('Role', exact=True).count() == 1,
-        'add-user form fields have explicit accessible names',
+        all(value == 1 for value in user_label_queries.values())
+        and all(item['labelCount'] == 1 for item in user_label_metrics['controls']),
+        f'add-user form fields have explicit accessible names; queries={user_label_queries}, markup={user_label_metrics}',
     )
     check(
         page.locator('#up').get_attribute('type') == 'password'
