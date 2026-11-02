@@ -20,7 +20,7 @@
 - No Apps Script deployment, Google Sheet migration, staging financial write, cPanel publication or production data change was part of PR #258.
 
 **Updated:** 2 November 2026 — Phase 6 first-paint smoke and diagnostics follow-up.
-**Verified integration baseline:** `27e20f4167413a8901e58204bcf59ff3e8651686`.
+**Current integration baseline:** `27e20f4167413a8901e58204bcf59ff3e8651686`.
 **Next action:** run exact-head CI, Browser E2E, Full Flight and Autonomous Development Monitor; inspect the paint smoke JSON artifact and the full PR diff before merge. Then perform a clean-profile Lighthouse run against the verified staging build and investigate any reproducible issue with its trace/network evidence.
 
 ## TailAdmin-inspired finance workspace milestone — PR #257
