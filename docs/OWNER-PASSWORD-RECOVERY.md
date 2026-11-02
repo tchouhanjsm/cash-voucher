@@ -1,97 +1,115 @@
-# Owner password recovery — editor-authorized break-glass
+# Password Recovery Tool — operator runbook
 
-## Purpose and scope
+## Purpose
 
-The normal `resetPassword_` action requires an authenticated Owner session. It cannot recover access when the only Owner is locked out. This is an operator-controlled procedure for the existing, active Owner only. It must never create another Owner, reactivate an account, or provide a public password-reset route.
+Use the dedicated `passwordRecoveryTool()` Apps Script editor entrypoint when the normal application Owner cannot sign in. Do not use `setup()`, reinitialize the application, create a replacement Owner, or edit the Users sheet manually.
 
-This implementation is scoped to staging. It does not authorize a production recovery procedure.
+This is a break-glass operation for one existing, active Owner account. It is source-only until the code is synchronized to the intended staging Apps Script project through the approved release process. No production recovery is authorized by this runbook.
 
-## IAM trust and target verification
+## Execution and authorization model
 
-The operator must already possess edit access to the exact Apps Script project. The operation checks two independently configured identities:
+The current web app manifest is configured with `executeAs: USER_DEPLOYING` and `access: ANYONE_ANONYMOUS`. A public top-level Apps Script function is callable through `google.script.run`; absence from the application's `ACTIONS` table is not a security boundary.
 
-1. `ScriptApp.getScriptId()` must equal `OWNER_RECOVERY_EXPECTED_SCRIPT_ID`.
-2. `SS_ID` and the spreadsheet opened by ID must both equal `OWNER_RECOVERY_EXPECTED_SS_ID`.
+For that reason the editor entrypoints are protected by a server-side Google identity check:
 
-Set these values only after confirming the intended staging project and Sheet from the team's private inventory. Do not place IDs, email addresses or secrets in source code, PR comments, screenshots, terminal history or chat.
+- `Session.getActiveUser().getEmail()` must be non-empty.
+- `Session.getEffectiveUser().getEmail()` must be non-empty.
+- Both values must exactly match the persistent `OWNER_RECOVERY_OPERATOR_EMAIL` Script Property.
+- The identity check is repeated after acquiring the existing ScriptLock.
+- Missing, unavailable or mismatched identities are denied. There is no fallback to an email supplied by the browser, a request parameter, the Owner account being recovered, or the effective user alone.
 
-The procedure also requires explicit confirmation, unchanged `PEPPER`, exact `Users` and `AuditLog` schemas, readable receipt/backup folders, one matching active Owner, populated existing credential fields, and the normal 8–128 character password policy.
+An anonymous or otherwise unresolved web-app caller therefore fails closed. A caller whose active and effective Google identities both equal the configured operator is acting as that explicitly authorized Google account; protect that account and its editor access accordingly.
 
-## Private functions and Apps Script editor limitation
+The two public entrypoints are deliberately not registered in `ACTIONS` or `WRITES` and are not exposed in application navigation:
 
-- `ownerRecoveryPreflight_()` is read-only. Its result contains individual pass/fail checks and a masked Owner email. It changes no rows, Script Properties, Cache entries, audit events or triggers.
-- `recoverExistingOwnerPasswordOnce_()` reads its inputs from temporary Script Properties, is underscore-suffixed and is not registered in `ACTIONS`.
-- **Invocation constraint:** Apps Script underscore-suffixed functions are private to client calls, but the project also documents that they do not appear in the editor's Run function list. A public wrapper would appear in that list but may also be invocable through `google.script.run`, even if it is not registered in `ACTIONS`. Do not add such a wrapper. This PR does not claim that a private function is selectable from the standard Run list; the team must resolve the editor invocation mechanism separately before operational use. Do not use `eval`, a browser-callable wrapper or an unreviewed workaround.
+- `passwordRecoveryPreflight()` — read-only preflight.
+- `passwordRecoveryTool()` — performs the one-time password reset.
 
-## Temporary Script Properties
+The credential mutation remains in the private `recoverExistingOwnerPasswordOnce_()` worker. Do not add a route, UI control, alternate wrapper, `eval` invocation or unauthenticated recovery endpoint.
 
-The operator configures the following five properties only in the independently verified staging project:
+## Persistent operator configuration
 
-| Property                            | Value                                               |
-| ----------------------------------- | --------------------------------------------------- |
-| `OWNER_RECOVERY_EXPECTED_SCRIPT_ID` | Verified staging Apps Script project ID             |
-| `OWNER_RECOVERY_EXPECTED_SS_ID`     | Verified staging spreadsheet ID                     |
-| `OWNER_RECOVERY_EMAIL`              | Email of the existing Owner                         |
-| `OWNER_RECOVERY_PASSWORD`           | Unique temporary random password (8–128 characters) |
-| `OWNER_RECOVERY_CONFIRM`            | `RESET_EXISTING_OWNER_ONLY`                         |
+In the intended staging Apps Script project, configure this persistent Script Property once:
 
-Generate the temporary password with an approved password manager. Never put it in source, shell history, logs, issue comments, or chat. The procedure deletes all five properties on each recovery attempt, including validation and lock failures.
+| Property                        | Value                                                             |
+| ------------------------------- | ----------------------------------------------------------------- |
+| `OWNER_RECOVERY_OPERATOR_EMAIL` | Exact Google account email of the authorized Apps Script operator |
 
-## Read-only preflight sequence
+Use the same Google account that has editor access and will execute the function from the Apps Script editor. Keep this property in place between recovery events. Change it only through an authorized project editor and a reviewed operator-identity change.
 
-After the code has been synchronized through a separately approved release process, verify the project name and staging inventory. Configure the expected identities and target email. Then use the separately approved private invocation mechanism to execute `ownerRecoveryPreflight_()`.
+The tool requires both the active and effective user email to equal this property. If Apps Script cannot resolve either identity in the editor, stop: do not weaken the check or substitute a browser-supplied email.
 
-Review all checks: project identity, SS_ID, spreadsheet read access, PEPPER presence, exact Users schema, exactly one matching active Owner, populated UserID/Salt/PasswordHash, exact AuditLog schema, and readable receipt/backup folders.
+## Preflight Script Properties
 
-A failed check means stop and investigate. Do not call `setup()`, create another Owner, edit the Users sheet or change PEPPER/SS_ID to make preflight pass.
+Configure only these three temporary Script Properties before the read-only preflight:
 
-The backup property requirement follows the actual implementation: `SS_ID`, `RECEIPT_FOLDER_ID` and `BACKUP_FOLDER_ID`. A previous `BACKUP_LAST_SUCCESS` is not required because the system supports configured-but-never-run backups. Folder readability is verified; preflight does not create folders or triggers.
+- `OWNER_RECOVERY_EXPECTED_SCRIPT_ID` — independently verified staging Apps Script project ID.
+- `OWNER_RECOVERY_EXPECTED_SS_ID` — independently verified staging spreadsheet ID.
+- `OWNER_RECOVERY_EMAIL` — email of the existing Owner account to recover.
 
-## Recovery behavior
+The preflight reads these target values, the persistent `OWNER_RECOVERY_OPERATOR_EMAIL`, the existing `SS_ID`, `PEPPER`, Users/AuditLog schemas and receipt/backup folder properties. It does **not** read the temporary password or destructive confirmation.
 
-When invoked through an approved private mechanism, the function:
+## Recovery-only Script Properties
 
-1. Acquires the existing Apps Script ScriptLock and rechecks environment, schema and account safeguards inside the lock.
-2. Rejects a project/Sheet mismatch, missing PEPPER, malformed schemas, unreadable backup infrastructure, invalid confirmation/password, duplicate target email, non-Owner/inactive account or incomplete existing credentials.
-3. Generates a fresh UUID salt and uses the existing HMAC-SHA256 `hashPassword_()` implementation with the existing PEPPER.
-4. Updates only `Salt`, `PasswordHash` and `MustChangePassword=true` on the existing Owner row.
-5. Reads the row back and verifies the new credentials and preservation of UserID, name, email, role and active status.
-6. Removes only `f:<email>` and `pf:<UserID>` counters. Salt rotation invalidates prior sessions through the existing `auth_()` salt comparison; unrelated session cache entries are not deleted.
-7. Calls the existing `auditEvent_()` mechanism using a unique operation identifier and reads AuditLog back to prove that the corresponding `PASSWORD_RESET` / `USER_PASSWORD_RESET` event persisted.
-8. Deletes the five named temporary recovery properties in a `finally` block.
+Set these two properties **only after** `passwordRecoveryPreflight()` returns `PREFLIGHT_READY` and every check has been reviewed:
 
-The code never returns, logs or audits the temporary password, salt or hash. It does not alter Owner identity/status, another user's row, PEPPER, SS_ID, backup markers or unrelated Script Properties.
+- `OWNER_RECOVERY_PASSWORD` — unique temporary random password (8–128 characters).
+- `OWNER_RECOVERY_CONFIRM` — exact text `RESET_EXISTING_OWNER_ONLY`.
+
+Generate the temporary password in an approved password manager. Do not put it in source code, shell history, logs, issue comments, PR descriptions or chat. Do not add the password to the persistent operator property. Minimize its time in Script Properties: create it after preflight and immediately run the recovery entrypoint once.
+
+The authorized recovery worker deletes all five temporary recovery properties in its cleanup path, including validation and lock failures. An unauthorized identity does not consume or clear them. If preflight is blocked, do not set the recovery-only properties and manually remove only the three target properties listed above. The persistent `OWNER_RECOVERY_OPERATOR_EMAIL` is never removed by recovery.
+
+## Operator procedure
+
+1. Open the exact staging Apps Script project in the browser and verify its project name and script ID against the private staging inventory.
+2. Confirm that the signed-in Google account is the configured `OWNER_RECOVERY_OPERATOR_EMAIL` and has editor access.
+3. Set only the three preflight target properties: expected Script ID, expected spreadsheet ID and target Owner email. Do not change `PEPPER`, `SS_ID`, receipt/backup folder IDs or any other application property.
+4. In the Apps Script editor function selector, choose **`passwordRecoveryPreflight`** and click **Run**.
+5. Review the Execution log. It must report `PREFLIGHT_READY`, with the operator identity and every project, spreadsheet, PEPPER, schema, Owner and folder check passed. Preflight is read-only: it changes no application data, recovery properties, cache entries, audit events or triggers.
+6. If any check fails or either operator identity is unavailable, stop. Do not set a temporary password or confirmation. Remove only the three preflight target properties; do not run `setup()`, edit Users manually, create a new Owner or change trusted IDs to force a pass.
+7. Only after a clean preflight, generate a unique temporary password in an approved password manager and add `OWNER_RECOVERY_PASSWORD` plus `OWNER_RECOVERY_CONFIRM=RESET_EXISTING_OWNER_ONLY` to Script Properties.
+8. Recheck that the exact staging project and Owner target are still selected. Choose **`passwordRecoveryTool`** in the editor function selector and click **Run** once. The worker repeats all authorization and target checks under ScriptLock before changing the credential.
+9. Review the sanitized Execution log. `RECOVERY_COMPLETED` means the credential row and matching audit event were verified. `RECOVERY_COMPLETED_AUDIT_UNVERIFIED` means the credential reset succeeded but audit persistence needs reconciliation before closing the incident.
+10. Verify all five temporary properties are gone. The persistent operator email, PEPPER, SS_ID, folder properties and backup markers must remain unchanged.
+11. The Owner signs in using the temporary password and immediately completes the existing mandatory password-change flow. Verify the new password works and all pre-recovery sessions are rejected.
+
+Do not rerun the recovery tool merely because the audit result is unverified or a later check failed. Inspect the Owner row and AuditLog first.
+
+## What the recovery worker changes
+
+Under the existing Apps Script ScriptLock, it revalidates operator identity, project ID, spreadsheet ID, PEPPER, Users/AuditLog schemas, folder readability, target email uniqueness, Owner role/status, existing identity fields, confirmation and password policy.
+
+It then:
+
+1. Generates a fresh UUID salt and uses the existing HMAC-SHA256 `hashPassword_()` implementation with the unchanged PEPPER.
+2. Patches only `Salt`, `PasswordHash` and `MustChangePassword=true` on the existing Owner row.
+3. Reads back the row and verifies the credential values and preservation of UserID, name, email, role and active status.
+4. Clears only the target Owner's failed-login and failed-password-change counters. Salt rotation invalidates old sessions through the existing authentication salt check.
+5. Writes a structured `PASSWORD_RESET` / `USER_PASSWORD_RESET` event under the actual authorized Google operator identity, then reads it back to verify the unique recovery marker.
+6. Deletes the five temporary recovery properties in a `finally` block.
+
+The temporary password, new salt and hash are never returned, logged or written to the audit event. Other users, Owner identity/status, PEPPER, SS_ID and unrelated cache/property values are not intended to change.
 
 ## Result handling
 
-| Status                                  | Meaning                                                                                                                           |
-| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `RECOVERY_COMPLETED`                    | Credential write verified and matching audit event read back; Owner must immediately change the temporary password.               |
-| `RECOVERY_COMPLETED_AUDIT_UNVERIFIED`   | Credential write succeeded, but audit persistence could not be verified. Reconcile AuditLog before closing the security incident. |
-| `LOCK_ACQUISITION_FAILED`               | ScriptLock timeout; credential mutation did not run.                                                                              |
-| `ENVIRONMENT_VALIDATION_FAILED`         | Project, spreadsheet, PEPPER, schema or backup folder validation failed.                                                          |
-| `ACCOUNT_VALIDATION_FAILED`             | Owner not uniquely found, not active/owner, or required existing credentials missing.                                             |
-| `VALIDATION_FAILED`                     | Temporary configuration, confirmation or password policy failed.                                                                  |
-| `CREDENTIAL_WRITE_VERIFICATION_FAILED`  | Credential write/read-back failed. Inspect the existing row before retrying.                                                      |
-| `TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE` | One or more named temporary properties could not be removed; an authorized editor must remove those specific properties manually. |
-| `RECOVERY_NOT_PERFORMED`                | Unexpected failure; review sanitized execution evidence and the stored Owner row before retrying.                                 |
+| Status                                  | Meaning                                                                                                                                        |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PREFLIGHT_READY`                       | Read-only validation passed; no data was changed.                                                                                              |
+| `PREFLIGHT_BLOCKED`                     | One or more environment/account checks failed; do not run recovery.                                                                            |
+| `OPERATOR_NOT_AUTHORIZED`               | Active/effective Google identities are missing or do not exactly match the persistent operator allowlist. No recovery properties are consumed. |
+| `RECOVERY_COMPLETED`                    | Credential write and matching audit-event read-back verified.                                                                                  |
+| `RECOVERY_COMPLETED_AUDIT_UNVERIFIED`   | Credential write verified; audit persistence could not be verified. Reconcile AuditLog before closing the incident.                            |
+| `LOCK_ACQUISITION_FAILED`               | ScriptLock timeout; credential mutation did not run.                                                                                           |
+| `ENVIRONMENT_VALIDATION_FAILED`         | Project, spreadsheet, PEPPER, schema or backup infrastructure validation failed.                                                               |
+| `ACCOUNT_VALIDATION_FAILED`             | No unique active Owner or incomplete existing Owner record.                                                                                    |
+| `VALIDATION_FAILED`                     | Temporary configuration, confirmation or password policy failed.                                                                               |
+| `CREDENTIAL_WRITE_VERIFICATION_FAILED`  | Credential write/read-back failed. Inspect the row before retrying.                                                                            |
+| `TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE` | One or more temporary properties could not be removed; an authorized editor must remove only the named temporary properties.                   |
+| `RECOVERY_NOT_PERFORMED`                | Unexpected failure; inspect sanitized execution evidence and the stored Owner row before retrying.                                             |
 
-A `recovered: true` result means credentials were read-back verified. It does not imply that audit persistence is confirmed or a deployment was performed.
+## Failure handling and release boundary
 
-## Post-recovery verification
+Never bypass the operator identity check, weaken it to accept a browser parameter, edit Users manually, create a replacement Owner, reactivate an account, rotate PEPPER, change SS_ID, run `setup()`, bypass AuditLog or clear unrelated cache/session entries.
 
-Once a secure invocation mechanism is approved:
-
-1. Verify the same Owner UserID, name, email, role and active status remain.
-2. Verify only Salt, PasswordHash and MustChangePassword changed. Do not display or export credential values.
-3. Confirm `MustChangePassword=true`.
-4. Confirm the specific structured audit event exists and contains no credential material.
-5. Confirm all five temporary properties are gone. PEPPER, SS_ID, receipt/backup IDs and backup markers must remain unchanged.
-6. The Owner signs in with the temporary password and immediately uses the existing mandatory password-change flow. Verify the new password works and prior sessions are rejected.
-7. Remove the temporary recovery module from the Apps Script project only after recovery is complete and all audit/cleanup issues are resolved. Keep the reviewed source and tests in Git.
-
-## Failure handling and deployment boundary
-
-Never edit the Users sheet manually, create a replacement Owner, reactivate an account, change identity, rotate PEPPER, change SS_ID, run setup(), bypass AuditLog, or clear unrelated cache/session entries. A mismatch is a stop condition for a second authorized reviewer.
-
-Executing the editor-only recovery logic does not require a web-app redeployment. However, the new source must first be synchronized into the intended staging Apps Script project via a separately approved process. This PR does not run Clasp, deploy a web app, modify a live spreadsheet, change staging data or access production resources.
+The recovery worker does not require a web-app deployment to run from the Apps Script editor. This PR does not synchronize code to Apps Script, execute a staging recovery, change a live spreadsheet, deploy a web app, access production data or merge the PR.

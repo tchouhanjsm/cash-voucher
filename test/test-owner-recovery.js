@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const { create } = require('./mock-gas');
 
 function configureRecovery(g, overrides = {}) {
+  g.props.OWNER_RECOVERY_OPERATOR_EMAIL = overrides.operatorEmail || 'owner-google@test.com';
   g.props.OWNER_RECOVERY_EXPECTED_SCRIPT_ID = overrides.scriptId || 'MOCK_SCRIPT_ID';
   g.props.OWNER_RECOVERY_EXPECTED_SS_ID = overrides.ssId || 'SS1';
   g.props.OWNER_RECOVERY_EMAIL = overrides.email || 'owner@test.com';
@@ -96,7 +97,7 @@ async function run() {
   );
   const cacheBeforePreflight = JSON.stringify(success.g.cache);
   const locksBeforePreflight = success.g.lockStats.attempts;
-  const preflight = success.g.ownerRecoveryPreflight();
+  const preflight = success.g.passwordRecoveryPreflight();
   assert.equal(preflight.ready, true);
   assert.equal(preflight.readOnly, true);
   assert.equal(
@@ -116,7 +117,31 @@ async function run() {
   assert.equal(JSON.stringify(success.g.cache), cacheBeforePreflight);
   assert.equal(success.g.lockStats.attempts, locksBeforePreflight);
 
-  const recovered = success.g.recoverOwnerPassword();
+  // Read-only preflight must not require a temporary password or destructive confirmation.
+  const preflightWithoutRecoverySecrets = makeReady();
+  delete preflightWithoutRecoverySecrets.g.props.OWNER_RECOVERY_PASSWORD;
+  delete preflightWithoutRecoverySecrets.g.props.OWNER_RECOVERY_CONFIRM;
+  const preflightOnlyPropsBefore = JSON.stringify(preflightWithoutRecoverySecrets.g.props);
+  const preflightOnly = preflightWithoutRecoverySecrets.g.passwordRecoveryPreflight();
+  assert.equal(preflightOnly.ready, true);
+  assert.equal(preflightOnly.readOnly, true);
+  assert.equal(JSON.stringify(preflightWithoutRecoverySecrets.g.props), preflightOnlyPropsBefore);
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(
+      preflightWithoutRecoverySecrets.g.props,
+      'OWNER_RECOVERY_PASSWORD',
+    ),
+    false,
+  );
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(
+      preflightWithoutRecoverySecrets.g.props,
+      'OWNER_RECOVERY_CONFIRM',
+    ),
+    false,
+  );
+
+  const recovered = success.g.passwordRecoveryTool();
   assert.equal(recovered.status, 'RECOVERY_COMPLETED');
   assert.equal(recovered.recovered, true);
   assert.equal(recovered.auditVerified, true);
@@ -145,7 +170,9 @@ async function run() {
   assert.equal(auditDetails.eventType, 'USER_PASSWORD_RESET');
   assert.equal(auditDetails.entityType, 'user');
   assert.equal(auditDetails.entityId, before.userId);
-  assert.ok(auditDetails.reason.startsWith('EDITOR_AUTHORIZED_OWNER_RECOVERY|'));
+  assert.ok(auditDetails.reason.startsWith('OPERATOR_PASSWORD_RECOVERY|'));
+  assert.equal(auditEvent[1], 'owner-google@test.com');
+  assert.equal(success.g.props.OWNER_RECOVERY_OPERATOR_EMAIL, 'owner-google@test.com');
   assert.ok(!JSON.stringify(auditDetails).includes(after.hash));
   assert.ok(!JSON.stringify(auditDetails).includes(after.salt));
   assert.ok(!JSON.stringify(auditDetails).includes('Secure-Temporary-Password-2026'));
@@ -224,7 +251,7 @@ async function run() {
     );
     const cacheBefore = JSON.stringify(fixture.g.cache);
     const locksBefore = fixture.g.lockStats.attempts;
-    assert.equal(fixture.g.ownerRecoveryPreflight().ready, false, label);
+    assert.equal(fixture.g.passwordRecoveryPreflight().ready, false, label);
     assert.equal(JSON.stringify(fixture.g.props), propsBefore);
     assert.equal(
       JSON.stringify(
@@ -258,7 +285,7 @@ async function run() {
   failureCases.push([roleRecovery, 'ACCOUNT_VALIDATION_FAILED', 'wrong role']);
   for (const [fixture, expectedStatus, label] of failureCases) {
     const ownerBefore = credentialSnapshot(fixture.owner);
-    const result = fixture.g.recoverOwnerPassword();
+    const result = fixture.g.passwordRecoveryTool();
     assert.equal(result.status, expectedStatus, label);
     assert.deepEqual(credentialSnapshot(matchingRow(fixture.g, 'owner@test.com')), ownerBefore);
     assert.equal(recoveryPropertiesCleared(fixture.g), true);
@@ -267,7 +294,7 @@ async function run() {
   const lockFailure = makeReady();
   const lockOwnerBefore = credentialSnapshot(lockFailure.owner);
   lockFailure.g.failNextLock();
-  assert.equal(lockFailure.g.recoverOwnerPassword().status, 'LOCK_ACQUISITION_FAILED');
+  assert.equal(lockFailure.g.passwordRecoveryTool().status, 'LOCK_ACQUISITION_FAILED');
   assert.deepEqual(
     credentialSnapshot(matchingRow(lockFailure.g, 'owner@test.com')),
     lockOwnerBefore,
@@ -275,13 +302,88 @@ async function run() {
   assert.equal(recoveryPropertiesCleared(lockFailure.g), true);
   assert.equal(lockFailure.g.lockStats.releases, 0);
 
+  const identityChangedUnderLock = makeReady();
+  const identityChangedOwnerBefore = credentialSnapshot(identityChangedUnderLock.owner);
+  const identityChangedAuditBefore = JSON.stringify(
+    identityChangedUnderLock.g.sheets.AuditLog.rows,
+  );
+  const identityChangedCacheBefore = JSON.stringify(identityChangedUnderLock.g.cache);
+  identityChangedUnderLock.g.lockStats.afterAcquire = () => {
+    identityChangedUnderLock.g.setSessionEmails('intruder@test.com', 'owner-google@test.com');
+  };
+  const deniedAfterLock = identityChangedUnderLock.g.passwordRecoveryTool();
+  assert.equal(deniedAfterLock.status, 'OPERATOR_NOT_AUTHORIZED');
+  assert.equal(deniedAfterLock.cleanupComplete, false);
+  assert.deepEqual(
+    credentialSnapshot(matchingRow(identityChangedUnderLock.g, 'owner@test.com')),
+    identityChangedOwnerBefore,
+  );
+  assert.equal(
+    JSON.stringify(identityChangedUnderLock.g.sheets.AuditLog.rows),
+    identityChangedAuditBefore,
+  );
+  assert.equal(JSON.stringify(identityChangedUnderLock.g.cache), identityChangedCacheBefore);
+  assert.equal(recoveryPropertiesCleared(identityChangedUnderLock.g), false);
+  for (const key of recoveryKeys()) {
+    assert.equal(
+      Object.prototype.hasOwnProperty.call(identityChangedUnderLock.g.props, key),
+      true,
+      key + ' preserved after lock-time authorization denial',
+    );
+  }
+  assert.equal(identityChangedUnderLock.g.lockStats.releases, 1);
+
   const auditDegraded = makeReady();
   auditDegraded.g.failNextAuditWrite();
-  const partial = auditDegraded.g.recoverOwnerPassword();
+  const partial = auditDegraded.g.passwordRecoveryTool();
   assert.equal(partial.status, 'RECOVERY_COMPLETED_AUDIT_UNVERIFIED');
   assert.equal(partial.recovered, true);
   assert.equal(partial.auditVerified, false);
   assert.equal(recoveryPropertiesCleared(auditDegraded.g), true);
+
+  // Public editor entrypoints require both server-verified Google identities.
+  // Denied calls do not mutate the Owner row or consume temporary properties.
+  const anonymousCaller = makeReady();
+  const anonymousOwnerBefore = credentialSnapshot(anonymousCaller.owner);
+  anonymousCaller.g.setSessionEmails('', 'owner-google@test.com');
+  const anonymousDenied = anonymousCaller.g.passwordRecoveryTool();
+  assert.equal(anonymousDenied.status, 'OPERATOR_NOT_AUTHORIZED');
+  assert.deepEqual(
+    credentialSnapshot(matchingRow(anonymousCaller.g, 'owner@test.com')),
+    anonymousOwnerBefore,
+  );
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(anonymousCaller.g.props, 'OWNER_RECOVERY_PASSWORD'),
+    true,
+  );
+
+  const otherGoogleUser = makeReady();
+  const otherOwnerBefore = credentialSnapshot(otherGoogleUser.owner);
+  otherGoogleUser.g.setSessionEmails('intruder@test.com', 'owner-google@test.com');
+  assert.equal(otherGoogleUser.g.passwordRecoveryTool().status, 'OPERATOR_NOT_AUTHORIZED');
+  assert.deepEqual(
+    credentialSnapshot(matchingRow(otherGoogleUser.g, 'owner@test.com')),
+    otherOwnerBefore,
+  );
+
+  const wrongEffectiveUser = makeReady();
+  wrongEffectiveUser.g.setSessionEmails('owner-google@test.com', 'different-effective@test.com');
+  assert.equal(wrongEffectiveUser.g.passwordRecoveryTool().status, 'OPERATOR_NOT_AUTHORIZED');
+
+  const wrongAllowlist = makeReady({ operatorEmail: 'different-operator@test.com' });
+  wrongAllowlist.g.setSessionEmails('owner-google@test.com', 'owner-google@test.com');
+  assert.equal(wrongAllowlist.g.passwordRecoveryTool().status, 'OPERATOR_NOT_AUTHORIZED');
+
+  const deniedPreflight = makeReady();
+  deniedPreflight.g.setSessionEmails('', 'owner-google@test.com');
+  const deniedPreflightResult = deniedPreflight.g.passwordRecoveryPreflight();
+  assert.equal(deniedPreflightResult.status, 'OPERATOR_NOT_AUTHORIZED');
+  assert.equal(deniedPreflightResult.ready, false);
+  assert.equal(deniedPreflightResult.readOnly, true);
+  assert.equal(
+    Object.prototype.hasOwnProperty.call(deniedPreflight.g.props, 'OWNER_RECOVERY_PASSWORD'),
+    true,
+  );
 
   const routes = create();
   routes.props.OWNER_EMAIL = 'owner@test.com';
@@ -289,6 +391,8 @@ async function run() {
   routes.setup();
   assert.equal(routes.registeredActions().includes('recoverExistingOwnerPasswordOnce_'), false);
   assert.equal(routes.registeredActions().includes('ownerRecoveryPreflight_'), false);
+  assert.equal(routes.registeredActions().includes('passwordRecoveryPreflight'), false);
+  assert.equal(routes.registeredActions().includes('passwordRecoveryTool'), false);
   console.log(
     'Owner recovery tests passed: preflight, safeguards, identity isolation, hashing, sessions, forced password change, audit and cleanup.',
   );

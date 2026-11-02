@@ -1,8 +1,8 @@
 /* ============================================================================
- * Editor-authorized Owner password recovery (break-glass).
+ * Operator-authorized Owner password recovery (break-glass).
  *
- * Keep this operation private and absent from ACTIONS. A public Apps Script
- * global can be invoked by google.script.run even when it is not in ACTIONS.
+ * Public editor entrypoints perform server-side active/effective Google
+ * identity checks. The credential mutation remains in a private worker.
  * ========================================================================== */
 
 const OWNER_RECOVERY_PROPERTY_KEYS_ = [
@@ -236,6 +236,114 @@ function ownerRecoveryResult_(status, message) {
     message: message,
   };
 }
+
+function ownerRecoveryOperatorContext_() {
+  const expectedOperator = ownerRecoveryEmail_(
+    props_().getProperty('OWNER_RECOVERY_OPERATOR_EMAIL'),
+  );
+  let activeEmail = '';
+  let effectiveEmail = '';
+  try {
+    activeEmail = ownerRecoveryEmail_(Session.getActiveUser().getEmail());
+    effectiveEmail = ownerRecoveryEmail_(Session.getEffectiveUser().getEmail());
+  } catch (_) {
+    activeEmail = '';
+    effectiveEmail = '';
+  }
+  const operatorParts = expectedOperator.split('@');
+  const expectedOperatorValid = Boolean(
+    operatorParts.length === 2 &&
+    operatorParts[0] &&
+    operatorParts[1] &&
+    operatorParts[1].indexOf('.') > 0,
+  );
+  const authorized = Boolean(
+    expectedOperatorValid &&
+    activeEmail &&
+    effectiveEmail &&
+    activeEmail === expectedOperator &&
+    effectiveEmail === expectedOperator,
+  );
+  return { authorized: authorized, email: authorized ? expectedOperator : '' };
+}
+
+/**
+ * Public Apps Script editor entrypoint for read-only validation.
+ * It is also technically callable through google.script.run, so the server-side
+ * identity check—not its absence from ACTIONS—is the authorization boundary.
+ */
+function passwordRecoveryPreflight() {
+  const operator = ownerRecoveryOperatorContext_();
+  if (!operator.authorized) {
+    const denied = {
+      ready: false,
+      readOnly: true,
+      status: 'OPERATOR_NOT_AUTHORIZED',
+      checks: [
+        {
+          key: 'operator_identity',
+          passed: false,
+          message:
+            'The active and effective Google identities could not be verified against the configured recovery operator.',
+        },
+      ],
+      message:
+        'Recovery operator identity was not verified. No application data or recovery properties were changed.',
+    };
+    console.log('Password recovery preflight: ' + JSON.stringify(denied));
+    return denied;
+  }
+
+  const result = ownerRecoveryPreflight_();
+  result.checks.unshift({
+    key: 'operator_identity',
+    passed: true,
+    message: 'The active and effective Google identities match the configured recovery operator.',
+  });
+  result.status = result.ready ? 'PREFLIGHT_READY' : 'PREFLIGHT_BLOCKED';
+  console.log(
+    'Password recovery preflight: ' +
+      JSON.stringify({
+        status: result.status,
+        ready: result.ready,
+        owner: result.owner,
+        checks: result.checks,
+        message: result.message,
+      }),
+  );
+  return result;
+}
+
+/**
+ * Public Apps Script editor entrypoint for one-time recovery.
+ * Unauthorized calls do not consume or clear configured recovery properties.
+ */
+function passwordRecoveryTool() {
+  const operator = ownerRecoveryOperatorContext_();
+  if (!operator.authorized) {
+    const denied = ownerRecoveryResult_(
+      'OPERATOR_NOT_AUTHORIZED',
+      'Recovery operator identity was not verified. No credential changes or property cleanup were performed.',
+    );
+    console.log('Password recovery tool: ' + JSON.stringify(denied));
+    return denied;
+  }
+
+  const result = recoverExistingOwnerPasswordOnce_(operator.email);
+  console.log(
+    'Password recovery tool: ' +
+      JSON.stringify({
+        status: result.status,
+        recovered: result.recovered,
+        auditVerified: result.auditVerified,
+        cacheCountersCleared: result.cacheCountersCleared,
+        cleanupComplete: result.cleanupComplete,
+        owner: result.owner || null,
+        message: result.message,
+      }),
+  );
+  return result;
+}
 function ownerRecoveryAuditVerified_(rowCountBefore, ownerEmail, ownerId, operationId) {
   try {
     const rows = readAll_('AuditLog');
@@ -251,9 +359,9 @@ function ownerRecoveryAuditVerified_(rowCountBefore, ownerEmail, ownerId, operat
           details.eventType === 'USER_PASSWORD_RESET' &&
           details.entityType === 'user' &&
           details.entityId === ownerId &&
-          details.reason === 'EDITOR_AUTHORIZED_OWNER_RECOVERY|' + operationId &&
+          details.reason === 'OPERATOR_PASSWORD_RECOVERY|' + operationId &&
           details.summary ===
-            'Editor-authorized break-glass recovery; mandatory password change required.',
+            'Google-account-authorized operator password recovery; mandatory password change required.',
         );
       } catch (_) {
         return false;
@@ -268,7 +376,16 @@ function ownerRecoveryAuditVerified_(rowCountBefore, ownerEmail, ownerId, operat
  * One-time private operation. Inputs come only from temporary Script Properties.
  * Temporary properties are deleted on all paths, including validation failures.
  */
-function recoverExistingOwnerPasswordOnce_() {
+function recoverExistingOwnerPasswordOnce_(authorizedOperatorEmail) {
+  const initialOperator = ownerRecoveryOperatorContext_();
+  const operatorEmail = ownerRecoveryEmail_(authorizedOperatorEmail);
+  if (!initialOperator.authorized || !operatorEmail || initialOperator.email !== operatorEmail) {
+    return ownerRecoveryResult_(
+      'OPERATOR_NOT_AUTHORIZED',
+      'Recovery operator identity was not verified. No credential changes or property cleanup were performed.',
+    );
+  }
+
   let result = ownerRecoveryResult_('RECOVERY_NOT_PERFORMED', 'Owner recovery was not performed.');
   const p = props_();
   let ownerEmail = '';
@@ -276,6 +393,7 @@ function recoverExistingOwnerPasswordOnce_() {
   let credentialWriteVerified = false;
   let credentialOwner = null;
   let operationId = '';
+  let operatorAuthorizationRevoked = false;
 
   try {
     const expectedScriptId = String(
@@ -302,6 +420,15 @@ function recoverExistingOwnerPasswordOnce_() {
     } else {
       try {
         result = withScriptLock_(function () {
+          const lockedOperator = ownerRecoveryOperatorContext_();
+          if (!lockedOperator.authorized || lockedOperator.email !== operatorEmail) {
+            operatorAuthorizationRevoked = true;
+            return ownerRecoveryResult_(
+              'OPERATOR_NOT_AUTHORIZED',
+              'Recovery operator identity changed or could not be verified under the lock. No credential changes or property cleanup were performed.',
+            );
+          }
+
           const actualScriptId =
             typeof ScriptApp !== 'undefined' && typeof ScriptApp.getScriptId === 'function'
               ? String(ScriptApp.getScriptId() || '')
@@ -488,15 +615,15 @@ function recoverExistingOwnerPasswordOnce_() {
           }
           try {
             auditEvent_(
-              { email: 'editor-authorized-recovery' },
+              { email: operatorEmail },
               'PASSWORD_RESET',
               ownerEmail,
               'USER_PASSWORD_RESET',
               'user',
               userId,
-              'EDITOR_AUTHORIZED_OWNER_RECOVERY|' + operationId,
+              'OPERATOR_PASSWORD_RECOVERY|' + operationId,
               [{ field: 'mustChangePassword', before: mustChangeBefore, after: true }],
-              'Editor-authorized break-glass recovery; mandatory password change required.',
+              'Google-account-authorized operator password recovery; mandatory password change required.',
             );
           } catch (_) {
             // auditEvent_ is deliberately best-effort in this application.
@@ -515,6 +642,7 @@ function recoverExistingOwnerPasswordOnce_() {
           completed.auditVerified = auditVerified;
           completed.cacheCountersCleared = cacheCountersCleared;
           completed.owner = credentialOwner;
+          completed.operator = { email: ownerRecoveryMaskEmail_(operatorEmail) };
           completed.userId = userId;
           return completed;
         }, 'The recovery lock could not be acquired. No credential changes were made.');
@@ -537,19 +665,24 @@ function recoverExistingOwnerPasswordOnce_() {
       'Recovery stopped unexpectedly. No credential changes were confirmed.',
     );
   } finally {
-    let cleanupComplete = true;
-    OWNER_RECOVERY_PROPERTY_KEYS_.forEach(function (key) {
-      try {
-        p.deleteProperty(key);
-      } catch (_) {
-        cleanupComplete = false;
+    if (operatorAuthorizationRevoked) {
+      // A failed under-lock identity recheck is a denial, not an authorized attempt.
+      result.cleanupComplete = false;
+    } else {
+      let cleanupComplete = true;
+      OWNER_RECOVERY_PROPERTY_KEYS_.forEach(function (key) {
+        try {
+          p.deleteProperty(key);
+        } catch (_) {
+          cleanupComplete = false;
+        }
+      });
+      result.cleanupComplete = cleanupComplete;
+      if (!cleanupComplete) {
+        result.status = 'TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE';
+        result.message +=
+          ' At least one temporary recovery property could not be removed; an authorized editor must remove only the named recovery properties.';
       }
-    });
-    result.cleanupComplete = cleanupComplete;
-    if (!cleanupComplete) {
-      result.status = 'TEMPORARY_PROPERTY_CLEANUP_INCOMPLETE';
-      result.message +=
-        ' At least one temporary recovery property could not be removed; an authorized editor must remove only the named recovery properties.';
     }
   }
 

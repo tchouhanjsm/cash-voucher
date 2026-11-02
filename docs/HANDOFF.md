@@ -1,8 +1,20 @@
 # Engineering Handoff — Cash Voucher
 
-## Current implementation batch — PR #258
+## Current implementation batch — PR #259
 
-## Phase 4 — Premium dashboard analytics (PR #258)
+## Phase 5 — IAM Password Recovery Tool (PR #259)
+
+- Add a read-only `passwordRecoveryPreflight()` and a separate one-time `passwordRecoveryTool()`; keep credential mutation in private `recoverExistingOwnerPasswordOnce_()` and keep both public entrypoints outside `ACTIONS` and `WRITES`.
+- Require both server-resolved active and effective Google account identities to match persistent `OWNER_RECOVERY_OPERATOR_EMAIL`, and recheck under ScriptLock before credential mutation. Missing or mismatched identities fail closed.
+- Verify the exact Apps Script project and staging spreadsheet, existing PEPPER, Users/AuditLog schemas, receipt/backup folder readability, one existing active Owner and populated credentials.
+- Change only the existing Owner's Salt, PasswordHash and MustChangePassword fields; verify credential read-back, invalidate old sessions through salt rotation, clear only the target Owner's failure counters and independently verify the structured audit event.
+- Keep read-only preflight independent of the temporary password and destructive confirmation. Configure those secrets only after a clean staging preflight and explicit operator approval.
+- **Security limitation:** Apps Script public top-level functions remain technically callable through `google.script.run`. The server-side active/effective Google identity allowlist is the authorization control; this is not strict editor-origin isolation.
+- **Current gate:** all four required workflows must pass on the final PR head. The controlled read-only staging identity/preflight, real Owner reset, deployment, live spreadsheet write, real restore, device acceptance and customer sign-off remain unverified.
+
+## Previously merged workspace milestone — PR #258
+
+### Phase 4 — Premium dashboard analytics (PR #258)
 
 - Replaced the dashboard's compact bar strip with a scalable SVG area/line trend that includes value guides, daily/monthly labels, exact-value point tooltips and a programmatic title/description. Buckets continue to be derived from the validated `dashboardSummary.trend` read model; no client-generated financial values were added.
 - Reworked the Total paid comparison copy: zero previous-period totals now show the zero baseline and explain why a percentage is unavailable; unchanged periods are described as unchanged; increases/decreases use neutral directional copy rather than green/red business-success semantics.
@@ -10,7 +22,7 @@
 - Browser E2E now covers zero baseline, flat, increase and decrease comparisons, and verifies the chart's accessible SVG semantics, area/line paths, points, guide lines and responsive visual states.
 - No dashboard API, backend calculation, permission boundary, accounting rule or report/export behavior is changed.
 
-### Scope delivered in this source candidate
+### Scope delivered by merged PR #258
 
 - Replaced the repeatable New Entry row's HTML-string parser with native DOM construction. Input labels, category options, payment methods, receipt inputs and remove actions are created as nodes; existing classes/data-action contracts and payment semantics remain unchanged.
 - Removed one active `innerHTML` assignment from `frontend/features/payments.js`; the checked sink count moves from 17 to 16. The remaining 16 assignments still require contextual review and are not represented as XSS-certified.
@@ -18,7 +30,7 @@
 - Extended the TailAdmin-inspired local design system to Vendor/User management, Settings, Audit, Bulk Upload, Daily Cash Close and Onboarding.
 - Added a deterministic public asset manifest to customer builds with raw/gzip byte sizes and SHA-256 per asset. Generated customer endpoint configuration and host policy files are excluded. This measures the existing modular output; it does not bundle/minify it or claim a load-time improvement.
 
-### Verification required on the exact PR head
+### Historical verification contract for PR #258
 
 - CI / Quality, Browser E2E, Full Flight and Autonomous Development Monitor.
 - Browser assertions for DOM-built repeatable rows, label association, add/remove flow, mobile touch geometry and the responsive visual review matrix.
@@ -31,12 +43,12 @@
 - No Lighthouse scores, WCAG certification, live Sheets concurrency/export metrics or deployed security-header claim is made by this source PR. These remain release/UAT acceptance gates.
 - Repository governance remains an owner/admin action: verify protection for `client-main`; this batch does not alter branch/ruleset settings.
 
-**Updated:** 1 November 2026 — consolidated finance workspace, security and measurement batch in PR #258 (source branch; not merged).
+**Updated:** 2 November 2026 — operator-authorized Owner recovery batch in PR #259 (source branch; open, not merged).
 **Repository:** `tchouhanjsm/cash-voucher`
 **Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `fea102d7aa1dc6d3a0724005c03bd67ef7734c67` (PR #257 merge commit).
-**Active implementation branch:** `client/finance-workspace-security-ux-performance-20261101`, based on the integration baseline above.
-**Most recent merged PR:** [PR #257 — TailAdmin-inspired finance workspace foundation](https://github.com/tchouhanjsm/cash-voucher/pull/257), merged into `client-main` at `fea102d7aa1dc6d3a0724005c03bd67ef7734c67`.
+**Current integration baseline:** `215fa43aa04be3d949d714bd21f4828e2089c4f8` (PR #258 merge commit).
+**Active implementation branch:** `client/password-recovery-tool-iam-20261101`, based on the integration baseline above.
+**Most recent merged PR:** [PR #258 — Finance workspace and DOM-rendering hardening](https://github.com/tchouhanjsm/cash-voucher/pull/258), merged into `client-main` at `215fa43aa04be3d949d714bd21f4828e2089c4f8`.
 **Release boundary:** This batch is source-only. It does not deploy Apps Script, run a spreadsheet migration, write staging/production financial data, upload a cPanel package or change `main`.
 
 ## TailAdmin-inspired finance workspace milestone — PR #257
@@ -520,15 +532,18 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - **CI correction:** format, lint, JSON, syntax, backend, contrast, frontend, DOM-sink, regression-test, PR-handoff and dependency-audit checks are now separate steps. They run independently after dependency installation even when an earlier check fails, so failures remain visible instead of being hidden behind skipped steps. The job still fails closed if any required gate fails.
 - **Expected conditional skips:** the manual-only Full Flight job is skipped on pull-request events by design; it is not a passing result and is not the PR Full Flight release gate. No staging UAT or deployment was performed while these failures remained open. Fresh exact-head CI, Browser E2E and Full Flight evidence is required before UAT.
 
-## Phase 5 — IAM break-glass Owner recovery
+## Phase 5 — IAM Password Recovery Tool (PR #259)
 
-- [x] Add a private recovery backend with project/Sheet identity checks, exact existing-Owner validation, existing hash reuse, ScriptLock, salt-based session invalidation, mandatory password rotation and temporary-property cleanup.
-- [x] Add read-only preflight checks for PEPPER, exact Users/AuditLog schema and readable backup infrastructure.
-- [x] Verify credential write-back and audit-event persistence separately; report audit degradation as partial success.
-- [x] Add automated tests for read-only behavior, user isolation, safeguards, lock failures, audit degradation, cleanup and sign-in/password-change flow.
-- [ ] Resolve Apps Script private-function invocation: underscore-private functions are not browser-callable but are omitted from the editor Run list in this project. No public wrapper was added.
-- [x] Keep recovery unregistered in ACTIONS; no unauthenticated reset API or Owner creation path.
-- [x] Source-only; no Clasp push, deployment, staging-data write or production activity.
+- [x] Add `backend/90-owner-recovery.gs` with a private credential-mutation worker; validate the exact Apps Script project, configured spreadsheet, existing PEPPER, Users/AuditLog schemas, backup-folder readability and one existing active Owner.
+- [x] Add `passwordRecoveryPreflight()` as a read-only Apps Script editor entrypoint and `passwordRecoveryTool()` as the one-time recovery entrypoint. Keep both outside `ACTIONS` and `WRITES`; keep the credential mutation in private `recoverExistingOwnerPasswordOnce_()`.
+- [x] Keep the temporary password and destructive confirmation unset during read-only preflight; add them only after `PREFLIGHT_READY`, with regression coverage proving preflight does not require either secret.
+- [x] Require both server-resolved active and effective Google account emails to match persistent `OWNER_RECOVERY_OPERATOR_EMAIL`; repeat the check after ScriptLock acquisition. Missing or mismatched identity fails closed without credential mutation or temporary-property cleanup.
+- [x] Rotate only the existing Owner's salt/hash and set mandatory password change; verify credential read-back, invalidate old sessions through salt mismatch, clear only the target Owner's failed-attempt counters, and verify the structured audit event separately.
+- [x] Attribute the audit event to the actual authorized Google operator; represent audit persistence failure as partial success; retain the persistent operator allowlist and remove only the five temporary recovery properties after an authorized attempt.
+- [x] Cover read-only preflight, operator identity variants, denial paths, lock-time identity changes, property preservation, user isolation, recovery, audit degradation, cleanup and sign-in/password-change behavior in regression tests.
+- [x] Document the invocation boundary: public Apps Script functions are technically callable through `google.script.run`; the server-side Google identity check is the authorization control, not function visibility or absence from `ACTIONS`. This is not a strict editor-origin isolation guarantee.
+- [x] Keep the change source-only. No Clasp push, Apps Script deployment, staging spreadsheet write, real Owner reset, production access or merge was performed.
+- [ ] Complete a controlled, read-only staging identity/preflight run from the exact staging Apps Script editor. Do not run `passwordRecoveryTool()` or reset an Owner until identity and target checks have been independently verified.
 
 ## Phase 4 follow-up — dashboard range and chart behavior
 
