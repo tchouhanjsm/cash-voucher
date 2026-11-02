@@ -31,7 +31,7 @@ assert.ok(
     navigation,
   ),
 );
-assert.ok(/void getPayments\(\)\.showBanner\(\)/.test(navigation));
+assert.ok(/void getPayments\(\)\s*\.showBanner\(\)/.test(navigation));
 assert.ok(!navigation.includes('await getPayments().showBanner()'));
 
 console.log(
