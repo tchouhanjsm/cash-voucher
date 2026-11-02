@@ -94,6 +94,7 @@ navigation = createNavigation({
   unsavedWork,
   getAuth: () => auth,
   getPayments: () => payments,
+  setOnboardingState: (state, error) => onboarding.setInitialState(state, error),
   renderers: {
     dash: dashboard.render,
     reports: reports.render,
@@ -277,10 +278,6 @@ async function init() {
     registerPwa({ confirmDiscardUnsavedWork: unsavedWork.confirmDiscard });
 
     bindFeatures();
-    void payments.showBanner().catch((error) => {
-      console.error('Could not restore the offline queue banner:', error);
-    });
-
     if (session.autoResume) {
       $('#login').classList.add('hidden');
       const started = await navigation.start();
