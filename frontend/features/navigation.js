@@ -20,7 +20,14 @@ const NAV_ICON_NAMES = new Set([
   'check',
 ]);
 
-export function createNavigation({ api, getAuth, getPayments, renderers, unsavedWork, setOnboardingState }) {
+export function createNavigation({
+  api,
+  getAuth,
+  getPayments,
+  renderers,
+  unsavedWork,
+  setOnboardingState,
+}) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
   const NAV = [
     ['dash', 'home', 'Dashboard', () => can('viewAll') || can('viewOwn')],
@@ -88,7 +95,8 @@ export function createNavigation({ api, getAuth, getPayments, renderers, unsaved
         },
         vendors: data.vendors,
         names: data.names,
-        onboarding: data?.onboarding && typeof data.onboarding === 'object' ? data.onboarding : null,
+        onboarding:
+          data?.onboarding && typeof data.onboarding === 'object' ? data.onboarding : null,
         onboardingError: typeof data?.onboardingError === 'string' ? data.onboardingError : '',
         onboardingIncluded: Boolean(
           data && Object.prototype.hasOwnProperty.call(data, 'onboarding'),

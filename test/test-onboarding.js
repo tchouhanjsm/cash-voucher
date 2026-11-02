@@ -58,7 +58,11 @@ assert.equal(mismatch.ok, false);
 assert.equal(mismatch.code, 'ENVIRONMENT_MISMATCH');
 
 const wrongDeploymentBootstrap = request('bootstrap', { deploymentId: 'WRONG' });
-assert.equal(wrongDeploymentBootstrap.ok, true, 'onboarding identity errors do not break workspace bootstrap');
+assert.equal(
+  wrongDeploymentBootstrap.ok,
+  true,
+  'onboarding identity errors do not break workspace bootstrap',
+);
 assert.equal(wrongDeploymentBootstrap.data.onboarding, null);
 assert.match(wrongDeploymentBootstrap.data.onboardingError, /clientDeployment/);
 assert.doesNotMatch(wrongDeploymentBootstrap.data.onboardingError, /MOCK_DEPLOYMENT/);
@@ -175,7 +179,11 @@ const staffBootstrap = g.call('bootstrap', {
   deploymentId: 'MOCK_DEPLOYMENT',
 });
 assert.equal(staffBootstrap.ok, true);
-assert.equal(staffBootstrap.data.onboarding, null, 'non-settings users do not receive onboarding diagnostics');
+assert.equal(
+  staffBootstrap.data.onboarding,
+  null,
+  'non-settings users do not receive onboarding diagnostics',
+);
 assert.equal(staffBootstrap.data.onboardingError, '');
 
 const staffConfirm = g.call('onboardingConfirm', {

@@ -22,7 +22,9 @@ assert.ok(onboarding.includes('Current-stage readiness summary'));
 assert.ok(onboarding.includes('Outstanding onboarding actions'));
 assert.ok(onboarding.includes('function setInitialState(state, error = \'\')'));
 assert.ok(onboarding.includes('unavailableMessage'));
-assert.ok(main.includes('setOnboardingState: (state, error) => onboarding.setInitialState(state, error)'));
+assert.ok(
+  main.includes('setOnboardingState: (state, error) => onboarding.setInitialState(state, error)'),
+);
 assert.ok(/async function prepareOnboarding\(\)[\s\S]*?if \(!S\.onboardingIncluded\)[\s\S]*?api\('onboardingState'\)/.test(navigation));
 assert.ok(/void getPayments\(\)\.showBanner\(\)/.test(navigation));
 assert.ok(!navigation.includes('await getPayments().showBanner()'));
