@@ -43,7 +43,17 @@ jobs:
           python -m playwright install --with-deps chromium
 
       - name: Run browser E2E
+        env:
+          CV_BROWSER_PAINT_REPORT: ${{ runner.temp }}/cash-voucher-browser-paint.json
         run: npm run test:e2e
+
+      - name: Upload browser first-paint smoke report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: cash-voucher-browser-paint-${{ github.run_id }}
+          path: ${{ runner.temp }}/cash-voucher-browser-paint.json
+          if-no-files-found: ignore
 
       - name: Upload responsive visual review matrix
         if: always()
