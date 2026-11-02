@@ -1,55 +1,27 @@
 # Engineering Handoff — Cash Voucher
 
-## Current implementation batch — PR #259
+## Current implementation batch — clean-browser first-paint observability (Phase 6)
 
-## Phase 5 — IAM Password Recovery Tool (PR #259)
-
-- Add a read-only `passwordRecoveryPreflight()` and a separate one-time `passwordRecoveryTool()`; keep credential mutation in private `recoverExistingOwnerPasswordOnce_()` and keep both public entrypoints outside `ACTIONS` and `WRITES`.
-- Require both server-resolved active and effective Google account identities to match persistent `OWNER_RECOVERY_OPERATOR_EMAIL`, and recheck under ScriptLock before credential mutation. Missing or mismatched identities fail closed.
-- Verify the exact Apps Script project and staging spreadsheet, existing PEPPER, Users/AuditLog schemas, receipt/backup folder readability, one existing active Owner and populated credentials.
-- Change only the existing Owner's Salt, PasswordHash and MustChangePassword fields; verify credential read-back, invalidate old sessions through salt rotation, clear only the target Owner's failure counters and independently verify the structured audit event.
-- Keep read-only preflight independent of the temporary password and destructive confirmation. Configure those secrets only after a clean staging preflight and explicit operator approval.
-- **Security limitation:** Apps Script public top-level functions remain technically callable through `google.script.run`. The server-side active/effective Google identity allowlist is the authorization control; this is not strict editor-origin isolation.
-- **Current gate:** all four required workflows must pass on the final PR head. The controlled read-only staging identity/preflight, real Owner reset, deployment, live spreadsheet write, real restore, device acceptance and customer sign-off remain unverified.
+- **Repository:** `tchouhanjsm/cash-voucher`; integration branch `client-main`; legacy `main` remains read-only by engineering policy.
+- **Verified base:** `27e20f4167413a8901e58204bcf59ff3e8651686` — PR #259 merge commit. No PRs were open when this batch started.
+- **Current work:** `client/browser-first-paint-smoke-20261102`, based directly on the verified integration SHA above.
+- **Purpose:** protect against a blank initial page and preserve first-render diagnostics from a clean browser context. This adds a local Playwright smoke and a JSON CI artifact; it does not optimize source assets or assert an unsupported speed target.
+- **Browser smoke:** launches a new 390×800 Chromium context with no saved state and service workers blocked; checks HTTP success, HTML doctype, language, UTF-8 charset, viewport, title, visible login heading/form and a recorded FCP. It captures FCP/LCP/CLS, long tasks, navigation timings, same-origin resource bytes/counts and DOM node count where available.
+- **No arbitrary performance budget:** timings are recorded for comparison and diagnosis only. This is a local mock-server measurement, not a Lighthouse score, real staging network result, Apps Script/Sheets measurement, production SLO or a claim about mobile device performance.
+- **Lighthouse report disposition:** the supplied Lighthouse 13.4.1 report was captured 31 October 2026 on an emulated Moto G Power / Slow 4G profile, but its run reports cache-clearing timeout and `NO_FCP`. FCP/LCP/TBT/CLS/Speed Index are unavailable; downstream `Error!` audits are not evidence that every listed issue exists. Current `index.html` already has a doctype, `lang="en"`, UTF-8 charset, viewport meta and document title. Re-run Lighthouse in a clean/incognito profile with DevTools foregrounded before making performance or accessibility conclusions.
+- **PR #259 / Phase 5:** merged into `client-main`. The operator reports staging access has been regained after the recovery workflow. The shared preflight log was `PREFLIGHT_READY` with all 11 checks passed; no sanitized final recovery execution log or independent post-recovery audit/property/session verification has been recorded here. Do not repeat the password reset. Keep audit read-back, temporary-property cleanup, forced password-change and prior-session invalidation evidence as operator-side validation items until separately confirmed.
+- **Exact-head source validation on the base:** CI / Quality [41376838870](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41376838870), Browser E2E [41376838909](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41376838909), Full Flight [41376838866](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41376838866), and Autonomous Development Monitor [41376838819](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41376838819) all passed on `27e20f4167413a8901e58204bcf59ff3e8651686`.
+- **Release boundary:** source/test/CI only. No Apps Script push or deployment, spreadsheet migration/write, cPanel upload, staging transaction, production resource access, merge or deployment is performed by this batch.
 
 ## Previously merged workspace milestone — PR #258
 
-### Phase 4 — Premium dashboard analytics (PR #258)
+- PR #258 delivered the premium dashboard area/line trend, comparison-state copy, DOM-built repeatable New Entry rows, labelled Vendor/User management fields, broader TailAdmin-inspired design-system adoption and a static asset manifest.
+- The active DOM assignment inventory is now 16 sites across eight frontend modules. The remaining assignments still require contextual source-to-sink review; the count/fingerprint checks are drift controls, not XSS certification.
+- No Apps Script deployment, Google Sheet migration, staging financial write, cPanel publication or production data change was part of PR #258.
 
-- Replaced the dashboard's compact bar strip with a scalable SVG area/line trend that includes value guides, daily/monthly labels, exact-value point tooltips and a programmatic title/description. Buckets continue to be derived from the validated `dashboardSummary.trend` read model; no client-generated financial values were added.
-- Reworked the Total paid comparison copy: zero previous-period totals now show the zero baseline and explain why a percentage is unavailable; unchanged periods are described as unchanged; increases/decreases use neutral directional copy rather than green/red business-success semantics.
-- Bumped the public-shell service-worker revision to `cv2-v46` so the dashboard module and local design layer refresh together after update approval.
-- Browser E2E now covers zero baseline, flat, increase and decrease comparisons, and verifies the chart's accessible SVG semantics, area/line paths, points, guide lines and responsive visual states.
-- No dashboard API, backend calculation, permission boundary, accounting rule or report/export behavior is changed.
-
-### Scope delivered by merged PR #258
-
-- Replaced the repeatable New Entry row's HTML-string parser with native DOM construction. Input labels, category options, payment methods, receipt inputs and remove actions are created as nodes; existing classes/data-action contracts and payment semantics remain unchanged.
-- Removed one active `innerHTML` assignment from `frontend/features/payments.js`; the checked sink count moves from 17 to 16. The remaining 16 assignments still require contextual review and are not represented as XSS-certified.
-- Added visible, programmatically associated labels to Vendor and User management fields while preserving their existing IDs and backend payloads.
-- Extended the TailAdmin-inspired local design system to Vendor/User management, Settings, Audit, Bulk Upload, Daily Cash Close and Onboarding.
-- Added a deterministic public asset manifest to customer builds with raw/gzip byte sizes and SHA-256 per asset. Generated customer endpoint configuration and host policy files are excluded. This measures the existing modular output; it does not bundle/minify it or claim a load-time improvement.
-
-### Historical verification contract for PR #258
-
-- CI / Quality, Browser E2E, Full Flight and Autonomous Development Monitor.
-- Browser assertions for DOM-built repeatable rows, label association, add/remove flow, mobile touch geometry and the responsive visual review matrix.
-- Static DOM sink count/source fingerprint, customer build manifest, CSP, service-worker and theme/layout contracts.
-
-### Operational items intentionally not performed
-
-- No staging Google Sheet backup, VendorType migration, Apps Script deployment, cPanel upload, staging transaction or historical correction.
-- No production resource or financial data access.
-- No Lighthouse scores, WCAG certification, live Sheets concurrency/export metrics or deployed security-header claim is made by this source PR. These remain release/UAT acceptance gates.
-- Repository governance remains an owner/admin action: verify protection for `client-main`; this batch does not alter branch/ruleset settings.
-
-**Updated:** 2 November 2026 — operator-authorized Owner recovery batch in PR #259 (source branch; open, not merged).
-**Repository:** `tchouhanjsm/cash-voucher`
-**Integration branch:** `client-main`; legacy `main` remains read-only by engineering policy.
-**Current integration baseline:** `215fa43aa04be3d949d714bd21f4828e2089c4f8` (PR #258 merge commit).
-**Active implementation branch:** `client/password-recovery-tool-iam-20261101`, based on the integration baseline above.
-**Most recent merged PR:** [PR #258 — Finance workspace and DOM-rendering hardening](https://github.com/tchouhanjsm/cash-voucher/pull/258), merged into `client-main` at `215fa43aa04be3d949d714bd21f4828e2089c4f8`.
-**Release boundary:** This batch is source-only. It does not deploy Apps Script, run a spreadsheet migration, write staging/production financial data, upload a cPanel package or change `main`.
+**Updated:** 2 November 2026 — Phase 6 first-paint smoke and diagnostics follow-up.
+**Verified integration baseline:** `27e20f4167413a8901e58204bcf59ff3e8651686`.
+**Next action:** run exact-head CI, Browser E2E, Full Flight and Autonomous Development Monitor; inspect the paint smoke JSON artifact and the full PR diff before merge. Then perform a clean-profile Lighthouse run against the verified staging build and investigate any reproducible issue with its trace/network evidence.
 
 ## TailAdmin-inspired finance workspace milestone — PR #257
 
