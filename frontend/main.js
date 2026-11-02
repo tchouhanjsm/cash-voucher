@@ -278,6 +278,11 @@ async function init() {
     registerPwa({ confirmDiscardUnsavedWork: unsavedWork.confirmDiscard });
 
     bindFeatures();
+    // Surface legacy offline-storage errors even before a user signs in.
+    // navigation.start() refreshes the banner after the active account is known.
+    void payments.showBanner().catch((error) => {
+      console.error('Could not restore the offline queue banner:', error);
+    });
     if (session.autoResume) {
       $('#login').classList.add('hidden');
       const started = await navigation.start();

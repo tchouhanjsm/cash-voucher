@@ -10,6 +10,7 @@ const onboarding = read('frontend/features/onboarding.js');
 const navigation = read('frontend/features/navigation.js');
 
 assert.ok(/function bindFeatures\(\)[\s\S]*?onboarding\.init\(\)/.test(main));
+assert.ok(/void payments\.showBanner\(\)\.catch/.test(main));
 assert.ok(onboarding.includes('Checking this customer’s configuration with the server…'));
 assert.ok(/if \(!busy\) void load\(\)/.test(onboarding));
 assert.ok(onboarding.includes("current = await api('onboardingState')"));
@@ -20,12 +21,16 @@ assert.ok(onboarding.includes('refreshAfterMutationFailure'));
 assert.ok(onboarding.includes("root.setAttribute('aria-busy', busy ? 'true' : 'false')"));
 assert.ok(onboarding.includes('Current-stage readiness summary'));
 assert.ok(onboarding.includes('Outstanding onboarding actions'));
-assert.ok(onboarding.includes('function setInitialState(state, error = \'\')'));
+assert.ok(onboarding.includes("function setInitialState(state, error = '')"));
 assert.ok(onboarding.includes('unavailableMessage'));
 assert.ok(
   main.includes('setOnboardingState: (state, error) => onboarding.setInitialState(state, error)'),
 );
-assert.ok(/async function prepareOnboarding\(\)[\s\S]*?if \(!S\.onboardingIncluded\)[\s\S]*?api\('onboardingState'\)/.test(navigation));
+assert.ok(
+  /async function prepareOnboarding\(\)[\s\S]*?if \(!S\.onboardingIncluded\)[\s\S]*?api\('onboardingState'\)/.test(
+    navigation,
+  ),
+);
 assert.ok(/void getPayments\(\)\.showBanner\(\)/.test(navigation));
 assert.ok(!navigation.includes('await getPayments().showBanner()'));
 

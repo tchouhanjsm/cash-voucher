@@ -252,9 +252,11 @@ export function createNavigation({
               : 'dash',
     );
 
-    void getPayments().showBanner().catch((error) => {
-      console.error('Could not restore the offline queue banner:', error);
-    });
+    void getPayments()
+      .showBanner()
+      .catch((error) => {
+        console.error('Could not restore the offline queue banner:', error);
+      });
 
     if (offline) {
       toast(

@@ -490,8 +490,7 @@ export function createOnboarding({ api }) {
       render();
     } catch (error) {
       current = null;
-      unavailableMessage =
-        error.message || 'Could not load server-verified onboarding state.';
+      unavailableMessage = error.message || 'Could not load server-verified onboarding state.';
       renderError(unavailableMessage);
     } finally {
       busy = false;

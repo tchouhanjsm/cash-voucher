@@ -4,13 +4,13 @@
 
 The desktop and mobile reports supplied on 2 November 2026 were generated with Lighthouse 13.5.0 against the staging URL. They are diagnostic captures, not clean-profile baselines.
 
-| Metric | Desktop | Moto G Power mobile |
-| --- | ---: | ---: |
-| First Contentful Paint | 1.87 s | 2.46 s |
-| Largest Contentful Paint | 23.68 s | 19.17 s |
-| Total Blocking Time | 31 ms | 1,238 ms |
-| Cumulative Layout Shift | 0 | 0 |
-| Speed Index | 16.78 s | 18.04 s |
+| Metric                   | Desktop | Moto G Power mobile |
+| ------------------------ | ------: | ------------------: |
+| First Contentful Paint   |  1.87 s |              2.46 s |
+| Largest Contentful Paint | 23.68 s |             19.17 s |
+| Total Blocking Time      |   31 ms |            1,238 ms |
+| Cumulative Layout Shift  |       0 |                   0 |
+| Speed Index              | 16.78 s |             18.04 s |
 
 The mobile performance score was 0.38. The mobile capture used a Moto G Power emulation profile (412 × 823, Android 11 user agent) and reports `disableStorageReset: true`; do not treat it as an anonymous first-visit measurement.
 
@@ -27,18 +27,19 @@ div#view > section.onboarding-page > section.onboarding-attention > p
 Its text begins “Login and role restrictions — pending evidence.” Lighthouse attributes approximately 23.23 seconds (desktop) and 18.72 seconds (mobile) to element render delay, while time to first byte is about 456 ms in both runs.
 
 The authenticated startup path previously serialized:
+
 1. `bootstrap` to load the signed-in workspace;
 2. `onboardingState` in `navigation.start` to decide whether an owner must remain in onboarding;
 3. another `onboardingState` initiated by `onboarding.render()` because the onboarding feature had no initial state.
 
-It also awaited the offline-queue banner's IndexedDB read before `navigation.start()` returned and the global boot overlay was dismissed. The initial banner read in `main.init()` occurred before the signed-in user identity was known.
+It also awaited the authenticated offline-queue banner's IndexedDB read before `navigation.start()` returned and the global boot overlay was dismissed. `main.init()` already performed a separate non-blocking pass before authentication so legacy queue migration errors could be shown on the login screen; that recovery path must remain.
 
 ## Phase 7 change
 
 - Authenticated bootstrap now includes the server-verified onboarding state for users with the `settings` permission only.
 - Onboarding identity/readiness failures are returned as a sanitized onboarding-specific diagnostic; they do not prevent standard workspace bootstrap from succeeding.
 - The onboarding feature receives that state and renders it without a second API read. A one-request fallback remains for older staged backends that do not yet include the new bootstrap field.
-- Offline queue banner restoration starts after the workspace route is rendered and no longer blocks completion of application startup.
+- The pre-authentication offline-queue diagnostic remains fire-and-forget so legacy storage failures are visible on the login screen. The account-scoped banner refresh starts after route rendering and does not block the startup promise.
 - Existing server-side onboarding financial-write gates, owner-only evidence confirmation, environment identity validation and production/staging separation are unchanged.
 
 ## Validation required after merge and deployment
