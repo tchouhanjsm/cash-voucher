@@ -800,6 +800,15 @@ with sync_playwright() as p:
         and page.evaluate("localStorage.getItem('cv.theme')") == 'light',
         'Haveli light appearance can be restored from My Account',
     )
+    page.click('#userBtn')
+    page.locator('#userPop #themeToggle').click()
+    check(
+        page.locator('html').get_attribute('data-theme') == 'dark'
+        and page.locator('#accountAppearance').input_value() == 'dark'
+        and page.evaluate("localStorage.getItem('cv.theme')") == 'dark',
+        'top-right appearance toggle stays synchronized with the My Account preference selector',
+    )
+    page.select_option('#accountAppearance', 'light')
     page.select_option('#accountDensity', 'compact')
     check(
         page.locator('html').get_attribute('data-density') == 'compact'
