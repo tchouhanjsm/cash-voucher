@@ -4,7 +4,7 @@ const STORAGE_KEY = 'cv.theme';
 const PALETTE_STORAGE_KEY = 'cv.palette';
 const PALETTES = new Set(['sky', 'blush', 'mint']);
 const THEME_COLORS = {
-  light: '#edf1f6',
+  light: '#faf6ef',
   dark: '#111820',
 };
 
