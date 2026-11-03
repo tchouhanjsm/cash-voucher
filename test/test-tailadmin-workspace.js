@@ -165,16 +165,28 @@ assert.match(
 );
 assert.match(build, /'frontend-workspace\.css'/, 'static customer build publishes the stylesheet');
 
-assert.match(worker, /frontend\/core\/preferences\.js/, 'device preference controller is available in the offline shell');
+assert.match(
+  worker,
+  /frontend\/core\/preferences\.js/,
+  'device preference controller is available in the offline shell',
+);
 assert.match(account, /accountPreferencesHeading/, 'My Account includes a preferences section');
-assert.match(account, /handleAccountPreferenceChange/, 'preference edits have a dedicated change handler');
+assert.match(
+  account,
+  /handleAccountPreferenceChange/,
+  'preference edits have a dedicated change handler',
+);
 assert.match(account, /setWorkspaceDensity/, 'density uses the shared local preference controller');
 assert.match(account, /setTheme/, 'appearance uses the shared theme controller');
 assert.match(shell, /popRole/, 'account popover displays the signed-in role');
 assert.match(preferences, /cv\.density/, 'workspace density uses a device-local storage key');
 assert.match(theme, /export function setTheme/, 'appearance controls share one theme setter');
 assert.match(styles, /account-workspace-grid/, 'My Account uses a responsive workspace grid');
-assert.match(styles, /account-preferences-grid/, 'My Account preferences have a dedicated control grid');
+assert.match(
+  styles,
+  /account-preferences-grid/,
+  'My Account preferences have a dedicated control grid',
+);
 assert.match(styles, /data-density='compact'/, 'compact density is a supported presentation state');
 
 assert.match(
