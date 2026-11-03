@@ -197,6 +197,8 @@ registerActions({
       from: data.from || '',
       to: data.to || '',
       type: data.type || '',
+      approval: data.approval || 'ALL',
+      status: data.status || 'ACTIVE',
       query: data.query || '',
       vendor: data.vendor || '',
     };

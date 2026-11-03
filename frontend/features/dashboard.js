@@ -44,12 +44,14 @@ export function createDashboard({ api }) {
     const from = isBusinessDate(options.from) ? options.from : '';
     const to = isBusinessDate(options.to) ? options.to : '';
     const type = ['PAYMENT', 'RECEIPT'].includes(options.type) ? options.type : '';
+    const approval = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_REQUIRED', 'REVIEW_REQUIRED'].includes(options.approval) ? options.approval : 'ALL';
+    const status = ['ACTIVE', 'CANCELLED', 'ALL'].includes(options.status) ? options.status : 'ACTIVE';
     const query = typeof options.query === 'string' ? options.query.slice(0, 120) : '';
     const vendor = typeof options.vendor === 'string' ? options.vendor.slice(0, 200) : '';
     const label = typeof options.label === 'string' ? options.label : 'Open context';
     const className = typeof options.className === 'string' ? options.className : 'btn dashboard-drilldown';
     const accessibleLabel = typeof options.ariaLabel === 'string' ? options.ariaLabel : label;
-    return `<button type="button" class="${esc(className)}" data-act="dashboardDrilldown" data-drill-key="${esc(key)}" data-target="${target}" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${type}" data-query="${esc(query)}" data-vendor="${esc(vendor)}" aria-label="${esc(accessibleLabel)}">${esc(label)}${icon('arrow-right')}</button>`;
+    return `<button type="button" class="${esc(className)}" data-act="dashboardDrilldown" data-drill-key="${esc(key)}" data-target="${target}" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${type}" data-approval="${approval}" data-status="${status}" data-query="${esc(query)}" data-vendor="${esc(vendor)}" aria-label="${esc(accessibleLabel)}">${esc(label)}${icon('arrow-right')}</button>`;
   }
 
   function bars(rows, limit = 8) {
@@ -746,7 +748,7 @@ export function createDashboard({ api }) {
               ' · ' +
               esc(approval) +
               '</small>' +
-              dashboardDrilldownButton({ key: 'recent-voucher', target: 'reg', from: row.date, to: row.date, type: row.type, query: String(row.no), label: 'View in Register', ariaLabel: 'Find voucher ' + number + ' in Register', className: 'btn sm dashboard-recent-item__open' }) +
+              dashboardDrilldownButton({ key: 'recent-voucher', target: 'reg', from: row.date, to: row.date, type: row.type, query: String(row.no), vendor: row.vendor, label: 'View in Register', ariaLabel: 'Find voucher ' + number + ' in Register', className: 'btn sm dashboard-recent-item__open' }) +
               '</div><strong class="dashboard-recent-item__amount">' +
               esc(amount) +
               '</strong></li>'
@@ -971,6 +973,7 @@ export function createDashboard({ api }) {
         key: 'invalid-voucher-data',
         from,
         to,
+        status: 'ALL',
         label: 'Inspect voucher data',
       });
     }
@@ -1107,10 +1110,10 @@ export function createDashboard({ api }) {
       ? ''
       : `
       <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--staff'}">
-        <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Approved payments · period</span><b>${money(total)}</b><small class="dashboard-period-comparison" data-direction="${comparisonDirection}">${esc(comparisonText)}</small>${dashboardDrilldownButton({ key: 'payments-period', target: can('reports') ? 'reports' : 'reg', from, to, type: 'PAYMENT', label: can('reports') ? 'Open payment report' : 'View payment entries', ariaLabel: 'Open selected-period payment context', className: 'btn sm dashboard-kpi-drilldown' })}</div>
-        <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Approved payment vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small>${dashboardDrilldownButton({ key: 'payment-count', target: 'reg', from, to, type: 'PAYMENT', label: 'Review payment records', className: 'btn sm dashboard-kpi-drilldown' })}</div>
-        <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest payment</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small>${dashboardDrilldownButton({ key: 'largest-payment', target: 'reg', from, to, type: 'PAYMENT', vendor: typeof summary.largest?.vendor === 'string' ? summary.largest.vendor : '', label: 'View vendor entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>
-        <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Paid today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small>${dashboardDrilldownButton({ key: 'paid-today', target: 'reg', from: today(), to: today(), type: 'PAYMENT', label: 'View today’s payments', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Approved payments · period</span><b>${money(total)}</b><small class="dashboard-period-comparison" data-direction="${comparisonDirection}">${esc(comparisonText)}</small>${dashboardDrilldownButton({ key: 'payments-period', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', label: can('reports') ? 'Open payment report' : 'View payment entries', ariaLabel: 'Open selected-period payment context', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Approved payment vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small>${dashboardDrilldownButton({ key: 'payment-count', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', label: 'Review payment records', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest payment</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small>${dashboardDrilldownButton({ key: 'largest-payment', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', vendor: typeof summary.largest?.vendor === 'string' ? summary.largest.vendor : '', label: 'View vendor entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Paid today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small>${dashboardDrilldownButton({ key: 'paid-today', target: 'reg', from: today(), to: today(), type: 'PAYMENT', approval: 'APPROVED', label: 'View today’s payments', className: 'btn sm dashboard-kpi-drilldown' })}</div>
         <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Receipts · period</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} recorded receipts · all methods</small>${dashboardDrilldownButton({ key: 'receipts-period', target: can('reports') ? 'reports' : 'reg', from, to, type: 'RECEIPT', label: can('reports') ? 'Open receipt report' : 'View receipt entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>
         ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance · all time</span><b>${money(summary.bookBalance)}</b><small class="muted">Opening balance + active receipts − approved payments; not a physical cash count or bank balance</small>${dashboardDrilldownButton({ key: 'book-balance', target: 'reg', label: 'Review all-time entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>` : ''}
       </div>

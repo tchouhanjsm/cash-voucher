@@ -1822,8 +1822,8 @@ export function createRegister({ api, go }) {
       t: ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : '',
       from: validRange ? requestedFrom : '',
       to: validRange ? requestedTo : '',
-      st: 'ACTIVE',
-      approval: 'ALL',
+      st: ['ACTIVE', 'CANCELLED', 'ALL'].includes(context.status) ? context.status : 'ACTIVE',
+      approval: ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_REQUIRED', 'REVIEW_REQUIRED'].includes(context.approval) ? context.approval : 'ALL',
       paymentMethod: 'ALL',
       limit: 100,
     });
