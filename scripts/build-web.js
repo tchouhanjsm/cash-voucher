@@ -146,15 +146,15 @@ function validateCacheHeaders(source, format = 'apache') {
         'css|js|mjs|webmanifest|svg|png',
       ]
     : [
-        '/\\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/index.html\\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/sw.js\\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/config.js\\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/asset-manifest.json\\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/release-manifest.json\\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/frontend/*\\n  Cache-Control: no-cache, must-revalidate',
-        '/icons/*\\n  Cache-Control: no-cache, must-revalidate',
-        '/frontend-workspace.css\\n  Cache-Control: no-cache, must-revalidate',
+        '/\n  Cache-Control: no-cache, no-store, must-revalidate',
+        '/index.html\n  Cache-Control: no-cache, no-store, must-revalidate',
+        '/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate',
+        '/config.js\n  Cache-Control: no-cache, no-store, must-revalidate',
+        '/asset-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
+        '/release-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
+        '/frontend/*\n  Cache-Control: no-cache, must-revalidate',
+        '/icons/*\n  Cache-Control: no-cache, must-revalidate',
+        '/frontend-workspace.css\n  Cache-Control: no-cache, must-revalidate',
       ];
 
   for (const marker of required) {
