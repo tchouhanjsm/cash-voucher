@@ -669,6 +669,18 @@ ${methodBreakdown}
       }
     }
   }
+  function openDashboardContext(context = {}) {
+    const from = typeof context.from === 'string' ? context.from : '';
+    const to = typeof context.to === 'string' ? context.to : '';
+    if (!isBusinessDate(from) || !isBusinessDate(to) || from > to) return;
+    R.from = from;
+    R.to = to;
+    R.type = ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : 'ALL';
+    R.status = 'ACTIVE';
+    R.paymentMethod = 'ALL';
+    return load();
+  }
+
   function exportCsv() {
     if (!R.summary) {
       toast('Run a successful report before exporting.', 'err');
@@ -712,5 +724,5 @@ ${methodBreakdown}
     }
   }
 
-  return { render, load, exportCsv };
+  return { render, load, openDashboardContext, exportCsv };
 }

@@ -38,6 +38,20 @@ export function createDashboard({ api }) {
     return [addDays(current, -29), current];
   }
 
+  function dashboardDrilldownButton(options = {}) {
+    const target = ['reg', 'reports', 'cashClose'].includes(options.target) ? options.target : 'reg';
+    const key = typeof options.key === 'string' ? options.key : 'dashboard';
+    const from = isBusinessDate(options.from) ? options.from : '';
+    const to = isBusinessDate(options.to) ? options.to : '';
+    const type = ['PAYMENT', 'RECEIPT'].includes(options.type) ? options.type : '';
+    const query = typeof options.query === 'string' ? options.query.slice(0, 120) : '';
+    const vendor = typeof options.vendor === 'string' ? options.vendor.slice(0, 200) : '';
+    const label = typeof options.label === 'string' ? options.label : 'Open context';
+    const className = typeof options.className === 'string' ? options.className : 'btn dashboard-drilldown';
+    const accessibleLabel = typeof options.ariaLabel === 'string' ? options.ariaLabel : label;
+    return `<button type="button" class="${esc(className)}" data-act="dashboardDrilldown" data-drill-key="${esc(key)}" data-target="${target}" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${type}" data-query="${esc(query)}" data-vendor="${esc(vendor)}" aria-label="${esc(accessibleLabel)}">${esc(label)}${icon('arrow-right')}</button>`;
+  }
+
   function bars(rows, limit = 8) {
     // Persisted/bootstrap data is untrusted; keep non-finite totals out of CSS geometry.
     const top = rows.slice(0, limit).map((row) => ({
@@ -462,10 +476,10 @@ export function createDashboard({ api }) {
   function dailyCloseCard(data, error) {
     if (!can('cashClose')) return '';
 
-    const action =
-      '<button type="button" class="btn" data-act="goto" data-k="cashClose">Open Daily Cash Close ' +
-      icon('arrow-right') +
-      '</button>';
+    const action = dashboardDrilldownButton({
+      key: 'daily-cash-close', target: 'cashClose', from: today(), to: today(),
+      label: 'Open Daily Cash Close', className: 'btn dashboard-attention-drilldown',
+    });
     if (error || !data || typeof data !== 'object') {
       return (
         '<section class="card daily-close-readiness" data-status="UNAVAILABLE" aria-labelledby="dailyCloseTitle">' +
@@ -681,9 +695,9 @@ export function createDashboard({ api }) {
       esc(dmy(from)) +
       ' – ' +
       esc(dmy(to)) +
-      '</p></div><button type="button" class="btn" data-act="goto" data-k="reg">Open register ' +
-      icon('arrow-right') +
-      '</button></div>';
+      '</p></div>' +
+      dashboardDrilldownButton({ key: 'recent-period', target: 'reg', from, to, label: 'Open register', className: 'btn dashboard-recent-open' }) +
+      '</div>';
     if (error || recentTransactionsIssue(result)) {
       return (
         '<section class="card dashboard-recent-transactions" aria-labelledby="dashboardRecentTitle">' +
@@ -731,7 +745,9 @@ export function createDashboard({ api }) {
               esc(dmy(row.date)) +
               ' · ' +
               esc(approval) +
-              '</small></div><strong class="dashboard-recent-item__amount">' +
+              '</small>' +
+              dashboardDrilldownButton({ key: 'recent-voucher', target: 'reg', from: row.date, to: row.date, type: row.type, query: String(row.no), label: 'View in Register', ariaLabel: 'Find voucher ' + number + ' in Register', className: 'btn sm dashboard-recent-item__open' }) +
+              '</div><strong class="dashboard-recent-item__amount">' +
               esc(amount) +
               '</strong></li>'
             );
@@ -928,8 +944,12 @@ export function createDashboard({ api }) {
         tone: 'warn',
         icon: 'clock',
         text: `${approvalExceptionCount} payment${approvalExceptionCount === 1 ? '' : 's'} need approval or review`,
-        action: 'reg',
-        label: 'Open register',
+        target: 'reg',
+        key: 'approval-exceptions',
+        from,
+        to,
+        type: 'PAYMENT',
+        label: 'Review payment entries',
       });
     }
     if (S.offlineMode || navigator.onLine === false) {
@@ -937,7 +957,8 @@ export function createDashboard({ api }) {
         tone: 'warn',
         icon: 'cloud-off',
         text: 'Working offline. New entries are saved on this device until you reconnect',
-        action: '',
+        target: '',
+        key: 'offline-status',
         label: '',
       });
     }
@@ -946,8 +967,11 @@ export function createDashboard({ api }) {
         tone: 'bad',
         icon: 'alert',
         text: `${malformedRecordCount + invalidAmountCount} voucher record(s) have invalid data and are excluded`,
-        action: 'reg',
-        label: 'Check register',
+        target: 'reg',
+        key: 'invalid-voucher-data',
+        from,
+        to,
+        label: 'Inspect voucher data',
       });
     }
     if (can('cashClose')) {
@@ -956,7 +980,10 @@ export function createDashboard({ api }) {
           tone: 'warn',
           icon: 'alert',
           text: "Today's physical cash readiness could not be verified",
-          action: 'cashClose',
+          target: 'cashClose',
+          key: 'cash-readiness-unavailable',
+          from: today(),
+          to: today(),
           label: 'Review cash close',
         });
       } else {
@@ -968,7 +995,10 @@ export function createDashboard({ api }) {
             tone: 'warn',
             icon: 'alert',
             text: `${dailyOperations.unclassifiedCount} current-day voucher(s) need a verified cash-impact classification`,
-            action: 'cashClose',
+            target: 'cashClose',
+            key: 'unclassified-cash-impact',
+            from: today(),
+            to: today(),
             label: 'Review cash close',
           });
         }
@@ -980,7 +1010,10 @@ export function createDashboard({ api }) {
             tone: 'bad',
             icon: 'alert',
             text: `${dailyOperations.invalidVoucherCount} current-day voucher(s) contain invalid data and block closing`,
-            action: 'cashClose',
+            target: 'cashClose',
+            key: 'invalid-cash-close-vouchers',
+            from: today(),
+            to: today(),
             label: 'Review cash close',
           });
         }
@@ -989,7 +1022,10 @@ export function createDashboard({ api }) {
             tone: 'warn',
             icon: 'wallet',
             text: 'Opening cash is required before today can be closed',
-            action: 'cashClose',
+            target: 'cashClose',
+            key: 'opening-cash-required',
+            from: today(),
+            to: today(),
             label: 'Record opening cash',
           });
         }
@@ -998,7 +1034,10 @@ export function createDashboard({ api }) {
             tone: 'bad',
             icon: 'calendar',
             text: "Today's cash close is blocked by a later closed business date",
-            action: 'cashClose',
+            target: 'cashClose',
+            key: 'later-close-blocker',
+            from: today(),
+            to: today(),
             label: 'Review cash close',
           });
         }
@@ -1010,7 +1049,7 @@ export function createDashboard({ api }) {
         ? `<ul class="needs-list">${attention
             .map(
               (item) =>
-                `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${esc(item.text)}</span>${item.action ? `<button type="button" class="btn" data-act="goto" data-k="${item.action}">${item.label}${icon('arrow-right')}</button>` : ''}</li>`,
+                `<li class="needs-item ${item.tone}">${icon(item.icon)}<span>${esc(item.text)}</span>${item.target ? dashboardDrilldownButton({ ...item, className: 'btn dashboard-attention-drilldown' }) : ''}</li>`,
             )
             .join('')}</ul>`
         : `<p class="needs-clear">${icon('check')}<span>No dashboard issues need your attention right now. Backup and recovery status are checked separately.</span></p>`
@@ -1068,12 +1107,12 @@ export function createDashboard({ api }) {
       ? ''
       : `
       <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--staff'}">
-        <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Approved payments · period</span><b>${money(total)}</b><small class="dashboard-period-comparison" data-direction="${comparisonDirection}">${esc(comparisonText)}</small></div>
-        <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Approved payment vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
-        <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest payment</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>
-        <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Paid today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small></div>
-        <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Receipts · period</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} recorded receipts · all methods</small></div>
-        ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance · all time</span><b>${money(summary.bookBalance)}</b><small class="muted">Opening balance + active receipts − approved payments; not a physical cash count or bank balance</small></div>` : ''}
+        <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Approved payments · period</span><b>${money(total)}</b><small class="dashboard-period-comparison" data-direction="${comparisonDirection}">${esc(comparisonText)}</small>${dashboardDrilldownButton({ key: 'payments-period', target: can('reports') ? 'reports' : 'reg', from, to, type: 'PAYMENT', label: can('reports') ? 'Open payment report' : 'View payment entries', ariaLabel: 'Open selected-period payment context', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Approved payment vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small>${dashboardDrilldownButton({ key: 'payment-count', target: 'reg', from, to, type: 'PAYMENT', label: 'Review payment records', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest payment</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small>${dashboardDrilldownButton({ key: 'largest-payment', target: 'reg', from, to, type: 'PAYMENT', vendor: typeof summary.largest?.vendor === 'string' ? summary.largest.vendor : '', label: 'View vendor entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Paid today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small>${dashboardDrilldownButton({ key: 'paid-today', target: 'reg', from: today(), to: today(), type: 'PAYMENT', label: 'View today’s payments', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Receipts · period</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} recorded receipts · all methods</small>${dashboardDrilldownButton({ key: 'receipts-period', target: can('reports') ? 'reports' : 'reg', from, to, type: 'RECEIPT', label: can('reports') ? 'Open receipt report' : 'View receipt entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>
+        ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance · all time</span><b>${money(summary.bookBalance)}</b><small class="muted">Opening balance + active receipts − approved payments; not a physical cash count or bank balance</small>${dashboardDrilldownButton({ key: 'book-balance', target: 'reg', label: 'Review all-time entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>` : ''}
       </div>
       ${dashboardWarnings}
       ${operationsPanels}

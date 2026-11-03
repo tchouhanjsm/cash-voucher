@@ -26,6 +26,7 @@ import {
   finiteAmount,
   money,
   parseAmt,
+  isBusinessDate,
   today,
 } from '../core/utils.js';
 import { closeModal, dialog, fail, head, refreshBtn, toast } from '../core/ui.js';
@@ -1808,6 +1809,34 @@ export function createRegister({ api, go }) {
     );
   }
 
+  function openDashboardContext(context = {}) {
+    const requestedFrom = scalarText(context.from);
+    const requestedTo = scalarText(context.to);
+    const validRange =
+      isBusinessDate(requestedFrom) && isBusinessDate(requestedTo) && requestedFrom <= requestedTo;
+    Object.assign(R, {
+      q: typeof context.query === 'string' ? context.query.trim().slice(0, 120) : '',
+      vendor: typeof context.vendor === 'string' ? context.vendor.trim().slice(0, 200) : '',
+      cat: '',
+      user: '',
+      t: ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : '',
+      from: validRange ? requestedFrom : '',
+      to: validRange ? requestedTo : '',
+      st: 'ACTIVE',
+      approval: 'ALL',
+      paymentMethod: 'ALL',
+      limit: 100,
+    });
+    pageRequestSequence += 1;
+    clearTimeout(filterDebounce);
+    pageRows = [];
+    pageTotalCount = 0;
+    pageTotals = null;
+    pageFacets = { vendors: [], users: [] };
+    pageLoading = false;
+    pageError = null;
+  }
+
   function bind() {
     $('#view').addEventListener('input', updateFilter);
     $('#view').addEventListener('change', updateFilter);
@@ -1829,6 +1858,7 @@ export function createRegister({ api, go }) {
     bind,
     render,
     renderRows,
+    openDashboardContext,
     loadMore,
     clearFilters,
     csvExport,
