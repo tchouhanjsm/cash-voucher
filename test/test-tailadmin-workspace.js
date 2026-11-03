@@ -17,6 +17,10 @@ const administration = read('frontend/features/administration.js');
 const cashClose = read('frontend/features/cash-close.js');
 const bulk = read('frontend/features/bulk.js');
 const onboarding = read('frontend/features/onboarding.js');
+const account = read('frontend/features/administration.js');
+const shell = read('frontend/features/shell.js');
+const preferences = read('frontend/core/preferences.js');
+const theme = read('frontend/core/theme.js');
 
 const uiKitPosition = html.indexOf('frontend-ui-kit.css');
 const workspacePosition = html.indexOf('frontend-workspace.css');
@@ -151,7 +155,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v47'/,
+  /const C = 'cv2-v48'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
