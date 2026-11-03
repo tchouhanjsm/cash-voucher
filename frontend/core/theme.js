@@ -49,6 +49,8 @@ function updateTheme(theme) {
   const next = selected === 'dark' ? 'light' : 'dark';
 
   document.documentElement.dataset.theme = selected;
+  const accountAppearance = document.getElementById('accountAppearance');
+  if (accountAppearance) accountAppearance.value = selected;
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', THEME_COLORS[selected]);
