@@ -5739,10 +5739,9 @@ with sync_playwright() as p:
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
 
     manager_dashboard_requests = []
-    manager_dashboard_vendor = ''
+    manager_dashboard_state = {'vendor': ''}
 
     def inject_manager_dashboard_drilldowns(route):
-        nonlocal manager_dashboard_vendor
         try:
             request_data = json.loads(route.request.post_data or '{}')
         except json.JSONDecodeError:
@@ -5764,7 +5763,7 @@ with sync_playwright() as p:
                 data['invalidAmountCount'] = max(1, int(data.get('invalidAmountCount') or 0))
                 largest = data.get('largest')
                 if isinstance(largest, dict) and isinstance(largest.get('vendor'), str):
-                    manager_dashboard_vendor = largest['vendor']
+                    manager_dashboard_state['vendor'] = largest['vendor']
                 payload['data'] = data
             route.fulfill(response=response, json=payload)
             return
@@ -5774,12 +5773,12 @@ with sync_playwright() as p:
             payload = response.json()
             data = payload.get('data', {})
             facets = data.get('facets', {}) if isinstance(data, dict) else {}
-            if isinstance(facets, dict) and manager_dashboard_vendor:
+            if isinstance(facets, dict) and manager_dashboard_state['vendor']:
                 vendors = facets.get('vendors', [])
                 if not isinstance(vendors, list):
                     vendors = []
-                if manager_dashboard_vendor not in vendors:
-                    vendors.append(manager_dashboard_vendor)
+                if manager_dashboard_state['vendor'] not in vendors:
+                    vendors.append(manager_dashboard_state['vendor'])
                 facets['vendors'] = vendors
                 data['facets'] = facets
                 payload['data'] = data
