@@ -31,8 +31,10 @@ const APACHE_SECURITY_HEADERS = `<IfModule mod_headers.c>
 </IfModule>
 `;
 
-const PAGES_CACHE_HEADERS = "/\n  Cache-Control: no-cache, no-store, must-revalidate\n/index.html\n  Cache-Control: no-cache, no-store, must-revalidate\n/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate\n/config.js\n  Cache-Control: no-cache, no-store, must-revalidate\n/asset-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate\n/release-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate\n/frontend/*\n  Cache-Control: no-cache, must-revalidate\n/icons/*\n  Cache-Control: no-cache, must-revalidate\n/style.css\n  Cache-Control: no-cache, must-revalidate\n/frontend-ui-kit.css\n  Cache-Control: no-cache, must-revalidate\n/frontend-workspace.css\n  Cache-Control: no-cache, must-revalidate\n/manifest.webmanifest\n  Cache-Control: no-cache, must-revalidate\n";
-const APACHE_CACHE_HEADERS = "<IfModule mod_headers.c>\n  <FilesMatch \"^(index\\.html|sw\\.js|config\\.js|asset-manifest\\.json|release-manifest\\.json)$\">\n    Header always set Cache-Control \"no-cache, no-store, must-revalidate\"\n    Header always set Pragma \"no-cache\"\n    Header always set Expires \"0\"\n  </FilesMatch>\n  <FilesMatch \"^(?!config\\.js$|sw\\.js$).+\\.(css|js|mjs|webmanifest|svg|png)$\">\n    Header always set Cache-Control \"no-cache, must-revalidate\"\n  </FilesMatch>\n</IfModule>\n";
+const PAGES_CACHE_HEADERS =
+  '/\n  Cache-Control: no-cache, no-store, must-revalidate\n/index.html\n  Cache-Control: no-cache, no-store, must-revalidate\n/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate\n/config.js\n  Cache-Control: no-cache, no-store, must-revalidate\n/asset-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate\n/release-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate\n/frontend/*\n  Cache-Control: no-cache, must-revalidate\n/icons/*\n  Cache-Control: no-cache, must-revalidate\n/style.css\n  Cache-Control: no-cache, must-revalidate\n/frontend-ui-kit.css\n  Cache-Control: no-cache, must-revalidate\n/frontend-workspace.css\n  Cache-Control: no-cache, must-revalidate\n/manifest.webmanifest\n  Cache-Control: no-cache, must-revalidate\n';
+const APACHE_CACHE_HEADERS =
+  '<IfModule mod_headers.c>\n  <FilesMatch "^(index\\.html|sw\\.js|config\\.js|asset-manifest\\.json|release-manifest\\.json)$">\n    Header always set Cache-Control "no-cache, no-store, must-revalidate"\n    Header always set Pragma "no-cache"\n    Header always set Expires "0"\n  </FilesMatch>\n  <FilesMatch "^(?!config\\.js$|sw\\.js$).+\\.(css|js|mjs|webmanifest|svg|png)$">\n    Header always set Cache-Control "no-cache, must-revalidate"\n  </FilesMatch>\n</IfModule>\n';
 function validateApiUrl(value) {
   const raw = typeof value === 'string' ? value.trim() : '';
   if (!raw) {
@@ -137,15 +139,16 @@ function validateCacheHeaders(source, format = 'apache') {
     throw new Error('Generated cache policy is empty.');
   }
 
-  const required = format === 'apache'
-    ? [
+  const required =
+    format === 'apache'
+      ? [
         'Header always set Cache-Control "no-cache, no-store, must-revalidate"',
         'Header always set Pragma "no-cache"',
         'Header always set Expires "0"',
         'Header always set Cache-Control "no-cache, must-revalidate"',
-        'css|js|mjs|webmanifest|svg|png',
-      ]
-    : [
+          'css|js|mjs|webmanifest|svg|png',
+        ]
+      : [
         '/\n  Cache-Control: no-cache, no-store, must-revalidate',
         '/index.html\n  Cache-Control: no-cache, no-store, must-revalidate',
         '/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate',
@@ -154,8 +157,8 @@ function validateCacheHeaders(source, format = 'apache') {
         '/release-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
         '/frontend/*\n  Cache-Control: no-cache, must-revalidate',
         '/icons/*\n  Cache-Control: no-cache, must-revalidate',
-        '/frontend-workspace.css\n  Cache-Control: no-cache, must-revalidate',
-      ];
+          '/frontend-workspace.css\n  Cache-Control: no-cache, must-revalidate',
+        ];
 
   for (const marker of required) {
     if (!source.includes(marker)) {
@@ -230,7 +233,11 @@ window.CV_CONFIG = {
 
   fs.writeFileSync(path.join(outDir, 'config.js'), config, 'utf8');
   fs.writeFileSync(path.join(outDir, '_headers'), SECURITY_HEADERS + PAGES_CACHE_HEADERS, 'utf8');
-  fs.writeFileSync(path.join(outDir, '.htaccess'), APACHE_SECURITY_HEADERS + APACHE_CACHE_HEADERS, 'utf8');
+  fs.writeFileSync(
+    path.join(outDir, '.htaccess'),
+    APACHE_SECURITY_HEADERS + APACHE_CACHE_HEADERS,
+    'utf8',
+  );
   fs.writeFileSync(path.join(outDir, '.nojekyll'), '', 'utf8');
 
   const assetManifest = createAssetManifest(outDir);
