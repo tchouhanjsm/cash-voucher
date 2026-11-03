@@ -39,7 +39,14 @@ const config = [
   '};',
 ].join('\n');
 
-function makeFetch({ replacements = {}, missingCache = '', missingSecurity = false } = {}) {
+const secureCsp = "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; script-src-attr 'none'; frame-src 'none'; frame-ancestors 'none'";
+
+function makeFetch({
+  replacements = {},
+  missingCache = '',
+  missingSecurity = false,
+  cspOverride = secureCsp,
+} = {}) {
   const payloads = {
     ...files,
     'release-manifest.json': JSON.stringify(release),
@@ -58,8 +65,7 @@ function makeFetch({ replacements = {}, missingCache = '', missingSecurity = fal
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
-      'Content-Security-Policy':
-        "default-src 'self'; object-src 'none'; script-src 'self'; frame-ancestors 'none'",
+      'Content-Security-Policy': cspOverride,
     };
     if (missingCache && pathname.endsWith(missingCache))
       headers['Cache-Control'] = 'public, max-age=86400';
@@ -151,6 +157,33 @@ async function expectFailure(options, pattern) {
       fetchImpl: makeFetch({ missingSecurity: true }),
     },
     /restrictive Content-Security-Policy/,
+  );
+
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch({
+        cspOverride:
+          "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self' https://evil.example; script-src-attr 'none'; frame-src 'none'; frame-ancestors 'none'",
+      }),
+    },
+    /restrictive Content-Security-Policy response directive: script-src/,
+  );
+
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch({
+        replacements: {
+          'config.js': config.replace('/exec",', '/exec?api=https://evil.example",'),
+        },
+      }),
+    },
+    /API endpoint and deployment identity do not match/,
   );
 
   await expectFailure(
