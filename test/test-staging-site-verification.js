@@ -20,16 +20,19 @@ const assets = Object.entries(files).map(([path, content]) => ({
   bytes: Buffer.byteLength(content),
   sha256: crypto.createHash('sha256').update(content).digest('hex'),
 }));
-const release = {
-  environment: 'staging',
-  commit,
-  deploymentId,
-  artifactVersion: 2,
-};
 const assetManifest = {
   schemaVersion: 1,
   scope: 'public-static-client-assets',
   assets,
+};
+const assetManifestBytes = JSON.stringify(assetManifest);
+const assetManifestSha256 = crypto.createHash('sha256').update(assetManifestBytes).digest('hex');
+const release = {
+  environment: 'staging',
+  commit,
+  deploymentId,
+  assetManifestSha256,
+  artifactVersion: 2,
 };
 const config = [
   'window.CV_CONFIG = {',
@@ -50,7 +53,7 @@ function makeFetch({
   const payloads = {
     ...files,
     'release-manifest.json': JSON.stringify(release),
-    'asset-manifest.json': JSON.stringify(assetManifest),
+    'asset-manifest.json': assetManifestBytes,
     'config.js': config,
     ...replacements,
   };
@@ -72,6 +75,23 @@ function makeFetch({
     if (missingSecurity) delete headers['Content-Security-Policy'];
 
     return new Response(value, { status: 200, headers });
+  };
+}
+
+
+function manifestReplacements(extraPath) {
+  const changedManifest = {
+    ...assetManifest,
+    assets: [...assets, { ...assets[0], path: extraPath }],
+  };
+  const bytes = JSON.stringify(changedManifest);
+  const changedRelease = {
+    ...release,
+    assetManifestSha256: crypto.createHash('sha256').update(bytes).digest('hex'),
+  };
+  return {
+    'asset-manifest.json': bytes,
+    'release-manifest.json': JSON.stringify(changedRelease),
   };
 }
 
@@ -144,6 +164,20 @@ async function expectFailure(options, pattern) {
       siteUrl: 'https://staging.example.test/cash-voucher/',
       expectedCommit: commit,
       expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch({
+        replacements: {
+          'asset-manifest.json': JSON.stringify({ ...assetManifest, scope: 'modified-manifest' }),
+        },
+      }),
+    },
+    /Asset manifest digest does not match the release manifest/,
+  );
+
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
       fetchImpl: makeFetch({ missingCache: '/sw.js' }),
     },
     /sw\.js is missing Cache-Control/,
@@ -192,12 +226,7 @@ async function expectFailure(options, pattern) {
       expectedCommit: commit,
       expectedDeploymentId: deploymentId,
       fetchImpl: makeFetch({
-        replacements: {
-          'asset-manifest.json': JSON.stringify({
-            ...assetManifest,
-            assets: [...assets, { ...assets[0], path: '../outside.js' }],
-          }),
-        },
+        replacements: manifestReplacements('../outside.js'),
       }),
     },
     /unsafe relative path/,
@@ -209,12 +238,7 @@ async function expectFailure(options, pattern) {
       expectedCommit: commit,
       expectedDeploymentId: deploymentId,
       fetchImpl: makeFetch({
-        replacements: {
-          'asset-manifest.json': JSON.stringify({
-            ...assetManifest,
-            assets: [...assets, { ...assets[0], path: '%2e%2e/outside.js' }],
-          }),
-        },
+        replacements: manifestReplacements('%2e%2e/outside.js'),
       }),
     },
     /unsafe relative path/,
