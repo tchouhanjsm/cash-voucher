@@ -494,7 +494,7 @@ with sync_playwright() as p:
         page.locator('html').get_attribute('data-theme') == 'light'
         and page.evaluate("localStorage.getItem('cv.theme')") == 'light'
         and page.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(237, 241, 246)'
-        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#edf1f6'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#faf6ef'
         and page.locator('#themeToggle').get_attribute('aria-pressed') == 'false',
         'light theme can be restored and the explicit choice is retained',
     )
@@ -659,6 +659,7 @@ with sync_playwright() as p:
         {'paid': 1250, 'previousPaid': 0, 'direction': 'zero-baseline', 'copy': 'percentage change unavailable'},
         {'paid': 1000, 'previousPaid': 1000, 'direction': 'flat', 'copy': 'No change vs previous 7 days'},
         {'paid': 1250, 'previousPaid': 1000, 'direction': 'increase', 'copy': '↑ 25% vs previous 7 days'},
+        {'paid': 100, 'previousPaid': 2, 'direction': 'increase', 'copy': 'Change +₹98', 'alsoCopy': 'percentage omitted for a small baseline'},
         {'paid': 750, 'previousPaid': 1000, 'direction': 'decrease', 'copy': '↓ 25% vs previous 7 days'},
     ]:
         comparison_case = case
@@ -670,6 +671,7 @@ with sync_playwright() as p:
         comparison = page.locator('.dashboard-period-comparison')
         check(
             case['copy'] in comparison.inner_text()
+            and (not case.get('alsoCopy') or case['alsoCopy'] in comparison.inner_text())
             and comparison.get_attribute('data-direction') == case['direction']
             and 'up' not in (comparison.get_attribute('class') or '')
             and 'down' not in (comparison.get_attribute('class') or ''),
@@ -2483,7 +2485,7 @@ with sync_playwright() as p:
     )
     try:
         page.wait_for_function(
-            "document.querySelector('#view')?.innerText.includes('Total paid') || "
+            "document.querySelector('#view')?.innerText.includes('Approved payments') || "
             "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
             timeout=10000,
         )
@@ -2614,7 +2616,7 @@ with sync_playwright() as p:
         'dashboard recovers after the unsupported-action error is removed',
     )
     page.wait_for_function(
-        "document.querySelector('#view')?.innerText.includes('Total paid') || "
+        "document.querySelector('#view')?.innerText.includes('Approved payments') || "
             "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
         timeout=10000,
     )
@@ -5954,7 +5956,7 @@ with sync_playwright() as p:
         and page.locator('#view svg.chart, #view .hb').count() == 0
         and all(
             label not in dashboard_invalid_text
-            for label in ('Total paid', 'Cash received', 'Book balance', 'Spending trend', 'Top vendors', 'By category')
+            for label in ('Approved payments', 'Receipts', 'Book balance', 'Spending trend', 'Top vendors', 'By category')
         ),
         'invalid bootstrap envelope withholds dashboard KPIs and charts instead of showing zero-like totals',
     )
@@ -5985,6 +5987,16 @@ with sync_playwright() as p:
         and page.locator('#view svg.chart').count() == 1
         and page.locator('#view .hb').count() > 0,
         'dashboard restores KPIs and charts after a valid voucher collection returns',
+    )
+    restored_dashboard_text = page.locator('#view').inner_text()
+    check(
+        page.locator('#view .dashboard-cash-position').count() == 1
+        and page.locator('#view .daily-close-readiness').count() == 1
+        and page.locator('#view .dashboard-recent-transactions').count() == 1
+        and 'Daily cash position' in restored_dashboard_text
+        and 'Recent transactions' in restored_dashboard_text
+        and page.locator('#view [data-act="range"][data-k="today"]').count() == 1,
+        'dashboard presents daily drawer position, close operations, recent activity and a Today preset',
     )
 
     # A malformed dashboard summary must never degrade into zero-like financial KPIs.
@@ -6026,11 +6038,45 @@ with sync_playwright() as p:
             and page.locator('#view .stats, #view svg.chart, #view .hb').count() == 0
             and all(
                 label not in invalid_summary_text
-                for label in ('Total paid', 'Cash received', 'Book balance', 'Spending trend')
+                for label in ('Approved payments', 'Receipts', 'Book balance', 'Spending trend')
             ),
             f'malformed Dashboard {invalid_field} response hides financial totals and charts',
         )
     page.unroute('**/api?*', inject_invalid_dashboard_summary)
+
+    # Recent Register activity is an optional panel; a page failure must not hide good KPI data.
+    recent_activity_failures = []
+
+    def fail_dashboard_recent_activity(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'registerPage':
+            route.continue_()
+            return
+        recent_activity_failures.append(True)
+        route.fulfill(
+            status=503,
+            content_type='application/json',
+            body=json.dumps({'ok': False, 'error': 'Simulated recent-activity failure'}),
+        )
+
+    page.route('**/api?*', fail_dashboard_recent_activity)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'dashboardSummary'
+    ):
+        page.click('[data-act=range][data-k="today"]')
+    page.wait_for_function(
+        "document.querySelector('.dashboard-recent-transactions .dashboard-recent-empty')?.innerText.includes('Recent activity could not be loaded')",
+        timeout=10000,
+    )
+    check(
+        len(recent_activity_failures) == 1
+        and page.locator('#view .stats').count() == 1
+        and page.locator('#view svg.chart').count() == 1
+        and 'Dashboard totals unavailable' not in page.locator('#view').inner_text(),
+        'failed recent activity is isolated and does not blank valid dashboard KPIs or charts',
+    )
+    page.unroute('**/api?*', fail_dashboard_recent_activity)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
