@@ -1794,7 +1794,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
     formHeading.textContent = 'Security';
     const formIntro = document.createElement('p');
     formIntro.id = 'accountPasswordHelp';
-    formIntro.textContent = 'Change your password for this account. Your current password is required.';
+    formIntro.textContent =
+      'Change your password for this account. Your current password is required.';
     formHeader.append(formHeading, formIntro);
     const controls = document.createElement('div');
     controls.className = 'account-password-controls';
