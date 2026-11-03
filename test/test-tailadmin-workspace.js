@@ -156,7 +156,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v50'/,
+  /const C = 'cv2-v51'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -202,7 +202,7 @@ assert.ok(
   'Dashboard renders escaped, allowlisted, context-bearing drill-down actions',
 );
 assert.ok(
-  appMain.includes("dashboardDrilldown: ({ element })") &&
+  appMain.includes('dashboardDrilldown: ({ element })') &&
     appMain.includes("if (can('cashClose')) navigation.go('cashClose')") &&
     appMain.includes('reports.openDashboardContext(context)') &&
     appMain.includes('register.openDashboardContext(context)'),

@@ -4468,6 +4468,18 @@ with sync_playwright() as p:
     )
     go_view(page, 'dash')
     page.unroute('**/api?*', inject_staff_dashboard_summary)
+    go_view(page, 'reg')
+    page.wait_for_selector('#rf')
+    page.locator('#rf [data-act=rclear]').click()
+    page.wait_for_selector('#rbody tr')
+    check(
+        page.locator('#rq').input_value() == ''
+        and page.locator('#rt').input_value() == ''
+        and page.locator('#rs').input_value() == 'ACTIVE'
+        and page.locator('#rapproval').input_value() == 'ALL',
+        'staff drill-down context is cleared before the following unfiltered Register workflow',
+    )
+    go_view(page, 'dash')
     page.set_viewport_size({'width': 390, 'height': 800})
     page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
 
