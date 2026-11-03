@@ -6,7 +6,7 @@ PR #263 now groups the Haveli Light Dashboard, My Account, Register and Reports 
 - **Account:** identity and role presentation, accessible avatar popover, device-local appearance and density preferences, existing password update and support reporting.
 - **Register and Reports:** business-date shortcuts for daily, weekly, monthly and prior-month review; live Register refinement context; explicit applied-filter context on report source rows; 44px accessible date controls and mobile reflow.
 - **Boundaries:** no new backend action, profile-edit endpoint, account-role change, API/schema update, financial formula, Apps Script deployment or production-data write.
-- **Verification:** exact-head CI / Quality, Browser E2E and Full Flight are required after the combined account slice. The previously recorded dashboard-only results do not certify this expanded head.
+- **Verification:** Dashboard/Account previous exact-head checks are recorded in the PR. Phase 10 Browser E2E passed 1,601 checks and push CI passed on `1c1332959c7cf1cd07e1f17900215a0f0a22e3cf`; PR-event CI must rerun on the fresh synchronize event because the earlier event snapshot lacked the mandatory PR-description sections. Full Flight must then pass on the same SHA. The dashboard-only historical results do not certify the expanded head.
 
 See [docs/HANDOFF.md](HANDOFF.md) and [PR #263](https://github.com/tchouhanjsm/cash-voucher/pull/263) for the current implementation detail and exact-head evidence.
 
