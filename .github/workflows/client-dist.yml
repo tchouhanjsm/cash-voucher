@@ -194,9 +194,13 @@ jobs:
             }
           }
           walk(root);
-          for (const required of ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt']) {
+          for (const required of ['index.html', 'config.js', 'sw.js', '.htaccess', 'robots.txt', 'asset-manifest.json']) {
             if (!files.includes(required)) throw new Error('Missing required artifact file: ' + required);
           }
+
+          const assetManifestSha256 = crypto.createHash('sha256')
+            .update(fs.readFileSync(path.join(root, 'asset-manifest.json')))
+            .digest('hex');
 
           fs.writeFileSync(path.join(root, 'release-manifest.json'), JSON.stringify({
             clientCode: process.env.CLIENT_CODE,
@@ -205,6 +209,7 @@ jobs:
             builtAt: new Date().toISOString(),
             apiOrigin: new URL(process.env.CV_API_URL).origin,
             deploymentId: process.env.EXPECTED_STAGING_DEPLOYMENT_ID,
+            assetManifestSha256,
             artifactVersion: 2,
             checksumAlgorithm: 'SHA-256',
             checksumsFile: 'SHA256SUMS.txt',

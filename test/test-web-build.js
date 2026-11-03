@@ -4,7 +4,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { buildWebSite, validateApiUrl, validateSecurityHeaders } = require('../scripts/build-web');
+const {
+  buildWebSite,
+  validateApiUrl,
+  validateSecurityHeaders,
+  validateCacheHeaders,
+} = require('../scripts/build-web');
 
 const rootDir = path.resolve(__dirname, '..');
 const customerApiUrl = 'https://script.google.com/macros/s/TEST_CUSTOMER_DEPLOYMENT_ID/exec';
@@ -137,15 +142,30 @@ try {
   assert.ok(headers.includes('X-Frame-Options: DENY'));
   assert.ok(headers.includes("frame-ancestors 'none'"));
   assert.ok(headers.includes('https://script.google.com'));
+  assert.equal(validateCacheHeaders(headers, 'pages'), true);
+  assert.ok(headers.includes('/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate'));
 
   const apacheHeaders = fs.readFileSync(path.join(outDir, '.htaccess'), 'utf8');
   assert.ok(apacheHeaders.includes('Header always set X-Content-Type-Options "nosniff"'));
   assert.ok(apacheHeaders.includes('Header always set X-Frame-Options "DENY"'));
   assert.ok(apacheHeaders.includes('Header always set Content-Security-Policy'));
   assert.ok(apacheHeaders.includes("frame-ancestors 'none'"));
+  assert.equal(validateCacheHeaders(apacheHeaders, 'apache'), true);
+  assert.ok(
+    apacheHeaders.includes('Header always set Cache-Control "no-cache, no-store, must-revalidate"'),
+  );
 
   assert.equal(validateSecurityHeaders(headers, 'pages'), true);
   assert.equal(validateSecurityHeaders(apacheHeaders, 'apache'), true);
+  assert.throws(
+    () =>
+      validateCacheHeaders(
+        headers.replace('/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate', ''),
+        'pages',
+      ),
+    /cache policy/,
+    'Pages cache policy rejects missing service-worker revalidation',
+  );
   assert.throws(
     () => validateSecurityHeaders(headers.replace("script-src 'self'", 'script-src *'), 'pages'),
     /script-src/,

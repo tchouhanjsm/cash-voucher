@@ -31,6 +31,10 @@ const APACHE_SECURITY_HEADERS = `<IfModule mod_headers.c>
 </IfModule>
 `;
 
+const PAGES_CACHE_HEADERS =
+  '/\n  Cache-Control: no-cache, no-store, must-revalidate\n/index.html\n  Cache-Control: no-cache, no-store, must-revalidate\n/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate\n/config.js\n  Cache-Control: no-cache, no-store, must-revalidate\n/asset-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate\n/release-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate\n/frontend/*\n  Cache-Control: no-cache, must-revalidate\n/icons/*\n  Cache-Control: no-cache, must-revalidate\n/style.css\n  Cache-Control: no-cache, must-revalidate\n/frontend-ui-kit.css\n  Cache-Control: no-cache, must-revalidate\n/frontend-workspace.css\n  Cache-Control: no-cache, must-revalidate\n/manifest.webmanifest\n  Cache-Control: no-cache, must-revalidate\n';
+const APACHE_CACHE_HEADERS =
+  '<IfModule mod_headers.c>\n  <FilesMatch "^(index\\.html|sw\\.js|config\\.js|asset-manifest\\.json|release-manifest\\.json)$">\n    Header always set Cache-Control "no-cache, no-store, must-revalidate"\n    Header always set Pragma "no-cache"\n    Header always set Expires "0"\n  </FilesMatch>\n  <FilesMatch "^(?!config\\.js$|sw\\.js$).+\\.(css|js|mjs|webmanifest|svg|png)$">\n    Header always set Cache-Control "no-cache, must-revalidate"\n  </FilesMatch>\n</IfModule>\n';
 function validateApiUrl(value) {
   const raw = typeof value === 'string' ? value.trim() : '';
   if (!raw) {
@@ -130,6 +134,40 @@ function validateSecurityHeaders(source, format = 'apache') {
   return true;
 }
 
+function validateCacheHeaders(source, format = 'apache') {
+  if (typeof source !== 'string' || !source.trim()) {
+    throw new Error('Generated cache policy is empty.');
+  }
+
+  const required =
+    format === 'apache'
+      ? [
+          'Header always set Cache-Control "no-cache, no-store, must-revalidate"',
+          'Header always set Pragma "no-cache"',
+          'Header always set Expires "0"',
+          'Header always set Cache-Control "no-cache, must-revalidate"',
+          'css|js|mjs|webmanifest|svg|png',
+        ]
+      : [
+          '/\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/index.html\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/config.js\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/asset-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/release-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/frontend/*\n  Cache-Control: no-cache, must-revalidate',
+          '/icons/*\n  Cache-Control: no-cache, must-revalidate',
+          '/frontend-workspace.css\n  Cache-Control: no-cache, must-revalidate',
+        ];
+
+  for (const marker of required) {
+    if (!source.includes(marker)) {
+      throw new Error('Generated ' + format + ' cache policy is missing: ' + marker);
+    }
+  }
+
+  return true;
+}
 function buildWebSite(options = {}) {
   const rootDir = path.resolve(options.rootDir || path.join(__dirname, '..'));
   const outDir = path.resolve(options.outDir || path.join(rootDir, 'dist'));
@@ -194,8 +232,12 @@ window.CV_CONFIG = {
 `;
 
   fs.writeFileSync(path.join(outDir, 'config.js'), config, 'utf8');
-  fs.writeFileSync(path.join(outDir, '_headers'), SECURITY_HEADERS, 'utf8');
-  fs.writeFileSync(path.join(outDir, '.htaccess'), APACHE_SECURITY_HEADERS, 'utf8');
+  fs.writeFileSync(path.join(outDir, '_headers'), SECURITY_HEADERS + PAGES_CACHE_HEADERS, 'utf8');
+  fs.writeFileSync(
+    path.join(outDir, '.htaccess'),
+    APACHE_SECURITY_HEADERS + APACHE_CACHE_HEADERS,
+    'utf8',
+  );
   fs.writeFileSync(path.join(outDir, '.nojekyll'), '', 'utf8');
 
   const assetManifest = createAssetManifest(outDir);
@@ -207,6 +249,8 @@ window.CV_CONFIG = {
 
   validateSecurityHeaders(fs.readFileSync(path.join(outDir, '_headers'), 'utf8'), 'pages');
   validateSecurityHeaders(fs.readFileSync(path.join(outDir, '.htaccess'), 'utf8'), 'apache');
+  validateCacheHeaders(fs.readFileSync(path.join(outDir, '_headers'), 'utf8'), 'pages');
+  validateCacheHeaders(fs.readFileSync(path.join(outDir, '.htaccess'), 'utf8'), 'apache');
 
   return {
     outDir,
@@ -286,4 +330,4 @@ if (require.main === module) {
   }
 }
 
-module.exports = { buildWebSite, validateApiUrl, validateSecurityHeaders };
+module.exports = { buildWebSite, validateApiUrl, validateSecurityHeaders, validateCacheHeaders };
