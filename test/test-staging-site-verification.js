@@ -59,7 +59,7 @@ function makeFetch({ replacements = {}, missingCache = '', missingSecurity = fal
       'X-Frame-Options': 'DENY',
       'Content-Security-Policy': "default-src 'self'; object-src 'none'; script-src 'self'; frame-ancestors 'none'",
     };
-    if (pathname.endsWith(missingCache)) headers['Cache-Control'] = 'public, max-age=86400';
+    if (missingCache && pathname.endsWith(missingCache)) headers['Cache-Control'] = 'public, max-age=86400';
     if (missingSecurity) delete headers['Content-Security-Policy'];
 
     return new Response(value, { status: 200, headers });
