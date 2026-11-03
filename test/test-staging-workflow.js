@@ -327,7 +327,7 @@ assert.ok(
 );
 assert.match(clientDistWorkflow, /actions\/upload-artifact@v4/);
 assert.match(clientDistWorkflow, /artifactVersion: 2/);
-assert.match(clientDistWorkflow, /const assetManifestSha256 = crypto\\.createHash\\('sha256'\\)/);
+assert.match(clientDistWorkflow, /const assetManifestSha256 = crypto\.createHash\('sha256'\)/);
 assert.match(clientDistWorkflow, /asset-manifest\.json/);
 assert.match(
   clientDistWorkflow,
