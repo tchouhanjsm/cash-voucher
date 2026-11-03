@@ -7,7 +7,8 @@ const { verifyStagingSite } = require('../scripts/verify-staging-site');
 const commit = 'a'.repeat(40);
 const deploymentId = 'STAGING_DEPLOYMENT_123';
 const files = {
-  'index.html': '<!doctype html><html><head><link rel="stylesheet" href="frontend-workspace.css"></head><body><script type="module" src="frontend/main.js"></script></body></html>',
+  'index.html':
+    '<!doctype html><html><head><link rel="stylesheet" href="frontend-workspace.css"></head><body><script type="module" src="frontend/main.js"></script></body></html>',
   'sw.js': "const C = 'cv2-v46';\nconst F = ['index.html', 'frontend-workspace.css'];",
   'frontend-workspace.css': ':root { --workspace-canvas: #f6f8fc; }',
   'frontend/main.js': "import './core/pwa.js';",
@@ -57,9 +58,11 @@ function makeFetch({ replacements = {}, missingCache = '', missingSecurity = fal
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'X-Content-Type-Options': 'nosniff',
       'X-Frame-Options': 'DENY',
-      'Content-Security-Policy': "default-src 'self'; object-src 'none'; script-src 'self'; frame-ancestors 'none'",
+      'Content-Security-Policy':
+        "default-src 'self'; object-src 'none'; script-src 'self'; frame-ancestors 'none'",
     };
-    if (missingCache && pathname.endsWith(missingCache)) headers['Cache-Control'] = 'public, max-age=86400';
+    if (missingCache && pathname.endsWith(missingCache))
+      headers['Cache-Control'] = 'public, max-age=86400';
     if (missingSecurity) delete headers['Content-Security-Policy'];
 
     return new Response(value, { status: 200, headers });
@@ -82,78 +85,107 @@ async function expectFailure(options, pattern) {
   assert.equal(valid.assetCount, assets.length);
   assert.equal(valid.serviceWorkerCache, 'cv2-v46');
   assert.equal(valid.apiDeploymentMatched, true);
-  assert.equal(Object.hasOwn(valid, 'deploymentId'), false, 'verification output omits deployment identifiers');
+  assert.equal(
+    Object.hasOwn(valid, 'deploymentId'),
+    false,
+    'verification output omits deployment identifiers',
+  );
 
-  await expectFailure({
-    siteUrl: 'https://staging.example.test/cash-voucher/',
-    expectedCommit: 'b'.repeat(40),
-    expectedDeploymentId: deploymentId,
-    fetchImpl: makeFetch(),
-  }, /does not match the requested client-main commit/);
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: 'b'.repeat(40),
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch(),
+    },
+    /does not match the requested client-main commit/,
+  );
 
-  await expectFailure({
-    siteUrl: 'https://staging.example.test/cash-voucher/',
-    expectedCommit: commit,
-    expectedDeploymentId: 'OTHER_DEPLOYMENT_999',
-    fetchImpl: makeFetch(),
-  }, /different Apps Script deployment/);
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: 'OTHER_DEPLOYMENT_999',
+      fetchImpl: makeFetch(),
+    },
+    /different Apps Script deployment/,
+  );
 
-  await expectFailure({
-    siteUrl: 'http://staging.example.test/',
-    expectedCommit: commit,
-    expectedDeploymentId: deploymentId,
-    fetchImpl: makeFetch(),
-  }, /HTTPS/);
+  await expectFailure(
+    {
+      siteUrl: 'http://staging.example.test/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch(),
+    },
+    /HTTPS/,
+  );
 
-  await expectFailure({
-    siteUrl: 'https://staging.example.test/cash-voucher/',
-    expectedCommit: commit,
-    expectedDeploymentId: deploymentId,
-    fetchImpl: makeFetch({ replacements: { 'frontend-workspace.css': 'old dashboard stylesheet' } }),
-  }, /integrity mismatch/);
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch({
+        replacements: { 'frontend-workspace.css': 'old dashboard stylesheet' },
+      }),
+    },
+    /integrity mismatch/,
+  );
 
-  await expectFailure({
-    siteUrl: 'https://staging.example.test/cash-voucher/',
-    expectedCommit: commit,
-    expectedDeploymentId: deploymentId,
-    fetchImpl: makeFetch({ missingCache: '/sw.js' }),
-  }, /sw\.js is missing Cache-Control/);
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch({ missingCache: '/sw.js' }),
+    },
+    /sw\.js is missing Cache-Control/,
+  );
 
-  await expectFailure({
-    siteUrl: 'https://staging.example.test/cash-voucher/',
-    expectedCommit: commit,
-    expectedDeploymentId: deploymentId,
-    fetchImpl: makeFetch({ missingSecurity: true }),
-  }, /restrictive Content-Security-Policy/);
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch({ missingSecurity: true }),
+    },
+    /restrictive Content-Security-Policy/,
+  );
 
-  await expectFailure({
-    siteUrl: 'https://staging.example.test/cash-voucher/',
-    expectedCommit: commit,
-    expectedDeploymentId: deploymentId,
-    fetchImpl: makeFetch({
-      replacements: {
-        'asset-manifest.json': JSON.stringify({
-          ...assetManifest,
-          assets: [...assets, { ...assets[0], path: '../outside.js' }],
-        }),
-      },
-    }),
-  }, /unsafe relative path/);
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch({
+        replacements: {
+          'asset-manifest.json': JSON.stringify({
+            ...assetManifest,
+            assets: [...assets, { ...assets[0], path: '../outside.js' }],
+          }),
+        },
+      }),
+    },
+    /unsafe relative path/,
+  );
 
-  await expectFailure({
-    siteUrl: 'https://staging.example.test/cash-voucher/',
-    expectedCommit: commit,
-    expectedDeploymentId: deploymentId,
-    fetchImpl: makeFetch({
-      replacements: {
-        'asset-manifest.json': JSON.stringify({
-          ...assetManifest,
-          assets: [...assets, { ...assets[0], path: '%2e%2e/outside.js' }],
-        }),
-      },
-    }),
-  }, /unsafe relative path/);
-
+  await expectFailure(
+    {
+      siteUrl: 'https://staging.example.test/cash-voucher/',
+      expectedCommit: commit,
+      expectedDeploymentId: deploymentId,
+      fetchImpl: makeFetch({
+        replacements: {
+          'asset-manifest.json': JSON.stringify({
+            ...assetManifest,
+            assets: [...assets, { ...assets[0], path: '%2e%2e/outside.js' }],
+          }),
+        },
+      }),
+    },
+    /unsafe relative path/,
+  );
   console.log('Staging frontend verifier tests passed.');
 })().catch((error) => {
   console.error(error);
