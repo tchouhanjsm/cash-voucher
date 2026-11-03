@@ -1,3 +1,13 @@
+## Current redesign batch — PR #263 (3 November 2026)
+
+PR #263 now groups the Haveli Light Dashboard and My Account redesign in one reviewable product slice. The Dashboard uses the existing server read models for approved movement, all-time Book balance, daily cash position and recent transactions. My Account reuses the existing account route and preserves the current password-change and support-report actions.
+
+- **Dashboard:** Haveli palette, period presets including Today, separated physical-cash position, selected-period recent activity and safer small-baseline comparison copy.
+- **Account:** identity and role presentation, accessible avatar popover, device-local appearance and density preferences, existing password update and support reporting.
+- **Boundaries:** no new backend action, profile-edit endpoint, account-role change, API/schema update, financial formula, Apps Script deployment or production-data write.
+- **Verification:** exact-head CI / Quality, Browser E2E and Full Flight are required after the combined account slice. The previously recorded dashboard-only results do not certify this expanded head.
+
+See [docs/HANDOFF.md](HANDOFF.md) and [PR #263](https://github.com/tchouhanjsm/cash-voucher/pull/263) for the current implementation detail and exact-head evidence.
 # Product Gap Register and Roadmap
 
 Last observed main baseline for this follow-up: `8b14adc72c146589149a33d793ca9e55af5da13a` (merge of PR #180). Verify the current main commit and its own CI status live before release; historical workflow links apply only to their named commits.
