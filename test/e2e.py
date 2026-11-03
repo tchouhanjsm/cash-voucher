@@ -1615,7 +1615,7 @@ with sync_playwright() as p:
         "document.querySelector('#view .page-header h1')?.innerText === 'Daily Cash Close'"
     )
     check(
-        page.locator('[data-v=cashClose]').get_attribute('aria-current') == 'page'
+        page.locator('#navMoreItems [data-v=cashClose]').get_attribute('aria-current') == 'page'
         and page.locator('#cc-date').count() == 1,
         'Dashboard Daily Cash Close CTA navigates to the authorized cash-close workflow',
     )
