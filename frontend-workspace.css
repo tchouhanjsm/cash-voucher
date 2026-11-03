@@ -2599,7 +2599,6 @@
   }
 }
 
-
 /* Haveli account workspace — identity, self-service preferences and security. */
 @media screen {
   .app > .topbar .user-pop-head {
@@ -2664,7 +2663,11 @@
     border: 1px solid var(--workspace-border);
     border-radius: var(--workspace-radius);
     background:
-      radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--workspace-cta) 34%, transparent), transparent 34%),
+      radial-gradient(
+        circle at 92% 8%,
+        color-mix(in srgb, var(--workspace-cta) 34%, transparent),
+        transparent 34%
+      ),
       var(--workspace-surface);
     box-shadow: var(--workspace-shadow);
   }
