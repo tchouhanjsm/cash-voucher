@@ -2598,3 +2598,289 @@
     box-shadow: none;
   }
 }
+
+
+/* Haveli account workspace — identity, self-service preferences and security. */
+@media screen {
+  .app > .topbar .user-pop-head {
+    display: grid;
+    grid-template-columns: 42px minmax(0, 1fr);
+    align-items: center;
+    gap: 11px;
+    padding: 15px 16px;
+    border-bottom: 1px solid var(--workspace-border);
+    background: var(--workspace-soft);
+  }
+  .user-pop-avatar {
+    display: grid;
+    width: 42px;
+    height: 42px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--workspace-cta-ink) 20%, transparent);
+    border-radius: 50%;
+    background: var(--workspace-cta);
+    color: var(--workspace-cta-ink);
+    font-size: 13px;
+    font-weight: 850;
+    letter-spacing: 0.03em;
+  }
+  .user-pop-identity {
+    display: grid;
+    min-width: 0;
+    gap: 3px;
+  }
+  .user-pop-identity b,
+  .user-pop-identity .muted {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .user-pop-role {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: capitalize;
+  }
+  .app > .topbar .user-pop button {
+    min-height: 44px;
+    padding: 10px 14px;
+  }
+  .app #view .account-workspace-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: 18px;
+  }
+  .app #view .account-workspace-grid > * {
+    min-width: 0;
+    margin: 0;
+  }
+  .app #view .account-profile-panel {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 26px;
+    border: 1px solid var(--workspace-border);
+    border-radius: var(--workspace-radius);
+    background:
+      radial-gradient(circle at 92% 8%, color-mix(in srgb, var(--workspace-cta) 34%, transparent), transparent 34%),
+      var(--workspace-surface);
+    box-shadow: var(--workspace-shadow);
+  }
+  .app #view .profile-account-avatar {
+    display: grid;
+    flex: 0 0 72px;
+    width: 72px;
+    height: 72px;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--workspace-cta-ink) 18%, transparent);
+    border-radius: 50%;
+    background: var(--workspace-cta);
+    color: var(--workspace-cta-ink);
+    font-size: 21px;
+    font-weight: 850;
+  }
+  .app #view .profile-account-panel .profile-main,
+  .app #view .account-profile-panel .profile-main {
+    flex: 1 1 220px;
+    min-width: 0;
+  }
+  .app #view .account-profile-panel .profile-main h2 {
+    margin: 0 0 5px;
+    color: var(--workspace-ink);
+    font-size: 21px;
+    font-weight: 820;
+    letter-spacing: -0.035em;
+  }
+  .app #view .account-profile-panel .profile-main > p {
+    margin: 0 0 8px;
+    color: var(--workspace-muted);
+    overflow-wrap: anywhere;
+  }
+  .app #view .profile-account-metadata {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 9px;
+  }
+  .app #view .profile-account-role {
+    border-color: var(--workspace-border);
+    background: var(--workspace-info-surface);
+    color: var(--workspace-info-ink);
+    text-transform: capitalize;
+  }
+  .app #view .profile-account-actions {
+    flex: 0 0 auto;
+    align-items: center;
+  }
+  .app #view .account-section-card {
+    min-width: 0;
+    padding: 23px;
+    border: 1px solid var(--workspace-border);
+    border-radius: var(--workspace-radius);
+    background: var(--workspace-surface);
+    box-shadow: var(--workspace-shadow);
+  }
+  .app #view .account-section-heading {
+    display: grid;
+    gap: 6px;
+    margin-bottom: 18px;
+  }
+  .app #view .account-section-heading h2 {
+    margin: 0;
+    color: var(--workspace-ink);
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  .app #view .account-section-heading p {
+    margin: 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .app #view .account-preferences-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+  .app #view .account-preference-field,
+  .app #view .account-password-field {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    color: var(--workspace-ink);
+    font-size: 12px;
+    font-weight: 720;
+  }
+  .app #view .account-preference-field select,
+  .app #view .account-password-field input {
+    width: 100%;
+    min-width: 0;
+    min-height: 46px;
+    padding: 10px 12px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-soft);
+    color: var(--workspace-ink);
+    font: inherit;
+    font-weight: 550;
+  }
+  .app #view .account-preferences-status {
+    margin: 14px 0 0;
+    color: var(--workspace-muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .app #view .account-password-controls {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: end;
+    gap: 12px;
+  }
+  .app #view .account-password-controls button {
+    grid-column: 1 / -1;
+    justify-self: start;
+    min-height: 44px;
+  }
+  .app #view .account-report-form {
+    grid-column: 1 / -1;
+  }
+  .app #view .account-report-controls {
+    display: grid;
+    grid-template-columns: minmax(0, 0.72fr) minmax(0, 1fr);
+    gap: 13px;
+  }
+  .app #view .account-report-field {
+    display: grid;
+    min-width: 0;
+    gap: 7px;
+    color: var(--workspace-ink);
+    font-size: 12px;
+    font-weight: 720;
+  }
+  .app #view .account-report-field--message,
+  .app #view .account-report-controls > button[type='submit'] {
+    grid-column: 1 / -1;
+  }
+  .app #view .account-report-field :is(input, select, textarea) {
+    width: 100%;
+    min-width: 0;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-soft);
+    color: var(--workspace-ink);
+    font: inherit;
+  }
+  .app #view .account-report-field textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+  .app #view .account-report-controls > button[type='submit'] {
+    justify-self: start;
+    min-height: 44px;
+  }
+  .app #view .account-report-status {
+    margin: 13px 0 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    line-height: 1.5;
+  }
+  .app #view .account-install-tip {
+    margin: 12px 0 0;
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  :root[data-density='compact'] .app #view .account-section-card {
+    padding: 16px;
+  }
+  :root[data-density='compact'] .app #view .account-workspace-grid {
+    gap: 12px;
+  }
+  :root[data-density='compact'] .app #view .dashboard-view .card {
+    padding: 15px;
+  }
+}
+@media screen and (max-width: 800px) {
+  .app #view .account-workspace-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .account-profile-panel,
+  .app #view .account-report-form {
+    grid-column: 1;
+  }
+}
+@media screen and (max-width: 560px) {
+  .app #view .account-profile-panel {
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 13px;
+    padding: 18px;
+  }
+  .app #view .profile-account-avatar {
+    flex-basis: 58px;
+    width: 58px;
+    height: 58px;
+    font-size: 18px;
+  }
+  .app #view .profile-account-actions {
+    flex: 1 1 100%;
+  }
+  .app #view .account-section-card {
+    padding: 17px;
+  }
+  .app #view .account-preferences-grid,
+  .app #view .account-password-controls,
+  .app #view .account-report-controls {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .account-password-controls button,
+  .app #view .account-report-field--message,
+  .app #view .account-report-controls > button[type='submit'] {
+    grid-column: 1;
+    width: 100%;
+  }
+}
