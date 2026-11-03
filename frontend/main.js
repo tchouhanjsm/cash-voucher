@@ -192,7 +192,7 @@ registerActions({
   goreg: () => bulk.goRegister(),
 
   goto: ({ key }) => {
-    if (key === 'reg') navigation.go('reg');
+    if (key === 'reg' || key === 'cashClose') navigation.go(key);
   },
 
   bulkagain: () => bulk.renderAgain(),

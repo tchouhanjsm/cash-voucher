@@ -1609,6 +1609,19 @@ with sync_playwright() as p:
         and daily_close_card.locator('[data-act=goto][data-k=cashClose]').is_visible(),
         'authorized dashboard shows live close status, cash movement summary and direct close navigation',
     )
+    # Exercise the dashboard's delegated Cash Close CTA rather than merely asserting visibility.
+    page.click('#view .daily-close-readiness [data-act=goto][data-k=cashClose]')
+    page.wait_for_function(
+        "document.querySelector('#view .page-header h1')?.innerText === 'Daily Cash Close'"
+    )
+    check(
+        page.locator('[data-v=cashClose]').get_attribute('aria-current') == 'page'
+        and page.locator('#cc-date').count() == 1,
+        'Dashboard Daily Cash Close CTA navigates to the authorized cash-close workflow',
+    )
+    go_view(page, 'dash')
+    page.wait_for_selector('#view .daily-close-readiness')
+
     check(
         page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
         'Dashboard exposes the create-permitted primary action in its page header',

@@ -10,6 +10,10 @@ PR #263 now groups the Haveli Light Dashboard, My Account, Register and Reports 
 
 See [docs/HANDOFF.md](HANDOFF.md) and [PR #263](https://github.com/tchouhanjsm/cash-voucher/pull/263) for the current implementation detail and exact-head evidence.
 
+### Phase 11 — Dashboard action routing integrity (3 November 2026)
+
+The Daily Cash Close readiness card and attention items already emitted the `cashClose` destination, but the central delegated `goto` handler only forwarded Register navigation. The visible Cash Close call-to-action was therefore inert. The follow-up forwards both explicit destinations to the existing permission-checked navigator and adds a browser click-path regression. It does not change the server contract, accounting calculations, role policy or persisted data. Exact-head CI, Browser E2E and Full Flight evidence is required on the new commit before review.
+
 # Product Gap Register and Roadmap
 
 Last observed main baseline for this follow-up: `8b14adc72c146589149a33d793ca9e55af5da13a` (merge of PR #180). Verify the current main commit and its own CI status live before release; historical workflow links apply only to their named commits.

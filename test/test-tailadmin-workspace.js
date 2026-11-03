@@ -21,6 +21,7 @@ const account = read('frontend/features/administration.js');
 const shell = read('frontend/features/shell.js');
 const preferences = read('frontend/core/preferences.js');
 const theme = read('frontend/core/theme.js');
+const appMain = read('frontend/main.js');
 
 const uiKitPosition = html.indexOf('frontend-ui-kit.css');
 const workspacePosition = html.indexOf('frontend-workspace.css');
@@ -155,7 +156,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v49'/,
+  /const C = 'cv2-v50'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -188,6 +189,12 @@ assert.match(
   'My Account preferences have a dedicated control grid',
 );
 assert.match(styles, /data-density='compact'/, 'compact density is a supported presentation state');
+
+assert.match(
+  appMain,
+  /goto:\s*\(\{ key \}\)\s*=>\s*\{\s*if \(key === 'reg' \|\| key === 'cashClose'\) navigation\.go\(key\);\s*\}/,
+  'dashboard cash-close drill-down routes through the permission-checked navigator',
+);
 
 assert.match(
   dashboard,
