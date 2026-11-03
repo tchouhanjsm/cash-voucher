@@ -1,17 +1,27 @@
-# Engineering Handoff — Cash Voucher
-
-## Current implementation batch — staging frontend publication parity (Phase 7)
+## Current implementation batch — PR #263: Haveli Light dashboard redesign (Phase 8)
 
 - **Repository:** tchouhanjsm/cash-voucher; integration branch client-main; legacy main remains read-only.
-- **Verified base:** 1fbb90911b663a77974dcd956b02117b29effc11, merge of PR #260. PR #261 remains a separate startup-performance batch and is not changed here.
-- **Active work:** PR #262 — https://github.com/tchouhanjsm/cash-voucher/pull/262 on branch client/staging-ui-cache-parity-20261103.
-- **Root cause:** PRs #257 and #258 merged the redesigned frontend into source. The manual staging ZIP workflow builds an artifact only; it does not publish to cPanel/Cloudflare. The generated host policies also lacked explicit cache revalidation for the application shell and frontend assets, so a host/browser HTTP cache could continue serving older files after manual publication.
-- **Implementation:** add explicit cache-control policy to generated Cloudflare Pages and Apache headers; validate both policies during static builds; add a read-only staging verifier that checks exact commit/deployment identity, root/index parity, required dashboard assets, service-worker cache integration, all public asset SHA-256/byte lengths, cache headers and host security response headers.
-- **No design duplication:** reuse the existing workspace and dashboard implementation from PRs #257/#258 unchanged.
-- **Tests:** add focused verifier tests for exact commit/deployment parity, HTTPS-only behavior, asset tampering, stale cache headers, missing security headers and unsafe paths; extend static build tests for Cloudflare/Apache cache policy generation.
-- **PR handoff contract:** PR #262 uses the repository's six mandatory PR template headings with populated outcome, acceptance, verification, security, release-boundary and residual-risk sections; the CI event-payload check must be rerun after the description update.
-- **Release boundary:** source/tests/docs only. No static host upload, Apps Script push/deploy, Sheet/Drive write, password reset, staging transaction or production operation is performed by this PR.
-- **Next action:** pass exact-head Quality and Browser E2E/Full Flight gates; then run the protected staging ZIP workflow, publish the complete artifact to the staging document root only, and run npm run staging:verify-site with the verified staging URL and expected artifact identifiers. The actual staging hostname/document root is not yet verified in this session.
+- **Base:** client-main at 191b47fce179320bf994798345998b7057d42f24 (PR #262 merged).
+- **Active work:** draft PR #263 — https://github.com/tchouhanjsm/cash-voucher/pull/263, branch client/haveli-light-dashboard-20261103.
+- **Outcome:** introduce the first Haveli Light design foundation and a clearer operational Dashboard. Keep the existing vanilla JavaScript PWA, shared UI kit, Apps Script read models, server authorization, Sheets schema and accounting definitions.
+- **Design foundation:** workspace surfaces now use Haveli ivory (#FAF6EF), warm-white cards (#FFFEFC), sandstone (#E8D8C5), desert ink (#554A43), muted brown (#71665F), terracotta primary actions (#DCAFA4 / #5B4038), sage, blue pottery, marigold and bandhani attention. Preserve the saved user accent and dark-mode preference; the theme-color metadata follows the ivory canvas. The FrontUI Studio swatches and labels now represent the same palette.
+- **Dashboard hierarchy:** period controls include Today; KPI labels distinguish approved payments and receipts during the selected period from all-time Book balance; Book balance remains the existing recorded-voucher projection and is explicitly not physical drawer cash or a bank balance.
+- **Physical cash:** add a role-gated Daily cash position card backed by dailyOperationsSummary. It displays current-business-date cash in/out, non-cash count, active voucher count and server expectedCash only when the API returns a finite value. Pending, unclassified, invalid or unavailable states do not become fabricated zeroes. The existing Daily Cash Close card and server reconciliation logic remain authoritative.
+- **Recent activity:** add the latest five active, selected-period entries using the existing permission-scoped, read-only registerPage action. Its failure is isolated from dashboard KPI loading. Vendor/date/amount output is validated and escaped.
+- **Comparison correction:** for a previous-period approved-payment baseline below ₹100, show absolute change instead of a percentage that can exaggerate small denominators. Zero-baseline and flat-period semantics remain explicit.
+- **Security review:** no new DOM sink was added. The existing Dashboard innerHTML composition now includes the two new panels. Dynamic vendor/date text is escaped; type/status/date/amount/page fields are validated before insertion. Browser E2E adds hostile recent-vendor and daily-close payload cases. The dashboard source fingerprint in scripts/dom-sink-source-baseline.json was recalculated for this reviewed sink only; the repository fingerprint gate remains enabled for all other sinks.
+- **PWA:** advance the shell cache to cv2-v47 so installed clients refresh the workspace styles and dashboard code. The stylesheet is already included in the offline shell/build allowlist.
+- **Files changed:** frontend-workspace.css, frontend/features/dashboard.js, frontend/core/theme.js, index.html, frontend-ui-kit.css, ui-studio.html, sw.js, test/test-tailadmin-workspace.js, test/e2e.py and scripts/dom-sink-source-baseline.json.
+- **Verification:** exact-head CI / Quality and Browser E2E are required for the latest PR #263 SHA; Full Flight must verify CI and Browser E2E against that same SHA. Do not infer a pass from pending, skipped or superseded runs. Record final run links in the PR description after the current head settles.
+- **Operational status:** the owner reports staging UAT is working as of 3 November 2026. This source-only PR does not rerun or independently certify staging.
+- **Release boundary:** no API or Sheet schema change, new backend action, Apps Script push/version/deployment, Google Sheet/Drive write, staging transaction, migration, static ZIP publication, cPanel upload, production configuration change, merge or deployment.
+- **Next action:** complete exact-head validation and visual walkthrough for PR #263. Then continue with the existing My Account route and avatar/account menu refresh as the next design slice; do not create a second profile route or combine self-service preferences with owner-controlled Team & permissions.
+
+## Previous staging publication milestone — PR #262
+
+- PR #262 merged the static cache-policy generator and read-only staging parity verifier. The generated Apache/Cloudflare policies explicitly revalidate critical mutable files and public assets; the verifier checks commit/deployment identity, root/index parity, asset digests and lengths, cache headers, service-worker integration and host security headers.
+- The static ZIP remains an artifact builder, not an automatic cPanel/Cloudflare publisher. Publication and live-host verification remain separate operational steps.
+- No staging host upload, Apps Script deployment, spreadsheet write, production configuration change or production operation was performed by PR #262.
 
 ## Previously merged workspace milestone — PR #258
 
