@@ -42,7 +42,8 @@ const config = [
   '};',
 ].join('\n');
 
-const secureCsp = "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; script-src-attr 'none'; frame-src 'none'; frame-ancestors 'none'";
+const secureCsp =
+  "default-src 'self'; base-uri 'self'; object-src 'none'; script-src 'self'; script-src-attr 'none'; frame-src 'none'; frame-ancestors 'none'";
 
 function makeFetch({
   replacements = {},
@@ -77,7 +78,6 @@ function makeFetch({
     return new Response(value, { status: 200, headers });
   };
 }
-
 
 function manifestReplacements(extraPath) {
   const changedManifest = {
