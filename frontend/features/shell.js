@@ -36,7 +36,9 @@ export function createShell({ go }) {
     $('#userName').textContent = name;
     const role = scalarText(S.me?.role);
     $('#userRole').textContent = role.toLowerCase() === name.toLowerCase() ? '' : role;
+    $('#popAvatar').textContent = initials(name);
     $('#popName').textContent = name;
+    $('#popRole').textContent = role;
     $('#popEmail').textContent = email;
     closeMenu();
     renderNetwork();
