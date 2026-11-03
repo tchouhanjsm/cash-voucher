@@ -35,6 +35,7 @@ function assertSafeAssetPath(value) {
     value.includes('\\') ||
     value.includes('?') ||
     value.includes('#') ||
+    !/^[A-Za-z0-9._/-]+$/.test(value) ||
     value.split('/').some((part) => !part || part === '.' || part === '..')
   ) {
     throw new Error('Asset manifest contains an unsafe relative path.');
