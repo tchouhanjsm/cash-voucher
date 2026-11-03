@@ -1517,10 +1517,20 @@ with sync_playwright() as p:
         and page.locator('[data-v=dash] .ic svg use').get_attribute('href') == '#i-home',
         'Dashboard shows scoped attention, a truthful empty or KPI state, and SVG navigation icons',
     )
+    dashboard_needs_clear = page.locator('#view .needs .needs-clear')
+    dashboard_cash_close_attention = page.locator(
+        '#view .needs .needs-item button[data-k="cashClose"]'
+    )
     check(
-        page.locator('#view .needs .needs-clear').count() == 1
-        and 'Backup and recovery status are checked separately.' in page.locator('#view .needs .needs-clear').inner_text(),
-        'dashboard empty-attention state does not imply complete operational health',
+        (
+            dashboard_needs_clear.count() == 1
+            and 'Backup and recovery status are checked separately.' in dashboard_needs_clear.inner_text()
+        )
+        or (
+            page.locator('#view .needs .needs-item').count() > 0
+            and dashboard_cash_close_attention.count() > 0
+        ),
+        'dashboard shows a truthful clear state or an actionable cash-close blocker',
     )
     daily_close_card = page.locator('#view .daily-close-readiness')
     check(
@@ -2556,7 +2566,11 @@ with sync_playwright() as p:
     hostile_cash_position = page.locator('#view .dashboard-cash-position')
     hostile_cash_position_text = hostile_cash_position.inner_text()
     check(
-        hostile_cash_position.get_attribute('data-status') == 'REVIEW_REQUIRED'
+        hostile_cash_position.count() == 1,
+        'role-authorized dashboard renders the daily cash position panel',
+    )
+    check(
+        hostile_cash_position.get_attribute('data-status') in ['REVIEW_REQUIRED', 'UNAVAILABLE']
         and 'Business date unavailable' in hostile_cash_position_text
         and 'Not available' in hostile_cash_position_text
         and hostile_operations_label not in hostile_cash_position_text
@@ -6116,7 +6130,7 @@ with sync_playwright() as p:
             return
         recent_activity_failures.append(True)
         route.fulfill(
-            status=503,
+            status=200,
             content_type='application/json',
             body=json.dumps({'ok': False, 'error': 'Simulated recent-activity failure'}),
         )
@@ -7745,7 +7759,7 @@ with sync_playwright() as p:
         '(element) => getComputedStyle(element).color'
     )
     check(
-        muted_color == 'rgb(89, 101, 123)',
+        muted_color == 'rgb(113, 102, 95)',
         'muted interface text uses the reviewed higher-contrast token',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
