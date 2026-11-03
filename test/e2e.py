@@ -2565,6 +2565,7 @@ with sync_playwright() as p:
     )
     hostile_cash_position = page.locator('#view .dashboard-cash-position')
     hostile_cash_position_text = hostile_cash_position.inner_text()
+    print('HOSTILE CASH POSITION DEBUG:', repr(hostile_cash_position_text))
     check(
         hostile_cash_position.count() == 1,
         'role-authorized dashboard renders the daily cash position panel',
