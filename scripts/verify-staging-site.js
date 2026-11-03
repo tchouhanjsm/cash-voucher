@@ -73,15 +73,36 @@ function verifySecurityHeaders(headers) {
     throw new Error('Staging host is missing X-Frame-Options: DENY.');
   }
 
-  const csp = String(headers.get('content-security-policy') || '').toLowerCase();
-  if (
-    !csp.includes("script-src 'self'") ||
-    !csp.includes("object-src 'none'") ||
-    !csp.includes("frame-ancestors 'none'")
-  ) {
-    throw new Error(
-      'Staging host is missing the required restrictive Content-Security-Policy response header.',
-    );
+  const csp = String(headers.get('content-security-policy') || '');
+  const directives = new Map();
+  for (const entry of csp.split(';').map((part) => part.trim()).filter(Boolean)) {
+    const [name, ...sources] = entry.split(/\s+/);
+    const key = name.toLowerCase();
+    if (directives.has(key)) {
+      throw new Error('Staging host has duplicate Content-Security-Policy directives.');
+    }
+    directives.set(key, sources.join(' ').toLowerCase());
+  }
+
+  const expected = {
+    'default-src': "'self'",
+    'base-uri': "'self'",
+    'object-src': "'none'",
+    'script-src': "'self'",
+    'script-src-attr': "'none'",
+    'frame-src': "'none'",
+    'frame-ancestors': "'none'",
+  };
+  for (const [name, value] of Object.entries(expected)) {
+    if (directives.get(name) !== value) {
+      throw new Error(
+        'Staging host is missing the required restrictive Content-Security-Policy response directive: ' +
+          name,
+      );
+    }
+  }
+  if (/\bunsafe-eval\b/i.test(csp) || /\bunsafe-inline\b/i.test(directives.get('script-src') || '')) {
+    throw new Error('Staging host Content-Security-Policy permits unsafe script execution.');
   }
 }
 
@@ -222,6 +243,10 @@ async function verifyStagingSite({
   if (
     apiUrl.protocol !== 'https:' ||
     apiUrl.hostname !== 'script.google.com' ||
+    apiUrl.username ||
+    apiUrl.password ||
+    apiUrl.search ||
+    apiUrl.hash ||
     apiParts.length !== 4 ||
     apiParts[0] !== 'macros' ||
     apiParts[1] !== 's' ||
