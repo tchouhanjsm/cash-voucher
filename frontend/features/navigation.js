@@ -20,7 +20,14 @@ const NAV_ICON_NAMES = new Set([
   'check',
 ]);
 
-export function createNavigation({ api, getAuth, getPayments, renderers, unsavedWork }) {
+export function createNavigation({
+  api,
+  getAuth,
+  getPayments,
+  renderers,
+  unsavedWork,
+  setOnboardingState,
+}) {
   const OFFLINE_VIEWS = new Set(['dash', 'new', 'reg', 'acct']);
   const NAV = [
     ['dash', 'home', 'Dashboard', () => can('viewAll') || can('viewOwn')],
@@ -88,6 +95,12 @@ export function createNavigation({ api, getAuth, getPayments, renderers, unsaved
         },
         vendors: data.vendors,
         names: data.names,
+        onboarding:
+          data?.onboarding && typeof data.onboarding === 'object' ? data.onboarding : null,
+        onboardingError: typeof data?.onboardingError === 'string' ? data.onboardingError : '',
+        onboardingIncluded: Boolean(
+          data && Object.prototype.hasOwnProperty.call(data, 'onboarding'),
+        ),
         loadedAt: Date.now(),
         offlineMode: false,
       });
@@ -114,6 +127,37 @@ export function createNavigation({ api, getAuth, getPayments, renderers, unsaved
     } finally {
       if (activeBootstrapLoad === request) activeBootstrapLoad = null;
     }
+  }
+
+  async function prepareOnboarding() {
+    if (!can('settings')) {
+      setOnboardingState?.(null, '');
+      return;
+    }
+
+    // Newer API deployments return onboarding with bootstrap. Retain one
+    // compatibility request while an independently deployed backend is older.
+    if (!S.onboardingIncluded) {
+      try {
+        S.onboarding = await api('onboardingState');
+        S.onboardingError = '';
+        S.onboardingIncluded = true;
+      } catch (error) {
+        S.onboarding = null;
+        S.onboardingError =
+          error.message || 'Could not load server-verified onboarding state. Retry server checks.';
+        S.onboardingStage = 'unverified';
+      }
+    }
+
+    if (S.onboarding && typeof S.onboarding.stage === 'string') {
+      S.onboardingStage = S.onboarding.stage;
+      S.onboardingEnvironment = S.onboarding.environment || '';
+    } else {
+      S.onboardingStage = 'unverified';
+    }
+
+    setOnboardingState?.(S.onboarding, S.onboardingError);
   }
 
   async function start(mustChange, expectedEmail = '') {
@@ -154,6 +198,9 @@ export function createNavigation({ api, getAuth, getPayments, renderers, unsaved
           vendors: cache.vendors || [],
           names: cache.names || {},
           vouchers: [],
+          onboarding: null,
+          onboardingError: '',
+          onboardingIncluded: false,
           offlineMode: true,
           voucherDiagnostics: {
             envelopeValid: false,
@@ -181,14 +228,10 @@ export function createNavigation({ api, getAuth, getPayments, renderers, unsaved
     document.title = propertyName || 'Vouchers';
     shell.render();
 
-    if (!offline && can('settings')) {
-      try {
-        const onboarding = await api('onboardingState');
-        S.onboardingStage = onboarding.stage;
-        S.onboardingEnvironment = onboarding.environment;
-      } catch {
-        S.onboardingStage = 'unverified';
-      }
+    if (!offline) {
+      await prepareOnboarding();
+    } else {
+      setOnboardingState?.(null, '');
     }
 
     const ownerNeedsOnboarding =
@@ -209,7 +252,11 @@ export function createNavigation({ api, getAuth, getPayments, renderers, unsaved
               : 'dash',
     );
 
-    await getPayments().showBanner();
+    void getPayments()
+      .showBanner()
+      .catch((error) => {
+        console.error('Could not restore the offline queue banner:', error);
+      });
 
     if (offline) {
       toast(
@@ -398,6 +445,7 @@ export function createNavigation({ api, getAuth, getPayments, renderers, unsaved
     try {
       const loaded = await load();
       if (!loaded) return;
+      await prepareOnboarding();
       renderNav();
       // Background outbox sync may refresh data while a staff member is drafting an entry.
       if (S.view !== 'new') await go(S.view);

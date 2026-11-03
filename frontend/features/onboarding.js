@@ -49,6 +49,7 @@ const TITLES = {
 
 export function createOnboarding({ api }) {
   let current = null;
+  let unavailableMessage = '';
   let busy = false;
 
   const el = (tag, text, className) => {
@@ -189,6 +190,7 @@ export function createOnboarding({ api }) {
     toast(error.message || fallback, 'err');
     try {
       current = await api('onboardingState');
+      unavailableMessage = '';
       updateStageState(current);
       render();
     } catch {
@@ -220,11 +222,36 @@ export function createOnboarding({ api }) {
     root.appendChild(card);
   }
 
+  function setInitialState(state, error = '') {
+    if (
+      state &&
+      typeof state === 'object' &&
+      !Array.isArray(state) &&
+      typeof state.stage === 'string' &&
+      Array.isArray(state.steps)
+    ) {
+      current = state;
+      unavailableMessage = '';
+      updateStageState(state);
+      return;
+    }
+
+    current = null;
+    unavailableMessage =
+      typeof error === 'string' && error.trim()
+        ? error
+        : 'The server did not return a valid onboarding state. Retry server checks before continuing.';
+  }
+
   function render() {
     const root = $('#view');
     root.replaceChildren();
 
     if (!current) {
+      if (unavailableMessage) {
+        renderError(unavailableMessage);
+        return;
+      }
       const loading = el('section', undefined, 'onboarding-page card');
       loading.append(
         el('p', 'CLIENT LAUNCH', 'muted'),
@@ -463,7 +490,8 @@ export function createOnboarding({ api }) {
       render();
     } catch (error) {
       current = null;
-      renderError(error.message || 'Could not load server-verified onboarding state.');
+      unavailableMessage = error.message || 'Could not load server-verified onboarding state.';
+      renderError(unavailableMessage);
     } finally {
       busy = false;
       setBusyPresentation();
@@ -526,5 +554,5 @@ export function createOnboarding({ api }) {
     setBusyPresentation();
   }
 
-  return { render, load, init };
+  return { render, load, init, setInitialState };
 }

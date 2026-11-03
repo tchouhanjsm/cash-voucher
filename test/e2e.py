@@ -164,6 +164,16 @@ with sync_playwright() as p:
             event['ok'] = result.get('ok') if isinstance(result, dict) else None
             event['code'] = result.get('code') if isinstance(result, dict) else None
             event['error'] = result.get('error') if isinstance(result, dict) else None
+            if request_payload.get('action') == 'bootstrap' and isinstance(result, dict):
+                data = result.get('data')
+                event['has_onboarding_state'] = (
+                    isinstance(data, dict) and isinstance(data.get('onboarding'), dict)
+                )
+                event['onboarding_stage'] = (
+                    data.get('onboarding', {}).get('stage')
+                    if isinstance(data, dict) and isinstance(data.get('onboarding'), dict)
+                    else None
+                )
         except Exception as error:
             event['response_error'] = str(error)
         api_events.append(event)
@@ -352,6 +362,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#lErr:not(:empty)')
     check('Invalid' in page.inner_text('#lErr'), 'wrong password message')
 
+    owner_startup_event_offset = len(api_events)
     page.fill('#lPassword', 'Owner#Start2026')
     page.click('#lBtn')
     page.get_by_role('dialog', name='Choose a new password').wait_for(state='visible', timeout=10000)
@@ -411,6 +422,16 @@ with sync_playwright() as p:
         'owner first login opens the onboarding dashboard',
     )
     page.wait_for_selector('.onboarding-summary [data-onboarding-count="pending"]')
+    owner_startup_events = api_events[owner_startup_event_offset:]
+    owner_bootstrap_events = [
+        event for event in owner_startup_events if event.get('action') == 'bootstrap'
+    ]
+    check(
+        len(owner_bootstrap_events) == 1
+        and owner_bootstrap_events[0].get('has_onboarding_state') is True
+        and not any(event.get('action') == 'onboardingState' for event in owner_startup_events),
+        'owner startup receives onboarding state with bootstrap and avoids duplicate serialized onboarding requests',
+    )
     check(
         page.locator('[data-onboarding-count="passed"]').inner_text() == '0'
         and page.locator('[data-onboarding-count="pending"]').inner_text() == '7'

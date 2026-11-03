@@ -57,6 +57,16 @@ const mismatch = g.call('onboardingState', {
 assert.equal(mismatch.ok, false);
 assert.equal(mismatch.code, 'ENVIRONMENT_MISMATCH');
 
+const wrongDeploymentBootstrap = request('bootstrap', { deploymentId: 'WRONG' });
+assert.equal(
+  wrongDeploymentBootstrap.ok,
+  true,
+  'onboarding identity errors do not break workspace bootstrap',
+);
+assert.equal(wrongDeploymentBootstrap.data.onboarding, null);
+assert.match(wrongDeploymentBootstrap.data.onboardingError, /clientDeployment/);
+assert.doesNotMatch(wrongDeploymentBootstrap.data.onboardingError, /MOCK_DEPLOYMENT/);
+
 const wrongDeployment = request('onboardingState', { deploymentId: 'WRONG' });
 assert.equal(wrongDeployment.ok, false);
 assert.equal(wrongDeployment.code, 'ENVIRONMENT_MISMATCH');
@@ -64,12 +74,24 @@ assert.match(wrongDeployment.error, /clientDeployment/);
 assert.doesNotMatch(wrongDeployment.error, /MOCK_DEPLOYMENT/);
 
 g.props.CV_STAGING_DEPLOYMENT_ID = 'WRONG_SERVER_DEPLOYMENT';
+const wrongServerDeploymentBootstrap = request('bootstrap');
+assert.equal(wrongServerDeploymentBootstrap.ok, true);
+assert.equal(wrongServerDeploymentBootstrap.data.onboarding, null);
+assert.match(wrongServerDeploymentBootstrap.data.onboardingError, /serverDeployment/);
+assert.doesNotMatch(wrongServerDeploymentBootstrap.data.onboardingError, /WRONG_SERVER_DEPLOYMENT/);
+
 const wrongServerDeployment = request('onboardingState');
 assert.equal(wrongServerDeployment.ok, false);
 assert.equal(wrongServerDeployment.code, 'ENVIRONMENT_MISMATCH');
 assert.match(wrongServerDeployment.error, /serverDeployment/);
 assert.doesNotMatch(wrongServerDeployment.error, /WRONG_SERVER_DEPLOYMENT/);
 g.props.CV_STAGING_DEPLOYMENT_ID = 'MOCK_DEPLOYMENT';
+
+const bootstrapWithOnboarding = request('bootstrap');
+assert.equal(bootstrapWithOnboarding.ok, true);
+assert.equal(bootstrapWithOnboarding.data.onboarding.stage, 'preflight');
+assert.equal(bootstrapWithOnboarding.data.onboarding.summary.total, 7);
+assert.equal(bootstrapWithOnboarding.data.onboardingError, '');
 
 const state = request('onboardingState');
 assert.equal(state.ok, true);
@@ -151,6 +173,19 @@ const staffLogin = g.call('login', {
   email: 'onboarding-staff@example.test',
   password: 'Staff#Final2026',
 });
+const staffBootstrap = g.call('bootstrap', {
+  token: staffLogin.data.token,
+  environment: 'staging',
+  deploymentId: 'MOCK_DEPLOYMENT',
+});
+assert.equal(staffBootstrap.ok, true);
+assert.equal(
+  staffBootstrap.data.onboarding,
+  null,
+  'non-settings users do not receive onboarding diagnostics',
+);
+assert.equal(staffBootstrap.data.onboardingError, '');
+
 const staffConfirm = g.call('onboardingConfirm', {
   token: staffLogin.data.token,
   environment: 'staging',

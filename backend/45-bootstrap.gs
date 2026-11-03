@@ -26,7 +26,7 @@ function vOut_(o) {
     approvalReason: String(o.ApprovalReason || ''),
   };
 }
-function bootstrap_(user) {
+function bootstrap_(user, req) {
   const all = can_(user, 'viewAll');
   const canViewRegister = all || can_(user, 'viewOwn');
   const vouchers = canViewRegister
@@ -61,6 +61,22 @@ function bootstrap_(user) {
       names[String(u.Email).toLowerCase()] = u.Name;
     });
   else names[user.email] = user.name;
+
+  // Include the existing server-verified onboarding read in the authenticated
+  // bootstrap round trip for users who are permitted to view launch diagnostics.
+  let onboarding = null;
+  let onboardingError = '';
+  if (can_(user, 'settings')) {
+    try {
+      const identity = onboardingRequestIdentity_(req);
+      onboarding = onboardingVisibleState_(user, identity.environment);
+    } catch (error) {
+      onboardingError =
+        (error && typeof error.userMessage === 'string' && error.userMessage) ||
+        'Server onboarding checks are unavailable. Retry server checks before continuing.';
+    }
+  }
+
   return {
     user: {
       id: user.id,
@@ -81,5 +97,7 @@ function bootstrap_(user) {
     vouchers: vouchers,
     vendors: user.role === 'accountant' ? [] : vendors,
     names: names,
+    onboarding: onboarding,
+    onboardingError: onboardingError,
   };
 }
