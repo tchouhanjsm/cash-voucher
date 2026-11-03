@@ -1823,7 +1823,16 @@ export function createRegister({ api, go }) {
       from: validRange ? requestedFrom : '',
       to: validRange ? requestedTo : '',
       st: ['ACTIVE', 'CANCELLED', 'ALL'].includes(context.status) ? context.status : 'ACTIVE',
-      approval: ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_REQUIRED', 'REVIEW_REQUIRED'].includes(context.approval) ? context.approval : 'ALL',
+      approval: [
+        'ALL',
+        'PENDING',
+        'APPROVED',
+        'REJECTED',
+        'NOT_REQUIRED',
+        'REVIEW_REQUIRED',
+      ].includes(context.approval)
+        ? context.approval
+        : 'ALL',
       paymentMethod: 'ALL',
       limit: 100,
     });

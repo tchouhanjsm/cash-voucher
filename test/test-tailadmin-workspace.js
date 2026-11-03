@@ -197,33 +197,34 @@ assert.match(
 );
 
 assert.ok(
-  dashboard.includes('function dashboardDrilldownButton(options = {})')
-    && dashboard.includes('data-act="dashboardDrilldown"'),
+  dashboard.includes('function dashboardDrilldownButton(options = {})') &&
+    dashboard.includes('data-act="dashboardDrilldown"'),
   'Dashboard renders escaped, allowlisted, context-bearing drill-down actions',
 );
 assert.ok(
-  appMain.includes("dashboardDrilldown: ({ element })")
-    && appMain.includes("if (can('cashClose')) navigation.go('cashClose')")
-    && appMain.includes('reports.openDashboardContext(context)')
-    && appMain.includes('register.openDashboardContext(context)'),
+  appMain.includes("dashboardDrilldown: ({ element })") &&
+    appMain.includes("if (can('cashClose')) navigation.go('cashClose')") &&
+    appMain.includes('reports.openDashboardContext(context)') &&
+    appMain.includes('register.openDashboardContext(context)'),
   'delegated Dashboard drill-downs recheck permissions and target existing views',
 );
 assert.ok(
-  register.includes('function openDashboardContext(context = {})')
-    && register.includes('context.approval')
-    && register.includes('context.status')
-    && register.includes("['ACTIVE', 'CANCELLED', 'ALL'].includes(context.status)"),
+  register.includes('function openDashboardContext(context = {})') &&
+    register.includes('context.approval') &&
+    register.includes('context.status') &&
+    register.includes("['ACTIVE', 'CANCELLED', 'ALL'].includes(context.status)"),
   'Register accepts safe Dashboard context while retaining all approval states and active-only server scope',
 );
 assert.ok(
-  dashboard.includes("approval: 'APPROVED'")
-    && dashboard.includes("status: 'ALL'"),
+  dashboard.includes("approval: 'APPROVED'") && dashboard.includes("status: 'ALL'"),
   'Dashboard approved-payment KPIs and invalid-data attention retain precise Register scopes',
 );
 assert.ok(
-  reports.includes('function openDashboardContext(context = {})')
-    && reports.includes("R.type = ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : 'ALL'")
-    && reports.includes('return load();'),
+  reports.includes('function openDashboardContext(context = {})') &&
+    reports.includes(
+      "R.type = ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : 'ALL'",
+    ) &&
+    reports.includes('return load();'),
   'Reports submits Dashboard date/type context using its existing read model',
 );
 assert.match(

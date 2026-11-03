@@ -548,7 +548,6 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - Browser coverage asserts there is no summary request while opening the custom-date draft, the selected dates survive until Apply, a 93-day period uses four monthly buckets, and a receipts-only period displays an actual zero approved-payment trend.
 - This remains a presentation/read-model integration change. No server aggregation, accounting definition, cash-close calculation, or permission rule changed.
 
-
 ## Phase 12 — Dashboard operational drill-down completion
 
 - **KPIs:** approved-payment amount/count, largest payment and Paid today open Register with Approval = APPROVED and their matching date/type/vendor context. Receipts use Recorded Movement Reports for report-capable roles; staff fall back to the permission-scoped Register. Book balance opens the all-time active Register and remains explicitly distinct from physical drawer cash or bank balance.

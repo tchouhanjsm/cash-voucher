@@ -39,17 +39,31 @@ export function createDashboard({ api }) {
   }
 
   function dashboardDrilldownButton(options = {}) {
-    const target = ['reg', 'reports', 'cashClose'].includes(options.target) ? options.target : 'reg';
+    const target = ['reg', 'reports', 'cashClose'].includes(options.target)
+      ? options.target
+      : 'reg';
     const key = typeof options.key === 'string' ? options.key : 'dashboard';
     const from = isBusinessDate(options.from) ? options.from : '';
     const to = isBusinessDate(options.to) ? options.to : '';
     const type = ['PAYMENT', 'RECEIPT'].includes(options.type) ? options.type : '';
-    const approval = ['ALL', 'PENDING', 'APPROVED', 'REJECTED', 'NOT_REQUIRED', 'REVIEW_REQUIRED'].includes(options.approval) ? options.approval : 'ALL';
-    const status = ['ACTIVE', 'CANCELLED', 'ALL'].includes(options.status) ? options.status : 'ACTIVE';
+    const approval = [
+      'ALL',
+      'PENDING',
+      'APPROVED',
+      'REJECTED',
+      'NOT_REQUIRED',
+      'REVIEW_REQUIRED',
+    ].includes(options.approval)
+      ? options.approval
+      : 'ALL';
+    const status = ['ACTIVE', 'CANCELLED', 'ALL'].includes(options.status)
+      ? options.status
+      : 'ACTIVE';
     const query = typeof options.query === 'string' ? options.query.slice(0, 120) : '';
     const vendor = typeof options.vendor === 'string' ? options.vendor.slice(0, 200) : '';
     const label = typeof options.label === 'string' ? options.label : 'Open context';
-    const className = typeof options.className === 'string' ? options.className : 'btn dashboard-drilldown';
+    const className =
+      typeof options.className === 'string' ? options.className : 'btn dashboard-drilldown';
     const accessibleLabel = typeof options.ariaLabel === 'string' ? options.ariaLabel : label;
     return `<button type="button" class="${esc(className)}" data-act="dashboardDrilldown" data-drill-key="${esc(key)}" data-target="${target}" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${type}" data-approval="${approval}" data-status="${status}" data-query="${esc(query)}" data-vendor="${esc(vendor)}" aria-label="${esc(accessibleLabel)}">${esc(label)}${icon('arrow-right')}</button>`;
   }
@@ -479,8 +493,12 @@ export function createDashboard({ api }) {
     if (!can('cashClose')) return '';
 
     const action = dashboardDrilldownButton({
-      key: 'daily-cash-close', target: 'cashClose', from: today(), to: today(),
-      label: 'Open Daily Cash Close', className: 'btn dashboard-attention-drilldown',
+      key: 'daily-cash-close',
+      target: 'cashClose',
+      from: today(),
+      to: today(),
+      label: 'Open Daily Cash Close',
+      className: 'btn dashboard-attention-drilldown',
     });
     if (error || !data || typeof data !== 'object') {
       return (
@@ -698,7 +716,14 @@ export function createDashboard({ api }) {
       ' – ' +
       esc(dmy(to)) +
       '</p></div>' +
-      dashboardDrilldownButton({ key: 'recent-period', target: 'reg', from, to, label: 'Open register', className: 'btn dashboard-recent-open' }) +
+      dashboardDrilldownButton({
+        key: 'recent-period',
+        target: 'reg',
+        from,
+        to,
+        label: 'Open register',
+        className: 'btn dashboard-recent-open',
+      }) +
       '</div>';
     if (error || recentTransactionsIssue(result)) {
       return (
@@ -748,7 +773,18 @@ export function createDashboard({ api }) {
               ' · ' +
               esc(approval) +
               '</small>' +
-              dashboardDrilldownButton({ key: 'recent-voucher', target: 'reg', from: row.date, to: row.date, type: row.type, query: String(row.no), vendor: row.vendor, label: 'View in Register', ariaLabel: 'Find voucher ' + number + ' in Register', className: 'btn sm dashboard-recent-item__open' }) +
+              dashboardDrilldownButton({
+                key: 'recent-voucher',
+                target: 'reg',
+                from: row.date,
+                to: row.date,
+                type: row.type,
+                query: String(row.no),
+                vendor: row.vendor,
+                label: 'View in Register',
+                ariaLabel: 'Find voucher ' + number + ' in Register',
+                className: 'btn sm dashboard-recent-item__open',
+              }) +
               '</div><strong class="dashboard-recent-item__amount">' +
               esc(amount) +
               '</strong></li>'

@@ -3030,7 +3030,6 @@
   }
 }
 
-
 /* Phase 12: Dashboard drill-down controls retain the 44px interaction baseline. */
 @media screen {
   .app #view .dashboard-kpi-drilldown,
@@ -3048,8 +3047,13 @@
     text-align: left;
     white-space: normal;
   }
-  .app #view .dashboard-kpi-drilldown { margin-top: 6px; }
-  .app #view .dashboard-recent-item__open { justify-self: start; margin-top: 3px; }
+  .app #view .dashboard-kpi-drilldown {
+    margin-top: 6px;
+  }
+  .app #view .dashboard-recent-item__open {
+    justify-self: start;
+    margin-top: 3px;
+  }
   .app #view .dashboard-attention-drilldown {
     flex: 0 0 auto;
     padding: 8px 12px;
