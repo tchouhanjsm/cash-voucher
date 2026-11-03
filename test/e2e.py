@@ -2553,6 +2553,17 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'hostile daily-close summary values fail closed and remain inert text',
     )
+    hostile_cash_position = page.locator('#view .dashboard-cash-position')
+    hostile_cash_position_text = hostile_cash_position.inner_text()
+    check(
+        hostile_cash_position.get_attribute('data-status') == 'REVIEW_REQUIRED'
+        and 'Business date unavailable' in hostile_cash_position_text
+        and 'Not available' in hostile_cash_position_text
+        and hostile_operations_label not in hostile_cash_position_text
+        and hostile_cash_position.locator('[onload], [onerror]').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'daily cash position fails closed on hostile API fields and displays no fabricated totals',
+    )
     page.unroute('**/api?*', inject_hostile_daily_operations)
     with page.expect_response(
         lambda response: '/api?' in response.url
@@ -5998,6 +6009,57 @@ with sync_playwright() as p:
         and page.locator('#view [data-act="range"][data-k="today"]').count() == 1,
         'dashboard presents daily drawer position, close operations, recent activity and a Today preset',
     )
+
+    # Recent transaction data is user-controlled text and must remain inert in the new card.
+    recent_vendor_payload = '<img src=x onerror=window.__xssFired=true>'
+
+    def inject_hostile_recent_transaction(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'registerPage':
+            route.continue_()
+            return
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {})
+        data['items'] = [{
+            'id': 'dashboard-recent-xss-test',
+            'no': 99999,
+            'date': BUSINESS_TODAY.isoformat(),
+            'vendor': recent_vendor_payload,
+            'type': 'PAYMENT',
+            'status': 'ACTIVE',
+            'amount': 75,
+            'approvalStatus': 'NOT_REQUIRED',
+        }]
+        data['offset'] = 0
+        data['limit'] = 5
+        data['totalCount'] = 1
+        route.fulfill(response=response, json=payload)
+
+    page.evaluate('window.__xssFired = false')
+    page.route('**/api?*', inject_hostile_recent_transaction)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ):
+        page.click('[data-act=range][data-k="today"]')
+    page.wait_for_function(
+        "document.querySelector('.dashboard-recent-item__vendor')?.textContent.includes('<img src=x')",
+        timeout=10000,
+    )
+    recent_vendor_node = page.locator('.dashboard-recent-item__vendor').first
+    check(
+        recent_vendor_node.text_content() == recent_vendor_payload
+        and recent_vendor_node.locator('img, svg, [onerror], [onload]').count() == 0
+        and page.locator('#view img, #view [onerror], #view [onload]').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile recent-transaction vendor text is escaped and cannot create active markup',
+    )
+    page.unroute('**/api?*', inject_hostile_recent_transaction)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    go_view(page, 'dash')
+    page.wait_for_selector('.stats')
 
     # A malformed dashboard summary must never degrade into zero-like financial KPIs.
     dashboard_summary_fault = {'field': 'paid'}
