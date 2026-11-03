@@ -2570,13 +2570,22 @@ with sync_playwright() as p:
         'role-authorized dashboard renders the daily cash position panel',
     )
     check(
-        hostile_cash_position.get_attribute('data-status') in ['REVIEW_REQUIRED', 'UNAVAILABLE']
-        and 'Business date unavailable' in hostile_cash_position_text
-        and 'Not available' in hostile_cash_position_text
-        and hostile_operations_label not in hostile_cash_position_text
+        hostile_cash_position.get_attribute('data-status') in ['REVIEW_REQUIRED', 'UNAVAILABLE'],
+        'hostile daily cash status is mapped to a safe review or unavailable state',
+    )
+    check(
+        'Business date unavailable' in hostile_cash_position_text,
+        'hostile daily cash date is not presented as a business date',
+    )
+    check(
+        'Not available' in hostile_cash_position_text,
+        'hostile daily cash numeric fields are not presented as zero or fabricated totals',
+    )
+    check(
+        hostile_operations_label not in hostile_cash_position_text
         and hostile_cash_position.locator('[onload], [onerror]').count() == 0
         and not page.evaluate('window.__xssFired === true'),
-        'daily cash position fails closed on hostile API fields and displays no fabricated totals',
+        'hostile daily cash fields remain inert and do not create active markup',
     )
     page.unroute('**/api?*', inject_hostile_daily_operations)
     with page.expect_response(
