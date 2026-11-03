@@ -2844,6 +2844,16 @@
     padding: 15px;
   }
 }
+@media screen and (min-width: 801px) {
+  .app #view .account-password-controls {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  }
+  .app #view .account-password-controls button {
+    grid-column: auto;
+    justify-self: end;
+    white-space: nowrap;
+  }
+}
 @media screen and (max-width: 800px) {
   .app #view .account-workspace-grid {
     grid-template-columns: minmax(0, 1fr);
