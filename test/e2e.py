@@ -751,15 +751,66 @@ with sync_playwright() as p:
     page.unroute('**/api?*', inject_dashboard_comparison)
 
     page.click('#userBtn')
+    check(
+        page.locator('#userPop').is_visible()
+        and page.locator('#userBtn').get_attribute('aria-expanded') == 'true'
+        and page.locator('#userPop').get_attribute('aria-label') == 'Account and appearance options'
+        and page.locator('#popAvatar').inner_text().strip() != ''
+        and page.locator('#popRole').inner_text().strip() != '',
+        'avatar popover exposes signed-in identity, role and expanded state',
+    )
+    page.keyboard.press('Escape')
+    check(
+        page.locator('#userPop').is_hidden()
+        and page.locator('#userBtn').get_attribute('aria-expanded') == 'false'
+        and page.locator('#userBtn').evaluate('element => document.activeElement === element'),
+        'Escape dismisses the account popover and returns keyboard focus to its trigger',
+    )
+    page.click('#userBtn')
     page.locator('#userPop button[data-go="acct"]').first.click()
     page.wait_for_selector('#pf')
     account_header = page.locator('#view .page-header')
     check(
-        account_header.locator('.page-eyebrow').text_content().strip() == 'Account'
+        account_header.locator('.page-eyebrow').text_content().strip() == 'Personal workspace'
         and account_header.locator('.page-description').count() == 1
         and page.locator('.profile-account-card').count() == 1
-        and page.locator('.account-password-form#pf').count() == 1,
-        'My Account uses shared page context and a dedicated profile/password layout',
+        and page.locator('.account-password-form#pf').count() == 1
+        and page.locator('#accountProfileHeading').count() == 1
+        and page.locator('#accountPreferencesHeading').count() == 1
+        and page.locator('#accountPasswordHeading').count() == 1
+        and page.locator('#accountReportHeading').count() == 1,
+        'My Account uses the Haveli profile, preferences, security and support hierarchy',
+    )
+    check(
+        page.get_by_label('Appearance').count() == 1
+        and page.get_by_label('Workspace density').count() == 1
+        and page.locator('#accountPreferencesStatus').get_attribute('aria-live') == 'polite',
+        'workspace preferences have associated labels and a live saved-state message',
+    )
+    page.select_option('#accountAppearance', 'dark')
+    check(
+        page.locator('html').get_attribute('data-theme') == 'dark'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#111820'
+        and page.evaluate("localStorage.getItem('cv.theme')") == 'dark',
+        'My Account appearance preference updates browser chrome and persists locally',
+    )
+    page.select_option('#accountAppearance', 'light')
+    check(
+        page.locator('html').get_attribute('data-theme') == 'light'
+        and page.evaluate("localStorage.getItem('cv.theme')") == 'light',
+        'Haveli light appearance can be restored from My Account',
+    )
+    page.select_option('#accountDensity', 'compact')
+    check(
+        page.locator('html').get_attribute('data-density') == 'compact'
+        and page.evaluate("localStorage.getItem('cv.density')") == 'compact',
+        'compact workspace density applies and persists locally',
+    )
+    page.select_option('#accountDensity', 'comfortable')
+    check(
+        page.locator('html').get_attribute('data-density') == 'comfortable'
+        and page.evaluate("localStorage.getItem('cv.density')") == 'comfortable',
+        'comfortable workspace density can be restored from My Account',
     )
     report_form = page.locator('#accountReportForm')
     page.set_viewport_size({'width': 320, 'height': 800})
