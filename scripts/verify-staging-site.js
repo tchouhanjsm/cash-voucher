@@ -189,6 +189,11 @@ async function verifyStagingSite({
     throw new Error('Published release manifest targets a different Apps Script deployment.');
   }
 
+  const assetManifestSha256 = crypto.createHash('sha256').update(manifestBytes).digest('hex');
+  if (String(release.assetManifestSha256 || '') !== assetManifestSha256) {
+    throw new Error('Asset manifest digest does not match the release manifest.');
+  }
+
   const manifest = parseJson(manifestBytes, 'Asset manifest');
   if (
     manifest.schemaVersion !== 1 ||
