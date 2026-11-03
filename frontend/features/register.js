@@ -82,12 +82,19 @@ export function createRegister({ api, go }) {
       { key: 'today', label: 'Today', from: referenceDate, to: referenceDate },
       { key: '7d', label: 'Last 7 days', from: addDays(referenceDate, -6), to: referenceDate },
       { key: '30d', label: 'Last 30 days', from: addDays(referenceDate, -29), to: referenceDate },
-      { key: 'mtd', label: 'Month to date', from: referenceDate.slice(0, 7) + '-01', to: referenceDate },
+      {
+        key: 'mtd',
+        label: 'Month to date',
+        from: referenceDate.slice(0, 7) + '-01',
+        to: referenceDate,
+      },
     ];
   }
 
   function selectedRegisterDateRange() {
-    return registerDateRanges().find((range) => R.from === range.from && R.to === range.to)?.key || '';
+    return (
+      registerDateRanges().find((range) => R.from === range.from && R.to === range.to)?.key || ''
+    );
   }
 
   function labeledControl(text, control) {
@@ -234,7 +241,9 @@ export function createRegister({ api, go }) {
       [R.paymentMethod !== 'ALL', 'Payment method'],
       [R.st !== 'ACTIVE', R.st === 'CANCELLED' ? 'Cancelled status' : 'All statuses'],
       [R.approval !== 'ALL', 'Approval state'],
-    ].filter(([active]) => active).map(([, label]) => label);
+    ]
+      .filter(([active]) => active)
+      .map(([, label]) => label);
 
     if (target) {
       target.textContent = filters.length
@@ -243,11 +252,13 @@ export function createRegister({ api, go }) {
     }
 
     const selected = selectedRegisterDateRange();
-    $('#view')?.querySelectorAll('[data-register-range]').forEach((button) => {
-      const pressed = button.dataset.registerRange === selected;
-      button.classList.toggle('on', pressed);
-      button.setAttribute('aria-pressed', String(pressed));
-    });
+    $('#view')
+      ?.querySelectorAll('[data-register-range]')
+      .forEach((button) => {
+        const pressed = button.dataset.registerRange === selected;
+        button.classList.toggle('on', pressed);
+        button.setAttribute('aria-pressed', String(pressed));
+      });
   }
 
   async function renderRows(options = {}) {
@@ -618,11 +629,22 @@ export function createRegister({ api, go }) {
   function render() {
     const datePresets = registerDateRanges();
     const selectedDatePreset = selectedRegisterDateRange();
-    const datePresetButtons = datePresets.map((range) => {
-      const pressed = selectedDatePreset === range.key;
-      return '<button type="button" data-register-range="' + range.key + '" class="' +
-        (pressed ? 'on' : '') + '" aria-pressed="' + String(pressed) + '">' + range.label + '</button>';
-    }).join('');
+    const datePresetButtons = datePresets
+      .map((range) => {
+        const pressed = selectedDatePreset === range.key;
+        return (
+          '<button type="button" data-register-range="' +
+          range.key +
+          '" class="' +
+          (pressed ? 'on' : '') +
+          '" aria-pressed="' +
+          String(pressed) +
+          '">' +
+          range.label +
+          '</button>'
+        );
+      })
+      .join('');
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
     const vendors =
       Array.isArray(pageFacets.vendors) && pageFacets.vendors.length

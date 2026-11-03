@@ -311,8 +311,18 @@ export function createReports({ api }) {
       { key: '7d', label: 'Last 7 days', from: addDays(reportToday, -6), to: reportToday },
       { key: '30d', label: 'Last 30 days', from: addDays(reportToday, -29), to: reportToday },
       { key: '90d', label: 'Last 90 days', from: addDays(reportToday, -89), to: reportToday },
-      { key: 'mtd', label: 'Month to date', from: reportToday.slice(0, 7) + '-01', to: reportToday },
-      { key: 'previous-month', label: 'Previous month', from: previousMonthEnd.slice(0, 7) + '-01', to: previousMonthEnd },
+      {
+        key: 'mtd',
+        label: 'Month to date',
+        from: reportToday.slice(0, 7) + '-01',
+        to: reportToday,
+      },
+      {
+        key: 'previous-month',
+        label: 'Previous month',
+        from: previousMonthEnd.slice(0, 7) + '-01',
+        to: previousMonthEnd,
+      },
     ];
     const quickRangeControls =
       '<div class="report-period-presets" role="group" aria-label="Quick report date ranges">' +
@@ -335,9 +345,26 @@ export function createReports({ api }) {
       ? 'Invalid date selection'
       : esc(dmy(R.from)) + ' – ' + esc(dmy(R.to));
     const appliedReportFilters = [
-      ['Type', R.type === 'PAYMENT' ? 'Payments only' : R.type === 'RECEIPT' ? 'Receipts only' : 'Payments and receipts'],
-      ['Payment method', R.paymentMethod === 'ALL' ? 'All methods' : paymentMethodLabel(R.paymentMethod)],
-      ['Status', R.status === 'ACTIVE' ? 'Active only' : R.status === 'CANCELLED' ? 'Cancelled only' : 'All statuses'],
+      [
+        'Type',
+        R.type === 'PAYMENT'
+          ? 'Payments only'
+          : R.type === 'RECEIPT'
+            ? 'Receipts only'
+            : 'Payments and receipts',
+      ],
+      [
+        'Payment method',
+        R.paymentMethod === 'ALL' ? 'All methods' : paymentMethodLabel(R.paymentMethod),
+      ],
+      [
+        'Status',
+        R.status === 'ACTIVE'
+          ? 'Active only'
+          : R.status === 'CANCELLED'
+            ? 'Cancelled only'
+            : 'All statuses',
+      ],
     ];
     const methodRows = Array.isArray(summary?.byPaymentMethod) ? summary.byPaymentMethod : [];
     const methodMax = Math.max(1, ...methodRows.map((item) => item.s));
@@ -455,7 +482,9 @@ ${methodBreakdown}
             <div>
               <p class="page-eyebrow">SOURCE RECORDS</p>
               <h2>Source vouchers</h2>
-              <p class="muted">Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}</p>
+              <p class="muted">
+                Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}
+              </p>
             </div>
             <div class="report-results-period">
               <span>Report period</span>

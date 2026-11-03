@@ -2898,31 +2898,134 @@
   }
 }
 
-
 /* Phase 10: Register and Reports refinement surfaces. */
 @media screen {
-  .app #view .register-date-presets { display:flex; flex-wrap:wrap; align-items:center; gap:8px; }
-  .app #view .register-date-presets__label { margin-right:4px; color:var(--workspace-muted); font-size:11px; font-weight:760; letter-spacing:.04em; text-transform:uppercase; }
-  .app #view .register-date-presets button { min-height:44px; padding:8px 13px; border:1px solid var(--workspace-border); border-radius:10px; background:var(--workspace-soft); color:var(--workspace-muted); font-size:11px; font-weight:740; transition:background-color 140ms ease,border-color 140ms ease,color 140ms ease; }
+  .app #view .register-date-presets {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+  }
+  .app #view .register-date-presets__label {
+    margin-right: 4px;
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 760;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .app #view .register-date-presets button {
+    min-height: 44px;
+    padding: 8px 13px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-soft);
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 740;
+    transition:
+      background-color 140ms ease,
+      border-color 140ms ease,
+      color 140ms ease;
+  }
   .app #view .register-date-presets button:hover,
   .app #view .register-date-presets button.on,
-  .app #view .register-date-presets button[aria-pressed='true'] { border-color:color-mix(in srgb,var(--workspace-accent) 42%,var(--workspace-border)); background:color-mix(in srgb,var(--workspace-accent) 10%,var(--workspace-surface)); color:var(--workspace-ink); }
-  .app #view .register-filter-summary { margin:-6px 0 0; padding:10px 12px; border:1px solid var(--workspace-border); border-radius:10px; background:var(--workspace-soft); color:var(--workspace-muted); font-size:11px; line-height:1.5; }
-  .app #view .report-period-presets button { min-height:44px; }
-  .app #view .report-results-heading { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:13px; }
-  .app #view .report-results-heading h2 { margin:0; color:var(--workspace-ink); font-size:17px; font-weight:800; letter-spacing:-.025em; }
-  .app #view .report-results-heading p:not(.page-eyebrow) { margin:7px 0 0; color:var(--workspace-muted); font-size:11px; }
-  .app #view .report-results-period { display:grid; flex:0 0 auto; gap:5px; padding:10px 12px; border:1px solid var(--workspace-border); border-radius:10px; background:var(--workspace-soft); }
-  .app #view .report-results-period span { color:var(--workspace-muted); font-size:9px; font-weight:820; letter-spacing:.09em; text-transform:uppercase; }
-  .app #view .report-results-period strong { color:var(--workspace-ink); font-size:11px; font-variant-numeric:tabular-nums; }
-  .app #view .report-applied-filters { display:flex; flex-wrap:wrap; gap:7px; margin:0 0 16px; }
-  .app #view .report-applied-filters span { display:inline-flex; align-items:baseline; gap:4px; min-height:30px; padding:6px 9px; border:1px solid var(--workspace-border); border-radius:999px; background:var(--workspace-soft); color:var(--workspace-muted); font-size:10px; }
-  .app #view .report-applied-filters b { color:var(--workspace-ink); font-weight:790; }
-  @media (max-width:560px) {
-    .app #view .register-date-presets { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); }
-    .app #view .register-date-presets__label { grid-column:1/-1; }
-    .app #view .register-date-presets button { width:100%; }
-    .app #view .report-results-heading { flex-direction:column; }
-    .app #view .report-results-period { width:100%; }
+  .app #view .register-date-presets button[aria-pressed='true'] {
+    border-color: color-mix(in srgb, var(--workspace-accent) 42%, var(--workspace-border));
+    background: color-mix(in srgb, var(--workspace-accent) 10%, var(--workspace-surface));
+    color: var(--workspace-ink);
+  }
+  .app #view .register-filter-summary {
+    margin: -6px 0 0;
+    padding: 10px 12px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-soft);
+    color: var(--workspace-muted);
+    font-size: 11px;
+    line-height: 1.5;
+  }
+  .app #view .report-period-presets button {
+    min-height: 44px;
+  }
+  .app #view .report-results-heading {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 13px;
+  }
+  .app #view .report-results-heading h2 {
+    margin: 0;
+    color: var(--workspace-ink);
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+  }
+  .app #view .report-results-heading p:not(.page-eyebrow) {
+    margin: 7px 0 0;
+    color: var(--workspace-muted);
+    font-size: 11px;
+  }
+  .app #view .report-results-period {
+    display: grid;
+    flex: 0 0 auto;
+    gap: 5px;
+    padding: 10px 12px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 10px;
+    background: var(--workspace-soft);
+  }
+  .app #view .report-results-period span {
+    color: var(--workspace-muted);
+    font-size: 9px;
+    font-weight: 820;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+  }
+  .app #view .report-results-period strong {
+    color: var(--workspace-ink);
+    font-size: 11px;
+    font-variant-numeric: tabular-nums;
+  }
+  .app #view .report-applied-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 0 0 16px;
+  }
+  .app #view .report-applied-filters span {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    min-height: 30px;
+    padding: 6px 9px;
+    border: 1px solid var(--workspace-border);
+    border-radius: 999px;
+    background: var(--workspace-soft);
+    color: var(--workspace-muted);
+    font-size: 10px;
+  }
+  .app #view .report-applied-filters b {
+    color: var(--workspace-ink);
+    font-weight: 790;
+  }
+  @media (max-width: 560px) {
+    .app #view .register-date-presets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    .app #view .register-date-presets__label {
+      grid-column: 1/-1;
+    }
+    .app #view .register-date-presets button {
+      width: 100%;
+    }
+    .app #view .report-results-heading {
+      flex-direction: column;
+    }
+    .app #view .report-results-period {
+      width: 100%;
+    }
   }
 }
