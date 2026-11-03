@@ -579,11 +579,8 @@ export function createDashboard({ api }) {
       'OPENING_CASH_REQUIRED',
       'REVIEW_REQUIRED',
     ];
-    const status = unavailable
-      ? 'UNAVAILABLE'
-      : validStatuses.includes(data.status)
-        ? data.status
-        : 'REVIEW_REQUIRED';
+    const knownStatus = !unavailable && validStatuses.includes(data.status);
+    const status = unavailable ? 'UNAVAILABLE' : knownStatus ? data.status : 'REVIEW_REQUIRED';
     const statusLabels = {
       CLOSED: 'Closed',
       READY_TO_CLOSE: 'Ready to close',
@@ -594,7 +591,7 @@ export function createDashboard({ api }) {
       UNAVAILABLE: 'Unavailable',
     };
     const date =
-      !unavailable && isBusinessDate(data.date) ? dmy(data.date) : 'Business date unavailable';
+      knownStatus && isBusinessDate(data.date) ? dmy(data.date) : 'Business date unavailable';
     const amountLabel = (value) =>
       typeof value === 'number' && Number.isFinite(value) ? money(value) : 'Not available';
     const countLabel = (value) =>
