@@ -4,7 +4,12 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
-const { buildWebSite, validateApiUrl, validateSecurityHeaders, validateCacheHeaders } = require('../scripts/build-web');
+const {
+  buildWebSite,
+  validateApiUrl,
+  validateSecurityHeaders,
+  validateCacheHeaders,
+} = require('../scripts/build-web');
 
 const rootDir = path.resolve(__dirname, '..');
 const customerApiUrl = 'https://script.google.com/macros/s/TEST_CUSTOMER_DEPLOYMENT_ID/exec';
@@ -146,12 +151,18 @@ try {
   assert.ok(apacheHeaders.includes('Header always set Content-Security-Policy'));
   assert.ok(apacheHeaders.includes("frame-ancestors 'none'"));
   assert.equal(validateCacheHeaders(apacheHeaders, 'apache'), true);
-  assert.ok(apacheHeaders.includes('Header always set Cache-Control "no-cache, no-store, must-revalidate"'));
+  assert.ok(
+    apacheHeaders.includes('Header always set Cache-Control "no-cache, no-store, must-revalidate"'),
+  );
 
   assert.equal(validateSecurityHeaders(headers, 'pages'), true);
   assert.equal(validateSecurityHeaders(apacheHeaders, 'apache'), true);
   assert.throws(
-    () => validateCacheHeaders(headers.replace('/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate', ''), 'pages'),
+    () =>
+      validateCacheHeaders(
+        headers.replace('/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate', ''),
+        'pages',
+      ),
     /cache policy/,
     'Pages cache policy rejects missing service-worker revalidation',
   );
