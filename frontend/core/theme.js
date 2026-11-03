@@ -37,6 +37,13 @@ export function setPalette(palette) {
   return selected;
 }
 
+export function setTheme(theme) {
+  if (theme !== 'light' && theme !== 'dark') return false;
+  const persisted = ls.set(STORAGE_KEY, theme);
+  updateTheme(theme);
+  return persisted;
+}
+
 function updateTheme(theme) {
   const selected = theme === 'dark' ? 'dark' : 'light';
   const next = selected === 'dark' ? 'light' : 'dark';
@@ -66,7 +73,6 @@ export function initTheme() {
 
   document.getElementById('themeToggle')?.addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    ls.set(STORAGE_KEY, next);
-    updateTheme(next);
+    setTheme(next);
   });
 }
