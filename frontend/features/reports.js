@@ -455,7 +455,7 @@ ${methodBreakdown}
             <div>
               <p class="page-eyebrow">SOURCE RECORDS</p>
               <h2>Source vouchers</h2>
-              <p class="muted">Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows</p>
+              <p class="muted">Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}</p>
             </div>
             <div class="report-results-period">
               <span>Report period</span>
