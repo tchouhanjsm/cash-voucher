@@ -1825,7 +1825,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const submit = document.createElement('button');
     submit.type = 'submit';
     submit.className = 'btn primary';
-    submit.textContent = 'Update password';
+    submit.textContent = 'Change password';
     controls.appendChild(submit);
     form.append(formHeader, controls);
     layout.appendChild(form);
