@@ -150,6 +150,7 @@ function createHarness({ failAddAll = false } = {}) {
     'frontend/core/offline-auth.js',
     'frontend/core/recovery-validation.js',
     'frontend/core/session.js',
+    'frontend/core/preferences.js',
     'frontend-workspace.css',
   ]) {
     assert.ok(
