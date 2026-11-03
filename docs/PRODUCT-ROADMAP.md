@@ -1,9 +1,10 @@
-## Current redesign batch — PR #263 (3 November 2026)
+## Current redesign batch — PR #263 (3 November 2026; Dashboard, Account, Register and Reports)
 
-PR #263 now groups the Haveli Light Dashboard and My Account redesign in one reviewable product slice. The Dashboard uses the existing server read models for approved movement, all-time Book balance, daily cash position and recent transactions. My Account reuses the existing account route and preserves the current password-change and support-report actions.
+PR #263 now groups the Haveli Light Dashboard, My Account, Register and Reports workflows in one reviewable product slice. The Dashboard, server-filtered Register and Recorded Movement Report retain their existing read models and permission boundaries. My Account reuses the existing account route and preserves the current password-change and support-report actions.
 
 - **Dashboard:** Haveli palette, period presets including Today, separated physical-cash position, selected-period recent activity and safer small-baseline comparison copy.
 - **Account:** identity and role presentation, accessible avatar popover, device-local appearance and density preferences, existing password update and support reporting.
+- **Register and Reports:** business-date shortcuts for daily, weekly, monthly and prior-month review; live Register refinement context; explicit applied-filter context on report source rows; 44px accessible date controls and mobile reflow.
 - **Boundaries:** no new backend action, profile-edit endpoint, account-role change, API/schema update, financial formula, Apps Script deployment or production-data write.
 - **Verification:** exact-head CI / Quality, Browser E2E and Full Flight are required after the combined account slice. The previously recorded dashboard-only results do not certify this expanded head.
 

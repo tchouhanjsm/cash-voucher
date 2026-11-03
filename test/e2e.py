@@ -7006,6 +7006,24 @@ with sync_playwright() as p:
     )
     check(page.locator('#rbody tr.cx').count() == 1, 'cancelled voucher visible under filter')
 
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ) as register_range_response:
+        page.click('[data-register-range="7d"]')
+    register_range_payload = json.loads(register_range_response.value.request.post_data or '{}')
+    check(
+        register_range_payload.get('from')
+        == (BUSINESS_TODAY - datetime.timedelta(days=6)).isoformat()
+        and register_range_payload.get('to') == BUSINESS_TODAY.isoformat(),
+        'Register quick period sends the exact seven-day window to the server read model',
+    )
+    check(
+        page.locator('[data-register-range="7d"]').get_attribute('aria-pressed') == 'true'
+        and 'Date range' in page.locator('#registerFilterSummary').inner_text(),
+        'Register exposes the selected quick range and live applied-filter context',
+    )
+
     # Exercise the recorded movement report through the actual browser/API mock.
     go_view(page, 'reports')
     page.wait_for_selector('#movementFilters')
@@ -7078,6 +7096,34 @@ with sync_playwright() as p:
         'movement report exposes payment and receipt totals',
     )
     report_rows = page.locator('#view table tbody tr')
+    check(
+        page.locator('#view .report-applied-filters').count() == 1
+        and 'Payments and receipts' in page.locator('#view .report-applied-filters').inner_text()
+        and 'Active only' in page.locator('#view .report-applied-filters').inner_text(),
+        'report source rows display the exact type, payment-method and status filters used',
+    )
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ) as report_range_response:
+        page.click('[data-report-range="90d"]')
+    report_range_payload = json.loads(report_range_response.value.request.post_data or '{}')
+    page.wait_for_function(
+        "document.querySelector('#report-output')?.getAttribute('aria-busy') === 'false'"
+    )
+    check(
+        report_range_payload.get('from')
+        == (BUSINESS_TODAY - datetime.timedelta(days=89)).isoformat()
+        and report_range_payload.get('to') == BUSINESS_TODAY.isoformat()
+        and page.locator('[data-report-range="90d"]').get_attribute('aria-pressed') == 'true',
+        'Reports quick period submits the exact ninety-day range and exposes its selected state',
+    )
+    check(
+        page.locator('[data-report-range="90d"]').evaluate(
+            '(element) => element.getBoundingClientRect().height'
+        ) >= 44,
+        'Report quick-range controls meet the 44px touch target baseline',
+    )
     check(
         'Guest Room 5' in report_text
         and 'RECEIPT' in report_text
@@ -7715,6 +7761,14 @@ with sync_playwright() as p:
             'document.documentElement.scrollWidth > document.documentElement.clientWidth'
         )
         check(not page_overflow, f'{width}px register has no page-level horizontal overflow')
+    page.set_viewport_size({'width': 390, 'height': 800})
+    register_range_targets = page.locator('.register-date-presets button').evaluate_all(
+        '(elements) => elements.map((element) => element.getBoundingClientRect().height)'
+    )
+    check(
+        len(register_range_targets) == 4 and all(height >= 44 for height in register_range_targets),
+        'Register quick-range controls meet the 44px touch target baseline on mobile',
+    )
 
     # Exercise the payment-entry workflow at the narrow reflow width used for 400% zoom.
     go_view(page, 'new')

@@ -214,6 +214,11 @@ assert.match(
   /register-results-summary/,
   'register gives server totals and results a dedicated hierarchy',
 );
+assert.match(register, /data-register-range/, 'register exposes business-date quick ranges');
+assert.match(register, /syncRegisterFilterSummary/, 'register announces active server-side refinements without reimplementing filtering');
+assert.match(reports, /key: '90d'/, 'reports offer a ninety-day reporting window');
+assert.match(reports, /key: 'previous-month'/, 'reports offer the previous complete calendar month');
+assert.match(reports, /report-applied-filters/, 'report results disclose the filter scope used for source rows');
 assert.match(reports, /data-report-range/, 'reports expose quick date presets');
 assert.match(
   reports,
@@ -260,6 +265,10 @@ for (const [source, pattern, description] of [
 ])
   assert.match(source, pattern, description);
 for (const selector of [
+  '.register-date-presets',
+  '.register-filter-summary',
+  '.report-results-heading',
+  '.report-applied-filters',
   '.settings-layout',
   '.settings-diagnostics',
   '.audit-panel',
