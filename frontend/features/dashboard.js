@@ -1076,7 +1076,7 @@ export function createDashboard({ api }) {
         <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest payment</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Paid today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small></div>
         <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Receipts · period</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} recorded receipts · all methods</small></div>
-        ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance · all time</span><b>${money(summary.bookBalance)}</b><small class="muted">Opening balance + active receipts − approved payments; not a physical cash or bank count</small></div>` : ''}
+        ${can('viewAll') ? `<div class="card stat"><span class="stat-ic">${icon('book')}</span><span>Book balance · all time</span><b>${money(summary.bookBalance)}</b><small class="muted">Opening balance + active receipts − approved payments; not a physical cash count or bank balance</small></div>` : ''}
       </div>
       ${dashboardWarnings}
       ${operationsPanels}
