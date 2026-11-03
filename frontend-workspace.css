@@ -2591,7 +2591,6 @@
   }
 }
 
-
 @media (prefers-contrast: more) {
   .app #view .dashboard-view .card {
     border-width: 2px;
