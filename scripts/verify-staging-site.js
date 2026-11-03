@@ -75,7 +75,10 @@ function verifySecurityHeaders(headers) {
 
   const csp = String(headers.get('content-security-policy') || '');
   const directives = new Map();
-  for (const entry of csp.split(';').map((part) => part.trim()).filter(Boolean)) {
+  for (const entry of csp
+    .split(';')
+    .map((part) => part.trim())
+    .filter(Boolean)) {
     const [name, ...sources] = entry.split(/\s+/);
     const key = name.toLowerCase();
     if (directives.has(key)) {
@@ -101,7 +104,10 @@ function verifySecurityHeaders(headers) {
       );
     }
   }
-  if (/\bunsafe-eval\b/i.test(csp) || /\bunsafe-inline\b/i.test(directives.get('script-src') || '')) {
+  if (
+    /\bunsafe-eval\b/i.test(csp) ||
+    /\bunsafe-inline\b/i.test(directives.get('script-src') || '')
+  ) {
     throw new Error('Staging host Content-Security-Policy permits unsafe script execution.');
   }
 }
