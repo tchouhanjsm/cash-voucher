@@ -1660,6 +1660,8 @@ export function createAdministration({ api, getNavigation, signOut }) {
     eyebrow.className = 'page-eyebrow';
     eyebrow.textContent = 'Personal workspace';
     const heading = document.createElement('h1');
+    heading.id = 'accountPageHeading';
+    heading.tabIndex = -1;
     heading.textContent = 'My Account';
     const description = document.createElement('p');
     description.className = 'page-description';
