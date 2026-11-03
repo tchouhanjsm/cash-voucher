@@ -4254,26 +4254,32 @@ with sync_playwright() as p:
             request_data = {}
         if request_data.get('action') == 'registerPage':
             staff_dashboard_register_requests.append(dict(request_data))
-            response = route.fetch()
-            payload = response.json()
-            data = payload.get('data', {})
-            items = data.get('items', []) if isinstance(data, dict) else []
-            row = dict(items[0]) if items and isinstance(items[0], dict) else {}
-            row.update(staff_dashboard_register_fixture)
-            data['items'] = [row]
-            data['totalCount'] = 1
-            data['hasMore'] = False
-            data['totals'] = {
-                'paid': 250, 'received': 0, 'approvalExceptionCount': 0,
-                'invalidAmountCount': 0, 'malformedRecordCount': 0,
-                'malformedFieldCount': 0,
-            }
-            data['facets'] = {
-                'vendors': ['Staff Dashboard Drilldown'],
-                'users': ['s@test.com'],
-            }
-            payload['data'] = data
-            route.fulfill(response=response, json=payload)
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({
+                    'ok': True,
+                    'data': {
+                        'items': [staff_dashboard_register_fixture],
+                        'offset': request_data.get('offset', 0),
+                        'limit': request_data.get('limit', 100),
+                        'totalCount': 1,
+                        'hasMore': False,
+                        'totals': {
+                            'paid': 250,
+                            'received': 0,
+                            'approvalExceptionCount': 0,
+                            'invalidAmountCount': 0,
+                            'malformedRecordCount': 0,
+                            'malformedFieldCount': 0,
+                        },
+                        'facets': {
+                            'vendors': ['Staff Dashboard Drilldown'],
+                            'users': ['s@test.com'],
+                        },
+                    },
+                }),
+            )
             return
         if request_data.get('action') != 'dashboardSummary':
             route.continue_()
@@ -5739,8 +5745,6 @@ with sync_playwright() as p:
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
 
     manager_dashboard_requests = []
-    manager_dashboard_state = {'vendor': ''}
-
     def inject_manager_dashboard_drilldowns(route):
         try:
             request_data = json.loads(route.request.post_data or '{}')
@@ -5755,34 +5759,77 @@ with sync_playwright() as p:
             )
             return
         if action == 'dashboardSummary':
-            response = route.fetch()
-            payload = response.json()
-            data = payload.get('data', {})
-            if isinstance(data, dict):
-                data['approvalExceptionCount'] = max(1, int(data.get('approvalExceptionCount') or 0))
-                data['invalidAmountCount'] = max(1, int(data.get('invalidAmountCount') or 0))
-                largest = data.get('largest')
-                if isinstance(largest, dict) and isinstance(largest.get('vendor'), str):
-                    manager_dashboard_state['vendor'] = largest['vendor']
-                payload['data'] = data
-            route.fulfill(response=response, json=payload)
+            from_date = request_data.get('from', BUSINESS_TODAY.isoformat())
+            to_date = request_data.get('to', BUSINESS_TODAY.isoformat())
+            from_value = datetime.date.fromisoformat(from_date)
+            to_value = datetime.date.fromisoformat(to_date)
+            period_days = (to_value - from_value).days + 1
+            trend_monthly = period_days > 62
+            largest_vendor = 'Dashboard Drilldown Vendor'
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({
+                    'ok': True,
+                    'data': {
+                        'from': from_date,
+                        'to': to_date,
+                        'periodDays': period_days,
+                        'trendMonthly': trend_monthly,
+                        'trend': [{
+                            'date': to_date[:7] if trend_monthly else to_date,
+                            'amount': 5000,
+                        }],
+                        'paid': 5000,
+                        'previousPaid': 4200,
+                        'paymentCount': 1,
+                        'validPaymentCount': 1,
+                        'largest': {'amount': 5000, 'vendor': largest_vendor},
+                        'todayPaid': 5000,
+                        'todayPaymentCount': 1,
+                        'received': 1500,
+                        'receiptCount': 1,
+                        'bookBalance': 9000,
+                        'topVendors': [{'k': largest_vendor, 'n': 1, 's': 5000}],
+                        'byCategory': [{'k': 'Operations', 'n': 1, 's': 5000}],
+                        'byTeamMember': [{'k': 'Staff sample', 'n': 1, 's': 5000}],
+                        'byPaymentMethod': [{'k': 'Cash', 'n': 1, 's': 5000}],
+                        'approvalExceptionCount': 1,
+                        'invalidAmountCount': 1,
+                        'malformedRecordCount': 0,
+                        'malformedFieldCount': 0,
+                    },
+                }),
+            )
             return
         if action == 'registerPage':
             manager_dashboard_requests.append(dict(request_data))
-            response = route.fetch()
-            payload = response.json()
-            data = payload.get('data', {})
-            facets = data.get('facets', {}) if isinstance(data, dict) else {}
-            if isinstance(facets, dict) and manager_dashboard_state['vendor']:
-                vendors = facets.get('vendors', [])
-                if not isinstance(vendors, list):
-                    vendors = []
-                if manager_dashboard_state['vendor'] not in vendors:
-                    vendors.append(manager_dashboard_state['vendor'])
-                facets['vendors'] = vendors
-                data['facets'] = facets
-                payload['data'] = data
-            route.fulfill(response=response, json=payload)
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({
+                    'ok': True,
+                    'data': {
+                        'items': [manager_dashboard_register_fixture],
+                        'offset': request_data.get('offset', 0),
+                        'limit': request_data.get('limit', 100),
+                        'totalCount': 1,
+                        'hasMore': False,
+                        'totals': {
+                            'paid': 5000,
+                            'received': 1500,
+                            'approvalExceptionCount': 1,
+                            'invalidAmountCount': 1,
+                            'malformedRecordCount': 0,
+                            'malformedFieldCount': 0,
+                        },
+                        'facets': {
+                            'vendors': ['Dashboard Drilldown Vendor'],
+                            'users': ['s@test.com'],
+                        },
+                    },
+                }),
+            )
             return
         if action == 'recordedMovementReport':
             manager_dashboard_requests.append(dict(request_data))
