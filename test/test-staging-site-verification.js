@@ -140,6 +140,20 @@ async function expectFailure(options, pattern) {
     }),
   }, /unsafe relative path/);
 
+  await expectFailure({
+    siteUrl: 'https://staging.example.test/cash-voucher/',
+    expectedCommit: commit,
+    expectedDeploymentId: deploymentId,
+    fetchImpl: makeFetch({
+      replacements: {
+        'asset-manifest.json': JSON.stringify({
+          ...assetManifest,
+          assets: [...assets, { ...assets[0], path: '%2e%2e/outside.js' }],
+        }),
+      },
+    }),
+  }, /unsafe relative path/);
+
   console.log('Staging frontend verifier tests passed.');
 })().catch((error) => {
   console.error(error);
