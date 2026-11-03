@@ -4471,7 +4471,7 @@ with sync_playwright() as p:
     go_view(page, 'reg')
     page.wait_for_selector('#rf')
     page.locator('#rf [data-act=rclear]').click()
-    page.wait_for_selector('#rbody tr')
+    page.wait_for_selector('#registerFilterSummary')
     check(
         page.locator('#rq').input_value() == ''
         and page.locator('#rt').input_value() == ''
