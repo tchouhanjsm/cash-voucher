@@ -26,11 +26,31 @@ assert.ok(
 );
 
 assert.match(styles, /--workspace-canvas:\s*#faf6ef/, 'workspace defines the Haveli ivory canvas');
-assert.match(styles, /--workspace-surface:\s*#fffefc/, 'workspace uses an opaque warm-white card surface');
-assert.match(styles, /--workspace-cta:\s*#dcafa4/, 'workspace uses the terracotta primary action token');
-assert.match(styles, /--workspace-cta-ink:\s*#5b4038/, 'terracotta actions use a readable warm-brown label token');
-assert.match(styles, /\.dashboard-cash-position__expected/, 'daily drawer position uses a dedicated financial hierarchy');
-assert.match(styles, /\.dashboard-recent-transactions/, 'recent transactions use a dedicated opaque panel');
+assert.match(
+  styles,
+  /--workspace-surface:\s*#fffefc/,
+  'workspace uses an opaque warm-white card surface',
+);
+assert.match(
+  styles,
+  /--workspace-cta:\s*#dcafa4/,
+  'workspace uses the terracotta primary action token',
+);
+assert.match(
+  styles,
+  /--workspace-cta-ink:\s*#5b4038/,
+  'terracotta actions use a readable warm-brown label token',
+);
+assert.match(
+  styles,
+  /\.dashboard-cash-position__expected/,
+  'daily drawer position uses a dedicated financial hierarchy',
+);
+assert.match(
+  styles,
+  /\.dashboard-recent-transactions/,
+  'recent transactions use a dedicated opaque panel',
+);
 assert.match(
   styles,
   /--workspace-accent:\s*var\(--accent\)/,
@@ -229,12 +249,28 @@ for (const selector of [
 
 // Dashboard amounts and chart data remain owned by the validated server read model.
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');
-assert.match(dashboard, /Book balance · all time/, 'Book balance is explicitly identified as all-time');
-assert.match(dashboard, /dailyCashPositionCard/, 'daily physical cash has its own server-backed renderer');
+assert.match(
+  dashboard,
+  /Book balance · all time/,
+  'Book balance is explicitly identified as all-time',
+);
+assert.match(
+  dashboard,
+  /dailyCashPositionCard/,
+  'daily physical cash has its own server-backed renderer',
+);
 assert.match(dashboard, /recentTransactionsCard/, 'recent activity has its own renderer');
-assert.match(dashboard, /api\('registerPage'/, 'recent activity uses the server-paginated register read model');
+assert.match(
+  dashboard,
+  /api\('registerPage'/,
+  'recent activity uses the server-paginated register read model',
+);
 assert.match(dashboard, /\['today', 'Today'\]/, 'Today is available as a dashboard period preset');
-assert.match(dashboard, /percentage omitted for a small baseline/, 'tiny previous-period totals use absolute change rather than unstable percentages');
+assert.match(
+  dashboard,
+  /percentage omitted for a small baseline/,
+  'tiny previous-period totals use absolute change rather than unstable percentages',
+);
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
 assert.match(
