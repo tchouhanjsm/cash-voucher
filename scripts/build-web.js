@@ -142,21 +142,21 @@ function validateCacheHeaders(source, format = 'apache') {
   const required =
     format === 'apache'
       ? [
-        'Header always set Cache-Control "no-cache, no-store, must-revalidate"',
-        'Header always set Pragma "no-cache"',
-        'Header always set Expires "0"',
-        'Header always set Cache-Control "no-cache, must-revalidate"',
+          'Header always set Cache-Control "no-cache, no-store, must-revalidate"',
+          'Header always set Pragma "no-cache"',
+          'Header always set Expires "0"',
+          'Header always set Cache-Control "no-cache, must-revalidate"',
           'css|js|mjs|webmanifest|svg|png',
         ]
       : [
-        '/\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/index.html\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/config.js\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/asset-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/release-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
-        '/frontend/*\n  Cache-Control: no-cache, must-revalidate',
-        '/icons/*\n  Cache-Control: no-cache, must-revalidate',
+          '/\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/index.html\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/sw.js\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/config.js\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/asset-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/release-manifest.json\n  Cache-Control: no-cache, no-store, must-revalidate',
+          '/frontend/*\n  Cache-Control: no-cache, must-revalidate',
+          '/icons/*\n  Cache-Control: no-cache, must-revalidate',
           '/frontend-workspace.css\n  Cache-Control: no-cache, must-revalidate',
         ];
 
