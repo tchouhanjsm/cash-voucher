@@ -754,7 +754,7 @@ with sync_playwright() as p:
     check(
         page.locator('#userPop').is_visible()
         and page.locator('#userBtn').get_attribute('aria-expanded') == 'true'
-        and page.locator('#userPop').get_attribute('aria-label') == 'Account and appearance options'
+        and page.locator('#userPop').get_attribute('aria-label') == 'Account actions'
         and page.locator('#popAvatar').inner_text().strip() != ''
         and page.locator('#popRole').inner_text().strip() != '',
         'avatar popover exposes signed-in identity, role and expanded state',
