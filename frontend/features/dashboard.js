@@ -368,7 +368,8 @@ export function createDashboard({ api }) {
     title.textContent = can('viewAll') ? 'Dashboard' : 'My Dashboard';
     const description = document.createElement('p');
     description.className = 'page-description';
-    description.textContent = 'Review saved payment and receipt activity for the selected period.';
+    description.textContent =
+      'Review approved movement, today’s drawer position and the actions that need attention.';
     copy.append(eyebrow, title, description);
 
     const actions = document.createElement('div');
@@ -565,7 +566,6 @@ export function createDashboard({ api }) {
     );
   }
 
-
   function dailyCashPositionCard(data, error) {
     if (!can('cashClose')) return '';
 
@@ -593,7 +593,8 @@ export function createDashboard({ api }) {
       REVIEW_REQUIRED: 'Review required',
       UNAVAILABLE: 'Unavailable',
     };
-    const date = !unavailable && isBusinessDate(data.date) ? dmy(data.date) : 'Business date unavailable';
+    const date =
+      !unavailable && isBusinessDate(data.date) ? dmy(data.date) : 'Business date unavailable';
     const amountLabel = (value) =>
       typeof value === 'number' && Number.isFinite(value) ? money(value) : 'Not available';
     const countLabel = (value) =>
@@ -696,7 +697,8 @@ export function createDashboard({ api }) {
     }
 
     const items = result.items;
-    let content = '<p class="dashboard-recent-empty">No active vouchers were recorded in this period.</p>';
+    let content =
+      '<p class="dashboard-recent-empty">No active vouchers were recorded in this period.</p>';
     if (items.length) {
       content =
         '<ul class="dashboard-recent-list">' +
@@ -961,7 +963,10 @@ export function createDashboard({ api }) {
           label: 'Review cash close',
         });
       } else {
-        if (Number.isSafeInteger(dailyOperations.unclassifiedCount) && dailyOperations.unclassifiedCount > 0) {
+        if (
+          Number.isSafeInteger(dailyOperations.unclassifiedCount) &&
+          dailyOperations.unclassifiedCount > 0
+        ) {
           attention.push({
             tone: 'warn',
             icon: 'alert',
@@ -970,7 +975,10 @@ export function createDashboard({ api }) {
             label: 'Review cash close',
           });
         }
-        if (Number.isSafeInteger(dailyOperations.invalidVoucherCount) && dailyOperations.invalidVoucherCount > 0) {
+        if (
+          Number.isSafeInteger(dailyOperations.invalidVoucherCount) &&
+          dailyOperations.invalidVoucherCount > 0
+        ) {
           attention.push({
             tone: 'bad',
             icon: 'alert',
@@ -1064,7 +1072,7 @@ export function createDashboard({ api }) {
       : `
       <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--staff'}">
         <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Approved payments · period</span><b>${money(total)}</b><small class="dashboard-period-comparison" data-direction="${comparisonDirection}">${esc(comparisonText)}</small></div>
-        <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Payment vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
+        <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Approved payment vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest payment</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small></div>
         <div class="card stat"><span class="stat-ic">${icon('clock')}</span><span>Paid today</span><b>${money(summary.todayPaid)}</b><small class="muted">${summary.todayPaymentCount} vouchers</small></div>
         <div class="card stat"><span class="stat-ic">${icon('cash')}</span><span>Receipts · period</span><b class="cash-received-value">${money(received)}</b><small class="muted">${receiptCount} recorded receipts · all methods</small></div>
@@ -1099,11 +1107,7 @@ export function createDashboard({ api }) {
           dashboardWarnings,
           operationsPanels,
         ].join('')
-      : [
-          needsAttention,
-          periodControls(from, to),
-          financialPanels,
-        ].join('');
+      : [needsAttention, periodControls(from, to), financialPanels].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
@@ -1112,7 +1116,8 @@ export function createDashboard({ api }) {
         `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
         {
           section: 'Work',
-          description: 'Review approved movement, today’s drawer position and the actions that need attention.',
+          description:
+            'Review approved movement, today’s drawer position and the actions that need attention.',
         },
       ) +
       `<div class="dashboard-body">${dashboardContent}</div></div>`;
