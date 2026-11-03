@@ -1,4 +1,4 @@
-## Current implementation batch — PR #263: Haveli Light dashboard, account, Register and Reports (Phases 8–10)
+## Current implementation batch — PR #263: Haveli Light dashboard, account, Register and Reports (Phases 8–12)
 
 - **Repository:** tchouhanjsm/cash-voucher; integration branch client-main; legacy main remains read-only.
 - **Base:** client-main at 191b47fce179320bf994798345998b7057d42f24 (PR #262 merged).
@@ -547,3 +547,15 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - Only Apply commits the selected From/To dates and requests the new summary. Reopening Custom seeds the form from the last applied custom range.
 - Browser coverage asserts there is no summary request while opening the custom-date draft, the selected dates survive until Apply, a 93-day period uses four monthly buckets, and a receipts-only period displays an actual zero approved-payment trend.
 - This remains a presentation/read-model integration change. No server aggregation, accounting definition, cash-close calculation, or permission rule changed.
+
+
+## Phase 12 — Dashboard operational drill-down completion
+
+- **KPIs:** all visible KPI cards now link to the relevant operational context. Report-capable roles open the existing Recorded Movement Report for selected-period payments/receipts; staff fall back to the permission-scoped Register. Payment count, largest payment/vendor and Paid today open matching Register filters. Book balance opens the all-time active Register and remains explicitly distinct from physical drawer cash or bank balance.
+- **Attention:** approval exceptions open selected-period payment entries with Approval = All so pending, rejected, not-required and review-required states remain visible. Invalid/malformed voucher data opens the complete selected-period Register without assuming a movement type. Daily Cash Close blockers open the current Asia/Kolkata business date. Offline connectivity status remains informational because no finance route resolves a disconnected network.
+- **Recent activity:** every displayed transaction includes a View in Register action carrying its voucher number, date and movement type. The existing server-side `registerPage` search/filter is used; no new ID lookup endpoint or client-side total calculation is introduced.
+- **Authorization:** action markup uses an allowlisted destination and escaped/bounded context. The delegated dispatcher rechecks `can()` before routing; Register and Reports continue using their existing permission-filtered server read models. Staff do not receive Reports or Cash Close destinations.
+- **Browser coverage:** staff and manager Playwright paths exercise KPI/attention/recent click-through, route differences and request date/type/status/vendor filters with read-only fixtures. These tests do not claim live Apps Script/UAT validation.
+- **PWA:** shell cache is `cv2-v51` for installed clients to refresh the new navigation/context handoff.
+- **Release boundary:** no backend/API/schema, accounting formula, approval policy, cash-close calculation, role permissions or persisted data changes; no Apps Script deploy, Sheet/Drive write, migration, staging transaction, publication, merge or production deployment.
+- **Exact-head gate:** latest PR-head CI/Quality, Browser E2E and Full Flight must all pass before merge review.

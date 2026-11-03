@@ -196,6 +196,30 @@ assert.match(
   'dashboard cash-close drill-down routes through the permission-checked navigator',
 );
 
+assert.ok(
+  dashboard.includes('function dashboardDrilldownButton(options = {})')
+    && dashboard.includes('data-act="dashboardDrilldown"'),
+  'Dashboard renders escaped, allowlisted, context-bearing drill-down actions',
+);
+assert.ok(
+  appMain.includes("dashboardDrilldown: ({ element })")
+    && appMain.includes("if (can('cashClose')) navigation.go('cashClose')")
+    && appMain.includes('reports.openDashboardContext(context)')
+    && appMain.includes('register.openDashboardContext(context)'),
+  'delegated Dashboard drill-downs recheck permissions and target existing views',
+);
+assert.ok(
+  register.includes('function openDashboardContext(context = {})')
+    && register.includes("approval: 'ALL'")
+    && register.includes("st: 'ACTIVE'"),
+  'Register accepts safe Dashboard context while retaining all approval states and active-only server scope',
+);
+assert.ok(
+  reports.includes('function openDashboardContext(context = {})')
+    && reports.includes("R.type = ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : 'ALL'")
+    && reports.includes('return load();'),
+  'Reports submits Dashboard date/type context using its existing read model',
+);
 assert.match(
   dashboard,
   /dashboard-analysis-grid/,

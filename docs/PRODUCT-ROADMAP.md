@@ -1,4 +1,4 @@
-## Current redesign batch — PR #263 (3 November 2026; Dashboard, Account, Register and Reports)
+## Current redesign batch — PR #263 (3 November 2026; Dashboard, Account, Register, Reports and operational drill-downs)
 
 PR #263 now groups the Haveli Light Dashboard, My Account, Register and Reports workflows in one reviewable product slice. The Dashboard, server-filtered Register and Recorded Movement Report retain their existing read models and permission boundaries. My Account reuses the existing account route and preserves the current password-change and support-report actions.
 
@@ -13,6 +13,10 @@ See [docs/HANDOFF.md](HANDOFF.md) and [PR #263](https://github.com/tchouhanjsm/c
 ### Phase 11 — Dashboard action routing integrity (3 November 2026)
 
 The Daily Cash Close readiness card and attention items already emitted the `cashClose` destination, but the central delegated `goto` handler only forwarded Register navigation. The visible Cash Close call-to-action was therefore inert. The follow-up forwards both explicit destinations to the existing permission-checked navigator and adds a browser click-path regression. It does not change the server contract, accounting calculations, role policy or persisted data. Exact-head CI, Browser E2E and Full Flight evidence is required on the new commit before review.
+
+### Phase 12 — Dashboard operational drill-down completion (3 November 2026)
+
+Every visible KPI, actionable attention item and recent transaction now links to a bounded, explicit Register, Report or current-business-date Cash Close context. Staff use their authorized Register; report-capable roles use the existing Recorded Movement Report for period payment/receipt KPIs. Approval review does not narrow away any approval states; invalid voucher attention opens a full period register; recent activity uses voucher number/date/type with the existing server filters. Offline status remains informational. Staff and manager Browser E2E cases verify role destinations and API filters. No API, Sheet schema, accounting, approval or Cash Close calculation changed.
 
 # Product Gap Register and Roadmap
 
