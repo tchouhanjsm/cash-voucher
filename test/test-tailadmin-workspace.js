@@ -38,8 +38,8 @@ assert.match(
 );
 assert.match(
   styles,
-  /--workspace-muted:\s*var\(--muted\)/,
-  'workspace secondary text retains the audited contrast token',
+  /--workspace-muted:\s*#71665f/,
+  'workspace secondary text uses the Haveli muted brown token',
 );
 assert.match(
   styles,
