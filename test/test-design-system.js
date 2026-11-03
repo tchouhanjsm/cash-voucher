@@ -379,7 +379,7 @@ assert.match(
 );
 assert.match(
   administration,
-  /className = 'card account-password-form'/,
+  /className = 'card account-section-card account-password-form'/,
   'account password form uses the shared workflow styling',
 );
 
