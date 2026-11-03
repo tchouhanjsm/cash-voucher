@@ -20,7 +20,9 @@ function normalizeSiteRoot(value) {
   }
 
   if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash) {
-    throw new Error('Staging site URL must use HTTPS and must not contain credentials, query, or fragment.');
+    throw new Error(
+      'Staging site URL must use HTTPS and must not contain credentials, query, or fragment.',
+    );
   }
 
   if (!url.pathname.endsWith('/')) url.pathname += '/';
@@ -77,7 +79,9 @@ function verifySecurityHeaders(headers) {
     !csp.includes("object-src 'none'") ||
     !csp.includes("frame-ancestors 'none'")
   ) {
-    throw new Error('Staging host is missing the required restrictive Content-Security-Policy response header.');
+    throw new Error(
+      'Staging host is missing the required restrictive Content-Security-Policy response header.',
+    );
   }
 }
 
@@ -89,7 +93,9 @@ async function verifyStagingSite({
   timeoutMs = 15000,
 } = {}) {
   const root = normalizeSiteRoot(siteUrl);
-  const commit = String(expectedCommit || '').trim().toLowerCase();
+  const commit = String(expectedCommit || '')
+    .trim()
+    .toLowerCase();
   const deploymentId = String(expectedDeploymentId || '').trim();
 
   if (!/^[a-f0-9]{40}$/.test(commit)) {
@@ -98,7 +104,8 @@ async function verifyStagingSite({
   if (!/^[A-Za-z0-9_-]{8,}$/.test(deploymentId)) {
     throw new Error('CV_EXPECTED_STAGING_DEPLOYMENT_ID must be a valid deployment identifier.');
   }
-  if (typeof fetchImpl !== 'function') throw new Error('A Fetch-compatible HTTP client is required.');
+  if (typeof fetchImpl !== 'function')
+    throw new Error('A Fetch-compatible HTTP client is required.');
 
   const observedHeaders = new Map();
 
@@ -132,7 +139,9 @@ async function verifyStagingSite({
         throw new Error('Staging asset returned an invalid final URL: ' + pathname);
       }
       if (finalUrl.origin !== root.origin || !finalUrl.pathname.startsWith(root.pathname)) {
-        throw new Error('Staging asset redirected outside the configured staging site: ' + pathname);
+        throw new Error(
+          'Staging asset redirected outside the configured staging site: ' + pathname,
+        );
       }
     }
 
@@ -150,7 +159,8 @@ async function verifyStagingSite({
   ]);
 
   const release = parseJson(releaseBytes, 'Release manifest');
-  if (release.environment !== 'staging') throw new Error('Published release is not marked as staging.');
+  if (release.environment !== 'staging')
+    throw new Error('Published release is not marked as staging.');
   if (String(release.commit || '').toLowerCase() !== commit) {
     throw new Error('Published frontend commit does not match the requested client-main commit.');
   }
@@ -200,7 +210,8 @@ async function verifyStagingSite({
   if (deploymentMatch?.[2] !== deploymentId) {
     throw new Error('Published frontend config targets a different Apps Script deployment.');
   }
-  if (!apiMatch) throw new Error('Published frontend config does not contain a generated Apps Script endpoint.');
+  if (!apiMatch)
+    throw new Error('Published frontend config does not contain a generated Apps Script endpoint.');
   let apiUrl;
   try {
     apiUrl = new URL(JSON.parse(apiMatch[1]));
@@ -245,20 +256,24 @@ async function verifyStagingSite({
   const assets = [...manifest.assets];
   const failures = [];
   for (let offset = 0; offset < assets.length; offset += 6) {
-    await Promise.all(assets.slice(offset, offset + 6).map(async (asset) => {
-      try {
-        const body = await read(asset.path);
-        const actualHash = crypto.createHash('sha256').update(body).digest('hex');
-        if (body.length !== asset.bytes || actualHash !== asset.sha256) {
+    await Promise.all(
+      assets.slice(offset, offset + 6).map(async (asset) => {
+        try {
+          const body = await read(asset.path);
+          const actualHash = crypto.createHash('sha256').update(body).digest('hex');
+          if (body.length !== asset.bytes || actualHash !== asset.sha256) {
+            failures.push(asset.path);
+          }
+        } catch {
           failures.push(asset.path);
         }
-      } catch {
-        failures.push(asset.path);
-      }
-    }));
+      }),
+    );
   }
   if (failures.length) {
-    throw new Error('Published static asset integrity mismatch: ' + failures.slice(0, 12).join(', '));
+    throw new Error(
+      'Published static asset integrity mismatch: ' + failures.slice(0, 12).join(', '),
+    );
   }
 
   return {
@@ -296,4 +311,9 @@ if (require.main === module) {
     });
 }
 
-module.exports = { verifyStagingSite, normalizeSiteRoot, assertSafeAssetPath, verifySecurityHeaders };
+module.exports = {
+  verifyStagingSite,
+  normalizeSiteRoot,
+  assertSafeAssetPath,
+  verifySecurityHeaders,
+};
