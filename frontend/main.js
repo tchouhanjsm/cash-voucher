@@ -11,6 +11,7 @@ import {
   SESSION_ENDPOINT_STORAGE_KEY,
 } from './core/session.js';
 import { initTheme } from './core/theme.js';
+import { applyWorkspacePreferences } from './core/preferences.js';
 import { busy, closeModal, dialog, fail, toast } from './core/ui.js';
 
 import { createAuth } from './features/auth.js';
@@ -309,4 +310,5 @@ async function init() {
 }
 
 initTheme();
+applyWorkspacePreferences();
 void init();
