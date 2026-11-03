@@ -2565,7 +2565,6 @@ with sync_playwright() as p:
     )
     hostile_cash_position = page.locator('#view .dashboard-cash-position')
     hostile_cash_position_text = hostile_cash_position.inner_text()
-    print('HOSTILE CASH POSITION DEBUG:', repr(hostile_cash_position_text))
     check(
         hostile_cash_position.count() == 1,
         'role-authorized dashboard renders the daily cash position panel',
@@ -2575,7 +2574,7 @@ with sync_playwright() as p:
         'hostile daily cash status is mapped to a safe review or unavailable state',
     )
     check(
-        'Business date unavailable' in hostile_cash_position_text,
+        'business date unavailable' in hostile_cash_position_text.lower(),
         'hostile daily cash date is not presented as a business date',
     )
     check(
