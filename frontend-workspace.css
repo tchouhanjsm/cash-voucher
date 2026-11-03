@@ -2319,7 +2319,6 @@
   line-height: 1.55;
 }
 
-
 /* Haveli light dashboard: opaque financial surfaces and explicit money semantics. */
 @media screen {
   .dashboard-view .dashboard-cash-position,
