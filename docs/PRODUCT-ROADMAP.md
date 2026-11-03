@@ -16,7 +16,7 @@ The Daily Cash Close readiness card and attention items already emitted the `cas
 
 ### Phase 12 — Dashboard operational drill-down completion (3 November 2026)
 
-Every visible KPI, actionable attention item and recent transaction now links to a bounded, explicit Register, Report or current-business-date Cash Close context. Staff use their authorized Register; report-capable roles use the existing Recorded Movement Report for period payment/receipt KPIs. Approval review does not narrow away any approval states; invalid voucher attention opens a full period register; recent activity uses voucher number/date/type with the existing server filters. Offline status remains informational. Staff and manager Browser E2E cases verify role destinations and API filters. No API, Sheet schema, accounting, approval or Cash Close calculation changed.
+Every visible KPI, actionable attention item and recent transaction now links to a bounded, explicit Register, Report or current-business-date Cash Close context. Approved-payment KPIs use Register with Approval = APPROVED; receipts use the existing Recorded Movement Report for report-capable roles, with staff falling back to Register. Approval review uses Approval = ALL; invalid voucher attention includes all statuses; recent activity uses voucher number/vendor/date/type with the existing server filters. Offline status remains informational. Staff and manager Browser E2E cases verify role destinations and API filters. No API, Sheet schema, accounting, approval or Cash Close calculation changed.
 
 # Product Gap Register and Roadmap
 

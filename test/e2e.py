@@ -4427,6 +4427,7 @@ with sync_playwright() as p:
         and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
         and json.loads(response.request.post_data or '{}').get('t') == 'PAYMENT'
         and json.loads(response.request.post_data or '{}').get('from') == staff_from
+        and json.loads(response.request.post_data or '{}').get('approval') == 'APPROVED'
     ) as staff_kpi_response:
         page.locator('[data-drill-key="payments-period"]').click()
     staff_kpi_request = json.loads(staff_kpi_response.value.request.post_data or '{}')
@@ -4452,10 +4453,12 @@ with sync_playwright() as p:
         and page.locator('#rfrom').input_value() == BUSINESS_TODAY.isoformat()
         and page.locator('#rto').input_value() == BUSINESS_TODAY.isoformat()
         and page.locator('#rt').input_value() == 'PAYMENT'
+        and page.locator('#rv').input_value() == 'Staff Dashboard Drilldown'
         and staff_recent_request.get('from') == BUSINESS_TODAY.isoformat()
         and staff_recent_request.get('to') == BUSINESS_TODAY.isoformat()
-        and staff_recent_request.get('t') == 'PAYMENT',
-        'staff recent transaction opens its voucher number/date/type through Register server filters',
+        and staff_recent_request.get('t') == 'PAYMENT'
+        and staff_recent_request.get('vendor') == 'Staff Dashboard Drilldown',
+        'staff recent transaction opens its voucher number/vendor/date/type through Register server filters',
     )
     go_view(page, 'dash')
     page.unroute('**/api?*', inject_staff_dashboard_summary)
@@ -5739,6 +5742,7 @@ with sync_playwright() as p:
     manager_dashboard_vendor = ''
 
     def inject_manager_dashboard_drilldowns(route):
+        nonlocal manager_dashboard_vendor
         try:
             request_data = json.loads(route.request.post_data or '{}')
         except json.JSONDecodeError:
@@ -5812,9 +5816,11 @@ with sync_playwright() as p:
     page.wait_for_selector('#rf')
     check(
         page.locator('#rt').input_value() == ''
+        and page.locator('#rs').input_value() == 'ALL'
+        and page.locator('#rapproval').input_value() == 'ALL'
         and page.locator('#rfrom').input_value() != ''
         and page.locator('#rto').input_value() != '',
-        'manager data-quality attention opens the complete selected-period Register',
+        'manager data-quality attention opens all statuses in the complete selected-period Register',
     )
     go_view(page, 'dash')
     page.locator('.needs-item [data-drill-key="cash-readiness-unavailable"]').click()
@@ -5827,20 +5833,21 @@ with sync_playwright() as p:
     )
     go_view(page, 'dash')
     manager_kpi_contexts = {
-        'payments-period': ('reports', 'PAYMENT'),
-        'payment-count': ('reg', 'PAYMENT'),
-        'largest-payment': ('reg', 'PAYMENT'),
-        'paid-today': ('reg', 'PAYMENT'),
-        'receipts-period': ('reports', 'RECEIPT'),
-        'book-balance': ('reg', ''),
+        'payments-period': ('reg', 'PAYMENT', 'APPROVED'),
+        'payment-count': ('reg', 'PAYMENT', 'APPROVED'),
+        'largest-payment': ('reg', 'PAYMENT', 'APPROVED'),
+        'paid-today': ('reg', 'PAYMENT', 'APPROVED'),
+        'receipts-period': ('reports', 'RECEIPT', 'ALL'),
+        'book-balance': ('reg', '', 'ALL'),
     }
-    for drill_key, (destination, movement_type) in manager_kpi_contexts.items():
+    for drill_key, (destination, movement_type, approval_state) in manager_kpi_contexts.items():
         button = page.locator('[data-drill-key="' + drill_key + '"]')
         date_from = button.get_attribute('data-from') or ''
         date_to = button.get_attribute('data-to') or ''
         check(
             button.get_attribute('data-target') == destination
-            and button.get_attribute('data-type') == movement_type,
+            and button.get_attribute('data-type') == movement_type
+            and button.get_attribute('data-approval') == approval_state,
             'manager KPI ' + drill_key + ' declares its intended role-appropriate destination and movement type',
         )
         if destination == 'reports':
@@ -5859,7 +5866,8 @@ with sync_playwright() as p:
                 and page.locator('#movementStatus').input_value() == 'ACTIVE'
                 and page.locator('#movementFrom').input_value() == date_from
                 and page.locator('#movementTo').input_value() == date_to
-                and report_request.get('status') == 'ACTIVE',
+                and report_request.get('status') == 'ACTIVE'
+                and report_request.get('type') == movement_type,
                 'manager ' + drill_key + ' opens Reports with the exact date/type/status filters',
             )
         else:
@@ -5869,12 +5877,14 @@ with sync_playwright() as p:
                 and json.loads(response.request.post_data or '{}').get('from', '') == date_from
                 and json.loads(response.request.post_data or '{}').get('to', '') == date_to
                 and json.loads(response.request.post_data or '{}').get('t', '') == movement_type
+                and json.loads(response.request.post_data or '{}').get('approval', 'ALL') == approval_state
             ) as register_response:
                 button.click()
             register_request = json.loads(register_response.value.request.post_data or '{}')
             page.wait_for_selector('#rf')
             check(
                 page.locator('#rt').input_value() == movement_type
+                and page.locator('#rapproval').input_value() == approval_state
                 and page.locator('#rfrom').input_value() == date_from
                 and page.locator('#rto').input_value() == date_to
                 and (
@@ -5885,6 +5895,32 @@ with sync_playwright() as p:
             )
         go_view(page, 'dash')
         page.wait_for_selector('[data-drill-key="' + drill_key + '"]')
+    go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-recent-item__open')
+    manager_recent_button = page.locator('.dashboard-recent-item__open').first
+    manager_recent_query = manager_recent_button.get_attribute('data-query')
+    manager_recent_vendor = manager_recent_button.get_attribute('data-vendor')
+    manager_recent_from = manager_recent_button.get_attribute('data-from')
+    manager_recent_type = manager_recent_button.get_attribute('data-type')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == manager_recent_query
+        and json.loads(response.request.post_data or '{}').get('vendor') == manager_recent_vendor
+    ) as manager_recent_response:
+        manager_recent_button.click()
+    manager_recent_request = json.loads(manager_recent_response.value.request.post_data or '{}')
+    check(
+        page.locator('#rq').input_value() == manager_recent_query
+        and page.locator('#rv').input_value() == manager_recent_vendor
+        and page.locator('#rfrom').input_value() == manager_recent_from
+        and page.locator('#rto').input_value() == manager_recent_from
+        and page.locator('#rt').input_value() == manager_recent_type
+        and manager_recent_request.get('from') == manager_recent_from
+        and manager_recent_request.get('to') == manager_recent_from
+        and manager_recent_request.get('t') == manager_recent_type,
+        'manager recent transaction opens voucher number/vendor/date/type through server Register filters',
+    )
     page.unroute('**/api?*', inject_manager_dashboard_drilldowns)
 
     go_view(page, 'new')

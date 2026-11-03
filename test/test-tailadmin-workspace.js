@@ -210,9 +210,15 @@ assert.ok(
 );
 assert.ok(
   register.includes('function openDashboardContext(context = {})')
-    && register.includes("approval: 'ALL'")
-    && register.includes("st: 'ACTIVE'"),
+    && register.includes('context.approval')
+    && register.includes('context.status')
+    && register.includes("['ACTIVE', 'CANCELLED', 'ALL'].includes(context.status)"),
   'Register accepts safe Dashboard context while retaining all approval states and active-only server scope',
+);
+assert.ok(
+  dashboard.includes("approval: 'APPROVED'")
+    && dashboard.includes("status: 'ALL'"),
+  'Dashboard approved-payment KPIs and invalid-data attention retain precise Register scopes',
 );
 assert.ok(
   reports.includes('function openDashboardContext(context = {})')
