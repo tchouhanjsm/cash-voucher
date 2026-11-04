@@ -903,13 +903,15 @@ $shortLegacyUserId = insertAuthTestUser(
     'legacy-hmac-sha256$' . $shortSalt . '$' . $shortHash,
     true
 );
-putenv('CV_ALLOW_LEGACY_SHORT_PASSWORDS=true');
+$_ENV['CV_ALLOW_LEGACY_SHORT_PASSWORDS'] = 'true';
+$_SERVER['CV_ALLOW_LEGACY_SHORT_PASSWORDS'] = 'true';
 $shortLogin = $authKernel->handle(authRequest(
     'POST',
     '/api/v1/sessions',
     ['email' => $shortLegacyEmail, 'password' => $shortLegacyPassword]
 ));
-putenv('CV_ALLOW_LEGACY_SHORT_PASSWORDS=false');
+$_ENV['CV_ALLOW_LEGACY_SHORT_PASSWORDS'] = 'false';
+$_SERVER['CV_ALLOW_LEGACY_SHORT_PASSWORDS'] = 'false';
 check($shortLogin->status() === 200, 'short legacy PIN is accepted only behind the explicit migration flag and forced-change marker');
 $shortHashQuery = $pdo->prepare('SELECT password_hash FROM users WHERE id = :id');
 $shortHashQuery->execute(['id' => $shortLegacyUserId]);
