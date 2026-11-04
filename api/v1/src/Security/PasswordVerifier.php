@@ -15,13 +15,13 @@ final class PasswordVerifier
      * Legacy import format: legacy-hmac-sha256$<Apps-Script-Salt>$<lowercase-hmac-hex>.
      * Current PHP format: php-sha384$<adaptive-password-hash>.
      *
-     * @return array{valid:bool,needsRehash:bool,legacy:bool}
+     * @return array{valid:bool,needsRehash:bool,legacy:bool,shortLegacy:bool}
      */
     public function verify(string $storedHash, string $password, bool $mustChangePassword): array
     {
         $length = self::characterLength($password);
         if ($length > 128) {
-            return ['valid' => false, 'needsRehash' => false, 'legacy' => str_starts_with($storedHash, self::LEGACY_PREFIX)];
+            return ['valid' => false, 'needsRehash' => false, 'legacy' => str_starts_with($storedHash, self::LEGACY_PREFIX), 'shortLegacy' => false];
         }
 
         if (str_starts_with($storedHash, self::LEGACY_PREFIX)) {
@@ -31,7 +31,7 @@ final class PasswordVerifier
                 || $parts[1] === ''
                 || !preg_match('/^[a-f0-9]{64}$/D', $parts[2])
             ) {
-                return ['valid' => false, 'needsRehash' => false, 'legacy' => true];
+                return ['valid' => false, 'needsRehash' => false, 'legacy' => true, 'shortLegacy' => false];
             }
 
             $pepper = getenv('CV_LEGACY_PASSWORD_PEPPER');
@@ -49,12 +49,18 @@ final class PasswordVerifier
 
             $candidate = hash_hmac('sha256', $parts[1] . ':' . $password, $pepper);
             $valid = hash_equals($parts[2], $candidate);
-            return ['valid' => $valid, 'needsRehash' => $valid, 'legacy' => true];
+            $shortLegacy = $length < 8;
+            return [
+                'valid' => $valid,
+                'needsRehash' => $valid && !$shortLegacy,
+                'legacy' => true,
+                'shortLegacy' => $valid && $shortLegacy,
+            ];
         }
 
         if (str_starts_with($storedHash, self::PHP_PREFIX)) {
             if ($length < 8) {
-                return ['valid' => false, 'needsRehash' => false, 'legacy' => false];
+                return ['valid' => false, 'needsRehash' => false, 'legacy' => false, 'shortLegacy' => false];
             }
             $encodedHash = substr($storedHash, strlen(self::PHP_PREFIX));
             $valid = $encodedHash !== '' && password_verify(self::prehash($password), $encodedHash);
@@ -62,6 +68,7 @@ final class PasswordVerifier
                 'valid' => $valid,
                 'needsRehash' => $valid && password_needs_rehash($encodedHash, PASSWORD_DEFAULT),
                 'legacy' => false,
+                'shortLegacy' => false,
             ];
         }
 
@@ -71,7 +78,7 @@ final class PasswordVerifier
             return ['valid' => false, 'needsRehash' => false, 'legacy' => false];
         }
         $valid = password_verify($password, $storedHash);
-        return ['valid' => $valid, 'needsRehash' => $valid, 'legacy' => false];
+        return ['valid' => $valid, 'needsRehash' => $valid, 'legacy' => false, 'shortLegacy' => false];
     }
 
     public function isAcceptablePassword(string $password): bool
