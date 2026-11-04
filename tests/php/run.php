@@ -865,9 +865,7 @@ $legacyUserId = insertAuthTestUser(
     $pdo,
     $legacyEmail,
     'staff',
-    'legacy-hmac-sha256
- . $legacySalt . '
- . $legacyHash,
+    'legacy-hmac-sha256$' . $legacySalt . '$' . $legacyHash,
     true
 );
 $legacyLogin = $authKernel->handle(authRequest(
@@ -902,9 +900,7 @@ $shortLegacyUserId = insertAuthTestUser(
     $pdo,
     $shortLegacyEmail,
     'staff',
-    'legacy-hmac-sha256
- . $shortSalt . '
- . $shortHash,
+    'legacy-hmac-sha256$' . $shortSalt . '$' . $shortHash,
     true
 );
 putenv('CV_ALLOW_LEGACY_SHORT_PASSWORDS=true');
