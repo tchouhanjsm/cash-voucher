@@ -5811,15 +5811,12 @@ with sync_playwright() as p:
           }))
         })"""
     )
-    manager_workspace_valid = (
+    check(
         manager_workspace_diagnostics['navHeading'] == 'Admin workspace'
         and manager_workspace_diagnostics['popRole'] == 'Admin'
-        and 'Administration' in manager_workspace_diagnostics['navText']
-        and not manager_workspace_diagnostics['ownerControlLinks']
-    )
-    check(
-        manager_workspace_valid,
-        'manager workspace diagnostics: ' + json.dumps(manager_workspace_diagnostics, sort_keys=True),
+        and 'administration' in manager_workspace_diagnostics['navText'].lower()
+        and not manager_workspace_diagnostics['ownerControlLinks'],
+        'manager uses the Admin label while owner-only administration remains unavailable',
     )
 
     manager_dashboard_requests = []
