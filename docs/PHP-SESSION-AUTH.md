@@ -17,7 +17,7 @@ Health and metadata routes remain available. Unknown business routes still retur
 
 ## Password migration
 
-The existing Apps Script credential is HMAC-SHA256 over salt:password, keyed by the Script Property PEPPER. The import contract encodes it in users.password_hash as:
+The existing Apps Script credential is HMAC-SHA256 over the UTF-8 string `<salt>:<password>`, keyed by the Script Property `PEPPER`. The PHP verifier uses the same message order and key. The import contract encodes it in users.password_hash as:
 
     legacy-hmac-sha256$<legacy-salt>$<lowercase-hex-hmac>
 
