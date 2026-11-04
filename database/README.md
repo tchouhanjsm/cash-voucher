@@ -34,7 +34,7 @@ The web runtime needs SELECT/INSERT/UPDATE on users, user_sessions and login_att
 
 | Migration | Tables                                                                                   | Purpose                                                                                                  |
 | --------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| 0001      | users, vendors, settings                                                                 | Identity, role key compatibility, party identity and configuration                                      | 
+| 0001      | users, vendors, settings                                                                 | Identity, role key compatibility, party identity and configuration                                       |
 | 0002      | vouchers, voucher_approval_events, voucher_receipts, cash_closes, cash_close_corrections | Financial records, approvals, private receipt metadata and close snapshots                               |
 | 0003      | user_sessions, login_attempts, idempotency_requests, audit_events                        | Hashed sessions/CSRF state, throttling, retry safety and attributable audit events                       |
 | 0004      | voucher_number_sequences                                                                 | Independent payment/receipt counters allocated under an InnoDB row lock inside the financial transaction |
