@@ -462,6 +462,7 @@ PR #164 merged at `dd901910531da2c060539baad44949fe2cb54b30`; tested head `b3ada
 PR #166 adds a guarded per-customer static-site builder requiring the verified Apps Script Web App `CV_API_URL`, emits only the static runtime into `dist/`, generates the Cloudflare Pages response-header file and adds onboarding, quick-start and private instance-register documents. Its exact tested head `13f12d314687ec88d9044ccae7e8fb3c202743fb` passed CI, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks). Post-merge CI also passed on current main.
 
 This is source/build/documentation readiness only: it did not provision staging/customer Google resources or a static host, run the live staging workflow, prove a real restore, or issue a customer URL. The active release queue is now the owner-controlled operational work in `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`.
+
 ## Phase 14 — isolated PHP/MySQL API and schema foundation (4 November 2026)
 
 A real replacement-runtime foundation is now in source: a versioned /api/v1 HTTP shell, separate PDO migration/runtime credentials, guarded immutable migrations, and normalized identity/catalog/financial/security tables. It deliberately exposes health and metadata only. The current PWA continues to use Apps Script, with no parallel financial writer.

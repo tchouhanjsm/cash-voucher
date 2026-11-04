@@ -12,12 +12,7 @@
     "POST /sessions/current/logout",
     "POST /sessions/current/password"
   ],
-  "legacyRoleKeys": [
-    "staff",
-    "manager",
-    "owner",
-    "accountant"
-  ],
+  "legacyRoleKeys": ["staff", "manager", "owner", "accountant"],
   "businessActionsEnabled": false,
   "schemaVersion": "0004",
   "moneyStorageUnit": "integer-paise",
