@@ -1,3 +1,33 @@
+## Current redesign batch — PR #263 (3 November 2026; Dashboard, Account, Register, Reports and operational drill-downs)
+
+PR #263 now groups the Haveli Light Dashboard, My Account, Register and Reports workflows in one reviewable product slice. The Dashboard, server-filtered Register and Recorded Movement Report retain their existing read models and permission boundaries. My Account reuses the existing account route and preserves the current password-change and support-report actions.
+
+- **Dashboard:** Haveli palette, period presets including Today, separated physical-cash position, selected-period recent activity and safer small-baseline comparison copy.
+- **Account:** identity and role presentation, accessible avatar popover, device-local appearance and density preferences, existing password update and support reporting.
+- **Register and Reports:** business-date shortcuts for daily, weekly, monthly and prior-month review; live Register refinement context; explicit applied-filter context on report source rows; 44px accessible date controls and mobile reflow.
+- **Boundaries:** no new backend action, profile-edit endpoint, account-role change, API/schema update, financial formula, Apps Script deployment or production-data write.
+- **Verification:** Dashboard/Account previous exact-head checks are recorded in the PR. Phase 10 Browser E2E passed 1,601 checks and push CI passed on `1c1332959c7cf1cd07e1f17900215a0f0a22e3cf`; PR-event CI must rerun on the fresh synchronize event because the earlier event snapshot lacked the mandatory PR-description sections. Full Flight must then pass on the same SHA. The dashboard-only historical results do not certify the expanded head.
+
+See [docs/HANDOFF.md](HANDOFF.md) and [PR #263](https://github.com/tchouhanjsm/cash-voucher/pull/263) for the current implementation detail and exact-head evidence.
+
+### Reliability batch — PR #263
+
+The service-worker shell includes the workspace-role module and advances its cache version. Browser coverage verifies that the module is available in the offline shell. The Owner role assertion reads the persistent role label in the account popover rather than a top-bar label that deliberately hides duplicate name/role text. A focused source regression exercises hostile non-string role values and verifies role lookup does not coerce them.
+
+The administration sink review is limited to a fixed backend-role allowlist and escaped role keys/labels. Its reviewed fingerprint baseline is intentionally held until this regression and exact-head CI are green.
+
+### Phase 11 — Dashboard action routing integrity (3 November 2026)
+
+The Daily Cash Close readiness card and attention items already emitted the `cashClose` destination, but the central delegated `goto` handler only forwarded Register navigation. The visible Cash Close call-to-action was therefore inert. The follow-up forwards both explicit destinations to the existing permission-checked navigator and adds a browser click-path regression. It does not change the server contract, accounting calculations, role policy or persisted data. Exact-head CI, Browser E2E and Full Flight evidence is required on the new commit before review.
+
+### Phase 13 — role-specific workspaces and platform exit architecture (4 November 2026)
+
+The UI now presents the existing `staff`, `manager`, `owner` and `accountant` roles as User, Admin, Owner and Accountant experiences. Admin is a display alias for the existing Manager role; server grants and owner-only User/Settings/Audit endpoints do not change. The target database decision is conditional: qualify the already-paid cPanel PHP + MySQL/MariaDB stack first, with Cloudflare D1 as a cost-first fallback if cPanel does not meet transaction, quota, private-file and recovery requirements. ADR and migration stages are documented; no live Apps Script endpoint, SQL schema, production data or offline queue is changed.
+
+### Phase 12 — Dashboard operational drill-down completion (3 November 2026)
+
+Every visible KPI, actionable attention item and recent transaction now links to a bounded, explicit Register, Report or current-business-date Cash Close context. Approved-payment KPIs use Register with Approval = APPROVED; receipts use the existing Recorded Movement Report for report-capable roles, with staff falling back to Register. Approval review uses Approval = ALL; invalid voucher attention includes all statuses; recent activity uses voucher number/vendor/date/type with the existing server filters. Offline status remains informational. Staff and manager Browser E2E cases verify role destinations and API filters. No API, Sheet schema, accounting, approval or Cash Close calculation changed.
+
 # Product Gap Register and Roadmap
 
 Last observed main baseline for this follow-up: `8b14adc72c146589149a33d793ca9e55af5da13a` (merge of PR #180). Verify the current main commit and its own CI status live before release; historical workflow links apply only to their named commits.
@@ -432,3 +462,10 @@ PR #164 merged at `dd901910531da2c060539baad44949fe2cb54b30`; tested head `b3ada
 PR #166 adds a guarded per-customer static-site builder requiring the verified Apps Script Web App `CV_API_URL`, emits only the static runtime into `dist/`, generates the Cloudflare Pages response-header file and adds onboarding, quick-start and private instance-register documents. Its exact tested head `13f12d314687ec88d9044ccae7e8fb3c202743fb` passed CI, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks). Post-merge CI also passed on current main.
 
 This is source/build/documentation readiness only: it did not provision staging/customer Google resources or a static host, run the live staging workflow, prove a real restore, or issue a customer URL. The active release queue is now the owner-controlled operational work in `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`.
+## Phase 14 — isolated PHP/MySQL API and schema foundation (4 November 2026)
+
+A real replacement-runtime foundation is now in source: a versioned /api/v1 HTTP shell, separate PDO migration/runtime credentials, guarded immutable migrations, and normalized identity/catalog/financial/security tables. It deliberately exposes health and metadata only. The current PWA continues to use Apps Script, with no parallel financial writer.
+
+CI provisions a disposable MySQL 8 service, applies the four migrations using a DDL-only account, then tests the application against a table-restricted runtime account. The PHP integration suite covers exact paise conversion, existing role grants, request validation, health/readiness, rollback-safe per-type voucher numbering under a two-process row-lock contention test, idempotent replay/conflict, atomic audit writes, legacy action-map parity and append-only privilege boundaries.
+
+**Next delivery:** secure login/session lifecycle plus CSRF protection and rate limiting, followed by a single first financial vertical slice (voucher create/read) with atomic audit and idempotency. Do not switch the PWA or export any production records until host preflight, source mapping, shadow reconciliation and rollback are approved.

@@ -2,7 +2,7 @@ import { createApi } from './core/api.js';
 import { createUnsavedWorkGuard } from './core/unsaved-work.js';
 import { $ } from './core/dom.js';
 import { registerActions, installActionDelegation } from './core/actions.js';
-import { S } from './core/state.js';
+import { can, S } from './core/state.js';
 import { registerPwa } from './core/pwa.js';
 import { ls } from './core/storage.js';
 import {
@@ -11,6 +11,7 @@ import {
   SESSION_ENDPOINT_STORAGE_KEY,
 } from './core/session.js';
 import { initTheme } from './core/theme.js';
+import { applyWorkspacePreferences } from './core/preferences.js';
 import { busy, closeModal, dialog, fail, toast } from './core/ui.js';
 
 import { createAuth } from './features/auth.js';
@@ -190,8 +191,40 @@ registerActions({
 
   goreg: () => bulk.goRegister(),
 
+  dashboardDrilldown: ({ element }) => {
+    const data = element?.dataset || {};
+    const context = {
+      from: data.from || '',
+      to: data.to || '',
+      type: data.type || '',
+      approval: data.approval || 'ALL',
+      status: data.status || 'ACTIVE',
+      query: data.query || '',
+      vendor: data.vendor || '',
+    };
+
+    if (data.target === 'cashClose') {
+      if (can('cashClose')) navigation.go('cashClose');
+      return;
+    }
+
+    if (data.target === 'reports' && can('reports')) {
+      navigation.go('reports');
+      reports.openDashboardContext(context);
+      return;
+    }
+
+    if (
+      (data.target === 'reg' || data.target === 'reports') &&
+      (can('viewAll') || can('viewOwn'))
+    ) {
+      register.openDashboardContext(context);
+      navigation.go('reg');
+    }
+  },
+
   goto: ({ key }) => {
-    if (key === 'reg') navigation.go('reg');
+    if (key === 'reg' || key === 'cashClose') navigation.go(key);
   },
 
   bulkagain: () => bulk.renderAgain(),
@@ -309,4 +342,5 @@ async function init() {
 }
 
 initTheme();
+applyWorkspacePreferences();
 void init();

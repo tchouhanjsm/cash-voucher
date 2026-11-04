@@ -17,6 +17,11 @@ const administration = read('frontend/features/administration.js');
 const cashClose = read('frontend/features/cash-close.js');
 const bulk = read('frontend/features/bulk.js');
 const onboarding = read('frontend/features/onboarding.js');
+const account = read('frontend/features/administration.js');
+const shell = read('frontend/features/shell.js');
+const preferences = read('frontend/core/preferences.js');
+const theme = read('frontend/core/theme.js');
+const appMain = read('frontend/main.js');
 
 const uiKitPosition = html.indexOf('frontend-ui-kit.css');
 const workspacePosition = html.indexOf('frontend-workspace.css');
@@ -25,7 +30,32 @@ assert.ok(
   'workspace layer loads after the base UI kit',
 );
 
-assert.match(styles, /--workspace-canvas:\s*#f6f8fc/, 'workspace defines a light canvas');
+assert.match(styles, /--workspace-canvas:\s*#faf6ef/, 'workspace defines the Haveli ivory canvas');
+assert.match(
+  styles,
+  /--workspace-surface:\s*#fffefc/,
+  'workspace uses an opaque warm-white card surface',
+);
+assert.match(
+  styles,
+  /--workspace-cta:\s*#dcafa4/,
+  'workspace uses the terracotta primary action token',
+);
+assert.match(
+  styles,
+  /--workspace-cta-ink:\s*#5b4038/,
+  'terracotta actions use a readable warm-brown label token',
+);
+assert.match(
+  styles,
+  /\.dashboard-cash-position__expected/,
+  'daily drawer position uses a dedicated financial hierarchy',
+);
+assert.match(
+  styles,
+  /\.dashboard-recent-transactions/,
+  'recent transactions use a dedicated opaque panel',
+);
 assert.match(
   styles,
   /--workspace-accent:\s*var\(--accent\)/,
@@ -33,8 +63,8 @@ assert.match(
 );
 assert.match(
   styles,
-  /--workspace-muted:\s*var\(--muted\)/,
-  'workspace secondary text retains the audited contrast token',
+  /--workspace-muted:\s*#71665f/,
+  'workspace secondary text uses the Haveli muted brown token',
 );
 assert.match(
   styles,
@@ -48,6 +78,16 @@ assert.match(
 );
 assert.match(styles, /:root\[data-theme='dark'\]/, 'workspace defines dark-theme surfaces');
 assert.match(styles, /\.app > \.side\s*\{/, 'desktop navigation rail receives the workspace skin');
+assert.match(
+  styles,
+  /\.app > \.side #nav\s*\{[\s\S]*?overflow-y:\s*auto;/,
+  'long workspace navigation scrolls inside its own rail instead of overlapping sign-out',
+);
+assert.match(
+  styles,
+  /\.app > \.side \.side-out\s*\{[\s\S]*?flex:\s*0 0 auto;[\s\S]*?z-index:\s*1;/,
+  'sign-out remains a non-shrinking, foreground sidebar control',
+);
 assert.match(styles, /\.app > \.topbar\s*\{/, 'topbar receives the workspace skin');
 assert.match(
   styles,
@@ -126,7 +166,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v46'/,
+  /const C = 'cv2-v52'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -136,6 +176,67 @@ assert.match(
 );
 assert.match(build, /'frontend-workspace\.css'/, 'static customer build publishes the stylesheet');
 
+assert.match(
+  worker,
+  /frontend\/core\/preferences\.js/,
+  'device preference controller is available in the offline shell',
+);
+assert.match(account, /accountPreferencesHeading/, 'My Account includes a preferences section');
+assert.match(
+  account,
+  /handleAccountPreferenceChange/,
+  'preference edits have a dedicated change handler',
+);
+assert.match(account, /setWorkspaceDensity/, 'density uses the shared local preference controller');
+assert.match(account, /setTheme/, 'appearance uses the shared theme controller');
+assert.match(shell, /popRole/, 'account popover displays the signed-in role');
+assert.match(preferences, /cv\.density/, 'workspace density uses a device-local storage key');
+assert.match(theme, /export function setTheme/, 'appearance controls share one theme setter');
+assert.match(styles, /account-workspace-grid/, 'My Account uses a responsive workspace grid');
+assert.match(
+  styles,
+  /account-preferences-grid/,
+  'My Account preferences have a dedicated control grid',
+);
+assert.match(styles, /data-density='compact'/, 'compact density is a supported presentation state');
+
+assert.match(
+  appMain,
+  /goto:\s*\(\{ key \}\)\s*=>\s*\{\s*if \(key === 'reg' \|\| key === 'cashClose'\) navigation\.go\(key\);\s*\}/,
+  'dashboard cash-close drill-down routes through the permission-checked navigator',
+);
+
+assert.ok(
+  dashboard.includes('function dashboardDrilldownButton(options = {})') &&
+    dashboard.includes('data-act="dashboardDrilldown"'),
+  'Dashboard renders escaped, allowlisted, context-bearing drill-down actions',
+);
+assert.ok(
+  appMain.includes('dashboardDrilldown: ({ element })') &&
+    appMain.includes("if (can('cashClose')) navigation.go('cashClose')") &&
+    appMain.includes('reports.openDashboardContext(context)') &&
+    appMain.includes('register.openDashboardContext(context)'),
+  'delegated Dashboard drill-downs recheck permissions and target existing views',
+);
+assert.ok(
+  register.includes('function openDashboardContext(context = {})') &&
+    register.includes('context.approval') &&
+    register.includes('context.status') &&
+    register.includes("['ACTIVE', 'CANCELLED', 'ALL'].includes(context.status)"),
+  'Register accepts safe Dashboard context while retaining all approval states and active-only server scope',
+);
+assert.ok(
+  dashboard.includes("approval: 'APPROVED'") && dashboard.includes("status: 'ALL'"),
+  'Dashboard approved-payment KPIs and invalid-data attention retain precise Register scopes',
+);
+assert.ok(
+  reports.includes('function openDashboardContext(context = {})') &&
+    reports.includes(
+      "R.type = ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : 'ALL'",
+    ) &&
+    reports.includes('return load();'),
+  'Reports submits Dashboard date/type context using its existing read model',
+);
 assert.match(
   dashboard,
   /dashboard-analysis-grid/,
@@ -160,6 +261,23 @@ assert.match(
   register,
   /register-results-summary/,
   'register gives server totals and results a dedicated hierarchy',
+);
+assert.match(register, /data-register-range/, 'register exposes business-date quick ranges');
+assert.match(
+  register,
+  /syncRegisterFilterSummary/,
+  'register announces active server-side refinements without reimplementing filtering',
+);
+assert.match(reports, /key: '90d'/, 'reports offer a ninety-day reporting window');
+assert.match(
+  reports,
+  /key: 'previous-month'/,
+  'reports offer the previous complete calendar month',
+);
+assert.match(
+  reports,
+  /report-applied-filters/,
+  'report results disclose the filter scope used for source rows',
 );
 assert.match(reports, /data-report-range/, 'reports expose quick date presets');
 assert.match(
@@ -207,6 +325,10 @@ for (const [source, pattern, description] of [
 ])
   assert.match(source, pattern, description);
 for (const selector of [
+  '.register-date-presets',
+  '.register-filter-summary',
+  '.report-results-heading',
+  '.report-applied-filters',
   '.settings-layout',
   '.settings-diagnostics',
   '.audit-panel',
@@ -224,6 +346,28 @@ for (const selector of [
 
 // Dashboard amounts and chart data remain owned by the validated server read model.
 assert.match(dashboard, /summary\.bookBalance/, 'book balance remains API-derived');
+assert.match(
+  dashboard,
+  /Book balance · all time/,
+  'Book balance is explicitly identified as all-time',
+);
+assert.match(
+  dashboard,
+  /dailyCashPositionCard/,
+  'daily physical cash has its own server-backed renderer',
+);
+assert.match(dashboard, /recentTransactionsCard/, 'recent activity has its own renderer');
+assert.match(
+  dashboard,
+  /api\('registerPage'/,
+  'recent activity uses the server-paginated register read model',
+);
+assert.match(dashboard, /\['today', 'Today'\]/, 'Today is available as a dashboard period preset');
+assert.match(
+  dashboard,
+  /percentage omitted for a small baseline/,
+  'tiny previous-period totals use absolute change rather than unstable percentages',
+);
 assert.match(dashboard, /summary\.trend/, 'trend data remains API-derived');
 assert.match(dashboard, /summary\.topVendors/, 'vendor breakdown remains API-derived');
 assert.match(

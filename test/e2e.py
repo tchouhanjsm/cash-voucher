@@ -408,6 +408,13 @@ with sync_playwright() as p:
         'owner sees Onboarding and Cash Close navigation; Account moved to the user menu',
     )
     check(
+        page.locator('#nav').get_attribute('data-workspace') == 'owner'
+        and page.locator('#nav .nav-workspace-title').text_content().strip() == 'Owner workspace'
+        and page.locator('#popRole').text_content().strip() == 'Owner'
+        and 'Owner controls' in page.locator('#navMoreItems').text_content(),
+        'owner receives the owner-labelled workspace and separate owner-control navigation group',
+    )
+    check(
         page.locator('html').get_attribute('data-palette') == 'mint'
         and page.evaluate("localStorage.getItem('cv.palette')") == 'mint'
         and page.evaluate("getComputedStyle(document.querySelector('.side')).backgroundColor")
@@ -494,7 +501,7 @@ with sync_playwright() as p:
         page.locator('html').get_attribute('data-theme') == 'light'
         and page.evaluate("localStorage.getItem('cv.theme')") == 'light'
         and page.evaluate("getComputedStyle(document.body).backgroundColor") == 'rgb(237, 241, 246)'
-        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#edf1f6'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#faf6ef'
         and page.locator('#themeToggle').get_attribute('aria-pressed') == 'false',
         'light theme can be restored and the explicit choice is retained',
     )
@@ -659,6 +666,7 @@ with sync_playwright() as p:
         {'paid': 1250, 'previousPaid': 0, 'direction': 'zero-baseline', 'copy': 'percentage change unavailable'},
         {'paid': 1000, 'previousPaid': 1000, 'direction': 'flat', 'copy': 'No change vs previous 7 days'},
         {'paid': 1250, 'previousPaid': 1000, 'direction': 'increase', 'copy': '↑ 25% vs previous 7 days'},
+        {'paid': 100, 'previousPaid': 2, 'direction': 'increase', 'copy': 'Change +₹98', 'alsoCopy': 'percentage omitted for a small baseline'},
         {'paid': 750, 'previousPaid': 1000, 'direction': 'decrease', 'copy': '↓ 25% vs previous 7 days'},
     ]:
         comparison_case = case
@@ -670,6 +678,7 @@ with sync_playwright() as p:
         comparison = page.locator('.dashboard-period-comparison')
         check(
             case['copy'] in comparison.inner_text()
+            and (not case.get('alsoCopy') or case['alsoCopy'] in comparison.inner_text())
             and comparison.get_attribute('data-direction') == case['direction']
             and 'up' not in (comparison.get_attribute('class') or '')
             and 'down' not in (comparison.get_attribute('class') or ''),
@@ -749,15 +758,75 @@ with sync_playwright() as p:
     page.unroute('**/api?*', inject_dashboard_comparison)
 
     page.click('#userBtn')
+    check(
+        page.locator('#userPop').is_visible()
+        and page.locator('#userBtn').get_attribute('aria-expanded') == 'true'
+        and page.locator('#userPop').get_attribute('aria-label') == 'Account actions'
+        and page.locator('#popAvatar').inner_text().strip() != ''
+        and page.locator('#popRole').inner_text().strip() != '',
+        'avatar popover exposes signed-in identity, role and expanded state',
+    )
+    page.keyboard.press('Escape')
+    check(
+        page.locator('#userPop').is_hidden()
+        and page.locator('#userBtn').get_attribute('aria-expanded') == 'false'
+        and page.locator('#userBtn').evaluate('element => document.activeElement === element'),
+        'Escape dismisses the account popover and returns keyboard focus to its trigger',
+    )
+    page.click('#userBtn')
     page.locator('#userPop button[data-go="acct"]').first.click()
     page.wait_for_selector('#pf')
     account_header = page.locator('#view .page-header')
     check(
-        account_header.locator('.page-eyebrow').text_content().strip() == 'Account'
+        account_header.locator('.page-eyebrow').text_content().strip() == 'Personal workspace'
         and account_header.locator('.page-description').count() == 1
         and page.locator('.profile-account-card').count() == 1
-        and page.locator('.account-password-form#pf').count() == 1,
-        'My Account uses shared page context and a dedicated profile/password layout',
+        and page.locator('.account-password-form#pf').count() == 1
+        and page.locator('#accountProfileHeading').count() == 1
+        and page.locator('#accountPreferencesHeading').count() == 1
+        and page.locator('#accountPasswordHeading').count() == 1
+        and page.locator('#accountReportHeading').count() == 1,
+        'My Account uses the Haveli profile, preferences, security and support hierarchy',
+    )
+    check(
+        page.get_by_label('Appearance').count() == 1
+        and page.get_by_label('Workspace density').count() == 1
+        and page.locator('#accountPreferencesStatus').get_attribute('aria-live') == 'polite',
+        'workspace preferences have associated labels and a live saved-state message',
+    )
+    page.select_option('#accountAppearance', 'dark')
+    check(
+        page.locator('html').get_attribute('data-theme') == 'dark'
+        and page.locator('meta[name="theme-color"]').get_attribute('content') == '#111820'
+        and page.evaluate("localStorage.getItem('cv.theme')") == 'dark',
+        'My Account appearance preference updates browser chrome and persists locally',
+    )
+    page.select_option('#accountAppearance', 'light')
+    check(
+        page.locator('html').get_attribute('data-theme') == 'light'
+        and page.evaluate("localStorage.getItem('cv.theme')") == 'light',
+        'Haveli light appearance can be restored from My Account',
+    )
+    page.click('#userBtn')
+    page.locator('#userPop #themeToggle').click()
+    check(
+        page.locator('html').get_attribute('data-theme') == 'dark'
+        and page.locator('#accountAppearance').input_value() == 'dark'
+        and page.evaluate("localStorage.getItem('cv.theme')") == 'dark',
+        'top-right appearance toggle stays synchronized with the My Account preference selector',
+    )
+    page.select_option('#accountAppearance', 'light')
+    page.select_option('#accountDensity', 'compact')
+    check(
+        page.locator('html').get_attribute('data-density') == 'compact'
+        and page.evaluate("localStorage.getItem('cv.density')") == 'compact',
+        'compact workspace density applies and persists locally',
+    )
+    page.select_option('#accountDensity', 'comfortable')
+    check(
+        page.locator('html').get_attribute('data-density') == 'comfortable'
+        and page.evaluate("localStorage.getItem('cv.density')") == 'comfortable',
+        'comfortable workspace density can be restored from My Account',
     )
     report_form = page.locator('#accountReportForm')
     page.set_viewport_size({'width': 320, 'height': 800})
@@ -1515,10 +1584,20 @@ with sync_playwright() as p:
         and page.locator('[data-v=dash] .ic svg use').get_attribute('href') == '#i-home',
         'Dashboard shows scoped attention, a truthful empty or KPI state, and SVG navigation icons',
     )
+    dashboard_needs_clear = page.locator('#view .needs .needs-clear')
+    dashboard_cash_close_attention = page.locator(
+        '#view .needs .needs-item button[data-act="dashboardDrilldown"][data-target="cashClose"]'
+    )
     check(
-        page.locator('#view .needs .needs-clear').count() == 1
-        and 'Backup and recovery status are checked separately.' in page.locator('#view .needs .needs-clear').inner_text(),
-        'dashboard empty-attention state does not imply complete operational health',
+        (
+            dashboard_needs_clear.count() == 1
+            and 'Backup and recovery status are checked separately.' in dashboard_needs_clear.inner_text()
+        )
+        or (
+            page.locator('#view .needs .needs-item').count() > 0
+            and dashboard_cash_close_attention.count() > 0
+        ),
+        'dashboard shows a truthful clear state or an actionable cash-close blocker',
     )
     daily_close_card = page.locator('#view .daily-close-readiness')
     check(
@@ -1534,9 +1613,26 @@ with sync_playwright() as p:
         and 'Business date:' in daily_close_card.inner_text()
         and 'Cash in:' in daily_close_card.inner_text()
         and 'Cash out:' in daily_close_card.inner_text()
-        and daily_close_card.locator('[data-act=goto][data-k=cashClose]').is_visible(),
+        and daily_close_card.locator('[data-act=dashboardDrilldown][data-drill-key=daily-cash-close]').is_visible()
+        and daily_close_card.locator('[data-drill-key=daily-cash-close]').get_attribute('data-from')
+        == BUSINESS_TODAY.isoformat()
+        and daily_close_card.locator('[data-drill-key=daily-cash-close]').get_attribute('data-to')
+        == BUSINESS_TODAY.isoformat(),
         'authorized dashboard shows live close status, cash movement summary and direct close navigation',
     )
+    # Exercise the dashboard's delegated Cash Close CTA rather than merely asserting visibility.
+    page.click('#view .daily-close-readiness [data-act=dashboardDrilldown][data-drill-key=daily-cash-close]')
+    page.wait_for_function(
+        "document.querySelector('#view .page-header h1')?.innerText === 'Daily Cash Close'"
+    )
+    check(
+        page.locator('#navMoreItems [data-v=cashClose]').get_attribute('aria-current') == 'page'
+        and page.locator('#cc-date').count() == 1,
+        'Dashboard Daily Cash Close CTA navigates to the authorized cash-close workflow',
+    )
+    go_view(page, 'dash')
+    page.wait_for_selector('#view .daily-close-readiness')
+
     check(
         page.locator('#view .page-header-actions [data-act=ntype]').is_visible(),
         'Dashboard exposes the create-permitted primary action in its page header',
@@ -2483,7 +2579,7 @@ with sync_playwright() as p:
     )
     try:
         page.wait_for_function(
-            "document.querySelector('#view')?.innerText.includes('Total paid') || "
+            "document.querySelector('#view')?.innerText.includes('Approved payments') || "
             "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
             timeout=10000,
         )
@@ -2551,6 +2647,30 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'hostile daily-close summary values fail closed and remain inert text',
     )
+    hostile_cash_position = page.locator('#view .dashboard-cash-position')
+    hostile_cash_position_text = hostile_cash_position.inner_text()
+    check(
+        hostile_cash_position.count() == 1,
+        'role-authorized dashboard renders the daily cash position panel',
+    )
+    check(
+        hostile_cash_position.get_attribute('data-status') in ['REVIEW_REQUIRED', 'UNAVAILABLE'],
+        'hostile daily cash status is mapped to a safe review or unavailable state',
+    )
+    check(
+        'business date unavailable' in hostile_cash_position_text.lower(),
+        'hostile daily cash date is not presented as a business date',
+    )
+    check(
+        'Not available' in hostile_cash_position_text,
+        'hostile daily cash numeric fields are not presented as zero or fabricated totals',
+    )
+    check(
+        hostile_operations_label not in hostile_cash_position_text
+        and hostile_cash_position.locator('[onload], [onerror]').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile daily cash fields remain inert and do not create active markup',
+    )
     page.unroute('**/api?*', inject_hostile_daily_operations)
     with page.expect_response(
         lambda response: '/api?' in response.url
@@ -2614,7 +2734,7 @@ with sync_playwright() as p:
         'dashboard recovers after the unsupported-action error is removed',
     )
     page.wait_for_function(
-        "document.querySelector('#view')?.innerText.includes('Total paid') || "
+        "document.querySelector('#view')?.innerText.includes('Approved payments') || "
             "document.querySelector('#view')?.innerText.includes('No approved payments or recorded receipts are included')",
         timeout=10000,
     )
@@ -2806,6 +2926,11 @@ with sync_playwright() as p:
         and accountant_page.locator('[data-v=cashClose]').count() == 0
         and accountant_page.locator('[data-v=users]').count() == 0,
         'accountant sees Reports only, without voucher entry, Register, Vendors, close or user administration',
+    )
+    check(
+        accountant_page.locator('#nav .nav-workspace-title').text_content().strip() == 'Finance workspace'
+        and accountant_page.locator('#userRole').text_content().strip() == 'Accountant',
+        'accountant receives a clearly labelled read-only finance workspace',
     )
     check(
         accountant_page.locator('#view .page-header-actions [data-act=ntype]').count() == 0,
@@ -3132,6 +3257,13 @@ with sync_playwright() as p:
                         'role': {'name': 'owner'},
                         'active': True,
                     },
+                    {
+                        'id': 'xss-user-"><img src=x onerror=window.__xssFired=true>',
+                        'name': '<svg onload=window.__xssFired=true></svg>Escaped User',
+                        'email': '"><img src=x onerror=window.__xssFired=true>@example.test',
+                        'role': 'manager',
+                        'active': True,
+                    },
                 ])
         route.fulfill(response=response, body=json.dumps(payload))
 
@@ -3143,15 +3275,27 @@ with sync_playwright() as p:
     )
     check(
         '5 malformed user record(s) omitted from this response' in page.locator('#view').inner_text()
-        and page.locator('#view tbody tr').count() == 6
-        and page.locator('#view [data-act=utog]').count() == 6,
+        and page.locator('#view tbody tr').count() == 7
+        and page.locator('#view [data-act=utog]').count() == 7,
         'owner Users view omits malformed rows while keeping valid user records actionable',
     )
+    hostile_user_role = page.locator('#view .user-role-select').last.evaluate(
+        """select => ({
+          id: select.getAttribute('data-id'),
+          managerLabel: Array.from(select.options).find(option => option.value === 'manager')?.textContent || '',
+          hasAdminRoleKey: Array.from(select.options).some(option => option.value === 'admin')
+        })"""
+    )
     check(
-        page.locator('#view img, #view svg').count() == 0
+        'Escaped User' in page.locator('#view tbody').inner_text()
+        and '"><img src=x onerror=window.__xssFired=true>@example.test' in page.locator('#view tbody').inner_text()
+        and hostile_user_role['id'] == 'xss-user-"><img src=x onerror=window.__xssFired=true>'
+        and hostile_user_role['managerLabel'] == 'Admin'
+        and not hostile_user_role['hasAdminRoleKey']
+        and page.locator('#view img, #view svg').count() == 0
         and '[object Object]' not in page.locator('#view').inner_text()
         and not page.evaluate('window.__xssFired === true'),
-        'malformed user names, emails and roles are not coerced or rendered as active markup',
+        'hostile user name, email and id stay inert while manager remains the submitted Admin role key',
     )
     invalid_user_envelope = True
     go_view(page, 'dash')
@@ -3681,7 +3825,7 @@ with sync_playwright() as p:
     check(
         page.locator('#brand').inner_text() == 'Cash Vouchers'
         and page.title() == 'Vouchers'
-        and page.locator('#userRole').inner_text().strip() == 'owner'
+        and page.locator('#userRole').inner_text().strip() == 'Owner'
         and page.locator('#nav button').count() > 0
         and not page.evaluate('window.__xssFired === true'),
         'object-valued property and profile names stay inert and do not abort navigation bootstrap',
@@ -4110,11 +4254,64 @@ with sync_playwright() as p:
     page.click('#view [data-act=signout]')
     page.wait_for_selector('#loginForm')
 
+    staff_dashboard_register_requests = []
+    staff_dashboard_register_fixture = {
+        'id': 'e2e-staff-dashboard-drilldown',
+        'no': 98765,
+        'date': BUSINESS_TODAY.isoformat(),
+        'vendor': 'Staff Dashboard Drilldown',
+        'vendorId': '',
+        'category': 'Operations',
+        'notes': 'Synthetic read-only dashboard drill-down fixture',
+        'type': 'PAYMENT',
+        'status': 'ACTIVE',
+        'amount': 250,
+        'approvalStatus': 'APPROVED',
+        'approvedBy': '',
+        'approvedAt': '',
+        'approvalReason': '',
+        'paymentMethod': 'CASH',
+        'cashImpact': 'CASH_OUT',
+        'createdBy': 's@test.com',
+        'createdAt': '2026-11-03T12:00:00.000Z',
+        'cancelReason': '',
+        'receipts': [],
+    }
+
     def inject_staff_dashboard_summary(route):
         try:
             request_data = json.loads(route.request.post_data or '{}')
         except json.JSONDecodeError:
             request_data = {}
+        if request_data.get('action') == 'registerPage':
+            staff_dashboard_register_requests.append(dict(request_data))
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({
+                    'ok': True,
+                    'data': {
+                        'items': [staff_dashboard_register_fixture],
+                        'offset': request_data.get('offset', 0),
+                        'limit': request_data.get('limit', 100),
+                        'totalCount': 1,
+                        'hasMore': False,
+                        'totals': {
+                            'paid': 250,
+                            'received': 0,
+                            'approvalExceptionCount': 0,
+                            'invalidAmountCount': 0,
+                            'malformedRecordCount': 0,
+                            'malformedFieldCount': 0,
+                        },
+                        'facets': {
+                            'vendors': ['Staff Dashboard Drilldown'],
+                            'users': ['s@test.com'],
+                        },
+                    },
+                }),
+            )
+            return
         if request_data.get('action') != 'dashboardSummary':
             route.continue_()
             return
@@ -4146,7 +4343,7 @@ with sync_playwright() as p:
                 'topVendors': [{'k': 'Responsive KPI sample', 'n': 12345, 's': 12345678}],
                 'byCategory': [{'k': 'Operations', 'n': 12345, 's': 12345678}],
                 'byTeamMember': [{'k': 'Staff sample', 'n': 12345, 's': 12345678}],
-                'approvalExceptionCount': 0,
+                'approvalExceptionCount': 1,
                 'invalidAmountCount': 0,
                 'malformedRecordCount': 0,
                 'malformedFieldCount': 0,
@@ -4162,6 +4359,14 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 3, 'staff sees 3 nav items (dash,new,reg); Account is in the user menu')
+    check(
+        page.locator('#nav').get_attribute('data-workspace') == 'staff'
+        and page.locator('#nav .nav-workspace-title').text_content().strip() == 'My workspace'
+        and page.locator('#userRole').text_content().strip() == 'User'
+        and page.locator('#nav .nav-label').evaluate_all("els => els.map(el => el.textContent.trim())") == ['My day', 'My records']
+        and page.locator('#nav .nav-workspace-title').evaluate("el => getComputedStyle(el).display") == 'none',
+        'staff gets a simple User workspace with no desktop-only navigation heading on the mobile bottom bar',
+    )
 
     # Exercise the live staff dashboard at every KPI breakpoint with deliberately long
     # INR values, rather than inferring its layout from owner-only screenshots.
@@ -4223,7 +4428,97 @@ with sync_playwright() as p:
                 staff_metrics['documentWidth'] <= staff_metrics['viewportWidth'] + 1,
                 f'staff dashboard remains within the viewport at {width}px in {theme_name} theme',
             )
+    page.set_viewport_size({'width': 390, 'height': 800})
+    staff_kpi_buttons = page.locator('.dashboard-stats--staff .dashboard-kpi-drilldown')
+    check(
+        staff_kpi_buttons.count() == 5
+        and all(
+            staff_kpi_buttons.nth(index).get_attribute('data-target') == 'reg'
+            for index in range(staff_kpi_buttons.count())
+        )
+        and page.locator('.dashboard-stats--staff [data-target="reports"], .dashboard-stats--staff [data-target="cashClose"]').count() == 0,
+        'staff Dashboard exposes all five KPI drill-downs only to the permitted Register',
+    )
+    staff_period_button = page.locator('[data-drill-key="payments-period"]')
+    staff_from = staff_period_button.get_attribute('data-from')
+    staff_to = staff_period_button.get_attribute('data-to')
+    staff_approval_attention = page.locator('.needs-item [data-drill-key="approval-exceptions"]')
+    check(
+        staff_approval_attention.count() == 1
+        and staff_approval_attention.get_attribute('data-target') == 'reg',
+        'staff approval attention links to Register without exposing Reports or Cash Close',
+    )
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('t') == 'PAYMENT'
+    ) as staff_attention_response:
+        staff_approval_attention.click()
+    staff_attention_request = json.loads(staff_attention_response.value.request.post_data or '{}')
+    page.wait_for_selector('#rf')
+    check(
+        page.locator('#rt').input_value() == 'PAYMENT'
+        and page.locator('#rapproval').input_value() == 'ALL'
+        and page.locator('#rfrom').input_value() == staff_from
+        and page.locator('#rto').input_value() == staff_to
+        and staff_attention_request.get('from') == staff_from
+        and staff_attention_request.get('to') == staff_to,
+        'staff approval attention opens the same selected-period payment Register with all approval states',
+    )
+    go_view(page, 'dash')
+    page.wait_for_selector('[data-drill-key="payments-period"]')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('t') == 'PAYMENT'
+        and json.loads(response.request.post_data or '{}').get('from') == staff_from
+        and json.loads(response.request.post_data or '{}').get('approval') == 'APPROVED'
+    ) as staff_kpi_response:
+        page.locator('[data-drill-key="payments-period"]').click()
+    staff_kpi_request = json.loads(staff_kpi_response.value.request.post_data or '{}')
+    check(
+        page.locator('#rt').input_value() == 'PAYMENT'
+        and page.locator('#rfrom').input_value() == staff_from
+        and page.locator('#rto').input_value() == staff_to
+        and staff_kpi_request.get('to') == staff_to,
+        'staff payment KPI opens the selected-period, date/type-scoped Register',
+    )
+    go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-recent-item__open')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == '98765'
+    ) as staff_recent_response:
+        page.locator('.dashboard-recent-item__open').click()
+    staff_recent_request = json.loads(staff_recent_response.value.request.post_data or '{}')
+    page.wait_for_selector('#rbody tr')
+    check(
+        page.locator('#rq').input_value() == '98765'
+        and page.locator('#rfrom').input_value() == BUSINESS_TODAY.isoformat()
+        and page.locator('#rto').input_value() == BUSINESS_TODAY.isoformat()
+        and page.locator('#rt').input_value() == 'PAYMENT'
+        and page.locator('#rv').input_value() == 'Staff Dashboard Drilldown'
+        and staff_recent_request.get('from') == BUSINESS_TODAY.isoformat()
+        and staff_recent_request.get('to') == BUSINESS_TODAY.isoformat()
+        and staff_recent_request.get('t') == 'PAYMENT'
+        and staff_recent_request.get('vendor') == 'Staff Dashboard Drilldown',
+        'staff recent transaction opens its voucher number/vendor/date/type through Register server filters',
+    )
+    go_view(page, 'dash')
     page.unroute('**/api?*', inject_staff_dashboard_summary)
+    go_view(page, 'reg')
+    page.wait_for_selector('#rf')
+    page.locator('#rf [data-act=rclear]').click()
+    page.wait_for_selector('#registerFilterSummary')
+    check(
+        page.locator('#rq').input_value() == ''
+        and page.locator('#rt').input_value() == ''
+        and page.locator('#rs').input_value() == 'ACTIVE'
+        and page.locator('#rapproval').input_value() == 'ALL',
+        'staff drill-down context is cleared before the following unfiltered Register workflow',
+    )
+    go_view(page, 'dash')
     page.set_viewport_size({'width': 390, 'height': 800})
     page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
 
@@ -5498,7 +5793,279 @@ with sync_playwright() as p:
     page.fill('#newPassword', 'Manager#Final2026')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
+    page.set_viewport_size({'width': 1280, 'height': 800})
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
+    manager_workspace_diagnostics = page.evaluate(
+        """() => ({
+          viewport: { width: innerWidth, height: innerHeight },
+          navHeading: document.querySelector('#nav .nav-workspace-title')?.textContent || null,
+          userRole: document.querySelector('#userRole')?.textContent || null,
+          popRole: document.querySelector('#popRole')?.textContent || null,
+          navText: document.querySelector('#nav')?.innerText || '',
+          ownerControlLinks: Array.from(document.querySelectorAll(
+            '#nav [data-v=users], #nav [data-v=set], #nav [data-v=audit], #nav [data-v=onboarding], ' +
+            '#navMoreItems [data-v=users], #navMoreItems [data-v=set], #navMoreItems [data-v=audit], #navMoreItems [data-v=onboarding]'
+          )).map(element => ({
+            view: element.dataset.v,
+            workspace: element.closest('#nav')?.dataset.workspace || 'overflow'
+          }))
+        })"""
+    )
+    check(
+        manager_workspace_diagnostics['navHeading'] == 'Admin workspace'
+        and manager_workspace_diagnostics['popRole'] == 'Admin'
+        and 'administration' in manager_workspace_diagnostics['navText'].lower()
+        and not manager_workspace_diagnostics['ownerControlLinks'],
+        'manager uses the Admin label while owner-only administration remains unavailable',
+    )
+
+    manager_dashboard_requests = []
+    manager_dashboard_register_fixture = {
+        'id': 'e2e-manager-dashboard-drilldown',
+        'no': 98766,
+        'date': BUSINESS_TODAY.isoformat(),
+        'vendor': 'Dashboard Drilldown Vendor',
+        'vendorId': '',
+        'category': 'Operations',
+        'notes': 'Synthetic read-only manager dashboard drill-down fixture',
+        'type': 'PAYMENT',
+        'status': 'ACTIVE',
+        'amount': 5000,
+        'approvalStatus': 'PENDING',
+        'approvedBy': '',
+        'approvedAt': '',
+        'approvalReason': '',
+        'paymentMethod': 'CASH',
+        'cashImpact': 'CASH_OUT',
+        'createdBy': 's@test.com',
+        'createdAt': '2026-11-03T12:00:00.000Z',
+        'cancelReason': '',
+        'receipts': [],
+    }
+
+    def inject_manager_dashboard_drilldowns(route):
+        try:
+            request_data = json.loads(route.request.post_data or '{}')
+        except json.JSONDecodeError:
+            request_data = {}
+        action = request_data.get('action')
+        if action == 'dailyOperationsSummary':
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({'ok': False, 'error': 'Synthetic daily-operations read unavailable'}),
+            )
+            return
+        if action == 'dashboardSummary':
+            from_date = request_data.get('from', BUSINESS_TODAY.isoformat())
+            to_date = request_data.get('to', BUSINESS_TODAY.isoformat())
+            from_value = datetime.date.fromisoformat(from_date)
+            to_value = datetime.date.fromisoformat(to_date)
+            period_days = (to_value - from_value).days + 1
+            trend_monthly = period_days > 62
+            largest_vendor = 'Dashboard Drilldown Vendor'
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({
+                    'ok': True,
+                    'data': {
+                        'from': from_date,
+                        'to': to_date,
+                        'periodDays': period_days,
+                        'trendMonthly': trend_monthly,
+                        'trend': [{
+                            'date': to_date[:7] if trend_monthly else to_date,
+                            'amount': 5000,
+                        }],
+                        'paid': 5000,
+                        'previousPaid': 4200,
+                        'paymentCount': 1,
+                        'validPaymentCount': 1,
+                        'largest': {'amount': 5000, 'vendor': largest_vendor},
+                        'todayPaid': 5000,
+                        'todayPaymentCount': 1,
+                        'received': 1500,
+                        'receiptCount': 1,
+                        'bookBalance': 9000,
+                        'topVendors': [{'k': largest_vendor, 'n': 1, 's': 5000}],
+                        'byCategory': [{'k': 'Operations', 'n': 1, 's': 5000}],
+                        'byTeamMember': [{'k': 'Staff sample', 'n': 1, 's': 5000}],
+                        'byPaymentMethod': [{'k': 'Cash', 'n': 1, 's': 5000}],
+                        'approvalExceptionCount': 1,
+                        'invalidAmountCount': 1,
+                        'malformedRecordCount': 0,
+                        'malformedFieldCount': 0,
+                    },
+                }),
+            )
+            return
+        if action == 'registerPage':
+            manager_dashboard_requests.append(dict(request_data))
+            route.fulfill(
+                status=200,
+                content_type='application/json',
+                body=json.dumps({
+                    'ok': True,
+                    'data': {
+                        'items': [manager_dashboard_register_fixture],
+                        'offset': request_data.get('offset', 0),
+                        'limit': request_data.get('limit', 100),
+                        'totalCount': 1,
+                        'hasMore': False,
+                        'totals': {
+                            'paid': 5000,
+                            'received': 1500,
+                            'approvalExceptionCount': 1,
+                            'invalidAmountCount': 1,
+                            'malformedRecordCount': 0,
+                            'malformedFieldCount': 0,
+                        },
+                        'facets': {
+                            'vendors': ['Dashboard Drilldown Vendor'],
+                            'users': ['s@test.com'],
+                        },
+                    },
+                }),
+            )
+            return
+        if action == 'recordedMovementReport':
+            manager_dashboard_requests.append(dict(request_data))
+            route.continue_()
+            return
+        route.continue_()
+
+    page.route('**/api?*', inject_manager_dashboard_drilldowns)
+    go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-stats--owner .dashboard-kpi-drilldown')
+    page.wait_for_selector('.needs-item [data-drill-key="cash-readiness-unavailable"]')
+    manager_attention = page.locator('.needs-item [data-act="dashboardDrilldown"]')
+    check(
+        manager_attention.count() >= 3
+        and page.locator('.needs-item [data-drill-key="approval-exceptions"][data-target="reg"]').count() == 1
+        and page.locator('.needs-item [data-drill-key="invalid-voucher-data"][data-target="reg"]').count() == 1
+        and page.locator('.needs-item [data-drill-key="cash-readiness-unavailable"][data-target="cashClose"]').count() == 1,
+        'manager Dashboard exposes payment, data-quality and current-day Cash Close attention destinations',
+    )
+    page.locator('.needs-item [data-drill-key="approval-exceptions"]').click()
+    page.wait_for_selector('#rf')
+    check(
+        page.locator('#rt').input_value() == 'PAYMENT'
+        and page.locator('#rfrom').input_value() != ''
+        and page.locator('#rto').input_value() != '',
+        'manager approval attention opens selected-period payment Register',
+    )
+    go_view(page, 'dash')
+    page.locator('.needs-item [data-drill-key="invalid-voucher-data"]').click()
+    page.wait_for_selector('#rf')
+    check(
+        page.locator('#rt').input_value() == ''
+        and page.locator('#rs').input_value() == 'ALL'
+        and page.locator('#rapproval').input_value() == 'ALL'
+        and page.locator('#rfrom').input_value() != ''
+        and page.locator('#rto').input_value() != '',
+        'manager data-quality attention opens all statuses in the complete selected-period Register',
+    )
+    go_view(page, 'dash')
+    page.locator('.needs-item [data-drill-key="cash-readiness-unavailable"]').click()
+    page.wait_for_selector('#cc-date')
+    check(
+        page.locator('#view .page-header h1').inner_text() == 'Daily Cash Close'
+        and page.locator('#navMoreItems [data-v=cashClose]').get_attribute('aria-current') == 'page'
+        and page.locator('#cc-date').input_value() == BUSINESS_TODAY.isoformat(),
+        'manager cash-readiness attention opens the authorized current-business-date Cash Close context',
+    )
+    go_view(page, 'dash')
+    manager_kpi_contexts = {
+        'payments-period': ('reg', 'PAYMENT', 'APPROVED'),
+        'payment-count': ('reg', 'PAYMENT', 'APPROVED'),
+        'largest-payment': ('reg', 'PAYMENT', 'APPROVED'),
+        'paid-today': ('reg', 'PAYMENT', 'APPROVED'),
+        'receipts-period': ('reports', 'RECEIPT', 'ALL'),
+        'book-balance': ('reg', '', 'ALL'),
+    }
+    for drill_key, (destination, movement_type, approval_state) in manager_kpi_contexts.items():
+        button = page.locator('[data-drill-key="' + drill_key + '"]')
+        date_from = button.get_attribute('data-from') or ''
+        date_to = button.get_attribute('data-to') or ''
+        button_vendor = button.get_attribute('data-vendor') or ''
+        check(
+            button.get_attribute('data-target') == destination
+            and button.get_attribute('data-type') == movement_type
+            and button.get_attribute('data-approval') == approval_state,
+            'manager KPI ' + drill_key + ' declares its intended role-appropriate destination and movement type',
+        )
+        if destination == 'reports':
+            with page.expect_response(
+                lambda response: '/api?' in response.url
+                and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+                and json.loads(response.request.post_data or '{}').get('type') == movement_type
+                and json.loads(response.request.post_data or '{}').get('from') == date_from
+                and json.loads(response.request.post_data or '{}').get('to') == date_to
+            ) as report_response:
+                button.click()
+            report_request = json.loads(report_response.value.request.post_data or '{}')
+            page.wait_for_selector('#movementFilters')
+            check(
+                page.locator('#movementType').input_value() == movement_type
+                and page.locator('#movementStatus').input_value() == 'ACTIVE'
+                and page.locator('#movementFrom').input_value() == date_from
+                and page.locator('#movementTo').input_value() == date_to
+                and report_request.get('status') == 'ACTIVE'
+                and report_request.get('type') == movement_type,
+                'manager ' + drill_key + ' opens Reports with the exact date/type/status filters',
+            )
+        else:
+            with page.expect_response(
+                lambda response: '/api?' in response.url
+                and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+                and json.loads(response.request.post_data or '{}').get('from', '') == date_from
+                and json.loads(response.request.post_data or '{}').get('to', '') == date_to
+                and json.loads(response.request.post_data or '{}').get('t', '') == movement_type
+                and json.loads(response.request.post_data or '{}').get('approval', 'ALL') == approval_state
+            ) as register_response:
+                button.click()
+            register_request = json.loads(register_response.value.request.post_data or '{}')
+            page.wait_for_selector('#rf')
+            check(
+                page.locator('#rt').input_value() == movement_type
+                and page.locator('#rapproval').input_value() == approval_state
+                and page.locator('#rfrom').input_value() == date_from
+                and page.locator('#rto').input_value() == date_to
+                and (
+                    not button_vendor or register_request.get('vendor') == button_vendor
+                ),
+                'manager ' + drill_key + ' opens Register with its intended period/type/vendor context',
+            )
+        go_view(page, 'dash')
+        page.wait_for_selector('[data-drill-key="' + drill_key + '"]')
+    go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-recent-item__open')
+    manager_recent_button = page.locator('.dashboard-recent-item__open').first
+    manager_recent_query = manager_recent_button.get_attribute('data-query')
+    manager_recent_vendor = manager_recent_button.get_attribute('data-vendor')
+    manager_recent_from = manager_recent_button.get_attribute('data-from')
+    manager_recent_type = manager_recent_button.get_attribute('data-type')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('q') == manager_recent_query
+        and json.loads(response.request.post_data or '{}').get('vendor') == manager_recent_vendor
+    ) as manager_recent_response:
+        manager_recent_button.click()
+    manager_recent_request = json.loads(manager_recent_response.value.request.post_data or '{}')
+    check(
+        page.locator('#rq').input_value() == manager_recent_query
+        and page.locator('#rv').input_value() == manager_recent_vendor
+        and page.locator('#rfrom').input_value() == manager_recent_from
+        and page.locator('#rto').input_value() == manager_recent_from
+        and page.locator('#rt').input_value() == manager_recent_type
+        and manager_recent_request.get('from') == manager_recent_from
+        and manager_recent_request.get('to') == manager_recent_from
+        and manager_recent_request.get('t') == manager_recent_type,
+        'manager recent transaction opens voucher number/vendor/date/type through server Register filters',
+    )
+    page.unroute('**/api?*', inject_manager_dashboard_drilldowns)
 
     go_view(page, 'new')
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
@@ -5954,7 +6521,7 @@ with sync_playwright() as p:
         and page.locator('#view svg.chart, #view .hb').count() == 0
         and all(
             label not in dashboard_invalid_text
-            for label in ('Total paid', 'Cash received', 'Book balance', 'Spending trend', 'Top vendors', 'By category')
+            for label in ('Approved payments', 'Receipts', 'Book balance', 'Spending trend', 'Top vendors', 'By category')
         ),
         'invalid bootstrap envelope withholds dashboard KPIs and charts instead of showing zero-like totals',
     )
@@ -5986,6 +6553,67 @@ with sync_playwright() as p:
         and page.locator('#view .hb').count() > 0,
         'dashboard restores KPIs and charts after a valid voucher collection returns',
     )
+    restored_dashboard_text = page.locator('#view').inner_text()
+    check(
+        page.locator('#view .dashboard-cash-position').count() == 1
+        and page.locator('#view .daily-close-readiness').count() == 1
+        and page.locator('#view .dashboard-recent-transactions').count() == 1
+        and 'Daily cash position' in restored_dashboard_text
+        and 'Recent transactions' in restored_dashboard_text
+        and page.locator('#view [data-act="range"][data-k="today"]').count() == 1,
+        'dashboard presents daily drawer position, close operations, recent activity and a Today preset',
+    )
+
+    # Recent transaction data is user-controlled text and must remain inert in the new card.
+    recent_vendor_payload = '<img src=x onerror=window.__xssFired=true>'
+
+    def inject_hostile_recent_transaction(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'registerPage':
+            route.continue_()
+            return
+        response = route.fetch()
+        payload = response.json()
+        data = payload.get('data', {})
+        data['items'] = [{
+            'id': 'dashboard-recent-xss-test',
+            'no': 99999,
+            'date': BUSINESS_TODAY.isoformat(),
+            'vendor': recent_vendor_payload,
+            'type': 'PAYMENT',
+            'status': 'ACTIVE',
+            'amount': 75,
+            'approvalStatus': 'NOT_REQUIRED',
+        }]
+        data['offset'] = 0
+        data['limit'] = 5
+        data['totalCount'] = 1
+        route.fulfill(response=response, json=payload)
+
+    page.evaluate('window.__xssFired = false')
+    page.route('**/api?*', inject_hostile_recent_transaction)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ):
+        page.click('[data-act=range][data-k="today"]')
+    page.wait_for_function(
+        "document.querySelector('.dashboard-recent-item__vendor')?.textContent.includes('<img src=x')",
+        timeout=10000,
+    )
+    recent_vendor_node = page.locator('.dashboard-recent-item__vendor').first
+    check(
+        recent_vendor_node.text_content() == recent_vendor_payload
+        and recent_vendor_node.locator('img, svg, [onerror], [onload]').count() == 0
+        and page.locator('#view img, #view [onerror], #view [onload]').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile recent-transaction vendor text is escaped and cannot create active markup',
+    )
+    page.unroute('**/api?*', inject_hostile_recent_transaction)
+    page.reload(wait_until='domcontentloaded')
+    page.wait_for_selector('#nav button')
+    go_view(page, 'dash')
+    page.wait_for_selector('.stats')
 
     # A malformed dashboard summary must never degrade into zero-like financial KPIs.
     dashboard_summary_fault = {'field': 'paid'}
@@ -6026,11 +6654,45 @@ with sync_playwright() as p:
             and page.locator('#view .stats, #view svg.chart, #view .hb').count() == 0
             and all(
                 label not in invalid_summary_text
-                for label in ('Total paid', 'Cash received', 'Book balance', 'Spending trend')
+                for label in ('Approved payments', 'Receipts', 'Book balance', 'Spending trend')
             ),
             f'malformed Dashboard {invalid_field} response hides financial totals and charts',
         )
     page.unroute('**/api?*', inject_invalid_dashboard_summary)
+
+    # Recent Register activity is an optional panel; a page failure must not hide good KPI data.
+    recent_activity_failures = []
+
+    def fail_dashboard_recent_activity(route):
+        request_data = json.loads(route.request.post_data or '{}')
+        if request_data.get('action') != 'registerPage':
+            route.continue_()
+            return
+        recent_activity_failures.append(True)
+        route.fulfill(
+            status=200,
+            content_type='application/json',
+            body=json.dumps({'ok': False, 'error': 'Simulated recent-activity failure'}),
+        )
+
+    page.route('**/api?*', fail_dashboard_recent_activity)
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'dashboardSummary'
+    ):
+        page.click('[data-act=range][data-k="today"]')
+    page.wait_for_function(
+        "document.querySelector('.dashboard-recent-transactions .dashboard-recent-empty')?.innerText.includes('Recent activity could not be loaded')",
+        timeout=10000,
+    )
+    check(
+        len(recent_activity_failures) == 1
+        and page.locator('#view .stats').count() == 1
+        and page.locator('#view svg.chart').count() == 1
+        and 'Dashboard totals unavailable' not in page.locator('#view').inner_text(),
+        'failed recent activity is isolated and does not blank valid dashboard KPIs or charts',
+    )
+    page.unroute('**/api?*', fail_dashboard_recent_activity)
     page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
@@ -6815,6 +7477,24 @@ with sync_playwright() as p:
     )
     check(page.locator('#rbody tr.cx').count() == 1, 'cancelled voucher visible under filter')
 
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ) as register_range_response:
+        page.click('[data-register-range="7d"]')
+    register_range_payload = json.loads(register_range_response.value.request.post_data or '{}')
+    check(
+        register_range_payload.get('from')
+        == (BUSINESS_TODAY - datetime.timedelta(days=6)).isoformat()
+        and register_range_payload.get('to') == BUSINESS_TODAY.isoformat(),
+        'Register quick period sends the exact seven-day window to the server read model',
+    )
+    check(
+        page.locator('[data-register-range="7d"]').get_attribute('aria-pressed') == 'true'
+        and 'Date range' in page.locator('#registerFilterSummary').inner_text(),
+        'Register exposes the selected quick range and live applied-filter context',
+    )
+
     # Exercise the recorded movement report through the actual browser/API mock.
     go_view(page, 'reports')
     page.wait_for_selector('#movementFilters')
@@ -6887,6 +7567,34 @@ with sync_playwright() as p:
         'movement report exposes payment and receipt totals',
     )
     report_rows = page.locator('#view table tbody tr')
+    check(
+        page.locator('#view .report-applied-filters').count() == 1
+        and 'Payments and receipts' in page.locator('#view .report-applied-filters').inner_text()
+        and 'Active only' in page.locator('#view .report-applied-filters').inner_text(),
+        'report source rows display the exact type, payment-method and status filters used',
+    )
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'recordedMovementReport'
+    ) as report_range_response:
+        page.click('[data-report-range="90d"]')
+    report_range_payload = json.loads(report_range_response.value.request.post_data or '{}')
+    page.wait_for_function(
+        "document.querySelector('#report-output')?.getAttribute('aria-busy') === 'false'"
+    )
+    check(
+        report_range_payload.get('from')
+        == (BUSINESS_TODAY - datetime.timedelta(days=89)).isoformat()
+        and report_range_payload.get('to') == BUSINESS_TODAY.isoformat()
+        and page.locator('[data-report-range="90d"]').get_attribute('aria-pressed') == 'true',
+        'Reports quick period submits the exact ninety-day range and exposes its selected state',
+    )
+    check(
+        page.locator('[data-report-range="90d"]').evaluate(
+            '(element) => element.getBoundingClientRect().height'
+        ) >= 44,
+        'Report quick-range controls meet the 44px touch target baseline',
+    )
     check(
         'Guest Room 5' in report_text
         and 'RECEIPT' in report_text
@@ -7524,6 +8232,14 @@ with sync_playwright() as p:
             'document.documentElement.scrollWidth > document.documentElement.clientWidth'
         )
         check(not page_overflow, f'{width}px register has no page-level horizontal overflow')
+    page.set_viewport_size({'width': 390, 'height': 800})
+    register_range_targets = page.locator('.register-date-presets button').evaluate_all(
+        '(elements) => elements.map((element) => element.getBoundingClientRect().height)'
+    )
+    check(
+        len(register_range_targets) == 4 and all(height >= 44 for height in register_range_targets),
+        'Register quick-range controls meet the 44px touch target baseline on mobile',
+    )
 
     # Exercise the payment-entry workflow at the narrow reflow width used for 400% zoom.
     go_view(page, 'new')
@@ -7637,7 +8353,7 @@ with sync_playwright() as p:
         '(element) => getComputedStyle(element).color'
     )
     check(
-        muted_color == 'rgb(89, 101, 123)',
+        muted_color == 'rgb(113, 102, 95)',
         'muted interface text uses the reviewed higher-contrast token',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
@@ -8833,7 +9549,7 @@ with sync_playwright() as p:
     check(
         account_dom_result['name'] == '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>'
         and account_dom_result['email'] == account_dom_result['name']
-        and account_dom_result['role'] == account_dom_result['name']
+        and account_dom_result['role'] == 'Restricted'
         and account_dom_result['property'] == account_dom_result['name']
         and not account_dom_result['hasActiveMarkup']
         and not account_dom_result['scriptEffect'],

@@ -1,6 +1,7 @@
 import { $ } from '../core/dom.js';
 import { S } from '../core/state.js';
 import { initials, scalarText } from '../core/utils.js';
+import { displayRole } from '../core/workspaces.js';
 
 // App shell: top bar identity, connection pill and user menu.
 export function createShell({ go }) {
@@ -34,9 +35,11 @@ export function createShell({ go }) {
     $('#brandTop').textContent = brand;
     $('#avatar').textContent = initials(name);
     $('#userName').textContent = name;
-    const role = scalarText(S.me?.role);
+    const role = displayRole(S.me?.role);
     $('#userRole').textContent = role.toLowerCase() === name.toLowerCase() ? '' : role;
+    $('#popAvatar').textContent = initials(name);
     $('#popName').textContent = name;
+    $('#popRole').textContent = role;
     $('#popEmail').textContent = email;
     closeMenu();
     renderNetwork();

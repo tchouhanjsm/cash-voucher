@@ -305,10 +305,24 @@ export function createReports({ api }) {
 
     const summary = R.summary;
     const reportToday = today();
+    const previousMonthEnd = addDays(reportToday.slice(0, 7) + '-01', -1);
     const quickRanges = [
-      { key: '7d', label: 'Last 7 days', from: addDays(reportToday, -6) },
-      { key: '30d', label: 'Last 30 days', from: addDays(reportToday, -29) },
-      { key: 'mtd', label: 'Month to date', from: reportToday.slice(0, 7) + '-01' },
+      { key: 'today', label: 'Today', from: reportToday, to: reportToday },
+      { key: '7d', label: 'Last 7 days', from: addDays(reportToday, -6), to: reportToday },
+      { key: '30d', label: 'Last 30 days', from: addDays(reportToday, -29), to: reportToday },
+      { key: '90d', label: 'Last 90 days', from: addDays(reportToday, -89), to: reportToday },
+      {
+        key: 'mtd',
+        label: 'Month to date',
+        from: reportToday.slice(0, 7) + '-01',
+        to: reportToday,
+      },
+      {
+        key: 'previous-month',
+        label: 'Previous month',
+        from: previousMonthEnd.slice(0, 7) + '-01',
+        to: previousMonthEnd,
+      },
     ];
     const quickRangeControls =
       '<div class="report-period-presets" role="group" aria-label="Quick report date ranges">' +
@@ -318,7 +332,9 @@ export function createReports({ api }) {
             '<button type="button" data-report-range="' +
             range.key +
             '" class="' +
-            (R.from === range.from && R.to === reportToday ? 'on' : '') +
+            (R.from === range.from && R.to === range.to ? 'on' : '') +
+            '" aria-pressed="' +
+            (R.from === range.from && R.to === range.to ? 'true' : 'false') +
             '">' +
             range.label +
             '</button>',
@@ -328,6 +344,28 @@ export function createReports({ api }) {
     const reportRangeLabel = R.dateRangeInvalid
       ? 'Invalid date selection'
       : esc(dmy(R.from)) + ' – ' + esc(dmy(R.to));
+    const appliedReportFilters = [
+      [
+        'Type',
+        R.type === 'PAYMENT'
+          ? 'Payments only'
+          : R.type === 'RECEIPT'
+            ? 'Receipts only'
+            : 'Payments and receipts',
+      ],
+      [
+        'Payment method',
+        R.paymentMethod === 'ALL' ? 'All methods' : paymentMethodLabel(R.paymentMethod),
+      ],
+      [
+        'Status',
+        R.status === 'ACTIVE'
+          ? 'Active only'
+          : R.status === 'CANCELLED'
+            ? 'Cancelled only'
+            : 'All statuses',
+      ],
+    ];
     const methodRows = Array.isArray(summary?.byPaymentMethod) ? summary.byPaymentMethod : [];
     const methodMax = Math.max(1, ...methodRows.map((item) => item.s));
     const methodBreakdown = methodRows.length
@@ -440,10 +478,22 @@ ${methodBreakdown}
           ${hasPositiveCount(summary.approvalExceptionCount) ? `<p class="muted" role="status">${esc(scalarText(summary.approvalExceptionCount))} active payment(s) have unresolved approval states. They remain visible below but are excluded from approved payment totals and block daily cash close until approved or cancelled.</p>` : ''}
           ${hasPositiveCount(summary.unmatchedVendorCount) ? `<p class="muted" role="status">${esc(scalarText(summary.unmatchedVendorCount))} report row(s) have no unique saved Vendor ID. IDs are linked only when the counterparty exactly matches one unambiguous saved vendor name; unmatched historical/free-text names remain blank.</p>` : ''}
           ${hasPositiveCount(summary.ambiguousVendorCount) ? `<p class="muted" role="status">${esc(scalarText(summary.ambiguousVendorCount))} report row(s) have ambiguous vendor names because the saved vendor master contains duplicates. No VendorID is inferred for these rows; reconcile them manually before relying on party-level summaries.</p>` : ''}
-          <h2>Source vouchers <span class="muted">${esc(dmy(R.from))} – ${esc(dmy(R.to))}</span></h2>
-          <p class="muted">
-            Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}
-          </p>
+          <div class="report-results-heading">
+            <div>
+              <p class="page-eyebrow">SOURCE RECORDS</p>
+              <h2>Source vouchers</h2>
+              <p class="muted">
+                Generated ${esc(scalarText(summary.generatedAt))} · ${esc(scalarText(summary.count))} rows · Type: ${esc(scalarText(summary.type))} · Status: ${esc(scalarText(summary.status))}
+              </p>
+            </div>
+            <div class="report-results-period">
+              <span>Report period</span>
+              <strong>${esc(dmy(R.from))} – ${esc(dmy(R.to))}</strong>
+            </div>
+          </div>
+          <div class="report-applied-filters" aria-label="Filters applied to this report">
+            ${appliedReportFilters.map(([label, value]) => '<span><b>' + esc(label) + '</b> · ' + esc(value) + '</span>').join('')}
+          </div>
           ${R.invalidRowCount ? `<p class="muted" role="status">${R.invalidRowCount} malformed report row(s) omitted from this result. Run the report again to refresh.</p>` : ''}
           ${renderRows()}
         </div>
@@ -476,7 +526,7 @@ ${methodBreakdown}
       const range = quickRanges.find((item) => item.key === button.dataset.reportRange);
       if (!range) return;
       R.from = range.from;
-      R.to = reportToday;
+      R.to = range.to;
       load();
     });
     $('#movementFilters')?.addEventListener('submit', (event) => {
@@ -619,6 +669,18 @@ ${methodBreakdown}
       }
     }
   }
+  function openDashboardContext(context = {}) {
+    const from = typeof context.from === 'string' ? context.from : '';
+    const to = typeof context.to === 'string' ? context.to : '';
+    if (!isBusinessDate(from) || !isBusinessDate(to) || from > to) return;
+    R.from = from;
+    R.to = to;
+    R.type = ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : 'ALL';
+    R.status = 'ACTIVE';
+    R.paymentMethod = 'ALL';
+    return load();
+  }
+
   function exportCsv() {
     if (!R.summary) {
       toast('Run a successful report before exporting.', 'err');
@@ -662,5 +724,5 @@ ${methodBreakdown}
     }
   }
 
-  return { render, load, exportCsv };
+  return { render, load, openDashboardContext, exportCsv };
 }

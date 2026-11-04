@@ -17,6 +17,7 @@ import {
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import { createAuditReconciliationCsv } from '../core/audit-export.js';
 import {
+  addDays,
   compress,
   csvCell,
   dmy,
@@ -25,6 +26,7 @@ import {
   finiteAmount,
   money,
   parseAmt,
+  isBusinessDate,
   today,
 } from '../core/utils.js';
 import { closeModal, dialog, fail, head, refreshBtn, toast } from '../core/ui.js';
@@ -74,6 +76,26 @@ export function createRegister({ api, go }) {
       : [];
 
     return { ids, valid: Boolean(values) && ids.length === values.length };
+  }
+
+  function registerDateRanges(referenceDate = today()) {
+    return [
+      { key: 'today', label: 'Today', from: referenceDate, to: referenceDate },
+      { key: '7d', label: 'Last 7 days', from: addDays(referenceDate, -6), to: referenceDate },
+      { key: '30d', label: 'Last 30 days', from: addDays(referenceDate, -29), to: referenceDate },
+      {
+        key: 'mtd',
+        label: 'Month to date',
+        from: referenceDate.slice(0, 7) + '-01',
+        to: referenceDate,
+      },
+    ];
+  }
+
+  function selectedRegisterDateRange() {
+    return (
+      registerDateRanges().find((range) => R.from === range.from && R.to === range.to)?.key || ''
+    );
   }
 
   function labeledControl(text, control) {
@@ -208,6 +230,38 @@ export function createRegister({ api, go }) {
     }
   }
 
+  function syncRegisterFilterSummary() {
+    const target = $('#registerFilterSummary');
+    const filters = [
+      [Boolean(R.q.trim()), 'Search'],
+      [Boolean(R.vendor), 'Vendor'],
+      [Boolean(R.cat), 'Category'],
+      [Boolean(R.from || R.to), 'Date range'],
+      [Boolean(R.user), 'User'],
+      [Boolean(R.t), R.t === 'RECEIPT' ? 'Receipts only' : 'Payments only'],
+      [R.paymentMethod !== 'ALL', 'Payment method'],
+      [R.st !== 'ACTIVE', R.st === 'CANCELLED' ? 'Cancelled status' : 'All statuses'],
+      [R.approval !== 'ALL', 'Approval state'],
+    ]
+      .filter(([active]) => active)
+      .map(([, label]) => label);
+
+    if (target) {
+      target.textContent = filters.length
+        ? filters.length + ' refinement(s) active · ' + filters.join(' · ')
+        : 'Showing active vouchers. Add a filter to narrow these results.';
+    }
+
+    const selected = selectedRegisterDateRange();
+    $('#view')
+      ?.querySelectorAll('[data-register-range]')
+      .forEach((button) => {
+        const pressed = button.dataset.registerRange === selected;
+        button.classList.toggle('on', pressed);
+        button.setAttribute('aria-pressed', String(pressed));
+      });
+  }
+
   async function renderRows(options = {}) {
     // A debounced filter can fire after navigation has detached the Register.
     if (S.view !== 'reg' || !$('#rbody')) return;
@@ -295,6 +349,7 @@ export function createRegister({ api, go }) {
     // Stale callbacks must never attempt to render into a detached Register surface.
     if (S.view !== 'reg' || !$('#rbody')) return;
 
+    syncRegisterFilterSummary();
     const diagnostics = S.voucherDiagnostics || {};
     const dataAvailable =
       !pageError &&
@@ -573,6 +628,24 @@ export function createRegister({ api, go }) {
   }
 
   function render() {
+    const datePresets = registerDateRanges();
+    const selectedDatePreset = selectedRegisterDateRange();
+    const datePresetButtons = datePresets
+      .map((range) => {
+        const pressed = selectedDatePreset === range.key;
+        return (
+          '<button type="button" data-register-range="' +
+          range.key +
+          '" class="' +
+          (pressed ? 'on' : '') +
+          '" aria-pressed="' +
+          String(pressed) +
+          '">' +
+          range.label +
+          '</button>'
+        );
+      })
+      .join('');
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
     const vendors =
       Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
@@ -595,7 +668,10 @@ export function createRegister({ api, go }) {
         },
       ) +
       `<section class="card filters register-filter-panel" id="rf" aria-labelledby="registerFiltersTitle"><div class="register-panel-heading"><div><p class="page-eyebrow">FIND A MOVEMENT</p><h2 id="registerFiltersTitle">Search and refine</h2><p class="muted">Filters are applied by the server within your account permissions.</p></div><span class="register-server-label">SERVER FILTERED</span></div>
-    <div class="register-search-row"><label class="register-search-field" for="rq">Search vouchers<input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}"></label><span class="register-search-hint">Search voucher number, counterparty or note</span></div><div class="register-filter-grid">
+    <div class="register-search-row"><label class="register-search-field" for="rq">Search vouchers<input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}"></label><span class="register-search-hint">Search voucher number, counterparty or note</span></div>
+    <div class="register-date-presets" role="group" aria-label="Quick register date ranges"><span class="register-date-presets__label">Quick period</span>${datePresetButtons}</div>
+    <p id="registerFilterSummary" class="register-filter-summary" role="status" aria-live="polite">Showing active vouchers. Add a filter to narrow these results.</p>
+    <div class="register-filter-grid">
     <label class="register-filter-field" for="rv">Vendor<select id="rv" aria-label="Filter by vendor"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select></label>
     <label class="register-filter-field" for="rc">Category<select id="rc" aria-label="Filter by category"><option value="">All categories</option>${categories()
       .map(
@@ -1733,15 +1809,65 @@ export function createRegister({ api, go }) {
     );
   }
 
+  function openDashboardContext(context = {}) {
+    const requestedFrom = scalarText(context.from);
+    const requestedTo = scalarText(context.to);
+    const validRange =
+      isBusinessDate(requestedFrom) && isBusinessDate(requestedTo) && requestedFrom <= requestedTo;
+    Object.assign(R, {
+      q: typeof context.query === 'string' ? context.query.trim().slice(0, 120) : '',
+      vendor: typeof context.vendor === 'string' ? context.vendor.trim().slice(0, 200) : '',
+      cat: '',
+      user: '',
+      t: ['PAYMENT', 'RECEIPT'].includes(context.type) ? context.type : '',
+      from: validRange ? requestedFrom : '',
+      to: validRange ? requestedTo : '',
+      st: ['ACTIVE', 'CANCELLED', 'ALL'].includes(context.status) ? context.status : 'ACTIVE',
+      approval: [
+        'ALL',
+        'PENDING',
+        'APPROVED',
+        'REJECTED',
+        'NOT_REQUIRED',
+        'REVIEW_REQUIRED',
+      ].includes(context.approval)
+        ? context.approval
+        : 'ALL',
+      paymentMethod: 'ALL',
+      limit: 100,
+    });
+    pageRequestSequence += 1;
+    clearTimeout(filterDebounce);
+    pageRows = [];
+    pageTotalCount = 0;
+    pageTotals = null;
+    pageFacets = { vendors: [], users: [] };
+    pageLoading = false;
+    pageError = null;
+  }
+
   function bind() {
     $('#view').addEventListener('input', updateFilter);
     $('#view').addEventListener('change', updateFilter);
+    $('#view').addEventListener('click', (event) => {
+      const button = event.target.closest('[data-register-range]');
+      if (!button || S.view !== 'reg') return;
+      const range = registerDateRanges().find((item) => item.key === button.dataset.registerRange);
+      if (!range) return;
+      R.from = range.from;
+      R.to = range.to;
+      R.limit = 100;
+      pageRows = [];
+      pageTotalCount = 0;
+      renderRows();
+    });
   }
 
   return {
     bind,
     render,
     renderRows,
+    openDashboardContext,
     loadMore,
     clearFilters,
     csvExport,

@@ -4,7 +4,7 @@ const STORAGE_KEY = 'cv.theme';
 const PALETTE_STORAGE_KEY = 'cv.palette';
 const PALETTES = new Set(['sky', 'blush', 'mint']);
 const THEME_COLORS = {
-  light: '#edf1f6',
+  light: '#faf6ef',
   dark: '#111820',
 };
 
@@ -37,11 +37,20 @@ export function setPalette(palette) {
   return selected;
 }
 
+export function setTheme(theme) {
+  if (theme !== 'light' && theme !== 'dark') return false;
+  const persisted = ls.set(STORAGE_KEY, theme);
+  updateTheme(theme);
+  return persisted;
+}
+
 function updateTheme(theme) {
   const selected = theme === 'dark' ? 'dark' : 'light';
   const next = selected === 'dark' ? 'light' : 'dark';
 
   document.documentElement.dataset.theme = selected;
+  const accountAppearance = document.getElementById('accountAppearance');
+  if (accountAppearance) accountAppearance.value = selected;
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute('content', THEME_COLORS[selected]);
@@ -66,7 +75,6 @@ export function initTheme() {
 
   document.getElementById('themeToggle')?.addEventListener('click', () => {
     const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-    ls.set(STORAGE_KEY, next);
-    updateTheme(next);
+    setTheme(next);
   });
 }

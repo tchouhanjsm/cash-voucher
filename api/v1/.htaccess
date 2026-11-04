@@ -1,0 +1,13 @@
+Options -Indexes
+RewriteEngine On
+
+# PHP source and bootstrap files are never public resources.
+RewriteRule ^(?:src/|bootstrap\.php$) - [F,L,NC]
+RewriteRule ^(?:\.|.*\.sql$) - [F,L,NC]
+
+RewriteRule ^legacy-action-map[.]json$ - [F,L,NC]
+
+# The versioned API has one front controller.
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^ index.php [QSA,L]

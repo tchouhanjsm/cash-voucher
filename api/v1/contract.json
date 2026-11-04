@@ -1,0 +1,27 @@
+{
+  "apiVersion": "v1",
+  "rolloutState": "isolated-foundation",
+  "transport": "same-origin HTTPS JSON",
+  "basePath": "/api/v1",
+  "implementedResources": [
+    "GET /health/live",
+    "GET /health/ready",
+    "GET /meta"
+  ],
+  "legacyRoleKeys": [
+    "staff",
+    "manager",
+    "owner",
+    "accountant"
+  ],
+  "businessActionsEnabled": false,
+  "notes": [
+    "The current Apps Script endpoint remains authoritative.",
+    "No browser client is switched to this API in this phase.",
+    "Authentication, financial handlers, receipt access, imports and cutover are later gated phases."
+  ],
+  "schemaVersion": "0004",
+  "moneyStorageUnit": "integer-paise",
+  "businessTimeZone": "Asia/Kolkata",
+  "legacyActionMapSource": "api/v1/legacy-action-map.json (source-controlled inventory; deliberately not served publicly)"
+}

@@ -1,6 +1,9 @@
 import { $ } from '../core/dom.js';
 import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
+import { setWorkspaceDensity } from '../core/preferences.js';
+import { setTheme } from '../core/theme.js';
+import { displayRole } from '../core/workspaces.js';
 import { csvCell, download, esc, initials, scalarText } from '../core/utils.js';
 import {
   closeModal,
@@ -277,7 +280,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const rows = users
       .map(
         (user) =>
-          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option${role === user.role ? ' selected' : ''}>${role}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
+          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option value="${esc(role)}"${role === user.role ? ' selected' : ''}>${esc(displayRole(role))}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
      <td class="r nw"><button class="btn sm" data-act="upassword" data-id="${esc(user.id)}">Reset password</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
       )
       .join('');
@@ -298,7 +301,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
       '<label for="un">Name<input id="un" autocomplete="name" placeholder="Name" required></label>',
       '<label for="ue">Email address<input id="ue" autocomplete="email" type="email" placeholder="Email" required></label>',
       '<div class="user-select-field"><label for="ur">User role</label><select id="ur">',
-      roles.map((role) => '<option>' + esc(role) + '</option>').join(''),
+      roles
+        .map((role) => '<option value="' + esc(role) + '">' + esc(displayRole(role)) + '</option>')
+        .join(''),
       '</select></div>',
       '<label for="up">Temporary password<input id="up" type="password" inputmode="text" minlength="8" maxlength="128" title="Use 8 to 128 characters" autocomplete="new-password" placeholder="Temporary password (8–128 characters)" required></label>',
       '<button class="btn primary">Add</button>',
@@ -316,7 +321,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         fields: userFormFields,
         className: 'filters user-form-fields',
         footer:
-          '<p class="muted"><b>Staff</b>: create and view own entries · <b>Manager</b>: view, edit, cancel, bulk upload, vendors, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
+          '<p class="muted"><b>User</b>: create and view own entries · <b>Admin</b>: manage daily operations, vendors, bulk uploads, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
       }) +
       '<div class="card management-results-card">' +
       userTable +
@@ -1648,184 +1653,294 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   function account() {
-    (() => {
-      const view = $('#view');
-      const fragment = document.createDocumentFragment();
-      const header = document.createElement('div');
-      header.className = 'head page-header';
-      const headerCopy = document.createElement('div');
-      headerCopy.className = 'page-header-copy';
-      const eyebrow = document.createElement('p');
-      eyebrow.className = 'page-eyebrow';
-      eyebrow.textContent = 'Account';
-      const heading = document.createElement('h1');
-      heading.textContent = 'My Account';
-      const description = document.createElement('p');
-      description.className = 'page-description';
-      description.textContent =
-        'Review your signed-in profile, installation options, and password settings.';
-      headerCopy.append(eyebrow, heading, description);
-      const headerActions = document.createElement('div');
-      headerActions.className = 'page-header-actions';
-      header.append(headerCopy, headerActions);
-      fragment.appendChild(header);
+    const view = $('#view');
+    const fragment = document.createDocumentFragment();
+    const header = document.createElement('div');
+    header.className = 'head page-header account-page-header';
+    const headerCopy = document.createElement('div');
+    headerCopy.className = 'page-header-copy';
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'page-eyebrow';
+    eyebrow.textContent = 'Personal workspace';
+    const heading = document.createElement('h1');
+    heading.id = 'accountPageHeading';
+    heading.tabIndex = -1;
+    heading.textContent = 'My Account';
+    const description = document.createElement('p');
+    description.className = 'page-description';
+    description.textContent =
+      'Your signed-in identity, security and the preferences for this device.';
+    headerCopy.append(eyebrow, heading, description);
+    header.appendChild(headerCopy);
+    fragment.appendChild(header);
 
-      const name = scalarText(S.me?.name);
-      const email = scalarText(S.me?.email);
-      const role = scalarText(S.me?.role);
-      const propertyName = scalarText(S.settings?.propertyName);
-      const profile = document.createElement('div');
-      profile.className = 'card profile profile-account-card';
-      const avatar = document.createElement('span');
-      avatar.className = 'avatar lg';
-      avatar.setAttribute('aria-hidden', 'true');
-      avatar.textContent = initials(name || email);
-      const profileMain = document.createElement('div');
-      profileMain.className = 'profile-main';
-      const profileName = document.createElement('h2');
-      profileName.textContent = name;
-      const profileEmail = document.createElement('p');
-      profileEmail.textContent = email;
-      const metadata = document.createElement('p');
-      const roleBadge = document.createElement('span');
-      roleBadge.className = 'badge';
-      roleBadge.textContent = role;
-      const property = document.createElement('span');
-      property.className = 'muted';
-      property.textContent = propertyName;
-      metadata.append(roleBadge, document.createTextNode(' '), property);
-      profileMain.append(profileName, profileEmail, metadata);
-      const actions = document.createElement('div');
-      actions.className = 'actions';
-      const makeAction = (label, action, className) => {
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.className = className;
-        button.dataset.act = action;
-        button.textContent = label;
-        return button;
-      };
-      if (deferredInstall) actions.appendChild(makeAction('📲 Install app', 'install', 'btn'));
-      actions.appendChild(makeAction('Sign out', 'signout', 'btn danger'));
-      profile.append(avatar, profileMain, actions);
-      fragment.appendChild(profile);
+    const name = scalarText(S.me?.name) || 'Your account';
+    const email = scalarText(S.me?.email);
+    const role = displayRole(S.me?.role);
+    const propertyName = scalarText(S.settings?.propertyName);
+    const layout = document.createElement('div');
+    layout.className = 'account-workspace-grid';
 
-      const tip = document.createElement('p');
-      tip.className = 'muted';
-      tip.textContent =
-        'Tip: on iPhone use Share → Add to Home Screen. On Android/Chrome use the menu → Install app.';
-      fragment.appendChild(tip);
+    const profile = document.createElement('section');
+    profile.className = 'card profile profile-account-card account-profile-panel';
+    profile.setAttribute('aria-labelledby', 'accountProfileHeading');
+    const avatar = document.createElement('span');
+    avatar.className = 'avatar lg profile-account-avatar';
+    avatar.setAttribute('aria-hidden', 'true');
+    avatar.textContent = initials(name || email);
+    const profileMain = document.createElement('div');
+    profileMain.className = 'profile-main';
+    const profileName = document.createElement('h2');
+    profileName.id = 'accountProfileHeading';
+    profileName.tabIndex = -1;
+    profileName.textContent = name;
+    const profileEmail = document.createElement('p');
+    profileEmail.textContent = email;
+    const metadata = document.createElement('p');
+    metadata.className = 'profile-account-metadata';
+    const roleBadge = document.createElement('span');
+    roleBadge.className = 'badge profile-account-role';
+    roleBadge.textContent = role || 'User';
+    const property = document.createElement('span');
+    property.className = 'muted';
+    property.textContent = propertyName || 'Workspace';
+    metadata.append(roleBadge, document.createTextNode(' '), property);
+    profileMain.append(profileName, profileEmail, metadata);
+    const actions = document.createElement('div');
+    actions.className = 'actions profile-account-actions';
+    const makeAction = (label, action, className) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = className;
+      button.dataset.act = action;
+      button.textContent = label;
+      return button;
+    };
+    if (deferredInstall) actions.appendChild(makeAction('Install app', 'install', 'btn'));
+    actions.appendChild(makeAction('Sign out', 'signout', 'btn danger'));
+    profile.append(avatar, profileMain, actions);
+    layout.appendChild(profile);
 
-      const form = document.createElement('form');
-      form.id = 'pf';
-      form.className = 'card account-password-form';
-      form.autocomplete = 'off';
-      const formHeading = document.createElement('h2');
-      formHeading.textContent = 'Change password';
-      const controls = document.createElement('div');
-      controls.className = 'filters account-password-controls';
-      const makePasswordInput = (id, label, autocomplete, placeholder) => {
-        const input = document.createElement('input');
-        input.id = id;
-        input.type = 'password';
-        input.inputMode = 'text';
-        input.minLength = 8;
-        input.title = 'Use 8 to 128 characters';
-        input.maxLength = 128;
-        input.autocomplete = autocomplete;
-        input.placeholder = placeholder;
-        input.setAttribute('aria-label', label);
-        input.required = true;
-        return input;
-      };
-      controls.append(
-        makePasswordInput('po', 'Current password', 'current-password', 'Current password'),
-        makePasswordInput('pn', 'New password', 'new-password', 'New password'),
-      );
-      const submit = document.createElement('button');
-      submit.type = 'submit';
-      submit.className = 'btn primary';
-      submit.textContent = 'Change password';
-      controls.appendChild(submit);
-      form.append(formHeading, controls);
-      fragment.appendChild(form);
-
-      const report = document.createElement('form');
-      report.id = 'accountReportForm';
-      report.className = 'card account-report-form';
-      report.autocomplete = 'off';
-      report.setAttribute('aria-labelledby', 'accountReportHeading');
-      report.setAttribute('aria-describedby', 'accountReportHelp');
-      const reportHeading = document.createElement('h2');
-      reportHeading.id = 'accountReportHeading';
-      reportHeading.textContent = 'Report a problem or ask for help';
-      const reportIntro = document.createElement('p');
-      reportIntro.id = 'accountReportHelp';
-      reportIntro.className = 'muted';
-      reportIntro.textContent =
-        'Your message is emailed to support with your name and email so they can reply. Never type a password.';
-      const reportControls = document.createElement('div');
-      reportControls.className = 'filters account-report-controls';
-      const categoryField = document.createElement('label');
-      categoryField.className = 'account-report-field account-report-field--category';
-      categoryField.htmlFor = 'rc';
-      const categoryLabel = document.createElement('span');
-      categoryLabel.textContent = 'Type of report';
-      const category = document.createElement('select');
-      category.id = 'rc';
-      [
-        ['bug', 'Something is not working'],
-        ['question', 'I have a question'],
-        ['feature', 'Suggestion'],
-        ['other', 'Other'],
-      ].forEach(([value, label]) => {
+    const preferences = document.createElement('section');
+    preferences.className = 'card account-section-card account-preferences';
+    preferences.setAttribute('aria-labelledby', 'accountPreferencesHeading');
+    const preferencesHeader = document.createElement('div');
+    preferencesHeader.className = 'account-section-heading';
+    const preferencesHeading = document.createElement('h2');
+    preferencesHeading.id = 'accountPreferencesHeading';
+    preferencesHeading.tabIndex = -1;
+    preferencesHeading.textContent = 'Workspace preferences';
+    const preferencesIntro = document.createElement('p');
+    preferencesIntro.textContent =
+      'Choose how this workspace looks on this device. These settings are not shared with other users.';
+    preferencesHeader.append(preferencesHeading, preferencesIntro);
+    const preferenceGrid = document.createElement('div');
+    preferenceGrid.className = 'account-preferences-grid';
+    const makePreference = (id, labelText, key, value, options) => {
+      const field = document.createElement('label');
+      field.className = 'account-preference-field';
+      field.htmlFor = id;
+      const label = document.createElement('span');
+      label.textContent = labelText;
+      const select = document.createElement('select');
+      select.id = id;
+      select.dataset.accountPreference = key;
+      options.forEach(([optionValue, optionLabel]) => {
         const option = document.createElement('option');
-        option.value = value;
-        option.textContent = label;
-        category.appendChild(option);
+        option.value = optionValue;
+        option.textContent = optionLabel;
+        select.appendChild(option);
       });
-      categoryField.append(categoryLabel, category);
-      const subjectField = document.createElement('label');
-      subjectField.className = 'account-report-field account-report-field--subject';
-      subjectField.htmlFor = 'rs';
-      const subjectLabel = document.createElement('span');
-      subjectLabel.textContent = 'Subject';
-      const subject = document.createElement('input');
-      subject.id = 'rs';
-      subject.type = 'text';
-      subject.maxLength = 100;
-      subject.minLength = 3;
-      subject.required = true;
-      subject.placeholder = 'Short subject';
-      subjectField.append(subjectLabel, subject);
-      const messageField = document.createElement('label');
-      messageField.className = 'account-report-field account-report-field--message';
-      messageField.htmlFor = 'rm';
-      const messageLabel = document.createElement('span');
-      messageLabel.textContent = 'Describe the problem';
-      const message = document.createElement('textarea');
-      message.id = 'rm';
-      message.maxLength = 2000;
-      message.minLength = 10;
-      message.required = true;
-      message.rows = 5;
-      message.placeholder = 'What were you doing, what did you expect, and what happened instead?';
-      messageField.append(messageLabel, message);
-      const reportSubmit = document.createElement('button');
-      reportSubmit.type = 'submit';
-      reportSubmit.className = 'btn primary';
-      reportSubmit.textContent = 'Send to support';
-      const reportStatus = document.createElement('p');
-      reportStatus.id = 'accountReportStatus';
-      reportStatus.className = 'account-report-status';
-      reportStatus.setAttribute('role', 'status');
-      reportStatus.setAttribute('aria-live', 'polite');
-      reportStatus.setAttribute('aria-atomic', 'true');
-      reportControls.append(categoryField, subjectField, messageField, reportSubmit);
-      report.append(reportHeading, reportIntro, reportControls, reportStatus);
-      fragment.appendChild(report);
-      view.replaceChildren(fragment);
-    })();
+      select.value = value;
+      field.append(label, select);
+      return field;
+    };
+    preferenceGrid.append(
+      makePreference(
+        'accountAppearance',
+        'Appearance',
+        'theme',
+        document.documentElement.dataset.theme === 'dark' ? 'dark' : 'light',
+        [
+          ['light', 'Haveli light'],
+          ['dark', 'Dark'],
+        ],
+      ),
+      makePreference(
+        'accountDensity',
+        'Workspace density',
+        'density',
+        document.documentElement.dataset.density === 'compact' ? 'compact' : 'comfortable',
+        [
+          ['comfortable', 'Comfortable'],
+          ['compact', 'Compact'],
+        ],
+      ),
+    );
+    const preferenceStatus = document.createElement('p');
+    preferenceStatus.id = 'accountPreferencesStatus';
+    preferenceStatus.className = 'account-preferences-status';
+    preferenceStatus.setAttribute('role', 'status');
+    preferenceStatus.setAttribute('aria-live', 'polite');
+    preferenceStatus.textContent = 'Preferences are saved locally on this device.';
+    preferences.append(preferencesHeader, preferenceGrid, preferenceStatus);
+    layout.appendChild(preferences);
+
+    const form = document.createElement('form');
+    form.id = 'pf';
+    form.className = 'card account-section-card account-password-form';
+    form.autocomplete = 'off';
+    form.setAttribute('aria-labelledby', 'accountPasswordHeading');
+    form.setAttribute('aria-describedby', 'accountPasswordHelp');
+    const formHeader = document.createElement('div');
+    formHeader.className = 'account-section-heading';
+    const formHeading = document.createElement('h2');
+    formHeading.id = 'accountPasswordHeading';
+    formHeading.textContent = 'Security';
+    const formIntro = document.createElement('p');
+    formIntro.id = 'accountPasswordHelp';
+    formIntro.textContent =
+      'Change your password for this account. Your current password is required.';
+    formHeader.append(formHeading, formIntro);
+    const controls = document.createElement('div');
+    controls.className = 'account-password-controls';
+    const makePasswordField = (id, labelText, autocomplete, placeholder) => {
+      const field = document.createElement('label');
+      field.className = 'account-password-field';
+      field.htmlFor = id;
+      const label = document.createElement('span');
+      label.textContent = labelText;
+      const input = document.createElement('input');
+      input.id = id;
+      input.type = 'password';
+      input.inputMode = 'text';
+      input.minLength = 8;
+      input.title = 'Use 8 to 128 characters';
+      input.maxLength = 128;
+      input.autocomplete = autocomplete;
+      input.placeholder = placeholder;
+      input.setAttribute('aria-label', labelText);
+      input.required = true;
+      field.append(label, input);
+      return field;
+    };
+    controls.append(
+      makePasswordField('po', 'Current password', 'current-password', 'Current password'),
+      makePasswordField('pn', 'New password', 'new-password', 'New password'),
+    );
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.className = 'btn primary';
+    submit.textContent = 'Change password';
+    controls.appendChild(submit);
+    form.append(formHeader, controls);
+    layout.appendChild(form);
+
+    const report = document.createElement('form');
+    report.id = 'accountReportForm';
+    report.className = 'card account-section-card account-report-form';
+    report.autocomplete = 'off';
+    report.setAttribute('aria-labelledby', 'accountReportHeading');
+    report.setAttribute('aria-describedby', 'accountReportHelp');
+    const reportHeader = document.createElement('div');
+    reportHeader.className = 'account-section-heading';
+    const reportHeading = document.createElement('h2');
+    reportHeading.id = 'accountReportHeading';
+    reportHeading.textContent = 'Help & support';
+    const reportIntro = document.createElement('p');
+    reportIntro.id = 'accountReportHelp';
+    reportIntro.className = 'muted';
+    reportIntro.textContent =
+      'Send a problem report or question to support. Your name and email are included so the team can reply. Never type a password.';
+    reportHeader.append(reportHeading, reportIntro);
+    const reportControls = document.createElement('div');
+    reportControls.className = 'filters account-report-controls';
+    const categoryField = document.createElement('label');
+    categoryField.className = 'account-report-field account-report-field--category';
+    categoryField.htmlFor = 'rc';
+    const categoryLabel = document.createElement('span');
+    categoryLabel.textContent = 'Type of report';
+    const category = document.createElement('select');
+    category.id = 'rc';
+    [
+      ['bug', 'Something is not working'],
+      ['question', 'I have a question'],
+      ['feature', 'Suggestion'],
+      ['other', 'Other'],
+    ].forEach(([value, label]) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = label;
+      category.appendChild(option);
+    });
+    categoryField.append(categoryLabel, category);
+    const subjectField = document.createElement('label');
+    subjectField.className = 'account-report-field account-report-field--subject';
+    subjectField.htmlFor = 'rs';
+    const subjectLabel = document.createElement('span');
+    subjectLabel.textContent = 'Subject';
+    const subject = document.createElement('input');
+    subject.id = 'rs';
+    subject.type = 'text';
+    subject.maxLength = 100;
+    subject.minLength = 3;
+    subject.required = true;
+    subject.placeholder = 'Short subject';
+    subjectField.append(subjectLabel, subject);
+    const messageField = document.createElement('label');
+    messageField.className = 'account-report-field account-report-field--message';
+    messageField.htmlFor = 'rm';
+    const messageLabel = document.createElement('span');
+    messageLabel.textContent = 'Describe the problem';
+    const message = document.createElement('textarea');
+    message.id = 'rm';
+    message.maxLength = 2000;
+    message.minLength = 10;
+    message.required = true;
+    message.rows = 5;
+    message.placeholder = 'What were you doing, what did you expect, and what happened instead?';
+    messageField.append(messageLabel, message);
+    const reportSubmit = document.createElement('button');
+    reportSubmit.type = 'submit';
+    reportSubmit.className = 'btn primary';
+    reportSubmit.textContent = 'Send to support';
+    const reportStatus = document.createElement('p');
+    reportStatus.id = 'accountReportStatus';
+    reportStatus.className = 'account-report-status';
+    reportStatus.setAttribute('role', 'status');
+    reportStatus.setAttribute('aria-live', 'polite');
+    reportStatus.setAttribute('aria-atomic', 'true');
+    reportControls.append(categoryField, subjectField, messageField, reportSubmit);
+    report.append(reportHeader, reportControls, reportStatus);
+    layout.appendChild(report);
+
+    const tip = document.createElement('p');
+    tip.className = 'muted account-install-tip';
+    tip.textContent =
+      'Install the workspace on your device for quicker access. On iPhone use Share → Add to Home Screen; on Android or desktop Chrome use the browser menu → Install app.';
+    view.replaceChildren(header, layout, tip);
+  }
+
+  function handleAccountPreferenceChange(event) {
+    const control = event.target;
+    const preference = control?.dataset?.accountPreference;
+    if (!preference) return;
+
+    let saved = false;
+    if (preference === 'theme') {
+      saved = setTheme(control.value);
+    } else if (preference === 'density') {
+      saved = setWorkspaceDensity(control.value);
+    } else {
+      return;
+    }
+
+    const status = $('#accountPreferencesStatus');
+    if (status) {
+      status.textContent = saved
+        ? 'Preference saved on this device.'
+        : 'The preference is active, but this browser could not save it for next time.';
+    }
   }
 
   async function changePassword(event) {
@@ -1923,7 +2038,10 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     $('#view').addEventListener('submit', handleSubmit);
     $('#view').addEventListener('input', handleAuditFilters);
-    $('#view').addEventListener('change', handleAuditFilters);
+    $('#view').addEventListener('change', (event) => {
+      handleAccountPreferenceChange(event);
+      handleAuditFilters(event);
+    });
   }
 
   return {

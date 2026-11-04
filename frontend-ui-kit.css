@@ -729,31 +729,31 @@ here and in the production app. It requires no JS or remote assets. */
 }
 
 .studio-paper {
-  background: #fff;
+  background: #fffefc;
 }
 .studio-canvas {
-  background: #edf1f6;
+  background: #faf6ef;
 }
 .studio-ink {
-  background: #1f2a44;
+  background: #554a43;
 }
 .studio-navy {
-  background: #1f2a44;
+  background: #dcafa4;
 }
 .studio-accent {
   background: #3477bf;
 }
 .studio-success {
-  background: #1b7a43;
+  background: #dde8d9;
 }
 .studio-warning {
-  background: #895b00;
+  background: #f0e1bb;
 }
 .studio-danger {
-  background: #b3261e;
+  background: #b8456b;
 }
 .studio-stroke {
-  background: #dce2eb;
+  background: #e8d8c5;
 }
 .studio-type-sample {
   display: flex;

@@ -8,7 +8,7 @@
       name="description"
       content="Cash Payment Vouchers — secure voucher and payment management."
     />
-    <meta name="theme-color" content="#f6f8fc" />
+    <meta name="theme-color" content="#faf6ef" />
     <meta name="color-scheme" content="light dark" />
 
     <meta
@@ -437,16 +437,26 @@
             <span class="user-meta"><b id="userName"></b><small id="userRole"></small></span>
             <span class="caret" aria-hidden="true">▾</span>
           </button>
-          <div id="userPop" class="user-pop hidden">
+          <div id="userPop" class="user-pop hidden" role="group" aria-label="Account actions">
             <div class="user-pop-head">
-              <b id="popName"></b>
-              <span class="muted" id="popEmail"></span>
+              <span class="user-pop-avatar" id="popAvatar" aria-hidden="true"></span>
+              <div class="user-pop-identity">
+                <b id="popName"></b>
+                <span class="user-pop-role" id="popRole"></span>
+                <span class="muted" id="popEmail"></span>
+              </div>
             </div>
-            <button type="button" data-go="acct">
+            <button type="button" data-go="acct" data-focus="accountPageHeading">
               <svg class="i menu-icon" aria-hidden="true">
                 <use href="#i-user"></use>
               </svg>
-              <span>My profile</span>
+              <span>My account</span>
+            </button>
+            <button type="button" data-go="acct" data-focus="accountPreferencesHeading">
+              <svg class="i menu-icon" aria-hidden="true">
+                <use href="#i-settings"></use>
+              </svg>
+              <span>Preferences</span>
             </button>
             <button type="button" data-go="acct" data-focus="po">
               <svg class="i menu-icon" aria-hidden="true">
