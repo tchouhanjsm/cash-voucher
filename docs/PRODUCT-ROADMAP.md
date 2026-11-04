@@ -468,4 +468,12 @@ A real replacement-runtime foundation is now in source: a versioned /api/v1 HTTP
 
 CI provisions a disposable MySQL 8 service, applies the four migrations using a DDL-only account, then tests the application against a table-restricted runtime account. The PHP integration suite covers exact paise conversion, existing role grants, request validation, health/readiness, rollback-safe per-type voucher numbering under a two-process row-lock contention test, idempotent replay/conflict, atomic audit writes, legacy action-map parity and append-only privilege boundaries.
 
-**Next delivery:** secure login/session lifecycle plus CSRF protection and rate limiting, followed by a single first financial vertical slice (voucher create/read) with atomic audit and idempotency. Do not switch the PWA or export any production records until host preflight, source mapping, shadow reconciliation and rollback are approved.
+**Next delivery:** first PHP voucher create/read vertical slice with staff own-record scope, manager/owner view scope, row-locked numbering, idempotency and atomic audit. Do not switch the PWA or export any production records until host preflight, source mapping, shadow reconciliation and rollback are approved.
+
+## Phase 15 — isolated PHP authentication and session lifecycle (4 November 2026)
+
+The replacement API now verifies imported legacy HMAC credentials without requiring a plaintext password export and upgrades each successfully authenticated account to PHP password_hash. Sessions are opaque, six-hour, server-revocable records; cookies are HttpOnly/SameSite=Strict, CSRF is double-checked against the database, and a database lockout applies to both normalized email and source IP. Password changes are audited and revoke all active sessions.
+
+Only login, current-session restore, logout and password change are exposed under /api/v1. Existing Apps Script remains the PWA's authoritative API. No real user/password data or production pepper has been moved.
+
+**Next delivery:** first PHP voucher create/list/read vertical slice. It must enforce staff own-record scope, preserve manager/owner permissions and accountant read-only scope, use the transaction-safe number allocator, and commit voucher + audit + idempotency atomically. The current PWA stays on Apps Script until fixture reconciliation and owner-approved staging.

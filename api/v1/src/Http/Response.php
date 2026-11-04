@@ -4,15 +4,19 @@ declare(strict_types=1);
 namespace CashVoucher\Api\Http;
 
 use CashVoucher\Api\Support\ApiException;
+use InvalidArgumentException;
 use JsonException;
 
 final class Response
 {
-    /** @param array<string, mixed> $body */
+    /** @param array<string, mixed> $body
+     *  @param array<string, list<string>> $headers
+     */
     private function __construct(
         private readonly int $status,
         private readonly array $body,
-        private readonly string $requestId
+        private readonly string $requestId,
+        private readonly array $headers = []
     ) {
     }
 
@@ -49,6 +53,25 @@ final class Response
         return $this->body;
     }
 
+    public function withHeader(string $name, string $value): self
+    {
+        if (!preg_match('/^[A-Za-z0-9-]{1,64}$/D', $name)
+            || preg_match('/[\r\n]/', $value)
+        ) {
+            throw new InvalidArgumentException('Response header is invalid.');
+        }
+
+        $headers = $this->headers;
+        $headers[$name][] = $value;
+        return new self($this->status, $this->body, $this->requestId, $headers);
+    }
+
+    /** @return array<string, list<string>> */
+    public function headers(): array
+    {
+        return $this->headers;
+    }
+
     public function send(): never
     {
         http_response_code($this->status);
@@ -59,6 +82,12 @@ final class Response
         header('Referrer-Policy: no-referrer');
         header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
         header('X-Request-Id: ' . $this->requestId);
+
+        foreach ($this->headers as $name => $values) {
+            foreach ($values as $value) {
+                header($name . ': ' . $value, strtolower($name) !== 'set-cookie');
+            }
+        }
 
         try {
             echo json_encode(

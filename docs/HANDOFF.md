@@ -590,4 +590,15 @@ See [Role-based workspace architecture](WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.m
 - Added capability parity tests for staff/manager/owner/accountant and an integer-paise conversion helper. The manager key remains manager; the backend is not changed to admin.
 - Added a MySQL-backed integration suite and CI service with a restricted runtime DB account. Tests cover exact-paise conversion, per-type row-locked numbering, a two-process contention test and rollback, action-map parity, role/record scope, idempotent replay/conflict, exactly-one audit commit, and the runtime account's inability to update/delete audit, approval or cash-close correction history.
 - Release boundary: isolated test schema only. No production cPanel connection, Apps Script/Sheets/Drive read/write, export/import, financial service route, API endpoint switch, offline queue modification, deploy or merge has occurred.
-- Next phase: implement session login/CSRF/rate limiting and the first voucher read/write service behind the same authorization/idempotency/audit transaction; first verify the hosting plan and backup/restore capability with the Owner.
+- Next phase: implement the first PHP voucher create/read vertical slice behind the verified session, record-scope authorization, row-locked numbering, idempotency and atomic audit; hosting and backup/restore qualification remain a separate Owner gate.
+
+### Phase 15 — isolated PHP authentication and session lifecycle (4 November 2026)
+
+- Added database-backed login with independent HMAC-hashed email/IP throttling, five failed attempts and a 15-minute lockout.
+- Added HttpOnly SameSite=Strict session cookies, a separate session-bound CSRF cookie, HTTPS enforcement, six-hour hard expiry and active-user/current-role checks on every request.
+- Implemented current-session restore, logout and password change. Password changes clear must-change state, append audit history and revoke all user sessions transactionally.
+- Preserved the exact legacy Apps Script HMAC-SHA256(salt + ':' + password, PEPPER) format for staged import. A successful login upgrades the hash to PHP password_hash. The legacy pepper is an environment secret; temporary short PINs remain disabled unless an explicit migration marker is set and must-change is true.
+- Marked only login, logout and changePassword as implemented in the legacy action inventory. All financial and administrative handlers remain planned. The PWA still uses Apps Script.
+- Added MySQL integration coverage for legacy password upgrade, current session restore, CSRF enforcement, forced password change, session revocation and lockout.
+- No production credentials, Apps Script properties, Sheets/Drive values or real user hashes were read or changed. No endpoint switch, deployment, migration or PR creation occurred.
+- Follow-up: add the first PHP voucher create/read vertical slice with transaction-safe numbering, record-scope authorization, idempotency and atomic audit; then validate it against fixtures before any production migration.

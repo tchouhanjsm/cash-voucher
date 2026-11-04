@@ -8,7 +8,10 @@ use CashVoucher\Api\Financial\IdempotencyService;
 use CashVoucher\Api\Infrastructure\Database;
 use CashVoucher\Api\Infrastructure\MigrationRunner;
 use CashVoucher\Api\Security\Authorization;
+use CashVoucher\Api\Security\AuthService;
+use CashVoucher\Api\Security\PasswordHasher;
 use CashVoucher\Api\Security\Role;
+use CashVoucher\Api\Security\SessionService;
 use CashVoucher\Api\Support\ApiException;
 use CashVoucher\Api\Support\Money;
 
@@ -132,35 +135,13 @@ $kernel = new Kernel();
 $live = $kernel->handle(Request::fromValues('GET', '/api/v1/health/live'));
 check($live->status() === 200 && ($live->body()['data']['status'] ?? null) === 'live', 'liveness endpoint responds without touching the database');
 $meta = $kernel->handle(Request::fromValues('GET', '/api/v1/meta'));
-check(($meta->body()['data']['rolloutState'] ?? null) === 'isolated-foundation', 'metadata declares the non-production rollout state');
+check(($meta->body()['data']['rolloutState'] ?? null) === 'isolated-authentication-foundation', 'metadata declares the non-production rollout state');
 $wrongMethod = $kernel->handle(Request::fromValues('POST', '/api/v1/health/live'));
 check($wrongMethod->status() === 405, 'health endpoint rejects unsupported methods');
 $missing = $kernel->handle(Request::fromValues('GET', '/api/v1/admin'));
 check($missing->status() === 404, 'unimplemented business routes are not silently exposed');
 
-// Freeze every registered legacy action before the new API handlers are ported.
-$repositoryRoot = dirname(__DIR__, 2);
-$actionMap = json_decode(
-    (string) file_get_contents($repositoryRoot . '/api/v1/legacy-action-map.json'),
-    true,
-    64,
-    JSON_THROW_ON_ERROR
-);
-$routesSource = (string) file_get_contents($repositoryRoot . '/backend/99-routes.gs');
-$registeredBlock = explode('const WRITES =', $routesSource, 2)[0];
-preg_match_all('/^\\s{2}([A-Za-z][A-Za-z0-9]+):\\s*[A-Za-z0-9_]+,?$/m', $registeredBlock, $routeMatches);
-$registeredActions = $routeMatches[1] ?? [];
-$mappedActions = array_keys($actionMap['actions'] ?? []);
-sort($registeredActions);
-sort($mappedActions);
-check($registeredActions === array_values(array_diff($mappedActions, ['login'])), 'every registered Apps Script action has a versioned API contract mapping');
-check(isset($actionMap['actions']['login']), 'the special public login action is mapped separately');
-check(
-    count(array_filter($actionMap['actions'], static fn (array $action): bool => ($action['state'] ?? '') === 'planned')) === count($actionMap['actions']),
-    'action map distinguishes planned routes from implemented business handlers'
-);
-
-// Freeze every registered legacy action before the new API handlers are ported.
+// Freeze every Apps Script action and mark only the completed authentication routes as implemented.
 $repositoryRoot = dirname(__DIR__, 2);
 $actionMap = json_decode(
     (string) file_get_contents($repositoryRoot . '/api/v1/legacy-action-map.json'),
@@ -176,10 +157,15 @@ $mappedActions = array_keys($actionMap['actions'] ?? []);
 sort($registeredActions);
 sort($mappedActions);
 check($registeredActions === array_values(array_diff($mappedActions, ['login'])), 'every registered Apps Script action has a versioned API contract mapping');
-check(isset($actionMap['actions']['login']), 'the special public login action is mapped separately');
+$implementedActions = array_keys(array_filter(
+    $actionMap['actions'],
+    static fn (array $action): bool => ($action['state'] ?? '') === 'implemented'
+));
+sort($implementedActions);
+check($implementedActions === ['changePassword', 'login', 'logout'], 'only the PHP authentication routes are marked implemented');
 check(
-    count(array_filter($actionMap['actions'], static fn (array $action): bool => ($action['state'] ?? '') === 'planned')) === count($actionMap['actions']),
-    'action map distinguishes planned routes from implemented business handlers'
+    count(array_filter($actionMap['actions'], static fn (array $action): bool => ($action['state'] ?? '') === 'planned')) === count($actionMap['actions']) - 3,
+    'all financial and administrative action routes remain explicitly planned'
 );
 
 // Integration checks run only with the restricted application account, never the migration account.
@@ -689,5 +675,154 @@ try {
         $pdo->rollBack();
     }
 }
+
+// Secure PHP session lifecycle: legacy HMAC upgrade, DB throttling, CSRF, password change and revocation.
+$legacyPepper = (string) (getenv('CV_LEGACY_AUTH_PEPPER') ?: '');
+check(strlen($legacyPepper) >= 16, 'legacy pepper is available only in isolated test environment');
+$authEmail = 'auth-' . bin2hex(random_bytes(5)) . '@example.test';
+$authUserId = uuid();
+$legacySalt = 'legacy-salt-' . bin2hex(random_bytes(8));
+$legacyDigest = hash_hmac('sha256', $legacySalt . ':1234', $legacyPepper);
+$legacyStoredHash = 'legacy-hmac-sha256-v1' . chr(36) . $legacySalt . chr(36) . $legacyDigest;
+$insertAuthUser = $pdo->prepare(
+    'INSERT INTO users
+     (id, full_name, email, email_normalized, role, is_active, password_hash,
+      must_change_password, created_at_utc, updated_at_utc)
+     VALUES (:id, :name, :email, :normalized, :role, 1, :password_hash, 1,
+      UTC_TIMESTAMP(6), UTC_TIMESTAMP(6))'
+);
+$insertAuthUser->execute([
+    'id' => $authUserId,
+    'name' => 'Legacy Authentication Fixture',
+    'email' => $authEmail,
+    'normalized' => strtolower($authEmail),
+    'role' => 'staff',
+    'password_hash' => $legacyStoredHash,
+]);
+
+$authService = AuthService::fromEnvironment($pdo);
+$legacyLogin = $authService->login($authEmail, '1234', '198.51.100.31');
+check($legacyLogin['user']['role'] === 'staff', 'legacy credential login retains the original staff role');
+check($legacyLogin['user']['mustChangePassword'] === true, 'temporary legacy PIN keeps the forced password-change gate');
+check(preg_match('/^[a-f0-9]{64}$/D', $legacyLogin['sessionToken']) === 1, 'session token is a 256-bit random opaque value');
+check(preg_match('/^[a-f0-9]{64}$/D', $legacyLogin['csrfToken']) === 1, 'CSRF token is independently random');
+$storedPassword = $pdo->prepare('SELECT password_hash FROM users WHERE id = :id');
+$storedPassword->execute(['id' => $authUserId]);
+$upgradedHash = (string) $storedPassword->fetchColumn();
+check(password_get_info($upgradedHash)['algoName'] !== 'unknown', 'successful legacy login immediately upgrades the stored password hash');
+check(!hash_equals($legacyStoredHash, $upgradedHash), 'the imported legacy salt/HMAC is no longer stored after successful login');
+
+$sessionService = new SessionService($pdo);
+$principal = $sessionService->authenticate($legacyLogin['sessionToken']);
+check($principal['id'] === $authUserId && $principal['role'] === 'staff', 'session resolves the current active user and stored role');
+$sessionService->assertCsrf($principal, $legacyLogin['csrfToken'], $legacyLogin['csrfToken']);
+expectFailure(
+    static fn () => $sessionService->assertCsrf($principal, str_repeat('0', 64), $legacyLogin['csrfToken']),
+    'CSRF verification rejects a missing or mismatched request token',
+    ApiException::class
+);
+
+$currentRequest = $kernel->handle(Request::fromValues(
+    'GET',
+    '/api/v1/sessions/current',
+    ['Cookie' => 'cv_session=' . $legacyLogin['sessionToken'] . '; cv_csrf=' . $legacyLogin['csrfToken']]
+));
+check($currentRequest->status() === 200, 'session-current endpoint restores a valid cookie session');
+check(
+    ($currentRequest->body()['data']['csrfToken'] ?? null) === $legacyLogin['csrfToken'],
+    'session-current endpoint returns the session-bound CSRF token after reload'
+);
+
+$insecureLogin = $kernel->handle(Request::fromValues(
+    'POST',
+    '/api/v1/sessions',
+    ['Content-Type' => 'application/json'],
+    '{"email":"operator@example.test","password":"not-used"}',
+    '198.51.100.40',
+    false,
+    false
+));
+check($insecureLogin->status() === 400, 'session creation refuses non-HTTPS non-local requests');
+
+$passwordChange = $kernel->handle(Request::fromValues(
+    'POST',
+    '/api/v1/sessions/current/password',
+    [
+        'Content-Type' => 'application/json',
+        'Cookie' => 'cv_session=' . $legacyLogin['sessionToken'] . '; cv_csrf=' . $legacyLogin['csrfToken'],
+        'X-CSRF-Token' => $legacyLogin['csrfToken'],
+    ],
+    json_encode([
+        'currentPassword' => '1234',
+        'newPassword' => 'Better-New-Password-2026!',
+    ], JSON_THROW_ON_ERROR)
+));
+check($passwordChange->status() === 200, 'forced password change endpoint accepts the current credential and a strong new password');
+check(
+    ($passwordChange->body()['data']['signInRequired'] ?? false) === true,
+    'password change requires a fresh sign-in after session revocation'
+);
+check(
+    count($passwordChange->headers()['Set-Cookie'] ?? []) === 2
+    && str_contains($passwordChange->headers()['Set-Cookie'][0], 'Max-Age=0')
+    && str_contains($passwordChange->headers()['Set-Cookie'][1], 'Max-Age=0'),
+    'password change clears both authentication and CSRF cookies'
+);
+expectFailure(
+    static fn () => $sessionService->authenticate($legacyLogin['sessionToken']),
+    'password change revokes the previously active session',
+    ApiException::class
+);
+$updatedUser = $pdo->prepare(
+    'SELECT password_hash, must_change_password FROM users WHERE id = :id'
+);
+$updatedUser->execute(['id' => $authUserId]);
+$updatedPasswordRow = $updatedUser->fetch();
+check(is_array($updatedPasswordRow) && (int) $updatedPasswordRow['must_change_password'] === 0, 'password change clears mandatory-change state');
+check(
+    is_array($updatedPasswordRow) && password_verify('Better-New-Password-2026!', (string) $updatedPasswordRow['password_hash']),
+    'new password is stored using the native PHP password hashing API'
+);
+
+$modernLogin = $authService->login($authEmail, 'Better-New-Password-2026!', '198.51.100.32');
+check($modernLogin['user']['mustChangePassword'] === false, 'modern password login no longer requires forced change');
+$modernPrincipal = $sessionService->authenticate($modernLogin['sessionToken']);
+$logoutResponse = $kernel->handle(Request::fromValues(
+    'POST',
+    '/api/v1/sessions/current/logout',
+    [
+        'Content-Type' => 'application/json',
+        'Cookie' => 'cv_session=' . $modernLogin['sessionToken'] . '; cv_csrf=' . $modernLogin['csrfToken'],
+        'X-CSRF-Token' => $modernLogin['csrfToken'],
+    ],
+    '{}'
+));
+check($logoutResponse->status() === 200, 'logout endpoint revokes the current session');
+check(
+    count($logoutResponse->headers()['Set-Cookie'] ?? []) === 2,
+    'logout clears both session cookies'
+);
+expectFailure(
+    static fn () => $sessionService->authenticate($modernLogin['sessionToken']),
+    'logged-out session token cannot be reused',
+    ApiException::class
+);
+
+// Five consecutive failures lock both the normalized email and the source IP for 15 minutes.
+$throttleEmail = 'missing-' . bin2hex(random_bytes(5)) . '@example.test';
+for ($attempt = 1; $attempt <= 5; $attempt++) {
+    expectFailure(
+        static fn () => $authService->login($throttleEmail, 'Wrong-Password-2026!', '198.51.100.77'),
+        'invalid credentials are rejected and counted for sign-in throttling',
+        ApiException::class
+    );
+}
+$throttled = false;
+try {
+    $authService->login($throttleEmail, 'Wrong-Password-2026!', '198.51.100.77');
+} catch (ApiException $exception) {
+    $throttled = $exception->httpStatus === 429 && $exception->errorCode === 'LOGIN_THROTTLED';
+}
+check($throttled, 'sixth failed sign-in attempt is refused by the database-backed lockout');
 
 fwrite(STDOUT, sprintf("PHP API foundation tests passed: %d assertions.\n", $checks));

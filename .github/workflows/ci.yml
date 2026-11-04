@@ -23,7 +23,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: cash-voucher-ci-root-only
-          MYSQL_ROOT_HOST: "%"
+          MYSQL_ROOT_HOST: '%'
           MYSQL_DATABASE: cash_voucher_test
         ports:
           - 3306:3306
@@ -35,13 +35,16 @@ jobs:
     env:
       CV_APP_ENV: test
       CV_DB_HOST: 127.0.0.1
-      CV_DB_PORT: "3306"
+      CV_DB_PORT: '3306'
       CV_DB_NAME: cash_voucher_test
       CV_DB_USER: cash_voucher_app
       CV_DB_PASSWORD: cash-voucher-test-app-password
       CV_MIGRATION_DB_USER: root
       CV_MIGRATION_DB_PASSWORD: cash-voucher-ci-root-only
-      CV_ALLOW_SCHEMA_MIGRATIONS: "true"
+      CV_ALLOW_SCHEMA_MIGRATIONS: 'true'
+      CV_AUTH_THROTTLE_SECRET: 'cash-voucher-ci-auth-throttle-secret-2026'
+      CV_LEGACY_AUTH_PEPPER: 'cash-voucher-ci-legacy-pepper-only-2026'
+      CV_LEGACY_SHORT_CREDENTIAL_MIGRATION: PIN_TO_PASSWORD_V1
 
     steps:
       - name: Checkout
@@ -131,7 +134,7 @@ jobs:
         if: ${{ always() && steps.dependencies.outcome == 'success' }}
         uses: shivammathur/setup-php@v2
         with:
-          php-version: "8.3"
+          php-version: '8.3'
           extensions: pdo_mysql
           coverage: none
 

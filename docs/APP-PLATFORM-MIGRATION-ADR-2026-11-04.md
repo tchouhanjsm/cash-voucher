@@ -117,8 +117,8 @@ No dual writes between Sheets and SQL are recommended: partial success across tw
 
 ## Scope of this PR
 
-This PR now includes the isolated PHP runtime shell, a guarded MySQL/MariaDB schema migration foundation, capability parity primitives and disposable integration tests. The only exposed PHP routes are liveness, readiness and metadata. No business action is wired and the PWA continues to use the existing Apps Script endpoint.
+This work now includes the isolated PHP runtime shell, guarded MySQL/MariaDB schema migrations, capability parity primitives and a secure session lifecycle (login, current session, logout and password change). Financial/business handlers are not exposed; the PWA continues to use the existing Apps Script endpoint.
 
 It must not introduce a production SQL connection, configure the actual cPanel account, expose credentials, apply migrations to a customer database, export production Sheets/Drive contents, change the live Apps Script API URL, deploy/push Apps Script, write production financial data, clear offline queues, alter backups, or claim Apps Script is already retired.
 
-The next delivery must add authenticated sessions/CSRF/rate limits and expose the first voucher create/read service through the frozen action contract. The current row-locked allocator, idempotency unit of work and audit writer are internal primitives only; no business HTTP route uses them yet. Actual host qualification, field-by-field import mapping, shadow reconciliation, offline queue drain, owner-approved cutover and tested rollback remain separate release gates.
+The next delivery must expose the first voucher create/read service through the frozen action contract. The current row-locked allocator, idempotency unit of work and audit writer are internal primitives only; no financial HTTP route uses them yet. Actual host qualification, field-by-field import mapping, shadow reconciliation, offline queue drain, owner-approved cutover and tested rollback remain separate release gates.

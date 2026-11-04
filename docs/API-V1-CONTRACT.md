@@ -1,18 +1,30 @@
-# Versioned PHP API — Phase 14 foundation
+# Versioned PHP API — Phase 14–15 foundation
 
 ## Status
 
-The PHP API is an isolated scaffold only. The current PWA still calls the Apps Script API, and Apps Script + Sheets + Drive remain the single authoritative production writer. The PHP endpoints in this phase do not create or mutate vouchers.
+The PHP API is an isolated replacement foundation with a working session lifecycle only. The current PWA still calls the Apps Script API, and Apps Script + Sheets + Drive remain the single authoritative production writer. No PHP financial or business mutation route is exposed.
 
 ## Implemented routes
 
-| Method | Path | Behavior |
-|---|---|---|
-| GET | /api/v1/health/live | Process liveness; does not require a database |
-| GET | /api/v1/health/ready | Verifies the runtime DB account can connect, read schema_migrations, and sees schema version 0004 |
-| GET | /api/v1/meta | Returns API version, isolated rollout state, business timezone, integer currency unit and legacy role keys |
+- `GET /api/v1/health/live` — process liveness; does not require a database.
+- `GET /api/v1/health/ready` — runtime database connectivity and schema version 0004.
+- `GET /api/v1/meta` — API version, rollout state, timezone, currency and legacy role keys.
+- `POST /api/v1/sessions` — sign-in, legacy password upgrade and secure cookie creation.
+- `GET /api/v1/sessions/current` — current-user and role revalidation plus session restore.
+- `POST /api/v1/sessions/current/logout` — CSRF-protected session revocation.
+- `POST /api/v1/sessions/current/password` — CSRF-protected password change and global session revocation.
 
 All responses use a JSON envelope with ok, data or error, and a request identifier. Responses are not cacheable. The API does not enable cross-origin access; same-origin HTTPS is the default boundary. Unknown resources return 404 and unsupported methods return 405.
+
+## Authentication and session security
+
+- Session tokens are 256-bit random opaque values, stored only as SHA-256 hashes in user_sessions and sent in an HttpOnly, SameSite=Strict, Secure cookie on HTTPS.
+- A separate random CSRF token is stored as a hash and in a SameSite=Strict cookie readable by the same-origin PWA. Every POST session mutation must send the same value in X-CSRF-Token; both cookie equality and database hash are checked.
+- Sessions have a six-hour hard expiry. User active state and role are re-read on every authenticated request, so disabling a user or changing a role takes effect without waiting for token expiry.
+- Login throttling uses HMAC-hashed normalized email and REMOTE_ADDR identifiers in login_attempts. Five failed attempts lock the relevant subjects for 15 minutes. Forwarded IP headers are not trusted.
+- The legacy verifier supports the exact current Apps Script format HMAC-SHA256(salt + ':' + password, PEPPER). The source pepper is provided separately as CV_LEGACY_AUTH_PEPPER and is never exported automatically. A successful legacy login immediately rehashes with PHP password_hash. Short temporary credentials are accepted only when the account is marked must-change and CV_LEGACY_SHORT_CREDENTIAL_MIGRATION=PIN_TO_PASSWORD_V1 is explicitly enabled.
+- Password change requires the current password and CSRF token, clears must-change, appends an audit event and revokes every active session in one database transaction.
+- No token is returned in JSON. HTTPS is required outside localhost development. CORS is not enabled.
 
 ## Compatibility rules frozen for later service work
 
@@ -28,11 +40,11 @@ All responses use a JSON envelope with ok, data or error, and a request identifi
 
 ## Legacy action inventory
 
-[api/v1/legacy-action-map.json](../api/v1/legacy-action-map.json) maps every action currently registered in backend/99-routes.gs, plus the separately handled public login action, to a proposed versioned route and required access scope. The PHP integration suite compares this map against the real Apps Script registry so an existing action cannot silently disappear from the migration plan. All entries remain planned until a tested handler is implemented.
+[api/v1/legacy-action-map.json](../api/v1/legacy-action-map.json) maps every action currently registered in backend/99-routes.gs, plus the separately handled public login action, to a proposed versioned route and required access scope. The PHP integration suite compares this map against the real Apps Script registry so an existing action cannot silently disappear from the migration plan. Only login, logout and changePassword are marked implemented. All financial, vendor, report, receipt, cash-close, backup, settings and user-management entries remain planned until a tested handler is implemented.
 
 ## Deliberately not implemented yet
 
-Login/session creation, CSRF validation, password import/rehash, financial handlers, reports, receipt upload/download, owner recovery, backups, export/import, offline queue switching and customer/tenant provisioning are not exposed. The schema is a reviewed engineering starting point, not a production import schema. Build these as separate tested vertical slices after the hosting preflight and field-by-field legacy contract inventory.
+Financial handlers, reports, receipt upload/download, owner recovery, backups, export/import, offline queue switching and customer/tenant provisioning are not exposed. The schema is a reviewed engineering starting point, not a production import schema. Build these as separate tested vertical slices after the hosting preflight and field-by-field legacy contract inventory.
 
 ## Configuration
 

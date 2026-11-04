@@ -24,14 +24,20 @@ Recommended runtime grants are SELECT/INSERT/UPDATE on users, vendors, settings,
 
 The API never loads a .env file. Provide environment variables through the local shell, process manager or hosting control panel. Keep secrets outside the public document root and outside Git.
 
+## Authentication and session policy
+
+The runtime supports modern PHP password hashes and imported legacy values encoded as `legacy-hmac-sha256-v1$<salt>$<hex-hmac>`. The imported HMAC pepper is not stored in SQL; it must be transferred by the Owner through a secret environment variable after a secure, separately approved import. A successful login upgrades the hash immediately. Never export the pepper into a repository or include it in a database dump.
+
+The web runtime needs SELECT/INSERT/UPDATE on users, user_sessions and login_attempts. It does not receive schema privileges. Session tokens and CSRF tokens are 256-bit random values; only SHA-256 digests are stored in user_sessions. Five failed attempts lock the HMAC-hashed email and source-IP identities for 15 minutes. Cookie sessions last six hours, are HttpOnly/SameSite=Strict, and require HTTPS except localhost development. CSRF validation compares the same-origin header, CSRF cookie and stored hash.
+
 ## Initial table groups
 
-| Migration | Tables | Purpose |
-|---|---|---|
-| 0001 | users, vendors, settings | Identity, role key compatibility, party identity and configuration |
-| 0002 | vouchers, voucher_approval_events, voucher_receipts, cash_closes, cash_close_corrections | Financial records, approvals, private receipt metadata and close snapshots |
-| 0003 | user_sessions, login_attempts, idempotency_requests, audit_events | Hashed sessions/CSRF state, throttling, retry safety and attributable audit events |
-| 0004 | voucher_number_sequences | Independent payment/receipt counters allocated under an InnoDB row lock inside the financial transaction |
+| Migration | Tables                                                                                   | Purpose                                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 0001      | users, vendors, settings                                                                 | Identity, role key compatibility, party identity and configuration                                      |
+| 0002      | vouchers, voucher_approval_events, voucher_receipts, cash_closes, cash_close_corrections | Financial records, approvals, private receipt metadata and close snapshots                               |
+| 0003      | user_sessions, login_attempts, idempotency_requests, audit_events                        | Hashed sessions/CSRF state, throttling, retry safety and attributable audit events                       |
+| 0004      | voucher_number_sequences                                                                 | Independent payment/receipt counters allocated under an InnoDB row lock inside the financial transaction |
 
 Voucher numbers are allocated from a per-type row locked by SELECT ... FOR UPDATE inside the same transaction as the voucher insert. A rollback also rolls back the counter increment. Seed the first value from the reconciled legacy next-number setting during import; never guess the historical counter. Amounts use integer paise columns, never floating-point currency columns. Business dates remain DATE values in the Asia/Kolkata business calendar; event instants are DATETIME(6) stored in UTC. Existing Drive IDs and legacy source IDs have dedicated nullable fields for later reconciliation; no importer is included.
 
