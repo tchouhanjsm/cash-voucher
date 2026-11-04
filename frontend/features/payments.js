@@ -26,6 +26,7 @@ export function createPayments({ api, refresh }) {
   let NT = 'PAYMENT';
   let flushing = false;
   let rowErrorSeq = 0;
+  let cashImpactGroupSeq = 0;
   const outboxChannel =
     typeof BroadcastChannel === 'function' ? new BroadcastChannel('cash-voucher-outbox') : null;
 
@@ -236,7 +237,7 @@ export function createPayments({ api, refresh }) {
     remove.title = NT === 'RECEIPT' ? 'Remove receipt' : 'Remove payment';
     remove.setAttribute('aria-label', remove.title);
     remove.textContent = '✕';
-    top.append(payeeLabel, amountLabel, noteLabel, remove);
+    top.append(payeeLabel, amountLabel, remove);
 
     const bottom = document.createElement('div');
     bottom.className = 'bot';
@@ -249,10 +250,8 @@ export function createPayments({ api, refresh }) {
     categoryLabel.appendChild(categorySelect);
 
     const methodLabel = document.createElement('label');
-    methodLabel.className = 'cash-impact-control payment-method-control';
-    methodLabel.appendChild(
-      document.createTextNode(NT === 'RECEIPT' ? 'Received via' : 'Paid via'),
-    );
+    methodLabel.className = 'payment-method-control';
+    methodLabel.appendChild(document.createTextNode('Payment method'));
     const methodSelect = document.createElement('select');
     methodSelect.className = 'rci';
     methodSelect.required = true;
@@ -265,6 +264,44 @@ export function createPayments({ api, refresh }) {
     });
     methodLabel.appendChild(methodSelect);
     bottom.append(categoryLabel, methodLabel);
+
+    const movement = document.createElement('fieldset');
+    movement.className = 'cash-movement-fieldset';
+    const groupNumber = ++cashImpactGroupSeq;
+    const movementLegend = document.createElement('legend');
+    movementLegend.textContent = 'What happened to the physical cash?';
+    const movementHelp = document.createElement('p');
+    movementHelp.className = 'cash-movement-help';
+    movementHelp.id = 'cash-movement-help-' + groupNumber;
+    movementHelp.textContent =
+      'Choose what actually happened to the drawer. This is separate from the payment method and category.';
+    movement.setAttribute('aria-describedby', movementHelp.id);
+    movement.append(movementLegend, movementHelp);
+    [
+      { value: 'CASH_IN', label: 'Cash added to the drawer', description: 'Money was physically put into the drawer.' },
+      { value: 'CASH_OUT', label: 'Cash taken out of the drawer', description: 'Money was physically taken from the drawer.' },
+      { value: 'NO_CASH', label: 'No physical cash moved', description: 'The drawer did not gain or lose cash.' },
+    ].forEach((choice) => {
+      const label = document.createElement('label');
+      label.className = 'cash-movement-choice';
+      const input = document.createElement('input');
+      input.type = 'radio';
+      input.className = 'cash-impact';
+      input.name = 'cash-impact-' + groupNumber;
+      input.value = choice.value;
+      input.required = true;
+      const title = document.createElement('span');
+      title.className = 'cash-movement-choice__title';
+      title.textContent = choice.label;
+      const description = document.createElement('small');
+      description.className = 'cash-movement-choice__description';
+      description.textContent = choice.description;
+      label.append(input, title, description);
+      movement.appendChild(label);
+    });
+    const supporting = document.createElement('div');
+    supporting.className = 'entry-supporting-fields';
+    supporting.appendChild(noteLabel);
 
     const chips = document.createElement('div');
     chips.className = 'chips';
@@ -286,7 +323,8 @@ export function createPayments({ api, refresh }) {
     preview.className = 'rp';
     chips.append(receiptLabel, preview);
 
-    row.append(top, bottom, chips);
+    supporting.appendChild(chips);
+    row.append(top, bottom, movement, supporting);
     return row;
   }
 
@@ -299,6 +337,10 @@ export function createPayments({ api, refresh }) {
       $('.rc', row).setAttribute('aria-label', 'Category, row ' + number);
       $('.rci', row).setAttribute('aria-label', 'Payment method, row ' + number);
       $('.rn', row).setAttribute('aria-label', 'Note, row ' + number);
+      $('.cash-movement-fieldset', row).setAttribute(
+        'aria-label',
+        'Physical cash movement, row ' + number,
+      );
       $('.rf', row).setAttribute('aria-label', 'Receipt images, row ' + number);
       $('[data-act="delrow"]', row).setAttribute('aria-label', 'Remove row ' + number);
     });
@@ -309,7 +351,7 @@ export function createPayments({ api, refresh }) {
     const errorId = error?.id || '';
     error?.remove();
 
-    ['.rv', '.ra'].forEach((selector) => {
+    ['.rv', '.ra', '.rci', '.cash-impact'].forEach((selector) => {
       const field = $(selector, row);
       field.removeAttribute('aria-invalid');
       const descriptions = (field.getAttribute('aria-describedby') || '')
@@ -490,15 +532,29 @@ export function createPayments({ api, refresh }) {
     let missingPayeeCount = 0;
     let invalidAmountCount = 0;
     let invalidMethodCount = 0;
-    const rows = $$('#rows .erow');
+    let missingCashMovementCount = 0;
+    const rows = $('#rows .erow');
+    const summary = $('#entrySummary');
+    const aside = summary?.closest('.entry-workspace__aside');
+    const showMultiEntrySummary = rows.length > 1;
+    if (summary) summary.hidden = !showMultiEntrySummary;
+    if (aside) aside.hidden = !showMultiEntrySummary;
     rows.forEach((row) => {
       const payee = $('.rv', row).value.trim();
       const amount = parseAmt($('.ra', row).value.trim());
       const method = $('.rci', row).value;
+      const cashImpact = $('.cash-impact:checked', row)?.value || '';
       if (!payee) missingPayeeCount += 1;
       if (!(amount > 0)) invalidAmountCount += 1;
       if (!PAYMENT_METHODS.includes(method)) invalidMethodCount += 1;
-      if (!payee || !(amount > 0) || !PAYMENT_METHODS.includes(method)) return;
+      if (!CASH_IMPACT_CHOICES.includes(cashImpact)) missingCashMovementCount += 1;
+      if (
+        !payee ||
+        !(amount > 0) ||
+        !PAYMENT_METHODS.includes(method) ||
+        !CASH_IMPACT_CHOICES.includes(cashImpact)
+      )
+        return;
       readyCount += 1;
       totals[method] += amount;
     });
@@ -533,6 +589,8 @@ export function createPayments({ api, refresh }) {
         if (missingPayeeCount) issues.push(missingPayeeCount + ' missing payee');
         if (invalidAmountCount) issues.push(invalidAmountCount + ' need a valid positive amount');
         if (invalidMethodCount) issues.push(invalidMethodCount + ' need a payment method');
+        if (missingCashMovementCount)
+          issues.push(missingCashMovementCount + ' need a cash-movement choice');
         readiness.textContent =
           incompleteCount +
           ' of ' +
@@ -561,44 +619,47 @@ export function createPayments({ api, refresh }) {
     $('#view').innerHTML =
       head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment', '', {
         section: 'Work',
-        description:
-          'Record a payment or receipt, attach supporting evidence, and confirm how the money moved.',
+        description: 'Record one payment or cash receipt. Choose the physical cash movement separately from the payment method.',
       }) +
-      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" data-workspace="entry-form-workspace" autocomplete="off">${vendorList()}
+      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" data-workspace="entry-form-workspace" autocomplete="off" novalidate>${vendorList()}
     <div class="entry-workspace__main">
       <div class="entry-section-heading">
-        <p class="page-eyebrow">ENTRY DETAILS</p>
-        <h2>${NT === 'RECEIPT' ? 'Record incoming cash' : 'Record an outgoing payment'}</h2>
-        <p>Capture the business date, counterparty, value and supporting evidence for every line.</p>
+        <p class="page-eyebrow">${NT === 'RECEIPT' ? 'CASH RECEIVED' : 'PAYMENT'}</p>
+        <h2>${NT === 'RECEIPT' ? 'Who paid you?' : 'Who did you pay?'}</h2>
+        <p>Enter the name and amount, then tell us what happened to the cash in the drawer.</p>
       </div>
-    <label class="entry-date-field">Date<input type="date" id="nd" value="${businessDate()}" max="${addDays(businessDate(), 1)}" required></label><div id="recentVendors" class="chips" role="group" aria-label="${NT === 'RECEIPT' ? 'Recent verified payers' : 'Recent verified payees'}" hidden></div><div id="rows"></div>
+      <label class="entry-date-field">Date<input type="date" id="nd" value="${businessDate()}" max="${addDays(businessDate(), 1)}" required></label>
+      <div id="recentVendors" class="chips" role="group" aria-label="${NT === 'RECEIPT' ? 'Recent verified payers' : 'Recent verified payees'}" hidden></div>
+      <div id="rows"></div>
+      <div class="actions entry-primary-actions">
+        <button class="btn primary" id="nsave">Save ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button>
+        <button type="button" class="btn" data-act="addrow">+ Add another entry</button>
+      </div>
+      <div class="entry-recovery-help">
+        <span>Need to restore an entry saved earlier?</span>
+        <button type="button" class="entry-recovery-link" data-act="import-pending">Import a saved recovery file</button>
+      </div>
+      <p class="muted entry-receipt-help">Attach a receipt photo or screenshot when available (up to 3 per entry).</p>
     </div>
-    <aside class="entry-workspace__aside" aria-label="Batch review and save">
-    <section id="entrySummary" class="entry-summary" aria-label="Current batch totals">
-      <div class="entry-summary__head"><strong>Current batch</strong><span id="batchCount" aria-live="polite">0 ready entries</span></div>
-      <div id="batchProgress" class="entry-summary__progress" role="progressbar" aria-label="Batch completion" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" aria-valuetext="0 of 1 entries ready"><span id="batchProgressFill"></span></div>
-      <p id="batchReadiness" class="entry-summary__readiness" role="status" aria-live="polite">Complete the payee and amount to ready this entry.</p>
-      <div class="entry-summary__grid">
-        <div class="entry-summary__metric entry-summary__metric--total"><span>Total</span><strong id="batchTotal" data-value="0.00">₹0</strong></div>
-        <div class="entry-summary__metric"><span>Cash method</span><strong id="batchCash" data-value="0.00">₹0</strong></div>
-        <div class="entry-summary__metric"><span>UPI</span><strong id="batchUpi" data-value="0.00">₹0</strong></div>
-        <div class="entry-summary__metric"><span>Bank transfer</span><strong id="batchBank" data-value="0.00">₹0</strong></div>
-      </div>
-      <p class="entry-summary__note">Totals include rows with a payee and valid amount. Only Cash counts toward drawer movement; UPI and bank transfer stay separate.</p>
-    </section>
-    <section class="entry-guidance" aria-labelledby="entryGuidanceTitle">
-      <p class="page-eyebrow">CONTROL CHECK</p>
-      <h3 id="entryGuidanceTitle">Keep the movement traceable</h3>
-      <p>Use the exact counterparty name, verify the payment method and attach a receipt image when available.</p>
-      <p class="entry-guidance__note">Cash affects drawer movement. UPI and bank transfers remain non-cash movements.</p>
-    </section>
-    <div class="actions"><button type="button" class="btn" data-act="addrow">+ Add another</button><button class="btn primary" id="nsave">Save ${NT === 'RECEIPT' ? 'cash receipt' : 'payment'}</button><button type="button" class="btn" data-act="import-pending">Import recovery file</button></div>
-    <p class="muted">Tip: tap “Receipt” to take a photo or pick a screenshot (up to 3 per payment).</p></aside></form><div id="nres"></div>`;
+    <aside class="entry-workspace__aside" aria-label="Multiple-entry summary" hidden>
+      <section id="entrySummary" class="entry-summary" aria-label="Multiple-entry totals" hidden>
+        <div class="entry-summary__head"><strong>Multiple entries</strong><span id="batchCount" aria-live="polite">0 ready entries</span></div>
+        <div id="batchProgress" class="entry-summary__progress" role="progressbar" aria-label="Entry completion" aria-valuemin="0" aria-valuemax="1" aria-valuenow="0" aria-valuetext="0 of 1 entries ready"><span id="batchProgressFill"></span></div>
+        <p id="batchReadiness" class="entry-summary__readiness" role="status" aria-live="polite">Complete each entry before saving.</p>
+        <div class="entry-summary__grid">
+          <div class="entry-summary__metric entry-summary__metric--total"><span>Total</span><strong id="batchTotal" data-value="0.00">₹0</strong></div>
+          <div class="entry-summary__metric"><span>Cash method</span><strong id="batchCash" data-value="0.00">₹0</strong></div>
+          <div class="entry-summary__metric"><span>UPI</span><strong id="batchUpi" data-value="0.00">₹0</strong></div>
+          <div class="entry-summary__metric"><span>Bank transfer</span><strong id="batchBank" data-value="0.00">₹0</strong></div>
+        </div>
+        <p class="entry-summary__note">Payment method totals are separate from physical drawer movement.</p>
+      </section>
+    </aside>
+    </form><div id="nres"></div>`;
     addRow();
     renderRecentVendors();
     updateBatchSummary();
   }
-
   function recentVendors(limit = 6) {
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers : [];
     const lastUsed = new Map();
@@ -783,18 +844,19 @@ export function createPayments({ api, refresh }) {
       const payee = $('.rv', previous).value.trim();
       const amount = parseAmt($('.ra', previous).value.trim());
       if (!payee) {
-        showRowError(
-          previous,
-          $('.rv', previous),
-          'Enter who was paid before adding another payment.',
-        );
+        showRowError(previous, $('.rv', previous), 'Enter who was paid before adding another payment.');
         return;
       }
       if (!(amount > 0)) {
+        showRowError(previous, $('.ra', previous), 'Enter a valid amount before adding another payment.');
+        return;
+      }
+      const cashImpact = $('.cash-impact:checked', previous)?.value || '';
+      if (!CASH_IMPACT_CHOICES.includes(cashImpact)) {
         showRowError(
           previous,
-          $('.ra', previous),
-          'Enter a valid amount before adding another payment.',
+          $('.cash-impact', previous),
+          'Choose what happened to the physical cash before adding another entry.',
         );
         return;
       }
@@ -812,7 +874,6 @@ export function createPayments({ api, refresh }) {
     updateQuickSavePayee(r);
     updateBatchSummary();
   }
-
   function clearReceipt(button) {
     const row = button.closest('.erow');
     if (!row) return;
@@ -886,7 +947,7 @@ export function createPayments({ api, refresh }) {
       updateVendorIdentity(row);
       updateQuickSavePayee(row);
     }
-    if (event.target.matches('.rci, .rc, .rn')) clearRowError(row);
+    if (event.target.matches('.rci, .rc, .rn, .cash-impact')) clearRowError(row);
     updateBatchSummary();
   });
   document.addEventListener('focusout', (event) => {
@@ -1053,8 +1114,15 @@ export function createPayments({ api, refresh }) {
         showRowError(r, $('.rci', r), 'Choose Cash, UPI or Bank transfer.');
         return;
       }
-      const cashImpact =
-        paymentMethod === 'CASH' ? (NT === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT') : 'NO_CASH';
+      const cashImpact = $('.cash-impact:checked', r)?.value || '';
+      if (!CASH_IMPACT_CHOICES.includes(cashImpact)) {
+        showRowError(
+          r,
+          $('.cash-impact', r),
+          'Choose what happened to the physical cash before saving.',
+        );
+        return;
+      }
 
       const selectedVendor = vendorForName(vendor);
 

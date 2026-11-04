@@ -166,7 +166,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v52'/,
+  /const C = 'cv2-v53'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -249,8 +249,18 @@ assert.match(
 );
 assert.match(
   payments,
-  /entry-guidance/,
-  'new voucher presents cash-impact controls beside the live batch summary',
+  /cash-movement-fieldset/,
+  'new voucher requires an explicit physical drawer movement choice',
+);
+assert.match(
+  payments,
+  /entry-recovery-link/,
+  'recovery import is a secondary action',
+);
+assert.match(
+  payments,
+  /showMultiEntrySummary/,
+  'multi-entry summary is progressively disclosed',
 );
 assert.match(
   register,

@@ -662,8 +662,23 @@ assert.match(
 );
 assert.match(
   payments,
-  /NT === 'RECEIPT' \? 'Received via' : 'Paid via'/,
-  'payment method label reflects receipt vs payment direction',
+  /methodLabel\.appendChild\(document\.createTextNode\('Payment method'\)\)/,
+  'payment method is labelled independently of physical drawer movement',
+);
+assert.match(
+  payments,
+  /cash-movement-fieldset[\s\S]*?CASH_IN[\s\S]*?CASH_OUT[\s\S]*?NO_CASH/,
+  'New Entry exposes all three physical cash movement choices',
+);
+assert.match(
+  payments,
+  /CASH_IMPACT_CHOICES\.includes\(cashImpact\)/,
+  'New Entry validates movement against the controlled vocabulary',
+);
+assert.doesNotMatch(
+  payments,
+  /paymentMethod === 'CASH' \? \(NT === 'RECEIPT' \? 'CASH_IN' : 'CASH_OUT'\)/,
+  'New Entry never derives movement from payment rail or entry type',
 );
 assert.match(
   printing,

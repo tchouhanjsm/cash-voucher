@@ -102,8 +102,11 @@ with sync_playwright() as p:
     page = context.new_page()
 
     def choose_cash_impact_for_current_rows():
-        for control in page.locator('#rows .rci').all():
-            control.select_option('CASH')
+        entry_type = page.locator('.entry-type-switch button.on').get_attribute('data-k')
+        impact = 'CASH_IN' if entry_type == 'RECEIPT' else 'CASH_OUT'
+        for control in page.locator('#rows .cash-impact').all():
+            if control.get_attribute('value') == impact:
+                control.check()
 
     def choose_bulk_cash_impact_for_current_rows():
         impact = 'CASH_IN' if page.locator('#bt2').input_value() == 'RECEIPT' else 'CASH_OUT'
@@ -159,6 +162,14 @@ with sync_playwright() as p:
             'action': request_payload.get('action'),
             'status': response.status,
         }
+        if request_payload.get('action') == 'createVouchers':
+            entries = request_payload.get('entries')
+            event['cash_impacts'] = [
+                entry.get('cashImpact') for entry in entries if isinstance(entry, dict)
+            ] if isinstance(entries, list) else []
+            event['payment_methods'] = [
+                entry.get('paymentMethod') for entry in entries if isinstance(entry, dict)
+            ] if isinstance(entries, list) else []
         try:
             result = response.json()
             event['ok'] = result.get('ok') if isinstance(result, dict) else None
@@ -1099,16 +1110,6 @@ with sync_playwright() as p:
         else:
             go_view(page, route_id)
         page.wait_for_selector(ready_selector, state='visible', timeout=10000)
-        if route_id == 'new':
-            # Safe, synthetic values make the New Entry screenshot useful for before/after review.
-            page.locator('#rows .rv').first.fill('Visual Review Supplies')
-            page.locator('#rows .ra').first.fill('1250')
-            if page.locator('.cash-impact').count():
-                page.locator('.cash-impact[value="CASH_OUT"]').first.check()
-            elif page.locator('.rci').count():
-                page.locator('.rci').first.select_option('CASH')
-            page.locator('#toast').evaluate("element => element.classList.add('hidden')")
-
         if route_id == 'dash':
             page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
             chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
@@ -1145,6 +1146,14 @@ with sync_playwright() as p:
             page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
             f'{route_name}: route navigation places focus on the destination heading',
         )
+
+        if route_id == 'new':
+            # Synthetic fixture is applied after the destination focus assertion.
+            page.locator('#rows .rv').first.fill('Visual Review Supplies')
+            page.locator('#rows .ra').first.fill('1250')
+            page.locator('.cash-impact[value="CASH_OUT"]').first.check()
+            page.locator('#toast').evaluate("element => element.classList.add('hidden')")
+
         unnamed_controls = page.evaluate("""() => {
             const selector = [
                 'button',
@@ -1404,13 +1413,19 @@ with sync_playwright() as p:
         payeeLabelled: labelled('.rv'), amountLabelled: labelled('.ra'),
         noteLabelled: labelled('.rn'), categoryLabelled: labelled('.rc'),
         methodLabelled: labelled('.rci'),
+        movementLegend: row?.querySelector('.cash-movement-fieldset legend')?.textContent.trim() || '',
+        movementValues: Array.from(row?.querySelectorAll('.cash-impact') || []).map((input) => input.value),
+        movementUnselected: row?.querySelectorAll('.cash-impact:checked').length === 0,
         receiptInputPresent: Boolean(row?.querySelector('.rf[type="file"][multiple]')),
         removeActionPresent: Boolean(row?.querySelector('button.x[data-act="delrow"]')),
       };
     }""")
     check(
-        all(row_semantics.values()),
-        f'New Entry row uses labelled native controls and receipt/remove actions; semantics={row_semantics}',
+        all(row_semantics.values())
+        and row_semantics['movementLegend'] == 'What happened to the physical cash?'
+        and row_semantics['movementValues'] == ['CASH_IN', 'CASH_OUT', 'NO_CASH']
+        and row_semantics['movementUnselected'],
+        f'New Entry row exposes three explicit drawer choices with no silent default; semantics={row_semantics}',
     )
     first_entry_row = page.locator('#rows .erow').first
     first_entry_row.locator('.rv').fill('DOM row renderer probe')
@@ -1527,13 +1542,11 @@ with sync_playwright() as p:
       };
     }""")
     check(
-        desktop_entry_metrics['columns'] >= 4
+        desktop_entry_metrics['columns'] >= 3
         and desktop_entry_metrics['noteWidth'] >= 140
         and desktop_entry_metrics['removeWidth'] >= 44
-        and desktop_entry_metrics['layoutElements'][4]['left']
-        < desktop_entry_metrics['layoutElements'][5]['left']
-        and desktop_entry_metrics['layoutElements'][4]['width']
-        > desktop_entry_metrics['layoutElements'][5]['width']
+        and desktop_entry_metrics['layoutElements'][4]['width'] > 0
+        and desktop_entry_metrics['layoutElements'][5]['width'] == 0
         and not desktop_entry_metrics['horizontalOverflow'],
         f'desktop payment row allocates four distinct tracks without stretched remove controls or overflow; metrics={desktop_entry_metrics}',
     )
@@ -1546,20 +1559,10 @@ with sync_playwright() as p:
     )
     page.locator('#rows .erow .rv').first.fill('Keyboard Batch Test Vendor')
     page.locator('#rows .erow .ra').first.fill('42')
-    page.wait_for_function("document.querySelector('#batchTotal')?.dataset.value === '42.00'")
+    page.locator('#rows .erow .cash-impact[value="CASH_OUT"]').check()
     check(
-        page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
-        and page.locator('#batchProgress').get_attribute('aria-valuemax') == '1'
-        and 'ready to save' in page.locator('#batchReadiness').inner_text().lower(),
-        'batch progress announces when every entry is complete',
-    )
-    check(
-        page.locator('#batchCount').inner_text() == '1 ready entry'
-        and page.locator('#batchTotal').get_attribute('data-value') == '42.00'
-        and page.locator('#batchCash').get_attribute('data-value') == '42.00'
-        and page.locator('#batchUpi').get_attribute('data-value') == '0.00'
-        and page.locator('#batchBank').get_attribute('data-value') == '0.00',
-        'live batch summary reports the ready entry and cash-method amount',
+        page.locator('#entrySummary').is_hidden(),
+        'ordinary single-entry flow hides the multi-entry summary',
     )
     page.locator('#rows .erow .ra').first.press('Enter')
     page.wait_for_function(
@@ -1568,15 +1571,16 @@ with sync_playwright() as p:
         "document.activeElement.closest('.erow') === document.querySelectorAll('#rows .erow')[1]"
     )
     check(
-        page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
+        not page.locator('#entrySummary').is_hidden()
+        and page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
         and page.locator('#batchProgress').get_attribute('aria-valuemax') == '2'
         and '1 of 2' in page.locator('#batchReadiness').inner_text(),
-        'an appended blank row reduces batch completion without changing ready totals',
+        'second entry reveals the multi-entry summary and counts the empty row as incomplete',
     )
     check(
         page.locator('#batchTotal').get_attribute('data-value') == '42.00'
         and page.locator('#batchCount').inner_text() == '1 ready entry',
-        'Enter appends and focuses a new row without counting an incomplete row',
+        'multi-entry totals exclude an incomplete row',
     )
     page.locator('#rows .erow').nth(1).locator('.x').click()
     check(
@@ -4556,10 +4560,10 @@ with sync_playwright() as p:
     )
     check(
         page.locator('.rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer']
-        and page.locator('.rci').first.input_value() == 'CASH',
-        'payment method defaults to Cash and exposes explicit UPI/bank transfer options',
+        and page.locator('.rci').first.input_value() == 'CASH'
+        and page.locator('.cash-impact:checked').count() == 0,
+        'payment method defaults separately while physical cash movement starts unselected',
     )
-    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('#nres .form-error')
     check(
@@ -4568,7 +4572,6 @@ with sync_playwright() as p:
         'empty form submission is announced and focuses the first row',
     )
     page.fill('.rv', 'Ram Traders')
-    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.row-error')
     check(
@@ -4595,10 +4598,19 @@ with sync_playwright() as p:
     page.select_option('.rci', 'UPI')
     check(
         page.locator('.rci').first.input_value() == 'UPI'
-        and page.locator('.rci').first.get_attribute('aria-invalid') is None,
-        'selecting UPI does not require a separate cash-drawer classification',
+        and page.locator('.cash-impact:checked').count() == 0,
+        'UPI selection does not silently classify physical drawer movement',
     )
-    page.select_option('.rci', 'CASH')
+    page.click('#nsave')
+    page.wait_for_selector('.row-error')
+    check(
+        'Choose what happened to the physical cash' in page.locator('.row-error').inner_text()
+        and page.locator('.cash-impact').first.get_attribute('aria-invalid') == 'true'
+        and page.evaluate("document.activeElement === document.querySelector('.cash-impact')"),
+        'missing drawer movement is announced and focus moves to the required choice',
+    )
+    page.locator('.cash-impact[value="NO_CASH"]').check()
+    page.wait_for_function("document.querySelector('.row-error') === null")
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
     xss_note = '<img src=x onerror=window.__xssFired=true>'
@@ -4622,6 +4634,7 @@ with sync_playwright() as p:
     )
     page.locator('.rv').nth(1).fill('Shiv Gas')
     page.locator('.ra').nth(1).fill('900')
+    page.locator('.erow').nth(1).locator('.cash-impact[value="CASH_OUT"]').check()
     second_row = page.locator('.erow').nth(1)
     second_row.locator('.rf').set_input_files('/tmp/r.png')
     page.wait_for_function("document.querySelectorAll('.erow .thumb').length === 2")
@@ -4676,11 +4689,22 @@ with sync_playwright() as p:
 
     page.route('**/api?*', tamper_created_voucher_number)
     choose_cash_impact_for_current_rows()
+    page.locator('.erow').first.locator('.cash-impact[value="NO_CASH"]').check()
+    page.locator('.erow').first.locator('.rci').select_option('UPI')
+    page.locator('.erow').nth(1).locator('.rci').select_option('CASH')
     normal_voucher_date = page.locator('#nd').input_value()
     normal_voucher_date_display = '/'.join(reversed(normal_voucher_date.split('-')))
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved 2 payments' in page.inner_text('#nres'), 'saved 2 payments')
+    create_request = next(
+        event for event in reversed(api_events) if event.get('action') == 'createVouchers'
+    )
+    check(
+        create_request.get('cash_impacts') == ['NO_CASH', 'CASH_OUT']
+        and create_request.get('payment_methods') == ['UPI', 'CASH'],
+        'submitted physical movement is independent of payment method',
+    )
     check(
         page.locator('#nres img, #nres svg').count() == 0
         and success_number_payload in page.locator('#nres').inner_text()

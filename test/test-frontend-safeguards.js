@@ -66,6 +66,13 @@ assert.match(payments, /DUPLICATE_CONFIRMATION_REQUIRED/);
 assert.doesNotMatch(payments, /duplicateConfirmed/);
 assert.match(payments, /vendorType: selectedVendor \? 'REGISTERED' : 'ONE_TIME'/);
 assert.match(payments, /vendor-identity/);
+assert.match(payments, /cash-movement-fieldset/);
+assert.match(payments, /CASH_IMPACT_CHOICES\.includes\(cashImpact\)/);
+assert.doesNotMatch(
+  payments,
+  /paymentMethod === 'CASH' \? \(NT === 'RECEIPT' \? 'CASH_IN' : 'CASH_OUT'\)/,
+  'entry save never infers physical drawer movement from method or voucher type',
+);
 const saveStart = payments.indexOf('async function saveNew');
 const saveNext = payments.indexOf('\n  async function ', saveStart + 1);
 assert.ok(saveStart >= 0 && saveNext > saveStart, 'New Entry save handler is present');
