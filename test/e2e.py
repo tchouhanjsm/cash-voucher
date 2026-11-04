@@ -5797,9 +5797,12 @@ with sync_playwright() as p:
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
     check(
         page.locator('#nav .nav-workspace-title').text_content().strip() == 'Admin workspace'
-        and page.locator('#userRole').text_content().strip() == 'Admin'
+        and page.locator('#popRole').text_content().strip() == 'Admin'
         and 'Administration' in page.locator('#nav').inner_text()
-        and page.locator('[data-v=users], [data-v=set], [data-v=audit], [data-v=onboarding]').count() == 0,
+        and page.locator(
+            '#nav [data-v=users], #nav [data-v=set], #nav [data-v=audit], #nav [data-v=onboarding], '
+            '#navMoreItems [data-v=users], #navMoreItems [data-v=set], #navMoreItems [data-v=audit], #navMoreItems [data-v=onboarding]'
+        ).count() == 0,
         'manager uses the Admin label while owner-only administration remains unavailable',
     )
 
@@ -9533,7 +9536,7 @@ with sync_playwright() as p:
     check(
         account_dom_result['name'] == '<svg onload=window.__xssFired=true></svg><img src=x onerror=window.__xssFired=true>'
         and account_dom_result['email'] == account_dom_result['name']
-        and account_dom_result['role'] == account_dom_result['name']
+        and account_dom_result['role'] == 'Restricted'
         and account_dom_result['property'] == account_dom_result['name']
         and not account_dom_result['hasActiveMarkup']
         and not account_dom_result['scriptEffect'],
