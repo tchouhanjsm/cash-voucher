@@ -42,3 +42,7 @@ voucher_receipts.storage_key is a private storage identifier, not a public URL. 
 ## Import and cutover boundary
 
 Do not run these migrations on a customer database or production cPanel account during this phase. The schema is only an isolated engineering baseline; actual Sheet headers, formulas, Script Properties, receipt manifests, numbering behavior and cash-close semantics still require owner-reviewed field mapping and shadow reconciliation. There is no dual write and no API endpoint switch.
+
+## Session-authentication boundary
+
+Migration 0003 provides the session, CSRF-digest, rate-limit and audit persistence used by the isolated PHP authentication routes. Imported Apps Script password hashes must preserve the exact legacy serialization documented in [PHP session authentication](../docs/PHP-SESSION-AUTH.md): `legacy-hmac-sha256$<salt>$<lowercase-hmac-hex>`, where the HMAC is SHA-256 over `salt:password`, keyed by the existing Script Property `PEPPER`. Never import plaintext credentials or place the PEPPER in repository files. CI uses disposable MySQL and synthetic test accounts only.
