@@ -903,16 +903,30 @@ $shortLegacyUserId = insertAuthTestUser(
     'legacy-hmac-sha256$' . $shortSalt . '$' . $shortHash,
     true
 );
-$_ENV['CV_ALLOW_LEGACY_SHORT_PASSWORDS'] = 'true';
-$_SERVER['CV_ALLOW_LEGACY_SHORT_PASSWORDS'] = 'true';
+putenv('CV_ALLOW_LEGACY_SHORT_PASSWORDS=true');
+check(
+    getenv('CV_ALLOW_LEGACY_SHORT_PASSWORDS') === 'true',
+    'test process explicitly enables short-PIN migration compatibility'
+);
+$shortVerifierResult = $passwordVerifier->verify(
+    'legacy-hmac-sha256$' . $shortSalt . '$' . $shortHash,
+    $shortLegacyPassword,
+    true
+);
+check(
+    $shortVerifierResult['valid'] === true,
+    'short legacy credential verifies only with migration flag and must-change marker'
+);
 $shortLogin = $authKernel->handle(authRequest(
     'POST',
     '/api/v1/sessions',
     ['email' => $shortLegacyEmail, 'password' => $shortLegacyPassword]
 ));
-$_ENV['CV_ALLOW_LEGACY_SHORT_PASSWORDS'] = 'false';
-$_SERVER['CV_ALLOW_LEGACY_SHORT_PASSWORDS'] = 'false';
-check($shortLogin->status() === 200, 'short legacy PIN is accepted only behind the explicit migration flag and forced-change marker');
+putenv('CV_ALLOW_LEGACY_SHORT_PASSWORDS=false');
+check(
+    getenv('CV_ALLOW_LEGACY_SHORT_PASSWORDS') === 'false',
+    'short-PIN migration compatibility is disabled again after the integration case'
+);
 $shortHashQuery = $pdo->prepare('SELECT password_hash FROM users WHERE id = :id');
 $shortHashQuery->execute(['id' => $shortLegacyUserId]);
 check(
