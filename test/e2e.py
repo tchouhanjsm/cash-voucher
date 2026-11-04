@@ -408,8 +408,8 @@ with sync_playwright() as p:
         'owner sees Onboarding and Cash Close navigation; Account moved to the user menu',
     )
     check(
-        page.locator('#nav .nav-workspace-title').inner_text() == 'Owner workspace'
-        and page.locator('#userRole').inner_text() == 'Owner'
+        page.locator('#nav .nav-workspace-title').text_content().strip() == 'Owner workspace'
+        and page.locator('#userRole').text_content().strip() == 'Owner'
         and 'Owner controls' in page.locator('#nav').inner_text(),
         'owner receives the owner-labelled workspace and separate owner-control navigation group',
     )
@@ -2927,8 +2927,8 @@ with sync_playwright() as p:
         'accountant sees Reports only, without voucher entry, Register, Vendors, close or user administration',
     )
     check(
-        accountant_page.locator('#nav .nav-workspace-title').inner_text() == 'Finance workspace'
-        and accountant_page.locator('#userRole').inner_text() == 'Accountant',
+        accountant_page.locator('#nav .nav-workspace-title').text_content().strip() == 'Finance workspace'
+        and accountant_page.locator('#userRole').text_content().strip() == 'Accountant',
         'accountant receives a clearly labelled read-only finance workspace',
     )
     check(
@@ -3805,7 +3805,7 @@ with sync_playwright() as p:
     check(
         page.locator('#brand').inner_text() == 'Cash Vouchers'
         and page.title() == 'Vouchers'
-        and page.locator('#userRole').inner_text().strip() == 'owner'
+        and page.locator('#userRole').inner_text().strip() == 'Owner'
         and page.locator('#nav button').count() > 0
         and not page.evaluate('window.__xssFired === true'),
         'object-valued property and profile names stay inert and do not abort navigation bootstrap',
@@ -4341,9 +4341,9 @@ with sync_playwright() as p:
     check(page.locator('#nav button').count() == 3, 'staff sees 3 nav items (dash,new,reg); Account is in the user menu')
     check(
         page.locator('#nav').get_attribute('data-workspace') == 'staff'
-        and page.locator('#nav .nav-workspace-title').inner_text() == 'My workspace'
-        and page.locator('#userRole').inner_text() == 'User'
-        and page.locator('#nav .nav-label').all_inner_texts() == ['My day', 'My records']
+        and page.locator('#nav .nav-workspace-title').text_content().strip() == 'My workspace'
+        and page.locator('#userRole').text_content().strip() == 'User'
+        and page.locator('#nav .nav-label').evaluate_all("els => els.map(el => el.textContent.trim())") == ['My day', 'My records']
         and page.locator('#nav .nav-workspace-title').evaluate("el => getComputedStyle(el).display") == 'none',
         'staff gets a simple User workspace with no desktop-only navigation heading on the mobile bottom bar',
     )
@@ -5775,8 +5775,8 @@ with sync_playwright() as p:
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
     check(
-        page.locator('#nav .nav-workspace-title').inner_text() == 'Admin workspace'
-        and page.locator('#userRole').inner_text() == 'Admin'
+        page.locator('#nav .nav-workspace-title').text_content().strip() == 'Admin workspace'
+        and page.locator('#userRole').text_content().strip() == 'Admin'
         and 'Administration' in page.locator('#nav').inner_text()
         and page.locator('[data-v=users], [data-v=set], [data-v=audit], [data-v=onboarding]').count() == 0,
         'manager uses the Admin label while owner-only administration remains unavailable',
