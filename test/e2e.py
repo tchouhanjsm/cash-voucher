@@ -5757,6 +5757,29 @@ with sync_playwright() as p:
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
 
     manager_dashboard_requests = []
+    manager_dashboard_register_fixture = {
+        'id': 'e2e-manager-dashboard-drilldown',
+        'no': 98766,
+        'date': BUSINESS_TODAY.isoformat(),
+        'vendor': 'Dashboard Drilldown Vendor',
+        'vendorId': '',
+        'category': 'Operations',
+        'notes': 'Synthetic read-only manager dashboard drill-down fixture',
+        'type': 'PAYMENT',
+        'status': 'ACTIVE',
+        'amount': 5000,
+        'approvalStatus': 'PENDING',
+        'approvedBy': '',
+        'approvedAt': '',
+        'approvalReason': '',
+        'paymentMethod': 'CASH',
+        'cashImpact': 'CASH_OUT',
+        'createdBy': 's@test.com',
+        'createdAt': '2026-11-03T12:00:00.000Z',
+        'cancelReason': '',
+        'receipts': [],
+    }
+
     def inject_manager_dashboard_drilldowns(route):
         try:
             request_data = json.loads(route.request.post_data or '{}')
