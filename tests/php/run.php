@@ -930,8 +930,12 @@ check(
 $shortHashQuery = $pdo->prepare('SELECT password_hash FROM users WHERE id = :id');
 $shortHashQuery->execute(['id' => $shortLegacyUserId]);
 check(
-    password_verify($shortLegacyPassword, (string) $shortHashQuery->fetchColumn()),
-    'short legacy credential is immediately upgraded to the new password hash'
+    (string) $shortHashQuery->fetchColumn() === 'legacy-hmac-sha256$' . $shortSalt . '$' . $shortHash,
+    'short legacy PIN remains in its legacy format until the mandatory password change'
+);
+check(
+    ($shortLogin->body()['data']['user']['mustChangePassword'] ?? false) === true,
+    'short legacy PIN session is restricted to the forced password-change step'
 );
 $shortCookies = authCookies($shortLogin);
 $shortLogout = $authKernel->handle(authRequest(
