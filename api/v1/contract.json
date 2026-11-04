@@ -12,7 +12,12 @@
     "POST /sessions/current/logout",
     "POST /sessions/current/password"
   ],
-  "legacyRoleKeys": ["staff", "manager", "owner", "accountant"],
+  "legacyRoleKeys": [
+    "staff",
+    "manager",
+    "owner",
+    "accountant"
+  ],
   "businessActionsEnabled": false,
   "notes": [
     "The current Apps Script endpoint remains authoritative.",
@@ -28,7 +33,7 @@
     "csrfCookie": "cv_csrf (Secure, readable, SameSite=Strict; echoed in X-CSRF-Token)",
     "sessionTtlSeconds": 21600,
     "rateLimit": "5 attempts per 15 minutes per email and email/IP; 25 per IP",
-    "legacyPassword": "HMAC-SHA256(UTF-8 salt:password, existing Apps Script PEPPER), imported as legacy-hmac-sha256$<salt>$<lowercase-hmac-hex>; upgraded after successful login to versioned SHA-384-prehash PASSWORD_DEFAULT",
+    "legacyPassword": "HMAC-SHA256(UTF-8 salt:password, existing Apps Script PEPPER), imported as legacy-hmac-sha256$<salt>$<lowercase-hmac-hex>; normal-length credentials upgrade on login; short PINs require migration flag plus must-change and are rehashed only by compliant password change",
     "roleResolution": "Re-read active status and current legacy role from MySQL on every request",
     "passwordPolicy": "8-128 characters; explicit must-change-only legacy short-PIN migration exception",
     "passwordPepperVariable": "CV_LEGACY_PASSWORD_PEPPER",
