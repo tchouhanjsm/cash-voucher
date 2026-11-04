@@ -558,3 +558,20 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - **PWA:** shell cache is `cv2-v51` for installed clients to refresh the new navigation/context handoff.
 - **Release boundary:** no backend/API/schema, accounting formula, approval policy, cash-close calculation, role permissions or persisted data changes; no Apps Script deploy, Sheet/Drive write, migration, staging transaction, publication, merge or production deployment.
 - **Exact-head gate:** latest PR-head CI/Quality, Browser E2E and Full Flight must all pass before merge review.
+
+
+## Phase 13 — User / Admin / Owner workspaces and Apps Script exit architecture (4 November 2026)
+
+- [x] Introduce workspace-specific navigation labels and groupings: User → My workspace; stored Manager → Admin workspace; Owner → Owner workspace; Accountant → read-only Finance workspace.
+- [x] Show the human-facing role label in the shell and My Account. The Owner's Users screen labels the current `manager` role as Admin, but keeps the submitted role key as `manager`.
+- [x] Preserve the backend permission contract. No `admin` role key or user-row migration is introduced; the existing authorization matrix still proves user management, settings and audit are owner-only.
+- [x] Keep staff's mobile bottom navigation task-led and free of desktop-only workspace section headings. The mobile overflow panel includes its workspace title.
+- [x] Add static architecture guard and role-specific browser checks for Staff, Manager/Admin, Owner and Accountant.
+- [x] Record the Apps Script exit ADR with a conditional recommendation: first qualify existing cPanel MySQL/MariaDB plus PHP; use it only if engine/runtime quotas, private uploads, secrets and restore gates pass. Cloudflare D1 is the leading zero-new-platform-cost fallback; managed Postgres is not assumed free/backup-safe for a financial system.
+- [x] Record a phased export/import, reconciliation, offline outbox and owner-controlled single-writer cutover plan. No dual-write, live migration or decommission occurs in this PR.
+- [ ] Verify the actual GoDaddy/cPanel hosting plan, PHP/MySQL versions, quotas, cron, private file support and isolated backup restore with the Owner before choosing the final production database.
+- [ ] Implement the replacement API and schema in an isolated test environment only after the hosting decision and migration contract are approved.
+- **Release boundary:** no backend role changes, SQL connection, live Apps Script change, database migration, production data read/write, deployment or merge.
+
+See [Role-based workspace architecture](WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.md) and [Apps Script exit ADR](APP-PLATFORM-MIGRATION-ADR-2026-11-04.md).
+

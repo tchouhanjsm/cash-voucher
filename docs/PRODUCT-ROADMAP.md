@@ -14,6 +14,10 @@ See [docs/HANDOFF.md](HANDOFF.md) and [PR #263](https://github.com/tchouhanjsm/c
 
 The Daily Cash Close readiness card and attention items already emitted the `cashClose` destination, but the central delegated `goto` handler only forwarded Register navigation. The visible Cash Close call-to-action was therefore inert. The follow-up forwards both explicit destinations to the existing permission-checked navigator and adds a browser click-path regression. It does not change the server contract, accounting calculations, role policy or persisted data. Exact-head CI, Browser E2E and Full Flight evidence is required on the new commit before review.
 
+### Phase 13 — role-specific workspaces and platform exit architecture (4 November 2026)
+
+The UI now presents the existing `staff`, `manager`, `owner` and `accountant` roles as User, Admin, Owner and Accountant experiences. Admin is a display alias for the existing Manager role; server grants and owner-only User/Settings/Audit endpoints do not change. The target database decision is conditional: qualify the already-paid cPanel PHP + MySQL/MariaDB stack first, with Cloudflare D1 as a cost-first fallback if cPanel does not meet transaction, quota, private-file and recovery requirements. ADR and migration stages are documented; no live Apps Script endpoint, SQL schema, production data or offline queue is changed.
+
 ### Phase 12 — Dashboard operational drill-down completion (3 November 2026)
 
 Every visible KPI, actionable attention item and recent transaction now links to a bounded, explicit Register, Report or current-business-date Cash Close context. Approved-payment KPIs use Register with Approval = APPROVED; receipts use the existing Recorded Movement Report for report-capable roles, with staff falling back to Register. Approval review uses Approval = ALL; invalid voucher attention includes all statuses; recent activity uses voucher number/vendor/date/type with the existing server filters. Offline status remains informational. Staff and manager Browser E2E cases verify role destinations and API filters. No API, Sheet schema, accounting, approval or Cash Close calculation changed.

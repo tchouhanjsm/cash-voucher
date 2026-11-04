@@ -110,3 +110,10 @@ The app is a single-property cash-voucher tool, not a shared multi-tenant platfo
 - UI/UX source review and next design criteria: `docs/UI-UX-REVIEW.md`
 - Engineering method: `docs/ENGINEERING-METHOD.md`
 - Release checklist: `docs/RELEASE-READINESS.md`
+
+### Role workspaces and platform migration direction
+
+The interface presents simple User, operational Admin, and business-wide Owner workspaces. The existing `manager` backend role is displayed as **Admin**; the backend role keys and owner-only authorization checks are intentionally unchanged. The Accountant retains a separate read-only Finance workspace.
+
+Apps Script + Sheets + Drive remain the current deployed backend. A replacement is only a proposed direction at this stage: first qualify the already-paid cPanel PHP/MySQL capability and recovery controls, then implement and validate a versioned API and isolated SQL environment before any owner-approved data cutover. See [role workspace architecture](docs/WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.md) and [Apps Script exit ADR](docs/APP-PLATFORM-MIGRATION-ADR-2026-11-04.md). No live deployment or data migration is implied by this plan.
+

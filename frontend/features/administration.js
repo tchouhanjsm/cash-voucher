@@ -3,6 +3,7 @@ import { categories, rcats, S } from '../core/state.js';
 import { ls } from '../core/storage.js';
 import { setWorkspaceDensity } from '../core/preferences.js';
 import { setTheme } from '../core/theme.js';
+import { displayRole } from '../core/workspaces.js';
 import { csvCell, download, esc, initials, scalarText } from '../core/utils.js';
 import {
   closeModal,
@@ -279,7 +280,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
     const rows = users
       .map(
         (user) =>
-          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option${role === user.role ? ' selected' : ''}>${role}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
+          `<tr><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option value="${esc(role)}"${role === user.role ? ' selected' : ''}>${esc(displayRole(role))}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
      <td class="r nw"><button class="btn sm" data-act="upassword" data-id="${esc(user.id)}">Reset password</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
       )
       .join('');
@@ -300,7 +301,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
       '<label for="un">Name<input id="un" autocomplete="name" placeholder="Name" required></label>',
       '<label for="ue">Email address<input id="ue" autocomplete="email" type="email" placeholder="Email" required></label>',
       '<div class="user-select-field"><label for="ur">User role</label><select id="ur">',
-      roles.map((role) => '<option>' + esc(role) + '</option>').join(''),
+      roles.map((role) => '<option value="' + esc(role) + '">' + esc(displayRole(role)) + '</option>').join(''),
       '</select></div>',
       '<label for="up">Temporary password<input id="up" type="password" inputmode="text" minlength="8" maxlength="128" title="Use 8 to 128 characters" autocomplete="new-password" placeholder="Temporary password (8–128 characters)" required></label>',
       '<button class="btn primary">Add</button>',
@@ -318,7 +319,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
         fields: userFormFields,
         className: 'filters user-form-fields',
         footer:
-          '<p class="muted"><b>Staff</b>: create and view own entries · <b>Manager</b>: view, edit, cancel, bulk upload, vendors, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
+          '<p class="muted"><b>User</b>: create and view own entries · <b>Admin</b>: manage daily operations, vendors, bulk uploads, cash close, approvals and reports · <b>Accountant</b>: read-only reports and CSV export · <b>Owner</b>: full administration, approvals and reports.</p>',
       }) +
       '<div class="card management-results-card">' +
       userTable +
@@ -1673,7 +1674,7 @@ export function createAdministration({ api, getNavigation, signOut }) {
 
     const name = scalarText(S.me?.name) || 'Your account';
     const email = scalarText(S.me?.email);
-    const role = scalarText(S.me?.role);
+    const role = displayRole(S.me?.role);
     const propertyName = scalarText(S.settings?.propertyName);
     const layout = document.createElement('div');
     layout.className = 'account-workspace-grid';

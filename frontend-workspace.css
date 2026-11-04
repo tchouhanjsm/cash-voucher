@@ -814,7 +814,8 @@
     .app > .side .brand,
     .app > .side .who,
     .app > .side .side-out,
-    .app > .side .nav-label {
+    .app > .side .nav-label,
+    .app > .side .nav-workspace-title {
       display: none;
     }
     .app > .side #nav {
@@ -3067,4 +3068,29 @@
     text-decoration: underline;
     text-underline-offset: 3px;
   }
+}
+
+
+/* Role-specific workspace identity. Navigation visibility remains permission-derived. */
+.app > .side .nav-workspace-title,
+.app > .side .nav-more-workspace-title {
+  margin: 8px 12px 2px;
+  color: var(--workspace-ink, var(--nav-ink));
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.35;
+}
+.app > .side .nav-workspace-title {
+  padding: 0 12px 8px;
+  border-bottom: 1px solid var(--workspace-border, var(--nav-border));
+}
+.app > .side .nav-more-workspace-title {
+  margin: 0 0 12px;
+  padding: 0 0 10px;
+  border-bottom: 1px solid var(--workspace-border, var(--nav-border));
+}
+.app > .side .nav-label,
+.app > .side .nav-more-label {
+  margin-top: 14px;
 }

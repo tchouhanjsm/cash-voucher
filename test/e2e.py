@@ -408,6 +408,12 @@ with sync_playwright() as p:
         'owner sees Onboarding and Cash Close navigation; Account moved to the user menu',
     )
     check(
+        page.locator('#nav .nav-workspace-title').inner_text() == 'Owner workspace'
+        and page.locator('#userRole').inner_text() == 'Owner'
+        and 'Owner controls' in page.locator('#nav').inner_text(),
+        'owner receives the owner-labelled workspace and separate owner-control navigation group',
+    )
+    check(
         page.locator('html').get_attribute('data-palette') == 'mint'
         and page.evaluate("localStorage.getItem('cv.palette')") == 'mint'
         and page.evaluate("getComputedStyle(document.querySelector('.side')).backgroundColor")
@@ -2921,6 +2927,11 @@ with sync_playwright() as p:
         'accountant sees Reports only, without voucher entry, Register, Vendors, close or user administration',
     )
     check(
+        accountant_page.locator('#nav .nav-workspace-title').inner_text() == 'Finance workspace'
+        and accountant_page.locator('#userRole').inner_text() == 'Accountant',
+        'accountant receives a clearly labelled read-only finance workspace',
+    )
+    check(
         accountant_page.locator('#view .page-header-actions [data-act=ntype]').count() == 0,
         'read-only accountant experience does not expose a create-primary action',
     )
@@ -4328,6 +4339,14 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 3, 'staff sees 3 nav items (dash,new,reg); Account is in the user menu')
+    check(
+        page.locator('#nav').get_attribute('data-workspace') == 'staff'
+        and page.locator('#nav .nav-workspace-title').inner_text() == 'My workspace'
+        and page.locator('#userRole').inner_text() == 'User'
+        and page.locator('#nav .nav-label').all_inner_texts() == ['My day', 'My records']
+        and page.locator('#nav .nav-workspace-title').evaluate("el => getComputedStyle(el).display") == 'none',
+        'staff gets a simple User workspace with no desktop-only navigation heading on the mobile bottom bar',
+    )
 
     # Exercise the live staff dashboard at every KPI breakpoint with deliberately long
     # INR values, rather than inferring its layout from owner-only screenshots.
@@ -5755,6 +5774,13 @@ with sync_playwright() as p:
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
+    check(
+        page.locator('#nav .nav-workspace-title').inner_text() == 'Admin workspace'
+        and page.locator('#userRole').inner_text() == 'Admin'
+        and 'Administration' in page.locator('#nav').inner_text()
+        and page.locator('[data-v=users], [data-v=set], [data-v=audit], [data-v=onboarding]').count() == 0,
+        'manager uses the Admin label while owner-only administration remains unavailable',
+    )
 
     manager_dashboard_requests = []
     manager_dashboard_register_fixture = {

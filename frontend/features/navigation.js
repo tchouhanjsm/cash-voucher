@@ -3,6 +3,7 @@ import { normalizeVoucherCollection, S, can } from '../core/state.js';
 import { fail, toast } from '../core/ui.js';
 import { ls } from '../core/storage.js';
 import { scalarText } from '../core/utils.js';
+import { workspaceForRole } from '../core/workspaces.js';
 import { createShell } from './shell.js';
 
 const NAV_ICON_NAMES = new Set([
@@ -44,19 +45,6 @@ export function createNavigation({
     ['onboarding', 'check', 'Onboarding', () => can('settings')],
   ];
 
-  const NAV_GROUPS = {
-    dash: 'Work',
-    new: 'Work',
-    reg: 'Work',
-    reports: 'Money',
-    cashClose: 'Money',
-    bulk: 'Manage',
-    vend: 'Manage',
-    users: 'Manage',
-    set: 'Manage',
-    audit: 'Manage',
-    onboarding: 'Manage',
-  };
   const MOBILE_SHORTCUTS = new Set(['dash', 'new', 'reg', 'reports']);
   const shell = createShell({ go: (view, options) => go(view, options) });
 
@@ -319,14 +307,19 @@ export function createNavigation({
   }
 
   function renderNav() {
+    const workspace = workspaceForRole(S.me?.role);
     const available = NAV.filter(
       (item) => item[0] !== 'acct' && (!S.offlineMode || OFFLINE_VIEWS.has(item[0])) && item[3](),
     );
     const navContent = document.createDocumentFragment();
+    const workspaceHeading = document.createElement('p');
+    workspaceHeading.className = 'nav-workspace-title';
+    workspaceHeading.textContent = workspace.title;
+    navContent.appendChild(workspaceHeading);
     let lastGroup = '';
 
     available.forEach(([view, icon, label]) => {
-      const group = NAV_GROUPS[view] || '';
+      const group = workspace.groups[view] || '';
       if (group && group !== lastGroup) {
         const heading = document.createElement('p');
         heading.className = 'nav-label';
@@ -336,13 +329,20 @@ export function createNavigation({
       }
       navContent.appendChild(createNavButton(view, icon, label));
     });
+    $('#nav').dataset.workspace = S.me?.role || 'restricted';
     $('#nav').replaceChildren(navContent);
 
     const overflowItems = available.filter(([view]) => !MOBILE_SHORTCUTS.has(view));
     const moreContent = document.createDocumentFragment();
+    if (overflowItems.length) {
+      const heading = document.createElement('p');
+      heading.className = 'nav-more-workspace-title';
+      heading.textContent = workspace.title;
+      moreContent.appendChild(heading);
+    }
     lastGroup = '';
     overflowItems.forEach(([view, icon, label]) => {
-      const group = NAV_GROUPS[view] || '';
+      const group = workspace.groups[view] || '';
       if (group && group !== lastGroup) {
         const heading = document.createElement('p');
         heading.className = 'nav-more-label';
