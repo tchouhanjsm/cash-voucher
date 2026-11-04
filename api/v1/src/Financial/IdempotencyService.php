@@ -121,6 +121,7 @@ final class IdempotencyService
                 if (!is_array($storedResponse)) {
                     throw new RuntimeException('The stored idempotency response is invalid.');
                 }
+                $storedResponse = $this->canonicalize($storedResponse);
 
                 $this->pdo->commit();
                 return ['data' => $storedResponse, 'replayed' => true];
@@ -130,6 +131,7 @@ final class IdempotencyService
             if (!is_array($result)) {
                 throw new RuntimeException('A financial operation must return an object-shaped result.');
             }
+            $result = $this->canonicalize($result);
 
             $audit['after'] = $result;
             AuditWriter::append($this->pdo, $actorUserId, $actorEmail, $audit);

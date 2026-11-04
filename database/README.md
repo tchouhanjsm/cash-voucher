@@ -26,9 +26,9 @@ The API never loads a .env file. Provide environment variables through the local
 
 ## Initial table groups
 
-| Migration | Tables                                                                                   | Purpose                                                                                                   |
-| --------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| 0001      | users, vendors, settings                                                                 | Identity, role key compatibility, party identity and configuration                                      |
+| Migration | Tables                                                                                   | Purpose                                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 0001      | users, vendors, settings                                                                 | Identity, role key compatibility, party identity and configuration                                       |
 | 0002      | vouchers, voucher_approval_events, voucher_receipts, cash_closes, cash_close_corrections | Financial records, approvals, private receipt metadata and close snapshots                               |
 | 0003      | user_sessions, login_attempts, idempotency_requests, audit_events                        | Hashed sessions/CSRF state, throttling, retry safety and attributable audit events                       |
 | 0004      | voucher_number_sequences                                                                 | Independent payment/receipt counters allocated under an InnoDB row lock inside the financial transaction |

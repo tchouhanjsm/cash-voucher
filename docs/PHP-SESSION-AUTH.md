@@ -6,12 +6,12 @@ This phase implements only the authentication boundary under /api/v1. The browse
 
 ## Routes
 
-| Method | Path | Purpose |
-| --- | --- | --- |
-| POST | /api/v1/sessions | Validate credentials and issue a session |
-| GET | /api/v1/sessions/current | Restore the signed-in user from the database |
-| POST | /api/v1/sessions/current/logout | Revoke the active session |
-| POST | /api/v1/sessions/current/password | Verify the current password, change it and revoke every session |
+| Method | Path                              | Purpose                                                         |
+| ------ | --------------------------------- | --------------------------------------------------------------- |
+| POST   | /api/v1/sessions                  | Validate credentials and issue a session                        |
+| GET    | /api/v1/sessions/current          | Restore the signed-in user from the database                    |
+| POST   | /api/v1/sessions/current/logout   | Revoke the active session                                       |
+| POST   | /api/v1/sessions/current/password | Verify the current password, change it and revoke every session |
 
 Health and metadata routes remain available. Unknown business routes still return 404.
 

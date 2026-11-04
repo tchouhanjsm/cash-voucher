@@ -581,6 +581,7 @@ See [Role-based workspace architecture](WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.m
 - Administration sink 2 was reviewed end to end: the role set is a fixed backend-role allowlist, `manager` remains the submitted key with the escaped `Admin` display label, and user name/email/ID attributes are escaped. The role-mapper hostile-object unit test and hostile Users-table Browser E2E fixture passed before this baseline was updated from `dca567c2` to `fc389555`.
 - The desktop sidebar now gives its navigation list an independent scroll region and keeps Sign out in the foreground; Browser E2E also resets the Manager workspace label assertion to its intended desktop viewport.
 - Exact-head CI, Browser E2E, Full Flight and Autonomous Development Monitor evidence for this new phase is pending. No merge, deployment, Apps Script mutation, database operation or financial-data migration is part of this batch.
+
 ### Phase 14 — isolated PHP/MySQL API and schema foundation (4 November 2026)
 
 - Added a same-origin /api/v1 front controller with liveness, readiness and version metadata only. No financial/business action is exposed and the PWA endpoint is unchanged.

@@ -128,10 +128,7 @@
       "state": "planned"
     },
     "saveUser": {
-      "method": [
-        "POST",
-        "PATCH"
-      ],
+      "method": ["POST", "PATCH"],
       "path": "/users[/{userId}]",
       "access": "users",
       "kind": "write",

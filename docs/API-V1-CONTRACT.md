@@ -6,15 +6,15 @@ The PHP API is isolated from the PWA. The session-authentication routes are impl
 
 ## Implemented routes
 
-| Method | Path                                | Purpose                                          |
-| ------ | ----------------------------------- | ------------------------------------------------ |
-| GET    | /api/v1/health/live                 | Process liveness; no database required           |
-| GET    | /api/v1/health/ready                | Checks database connection and schema version 0004 |
-| GET    | /api/v1/meta                        | API version, rollout state, timezone, currency, roles |
-| POST   | /api/v1/sessions                    | Verify credentials and issue a session           |
-| GET    | /api/v1/sessions/current            | Restore active user and current role             |
-| POST   | /api/v1/sessions/current/logout     | Revoke session with CSRF validation              |
-| POST   | /api/v1/sessions/current/password   | Change password and revoke all sessions          |
+| Method | Path                              | Purpose                                               |
+| ------ | --------------------------------- | ----------------------------------------------------- |
+| GET    | /api/v1/health/live               | Process liveness; no database required                |
+| GET    | /api/v1/health/ready              | Checks database connection and schema version 0004    |
+| GET    | /api/v1/meta                      | API version, rollout state, timezone, currency, roles |
+| POST   | /api/v1/sessions                  | Verify credentials and issue a session                |
+| GET    | /api/v1/sessions/current          | Restore active user and current role                  |
+| POST   | /api/v1/sessions/current/logout   | Revoke session with CSRF validation                   |
+| POST   | /api/v1/sessions/current/password | Change password and revoke all sessions               |
 
 All responses use a JSON envelope with ok, data or error, and a request identifier. Responses are not cacheable. The API does not enable cross-origin access; same-origin HTTPS is the default boundary. Unknown resources return 404 and unsupported methods return 405.
 
