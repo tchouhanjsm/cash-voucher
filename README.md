@@ -119,4 +119,4 @@ Apps Script + Sheets + Drive remain the current deployed backend. A replacement 
 
 ### Isolated PHP/MySQL API foundation
 
-The next-generation API now has an isolated /api/v1 shell, guarded MySQL/MariaDB migrations and database-backed PHP session authentication. The PWA is not connected to it and no production users or financial data were moved. Apps Script remains authoritative until financial services, reconciliation and owner-controlled cutover gates pass. See docs/API-V1-CONTRACT.md, docs/PHP-SESSION-AUTH.md and database/README.md.
+The next-generation API now has an isolated /api/v1 shell, guarded MySQL/MariaDB migrations and database-backed PHP session authentication (login, session restore, logout and self-service password change only). The PWA is not connected to it and no production users or financial data were moved. Apps Script remains authoritative until financial services, reconciliation and owner-controlled cutover gates pass. See docs/API-V1-CONTRACT.md, docs/PHP-SESSION-AUTH.md and database/README.md.
