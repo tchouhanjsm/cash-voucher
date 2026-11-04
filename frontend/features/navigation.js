@@ -329,7 +329,7 @@ export function createNavigation({
       }
       navContent.appendChild(createNavButton(view, icon, label));
     });
-    $('#nav').dataset.workspace = S.me?.role || 'restricted';
+    $('#nav').dataset.workspace = workspace.key;
     $('#nav').replaceChildren(navContent);
 
     const overflowItems = available.filter(([view]) => !MOBILE_SHORTCUTS.has(view));

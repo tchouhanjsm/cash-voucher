@@ -408,9 +408,10 @@ with sync_playwright() as p:
         'owner sees Onboarding and Cash Close navigation; Account moved to the user menu',
     )
     check(
-        page.locator('#nav .nav-workspace-title').text_content().strip() == 'Owner workspace'
+        page.locator('#nav').dataset.workspace == 'owner'
+        and page.locator('#nav .nav-workspace-title').text_content().strip() == 'Owner workspace'
         and page.locator('#userRole').text_content().strip() == 'Owner'
-        and 'Owner controls' in page.locator('#nav').inner_text(),
+        and 'Owner controls' in page.locator('#navMoreItems').text_content(),
         'owner receives the owner-labelled workspace and separate owner-control navigation group',
     )
     check(

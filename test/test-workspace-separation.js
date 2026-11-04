@@ -17,7 +17,8 @@ assert.match(workspaces, /manager:\s*\{\s*roleLabel:\s*'Admin',\s*title:\s*'Admi
 assert.match(workspaces, /owner:\s*\{\s*roleLabel:\s*'Owner',\s*title:\s*'Owner workspace'/);
 assert.match(workspaces, /accountant:\s*\{\s*roleLabel:\s*'Accountant'/);
 assert.doesNotMatch(workspaces, /\badmin\s*:/, 'Admin is a display label, not a new API role key');
-assert.match(workspaces, /RESTRICTED_WORKSPACE/);
+assert.match(workspaces, /key:\s*'restricted'/);
+assert.match(workspaces, /typeof role === 'string'/, 'role objects do not trigger coercion hooks during workspace resolution');
 assert.match(navigation, /workspaceForRole\(S\.me\?\.role\)/);
 assert.match(navigation, /item\[3\]\(\)/, 'navigation continues to use server-provided capabilities');
 assert.match(navigation, /nav-workspace-title/);
