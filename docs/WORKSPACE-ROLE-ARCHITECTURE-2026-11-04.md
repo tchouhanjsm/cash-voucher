@@ -14,12 +14,12 @@ The Accountant remains a separate read-only Finance workspace.
 
 The existing backend role keys are retained:
 
-| Stored role / permission source | User-facing label | Workspace |
-|---|---|---|
-| `staff` | User | My workspace |
-| `manager` | Admin | Admin workspace |
-| `owner` | Owner | Owner workspace |
-| `accountant` | Accountant | Finance workspace |
+| Stored role / permission source | User-facing label | Workspace         |
+| ------------------------------- | ----------------- | ----------------- |
+| `staff`                         | User              | My workspace      |
+| `manager`                       | Admin             | Admin workspace   |
+| `owner`                          | Owner             | Owner workspace   |
+| `accountant`                    | Accountant        | Finance workspace |
 
 **Admin is a presentation label, not a new backend role.** Existing deployed Apps Script projects and customer instances may continue to store `manager`. Do not add an `admin` role key, silently rewrite user rows, or reinterpret role grants as part of a visual redesign.
 

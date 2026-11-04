@@ -10,6 +10,12 @@ PR #263 now groups the Haveli Light Dashboard, My Account, Register and Reports 
 
 See [docs/HANDOFF.md](HANDOFF.md) and [PR #263](https://github.com/tchouhanjsm/cash-voucher/pull/263) for the current implementation detail and exact-head evidence.
 
+### Reliability batch — PR #263
+
+The service-worker shell includes the workspace-role module and advances its cache version. Browser coverage verifies that the module is available in the offline shell. The Owner role assertion reads the persistent role label in the account popover rather than a top-bar label that deliberately hides duplicate name/role text. A focused source regression exercises hostile non-string role values and verifies role lookup does not coerce them.
+
+The administration sink review is limited to a fixed backend-role allowlist and escaped role keys/labels. Its reviewed fingerprint baseline is intentionally held until this regression and exact-head CI are green.
+
 ### Phase 11 — Dashboard action routing integrity (3 November 2026)
 
 The Daily Cash Close readiness card and attention items already emitted the `cashClose` destination, but the central delegated `goto` handler only forwarded Register navigation. The visible Cash Close call-to-action was therefore inert. The follow-up forwards both explicit destinations to the existing permission-checked navigator and adds a browser click-path regression. It does not change the server contract, accounting calculations, role policy or persisted data. Exact-head CI, Browser E2E and Full Flight evidence is required on the new commit before review.

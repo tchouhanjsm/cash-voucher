@@ -301,7 +301,9 @@ export function createAdministration({ api, getNavigation, signOut }) {
       '<label for="un">Name<input id="un" autocomplete="name" placeholder="Name" required></label>',
       '<label for="ue">Email address<input id="ue" autocomplete="email" type="email" placeholder="Email" required></label>',
       '<div class="user-select-field"><label for="ur">User role</label><select id="ur">',
-      roles.map((role) => '<option value="' + esc(role) + '">' + esc(displayRole(role)) + '</option>').join(''),
+      roles
+        .map((role) => '<option value="' + esc(role) + '">' + esc(displayRole(role)) + '</option>')
+        .join(''),
       '</select></div>',
       '<label for="up">Temporary password<input id="up" type="password" inputmode="text" minlength="8" maxlength="128" title="Use 8 to 128 characters" autocomplete="new-password" placeholder="Temporary password (8–128 characters)" required></label>',
       '<button class="btn primary">Add</button>',

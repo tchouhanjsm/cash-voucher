@@ -559,7 +559,6 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 - **Release boundary:** no backend/API/schema, accounting formula, approval policy, cash-close calculation, role permissions or persisted data changes; no Apps Script deploy, Sheet/Drive write, migration, staging transaction, publication, merge or production deployment.
 - **Exact-head gate:** latest PR-head CI/Quality, Browser E2E and Full Flight must all pass before merge review.
 
-
 ## Phase 13 — User / Admin / Owner workspaces and Apps Script exit architecture (4 November 2026)
 
 - [x] Introduce workspace-specific navigation labels and groupings: User → My workspace; stored Manager → Admin workspace; Owner → Owner workspace; Accountant → read-only Finance workspace.
@@ -575,3 +574,9 @@ The last fully green pre-status-alignment head was `76df53e233d693d83caab8b07edd
 
 See [Role-based workspace architecture](WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.md) and [Apps Script exit ADR](APP-PLATFORM-MIGRATION-ADR-2026-11-04.md).
 
+### PR #263 reliability batch — implementation notes
+
+- The workspace module is added to the versioned public app-shell precache so offline reload can import the role mapper before startup reveals the login or app workspace.
+- The Owner browser assertion uses the persistent role label in the account popover; the top-bar role intentionally suppresses duplicate text when the account name already equals the role.
+- The administration role selector uses a fixed backend-role allowlist and escapes both the submitted role key and its display label. Its source-fingerprint baseline remains unchanged until the focused regression and exact-head CI review pass.
+- Exact-head CI, Browser E2E, Full Flight and Autonomous Development Monitor evidence is pending. No merge, deployment, Apps Script mutation, database operation or financial-data migration is part of this batch.
