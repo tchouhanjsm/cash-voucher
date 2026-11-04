@@ -5795,15 +5795,31 @@ with sync_playwright() as p:
     page.wait_for_selector('#nav button')
     page.set_viewport_size({'width': 1280, 'height': 800})
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
-    check(
-        page.locator('#nav .nav-workspace-title').text_content().strip() == 'Admin workspace'
-        and page.locator('#popRole').text_content().strip() == 'Admin'
-        and 'Administration' in page.locator('#nav').inner_text()
-        and page.locator(
-            '#nav [data-v=users], #nav [data-v=set], #nav [data-v=audit], #nav [data-v=onboarding], '
+    manager_workspace_diagnostics = page.evaluate(
+        """() => ({
+          viewport: { width: innerWidth, height: innerHeight },
+          navHeading: document.querySelector('#nav .nav-workspace-title')?.textContent || null,
+          userRole: document.querySelector('#userRole')?.textContent || null,
+          popRole: document.querySelector('#popRole')?.textContent || null,
+          navText: document.querySelector('#nav')?.innerText || '',
+          ownerControlLinks: Array.from(document.querySelectorAll(
+            '#nav [data-v=users], #nav [data-v=set], #nav [data-v=audit], #nav [data-v=onboarding], ' +
             '#navMoreItems [data-v=users], #navMoreItems [data-v=set], #navMoreItems [data-v=audit], #navMoreItems [data-v=onboarding]'
-        ).count() == 0,
-        'manager uses the Admin label while owner-only administration remains unavailable',
+          )).map(element => ({
+            view: element.dataset.v,
+            workspace: element.closest('#nav')?.dataset.workspace || 'overflow'
+          }))
+        })"""
+    )
+    manager_workspace_valid = (
+        manager_workspace_diagnostics['navHeading'] == 'Admin workspace'
+        and manager_workspace_diagnostics['popRole'] == 'Admin'
+        and 'Administration' in manager_workspace_diagnostics['navText']
+        and not manager_workspace_diagnostics['ownerControlLinks']
+    )
+    check(
+        manager_workspace_valid,
+        'manager workspace diagnostics: ' + json.dumps(manager_workspace_diagnostics, sort_keys=True),
     )
 
     manager_dashboard_requests = []
