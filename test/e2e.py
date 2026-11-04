@@ -5925,6 +5925,7 @@ with sync_playwright() as p:
         button = page.locator('[data-drill-key="' + drill_key + '"]')
         date_from = button.get_attribute('data-from') or ''
         date_to = button.get_attribute('data-to') or ''
+        button_vendor = button.get_attribute('data-vendor') or ''
         check(
             button.get_attribute('data-target') == destination
             and button.get_attribute('data-type') == movement_type
@@ -5969,8 +5970,7 @@ with sync_playwright() as p:
                 and page.locator('#rfrom').input_value() == date_from
                 and page.locator('#rto').input_value() == date_to
                 and (
-                    not button.get_attribute('data-vendor')
-                    or register_request.get('vendor') == button.get_attribute('data-vendor')
+                    not button_vendor or register_request.get('vendor') == button_vendor
                 ),
                 'manager ' + drill_key + ' opens Register with its intended period/type/vendor context',
             )
