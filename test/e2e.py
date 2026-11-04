@@ -1099,6 +1099,16 @@ with sync_playwright() as p:
         else:
             go_view(page, route_id)
         page.wait_for_selector(ready_selector, state='visible', timeout=10000)
+        if route_id == 'new':
+            # Safe, synthetic values make the New Entry screenshot useful for before/after review.
+            page.locator('#rows .rv').first.fill('Visual Review Supplies')
+            page.locator('#rows .ra').first.fill('1250')
+            if page.locator('.cash-impact').count():
+                page.locator('.cash-impact[value="CASH_OUT"]').first.check()
+            elif page.locator('.rci').count():
+                page.locator('.rci').first.select_option('CASH')
+            page.locator('#toast').evaluate("element => element.classList.add('hidden')")
+
         if route_id == 'dash':
             page.wait_for_selector('.dashboard-trend-chart', state='visible', timeout=10000)
             chart_metrics = page.locator('.dashboard-trend-chart').evaluate("""svg => ({
