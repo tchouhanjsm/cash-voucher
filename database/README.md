@@ -26,12 +26,12 @@ The API never loads a .env file. Provide environment variables through the local
 
 ## Initial table groups
 
-| Migration | Tables | Purpose |
-|---|---|---|
-| 0001 | users, vendors, settings | Identity, role key compatibility, party identity and configuration |
-| 0002 | vouchers, voucher_approval_events, voucher_receipts, cash_closes, cash_close_corrections | Financial records, approvals, private receipt metadata and close snapshots |
-| 0003 | user_sessions, login_attempts, idempotency_requests, audit_events | Hashed sessions/CSRF state, throttling, retry safety and attributable audit events |
-| 0004 | voucher_number_sequences | Independent payment/receipt counters allocated under an InnoDB row lock inside the financial transaction |
+| Migration | Tables                                                                                   | Purpose                                                                                                   |
+| --------- | ---------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| 0001      | users, vendors, settings                                                                 | Identity, role key compatibility, party identity and configuration                                      |
+| 0002      | vouchers, voucher_approval_events, voucher_receipts, cash_closes, cash_close_corrections | Financial records, approvals, private receipt metadata and close snapshots                               |
+| 0003      | user_sessions, login_attempts, idempotency_requests, audit_events                        | Hashed sessions/CSRF state, throttling, retry safety and attributable audit events                       |
+| 0004      | voucher_number_sequences                                                                 | Independent payment/receipt counters allocated under an InnoDB row lock inside the financial transaction |
 
 Voucher numbers are allocated from a per-type row locked by SELECT ... FOR UPDATE inside the same transaction as the voucher insert. A rollback also rolls back the counter increment. Seed the first value from the reconciled legacy next-number setting during import; never guess the historical counter. Amounts use integer paise columns, never floating-point currency columns. Business dates remain DATE values in the Asia/Kolkata business calendar; event instants are DATETIME(6) stored in UTC. Existing Drive IDs and legacy source IDs have dedicated nullable fields for later reconciliation; no importer is included.
 

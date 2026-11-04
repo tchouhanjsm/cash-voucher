@@ -8,11 +8,14 @@ use JsonException;
 
 final class Response
 {
-    /** @param array<string, mixed> $body */
+    /** @param array<string, mixed> $body
+     *  @param list<array{name:string,value:string}> $headers
+     */
     private function __construct(
         private readonly int $status,
         private readonly array $body,
-        private readonly string $requestId
+        private readonly string $requestId,
+        private readonly array $headers = []
     ) {
     }
 
@@ -38,6 +41,21 @@ final class Response
         ], $requestId);
     }
 
+    public function withHeader(string $name, string $value): self
+    {
+        if (!preg_match('/^[A-Za-z0-9-]{1,64}$/D', $name)
+            || str_contains($value, "\r")
+            || str_contains($value, "\n")
+            || strlen($value) > 4096
+        ) {
+            throw new \InvalidArgumentException('Response header is invalid.');
+        }
+
+        $headers = $this->headers;
+        $headers[] = ['name' => $name, 'value' => $value];
+        return new self($this->status, $this->body, $this->requestId, $headers);
+    }
+
     public function status(): int
     {
         return $this->status;
@@ -49,16 +67,30 @@ final class Response
         return $this->body;
     }
 
+    /** @return list<string> */
+    public function headerValues(string $name): array
+    {
+        return array_values(array_map(
+            static fn (array $header): string => $header['value'],
+            array_filter($this->headers, static fn (array $header): bool => strcasecmp($header['name'], $name) === 0)
+        ));
+    }
+
     public function send(): never
     {
         http_response_code($this->status);
         header('Content-Type: application/json; charset=utf-8');
         header('Cache-Control: no-store, private');
+        header('Pragma: no-cache');
         header('X-Content-Type-Options: nosniff');
         header('X-Frame-Options: DENY');
         header('Referrer-Policy: no-referrer');
         header("Content-Security-Policy: default-src 'none'; frame-ancestors 'none'; base-uri 'none'");
         header('X-Request-Id: ' . $this->requestId);
+
+        foreach ($this->headers as $header) {
+            header($header['name'] . ': ' . $header['value'], false);
+        }
 
         try {
             echo json_encode(

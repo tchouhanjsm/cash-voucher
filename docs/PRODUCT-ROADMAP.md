@@ -469,3 +469,11 @@ A real replacement-runtime foundation is now in source: a versioned /api/v1 HTTP
 CI provisions a disposable MySQL 8 service, applies the four migrations using a DDL-only account, then tests the application against a table-restricted runtime account. The PHP integration suite covers exact paise conversion, existing role grants, request validation, health/readiness, rollback-safe per-type voucher numbering under a two-process row-lock contention test, idempotent replay/conflict, atomic audit writes, legacy action-map parity and append-only privilege boundaries.
 
 **Next delivery:** secure login/session lifecycle plus CSRF protection and rate limiting, followed by a single first financial vertical slice (voucher create/read) with atomic audit and idempotency. Do not switch the PWA or export any production records until host preflight, source mapping, shadow reconciliation and rollback are approved.
+
+## Phase 15 — PHP authentication, session lifecycle and CSRF
+
+The isolated replacement API now has a database-backed login/session boundary. It supports login, session restoration, logout and password change; legacy Apps Script HMAC credentials are verified using a separately injected migration pepper and upgraded on successful login. Sessions are random, hashed at rest, six-hour absolute expiry, Secure/HttpOnly/SameSite cookies with double-submit CSRF for state-changing session routes.
+
+Login throttles are HMAC-keyed and scoped to an account, email/IP pair and source IP. Current active status and role are resolved from MySQL for each request. Password change and account deactivation revoke existing sessions. Three legacy auth actions are marked implemented; all financial/operational route handlers remain disabled.
+
+CI must exercise this against disposable MySQL with the restricted runtime account. Do not transfer the legacy pepper or migrate real users until the Owner approves host qualification and secret handoff. **Next:** implement the first authenticated voucher read/create vertical slice, including staff record scope, transaction-safe numbering, idempotency, audit and offline queue contract tests. Then port approval/receipts and cash-close workflows before any PWA endpoint switch.

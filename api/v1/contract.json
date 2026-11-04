@@ -6,22 +6,32 @@
   "implementedResources": [
     "GET /health/live",
     "GET /health/ready",
-    "GET /meta"
+    "GET /meta",
+    "POST /sessions",
+    "GET /sessions/current",
+    "POST /sessions/current/logout",
+    "POST /sessions/current/password"
   ],
-  "legacyRoleKeys": [
-    "staff",
-    "manager",
-    "owner",
-    "accountant"
-  ],
+  "legacyRoleKeys": ["staff", "manager", "owner", "accountant"],
   "businessActionsEnabled": false,
   "notes": [
     "The current Apps Script endpoint remains authoritative.",
-    "No browser client is switched to this API in this phase.",
-    "Authentication, financial handlers, receipt access, imports and cutover are later gated phases."
+    "No PWA client is switched to the replacement API in this phase.",
+    "Financial routes, imports, backups and production cutover require separate owner-approved gates."
   ],
   "schemaVersion": "0004",
   "moneyStorageUnit": "integer-paise",
   "businessTimeZone": "Asia/Kolkata",
-  "legacyActionMapSource": "api/v1/legacy-action-map.json (source-controlled inventory; deliberately not served publicly)"
+  "legacyActionMapSource": "api/v1/legacy-action-map.json (source-controlled inventory; deliberately not served publicly)",
+  "authentication": {
+    "sessionCookie": "cv_session (Secure, HttpOnly, SameSite=Strict)",
+    "csrfCookie": "cv_csrf (Secure, readable, SameSite=Strict; echoed in X-CSRF-Token)",
+    "sessionTtlSeconds": 21600,
+    "rateLimit": "5 attempts per 15 minutes per email and email/IP; 25 per IP",
+    "legacyPassword": "Apps Script HMAC-SHA256 verified and upgraded to versioned SHA-384-prehash PASSWORD_DEFAULT",
+    "roleResolution": "Re-read active status and current legacy role from MySQL on every request",
+    "passwordPolicy": "8-128 characters; explicit must-change-only legacy short-PIN migration exception",
+    "passwordPepperVariable": "CV_LEGACY_PASSWORD_PEPPER",
+    "rateLimitKeyVariable": "CV_AUTH_RATE_LIMIT_KEY"
+  }
 }

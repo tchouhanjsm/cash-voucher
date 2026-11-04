@@ -1,16 +1,20 @@
-# Versioned PHP API — Phase 14 foundation
+# Versioned PHP API — isolated replacement foundation
 
 ## Status
 
-The PHP API is an isolated scaffold only. The current PWA still calls the Apps Script API, and Apps Script + Sheets + Drive remain the single authoritative production writer. The PHP endpoints in this phase do not create or mutate vouchers.
+The PHP API is isolated from the PWA. The session-authentication routes are implemented, but Apps Script + Sheets + Drive remain the single authoritative production writer. The PHP API does not create or mutate vouchers.
 
 ## Implemented routes
 
-| Method | Path | Behavior |
-|---|---|---|
-| GET | /api/v1/health/live | Process liveness; does not require a database |
-| GET | /api/v1/health/ready | Verifies the runtime DB account can connect, read schema_migrations, and sees schema version 0004 |
-| GET | /api/v1/meta | Returns API version, isolated rollout state, business timezone, integer currency unit and legacy role keys |
+| Method | Path                                | Purpose                                          |
+| ------ | ----------------------------------- | ------------------------------------------------ |
+| GET    | /api/v1/health/live                 | Process liveness; no database required           |
+| GET    | /api/v1/health/ready                | Checks database connection and schema version 0004 |
+| GET    | /api/v1/meta                        | API version, rollout state, timezone, currency, roles |
+| POST   | /api/v1/sessions                    | Verify credentials and issue a session           |
+| GET    | /api/v1/sessions/current            | Restore active user and current role             |
+| POST   | /api/v1/sessions/current/logout     | Revoke session with CSRF validation              |
+| POST   | /api/v1/sessions/current/password   | Change password and revoke all sessions          |
 
 All responses use a JSON envelope with ok, data or error, and a request identifier. Responses are not cacheable. The API does not enable cross-origin access; same-origin HTTPS is the default boundary. Unknown resources return 404 and unsupported methods return 405.
 
@@ -28,11 +32,19 @@ All responses use a JSON envelope with ok, data or error, and a request identifi
 
 ## Legacy action inventory
 
-[api/v1/legacy-action-map.json](../api/v1/legacy-action-map.json) maps every action currently registered in backend/99-routes.gs, plus the separately handled public login action, to a proposed versioned route and required access scope. The PHP integration suite compares this map against the real Apps Script registry so an existing action cannot silently disappear from the migration plan. All entries remain planned until a tested handler is implemented.
+[api/v1/legacy-action-map.json](../api/v1/legacy-action-map.json) maps every action currently registered in backend/99-routes.gs, plus the separately handled public login action, to a proposed versioned route and required access scope. The PHP integration suite compares this map against the real Apps Script registry so an existing action cannot silently disappear from the migration plan. Login, logout and password change are implemented in this phase. All other financial and operational actions remain planned.
+
+## Authentication boundary
+
+Sessions are 256-bit random tokens stored only as SHA-256 digests. The cv_session cookie is Secure, HttpOnly and SameSite=Strict; state-changing session routes additionally require the cv_csrf double-submit cookie and matching X-CSRF-Token header. Account/email, email/IP and IP-only login buckets are HMAC-keyed. Active status and current role are loaded from the database for each request. Password change and deactivation revoke all sessions. See [PHP session authentication](PHP-SESSION-AUTH.md) for environment and migration details.
 
 ## Deliberately not implemented yet
 
-Login/session creation, CSRF validation, password import/rehash, financial handlers, reports, receipt upload/download, owner recovery, backups, export/import, offline queue switching and customer/tenant provisioning are not exposed. The schema is a reviewed engineering starting point, not a production import schema. Build these as separate tested vertical slices after the hosting preflight and field-by-field legacy contract inventory.
+Owner-admin user CRUD/password reset, password recovery, MFA, session administration UI, financial handlers, reports, receipt upload/download, owner recovery, backups, export/import, offline queue switching and customer/tenant provisioning are not exposed. The schema is a reviewed engineering starting point, not a production import schema. Build these as separate tested vertical slices after the hosting preflight and field-by-field legacy contract inventory.
+
+## Authentication secrets
+
+Set CV_AUTH_RATE_LIMIT_KEY to an independent random secret of at least 32 characters. CV_LEGACY_PASSWORD_PEPPER must receive the existing Apps Script PEPPER securely while imported legacy HMAC hashes remain. CV_ALLOW_LEGACY_SHORT_PASSWORDS defaults to false and may be enabled only for the Owner-approved forced-change legacy PIN migration. See [PHP session authentication](PHP-SESSION-AUTH.md).
 
 ## Configuration
 

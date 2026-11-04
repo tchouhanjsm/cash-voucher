@@ -4,8 +4,11 @@ declare(strict_types=1);
 namespace CashVoucher\Api\Http;
 
 use CashVoucher\Api\Infrastructure\Database;
+use CashVoucher\Api\Security\AuthenticationService;
 use CashVoucher\Api\Security\Role;
+use CashVoucher\Api\Security\SessionService;
 use CashVoucher\Api\Support\ApiException;
+use RuntimeException;
 use Throwable;
 
 final class Kernel
@@ -14,6 +17,7 @@ final class Kernel
     {
         try {
             $path = rtrim($request->path, '/') ?: '/';
+
             if ($path === '/api/v1/health/live') {
                 $this->requireMethod($request, 'GET');
                 return Response::success([
@@ -31,7 +35,7 @@ final class Kernel
                         'SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1'
                     )->fetchColumn();
                     if ($latestMigration !== '0004') {
-                        throw new \RuntimeException('The expected database schema version is not applied.');
+                        throw new RuntimeException('The expected database schema version is not applied.');
                     }
                 } catch (Throwable $exception) {
                     error_log('Cash Voucher readiness probe failed: ' . get_class($exception));
@@ -53,8 +57,95 @@ final class Kernel
                     'currency' => 'INR',
                     'moneyStorageUnit' => 'paise',
                     'legacyRoleKeys' => Role::keys(),
-                    'implementedResources' => ['health', 'meta'],
+                    'implementedResources' => [
+                        'health',
+                        'meta',
+                        'sessions:create',
+                        'sessions:current',
+                        'sessions:logout',
+                        'sessions:change-password',
+                    ],
                 ], $request->requestId);
+            }
+
+            if ($path === '/api/v1/sessions') {
+                $this->requireMethod($request, 'POST');
+                $authentication = $this->authenticationService();
+                try {
+                    $login = $authentication->login($request);
+                } catch (ApiException $exception) {
+                    throw $exception;
+                } catch (Throwable $exception) {
+                    error_log('Cash Voucher login service unavailable: ' . get_class($exception));
+                    throw new ApiException(503, 'AUTH_UNAVAILABLE', 'Authentication is temporarily unavailable.');
+                }
+
+                $response = Response::success([
+                    'user' => $login['user'],
+                    'expiresAtUtc' => $login['expiresAtUtc'],
+                ], $request->requestId);
+                return $this->withCookies(
+                    $response,
+                    SessionService::issueCookieHeaders($login['sessionToken'], $login['csrfToken'])
+                );
+            }
+
+            if ($path === '/api/v1/sessions/current') {
+                $this->requireMethod($request, 'GET');
+                try {
+                    $principal = (new SessionService(Database::connectFromEnvironment()))
+                        ->authenticate($request, false);
+                } catch (ApiException $exception) {
+                    throw $exception;
+                } catch (Throwable $exception) {
+                    error_log('Cash Voucher session lookup unavailable: ' . get_class($exception));
+                    throw new ApiException(503, 'AUTH_UNAVAILABLE', 'Session validation is temporarily unavailable.');
+                }
+
+                unset($principal['sessionId']);
+                return Response::success(['user' => $principal], $request->requestId);
+            }
+
+            if ($path === '/api/v1/sessions/current/logout') {
+                $this->requireMethod($request, 'POST');
+                try {
+                    $pdo = Database::connectFromEnvironment();
+                    $principal = (new SessionService($pdo))->authenticate($request, true);
+                    $this->authenticationService($pdo)->logout($principal);
+                } catch (ApiException $exception) {
+                    throw $exception;
+                } catch (Throwable $exception) {
+                    error_log('Cash Voucher logout service unavailable: ' . get_class($exception));
+                    throw new ApiException(503, 'AUTH_UNAVAILABLE', 'Sign out is temporarily unavailable.');
+                }
+
+                return $this->withCookies(
+                    Response::success(['signedOut' => true], $request->requestId),
+                    SessionService::clearCookieHeaders()
+                );
+            }
+
+            if ($path === '/api/v1/sessions/current/password') {
+                $this->requireMethod($request, 'POST');
+                try {
+                    $pdo = Database::connectFromEnvironment();
+                    $principal = (new SessionService($pdo))->authenticate($request, true);
+                    $this->authenticationService($pdo)->changePassword($principal, $request);
+                } catch (ApiException $exception) {
+                    throw $exception;
+                } catch (Throwable $exception) {
+                    error_log('Cash Voucher password-change service unavailable: ' . get_class($exception));
+                    throw new ApiException(503, 'AUTH_UNAVAILABLE', 'Password change is temporarily unavailable.');
+                }
+
+                return $this->withCookies(
+                    Response::success([
+                        'passwordChanged' => true,
+                        'sessionRevoked' => true,
+                        'requiresSignIn' => true,
+                    ], $request->requestId),
+                    SessionService::clearCookieHeaders()
+                );
             }
 
             throw new ApiException(404, 'NOT_FOUND', 'The requested API resource was not found.');
@@ -67,6 +158,25 @@ final class Kernel
                 $request->requestId
             );
         }
+    }
+
+    private function authenticationService(?\PDO $pdo = null): AuthenticationService
+    {
+        try {
+            return new AuthenticationService($pdo ?? Database::connectFromEnvironment());
+        } catch (Throwable $exception) {
+            error_log('Cash Voucher authentication configuration failed: ' . get_class($exception));
+            throw new ApiException(503, 'AUTH_UNAVAILABLE', 'Authentication is temporarily unavailable.');
+        }
+    }
+
+    /** @param array{0:string,1:string} $cookies */
+    private function withCookies(Response $response, array $cookies): Response
+    {
+        foreach ($cookies as $cookie) {
+            $response = $response->withHeader('Set-Cookie', $cookie);
+        }
+        return $response;
     }
 
     private function requireMethod(Request $request, string $required): void

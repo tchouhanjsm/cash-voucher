@@ -591,3 +591,14 @@ See [Role-based workspace architecture](WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.m
 - Added a MySQL-backed integration suite and CI service with a restricted runtime DB account. Tests cover exact-paise conversion, per-type row-locked numbering, a two-process contention test and rollback, action-map parity, role/record scope, idempotent replay/conflict, exactly-one audit commit, and the runtime account's inability to update/delete audit, approval or cash-close correction history.
 - Release boundary: isolated test schema only. No production cPanel connection, Apps Script/Sheets/Drive read/write, export/import, financial service route, API endpoint switch, offline queue modification, deploy or merge has occurred.
 - Next phase: implement session login/CSRF/rate limiting and the first voucher read/write service behind the same authorization/idempotency/audit transaction; first verify the hosting plan and backup/restore capability with the Owner.
+
+### Phase 15 — PHP authentication, session lifecycle and CSRF (4 November 2026)
+
+- Added /api/v1/sessions login, session restoration, logout and password change. The PWA remains on Apps Script; no existing production user, credential, or session was modified.
+- Legacy Apps Script HMAC-SHA256 passwords can be verified using an operator-supplied CV_LEGACY_PASSWORD_PEPPER and are immediately rehashed with PHP password_hash after successful login. The temporary short-PIN exception requires both an explicit environment flag and must_change_password=1.
+- Session cookies are opaque 256-bit random tokens, HttpOnly/Secure/SameSite=Strict. The DB stores only token digests. CSRF uses a second hashed token cookie plus matching X-CSRF-Token.
+- Active status and current role are loaded from MySQL on every request. Role changes are immediate; deactivation revokes all sessions; password change requires the current password and revokes every device session.
+- Added transactional login audit and HMAC-keyed email/composite/IP rate limits; no raw rate-limit identity, password, session token or CSRF token is stored in the throttle table or audit event.
+- Marked only login/logout/password-change legacy actions implemented in the source-controlled action map. Owner user administration/password reset, recovery, MFA and financial API actions remain planned.
+- Release boundary: disposable MySQL CI only. No cPanel credentials, legacy PEPPER value, Apps Script session, production user, financial data, API URL or deployment configuration was accessed or changed.
+- Exact-head PHP lint, MySQL integration, CI, Browser E2E, Full Flight and Autonomous Development Monitor results are pending for the follow-on PR.
