@@ -44,7 +44,7 @@ final class AuthenticationService
 
         $candidateEmail = filter_var($email, FILTER_VALIDATE_EMAIL) !== false && strlen($email) <= 254;
         $user = null;
-        $verification = ['valid' => false, 'needsRehash' => false, 'legacy' => false];
+        $verification = ['valid' => false, 'needsRehash' => false, 'legacy' => false, 'shortLegacy' => false];
 
         $this->pdo->beginTransaction();
         try {
@@ -124,7 +124,9 @@ final class AuthenticationService
                 (string) $user['email'],
                 'AUTH_LOGIN_SUCCESS',
                 (string) $user['id'],
-                $verification['legacy'] ? 'Legacy credential verified and upgraded.' : 'Password authentication succeeded.'
+                $verification['shortLegacy']
+                    ? 'Legacy short PIN accepted only for forced password change; rehash deferred.'
+                    : ($verification['legacy'] ? 'Legacy credential verified and upgraded.' : 'Password authentication succeeded.')
             );
             $this->pdo->commit();
 
