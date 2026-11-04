@@ -25,7 +25,7 @@ During a successful login, the PHP API verifies the original HMAC using CV_LEGAC
 
 CV_LEGACY_PASSWORD_PEPPER must be provided securely from the existing Script Property only for the migration period. It is not a source-controlled value. If it is missing, legacy accounts fail closed; do not disable verification or accept an unverified password to work around the missing key.
 
-The existing 8–128 character password policy is retained. A legacy PIN shorter than eight characters is accepted only if both the Owner-approved environment flag CV_ALLOW_LEGACY_SHORT_PASSWORDS=true and the account's must_change_password=1 are present. Successful sign-in immediately upgrades the credential, and the user must complete a full password change. The flag defaults to false and must be turned off after the approved migration window.
+The existing 8–128 character password policy is retained. A legacy PIN shorter than eight characters is accepted only if both the Owner-approved environment flag CV_ALLOW_LEGACY_SHORT_PASSWORDS=true and the account's must_change_password=1 are present. This narrow compatibility path creates a session that remains marked mustChangePassword; it deliberately does not rehash the short PIN with the normal password hasher. The user must complete the existing password-change flow with a new 8–128 character password. That operation writes the new versioned hash, clears must_change_password and revokes all sessions. A short PIN cannot be used as a normal PHP password or to bypass the forced-change state. The flag defaults to false and must be turned off after the approved migration window.
 
 ## Session and CSRF controls
 
