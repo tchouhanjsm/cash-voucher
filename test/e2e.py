@@ -5793,6 +5793,7 @@ with sync_playwright() as p:
     page.fill('#newPassword', 'Manager#Final2026')
     page.click('.mcard .primary')
     page.wait_for_selector('#nav button')
+    page.set_viewport_size({'width': 1280, 'height': 800})
     check(page.locator('#nav button').count() == 7, 'manager sees 7 nav items including Reports and Cash Close')
     check(
         page.locator('#nav .nav-workspace-title').text_content().strip() == 'Admin workspace'

@@ -78,6 +78,16 @@ assert.match(
 );
 assert.match(styles, /:root\[data-theme='dark'\]/, 'workspace defines dark-theme surfaces');
 assert.match(styles, /\.app > \.side\s*\{/, 'desktop navigation rail receives the workspace skin');
+assert.match(
+  styles,
+  /\.app > \.side #nav\s*\{[\s\S]*?overflow-y:\s*auto;/,
+  'long workspace navigation scrolls inside its own rail instead of overlapping sign-out',
+);
+assert.match(
+  styles,
+  /\.app > \.side \.side-out\s*\{[\s\S]*?flex:\s*0 0 auto;[\s\S]*?z-index:\s*1;/,
+  'sign-out remains a non-shrinking, foreground sidebar control',
+);
 assert.match(styles, /\.app > \.topbar\s*\{/, 'topbar receives the workspace skin');
 assert.match(
   styles,

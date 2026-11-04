@@ -578,5 +578,6 @@ See [Role-based workspace architecture](WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.m
 
 - The workspace module is added to the versioned public app-shell precache so offline reload can import the role mapper before startup reveals the login or app workspace.
 - The Owner browser assertion uses the persistent role label in the account popover; the top-bar role intentionally suppresses duplicate text when the account name already equals the role.
-- The administration role selector uses a fixed backend-role allowlist and escapes both the submitted role key and its display label. Its source-fingerprint baseline remains unchanged until the focused regression and exact-head CI review pass.
+- Administration sink 2 was reviewed end to end: the role set is a fixed backend-role allowlist, `manager` remains the submitted key with the escaped `Admin` display label, and user name/email/ID attributes are escaped. The role-mapper hostile-object unit test and hostile Users-table Browser E2E fixture passed before this baseline was updated from `dca567c2` to `fc389555`.
+- The desktop sidebar now gives its navigation list an independent scroll region and keeps Sign out in the foreground; Browser E2E also resets the Manager workspace label assertion to its intended desktop viewport.
 - Exact-head CI, Browser E2E, Full Flight and Autonomous Development Monitor evidence is pending. No merge, deployment, Apps Script mutation, database operation or financial-data migration is part of this batch.
