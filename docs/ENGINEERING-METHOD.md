@@ -118,3 +118,13 @@ See `docs/UI-UX-REVIEW.md` for the current source review and validation plan.
 - The owner reviews and merges PRs; the agent must not merge or deploy.
 - Backend source changes are not a production Apps Script deployment. `clasp push`, deployment versions and release tags remain deliberate, separately authorized operations.
 - Never delete/rename branches or force-update refs without explicit permission.
+
+## Novice-first implementation standard (4 November 2026)
+
+Product direction: **Less complexity. More quality.** Design for recognition rather than recall and reduce mental effort without removing information required for correct work. A bounded batch should identify user/role, current evidence, user problem, target behavior, touched modules, API/data impact (normally none for a PWA-only UX batch), acceptance criteria, error/offline/recovery states, accessibility, privacy, tests/screenshots and release boundary.
+
+Use this order unless observed user evidence justifies a change: New Entry—Payment and Cash received; Register search and common filters; Home first action/actionable exceptions; Daily Cash Close clarity with unchanged financial rules; shared Login/Reports/Bulk Upload/Vendors/Users/Settings/Audit/receipt/print consistency. Ship a coherent vertical slice with code, regression tests and documentation together; do not split into trivial PRs just to minimize change count. Do not combine an unrelated backend/authentication change with the PWA redesign merely to make one larger PR.
+
+For India-first behavior preserve English-only UI, INR/₹, Indian number grouping/date display, ISO dates at data boundaries and `Asia/Kolkata`. Required physical drawer movement remains an explicit user choice mapped to CASH_IN/CASH_OUT/NO_CASH; category/type never silently decides it. Keep payment approval at ₹10,000 inclusive, creator self-approval denied, and all Daily Cash Close, role, audit, offline/idempotency and receipt invariants unchanged.
+
+Validate at 320, 360, 390, 768, 801, 1024 and 1280 CSS px; test keyboard/focus, labels/errors, dialog focus, screen-reader announcements, zoom/reflow, contrast, touch targets, reduced motion, print and offline/save recovery. Automated scans alone do not establish WCAG conformance. When real novice users are unavailable, document that observation/usability validation remains open and do not invent success metrics.
