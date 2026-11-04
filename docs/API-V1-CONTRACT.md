@@ -36,6 +36,8 @@ All responses use a JSON envelope with ok, data or error, and a request identifi
 
 ## Authentication boundary
 
+Legacy credential compatibility is exact: Apps Script computes HMAC-SHA256 over `<salt>:<password>` with the Script Property `PEPPER`; the imported value is `legacy-hmac-sha256$<salt>$<lowercase-hex-hmac>`. Integration tests must construct this exact serialization; the production verifier must not be weakened to accommodate malformed fixtures.
+
 Sessions are 256-bit random tokens stored only as SHA-256 digests. The cv_session cookie is Secure, HttpOnly and SameSite=Strict; state-changing session routes additionally require the cv_csrf double-submit cookie and matching X-CSRF-Token header. Account/email, email/IP and IP-only login buckets are HMAC-keyed. Active status and current role are loaded from the database for each request. Password change and deactivation revoke all sessions. See [PHP session authentication](PHP-SESSION-AUTH.md) for environment and migration details.
 
 ## Deliberately not implemented yet
