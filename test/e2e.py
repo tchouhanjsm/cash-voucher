@@ -3257,6 +3257,13 @@ with sync_playwright() as p:
                         'role': {'name': 'owner'},
                         'active': True,
                     },
+                    {
+                        'id': 'xss-user-"><img src=x onerror=window.__xssFired=true>',
+                        'name': '<svg onload=window.__xssFired=true></svg>Escaped User',
+                        'email': '"><img src=x onerror=window.__xssFired=true>@example.test',
+                        'role': 'manager',
+                        'active': True,
+                    },
                 ])
         route.fulfill(response=response, body=json.dumps(payload))
 
@@ -3268,15 +3275,27 @@ with sync_playwright() as p:
     )
     check(
         '5 malformed user record(s) omitted from this response' in page.locator('#view').inner_text()
-        and page.locator('#view tbody tr').count() == 6
-        and page.locator('#view [data-act=utog]').count() == 6,
+        and page.locator('#view tbody tr').count() == 7
+        and page.locator('#view [data-act=utog]').count() == 7,
         'owner Users view omits malformed rows while keeping valid user records actionable',
     )
+    hostile_user_role = page.locator('#view .user-role-select').last.evaluate(
+        """select => ({
+          id: select.getAttribute('data-id'),
+          managerLabel: Array.from(select.options).find(option => option.value === 'manager')?.textContent || '',
+          hasAdminRoleKey: Array.from(select.options).some(option => option.value === 'admin')
+        })"""
+    )
     check(
-        page.locator('#view img, #view svg').count() == 0
+        'Escaped User' in page.locator('#view tbody').inner_text()
+        and '"><img src=x onerror=window.__xssFired=true>@example.test' in page.locator('#view tbody').inner_text()
+        and hostile_user_role['id'] == 'xss-user-"><img src=x onerror=window.__xssFired=true>'
+        and hostile_user_role['managerLabel'] == 'Admin'
+        and not hostile_user_role['hasAdminRoleKey']
+        and page.locator('#view img, #view svg').count() == 0
         and '[object Object]' not in page.locator('#view').inner_text()
         and not page.evaluate('window.__xssFired === true'),
-        'malformed user names, emails and roles are not coerced or rendered as active markup',
+        'hostile user name, email and id stay inert while manager remains the submitted Admin role key',
     )
     invalid_user_envelope = True
     go_view(page, 'dash')

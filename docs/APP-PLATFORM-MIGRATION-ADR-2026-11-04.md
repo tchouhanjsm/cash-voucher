@@ -52,7 +52,6 @@ Limits are provider-published plan limits observed on 4 November 2026; providers
 
 Provider references:
 
-
 - [GoDaddy cPanel hosting limits](https://www.godaddy.com/help/resource-limits-for-my-hosting-account-32396) and [connecting to a MySQL database](https://www.godaddy.com/help/connect-to-a-mysql-database-using-php-216).
 - [Cloudflare D1 pricing](https://developers.cloudflare.com/d1/platform/pricing/), [limits](https://developers.cloudflare.com/d1/platform/limits/) and [Time Travel](https://developers.cloudflare.com/d1/reference/time-travel/).
 - [Neon free plan limits](https://github.com/neondatabase/website/blob/main/content/faqs/free-plan-limits-and-quotas.md).
