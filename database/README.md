@@ -26,12 +26,12 @@ The API never loads a .env file. Provide environment variables through the local
 
 ## Initial table groups
 
-| Migration | Tables | Purpose |
-|---|---|---|
-| 0001 | users, vendors, settings | Identity, role key compatibility, party identity and configuration |
-| 0002 | vouchers, voucher_approval_events, voucher_receipts, cash_closes, cash_close_corrections | Financial records, approvals, private receipt metadata and close snapshots |
-| 0003 | user_sessions, login_attempts, idempotency_requests, audit_events | Hashed sessions/CSRF state, throttling, retry safety and attributable audit events |
-| 0004 | voucher_number_sequences | Independent payment/receipt counters allocated under an InnoDB row lock inside the financial transaction |
+| Migration | Tables                                                                                   | Purpose                                                                                                  |
+| --------- | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| 0001      | users, vendors, settings                                                                 | Identity, role key compatibility, party identity and configuration                                       |
+| 0002      | vouchers, voucher_approval_events, voucher_receipts, cash_closes, cash_close_corrections | Financial records, approvals, private receipt metadata and close snapshots                               |
+| 0003      | user_sessions, login_attempts, idempotency_requests, audit_events                        | Hashed sessions/CSRF state, throttling, retry safety and attributable audit events                       |
+| 0004      | voucher_number_sequences                                                                 | Independent payment/receipt counters allocated under an InnoDB row lock inside the financial transaction |
 
 Voucher numbers are allocated from a per-type row locked by SELECT ... FOR UPDATE inside the same transaction as the voucher insert. A rollback also rolls back the counter increment. Seed the first value from the reconciled legacy next-number setting during import; never guess the historical counter. Amounts use integer paise columns, never floating-point currency columns. Business dates remain DATE values in the Asia/Kolkata business calendar; event instants are DATETIME(6) stored in UTC. Existing Drive IDs and legacy source IDs have dedicated nullable fields for later reconciliation; no importer is included.
 
@@ -42,3 +42,7 @@ voucher_receipts.storage_key is a private storage identifier, not a public URL. 
 ## Import and cutover boundary
 
 Do not run these migrations on a customer database or production cPanel account during this phase. The schema is only an isolated engineering baseline; actual Sheet headers, formulas, Script Properties, receipt manifests, numbering behavior and cash-close semantics still require owner-reviewed field mapping and shadow reconciliation. There is no dual write and no API endpoint switch.
+
+## Session-authentication boundary
+
+Migration 0003 provides the session, CSRF-digest, rate-limit and audit persistence used by the isolated PHP authentication routes. Imported Apps Script password hashes must preserve the exact legacy serialization documented in [PHP session authentication](../docs/PHP-SESSION-AUTH.md): `legacy-hmac-sha256$<salt>$<lowercase-hmac-hex>`, where the HMAC is SHA-256 over `salt:password`, keyed by the existing Script Property `PEPPER`. Never import plaintext credentials or place the PEPPER in repository files. A short legacy PIN is accepted only during the explicit must-change migration window; its legacy hash stays in place until the existing password-change transaction writes a compliant versioned hash and revokes sessions. CI uses disposable MySQL and synthetic test accounts only.

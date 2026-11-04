@@ -161,3 +161,15 @@ The new static `ui-studio.html` gallery provides a single reference for the exis
 The design direction is deliberately operational rather than decorative: no glass treatment behind amounts, no remote dependencies, no new icon runtime, and no status communicated by color alone. The production app remains vanilla JavaScript and uses the new stylesheet after `style.css`; the service-worker cache is bumped so installed clients request the new component layer.
 
 Browser E2E should verify the gallery loads under its strict static CSP, links the local kit stylesheet, preserves the key component tokens and avoids document-level horizontal overflow at phone/tablet/desktop widths. Those tests are layout regressions, not a human visual sign-off. Physical devices, zoom/reflow, manual keyboard traversal, screen readers and role-based operator observation remain open.
+
+## Product direction update — novice-first brief v2.0 (4 November 2026)
+
+The product north star is now: a person with low digital confidence can record, find and understand an ordinary voucher correctly on the first attempt, without coaching. The governing rule is **minimalism means less mental effort, not less information**. Persistent field labels, required financial choices, readable amounts and truthful error/save states take precedence over compact layouts or screenshot aesthetics.
+
+Market decisions are fixed: India-first, English-only UI, INR/₹ with Indian grouping, current Indian-friendly date display, ISO dates at data boundaries and `Asia/Kolkata` business-day rules. Japanese-inspired operational principles guide observation, mistake-proofing, consistency and continuous improvement; do not add Japanese words, locale, yen, timezone or decorative themes.
+
+The first design tranche is New Entry (Payment and Cash received), followed by Register, Home, Daily Cash Close clarity and shared consistency. New Entry must ask, visibly and in plain language, what happened to the physical cash in the drawer and map the explicit choice to existing CASH_IN/CASH_OUT/NO_CASH values. No category/type inference is permitted. Do not hide this choice, required category fields or other financial controls in an advanced panel. One voucher is the normal path; preserve multiple-entry capability as a secondary action. Save feedback must distinguish server acknowledgement from device-local pending sync; a pending manager-approval payment is still a saved voucher, not a failed save.
+
+The Register starts with search and common filters; Home presents the primary task and only actionable exceptions; Book balance remains a recorded-voucher projection, not physical cash or bank balance. Daily Cash Close clarity must not alter its calculation, chronological date, opening-cash, variance, reason, role, online-finalization, immutability or correction rules.
+
+This is a source-review and product-contract update, not proof that the new experience is implemented or validated. No real-user observation, real-device audit or complete WCAG audit is claimed here. Track actual behavior as present/already resolved/not applicable/not verified in each implementation PR.

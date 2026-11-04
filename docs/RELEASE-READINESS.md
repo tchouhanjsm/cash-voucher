@@ -149,3 +149,9 @@ PR #74 merged at `970475dc440a3dc84b788087e60a73836d3d8814`. Its exact tested he
 ## PR #75 merged — bulk import completion feedback
 
 Merged at `0d9a6a4ae904862d213144e7a823ca1ec5d547f9`. Its exact tested PR head passed CI, Browser E2E (145 checks / 0 failures) and Full Flight Test (110 backend checks; 145 browser checks / 0 failures). This frontend change does not alter the status of live authorization, scheduled backup or isolated restore gates.
+
+## Novice-first redesign evidence gate — 4 November 2026
+
+The Cash Voucher UX v2.0 brief is the active product contract for future PWA redesign batches. A source/documentation update or automated test pass does not certify novice usability. Before calling the redesign ready for owner review, capture before/after phone and desktop screenshots using safe synthetic data; report which observations are present/already resolved/not applicable/not verified; add targeted tests for every changed financial interaction; and complete the documented responsive/accessibility review. Real-user validation remains outstanding until representative staff and managers complete observed, uncoached tasks. Do not claim a 9/10 score, WCAG 2.2 AA conformance, real-device offline success, live backup/restore, or production readiness without the matching evidence.
+
+The market/product boundary is India-first, English-only, INR/₹, Indian date conventions and `Asia/Kolkata`. Keep Apps Script + Sheets + Drive as the actual authoritative backend until host qualification, secure import, shadow reconciliation, backup/restore, offline queue drain, rollback and Owner-approved single-writer cutover are all proven separately. The isolated PHP authentication work in PR #264 does not change this release boundary.
