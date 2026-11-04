@@ -12,3 +12,7 @@ coverage/
 .idea/
 dist/
 dist-template/
+/storage/private/
+/storage/backups/
+/storage/tmp/
+*.sql.gz

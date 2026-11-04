@@ -95,7 +95,8 @@ Initial normalized tables:
 - `cash_closes` and `cash_close_corrections`, preserving included voucher snapshot and original close evidence;
 - `settings`;
 - append-only `audit_events`;
-- `idempotency_requests` for offline/retry-safe mutation acceptance.
+- `idempotency_requests` for offline/retry-safe mutation acceptance;
+- `voucher_number_sequences` with a per-type InnoDB row lock so concurrent payment and receipt creation serializes numbering and transaction rollback does not consume a number.
 
 Finalize columns and indexes only after a field-by-field inventory of the actual production Sheet data and existing Apps Script formulas is reconciled. This is a target outline, not a ready-to-run production schema.
 
@@ -116,6 +117,8 @@ No dual writes between Sheets and SQL are recommended: partial success across tw
 
 ## Scope of this PR
 
-This PR may document the target architecture and separate the existing User/Admin/Owner experiences without modifying existing server role grants. It must not introduce a production SQL connection, expose credentials, create/migrate/drop a database schema, export production Sheets/Drive contents, change the live Apps Script API URL, deploy/push Apps Script, write production financial data, clear offline queues, alter backups, or claim Apps Script is already retired.
+This PR now includes the isolated PHP runtime shell, a guarded MySQL/MariaDB schema migration foundation, capability parity primitives and disposable integration tests. The only exposed PHP routes are liveness, readiness and metadata. No business action is wired and the PWA continues to use the existing Apps Script endpoint.
 
-A later delivery should implement a provider-neutral API contract and SQL-backed test environment only after the host preflight and owner-approved technical decision.
+It must not introduce a production SQL connection, configure the actual cPanel account, expose credentials, apply migrations to a customer database, export production Sheets/Drive contents, change the live Apps Script API URL, deploy/push Apps Script, write production financial data, clear offline queues, alter backups, or claim Apps Script is already retired.
+
+The next delivery must add authenticated sessions/CSRF/rate limits and expose the first voucher create/read service through the frozen action contract. The current row-locked allocator, idempotency unit of work and audit writer are internal primitives only; no business HTTP route uses them yet. Actual host qualification, field-by-field import mapping, shadow reconciliation, offline queue drain, owner-approved cutover and tested rollback remain separate release gates.

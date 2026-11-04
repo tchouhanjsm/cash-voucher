@@ -462,3 +462,10 @@ PR #164 merged at `dd901910531da2c060539baad44949fe2cb54b30`; tested head `b3ada
 PR #166 adds a guarded per-customer static-site builder requiring the verified Apps Script Web App `CV_API_URL`, emits only the static runtime into `dist/`, generates the Cloudflare Pages response-header file and adds onboarding, quick-start and private instance-register documents. Its exact tested head `13f12d314687ec88d9044ccae7e8fb3c202743fb` passed CI, Browser E2E (947 checks) and Full Flight Test (285 backend + 947 browser checks). Post-merge CI also passed on current main.
 
 This is source/build/documentation readiness only: it did not provision staging/customer Google resources or a static host, run the live staging workflow, prove a real restore, or issue a customer URL. The active release queue is now the owner-controlled operational work in `docs/STAGING-RELEASE-AUDIT.md` and `docs/RELEASE-READINESS.md`.
+## Phase 14 — isolated PHP/MySQL API and schema foundation (4 November 2026)
+
+A real replacement-runtime foundation is now in source: a versioned /api/v1 HTTP shell, separate PDO migration/runtime credentials, guarded immutable migrations, and normalized identity/catalog/financial/security tables. It deliberately exposes health and metadata only. The current PWA continues to use Apps Script, with no parallel financial writer.
+
+CI provisions a disposable MySQL 8 service, applies the four migrations using a DDL-only account, then tests the application against a table-restricted runtime account. The PHP integration suite covers exact paise conversion, existing role grants, request validation, health/readiness, rollback-safe per-type voucher numbering under a two-process row-lock contention test, idempotent replay/conflict, atomic audit writes, legacy action-map parity and append-only privilege boundaries.
+
+**Next delivery:** secure login/session lifecycle plus CSRF protection and rate limiting, followed by a single first financial vertical slice (voucher create/read) with atomic audit and idempotency. Do not switch the PWA or export any production records until host preflight, source mapping, shadow reconciliation and rollback are approved.

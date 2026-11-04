@@ -1,0 +1,263 @@
+{
+  "schemaVersion": 1,
+  "actions": {
+    "login": {
+      "method": "POST",
+      "path": "/sessions",
+      "access": "public",
+      "kind": "authentication",
+      "state": "planned"
+    },
+    "logout": {
+      "method": "POST",
+      "path": "/sessions/current/logout",
+      "access": "authenticated",
+      "kind": "authentication",
+      "state": "planned"
+    },
+    "bootstrap": {
+      "method": "GET",
+      "path": "/bootstrap",
+      "access": "authenticated",
+      "kind": "read",
+      "state": "planned"
+    },
+    "registerPage": {
+      "method": "GET",
+      "path": "/vouchers",
+      "access": "viewOwn-or-viewAll",
+      "kind": "read",
+      "state": "planned"
+    },
+    "checkVoucherDuplicates": {
+      "method": "POST",
+      "path": "/vouchers/duplicate-check",
+      "access": "create",
+      "kind": "read-validation",
+      "state": "planned"
+    },
+    "checkPaymentDuplicates": {
+      "method": "POST",
+      "path": "/payments/duplicate-check",
+      "access": "create",
+      "kind": "read-validation",
+      "state": "planned"
+    },
+    "dashboardSummary": {
+      "method": "GET",
+      "path": "/dashboard/summary",
+      "access": "authenticated-scope",
+      "kind": "read",
+      "state": "planned"
+    },
+    "dailyOperationsSummary": {
+      "method": "GET",
+      "path": "/dashboard/daily-operations",
+      "access": "viewAll",
+      "kind": "read",
+      "state": "planned"
+    },
+    "createVouchers": {
+      "method": "POST",
+      "path": "/vouchers",
+      "access": "create; bulk additionally requires bulk",
+      "kind": "write",
+      "state": "planned"
+    },
+    "updateVoucher": {
+      "method": "PATCH",
+      "path": "/vouchers/{voucherId}",
+      "access": "edit-and-record-scope",
+      "kind": "write",
+      "state": "planned"
+    },
+    "cancelVoucher": {
+      "method": "POST",
+      "path": "/vouchers/{voucherId}/cancel",
+      "access": "cancel-and-record-scope",
+      "kind": "write",
+      "state": "planned"
+    },
+    "approveVoucher": {
+      "method": "POST",
+      "path": "/vouchers/{voucherId}/approval",
+      "access": "approvePayments",
+      "kind": "write",
+      "state": "planned"
+    },
+    "rejectVoucher": {
+      "method": "POST",
+      "path": "/vouchers/{voucherId}/rejection",
+      "access": "approvePayments",
+      "kind": "write",
+      "state": "planned"
+    },
+    "addReceipt": {
+      "method": "POST",
+      "path": "/vouchers/{voucherId}/receipts",
+      "access": "create-or-receiptAny-and-record-scope",
+      "kind": "write",
+      "state": "planned"
+    },
+    "getReceipt": {
+      "method": "GET",
+      "path": "/receipts/{receiptId}",
+      "access": "receiptAny-or-own-record-scope",
+      "kind": "read-private-file",
+      "state": "planned"
+    },
+    "saveVendor": {
+      "method": [
+        "POST",
+        "PATCH"
+      ],
+      "path": "/vendors[/{vendorId}]",
+      "access": "vendors",
+      "kind": "write",
+      "state": "planned"
+    },
+    "toggleVendor": {
+      "method": "POST",
+      "path": "/vendors/{vendorId}/active",
+      "access": "vendors",
+      "kind": "write",
+      "state": "planned"
+    },
+    "listUsers": {
+      "method": "GET",
+      "path": "/users",
+      "access": "users",
+      "kind": "read",
+      "state": "planned"
+    },
+    "saveUser": {
+      "method": [
+        "POST",
+        "PATCH"
+      ],
+      "path": "/users[/{userId}]",
+      "access": "users",
+      "kind": "write",
+      "state": "planned"
+    },
+    "resetPassword": {
+      "method": "POST",
+      "path": "/users/{userId}/password-reset",
+      "access": "users",
+      "kind": "write",
+      "state": "planned"
+    },
+    "changePassword": {
+      "method": "POST",
+      "path": "/sessions/current/password",
+      "access": "authenticated",
+      "kind": "write",
+      "state": "planned"
+    },
+    "saveSettings": {
+      "method": "PUT",
+      "path": "/settings",
+      "access": "settings",
+      "kind": "write",
+      "state": "planned"
+    },
+    "auditLog": {
+      "method": "GET",
+      "path": "/audit-events",
+      "access": "audit",
+      "kind": "read",
+      "state": "planned"
+    },
+    "voucherHistory": {
+      "method": "GET",
+      "path": "/vouchers/{voucherId}/history",
+      "access": "viewAll-or-own-record-scope",
+      "kind": "read",
+      "state": "planned"
+    },
+    "backupStatus": {
+      "method": "GET",
+      "path": "/operations/backup-status",
+      "access": "settings",
+      "kind": "read",
+      "state": "planned"
+    },
+    "backupIntegrityReport": {
+      "method": "GET",
+      "path": "/operations/backup-integrity",
+      "access": "settings",
+      "kind": "read",
+      "state": "planned"
+    },
+    "deploymentReadiness": {
+      "method": "GET",
+      "path": "/operations/readiness",
+      "access": "settings",
+      "kind": "read",
+      "state": "planned"
+    },
+    "onboardingState": {
+      "method": "GET",
+      "path": "/onboarding",
+      "access": "settings",
+      "kind": "read",
+      "state": "planned"
+    },
+    "onboardingConfirm": {
+      "method": "POST",
+      "path": "/onboarding/confirm",
+      "access": "settings",
+      "kind": "write",
+      "state": "planned"
+    },
+    "onboardingAdvance": {
+      "method": "POST",
+      "path": "/onboarding/advance",
+      "access": "settings",
+      "kind": "write",
+      "state": "planned"
+    },
+    "dataQualityReport": {
+      "method": "GET",
+      "path": "/reports/data-quality",
+      "access": "settings",
+      "kind": "read",
+      "state": "planned"
+    },
+    "recordedMovementReport": {
+      "method": "GET",
+      "path": "/reports/recorded-movements",
+      "access": "reports",
+      "kind": "read",
+      "state": "planned"
+    },
+    "cashClosePreview": {
+      "method": "GET",
+      "path": "/cash-closes/preview",
+      "access": "cashClose",
+      "kind": "read",
+      "state": "planned"
+    },
+    "createCashClose": {
+      "method": "POST",
+      "path": "/cash-closes",
+      "access": "cashClose",
+      "kind": "write",
+      "state": "planned"
+    },
+    "recordCashCloseCorrection": {
+      "method": "POST",
+      "path": "/cash-closes/{closeId}/corrections",
+      "access": "cashClose",
+      "kind": "append-only-write",
+      "state": "planned"
+    },
+    "reportIssue": {
+      "method": "POST",
+      "path": "/support/issues",
+      "access": "authenticated",
+      "kind": "write",
+      "state": "planned"
+    }
+  }
+}

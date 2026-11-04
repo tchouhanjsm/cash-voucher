@@ -27,6 +27,7 @@
     "open": "clasp open",
     "release": "node scripts/release.js",
     "check:frontend": "node scripts/verify-frontend-release.js",
+    "api:lint": "find api/v1 bin tests/php -type f -name '*.php' -print0 | xargs -0 -n1 php -l",
     "check:pr-quality": "node scripts/check-pr-quality.js",
     "test:e2e": "bash test/run-e2e.sh",
     "measure:performance-baseline": "node test/test-performance-baseline.js",

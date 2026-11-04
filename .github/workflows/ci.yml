@@ -17,7 +17,31 @@ permissions:
 jobs:
   quality:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: cash-voucher-ci-root-only
+          MYSQL_ROOT_HOST: "%"
+          MYSQL_DATABASE: cash_voucher_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --host=127.0.0.1 --password=cash-voucher-ci-root-only"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      CV_APP_ENV: test
+      CV_DB_HOST: 127.0.0.1
+      CV_DB_PORT: "3306"
+      CV_DB_NAME: cash_voucher_test
+      CV_DB_USER: cash_voucher_app
+      CV_DB_PASSWORD: cash-voucher-test-app-password
+      CV_MIGRATION_DB_USER: root
+      CV_MIGRATION_DB_PASSWORD: cash-voucher-ci-root-only
+      CV_ALLOW_SCHEMA_MIGRATIONS: "true"
 
     steps:
       - name: Checkout
@@ -102,6 +126,44 @@ jobs:
       - name: Validate PR handoff evidence
         if: ${{ always() && github.event_name == 'pull_request' && steps.dependencies.outcome == 'success' }}
         run: npm run check:pr-quality
+
+      - name: Setup PHP runtime
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Lint isolated PHP API and migration sources
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        run: npm run api:lint
+
+      - name: Apply isolated test database migrations
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        run: php bin/migrate.php --apply
+
+      - name: Verify production migration guard
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        run: |
+          set +e
+          CV_APP_ENV=production CV_ALLOW_SCHEMA_MIGRATIONS=true php bin/migrate.php --apply
+          status=$?
+          set -e
+          test "$status" -eq 3
+          set +e
+          CV_APP_ENV=prod CV_ALLOW_SCHEMA_MIGRATIONS=true php bin/migrate.php --apply
+          status=$?
+          set -e
+          test "$status" -eq 3
+
+      - name: Configure restricted test-only runtime database account
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        run: php tests/php/prepare-test-db.php
+
+      - name: Run PHP API and MySQL integration tests
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        run: php tests/php/run.php
 
       # Keep the external advisory query last, but run it even when a source/test gate fails.
       # The job remains failed if any required check or dependency audit does not pass.
