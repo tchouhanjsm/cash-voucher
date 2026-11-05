@@ -57,10 +57,11 @@
 - Preserve ₹10,000 approval, no-self-approval, explicit movement mapping, audit, receipts, role authorization, stable client IDs/idempotency, outbox/recovery and server-authoritative acknowledgement.
 - Apps Script + Sheets + Drive remain the authoritative financial writer.
 - No endpoint/API/schema/financial rule changes without separate review and authorization; no deployment or merge without the required approval.
+
 ## PR #265 follow-up — Staff Home and Full Flight policy (5 November 2026)
 
 - Staff workspace: entry-first My day with Payment and Cash received actions, actionable approval/data-quality attention and server-returned recent entries. The latest 30-day range is visible and carried into Register via Open register.
-- Manager/Owner dashboards remain role-specific. Manager retains five financial KPI cards; Owner retains the owner cash position/close/analysis workspace.
+- Manager/Owner dashboards retain the existing `viewAll` six-KPI financial presentation and operational cash position/close/analysis. Admin and Owner navigation/control permissions remain separate.
 - The global outbox banner remains the only queue/recovery authority. No second queue or server-confirmed label for local-only data.
 - Full Flight is manual only. CI / Quality and Browser E2E remain automatic PR gates. The full release chain remains callable with `npm run test:flight`.
 - No backend/API/schema/Apps Script, approval, cash-impact, balance or Daily Cash Close rule changed. No deployment, merge or production operation.

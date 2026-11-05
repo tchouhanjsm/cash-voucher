@@ -2840,11 +2840,11 @@ with sync_playwright() as p:
     manager_page.click('.mcard .primary')
     manager_page.wait_for_selector('#nav button')
     go_view(manager_page, 'dash')
-    manager_page.wait_for_selector('.dashboard-stats--manager .dashboard-kpi-drilldown')
+    manager_page.wait_for_selector('.dashboard-stats--owner .dashboard-kpi-drilldown')
     check(
-        manager_page.locator('.dashboard-stats--manager > .stat').count() == 5
+        manager_page.locator('.dashboard-stats--owner > .stat').count() == 6
         and manager_page.locator('.dashboard-staff-home').count() == 0,
-        'Manager retains five financial KPIs and does not receive the staff Home',
+        'Manager with viewAll retains the existing six-KPI finance dashboard, not the staff Home',
     )
     go_view(manager_page, 'reg')
     manager_page.wait_for_selector('#rq')

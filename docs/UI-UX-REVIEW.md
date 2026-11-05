@@ -232,12 +232,13 @@ Before changing the hierarchy, observe uncoached staff and manager tasks in shor
 ### Out of scope and gates
 
 No Apps Script/PHP writer, API/schema, endpoint, authorization, approval, cash-movement, cash-close calculation, or deployment change. Do not calculate expected cash on the client or infer physical movement. Use current server read models and the existing local outbox only. Daily Cash Close clarity remains the following milestone after Home/exception visibility is validated. No claim of improved usability is made until staff observation demonstrates it.
+
 ## Home and exception-handling implementation update — PR #265 (5 November 2026)
 
 The research recommendation above is now partially implemented in the active PR:
 
 - **Staff Home:** the first screen leads with two permitted tasks — Payment and Cash received — then actionable attention and the five latest server-returned entries. Staff no longer sees the manager-style KPI/chart block or management date presets. The recent-entry range defaults to the latest 30 calendar days; **Open register** carries that same range into the existing permission-scoped Register.
-- **Manager and Owner:** retain their distinct finance workspaces. Manager keeps its five KPI cards and operational cash/exception context; Owner keeps the six-card owner view, current server-calculated cash position, close readiness and analysis.
+- **Manager and Owner:** retain their existing all-record financial workspace and operational cash/exception context. The current Manager permission set includes `viewAll`, so Manager receives the same six-KPI financial presentation as Owner; Owner-only user, settings and audit controls remain separately permission-gated.
 - **Synchronization status:** the existing global outbox banner remains the sole source for device-local waiting/failed records, retry, export/import and recovery. Home does not create a second queue, show local-only records as server-confirmed or duplicate recovery actions.
 - **No financial-policy change:** no API, server action, Apps Script/Sheets writer, approval rule, cash-movement mapping, book-balance calculation, expected-cash formula or close workflow was changed.
 - **Delivery gates:** CI and focused Browser E2E continue to run automatically for PRs. Full Flight is now an explicit manual release suite using `npm run test:flight`; its separate PR/push status aggregator was removed because it only repeated CI and Browser E2E results.

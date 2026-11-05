@@ -132,9 +132,9 @@ assert.match(
   'six owner KPIs have a balanced three-column desktop grid',
 );
 assert.match(
-  components,
+  workspace,
   /\.dashboard-view \.dashboard-stats--manager\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,
-  'manager retains a compact five-KPI grid while staff uses the action-first Home',
+  'fallback manager dashboard retains a compact five-KPI grid while staff uses the action-first Home',
 );
 assert.match(
   dashboard,
@@ -149,7 +149,11 @@ assert.match(
 assert.match(dashboard, /Record a payment/, 'staff Home offers a direct Payment action.');
 assert.match(dashboard, /Record cash received/, 'staff Home offers a direct Cash received action.');
 assert.match(dashboard, /My recent entries/, 'staff Home labels the personal activity list.');
-assert.match(dashboard, /Open register/, 'staff Home links to the recent-period server-scoped Register.');
+assert.match(
+  dashboard,
+  /Open register/,
+  'staff Home links to the recent-period server-scoped Register.',
+);
 assert.match(
   dashboard,
   /if \(!staffHome\) body\.appendChild\(periods\);/,
