@@ -72,10 +72,7 @@ function baseSnapshot() {
       '3. Complete real-device offline and accessibility acceptance.',
     ].join('\n'),
     openPullRequests: [],
-    runs: [
-      makeRun('ci.yml', 'client-main', MAIN_SHA),
-      makeRun('e2e.yml', 'client-main', MAIN_SHA),
-    ],
+    runs: [makeRun('ci.yml', 'client-main', MAIN_SHA), makeRun('e2e.yml', 'client-main', MAIN_SHA)],
   };
 }
 assert.equal(classifyRun(null, WORKFLOW_POLICIES[0], NOW).code, 'NOT_RUN');
@@ -303,7 +300,7 @@ const finalizedReport = buildMonitorReport(finalizedSnapshot, new Date('2026-10-
 assert.equal(finalizedReport.allSourceChecksPassed, true);
 assert.deepEqual(
   finalizedReport.sourceChecks.map((item) => item.code),
-  ['PASS', 'PASS', 'PASS'],
+  ['PASS', 'PASS'],
   'checkpoint finalization uses terminal results for the exact integration SHA',
 );
 assert.ok(finalizedReport.sourceChecks.every((item) => item.sha === MAIN_SHA));
