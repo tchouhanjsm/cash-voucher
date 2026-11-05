@@ -34,6 +34,44 @@ export function createDashboard({ api }) {
     </section>`;
   }
 
+  function appendStaffHomeActions(body) {
+    const card = document.createElement('section');
+    card.className = 'card dashboard-staff-home';
+    card.setAttribute('aria-labelledby', 'staffHomeActionsTitle');
+
+    const copy = document.createElement('div');
+    copy.className = 'dashboard-staff-home__copy';
+    const title = document.createElement('h2');
+    title.id = 'staffHomeActionsTitle';
+    title.textContent = 'What would you like to record?';
+    const description = document.createElement('p');
+    description.textContent = 'Choose the type of entry. You can review its status in your recent entries.';
+    copy.append(title, description);
+
+    const actions = document.createElement('div');
+    actions.className = 'dashboard-staff-home__actions';
+    const addAction = (label, type, action, primary) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn dashboard-staff-action' + (primary ? ' primary' : '');
+      button.dataset.act = action;
+      if (type) button.dataset.k = type;
+      button.textContent = label;
+      actions.appendChild(button);
+    };
+
+    if (can('create')) {
+      addAction('Record a payment', 'PAYMENT', 'ntype', true);
+      addAction('Record cash received', 'RECEIPT', 'ntype', false);
+    } else {
+      addAction('Open my entries', 'reg', 'goto', true);
+    }
+
+    card.append(copy, actions);
+    body.appendChild(card);
+  }
+
+
   function range() {
     const current = today();
     const [year, month] = current.split('-').map(Number);
@@ -424,32 +462,14 @@ export function createDashboard({ api }) {
 
     const actions = document.createElement('div');
     actions.className = 'page-header-actions';
-    if (can('create')) {
-      if (staffHome) {
-        const payment = document.createElement('button');
-        payment.type = 'button';
-        payment.className = 'btn primary';
-        payment.dataset.act = 'ntype';
-        payment.dataset.k = 'PAYMENT';
-        payment.textContent = 'Payment out';
-        actions.appendChild(payment);
-
-        const receipt = document.createElement('button');
-        receipt.type = 'button';
-        receipt.className = 'btn';
-        receipt.dataset.act = 'ntype';
-        receipt.dataset.k = 'RECEIPT';
-        receipt.textContent = 'Cash received';
-        actions.appendChild(receipt);
-      } else {
-        const create = document.createElement('button');
-        create.type = 'button';
-        create.className = 'btn primary';
-        create.dataset.act = 'ntype';
-        create.dataset.k = 'PAYMENT';
-        create.textContent = '+ New entry';
-        actions.appendChild(create);
-      }
+    if (can('create') && !staffHome) {
+      const create = document.createElement('button');
+      create.type = 'button';
+      create.className = 'btn primary';
+      create.dataset.act = 'ntype';
+      create.dataset.k = 'PAYMENT';
+      create.textContent = '+ New entry';
+      actions.appendChild(create);
     }
     const refresh = document.createElement('button');
     refresh.type = 'button';
@@ -461,6 +481,7 @@ export function createDashboard({ api }) {
 
     const body = document.createElement('div');
     body.className = 'dashboard-body';
+    if (staffHome) appendStaffHomeActions(body);
     const periods = document.createElement('div');
     periods.className = 'seg dashboard-period';
     [

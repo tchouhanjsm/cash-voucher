@@ -1,3 +1,22 @@
+## Latest delivery update — PR #265: Staff Home and release-check right-sizing (5 November 2026)
+
+The implementation below is already present on the active PR branch; this follow-up corrects one UI duplication issue and one test-fixture isolation defect.
+
+- **Staff Home:** staff sees Payment and Cash received as primary tasks, then `Needs attention` and the latest five server-returned entries. The finance KPI/chart block and date controls remain manager/owner content.
+- **Role boundary:** Manager and Owner retain their existing cash position, close-readiness, financial KPI and analysis context. Owner-only settings/team/audit controls remain separately permission-gated.
+- **Recent entries:** the latest 30 calendar days are shown by default. Approval exceptions route through the existing server-scoped Register. “View all entries” carries that same range into Register.
+- **Sync state:** the global IndexedDB outbox banner remains the only queue/retry/export/recovery surface. Home does not create a second queue or mark device-local entries as server-confirmed.
+- **Full Flight:** manual-only (`workflow_dispatch`). CI / Quality, Browser E2E and the read-only delivery monitor remain the automated PR checks. `npm run test:flight` remains available for deliberate release verification.
+- **Browser regression count:** Browser E2E completed on predecessor `167f24a` with **1,597 checks, 0 failures**, down from 1,651 on the earlier baseline. The repeated staff KPI matrix (11 widths × 2 themes) was replaced with three representative widths × two themes and task/role assertions. New Entry, explicit cash movement, approval, Register, offline/outbox and idempotency journeys remain covered.
+- **CI diagnosis:** CI on `167f24a` failed in `test/test-client-main-governance.js`, not application code. `classicProtection()` shared the canonical `requiredContexts` array; the deliberate Full Flight mutation polluted later ruleset fixtures. The follow-up clones that array and asserts mutation isolation. No production governance rule or branch-protection requirement is weakened.
+- **UI correction:** the initial shell displayed Payment/Cash received in the header and then repeated them in the final Home card. The follow-up keeps one DOM-built action card in the initial shell, makes it available during unavailable/offline states, and removes the duplicate header actions.
+- **Release boundary:** no backend/API/schema, financial rule, approval rule, cash movement, cash-close formula, Apps Script writer, deployment, migration, production endpoint or data was changed. No merge or deployment is authorized.
+
+### Still required outside automated checks
+
+Uncoached staff/manager task observation, real Android/PWA offline and reconnect recovery, manual TalkBack/VoiceOver and keyboard review, and real-browser 200–400% zoom/reflow remain unverified. Live repository branch-protection settings also remain an owner/admin verification item; source tests cannot configure or certify GitHub settings.
+
+---
 ## Current implementation batch — PR #265: New Entry and Register completion pass (5 November 2026)
 
 - **PR / branch:** [PR #265](https://github.com/tchouhanjsm/cash-voucher/pull/265), `client/new-entry-novice-first-phase1` → `client-main`. Code-under-test commit: `c30c6a336c23cd80370e9047fc97dff45f229fb7`. The live PR page is authoritative for subsequent documentation-only commits.

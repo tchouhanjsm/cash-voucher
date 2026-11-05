@@ -10,6 +10,16 @@
 - Scheduler: `Cash Voucher Delivery Monitor` remains disabled/read-only. Do not convert it to a concurrent branch-mutating runner.
 - Release state: PR remains open/unmerged; no deployment, production cutover, endpoint switch, destructive migration, Clasp push or hosting publication.
 
+## Latest active delivery state — 5 November 2026
+
+- PR #265 reviewed predecessor: `167f24ac3e11852cd9fa6979a7f0586546db4f63`; branch updates must use expected-head compare-and-swap.
+- Staff Home / manual Full Flight implementation is present. Browser E2E on that exact predecessor: **1,597 checks passed, 0 failed** (run 42071893003).
+- CI run 42071892974 failed in `test/test-client-main-governance.js`: a fixture shared `requiredContexts` across test cases. This follow-up clones the contexts array and asserts that a deliberate Full Flight mutation cannot contaminate later ruleset fixtures. Do not weaken the governance evaluator or its required check policy.
+- This follow-up also removes duplicate Staff Home CTAs: the page-header buttons duplicated the Home action card. The DOM-built action card now renders in the initial shell, before API loading, and remains visible when server data is unavailable/offline.
+- Full Flight remains manual-only. CI / Quality, Browser E2E and Autonomous Development Monitor remain automated PR checks. The full `npm run test:flight` chain remains available on demand.
+- Next product slice after this Home pass: Daily Cash Close clarity. Preserve its chronological, reconciliation, cash-impact and server-authoritative rules.
+- No deployment, Apps Script push, production endpoint/configuration change, migration, merge or data mutation.
+
 ## Current milestone — New Entry and Register completion pass
 
 ### New Entry

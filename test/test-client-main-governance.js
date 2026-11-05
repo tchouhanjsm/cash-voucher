@@ -20,7 +20,7 @@ const requiredContexts = [
 
 function classicProtection() {
   return {
-    required_status_checks: { strict: true, contexts: requiredContexts, checks: [] },
+    required_status_checks: { strict: true, contexts: [...requiredContexts], checks: [] },
     required_pull_request_reviews: {
       required_approving_review_count: 1,
       dismiss_stale_reviews: true,
@@ -157,6 +157,11 @@ async function main() {
   const obsoleteClassicFlight = goodSnapshot();
   obsoleteClassicFlight.integrationProtection.required_status_checks.contexts.push(
     'Full Flight Test / flight',
+  );
+  assert.deepEqual(
+    requiredContexts,
+    ['quality', 'Browser E2E / browser', 'Autonomous Development Monitor / Inspect exact-head delivery state'],
+    'a deliberately obsolete check in one protection fixture must not contaminate later ruleset fixtures',
   );
   assert.ok(
     errorCodes(obsoleteClassicFlight).includes('CLIENT_MAIN_OBSOLETE_FULL_FLIGHT_CHECK_REQUIRED'),

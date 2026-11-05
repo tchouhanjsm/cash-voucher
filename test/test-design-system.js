@@ -146,6 +146,22 @@ assert.match(
   /class="card dashboard-staff-home"/,
   'staff Home has a distinct task-first action section',
 );
+assert.match(
+  dashboard,
+  /function appendStaffHomeActions\(body\)[\s\S]*?body\.appendChild\(card\)/,
+  'staff Home actions are present in the initial shell using DOM APIs, including offline/unavailable states',
+);
+assert.match(
+  dashboard,
+  /if \(staffHome\) appendStaffHomeActions\(body\);/,
+  'the task-first staff actions render before asynchronous dashboard requests',
+);
+assert.doesNotMatch(
+  dashboard,
+  /if \(staffHome\) \{[\s\S]{0,500}Payment out[\s\S]{0,500}Cash received/,
+  'staff quick actions are not duplicated in the page header',
+);
+
 assert.match(dashboard, /Record a payment/, 'staff Home offers a direct Payment action.');
 assert.match(dashboard, /Record cash received/, 'staff Home offers a direct Cash received action.');
 assert.match(dashboard, /My recent entries/, 'staff Home labels the personal activity list.');

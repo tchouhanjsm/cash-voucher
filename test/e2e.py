@@ -4500,8 +4500,10 @@ with sync_playwright() as p:
         staff_quick_actions.count() == 2
         and staff_quick_actions.nth(0).inner_text().strip() == 'Record a payment'
         and staff_quick_actions.nth(1).inner_text().strip() == 'Record cash received'
-        and page.locator('.dashboard-staff-home').is_visible(),
-        'staff Home starts with the two permitted entry actions',
+        and page.locator('.dashboard-staff-home').is_visible()
+        and page.locator('.dashboard-staff-home').count() == 1
+        and page.locator('.page-header-actions [data-act="ntype"]').count() == 0,
+        'staff Home shows one action card without duplicating its entry actions in the page header',
     )
     check(
         page.locator('.dashboard-stats, .dashboard-analysis-grid, .dashboard-period, .dashboard-trend').count() == 0
