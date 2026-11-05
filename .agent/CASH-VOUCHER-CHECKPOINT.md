@@ -13,6 +13,7 @@
 ## Current milestone — New Entry and Register completion pass
 
 ### New Entry
+
 - One Payment or Cash received row is the default.
 - Explicit, required, unselected physical-cash choice maps only to `CASH_IN`, `CASH_OUT`, `NO_CASH`. Method/category remain independent.
 - Payment method copy is contextual: `Paid via` / `Received via`.
@@ -23,6 +24,7 @@
 - Required validation, duplicate confirmation, receipt, audit, stable IDs/idempotency, IndexedDB queue, server acknowledgement and recovery remain in existing contracts.
 
 ### Register
+
 - Common search, quick periods, type, status and approval stay visible.
 - Vendor/category/user/custom date/payment method are under native `More filters`; active advanced filters/drill-down reopen it.
 - Full-width filter card CSS specificity is fixed; server paging, totals, actions and authorization remain unchanged.
