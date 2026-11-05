@@ -393,10 +393,9 @@ The Payments feature retains one active `#view.innerHTML` assignment for the New
 
 The baseline update reflects a reviewed source change. It is a drift detector, not a proof of XSS absence or a replacement for contextual review. Other template sinks, live CSP/headers, external pen testing and manual adversarial testing remain separate risks.
 
-
 ## PR #265 — New Entry / Register rendering review (5 November 2026)
 
-The Register keeps one active `#view.innerHTML` assignment for its filter/results shell. The changed template source fingerprint was reviewed before updating the drift baseline (`7d239a5a` → `3038e613`):
+The Register keeps one active `#view.innerHTML` assignment for its filter/results shell. The changed template source fingerprint was reviewed before updating the drift baseline (`7d239a5a` → `3b89853b`):
 
 - Search query `R.q`, custom date values `R.from` / `R.to`, and all dynamic facet values and labels (vendor, category, user display name and payment method label) are passed through the shared `esc(...)` boundary before they enter input attributes or option markup.
 - Payment/receipt type values, status values, approval values, payment-method keys, quick-date preset keys/labels, fixed section labels and disclosure markup are app-authored constants or controlled enumerations.

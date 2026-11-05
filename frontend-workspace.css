@@ -3395,7 +3395,7 @@
 
 /* PR #265 — Register search hierarchy and progressive filter disclosure. */
 @media screen {
-  #rf.register-filter-panel {
+  #view #rf.register-filter-panel {
     display: grid;
     grid-template-columns: minmax(0, 1fr);
     align-items: stretch;

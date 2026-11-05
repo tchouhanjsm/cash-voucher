@@ -269,7 +269,7 @@ assert.match(
 );
 assert.match(
   workspace,
-  /#rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
+  /#view #rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
   'the labelled Register search keeps the intended desktop filter-grid span',
 );
 assert.match(
@@ -299,7 +299,7 @@ assert.match(
 );
 assert.match(
   workspace,
-  /#rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
+  /#view #rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
   'register filters use a predictable responsive grid',
 );
 assert.match(
@@ -363,9 +363,21 @@ assert.match(
   /class="register-totals"/,
   'register totals have a dedicated non-inline layout hook',
 );
-assert.match(register, /id="registerAdvancedFilters"/, 'advanced Register filters use a native disclosure');
-assert.match(register, /register-primary-filter-grid/, 'common Register filters remain immediately visible');
-assert.match(register, /function advancedRegisterFilterCount\(\)/, 'active advanced filters are counted');
+assert.match(
+  register,
+  /id="registerAdvancedFilters"/,
+  'advanced Register filters use a native disclosure',
+);
+assert.match(
+  register,
+  /register-primary-filter-grid/,
+  'common Register filters remain immediately visible',
+);
+assert.match(
+  register,
+  /function advancedRegisterFilterCount\(\)/,
+  'active advanced filters are counted',
+);
 assert.match(
   register,
   /value="\$\{esc\(R\.q\)\}"/,
