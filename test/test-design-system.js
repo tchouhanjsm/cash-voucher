@@ -7,6 +7,7 @@ const path = require('node:path');
 const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 const palette = read('style.css');
 const components = read('frontend-ui-kit.css');
+const workspace = read('frontend-workspace.css');
 const theme = read('frontend/core/theme.js');
 const auth = read('frontend/features/auth.js');
 const dashboard = read('frontend/features/dashboard.js');
@@ -262,12 +263,12 @@ assert.match(
   'Register approval filter has an associated visible label',
 );
 assert.match(
-  components,
+  workspace,
   /#rf \.register-filter-grid \.register-filter-field\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?min-width:\s*0;/,
   'Register filter labels keep labels and controls aligned without overflowing grid cells',
 );
 assert.match(
-  components,
+  workspace,
   /#rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
   'the labelled Register search keeps the intended desktop filter-grid span',
 );
@@ -297,7 +298,7 @@ assert.match(
   'settings groups property editing and diagnostics in a consistent grid',
 );
 assert.match(
-  components,
+  workspace,
   /#rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
   'register filters use a predictable responsive grid',
 );
@@ -365,8 +366,21 @@ assert.match(
 assert.match(register, /id="registerAdvancedFilters"/, 'advanced Register filters use a native disclosure');
 assert.match(register, /register-primary-filter-grid/, 'common Register filters remain immediately visible');
 assert.match(register, /function advancedRegisterFilterCount\(\)/, 'active advanced filters are counted');
-assert.match(components, /register-advanced-filters > summary/, 'advanced Register disclosure has a styled summary');
-assert.match(components, /grid-template-columns:\s*minmax\(0, 1fr\)/, 'Register filter panel uses an explicit single track');
+assert.match(
+  register,
+  /value="\$\{esc\(R\.q\)\}"/,
+  'Register search value is escaped before insertion into the input attribute',
+);
+assert.match(
+  workspace,
+  /register-advanced-filters > summary/,
+  'advanced Register disclosure has a styled summary',
+);
+assert.match(
+  workspace,
+  /grid-template-columns:\s*minmax\(0, 1fr\)/,
+  'Register filter panel uses an explicit single track',
+);
 
 assert.match(
   administration,

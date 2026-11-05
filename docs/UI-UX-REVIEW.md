@@ -189,7 +189,6 @@ Automated browser checks cover the required-choice blocker before API write, exp
 
 Representative staff observation, manual screen-reader/keyboard review, Android/PWA device testing and 200–400% zoom/reflow remain outstanding. No Apps Script deployment, data/schema migration, endpoint switch, PHP financial write or production operation is part of this phase.
 
-
 ## Register novice-first implementation — PR #265 (5 November 2026)
 
 The Register refinement keeps the existing server-filtered workflow and financial controls while reducing the first-screen filter burden:

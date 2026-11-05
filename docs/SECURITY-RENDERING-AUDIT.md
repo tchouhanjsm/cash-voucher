@@ -392,3 +392,16 @@ The Payments feature retains one active `#view.innerHTML` assignment for the New
 - A focused source regression checks the type allowlist; Browser E2E continues to inject hostile payee text and assert it remains inert.
 
 The baseline update reflects a reviewed source change. It is a drift detector, not a proof of XSS absence or a replacement for contextual review. Other template sinks, live CSP/headers, external pen testing and manual adversarial testing remain separate risks.
+
+
+## PR #265 — New Entry / Register rendering review (5 November 2026)
+
+The Register keeps one active `#view.innerHTML` assignment for its filter/results shell. The changed template source fingerprint was reviewed before updating the drift baseline (`7d239a5a` → `3038e613`):
+
+- Search query `R.q`, custom date values `R.from` / `R.to`, and all dynamic facet values and labels (vendor, category, user display name and payment method label) are passed through the shared `esc(...)` boundary before they enter input attributes or option markup.
+- Payment/receipt type values, status values, approval values, payment-method keys, quick-date preset keys/labels, fixed section labels and disclosure markup are app-authored constants or controlled enumerations.
+- Selected-state interpolation is limited to fixed boolean HTML attributes after comparison with normalized state; it does not concatenate raw facet values.
+- Voucher result rows continue to use their existing field-by-field scalar normalization and escaping. The new disclosure is native `details/summary` semantics and does not add a user-data HTML sink.
+- Browser E2E retains hostile vendor-option checks and now injects an attribute-breaking search string, navigates away/back, and verifies the search is retained as an inert input value without creating markup or firing an event handler.
+
+This fingerprint is a source-drift detector paired with contextual review and adversarial regression. It is not a proof of XSS absence, exhaustive taint analysis or certification of CSP/response headers. Other active template sinks and live-host/manual adversarial review remain separate risks.

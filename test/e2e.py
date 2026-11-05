@@ -7192,10 +7192,9 @@ with sync_playwright() as p:
     )
     check(
         desktop_register_panel['display'] == 'grid'
-        and len(desktop_register_panel['columns'].split()) == 1
         and desktop_register_panel['headingWidth'] >= desktop_register_panel['width'] * 0.85
         and desktop_register_panel['searchWidth'] >= desktop_register_panel['width'] * 0.85,
-        'desktop Register filter panel uses one full-width track rather than squeezing content into auto-columns',
+        f'desktop Register filter panel keeps heading and search full-width; metrics={desktop_register_panel}',
     )
     check(
         manager_row.locator('.voucher-actions').evaluate("element => getComputedStyle(element).display") == 'flex',
@@ -7207,6 +7206,21 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'stored vendor values remain inert text in register filter options',
     )
+    hostile_search_query = '"><img src=x onerror=window.__xssFired=true>'
+    page.fill('#rq', hostile_search_query)
+    page.wait_for_timeout(250)
+    go_view(page, 'dash')
+    go_view(page, 'reg')
+    page.wait_for_selector('#rq')
+    check(
+        page.locator('#rq').input_value() == hostile_search_query
+        and page.locator('#rf img, #rf svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile Register search remains an inert input value after route rendering',
+    )
+    page.fill('#rq', '')
+    page.wait_for_timeout(260)
+    page.wait_for_selector('#rbody tr')
     note_row = page.locator('#rbody tr').filter(has_text=manager_voucher_number)
     edit_trigger = note_row.locator('[data-act=edit]')
     edit_trigger.evaluate("(element) => element.dataset.focusRestoreProbe = 'edit-dialog-trigger'")

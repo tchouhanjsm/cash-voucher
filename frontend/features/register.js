@@ -674,7 +674,9 @@ export function createRegister({ api, go }) {
     const vendors =
       Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
         ? pageFacets.vendors
-        : [...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean))].sort();
+        : [
+            ...new Set(vouchers.map((voucher) => scalarText(voucher.vendor)).filter(Boolean)),
+          ].sort();
     const users =
       Array.isArray(pageFacets.users) && pageFacets.users.length
         ? pageFacets.users
@@ -791,7 +793,7 @@ export function createRegister({ api, go }) {
         <div class="register-filter-actions">
           <span class="register-filter-footnote">Results update automatically as you search or change a filter.</span>
           <div class="register-filter-action-buttons">
-            <button type="button" class="btn" data-act="rclear">Clear filters</button>
+            <button type="button" class="btn" data-act="rclear" aria-label="Clear all filters" title="Clear all filters">Clear all</button>
             <button type="button" class="btn" data-act="csv">Export CSV</button>
           </div>
         </div>
