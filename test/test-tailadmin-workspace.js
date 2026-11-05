@@ -96,8 +96,8 @@ assert.match(
 );
 assert.match(
   styles,
-  /\.dashboard-view \.dashboard-stats--staff/,
-  'staff dashboard metrics use a dedicated responsive grid',
+  /\.dashboard-view \.dashboard-stats--manager/,
+  'manager dashboard metrics use a dedicated responsive grid',
 );
 assert.match(
   styles,
@@ -123,8 +123,8 @@ assert.match(
 );
 assert.match(
   styles,
-  /dashboard-stats--staff[\s\S]*?repeat\(5, minmax\(0, 1fr\)\)/,
-  'staff dashboard uses five KPI columns on wide desktop',
+  /dashboard-stats--manager[\s\S]*?repeat\(5, minmax\(0, 1fr\)\)/,
+  'manager dashboard uses five KPI columns on wide desktop',
 );
 assert.match(
   styles,
@@ -133,8 +133,8 @@ assert.match(
 );
 assert.match(
   styles,
-  /@media screen and \(max-width: 440px\)[\s\S]*?dashboard-stats--staff > \.stat > b[\s\S]*?overflow-wrap: anywhere/,
-  'long staff INR values can wrap without widening the viewport',
+  /@media screen and \(max-width: 440px\)[\s\S]*?dashboard-stats--manager > \.stat > b[\s\S]*?overflow-wrap: anywhere/,
+  'long manager INR values can wrap without widening the viewport',
 );
 assert.match(
   styles,

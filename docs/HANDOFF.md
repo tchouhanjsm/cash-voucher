@@ -657,3 +657,18 @@ See [Role-based workspace architecture](WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.m
 - **Final exact head:** `968dc65ae22d288fffe02a9f851e6fb902b8dab4`.
 - **Final exact-head verification:** CI [41839239190](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41839239190) — passed; Browser E2E [41839239193](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41839239193) — passed; Full Flight [41839239096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41839239096) — passed; Autonomous Development Monitor [41839239210](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41839239210) — passed. CI included Prettier, JSON validation, regular regression tests, PR handoff validation, PHP lint, disposable MySQL migrations, production-migration refusal, least-privilege test DB setup and PHP/MySQL authentication integration including the short-PIN forced-change path. The manual-only Full Flight subjob was skipped by workflow design; the required automated Full Flight job passed.
 - **Next UX delivery:** a separate bulk PWA vertical slice starts with New Entry (Payment and Cash received), then Register, Home and Daily Cash Close clarity. Keep API/schema impact at none for that UI batch, preserve explicit physical cash movement and approval/close invariants, and leave real-user validation open until observed staff testing.
+## PR #265 follow-up — Staff Home and delivery-gate simplification (5 November 2026)
+
+- Staff now gets an entry-first **My day**: Record a payment, Record cash received, actionable Needs attention and My recent entries. Management analytics, charts and date presets are removed from the staff route.
+- Recent entries use the existing read-only, server-authorized `registerPage` action and default to the latest 30 calendar days. **Open register** carries that range into Register. Device-local unsent entries remain represented by the one existing global outbox banner.
+- The staff-only screen is selected from existing permissions (`viewOwn`, without `viewAll` or `cashClose`). Manager retains five finance KPIs and operational cash/exception context; Owner retains its six KPI view, cash position, Daily Cash Close readiness and analysis.
+- The global outbox banner remains the sole queue/recovery authority. No second queue store, API, schema or server-confirmed claim for local-only entries was introduced.
+- Full Flight now runs only by `workflow_dispatch`. Its complete `npm run test:flight` chain remains available for deliberate release validation. CI / Quality and Browser E2E remain the automatic PR gates; the redundant PR/push Full Flight status aggregator is gone.
+- The repeated Staff KPI matrix (11 widths × 2 themes) was replaced by six representative layout cases (390/768/1280px × light/dark), including action-column, touch-size and overflow checks, plus direct Payment/Receipt routing and server-scoped approval/recent-entry drill-downs. This focused regression set does not claim real-user usability evidence.
+
+### Exact-head follow-up
+
+- Initial implementation head: `5d10e9972fb8f8423b61a079a4d04258ee3d8500`.
+- Its first CI run exposed stale Staff KPI expectations and Prettier formatting. Its first Browser E2E run exposed a missing wait before reading the asynchronously rendered approval exception. Those are test/contract issues, not a reason to delete the underlying safety tests.
+- Corrective changes are being committed on the same PR. Exact-head CI / Quality and Browser E2E must be checked on the new follow-up commit; earlier green runs for `c30c6a3` do not validate this phase.
+- No merge, deployment, Clasp push, spreadsheet write or production operation is part of this follow-up.

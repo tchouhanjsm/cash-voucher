@@ -12,7 +12,7 @@ const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 
 
 assert.match(
   workflow,
-  /^on:\s*\n\s+workflow_dispatch:\s*$/m,
+  /^on:[ \t]*\n[ \t]+workflow_dispatch:[ \t]*$/m,
   'Full Flight is started only by an explicit manual dispatch.',
 );
 assert.doesNotMatch(
@@ -38,7 +38,8 @@ assert.match(
   'a manually requested release suite is not cancelled by another run.',
 );
 assert.ok(
-  packageJson.scripts?.['test:flight'] === 'npm run check && npm run test:e2e && npm run audit:deps',
+  packageJson.scripts?.['test:flight'] ===
+    'npm run check && npm run test:e2e && npm run audit:deps',
   'the full-suite command retains quality checks, browser journeys and dependency audit.',
 );
 

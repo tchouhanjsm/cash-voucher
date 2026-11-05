@@ -418,3 +418,8 @@ The Dashboard retains its existing single `#view.innerHTML` template assignment.
 - Manager/Owner cash position, cash-close readiness and KPI/analysis sections remain behind the existing permission-aware dashboard branches.
 
 This fingerprint update is paired with focused permission/layout regression checks. It is a source-drift detector plus contextual review, not XSS certification or a substitute for live adversarial testing.
+## PR #265 follow-up — Staff Home action wording (5 November 2026)
+
+The Staff Home recent-entry action now reads **Open register**, rather than **View all entries**, because it intentionally carries the recent 30-calendar-day filter into the Register and does not claim to show all historical vouchers. This is an application-authored constant; voucher number, vendor, date, type and filter parameters continue through the existing validation/escaping and server permission boundaries.
+
+The `#view.innerHTML` assignment source itself is unchanged, so its reviewed fingerprint remains `c09024b3`. No new DOM sink or user-controlled HTML interpolation was introduced by this wording correction. The existing fingerprint remains a source-drift detector, not XSS certification.

@@ -2839,6 +2839,13 @@ with sync_playwright() as p:
     manager_page.fill('#newPassword', 'Lock#Final2026')
     manager_page.click('.mcard .primary')
     manager_page.wait_for_selector('#nav button')
+    go_view(manager_page, 'dash')
+    manager_page.wait_for_selector('.dashboard-stats--manager .dashboard-kpi-drilldown')
+    check(
+        manager_page.locator('.dashboard-stats--manager > .stat').count() == 5
+        and manager_page.locator('.dashboard-staff-home').count() == 0,
+        'Manager retains five financial KPIs and does not receive the staff Home',
+    )
     go_view(manager_page, 'reg')
     manager_page.wait_for_selector('#rq')
     manager_page.fill('#rq', 'Approval E2E vendor')
@@ -4456,6 +4463,11 @@ with sync_playwright() as p:
     staff_recent_period_button = page.locator('[data-drill-key="recent-period"]')
     staff_from = staff_recent_period_button.get_attribute('data-from')
     staff_to = staff_recent_period_button.get_attribute('data-to')
+    check(
+        staff_to == BUSINESS_TODAY.isoformat()
+        and (datetime.date.fromisoformat(staff_to) - datetime.date.fromisoformat(staff_from)).days == 29,
+        'staff Home defaults to the latest 30 calendar days',
+    )
     staff_quick_actions = page.locator('.dashboard-staff-action')
     check(
         staff_quick_actions.count() == 2
@@ -4482,14 +4494,19 @@ with sync_playwright() as p:
                 return {
                     count: actions.length,
                     minHeight: actions.length ? Math.min(...actions.map(item => item.getBoundingClientRect().height)) : 0,
+                    columns: actions.length
+                        ? getComputedStyle(actions[0].parentElement).gridTemplateColumns.trim().split(' ').filter(Boolean).length
+                        : 0,
                     withinHome: actions.every(item => item.closest('.dashboard-staff-home')),
                     documentWidth: Math.max(root.scrollWidth, body.scrollWidth),
                     viewportWidth: root.clientWidth,
                     recentVisible: Boolean(document.querySelector('.dashboard-recent-transactions')),
                 };
             }""")
+            expected_action_columns = 1 if width <= 560 else 2
             check(
                 staff_home_metrics['count'] == 2
+                and staff_home_metrics['columns'] == expected_action_columns
                 and staff_home_metrics['minHeight'] >= 44
                 and staff_home_metrics['withinHome']
                 and staff_home_metrics['recentVisible']
@@ -4514,6 +4531,7 @@ with sync_playwright() as p:
     )
     go_view(page, 'dash')
 
+    page.wait_for_selector('[data-drill-key="approval-exceptions"]', timeout=10000)
     staff_approval_attention = page.locator('.needs-item [data-drill-key="approval-exceptions"]')
     check(
         staff_approval_attention.count() == 1

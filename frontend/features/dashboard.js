@@ -752,7 +752,7 @@ export function createDashboard({ api }) {
     const description = staffHome
       ? 'Latest active entries visible to you · '
       : 'Latest active vouchers in the selected period · ';
-    const openLabel = staffHome ? 'View all entries' : 'Open register';
+    const openLabel = 'Open register';
     const heading =
       '<div class="dashboard-panel-heading"><div><h2 id="dashboardRecentTitle">' +
       title +
@@ -1238,16 +1238,21 @@ export function createDashboard({ api }) {
       ? `<p class="muted" role="status" aria-live="polite">${malformedFieldCount} voucher detail(s) were handled safely and may need review.</p>`
       : '';
     const dashboardContent = staffHome
-      ? [staffHomeActions(), needsAttention, staffDashboardWarnings, recentTransactionsCard(recentTransactions, recentTransactionsError, from, to, true)].join('')
-      : periodIsEmpty
       ? [
+          staffHomeActions(),
           needsAttention,
-          periodControls(from, to),
-          emptyPeriodPanel,
-          dashboardWarnings,
-          operationsPanels,
+          staffDashboardWarnings,
+          recentTransactionsCard(recentTransactions, recentTransactionsError, from, to, true),
         ].join('')
-      : [needsAttention, periodControls(from, to), financialPanels].join('');
+      : periodIsEmpty
+        ? [
+            needsAttention,
+            periodControls(from, to),
+            emptyPeriodPanel,
+            dashboardWarnings,
+            operationsPanels,
+          ].join('')
+        : [needsAttention, periodControls(from, to), financialPanels].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +

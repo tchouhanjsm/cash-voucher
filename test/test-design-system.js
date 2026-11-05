@@ -149,7 +149,7 @@ assert.match(
 assert.match(dashboard, /Record a payment/, 'staff Home offers a direct Payment action.');
 assert.match(dashboard, /Record cash received/, 'staff Home offers a direct Cash received action.');
 assert.match(dashboard, /My recent entries/, 'staff Home labels the personal activity list.');
-assert.match(dashboard, /View all entries/, 'staff Home links to the complete server-scoped Register.');
+assert.match(dashboard, /Open register/, 'staff Home links to the recent-period server-scoped Register.');
 assert.match(
   dashboard,
   /if \(!staffHome\) body\.appendChild\(periods\);/,
@@ -159,6 +159,11 @@ assert.match(
   workspace,
   /\.dashboard-view \.dashboard-staff-home__actions[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/,
   'staff quick actions use a clear two-action layout',
+);
+assert.match(
+  workspace,
+  /\.dashboard-view \.dashboard-staff-home__actions[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?@media \(max-width: 560px\)[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
+  'staff actions use a single column on narrow phones after the desktop grid rule',
 );
 assert.doesNotMatch(
   dashboard,
