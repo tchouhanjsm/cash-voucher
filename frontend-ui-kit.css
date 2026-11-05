@@ -2250,11 +2250,30 @@ here and in the production app. It requires no JS or remote assets. */
   }
 
   #nf.entry-form .receipt-upload-label {
+    position: relative;
     display: inline-flex;
     align-items: center;
     justify-content: center;
     width: auto;
     margin: 0;
+  }
+
+  #nf.entry-form .receipt-upload-input {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    clip-path: inset(50%);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  #nf.entry-form .receipt-upload-label:focus-within {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
   }
 
   #nf.entry-form .actions {

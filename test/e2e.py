@@ -8421,6 +8421,20 @@ with sync_playwright() as p:
     # Exercise the payment-entry workflow at the narrow reflow width used for 400% zoom.
     go_view(page, 'new')
     page.wait_for_selector('#nf')
+    page.set_viewport_size({'width': 640, 'height': 800})
+    reflow_200 = page.evaluate(
+        """() => ({
+          overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+          movementColumns: getComputedStyle(document.querySelector('.cash-movement-fieldset')).gridTemplateColumns.split(' ').length,
+          saveHeight: document.querySelector('#nsave').getBoundingClientRect().height,
+        })"""
+    )
+    check(
+        not reflow_200['overflow']
+        and reflow_200['movementColumns'] == 1
+        and reflow_200['saveHeight'] >= 44,
+        f'640px reflow keeps New Entry readable with stacked movement choices and full-size Save; metrics={reflow_200}',
+    )
     page.set_viewport_size({'width': 320, 'height': 800})
     check(
         not page.evaluate(
@@ -8436,11 +8450,53 @@ with sync_playwright() as p:
         all(target['height'] >= 44 for target in touch_targets),
         'payment save and payment/receipt switch targets are at least 44px tall on mobile',
     )
+    check(
+        page.locator('[data-k=PAYMENT]').get_attribute('aria-pressed') == 'true'
+        and page.locator('[data-k=RECEIPT]').get_attribute('aria-pressed') == 'false',
+        'Payment mode is announced as selected when New Entry opens',
+    )
+    page.locator('[data-k=RECEIPT]').click()
+    check(
+        page.locator('[data-k=RECEIPT]').get_attribute('aria-pressed') == 'true'
+        and page.locator('[data-k=PAYMENT]').get_attribute('aria-pressed') == 'false',
+        'Cash received mode updates its accessible selected state',
+    )
+    page.locator('[data-k=PAYMENT]').click()
+    page.locator('.rn').first.focus()
+    page.keyboard.press('Tab')
+    receipt_keyboard_focus = page.evaluate(
+        """() => {
+          const input = document.querySelector('.rf');
+          const label = input?.closest('.receipt-upload-label');
+          return {
+            active: document.activeElement === input,
+            available: Boolean(input && !input.hidden && input.tabIndex >= 0),
+            focusWithin: Boolean(label?.matches(':focus-within')),
+            outlineWidth: label ? getComputedStyle(label).outlineWidth : '0px',
+          };
+        }"""
+    )
+    check(
+        receipt_keyboard_focus['active']
+        and receipt_keyboard_focus['available']
+        and receipt_keyboard_focus['focusWithin']
+        and float(receipt_keyboard_focus['outlineWidth'].replace('px', '')) >= 3,
+        f'receipt upload is reachable by Tab and has a visible focus indicator; metrics={receipt_keyboard_focus}',
+    )
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash-receipt mode uses matching save terminology')
     click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
     page.locator('.erow .rv').first.fill('Mobile workflow vendor')
     page.locator('.erow .ra').first.fill('42')
+    page.locator('.rci').first.select_option('UPI')
+    page.locator('.rc').first.select_option('Kitchen')
+    page.locator('.rv').first.focus()
+    page.locator('.ra').first.focus()
+    check(
+        page.locator('.rci').first.input_value() == 'UPI'
+        and page.locator('.rc').first.input_value() == 'Kitchen',
+        'revisiting a payee does not reset the staff member’s chosen method or category',
+    )
     check(
         page.locator('#nf .unsaved-draft-notice').inner_text()
         == 'Unsaved voucher draft — save it before leaving this screen.',

@@ -166,7 +166,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v53'/,
+  /const C = 'cv2-v54'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(

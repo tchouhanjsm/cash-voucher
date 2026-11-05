@@ -713,6 +713,31 @@ assert.doesNotMatch(
   'New Entry never derives movement from payment rail or entry type',
 );
 assert.match(
+  payments,
+  /row\.dataset\.payeeDefaultsFor === normalizedName/,
+  'revisiting a payee does not reapply defaults over manually selected values',
+);
+assert.match(
+  payments,
+  /aria-pressed=/,
+  'Payment and Cash received choices expose their selected state',
+);
+assert.match(
+  payments,
+  /receiptInput\.className = 'rf receipt-upload-input'/,
+  'receipt upload has a keyboard-focusable file input',
+);
+assert.doesNotMatch(
+  payments,
+  /receiptInput\.hidden = true/,
+  'receipt upload stays in keyboard navigation',
+);
+assert.match(
+  components,
+  /\.receipt-upload-label:focus-within[\s\S]*?outline:\s*3px solid var\(--focus\)/,
+  'receipt upload keyboard focus is visibly indicated',
+);
+assert.match(
   printing,
   /isIn\(voucher\) \? 'Received via' : 'Paid via'/,
   'printed voucher labels the payment rail by direction',

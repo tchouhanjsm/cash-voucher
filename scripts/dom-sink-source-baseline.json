@@ -3,7 +3,7 @@
   "frontend/features/bulk.js": ["f0afcb75", "c3e0e3e9"],
   "frontend/features/cash-close.js": ["8b83b045", "269d5b33", "34b62b64", "e292b23f"],
   "frontend/features/dashboard.js": ["31eb90ff"],
-  "frontend/features/payments.js": ["2f7c18e5"],
+  "frontend/features/payments.js": ["0056c613"],
   "frontend/features/register.js": ["4124babe", "3b89853b"],
   "frontend/features/reports.js": ["e3958601"],
   "frontend/features/printing.js": ["192002f4"]

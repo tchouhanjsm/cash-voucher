@@ -183,12 +183,18 @@ export function createPayments({ api, refresh }) {
   }
 
   function applyPayeeDefaults(row) {
-    const category = categoryForPayee($('.rv', row).value);
+    const name = scalarText($('.rv', row).value).trim();
+    const normalizedName = name.toLocaleLowerCase('en-IN');
+    if (row.dataset.payeeDefaultsFor === normalizedName) return;
+    row.dataset.payeeDefaultsFor = normalizedName;
+    if (!normalizedName) return;
+
+    const category = categoryForPayee(name);
     const categorySelect = $('.rc', row);
     categorySelect.value = [...categorySelect.options].some((option) => option.value === category)
       ? category
       : 'Other';
-    const method = methodForPayee($('.rv', row).value);
+    const method = methodForPayee(name);
     $('.rci', row).value = method;
     row.dataset.paymentMethod = method;
     updateBatchSummary();
@@ -341,11 +347,10 @@ export function createPayments({ api, refresh }) {
     receiptIcon.textContent = '▤';
     const receiptInput = document.createElement('input');
     receiptInput.type = 'file';
-    receiptInput.className = 'rf';
+    receiptInput.className = 'rf receipt-upload-input';
     receiptInput.accept = 'image/*';
     receiptInput.multiple = true;
-    receiptInput.hidden = true;
-    receiptInput.setAttribute('aria-label', 'Receipt images');
+    receiptInput.setAttribute('aria-label', 'Add receipt images');
     receiptLabel.append(receiptIcon, document.createTextNode(' Receipt'), receiptInput);
     const preview = document.createElement('span');
     preview.className = 'rp';
@@ -369,7 +374,7 @@ export function createPayments({ api, refresh }) {
         'aria-label',
         'Physical cash movement, row ' + number,
       );
-      $('.rf', row).setAttribute('aria-label', 'Receipt images, row ' + number);
+      $('.rf', row).setAttribute('aria-label', 'Add receipt images, row ' + number);
       $('[data-act="delrow"]', row).setAttribute('aria-label', 'Remove row ' + number);
     });
   }
@@ -649,7 +654,7 @@ export function createPayments({ api, refresh }) {
         description:
           'Record one payment or cash receipt. Choose the physical cash movement separately from the payment method.',
       }) +
-      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" data-workspace="entry-form-workspace" autocomplete="off" novalidate>${vendorList()}
+      `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" aria-pressed="${NT === 'PAYMENT' ? 'true' : 'false'}" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" aria-pressed="${NT === 'RECEIPT' ? 'true' : 'false'}" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" data-workspace="entry-form-workspace" autocomplete="off" novalidate>${vendorList()}
     <div class="entry-workspace__main">
       <div class="entry-section-heading">
         <p class="page-eyebrow">${NT === 'RECEIPT' ? 'CASH RECEIVED' : 'PAYMENT'}</p>

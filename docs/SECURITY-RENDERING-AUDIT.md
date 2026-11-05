@@ -382,7 +382,7 @@ The Register template adds only static `role`, `aria-label` and `tabindex` attri
 
 ## PR #265 — New Entry Payment / Cash Received template review (5 November 2026)
 
-The Payments feature retains one active `#view.innerHTML` assignment for the New Entry screen. Its changed assignment source was reviewed before updating the source-fingerprint baseline (`b3ec49f7` → `2f7c18e5`):
+The Payments feature retains one active `#view.innerHTML` assignment for the New Entry screen. Its changed assignment source was reviewed before updating the source-fingerprint baseline (`2f7c18e5` → `0056c613`):
 
 - Entry type is allowlisted in `open(type)` to exactly `PAYMENT` or `RECEIPT` before it is used in the page heading, section copy, labels or button text.
 - The shared `head()` renderer escapes title, section and description strings.
@@ -404,3 +404,5 @@ The Register keeps one active `#view.innerHTML` assignment for its filter/result
 - Browser E2E retains hostile vendor-option checks and now injects an attribute-breaking search string, navigates away/back, and verifies the search is retained as an inert input value without creating markup or firing an event handler.
 
 This fingerprint is a source-drift detector paired with contextual review and adversarial regression. It is not a proof of XSS absence, exhaustive taint analysis or certification of CSP/response headers. Other active template sinks and live-host/manual adversarial review remain separate risks.
+
+The latest PR #265 follow-up keeps the New Entry template's new values static and allowlisted: the Payment/Cash received selected state is interpolated only from the two-value `NT` enum; the receipt input class and accessible label are fixed strings. The updated fingerprint is paired with keyboard-upload and selected-state regressions. It remains a source-drift detector, not XSS certification.
