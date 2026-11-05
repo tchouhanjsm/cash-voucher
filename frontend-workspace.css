@@ -3164,6 +3164,9 @@
     font-weight: 600;
     line-height: 1.45;
   }
+  #nf[data-workspace='entry-form-workspace'] .approval-threshold-hint[hidden] {
+    display: none !important;
+  }
   #nf[data-workspace='entry-form-workspace'] .erow .x {
     width: 44px;
     min-width: 44px;

@@ -1166,6 +1166,10 @@ with sync_playwright() as p:
             # Synthetic fixture is applied after the destination focus assertion.
             page.locator('#rows .rv').first.fill('Visual Review Supplies')
             page.locator('#rows .ra').first.fill('1250')
+            check(
+                page.locator('#rows .approval-threshold-hint').first.is_hidden(),
+                '₹1,250 payment keeps the independent-approval helper hidden in the rendered UI',
+            )
             page.locator('.cash-impact[value="CASH_OUT"]').first.check()
             page.locator('#toast').evaluate("element => element.classList.add('hidden')")
             # Radio selection scrolls its control into view. Reset before every visual capture
@@ -2159,12 +2163,17 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.locator('#rows .rv').first.fill('Approval E2E vendor')
+    page.locator('#rows .ra').first.fill('9999.99')
+    check(
+        page.locator('#rows .approval-threshold-hint').first.is_hidden(),
+        'payment just below ₹10,000 does not show the approval helper',
+    )
     page.locator('#rows .ra').first.fill('10000')
     check(
         page.locator('#rows .approval-threshold-hint').first.is_visible()
         and '₹10,000 or more' in page.locator('#rows .approval-threshold-hint').first.inner_text()
         and 'cannot approve your own payment' in page.locator('#rows .approval-threshold-hint').first.inner_text(),
-        'high-value payment explains independent approval before the employee saves',
+        'high-value payment explains independent approval at the exact ₹10,000 boundary',
     )
     choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
@@ -9490,6 +9499,10 @@ with sync_playwright() as p:
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.erow .rv', 'Mobile cash receipt workflow')
     page.fill('.erow .ra', '25')
+    check(
+        page.locator('.erow .approval-threshold-hint').first.is_hidden(),
+        'Cash received never shows the independent-payment-approval helper',
+    )
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash receipt form has matching save action')
     choose_cash_impact_for_current_rows('CASH_IN')
     page.click('#nsave')

@@ -768,6 +768,11 @@ assert.match(
   'saved payee defaults can resolve payment method',
 );
 assert.match(
+  workspace,
+  /#nf\[data-workspace='entry-form-workspace'\] \.approval-threshold-hint\[hidden\]\s*\{\s*display:\s*none !important;/,
+  'the native hidden state wins over the approval helper base display rule',
+);
+assert.match(
   reports,
   /dateRangeInvalid:\s*false/,
   'report date-range validation has an explicit state separate from API errors',
