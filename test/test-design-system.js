@@ -364,9 +364,9 @@ assert.match(
 );
 assert.match(register, /id="registerAdvancedFilters"/, 'advanced Register filters use a native disclosure');
 assert.match(register, /register-primary-filter-grid/, 'common Register filters remain immediately visible');
-assert.match(register, /function advancedRegisterFilterCount\\(\\)/, 'active advanced filters are counted');
+assert.match(register, /function advancedRegisterFilterCount\(\)/, 'active advanced filters are counted');
 assert.match(components, /register-advanced-filters > summary/, 'advanced Register disclosure has a styled summary');
-assert.match(components, /grid-template-columns:\\s*minmax\\(0, 1fr\\)/, 'Register filter panel uses an explicit single track');
+assert.match(components, /grid-template-columns:\s*minmax\(0, 1fr\)/, 'Register filter panel uses an explicit single track');
 
 assert.match(
   administration,
