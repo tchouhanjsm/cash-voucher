@@ -1168,6 +1168,13 @@ with sync_playwright() as p:
             page.locator('#rows .ra').first.fill('1250')
             page.locator('.cash-impact[value="CASH_OUT"]').first.check()
             page.locator('#toast').evaluate("element => element.classList.add('hidden')")
+            # Radio selection scrolls its control into view. Reset before every visual capture
+            # so phone and desktop screenshots show the same top-of-task context.
+            page.evaluate("""() => {
+                window.scrollTo({top: 0, left: 0, behavior: 'instant'});
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+            }""")
 
         unnamed_controls = page.evaluate("""() => {
             const selector = [
@@ -1247,6 +1254,23 @@ with sync_playwright() as p:
             for width in visual_widths:
                 page.set_viewport_size({'width': width, 'height': 900 if width >= 768 else 844})
                 page.wait_for_timeout(25)
+                if route_id == 'new' and width in (390, 1280):
+                    new_entry_capture = page.evaluate("""() => {
+                        const heading = document.querySelector('#view .page-header h1');
+                        const rect = heading?.getBoundingClientRect();
+                        return {
+                            scrollY: window.scrollY,
+                            documentTop: document.scrollingElement?.scrollTop || 0,
+                            headingTop: rect ? Math.round(rect.top) : -1,
+                            headingVisible: Boolean(rect && rect.top >= 0 && rect.bottom <= window.innerHeight),
+                        };
+                    }""")
+                    check(
+                        new_entry_capture['scrollY'] <= 1
+                        and new_entry_capture['documentTop'] <= 1
+                        and new_entry_capture['headingVisible'],
+                        f'New Entry visual capture starts at the page heading at {width}px; metrics={new_entry_capture}',
+                    )
                 layout = page.evaluate("""() => {
                     const root = document.documentElement;
                     const body = document.body;
