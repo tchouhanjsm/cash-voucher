@@ -561,7 +561,7 @@ export function createPayments({ api, refresh }) {
     let invalidAmountCount = 0;
     let invalidMethodCount = 0;
     let missingCashMovementCount = 0;
-    const rows = $('#rows .erow');
+    const rows = $$('#rows .erow');
     const aside = summary.closest('.entry-workspace__aside');
     const showMultiEntrySummary = rows.length > 1;
     if (summary) summary.hidden = !showMultiEntrySummary;

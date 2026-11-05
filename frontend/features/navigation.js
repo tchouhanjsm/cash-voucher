@@ -435,11 +435,11 @@ export function createNavigation({
             if (renderId !== activeViewRenderId || S.view !== view) return;
             const active = document.activeElement;
             if (
-          !active ||
-          active === document.body ||
-          !active.isConnected ||
-          !$('#view').contains(active)
-        ) {
+              !active ||
+              active === document.body ||
+              !active.isConnected ||
+              !$('#view').contains(active)
+            ) {
               focusPageHeading();
             }
           })
