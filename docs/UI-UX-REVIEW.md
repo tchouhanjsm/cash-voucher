@@ -200,3 +200,36 @@ The Register refinement keeps the existing server-filtered workflow and financia
 - Existing mobile voucher cards remain in use; regression checks protect their action target size and named scroll region.
 
 Automated Browser E2E now checks the default collapsed state, keyboard expansion/collapse, desktop filter-panel geometry and mobile voucher/action layout. These are mock-backed browser regressions, not proof of staff task-completion improvement. Representative staff observation, manual keyboard/screen-reader review, real Android testing and 200–400% zoom/reflow remain open.
+
+## Research recommendation for the next milestone — Home and exception handling (5 November 2026)
+
+**Recommendation:** after New Entry and Register, take a focused Home/Dashboard + exception-handling milestone before a separate Daily Cash Close clarity redesign. This is a recommendation for the next product slice, not implementation or owner approval of new financial policy. [Completed research report and cited source list](https://agent.tinyfish.ai/research/01a1ab7a-450c-7bc0-a4ae-7c904edb65f8).
+
+### Grounded current state
+
+The Dashboard is not a blank slate. The current frontend already renders a server-calculated physical drawer position, recent transactions, a `Needs attention` section, pending approval/data-quality/cash-close readiness exceptions, period-empty guidance, and a safe unavailable/error state. It also communicates when the app is offline. The New Entry feature separately owns the IndexedDB outbox banner and recovery path. Do not rebuild these capabilities or create a second queue/state source.
+
+### Next-slice focus
+
+1. **Staff:** make the primary Payment/Cash received action easy to find; make the last entry and whether it was sent and confirmed versus saved on this device immediately understandable; provide a direct route to inspect waiting/failed work.
+2. **Manager:** prioritize actionable approval/review, invalid/unclassified-record, sync/recovery and cash-close-readiness exceptions. Each item should say what happened, whether action is needed, and offer one direct route into the existing authorized workflow.
+3. **Owner:** summarize current server-calculated cash position and unresolved exceptions without turning the screen into an analytics dashboard. Preserve the distinction between recorded-voucher book balance, expected drawer cash and an actual counted close.
+4. **Queue/status integration:** inspect the existing IndexedDB outbox and global banner behavior against Home. If any queue state is not obvious from Home, reuse the existing owner/endpoint-scoped queue source and established retry/export/recovery actions. Do not create a duplicate state store or imply a device-local record has reached Apps Script.
+5. **Exceptions:** order critical data/sync/recovery problems before routine informational summaries; use persistent, plain-language status for failures, not a toast alone. Keep staff, manager and owner visibility constrained by the existing server permission model.
+
+### Evidence-informed design constraints
+
+- Use progressive disclosure only for infrequent/secondary information; keep the primary task and frequent exception action visible. The correct primary/secondary split must be checked with actual usage, not internal preference. [NN/g — Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/).
+- Use plain-language action status, communicate both the current network/data state and changes to it, and let the user continue working where safe instead of blocking the whole app behind a network modal. [web.dev — Offline UX design guidelines](https://web.dev/articles/offline-ux-design-guidelines).
+- Keep status text explicit; color or an icon alone is insufficient. Use readable labels such as “Saved on this device — waiting to send” or “Sent and confirmed” only where the corresponding queue/server state proves that wording.
+- WCAG 2.2 SC 3.3.4 offers alternatives for important financial/data submissions: reversibility, checking with correction, or confirmation. It does **not** require adding a redundant confirmation page to every routine save if the existing workflow already provides an applicable safeguard. Assess the actual edit/cancel and review model before introducing extra friction. [W3C — Error Prevention (Legal, Financial, Data)](https://www.w3.org/WAI/WCAG22/Understanding/error-prevention-legal-financial-data.html).
+- Retain keyboard/focus, semantic headings/status regions, sufficient contrast, and large touch targets. WCAG 2.2 SC 2.5.8 sets a 24×24 CSS-pixel minimum subject to exceptions; the app's existing 44px/48px control target conventions are a stronger product choice for staff touch use. [W3C — Target Size (Minimum)](https://www.w3.org/TR/WCAG22/#target-size-minimum).
+
+### Measurement without invasive tracking
+
+Before changing the hierarchy, observe uncoached staff and manager tasks in short facilitated sessions. Record task completion, time to locate “my entry” / “waiting to send” / “needs approval”, incorrect re-entry attempts, wrong-route attempts, and recovery success. Capture confusion points and role context; do not add behavioral analytics or send financial details to third parties. A small sample is directional evidence, not a statistically representative usability claim.
+
+### Out of scope and gates
+
+No Apps Script/PHP writer, API/schema, endpoint, authorization, approval, cash-movement, cash-close calculation, or deployment change. Do not calculate expected cash on the client or infer physical movement. Use current server read models and the existing local outbox only. Daily Cash Close clarity remains the following milestone after Home/exception visibility is validated. No claim of improved usability is made until staff observation demonstrates it.
+
