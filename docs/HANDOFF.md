@@ -11,6 +11,8 @@
 - **Scheduler:** the existing `Cash Voucher Delivery Monitor` is a disabled read-only delivery monitor, not a mutating engineering runner. The available automation schema exposes no single-run lock/concurrency control, so it was not enabled or converted to a branch-mutating job. No application/business scheduler was changed.
 - **Human validation still open:** representative staff observation, unassisted task completion/hesitation baseline, manual screen-reader/keyboard review, real Android/PWA behavior and 200–400% zoom/reflow. Automated screenshots are not user research.
 
+The browser suite now passes explicit movement values into both the ordinary New Entry and bulk-import fixtures; test helpers no longer derive drawer movement from Payment/Receipt type. A multi-row summary source regression asserts all rows are collected, and route-focus recovery waits through synchronous render work without stealing focus from controls already inside the active view.
+
 The live PR page and exact-head workflow checks are authoritative for current review status. This handoff does not hard-code a mutable PR head SHA.
 ---
 

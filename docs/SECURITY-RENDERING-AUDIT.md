@@ -380,7 +380,6 @@ PR #149 updated the Dashboard and Payments templates to use allowlisted, app-aut
 
 The Register template adds only static `role`, `aria-label` and `tabindex` attributes to its existing table wrapper. No new sink is introduced and no API-derived value is added to the assignment. Browser E2E verifies keyboard reachability and the visible focus indicator; the full active template set still requires contextual review.
 
-
 ## PR #265 — New Entry Payment / Cash Received template review (5 November 2026)
 
 The Payments feature retains one active `#view.innerHTML` assignment for the New Entry screen. Its changed assignment source was reviewed before updating the source-fingerprint baseline (`b3ec49f7` → `2f7c18e5`):

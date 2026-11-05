@@ -662,7 +662,7 @@ assert.match(
 );
 assert.match(
   payments,
-  /methodLabel\.appendChild\(document\.createTextNode\('Payment method'\)\)/,
+  /methodLabel\.appendChild\([\s\S]*?document\.createTextNode\(NT === 'RECEIPT' \? 'Received via' : 'Paid via'\)/,
   'payment method is labelled independently of physical drawer movement',
 );
 assert.match(

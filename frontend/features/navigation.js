@@ -416,7 +416,12 @@ export function createNavigation({
       requestAnimationFrame(() => {
         if (renderId !== activeViewRenderId || S.view !== view) return;
         const active = document.activeElement;
-        if (!active || active === document.body || !active.isConnected || !$('#view').contains(active)) {
+        if (
+          !active ||
+          active === document.body ||
+          !active.isConnected ||
+          !$('#view').contains(active)
+        ) {
           focusPageHeading();
         }
       });
@@ -429,7 +434,12 @@ export function createNavigation({
           .then(() => {
             if (renderId !== activeViewRenderId || S.view !== view) return;
             const active = document.activeElement;
-            if (!active || active === document.body || !active.isConnected || !$('#view').contains(active)) {
+            if (
+          !active ||
+          active === document.body ||
+          !active.isConnected ||
+          !$('#view').contains(active)
+        ) {
               focusPageHeading();
             }
           })

@@ -116,11 +116,14 @@ with sync_playwright() as p:
         if page.locator('#rows .cash-impact:checked').count() != len(rows):
             raise AssertionError('The test fixture did not select exactly one movement per entry.')
 
-    def choose_bulk_cash_impact_for_current_rows():
-        impact = 'CASH_IN' if page.locator('#bt2').input_value() == 'RECEIPT' else 'CASH_OUT'
-        count = page.locator('#bprev .bci').count()
-        for index in range(count):
-            page.locator('#bprev .bci').nth(index).select_option(impact)
+    def choose_bulk_cash_impact_for_current_rows(impact):
+        if impact not in {'CASH_IN', 'CASH_OUT', 'NO_CASH'}:
+            raise AssertionError(f'Unsupported bulk cash movement fixture: {impact!r}')
+        controls = page.locator('#bprev .bci').all()
+        if not controls:
+            raise AssertionError('Bulk preview did not expose cash movement choices.')
+        for control in controls:
+            control.select_option(impact)
 
     logs = []
     api_events = []
@@ -6225,7 +6228,7 @@ with sync_playwright() as p:
         'bulk preview scrolls inside a named keyboard-focusable region at 320px',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
-    choose_bulk_cash_impact_for_current_rows()
+    choose_bulk_cash_impact_for_current_rows('CASH_OUT')
     check(
         'CSV File Vendor' in page.locator('#bprev').inner_text()
         and '1 ready' in page.locator('#bprev').inner_text().replace('\n', ' '),
@@ -6246,7 +6249,7 @@ with sync_playwright() as p:
     page.wait_for_function(
         "document.querySelector('#bprev')?.innerText.includes('Bulk Imported Replacement Vendor')"
     )
-    choose_bulk_cash_impact_for_current_rows()
+    choose_bulk_cash_impact_for_current_rows('CASH_OUT')
     preview_text = page.inner_text('#bprev')
     check(
         '2 ready' in preview_text or '2\nready' in preview_text or '2 ready' in preview_text.replace('\n', ' '),
@@ -6285,7 +6288,7 @@ with sync_playwright() as p:
     page.select_option('#bt2', 'RECEIPT')
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
-    choose_bulk_cash_impact_for_current_rows()
+    choose_bulk_cash_impact_for_current_rows('CASH_IN')
     check('1 ready' in page.inner_text('#bprev').replace('\n', ' '), 'receipt import row is ready after explicit classification')
     check(
         'Import 1 cash receipt' in page.locator('#bprev').inner_text(),
