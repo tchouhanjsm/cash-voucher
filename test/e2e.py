@@ -1314,7 +1314,7 @@ with sync_playwright() as p:
                             const statsRect = stats.getBoundingClientRect();
                             return {
                                 role: stats.classList.contains('dashboard-stats--owner') ? 'owner'
-                                    : stats.classList.contains('dashboard-stats--staff') ? 'staff' : 'unknown',
+                                    : stats.classList.contains('dashboard-stats--manager') ? 'manager' : 'unknown',
                                 cardCount: cards.length,
                                 columns: getComputedStyle(stats).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
                                 cardsWithinGrid: cards.every((card) => {
@@ -4449,80 +4449,71 @@ with sync_playwright() as p:
         'staff gets a simple User workspace with no desktop-only navigation heading on the mobile bottom bar',
     )
 
-    # Exercise the live staff dashboard at every KPI breakpoint with deliberately long
-    # INR values, rather than inferring its layout from owner-only screenshots.
+    # Staff Home is an entry-first work surface, not a miniature finance dashboard.
     go_view(page, 'dash')
-    page.wait_for_selector('#view .dashboard-stats--staff', timeout=10000)
-    staff_dashboard_widths = [320, 390, 440, 441, 768, 800, 801, 1024, 1100, 1101, 1280]
+    page.wait_for_selector('.dashboard-staff-home', timeout=10000)
+    page.set_viewport_size({'width': 390, 'height': 800})
+    staff_recent_period_button = page.locator('[data-drill-key="recent-period"]')
+    staff_from = staff_recent_period_button.get_attribute('data-from')
+    staff_to = staff_recent_period_button.get_attribute('data-to')
+    staff_quick_actions = page.locator('.dashboard-staff-action')
+    check(
+        staff_quick_actions.count() == 2
+        and staff_quick_actions.nth(0).inner_text().strip() == 'Record a payment'
+        and staff_quick_actions.nth(1).inner_text().strip() == 'Record cash received'
+        and page.locator('.dashboard-staff-home').is_visible(),
+        'staff Home starts with the two permitted entry actions',
+    )
+    check(
+        page.locator('.dashboard-stats, .dashboard-analysis-grid, .dashboard-period, .dashboard-trend').count() == 0
+        and page.locator('#view h2').filter(has_text='My recent entries').count() == 1,
+        'staff Home omits management analytics and shows My recent entries instead',
+    )
+
+    # Three representative device classes in both themes; one rendered-geometry check per case.
     for theme_name in ['light', 'dark']:
         page.evaluate("theme => document.documentElement.setAttribute('data-theme', theme)", theme_name)
-        for width in staff_dashboard_widths:
+        for width in [390, 768, 1280]:
             page.set_viewport_size({'width': width, 'height': 900 if width >= 768 else 844})
-            page.wait_for_timeout(25)
-            staff_metrics = page.evaluate("""() => {
+            staff_home_metrics = page.evaluate("""() => {
                 const root = document.documentElement;
                 const body = document.body;
-                const view = document.querySelector('#view');
-                const stats = view?.querySelector('.dashboard-view .dashboard-stats');
-                if (!stats) return {
-                    role: 'missing', cardCount: 0, columns: 0,
-                    cardsWithinGrid: false, valuesFit: false,
-                    viewportWidth: root.clientWidth,
-                    documentWidth: Math.max(root.scrollWidth, body.scrollWidth)
-                };
-                const cards = Array.from(stats.querySelectorAll(':scope > .stat'));
-                const statsRect = stats.getBoundingClientRect();
+                const actions = [...document.querySelectorAll('.dashboard-staff-action')];
                 return {
-                    role: stats.classList.contains('dashboard-stats--staff') ? 'staff'
-                        : stats.classList.contains('dashboard-stats--owner') ? 'owner' : 'unknown',
-                    cardCount: cards.length,
-                    columns: getComputedStyle(stats).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
-                    cardsWithinGrid: cards.every((card) => {
-                        const rect = card.getBoundingClientRect();
-                        return rect.left >= statsRect.left - 1 && rect.right <= statsRect.right + 1;
-                    }),
-                    valuesFit: cards.every((card) => {
-                        const value = card.querySelector(':scope > b');
-                        if (!value) return false;
-                        const valueRect = value.getBoundingClientRect();
-                        const cardRect = card.getBoundingClientRect();
-                        return valueRect.left >= cardRect.left - 1
-                            && valueRect.right <= cardRect.right + 1
-                            && value.scrollWidth <= value.clientWidth + 1;
-                    }),
+                    count: actions.length,
+                    minHeight: actions.length ? Math.min(...actions.map(item => item.getBoundingClientRect().height)) : 0,
+                    withinHome: actions.every(item => item.closest('.dashboard-staff-home')),
+                    documentWidth: Math.max(root.scrollWidth, body.scrollWidth),
                     viewportWidth: root.clientWidth,
-                    documentWidth: Math.max(root.scrollWidth, body.scrollWidth)
+                    recentVisible: Boolean(document.querySelector('.dashboard-recent-transactions')),
                 };
             }""")
-            expected_columns = 5 if width >= 1101 else 3 if width >= 801 else 2
             check(
-                staff_metrics['role'] == 'staff'
-                and staff_metrics['cardCount'] == 5
-                and staff_metrics['columns'] == expected_columns,
-                f'staff dashboard KPI grid matches the five-card role and breakpoint contract at {width}px in {theme_name} theme; metrics={staff_metrics}',
+                staff_home_metrics['count'] == 2
+                and staff_home_metrics['minHeight'] >= 44
+                and staff_home_metrics['withinHome']
+                and staff_home_metrics['recentVisible']
+                and staff_home_metrics['documentWidth'] <= staff_home_metrics['viewportWidth'] + 1,
+                f'staff Home actions and recent entries remain usable at {width}px in {theme_name}; metrics={staff_home_metrics}',
             )
-            check(
-                staff_metrics['cardsWithinGrid'] and staff_metrics['valuesFit'],
-                f'dashboard KPI values fit inside their cards without horizontal clipping at {width}px in {theme_name} theme; metrics={staff_metrics}',
-            )
-            check(
-                staff_metrics['documentWidth'] <= staff_metrics['viewportWidth'] + 1,
-                f'staff dashboard remains within the viewport at {width}px in {theme_name} theme',
-            )
+
     page.set_viewport_size({'width': 390, 'height': 800})
-    staff_kpi_buttons = page.locator('.dashboard-stats--staff .dashboard-kpi-drilldown')
+    page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+    page.locator('.dashboard-staff-action[data-k="PAYMENT"]').click()
+    page.wait_for_selector('#nf')
     check(
-        staff_kpi_buttons.count() == 5
-        and all(
-            staff_kpi_buttons.nth(index).get_attribute('data-target') == 'reg'
-            for index in range(staff_kpi_buttons.count())
-        )
-        and page.locator('.dashboard-stats--staff [data-target="reports"], .dashboard-stats--staff [data-target="cashClose"]').count() == 0,
-        'staff Dashboard exposes all five KPI drill-downs only to the permitted Register',
+        page.locator('#nsave').inner_text() == 'Save payment',
+        'Record a payment opens the existing Payment workflow',
     )
-    staff_period_button = page.locator('[data-drill-key="payments-period"]')
-    staff_from = staff_period_button.get_attribute('data-from')
-    staff_to = staff_period_button.get_attribute('data-to')
+    go_view(page, 'dash')
+    page.locator('.dashboard-staff-action[data-k="RECEIPT"]').click()
+    page.wait_for_selector('#nf')
+    check(
+        page.locator('#nsave').inner_text() == 'Save cash receipt',
+        'Record cash received opens the existing Cash received workflow',
+    )
+    go_view(page, 'dash')
+
     staff_approval_attention = page.locator('.needs-item [data-drill-key="approval-exceptions"]')
     check(
         staff_approval_attention.count() == 1
@@ -4544,25 +4535,25 @@ with sync_playwright() as p:
         and page.locator('#rto').input_value() == staff_to
         and staff_attention_request.get('from') == staff_from
         and staff_attention_request.get('to') == staff_to,
-        'staff approval attention opens the same selected-period payment Register with all approval states',
+        'staff approval attention opens the same server-scoped period in Register',
     )
     go_view(page, 'dash')
-    page.wait_for_selector('[data-drill-key="payments-period"]')
+    page.wait_for_selector('[data-drill-key="recent-period"]')
     with page.expect_response(
         lambda response: '/api?' in response.url
         and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
-        and json.loads(response.request.post_data or '{}').get('t') == 'PAYMENT'
         and json.loads(response.request.post_data or '{}').get('from') == staff_from
-        and json.loads(response.request.post_data or '{}').get('approval') == 'APPROVED'
-    ) as staff_kpi_response:
-        page.locator('[data-drill-key="payments-period"]').click()
-    staff_kpi_request = json.loads(staff_kpi_response.value.request.post_data or '{}')
+        and json.loads(response.request.post_data or '{}').get('to') == staff_to
+    ) as staff_recent_period_response:
+        page.locator('[data-drill-key="recent-period"]').click()
+    staff_recent_period_request = json.loads(staff_recent_period_response.value.request.post_data or '{}')
+    page.wait_for_selector('#rf')
     check(
-        page.locator('#rt').input_value() == 'PAYMENT'
-        and page.locator('#rfrom').input_value() == staff_from
+        page.locator('#rfrom').input_value() == staff_from
         and page.locator('#rto').input_value() == staff_to
-        and staff_kpi_request.get('to') == staff_to,
-        'staff payment KPI opens the selected-period, date/type-scoped Register',
+        and staff_recent_period_request.get('from') == staff_from
+        and staff_recent_period_request.get('to') == staff_to,
+        'View all entries preserves the visible period in the server-scoped Register',
     )
     go_view(page, 'dash')
     page.wait_for_selector('.dashboard-recent-item__open')
@@ -4584,7 +4575,7 @@ with sync_playwright() as p:
         and staff_recent_request.get('to') == BUSINESS_TODAY.isoformat()
         and staff_recent_request.get('t') == 'PAYMENT'
         and staff_recent_request.get('vendor') == 'Staff Dashboard Drilldown',
-        'staff recent transaction opens its voucher number/vendor/date/type through Register server filters',
+        'staff recent entry opens its voucher number/vendor/date/type through Register server filters',
     )
     go_view(page, 'dash')
     page.unroute('**/api?*', inject_staff_dashboard_summary)
@@ -6116,6 +6107,12 @@ with sync_playwright() as p:
         'manager cash-readiness attention opens the authorized current-business-date Cash Close context',
     )
     go_view(page, 'dash')
+    check(
+        page.locator('.dashboard-staff-home').count() == 0
+        and page.locator('.dashboard-period').count() == 1
+        and page.locator('.dashboard-cash-position').count() == 1,
+        'Manager keeps the operational dashboard and server-calculated cash position, not the staff Home',
+    )
     manager_kpi_contexts = {
         'payments-period': ('reg', 'PAYMENT', 'APPROVED'),
         'payment-count': ('reg', 'PAYMENT', 'APPROVED'),

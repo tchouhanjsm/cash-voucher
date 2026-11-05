@@ -133,8 +133,37 @@ assert.match(
 );
 assert.match(
   components,
-  /\.dashboard-view \.dashboard-stats--staff\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,
-  'five staff KPIs retain a balanced single-row desktop grid',
+  /\.dashboard-view \.dashboard-stats--manager\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,
+  'manager retains a compact five-KPI grid while staff uses the action-first Home',
+);
+assert.match(
+  dashboard,
+  /function isStaffWorkspace\(\)[\s\S]*?can\('viewOwn'\) && !can\('viewAll'\) && !can\('cashClose'\)/,
+  'the action-first Home is limited to staff permissions, not manager or owner workspaces',
+);
+assert.match(
+  dashboard,
+  /class="card dashboard-staff-home"/,
+  'staff Home has a distinct task-first action section',
+);
+assert.match(dashboard, /Record a payment/, 'staff Home offers a direct Payment action.');
+assert.match(dashboard, /Record cash received/, 'staff Home offers a direct Cash received action.');
+assert.match(dashboard, /My recent entries/, 'staff Home labels the personal activity list.');
+assert.match(dashboard, /View all entries/, 'staff Home links to the complete server-scoped Register.');
+assert.match(
+  dashboard,
+  /if \(!staffHome\) body\.appendChild\(periods\);/,
+  'staff Home removes the management-only date/analytics controls',
+);
+assert.match(
+  workspace,
+  /\.dashboard-view \.dashboard-staff-home__actions[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/,
+  'staff quick actions use a clear two-action layout',
+);
+assert.doesNotMatch(
+  dashboard,
+  /dashboard-stats--staff/,
+  'staff Home no longer uses a finance KPI layout',
 );
 assert.match(
   dashboard,

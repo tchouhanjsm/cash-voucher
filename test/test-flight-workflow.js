@@ -8,36 +8,38 @@ const root = path.resolve(__dirname, '..');
 const workflow = fs.readFileSync(path.join(root, '.github/workflows/flight-test.yml'), 'utf8');
 const browserWorkflow = fs.readFileSync(path.join(root, '.github/workflows/e2e.yml'), 'utf8');
 const ciWorkflow = fs.readFileSync(path.join(root, '.github/workflows/ci.yml'), 'utf8');
+const packageJson = JSON.parse(fs.readFileSync(path.join(root, 'package.json'), 'utf8'));
 
-const browserTimeout = Number(
-  browserWorkflow.match(/jobs:\s*browser:[\s\S]*?timeout-minutes:\s*(\d+)/)?.[1],
+assert.match(
+  workflow,
+  /^on:\s*\n\s+workflow_dispatch:\s*$/m,
+  'Full Flight is started only by an explicit manual dispatch.',
 );
-const flightTimeout = Number(
-  workflow.match(/^\s{2}flight:[^\S\r\n]*[\r\n]+[\s\S]*?^\s{4}timeout-minutes:\s*(\d+)/m)?.[1],
+assert.doesNotMatch(
+  workflow,
+  /^\s{2}(?:push|pull_request):/m,
+  'Full Flight does not add duplicate PR or push status checks.',
 );
-const gateWaitMinutes = Number(
-  workflow.match(/const deadline = Date\.now\(\) \+ (\d+) \* 60 \* 1000;/)?.[1],
+assert.match(workflow, /full-flight:/, 'manual Full Flight has one explicit job.');
+assert.match(workflow, /timeout-minutes:\s*45/, 'manual Full Flight has a bounded timeout.');
+assert.match(
+  workflow,
+  /Run complete chained test suite\s*\n\s+run: npm run test:flight/,
+  'manual Full Flight runs the complete validation and dependency-audit chain.',
 );
-
+assert.match(
+  workflow,
+  /python -m playwright install --with-deps chromium/,
+  'manual Full Flight installs the browser required by the E2E suite.',
+);
+assert.match(
+  workflow,
+  /cancel-in-progress: false/,
+  'a manually requested release suite is not cancelled by another run.',
+);
 assert.ok(
-  Number.isInteger(browserTimeout) && browserTimeout > 0,
-  'Browser E2E declares a job timeout.',
-);
-assert.ok(
-  Number.isInteger(flightTimeout) && flightTimeout > 0,
-  'Full Flight declares a job timeout.',
-);
-assert.ok(
-  Number.isInteger(gateWaitMinutes) && gateWaitMinutes > 0,
-  'Full Flight declares an exact-SHA gate deadline.',
-);
-assert.ok(
-  gateWaitMinutes >= browserTimeout + 5,
-  'Full Flight gate deadline must exceed the Browser E2E job timeout by at least five minutes.',
-);
-assert.ok(
-  flightTimeout >= gateWaitMinutes + 5,
-  'Full Flight job timeout must exceed its gate deadline by at least five minutes.',
+  packageJson.scripts?.['test:flight'] === 'npm run check && npm run test:e2e && npm run audit:deps',
+  'the full-suite command retains quality checks, browser journeys and dependency audit.',
 );
 
 assert.ok(
@@ -46,40 +48,26 @@ assert.ok(
   ),
   'CI push and pull_request runs have separate concurrency groups.',
 );
-
 assert.ok(
   browserWorkflow.includes(
     'group: e2e-${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.head.repo.full_name || github.repository }}-${{ github.event.pull_request.head.ref || github.ref_name }}',
   ),
   'Browser E2E push and pull_request runs have separate concurrency groups.',
 );
-
 assert.match(
   ciWorkflow,
   /types: \[opened, synchronize, reopened, edited\]/,
   'CI reruns the PR handoff contract when the description is edited.',
 );
-
+assert.match(
+  browserWorkflow,
+  /pull_request:/,
+  'focused browser regressions still run on pull requests.',
+);
 assert.doesNotMatch(
   ciWorkflow,
   /Temporary formatting diagnostic for PR 242|npx prettier --write/,
   'CI must not mutate source files with a PR-specific formatting workaround.',
 );
 
-assert.match(workflow, /const transientHttpStatuses = new Set\(\[500, 502, 503, 504\]\);/);
-assert.match(workflow, /const maxTransientRetries = 2;/);
-assert.match(workflow, /let transientRetriesUsed = 0;/);
-assert.match(
-  workflow,
-  /!transientHttpStatuses\.has\(error\.status\)[\s\S]*transientRetriesUsed >= maxTransientRetries/,
-);
-assert.match(workflow, /transientRetriesUsed \+= 1;/);
-assert.match(workflow, /await listWorkflowRunsWithRetry\(workflow\)/);
-assert.match(workflow, /run\.head_sha === sha/);
-assert.match(workflow, /run\.head_branch === branch/);
-assert.match(workflow, /run\.event === event/);
-assert.match(workflow, /core\.setFailed/);
-
-console.log(
-  'Full Flight workflow guard OK — exact-SHA validation, bounded retries and safe timeout margins.',
-);
+console.log('Workflow policy OK — CI and Browser E2E gate PRs; Full Flight is manual on demand.');

@@ -406,3 +406,15 @@ The Register keeps one active `#view.innerHTML` assignment for its filter/result
 This fingerprint is a source-drift detector paired with contextual review and adversarial regression. It is not a proof of XSS absence, exhaustive taint analysis or certification of CSP/response headers. Other active template sinks and live-host/manual adversarial review remain separate risks.
 
 The latest PR #265 follow-up keeps the New Entry template's new values static and allowlisted: the Payment/Cash received selected state is interpolated only from the two-value `NT` enum; the receipt input class and accessible label are fixed strings. The updated fingerprint is paired with keyboard-upload and selected-state regressions. It remains a source-drift detector, not XSS certification.
+
+## PR #265 — Staff Home action-first template review (5 November 2026)
+
+The Dashboard retains its existing single `#view.innerHTML` template assignment. The staff Home addition was reviewed before updating the source fingerprint (`31eb90ff` → `c09024b3`):
+
+- Staff/Manager/Owner presentation is selected from existing permission checks. The new staff action card uses fixed application-authored labels, `PAYMENT` / `RECEIPT` action keys and fixed icon identifiers; no user-provided role, action or label is interpolated.
+- The recent-entry heading, CTA copy and status wording are application-authored constants. Period dates are formatted from the validated business-date range.
+- Recent voucher rows continue to validate amount/type/status and escape voucher number/vendor/date text before template insertion. Register drill-down filters remain controlled values and the server continues to enforce staff record scope.
+- The Home reuses the current global outbox banner; no new browser queue, retry endpoint, local financial total or synchronization state was introduced.
+- Manager/Owner cash position, cash-close readiness and KPI/analysis sections remain behind the existing permission-aware dashboard branches.
+
+This fingerprint update is paired with focused permission/layout regression checks. It is a source-drift detector plus contextual review, not XSS certification or a substitute for live adversarial testing.

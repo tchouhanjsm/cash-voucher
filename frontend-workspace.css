@@ -452,7 +452,7 @@
   .dashboard-view .dashboard-stats--owner {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
-  .dashboard-view .dashboard-stats--staff {
+  .dashboard-view .dashboard-stats--manager {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
   .dashboard-view .stat {
@@ -781,13 +781,13 @@
     }
   }
   @media (max-width: 1100px) {
-    .dashboard-view .dashboard-stats--staff {
+    .dashboard-view .dashboard-stats--manager {
       grid-template-columns: repeat(3, minmax(0, 1fr));
     }
   }
   @media (max-width: 800px) {
     .dashboard-view .dashboard-stats--owner,
-    .dashboard-view .dashboard-stats--staff {
+    .dashboard-view .dashboard-stats--manager {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
     .app {
@@ -1015,7 +1015,7 @@
    long INR values through a side-by-side icon/value row. */
 @media screen and (max-width: 440px) {
   .app #view .dashboard-view .dashboard-stats--owner > .stat,
-  .app #view .dashboard-view .dashboard-stats--staff > .stat {
+  .app #view .dashboard-view .dashboard-stats--manager > .stat {
     grid-template-columns: minmax(0, 1fr);
     grid-template-rows: 32px auto auto auto;
     min-width: 0;
@@ -1026,14 +1026,14 @@
     padding: 13px;
   }
   .app #view .dashboard-view .dashboard-stats--owner > .stat > .stat-ic,
-  .app #view .dashboard-view .dashboard-stats--staff > .stat > .stat-ic {
+  .app #view .dashboard-view .dashboard-stats--manager > .stat > .stat-ic {
     grid-column: 1;
     grid-row: 1;
     width: 32px;
     height: 32px;
   }
   .app #view .dashboard-view .dashboard-stats--owner > .stat > span:not(.stat-ic),
-  .app #view .dashboard-view .dashboard-stats--staff > .stat > span:not(.stat-ic) {
+  .app #view .dashboard-view .dashboard-stats--manager > .stat > span:not(.stat-ic) {
     grid-column: 1;
     grid-row: 2;
     min-width: 0;
@@ -1041,7 +1041,7 @@
     overflow-wrap: anywhere;
   }
   .app #view .dashboard-view .dashboard-stats--owner > .stat > b,
-  .app #view .dashboard-view .dashboard-stats--staff > .stat > b {
+  .app #view .dashboard-view .dashboard-stats--manager > .stat > b {
     grid-column: 1;
     grid-row: 3;
     width: 100%;
@@ -1056,7 +1056,7 @@
     white-space: normal;
   }
   .app #view .dashboard-view .dashboard-stats--owner > .stat > small,
-  .app #view .dashboard-view .dashboard-stats--staff > .stat > small {
+  .app #view .dashboard-view .dashboard-stats--manager > .stat > small {
     grid-column: 1;
     grid-row: 4;
     min-width: 0;
@@ -2327,6 +2327,53 @@
 
 /* Haveli light dashboard: opaque financial surfaces and explicit money semantics. */
 @media screen {
+  .dashboard-view .dashboard-staff-home {
+    display: grid;
+    gap: 15px;
+    min-width: 0;
+    padding: 20px;
+    border: 1px solid var(--workspace-border);
+    border-radius: var(--workspace-radius);
+    background: var(--workspace-surface);
+    box-shadow: var(--workspace-shadow);
+  }
+  .dashboard-view .dashboard-staff-home h2 {
+    margin: 0;
+    color: var(--workspace-ink);
+    font-size: 17px;
+    font-weight: 790;
+  }
+  .dashboard-view .dashboard-staff-home__copy p {
+    margin: 6px 0 0;
+    color: var(--workspace-muted);
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .dashboard-view .dashboard-staff-home__actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+  @media (max-width: 560px) {
+    .dashboard-view .dashboard-staff-home__actions {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+  .dashboard-view .dashboard-staff-action {
+    display: flex;
+    min-width: 0;
+    min-height: 52px;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+    font-size: 14px;
+    font-weight: 760;
+    text-align: center;
+  }
+  .dashboard-view .dashboard-staff-action .i {
+    flex: 0 0 auto;
+  }
   .dashboard-view .dashboard-cash-position,
   .dashboard-view .dashboard-recent-transactions {
     min-width: 0;
