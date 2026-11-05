@@ -14,7 +14,7 @@ The read-only repository snapshot on 28 October 2026 shows:
 - Repository default branch is **main**, not **client-main**.
 - GitHub reports **client-main protected=false**.
 - Active repository ruleset **24624368** targets **~DEFAULT_BRANCH**. Because the current default is main, it does not govern client-main.
-- That ruleset requires only the **quality** status and zero approving reviews. It does not establish the four-check and human-review policy required for client-main.
+- That ruleset requires only the **quality** status and zero approving reviews. It does not establish the three-check and human-review policy required for client-main.
 - The inspected ruleset does not contain an **update** restriction for main, so it does not freeze the legacy branch against ordinary updates.
 
 These are governance blockers, not source-test failures. PR code and green CI do not correct repository settings.
@@ -27,13 +27,13 @@ Run the read-only verifier from a trusted local shell using a token with reposit
 
 Set GITHUB_TOKEN or GH_TOKEN in the shell environment before running the command. Do not put a token in the repository, command output, PR body or evidence file.
 
-For a release bundle, retain the JSON report as the `ownerBranchProtectionVerified` evidence file. The release-bundle validator checks its digest and validates the report's `ok` flag, repository/default branch, four required check groups, integration policy, distinct legacy-main freeze, read-only marker and observation-time binding. This prevents synthetic prose or a hash-only placeholder from passing that gate; it does not authenticate a human witness.
+For a release bundle, retain the JSON report as the `ownerBranchProtectionVerified` evidence file. The release-bundle validator checks its digest and validates the report's `ok` flag, repository/default branch, three required check groups, integration policy, distinct legacy-main freeze, read-only marker and observation-time binding. This prevents synthetic prose or a hash-only placeholder from passing that gate; it does not authenticate a human witness.
 
 The verifier checks that:
 
 - The default branch is client-main and both branch references are readable.
 - client-main is protected by either complete classic protection or an active applicable ruleset.
-- The integration policy requires up-to-date CI / Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor checks, at least one approving review, dismissal of stale approvals, resolved review threads, no force-pushes and no deletion.
+- The integration policy requires up-to-date CI / Quality, Browser E2E and Autonomous Development Monitor checks, at least one approving review, dismissal of stale approvals, resolved review threads, no force-pushes and no deletion.
 - The legacy main branch has a distinct active ruleset that restricts updates and deletion, with no bypass actors.
 - The GitHub API request scope is sufficient to inspect the governance metadata.
 
@@ -42,9 +42,9 @@ It uses GET requests only, logs sanitized error codes instead of API bodies, and
 ## Required owner/admin correction
 
 1. Set the repository default branch to **client-main**.
-2. Configure and verify active client-main protection. Require pull requests, at least one independent human approval, dismissal of stale approvals, up-to-date checks, review-thread resolution, and the four release checks: CI / Quality, Browser E2E, Full Flight Test and Autonomous Development Monitor. Block force pushes and branch deletion. Remove bypass actors.
+2. Configure and verify active client-main protection. Require pull requests, at least one independent human approval, dismissal of stale approvals, up-to-date checks, review-thread resolution, and the three PR checks: CI / Quality, Browser E2E and Autonomous Development Monitor. Full Flight is a manual release suite (workflow_dispatch), not a required PR status. Block force pushes and branch deletion. Remove bypass actors.
 3. Create a distinct active ruleset explicitly targeting **main**, with **Restrict updates** and **Restrict deletions**, and no bypass actors. Do not leave the legacy freeze scoped only to **~DEFAULT_BRANCH**, because that target moves when the default branch changes.
-4. Rerun the verifier and retain its sanitized result for owner review. Confirm the exact required check contexts in the GitHub UI before enabling release operations.
+4. Remove any obsolete Full Flight Test / flight required-status context from branch protection; Full Flight must remain manually callable, not a PR blocker. Rerun the verifier and retain its sanitized result for owner review. Confirm the exact required check contexts in the GitHub UI before enabling release operations.
 
 Do not let engineering automation change owner/admin governance settings. The checker is diagnostic; only the repository owner/admin can apply and verify the required settings.
 

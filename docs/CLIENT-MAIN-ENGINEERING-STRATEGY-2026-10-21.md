@@ -20,7 +20,7 @@ Every PR must receive:
 
 1. Product, security, financial-invariant, permissions, migration, offline/idempotency and rollback review.
 2. Local npm run check and Browser E2E when available; disclose any unrun tests.
-3. CI, Browser E2E and Full Flight Test passing on the exact final PR head.
+3. CI / Quality and Browser E2E passing on the exact final PR head. Full Flight remains a manual release suite for planned release validation or material cross-workflow changes; it is not a PR gate.
 4. Focused regression tests for the defect or operational failure.
 5. A fresh review after any pushed fix; checks from an older SHA do not satisfy the new head.
 6. A clear release boundary and no merge while required checks are missing, stale or failing.

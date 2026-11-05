@@ -23,14 +23,6 @@ const WORKFLOW_POLICIES = [
     category: 'source',
   },
   {
-    id: 'flight-test.yml',
-    name: 'Full Flight Test',
-    timeoutMinutes: 15,
-    required: true,
-    retryTimeout: true,
-    category: 'source',
-  },
-  {
     id: 'staging-uat.yml',
     name: 'Staging UAT',
     timeoutMinutes: 45,
@@ -389,7 +381,7 @@ function deriveCurrentPhase({
     return 'P0 source validation — resolve failed or stalled exact-head source checks before release.';
   }
   if (incompleteSource.length || !allSourceChecksPassed) {
-    return 'P0 source validation — obtain all exact-head CI / Quality, Browser E2E and Full Flight results.';
+    return 'P0 source validation — obtain exact-head CI / Quality and Browser E2E results.';
   }
 
   const blockedPullRequests = openPullRequests.filter(
@@ -913,7 +905,7 @@ function buildCheckpointIssueBody(report, previousBody = '') {
     '## Mandatory safety boundary',
     '',
     '- The monitor never merges PRs, pushes Clasp source, deploys Apps Script, mutates Google Sheets/Drive, runs write-capable staging UAT, performs migrations, publishes cPanel artifacts, or changes production.',
-    '- Automatic retries are restricted to timed-out CI / Browser E2E / Full Flight source validation; at most three total attempts per workflow run.',
+    '- Automatic retries are restricted to timed-out CI / Browser E2E source validation; at most three total attempts per workflow run.',
     '- Code/test failures require root-cause triage and a reviewed fix. Required checks, reviews, branch protection and owner release gates must never be bypassed.',
     '',
   ].join('\n');

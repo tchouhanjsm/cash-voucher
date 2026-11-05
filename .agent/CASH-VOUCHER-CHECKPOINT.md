@@ -67,3 +67,14 @@
 - No backend/API/schema/Apps Script, approval, cash-impact, balance or Daily Cash Close rule changed. No deployment, merge or production operation.
 - Responsive coverage is now six representative cases (390/768/1280px in light/dark) plus targeted action, approval and recent-entry routing checks, replacing repeated Staff KPI assertions across 11 widths.
 - Initial head `5d10e9972fb8f8423b61a079a4d04258ee3d8500` had red CI/E2E due to stale static expectations/formatting and a missing async-render wait. Corrective tests and formatting are included in this follow-up. Verify the new exact-head Actions results before merge; do not rely on earlier `c30c6a3` results.
+
+## PR #265 follow-up — right-sized delivery gates and Manager empty-period regression (5 November 2026)
+
+- Automatic PR gates are **CI / Quality**, **Browser E2E**, and the read-only **Autonomous Development Monitor**. The Monitor evaluates the same two required source workflows and exact PR/client-main heads.
+- **Full Flight** is manual-only (`workflow_dispatch`). Its full `npm run test:flight` chain remains available for deliberate release validation; its skip on a normal PR is expected, not a red or green PR status. The branch-governance contract now lists only the three actual automatic checks.
+- The read-only governance verifier now rejects an obsolete Full Flight required-status context, in both classic branch protection and applicable rulesets.
+- The Manager regression now accepts both legitimate dashboard presentations: six KPI cards when the selected period has approved movement, or the existing explicit empty-period panel when it does not. It still requires the Dashboard route, Manager cash-position card and Daily Cash Close surface, and verifies the staff Home is absent.
+- The previous exact head `fa5b58e890534c5d549f6e0734665f0e233eba45` had two known failures: the branch-policy unit test still expected automatic Full Flight triggers; Browser E2E assumed Manager always has six KPI cards even when the period is empty. These are being corrected without deleting financial, authorization, outbox, or critical journey coverage.
+- The staff Home uses the existing outbox, server Register read model and current permissions. No API/schema/financial policy, Apps Script deployment, Sheet/Drive mutation or production operation is part of this slice.
+- **Live GitHub branch protection is still an owner/admin task.** The integration does not grant the Administration read permission needed to inspect/change the protection context. Remove any obsolete Full Flight required check in GitHub settings; source documentation and tests do not change server-side branch protection.
+- Exact-head CI, Browser E2E and monitor results for the corrective commit must be checked before considering merge. No merge, Clasp push, deployment or release is authorized by this code change.

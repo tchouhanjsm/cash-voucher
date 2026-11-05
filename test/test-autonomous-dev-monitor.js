@@ -19,6 +19,11 @@ const {
 const NOW = new Date('2026-10-25T00:00:00.000Z');
 const MAIN_SHA = 'a'.repeat(40);
 const PR_SHA = 'b'.repeat(40);
+assert.deepEqual(
+  WORKFLOW_POLICIES.filter((policy) => policy.required).map((policy) => policy.id),
+  ['ci.yml', 'e2e.yml'],
+  'the autonomous monitor requires only the two automatic source workflows',
+);
 function makeRun(workflowId, scope, sha, overrides = {}) {
   const policy = WORKFLOW_POLICIES.find((item) => item.id === workflowId);
   return {
@@ -70,7 +75,6 @@ function baseSnapshot() {
     runs: [
       makeRun('ci.yml', 'client-main', MAIN_SHA),
       makeRun('e2e.yml', 'client-main', MAIN_SHA),
-      makeRun('flight-test.yml', 'client-main', MAIN_SHA),
     ],
   };
 }
@@ -214,7 +218,6 @@ snapshot.runs.push(
 snapshot.runs.push(
   makeRun('ci.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 4001 }),
   makeRun('e2e.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 4002 }),
-  makeRun('flight-test.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 4003 }),
 );
 snapshot.openPullRequests = [
   {
@@ -450,9 +453,9 @@ assert.doesNotMatch(
   /PR #214/,
   'current phase must not repeat a stale handoff PR queue',
 );
+assert.equal(report.sourceChecks.length, 2);
 assert.equal(report.sourceChecks[0].code, 'PASS');
 assert.equal(report.sourceChecks[1].code, 'FAIL');
-assert.equal(report.sourceChecks[2].code, 'PASS');
 assert.equal(report.openPullRequests[0].state, 'CHECKS_GREEN_REVIEW_REQUIRED');
 const reviewBlockedSnapshot = baseSnapshot();
 reviewBlockedSnapshot.openPullRequests = [
@@ -474,7 +477,6 @@ reviewBlockedSnapshot.openPullRequests = [
 reviewBlockedSnapshot.runs.push(
   makeRun('ci.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 7201 }),
   makeRun('e2e.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 7202 }),
-  makeRun('flight-test.yml', 'pull_request', PR_SHA, { prNumber: 209, runId: 7203 }),
 );
 const reviewBlockedReport = buildMonitorReport(reviewBlockedSnapshot, NOW);
 assert.equal(reviewBlockedReport.openPullRequests[0].state, 'CHANGES_REQUESTED');

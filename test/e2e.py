@@ -2840,11 +2840,38 @@ with sync_playwright() as p:
     manager_page.click('.mcard .primary')
     manager_page.wait_for_selector('#nav button')
     go_view(manager_page, 'dash')
-    manager_page.wait_for_selector('.dashboard-stats--owner .dashboard-kpi-drilldown')
+    manager_page.wait_for_function(
+        """() => {
+            const view = document.querySelector('#view');
+            return Boolean(
+                view?.querySelector('.dashboard-view')
+                && (
+                    view.querySelector('.dashboard-stats--owner')
+                    || view.querySelector('.dashboard-empty-state')
+                )
+                && view.querySelector('.dashboard-cash-position')
+                && view.querySelector('.daily-close-readiness')
+            );
+        }""",
+        timeout=10000,
+    )
+    manager_stats = manager_page.locator('.dashboard-stats--owner > .stat').count()
+    manager_empty_period = manager_page.locator('.dashboard-empty-state').count()
     check(
-        manager_page.locator('.dashboard-stats--owner > .stat').count() == 6
-        and manager_page.locator('.dashboard-staff-home').count() == 0,
-        'Manager with viewAll retains the existing six-KPI finance dashboard, not the staff Home',
+        manager_page.locator('#view .page-header h1').inner_text() == 'Dashboard'
+        and manager_page.locator('.dashboard-staff-home').count() == 0
+        and manager_page.locator('.dashboard-cash-position').count() == 1
+        and manager_page.locator('.daily-close-readiness').count() == 1
+        and (
+            manager_stats == 6
+            or (
+                manager_stats == 0
+                and manager_empty_period == 1
+                and 'No approved payments or recorded receipts are included in the selected period'
+                in manager_page.locator('.dashboard-empty-state').inner_text()
+            )
+        ),
+        'Manager keeps finance and cash-close controls while respecting a valid empty-period state',
     )
     go_view(manager_page, 'reg')
     manager_page.wait_for_selector('#rq')

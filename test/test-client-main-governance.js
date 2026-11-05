@@ -15,7 +15,6 @@ const repositoryName = 'tchouhanjsm/cash-voucher';
 const requiredContexts = [
   'quality',
   'Browser E2E / browser',
-  'Full Flight Test / flight',
   'Autonomous Development Monitor / Inspect exact-head delivery state',
 ];
 
@@ -94,7 +93,7 @@ function errorCodes(snapshot) {
 }
 
 async function main() {
-  assert.equal(REQUIRED_CHECK_GROUPS.length, 4);
+  assert.equal(REQUIRED_CHECK_GROUPS.length, 3);
   assert.equal(patternMatches('client-main', 'client-main', 'main'), true);
   assert.equal(patternMatches('refs/heads/client-main', 'client-main', 'main'), true);
   assert.equal(patternMatches('~DEFAULT_BRANCH', 'main', 'main'), true);
@@ -106,7 +105,6 @@ async function main() {
   jobNamedChecks.integrationProtection.required_status_checks.contexts = [
     'quality',
     'browser',
-    'flight',
     'Inspect exact-head delivery state',
   ];
   const validJobNames = evaluateRepositoryGovernance(jobNamedChecks);
@@ -155,6 +153,28 @@ async function main() {
   assert.equal(validClassic.ok, true, JSON.stringify(validClassic.errors));
   assert.equal(validClassic.integrationPolicy, 'classic-branch-protection');
   assert.deepEqual(validClassic.legacyFreezeRulesetIds, [102]);
+
+  const obsoleteClassicFlight = goodSnapshot();
+  obsoleteClassicFlight.integrationProtection.required_status_checks.contexts.push(
+    'Full Flight Test / flight',
+  );
+  assert.ok(
+    errorCodes(obsoleteClassicFlight).includes('CLIENT_MAIN_OBSOLETE_FULL_FLIGHT_CHECK_REQUIRED'),
+    'manual Full Flight must not remain a required classic branch-protection context',
+  );
+
+  const obsoleteRulesetFlight = goodSnapshot();
+  obsoleteRulesetFlight.integrationProtection = null;
+  const obsoleteRuleset = integrationRuleSet();
+  obsoleteRuleset.rules[0].parameters.required_status_checks.push({
+    context: 'Full Flight Test / flight',
+    integration_id: 15368,
+  });
+  obsoleteRulesetFlight.rulesets.push(obsoleteRuleset);
+  assert.ok(
+    errorCodes(obsoleteRulesetFlight).includes('CLIENT_MAIN_OBSOLETE_FULL_FLIGHT_CHECK_REQUIRED'),
+    'manual Full Flight must not remain a required ruleset status context',
+  );
 
   const rulesetOnly = goodSnapshot();
   rulesetOnly.integrationProtection = null;
