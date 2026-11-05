@@ -160,7 +160,11 @@ async function main() {
   );
   assert.deepEqual(
     requiredContexts,
-    ['quality', 'Browser E2E / browser', 'Autonomous Development Monitor / Inspect exact-head delivery state'],
+    [
+      'quality',
+      'Browser E2E / browser',
+      'Autonomous Development Monitor / Inspect exact-head delivery state',
+    ],
     'a deliberately obsolete check in one protection fixture must not contaminate later ruleset fixtures',
   );
   assert.ok(

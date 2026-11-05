@@ -17,6 +17,7 @@ The implementation below is already present on the active PR branch; this follow
 Uncoached staff/manager task observation, real Android/PWA offline and reconnect recovery, manual TalkBack/VoiceOver and keyboard review, and real-browser 200–400% zoom/reflow remain unverified. Live repository branch-protection settings also remain an owner/admin verification item; source tests cannot configure or certify GitHub settings.
 
 ---
+
 ## Current implementation batch — PR #265: New Entry and Register completion pass (5 November 2026)
 
 - **PR / branch:** [PR #265](https://github.com/tchouhanjsm/cash-voucher/pull/265), `client/new-entry-novice-first-phase1` → `client-main`. Code-under-test commit: `c30c6a336c23cd80370e9047fc97dff45f229fb7`. The live PR page is authoritative for subsequent documentation-only commits.

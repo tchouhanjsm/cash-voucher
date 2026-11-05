@@ -4503,7 +4503,7 @@ with sync_playwright() as p:
         and page.locator('.dashboard-staff-home').is_visible()
         and page.locator('.dashboard-staff-home').count() == 1
         and page.locator('.page-header-actions [data-act="ntype"]').count() == 0,
-        'staff Home shows one action card without duplicating its entry actions in the page header',
+        'staff Home starts with the two permitted entry actions exactly once without duplicate header actions',
     )
     check(
         page.locator('.dashboard-stats, .dashboard-analysis-grid, .dashboard-period, .dashboard-trend').count() == 0

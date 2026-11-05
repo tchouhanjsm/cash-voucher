@@ -45,7 +45,8 @@ export function createDashboard({ api }) {
     title.id = 'staffHomeActionsTitle';
     title.textContent = 'What would you like to record?';
     const description = document.createElement('p');
-    description.textContent = 'Choose the type of entry. You can review its status in your recent entries.';
+    description.textContent =
+      'Choose the type of entry. You can review its status in your recent entries.';
     copy.append(title, description);
 
     const actions = document.createElement('div');
@@ -70,7 +71,6 @@ export function createDashboard({ api }) {
     card.append(copy, actions);
     body.appendChild(card);
   }
-
 
   function range() {
     const current = today();
