@@ -411,6 +411,16 @@ export function createNavigation({
     if (focusHeading) {
       focusPageHeading();
 
+      // Restore focus after synchronous render work has settled. Do not leave
+      // keyboard users on a navigation trigger that is now hidden or inactive.
+      requestAnimationFrame(() => {
+        if (renderId !== activeViewRenderId || S.view !== view) return;
+        const active = document.activeElement;
+        if (!active || active === document.body || !active.isConnected || !$('#view').contains(active)) {
+          focusPageHeading();
+        }
+      });
+
       // Async screens can replace their loading surface after the initial focus
       // operation. Restore focus only if rendering detached/lost it and this is
       // still the active route/render; never interrupt a user who moved elsewhere.
@@ -419,7 +429,7 @@ export function createNavigation({
           .then(() => {
             if (renderId !== activeViewRenderId || S.view !== view) return;
             const active = document.activeElement;
-            if (!active || active === document.body || !active.isConnected) {
+            if (!active || active === document.body || !active.isConnected || !$('#view').contains(active)) {
               focusPageHeading();
             }
           })

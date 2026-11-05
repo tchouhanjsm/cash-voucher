@@ -179,7 +179,7 @@ export function createPayments({ api, refresh }) {
     const hint = $('.approval-threshold-hint', row);
     if (!hint) return;
     const amount = parseAmt($('.ra', row).value.trim());
-    hint.hidden = NT !== 'PAYMENT' || amount < 10000;
+    hint.hidden = NT !== 'PAYMENT' || !Number.isFinite(amount) || amount < 10000;
   }
 
   function applyPayeeDefaults(row) {
@@ -265,7 +265,9 @@ export function createPayments({ api, refresh }) {
 
     const methodLabel = document.createElement('label');
     methodLabel.className = 'payment-method-control';
-    methodLabel.appendChild(document.createTextNode('Payment method'));
+    methodLabel.appendChild(
+      document.createTextNode(NT === 'RECEIPT' ? 'Received via' : 'Paid via'),
+    );
     const methodSelect = document.createElement('select');
     methodSelect.className = 'rci';
     methodSelect.required = true;

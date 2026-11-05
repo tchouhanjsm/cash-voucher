@@ -101,12 +101,20 @@ with sync_playwright() as p:
     )
     page = context.new_page()
 
-    def choose_cash_impact_for_current_rows():
-        entry_type = page.locator('.entry-type-switch button.on').get_attribute('data-k')
-        impact = 'CASH_IN' if entry_type == 'RECEIPT' else 'CASH_OUT'
-        for control in page.locator('#rows .cash-impact').all():
-            if control.get_attribute('value') == impact:
-                control.check()
+    def choose_cash_impact_for_current_rows(impact):
+        allowed_impacts = {'CASH_IN', 'CASH_OUT', 'NO_CASH'}
+        if impact not in allowed_impacts:
+            raise AssertionError(f'Unsupported physical cash movement fixture: {impact!r}')
+        rows = page.locator('#rows .erow').all()
+        if not rows:
+            raise AssertionError('The current entry has no rows to classify.')
+        for row in rows:
+            choice = row.locator(f'.cash-impact[value="{impact}"]')
+            if choice.count() != 1:
+                raise AssertionError(f'Row does not expose the required {impact} choice.')
+            choice.check()
+        if page.locator('#rows .cash-impact:checked').count() != len(rows):
+            raise AssertionError('The test fixture did not select exactly one movement per entry.')
 
     def choose_bulk_cash_impact_for_current_rows():
         impact = 'CASH_IN' if page.locator('#bt2').input_value() == 'RECEIPT' else 'CASH_OUT'
@@ -2131,7 +2139,7 @@ with sync_playwright() as p:
         and 'cannot approve your own payment' in page.locator('#rows .approval-threshold-hint').first.inner_text(),
         'high-value payment explains independent approval before the employee saves',
     )
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     try:
         page.wait_for_function(
@@ -2934,7 +2942,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#nf')
     page.locator('#rows .rv').first.fill('Accountant E2E Vendor')
     page.locator('#rows .ra').first.fill('125')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1')")
     check(
@@ -4039,7 +4047,7 @@ with sync_playwright() as p:
         image_file.write(png)
     page.set_input_files('.rf', '/tmp/offline-unlock.png')
     page.wait_for_selector('.thumb')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel', timeout=10000)
     check(
@@ -4685,6 +4693,7 @@ with sync_playwright() as p:
         and page.evaluate("url => window.__revokedObjectUrls.includes(url)", removed_preview_url),
         'removing a receipt row restores focus and revokes its preview URL',
     )
+    page.locator('.erow').first.locator('.cash-impact[value="CASH_OUT"]').check()
     page.click('[data-act=addrow]')
     page.wait_for_function("document.querySelectorAll('.erow').length === 2")
     page.locator('.rv').nth(1).fill('Shiv Gas')
@@ -4711,7 +4720,7 @@ with sync_playwright() as p:
             route.fulfill(response=response)
 
     page.route('**/api?*', tamper_created_voucher_number)
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.locator('.erow').first.locator('.cash-impact[value="NO_CASH"]').check()
     page.locator('.erow').first.locator('.rci').select_option('UPI')
     page.locator('.erow').nth(1).locator('.rci').select_option('CASH')
@@ -5283,7 +5292,7 @@ with sync_playwright() as p:
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_selector('.thumb')
     offline_receipt_preview_url = page.locator('.thumb').first.get_attribute('src')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'offline queued')
@@ -5495,7 +5504,7 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', 'Multi-tab Vendor')
     page.fill('.ra', '525')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'multi-tab payment queued locally')
@@ -5595,7 +5604,7 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', 'Account-bound Vendor')
     page.fill('.ra', '81')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'account-binding test payment is queued offline')
@@ -5705,10 +5714,11 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', 'Poison Vendor')
     page.fill('.ra', '99')
+    page.locator('.erow').first.locator('.cash-impact[value="CASH_OUT"]').check()
     page.click('[data-act=addrow]')
     page.locator('#rows .erow').nth(1).locator('.rv').fill('Healthy Neighbor Vendor')
     page.locator('#rows .erow').nth(1).locator('.ra').fill('101')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'mixed valid/invalid batch is safely queued offline')
@@ -5802,7 +5812,7 @@ with sync_playwright() as p:
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.rv', 'Offline Receipt Label Test')
     page.fill('.ra', '21')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_IN')
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel')
     offline_receipt_records = outbox_vendor_records('Offline Receipt Label Test')
@@ -6136,7 +6146,7 @@ with sync_playwright() as p:
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.rv', 'Guest Room 5')
     page.fill('.ra', '5000')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_IN')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check(
@@ -8358,6 +8368,7 @@ with sync_playwright() as p:
     page.locator('.erow .rv').first.fill('Mobile workflow vendor')
     page.locator('.erow .ra').first.fill('42')
     check(page.locator('#nsave').inner_text() == 'Save payment', 'single-entry save label stays singular')
+    page.locator('.erow').first.locator('.cash-impact[value="CASH_OUT"]').check()
     page.click('[data-act=addrow]')
     page.locator('.erow .rv').nth(1).fill('Second workflow vendor')
     check(page.locator('#nsave').inner_text() == 'Save payments', 'save label reflects multiple entered payments')
@@ -8926,7 +8937,7 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', acknowledgement_vendor)
     page.fill('.ra', '151')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel')
     ack_before = outbox_vendor_records(acknowledgement_vendor)
@@ -9081,7 +9092,7 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', stale_session_vendor)
     page.fill('.ra', '173')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel')
     session_before = outbox_vendor_records(stale_session_vendor)
@@ -9194,7 +9205,7 @@ with sync_playwright() as p:
         page.locator('.seg button[data-k="PAYMENT"]').click()
         page.fill('.rv', vendor)
         page.fill('.ra', '137')
-        choose_cash_impact_for_current_rows()
+        choose_cash_impact_for_current_rows('CASH_OUT')
         page.click('#nsave')
         try:
             page.wait_for_function(
@@ -9317,7 +9328,7 @@ with sync_playwright() as p:
     page.fill('.erow .rv', 'Mobile cash receipt workflow')
     page.fill('.erow .ra', '25')
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash receipt form has matching save action')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_IN')
     page.click('#nsave')
     page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1 cash receipt')")
     check('Saved 1 cash receipt' in page.locator('#nres').inner_text(), 'saved confirmation uses cash-receipt terminology')
@@ -9462,7 +9473,7 @@ with sync_playwright() as p:
     before_xss_api_events = len(api_events)
     page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
     page.fill('.erow .ra', '11')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('#rows .erow .row-error')
     xss_api_events = api_events[before_xss_api_events:]

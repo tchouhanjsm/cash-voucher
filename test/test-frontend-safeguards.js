@@ -86,10 +86,16 @@ assert.match(saveSource, /rows\.forEach\(clearRowError\)/);
 const batchStart = payments.indexOf('function updateBatchSummary()');
 const batchEnd = payments.indexOf('function vNew()', batchStart);
 assert.ok(batchStart >= 0 && batchEnd > batchStart, 'multi-entry summary updater is present');
-assert.match(
-  payments.slice(batchStart, batchEnd),
-  /const rows = \\$\\$\\('#rows \\.erow'\\);/,
+assert.ok(
+  payments.slice(batchStart, batchEnd).includes("const rows = $$('#rows .erow');"),
   'multi-entry summary iterates every row rather than a single DOM element',
+);
+const openStart = payments.indexOf('function open(');
+const openEnd = payments.indexOf('function newAgain()', openStart);
+assert.ok(openStart >= 0 && openEnd > openStart, 'entry type opener is present');
+assert.ok(
+  payments.slice(openStart, openEnd).includes("NT = type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT';"),
+  'template entry type is allowlisted before it can be interpolated',
 );
 assert.match(state, /'vendorType'/);
 

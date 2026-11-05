@@ -5,32 +5,31 @@
 - Base branch: `client-main`
 - Active PR: [#265 — novice-first New Entry](https://github.com/tchouhanjsm/cash-voucher/pull/265)
 - Verified base SHA: `74340d387feb17450ca975543a82d179834ac2c5`
-- Parent source head before this checkpoint commit: `447a48c05b2809866f7ff81c52bdd3eebb944a36`
-- Local worktree: not available; branch changes use GitHub commit creation with expected-SHA compare-and-swap.
-- Scheduler: existing `Cash Voucher Delivery Monitor` automation id `6add06002f9c819190548c09132f70b2`; disabled. No concurrency-lock field is exposed by the automation schema, so do not start overlapping mutating runs.
+- Parent source head before this checkpoint batch: `3e7fc9ee1e43ea96ea4a342c58d9e650bcbf42a9`
+- Working tree: no local worktree is available; all branch updates use expected-SHA compare-and-swap.
+- Scheduler: existing `Cash Voucher Delivery Monitor` automation id `6add06002f9c819190548c09132f70b2` is disabled and read-only. Available automation schema has no single-run lock; leave it disabled and do not mutate branch state through overlapping jobs.
 
 ## Current phase — New Entry Payment and Cash received
 
-- Required, unselected physical drawer movement choices: `CASH_IN`, `CASH_OUT`, `NO_CASH`.
-- Payment method and category remain separate; neither infers drawer movement.
-- One row is the default; extra rows are opt-in and reveal the multi-entry summary.
-- Recovery import is secondary. Receipts, optional notes, vendor linking, duplicate confirmation, stable client IDs, online acknowledgement and device-local queue remain in the existing feature module.
-- A contextual pre-save message explains independent owner/manager approval for payments of ₹10,000 or more.
-- No backend/API/schema, PHP financial operation, production endpoint change, Apps Script write/deploy or data migration.
+- Explicit unselected drawer movement: `CASH_IN`, `CASH_OUT`, `NO_CASH`; no inference from category, method or voucher type.
+- One row is the ordinary path; add-another is secondary and multi-row totals appear only for a multi-entry batch.
+- Contextual labels: Paid to / Received from, Paid via / Received via, and a visible high-value payment approval message at ₹10,000 or more.
+- Preserve category, note, receipt image, vendor linking, duplicate checking, stable client IDs, server acknowledgement, device-local queue and recovery flow.
+- Add-row validation now requires a deliberate movement choice for every previous row.
+- Browser fixtures now pass explicit movement values instead of inferring from entry type; each add-row test selects a movement first.
+- Route heading focus includes a next-frame recovery when focus remains outside the active view.
 
-## Previous failure being corrected
+## Verification history / remaining gates
 
-- Shared head `1d8a48fce761feaa9449c27e6cd320b461a8b4d4` failed exact-head CI and Browser E2E due a duplicate `summary` declaration and single-element row selection in `updateBatchSummary()`. The duplicate declaration was removed first; CI/E2E then proved the single-element query still prevented multi-entry summary updates. The current follow-up changes the collection to `$('#rows .erow')` and adds a focused source regression.
-- CI also flagged Prettier drift and the payments template sink fingerprint change. The changed template was inspected, enum-bound to Payment/Receipt, and its focused source safeguard and reviewed fingerprint were updated deliberately.
-- New E2E checks assert save is blocked without movement before an API write, the high-value approval message appears before save, and offline cash receipts retain `CASH_IN` in IndexedDB.
-- The prior first-paint smoke passes on the repair head, but Browser E2E is not yet green: the single-row UPI test still expects batch totals even though the summary is intentionally hidden. That test is being changed to assert the single-entry state and explicit `NO_CASH`. A navigation-focus assertion is also being made tolerant of the route's deferred focus restoration.
-- CI currently fails only Prettier formatting; payment source, CSS, UX docs and checkpoint formatting are being corrected from the exact CI diff.
-- Exact-head CI, Browser E2E and Full Flight are still required; do not claim earlier failures as passing evidence.
+- Exact-head CI/E2E on `3e7fc9ee1e43ea96ea4a342c58d9e650bcbf42a9` failed: the multi-entry summary still queried one element instead of all rows; the focused route-navigation test timed out; and the Payments template source fingerprint differed from the previously reviewed baseline.
+- Source now changes the summary query to `$$('#rows .erow')`, adds a focused source guard, makes the E2E movement choices explicit, and records the reviewed `2f7c18e5` Payments template fingerprint. A fresh exact-head CI, Browser E2E and Full Flight run is required; do not treat historical failures or first-paint smoke as overall passes.
+- Before screenshots exist as a CI artifact from the baseline head; capture and inspect the new head's responsive matrix only after the browser run completes.
+- No backend/API/schema change, PHP financial operation, production endpoint change, Apps Script write/deploy or data migration. No merge/deployment is authorized.
 
 ## Next three priorities
 
-1. Commit the summary collection fix, revised single-entry UPI test and formatting repairs to this same branch using expected-SHA compare-and-swap. Run exact-head CI and Browser E2E.
-2. Inspect the responsive visual matrix at phone and desktop sizes; distinguish screenshot evidence from human usability research.
-3. After New Entry is stable, decide whether the next UX task remains coherent within PR #265; otherwise leave Register as the next distinct milestone, not an unrelated backend addition.
+1. Commit this implementation/test/documentation batch to this same branch and run exact-head CI, Browser E2E and Full Flight. Inspect the actual failed step/log if any gate fails.
+2. Inspect before/after New Entry screenshots at 390px and 1280px, then check the full responsive matrix and E2E diagnostics.
+3. Complete a two-pass review of payment/receipt save, ₹10,000 approval copy, movement/method independence, duplicate confirmation, receipt handling and offline recovery; leave real-user/device/accessibility validation explicitly open.
 
 Continue on this branch and PR. Never create another PR, force-push, merge, deploy, mutate production data or change financial authority.

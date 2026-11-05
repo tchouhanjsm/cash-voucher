@@ -379,3 +379,17 @@ PR #149 updated the Dashboard and Payments templates to use allowlisted, app-aut
 ## Phase 14 candidate — Register table keyboard scrolling
 
 The Register template adds only static `role`, `aria-label` and `tabindex` attributes to its existing table wrapper. No new sink is introduced and no API-derived value is added to the assignment. Browser E2E verifies keyboard reachability and the visible focus indicator; the full active template set still requires contextual review.
+
+
+## PR #265 — New Entry Payment / Cash Received template review (5 November 2026)
+
+The Payments feature retains one active `#view.innerHTML` assignment for the New Entry screen. Its changed assignment source was reviewed before updating the source-fingerprint baseline (`b3ec49f7` → `2f7c18e5`):
+
+- Entry type is allowlisted in `open(type)` to exactly `PAYMENT` or `RECEIPT` before it is used in the page heading, section copy, labels or button text.
+- The shared `head()` renderer escapes title, section and description strings.
+- `vendorList()` is the existing escaped datalist renderer; the current screen template does not interpolate the free-text payee, amount, note or receipt data.
+- The date field uses generated business-date values, and icons are fixed app-authored identifiers.
+- Each repeatable row, including cash-movement choices, is constructed with DOM APIs and assigns labels/values through `textContent`/native properties. User-entered values are not concatenated into a row HTML string.
+- A focused source regression checks the type allowlist; Browser E2E continues to inject hostile payee text and assert it remains inert.
+
+The baseline update reflects a reviewed source change. It is a drift detector, not a proof of XSS absence or a replacement for contextual review. Other template sinks, live CSP/headers, external pen testing and manual adversarial testing remain separate risks.
