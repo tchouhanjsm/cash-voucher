@@ -1,4 +1,3 @@
-
 ## Current milestone — Daily Cash Close readiness clarity (5 November 2026)
 
 - PR #265 adds a plain-language readiness summary to the existing Daily Cash Close preview.

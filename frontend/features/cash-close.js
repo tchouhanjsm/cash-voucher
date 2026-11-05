@@ -624,11 +624,7 @@ export function createCashClose({ api }) {
           ' still stored on this browser. Sync or review/export each entry from its matching account before closing. Do not delete entries just to close the day. Other phones/devices must be checked separately; the server cannot inspect their local queues.</p></section>'
         : '<p class="cc-note">This browser’s offline queue is empty. Confirm other operating devices are also synchronized before finalizing.</p>';
     const hasVoucherIssues = Boolean(unresolved || bad || approvalIssues);
-    const canClose =
-      snapshot.readyToClose &&
-      !hasVoucherIssues &&
-      queueKnown &&
-      queueCount === 0;
+    const canClose = snapshot.readyToClose && !hasVoucherIssues && queueKnown && queueCount === 0;
     const readiness = closeReadinessMarkup(snapshot, {
       hasVoucherIssues,
       queueKnown,

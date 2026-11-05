@@ -1,4 +1,3 @@
-
 ## Latest delivery update — PR #265: Daily Cash Close readiness clarity (5 November 2026)
 
 - **Decision sequence:** the open preview now states the next required action before the reconciliation detail: chronological block, device-queue issue, manual opening required, voucher review, negative expected cash, generic review, or ready for physical count.
