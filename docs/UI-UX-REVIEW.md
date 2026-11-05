@@ -188,3 +188,16 @@ The first PWA redesign tranche is implemented in the active New Entry feature:
 Automated browser checks cover the required-choice blocker before API write, explicit movement/payment-method independence, high-value warning, payment and receipt journeys, offline queue preservation, keyboard row addition and mobile geometry. Test fixtures now pass explicit movement enums (`CASH_IN`, `CASH_OUT`, `NO_CASH`) rather than inferring them from Payment/Receipt type. The multi-entry summary source guard requires iteration across all rows. Exact-head workflow status and screenshot artifacts are authoritative in PR #265; automated output is not user research.
 
 Representative staff observation, manual screen-reader/keyboard review, Android/PWA device testing and 200–400% zoom/reflow remain outstanding. No Apps Script deployment, data/schema migration, endpoint switch, PHP financial write or production operation is part of this phase.
+
+
+## Register novice-first implementation — PR #265 (5 November 2026)
+
+The Register refinement keeps the existing server-filtered workflow and financial controls while reducing the first-screen filter burden:
+
+- Search, quick date ranges, transaction type, status and approval remain visible in the ordinary path.
+- Vendor, category, user, custom date range and payment-method filters are grouped in a native keyboard-operable `details/summary` disclosure. It starts collapsed when unused, displays an active-filter count, and automatically opens when a saved drill-down/custom advanced criterion is active.
+- The filter panel is explicitly one full-width grid track. Mobile layout gives search and date presets usable space and keeps frequent filters visible without horizontal page overflow.
+- Clear filters, CSV export, page metadata, server totals, pagination, receipt/history/edit/cancel/approval actions, and server authorization remain unchanged.
+- Existing mobile voucher cards remain in use; regression checks protect their action target size and named scroll region.
+
+Automated Browser E2E now checks the default collapsed state, keyboard expansion/collapse, desktop filter-panel geometry and mobile voucher/action layout. These are mock-backed browser regressions, not proof of staff task-completion improvement. Representative staff observation, manual keyboard/screen-reader review, real Android testing and 200–400% zoom/reflow remain open.

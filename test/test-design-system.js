@@ -238,37 +238,37 @@ assert.match(
 );
 assert.match(
   register,
-  /class="register-search-field" for="rq">Search vouchers<input id="rq"/,
+  /class="register-search-field" for="rq">[\s\S]*?Search vouchers[\s\S]*?<input id="rq"/,
   'Register search has a persistent visible label instead of relying on placeholder text',
 );
 assert.match(
   register,
-  /class="register-filter-field" for="rv">Vendor<select id="rv"/,
+  /for="rv">[\s\S]*?Vendor[\s\S]*?<select id="rv"/,
   'Register vendor filter has an associated visible label',
 );
 assert.match(
   register,
-  /class="register-filter-field" for="rfrom">From<input type="date" id="rfrom"/,
+  /for="rfrom">[\s\S]*?From[\s\S]*?<input type="date" id="rfrom"/,
   'Register date filters keep their visible labels attached to the correct controls',
 );
 assert.match(
   register,
-  /class="register-filter-field" for="ru">User<select id="ru"/,
+  /for="ru">User<select id="ru"/,
   'Register user filter keeps an explicit label when the permission exposes it',
 );
 assert.match(
   register,
-  /class="register-filter-field" for="rapproval">Approval<select id="rapproval"/,
+  /for="rapproval">[\s\S]*?Approval[\s\S]*?<select id="rapproval"/,
   'Register approval filter has an associated visible label',
 );
 assert.match(
   components,
-  /#rf \.register-filter-field\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?min-width:\s*0;/,
+  /#rf \.register-filter-grid \.register-filter-field\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?min-width:\s*0;/,
   'Register filter labels keep labels and controls aligned without overflowing grid cells',
 );
 assert.match(
   components,
-  /#rf \.register-search-field\s*\{\s*grid-column:\s*span 2;/,
+  /#rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
   'the labelled Register search keeps the intended desktop filter-grid span',
 );
 assert.match(
@@ -298,7 +298,7 @@ assert.match(
 );
 assert.match(
   components,
-  /\.card\.filters#rf\s*\{[\s\S]*?grid-template-columns/,
+  /#rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
   'register filters use a predictable responsive grid',
 );
 assert.match(
@@ -362,6 +362,12 @@ assert.match(
   /class="register-totals"/,
   'register totals have a dedicated non-inline layout hook',
 );
+assert.match(register, /id="registerAdvancedFilters"/, 'advanced Register filters use a native disclosure');
+assert.match(register, /register-primary-filter-grid/, 'common Register filters remain immediately visible');
+assert.match(register, /function advancedRegisterFilterCount\\(\\)/, 'active advanced filters are counted');
+assert.match(components, /register-advanced-filters > summary/, 'advanced Register disclosure has a styled summary');
+assert.match(components, /grid-template-columns:\\s*minmax\\(0, 1fr\\)/, 'Register filter panel uses an explicit single track');
+
 assert.match(
   administration,
   /className: 'filters vendor-form-fields'/,

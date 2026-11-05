@@ -4920,6 +4920,34 @@ with sync_playwright() as p:
     go_view(page, 'reg')
     page.wait_for_selector('#rbody tr')
     check(
+        not page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and page.locator('#rq').is_visible()
+        and page.locator('.register-date-presets').is_visible()
+        and page.locator('#rt').is_visible()
+        and page.locator('#rs').is_visible()
+        and page.locator('#rapproval').is_visible()
+        and not page.locator('#rv').is_visible(),
+        'Register keeps search, quick periods and common filters visible while less-used filters start collapsed',
+    )
+    advanced_summary = page.locator('#registerAdvancedFilters summary')
+    advanced_summary.focus()
+    page.keyboard.press('Enter')
+    check(
+        page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and page.locator('#rv').is_visible()
+        and page.locator('#rc').is_visible()
+        and page.locator('#rfrom').is_visible()
+        and page.locator('#rpmethod').is_visible(),
+        'More filters expands through the native keyboard-operable disclosure',
+    )
+    page.keyboard.press('Enter')
+    check(
+        not page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and not page.locator('#rv').is_visible(),
+        'More filters can be collapsed again without clearing selected values',
+    )
+    page.keyboard.press('Enter')
+    check(
         page.locator('#registerPageMeta').inner_text() == 'Loaded 2 of 2 matching vouchers',
         'Register shows the loaded page against the authoritative server match count',
     )
@@ -5130,6 +5158,7 @@ with sync_playwright() as p:
         'Register returns to its populated table after the first-use fixture is removed',
     )
 
+    page.locator('#registerAdvancedFilters').evaluate('element => { element.open = true; }')
     page.fill('#rfrom', '2026-10-20')
     page.fill('#rto', '2026-10-10')
     check(
@@ -7152,6 +7181,22 @@ with sync_playwright() as p:
         'Register table region is reachable in tab order with a visible focus indicator',
     )
     page.set_viewport_size({'width': 1280, 'height': 800})
+    desktop_register_panel = page.locator('#rf').evaluate(
+        """element => ({
+            display: getComputedStyle(element).display,
+            columns: getComputedStyle(element).gridTemplateColumns,
+            width: element.getBoundingClientRect().width,
+            headingWidth: element.querySelector('.register-panel-heading').getBoundingClientRect().width,
+            searchWidth: element.querySelector('.register-search-row').getBoundingClientRect().width,
+        })"""
+    )
+    check(
+        desktop_register_panel['display'] == 'grid'
+        and len(desktop_register_panel['columns'].split()) == 1
+        and desktop_register_panel['headingWidth'] >= desktop_register_panel['width'] * 0.85
+        and desktop_register_panel['searchWidth'] >= desktop_register_panel['width'] * 0.85,
+        'desktop Register filter panel uses one full-width track rather than squeezing content into auto-columns',
+    )
     check(
         manager_row.locator('.voucher-actions').evaluate("element => getComputedStyle(element).display") == 'flex',
         'desktop register keeps a grouped action layout',
@@ -8335,6 +8380,22 @@ with sync_playwright() as p:
         )
         check(not page_overflow, f'{width}px register has no page-level horizontal overflow')
     page.set_viewport_size({'width': 390, 'height': 800})
+    mobile_register_metrics = page.locator('#rbody tr').first.evaluate(
+        """row => ({
+            rowDisplay: getComputedStyle(row).display,
+            actionHeights: [...row.querySelectorAll('.voucher-actions .btn')].map(
+                button => button.getBoundingClientRect().height
+            ),
+            tableRegionName: document.querySelector('.register-results-card .table-wrap')?.getAttribute('aria-label') || '',
+        })"""
+    )
+    check(
+        mobile_register_metrics['rowDisplay'] == 'grid'
+        and mobile_register_metrics['actionHeights']
+        and all(height >= 44 for height in mobile_register_metrics['actionHeights'])
+        and mobile_register_metrics['tableRegionName'] == 'Voucher register entries',
+        'mobile Register presents each voucher as a readable card with 44px actions inside a named table region',
+    )
     register_range_targets = page.locator('.register-date-presets button').evaluate_all(
         '(elements) => elements.map((element) => element.getBoundingClientRect().height)'
     )

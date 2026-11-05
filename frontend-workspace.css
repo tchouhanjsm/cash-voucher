@@ -3392,3 +3392,153 @@
     }
   }
 }
+
+
+/* PR #265 — Register search hierarchy and progressive filter disclosure. */
+@media screen {
+  #rf.register-filter-panel {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+    width: 100%;
+    min-width: 0;
+  }
+  #rf.register-filter-panel > * {
+    width: 100%;
+    min-width: 0;
+    flex: initial;
+  }
+  #rf .register-primary-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+    align-items: end;
+    gap: 12px;
+  }
+  #rf .register-primary-filter-grid .register-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+  }
+  #rf .register-advanced-filters {
+    min-width: 0;
+    border-top: 1px solid var(--workspace-border);
+    border-bottom: 1px solid var(--workspace-border);
+  }
+  #rf .register-advanced-filters > summary {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    color: var(--workspace-ink);
+    font-size: 13px;
+    font-weight: 780;
+    cursor: pointer;
+    list-style-position: inside;
+  }
+  #rf .register-advanced-filters > summary:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 3px;
+    border-radius: 6px;
+  }
+  #rf .register-advanced-filter-count {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    font-weight: 600;
+    text-align: right;
+  }
+  #rf .register-advanced-filters[open] > summary {
+    margin-bottom: 12px;
+  }
+  #rf .register-filter-grid {
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 180px), 1fr));
+    align-items: end;
+  }
+  #rf .register-filter-grid .register-filter-field {
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+    min-width: 0;
+    margin: 0;
+  }
+  #rf .register-filter-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--workspace-border);
+  }
+  #rf .register-filter-footnote {
+    color: var(--workspace-muted);
+    font-size: 11px;
+    line-height: 1.45;
+  }
+  #rf .register-filter-action-buttons {
+    display: flex;
+    flex: 0 0 auto;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  #rf .register-filter-actions .btn {
+    min-height: 44px;
+  }
+  @media (max-width: 800px) {
+    #rf .register-primary-filter-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #rf .register-primary-filter-grid .register-filter-field:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+  @media (max-width: 560px) {
+    #rf.register-filter-panel {
+      gap: 14px;
+      padding: 16px;
+    }
+    #rf .register-panel-heading {
+      align-items: flex-start;
+      flex-direction: row;
+      gap: 12px;
+    }
+    #rf .register-server-label {
+      font-size: 8px;
+      white-space: nowrap;
+    }
+    #rf .register-search-row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 8px;
+      padding: 13px;
+    }
+    #rf .register-search-hint {
+      padding: 0;
+    }
+    #rf .register-primary-filter-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #rf .register-primary-filter-grid .register-filter-field:first-child {
+      grid-column: 1 / -1;
+    }
+    #rf .register-date-presets {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #rf .register-date-presets__label {
+      grid-column: 1 / -1;
+    }
+    #rf .register-filter-actions {
+      align-items: stretch;
+      flex-direction: column;
+    }
+    #rf .register-filter-action-buttons {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+    #rf .register-filter-action-buttons .btn {
+      width: 100%;
+      min-width: 0;
+    }
+  }
+}
