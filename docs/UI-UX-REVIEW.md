@@ -232,4 +232,3 @@ Before changing the hierarchy, observe uncoached staff and manager tasks in shor
 ### Out of scope and gates
 
 No Apps Script/PHP writer, API/schema, endpoint, authorization, approval, cash-movement, cash-close calculation, or deployment change. Do not calculate expected cash on the client or infer physical movement. Use current server read models and the existing local outbox only. Daily Cash Close clarity remains the following milestone after Home/exception visibility is validated. No claim of improved usability is made until staff observation demonstrates it.
-
