@@ -292,9 +292,21 @@ export function createPayments({ api, refresh }) {
     movement.setAttribute('aria-describedby', movementHelp.id);
     movement.append(movementLegend, movementHelp);
     [
-      { value: 'CASH_IN', label: 'Cash added to the drawer', description: 'Money was physically put into the drawer.' },
-      { value: 'CASH_OUT', label: 'Cash taken out of the drawer', description: 'Money was physically taken from the drawer.' },
-      { value: 'NO_CASH', label: 'No physical cash moved', description: 'The drawer did not gain or lose cash.' },
+      {
+        value: 'CASH_IN',
+        label: 'Cash added to the drawer',
+        description: 'Money was physically put into the drawer.',
+      },
+      {
+        value: 'CASH_OUT',
+        label: 'Cash taken out of the drawer',
+        description: 'Money was physically taken from the drawer.',
+      },
+      {
+        value: 'NO_CASH',
+        label: 'No physical cash moved',
+        description: 'The drawer did not gain or lose cash.',
+      },
     ].forEach((choice) => {
       const label = document.createElement('label');
       label.className = 'cash-movement-choice';
@@ -632,7 +644,8 @@ export function createPayments({ api, refresh }) {
     $('#view').innerHTML =
       head(NT === 'RECEIPT' ? 'Cash Received' : 'New Cash Payment', '', {
         section: 'Work',
-        description: 'Record one payment or cash receipt. Choose the physical cash movement separately from the payment method.',
+        description:
+          'Record one payment or cash receipt. Choose the physical cash movement separately from the payment method.',
       }) +
       `<div class="seg entry-type-switch" role="group" aria-label="Entry type"><button type="button" data-act="ntype" data-k="PAYMENT" class="${NT === 'PAYMENT' ? 'on' : ''}">${icon('wallet')} Payment out</button><button type="button" data-act="ntype" data-k="RECEIPT" class="${NT === 'RECEIPT' ? 'on' : ''}">${icon('cash')} Cash received</button></div><form id="nf" class="card entry-form" data-workspace="entry-form-workspace" autocomplete="off" novalidate>${vendorList()}
     <div class="entry-workspace__main">
@@ -867,7 +880,11 @@ export function createPayments({ api, refresh }) {
         return;
       }
       if (!(amount > 0)) {
-        showRowError(previous, $('.ra', previous), 'Enter a valid amount before adding another entry.');
+        showRowError(
+          previous,
+          $('.ra', previous),
+          'Enter a valid amount before adding another entry.',
+        );
         return;
       }
       const cashImpact = $('.cash-impact:checked', previous)?.value || '';

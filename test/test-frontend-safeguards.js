@@ -83,6 +83,14 @@ assert.match(saveSource, /const cashImpact = \$\('\.cash-impact:checked', r\)\?\
 assert.doesNotMatch(saveSource, /paymentMethod\s*===|NT\s*===\s*'RECEIPT'\s*\?\s*'CASH_IN'/);
 assert.match(saveSource, /const rows = \$\$\('#rows \.erow'\);/);
 assert.match(saveSource, /rows\.forEach\(clearRowError\)/);
+const batchStart = payments.indexOf('function updateBatchSummary()');
+const batchEnd = payments.indexOf('function vNew()', batchStart);
+assert.ok(batchStart >= 0 && batchEnd > batchStart, 'multi-entry summary updater is present');
+assert.match(
+  payments.slice(batchStart, batchEnd),
+  /const rows = \\$\\$\\('#rows \\.erow'\\);/,
+  'multi-entry summary iterates every row rather than a single DOM element',
+);
 assert.match(state, /'vendorType'/);
 
 assert.match(main, /async function init\(\)/);

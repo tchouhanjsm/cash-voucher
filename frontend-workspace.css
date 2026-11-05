@@ -3256,7 +3256,10 @@
     outline: 3px solid var(--focus);
     outline-offset: 2px;
   }
-  #nf[data-workspace='entry-form-workspace'] .cash-movement-choice input:checked + .cash-movement-choice__title {
+  #nf[data-workspace='entry-form-workspace']
+    .cash-movement-choice
+    input:checked
+    + .cash-movement-choice__title {
     color: var(--workspace-accent, var(--brand));
   }
   #nf[data-workspace='entry-form-workspace'] .entry-supporting-fields {

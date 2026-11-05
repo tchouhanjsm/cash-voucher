@@ -1142,6 +1142,10 @@ with sync_playwright() as p:
             and page.locator('#view .page-header h1').inner_text().strip() != '',
             f'{route_name}: one non-empty shared page heading is rendered',
         )
+        page.wait_for_function(
+            "document.activeElement === document.querySelector('#view .page-header h1')",
+            timeout=2000,
+        )
         check(
             page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
             f'{route_name}: route navigation places focus on the destination heading',
@@ -3903,14 +3907,12 @@ with sync_playwright() as p:
     page.locator('#rows .erow .ra').fill('10')
     page.select_option('#rows .erow .rci', 'UPI')
     page.select_option('#rows .erow .rc', 'Other')
-    page.wait_for_function("document.querySelector('#batchUpi')?.dataset.value === '10.00'")
+    page.locator('#rows .erow .cash-impact[value="NO_CASH"]').check()
     check(
         page.locator('#rows .erow .rci').input_value() == 'UPI'
-        and page.locator('#batchTotal').get_attribute('data-value') == '10.00'
-        and page.locator('#batchCash').get_attribute('data-value') == '0.00'
-        and page.locator('#batchUpi').get_attribute('data-value') == '10.00'
-        and page.locator('#batchBank').get_attribute('data-value') == '0.00',
-        'UPI batch total is kept separate from cash-method total',
+        and page.locator('#rows .erow .cash-impact:checked').input_value() == 'NO_CASH'
+        and page.locator('#entrySummary').is_hidden(),
+        'single-entry UPI workflow keeps its explicit drawer choice without showing batch-only totals',
     )
     check(
         page.locator('#rows .erow .rv-quick-save').count() == 1,
@@ -3921,8 +3923,9 @@ with sync_playwright() as p:
     check(
         page.locator('#rows .erow .rc').input_value() == 'Other'
         and page.locator('#rows .erow .rci').input_value() == 'UPI'
-        and page.locator('#batchUpi').get_attribute('data-value') == '10.00',
-        'saving the payee preserves current voucher entry and selected defaults',
+        and page.locator('#rows .erow .cash-impact:checked').input_value() == 'NO_CASH'
+        and page.locator('#entrySummary').is_hidden(),
+        'saving the payee preserves current voucher details and keeps the single-entry layout',
     )
     check(
         page.locator('#recentVendors').count() == 1,

@@ -174,7 +174,6 @@ The Register starts with search and common filters; Home presents the primary ta
 
 This is a source-review and product-contract update, not proof that the new experience is implemented or validated. No real-user observation, real-device audit or complete WCAG audit is claimed here. Track actual behavior as present/already resolved/not applicable/not verified in each implementation PR.
 
-
 ## New Entry novice-first implementation — PR #265 (5 November 2026)
 
 The first PWA redesign tranche is implemented in the active New Entry feature:
