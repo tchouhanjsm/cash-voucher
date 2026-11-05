@@ -254,14 +254,16 @@ assert.match(
 );
 assert.match(
   payments,
-  /entry-recovery-link/,
-  'recovery import is a secondary action',
+  /approval-threshold-hint/,
+  'high-value payment approval is explained before save',
 );
 assert.match(
-  payments,
-  /showMultiEntrySummary/,
-  'multi-entry summary is progressively disclosed',
+  styles,
+  /approval-threshold-hint/,
+  'high-value payment guidance has a dedicated readable style',
 );
+assert.match(payments, /entry-recovery-link/, 'recovery import is a secondary action');
+assert.match(payments, /showMultiEntrySummary/, 'multi-entry summary is progressively disclosed');
 assert.match(
   register,
   /register-filter-grid/,

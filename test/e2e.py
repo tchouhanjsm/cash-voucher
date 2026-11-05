@@ -1416,6 +1416,7 @@ with sync_playwright() as p:
         movementLegend: row?.querySelector('.cash-movement-fieldset legend')?.textContent.trim() || '',
         movementValues: Array.from(row?.querySelectorAll('.cash-impact') || []).map((input) => input.value),
         movementUnselected: row?.querySelectorAll('.cash-impact:checked').length === 0,
+        approvalHintPresent: Boolean(row?.querySelector('.approval-threshold-hint[hidden]')),
         receiptInputPresent: Boolean(row?.querySelector('.rf[type="file"][multiple]')),
         removeActionPresent: Boolean(row?.querySelector('button.x[data-act="delrow"]')),
       };
@@ -1430,6 +1431,19 @@ with sync_playwright() as p:
     first_entry_row = page.locator('#rows .erow').first
     first_entry_row.locator('.rv').fill('DOM row renderer probe')
     first_entry_row.locator('.ra').fill('1')
+    create_requests_before_missing_movement = sum(
+        event.get('action') == 'createVouchers' for event in api_events
+    )
+    page.click('#nsave')
+    page.wait_for_selector('#rows .erow .row-error')
+    check(
+        'physical cash' in page.locator('#rows .erow .row-error').inner_text().lower()
+        and page.evaluate("document.activeElement?.classList.contains('cash-impact')")
+        and sum(event.get('action') == 'createVouchers' for event in api_events)
+        == create_requests_before_missing_movement,
+        'saving without a physical cash choice is blocked, explained and focused without an API write',
+    )
+    first_entry_row.locator('.cash-impact[value="CASH_OUT"]').check()
     page.locator('#nf [data-act="addrow"]').click()
     check(
         page.locator('#rows .erow').count() == 2
@@ -2107,6 +2121,12 @@ with sync_playwright() as p:
     page.wait_for_selector('#nf')
     page.locator('#rows .rv').first.fill('Approval E2E vendor')
     page.locator('#rows .ra').first.fill('10000')
+    check(
+        page.locator('#rows .approval-threshold-hint').first.is_visible()
+        and '₹10,000 or more' in page.locator('#rows .approval-threshold-hint').first.inner_text()
+        and 'cannot approve your own payment' in page.locator('#rows .approval-threshold-hint').first.inner_text(),
+        'high-value payment explains independent approval before the employee saves',
+    )
     choose_cash_impact_for_current_rows()
     page.click('#nsave')
     try:
@@ -5522,6 +5542,8 @@ with sync_playwright() as p:
                     ownerKey: record.ownerKey || '',
                     status: record.status,
                     failure: record.failure || '',
+                    cashImpact: record.entry?.cashImpact || '',
+                    paymentMethod: record.entry?.paymentMethod || '',
                   })));
                 request.onerror = () => reject(request.error);
               });
@@ -5780,6 +5802,12 @@ with sync_playwright() as p:
     choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel')
+    offline_receipt_records = outbox_vendor_records('Offline Receipt Label Test')
+    check(
+        len(offline_receipt_records) == 1
+        and offline_receipt_records[0]['cashImpact'] == 'CASH_IN',
+        'offline receipt preserves its explicit CASH_IN drawer movement in the device queue',
+    )
     page.wait_for_function(
         "document.querySelector('#banner').innerText.includes('1 cash receipt waiting to upload')",
         timeout=8000,

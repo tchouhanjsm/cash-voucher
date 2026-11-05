@@ -68,6 +68,8 @@ assert.match(payments, /vendorType: selectedVendor \? 'REGISTERED' : 'ONE_TIME'/
 assert.match(payments, /vendor-identity/);
 assert.match(payments, /cash-movement-fieldset/);
 assert.match(payments, /CASH_IMPACT_CHOICES\.includes\(cashImpact\)/);
+assert.match(payments, /function updateApprovalThresholdHint\(row\)/);
+assert.match(payments, /Payments of ₹10,000 or more need approval by an owner or manager/);
 assert.doesNotMatch(
   payments,
   /paymentMethod === 'CASH' \? \(NT === 'RECEIPT' \? 'CASH_IN' : 'CASH_OUT'\)/,
@@ -77,6 +79,8 @@ const saveStart = payments.indexOf('async function saveNew');
 const saveNext = payments.indexOf('\n  async function ', saveStart + 1);
 assert.ok(saveStart >= 0 && saveNext > saveStart, 'New Entry save handler is present');
 const saveSource = payments.slice(saveStart, saveNext);
+assert.match(saveSource, /const cashImpact = \$\('\.cash-impact:checked', r\)\?\.value \|\| ''/);
+assert.doesNotMatch(saveSource, /paymentMethod\s*===|NT\s*===\s*'RECEIPT'\s*\?\s*'CASH_IN'/);
 assert.match(saveSource, /const rows = \$\$\('#rows \.erow'\);/);
 assert.match(saveSource, /rows\.forEach\(clearRowError\)/);
 assert.match(state, /'vendorType'/);

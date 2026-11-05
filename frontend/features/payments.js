@@ -175,6 +175,13 @@ export function createPayments({ api, refresh }) {
       : 'CASH';
   }
 
+  function updateApprovalThresholdHint(row) {
+    const hint = $('.approval-threshold-hint', row);
+    if (!hint) return;
+    const amount = parseAmt($('.ra', row).value.trim());
+    hint.hidden = NT !== 'PAYMENT' || amount < 10000;
+  }
+
   function applyPayeeDefaults(row) {
     const category = categoryForPayee($('.rv', row).value);
     const categorySelect = $('.rc', row);
@@ -217,7 +224,14 @@ export function createPayments({ api, refresh }) {
     amountInput.className = 'ra';
     amountInput.inputMode = 'decimal';
     amountInput.placeholder = '0.00';
-    amountLabel.append(amountCaption, amountInput);
+    const approvalHint = document.createElement('small');
+    approvalHint.className = 'approval-threshold-hint';
+    approvalHint.setAttribute('role', 'status');
+    approvalHint.setAttribute('aria-live', 'polite');
+    approvalHint.textContent =
+      'Payments of ₹10,000 or more need approval by an owner or manager. You cannot approve your own payment.';
+    approvalHint.hidden = true;
+    amountLabel.append(amountCaption, amountInput, approvalHint);
 
     const noteLabel = document.createElement('label');
     noteLabel.className = 'entry-row-field entry-note-field';
@@ -534,8 +548,7 @@ export function createPayments({ api, refresh }) {
     let invalidMethodCount = 0;
     let missingCashMovementCount = 0;
     const rows = $('#rows .erow');
-    const summary = $('#entrySummary');
-    const aside = summary?.closest('.entry-workspace__aside');
+    const aside = summary.closest('.entry-workspace__aside');
     const showMultiEntrySummary = rows.length > 1;
     if (summary) summary.hidden = !showMultiEntrySummary;
     if (aside) aside.hidden = !showMultiEntrySummary;
@@ -830,7 +843,7 @@ export function createPayments({ api, refresh }) {
 
   function open(type = 'PAYMENT') {
     disposeReceiptPreviews();
-    NT = type;
+    NT = type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT';
     vNew();
   }
 
@@ -844,11 +857,17 @@ export function createPayments({ api, refresh }) {
       const payee = $('.rv', previous).value.trim();
       const amount = parseAmt($('.ra', previous).value.trim());
       if (!payee) {
-        showRowError(previous, $('.rv', previous), 'Enter who was paid before adding another payment.');
+        showRowError(
+          previous,
+          $('.rv', previous),
+          NT === 'RECEIPT'
+            ? 'Enter who this money was received from before adding another entry.'
+            : 'Enter who was paid before adding another payment.',
+        );
         return;
       }
       if (!(amount > 0)) {
-        showRowError(previous, $('.ra', previous), 'Enter a valid amount before adding another payment.');
+        showRowError(previous, $('.ra', previous), 'Enter a valid amount before adding another entry.');
         return;
       }
       const cashImpact = $('.cash-impact:checked', previous)?.value || '';
@@ -865,6 +884,7 @@ export function createPayments({ api, refresh }) {
     r._rec = [];
     r._receiptRevision = 0;
     $('#rows').appendChild(r);
+    updateApprovalThresholdHint(r);
     $('#nres').querySelector('.form-error')?.remove();
     labelRows();
     updateSaveLabel();
@@ -985,6 +1005,7 @@ export function createPayments({ api, refresh }) {
     const row = event.target.closest('.erow');
     if (row) {
       clearRowError(row);
+      updateApprovalThresholdHint(row);
       if (event.target.matches('.rv, .ra')) {
         delete row.dataset.duplicateConfirmationFingerprint;
         delete row.dataset.duplicateConfirmationToken;

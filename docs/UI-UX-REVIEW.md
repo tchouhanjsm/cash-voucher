@@ -173,3 +173,18 @@ The first design tranche is New Entry (Payment and Cash received), followed by R
 The Register starts with search and common filters; Home presents the primary task and only actionable exceptions; Book balance remains a recorded-voucher projection, not physical cash or bank balance. Daily Cash Close clarity must not alter its calculation, chronological date, opening-cash, variance, reason, role, online-finalization, immutability or correction rules.
 
 This is a source-review and product-contract update, not proof that the new experience is implemented or validated. No real-user observation, real-device audit or complete WCAG audit is claimed here. Track actual behavior as present/already resolved/not applicable/not verified in each implementation PR.
+
+
+## New Entry novice-first implementation — PR #265 (5 November 2026)
+
+The first PWA redesign tranche is implemented in the active New Entry feature:
+
+- One payment or cash-received row is the ordinary starting point; the multi-entry summary appears only after a second row is added. Add another remains available, and recovery-file import is secondary to the primary Save action.
+- Physical drawer movement is a required, unselected fieldset with three plain-English choices. The stored values remain exactly `CASH_IN`, `CASH_OUT` and `NO_CASH`. Payment method and category remain separate fields; neither determines drawer movement.
+- The amount field displays the existing independent approval warning before save at ₹10,000 or more. The backend approval threshold, no-self-approval rule and saved/pending status remain unchanged.
+- Receipt images, optional note, category, payee/vendor linking, stable client IDs, duplicate checks, server acknowledgement and device-local queue remain in the existing feature path.
+- The UI uses native radio inputs in a fieldset/legend, persistent labels and a single primary action. Responsive layouts keep movement choices stacked on narrow screens and distinct on desktop.
+
+Automated browser checks cover the required-choice blocker before API write, explicit movement/payment-method independence, high-value warning, payment and receipt journeys, offline queue preservation, keyboard row addition, mobile geometry and visual-matrix capture. Exact-head workflow status and screenshot artifacts are authoritative in PR #265; automated output is not user research.
+
+Representative staff observation, manual screen-reader/keyboard review, Android/PWA device testing and 200–400% zoom/reflow remain outstanding. No Apps Script deployment, data/schema migration, endpoint switch, PHP financial write or production operation is part of this phase.

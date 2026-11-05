@@ -1,3 +1,17 @@
+## Current implementation batch — PR #265: novice-first New Entry (5 November 2026)
+
+- **PR / branch:** [PR #265](https://github.com/tchouhanjsm/cash-voucher/pull/265), `client/new-entry-novice-first-phase1`; base `client-main` at `74340d387feb17450ca975543a82d179834ac2c5`.
+- **Purpose:** first working PWA UX tranche for Payment and Cash received. Continue on this same open PR and branch; do not create another PR or switch to PHP financial operations.
+- **Implemented behavior:** required, unselected `CASH_IN / CASH_OUT / NO_CASH` radio group; Payment method/category remain separate; one row by default; multi-entry summary appears only when another row is added; recovery import is secondary; explicit pre-save ₹10,000 approval explanation; existing receipt, duplicate-confirmation, stable client-ID, save-state and offline-queue behavior retained.
+- **Current verification issue being corrected:** shared head `1d8a48fce761feaa9449c27e6cd320b461a8b4d4` failed exact-head CI and Browser E2E because `updateBatchSummary()` redeclared `summary` and queried a single row, causing a JavaScript parse error. CI also identified Prettier drift and a reviewed payment-template sink fingerprint change. These findings are being corrected and covered before the next gate run; prior failures are not treated as passes.
+- **Financial boundary:** no cash classification is inferred from transaction type/category/payment method. The selected cash impact is validated before online or device-local save. ₹10,000 approval, no-self-approval, audit, receipt rules, role scope, close invariants, offline queue and idempotency remain unchanged.
+- **Release boundary:** Apps Script + Sheets + Drive remain authoritative. No PHP financial endpoint, endpoint switch, schema migration, production data/configuration change, Clasp push, Apps Script deployment, hosting publication, customer provisioning, merge or cutover.
+- **Human validation still open:** staff observation, task completion/hesitation baseline, screen-reader/keyboard review, real Android/PWA behavior and 200–400% zoom/reflow. Automated screenshot output is not user research.
+
+The live PR page carries exact-head workflow links. This handoff describes current phase and constraints; it does not hard-code a mutable PR head SHA.
+
+---
+
 ## Current implementation batch — PR #263: Haveli Light dashboard, account, Register and Reports (Phases 8–12)
 
 - **Repository:** tchouhanjsm/cash-voucher; integration branch client-main; legacy main remains read-only.
