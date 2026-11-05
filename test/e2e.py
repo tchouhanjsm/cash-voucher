@@ -8423,15 +8423,20 @@ with sync_playwright() as p:
     page.wait_for_selector('#nf')
     page.set_viewport_size({'width': 640, 'height': 800})
     reflow_200 = page.evaluate(
-        """() => ({
-          overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
-          movementColumns: getComputedStyle(document.querySelector('.cash-movement-fieldset')).gridTemplateColumns.split(' ').length,
-          saveHeight: document.querySelector('#nsave').getBoundingClientRect().height,
-        })"""
+        """() => {
+          const choices = [...document.querySelectorAll('.cash-movement-choice')];
+          return {
+            overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+            choiceLefts: [...new Set(choices.map(element => Math.round(element.getBoundingClientRect().left)))],
+            choiceCount: choices.length,
+            saveHeight: document.querySelector('#nsave').getBoundingClientRect().height,
+          };
+        }"""
     )
     check(
         not reflow_200['overflow']
-        and reflow_200['movementColumns'] == 1
+        and reflow_200['choiceCount'] == 3
+        and len(reflow_200['choiceLefts']) == 1
         and reflow_200['saveHeight'] >= 44,
         f'640px reflow keeps New Entry readable with stacked movement choices and full-size Save; metrics={reflow_200}',
     )
