@@ -1,3 +1,14 @@
+
+## Latest delivery update — PR #265: Daily Cash Close readiness clarity (5 November 2026)
+
+- **Decision sequence:** the open preview now states the next required action before the reconciliation detail: chronological block, device-queue issue, manual opening required, voucher review, negative expected cash, generic review, or ready for physical count.
+- **Physical count remains a separate operator action.** “Ready for physical count” does not mean a close was recorded. Save remains subject to the existing server readiness and browser queue checks; the server revalidates on save.
+- **Financial authority preserved:** no expected-cash formula, opening carry-forward rule, voucher inclusion/exclusion, approval condition, date-order rule, variance calculation, close API, schema or Apps Script writer changed.
+- **Queue scope is explicit:** the browser can inspect only its own IndexedDB queue; other operating devices still require separate synchronization checks.
+- **Accessibility:** the readiness statement is a polite status region and the Save action references it. No additional confirmation layer is introduced.
+- **E2E scope:** adds focused readiness-state regression and waits for the Manager Dashboard panels after navigation. The previously failing Manager assertion could run before asynchronous route rendering completed.
+- **Release boundary:** no deployment, Apps Script push, migration, production data mutation, merge or cutover.
+
 ## Latest delivery update — PR #265: Staff Home and release-check right-sizing (5 November 2026)
 
 The implementation below is already present on the active PR branch; this follow-up corrects one UI duplication issue and one test-fixture isolation defect.

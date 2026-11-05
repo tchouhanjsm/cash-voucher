@@ -244,3 +244,15 @@ The research recommendation above is now partially implemented in the active PR:
 - **Delivery gates:** CI and focused Browser E2E continue to run automatically for PRs. Full Flight is now an explicit manual release suite using `npm run test:flight`; its separate PR/push status aggregator was removed because it only repeated CI and Browser E2E results.
 
 **Still outstanding:** representative uncoached staff/manager observation; manual TalkBack/VoiceOver; real Android/PWA offline and recovery checks; and 200–400% zoom/reflow. The next product milestone is Daily Cash Close clarity, preserving its existing financial and chronological rules. This implementation is not evidence of measured usability improvement.
+
+## Daily Cash Close clarity implementation update — PR #265 (5 November 2026)
+
+The existing Close preview now presents one next-action status ahead of the reconciliation details. It is based only on the server preview and current browser queue evidence; it does not calculate expected cash in the client.
+
+- A later saved business date takes priority because the chronological close rule blocks the earlier date.
+- An unknown or non-empty local queue takes priority over routine reconciliation. The copy explicitly scopes that check to this browser and reminds the operator to inspect other devices separately.
+- A missing manual opening or unresolved voucher issues is explained before physical counting.
+- Only after existing server readiness and the local queue check pass does the page say “Ready for physical count”. The operator must still count notes/coins and enter the physical value.
+- The Save action is associated with the readiness statement. No extra confirmation screen is added; the existing immutable close and server revalidation remain the financial safeguard.
+
+The next validation item is a representative manager-led close task in a non-production environment, including missing opening, issue-blocked date, physical count, variance reason and a second device’s sync check. No measured usability claim is made by this code change.

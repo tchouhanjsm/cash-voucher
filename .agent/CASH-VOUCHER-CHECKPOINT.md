@@ -1,3 +1,13 @@
+
+## Current milestone — Daily Cash Close readiness clarity (5 November 2026)
+
+- PR #265 adds a plain-language readiness summary to the existing Daily Cash Close preview.
+- Statuses reuse existing signals only: later-close ordering, local queue accessibility/count, manual-opening readiness, voucher issues, expected-cash validity and server `readyToClose`.
+- “Ready for physical count” is not a close confirmation. The operator still counts the drawer and enters that amount. Server-side formulas, save authorization and immutable close records remain authoritative.
+- Browser E2E on inspected head `c389f50` had 1,596 passed / 1 failed; the sole failure was a Manager Dashboard assertion immediately after route navigation. The new check waits for rendered dashboard panels. New-head CI/E2E results are pending.
+- Full Flight stays manual; CI and Browser E2E stay the automatic PR gates.
+- No Apps Script push, deployment, migration, data write, merge or cutover.
+
 # Cash Voucher autonomous engineering checkpoint
 
 - Repository: `tchouhanjsm/cash-voucher`

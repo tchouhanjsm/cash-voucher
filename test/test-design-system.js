@@ -636,6 +636,22 @@ assert.match(
   /class="card cc-preview"/,
   'cash-close preview markup exposes the shared report surface',
 );
+
+assert.match(
+  cashClose,
+  /function closeReadinessMarkup\(snapshot, options = \{\}\)[\s\S]*?data-state=/,
+  'cash-close preview explains the next required action using existing readiness signals',
+);
+assert.match(
+  cashClose,
+  /aria-describedby="cc-readiness-description"/,
+  'the final close action is associated with its visible readiness explanation',
+);
+assert.match(
+  workspace,
+  /\.cc-readiness\s*\{[\s\S]*?border-left:\s*4px solid var\(--workspace-accent\)/,
+  'cash-close readiness has a readable, token-driven status surface',
+);
 assert.match(
   components,
   /\.cc-blockers\[role='alert'\]/,

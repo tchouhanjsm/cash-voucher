@@ -454,6 +454,68 @@ export function createCashClose({ api }) {
     return value.toISOString().slice(0, 10);
   }
 
+  function closeReadinessMarkup(snapshot, options = {}) {
+    const { hasVoucherIssues = false, queueKnown = false, queueCount = null } = options;
+    let state = 'review-required';
+    let title = 'Review required';
+    let message =
+      'The server has not marked this business date ready. Review the details below and refresh the preview; no client-side estimate is used.';
+
+    if (snapshot.blockedByLaterClose) {
+      state = 'blocked-order';
+      title = 'Close dates out of order';
+      message =
+        'A later business date (' +
+        (isDate(snapshot.laterCloseDate) ? snapshot.laterCloseDate : 'unknown date') +
+        ') already has a saved close. An earlier date cannot be finalized after it; the existing close remains unchanged.';
+    } else if (!queueKnown) {
+      state = 'queue-unavailable';
+      title = 'Device sync status unavailable';
+      message =
+        'This browser’s offline/recovery queue could not be inspected. Resolve the storage issue before closing. Do not clear browser storage to bypass this check.';
+    } else if (queueCount > 0) {
+      state = 'device-queue';
+      title = 'Device entries need attention';
+      message =
+        String(queueCount) +
+        ' device-local or recovery entr' +
+        (queueCount === 1 ? 'y remains' : 'ies remain') +
+        ' in this browser. Sync or review/export each entry from its matching account. Check other operating devices separately.';
+    } else if (snapshot.requiresManualOpening && !snapshot.openingReady) {
+      state = 'opening-required';
+      title = 'Opening cash required';
+      message =
+        'No accepted close is available for the previous business date. Enter the opening physical cash and explain the starting balance before continuing.';
+    } else if (hasVoucherIssues) {
+      state = 'voucher-review';
+      title = 'Voucher review required';
+      message =
+        'Resolve the listed voucher issues in Register: classify cash movement, correct invalid amounts, and resolve active payment approvals. Then refresh this preview.';
+    } else if (snapshot.expectedInvalid) {
+      state = 'invalid-expected';
+      title = 'Expected cash needs review';
+      message =
+        'Expected physical cash is below zero. Review the opening amount and cash-impact classifications before continuing.';
+    } else if (snapshot.readyToClose) {
+      state = 'ready-for-count';
+      title = 'Ready for physical count';
+      message =
+        'The server-side opening and voucher checks have passed. Count the notes and coins in the drawer, then enter the physical total below. Explain any non-zero variance.';
+    }
+
+    return (
+      '<section class="cc-readiness" id="cc-readiness" data-state="' +
+      esc(state) +
+      '" role="status" aria-live="polite" aria-labelledby="cc-readiness-title">' +
+      '<p class="cc-readiness__eyebrow">CLOSE READINESS</p>' +
+      '<h3 id="cc-readiness-title">' +
+      esc(title) +
+      '</h3><p id="cc-readiness-description">' +
+      esc(message) +
+      '</p></section>'
+    );
+  }
+
   function previewReport(snapshot) {
     const date = snapshot.date;
     if (snapshot.closed && snapshot.close) {
@@ -561,17 +623,22 @@ export function createCashClose({ api }) {
           (queueCount === 1 ? 'y is' : 'ies are') +
           ' still stored on this browser. Sync or review/export each entry from its matching account before closing. Do not delete entries just to close the day. Other phones/devices must be checked separately; the server cannot inspect their local queues.</p></section>'
         : '<p class="cc-note">This browser’s offline queue is empty. Confirm other operating devices are also synchronized before finalizing.</p>';
+    const hasVoucherIssues = Boolean(unresolved || bad || approvalIssues);
     const canClose =
       snapshot.readyToClose &&
-      !unresolved &&
-      !bad &&
-      !approvalIssues &&
+      !hasVoucherIssues &&
       queueKnown &&
       queueCount === 0;
+    const readiness = closeReadinessMarkup(snapshot, {
+      hasVoucherIssues,
+      queueKnown,
+      queueCount,
+    });
     $('#cc-results').innerHTML =
       '<section class="card cc-preview"><div class="cc-report-heading"><div><h2>Preview · ' +
       esc(date) +
       '</h2><p class="muted">Calculated from centrally synchronized ACTIVE vouchers. Cancelled vouchers are excluded.</p></div><span class="badge">PREVIEW ONLY</span></div>' +
+      readiness +
       openingMarkup +
       cannotReason +
       orderIssue +
@@ -587,7 +654,7 @@ export function createCashClose({ api }) {
       issues +
       '<div class="cc-count"><h3>Physical count</h3><div class="filters"><label for="cc-counted">Counted cash (₹)<input id="cc-counted" type="number" min="0" max="10000000" step="0.01" inputmode="decimal" placeholder="Count notes and coins" required></label>' +
       '<label for="cc-variance-reason">Variance reason (required when different)<input id="cc-variance-reason" maxlength="200" placeholder="Explain a non-zero variance"></label></div>' +
-      '<button id="cc-create" type="button" class="btn primary" data-act="closeCreate"' +
+      '<button id="cc-create" type="button" class="btn primary" aria-describedby="cc-readiness-description" data-act="closeCreate"' +
       (canClose ? '' : ' disabled') +
       '>Save daily close</button><p class="muted">Saving creates an immutable close record for this date. Server totals and permissions are revalidated when saving.</p></div></section>' +
       recentHistory(snapshot.recentCloses, date);

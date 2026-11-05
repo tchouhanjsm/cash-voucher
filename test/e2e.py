@@ -1768,10 +1768,23 @@ with sync_playwright() as p:
     page.fill('#cc-date', '2020-01-01')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-opening')
+    page.wait_for_selector('#cc-readiness[data-state="opening-required"]')
+    check(
+        'Opening cash required' in page.locator('#cc-readiness').inner_text()
+        and page.locator('#cc-create').is_disabled()
+        and page.locator('#cc-create').get_attribute('aria-describedby') == 'cc-readiness-description',
+        'Cash Close explains the missing opening balance before enabling finalization',
+    )
     page.fill('#cc-opening', '80')
     page.fill('#cc-opening-reason', 'Opening cash counted before the first test day')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-counted')
+    page.wait_for_selector('#cc-readiness[data-state="ready-for-count"]')
+    check(
+        'Ready for physical count' in page.locator('#cc-readiness').inner_text()
+        and not page.locator('#cc-create').is_disabled(),
+        'Cash Close separates server readiness from the operator’s required physical count',
+    )
     page.fill('#cc-counted', '100')
     page.fill('#cc-variance-reason', 'Initial count differs from expected cash')
     page.click('[data-act=closeCreate]')
@@ -2056,6 +2069,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#cc-create')
     check(
         page.locator('#cc-create').is_disabled()
+        and page.locator('#cc-readiness').get_attribute('data-state') == 'device-queue'
         and 'offline/recovery entr' in page.locator('#cc-results').inner_text().lower(),
         'a local offline entry blocks the cash close',
     )
@@ -6154,6 +6168,8 @@ with sync_playwright() as p:
         'manager cash-readiness attention opens the authorized current-business-date Cash Close context',
     )
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-period', timeout=10000)
+    page.wait_for_selector('.dashboard-cash-position', timeout=10000)
     check(
         page.locator('.dashboard-staff-home').count() == 0
         and page.locator('.dashboard-period').count() == 1

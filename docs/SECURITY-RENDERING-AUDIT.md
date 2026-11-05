@@ -424,3 +424,15 @@ This fingerprint update is paired with focused permission/layout regression chec
 The Staff Home recent-entry action now reads **Open register**, rather than **View all entries**, because it intentionally carries the recent 30-calendar-day filter into the Register and does not claim to show all historical vouchers. This is an application-authored constant; voucher number, vendor, date, type and filter parameters continue through the existing validation/escaping and server permission boundaries.
 
 The `#view.innerHTML` assignment source itself is unchanged, so its reviewed fingerprint remains `c09024b3`. No new DOM sink or user-controlled HTML interpolation was introduced by this wording correction. The existing fingerprint remains a source-drift detector, not XSS certification.
+
+## PR #265 — Daily Cash Close readiness explanation (5 November 2026)
+
+The existing Cash Close preview now gives one explicit next-action summary before the detailed reconciliation panels. It reuses only the validated server preview fields and the existing browser-local queue check:
+
+- The summary distinguishes chronological blocking, unavailable/non-empty device queue, missing manual opening, voucher review, negative expected-cash review, generic server review and readiness for a physical count.
+- “Ready for physical count” appears only when the server marks the preview ready, the current browser queue is known to be empty, and there are no displayed voucher issues. The screen still requires the operator to enter the physical count.
+- The Save action references the visible readiness explanation using `aria-describedby`; its existing disabled condition, server-side revalidation and immutable close contract remain unchanged.
+- Dynamic status copy (including a later-close date and local queue count) is escaped before insertion into the existing `#cc-results.innerHTML` sink. No new sink, API, client-side expected-cash calculation or financial rule was added.
+- The source fingerprint update is limited to the reviewed Cash Close preview assignment. This fingerprint is a source-drift guard, not XSS certification.
+
+Focused regressions cover opening-required, ready-for-count, device-queue and the Manager Dashboard return path. Results must be judged on the new exact PR head.

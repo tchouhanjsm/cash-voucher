@@ -2070,6 +2070,38 @@
     font-variant-numeric: tabular-nums;
     overflow-wrap: anywhere;
   }
+  .cc-readiness {
+    display: grid;
+    gap: 6px;
+    margin-top: 16px;
+    padding: 17px 18px;
+    border: 1px solid var(--workspace-border);
+    border-left: 4px solid var(--workspace-accent);
+    border-radius: 12px;
+    background: var(--workspace-soft);
+  }
+  .cc-readiness__eyebrow {
+    margin: 0;
+    color: var(--workspace-accent);
+    font-size: 10px;
+    font-weight: 850;
+    letter-spacing: 0.12em;
+  }
+  .cc-readiness h3 {
+    margin: 0;
+    color: var(--workspace-ink);
+    font-size: 16px;
+    font-weight: 800;
+  }
+  .cc-readiness p:last-child {
+    margin: 0;
+    color: var(--workspace-muted);
+    font-size: 12px;
+    line-height: 1.55;
+  }
+  .cc-readiness[data-state='ready-for-count'] {
+    border-left-color: var(--workspace-success-ink);
+  }
   .cc-count,
   .cc-opening,
   .cc-blockers {
