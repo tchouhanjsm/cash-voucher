@@ -46,7 +46,7 @@ final class VoucherLifecycleTest extends TestCase
         self::assertSame('Invoice amount corrected', $event->reason);
         self::assertSame(
             12500,
-            json_decode((string) $event->before_json, true)['voucher']['amountPaise'],
+            json_decode((string) $event->before_json, true)['amountPaise'],
         );
         self::assertSame(
             85025,
