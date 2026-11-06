@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Shared\ApiResponse;
+use App\Modules\Receipts\Http\Controllers\ReceiptController;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
 use App\Modules\Vendors\Http\Controllers\VendorController;
 use CashVoucher\Api\Support\ApiException;
@@ -51,6 +52,8 @@ Route::prefix('v1')->group(function (): void {
                 'vouchers:cancel',
                 'vouchers:approve',
                 'vouchers:reject',
+                'receipts:attach',
+                'receipts:read',
                 'vendors:list',
                 'vendors:create',
                 'vendors:update',
@@ -68,6 +71,8 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/vouchers/{voucherId}/cancel', [VoucherController::class, 'cancel']);
         Route::post('/vouchers/{voucherId}/approval', [VoucherController::class, 'approve']);
         Route::post('/vouchers/{voucherId}/rejection', [VoucherController::class, 'reject']);
+        Route::post('/vouchers/{voucherId}/receipts', [ReceiptController::class, 'attach']);
+        Route::get('/receipts/{receiptId}', [ReceiptController::class, 'show']);
         Route::get('/vendors', [VendorController::class, 'index']);
         Route::post('/vendors', [VendorController::class, 'store']);
         Route::patch('/vendors/{vendorId}', [VendorController::class, 'update']);
