@@ -7263,9 +7263,6 @@ with sync_playwright() as p:
                     if isinstance(item, dict)
                 )
             ):
-                    if isinstance(item, dict)
-                )
-            ):
                 data.setdefault('items', []).append({
                     'id': 'cash-classification-fixture',
                     'no': 998878,
