@@ -7829,6 +7829,8 @@ with sync_playwright() as p:
         'Register exposes the selected quick range and live applied-filter context',
     )
 
+    if page.locator('#registerAdvancedFilters').get_attribute('open') is None:
+        page.locator('#registerAdvancedFilters summary').click()
     with page.expect_response(
         lambda response: '/api?' in response.url
         and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
