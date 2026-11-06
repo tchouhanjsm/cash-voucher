@@ -104,7 +104,7 @@ final class StoreVoucher
                 }
 
                 $closed = $connection->prepare(
-                    'SELECT id FROM cash_closes WHERE business_date = :business_date LIMIT 1 FOR UPDATE'
+                    'SELECT id FROM cash_closes WHERE business_date = :business_date LIMIT 1 LOCK IN SHARE MODE'
                 );
                 $closed->execute(['business_date' => $voucher['date']]);
                 if ($closed->fetchColumn() !== false) {
