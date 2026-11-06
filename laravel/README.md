@@ -31,18 +31,18 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 
 ## Implemented routes in this phase
 
-| Method | Route                            | Scope                                                           |
-| ------ | -------------------------------- | --------------------------------------------------------------- |
-| GET    | /api/v1/health/live              | Public liveness, no DB dependency                               |
-| GET    | /api/v1/health/ready             | Public DB/schema readiness check                                |
-| GET    | /api/v1/meta                     | Public rollout metadata                                         |
-| GET    | /api/v1/vouchers                 | Authenticated, creator-scoped for staff; manager/owner view-all |
-| POST   | /api/v1/vouchers/duplicate-check | Authenticated create capability + CSRF                          |
-| POST   | /api/v1/vouchers                 | Single authenticated voucher create + CSRF + idempotency        |
-| GET    | /api/v1/vendors                  | Manager/owner vendor list; active by default                    |
-| POST   | /api/v1/vendors                  | Manager/owner vendor create + CSRF + idempotency                |
-| PATCH  | /api/v1/vendors/{vendorId}       | Manager/owner vendor update + CSRF + idempotency                |
-| POST   | /api/v1/vendors/{vendorId}/active| Manager/owner desired active-state change + CSRF + idempotency  |
+| Method | Route                             | Scope                                                           |
+| ------ | --------------------------------- | --------------------------------------------------------------- |
+| GET    | /api/v1/health/live               | Public liveness, no DB dependency                               |
+| GET    | /api/v1/health/ready              | Public DB/schema readiness check                                |
+| GET    | /api/v1/meta                      | Public rollout metadata                                         |
+| GET    | /api/v1/vouchers                  | Authenticated, creator-scoped for staff; manager/owner view-all |
+| POST   | /api/v1/vouchers/duplicate-check  | Authenticated create capability + CSRF                          |
+| POST   | /api/v1/vouchers                  | Single authenticated voucher create + CSRF + idempotency        |
+| GET    | /api/v1/vendors                   | Manager/owner vendor list; active by default                    |
+| POST   | /api/v1/vendors                   | Manager/owner vendor create + CSRF + idempotency                |
+| PATCH  | /api/v1/vendors/{vendorId}        | Manager/owner vendor update + CSRF + idempotency                |
+| POST   | /api/v1/vendors/{vendorId}/active | Manager/owner desired active-state change + CSRF + idempotency  |
 
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
 

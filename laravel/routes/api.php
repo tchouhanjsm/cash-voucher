@@ -2,6 +2,7 @@
 
 use App\Modules\Shared\ApiResponse;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
+use App\Modules\Vendors\Http\Controllers\VendorController;
 use CashVoucher\Api\Support\ApiException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -59,5 +60,9 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/vouchers', [VoucherController::class, 'index']);
         Route::post('/vouchers/duplicate-check', [VoucherController::class, 'duplicateCheck']);
         Route::post('/vouchers', [VoucherController::class, 'store']);
+        Route::get('/vendors', [VendorController::class, 'index']);
+        Route::post('/vendors', [VendorController::class, 'store']);
+        Route::patch('/vendors/{vendorId}', [VendorController::class, 'update']);
+        Route::post('/vendors/{vendorId}/active', [VendorController::class, 'setActive']);
     });
 });

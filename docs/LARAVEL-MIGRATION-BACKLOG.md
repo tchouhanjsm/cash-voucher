@@ -98,7 +98,6 @@ The first implementation PR is limited to an **isolated local/test Laravel verti
 
 **PR is accepted only when all criteria pass on a clean CI run.** A green SQLite-only suite is insufficient for locking and MariaDB behavior. Do not wire the production PWA endpoint or deploy to customer hosting in this PR.
 
-
 ## Vendor catalog implementation — next isolated slice
 
 **Branch:** `feat/laravel-vendor-management-20261106`  
