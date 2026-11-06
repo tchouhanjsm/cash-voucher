@@ -48,8 +48,11 @@ abstract class TestCase extends BaseTestCase
     protected function withLegacySession(): static
     {
         return $this
-            ->withUnencryptedCookie('cv_session', $this->sessionToken)
-            ->withUnencryptedCookie('cv_csrf', $this->csrfToken)
+            ->withCredentials()
+            ->withUnencryptedCookies([
+                'cv_session' => $this->sessionToken,
+                'cv_csrf' => $this->csrfToken,
+            ])
             ->withHeaders($this->authenticatedHeaders());
     }
 

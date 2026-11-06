@@ -126,6 +126,7 @@ The existing SQL baseline defines:
 Retain InnoDB, utf8mb4, foreign keys, uniqueness and current financial columns. Amounts are integer paise in signed/unsigned appropriately bounded BIGINTs; never FLOAT/DOUBLE/DECIMAL for the canonical paise amount. API amounts remain decimal strings. Business date is an explicit DATE in Asia/Kolkata; event timestamps are UTC DATETIME(6). Preserve status, approval status, cash impact, payment method and immutable snapshots separately.
 
 Laravel database work:
+
 1. Generate a schema inventory from all four SQL files and compare against the latest test schema and model assumptions.
 2. Add a Laravel baseline migration/adoption script that records the existing versions/checksums as already applied only after verifying the exact schema. It must not replay `CREATE TABLE` statements on a database with those tables.
 3. For future changes, use new forward-only Laravel migrations, reviewed and tested on disposable MySQL/MariaDB. No automatic destructive `migrate:fresh`, no `DROP`, `TRUNCATE`, or production schema repair scripts.
@@ -154,6 +155,7 @@ The legacy PEPPER is a deployment secret, not a migration artifact. Do not copy 
 The frozen v1 contract and action map are authoritative. Preserve JSON envelope, request ID, non-cacheable responses, HTTP methods, scope rules and existing names/semantics. The route mapping is the compatibility layer; internal Laravel naming may differ.
 
 Implement the first financial vertical slice before broad route coverage:
+
 1. Authenticated scoped voucher list/read.
 2. Create a single voucher using decimal string amount and explicit Asia/Kolkata business date.
 3. Enforce capability and creator/view-all scope server-side.
@@ -227,6 +229,7 @@ No dual financial writes. There is no period when Apps Script and Laravel both a
 **Preconditions:** host/architecture signed off; feature parity for required roles/actions; test suite green; production export dry-run; full backup and isolated restore proven; complete shadow import and reconciliation; offline outbox drained/replayed; receipt verification complete; monitoring and support ready; owner approves exact window and rollback owner.
 
 Cutover sequence:
+
 1. Announce maintenance and freeze new financial writes at the existing Apps Script boundary.
 2. Verify all clients are on compatible release, queues are empty, and no old API requests remain in flight.
 3. Take final source Sheet/Drive export and backup; verify manifest and hashes.
@@ -243,6 +246,7 @@ Old Apps Script resources remain preserved and read-only as a forensic/archive r
 ## 13. Google dependency retirement
 
 Retire only after every client has moved, the pilot passed, recovery is signed off and retention obligations are met:
+
 1. Remove Apps Script endpoint from active client configuration and deployment rollout logic.
 2. Confirm no API calls, triggers or scheduled jobs are required from Apps Script.
 3. Confirm Sheets/Drive are no longer operational dependencies; retain immutable encrypted exports and original source archives.

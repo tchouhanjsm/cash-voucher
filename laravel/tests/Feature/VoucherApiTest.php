@@ -59,8 +59,11 @@ final class VoucherApiTest extends TestCase
             'csrf' => hash('sha256', $csrf),
         ]);
 
-        $this->withCookie('cv_session', $token)
-            ->withCookie('cv_csrf', $csrf)
+        $this->withCredentials()
+            ->withUnencryptedCookies([
+                'cv_session' => $token,
+                'cv_csrf' => $csrf,
+            ])
             ->getJson('/api/v1/vouchers')
             ->assertForbidden()
             ->assertJsonPath('error.code', 'FORBIDDEN');
@@ -70,8 +73,11 @@ final class VoucherApiTest extends TestCase
     {
         $payload = $this->validPayload();
 
-        $this->withCookie('cv_session', $this->sessionToken)
-            ->withCookie('cv_csrf', $this->csrfToken)
+        $this->withCredentials()
+            ->withUnencryptedCookies([
+                'cv_session' => $this->sessionToken,
+                'cv_csrf' => $this->csrfToken,
+            ])
             ->postJson('/api/v1/vouchers', $payload, ['Idempotency-Key' => 'csrf-test-001'])
             ->assertForbidden()
             ->assertJsonPath('error.code', 'CSRF_INVALID');
