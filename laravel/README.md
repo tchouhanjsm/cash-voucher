@@ -43,6 +43,12 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 | POST   | /api/v1/vendors                   | Manager/owner vendor create + CSRF + idempotency                |
 | PATCH  | /api/v1/vendors/{vendorId}        | Manager/owner vendor update + CSRF + idempotency                |
 | POST   | /api/v1/vendors/{vendorId}/active | Manager/owner desired active-state change + CSRF + idempotency  |
+| PATCH  | /api/v1/vouchers/{voucherId}      | Manager/owner correction with reason + idempotency              |
+| POST   | /api/v1/vouchers/{voucherId}/cancel | Manager/owner cancellation with reason + idempotency           |
+| POST   | /api/v1/vouchers/{voucherId}/approval | Manager/owner pending-payment approval + immutable event    |
+| POST   | /api/v1/vouchers/{voucherId}/rejection | Manager/owner pending-payment rejection + reason             |
+| POST   | /api/v1/vouchers/{voucherId}/receipts | Staff-own or manager/owner; private image upload              |
+| GET    | /api/v1/receipts/{receiptId}       | Staff-own or manager/owner; private image retrieval            |
 
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
 
@@ -60,7 +66,13 @@ The API preserves the existing { ok, data|error, meta } envelope, request ID, an
 - A cash-closed business date cannot accept another voucher.
 - Vendor access is manager/owner only. Inactive vendors remain available to history but are excluded from default choices; names remain reserved when deactivated.
 - Vendor writes claim case-insensitive names in the same DB transaction, audit before/after snapshots and replay through actor/action/idempotency keys. Historical voucher vendor-name snapshots are never rewritten when a catalog entry changes.
-- Non-empty receipts and bulk requests are explicitly not supported by this slice; no receipt is silently discarded.
+- Voucher edit requires a 3–200 character correction reason; cancelled vouchers cannot be edited, and both the original and destination dates are blocked after cash close.
+- Category/notes-only corrections preserve an existing approval. Material payment edits recalculate threshold eligibility and clear stale approval actor/time/reason only when the legacy workflow would do so.
+- Cancellation is active-only, requires a reason, is blocked after cash close and uses idempotency.
+- Approval/rejection is Manager/Owner-only, requires an active pending PAYMENT and prevents self-approval. The decision row in `voucher_approval_events`, generic audit event and replay response commit with the voucher update.
+- Receipt upload accepts JPEG/PNG/WebP only, verifies the actual MIME signature, enforces 1.6 MB and three files per voucher, and requires an active voucher on an open business date.
+- Receipt bytes live only on the configured private disk under a random storage key. SQL stores the key, type, byte size and SHA-256; download checks parent-voucher permission and verifies the hash before streaming with no-store headers. The key is never returned and no public storage symlink is configured.
+- Bulk voucher requests remain explicitly unsupported by this slice; they are not silently accepted.
 
 ## Tests
 
@@ -70,4 +82,4 @@ The CI suite runs against a dedicated `cash_voucher_laravel_test` schema on the 
     composer install
     vendor/bin/phpunit
 
-The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, login issuance, PWA transport changes, receipts, approval actions, cash close, exports/imports and production cutover remain separate gated work.
+The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, login issuance, PWA transport changes, cash close, exports/imports and production cutover remain separate gated work.
