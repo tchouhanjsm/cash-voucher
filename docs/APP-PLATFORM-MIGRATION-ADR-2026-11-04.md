@@ -24,6 +24,7 @@ Prefer Laravel's built-in routing, request validation, middleware, authorization
 The prior ADR's cPanel-first recommendation remains conditional. **No current evidence establishes that the actual account can run Laravel 13.** Do not select Laravel merely because PHP is available.
 
 Before implementation is promoted beyond an isolated local/test scaffold, record and verify:
+
 - Provider, exact plan, renewal cost, resource limits and customer deployment model.
 - Supported PHP runtime satisfying Laravel 13's actual requirement, required extensions, Composer availability and ability to run optimized autoload/install on the host or build machine.
 - Web server rewrite/document-root control so the Laravel public directory alone is web-accessible; application source, vendor, storage, .env and backups must not be web-readable.
@@ -99,6 +100,7 @@ laravel/
 ```
 
 Module ownership:
+
 - **Identity:** user lifecycle, credentials, sessions and role lookup.
 - **Vouchers:** create/read/update/cancel and business-date/numbering invariants.
 - **Approvals:** immutable decisions and permitted state transitions.
@@ -115,6 +117,7 @@ Avoid circular module dependencies. Modules may share small domain value objects
 ## 5. Database and migration strategy
 
 The existing SQL baseline defines:
+
 - `0001`: users, vendors, settings.
 - `0002`: vouchers, approval events, receipt metadata, cash closes and corrections.
 - `0003`: sessions, login throttles, idempotency requests and audit events.
@@ -135,6 +138,7 @@ The four current SQL migrations and database README are source-of-truth evidence
 ## 6. Authentication and role migration
 
 Retain the exact existing account semantics:
+
 - Roles: `staff`, `manager`, `owner`, `accountant`. Unknown/inactive users fail closed and their sessions are revoked.
 - Staff: creator-bound record scope; manager/owner: existing view-all capabilities; accountant: reports-only.
 - Role/capability is loaded server-side per request. UI workspaces are never authorization.
@@ -175,6 +179,7 @@ IndexedDB remains the client outbox; do not replace it with a new sync framework
 Define queue envelope contract (client operation ID, action, created-at/client business date, payload version, request hash, retry count, status). Do not mutate business dates based on server clock. Failed/ambiguous requests remain pending until server status can be resolved with the same idempotency key.
 
 Cutover readiness requires:
+
 - all devices online and queue drained to zero; OR a tested export/replay procedure that carries original IDs into Laravel and validates every replay response.
 - no stale clients can continue posting to the old endpoint after freeze; force refresh/version gate and explicit maintenance response.
 - no clearing IndexedDB to “fix” synchronization. Acknowledge only after transaction commit.
@@ -187,6 +192,7 @@ Build an owner-operated export from Apps Script/Sheets and Drive with no writes 
 Exporter must be resumable, deterministic and re-runnable. Each source entity retains a stable `source_legacy_id`; imports use upsert/unique key semantics in a **staging target only**, with per-file/record checksums and import run ID. Never generate new voucher IDs or numbers for existing financial records. Do not export logs containing passwords, PEPPER, access tokens, session/CSRF tokens or raw receipt bytes.
 
 Import must be repeatable:
+
 - same manifest + payload is a no-op with identical counts/checksums;
 - same source ID + changed payload is a quarantined conflict, not silent overwrite;
 - missing source rows are reported, never inferred as deletion;
@@ -198,6 +204,7 @@ Only real source extraction after backup qualification and explicit owner author
 ## 11. Reconciliation, backup and restore
 
 Before and after each shadow import compare:
+
 - source/destination counts by entity, status and business date;
 - voucher numbers and per-type sequence next value;
 - total paise, counts and signed net by date/type/status/approval/payment method/cash impact;
