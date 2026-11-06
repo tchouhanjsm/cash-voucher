@@ -66,7 +66,7 @@ final class VoucherLifecycleTest extends TestCase
 
         $this->withLegacySession()
             ->patchJson('/api/v1/vouchers/'.$voucherId, [
-                'fields' => ['notes' => ''],
+                'fields' => ['category' => 'Other'],
                 'reason' => 'No actual change',
             ], ['Idempotency-Key' => 'voucher-edit-noop'])
             ->assertStatus(422)
