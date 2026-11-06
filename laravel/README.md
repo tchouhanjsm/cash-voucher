@@ -31,24 +31,27 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 
 ## Implemented routes in this phase
 
-| Method | Route                                  | Scope                                                           |
-| ------ | -------------------------------------- | --------------------------------------------------------------- |
-| GET    | /api/v1/health/live                    | Public liveness, no DB dependency                               |
-| GET    | /api/v1/health/ready                   | Public DB/schema readiness check                                |
-| GET    | /api/v1/meta                           | Public rollout metadata                                         |
-| GET    | /api/v1/vouchers                       | Authenticated, creator-scoped for staff; manager/owner view-all |
-| POST   | /api/v1/vouchers/duplicate-check       | Authenticated create capability + CSRF                          |
-| POST   | /api/v1/vouchers                       | Single authenticated voucher create + CSRF + idempotency        |
-| GET    | /api/v1/vendors                        | Manager/owner vendor list; active by default                    |
-| POST   | /api/v1/vendors                        | Manager/owner vendor create + CSRF + idempotency                |
-| PATCH  | /api/v1/vendors/{vendorId}             | Manager/owner vendor update + CSRF + idempotency                |
-| POST   | /api/v1/vendors/{vendorId}/active      | Manager/owner desired active-state change + CSRF + idempotency  |
-| PATCH  | /api/v1/vouchers/{voucherId}           | Manager/owner correction with reason + idempotency              |
-| POST   | /api/v1/vouchers/{voucherId}/cancel    | Manager/owner cancellation with reason + idempotency            |
-| POST   | /api/v1/vouchers/{voucherId}/approval  | Manager/owner pending-payment approval + immutable event        |
-| POST   | /api/v1/vouchers/{voucherId}/rejection | Manager/owner pending-payment rejection + reason                |
-| POST   | /api/v1/vouchers/{voucherId}/receipts  | Staff-own or manager/owner; private image upload                |
-| GET    | /api/v1/receipts/{receiptId}           | Staff-own or manager/owner; private image retrieval             |
+| Method | Route                                     | Scope                                                           |
+| ------ | ----------------------------------------- | --------------------------------------------------------------- |
+| GET    | /api/v1/health/live                       | Public liveness, no DB dependency                               |
+| GET    | /api/v1/health/ready                      | Public DB/schema readiness check                                |
+| GET    | /api/v1/meta                              | Public rollout metadata                                         |
+| GET    | /api/v1/vouchers                          | Authenticated, creator-scoped for staff; manager/owner view-all |
+| POST   | /api/v1/vouchers/duplicate-check          | Authenticated create capability + CSRF                          |
+| POST   | /api/v1/vouchers                          | Single authenticated voucher create + CSRF + idempotency        |
+| GET    | /api/v1/vendors                           | Manager/owner vendor list; active by default                    |
+| POST   | /api/v1/vendors                           | Manager/owner vendor create + CSRF + idempotency                |
+| PATCH  | /api/v1/vendors/{vendorId}                | Manager/owner vendor update + CSRF + idempotency                |
+| POST   | /api/v1/vendors/{vendorId}/active         | Manager/owner desired active-state change + CSRF + idempotency  |
+| PATCH  | /api/v1/vouchers/{voucherId}              | Manager/owner correction with reason + idempotency              |
+| POST   | /api/v1/vouchers/{voucherId}/cancel       | Manager/owner cancellation with reason + idempotency            |
+| POST   | /api/v1/vouchers/{voucherId}/approval     | Manager/owner pending-payment approval + immutable event        |
+| POST   | /api/v1/vouchers/{voucherId}/rejection    | Manager/owner pending-payment rejection + reason                |
+| POST   | /api/v1/vouchers/{voucherId}/receipts     | Staff-own or manager/owner; private image upload                |
+| GET    | /api/v1/receipts/{receiptId}              | Staff-own or manager/owner; private image retrieval             |
+| GET    | /api/v1/cash-closes/preview               | Manager/owner server-side daily cash preview                    |
+| POST   | /api/v1/cash-closes                       | Manager/owner idempotent immutable daily close                  |
+| POST   | /api/v1/cash-closes/{closeId}/corrections | Manager/owner attributed correction note, append-only           |
 
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
 
@@ -72,6 +75,8 @@ The API preserves the existing { ok, data|error, meta } envelope, request ID, an
 - Approval/rejection is Manager/Owner-only, requires an active pending PAYMENT and prevents self-approval. The decision row in `voucher_approval_events`, generic audit event and replay response commit with the voucher update.
 - Receipt upload accepts JPEG/PNG/WebP only, verifies the actual MIME signature, enforces 1.6 MB and three files per voucher, and requires an active voucher on an open business date.
 - Receipt bytes live only on the configured private disk under a random storage key. SQL stores the key, type, byte size and SHA-256; download checks parent-voucher permission and verifies the hash before streaming with no-store headers. The key is never returned and no public storage symlink is configured.
+- Daily cash close is one `MAIN` drawer per Asia/Kolkata calendar day. It carries forward the previous date's accepted count; a gap requires a manual opening amount and reason. Closing is chronological and blocked by invalid vouchers, unresolved cash impact or pending/rejected payments.
+- Close totals are derived from active server-side vouchers only. The immutable close stores included IDs and cash-impact snapshots, expected/count/variance, actor and time zone. Same-key retries replay; a separate correction note never edits the close or restates totals.
 - Bulk voucher requests remain explicitly unsupported by this slice; they are not silently accepted.
 
 ## Tests
