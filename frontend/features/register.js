@@ -276,8 +276,14 @@ export function createRegister({ api, go }) {
       [Boolean(R.user), 'User'],
       [Boolean(R.t), R.t === 'RECEIPT' ? 'Receipts only' : 'Payments only'],
       [R.paymentMethod !== 'ALL', 'Payment method'],
-      [R.cashImpact !== 'ALL', R.cashImpact === 'UNCLASSIFIED' ? 'Needs cash classification' : 'Physical cash movement'],
-      [R.amountValidity !== 'ALL', R.amountValidity === 'INVALID' ? 'Amount needs review' : 'Valid amounts'],
+      [
+        R.cashImpact !== 'ALL',
+        R.cashImpact === 'UNCLASSIFIED' ? 'Needs cash classification' : 'Physical cash movement',
+      ],
+      [
+        R.amountValidity !== 'ALL',
+        R.amountValidity === 'INVALID' ? 'Amount needs review' : 'Valid amounts',
+      ],
       [R.st !== 'ACTIVE', R.st === 'CANCELLED' ? 'Cancelled status' : 'All statuses'],
       [R.approval !== 'ALL', 'Approval state'],
     ]
@@ -1037,14 +1043,20 @@ export function createRegister({ api, go }) {
   function classifyCashMovement(id) {
     const voucher = voucherRows().find((item) => item.id === id);
     if (!voucher || !can('edit') || voucher.status !== 'ACTIVE') {
-      fail(new Error('This voucher cannot be classified from your current account. Refresh the Register and retry.'));
+      fail(
+        new Error(
+          'This voucher cannot be classified from your current account. Refresh the Register and retry.',
+        ),
+      );
       return;
     }
 
     const body = document.createDocumentFragment();
     const summary = document.createElement('p');
     const amount = document.createElement('b');
-    amount.textContent = validVoucherAmount(voucher.amount) ? money(voucher.amount) : 'Amount needs review';
+    amount.textContent = validVoucherAmount(voucher.amount)
+      ? money(voucher.amount)
+      : 'Amount needs review';
     summary.append(
       document.createTextNode(voucherNo(voucher) + ' · ' + scalarText(voucher.vendor) + ' · '),
       amount,

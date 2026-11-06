@@ -117,7 +117,9 @@ export function createDashboard({ api }) {
       : 'ACTIVE';
     const query = typeof options.query === 'string' ? options.query.slice(0, 120) : '';
     const vendor = typeof options.vendor === 'string' ? options.vendor.slice(0, 200) : '';
-    const cashImpact = ['CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'].includes(options.cashImpact)
+    const cashImpact = ['CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'].includes(
+      options.cashImpact,
+    )
       ? options.cashImpact
       : '';
     const amountValidity = ['VALID', 'INVALID'].includes(options.amountValidity)
