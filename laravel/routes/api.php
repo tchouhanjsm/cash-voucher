@@ -47,6 +47,10 @@ Route::prefix('v1')->group(function (): void {
                 'vouchers:list',
                 'vouchers:duplicate-check',
                 'vouchers:create',
+                'vouchers:update',
+                'vouchers:cancel',
+                'vouchers:approve',
+                'vouchers:reject',
                 'vendors:list',
                 'vendors:create',
                 'vendors:update',
@@ -60,6 +64,10 @@ Route::prefix('v1')->group(function (): void {
         Route::get('/vouchers', [VoucherController::class, 'index']);
         Route::post('/vouchers/duplicate-check', [VoucherController::class, 'duplicateCheck']);
         Route::post('/vouchers', [VoucherController::class, 'store']);
+        Route::patch('/vouchers/{voucherId}', [VoucherController::class, 'update']);
+        Route::post('/vouchers/{voucherId}/cancel', [VoucherController::class, 'cancel']);
+        Route::post('/vouchers/{voucherId}/approval', [VoucherController::class, 'approve']);
+        Route::post('/vouchers/{voucherId}/rejection', [VoucherController::class, 'reject']);
         Route::get('/vendors', [VendorController::class, 'index']);
         Route::post('/vendors', [VendorController::class, 'store']);
         Route::patch('/vendors/{vendorId}', [VendorController::class, 'update']);
