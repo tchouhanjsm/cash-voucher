@@ -32,10 +32,12 @@ jobs:
         uses: actions/setup-python@v7
         with:
           python-version: '3.11'
+          cache: pip
+          cache-dependency-path: requirements-e2e.txt
 
       - name: Install Playwright
         run: |
-          python -m pip install playwright
+          python -m pip install -r requirements-e2e.txt
           python -m playwright install --with-deps chromium
 
       - name: Run complete chained test suite

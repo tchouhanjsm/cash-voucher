@@ -16,7 +16,7 @@ trap cleanup EXIT INT TERM
 
 "$PYTHON_BIN" -c "import playwright" >/dev/null 2>&1 || {
   echo "Playwright is not installed for $PYTHON_BIN."
-  echo "Install it with: python3 -m pip install playwright && python3 -m playwright install chromium"
+  echo "Install it with: python3 -m pip install -r requirements-e2e.txt && python3 -m playwright install chromium"
   exit 1
 }
 

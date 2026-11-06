@@ -1,8 +1,9 @@
 name: CI
 
 on:
+  workflow_call:
   push:
-    branches: [client-main, 'client/**']
+    branches: [client-main]
   pull_request:
     branches: [client-main]
     types: [opened, synchronize, reopened, edited]
@@ -60,6 +61,7 @@ jobs:
 
       - name: Install dependencies
         id: dependencies
+        if: ${{ github.event_name != 'pull_request' || github.event.action != 'edited' }}
         run: npm ci
 
       - name: Scan current files and reachable Git history for credential patterns
@@ -127,8 +129,8 @@ jobs:
         run: npm test
 
       - name: Validate PR handoff evidence
-        if: ${{ always() && github.event_name == 'pull_request' && steps.dependencies.outcome == 'success' }}
-        run: npm run check:pr-quality
+        if: ${{ always() && github.event_name == 'pull_request' && (github.event.action == 'edited' || steps.dependencies.outcome == 'success') }}
+        run: node scripts/check-pr-quality.js
 
       - name: Setup PHP runtime
         if: ${{ always() && steps.dependencies.outcome == 'success' }}
