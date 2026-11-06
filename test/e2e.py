@@ -7363,6 +7363,10 @@ with sync_playwright() as p:
         'No vouchers match the current filters' in page.locator('#rempty').inner_text(),
         'corrected amount disappears from the active Needs review filter after server refresh',
     )
+    page.select_option('#ramountValidity', 'ALL')
+    page.wait_for_function(
+        "Array.from(document.querySelectorAll('#rbody tr')).some(row => row.innerText.includes('Ram Traders'))"
+    )
     check(
         manager_row.locator('.voucher-kind').inner_text() == 'Payment',
         'manager register identifies cash-paid voucher rows explicitly',
