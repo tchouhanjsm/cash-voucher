@@ -68,6 +68,12 @@ The Laravel application is under `laravel/` and is exercised only against the di
 | POST   | /api/v1/vendors                   | Implemented; Manager/Owner only; CSRF + idempotent audit                                |
 | PATCH  | /api/v1/vendors/{vendorId}        | Implemented; catalog update preserves voucher name snapshots                            |
 | POST   | /api/v1/vendors/{vendorId}/active | Implemented; desired active state; CSRF + idempotency                                   |
+| PATCH  | /api/v1/vouchers/{voucherId}       | Manager/Owner correction with reason, audit and closed-date protection                   |
+| POST   | /api/v1/vouchers/{voucherId}/cancel | Manager/Owner reasoned cancellation with close-date protection and idempotency           |
+| POST   | /api/v1/vouchers/{voucherId}/approval | Manager/Owner approval; pending payment only, no self-approval                           |
+| POST   | /api/v1/vouchers/{voucherId}/rejection | Manager/Owner rejection; pending payment only, reason required                           |
+| POST   | /api/v1/vouchers/{voucherId}/receipts | Own-record staff or Manager/Owner; private image attachment with idempotency             |
+| GET    | /api/v1/receipts/{receiptId}        | Own-record staff or Manager/Owner; private download with storage hash verification        |
 
 Laravel authentication reads the same hashed session table and cookie names as the current PHP API. The current PHP implementation remains the login/password-change/session issuer in this phase. Laravel does not accept must-change accounts for financial routes. It does not expose a login route yet.
 
@@ -75,4 +81,4 @@ Voucher create requires an explicitly seeded PAYMENT or RECEIPT row in `voucher_
 
 Vendor writes use the existing transaction-owning IdempotencyService. The additive `0005_vendor_name_claims.sql` migration provides a unique case-insensitive name claim; existing rows are checked before a claim is acquired so legacy duplicates fail closed. Inactive names remain reserved, and activation rejects an ambiguous active name. Vendor updates change the catalog only; issued vouchers keep their immutable `vendor_name_snapshot`. See [LARAVEL-VENDOR-INVENTORY.md](LARAVEL-VENDOR-INVENTORY.md) for the inspected source-field map and the remaining creator-email snapshot gap. These routes are isolated Laravel shadow endpoints and do not alter the Apps Script action registry or production writer.
 
-Non-empty receipts and bulk requests are rejected explicitly in this slice. Receipt storage, approval commands, edit/cancel, cash close, reports, export/import and IndexedDB endpoint switching remain unimplemented. The root PHP API and its route registry remain unchanged; these Laravel shadow routes are not production-routed.
+Bulk voucher create remains explicitly rejected in this slice. Voucher edit/cancellation/approval/rejection and private receipt upload/download are implemented as isolated shadow routes. Cash close, reports, exports, offline synchronization and historical data migration remain unimplemented. The receipt disk is configured as private with no public symlink; file metadata is stored in the existing `voucher_receipts` table and each download rechecks authorization, byte length, MIME signature and SHA-256. No storage key or public URL is returned. The root PHP API and its route registry remain unchanged; these Laravel shadow routes are not production-routed.
