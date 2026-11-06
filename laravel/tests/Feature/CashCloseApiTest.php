@@ -231,7 +231,7 @@ final class CashCloseApiTest extends TestCase
         $this->postJson('/api/v1/cash-closes/'.$closeId.'/corrections', $payload, [
             'Idempotency-Key' => $key,
         ])
-            ->assertCreated()
+            ->assertOk()
             ->assertJsonPath('data.replayed', true);
 
         self::assertSame(1, DB::table('cash_close_corrections')->where('cash_close_id', $closeId)->count());
