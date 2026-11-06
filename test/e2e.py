@@ -7162,7 +7162,7 @@ with sync_playwright() as p:
     # Simulate an unsafe legacy/imported API row through the server-backed register
     # response. The register no longer reads its visible rows from the bootstrap cache.
     legacy_xss_voucher_enabled = True
-    classification_fixture_state = {'cashImpact': 'UNCLASSIFIED'}
+    classification_fixture_state = {'cashImpact': 'UNCLASSIFIED', 'amount': 345}
 
     def inject_legacy_xss_voucher(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -7171,7 +7171,11 @@ with sync_playwright() as p:
             and request_data.get('id') == 'cash-classification-fixture'
         ):
             fields = request_data.get('fields') or {}
-            classification_fixture_state['cashImpact'] = fields.get('cashImpact', 'UNCLASSIFIED')
+            classification_fixture_state['cashImpact'] = fields.get(
+                'cashImpact', classification_fixture_state['cashImpact']
+            )
+            if 'amount' in fields:
+                classification_fixture_state['amount'] = fields['amount']
             route.fulfill(
                 status=200,
                 json={
@@ -7182,7 +7186,7 @@ with sync_playwright() as p:
                         'date': BUSINESS_TODAY.isoformat(),
                         'vendor': 'Cash Classification Fixture',
                         'paymentMethod': 'UPI',
-                        'amount': 345,
+                        'amount': classification_fixture_state['amount'],
                         'category': 'Other',
                         'notes': '',
                         'type': 'PAYMENT',
@@ -7241,9 +7245,18 @@ with sync_playwright() as p:
                     vendors.append(xss_payload)
             requested_cash_impact = request_data.get('cashImpact') or 'ALL'
             requested_amount_validity = request_data.get('amountValidity') or 'ALL'
+            fixture_amount_valid = (
+                isinstance(classification_fixture_state['amount'], (int, float))
+                and classification_fixture_state['amount'] > 0
+            )
+            amount_filter_matches = (
+                requested_amount_validity == 'ALL'
+                or (requested_amount_validity == 'VALID' and fixture_amount_valid)
+                or (requested_amount_validity == 'INVALID' and not fixture_amount_valid)
+            )
             if (
                 requested_cash_impact in ('ALL', classification_fixture_state['cashImpact'])
-                and requested_amount_validity in ('ALL', 'VALID')
+                and amount_filter_matches
                 and not any(
                     item.get('id') == 'cash-classification-fixture'
                     for item in data.get('items', [])
@@ -7257,7 +7270,7 @@ with sync_playwright() as p:
                     'vendor': 'Cash Classification Fixture',
                     'vendorId': 'cash-classification-vendor',
                     'paymentMethod': 'UPI',
-                    'amount': 345,
+                    'amount': classification_fixture_state['amount'],
                     'category': 'Other',
                     'notes': '',
                     'type': 'PAYMENT',
@@ -7316,6 +7329,39 @@ with sync_playwright() as p:
     check(
         'Cash taken out of the drawer' in page.locator('#rbody tr').filter(has_text='Cash Classification Fixture').inner_text(),
         'Register reflects the server-confirmed physical cash classification',
+    )
+    if page.locator('#registerAdvancedFilters').get_attribute('open') is None:
+        page.locator('#registerAdvancedFilters summary').click()
+    page.select_option('#ramountValidity', 'INVALID')
+    amount_review_row = page.locator('#rbody tr').filter(has_text='Cash Classification Fixture').first
+    amount_review_row.wait_for()
+    check(
+        'Amount needs review' in amount_review_row.inner_text()
+        and amount_review_row.locator('[data-act=edit]').inner_text() == 'Review amount',
+        'invalid-amount vouchers expose a direct, plain-language correction action',
+    )
+    amount_review_row.locator('[data-act=edit]').click()
+    page.wait_for_selector('#modal #ea')
+    page.fill('#ea', '345')
+    page.fill('#er', 'Corrected from the source receipt')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'updateVoucher'
+    ) as amount_correction_write:
+        page.locator('.mcard .primary').click()
+    amount_correction_request = json.loads(amount_correction_write.value.request.post_data or '{}')
+    check(
+        amount_correction_request.get('id') == 'cash-classification-fixture'
+        and amount_correction_request.get('fields', {}).get('amount') == 345
+        and amount_correction_request.get('reason') == 'Corrected from the source receipt',
+        'Manager amount correction uses the existing permission-checked updateVoucher API and reason',
+    )
+    page.wait_for_function(
+        "!Array.from(document.querySelectorAll('#rbody tr')).some(row => row.innerText.includes('Cash Classification Fixture'))"
+    )
+    check(
+        'No vouchers match the current filters' in page.locator('#rempty').inner_text(),
+        'corrected amount disappears from the active Needs review filter after server refresh',
     )
     check(
         manager_row.locator('.voucher-kind').inner_text() == 'Payment',

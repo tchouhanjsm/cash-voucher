@@ -84,10 +84,6 @@ function paymentMethod_(value, prefix) {
   }
   return value;
 }
-function cashImpactForPaymentMethod_(method, type) {
-  if (method === 'CASH') return type === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT';
-  return 'NO_CASH';
-}
 
 function sameClientVoucherReceipts_(voucher, entry) {
   const storedIds = String(voucher.Receipts || '')

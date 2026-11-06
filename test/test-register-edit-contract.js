@@ -26,6 +26,7 @@ assert.ok(editor.includes('for="rcashimpact"'));
 assert.ok(editor.includes('for="ramountValidity"'));
 assert.ok(backend.includes('const impact = cashImpact_(en.cashImpact, row)'));
 assert.ok(!backend.includes('Cash impact must match the saved payment method'));
+assert.ok(!backend.includes('cashImpactForPaymentMethod_'));
 assert.ok(backend.includes('if (f.cashImpact !== undefined)'));
 assert.ok(readModels.includes('Physical cash movement'));
 assert.ok(readModels.includes('amountValidity'));

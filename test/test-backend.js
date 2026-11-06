@@ -3578,6 +3578,22 @@ ok(
   !invalidPaymentRail.ok && invalidPaymentRail.code === 'VALIDATION',
   'server rejects unsupported payment rails',
 );
+const missingCashMovement = as(T, 'createVouchers', {
+  entries: [
+    {
+      clientId: 'missing-cash-movement-regression',
+      date: railDate,
+      vendor: 'Missing Cash Movement',
+      amount: 12,
+      category: 'Other',
+      paymentMethod: 'UPI',
+    },
+  ],
+});
+ok(
+  !missingCashMovement.ok && missingCashMovement.code === 'VALIDATION',
+  'server rejects missing physical movement even when a payment method is supplied',
+);
 const blankLegacyRail = as(T, 'createVouchers', {
   entries: [
     {

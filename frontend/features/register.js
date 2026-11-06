@@ -490,7 +490,9 @@ export function createRegister({ api, go }) {
                   R.to ||
                   R.st !== 'ACTIVE' ||
                   R.approval !== 'ALL' ||
-                  R.paymentMethod !== 'ALL'
+                  R.paymentMethod !== 'ALL' ||
+                  R.cashImpact !== 'ALL' ||
+                  R.amountValidity !== 'ALL'
                 ? 'filtered'
                 : 'first-use';
     }
@@ -548,7 +550,7 @@ export function createRegister({ api, go }) {
             ? `<button class="btn sm primary" data-act="classify" data-id="${esc(voucher.id)}">Classify cash</button>`
             : '',
           voucher.status === 'ACTIVE' && can('edit')
-            ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>`
+            ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">${validVoucherAmount(voucher.amount) ? 'Edit' : 'Review amount'}</button>`
             : '',
           voucher.status === 'ACTIVE' && can('cancel')
             ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(voucher.id)}">Cancel</button>`
@@ -608,7 +610,9 @@ export function createRegister({ api, go }) {
         R.to ||
         R.st !== 'ACTIVE' ||
         R.approval !== 'ALL' ||
-        R.paymentMethod !== 'ALL',
+        R.paymentMethod !== 'ALL' ||
+        R.cashImpact !== 'ALL' ||
+        R.amountValidity !== 'ALL',
       );
       const firstUse =
         dataAvailable && !pageLoading && !rangeInvalid && pageTotalCount === 0 && !hasActiveFilters;

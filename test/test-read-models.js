@@ -451,6 +451,17 @@ const staffVoucher = g.call('createVouchers', {
   ],
 });
 assert.equal(staffVoucher.ok, true, 'staff can create an own payment');
+const staffCashCorrection = g.call('updateVoucher', {
+  token: staff,
+  id: staffVoucher.data.created[0].id,
+  reason: 'Attempted unauthorised correction',
+  fields: { cashImpact: 'CASH_IN' },
+});
+assert.equal(
+  staffCashCorrection.code,
+  'FORBIDDEN',
+  'staff cannot use the Manager/Owner voucher correction permission',
+);
 const staffPage = g.call('registerPage', {
   token: staff,
   from: date,
