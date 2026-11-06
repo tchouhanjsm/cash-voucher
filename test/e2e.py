@@ -7359,8 +7359,11 @@ with sync_playwright() as p:
     page.wait_for_function(
         "!Array.from(document.querySelectorAll('#rbody tr')).some(row => row.innerText.includes('Cash Classification Fixture'))"
     )
+    page.wait_for_function(
+        "document.querySelector('#rempty .register-empty-state__copy')?.textContent.includes('No vouchers match the current filters.')"
+    )
     check(
-        'No vouchers match the current filters' in page.locator('#rempty').inner_text(),
+        'No vouchers match the current filters.' in page.locator('#rempty').inner_text(),
         'corrected amount disappears from the active Needs review filter after server refresh',
     )
     page.select_option('#ramountValidity', 'ALL')
