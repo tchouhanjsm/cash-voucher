@@ -197,7 +197,7 @@ jobs:
           DB_USERNAME: cash_voucher_app
           DB_PASSWORD: cash-voucher-test-app-password
           CV_DUPLICATE_CONFIRMATION_KEY: cash-voucher-ci-duplicate-confirmation-key-32chars
-        run: cd laravel && php artisan test
+        run: cd laravel && vendor/bin/phpunit
 
       - name: Upload resolved Laravel dependency lock for review
         if: ${{ always() && steps.dependencies.outcome == 'success' && hashFiles('laravel/composer.lock') != '' }}

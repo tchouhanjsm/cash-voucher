@@ -23,7 +23,7 @@
     }
   },
   "scripts": {
-    "test": "@php artisan test",
+    "test": "@php vendor/bin/phpunit",
     "lint": "find app bootstrap config public routes tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l"
   },
   "config": {

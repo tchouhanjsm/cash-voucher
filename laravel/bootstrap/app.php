@@ -9,7 +9,6 @@ use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
-use Throwable;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
@@ -27,7 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             fn ($request): bool => $request->is('api/*') || $request->expectsJson(),
         );
 
-        $exceptions->render(function (Throwable $exception, $request) {
+        $exceptions->render(function (\Throwable $exception, $request) {
             if (! $request->is('api/*')) {
                 return null;
             }

@@ -31,14 +31,14 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 
 ## Implemented routes in this phase
 
-| Method | Route | Scope |
-| --- | --- | --- |
-| GET | /api/v1/health/live | Public liveness, no DB dependency |
-| GET | /api/v1/health/ready | Public DB/schema readiness check |
-| GET | /api/v1/meta | Public rollout metadata |
-| GET | /api/v1/vouchers | Authenticated, creator-scoped for staff; manager/owner view-all |
-| POST | /api/v1/vouchers/duplicate-check | Authenticated create capability + CSRF |
-| POST | /api/v1/vouchers | Single authenticated voucher create + CSRF + idempotency |
+| Method | Route                            | Scope                                                           |
+| ------ | -------------------------------- | --------------------------------------------------------------- |
+| GET    | /api/v1/health/live              | Public liveness, no DB dependency                               |
+| GET    | /api/v1/health/ready             | Public DB/schema readiness check                                |
+| GET    | /api/v1/meta                     | Public rollout metadata                                         |
+| GET    | /api/v1/vouchers                 | Authenticated, creator-scoped for staff; manager/owner view-all |
+| POST   | /api/v1/vouchers/duplicate-check | Authenticated create capability + CSRF                          |
+| POST   | /api/v1/vouchers                 | Single authenticated voucher create + CSRF + idempotency        |
 
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
 
@@ -62,6 +62,6 @@ The CI suite runs against the existing disposable MySQL 8.0 service and the root
 
     composer validate --no-check-publish
     composer install
-    php artisan test
+    vendor/bin/phpunit
 
-A full Laravel dependency lockfile must be committed before this project is promoted beyond this first isolated implementation phase. Hosting qualification, schema-baseline adoption, login issuance, PWA transport changes, receipts, approval actions, cash close, exports/imports and production cutover remain separate gated work.
+The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, login issuance, PWA transport changes, receipts, approval actions, cash close, exports/imports and production cutover remain separate gated work.
