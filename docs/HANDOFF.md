@@ -1,3 +1,17 @@
+## Latest delivery update — Laravel 13 first financial slice (6 November 2026)
+
+- **Implementation branch:** `feat/laravel-13-financial-slice-20261106`, based on the merged Laravel planning PR #267 commit `2904212a5c366c46fa39a6485752fef75d1d921b`.
+- **Isolation:** Laravel lives under `laravel/`; the root PWA, IndexedDB outbox, Apps Script routes/writer, existing custom PHP API and four SQL migrations are unchanged. No production endpoint or data was touched.
+- **Framework baseline:** Laravel 13 requires PHP 8.3+. The Composer constraint is `^13.40` to stay above the published Laravel 13.29/13.30 security fixes and the 13.40 concurrency-process advisory floor. CI runs Composer audit.
+- **Authentication:** the Laravel middleware consumes the existing SHA-256 hashed `cv_session` and `cv_csrf` records. The existing PHP session issuer remains authoritative; Laravel does not yet issue credentials. Inactive/unknown roles and must-change accounts fail closed.
+- **Implemented shadow routes:** health/live, health/ready, meta, creator-scoped voucher list, duplicate-check, and single voucher create. Financial create reuses the existing PDO voucher sequence allocator, idempotency service and audit writer. PAYMENT/RECEIPT sequences must already exist; the Laravel path never guesses them.
+- **Financial safeguards:** decimal-string amounts → integer paise; Asia/Kolkata business dates; cash-closed date rejection; exact duplicate-review token; ₹10,000 single/payee-day approval threshold; idempotent same-key replay and different-payload conflict; transactional voucher + audit + idempotency completion.
+- **Explicitly deferred:** login/password issuance, migration-history adoption, new SQL migrations, receipt storage, bulk entry, edit/cancel, approvals, cash close, reports, importer/exporter, PWA transport switch, production hosting and cutover.
+- **Validation:** Laravel PHPUnit tests run against the isolated MySQL 8.0 service after root migrations 0001–0004 and the restricted test runtime account are prepared. Exact-head CI / Composer audit and a committed Composer lockfile remain merge gates. CI currently uploads the resolved lockfile as an artifact for inclusion.
+- **Release boundary:** no Clasp push, Apps Script deployment, staging/customer DB connection, production credentials, import, dual write, migration or endpoint switch. The Apps Script deployment remains the only production financial writer.
+
+---
+
 ## Latest delivery update — CI/CD efficiency and release isolation (6 November 2026)
 
 - **Feature-branch validation:** CI / Quality and Browser E2E now run once per pull-request update; push triggers remain on `client-main` for post-merge verification. This removes duplicate full runs for each `client/*` push.

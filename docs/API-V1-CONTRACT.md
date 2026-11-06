@@ -51,3 +51,24 @@ Set CV_AUTH_RATE_LIMIT_KEY to an independent random secret of at least 32 charac
 ## Configuration
 
 The PHP runtime reads environment variables directly; it does not parse .env. Use the local .env.example as a checklist only. Web workers receive the runtime account. The DDL-capable migration account must be available only to an operator's CLI environment. Database credentials must remain outside the public document root.
+
+
+## Laravel 13 isolated shadow implementation
+
+The Laravel application is under `laravel/` and is exercised only against the disposable CI MySQL database in this phase. It does not replace or modify the custom PHP API routes above, and the PWA continues to use Apps Script.
+
+| Method | Path | Shadow implementation |
+| --- | --- | --- |
+| GET | /api/v1/health/live | Implemented; no DB dependency |
+| GET | /api/v1/health/ready | Implemented; read-only schema version 0004 check |
+| GET | /api/v1/meta | Implemented; declares isolated-shadow rollout state |
+| GET | /api/v1/vouchers | Implemented; staff creator scope, manager/owner view-all, accountant denied |
+| POST | /api/v1/vouchers/duplicate-check | Implemented; create capability, existing session + CSRF, short-lived HMAC confirmation |
+| POST | /api/v1/vouchers | Implemented; one voucher per request, existing session + CSRF, required Idempotency-Key |
+
+Laravel authentication reads the same hashed session table and cookie names as the current PHP API. The current PHP implementation remains the login/password-change/session issuer in this phase. Laravel does not accept must-change accounts for financial routes. It does not expose a login route yet.
+
+Voucher create requires an explicitly seeded PAYMENT or RECEIPT row in `voucher_number_sequences`; missing series return `VOUCHER_SEQUENCE_NOT_INITIALIZED` and do not create a voucher. The sequence row is locked inside the existing PDO idempotency transaction. Voucher, append-only audit event and replay response are committed together. Existing payee/date/amount duplicate candidates require a short-lived confirmation token. The existing individual and payee/day cumulative ₹10,000 approval threshold is preserved.
+
+Non-empty receipts and bulk requests are rejected explicitly in this slice. Receipt storage, approval commands, edit/cancel, cash close, reports, export/import and IndexedDB endpoint switching remain unimplemented. The root PHP API and its route registry remain unchanged; these Laravel shadow routes are not production-routed.
+
