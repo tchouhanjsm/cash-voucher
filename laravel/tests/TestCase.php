@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
-    private static int $businessDateOffset = 100;
+    private static int $businessDateSequence = 0;
 
     protected string $userId;
     protected string $sessionToken;
@@ -25,9 +25,12 @@ abstract class TestCase extends BaseTestCase
         $this->csrfToken = bin2hex(random_bytes(32));
         // Every feature test receives a distinct historical business date. Shared
         // synthetic cash-close rows must never poison a later test's date guard.
-        $offset = self::$businessDateOffset++;
+        // Space synthetic dates one week apart in ascending order. A cash-close
+        // created by one test must not become a later-close blocker for another.
+        $sequence = self::$businessDateSequence++;
         $this->businessDate = (new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata')))
-            ->modify('-'.$offset.' days')
+            ->modify('-400 days')
+            ->modify('+'.($sequence * 7).' days')
             ->format('Y-m-d');
 
         $this->insertUser($this->userId, 'staff');
