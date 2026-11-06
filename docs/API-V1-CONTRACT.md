@@ -56,18 +56,18 @@ The PHP runtime reads environment variables directly; it does not parse .env. Us
 
 The Laravel application is under `laravel/` and is exercised only against the disposable CI MySQL database in this phase. It does not replace or modify the custom PHP API routes above, and the PWA continues to use Apps Script.
 
-| Method | Path                             | Shadow implementation                                                                   |
-| ------ | -------------------------------- | --------------------------------------------------------------------------------------- |
-| GET    | /api/v1/health/live              | Implemented; no DB dependency                                                           |
-| GET    | /api/v1/health/ready             | Implemented; read-only schema version 0005 check                                        |
-| GET    | /api/v1/meta                     | Implemented; declares isolated-shadow rollout state                                     |
-| GET    | /api/v1/vouchers                 | Implemented; staff creator scope, manager/owner view-all, accountant denied             |
-| POST   | /api/v1/vouchers/duplicate-check | Implemented; create capability, existing session + CSRF, short-lived HMAC confirmation |
-| POST   | /api/v1/vouchers                 | Implemented; one voucher per request, existing session + CSRF, required Idempotency-Key |
-| GET    | /api/v1/vendors                  | Implemented; Manager/Owner only; active by default; paginated                           |
-| POST   | /api/v1/vendors                  | Implemented; Manager/Owner only; CSRF + idempotent audit                                |
-| PATCH  | /api/v1/vendors/{vendorId}       | Implemented; catalog update preserves voucher name snapshots                            |
-| POST   | /api/v1/vendors/{vendorId}/active| Implemented; desired active state; CSRF + idempotency                                   |
+| Method | Path                              | Shadow implementation                                                                   |
+| ------ | --------------------------------- | --------------------------------------------------------------------------------------- |
+| GET    | /api/v1/health/live               | Implemented; no DB dependency                                                           |
+| GET    | /api/v1/health/ready              | Implemented; read-only schema version 0005 check                                        |
+| GET    | /api/v1/meta                      | Implemented; declares isolated-shadow rollout state                                     |
+| GET    | /api/v1/vouchers                  | Implemented; staff creator scope, manager/owner view-all, accountant denied             |
+| POST   | /api/v1/vouchers/duplicate-check  | Implemented; create capability, existing session + CSRF, short-lived HMAC confirmation  |
+| POST   | /api/v1/vouchers                  | Implemented; one voucher per request, existing session + CSRF, required Idempotency-Key |
+| GET    | /api/v1/vendors                   | Implemented; Manager/Owner only; active by default; paginated                           |
+| POST   | /api/v1/vendors                   | Implemented; Manager/Owner only; CSRF + idempotent audit                                |
+| PATCH  | /api/v1/vendors/{vendorId}        | Implemented; catalog update preserves voucher name snapshots                            |
+| POST   | /api/v1/vendors/{vendorId}/active | Implemented; desired active state; CSRF + idempotency                                   |
 
 Laravel authentication reads the same hashed session table and cookie names as the current PHP API. The current PHP implementation remains the login/password-change/session issuer in this phase. Laravel does not accept must-change accounts for financial routes. It does not expose a login route yet.
 
