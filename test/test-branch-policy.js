@@ -19,11 +19,15 @@ const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
 const stagingAudit = read('docs/STAGING-RELEASE-AUDIT.md');
 const governanceVerifier = read('scripts/verify-client-main-governance.js');
 
-assert.match(ci, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
+assert.match(ci, /push:\n\s+branches:\s*\[client-main\]/);
+assert.match(ci, /workflow_call:/);
 assert.match(ci, /pull_request:\n\s+branches:\s*\[client-main\]/);
+assert.doesNotMatch(ci, /client\/\*\*/);
 assert.doesNotMatch(ci, /branches:\s*\[main, client-main/);
-assert.match(browser, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
+assert.match(browser, /push:\n\s+branches:\s*\[client-main\]/);
+assert.match(browser, /workflow_call:/);
 assert.match(browser, /pull_request:\n\s+branches:\s*\[client-main\]/);
+assert.doesNotMatch(browser, /client\/\*\*/);
 assert.match(flight, /^on:\s*\n\s+workflow_dispatch:\s*$/m);
 assert.doesNotMatch(flight, /^\s{2}(?:push|pull_request):/m);
 assert.match(flight, /timeout-minutes:\s*45/);

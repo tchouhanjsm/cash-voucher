@@ -200,10 +200,16 @@ assert.ok(
 );
 assert.ok(
   ciWorkflow.includes(
-    "if: ${{ always() && github.event_name == 'pull_request' && steps.dependencies.outcome == 'success' }}",
+    "if: ${{ always() && github.event_name == 'pull_request' && (github.event.action == 'edited' || steps.dependencies.outcome == 'success') }}",
   ),
 );
 assert.ok(ciWorkflow.includes('- name: Run unit and regression tests'));
+assert.ok(ciWorkflow.includes("github.event.action != 'edited'"));
+assert.ok(ciWorkflow.includes('node scripts/check-pr-quality.js'));
+assert.ok(ciWorkflow.includes('workflow_call:'));
+assert.ok(browserWorkflow.includes('workflow_call:'));
+assert.ok(browserWorkflow.includes('python -m pip install -r requirements-e2e.txt'));
+assert.ok(read('requirements-e2e.txt').includes('playwright==1.64.1'));
 assert.ok(ciWorkflow.includes('npm run audit:deps'));
 assert.ok(formatDiffScript.includes("'--stdin-filepath'"));
 assert.ok(formatDiffScript.includes("'diff'"));

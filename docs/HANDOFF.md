@@ -1,3 +1,16 @@
+## Latest delivery update — CI/CD efficiency and release isolation (6 November 2026)
+
+- **Feature-branch validation:** CI / Quality and Browser E2E now run once per pull-request update; push triggers remain on `client-main` for post-merge verification. This removes duplicate full runs for each `client/*` push.
+- **Description-only changes:** PR title/body edits keep the existing CI / Quality check context but run only the handoff validator. The MySQL-backed quality suite, dependency installation and PHP integration are not repeated for metadata-only changes.
+- **Reusable delivery gates:** CI / Quality and Browser E2E are callable workflows. Release tags reuse both exact workflows rather than carrying a weaker independent list of tests.
+- **Release provenance and privilege separation:** a tag must match `package.json` and point to a commit already reachable from `client-main`. Build/test jobs are read-only; only the downstream publication job receives `contents: write`, after all required gates pass. A rerun leaves an existing release untouched.
+- **Reproducible browser runtime:** E2E, Full Flight and each staging-UAT route install the same pinned Playwright/Python dependencies from `requirements-e2e.txt`, with dependency-keyed pip caching.
+- **Release boundaries:** staging deployment/UAT and staging ZIP creation remain manual, isolated and guarded. No Clasp push, Apps Script deployment, staging write, cPanel publication, merge or production deployment is part of this batch.
+
+The live PR page is authoritative for the exact source head and workflow evidence. Remaining release work is controlled staging/UAT and real-device/operator validation; automated mock checks do not replace those gates.
+
+---
+
 ## Latest delivery update — PR #265: Daily Cash Close readiness clarity (5 November 2026)
 
 - **Decision sequence:** the open preview now states the next required action before the reconciliation detail: chronological block, device-queue issue, manual opening required, voucher review, negative expected cash, generic review, or ready for physical count.
