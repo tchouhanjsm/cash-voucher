@@ -24,14 +24,12 @@ assert.match(ci, /pull_request:\n\s+branches:\s*\[client-main\]/);
 assert.doesNotMatch(ci, /branches:\s*\[main, client-main/);
 assert.match(browser, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
 assert.match(browser, /pull_request:\n\s+branches:\s*\[client-main\]/);
-assert.match(flight, /push:\n\s+branches:\s*\[client-main, 'client\/\*\*'\]/);
-assert.match(flight, /pull_request:\n\s+branches:\s*\[client-main\]/);
-assert.match(
-  flight,
-  /flight:\n\s+if: github\.event_name == 'pull_request' \|\| \(github\.event_name == 'push' && github\.ref_name == 'client-main'\)/,
-  'the chained Full Flight gate must run on PR heads and client-main pushes, not superseded feature-branch pushes',
-);
-for (const workflow of [ci, browser, flight]) {
+assert.match(flight, /^on:\s*\n\s+workflow_dispatch:\s*$/m);
+assert.doesNotMatch(flight, /^\s{2}(?:push|pull_request):/m);
+assert.match(flight, /timeout-minutes:\s*45/);
+assert.match(flight, /run: npm run test:flight/);
+assert.match(flight, /cancel-in-progress: false/);
+for (const workflow of [ci, browser]) {
   assert.ok(
     workflow.includes('github.event.pull_request.head.ref || github.ref_name') &&
       workflow.includes('github.event.pull_request.head.repo.full_name || github.repository') &&
@@ -78,6 +76,9 @@ assert.match(stagingAudit, /separate recovery target/);
 assert.match(branchPolicy, /npm run verify:client-main-governance/);
 assert.match(governanceVerifier, /requestGitHubJson/);
 assert.match(governanceVerifier, /MAIN_FREEZE_RULESET_MISSING/);
+assert.match(governanceVerifier, /CLIENT_MAIN_OBSOLETE_FULL_FLIGHT_CHECK_REQUIRED/);
+assert.match(branchPolicy, /three PR checks/);
+assert.match(branchPolicy, /Full Flight is a manual release suite/);
 assert.doesNotMatch(governanceVerifier, /method:\s*['"](?:POST|PUT|PATCH|DELETE)/i);
 assert.match(
   branchPolicy,
@@ -85,5 +86,5 @@ assert.match(
 );
 
 console.log(
-  'Client-main policy OK — CI, E2E, Flight Test, strategy documents and staging guard align.',
+  'Client-main policy OK — CI and Browser E2E gate PRs; Full Flight remains a manual release suite.',
 );

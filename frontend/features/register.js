@@ -230,6 +230,17 @@ export function createRegister({ api, go }) {
     }
   }
 
+  function advancedRegisterFilterCount() {
+    const hasCustomDateRange = Boolean(R.from || R.to) && !selectedRegisterDateRange();
+    return [
+      Boolean(R.vendor),
+      Boolean(R.cat),
+      Boolean(R.user),
+      R.paymentMethod !== 'ALL',
+      hasCustomDateRange,
+    ].filter(Boolean).length;
+  }
+
   function syncRegisterFilterSummary() {
     const target = $('#registerFilterSummary');
     const filters = [
@@ -249,7 +260,15 @@ export function createRegister({ api, go }) {
     if (target) {
       target.textContent = filters.length
         ? filters.length + ' refinement(s) active · ' + filters.join(' · ')
-        : 'Showing active vouchers. Add a filter to narrow these results.';
+        : 'Showing active vouchers. Search by voucher number, payee or note.';
+    }
+
+    const advancedCount = advancedRegisterFilterCount();
+    const advancedCountTarget = $('#registerAdvancedFilterCount');
+    if (advancedCountTarget) {
+      advancedCountTarget.textContent = advancedCount
+        ? advancedCount + ' active'
+        : 'Vendor, category, dates and payment method';
     }
 
     const selected = selectedRegisterDateRange();
@@ -646,6 +665,11 @@ export function createRegister({ api, go }) {
         );
       })
       .join('');
+    const advancedFilterCount = advancedRegisterFilterCount();
+    const advancedFiltersOpen = advancedFilterCount > 0 ? ' open' : '';
+    const advancedFilterCountLabel = advancedFilterCount
+      ? advancedFilterCount + ' active'
+      : 'Vendor, category, dates and payment method';
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
     const vendors =
       Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
@@ -667,46 +691,141 @@ export function createRegister({ api, go }) {
           description: 'Search payments and receipts, review status, and open voucher details.',
         },
       ) +
-      `<section class="card filters register-filter-panel" id="rf" aria-labelledby="registerFiltersTitle"><div class="register-panel-heading"><div><p class="page-eyebrow">FIND A MOVEMENT</p><h2 id="registerFiltersTitle">Search and refine</h2><p class="muted">Filters are applied by the server within your account permissions.</p></div><span class="register-server-label">SERVER FILTERED</span></div>
-    <div class="register-search-row"><label class="register-search-field" for="rq">Search vouchers<input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}"></label><span class="register-search-hint">Search voucher number, counterparty or note</span></div>
-    <div class="register-date-presets" role="group" aria-label="Quick register date ranges"><span class="register-date-presets__label">Quick period</span>${datePresetButtons}</div>
-    <p id="registerFilterSummary" class="register-filter-summary" role="status" aria-live="polite">Showing active vouchers. Add a filter to narrow these results.</p>
-    <div class="register-filter-grid">
-    <label class="register-filter-field" for="rv">Vendor<select id="rv" aria-label="Filter by vendor"><option value="">All vendors</option>${vendors.map((vendor) => `<option${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}</select></label>
-    <label class="register-filter-field" for="rc">Category<select id="rc" aria-label="Filter by category"><option value="">All categories</option>${categories()
-      .map(
-        (category) => `<option${category === R.cat ? ' selected' : ''}>${esc(category)}</option>`,
-      )
-      .join('')}</select></label>
-    <label class="register-filter-field" for="rfrom">From<input type="date" id="rfrom" value="${esc(R.from)}"></label><label class="register-filter-field" for="rto">To<input type="date" id="rto" value="${esc(R.to)}"></label>
-    ${can('viewAll') ? `<label class="register-filter-field" for="ru">User<select id="ru" aria-label="Filter by user"><option value="">All users</option>${users.map((user) => `<option value="${esc(user)}"${user === R.user ? ' selected' : ''}>${esc(nm(user))}</option>`).join('')}</select></label>` : ''}
-    <label class="register-filter-field" for="rt">Transaction type<select id="rt" aria-label="Filter by transaction type"><option value="">Paid & received</option><option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option><option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option></select></label>
-    <label class="register-filter-field" for="rpmethod">Payment method<select id="rpmethod" aria-label="Filter by payment method">${PAYMENT_METHOD_FILTER_OPTIONS.map(([key, label]) => '<option value="' + key + '"' + (R.paymentMethod === key ? ' selected' : '') + '>' + esc(label) + '</option>').join('')}</select></label>
-    <label class="register-filter-field" for="rs">Status<select id="rs" aria-label="Filter by status">${[
-      ['ACTIVE', 'Active'],
-      ['CANCELLED', 'Cancelled'],
-      ['ALL', 'All'],
-    ]
-      .map(
-        ([key, label]) =>
-          `<option value="${key}"${R.st === key ? ' selected' : ''}>${label}</option>`,
-      )
-      .join('')}</select></label>
-    <label class="register-filter-field" for="rapproval">Approval<select id="rapproval" aria-label="Filter by approval status">${[
-      ['ALL', 'All approval states'],
-      ['PENDING', 'Pending approval'],
-      ['APPROVED', 'Approved'],
-      ['REJECTED', 'Rejected'],
-      ['NOT_REQUIRED', 'Not required'],
-      ['REVIEW_REQUIRED', 'Needs review'],
-    ]
-      .map(
-        ([key, label]) =>
-          `<option value="${key}"${R.approval === key ? ' selected' : ''}>${label}</option>`,
-      )
-      .join('')}</select></label>
-    <div class="register-filter-actions"><button class="btn" data-act="rclear">Clear</button><button class="btn" data-act="csv">Export CSV</button></div></div></section>
-    <div class="card register-results-card"><div class="register-results-summary"><div><p class="page-eyebrow">REGISTER</p><h2>Voucher activity</h2><p class="muted">Authoritative entries and totals from the server-filtered register.</p><p id="registerPageMeta" class="register-page-meta" role="status" aria-live="polite">Loading matching vouchers…</p></div><div id="rtot" class="register-totals"></div></div><div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div><div class="table-wrap" role="region" aria-label="Voucher register entries" tabindex="0"><table><thead><tr><th>Voucher / Type</th><th>Date</th><th>Vendor / Details</th><th class="r">Amount</th><th>By</th><th>Actions</th></tr></thead><tbody id="rbody"></tbody></table></div><div id="rmore"></div></div>`;
+      `<section class="card filters register-filter-panel" id="rf" aria-labelledby="registerFiltersTitle">
+        <div class="register-panel-heading">
+          <div>
+            <p class="page-eyebrow">FIND A MOVEMENT</p>
+            <h2 id="registerFiltersTitle">Search and refine</h2>
+            <p class="muted">Search first. Add a filter when you need to narrow the results.</p>
+          </div>
+          <span class="register-server-label">SERVER FILTERED</span>
+        </div>
+        <div class="register-search-row">
+          <label class="register-search-field" for="rq">
+            Search vouchers
+            <input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}">
+          </label>
+          <span class="register-search-hint">Search voucher number, payee or note</span>
+        </div>
+        <div class="register-date-presets" role="group" aria-label="Quick register date ranges">
+          <span class="register-date-presets__label">Quick period</span>
+          ${datePresetButtons}
+        </div>
+        <p id="registerFilterSummary" class="register-filter-summary" role="status" aria-live="polite">Showing active vouchers. Search by voucher number, payee or note.</p>
+        <div class="register-primary-filter-grid">
+          <label class="register-filter-field" for="rt">
+            Transaction type
+            <select id="rt" aria-label="Filter by transaction type">
+              <option value="">Paid &amp; received</option>
+              <option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option>
+              <option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option>
+            </select>
+          </label>
+          <label class="register-filter-field" for="rs">
+            Status
+            <select id="rs" aria-label="Filter by status">
+              <option value="ACTIVE"${R.st === 'ACTIVE' ? ' selected' : ''}>Active</option>
+              <option value="CANCELLED"${R.st === 'CANCELLED' ? ' selected' : ''}>Cancelled</option>
+              <option value="ALL"${R.st === 'ALL' ? ' selected' : ''}>All</option>
+            </select>
+          </label>
+          <label class="register-filter-field" for="rapproval">
+            Approval
+            <select id="rapproval" aria-label="Filter by approval status">
+              ${[
+                ['ALL', 'All approval states'],
+                ['PENDING', 'Pending approval'],
+                ['APPROVED', 'Approved'],
+                ['REJECTED', 'Rejected'],
+                ['NOT_REQUIRED', 'Not required'],
+                ['REVIEW_REQUIRED', 'Needs review'],
+              ]
+                .map(
+                  ([key, label]) =>
+                    `<option value="${key}"${R.approval === key ? ' selected' : ''}>${label}</option>`,
+                )
+                .join('')}
+            </select>
+          </label>
+        </div>
+        <details class="register-advanced-filters" id="registerAdvancedFilters"${advancedFiltersOpen}>
+          <summary>
+            <span>More filters</span>
+            <span id="registerAdvancedFilterCount" class="register-advanced-filter-count">${advancedFilterCountLabel}</span>
+          </summary>
+          <div class="register-filter-grid">
+            <label class="register-filter-field" for="rv">
+              Vendor
+              <select id="rv" aria-label="Filter by vendor">
+                <option value="">All vendors</option>
+                ${vendors.map((vendor) => `<option value="${esc(vendor)}"${vendor === R.vendor ? ' selected' : ''}>${esc(vendor)}</option>`).join('')}
+              </select>
+            </label>
+            <label class="register-filter-field" for="rc">
+              Category
+              <select id="rc" aria-label="Filter by category">
+                <option value="">All categories</option>
+                ${categories()
+                  .map(
+                    (category) =>
+                      `<option value="${esc(category)}"${category === R.cat ? ' selected' : ''}>${esc(category)}</option>`,
+                  )
+                  .join('')}
+              </select>
+            </label>
+            <label class="register-filter-field" for="rfrom">
+              From
+              <input type="date" id="rfrom" value="${esc(R.from)}">
+            </label>
+            <label class="register-filter-field" for="rto">
+              To
+              <input type="date" id="rto" value="${esc(R.to)}">
+            </label>
+            ${can('viewAll') ? `<label class="register-filter-field" for="ru">User<select id="ru" aria-label="Filter by user"><option value="">All users</option>${users.map((user) => `<option value="${esc(user)}"${user === R.user ? ' selected' : ''}>${esc(nm(user))}</option>`).join('')}</select></label>` : ''}
+            <label class="register-filter-field" for="rpmethod">
+              Payment method
+              <select id="rpmethod" aria-label="Filter by payment method">
+                ${PAYMENT_METHOD_FILTER_OPTIONS.map(([key, label]) => `<option value="${key}"${R.paymentMethod === key ? ' selected' : ''}>${esc(label)}</option>`).join('')}
+              </select>
+            </label>
+          </div>
+        </details>
+        <div class="register-filter-actions">
+          <span class="register-filter-footnote">Results update automatically as you search or change a filter.</span>
+          <div class="register-filter-action-buttons">
+            <button type="button" class="btn" data-act="rclear" aria-label="Clear all filters" title="Clear all filters">Clear all</button>
+            <button type="button" class="btn" data-act="csv">Export CSV</button>
+          </div>
+        </div>
+      </section>
+      <div class="card register-results-card">
+        <div class="register-results-summary">
+          <div>
+            <p class="page-eyebrow">REGISTER</p>
+            <h2>Voucher activity</h2>
+            <p class="muted">Authoritative entries and totals from the server-filtered register.</p>
+            <p id="registerPageMeta" class="register-page-meta" role="status" aria-live="polite">Loading matching vouchers…</p>
+          </div>
+          <div id="rtot" class="register-totals"></div>
+        </div>
+        <div id="rempty" class="empty-state hidden" role="status" aria-live="polite"></div>
+        <div class="table-wrap" role="region" aria-label="Voucher register entries" tabindex="0">
+          <table>
+            <thead>
+              <tr>
+                <th>Voucher / Type</th>
+                <th>Date</th>
+                <th>Payee / Source and details</th>
+                <th class="r">Amount</th>
+                <th>Entered by</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="rbody"></tbody>
+          </table>
+        </div>
+        <div id="rmore"></div>
+      </div>`;
 
     return renderRows();
   }

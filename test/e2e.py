@@ -101,15 +101,29 @@ with sync_playwright() as p:
     )
     page = context.new_page()
 
-    def choose_cash_impact_for_current_rows():
-        for control in page.locator('#rows .rci').all():
-            control.select_option('CASH')
+    def choose_cash_impact_for_current_rows(impact):
+        allowed_impacts = {'CASH_IN', 'CASH_OUT', 'NO_CASH'}
+        if impact not in allowed_impacts:
+            raise AssertionError(f'Unsupported physical cash movement fixture: {impact!r}')
+        rows = page.locator('#rows .erow').all()
+        if not rows:
+            raise AssertionError('The current entry has no rows to classify.')
+        for row in rows:
+            choice = row.locator(f'.cash-impact[value="{impact}"]')
+            if choice.count() != 1:
+                raise AssertionError(f'Row does not expose the required {impact} choice.')
+            choice.check()
+        if page.locator('#rows .cash-impact:checked').count() != len(rows):
+            raise AssertionError('The test fixture did not select exactly one movement per entry.')
 
-    def choose_bulk_cash_impact_for_current_rows():
-        impact = 'CASH_IN' if page.locator('#bt2').input_value() == 'RECEIPT' else 'CASH_OUT'
-        count = page.locator('#bprev .bci').count()
-        for index in range(count):
-            page.locator('#bprev .bci').nth(index).select_option(impact)
+    def choose_bulk_cash_impact_for_current_rows(impact):
+        if impact not in {'CASH_IN', 'CASH_OUT', 'NO_CASH'}:
+            raise AssertionError(f'Unsupported bulk cash movement fixture: {impact!r}')
+        controls = page.locator('#bprev .bci').all()
+        if not controls:
+            raise AssertionError('Bulk preview did not expose cash movement choices.')
+        for control in controls:
+            control.select_option(impact)
 
     logs = []
     api_events = []
@@ -159,6 +173,14 @@ with sync_playwright() as p:
             'action': request_payload.get('action'),
             'status': response.status,
         }
+        if request_payload.get('action') == 'createVouchers':
+            entries = request_payload.get('entries')
+            event['cash_impacts'] = [
+                entry.get('cashImpact') for entry in entries if isinstance(entry, dict)
+            ] if isinstance(entries, list) else []
+            event['payment_methods'] = [
+                entry.get('paymentMethod') for entry in entries if isinstance(entry, dict)
+            ] if isinstance(entries, list) else []
         try:
             result = response.json()
             event['ok'] = result.get('ok') if isinstance(result, dict) else None
@@ -1131,10 +1153,33 @@ with sync_playwright() as p:
             and page.locator('#view .page-header h1').inner_text().strip() != '',
             f'{route_name}: one non-empty shared page heading is rendered',
         )
+        page.wait_for_function(
+            "document.activeElement === document.querySelector('#view .page-header h1')",
+            timeout=2000,
+        )
         check(
             page.evaluate("document.activeElement === document.querySelector('#view .page-header h1')"),
             f'{route_name}: route navigation places focus on the destination heading',
         )
+
+        if route_id == 'new':
+            # Synthetic fixture is applied after the destination focus assertion.
+            page.locator('#rows .rv').first.fill('Visual Review Supplies')
+            page.locator('#rows .ra').first.fill('1250')
+            check(
+                page.locator('#rows .approval-threshold-hint').first.is_hidden(),
+                '₹1,250 payment keeps the independent-approval helper hidden in the rendered UI',
+            )
+            page.locator('.cash-impact[value="CASH_OUT"]').first.check()
+            page.locator('#toast').evaluate("element => element.classList.add('hidden')")
+            # Radio selection scrolls its control into view. Reset before every visual capture
+            # so phone and desktop screenshots show the same top-of-task context.
+            page.evaluate("""() => {
+                window.scrollTo({top: 0, left: 0, behavior: 'instant'});
+                document.documentElement.scrollTop = 0;
+                document.body.scrollTop = 0;
+            }""")
+
         unnamed_controls = page.evaluate("""() => {
             const selector = [
                 'button',
@@ -1213,6 +1258,23 @@ with sync_playwright() as p:
             for width in visual_widths:
                 page.set_viewport_size({'width': width, 'height': 900 if width >= 768 else 844})
                 page.wait_for_timeout(25)
+                if route_id == 'new' and width in (390, 1280):
+                    new_entry_capture = page.evaluate("""() => {
+                        const heading = document.querySelector('#view .page-header h1');
+                        const rect = heading?.getBoundingClientRect();
+                        return {
+                            scrollY: window.scrollY,
+                            documentTop: document.scrollingElement?.scrollTop || 0,
+                            headingTop: rect ? Math.round(rect.top) : -1,
+                            headingVisible: Boolean(rect && rect.top >= 0 && rect.bottom <= window.innerHeight),
+                        };
+                    }""")
+                    check(
+                        new_entry_capture['scrollY'] <= 1
+                        and new_entry_capture['documentTop'] <= 1
+                        and new_entry_capture['headingVisible'],
+                        f'New Entry visual capture starts at the page heading at {width}px; metrics={new_entry_capture}',
+                    )
                 layout = page.evaluate("""() => {
                     const root = document.documentElement;
                     const body = document.body;
@@ -1252,7 +1314,7 @@ with sync_playwright() as p:
                             const statsRect = stats.getBoundingClientRect();
                             return {
                                 role: stats.classList.contains('dashboard-stats--owner') ? 'owner'
-                                    : stats.classList.contains('dashboard-stats--staff') ? 'staff' : 'unknown',
+                                    : stats.classList.contains('dashboard-stats--manager') ? 'manager' : 'unknown',
                                 cardCount: cards.length,
                                 columns: getComputedStyle(stats).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
                                 cardsWithinGrid: cards.every((card) => {
@@ -1394,17 +1456,37 @@ with sync_playwright() as p:
         payeeLabelled: labelled('.rv'), amountLabelled: labelled('.ra'),
         noteLabelled: labelled('.rn'), categoryLabelled: labelled('.rc'),
         methodLabelled: labelled('.rci'),
+        movementLegend: row?.querySelector('.cash-movement-fieldset legend')?.textContent.trim() || '',
+        movementValues: Array.from(row?.querySelectorAll('.cash-impact') || []).map((input) => input.value),
+        movementUnselected: row?.querySelectorAll('.cash-impact:checked').length === 0,
+        approvalHintPresent: Boolean(row?.querySelector('.approval-threshold-hint[hidden]')),
         receiptInputPresent: Boolean(row?.querySelector('.rf[type="file"][multiple]')),
         removeActionPresent: Boolean(row?.querySelector('button.x[data-act="delrow"]')),
       };
     }""")
     check(
-        all(row_semantics.values()),
-        f'New Entry row uses labelled native controls and receipt/remove actions; semantics={row_semantics}',
+        all(row_semantics.values())
+        and row_semantics['movementLegend'] == 'What happened to the physical cash?'
+        and row_semantics['movementValues'] == ['CASH_IN', 'CASH_OUT', 'NO_CASH']
+        and row_semantics['movementUnselected'],
+        f'New Entry row exposes three explicit drawer choices with no silent default; semantics={row_semantics}',
     )
     first_entry_row = page.locator('#rows .erow').first
     first_entry_row.locator('.rv').fill('DOM row renderer probe')
     first_entry_row.locator('.ra').fill('1')
+    create_requests_before_missing_movement = sum(
+        event.get('action') == 'createVouchers' for event in api_events
+    )
+    page.click('#nsave')
+    page.wait_for_selector('#rows .erow .row-error')
+    check(
+        'physical cash' in page.locator('#rows .erow .row-error').inner_text().lower()
+        and page.evaluate("document.activeElement?.classList.contains('cash-impact')")
+        and sum(event.get('action') == 'createVouchers' for event in api_events)
+        == create_requests_before_missing_movement,
+        'saving without a physical cash choice is blocked, explained and focused without an API write',
+    )
+    first_entry_row.locator('.cash-impact[value="CASH_OUT"]').check()
     page.locator('#nf [data-act="addrow"]').click()
     check(
         page.locator('#rows .erow').count() == 2
@@ -1517,13 +1599,11 @@ with sync_playwright() as p:
       };
     }""")
     check(
-        desktop_entry_metrics['columns'] >= 4
+        desktop_entry_metrics['columns'] >= 3
         and desktop_entry_metrics['noteWidth'] >= 140
         and desktop_entry_metrics['removeWidth'] >= 44
-        and desktop_entry_metrics['layoutElements'][4]['left']
-        < desktop_entry_metrics['layoutElements'][5]['left']
-        and desktop_entry_metrics['layoutElements'][4]['width']
-        > desktop_entry_metrics['layoutElements'][5]['width']
+        and desktop_entry_metrics['layoutElements'][4]['width'] > 0
+        and desktop_entry_metrics['layoutElements'][5]['width'] == 0
         and not desktop_entry_metrics['horizontalOverflow'],
         f'desktop payment row allocates four distinct tracks without stretched remove controls or overflow; metrics={desktop_entry_metrics}',
     )
@@ -1536,20 +1616,10 @@ with sync_playwright() as p:
     )
     page.locator('#rows .erow .rv').first.fill('Keyboard Batch Test Vendor')
     page.locator('#rows .erow .ra').first.fill('42')
-    page.wait_for_function("document.querySelector('#batchTotal')?.dataset.value === '42.00'")
+    page.locator('#rows .erow .cash-impact[value="CASH_OUT"]').check()
     check(
-        page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
-        and page.locator('#batchProgress').get_attribute('aria-valuemax') == '1'
-        and 'ready to save' in page.locator('#batchReadiness').inner_text().lower(),
-        'batch progress announces when every entry is complete',
-    )
-    check(
-        page.locator('#batchCount').inner_text() == '1 ready entry'
-        and page.locator('#batchTotal').get_attribute('data-value') == '42.00'
-        and page.locator('#batchCash').get_attribute('data-value') == '42.00'
-        and page.locator('#batchUpi').get_attribute('data-value') == '0.00'
-        and page.locator('#batchBank').get_attribute('data-value') == '0.00',
-        'live batch summary reports the ready entry and cash-method amount',
+        page.locator('#entrySummary').is_hidden(),
+        'ordinary single-entry flow hides the multi-entry summary',
     )
     page.locator('#rows .erow .ra').first.press('Enter')
     page.wait_for_function(
@@ -1558,15 +1628,16 @@ with sync_playwright() as p:
         "document.activeElement.closest('.erow') === document.querySelectorAll('#rows .erow')[1]"
     )
     check(
-        page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
+        not page.locator('#entrySummary').is_hidden()
+        and page.locator('#batchProgress').get_attribute('aria-valuenow') == '1'
         and page.locator('#batchProgress').get_attribute('aria-valuemax') == '2'
         and '1 of 2' in page.locator('#batchReadiness').inner_text(),
-        'an appended blank row reduces batch completion without changing ready totals',
+        'second entry reveals the multi-entry summary and counts the empty row as incomplete',
     )
     check(
         page.locator('#batchTotal').get_attribute('data-value') == '42.00'
         and page.locator('#batchCount').inner_text() == '1 ready entry',
-        'Enter appends and focuses a new row without counting an incomplete row',
+        'multi-entry totals exclude an incomplete row',
     )
     page.locator('#rows .erow').nth(1).locator('.x').click()
     check(
@@ -1697,10 +1768,23 @@ with sync_playwright() as p:
     page.fill('#cc-date', '2020-01-01')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-opening')
+    page.wait_for_selector('#cc-readiness[data-state="opening-required"]')
+    check(
+        'Opening cash required' in page.locator('#cc-readiness').inner_text()
+        and page.locator('#cc-create').is_disabled()
+        and page.locator('#cc-create').get_attribute('aria-describedby') == 'cc-readiness-description',
+        'Cash Close explains the missing opening balance before enabling finalization',
+    )
     page.fill('#cc-opening', '80')
     page.fill('#cc-opening-reason', 'Opening cash counted before the first test day')
     page.click('[data-act=closePreview]')
     page.wait_for_selector('#cc-counted')
+    page.wait_for_selector('#cc-readiness[data-state="ready-for-count"]')
+    check(
+        'Ready for physical count' in page.locator('#cc-readiness').inner_text()
+        and not page.locator('#cc-create').is_disabled(),
+        'Cash Close separates server readiness from the operator’s required physical count',
+    )
     page.fill('#cc-counted', '100')
     page.fill('#cc-variance-reason', 'Initial count differs from expected cash')
     page.click('[data-act=closeCreate]')
@@ -1985,6 +2069,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#cc-create')
     check(
         page.locator('#cc-create').is_disabled()
+        and page.locator('#cc-readiness').get_attribute('data-state') == 'device-queue'
         and 'offline/recovery entr' in page.locator('#cc-results').inner_text().lower(),
         'a local offline entry blocks the cash close',
     )
@@ -2092,8 +2177,19 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.wait_for_selector('#nf')
     page.locator('#rows .rv').first.fill('Approval E2E vendor')
+    page.locator('#rows .ra').first.fill('9999.99')
+    check(
+        page.locator('#rows .approval-threshold-hint').first.is_hidden(),
+        'payment just below ₹10,000 does not show the approval helper',
+    )
     page.locator('#rows .ra').first.fill('10000')
-    choose_cash_impact_for_current_rows()
+    check(
+        page.locator('#rows .approval-threshold-hint').first.is_visible()
+        and '₹10,000 or more' in page.locator('#rows .approval-threshold-hint').first.inner_text()
+        and 'cannot approve your own payment' in page.locator('#rows .approval-threshold-hint').first.inner_text(),
+        'high-value payment explains independent approval at the exact ₹10,000 boundary',
+    )
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     try:
         page.wait_for_function(
@@ -2757,6 +2853,40 @@ with sync_playwright() as p:
     manager_page.fill('#newPassword', 'Lock#Final2026')
     manager_page.click('.mcard .primary')
     manager_page.wait_for_selector('#nav button')
+    go_view(manager_page, 'dash')
+    manager_page.wait_for_function(
+        """() => {
+            const view = document.querySelector('#view');
+            return Boolean(
+                view?.querySelector('.dashboard-view')
+                && (
+                    view.querySelector('.dashboard-stats--owner')
+                    || view.querySelector('.dashboard-empty-state')
+                )
+                && view.querySelector('.dashboard-cash-position')
+                && view.querySelector('.daily-close-readiness')
+            );
+        }""",
+        timeout=10000,
+    )
+    manager_stats = manager_page.locator('.dashboard-stats--owner > .stat').count()
+    manager_empty_period = manager_page.locator('.dashboard-empty-state').count()
+    check(
+        manager_page.locator('#view .page-header h1').inner_text() == 'Dashboard'
+        and manager_page.locator('.dashboard-staff-home').count() == 0
+        and manager_page.locator('.dashboard-cash-position').count() == 1
+        and manager_page.locator('.daily-close-readiness').count() == 1
+        and (
+            manager_stats == 6
+            or (
+                manager_stats == 0
+                and manager_empty_period == 1
+                and 'No approved payments or recorded receipts are included in the selected period'
+                in manager_page.locator('.dashboard-empty-state').inner_text()
+            )
+        ),
+        'Manager keeps finance and cash-close controls while respecting a valid empty-period state',
+    )
     go_view(manager_page, 'reg')
     manager_page.wait_for_selector('#rq')
     manager_page.fill('#rq', 'Approval E2E vendor')
@@ -2896,7 +3026,7 @@ with sync_playwright() as p:
     page.wait_for_selector('#nf')
     page.locator('#rows .rv').first.fill('Accountant E2E Vendor')
     page.locator('#rows .ra').first.fill('125')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1')")
     check(
@@ -3869,14 +3999,12 @@ with sync_playwright() as p:
     page.locator('#rows .erow .ra').fill('10')
     page.select_option('#rows .erow .rci', 'UPI')
     page.select_option('#rows .erow .rc', 'Other')
-    page.wait_for_function("document.querySelector('#batchUpi')?.dataset.value === '10.00'")
+    page.locator('#rows .erow .cash-impact[value="NO_CASH"]').check()
     check(
         page.locator('#rows .erow .rci').input_value() == 'UPI'
-        and page.locator('#batchTotal').get_attribute('data-value') == '10.00'
-        and page.locator('#batchCash').get_attribute('data-value') == '0.00'
-        and page.locator('#batchUpi').get_attribute('data-value') == '10.00'
-        and page.locator('#batchBank').get_attribute('data-value') == '0.00',
-        'UPI batch total is kept separate from cash-method total',
+        and page.locator('#rows .erow .cash-impact:checked').input_value() == 'NO_CASH'
+        and page.locator('#entrySummary').is_hidden(),
+        'single-entry UPI workflow keeps its explicit drawer choice without showing batch-only totals',
     )
     check(
         page.locator('#rows .erow .rv-quick-save').count() == 1,
@@ -3887,8 +4015,9 @@ with sync_playwright() as p:
     check(
         page.locator('#rows .erow .rc').input_value() == 'Other'
         and page.locator('#rows .erow .rci').input_value() == 'UPI'
-        and page.locator('#batchUpi').get_attribute('data-value') == '10.00',
-        'saving the payee preserves current voucher entry and selected defaults',
+        and page.locator('#rows .erow .cash-impact:checked').input_value() == 'NO_CASH'
+        and page.locator('#entrySummary').is_hidden(),
+        'saving the payee preserves current voucher details and keeps the single-entry layout',
     )
     check(
         page.locator('#recentVendors').count() == 1,
@@ -4002,7 +4131,7 @@ with sync_playwright() as p:
         image_file.write(png)
     page.set_input_files('.rf', '/tmp/offline-unlock.png')
     page.wait_for_selector('.thumb')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel', timeout=10000)
     check(
@@ -4368,80 +4497,84 @@ with sync_playwright() as p:
         'staff gets a simple User workspace with no desktop-only navigation heading on the mobile bottom bar',
     )
 
-    # Exercise the live staff dashboard at every KPI breakpoint with deliberately long
-    # INR values, rather than inferring its layout from owner-only screenshots.
+    # Staff Home is an entry-first work surface, not a miniature finance dashboard.
     go_view(page, 'dash')
-    page.wait_for_selector('#view .dashboard-stats--staff', timeout=10000)
-    staff_dashboard_widths = [320, 390, 440, 441, 768, 800, 801, 1024, 1100, 1101, 1280]
+    page.wait_for_selector('.dashboard-staff-home', timeout=10000)
+    page.set_viewport_size({'width': 390, 'height': 800})
+    staff_recent_period_button = page.locator('[data-drill-key="recent-period"]')
+    staff_from = staff_recent_period_button.get_attribute('data-from')
+    staff_to = staff_recent_period_button.get_attribute('data-to')
+    check(
+        staff_to == BUSINESS_TODAY.isoformat()
+        and (datetime.date.fromisoformat(staff_to) - datetime.date.fromisoformat(staff_from)).days == 29,
+        'staff Home defaults to the latest 30 calendar days',
+    )
+    staff_quick_actions = page.locator('.dashboard-staff-action')
+    check(
+        staff_quick_actions.count() == 2
+        and staff_quick_actions.nth(0).inner_text().strip() == 'Record a payment'
+        and staff_quick_actions.nth(1).inner_text().strip() == 'Record cash received'
+        and page.locator('.dashboard-staff-home').is_visible()
+        and page.locator('.dashboard-staff-home').count() == 1
+        and page.locator('.page-header-actions [data-act="ntype"]').count() == 0,
+        'staff Home starts with the two permitted entry actions exactly once without duplicate header actions',
+    )
+    check(
+        page.locator('.dashboard-stats, .dashboard-analysis-grid, .dashboard-period, .dashboard-trend').count() == 0
+        and page.locator('#view h2').filter(has_text='My recent entries').count() == 1,
+        'staff Home omits management analytics and shows My recent entries instead',
+    )
+
+    # Three representative device classes in both themes; one rendered-geometry check per case.
     for theme_name in ['light', 'dark']:
         page.evaluate("theme => document.documentElement.setAttribute('data-theme', theme)", theme_name)
-        for width in staff_dashboard_widths:
+        for width in [390, 768, 1280]:
             page.set_viewport_size({'width': width, 'height': 900 if width >= 768 else 844})
-            page.wait_for_timeout(25)
-            staff_metrics = page.evaluate("""() => {
+            staff_home_metrics = page.evaluate("""() => {
                 const root = document.documentElement;
                 const body = document.body;
-                const view = document.querySelector('#view');
-                const stats = view?.querySelector('.dashboard-view .dashboard-stats');
-                if (!stats) return {
-                    role: 'missing', cardCount: 0, columns: 0,
-                    cardsWithinGrid: false, valuesFit: false,
-                    viewportWidth: root.clientWidth,
-                    documentWidth: Math.max(root.scrollWidth, body.scrollWidth)
-                };
-                const cards = Array.from(stats.querySelectorAll(':scope > .stat'));
-                const statsRect = stats.getBoundingClientRect();
+                const actions = [...document.querySelectorAll('.dashboard-staff-action')];
                 return {
-                    role: stats.classList.contains('dashboard-stats--staff') ? 'staff'
-                        : stats.classList.contains('dashboard-stats--owner') ? 'owner' : 'unknown',
-                    cardCount: cards.length,
-                    columns: getComputedStyle(stats).gridTemplateColumns.trim().split(' ').filter(Boolean).length,
-                    cardsWithinGrid: cards.every((card) => {
-                        const rect = card.getBoundingClientRect();
-                        return rect.left >= statsRect.left - 1 && rect.right <= statsRect.right + 1;
-                    }),
-                    valuesFit: cards.every((card) => {
-                        const value = card.querySelector(':scope > b');
-                        if (!value) return false;
-                        const valueRect = value.getBoundingClientRect();
-                        const cardRect = card.getBoundingClientRect();
-                        return valueRect.left >= cardRect.left - 1
-                            && valueRect.right <= cardRect.right + 1
-                            && value.scrollWidth <= value.clientWidth + 1;
-                    }),
+                    count: actions.length,
+                    minHeight: actions.length ? Math.min(...actions.map(item => item.getBoundingClientRect().height)) : 0,
+                    columns: actions.length
+                        ? getComputedStyle(actions[0].parentElement).gridTemplateColumns.trim().split(' ').filter(Boolean).length
+                        : 0,
+                    withinHome: actions.every(item => item.closest('.dashboard-staff-home')),
+                    documentWidth: Math.max(root.scrollWidth, body.scrollWidth),
                     viewportWidth: root.clientWidth,
-                    documentWidth: Math.max(root.scrollWidth, body.scrollWidth)
+                    recentVisible: Boolean(document.querySelector('.dashboard-recent-transactions')),
                 };
             }""")
-            expected_columns = 5 if width >= 1101 else 3 if width >= 801 else 2
+            expected_action_columns = 1 if width <= 560 else 2
             check(
-                staff_metrics['role'] == 'staff'
-                and staff_metrics['cardCount'] == 5
-                and staff_metrics['columns'] == expected_columns,
-                f'staff dashboard KPI grid matches the five-card role and breakpoint contract at {width}px in {theme_name} theme; metrics={staff_metrics}',
+                staff_home_metrics['count'] == 2
+                and staff_home_metrics['columns'] == expected_action_columns
+                and staff_home_metrics['minHeight'] >= 44
+                and staff_home_metrics['withinHome']
+                and staff_home_metrics['recentVisible']
+                and staff_home_metrics['documentWidth'] <= staff_home_metrics['viewportWidth'] + 1,
+                f'staff Home actions and recent entries remain usable at {width}px in {theme_name}; metrics={staff_home_metrics}',
             )
-            check(
-                staff_metrics['cardsWithinGrid'] and staff_metrics['valuesFit'],
-                f'dashboard KPI values fit inside their cards without horizontal clipping at {width}px in {theme_name} theme; metrics={staff_metrics}',
-            )
-            check(
-                staff_metrics['documentWidth'] <= staff_metrics['viewportWidth'] + 1,
-                f'staff dashboard remains within the viewport at {width}px in {theme_name} theme',
-            )
+
     page.set_viewport_size({'width': 390, 'height': 800})
-    staff_kpi_buttons = page.locator('.dashboard-stats--staff .dashboard-kpi-drilldown')
+    page.evaluate("document.documentElement.setAttribute('data-theme', 'light')")
+    page.locator('.dashboard-staff-action[data-k="PAYMENT"]').click()
+    page.wait_for_selector('#nf')
     check(
-        staff_kpi_buttons.count() == 5
-        and all(
-            staff_kpi_buttons.nth(index).get_attribute('data-target') == 'reg'
-            for index in range(staff_kpi_buttons.count())
-        )
-        and page.locator('.dashboard-stats--staff [data-target="reports"], .dashboard-stats--staff [data-target="cashClose"]').count() == 0,
-        'staff Dashboard exposes all five KPI drill-downs only to the permitted Register',
+        page.locator('#nsave').inner_text() == 'Save payment',
+        'Record a payment opens the existing Payment workflow',
     )
-    staff_period_button = page.locator('[data-drill-key="payments-period"]')
-    staff_from = staff_period_button.get_attribute('data-from')
-    staff_to = staff_period_button.get_attribute('data-to')
+    go_view(page, 'dash')
+    page.locator('.dashboard-staff-action[data-k="RECEIPT"]').click()
+    page.wait_for_selector('#nf')
+    check(
+        page.locator('#nsave').inner_text() == 'Save cash receipt',
+        'Record cash received opens the existing Cash received workflow',
+    )
+    go_view(page, 'dash')
+
+    page.wait_for_selector('[data-drill-key="approval-exceptions"]', timeout=10000)
     staff_approval_attention = page.locator('.needs-item [data-drill-key="approval-exceptions"]')
     check(
         staff_approval_attention.count() == 1
@@ -4463,25 +4596,25 @@ with sync_playwright() as p:
         and page.locator('#rto').input_value() == staff_to
         and staff_attention_request.get('from') == staff_from
         and staff_attention_request.get('to') == staff_to,
-        'staff approval attention opens the same selected-period payment Register with all approval states',
+        'staff approval attention opens the same server-scoped period in Register',
     )
     go_view(page, 'dash')
-    page.wait_for_selector('[data-drill-key="payments-period"]')
+    page.wait_for_selector('[data-drill-key="recent-period"]')
     with page.expect_response(
         lambda response: '/api?' in response.url
         and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
-        and json.loads(response.request.post_data or '{}').get('t') == 'PAYMENT'
         and json.loads(response.request.post_data or '{}').get('from') == staff_from
-        and json.loads(response.request.post_data or '{}').get('approval') == 'APPROVED'
-    ) as staff_kpi_response:
-        page.locator('[data-drill-key="payments-period"]').click()
-    staff_kpi_request = json.loads(staff_kpi_response.value.request.post_data or '{}')
+        and json.loads(response.request.post_data or '{}').get('to') == staff_to
+    ) as staff_recent_period_response:
+        page.locator('[data-drill-key="recent-period"]').click()
+    staff_recent_period_request = json.loads(staff_recent_period_response.value.request.post_data or '{}')
+    page.wait_for_selector('#rf')
     check(
-        page.locator('#rt').input_value() == 'PAYMENT'
-        and page.locator('#rfrom').input_value() == staff_from
+        page.locator('#rfrom').input_value() == staff_from
         and page.locator('#rto').input_value() == staff_to
-        and staff_kpi_request.get('to') == staff_to,
-        'staff payment KPI opens the selected-period, date/type-scoped Register',
+        and staff_recent_period_request.get('from') == staff_from
+        and staff_recent_period_request.get('to') == staff_to,
+        'View all entries preserves the visible period in the server-scoped Register',
     )
     go_view(page, 'dash')
     page.wait_for_selector('.dashboard-recent-item__open')
@@ -4503,7 +4636,7 @@ with sync_playwright() as p:
         and staff_recent_request.get('to') == BUSINESS_TODAY.isoformat()
         and staff_recent_request.get('t') == 'PAYMENT'
         and staff_recent_request.get('vendor') == 'Staff Dashboard Drilldown',
-        'staff recent transaction opens its voucher number/vendor/date/type through Register server filters',
+        'staff recent entry opens its voucher number/vendor/date/type through Register server filters',
     )
     go_view(page, 'dash')
     page.unroute('**/api?*', inject_staff_dashboard_summary)
@@ -4546,10 +4679,10 @@ with sync_playwright() as p:
     )
     check(
         page.locator('.rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer']
-        and page.locator('.rci').first.input_value() == 'CASH',
-        'payment method defaults to Cash and exposes explicit UPI/bank transfer options',
+        and page.locator('.rci').first.input_value() == 'CASH'
+        and page.locator('.cash-impact:checked').count() == 0,
+        'payment method defaults separately while physical cash movement starts unselected',
     )
-    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('#nres .form-error')
     check(
@@ -4558,7 +4691,6 @@ with sync_playwright() as p:
         'empty form submission is announced and focuses the first row',
     )
     page.fill('.rv', 'Ram Traders')
-    choose_cash_impact_for_current_rows()
     page.click('#nsave')
     page.wait_for_selector('.row-error')
     check(
@@ -4585,10 +4717,19 @@ with sync_playwright() as p:
     page.select_option('.rci', 'UPI')
     check(
         page.locator('.rci').first.input_value() == 'UPI'
-        and page.locator('.rci').first.get_attribute('aria-invalid') is None,
-        'selecting UPI does not require a separate cash-drawer classification',
+        and page.locator('.cash-impact:checked').count() == 0,
+        'UPI selection does not silently classify physical drawer movement',
     )
-    page.select_option('.rci', 'CASH')
+    page.click('#nsave')
+    page.wait_for_selector('.row-error')
+    check(
+        'Choose what happened to the physical cash' in page.locator('.row-error').inner_text()
+        and page.locator('.cash-impact').first.get_attribute('aria-invalid') == 'true'
+        and page.evaluate("document.activeElement === document.querySelector('.cash-impact')"),
+        'missing drawer movement is announced and focus moves to the required choice',
+    )
+    page.locator('.cash-impact[value="NO_CASH"]').check()
+    page.wait_for_function("document.querySelector('.row-error') === null")
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
     xss_note = '<img src=x onerror=window.__xssFired=true>'
@@ -4612,6 +4753,7 @@ with sync_playwright() as p:
     )
     page.locator('.rv').nth(1).fill('Shiv Gas')
     page.locator('.ra').nth(1).fill('900')
+    page.locator('.erow').nth(1).locator('.cash-impact[value="CASH_OUT"]').check()
     second_row = page.locator('.erow').nth(1)
     second_row.locator('.rf').set_input_files('/tmp/r.png')
     page.wait_for_function("document.querySelectorAll('.erow .thumb').length === 2")
@@ -4639,6 +4781,7 @@ with sync_playwright() as p:
         and page.evaluate("url => window.__revokedObjectUrls.includes(url)", removed_preview_url),
         'removing a receipt row restores focus and revokes its preview URL',
     )
+    page.locator('.erow').first.locator('.cash-impact[value="CASH_OUT"]').check()
     page.click('[data-act=addrow]')
     page.wait_for_function("document.querySelectorAll('.erow').length === 2")
     page.locator('.rv').nth(1).fill('Shiv Gas')
@@ -4665,12 +4808,23 @@ with sync_playwright() as p:
             route.fulfill(response=response)
 
     page.route('**/api?*', tamper_created_voucher_number)
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
+    page.locator('.erow').first.locator('.cash-impact[value="NO_CASH"]').check()
+    page.locator('.erow').first.locator('.rci').select_option('UPI')
+    page.locator('.erow').nth(1).locator('.rci').select_option('CASH')
     normal_voucher_date = page.locator('#nd').input_value()
     normal_voucher_date_display = '/'.join(reversed(normal_voucher_date.split('-')))
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved 2 payments' in page.inner_text('#nres'), 'saved 2 payments')
+    create_request = next(
+        event for event in reversed(api_events) if event.get('action') == 'createVouchers'
+    )
+    check(
+        create_request.get('cash_impacts') == ['NO_CASH', 'CASH_OUT']
+        and create_request.get('payment_methods') == ['UPI', 'CASH'],
+        'submitted physical movement is independent of payment method',
+    )
     check(
         page.locator('#nres img, #nres svg').count() == 0
         and success_number_payload in page.locator('#nres').inner_text()
@@ -4826,6 +4980,34 @@ with sync_playwright() as p:
 
     go_view(page, 'reg')
     page.wait_for_selector('#rbody tr')
+    check(
+        not page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and page.locator('#rq').is_visible()
+        and page.locator('.register-date-presets').is_visible()
+        and page.locator('#rt').is_visible()
+        and page.locator('#rs').is_visible()
+        and page.locator('#rapproval').is_visible()
+        and not page.locator('#rv').is_visible(),
+        'Register keeps search, quick periods and common filters visible while less-used filters start collapsed',
+    )
+    advanced_summary = page.locator('#registerAdvancedFilters summary')
+    advanced_summary.focus()
+    page.keyboard.press('Enter')
+    check(
+        page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and page.locator('#rv').is_visible()
+        and page.locator('#rc').is_visible()
+        and page.locator('#rfrom').is_visible()
+        and page.locator('#rpmethod').is_visible(),
+        'More filters expands through the native keyboard-operable disclosure',
+    )
+    page.keyboard.press('Enter')
+    check(
+        not page.locator('#registerAdvancedFilters').evaluate('element => element.open')
+        and not page.locator('#rv').is_visible(),
+        'More filters can be collapsed again without clearing selected values',
+    )
+    page.keyboard.press('Enter')
     check(
         page.locator('#registerPageMeta').inner_text() == 'Loaded 2 of 2 matching vouchers',
         'Register shows the loaded page against the authoritative server match count',
@@ -5037,6 +5219,7 @@ with sync_playwright() as p:
         'Register returns to its populated table after the first-use fixture is removed',
     )
 
+    page.locator('#registerAdvancedFilters').evaluate('element => { element.open = true; }')
     page.fill('#rfrom', '2026-10-20')
     page.fill('#rto', '2026-10-10')
     check(
@@ -5226,7 +5409,7 @@ with sync_playwright() as p:
     page.set_input_files('.rf', '/tmp/r.png')
     page.wait_for_selector('.thumb')
     offline_receipt_preview_url = page.locator('.thumb').first.get_attribute('src')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'offline queued')
@@ -5438,7 +5621,7 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', 'Multi-tab Vendor')
     page.fill('.ra', '525')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'multi-tab payment queued locally')
@@ -5488,6 +5671,8 @@ with sync_playwright() as p:
                     ownerKey: record.ownerKey || '',
                     status: record.status,
                     failure: record.failure || '',
+                    cashImpact: record.entry?.cashImpact || '',
+                    paymentMethod: record.entry?.paymentMethod || '',
                   })));
                 request.onerror = () => reject(request.error);
               });
@@ -5536,7 +5721,7 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', 'Account-bound Vendor')
     page.fill('.ra', '81')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'account-binding test payment is queued offline')
@@ -5646,10 +5831,11 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', 'Poison Vendor')
     page.fill('.ra', '99')
+    page.locator('.erow').first.locator('.cash-impact[value="CASH_OUT"]').check()
     page.click('[data-act=addrow]')
     page.locator('#rows .erow').nth(1).locator('.rv').fill('Healthy Neighbor Vendor')
     page.locator('#rows .erow').nth(1).locator('.ra').fill('101')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check('Saved on this device' in page.inner_text('#nres'), 'mixed valid/invalid batch is safely queued offline')
@@ -5743,9 +5929,15 @@ with sync_playwright() as p:
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.rv', 'Offline Receipt Label Test')
     page.fill('.ra', '21')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_IN')
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel')
+    offline_receipt_records = outbox_vendor_records('Offline Receipt Label Test')
+    check(
+        len(offline_receipt_records) == 1
+        and offline_receipt_records[0]['cashImpact'] == 'CASH_IN',
+        'offline receipt preserves its explicit CASH_IN drawer movement in the device queue',
+    )
     page.wait_for_function(
         "document.querySelector('#banner').innerText.includes('1 cash receipt waiting to upload')",
         timeout=8000,
@@ -5976,6 +6168,14 @@ with sync_playwright() as p:
         'manager cash-readiness attention opens the authorized current-business-date Cash Close context',
     )
     go_view(page, 'dash')
+    page.wait_for_selector('.dashboard-period', timeout=10000)
+    page.wait_for_selector('.dashboard-cash-position', timeout=10000)
+    check(
+        page.locator('.dashboard-staff-home').count() == 0
+        and page.locator('.dashboard-period').count() == 1
+        and page.locator('.dashboard-cash-position').count() == 1,
+        'Manager keeps the operational dashboard and server-calculated cash position, not the staff Home',
+    )
     manager_kpi_contexts = {
         'payments-period': ('reg', 'PAYMENT', 'APPROVED'),
         'payment-count': ('reg', 'PAYMENT', 'APPROVED'),
@@ -6071,7 +6271,7 @@ with sync_playwright() as p:
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.rv', 'Guest Room 5')
     page.fill('.ra', '5000')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_IN')
     page.click('#nsave')
     page.wait_for_selector('.ok-panel')
     check(
@@ -6150,7 +6350,7 @@ with sync_playwright() as p:
         'bulk preview scrolls inside a named keyboard-focusable region at 320px',
     )
     page.set_viewport_size({'width': 390, 'height': 800})
-    choose_bulk_cash_impact_for_current_rows()
+    choose_bulk_cash_impact_for_current_rows('CASH_OUT')
     check(
         'CSV File Vendor' in page.locator('#bprev').inner_text()
         and '1 ready' in page.locator('#bprev').inner_text().replace('\n', ' '),
@@ -6171,7 +6371,7 @@ with sync_playwright() as p:
     page.wait_for_function(
         "document.querySelector('#bprev')?.innerText.includes('Bulk Imported Replacement Vendor')"
     )
-    choose_bulk_cash_impact_for_current_rows()
+    choose_bulk_cash_impact_for_current_rows('CASH_OUT')
     preview_text = page.inner_text('#bprev')
     check(
         '2 ready' in preview_text or '2\nready' in preview_text or '2 ready' in preview_text.replace('\n', ' '),
@@ -6210,7 +6410,7 @@ with sync_playwright() as p:
     page.select_option('#bt2', 'RECEIPT')
     page.click('[data-act=parse]')
     page.wait_for_selector('#bprev table')
-    choose_bulk_cash_impact_for_current_rows()
+    choose_bulk_cash_impact_for_current_rows('CASH_IN')
     check('1 ready' in page.inner_text('#bprev').replace('\n', ' '), 'receipt import row is ready after explicit classification')
     check(
         'Import 1 cash receipt' in page.locator('#bprev').inner_text(),
@@ -7050,6 +7250,21 @@ with sync_playwright() as p:
         'Register table region is reachable in tab order with a visible focus indicator',
     )
     page.set_viewport_size({'width': 1280, 'height': 800})
+    desktop_register_panel = page.locator('#rf').evaluate(
+        """element => ({
+            display: getComputedStyle(element).display,
+            columns: getComputedStyle(element).gridTemplateColumns,
+            width: element.getBoundingClientRect().width,
+            headingWidth: element.querySelector('.register-panel-heading').getBoundingClientRect().width,
+            searchWidth: element.querySelector('.register-search-row').getBoundingClientRect().width,
+        })"""
+    )
+    check(
+        desktop_register_panel['display'] == 'grid'
+        and desktop_register_panel['headingWidth'] >= desktop_register_panel['width'] * 0.85
+        and desktop_register_panel['searchWidth'] >= desktop_register_panel['width'] * 0.85,
+        f'desktop Register filter panel keeps heading and search full-width; metrics={desktop_register_panel}',
+    )
     check(
         manager_row.locator('.voucher-actions').evaluate("element => getComputedStyle(element).display") == 'flex',
         'desktop register keeps a grouped action layout',
@@ -7060,6 +7275,21 @@ with sync_playwright() as p:
         and not page.evaluate('window.__xssFired === true'),
         'stored vendor values remain inert text in register filter options',
     )
+    hostile_search_query = '"><img src=x onerror=window.__xssFired=true>'
+    page.fill('#rq', hostile_search_query)
+    page.wait_for_timeout(250)
+    go_view(page, 'dash')
+    go_view(page, 'reg')
+    page.wait_for_selector('#rq')
+    check(
+        page.locator('#rq').input_value() == hostile_search_query
+        and page.locator('#rf img, #rf svg').count() == 0
+        and not page.evaluate('window.__xssFired === true'),
+        'hostile Register search remains an inert input value after route rendering',
+    )
+    page.fill('#rq', '')
+    page.wait_for_timeout(260)
+    page.wait_for_selector('#rbody tr')
     note_row = page.locator('#rbody tr').filter(has_text=manager_voucher_number)
     edit_trigger = note_row.locator('[data-act=edit]')
     edit_trigger.evaluate("(element) => element.dataset.focusRestoreProbe = 'edit-dialog-trigger'")
@@ -8233,6 +8463,22 @@ with sync_playwright() as p:
         )
         check(not page_overflow, f'{width}px register has no page-level horizontal overflow')
     page.set_viewport_size({'width': 390, 'height': 800})
+    mobile_register_metrics = page.locator('#rbody tr').first.evaluate(
+        """row => ({
+            rowDisplay: getComputedStyle(row).display,
+            actionHeights: [...row.querySelectorAll('.voucher-actions .btn')].map(
+                button => button.getBoundingClientRect().height
+            ),
+            tableRegionName: document.querySelector('.register-results-card .table-wrap')?.getAttribute('aria-label') || '',
+        })"""
+    )
+    check(
+        mobile_register_metrics['rowDisplay'] == 'grid'
+        and mobile_register_metrics['actionHeights']
+        and all(height >= 44 for height in mobile_register_metrics['actionHeights'])
+        and mobile_register_metrics['tableRegionName'] == 'Voucher register entries',
+        'mobile Register presents each voucher as a readable card with 44px actions inside a named table region',
+    )
     register_range_targets = page.locator('.register-date-presets button').evaluate_all(
         '(elements) => elements.map((element) => element.getBoundingClientRect().height)'
     )
@@ -8244,6 +8490,25 @@ with sync_playwright() as p:
     # Exercise the payment-entry workflow at the narrow reflow width used for 400% zoom.
     go_view(page, 'new')
     page.wait_for_selector('#nf')
+    page.set_viewport_size({'width': 640, 'height': 800})
+    reflow_200 = page.evaluate(
+        """() => {
+          const choices = [...document.querySelectorAll('.cash-movement-choice')];
+          return {
+            overflow: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+            choiceLefts: [...new Set(choices.map(element => Math.round(element.getBoundingClientRect().left)))],
+            choiceCount: choices.length,
+            saveHeight: document.querySelector('#nsave').getBoundingClientRect().height,
+          };
+        }"""
+    )
+    check(
+        not reflow_200['overflow']
+        and reflow_200['choiceCount'] == 3
+        and len(reflow_200['choiceLefts']) == 1
+        and reflow_200['saveHeight'] >= 44,
+        f'640px reflow keeps New Entry readable with stacked movement choices and full-size Save; metrics={reflow_200}',
+    )
     page.set_viewport_size({'width': 320, 'height': 800})
     check(
         not page.evaluate(
@@ -8259,11 +8524,53 @@ with sync_playwright() as p:
         all(target['height'] >= 44 for target in touch_targets),
         'payment save and payment/receipt switch targets are at least 44px tall on mobile',
     )
+    check(
+        page.locator('[data-k=PAYMENT]').get_attribute('aria-pressed') == 'true'
+        and page.locator('[data-k=RECEIPT]').get_attribute('aria-pressed') == 'false',
+        'Payment mode is announced as selected when New Entry opens',
+    )
+    page.locator('[data-k=RECEIPT]').click()
+    check(
+        page.locator('[data-k=RECEIPT]').get_attribute('aria-pressed') == 'true'
+        and page.locator('[data-k=PAYMENT]').get_attribute('aria-pressed') == 'false',
+        'Cash received mode updates its accessible selected state',
+    )
+    page.locator('[data-k=PAYMENT]').click()
+    page.locator('.rn').first.focus()
+    page.keyboard.press('Tab')
+    receipt_keyboard_focus = page.evaluate(
+        """() => {
+          const input = document.querySelector('.rf');
+          const label = input?.closest('.receipt-upload-label');
+          return {
+            active: document.activeElement === input,
+            available: Boolean(input && !input.hidden && input.tabIndex >= 0),
+            focusWithin: Boolean(label?.matches(':focus-within')),
+            outlineWidth: label ? getComputedStyle(label).outlineWidth : '0px',
+          };
+        }"""
+    )
+    check(
+        receipt_keyboard_focus['active']
+        and receipt_keyboard_focus['available']
+        and receipt_keyboard_focus['focusWithin']
+        and float(receipt_keyboard_focus['outlineWidth'].replace('px', '')) >= 3,
+        f'receipt upload is reachable by Tab and has a visible focus indicator; metrics={receipt_keyboard_focus}',
+    )
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash-receipt mode uses matching save terminology')
     click_with_draft_discard(page, page.locator('[data-k=PAYMENT]'))
     page.locator('.erow .rv').first.fill('Mobile workflow vendor')
     page.locator('.erow .ra').first.fill('42')
+    page.locator('.rci').first.select_option('UPI')
+    page.locator('.rc').first.select_option('Kitchen')
+    page.locator('.rv').first.focus()
+    page.locator('.ra').first.focus()
+    check(
+        page.locator('.rci').first.input_value() == 'UPI'
+        and page.locator('.rc').first.input_value() == 'Kitchen',
+        'revisiting a payee does not reset the staff member’s chosen method or category',
+    )
     check(
         page.locator('#nf .unsaved-draft-notice').inner_text()
         == 'Unsaved voucher draft — save it before leaving this screen.',
@@ -8293,6 +8600,7 @@ with sync_playwright() as p:
     page.locator('.erow .rv').first.fill('Mobile workflow vendor')
     page.locator('.erow .ra').first.fill('42')
     check(page.locator('#nsave').inner_text() == 'Save payment', 'single-entry save label stays singular')
+    page.locator('.erow').first.locator('.cash-impact[value="CASH_OUT"]').check()
     page.click('[data-act=addrow]')
     page.locator('.erow .rv').nth(1).fill('Second workflow vendor')
     check(page.locator('#nsave').inner_text() == 'Save payments', 'save label reflects multiple entered payments')
@@ -8861,7 +9169,7 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', acknowledgement_vendor)
     page.fill('.ra', '151')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel')
     ack_before = outbox_vendor_records(acknowledgement_vendor)
@@ -9016,7 +9324,7 @@ with sync_playwright() as p:
     go_view(page, 'new')
     page.fill('.rv', stale_session_vendor)
     page.fill('.ra', '173')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('#nres .ok-panel')
     session_before = outbox_vendor_records(stale_session_vendor)
@@ -9129,7 +9437,7 @@ with sync_playwright() as p:
         page.locator('.seg button[data-k="PAYMENT"]').click()
         page.fill('.rv', vendor)
         page.fill('.ra', '137')
-        choose_cash_impact_for_current_rows()
+        choose_cash_impact_for_current_rows('CASH_OUT')
         page.click('#nsave')
         try:
             page.wait_for_function(
@@ -9251,8 +9559,12 @@ with sync_playwright() as p:
     click_with_draft_discard(page, page.locator('[data-k=RECEIPT]'))
     page.fill('.erow .rv', 'Mobile cash receipt workflow')
     page.fill('.erow .ra', '25')
+    check(
+        page.locator('.erow .approval-threshold-hint').first.is_hidden(),
+        'Cash received never shows the independent-payment-approval helper',
+    )
     check(page.locator('#nsave').inner_text() == 'Save cash receipt', 'cash receipt form has matching save action')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_IN')
     page.click('#nsave')
     page.wait_for_function("document.querySelector('#nres')?.innerText.includes('Saved 1 cash receipt')")
     check('Saved 1 cash receipt' in page.locator('#nres').inner_text(), 'saved confirmation uses cash-receipt terminology')
@@ -9397,7 +9709,7 @@ with sync_playwright() as p:
     before_xss_api_events = len(api_events)
     page.locator('#recentVendors .vchip', has_text='svg onload').first.click()
     page.fill('.erow .ra', '11')
-    choose_cash_impact_for_current_rows()
+    choose_cash_impact_for_current_rows('CASH_OUT')
     page.click('#nsave')
     page.wait_for_selector('#rows .erow .row-error')
     xss_api_events = api_events[before_xss_api_events:]

@@ -7,7 +7,6 @@ const LEGACY_BRANCH = 'main';
 const REQUIRED_CHECK_GROUPS = Object.freeze([
   { label: 'CI / Quality', aliases: ['ciquality', 'quality'] },
   { label: 'Browser E2E', aliases: ['browsere2e', 'browser'] },
-  { label: 'Full Flight Test', aliases: ['fullflighttest', 'flight'] },
   {
     label: 'Autonomous Development Monitor',
     aliases: ['autonomousdevelopmentmonitor', 'inspectexactheaddeliverystate'],
@@ -35,6 +34,20 @@ function hasRequiredContexts(contexts) {
         return normalized.some((actual) => actual === expected || actual.startsWith(expected));
       }),
   ).map((group) => group.label);
+}
+
+function hasObsoleteFullFlightContext(contexts) {
+  return (
+    Array.isArray(contexts) &&
+    contexts.some((context) => {
+      const normalized = normalizeContext(context);
+      return (
+        normalized.startsWith('fullflight') ||
+        normalized === 'flight' ||
+        normalized.startsWith('flighttest')
+      );
+    })
+  );
 }
 
 function patternMatches(pattern, branch, defaultBranch) {
@@ -120,6 +133,13 @@ function classicIntegrationPolicy(protection) {
         errors,
         'CLIENT_MAIN_CLASSIC_REQUIRED_CHECKS_MISSING',
         'Classic protection is missing required checks: ' + missing.join(', ') + '.',
+      );
+    }
+    if (hasObsoleteFullFlightContext(contexts)) {
+      addError(
+        errors,
+        'CLIENT_MAIN_OBSOLETE_FULL_FLIGHT_CHECK_REQUIRED',
+        'Full Flight is manual-only and must not remain a required pull-request status check.',
       );
     }
   }
@@ -222,12 +242,26 @@ function integrationRulesetPolicy(rulesets, defaultBranch) {
         )
       : [],
   );
+  const allContexts = statusRules.flatMap((rule) =>
+    isRecord(rule.parameters) && Array.isArray(rule.parameters.required_status_checks)
+      ? rule.parameters.required_status_checks.map((check) =>
+          isRecord(check) ? check.context : '',
+        )
+      : [],
+  );
   const missing = hasRequiredContexts(contexts);
   if (missing.length) {
     addError(
       errors,
       'CLIENT_MAIN_RULESET_REQUIRED_CHECKS_MISSING',
       'Integration rulesets are missing required checks: ' + missing.join(', ') + '.',
+    );
+  }
+  if (hasObsoleteFullFlightContext(allContexts)) {
+    addError(
+      errors,
+      'CLIENT_MAIN_OBSOLETE_FULL_FLIGHT_CHECK_REQUIRED',
+      'Full Flight is manual-only and must not remain a required pull-request status check.',
     );
   }
   const pullRequestRules = rules.filter((rule) => isRecord(rule) && rule.type === 'pull_request');

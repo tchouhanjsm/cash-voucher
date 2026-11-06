@@ -173,3 +173,86 @@ The first design tranche is New Entry (Payment and Cash received), followed by R
 The Register starts with search and common filters; Home presents the primary task and only actionable exceptions; Book balance remains a recorded-voucher projection, not physical cash or bank balance. Daily Cash Close clarity must not alter its calculation, chronological date, opening-cash, variance, reason, role, online-finalization, immutability or correction rules.
 
 This is a source-review and product-contract update, not proof that the new experience is implemented or validated. No real-user observation, real-device audit or complete WCAG audit is claimed here. Track actual behavior as present/already resolved/not applicable/not verified in each implementation PR.
+
+## New Entry novice-first implementation — PR #265 (5 November 2026)
+
+The first PWA redesign tranche is implemented in the active New Entry feature:
+
+- One payment or cash-received row is the ordinary starting point; the multi-entry summary appears only after a second row is added. Add another remains available, and recovery-file import is secondary to the primary Save action.
+- Physical drawer movement is a required, unselected fieldset with three plain-English choices. The stored values remain exactly `CASH_IN`, `CASH_OUT` and `NO_CASH`. Payment method and category remain separate fields; neither determines drawer movement.
+- The amount field displays the existing independent approval warning before save at ₹10,000 or more. The backend approval threshold, no-self-approval rule and saved/pending status remain unchanged.
+- Receipt images, optional note, category, payee/vendor linking, stable client IDs, duplicate checks, server acknowledgement and device-local queue remain in the existing feature path.
+- The UI uses native radio inputs in a fieldset/legend, persistent labels and a single primary action. Responsive layouts keep movement choices stacked on narrow screens and distinct on desktop.
+- Payment method labels read `Paid via` or `Received via` according to the selected workflow. A one-row form does not show the multi-entry totals panel; it appears only when additional rows are added.
+
+Automated browser checks cover the required-choice blocker before API write, explicit movement/payment-method independence, high-value warning, payment and receipt journeys, offline queue preservation, keyboard row addition and mobile geometry. Test fixtures now pass explicit movement enums (`CASH_IN`, `CASH_OUT`, `NO_CASH`) rather than inferring them from Payment/Receipt type. The multi-entry summary source guard requires iteration across all rows. Exact-head workflow status and screenshot artifacts are authoritative in PR #265; automated output is not user research.
+
+Representative staff observation, manual screen-reader/keyboard review, Android/PWA device testing and 200–400% zoom/reflow remain outstanding. No Apps Script deployment, data/schema migration, endpoint switch, PHP financial write or production operation is part of this phase.
+
+## Register novice-first implementation — PR #265 (5 November 2026)
+
+The Register refinement keeps the existing server-filtered workflow and financial controls while reducing the first-screen filter burden:
+
+- Search, quick date ranges, transaction type, status and approval remain visible in the ordinary path.
+- Vendor, category, user, custom date range and payment-method filters are grouped in a native keyboard-operable `details/summary` disclosure. It starts collapsed when unused, displays an active-filter count, and automatically opens when a saved drill-down/custom advanced criterion is active.
+- The filter panel is explicitly one full-width grid track. Mobile layout gives search and date presets usable space and keeps frequent filters visible without horizontal page overflow.
+- Clear filters, CSV export, page metadata, server totals, pagination, receipt/history/edit/cancel/approval actions, and server authorization remain unchanged.
+- Existing mobile voucher cards remain in use; regression checks protect their action target size and named scroll region.
+
+Automated Browser E2E now checks the default collapsed state, keyboard expansion/collapse, desktop filter-panel geometry and mobile voucher/action layout. These are mock-backed browser regressions, not proof of staff task-completion improvement. Representative staff observation, manual keyboard/screen-reader review, real Android testing and 200–400% zoom/reflow remain open.
+
+## Research recommendation for the next milestone — Home and exception handling (5 November 2026)
+
+**Recommendation:** after New Entry and Register, take a focused Home/Dashboard + exception-handling milestone before a separate Daily Cash Close clarity redesign. This is a recommendation for the next product slice, not implementation or owner approval of new financial policy. [Completed research report and cited source list](https://agent.tinyfish.ai/research/01a1ab7a-450c-7bc0-a4ae-7c904edb65f8).
+
+### Grounded current state
+
+The Dashboard is not a blank slate. The current frontend already renders a server-calculated physical drawer position, recent transactions, a `Needs attention` section, pending approval/data-quality/cash-close readiness exceptions, period-empty guidance, and a safe unavailable/error state. It also communicates when the app is offline. The New Entry feature separately owns the IndexedDB outbox banner and recovery path. Do not rebuild these capabilities or create a second queue/state source.
+
+### Next-slice focus
+
+1. **Staff:** make the primary Payment/Cash received action easy to find; make the last entry and whether it was sent and confirmed versus saved on this device immediately understandable; provide a direct route to inspect waiting/failed work.
+2. **Manager:** prioritize actionable approval/review, invalid/unclassified-record, sync/recovery and cash-close-readiness exceptions. Each item should say what happened, whether action is needed, and offer one direct route into the existing authorized workflow.
+3. **Owner:** summarize current server-calculated cash position and unresolved exceptions without turning the screen into an analytics dashboard. Preserve the distinction between recorded-voucher book balance, expected drawer cash and an actual counted close.
+4. **Queue/status integration:** inspect the existing IndexedDB outbox and global banner behavior against Home. If any queue state is not obvious from Home, reuse the existing owner/endpoint-scoped queue source and established retry/export/recovery actions. Do not create a duplicate state store or imply a device-local record has reached Apps Script.
+5. **Exceptions:** order critical data/sync/recovery problems before routine informational summaries; use persistent, plain-language status for failures, not a toast alone. Keep staff, manager and owner visibility constrained by the existing server permission model.
+
+### Evidence-informed design constraints
+
+- Use progressive disclosure only for infrequent/secondary information; keep the primary task and frequent exception action visible. The correct primary/secondary split must be checked with actual usage, not internal preference. [NN/g — Progressive Disclosure](https://www.nngroup.com/articles/progressive-disclosure/).
+- Use plain-language action status, communicate both the current network/data state and changes to it, and let the user continue working where safe instead of blocking the whole app behind a network modal. [web.dev — Offline UX design guidelines](https://web.dev/articles/offline-ux-design-guidelines).
+- Keep status text explicit; color or an icon alone is insufficient. Use readable labels such as “Saved on this device — waiting to send” or “Sent and confirmed” only where the corresponding queue/server state proves that wording.
+- WCAG 2.2 SC 3.3.4 offers alternatives for important financial/data submissions: reversibility, checking with correction, or confirmation. It does **not** require adding a redundant confirmation page to every routine save if the existing workflow already provides an applicable safeguard. Assess the actual edit/cancel and review model before introducing extra friction. [W3C — Error Prevention (Legal, Financial, Data)](https://www.w3.org/WAI/WCAG22/Understanding/error-prevention-legal-financial-data.html).
+- Retain keyboard/focus, semantic headings/status regions, sufficient contrast, and large touch targets. WCAG 2.2 SC 2.5.8 sets a 24×24 CSS-pixel minimum subject to exceptions; the app's existing 44px/48px control target conventions are a stronger product choice for staff touch use. [W3C — Target Size (Minimum)](https://www.w3.org/TR/WCAG22/#target-size-minimum).
+
+### Measurement without invasive tracking
+
+Before changing the hierarchy, observe uncoached staff and manager tasks in short facilitated sessions. Record task completion, time to locate “my entry” / “waiting to send” / “needs approval”, incorrect re-entry attempts, wrong-route attempts, and recovery success. Capture confusion points and role context; do not add behavioral analytics or send financial details to third parties. A small sample is directional evidence, not a statistically representative usability claim.
+
+### Out of scope and gates
+
+No Apps Script/PHP writer, API/schema, endpoint, authorization, approval, cash-movement, cash-close calculation, or deployment change. Do not calculate expected cash on the client or infer physical movement. Use current server read models and the existing local outbox only. Daily Cash Close clarity remains the following milestone after Home/exception visibility is validated. No claim of improved usability is made until staff observation demonstrates it.
+
+## Home and exception-handling implementation update — PR #265 (5 November 2026)
+
+The research recommendation above is now partially implemented in the active PR:
+
+- **Staff Home:** the first screen leads with two permitted tasks — Payment and Cash received — then actionable attention and the five latest server-returned entries. Staff no longer sees the manager-style KPI/chart block or management date presets. The recent-entry range defaults to the latest 30 calendar days; **Open register** carries that same range into the existing permission-scoped Register.
+- **Manager and Owner:** retain their existing all-record financial workspace and operational cash/exception context. The current Manager permission set includes `viewAll`, so Manager receives the same six-KPI financial presentation as Owner; Owner-only user, settings and audit controls remain separately permission-gated.
+- **Synchronization status:** the existing global outbox banner remains the sole source for device-local waiting/failed records, retry, export/import and recovery. Home does not create a second queue, show local-only records as server-confirmed or duplicate recovery actions.
+- **No financial-policy change:** no API, server action, Apps Script/Sheets writer, approval rule, cash-movement mapping, book-balance calculation, expected-cash formula or close workflow was changed.
+- **Delivery gates:** CI and focused Browser E2E continue to run automatically for PRs. Full Flight is now an explicit manual release suite using `npm run test:flight`; its separate PR/push status aggregator was removed because it only repeated CI and Browser E2E results.
+
+**Still outstanding:** representative uncoached staff/manager observation; manual TalkBack/VoiceOver; real Android/PWA offline and recovery checks; and 200–400% zoom/reflow. The next product milestone is Daily Cash Close clarity, preserving its existing financial and chronological rules. This implementation is not evidence of measured usability improvement.
+
+## Daily Cash Close clarity implementation update — PR #265 (5 November 2026)
+
+The existing Close preview now presents one next-action status ahead of the reconciliation details. It is based only on the server preview and current browser queue evidence; it does not calculate expected cash in the client.
+
+- A later saved business date takes priority because the chronological close rule blocks the earlier date.
+- An unknown or non-empty local queue takes priority over routine reconciliation. The copy explicitly scopes that check to this browser and reminds the operator to inspect other devices separately.
+- A missing manual opening or unresolved voucher issues is explained before physical counting.
+- Only after existing server readiness and the local queue check pass does the page say “Ready for physical count”. The operator must still count notes/coins and enter the physical value.
+- The Save action is associated with the readiness statement. No extra confirmation screen is added; the existing immutable close and server revalidation remain the financial safeguard.
+
+The next validation item is a representative manager-led close task in a non-production environment, including missing opening, issue-blocked date, physical count, variance reason and a second device’s sync check. No measured usability claim is made by this code change.

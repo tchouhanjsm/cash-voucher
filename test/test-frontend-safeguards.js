@@ -66,12 +66,37 @@ assert.match(payments, /DUPLICATE_CONFIRMATION_REQUIRED/);
 assert.doesNotMatch(payments, /duplicateConfirmed/);
 assert.match(payments, /vendorType: selectedVendor \? 'REGISTERED' : 'ONE_TIME'/);
 assert.match(payments, /vendor-identity/);
+assert.match(payments, /cash-movement-fieldset/);
+assert.match(payments, /CASH_IMPACT_CHOICES\.includes\(cashImpact\)/);
+assert.match(payments, /function updateApprovalThresholdHint\(row\)/);
+assert.match(payments, /Payments of ₹10,000 or more need approval by an owner or manager/);
+assert.doesNotMatch(
+  payments,
+  /paymentMethod === 'CASH' \? \(NT === 'RECEIPT' \? 'CASH_IN' : 'CASH_OUT'\)/,
+  'entry save never infers physical drawer movement from method or voucher type',
+);
 const saveStart = payments.indexOf('async function saveNew');
 const saveNext = payments.indexOf('\n  async function ', saveStart + 1);
 assert.ok(saveStart >= 0 && saveNext > saveStart, 'New Entry save handler is present');
 const saveSource = payments.slice(saveStart, saveNext);
+assert.match(saveSource, /const cashImpact = \$\('\.cash-impact:checked', r\)\?\.value \|\| ''/);
+assert.doesNotMatch(saveSource, /paymentMethod\s*===|NT\s*===\s*'RECEIPT'\s*\?\s*'CASH_IN'/);
 assert.match(saveSource, /const rows = \$\$\('#rows \.erow'\);/);
 assert.match(saveSource, /rows\.forEach\(clearRowError\)/);
+const batchStart = payments.indexOf('function updateBatchSummary()');
+const batchEnd = payments.indexOf('function vNew()', batchStart);
+assert.ok(batchStart >= 0 && batchEnd > batchStart, 'multi-entry summary updater is present');
+assert.ok(
+  payments.slice(batchStart, batchEnd).includes("const rows = $$('#rows .erow');"),
+  'multi-entry summary iterates every row rather than a single DOM element',
+);
+const openStart = payments.indexOf('function open(');
+const openEnd = payments.indexOf('function newAgain()', openStart);
+assert.ok(openStart >= 0 && openEnd > openStart, 'entry type opener is present');
+assert.ok(
+  payments.slice(openStart, openEnd).includes("NT = type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT';"),
+  'template entry type is allowlisted before it can be interpolated',
+);
 assert.match(state, /'vendorType'/);
 
 assert.match(main, /async function init\(\)/);

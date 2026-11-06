@@ -7,6 +7,7 @@ const path = require('node:path');
 const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
 const palette = read('style.css');
 const components = read('frontend-ui-kit.css');
+const workspace = read('frontend-workspace.css');
 const theme = read('frontend/core/theme.js');
 const auth = read('frontend/features/auth.js');
 const dashboard = read('frontend/features/dashboard.js');
@@ -131,9 +132,63 @@ assert.match(
   'six owner KPIs have a balanced three-column desktop grid',
 );
 assert.match(
-  components,
-  /\.dashboard-view \.dashboard-stats--staff\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,
-  'five staff KPIs retain a balanced single-row desktop grid',
+  workspace,
+  /\.dashboard-view \.dashboard-stats--manager\s*\{[^}]*grid-template-columns:\s*repeat\(5,\s*minmax\(0,\s*1fr\)\)/,
+  'fallback manager dashboard retains a compact five-KPI grid while staff uses the action-first Home',
+);
+assert.match(
+  dashboard,
+  /function isStaffWorkspace\(\)[\s\S]*?can\('viewOwn'\) && !can\('viewAll'\) && !can\('cashClose'\)/,
+  'the action-first Home is limited to staff permissions, not manager or owner workspaces',
+);
+assert.match(
+  dashboard,
+  /class="card dashboard-staff-home"/,
+  'staff Home has a distinct task-first action section',
+);
+assert.match(
+  dashboard,
+  /function appendStaffHomeActions\(body\)[\s\S]*?body\.appendChild\(card\)/,
+  'staff Home actions are present in the initial shell using DOM APIs, including offline/unavailable states',
+);
+assert.match(
+  dashboard,
+  /if \(staffHome\) appendStaffHomeActions\(body\);/,
+  'the task-first staff actions render before asynchronous dashboard requests',
+);
+assert.doesNotMatch(
+  dashboard,
+  /if \(staffHome\) \{[\s\S]{0,500}Payment out[\s\S]{0,500}Cash received/,
+  'staff quick actions are not duplicated in the page header',
+);
+
+assert.match(dashboard, /Record a payment/, 'staff Home offers a direct Payment action.');
+assert.match(dashboard, /Record cash received/, 'staff Home offers a direct Cash received action.');
+assert.match(dashboard, /My recent entries/, 'staff Home labels the personal activity list.');
+assert.match(
+  dashboard,
+  /Open register/,
+  'staff Home links to the recent-period server-scoped Register.',
+);
+assert.match(
+  dashboard,
+  /if \(!staffHome\) body\.appendChild\(periods\);/,
+  'staff Home removes the management-only date/analytics controls',
+);
+assert.match(
+  workspace,
+  /\.dashboard-view \.dashboard-staff-home__actions[\s\S]*?grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/,
+  'staff quick actions use a clear two-action layout',
+);
+assert.match(
+  workspace,
+  /\.dashboard-view \.dashboard-staff-home__actions[\s\S]*?repeat\(2, minmax\(0, 1fr\)\)[\s\S]*?@media \(max-width: 560px\)[\s\S]*?grid-template-columns: minmax\(0, 1fr\)/,
+  'staff actions use a single column on narrow phones after the desktop grid rule',
+);
+assert.doesNotMatch(
+  dashboard,
+  /dashboard-stats--staff/,
+  'staff Home no longer uses a finance KPI layout',
 );
 assert.match(
   dashboard,
@@ -238,37 +293,37 @@ assert.match(
 );
 assert.match(
   register,
-  /class="register-search-field" for="rq">Search vouchers<input id="rq"/,
+  /class="register-search-field" for="rq">[\s\S]*?Search vouchers[\s\S]*?<input id="rq"/,
   'Register search has a persistent visible label instead of relying on placeholder text',
 );
 assert.match(
   register,
-  /class="register-filter-field" for="rv">Vendor<select id="rv"/,
+  /for="rv">[\s\S]*?Vendor[\s\S]*?<select id="rv"/,
   'Register vendor filter has an associated visible label',
 );
 assert.match(
   register,
-  /class="register-filter-field" for="rfrom">From<input type="date" id="rfrom"/,
+  /for="rfrom">[\s\S]*?From[\s\S]*?<input type="date" id="rfrom"/,
   'Register date filters keep their visible labels attached to the correct controls',
 );
 assert.match(
   register,
-  /class="register-filter-field" for="ru">User<select id="ru"/,
+  /for="ru">User<select id="ru"/,
   'Register user filter keeps an explicit label when the permission exposes it',
 );
 assert.match(
   register,
-  /class="register-filter-field" for="rapproval">Approval<select id="rapproval"/,
+  /for="rapproval">[\s\S]*?Approval[\s\S]*?<select id="rapproval"/,
   'Register approval filter has an associated visible label',
 );
 assert.match(
-  components,
-  /#rf \.register-filter-field\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?min-width:\s*0;/,
+  workspace,
+  /#rf \.register-filter-grid \.register-filter-field\s*\{[\s\S]*?flex-direction:\s*column;[\s\S]*?min-width:\s*0;/,
   'Register filter labels keep labels and controls aligned without overflowing grid cells',
 );
 assert.match(
-  components,
-  /#rf \.register-search-field\s*\{\s*grid-column:\s*span 2;/,
+  workspace,
+  /#view #rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
   'the labelled Register search keeps the intended desktop filter-grid span',
 );
 assert.match(
@@ -297,8 +352,8 @@ assert.match(
   'settings groups property editing and diagnostics in a consistent grid',
 );
 assert.match(
-  components,
-  /\.card\.filters#rf\s*\{[\s\S]*?grid-template-columns/,
+  workspace,
+  /#view #rf\.register-filter-panel\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0, 1fr\)/,
   'register filters use a predictable responsive grid',
 );
 assert.match(
@@ -362,6 +417,37 @@ assert.match(
   /class="register-totals"/,
   'register totals have a dedicated non-inline layout hook',
 );
+assert.match(
+  register,
+  /id="registerAdvancedFilters"/,
+  'advanced Register filters use a native disclosure',
+);
+assert.match(
+  register,
+  /register-primary-filter-grid/,
+  'common Register filters remain immediately visible',
+);
+assert.match(
+  register,
+  /function advancedRegisterFilterCount\(\)/,
+  'active advanced filters are counted',
+);
+assert.match(
+  register,
+  /value="\$\{esc\(R\.q\)\}"/,
+  'Register search value is escaped before insertion into the input attribute',
+);
+assert.match(
+  workspace,
+  /register-advanced-filters > summary/,
+  'advanced Register disclosure has a styled summary',
+);
+assert.match(
+  workspace,
+  /grid-template-columns:\s*minmax\(0, 1fr\)/,
+  'Register filter panel uses an explicit single track',
+);
+
 assert.match(
   administration,
   /className: 'filters vendor-form-fields'/,
@@ -550,6 +636,22 @@ assert.match(
   /class="card cc-preview"/,
   'cash-close preview markup exposes the shared report surface',
 );
+
+assert.match(
+  cashClose,
+  /function closeReadinessMarkup\(snapshot, options = \{\}\)[\s\S]*?data-state=/,
+  'cash-close preview explains the next required action using existing readiness signals',
+);
+assert.match(
+  cashClose,
+  /aria-describedby="cc-readiness-description"/,
+  'the final close action is associated with its visible readiness explanation',
+);
+assert.match(
+  workspace,
+  /\.cc-readiness\s*\{[\s\S]*?border-left:\s*4px solid var\(--workspace-accent\)/,
+  'cash-close readiness has a readable, token-driven status surface',
+);
 assert.match(
   components,
   /\.cc-blockers\[role='alert'\]/,
@@ -662,8 +764,48 @@ assert.match(
 );
 assert.match(
   payments,
-  /NT === 'RECEIPT' \? 'Received via' : 'Paid via'/,
-  'payment method label reflects receipt vs payment direction',
+  /methodLabel\.appendChild\([\s\S]*?document\.createTextNode\(NT === 'RECEIPT' \? 'Received via' : 'Paid via'\)/,
+  'payment method is labelled independently of physical drawer movement',
+);
+assert.match(
+  payments,
+  /cash-movement-fieldset[\s\S]*?CASH_IN[\s\S]*?CASH_OUT[\s\S]*?NO_CASH/,
+  'New Entry exposes all three physical cash movement choices',
+);
+assert.match(
+  payments,
+  /CASH_IMPACT_CHOICES\.includes\(cashImpact\)/,
+  'New Entry validates movement against the controlled vocabulary',
+);
+assert.doesNotMatch(
+  payments,
+  /paymentMethod === 'CASH' \? \(NT === 'RECEIPT' \? 'CASH_IN' : 'CASH_OUT'\)/,
+  'New Entry never derives movement from payment rail or entry type',
+);
+assert.match(
+  payments,
+  /row\.dataset\.payeeDefaultsFor === normalizedName/,
+  'revisiting a payee does not reapply defaults over manually selected values',
+);
+assert.match(
+  payments,
+  /aria-pressed=/,
+  'Payment and Cash received choices expose their selected state',
+);
+assert.match(
+  payments,
+  /receiptInput\.className = 'rf receipt-upload-input'/,
+  'receipt upload has a keyboard-focusable file input',
+);
+assert.doesNotMatch(
+  payments,
+  /receiptInput\.hidden = true/,
+  'receipt upload stays in keyboard navigation',
+);
+assert.match(
+  components,
+  /\.receipt-upload-label:focus-within[\s\S]*?outline:\s*3px solid var\(--focus\)/,
+  'receipt upload keyboard focus is visibly indicated',
 );
 assert.match(
   printing,
@@ -694,6 +836,11 @@ assert.match(
   payments,
   /function methodForPayee\(name\)/,
   'saved payee defaults can resolve payment method',
+);
+assert.match(
+  workspace,
+  /#nf\[data-workspace='entry-form-workspace'\] \.approval-threshold-hint\[hidden\]\s*\{\s*display:\s*none !important;/,
+  'the native hidden state wins over the approval helper base display rule',
 );
 assert.match(
   reports,

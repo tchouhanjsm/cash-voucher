@@ -379,3 +379,60 @@ PR #149 updated the Dashboard and Payments templates to use allowlisted, app-aut
 ## Phase 14 candidate — Register table keyboard scrolling
 
 The Register template adds only static `role`, `aria-label` and `tabindex` attributes to its existing table wrapper. No new sink is introduced and no API-derived value is added to the assignment. Browser E2E verifies keyboard reachability and the visible focus indicator; the full active template set still requires contextual review.
+
+## PR #265 — New Entry Payment / Cash Received template review (5 November 2026)
+
+The Payments feature retains one active `#view.innerHTML` assignment for the New Entry screen. Its changed assignment source was reviewed before updating the source-fingerprint baseline (`2f7c18e5` → `0056c613`):
+
+- Entry type is allowlisted in `open(type)` to exactly `PAYMENT` or `RECEIPT` before it is used in the page heading, section copy, labels or button text.
+- The shared `head()` renderer escapes title, section and description strings.
+- `vendorList()` is the existing escaped datalist renderer; the current screen template does not interpolate the free-text payee, amount, note or receipt data.
+- The date field uses generated business-date values, and icons are fixed app-authored identifiers.
+- Each repeatable row, including cash-movement choices, is constructed with DOM APIs and assigns labels/values through `textContent`/native properties. User-entered values are not concatenated into a row HTML string.
+- A focused source regression checks the type allowlist; Browser E2E continues to inject hostile payee text and assert it remains inert.
+
+The baseline update reflects a reviewed source change. It is a drift detector, not a proof of XSS absence or a replacement for contextual review. Other template sinks, live CSP/headers, external pen testing and manual adversarial testing remain separate risks.
+
+## PR #265 — New Entry / Register rendering review (5 November 2026)
+
+The Register keeps one active `#view.innerHTML` assignment for its filter/results shell. The changed template source fingerprint was reviewed before updating the drift baseline (`7d239a5a` → `3b89853b`):
+
+- Search query `R.q`, custom date values `R.from` / `R.to`, and all dynamic facet values and labels (vendor, category, user display name and payment method label) are passed through the shared `esc(...)` boundary before they enter input attributes or option markup.
+- Payment/receipt type values, status values, approval values, payment-method keys, quick-date preset keys/labels, fixed section labels and disclosure markup are app-authored constants or controlled enumerations.
+- Selected-state interpolation is limited to fixed boolean HTML attributes after comparison with normalized state; it does not concatenate raw facet values.
+- Voucher result rows continue to use their existing field-by-field scalar normalization and escaping. The new disclosure is native `details/summary` semantics and does not add a user-data HTML sink.
+- Browser E2E retains hostile vendor-option checks and now injects an attribute-breaking search string, navigates away/back, and verifies the search is retained as an inert input value without creating markup or firing an event handler.
+
+This fingerprint is a source-drift detector paired with contextual review and adversarial regression. It is not a proof of XSS absence, exhaustive taint analysis or certification of CSP/response headers. Other active template sinks and live-host/manual adversarial review remain separate risks.
+
+The latest PR #265 follow-up keeps the New Entry template's new values static and allowlisted: the Payment/Cash received selected state is interpolated only from the two-value `NT` enum; the receipt input class and accessible label are fixed strings. The updated fingerprint is paired with keyboard-upload and selected-state regressions. It remains a source-drift detector, not XSS certification.
+
+## PR #265 — Staff Home action-first template review (5 November 2026)
+
+The Dashboard retains its existing single `#view.innerHTML` template assignment. The staff Home addition was reviewed before updating the source fingerprint (`31eb90ff` → `c09024b3`):
+
+- Staff/Manager/Owner presentation is selected from existing permission checks. The new staff action card uses fixed application-authored labels, `PAYMENT` / `RECEIPT` action keys and fixed icon identifiers; no user-provided role, action or label is interpolated.
+- The recent-entry heading, CTA copy and status wording are application-authored constants. Period dates are formatted from the validated business-date range.
+- Recent voucher rows continue to validate amount/type/status and escape voucher number/vendor/date text before template insertion. Register drill-down filters remain controlled values and the server continues to enforce staff record scope.
+- The Home reuses the current global outbox banner; no new browser queue, retry endpoint, local financial total or synchronization state was introduced.
+- Manager/Owner cash position, cash-close readiness and KPI/analysis sections remain behind the existing permission-aware dashboard branches.
+
+This fingerprint update is paired with focused permission/layout regression checks. It is a source-drift detector plus contextual review, not XSS certification or a substitute for live adversarial testing.
+
+## PR #265 follow-up — Staff Home action wording (5 November 2026)
+
+The Staff Home recent-entry action now reads **Open register**, rather than **View all entries**, because it intentionally carries the recent 30-calendar-day filter into the Register and does not claim to show all historical vouchers. This is an application-authored constant; voucher number, vendor, date, type and filter parameters continue through the existing validation/escaping and server permission boundaries.
+
+The `#view.innerHTML` assignment source itself is unchanged, so its reviewed fingerprint remains `c09024b3`. No new DOM sink or user-controlled HTML interpolation was introduced by this wording correction. The existing fingerprint remains a source-drift detector, not XSS certification.
+
+## PR #265 — Daily Cash Close readiness explanation (5 November 2026)
+
+The existing Cash Close preview now gives one explicit next-action summary before the detailed reconciliation panels. It reuses only the validated server preview fields and the existing browser-local queue check:
+
+- The summary distinguishes chronological blocking, unavailable/non-empty device queue, missing manual opening, voucher review, negative expected-cash review, generic server review and readiness for a physical count.
+- “Ready for physical count” appears only when the server marks the preview ready, the current browser queue is known to be empty, and there are no displayed voucher issues. The screen still requires the operator to enter the physical count.
+- The Save action references the visible readiness explanation using `aria-describedby`; its existing disabled condition, server-side revalidation and immutable close contract remain unchanged.
+- Dynamic status copy (including a later-close date and local queue count) is escaped before insertion into the existing `#cc-results.innerHTML` sink. No new sink, API, client-side expected-cash calculation or financial rule was added.
+- The source fingerprint update is limited to the reviewed Cash Close preview assignment. This fingerprint is a source-drift guard, not XSS certification.
+
+Focused regressions cover opening-required, ready-for-count, device-queue and the Manager Dashboard return path. Results must be judged on the new exact PR head.

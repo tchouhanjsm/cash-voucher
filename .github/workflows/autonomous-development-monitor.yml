@@ -52,7 +52,6 @@ jobs:
             const workflows = [
               { id: 'ci.yml', name: 'CI / Quality', required: true },
               { id: 'e2e.yml', name: 'Browser E2E', required: true },
-              { id: 'flight-test.yml', name: 'Full Flight Test', required: true },
               { id: 'staging-uat.yml', name: 'Staging UAT', required: false },
               { id: 'client-dist.yml', name: 'Client staging ZIP', required: false },
             ];

@@ -16,6 +16,62 @@ import { head, icon, refreshBtn } from '../core/ui.js';
 export function createDashboard({ api }) {
   const D = { r: '30d', from: '', to: '', customDraft: false };
 
+  function isStaffWorkspace() {
+    return can('viewOwn') && !can('viewAll') && !can('cashClose');
+  }
+
+  function staffHomeActions() {
+    const actions = can('create')
+      ? `<button type="button" class="btn primary dashboard-staff-action" data-act="ntype" data-k="PAYMENT">${icon('wallet')}<span>Record a payment</span></button>
+        <button type="button" class="btn dashboard-staff-action" data-act="ntype" data-k="RECEIPT">${icon('cash')}<span>Record cash received</span></button>`
+      : `<button type="button" class="btn primary dashboard-staff-action" data-act="goto" data-k="reg">Open my entries</button>`;
+    return `<section class="card dashboard-staff-home" aria-labelledby="staffHomeActionsTitle">
+      <div class="dashboard-staff-home__copy">
+        <h2 id="staffHomeActionsTitle">What would you like to record?</h2>
+        <p>Choose the type of entry. You can review its status in your recent entries.</p>
+      </div>
+      <div class="dashboard-staff-home__actions">${actions}</div>
+    </section>`;
+  }
+
+  function appendStaffHomeActions(body) {
+    const card = document.createElement('section');
+    card.className = 'card dashboard-staff-home';
+    card.setAttribute('aria-labelledby', 'staffHomeActionsTitle');
+
+    const copy = document.createElement('div');
+    copy.className = 'dashboard-staff-home__copy';
+    const title = document.createElement('h2');
+    title.id = 'staffHomeActionsTitle';
+    title.textContent = 'What would you like to record?';
+    const description = document.createElement('p');
+    description.textContent =
+      'Choose the type of entry. You can review its status in your recent entries.';
+    copy.append(title, description);
+
+    const actions = document.createElement('div');
+    actions.className = 'dashboard-staff-home__actions';
+    const addAction = (label, type, action, primary) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'btn dashboard-staff-action' + (primary ? ' primary' : '');
+      button.dataset.act = action;
+      if (type) button.dataset.k = type;
+      button.textContent = label;
+      actions.appendChild(button);
+    };
+
+    if (can('create')) {
+      addAction('Record a payment', 'PAYMENT', 'ntype', true);
+      addAction('Record cash received', 'RECEIPT', 'ntype', false);
+    } else {
+      addAction('Open my entries', 'reg', 'goto', true);
+    }
+
+    card.append(copy, actions);
+    body.appendChild(card);
+  }
+
   function range() {
     const current = today();
     const [year, month] = current.split('-').map(Number);
@@ -394,17 +450,19 @@ export function createDashboard({ api }) {
     const eyebrow = document.createElement('p');
     eyebrow.className = 'page-eyebrow';
     eyebrow.textContent = 'Work';
+    const staffHome = isStaffWorkspace();
     const title = document.createElement('h1');
-    title.textContent = can('viewAll') ? 'Dashboard' : 'My Dashboard';
+    title.textContent = staffHome ? 'My day' : can('viewAll') ? 'Dashboard' : 'My Dashboard';
     const description = document.createElement('p');
     description.className = 'page-description';
-    description.textContent =
-      'Review approved movement, today’s drawer position and the actions that need attention.';
+    description.textContent = staffHome
+      ? 'Record a payment or cash received, then check your recent entries.'
+      : 'Review approved movement, today’s drawer position and the actions that need attention.';
     copy.append(eyebrow, title, description);
 
     const actions = document.createElement('div');
     actions.className = 'page-header-actions';
-    if (can('create')) {
+    if (can('create') && !staffHome) {
       const create = document.createElement('button');
       create.type = 'button';
       create.className = 'btn primary';
@@ -423,6 +481,7 @@ export function createDashboard({ api }) {
 
     const body = document.createElement('div');
     body.className = 'dashboard-body';
+    if (staffHome) appendStaffHomeActions(body);
     const periods = document.createElement('div');
     periods.className = 'seg dashboard-period';
     [
@@ -441,9 +500,9 @@ export function createDashboard({ api }) {
       button.textContent = label;
       periods.appendChild(button);
     });
-    body.appendChild(periods);
+    if (!staffHome) body.appendChild(periods);
 
-    if (D.r === 'cus') {
+    if (!staffHome && D.r === 'cus') {
       const filters = document.createElement('div');
       filters.className = 'card filters';
       [
@@ -709,9 +768,17 @@ export function createDashboard({ api }) {
     return '';
   }
 
-  function recentTransactionsCard(result, error, from, to) {
+  function recentTransactionsCard(result, error, from, to, staffHome = isStaffWorkspace()) {
+    const title = staffHome ? 'My recent entries' : 'Recent transactions';
+    const description = staffHome
+      ? 'Latest active entries visible to you · '
+      : 'Latest active vouchers in the selected period · ';
+    const openLabel = 'Open register';
     const heading =
-      '<div class="dashboard-panel-heading"><div><h2 id="dashboardRecentTitle">Recent transactions</h2><p>Latest active vouchers in the selected period · ' +
+      '<div class="dashboard-panel-heading"><div><h2 id="dashboardRecentTitle">' +
+      title +
+      '</h2><p>' +
+      description +
       esc(dmy(from)) +
       ' – ' +
       esc(dmy(to)) +
@@ -721,7 +788,7 @@ export function createDashboard({ api }) {
         target: 'reg',
         from,
         to,
-        label: 'Open register',
+        label: openLabel,
         className: 'btn dashboard-recent-open',
       }) +
       '</div>';
@@ -729,14 +796,22 @@ export function createDashboard({ api }) {
       return (
         '<section class="card dashboard-recent-transactions" aria-labelledby="dashboardRecentTitle">' +
         heading +
-        '<p class="dashboard-recent-empty" role="status">Recent activity could not be loaded. Your dashboard totals remain available; open the register or refresh to retry.</p>' +
+        '<p class="dashboard-recent-empty" role="status">' +
+        (staffHome
+          ? 'Your recent entries could not be loaded. Open Register or refresh to try again.'
+          : 'Recent activity could not be loaded. Your dashboard totals remain available; open the register or refresh to retry.') +
+        '</p>' +
         '</section>'
       );
     }
 
     const items = result.items;
     let content =
-      '<p class="dashboard-recent-empty">No active vouchers were recorded in this period.</p>';
+      '<p class="dashboard-recent-empty">' +
+      (staffHome
+        ? 'No server-confirmed entries are available in this period yet. Device-local entries remain in the sync banner until the server confirms them.'
+        : 'No active vouchers were recorded in this period.') +
+      '</p>';
     if (items.length) {
       content =
         '<ul class="dashboard-recent-list">' +
@@ -803,7 +878,8 @@ export function createDashboard({ api }) {
 
   async function render() {
     const requestId = ++summaryRequestId;
-    const [from, to] = range();
+    const staffHome = isStaffWorkspace();
+    const [from, to] = staffHome ? [addDays(today(), -29), today()] : range();
     const body = renderShell(from || today(), to || today());
     const diagnostics = S.voucherDiagnostics || {};
     const bootstrapUnavailable =
@@ -818,13 +894,18 @@ export function createDashboard({ api }) {
           : 'Voucher data is unavailable because the server response was invalid. Refresh and retry.';
       appendStatusCard(
         body,
-        reason + ' No financial totals or charts are shown until voucher data is available.',
-        { title: 'Dashboard totals unavailable', role: 'alert' },
+        staffHome
+          ? reason + ' Your recent server entries are unavailable until the connection is restored.'
+          : reason + ' No financial totals or charts are shown until voucher data is available.',
+        {
+          title: staffHome ? 'Recent entries unavailable' : 'Dashboard totals unavailable',
+          role: 'alert',
+        },
       );
       return;
     }
 
-    if (D.r === 'cus' && D.customDraft) {
+    if (!staffHome && D.r === 'cus' && D.customDraft) {
       appendStatusCard(
         body,
         'Choose the From and To dates, then apply the range. Dashboard totals stay unchanged until the custom selection is applied.',
@@ -1145,7 +1226,7 @@ export function createDashboard({ api }) {
     const financialPanels = periodIsEmpty
       ? ''
       : `
-      <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--staff'}">
+      <div class="stats dashboard-stats${can('viewAll') ? ' dashboard-stats--owner' : ' dashboard-stats--manager'}">
         <div class="card stat"><span class="stat-ic">${icon('wallet')}</span><span>Approved payments · period</span><b>${money(total)}</b><small class="dashboard-period-comparison" data-direction="${comparisonDirection}">${esc(comparisonText)}</small>${dashboardDrilldownButton({ key: 'payments-period', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', label: 'Review approved payments', ariaLabel: 'Open selected-period payment context', className: 'btn sm dashboard-kpi-drilldown' })}</div>
         <div class="card stat"><span class="stat-ic">${icon('receipt')}</span><span>Approved payment vouchers</span><b>${paymentCount}</b><small class="muted">avg ${money(validPaymentCount ? total / validPaymentCount : 0)}</small>${dashboardDrilldownButton({ key: 'payment-count', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', label: 'Review payment records', className: 'btn sm dashboard-kpi-drilldown' })}</div>
         <div class="card stat"><span class="stat-ic">${icon('trend')}</span><span>Largest payment</span><b>${money(summary.largest?.amount ?? 0)}</b><small class="muted">${summary.largest ? esc(summary.largest.vendor) : '–'}</small>${dashboardDrilldownButton({ key: 'largest-payment', target: 'reg', from, to, type: 'PAYMENT', approval: 'APPROVED', vendor: typeof summary.largest?.vendor === 'string' ? summary.largest.vendor : '', label: 'View vendor entries', className: 'btn sm dashboard-kpi-drilldown' })}</div>
@@ -1174,25 +1255,36 @@ export function createDashboard({ api }) {
       </div>
     `;
 
-    const dashboardContent = periodIsEmpty
+    const staffDashboardWarnings = malformedFieldCount
+      ? `<p class="muted" role="status" aria-live="polite">${malformedFieldCount} voucher detail(s) were handled safely and may need review.</p>`
+      : '';
+    const dashboardContent = staffHome
       ? [
+          staffHomeActions(),
           needsAttention,
-          periodControls(from, to),
-          emptyPeriodPanel,
-          dashboardWarnings,
-          operationsPanels,
+          staffDashboardWarnings,
+          recentTransactionsCard(recentTransactions, recentTransactionsError, from, to, true),
         ].join('')
-      : [needsAttention, periodControls(from, to), financialPanels].join('');
+      : periodIsEmpty
+        ? [
+            needsAttention,
+            periodControls(from, to),
+            emptyPeriodPanel,
+            dashboardWarnings,
+            operationsPanels,
+          ].join('')
+        : [needsAttention, periodControls(from, to), financialPanels].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
       head(
-        can('viewAll') ? 'Dashboard' : 'My Dashboard',
-        `${can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
+        staffHome ? 'My day' : can('viewAll') ? 'Dashboard' : 'My Dashboard',
+        `${staffHome ? '' : can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
         {
           section: 'Work',
-          description:
-            'Review approved movement, today’s drawer position and the actions that need attention.',
+          description: staffHome
+            ? 'Record a payment or cash received, then check your recent entries.'
+            : 'Review approved movement, today’s drawer position and the actions that need attention.',
         },
       ) +
       `<div class="dashboard-body">${dashboardContent}</div></div>`;

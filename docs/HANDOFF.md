@@ -1,3 +1,73 @@
+## Latest delivery update — PR #265: Daily Cash Close readiness clarity (5 November 2026)
+
+- **Decision sequence:** the open preview now states the next required action before the reconciliation detail: chronological block, device-queue issue, manual opening required, voucher review, negative expected cash, generic review, or ready for physical count.
+- **Physical count remains a separate operator action.** “Ready for physical count” does not mean a close was recorded. Save remains subject to the existing server readiness and browser queue checks; the server revalidates on save.
+- **Financial authority preserved:** no expected-cash formula, opening carry-forward rule, voucher inclusion/exclusion, approval condition, date-order rule, variance calculation, close API, schema or Apps Script writer changed.
+- **Queue scope is explicit:** the browser can inspect only its own IndexedDB queue; other operating devices still require separate synchronization checks.
+- **Accessibility:** the readiness statement is a polite status region and the Save action references it. No additional confirmation layer is introduced.
+- **E2E scope:** adds focused readiness-state regression and waits for the Manager Dashboard panels after navigation. The previously failing Manager assertion could run before asynchronous route rendering completed.
+- **Release boundary:** no deployment, Apps Script push, migration, production data mutation, merge or cutover.
+
+## Latest delivery update — PR #265: Staff Home and release-check right-sizing (5 November 2026)
+
+The implementation below is already present on the active PR branch; this follow-up corrects one UI duplication issue and one test-fixture isolation defect.
+
+- **Staff Home:** staff sees Payment and Cash received as primary tasks, then `Needs attention` and the latest five server-returned entries. The finance KPI/chart block and date controls remain manager/owner content.
+- **Role boundary:** Manager and Owner retain their existing cash position, close-readiness, financial KPI and analysis context. Owner-only settings/team/audit controls remain separately permission-gated.
+- **Recent entries:** the latest 30 calendar days are shown by default. Approval exceptions route through the existing server-scoped Register. “View all entries” carries that same range into Register.
+- **Sync state:** the global IndexedDB outbox banner remains the only queue/retry/export/recovery surface. Home does not create a second queue or mark device-local entries as server-confirmed.
+- **Full Flight:** manual-only (`workflow_dispatch`). CI / Quality, Browser E2E and the read-only delivery monitor remain the automated PR checks. `npm run test:flight` remains available for deliberate release verification.
+- **Browser regression count:** Browser E2E completed on predecessor `167f24a` with **1,597 checks, 0 failures**, down from 1,651 on the earlier baseline. The repeated staff KPI matrix (11 widths × 2 themes) was replaced with three representative widths × two themes and task/role assertions. New Entry, explicit cash movement, approval, Register, offline/outbox and idempotency journeys remain covered.
+- **CI diagnosis:** CI on `167f24a` failed in `test/test-client-main-governance.js`, not application code. `classicProtection()` shared the canonical `requiredContexts` array; the deliberate Full Flight mutation polluted later ruleset fixtures. The follow-up clones that array and asserts mutation isolation. No production governance rule or branch-protection requirement is weakened.
+- **UI correction:** the initial shell displayed Payment/Cash received in the header and then repeated them in the final Home card. The follow-up keeps one DOM-built action card in the initial shell, makes it available during unavailable/offline states, and removes the duplicate header actions.
+- **Release boundary:** no backend/API/schema, financial rule, approval rule, cash movement, cash-close formula, Apps Script writer, deployment, migration, production endpoint or data was changed. No merge or deployment is authorized.
+
+### Still required outside automated checks
+
+Uncoached staff/manager task observation, real Android/PWA offline and reconnect recovery, manual TalkBack/VoiceOver and keyboard review, and real-browser 200–400% zoom/reflow remain unverified. Live repository branch-protection settings also remain an owner/admin verification item; source tests cannot configure or certify GitHub settings.
+
+---
+
+## Current implementation batch — PR #265: New Entry and Register completion pass (5 November 2026)
+
+- **PR / branch:** [PR #265](https://github.com/tchouhanjsm/cash-voucher/pull/265), `client/new-entry-novice-first-phase1` → `client-main`. Code-under-test commit: `c30c6a336c23cd80370e9047fc97dff45f229fb7`. The live PR page is authoritative for subsequent documentation-only commits.
+- **New Entry default:** one Payment or Cash received row is the ordinary path. Additional rows are deliberate; the multi-entry summary appears only after a second row.
+- **Physical drawer movement:** required and initially unselected; stored values remain exactly `CASH_IN`, `CASH_OUT`, and `NO_CASH`. Payment method and category never infer drawer movement.
+- **Payment method:** contextual labels are `Paid via` / `Received via`. Payee defaults apply once per payee text value; revisiting the same payee no longer overwrites a manually selected payment method or category.
+- **Entry mode accessibility:** Payment / Cash received controls expose their selected state with `aria-pressed`.
+- **Receipt upload:** native file input is keyboard-focusable rather than `hidden`; the labelled control shows a visible focus ring while the input remains visually unobtrusive.
+- **Approval guidance:** the ₹10,000+ independent owner/manager approval policy and no-self-approval rule are unchanged. The helper is actually hidden below ₹10,000, shown at the exact ₹10,000 threshold, and suppressed for Cash received. The CSS hidden-state override fixes the case where a base `display:block` rule had exposed the helper on a ₹1,250 payment.
+- **Preserved contracts:** field validation, duplicate confirmation, receipt preview/removal, notes/vendor linkage, stable client IDs/idempotency, server acknowledgement, IndexedDB outbox, retries/recovery, audit, role permissions and the authoritative Apps Script writer remain unchanged.
+- **Register:** common search/date/type/status/approval filters remain visible; less-used vendor/category/user/custom-date/payment-method filters use the native keyboard-operable `More filters` disclosure. Active filter state and dashboard drill-down context are preserved. The Register card’s scoped full-width CSS selector fixes the original desktop grid cascade issue. Server paging, totals, CSV export and voucher actions remain unchanged.
+- **No backend or release-authority change:** no Apps Script/PHP financial writer, API, schema, authorization, approval policy, cash-close calculation, production endpoint, data migration, deployment, Clasp push, host publication, merge or cutover was changed or performed.
+
+### Files changed in PR #265
+
+`.agent/CASH-VOUCHER-CHECKPOINT.md`, `docs/HANDOFF.md`, `docs/SECURITY-RENDERING-AUDIT.md`, `docs/UI-UX-REVIEW.md`, `frontend-ui-kit.css`, `frontend-workspace.css`, `frontend/features/navigation.js`, `frontend/features/payments.js`, `frontend/features/register.js`, `scripts/dom-sink-source-baseline.json`, `sw.js`, `test/e2e.py`, `test/test-design-system.js`, `test/test-frontend-safeguards.js`, `test/test-tailadmin-workspace.js`.
+
+### Exact-head verification — code commit `c30c6a3`
+
+- CI / Quality [run 42029220927](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42029220927): **passed**.
+- Browser E2E [run 42029219425](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42029219425): **passed — 1,651 checks, 0 failures**. Includes Payment and Cash received journeys, explicit movement validation, exact approval threshold, receipt keyboard reachability/focus, payee default preservation, queue/idempotency/recovery and responsive reflow.
+- Paired Full Flight [run 42029219220](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42029219220): **passed**. The separate manual Full Flight job was skipped and is not claimed as executed.
+- Autonomous Development Monitor [run 42029219257](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42029219257): **passed** (read-only exact-head status check).
+- Final responsive visual matrix [artifact 13416005553](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42029219425): 390px and 1280px light/dark captures generated. New Entry 1280px light and dark captures were visually inspected; the ₹1,250 fixture no longer shows the approval helper. E2E also asserts 320px overflow and 640px reflow. Screenshots and mocked browser checks are regression evidence, not staff usability or real-device proof.
+- CI / Quality includes formatting, lint, syntax, backend layout, contrast, frontend release-safety, DOM sink/source fingerprint checks, unit/regression tests, PR handoff validation and isolated PHP/MySQL integration gates.
+
+### Human validation still outstanding
+
+- No actual staff member has completed an uncoached task in this session. No task-completion score, SUS score or “9/10 usability” claim is made.
+- Real Android/PWA installation/offline recovery, manual TalkBack/VoiceOver, manual keyboard traversal beyond automated Tab checks, and actual 200–400% browser zoom/reflow remain to be verified on real devices.
+- The PR’s mock-backed tests do not prove Apps Script/Sheets production or staging latency/behavior, physical-device storage eviction behavior or live authorization.
+
+### Next delivery order
+
+1. Run uncoached Payment and Cash received tasks with representative staff in a safe staging/sandbox instance. Observe silently; record completion, hesitations, wrong turns, recovery and whether “saved on this device” versus “sent and confirmed” is understood. Do not lead or train during the task.
+2. Verify the same journeys on the actual Android/PWA device(s), including TalkBack and real offline/reconnect recovery. Keep production data out of the exercise.
+3. After that evidence, continue the next bounded vertical slice: targeted Home/Dashboard exception and queue-status visibility using the existing read models/outbox, then Daily Cash Close clarity and shared consistency. The research decision remains in `docs/UI-UX-REVIEW.md`; do not rebuild the Dashboard or create a second queue store.
+
+The repository does not contain `docs/UX-REDESIGN-BRIEF-V2.md` or `docs/ENGINEERING-QUALITY-GATE.md` by those exact paths on this branch. The active v2.0 product and quality contracts are recorded in `docs/UI-UX-REVIEW.md`, `PROJECT.md`, `README.md`, `docs/DEVELOPMENT-WORKFLOW.md`, and PR #265's acceptance criteria.
+
 ## Current implementation batch — PR #263: Haveli Light dashboard, account, Register and Reports (Phases 8–12)
 
 - **Repository:** tchouhanjsm/cash-voucher; integration branch client-main; legacy main remains read-only.
@@ -617,3 +687,30 @@ See [Role-based workspace architecture](WORKSPACE-ROLE-ARCHITECTURE-2026-11-04.m
 - **Final exact head:** `968dc65ae22d288fffe02a9f851e6fb902b8dab4`.
 - **Final exact-head verification:** CI [41839239190](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41839239190) — passed; Browser E2E [41839239193](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41839239193) — passed; Full Flight [41839239096](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41839239096) — passed; Autonomous Development Monitor [41839239210](https://github.com/tchouhanjsm/cash-voucher/actions/runs/41839239210) — passed. CI included Prettier, JSON validation, regular regression tests, PR handoff validation, PHP lint, disposable MySQL migrations, production-migration refusal, least-privilege test DB setup and PHP/MySQL authentication integration including the short-PIN forced-change path. The manual-only Full Flight subjob was skipped by workflow design; the required automated Full Flight job passed.
 - **Next UX delivery:** a separate bulk PWA vertical slice starts with New Entry (Payment and Cash received), then Register, Home and Daily Cash Close clarity. Keep API/schema impact at none for that UI batch, preserve explicit physical cash movement and approval/close invariants, and leave real-user validation open until observed staff testing.
+
+## PR #265 follow-up — Staff Home and delivery-gate simplification (5 November 2026)
+
+- Staff now gets an entry-first **My day**: Record a payment, Record cash received, actionable Needs attention and My recent entries. Management analytics, charts and date presets are removed from the staff route.
+- Recent entries use the existing read-only, server-authorized `registerPage` action and default to the latest 30 calendar days. **Open register** carries that range into Register. Device-local unsent entries remain represented by the one existing global outbox banner.
+- The staff-only screen is selected from existing permissions (`viewOwn`, without `viewAll` or `cashClose`). Manager and Owner retain the existing all-record financial Dashboard (six KPI cards when `viewAll` is granted), with their separate Admin/Owner navigation permissions, operational cash position, close readiness and exception workflows.
+- The global outbox banner remains the sole queue/recovery authority. No second queue store, API, schema or server-confirmed claim for local-only entries was introduced.
+- Full Flight now runs only by `workflow_dispatch`. Its complete `npm run test:flight` chain remains available for deliberate release validation. CI / Quality and Browser E2E remain the automatic PR gates; the redundant PR/push Full Flight status aggregator is gone.
+- The repeated Staff KPI matrix (11 widths × 2 themes) was replaced by six representative layout cases (390/768/1280px × light/dark), including action-column, touch-size and overflow checks, plus direct Payment/Receipt routing and server-scoped approval/recent-entry drill-downs. This focused regression set does not claim real-user usability evidence.
+
+### Exact-head follow-up
+
+- Initial implementation head: `5d10e9972fb8f8423b61a079a4d04258ee3d8500`.
+- Its first CI run exposed stale Staff KPI expectations and Prettier formatting. Its first Browser E2E run exposed a missing wait before reading the asynchronously rendered approval exception. Those are test/contract issues, not a reason to delete the underlying safety tests.
+- Corrective changes are being committed on the same PR. Exact-head CI / Quality and Browser E2E must be checked on the new follow-up commit; earlier green runs for `c30c6a3` do not validate this phase.
+- No merge, deployment, Clasp push, spreadsheet write or production operation is part of this follow-up.
+
+## PR #265 follow-up — right-sized delivery gates and Manager empty-period regression (5 November 2026)
+
+- Automatic PR gates are **CI / Quality**, **Browser E2E**, and the read-only **Autonomous Development Monitor**. The Monitor evaluates the same two required source workflows and exact PR/client-main heads.
+- **Full Flight** is manual-only (`workflow_dispatch`). Its full `npm run test:flight` chain remains available for deliberate release validation; its skip on a normal PR is expected, not a red or green PR status. The branch-governance contract now lists only the three actual automatic checks.
+- The read-only governance verifier now rejects an obsolete Full Flight required-status context, in both classic branch protection and applicable rulesets.
+- The Manager regression now accepts both legitimate dashboard presentations: six KPI cards when the selected period has approved movement, or the existing explicit empty-period panel when it does not. It still requires the Dashboard route, Manager cash-position card and Daily Cash Close surface, and verifies the staff Home is absent.
+- The previous exact head `fa5b58e890534c5d549f6e0734665f0e233eba45` had two known failures: the branch-policy unit test still expected automatic Full Flight triggers; Browser E2E assumed Manager always has six KPI cards even when the period is empty. These are being corrected without deleting financial, authorization, outbox, or critical journey coverage.
+- The staff Home uses the existing outbox, server Register read model and current permissions. No API/schema/financial policy, Apps Script deployment, Sheet/Drive mutation or production operation is part of this slice.
+- **Live GitHub branch protection is still an owner/admin task.** The integration does not grant the Administration read permission needed to inspect/change the protection context. Remove any obsolete Full Flight required check in GitHub settings; source documentation and tests do not change server-side branch protection.
+- Exact-head CI, Browser E2E and monitor results for the corrective commit must be checked before considering merge. No merge, Clasp push, deployment or release is authorized by this code change.
