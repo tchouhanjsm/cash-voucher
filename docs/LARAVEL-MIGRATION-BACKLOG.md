@@ -87,7 +87,7 @@ The first implementation PR is limited to an **isolated local/test Laravel verti
 - Health/live, health/ready and meta routes; readiness is read-only and verifies existing schema version 0004.
 - API v1 JSON envelope, request ID, no-store headers and normalized errors.
 - Existing role grants and shared session/CSRF digest contract; inactive, unknown-role and must-change sessions fail closed. Login issuance and password upgrade remain with existing PHP API for now.
-- MySQL integration tests use the existing four root SQL migrations on a disposable CI database. No Laravel destructive migrations, `migrate:fresh`, `DROP` or `TRUNCATE`.
+- MySQL integration tests use the existing four root SQL migrations on a dedicated disposable Laravel CI database, isolated from the PHP integration suite's seeded data. No Laravel destructive migrations, `migrate:fresh`, `DROP` or `TRUNCATE`.
 - Creator-scoped voucher list, duplicate-check and single voucher create. Bulk, non-empty receipts, edit/cancel, approval actions and cash close are explicit follow-on slices.
 - Voucher create reuses the PDO allocator, IdempotencyService and AuditWriter. A missing sequence fails closed; a create transaction includes voucher, audit and idempotency result.
 - Same key/same payload replays; same key/different payload conflicts; client ID collisions conflict; duplicate payment candidates require a short-lived HMAC confirmation token.

@@ -58,7 +58,7 @@ The API preserves the existing { ok, data|error, meta } envelope, request ID, an
 
 ## Tests
 
-The CI suite runs against the existing disposable MySQL 8.0 service and the root schema migration runner. The tests do not use SQLite or Laravel destructive migration helpers. They create synthetic test users, sessions and vouchers only.
+The CI suite runs against a dedicated `cash_voucher_laravel_test` schema on the disposable MySQL 8.0 service. Its root SQL migrations and least-privilege runtime grants are prepared separately from the PHP API integration suite, so synthetic sequences and vouchers cannot leak between test suites. The tests do not use SQLite or Laravel destructive migration helpers. They create synthetic test users, sessions and vouchers only.
 
     composer validate --no-check-publish
     composer install
