@@ -215,6 +215,8 @@ final class VoucherApiTest extends TestCase
     public function test_missing_receipt_sequence_fails_closed_without_guessing_a_number(): void
     {
         $payload = $this->validPayload([
+            // Use a distinct date so the synthetic closed-date test cannot influence this check.
+            'date' => (new \\DateTimeImmutable('-2 days', new \\DateTimeZone('Asia/Kolkata')))->format('Y-m-d'),
             'type' => 'RECEIPT',
             'cashImpact' => 'CASH_IN',
             'vendor' => 'Receipt sequence test '.bin2hex(random_bytes(4)),
