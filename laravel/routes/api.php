@@ -1,6 +1,7 @@
 <?php
 
 use App\Modules\Shared\ApiResponse;
+use App\Modules\CashClose\Http\Controllers\CashCloseController;
 use App\Modules\Receipts\Http\Controllers\ReceiptController;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
 use App\Modules\Vendors\Http\Controllers\VendorController;
@@ -54,6 +55,9 @@ Route::prefix('v1')->group(function (): void {
                 'vouchers:reject',
                 'receipts:attach',
                 'receipts:read',
+                'cash-close:preview',
+                'cash-close:create',
+                'cash-close:corrections',
                 'vendors:list',
                 'vendors:create',
                 'vendors:update',
@@ -65,6 +69,9 @@ Route::prefix('v1')->group(function (): void {
 
     Route::middleware('legacy.session')->group(function (): void {
         Route::get('/vouchers', [VoucherController::class, 'index']);
+        Route::get('/cash-closes/preview', [CashCloseController::class, 'preview']);
+        Route::post('/cash-closes', [CashCloseController::class, 'create']);
+        Route::post('/cash-closes/{closeId}/corrections', [CashCloseController::class, 'recordCorrection']);
         Route::post('/vouchers/duplicate-check', [VoucherController::class, 'duplicateCheck']);
         Route::post('/vouchers', [VoucherController::class, 'store']);
         Route::patch('/vouchers/{voucherId}', [VoucherController::class, 'update']);
