@@ -119,12 +119,12 @@ const cashInPage = g.call('registerPage', {
   limit: 100,
 });
 assert.equal(cashInPage.ok, true, 'owner can filter the Register by physical cash added');
+assert.equal(cashInPage.data.totalCount, 1, 'cash-in filter matches only the receipt fixture');
 assert.equal(
-  cashInPage.data.totalCount,
-  1,
-  'cash-in filter matches only the receipt fixture',
+  cashInPage.data.items[0].cashImpact,
+  'CASH_IN',
+  'receipt cash movement stays explicit',
 );
-assert.equal(cashInPage.data.items[0].cashImpact, 'CASH_IN', 'receipt cash movement stays explicit');
 assert.equal(
   firstPage.data.totals.approvalExceptionCount,
   1,
