@@ -188,9 +188,7 @@ function createVouchers_(user, req) {
       en.paymentMethod === undefined || en.paymentMethod === ''
         ? ''
         : paymentMethod_(en.paymentMethod, row);
-    const impact = method
-      ? cashImpactForPaymentMethod_(method, type)
-      : cashImpact_(en.cashImpact, row);
+    const impact = cashImpact_(en.cashImpact, row);
     const clientId = clientId_(en.clientId);
     const previousClientVoucher = clientId ? byClient[clientId] : null;
     const identity = previousClientVoucher
@@ -501,28 +499,9 @@ function updateVoucher_(user, req) {
   if (f.paymentMethod !== undefined) {
     const method = paymentMethod_(f.paymentMethod, '');
     recordChange('paymentMethod', 'PaymentMethod', String(o.PaymentMethod || ''), method);
-    recordChange(
-      'cashImpact',
-      'CashImpact',
-      String(o.CashImpact || 'UNCLASSIFIED'),
-      cashImpactForPaymentMethod_(method, o.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT'),
-    );
-  } else if (f.cashImpact !== undefined) {
+  }
+  if (f.cashImpact !== undefined) {
     const impact = cashImpact_(f.cashImpact, '');
-    const storedMethod = String(o.PaymentMethod || '');
-    if (storedMethod) {
-      const method = paymentMethod_(storedMethod, '');
-      const expectedImpact = cashImpactForPaymentMethod_(
-        method,
-        o.Type === 'RECEIPT' ? 'RECEIPT' : 'PAYMENT',
-      );
-      if (impact !== expectedImpact) {
-        throw err_(
-          'Cash impact must match the saved payment method. Correct the payment method to change the derived cash impact.',
-          'VALIDATION',
-        );
-      }
-    }
     recordChange('cashImpact', 'CashImpact', String(o.CashImpact || 'UNCLASSIFIED'), impact);
   }
   if (CASH_IMPACT_CHOICES.indexOf(o.CashImpact) < 0 && f.cashImpact === undefined) {

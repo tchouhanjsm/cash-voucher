@@ -117,11 +117,17 @@ export function createDashboard({ api }) {
       : 'ACTIVE';
     const query = typeof options.query === 'string' ? options.query.slice(0, 120) : '';
     const vendor = typeof options.vendor === 'string' ? options.vendor.slice(0, 200) : '';
+    const cashImpact = ['CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'].includes(options.cashImpact)
+      ? options.cashImpact
+      : '';
+    const amountValidity = ['VALID', 'INVALID'].includes(options.amountValidity)
+      ? options.amountValidity
+      : '';
     const label = typeof options.label === 'string' ? options.label : 'Open context';
     const className =
       typeof options.className === 'string' ? options.className : 'btn dashboard-drilldown';
     const accessibleLabel = typeof options.ariaLabel === 'string' ? options.ariaLabel : label;
-    return `<button type="button" class="${esc(className)}" data-act="dashboardDrilldown" data-drill-key="${esc(key)}" data-target="${target}" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${type}" data-approval="${approval}" data-status="${status}" data-query="${esc(query)}" data-vendor="${esc(vendor)}" aria-label="${esc(accessibleLabel)}">${esc(label)}${icon('arrow-right')}</button>`;
+    return `<button type="button" class="${esc(className)}" data-act="dashboardDrilldown" data-drill-key="${esc(key)}" data-target="${target}" data-from="${esc(from)}" data-to="${esc(to)}" data-type="${type}" data-approval="${approval}" data-status="${status}" data-query="${esc(query)}" data-vendor="${esc(vendor)}" data-cash-impact="${cashImpact}" data-amount-validity="${amountValidity}" aria-label="${esc(accessibleLabel)}">${esc(label)}${icon('arrow-right')}</button>`;
   }
 
   function bars(rows, limit = 8) {
@@ -1081,17 +1087,30 @@ export function createDashboard({ api }) {
         label: '',
       });
     }
-    if (malformedRecordCount || invalidAmountCount) {
+    if (invalidAmountCount) {
       attention.push({
         tone: 'bad',
         icon: 'alert',
-        text: `${malformedRecordCount + invalidAmountCount} voucher record(s) have invalid data and are excluded`,
+        text: `${invalidAmountCount} active voucher amount(s) need review and are excluded from totals`,
         target: 'reg',
-        key: 'invalid-voucher-data',
+        key: 'invalid-voucher-amounts',
         from,
         to,
-        status: 'ALL',
-        label: 'Inspect voucher data',
+        status: 'ACTIVE',
+        amountValidity: 'INVALID',
+        label: 'Review amounts',
+      });
+    }
+    if (malformedRecordCount) {
+      attention.push({
+        tone: 'bad',
+        icon: 'alert',
+        text: `${malformedRecordCount} voucher record(s) have missing or unsupported details and need owner review`,
+        target: 'cashClose',
+        key: 'malformed-voucher-records',
+        from: today(),
+        to: today(),
+        label: 'Review close blockers',
       });
     }
     if (can('cashClose')) {
@@ -1115,11 +1134,13 @@ export function createDashboard({ api }) {
             tone: 'warn',
             icon: 'alert',
             text: `${dailyOperations.unclassifiedCount} current-day voucher(s) need a verified cash-impact classification`,
-            target: 'cashClose',
+            target: 'reg',
             key: 'unclassified-cash-impact',
             from: today(),
             to: today(),
-            label: 'Review cash close',
+            status: 'ACTIVE',
+            cashImpact: 'UNCLASSIFIED',
+            label: 'Classify physical cash',
           });
         }
         if (

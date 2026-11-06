@@ -155,6 +155,8 @@ registerActions({
 
   edit: ({ id }) => register.edit(id),
 
+  classify: ({ id }) => register.classifyCashMovement(id),
+
   cancel: ({ id }) => register.cancel(id),
 
   approve: ({ id }) => register.approve(id),
@@ -201,6 +203,8 @@ registerActions({
       status: data.status || 'ACTIVE',
       query: data.query || '',
       vendor: data.vendor || '',
+      cashImpact: data.cashImpact || '',
+      amountValidity: data.amountValidity || '',
     };
 
     if (data.target === 'cashClose') {
