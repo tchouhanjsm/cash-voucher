@@ -59,6 +59,14 @@ Known unknowns:
 
 Read the active implementation, consumers, public interfaces and side effects before editing. Separate facts from assumptions. Reconcile incoming review findings to current paths and verify whether earlier findings are already resolved.
 
+## Delivery pipeline and release controls
+
+- Feature branches are validated through their pull request events (`opened`, `synchronize`, `reopened`); CI and Browser E2E push triggers are limited to `client-main`. Do not trigger duplicate feature-branch push runs alongside pull-request runs. A PR description edit runs only the handoff-content validator under the existing CI / Quality check context; it does not reinstall packages or rerun the code/test suite. Its `edited` event uses a distinct concurrency key, so updating the handoff cannot cancel a source-sync validation already in progress.
+- CI / Quality and Browser E2E are reusable workflows. A version tag can publish only when its commit is already reachable from `client-main`, the tag matches `package.json`, and the exact release commit passes both reusable workflows.
+- The release validation jobs have read-only repository permissions. The separate publication job receives `contents: write` only after provenance, CI and Browser E2E succeed. Existing releases are left unchanged on a retry.
+- Browser automation uses the shared, pinned `requirements-e2e.txt` toolchain and pip cache across E2E, Full Flight and staging-UAT. Update these pins only with a verified browser run; do not use an unbounded `pip install playwright` in CI.
+- Staging UAT and staging client ZIP generation remain manual dispatches guarded to `client-main`; neither PR checks nor a tag release deploy to Apps Script, cPanel or customer data. Full Flight remains manual-only.
+
 ## Build and verify continuously
 
 Run the narrowest relevant check after each logical change. After the final code edit, run the full checks and review the complete diff:
@@ -73,7 +81,7 @@ git diff --stat
 git diff
 ```
 
-The CI workflow runs `npm run check`; the Browser E2E workflow separately runs `npm run test:e2e`. The PR quality check enforces complete handoff sections; it does not impose a commit-count ceiling. The exact head SHA must be checked after the last commit, not just an earlier commit.
+The CI / Quality workflow runs `npm run check`, the isolated PHP/MySQL integration tests and dependency policy; Browser E2E separately runs `npm run test:e2e`. The PR quality check enforces complete handoff sections; it does not impose a commit-count ceiling. A description-only edit runs just `node scripts/check-pr-quality.js`. For local browser tests, install `python3 -m pip install -r requirements-e2e.txt` and `python3 -m playwright install chromium`. The exact head SHA must be checked after the last commit, not just an earlier commit.
 
 If browser E2E or another environment-dependent check has not run, report it as pending/not run. A passing mock is not proof of behavior on a real Google account. Neither normal CI workflow deploys the Apps Script backend.
 

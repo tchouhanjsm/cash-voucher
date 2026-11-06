@@ -33,6 +33,7 @@ const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
 const governanceVerifier = read('scripts/verify-client-main-governance.js');
 const governanceTest = read('test/test-client-main-governance.js');
 const ciWorkflow = read('.github/workflows/ci.yml');
+const browserWorkflow = read('.github/workflows/e2e.yml');
 const stagingWorkflow = read('.github/workflows/staging-uat.yml');
 const stagingWorkflowTest = read('test/test-staging-workflow.js');
 const stagingEvidenceWriter = read('scripts/staging-evidence.js');
@@ -200,10 +201,16 @@ assert.ok(
 );
 assert.ok(
   ciWorkflow.includes(
-    "if: ${{ always() && github.event_name == 'pull_request' && steps.dependencies.outcome == 'success' }}",
+    "if: ${{ always() && github.event_name == 'pull_request' && (github.event.action == 'edited' || steps.dependencies.outcome == 'success') }}",
   ),
 );
 assert.ok(ciWorkflow.includes('- name: Run unit and regression tests'));
+assert.ok(ciWorkflow.includes("github.event.action != 'edited'"));
+assert.ok(ciWorkflow.includes('node scripts/check-pr-quality.js'));
+assert.ok(ciWorkflow.includes('workflow_call:'));
+assert.ok(browserWorkflow.includes('workflow_call:'));
+assert.ok(browserWorkflow.includes('python -m pip install -r requirements-e2e.txt'));
+assert.ok(read('requirements-e2e.txt').includes('playwright==1.64.1'));
 assert.ok(ciWorkflow.includes('npm run audit:deps'));
 assert.ok(formatDiffScript.includes("'--stdin-filepath'"));
 assert.ok(formatDiffScript.includes("'diff'"));

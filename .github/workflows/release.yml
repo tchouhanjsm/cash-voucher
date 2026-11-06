@@ -10,82 +10,78 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  release:
+  release-guard:
+    name: Verify release provenance and version
     runs-on: ubuntu-latest
-    timeout-minutes: 25
-
+    timeout-minutes: 5
+    permissions:
+      contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version-file: .nvmrc
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Enforce dependency advisory policy
-        run: npm run audit:deps
-
-      - name: Run quality gate
-        run: npm run check
-
-      - name: Setup Python
-        uses: actions/setup-python@v7
-        with:
-          python-version: '3.11'
-
-      - name: Install Playwright
+      - name: Require the tagged commit to be reachable from client-main
         run: |
-          python -m pip install playwright
-          python -m playwright install --with-deps chromium
+          git fetch --no-tags origin refs/heads/client-main:refs/remotes/origin/client-main
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" refs/remotes/origin/client-main; then
+            echo "Release tags must point to a commit already contained in client-main."
+            exit 1
+          fi
+          echo "Release provenance verified against client-main."
 
-      - name: Run browser E2E
-        run: npm run test:e2e
-
-      - name: Upload browser diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v7
-        with:
-          name: cash-voucher-release-e2e-diagnostics
-          path: |
-            /tmp/desktop.png
-            /tmp/mobile.png
-            /tmp/cash-voucher-e2e-server.log
-          if-no-files-found: ignore
-
-      - name: Verify version
+      - name: Verify release tag matches package version
         env:
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
           node <<'NODE'
-          const fs = require('fs');
-
+          const fs = require('node:fs');
           const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-          const expected = `v${pkg.version}`;
+          const expected = 'v' + pkg.version;
           const actual = process.env.RELEASE_TAG;
-
           if (actual !== expected) {
-            console.error(`Release tag ${actual} does not match package version ${expected}.`);
+            console.error('Release tag ' + actual + ' does not match package version ' + expected + '.');
             process.exit(1);
           }
-
-          console.log(`Release version verified: ${pkg.version}`);
+          console.log('Release version verified: ' + pkg.version);
           NODE
 
-      - name: Create GitHub Release
+  quality:
+    name: Reuse CI / Quality
+    needs: [release-guard]
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  browser:
+    name: Reuse Browser E2E
+    needs: [release-guard, quality]
+    uses: ./.github/workflows/e2e.yml
+    permissions:
+      contents: read
+
+  publish:
+    name: Publish GitHub Release
+    needs: [release-guard, quality, browser]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: write
+    steps:
+      - name: Create GitHub Release after all validation gates
         env:
           GH_TOKEN: ${{ github.token }}
           RELEASE_TAG: ${{ github.ref_name }}
         run: |
-          gh release create "$RELEASE_TAG" \
-            --title "$RELEASE_TAG" \
-            --generate-notes
+          if gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "Release $RELEASE_TAG already exists; leaving it unchanged."
+          else
+            gh release create "$RELEASE_TAG" \
+              --title "$RELEASE_TAG" \
+              --generate-notes \
+              --verify-tag
+          fi

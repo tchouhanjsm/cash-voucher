@@ -226,8 +226,10 @@ assert.ok(
   'Register accepts safe Dashboard context while retaining all approval states and active-only server scope',
 );
 assert.ok(
-  dashboard.includes("approval: 'APPROVED'") && dashboard.includes("status: 'ALL'"),
-  'Dashboard approved-payment KPIs and invalid-data attention retain precise Register scopes',
+  dashboard.includes("approval: 'APPROVED'") &&
+    dashboard.includes("amountValidity: 'INVALID'") &&
+    dashboard.includes("cashImpact: 'UNCLASSIFIED'"),
+  'Dashboard routes amount and cash-classification exceptions into precise Register scopes',
 );
 assert.ok(
   reports.includes('function openDashboardContext(context = {})') &&

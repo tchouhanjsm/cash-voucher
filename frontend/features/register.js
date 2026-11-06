@@ -12,7 +12,6 @@ import {
   normalizeCashImpact,
   normalizeApprovalStatus,
   S,
-  suggestCashImpact,
 } from '../core/state.js';
 import { catOptionsNode, vendorListNode } from '../core/form-options.js';
 import { createAuditReconciliationCsv } from '../core/audit-export.js';
@@ -43,6 +42,8 @@ export function createRegister({ api, go }) {
     st: 'ACTIVE',
     approval: 'ALL',
     paymentMethod: 'ALL',
+    cashImpact: 'ALL',
+    amountValidity: 'ALL',
     limit: 100,
   };
   const receiptCache = {};
@@ -102,6 +103,26 @@ export function createRegister({ api, go }) {
     const label = document.createElement('label');
     label.append(document.createTextNode(text), control);
     return label;
+  }
+
+  function cashMovementLabel(value) {
+    switch (normalizeCashImpact(value)) {
+      case 'CASH_IN':
+        return 'Cash added to the drawer';
+      case 'CASH_OUT':
+        return 'Cash taken out of the drawer';
+      case 'NO_CASH':
+        return 'No physical cash moved';
+      default:
+        return 'Needs classification';
+    }
+  }
+
+  function validVoucherAmount(value) {
+    if (typeof value !== 'number' && typeof value !== 'string') return false;
+    if (String(value).trim() === '') return false;
+    const amount = Number(value);
+    return Number.isFinite(amount) && amount > 0 && amount <= 10000000;
   }
 
   // The server has already applied the user's filters and authorization scope.
@@ -195,6 +216,8 @@ export function createRegister({ api, go }) {
       st: R.st,
       approval: R.approval,
       paymentMethod: R.paymentMethod,
+      cashImpact: R.cashImpact,
+      amountValidity: R.amountValidity,
       offset,
       limit,
     };
@@ -237,6 +260,8 @@ export function createRegister({ api, go }) {
       Boolean(R.cat),
       Boolean(R.user),
       R.paymentMethod !== 'ALL',
+      R.cashImpact !== 'ALL',
+      R.amountValidity !== 'ALL',
       hasCustomDateRange,
     ].filter(Boolean).length;
   }
@@ -251,6 +276,14 @@ export function createRegister({ api, go }) {
       [Boolean(R.user), 'User'],
       [Boolean(R.t), R.t === 'RECEIPT' ? 'Receipts only' : 'Payments only'],
       [R.paymentMethod !== 'ALL', 'Payment method'],
+      [
+        R.cashImpact !== 'ALL',
+        R.cashImpact === 'UNCLASSIFIED' ? 'Needs cash classification' : 'Physical cash movement',
+      ],
+      [
+        R.amountValidity !== 'ALL',
+        R.amountValidity === 'INVALID' ? 'Amount needs review' : 'Valid amounts',
+      ],
       [R.st !== 'ACTIVE', R.st === 'CANCELLED' ? 'Cancelled status' : 'All statuses'],
       [R.approval !== 'ALL', 'Approval state'],
     ]
@@ -457,7 +490,9 @@ export function createRegister({ api, go }) {
                   R.to ||
                   R.st !== 'ACTIVE' ||
                   R.approval !== 'ALL' ||
-                  R.paymentMethod !== 'ALL'
+                  R.paymentMethod !== 'ALL' ||
+                  R.cashImpact !== 'ALL' ||
+                  R.amountValidity !== 'ALL'
                 ? 'filtered'
                 : 'first-use';
     }
@@ -509,8 +544,13 @@ export function createRegister({ api, go }) {
                 aria-label="Receipts for ${esc(voucherNo(voucher))}"
               >${!receiptState.valid ? '📎 Check receipts' : receiptCount ? '📎 ' + receiptCount : '📎 Add receipt'}</button>`
             : '',
+          voucher.status === 'ACTIVE' &&
+          can('edit') &&
+          normalizeCashImpact(voucher.cashImpact) === 'UNCLASSIFIED'
+            ? `<button class="btn sm primary" data-act="classify" data-id="${esc(voucher.id)}">Classify cash</button>`
+            : '',
           voucher.status === 'ACTIVE' && can('edit')
-            ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">Edit</button>`
+            ? `<button class="btn sm" data-act="edit" data-id="${esc(voucher.id)}">${validVoucherAmount(voucher.amount) ? 'Edit' : 'Review amount'}</button>`
             : '',
           voucher.status === 'ACTIVE' && can('cancel')
             ? `<button class="btn sm danger" data-act="cancel" data-id="${esc(voucher.id)}">Cancel</button>`
@@ -531,12 +571,12 @@ export function createRegister({ api, go }) {
             <span class="voucher-vendor">${esc(scalarText(voucher.vendor))}</span>
             <div class="cat">
               ${esc(scalarText(voucher.category))}${scalarText(voucher.notes) ? ' · ' + esc(scalarText(voucher.notes)) : ''}${receiptWarning}${cancelledNote}
-              <div class="cat">Payment method: ${esc(paymentMethodLabel(voucher.paymentMethod))} · Cash impact: ${esc(normalizeCashImpact(voucher.cashImpact))}${approvalNote}</div>
+              <div class="cat">Payment method: ${esc(paymentMethodLabel(voucher.paymentMethod))} · Physical cash: ${esc(cashMovementLabel(voucher.cashImpact))}${approvalNote}</div>
             </div>
           </td>
           <td class="r nw amt${isIn(voucher) ? ' cash-impact-in' : ''}">
             <span class="voucher-amount">
-              ${isIn(voucher) ? '+' : '−'}${money(voucher.amount)}
+              ${validVoucherAmount(voucher.amount) ? (isIn(voucher) ? '+' : '−') + money(voucher.amount) : '<span class="badge bad">Amount needs review</span>'}
             </span>
           </td>
           <td class="nw cat">${esc(nm(scalarText(voucher.createdBy)))}</td>
@@ -570,7 +610,9 @@ export function createRegister({ api, go }) {
         R.to ||
         R.st !== 'ACTIVE' ||
         R.approval !== 'ALL' ||
-        R.paymentMethod !== 'ALL',
+        R.paymentMethod !== 'ALL' ||
+        R.cashImpact !== 'ALL' ||
+        R.amountValidity !== 'ALL',
       );
       const firstUse =
         dataAvailable && !pageLoading && !rangeInvalid && pageTotalCount === 0 && !hasActiveFilters;
@@ -669,7 +711,7 @@ export function createRegister({ api, go }) {
     const advancedFiltersOpen = advancedFilterCount > 0 ? ' open' : '';
     const advancedFilterCountLabel = advancedFilterCount
       ? advancedFilterCount + ' active'
-      : 'Vendor, category, dates and payment method';
+      : 'Vendor, category, dates, payment and cash movement';
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
     const vendors =
       Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
@@ -788,6 +830,24 @@ export function createRegister({ api, go }) {
                 ${PAYMENT_METHOD_FILTER_OPTIONS.map(([key, label]) => `<option value="${key}"${R.paymentMethod === key ? ' selected' : ''}>${esc(label)}</option>`).join('')}
               </select>
             </label>
+            <label class="register-filter-field" for="rcashimpact">
+              Physical cash movement
+              <select id="rcashimpact" aria-label="Filter by physical cash movement">
+                <option value="ALL"${R.cashImpact === 'ALL' ? ' selected' : ''}>All movements</option>
+                <option value="CASH_IN"${R.cashImpact === 'CASH_IN' ? ' selected' : ''}>Cash added to the drawer</option>
+                <option value="CASH_OUT"${R.cashImpact === 'CASH_OUT' ? ' selected' : ''}>Cash taken out of the drawer</option>
+                <option value="NO_CASH"${R.cashImpact === 'NO_CASH' ? ' selected' : ''}>No physical cash moved</option>
+                <option value="UNCLASSIFIED"${R.cashImpact === 'UNCLASSIFIED' ? ' selected' : ''}>Needs classification</option>
+              </select>
+            </label>
+            <label class="register-filter-field" for="ramountValidity">
+              Amount review
+              <select id="ramountValidity" aria-label="Filter by amount validity">
+                <option value="ALL"${R.amountValidity === 'ALL' ? ' selected' : ''}>All amounts</option>
+                <option value="INVALID"${R.amountValidity === 'INVALID' ? ' selected' : ''}>Needs review</option>
+                <option value="VALID"${R.amountValidity === 'VALID' ? ' selected' : ''}>Valid amounts</option>
+              </select>
+            </label>
           </div>
         </details>
         <div class="register-filter-actions">
@@ -842,6 +902,8 @@ export function createRegister({ api, go }) {
       rt: 't',
       rapproval: 'approval',
       rpmethod: 'paymentMethod',
+      rcashimpact: 'cashImpact',
+      ramountValidity: 'amountValidity',
     };
     const key = mapping[event.target.id];
 
@@ -873,6 +935,8 @@ export function createRegister({ api, go }) {
       st: 'ACTIVE',
       approval: 'ALL',
       paymentMethod: 'ALL',
+      cashImpact: 'ALL',
+      amountValidity: 'ALL',
       limit: 100,
     });
     render();
@@ -980,6 +1044,83 @@ export function createRegister({ api, go }) {
     }
   }
 
+  function classifyCashMovement(id) {
+    const voucher = voucherRows().find((item) => item.id === id);
+    if (!voucher || !can('edit') || voucher.status !== 'ACTIVE') {
+      fail(
+        new Error(
+          'This voucher cannot be classified from your current account. Refresh the Register and retry.',
+        ),
+      );
+      return;
+    }
+
+    const body = document.createDocumentFragment();
+    const summary = document.createElement('p');
+    const amount = document.createElement('b');
+    amount.textContent = validVoucherAmount(voucher.amount)
+      ? money(voucher.amount)
+      : 'Amount needs review';
+    summary.append(
+      document.createTextNode(voucherNo(voucher) + ' · ' + scalarText(voucher.vendor) + ' · '),
+      amount,
+    );
+    body.appendChild(summary);
+
+    const movement = document.createElement('select');
+    movement.id = 'cash-movement';
+    movement.required = true;
+    const labels = {
+      CASH_IN: 'Cash added to the drawer',
+      CASH_OUT: 'Cash taken out of the drawer',
+      NO_CASH: 'No physical cash moved',
+    };
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = 'Choose what actually happened';
+    placeholder.disabled = true;
+    placeholder.selected = true;
+    movement.appendChild(placeholder);
+    CASH_IMPACT_CHOICES.forEach((value) => {
+      const option = document.createElement('option');
+      option.value = value;
+      option.textContent = labels[value];
+      movement.appendChild(option);
+    });
+    body.appendChild(labeledControl('Physical cash movement', movement));
+
+    const explanation = document.createElement('p');
+    explanation.className = 'muted';
+    explanation.textContent =
+      'Check the real drawer movement. Payment method and category do not determine whether cash moved.';
+    body.appendChild(explanation);
+
+    const reason = document.createElement('textarea');
+    reason.id = 'cash-reason';
+    reason.required = true;
+    reason.minLength = 3;
+    reason.maxLength = 200;
+    reason.rows = 3;
+    body.appendChild(labeledControl('Correction reason (required)', reason));
+
+    dialog(
+      'Classify physical cash · ' + voucherNo(voucher),
+      body,
+      async () => {
+        const updated = await api('updateVoucher', {
+          id,
+          reason: reason.value,
+          fields: { cashImpact: movement.value },
+        });
+        Object.assign(voucher, updated);
+        closeModal();
+        toast('Physical cash movement updated.', 'ok');
+        go(S.view);
+      },
+      'Save classification',
+    );
+  }
+
   function edit(id) {
     const voucher = voucherRows().find((item) => item.id === id);
     const body = document.createDocumentFragment();
@@ -1041,55 +1182,34 @@ export function createRegister({ api, go }) {
 
     const cashImpact = document.createElement('select');
     cashImpact.id = 'eci';
+    cashImpact.required = true;
     const selectedImpact = normalizeCashImpact(voucher.cashImpact);
     if (!CASH_IMPACT_CHOICES.includes(selectedImpact)) {
       const placeholder = document.createElement('option');
       placeholder.value = '';
-      placeholder.textContent = 'Choose cash impact…';
+      placeholder.textContent = 'Choose what happened to the physical cash';
       placeholder.selected = true;
       placeholder.disabled = true;
       cashImpact.appendChild(placeholder);
     }
+    const cashMovementOptions = {
+      CASH_IN: 'Cash added to the drawer',
+      CASH_OUT: 'Cash taken out of the drawer',
+      NO_CASH: 'No physical cash moved',
+    };
     CASH_IMPACT_CHOICES.forEach((value) => {
       const option = document.createElement('option');
       option.value = value;
-      option.textContent = value;
+      option.textContent = cashMovementOptions[value];
       cashImpact.appendChild(option);
     });
     if (CASH_IMPACT_CHOICES.includes(selectedImpact)) cashImpact.value = selectedImpact;
-    body.appendChild(labeledControl('Cash impact', cashImpact));
+    body.appendChild(labeledControl('Physical cash movement', cashImpact));
 
     const cashImpactHint = document.createElement('p');
     cashImpactHint.className = 'muted';
-    const derivedImpact = (method) => {
-      if (method === 'CASH') return voucher.type === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT';
-      return 'NO_CASH';
-    };
-    const updateCashImpactHint = () => {
-      const method = paymentMethod.value;
-      const suggestion = suggestCashImpact(voucher.type, category.value);
-      if (knownPaymentMethods.includes(method)) {
-        cashImpact.value = derivedImpact(method);
-        cashImpact.disabled = true;
-        cashImpact.required = false;
-        cashImpactHint.textContent =
-          'Cash impact is derived from ' +
-          paymentMethodLabels[method] +
-          ' (' +
-          cashImpact.value +
-          '). Changing the payment method updates drawer impact.';
-      } else {
-        cashImpact.disabled = false;
-        cashImpact.required = true;
-        cashImpactHint.textContent =
-          'Legacy payment method is not recorded. Category suggestion only: ' +
-          suggestion +
-          '. Verify physical cash movement; choose a method if known, otherwise classify the drawer impact.';
-      }
-    };
-    paymentMethod.addEventListener('change', updateCashImpactHint);
-    category.addEventListener('change', updateCashImpactHint);
-    updateCashImpactHint();
+    cashImpactHint.textContent =
+      'Choose what actually happened to the physical cash. Payment method and category do not determine drawer movement.';
     body.appendChild(cashImpactHint);
 
     const note = document.createElement('input');
@@ -1953,6 +2073,12 @@ export function createRegister({ api, go }) {
         ? context.approval
         : 'ALL',
       paymentMethod: 'ALL',
+      cashImpact: ['CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'].includes(context.cashImpact)
+        ? context.cashImpact
+        : 'ALL',
+      amountValidity: ['VALID', 'INVALID'].includes(context.amountValidity)
+        ? context.amountValidity
+        : 'ALL',
       limit: 100,
     });
     pageRequestSequence += 1;
@@ -1994,6 +2120,7 @@ export function createRegister({ api, go }) {
     cancel,
     approve,
     reject,
+    classifyCashMovement,
     history,
     receipts,
     state: R,

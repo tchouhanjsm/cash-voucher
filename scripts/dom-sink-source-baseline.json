@@ -5,6 +5,6 @@
   "frontend/features/dashboard.js": ["c09024b3"],
   "frontend/features/payments.js": ["0056c613"],
   "frontend/features/printing.js": ["192002f4"],
-  "frontend/features/register.js": ["4124babe", "3b89853b"],
+  "frontend/features/register.js": ["375e23b3", "8dcebe89"],
   "frontend/features/reports.js": ["e3958601"]
 }

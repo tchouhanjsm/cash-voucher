@@ -42,6 +42,7 @@ const created = g.call('createVouchers', {
       amount: 150,
       category: 'Other',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
       type: 'PAYMENT',
     },
     {
@@ -51,6 +52,7 @@ const created = g.call('createVouchers', {
       amount: 12000,
       category: 'Other',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
       type: 'PAYMENT',
     },
     {
@@ -60,6 +62,7 @@ const created = g.call('createVouchers', {
       amount: 300,
       category: 'Other',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_IN',
       type: 'RECEIPT',
     },
   ],
@@ -87,6 +90,41 @@ assert.equal(
   'pending payment is excluded from approved paid totals',
 );
 assert.equal(firstPage.data.totals.received, 300, 'received totals include active receipts');
+const cashOutPage = g.call('registerPage', {
+  token: owner,
+  from: date,
+  to: date,
+  st: 'ACTIVE',
+  cashImpact: 'CASH_OUT',
+  offset: 0,
+  limit: 100,
+});
+assert.equal(cashOutPage.ok, true, 'owner can filter the Register by physical cash taken out');
+assert.equal(
+  cashOutPage.data.totalCount,
+  2,
+  'cash-out filter matches both active payment fixtures',
+);
+assert.ok(
+  cashOutPage.data.items.every((item) => item.cashImpact === 'CASH_OUT'),
+  'server filters Register rows by explicit physical drawer movement',
+);
+const cashInPage = g.call('registerPage', {
+  token: owner,
+  from: date,
+  to: date,
+  st: 'ACTIVE',
+  cashImpact: 'CASH_IN',
+  offset: 0,
+  limit: 100,
+});
+assert.equal(cashInPage.ok, true, 'owner can filter the Register by physical cash added');
+assert.equal(cashInPage.data.totalCount, 1, 'cash-in filter matches only the receipt fixture');
+assert.equal(
+  cashInPage.data.items[0].cashImpact,
+  'CASH_IN',
+  'receipt cash movement stays explicit',
+);
 assert.equal(
   firstPage.data.totals.approvalExceptionCount,
   1,
@@ -416,11 +454,23 @@ const staffVoucher = g.call('createVouchers', {
       amount: 75,
       category: 'Other',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
       type: 'PAYMENT',
     },
   ],
 });
 assert.equal(staffVoucher.ok, true, 'staff can create an own payment');
+const staffCashCorrection = g.call('updateVoucher', {
+  token: staff,
+  id: staffVoucher.data.created[0].id,
+  reason: 'Attempted unauthorised correction',
+  fields: { cashImpact: 'CASH_IN' },
+});
+assert.equal(
+  staffCashCorrection.code,
+  'FORBIDDEN',
+  'staff cannot use the Manager/Owner voucher correction permission',
+);
 const staffPage = g.call('registerPage', {
   token: staff,
   from: date,

@@ -421,6 +421,8 @@ function registerPage_(user, req) {
   const status = readModelFilterText_(req.st, 'Status', 20) || 'ACTIVE';
   const approval = readModelFilterText_(req.approval, 'Approval status', 30) || 'ALL';
   const paymentMethod = readModelFilterText_(req.paymentMethod, 'Payment method', 20) || 'ALL';
+  const cashImpact = readModelFilterText_(req.cashImpact, 'Physical cash movement', 20) || 'ALL';
+  const amountValidity = readModelFilterText_(req.amountValidity, 'Amount review', 20) || 'ALL';
   const createdBy = readModelFilterText_(req.user, 'User', 254).toLowerCase();
   const from = readModelDate_(req.from, 'start');
   const to = readModelDate_(req.to, 'end');
@@ -439,6 +441,12 @@ function registerPage_(user, req) {
   }
   if (READ_MODEL_PAYMENT_METHOD_FILTERS.indexOf(paymentMethod) < 0) {
     throw err_('Invalid payment method filter.', 'VALIDATION');
+  }
+  if (['ALL', 'CASH_IN', 'CASH_OUT', 'NO_CASH', 'UNCLASSIFIED'].indexOf(cashImpact) < 0) {
+    throw err_('Invalid physical cash movement filter.', 'VALIDATION');
+  }
+  if (['ALL', 'VALID', 'INVALID'].indexOf(amountValidity) < 0) {
+    throw err_('Invalid amount review filter.', 'VALIDATION');
   }
   if (createdBy && !seeAll) throw err_('You cannot filter other users’ vouchers.', 'FORBIDDEN');
 
@@ -483,6 +491,9 @@ function registerPage_(user, req) {
     const rowStatus = String(row.Status || 'ACTIVE');
     const rowApproval = readModelApproval_(row);
     const rowPaymentMethod = readModelPaymentMethodKey_(row.PaymentMethod);
+    const rowCashImpact =
+      CASH_IMPACT_CHOICES.indexOf(row.CashImpact) >= 0 ? row.CashImpact : 'UNCLASSIFIED';
+    const rowAmountValid = readModelAmount_(row).valid;
     const no = readModelNo_(row).toLowerCase();
     const rowVendor = String(row.Vendor || '');
     const rowCategory = String(row.Category || '');
@@ -492,6 +503,9 @@ function registerPage_(user, req) {
       (status === 'ALL' || rowStatus === status) &&
       (approval === 'ALL' || rowApproval === approval) &&
       (paymentMethod === 'ALL' || rowPaymentMethod === paymentMethod) &&
+      (cashImpact === 'ALL' || rowCashImpact === cashImpact) &&
+      (amountValidity === 'ALL' ||
+        (amountValidity === 'VALID' ? rowAmountValid : !rowAmountValid)) &&
       (!vendor || rowVendor === vendor) &&
       (!category || rowCategory === category) &&
       (!type || rowType === type) &&

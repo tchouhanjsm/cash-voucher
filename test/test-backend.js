@@ -1720,6 +1720,7 @@ const historyFixture = as(T, 'createVouchers', {
       amount: 47,
       category: 'Other',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
     },
   ],
 });
@@ -2447,6 +2448,7 @@ const cashCloseNonCash = as(T, 'createVouchers', {
       amount: 30,
       category: 'Other',
       paymentMethod: 'UPI',
+      cashImpact: 'NO_CASH',
     },
   ],
 });
@@ -3553,12 +3555,12 @@ ok(
   paymentRailResult.ok &&
     paymentRailResult.data.created.length === 3 &&
     paymentRailResult.data.created[0].paymentMethod === 'CASH' &&
-    paymentRailResult.data.created[0].cashImpact === 'CASH_OUT' &&
+    paymentRailResult.data.created[0].cashImpact === 'NO_CASH' &&
     paymentRailResult.data.created[1].paymentMethod === 'UPI' &&
-    paymentRailResult.data.created[1].cashImpact === 'NO_CASH' &&
+    paymentRailResult.data.created[1].cashImpact === 'CASH_OUT' &&
     paymentRailResult.data.created[2].paymentMethod === 'BANK_TRANSFER' &&
-    paymentRailResult.data.created[2].cashImpact === 'NO_CASH',
-  'server allow-lists payment rails and derives cash impact instead of trusting conflicting client values',
+    paymentRailResult.data.created[2].cashImpact === 'CASH_OUT',
+  'server stores explicit physical cash movement independently of the payment method',
 );
 const invalidPaymentRail = as(T, 'createVouchers', {
   entries: [
@@ -3575,6 +3577,23 @@ const invalidPaymentRail = as(T, 'createVouchers', {
 ok(
   !invalidPaymentRail.ok && invalidPaymentRail.code === 'VALIDATION',
   'server rejects unsupported payment rails',
+);
+const missingCashMovement = g.call('createVouchers', {
+  token: T,
+  entries: [
+    {
+      clientId: 'missing-cash-movement-regression',
+      date: railDate,
+      vendor: 'Missing Cash Movement',
+      amount: 12,
+      category: 'Other',
+      paymentMethod: 'UPI',
+    },
+  ],
+});
+ok(
+  !missingCashMovement.ok && missingCashMovement.code === 'VALIDATION',
+  'server rejects missing physical movement even when a payment method is supplied',
 );
 const blankLegacyRail = as(T, 'createVouchers', {
   entries: [
@@ -3609,26 +3628,28 @@ ok(
   'idempotency rejects a changed payment rail when the stored legacy rail is unknown',
 );
 
-// Deep-dive regressions: rail/impact consistency, strict inputs, reserved client IDs and partial-write recovery.
-const directRailMismatch = as(T, 'updateVoucher', {
+// Deep-dive regressions: independent physical movement, strict inputs, reserved client IDs and partial-write recovery.
+const directCashClassification = as(T, 'updateVoucher', {
   id: paymentRailResult.data.created[1].id,
-  reason: 'Try conflicting drawer classification',
-  fields: { cashImpact: 'CASH_OUT' },
+  reason: 'Physical drawer movement was verified',
+  fields: { cashImpact: 'NO_CASH' },
 });
 ok(
-  !directRailMismatch.ok && directRailMismatch.code === 'VALIDATION',
-  'a stored UPI voucher cannot be reclassified as drawer cash without changing its payment method',
+  directCashClassification.ok &&
+    directCashClassification.data.paymentMethod === 'UPI' &&
+    directCashClassification.data.cashImpact === 'NO_CASH',
+  'cash movement can be corrected independently while retaining the UPI payment method',
 );
 const changedRail = as(T, 'updateVoucher', {
   id: paymentRailResult.data.created[1].id,
-  reason: 'Payment method physically confirmed as cash',
-  fields: { paymentMethod: 'CASH' },
+  reason: 'Payment method confirmed as bank transfer',
+  fields: { paymentMethod: 'BANK_TRANSFER' },
 });
 ok(
   changedRail.ok &&
-    changedRail.data.paymentMethod === 'CASH' &&
-    changedRail.data.cashImpact === 'CASH_OUT',
-  'changing a known payment rail derives the matching cash impact during correction',
+    changedRail.data.paymentMethod === 'BANK_TRANSFER' &&
+    changedRail.data.cashImpact === 'NO_CASH',
+  'changing payment method does not rewrite the verified physical cash movement',
 );
 
 const rowsBeforeInvalidInputs = g.sheets.Vouchers.rows.length;
@@ -3803,14 +3824,92 @@ const paymentMethodReconciliationUpi = as(T, 'createVouchers', {
       category: 'Other',
       type: 'PAYMENT',
       paymentMethod: 'UPI',
+      cashImpact: 'CASH_OUT',
     },
   ],
 });
 ok(
   paymentMethodReconciliationUpi.ok &&
     paymentMethodReconciliationUpi.data.created[0].paymentMethod === 'UPI' &&
-    paymentMethodReconciliationUpi.data.created[0].cashImpact === 'NO_CASH',
-  'UPI entry remains non-cash and retains its payment method',
+    paymentMethodReconciliationUpi.data.created[0].cashImpact === 'CASH_OUT',
+  'explicit physical cash movement is preserved independently of UPI payment method',
+);
+const cashClassificationFixtureId = paymentMethodReconciliationUpi.data.created[0].id;
+const cashImpactColumn = g.sheets.Vouchers.rows[0].indexOf('CashImpact');
+const cashClassificationFixtureRow = g.sheets.Vouchers.rows.find(
+  (row) => row[0] === cashClassificationFixtureId,
+);
+cashClassificationFixtureRow[cashImpactColumn] = '';
+const unclassifiedRegister = as(T, 'registerPage', {
+  cashImpact: 'UNCLASSIFIED',
+  st: 'ALL',
+  limit: 200,
+});
+ok(
+  unclassifiedRegister.ok &&
+    unclassifiedRegister.data.items.some((item) => item.id === cashClassificationFixtureId),
+  'Register read model can isolate active vouchers needing physical cash classification',
+);
+const correctedCashClassification = as(T, 'updateVoucher', {
+  id: cashClassificationFixtureId,
+  reason: 'Verified the physical drawer movement',
+  fields: { cashImpact: 'CASH_IN' },
+});
+ok(
+  correctedCashClassification.ok &&
+    correctedCashClassification.data.cashImpact === 'CASH_IN' &&
+    correctedCashClassification.data.paymentMethod === 'UPI',
+  'manager correction stores cash movement independently of payment method',
+);
+const cashClassificationAudit = g.sheets.AuditLog.rows.find(
+  (row) => row[2] === 'UPDATE' && row[3] === '#' + String(correctedCashClassification.data.no),
+);
+ok(
+  Boolean(cashClassificationAudit) &&
+    String(cashClassificationAudit[4]).includes('cashImpact') &&
+    String(cashClassificationAudit[4]).includes('CASH_IN'),
+  'cash classification correction is attributed and records field-level before/after changes',
+);
+const classifiedRegister = as(T, 'registerPage', {
+  cashImpact: 'CASH_IN',
+  st: 'ALL',
+  limit: 200,
+});
+ok(
+  classifiedRegister.ok &&
+    classifiedRegister.data.items.some((item) => item.id === cashClassificationFixtureId) &&
+    classifiedRegister.data.items.every((item) => item.cashImpact === 'CASH_IN'),
+  'Register read model filters by verified physical cash movement',
+);
+const invalidCashImpactFilter = as(T, 'registerPage', {
+  cashImpact: 'INFER_FROM_METHOD',
+});
+ok(
+  invalidCashImpactFilter.code === 'VALIDATION',
+  'Register rejects unknown physical cash movement filters',
+);
+const amountColumn = g.sheets.Vouchers.rows[0].indexOf('Amount');
+cashClassificationFixtureRow[amountColumn] = 'not-an-amount';
+const invalidAmountRegister = as(T, 'registerPage', {
+  amountValidity: 'INVALID',
+  st: 'ALL',
+  limit: 200,
+});
+ok(
+  invalidAmountRegister.ok &&
+    invalidAmountRegister.data.items.some((item) => item.id === cashClassificationFixtureId),
+  'Register can isolate active vouchers with invalid amounts for correction',
+);
+const correctedInvalidAmount = as(T, 'updateVoucher', {
+  id: cashClassificationFixtureId,
+  reason: 'Corrected the amount against the source receipt',
+  fields: { amount: 275 },
+});
+ok(
+  correctedInvalidAmount.ok &&
+    correctedInvalidAmount.data.amount === 275 &&
+    correctedInvalidAmount.data.cashImpact === 'CASH_IN',
+  'invalid amount can be corrected without changing the independently verified cash movement',
 );
 const paymentMethodReconciliationReport = as(T, 'recordedMovementReport', {
   from: today,
@@ -3840,6 +3939,7 @@ const paymentMethodReconciliationLegacy = as(T, 'createVouchers', {
       category: 'Other',
       type: 'PAYMENT',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
     },
   ],
 });
