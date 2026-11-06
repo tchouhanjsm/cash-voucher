@@ -176,6 +176,7 @@ final class CashCloseService
                     $varianceReason,
                     $principal,
                     $payload,
+                    $actorId,
                 ): array {
                     $this->lockVoucherSequences($connection);
 
