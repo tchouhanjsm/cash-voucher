@@ -1720,6 +1720,7 @@ const historyFixture = as(T, 'createVouchers', {
       amount: 47,
       category: 'Other',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
     },
   ],
 });
@@ -2447,6 +2448,7 @@ const cashCloseNonCash = as(T, 'createVouchers', {
       amount: 30,
       category: 'Other',
       paymentMethod: 'UPI',
+      cashImpact: 'NO_CASH',
     },
   ],
 });
@@ -3553,12 +3555,12 @@ ok(
   paymentRailResult.ok &&
     paymentRailResult.data.created.length === 3 &&
     paymentRailResult.data.created[0].paymentMethod === 'CASH' &&
-    paymentRailResult.data.created[0].cashImpact === 'CASH_OUT' &&
+    paymentRailResult.data.created[0].cashImpact === 'NO_CASH' &&
     paymentRailResult.data.created[1].paymentMethod === 'UPI' &&
-    paymentRailResult.data.created[1].cashImpact === 'NO_CASH' &&
+    paymentRailResult.data.created[1].cashImpact === 'CASH_OUT' &&
     paymentRailResult.data.created[2].paymentMethod === 'BANK_TRANSFER' &&
-    paymentRailResult.data.created[2].cashImpact === 'NO_CASH',
-  'server allow-lists payment rails and derives cash impact instead of trusting conflicting client values',
+    paymentRailResult.data.created[2].cashImpact === 'CASH_OUT',
+  'server stores explicit physical cash movement independently of the payment method',
 );
 const invalidPaymentRail = as(T, 'createVouchers', {
   entries: [
@@ -3609,26 +3611,28 @@ ok(
   'idempotency rejects a changed payment rail when the stored legacy rail is unknown',
 );
 
-// Deep-dive regressions: rail/impact consistency, strict inputs, reserved client IDs and partial-write recovery.
-const directRailMismatch = as(T, 'updateVoucher', {
+// Deep-dive regressions: independent physical movement, strict inputs, reserved client IDs and partial-write recovery.
+const directCashClassification = as(T, 'updateVoucher', {
   id: paymentRailResult.data.created[1].id,
-  reason: 'Try conflicting drawer classification',
-  fields: { cashImpact: 'CASH_OUT' },
+  reason: 'Physical drawer movement was verified',
+  fields: { cashImpact: 'NO_CASH' },
 });
 ok(
-  !directRailMismatch.ok && directRailMismatch.code === 'VALIDATION',
-  'a stored UPI voucher cannot be reclassified as drawer cash without changing its payment method',
+  directCashClassification.ok &&
+    directCashClassification.data.paymentMethod === 'UPI' &&
+    directCashClassification.data.cashImpact === 'NO_CASH',
+  'cash movement can be corrected independently while retaining the UPI payment method',
 );
 const changedRail = as(T, 'updateVoucher', {
   id: paymentRailResult.data.created[1].id,
-  reason: 'Payment method physically confirmed as cash',
-  fields: { paymentMethod: 'CASH' },
+  reason: 'Payment method confirmed as bank transfer',
+  fields: { paymentMethod: 'BANK_TRANSFER' },
 });
 ok(
   changedRail.ok &&
-    changedRail.data.paymentMethod === 'CASH' &&
-    changedRail.data.cashImpact === 'CASH_OUT',
-  'changing a known payment rail derives the matching cash impact during correction',
+    changedRail.data.paymentMethod === 'BANK_TRANSFER' &&
+    changedRail.data.cashImpact === 'NO_CASH',
+  'changing payment method does not rewrite the verified physical cash movement',
 );
 
 const rowsBeforeInvalidInputs = g.sheets.Vouchers.rows.length;
@@ -3918,6 +3922,7 @@ const paymentMethodReconciliationLegacy = as(T, 'createVouchers', {
       category: 'Other',
       type: 'PAYMENT',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
     },
   ],
 });

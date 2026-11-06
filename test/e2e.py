@@ -6135,7 +6135,7 @@ with sync_playwright() as p:
     check(
         manager_attention.count() >= 3
         and page.locator('.needs-item [data-drill-key="approval-exceptions"][data-target="reg"]').count() == 1
-        and page.locator('.needs-item [data-drill-key="invalid-voucher-data"][data-target="reg"]').count() == 1
+        and page.locator('.needs-item [data-drill-key="invalid-voucher-amounts"][data-target="reg"]').count() == 1
         and page.locator('.needs-item [data-drill-key="cash-readiness-unavailable"][data-target="cashClose"]').count() == 1,
         'manager Dashboard exposes payment, data-quality and current-day Cash Close attention destinations',
     )
@@ -6148,15 +6148,16 @@ with sync_playwright() as p:
         'manager approval attention opens selected-period payment Register',
     )
     go_view(page, 'dash')
-    page.locator('.needs-item [data-drill-key="invalid-voucher-data"]').click()
+    page.locator('.needs-item [data-drill-key="invalid-voucher-amounts"]').click()
     page.wait_for_selector('#rf')
     check(
         page.locator('#rt').input_value() == ''
-        and page.locator('#rs').input_value() == 'ALL'
+        and page.locator('#rs').input_value() == 'ACTIVE'
         and page.locator('#rapproval').input_value() == 'ALL'
+        and page.locator('#ramountValidity').input_value() == 'INVALID'
         and page.locator('#rfrom').input_value() != ''
         and page.locator('#rto').input_value() != '',
-        'manager data-quality attention opens all statuses in the complete selected-period Register',
+        'manager invalid-amount attention opens active vouchers needing amount review in the selected period',
     )
     go_view(page, 'dash')
     page.locator('.needs-item [data-drill-key="cash-readiness-unavailable"]').click()
