@@ -7356,11 +7356,12 @@ with sync_playwright() as p:
         and amount_correction_request.get('reason') == 'Corrected from the source receipt',
         'Manager amount correction uses the existing permission-checked updateVoucher API and reason',
     )
+    if page.locator('#registerAdvancedFilters').get_attribute('open') is None:
+        page.locator('#registerAdvancedFilters summary').click()
+    page.select_option('#ramountValidity', 'ALL')
     page.wait_for_function(
         "Array.from(document.querySelectorAll('#rbody tr')).some(row => row.innerText.includes('Cash Classification Fixture') && row.innerText.includes('345'))"
     )
-    if page.locator('#registerAdvancedFilters').get_attribute('open') is None:
-        page.locator('#registerAdvancedFilters summary').click()
     with page.expect_response(
         lambda response: '/api?' in response.url
         and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
