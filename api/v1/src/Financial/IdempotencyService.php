@@ -132,6 +132,19 @@ final class IdempotencyService
                 throw new RuntimeException('A financial operation must return an object-shaped result.');
             }
             $result = $this->canonicalize($result);
+            $auditMetadata = $result['_audit'] ?? null;
+            unset($result['_audit']);
+
+            if ($auditMetadata !== null) {
+                if (! is_array($auditMetadata)) {
+                    throw new RuntimeException('The internal audit metadata is invalid.');
+                }
+                foreach (['eventType', 'targetType', 'targetId', 'reason', 'before'] as $field) {
+                    if (array_key_exists($field, $auditMetadata)) {
+                        $audit[$field] = $auditMetadata[$field];
+                    }
+                }
+            }
 
             $audit['after'] = $result;
             AuditWriter::append($this->pdo, $actorUserId, $actorEmail, $audit);

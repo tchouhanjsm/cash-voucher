@@ -6,7 +6,7 @@ This is an isolated Laravel 13 modular-monolith implementation under active migr
 
 - Laravel 13 API routes live under /api/v1 when served from laravel/public.
 - Authentication reads the existing cv_session and cv_csrf session records. The existing PHP session issuer remains the only login/session issuer in this phase.
-- MySQL/MariaDB must already contain the reviewed root SQL schema versions 0001–0004.
+- MySQL/MariaDB must already contain the reviewed root SQL schema versions 0001–0005.
 - Laravel never runs schema migrations automatically. Do not run artisan migrate, migrate:fresh, db:wipe, or schema-changing commands from this project.
 - The first financial write uses the existing PDO voucher-number allocator, idempotency unit of work and audit writer from api/v1/src.
 - Voucher creation fails closed when the PAYMENT/RECEIPT number sequence is absent. It never guesses a historical next number.
@@ -39,6 +39,10 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 | GET    | /api/v1/vouchers                 | Authenticated, creator-scoped for staff; manager/owner view-all |
 | POST   | /api/v1/vouchers/duplicate-check | Authenticated create capability + CSRF                          |
 | POST   | /api/v1/vouchers                 | Single authenticated voucher create + CSRF + idempotency        |
+| GET    | /api/v1/vendors                  | Manager/owner vendor list; active by default                    |
+| POST   | /api/v1/vendors                  | Manager/owner vendor create + CSRF + idempotency                |
+| PATCH  | /api/v1/vendors/{vendorId}       | Manager/owner vendor update + CSRF + idempotency                |
+| POST   | /api/v1/vendors/{vendorId}/active| Manager/owner desired active-state change + CSRF + idempotency  |
 
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
 
@@ -54,6 +58,8 @@ The API preserves the existing { ok, data|error, meta } envelope, request ID, an
 - Possible exact payee/date/amount payment duplicates require a ten-minute HMAC-signed confirmation token; the candidates are rechecked after acquiring the series row lock.
 - The ₹10,000 individual and payee/day cumulative active-payment approval threshold is preserved.
 - A cash-closed business date cannot accept another voucher.
+- Vendor access is manager/owner only. Inactive vendors remain available to history but are excluded from default choices; names remain reserved when deactivated.
+- Vendor writes claim case-insensitive names in the same DB transaction, audit before/after snapshots and replay through actor/action/idempotency keys. Historical voucher vendor-name snapshots are never rewritten when a catalog entry changes.
 - Non-empty receipts and bulk requests are explicitly not supported by this slice; no receipt is silently discarded.
 
 ## Tests

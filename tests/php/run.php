@@ -187,16 +187,16 @@ check(
 $pdo = Database::connectFromEnvironment();
 $runner = new MigrationRunner($pdo, dirname(__DIR__, 2) . '/database/migrations');
 $migrations = $runner->status();
-check(count($migrations) === 4, 'four ordered migrations are registered');
-check(count(array_filter($migrations, static fn (array $row): bool => $row['applied'])) === 4, 'all four migrations are applied');
+check(count($migrations) === 5, 'five ordered migrations are registered');
+check(count(array_filter($migrations, static fn (array $row): bool => $row['applied'])) === 5, 'all five migrations are applied');
 $ready = $kernel->handle(Request::fromValues('GET', '/api/v1/health/ready'));
-check($ready->status() === 200 && ($ready->body()['data']['schemaVersion'] ?? null) === '0004', 'readiness endpoint requires the expected schema version');
+check($ready->status() === 200 && ($ready->body()['data']['schemaVersion'] ?? null) === '0005', 'readiness endpoint requires the expected schema version');
 
 $requiredTables = [
     'users', 'vendors', 'settings', 'vouchers', 'voucher_approval_events',
     'voucher_receipts', 'cash_closes', 'cash_close_corrections',
     'user_sessions', 'login_attempts', 'idempotency_requests', 'voucher_number_sequences', 'audit_events',
-    'schema_migrations',
+    'schema_migrations', 'vendor_name_claims',
 ];
 $tableQuery = $pdo->prepare(
     'SELECT COUNT(*) FROM information_schema.tables

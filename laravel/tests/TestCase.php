@@ -56,6 +56,45 @@ abstract class TestCase extends BaseTestCase
             ->withHeaders($this->authenticatedHeaders());
     }
 
+    protected function withRoleSession(string $role): static
+    {
+        $this->userId = self::uuid();
+        $this->sessionToken = bin2hex(random_bytes(32));
+        $this->csrfToken = bin2hex(random_bytes(32));
+        $this->insertUser($this->userId, $role);
+        $this->insertSession($this->userId, $this->sessionToken, $this->csrfToken);
+
+        return $this->withLegacySession();
+    }
+
+    protected function insertVendorFixture(string $name, bool $active = true): string
+    {
+        $id = self::uuid();
+        $statement = DB::connection()->getPdo()->prepare(
+            'INSERT INTO vendors (
+                id, display_name, company_name, mobile, is_active,
+                default_category, default_payment_method, source_legacy_id,
+                created_by_user_id, created_at_utc, updated_at_utc
+            ) VALUES (
+                :id, :name, :company, :mobile, :active,
+                :category, :payment_method, NULL,
+                :creator, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)
+            )'
+        );
+        $statement->execute([
+            'id' => $id,
+            'name' => $name,
+            'company' => '',
+            'mobile' => '',
+            'active' => $active ? 1 : 0,
+            'category' => '',
+            'payment_method' => '',
+            'creator' => $this->userId,
+        ]);
+
+        return $id;
+    }
+
     protected function createUser(string $role): string
     {
         $id = self::uuid();

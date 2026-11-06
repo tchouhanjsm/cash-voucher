@@ -97,3 +97,13 @@ The first implementation PR is limited to an **isolated local/test Laravel verti
 - A committed Composer lockfile, Composer audit, PHP lint, Laravel MySQL feature suite and all existing JS/PHP quality checks are required before PR can be marked ready.
 
 **PR is accepted only when all criteria pass on a clean CI run.** A green SQLite-only suite is insufficient for locking and MariaDB behavior. Do not wire the production PWA endpoint or deploy to customer hosting in this PR.
+
+
+## Vendor catalog implementation — next isolated slice
+
+**Branch:** `feat/laravel-vendor-management-20261106`  
+**Status:** Implementation prepared; exact-head CI and review are pending. This is not production authorization.
+
+The slice adds manager/owner-only Laravel vendor listing, creation, editing and desired active-state operations; it uses the shared idempotency transaction and append-only audit writer. Migration 0005 adds the unique case-insensitive vendor-name claim required to prevent concurrent duplicate creation. Tests cover authorization, replay/audit, inactive-name reservation, legacy-name ambiguity, rename snapshot preservation, invalid defaults and one-time payee classification. See [LARAVEL-VENDOR-INVENTORY.md](LARAVEL-VENDOR-INVENTORY.md) for the source field mapping.
+
+**Open gates:** the committed Composer lockfile defect from PR #268 remains unresolved; a CI artifact is not a substitute for a tracked lockfile. Actual PHP/Laravel/MySQL hosting qualification still needs the real hosting plan/account evidence. The vendor creator-email snapshot gap and the remaining non-vendor financial action/field inventory must be resolved before historical import. Apps Script remains the only production financial writer.

@@ -17,8 +17,8 @@ Route::prefix('v1')->group(function (): void {
     Route::get('/health/ready', function () {
         try {
             $latest = DB::table('schema_migrations')->orderByDesc('version')->value('version');
-            if ($latest !== '0004') {
-                throw new \RuntimeException('Expected schema baseline 0004 was not found.');
+            if ($latest !== '0005') {
+                throw new \RuntimeException('Expected schema baseline 0005 was not found.');
             }
         } catch (\Throwable $exception) {
             report($exception);
@@ -28,7 +28,7 @@ Route::prefix('v1')->group(function (): void {
         return ApiResponse::success([
             'status' => 'ready',
             'database' => 'reachable',
-            'schemaVersion' => '0004',
+            'schemaVersion' => '0005',
             'rolloutState' => 'isolated-shadow',
         ], (string) request()->attributes->get('request_id'));
     });
@@ -46,6 +46,10 @@ Route::prefix('v1')->group(function (): void {
                 'vouchers:list',
                 'vouchers:duplicate-check',
                 'vouchers:create',
+                'vendors:list',
+                'vendors:create',
+                'vendors:update',
+                'vendors:active-state',
             ],
             'authentication' => 'shared-cv_session-cv_csrf',
         ], (string) request()->attributes->get('request_id'));

@@ -34,7 +34,7 @@ final class Kernel
                     $latestMigration = $pdo->query(
                         'SELECT version FROM schema_migrations ORDER BY version DESC LIMIT 1'
                     )->fetchColumn();
-                    if ($latestMigration !== '0004') {
+                    if ($latestMigration !== '0005') {
                         throw new RuntimeException('The expected database schema version is not applied.');
                     }
                 } catch (Throwable $exception) {
@@ -44,7 +44,7 @@ final class Kernel
                 return Response::success([
                     'status' => 'ready',
                     'database' => 'reachable',
-                    'schemaVersion' => '0004',
+                    'schemaVersion' => '0005',
                 ], $request->requestId);
             }
 

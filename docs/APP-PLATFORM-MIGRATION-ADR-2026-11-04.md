@@ -122,6 +122,7 @@ The existing SQL baseline defines:
 - `0002`: vouchers, approval events, receipt metadata, cash closes and corrections.
 - `0003`: sessions, login throttles, idempotency requests and audit events.
 - `0004`: row-locked per-type voucher number sequences.
+- `0005`: unique vendor-name claims for concurrent case-insensitive catalog writes; existing vendor rows and voucher snapshots are not rewritten.
 
 Retain InnoDB, utf8mb4, foreign keys, uniqueness and current financial columns. Amounts are integer paise in signed/unsigned appropriately bounded BIGINTs; never FLOAT/DOUBLE/DECIMAL for the canonical paise amount. API amounts remain decimal strings. Business date is an explicit DATE in Asia/Kolkata; event timestamps are UTC DATETIME(6). Preserve status, approval status, cash impact, payment method and immutable snapshots separately.
 

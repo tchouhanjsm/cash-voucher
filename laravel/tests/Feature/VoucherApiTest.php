@@ -177,6 +177,27 @@ final class VoucherApiTest extends TestCase
             ->assertCreated();
     }
 
+    public function test_unregistered_payee_is_recorded_as_one_time_not_unverified(): void
+    {
+        $name = 'One-time payee '.bin2hex(random_bytes(5));
+        $payload = $this->validPayload(['vendor' => $name]);
+
+        $response = $this->withLegacySession()
+            ->postJson('/api/v1/vouchers', $payload, [
+                'Idempotency-Key' => 'one-time-payee-'.bin2hex(random_bytes(8)),
+            ]);
+
+        $response->assertCreated()
+            ->assertJsonPath('data.voucher.vendorType', 'ONE_TIME')
+            ->assertJsonPath('data.voucher.vendorId', null);
+
+        self::assertSame(
+            'ONE_TIME',
+            DB::table('vouchers')->where('client_id', $payload['clientId'])->value('vendor_type'),
+            'An unregistered new payee must preserve the legacy one-time payee classification.',
+        );
+    }
+
     public function test_payment_requires_approval_at_existing_ten_thousand_rupee_threshold(): void
     {
         $payload = $this->validPayload([

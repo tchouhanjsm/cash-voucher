@@ -9,7 +9,7 @@ The PHP API is isolated from the PWA. The session-authentication routes are impl
 | Method | Path                              | Purpose                                               |
 | ------ | --------------------------------- | ----------------------------------------------------- |
 | GET    | /api/v1/health/live               | Process liveness; no database required                |
-| GET    | /api/v1/health/ready              | Checks database connection and schema version 0004    |
+| GET    | /api/v1/health/ready              | Checks database connection and schema version 0005    |
 | GET    | /api/v1/meta                      | API version, rollout state, timezone, currency, roles |
 | POST   | /api/v1/sessions                  | Verify credentials and issue a session                |
 | GET    | /api/v1/sessions/current          | Restore active user and current role                  |
@@ -59,14 +59,20 @@ The Laravel application is under `laravel/` and is exercised only against the di
 | Method | Path                             | Shadow implementation                                                                   |
 | ------ | -------------------------------- | --------------------------------------------------------------------------------------- |
 | GET    | /api/v1/health/live              | Implemented; no DB dependency                                                           |
-| GET    | /api/v1/health/ready             | Implemented; read-only schema version 0004 check                                        |
+| GET    | /api/v1/health/ready             | Implemented; read-only schema version 0005 check                                        |
 | GET    | /api/v1/meta                     | Implemented; declares isolated-shadow rollout state                                     |
 | GET    | /api/v1/vouchers                 | Implemented; staff creator scope, manager/owner view-all, accountant denied             |
 | POST   | /api/v1/vouchers/duplicate-check | Implemented; create capability, existing session + CSRF, short-lived HMAC confirmation  |
 | POST   | /api/v1/vouchers                 | Implemented; one voucher per request, existing session + CSRF, required Idempotency-Key |
+| GET    | /api/v1/vendors                  | Implemented; Manager/Owner only; active by default; paginated |
+| POST   | /api/v1/vendors                  | Implemented; Manager/Owner only; CSRF + idempotent audit |
+| PATCH  | /api/v1/vendors/{vendorId}       | Implemented; catalog update preserves voucher name snapshots |
+| POST   | /api/v1/vendors/{vendorId}/active| Implemented; desired active state; CSRF + idempotency |
 
 Laravel authentication reads the same hashed session table and cookie names as the current PHP API. The current PHP implementation remains the login/password-change/session issuer in this phase. Laravel does not accept must-change accounts for financial routes. It does not expose a login route yet.
 
 Voucher create requires an explicitly seeded PAYMENT or RECEIPT row in `voucher_number_sequences`; missing series return `VOUCHER_SEQUENCE_NOT_INITIALIZED` and do not create a voucher. The sequence row is locked inside the existing PDO idempotency transaction. Voucher, append-only audit event and replay response are committed together. Existing payee/date/amount duplicate candidates require a short-lived confirmation token. The existing individual and payee/day cumulative ₹10,000 approval threshold is preserved.
+
+Vendor writes use the existing transaction-owning IdempotencyService. The additive `0005_vendor_name_claims.sql` migration provides a unique case-insensitive name claim; existing rows are checked before a claim is acquired so legacy duplicates fail closed. Inactive names remain reserved, and activation rejects an ambiguous active name. Vendor updates change the catalog only; issued vouchers keep their immutable `vendor_name_snapshot`. See [LARAVEL-VENDOR-INVENTORY.md](LARAVEL-VENDOR-INVENTORY.md) for the inspected source-field map and the remaining creator-email snapshot gap. These routes are isolated Laravel shadow endpoints and do not alter the Apps Script action registry or production writer.
 
 Non-empty receipts and bulk requests are rejected explicitly in this slice. Receipt storage, approval commands, edit/cancel, cash close, reports, export/import and IndexedDB endpoint switching remain unimplemented. The root PHP API and its route registry remain unchanged; these Laravel shadow routes are not production-routed.
