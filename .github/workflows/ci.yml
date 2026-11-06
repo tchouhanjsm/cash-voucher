@@ -170,6 +170,52 @@ jobs:
         if: ${{ always() && steps.dependencies.outcome == 'success' }}
         run: php tests/php/run.php
 
+      - name: Prepare isolated Laravel MySQL test database
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        env:
+          CV_DB_NAME: cash_voucher_laravel_test
+        run: |
+          php -r '$pdo = new PDO("mysql:host=".getenv("CV_DB_HOST").";port=".getenv("CV_DB_PORT"), getenv("CV_MIGRATION_DB_USER"), getenv("CV_MIGRATION_DB_PASSWORD"), [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); $pdo->exec("CREATE DATABASE IF NOT EXISTS cash_voucher_laravel_test CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");'
+          php bin/migrate.php --apply
+          php tests/php/prepare-test-db.php
+
+      - name: Resolve isolated Laravel dependency graph
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        run: composer update --working-dir=laravel --no-interaction --prefer-dist --no-progress
+
+      - name: Validate Laravel Composer manifest and dependency advisories
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        run: |
+          composer validate --working-dir=laravel --no-check-publish
+          composer audit --working-dir=laravel
+
+      - name: Lint Laravel application sources
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        run: composer run lint --working-dir=laravel
+
+      - name: Test Laravel API against the isolated MySQL schema
+        if: ${{ always() && steps.dependencies.outcome == 'success' }}
+        env:
+          APP_ENV: testing
+          APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+          APP_DEBUG: 'false'
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: '3306'
+          DB_DATABASE: cash_voucher_laravel_test
+          DB_USERNAME: cash_voucher_app
+          DB_PASSWORD: cash-voucher-test-app-password
+          CV_DUPLICATE_CONFIRMATION_KEY: cash-voucher-ci-duplicate-confirmation-key-32chars
+        run: cd laravel && vendor/bin/phpunit
+
+      - name: Upload resolved Laravel dependency lock for review
+        if: ${{ always() && steps.dependencies.outcome == 'success' && hashFiles('laravel/composer.lock') != '' }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: cash-voucher-laravel-composer-lock-${{ github.run_id }}
+          path: laravel/composer.lock
+          if-no-files-found: error
+
       # Keep the external advisory query last, but run it even when a source/test gate fails.
       # The job remains failed if any required check or dependency audit does not pass.
       - name: Enforce dependency advisory policy

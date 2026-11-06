@@ -24,6 +24,7 @@ Prefer Laravel's built-in routing, request validation, middleware, authorization
 The prior ADR's cPanel-first recommendation remains conditional. **No current evidence establishes that the actual account can run Laravel 13.** Do not select Laravel merely because PHP is available.
 
 Before implementation is promoted beyond an isolated local/test scaffold, record and verify:
+
 - Provider, exact plan, renewal cost, resource limits and customer deployment model.
 - Supported PHP runtime satisfying Laravel 13's actual requirement, required extensions, Composer availability and ability to run optimized autoload/install on the host or build machine.
 - Web server rewrite/document-root control so the Laravel public directory alone is web-accessible; application source, vendor, storage, .env and backups must not be web-readable.
@@ -38,22 +39,22 @@ Before implementation is promoted beyond an isolated local/test scaffold, record
 
 ## 3. Existing components: reuse, port, retire
 
-| Existing component | Disposition | Laravel target / rule |
-| --- | --- | --- |
-| `api/v1/legacy-action-map.json` and `backend/99-routes.gs` registry | Preserve as migration contract | Use as parity inventory and route/action traceability. Extend with explicit implementation state and contract tests; do not infer coverage from route existence. |
-| `docs/API-V1-CONTRACT.md` | Preserve and evolve | Keep response envelope, request ID, no-cache behavior, same-origin policy, role names, money/date semantics, idempotency/audit rules. Laravel controllers are adapters, not a reason to change the wire contract. |
-| `Role.php`, `Authorization.php` | Port with parity tests | Laravel Gate/Policies plus a domain capability map. Keep stored roles exactly `staff`, `manager`, `owner`, `accountant`; “Admin” remains presentation text, not a role. |
-| `AuthenticationService.php`, `PasswordVerifier.php` | Port carefully | Retain exact legacy HMAC verification and Argon/bcrypt/default-hash upgrade path. Legacy PEPPER is supplied only during migration, never committed. Short-PIN exception stays owner-approved, explicit, must-change and time-bounded. |
-| `SessionService.php`, auth routes and rate limiter | Port/adapt | Use Laravel session/cookie/CSRF primitives only after proving equivalent controls: 256-bit unpredictable session secret, digest-at-rest where custom opaque tokens are retained, Secure/HttpOnly/SameSite, CSRF for writes, six-hour absolute expiry, active role reload, revocation, HMAC-keyed throttles. Do not silently switch to bearer tokens or localStorage. |
-| `Database.php`, `MigrationRunner.php`, `bin/migrate.php` | Retain as provenance/reference; replace runtime migration execution under Laravel | Preserve environment gate, checksum/history invariants, migration-only credentials and non-production safeguards. Reconcile the four existing SQL files into Laravel migration history without executing their DDL twice. |
-| `0001`–`0004` SQL migrations | Preserve as immutable baseline | Map exact deployed/test schema definitions to Laravel migration classes or an explicit baseline-import mechanism. Existing version/checksum records must be adopted once, with a schema diff proving no semantic drift. |
-| `VoucherNumberAllocator.php` | Port as domain service/repository | Preserve per-type InnoDB row lock inside the caller transaction; allocation and voucher insert roll back together. Do not use MAX(voucher_number)+1 or a non-transactional counter. |
-| `IdempotencyService.php` | Port as transaction-bound application service | Unique actor + action + key; canonical request hash; same-hash replay; different-hash conflict. Persist final response with the mutation atomically. |
-| `AuditWriter.php` | Port/adapt | Append-only financial audit; same DB transaction as the mutation and idempotency result. Corrections are compensating events. Runtime grants prohibit audit mutation/deletion. |
-| Existing static PWA, service worker and IndexedDB outbox | Reuse | Maintain current PWA; introduce a transport adapter/API base URL behind a reversible config gate. Preserve outbox IDs, payload hashes and acknowledgement lifecycle. |
-| Apps Script business handlers | Port domain behavior, not source runtime | Treat each action's verified semantics, authorization and status transitions as acceptance tests. Apps Script remains read-only/export source only after final cutover. |
-| Sheets | Retire as live operational store only after retention gate | Keep exported immutable archive until owner/accountant retention approval. |
-| Drive receipt files/backups | Migrate and then retire as operational storage | Copy, hash, verify and preserve source IDs in manifest. Keep Drive source unchanged until sign-off. |
+| Existing component                                                  | Disposition                                                                       | Laravel target / rule                                                                                                                                                                                                                                                                                                                                                |
+| ------------------------------------------------------------------- | --------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `api/v1/legacy-action-map.json` and `backend/99-routes.gs` registry | Preserve as migration contract                                                    | Use as parity inventory and route/action traceability. Extend with explicit implementation state and contract tests; do not infer coverage from route existence.                                                                                                                                                                                                     |
+| `docs/API-V1-CONTRACT.md`                                           | Preserve and evolve                                                               | Keep response envelope, request ID, no-cache behavior, same-origin policy, role names, money/date semantics, idempotency/audit rules. Laravel controllers are adapters, not a reason to change the wire contract.                                                                                                                                                    |
+| `Role.php`, `Authorization.php`                                     | Port with parity tests                                                            | Laravel Gate/Policies plus a domain capability map. Keep stored roles exactly `staff`, `manager`, `owner`, `accountant`; “Admin” remains presentation text, not a role.                                                                                                                                                                                              |
+| `AuthenticationService.php`, `PasswordVerifier.php`                 | Port carefully                                                                    | Retain exact legacy HMAC verification and Argon/bcrypt/default-hash upgrade path. Legacy PEPPER is supplied only during migration, never committed. Short-PIN exception stays owner-approved, explicit, must-change and time-bounded.                                                                                                                                |
+| `SessionService.php`, auth routes and rate limiter                  | Port/adapt                                                                        | Use Laravel session/cookie/CSRF primitives only after proving equivalent controls: 256-bit unpredictable session secret, digest-at-rest where custom opaque tokens are retained, Secure/HttpOnly/SameSite, CSRF for writes, six-hour absolute expiry, active role reload, revocation, HMAC-keyed throttles. Do not silently switch to bearer tokens or localStorage. |
+| `Database.php`, `MigrationRunner.php`, `bin/migrate.php`            | Retain as provenance/reference; replace runtime migration execution under Laravel | Preserve environment gate, checksum/history invariants, migration-only credentials and non-production safeguards. Reconcile the four existing SQL files into Laravel migration history without executing their DDL twice.                                                                                                                                            |
+| `0001`–`0004` SQL migrations                                        | Preserve as immutable baseline                                                    | Map exact deployed/test schema definitions to Laravel migration classes or an explicit baseline-import mechanism. Existing version/checksum records must be adopted once, with a schema diff proving no semantic drift.                                                                                                                                              |
+| `VoucherNumberAllocator.php`                                        | Port as domain service/repository                                                 | Preserve per-type InnoDB row lock inside the caller transaction; allocation and voucher insert roll back together. Do not use MAX(voucher_number)+1 or a non-transactional counter.                                                                                                                                                                                  |
+| `IdempotencyService.php`                                            | Port as transaction-bound application service                                     | Unique actor + action + key; canonical request hash; same-hash replay; different-hash conflict. Persist final response with the mutation atomically.                                                                                                                                                                                                                 |
+| `AuditWriter.php`                                                   | Port/adapt                                                                        | Append-only financial audit; same DB transaction as the mutation and idempotency result. Corrections are compensating events. Runtime grants prohibit audit mutation/deletion.                                                                                                                                                                                       |
+| Existing static PWA, service worker and IndexedDB outbox            | Reuse                                                                             | Maintain current PWA; introduce a transport adapter/API base URL behind a reversible config gate. Preserve outbox IDs, payload hashes and acknowledgement lifecycle.                                                                                                                                                                                                 |
+| Apps Script business handlers                                       | Port domain behavior, not source runtime                                          | Treat each action's verified semantics, authorization and status transitions as acceptance tests. Apps Script remains read-only/export source only after final cutover.                                                                                                                                                                                              |
+| Sheets                                                              | Retire as live operational store only after retention gate                        | Keep exported immutable archive until owner/accountant retention approval.                                                                                                                                                                                                                                                                                           |
+| Drive receipt files/backups                                         | Migrate and then retire as operational storage                                    | Copy, hash, verify and preserve source IDs in manifest. Keep Drive source unchanged until sign-off.                                                                                                                                                                                                                                                                  |
 
 Do not create Laravel Eloquent models that permit broad mass assignment on financial tables. Use explicit DTOs, validation and domain services. Restrict deletion paths for audit, approvals, cash closes and historical vouchers.
 
@@ -99,6 +100,7 @@ laravel/
 ```
 
 Module ownership:
+
 - **Identity:** user lifecycle, credentials, sessions and role lookup.
 - **Vouchers:** create/read/update/cancel and business-date/numbering invariants.
 - **Approvals:** immutable decisions and permitted state transitions.
@@ -115,6 +117,7 @@ Avoid circular module dependencies. Modules may share small domain value objects
 ## 5. Database and migration strategy
 
 The existing SQL baseline defines:
+
 - `0001`: users, vendors, settings.
 - `0002`: vouchers, approval events, receipt metadata, cash closes and corrections.
 - `0003`: sessions, login throttles, idempotency requests and audit events.
@@ -123,6 +126,7 @@ The existing SQL baseline defines:
 Retain InnoDB, utf8mb4, foreign keys, uniqueness and current financial columns. Amounts are integer paise in signed/unsigned appropriately bounded BIGINTs; never FLOAT/DOUBLE/DECIMAL for the canonical paise amount. API amounts remain decimal strings. Business date is an explicit DATE in Asia/Kolkata; event timestamps are UTC DATETIME(6). Preserve status, approval status, cash impact, payment method and immutable snapshots separately.
 
 Laravel database work:
+
 1. Generate a schema inventory from all four SQL files and compare against the latest test schema and model assumptions.
 2. Add a Laravel baseline migration/adoption script that records the existing versions/checksums as already applied only after verifying the exact schema. It must not replay `CREATE TABLE` statements on a database with those tables.
 3. For future changes, use new forward-only Laravel migrations, reviewed and tested on disposable MySQL/MariaDB. No automatic destructive `migrate:fresh`, no `DROP`, `TRUNCATE`, or production schema repair scripts.
@@ -135,6 +139,7 @@ The four current SQL migrations and database README are source-of-truth evidence
 ## 6. Authentication and role migration
 
 Retain the exact existing account semantics:
+
 - Roles: `staff`, `manager`, `owner`, `accountant`. Unknown/inactive users fail closed and their sessions are revoked.
 - Staff: creator-bound record scope; manager/owner: existing view-all capabilities; accountant: reports-only.
 - Role/capability is loaded server-side per request. UI workspaces are never authorization.
@@ -150,6 +155,7 @@ The legacy PEPPER is a deployment secret, not a migration artifact. Do not copy 
 The frozen v1 contract and action map are authoritative. Preserve JSON envelope, request ID, non-cacheable responses, HTTP methods, scope rules and existing names/semantics. The route mapping is the compatibility layer; internal Laravel naming may differ.
 
 Implement the first financial vertical slice before broad route coverage:
+
 1. Authenticated scoped voucher list/read.
 2. Create a single voucher using decimal string amount and explicit Asia/Kolkata business date.
 3. Enforce capability and creator/view-all scope server-side.
@@ -175,6 +181,7 @@ IndexedDB remains the client outbox; do not replace it with a new sync framework
 Define queue envelope contract (client operation ID, action, created-at/client business date, payload version, request hash, retry count, status). Do not mutate business dates based on server clock. Failed/ambiguous requests remain pending until server status can be resolved with the same idempotency key.
 
 Cutover readiness requires:
+
 - all devices online and queue drained to zero; OR a tested export/replay procedure that carries original IDs into Laravel and validates every replay response.
 - no stale clients can continue posting to the old endpoint after freeze; force refresh/version gate and explicit maintenance response.
 - no clearing IndexedDB to “fix” synchronization. Acknowledge only after transaction commit.
@@ -187,6 +194,7 @@ Build an owner-operated export from Apps Script/Sheets and Drive with no writes 
 Exporter must be resumable, deterministic and re-runnable. Each source entity retains a stable `source_legacy_id`; imports use upsert/unique key semantics in a **staging target only**, with per-file/record checksums and import run ID. Never generate new voucher IDs or numbers for existing financial records. Do not export logs containing passwords, PEPPER, access tokens, session/CSRF tokens or raw receipt bytes.
 
 Import must be repeatable:
+
 - same manifest + payload is a no-op with identical counts/checksums;
 - same source ID + changed payload is a quarantined conflict, not silent overwrite;
 - missing source rows are reported, never inferred as deletion;
@@ -198,6 +206,7 @@ Only real source extraction after backup qualification and explicit owner author
 ## 11. Reconciliation, backup and restore
 
 Before and after each shadow import compare:
+
 - source/destination counts by entity, status and business date;
 - voucher numbers and per-type sequence next value;
 - total paise, counts and signed net by date/type/status/approval/payment method/cash impact;
@@ -220,6 +229,7 @@ No dual financial writes. There is no period when Apps Script and Laravel both a
 **Preconditions:** host/architecture signed off; feature parity for required roles/actions; test suite green; production export dry-run; full backup and isolated restore proven; complete shadow import and reconciliation; offline outbox drained/replayed; receipt verification complete; monitoring and support ready; owner approves exact window and rollback owner.
 
 Cutover sequence:
+
 1. Announce maintenance and freeze new financial writes at the existing Apps Script boundary.
 2. Verify all clients are on compatible release, queues are empty, and no old API requests remain in flight.
 3. Take final source Sheet/Drive export and backup; verify manifest and hashes.
@@ -236,6 +246,7 @@ Old Apps Script resources remain preserved and read-only as a forensic/archive r
 ## 13. Google dependency retirement
 
 Retire only after every client has moved, the pilot passed, recovery is signed off and retention obligations are met:
+
 1. Remove Apps Script endpoint from active client configuration and deployment rollout logic.
 2. Confirm no API calls, triggers or scheduled jobs are required from Apps Script.
 3. Confirm Sheets/Drive are no longer operational dependencies; retain immutable encrypted exports and original source archives.
