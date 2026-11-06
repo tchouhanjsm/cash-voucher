@@ -9,6 +9,8 @@ use Illuminate\Support\Facades\DB;
 
 abstract class TestCase extends BaseTestCase
 {
+    private static int $businessDateOffset = 100;
+
     protected string $userId;
     protected string $sessionToken;
     protected string $csrfToken;
@@ -21,7 +23,11 @@ abstract class TestCase extends BaseTestCase
         $this->userId = self::uuid();
         $this->sessionToken = bin2hex(random_bytes(32));
         $this->csrfToken = bin2hex(random_bytes(32));
-        $this->businessDate = (new DateTimeImmutable('yesterday', new DateTimeZone('Asia/Kolkata')))
+        // Every feature test receives a distinct historical business date. Shared
+        // synthetic cash-close rows must never poison a later test's date guard.
+        $offset = self::$businessDateOffset++;
+        $this->businessDate = (new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata')))
+            ->modify('-'.$offset.' days')
             ->format('Y-m-d');
 
         $this->insertUser($this->userId, 'staff');
