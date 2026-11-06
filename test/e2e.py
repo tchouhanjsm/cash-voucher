@@ -7361,16 +7361,26 @@ with sync_playwright() as p:
     )
     if page.locator('#registerAdvancedFilters').get_attribute('open') is None:
         page.locator('#registerAdvancedFilters summary').click()
-    page.select_option('#ramountValidity', 'INVALID')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+        and json.loads(response.request.post_data or '{}').get('amountValidity') == 'INVALID'
+    ) as corrected_amount_review:
+        page.select_option('#ramountValidity', 'INVALID')
+    corrected_amount_review_request = json.loads(
+        corrected_amount_review.value.request.post_data or '{}'
+    )
+    check(
+        corrected_amount_review_request.get('amountValidity') == 'INVALID',
+        'Manager reapplies Needs review through the server-filtered Register read model',
+    )
     page.wait_for_function(
         "!Array.from(document.querySelectorAll('#rbody tr')).some(row => row.innerText.includes('Cash Classification Fixture'))"
     )
-    page.wait_for_function(
-        "document.querySelector('#rempty .register-empty-state__copy')?.textContent.includes('No vouchers match the current filters.')"
-    )
     check(
-        'No vouchers match the current filters.' in page.locator('#rempty').inner_text(),
-        'corrected amount disappears when Manager reapplies the Needs review filter',
+        page.locator('#ramountValidity').input_value() == 'INVALID'
+        and page.locator('#rbody tr').filter(has_text='Cash Classification Fixture').count() == 0,
+        'corrected voucher is excluded from the Needs review results even when other invalid vouchers remain',
     )
     page.select_option('#ramountValidity', 'ALL')
     page.wait_for_function(
