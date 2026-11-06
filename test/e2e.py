@@ -7161,9 +7161,46 @@ with sync_playwright() as p:
     # Simulate an unsafe legacy/imported API row through the server-backed register
     # response. The register no longer reads its visible rows from the bootstrap cache.
     legacy_xss_voucher_enabled = True
+    classification_fixture_state = {'cashImpact': 'UNCLASSIFIED'}
 
     def inject_legacy_xss_voucher(route):
         request_data = json.loads(route.request.post_data or '{}')
+        if (
+            request_data.get('action') == 'updateVoucher'
+            and request_data.get('id') == 'cash-classification-fixture'
+        ):
+            fields = request_data.get('fields') or {}
+            classification_fixture_state['cashImpact'] = fields.get('cashImpact', 'UNCLASSIFIED')
+            route.fulfill(
+                status=200,
+                json={
+                    'ok': True,
+                    'data': {
+                        'id': 'cash-classification-fixture',
+                        'no': 998878,
+                        'date': BUSINESS_TODAY.isoformat(),
+                        'vendor': 'Cash Classification Fixture',
+                        'paymentMethod': 'UPI',
+                        'amount': 345,
+                        'category': 'Other',
+                        'notes': '',
+                        'type': 'PAYMENT',
+                        'status': 'ACTIVE',
+                        'createdBy': 'staff@test.com',
+                        'createdAt': '2026-11-06T01:00:00Z',
+                        'updatedBy': 'manager@test.com',
+                        'updatedAt': '2026-11-06T02:00:00Z',
+                        'receipts': [],
+                        'cancelReason': '',
+                        'cashImpact': classification_fixture_state['cashImpact'],
+                        'approvalStatus': 'NOT_REQUIRED',
+                        'approvedBy': '',
+                        'approvedAt': '',
+                        'approvalReason': '',
+                    },
+                },
+            )
+            return
         response = route.fetch()
         payload = response.json()
         if request_data.get('action') == 'registerPage' and legacy_xss_voucher_enabled:
@@ -7201,6 +7238,42 @@ with sync_playwright() as p:
                 vendors = facets.setdefault('vendors', [])
                 if xss_payload not in vendors:
                     vendors.append(xss_payload)
+            requested_cash_impact = request_data.get('cashImpact') or 'ALL'
+            requested_amount_validity = request_data.get('amountValidity') or 'ALL'
+            if (
+                requested_cash_impact in ('ALL', classification_fixture_state['cashImpact'])
+                and requested_amount_validity in ('ALL', 'VALID')
+                and not any(
+                    item.get('id') == 'cash-classification-fixture'
+                    for item in data.get('items', [])
+                    if isinstance(item, dict)
+                )
+            ):
+                data.setdefault('items', []).append({
+                    'id': 'cash-classification-fixture',
+                    'no': 998878,
+                    'date': BUSINESS_TODAY.isoformat(),
+                    'vendor': 'Cash Classification Fixture',
+                    'vendorId': 'cash-classification-vendor',
+                    'paymentMethod': 'UPI',
+                    'amount': 345,
+                    'category': 'Other',
+                    'notes': '',
+                    'type': 'PAYMENT',
+                    'status': 'ACTIVE',
+                    'createdBy': 'staff@test.com',
+                    'createdAt': '2026-11-06T01:00:00Z',
+                    'updatedBy': '',
+                    'updatedAt': '',
+                    'receipts': [],
+                    'cancelReason': '',
+                    'cashImpact': classification_fixture_state['cashImpact'],
+                    'approvalStatus': 'NOT_REQUIRED',
+                    'approvedBy': '',
+                    'approvedAt': '',
+                    'approvalReason': '',
+                })
+                data['totalCount'] = int(data.get('totalCount') or 0) + 1
             route.fulfill(response=response, json=payload)
         else:
             route.fulfill(response=response)
@@ -7212,6 +7285,37 @@ with sync_playwright() as p:
     page.set_viewport_size({'width': 390, 'height': 844})
     manager_row = page.locator('#rbody tr').filter(has_text='Ram Traders').first
     manager_voucher_number = manager_row.locator('td').nth(0).locator('b').inner_text()
+    classification_row = page.locator('#rbody tr').filter(has_text='Cash Classification Fixture').first
+    classification_row.wait_for()
+    check(
+        'Needs classification' in classification_row.inner_text()
+        and 'UNCLASSIFIED' not in classification_row.inner_text()
+        and classification_row.locator('[data-act=classify]').count() == 1,
+        'Manager Register presents unclassified physical movement in plain language with a direct action',
+    )
+    classification_row.locator('[data-act=classify]').click()
+    page.wait_for_selector('#modal #cash-movement')
+    page.select_option('#cash-movement', 'CASH_OUT')
+    page.fill('#cash-reason', 'Verified the physical drawer movement')
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'updateVoucher'
+    ) as classification_write:
+        page.locator('.mcard .primary').click()
+    classification_request = json.loads(classification_write.value.request.post_data or '{}')
+    check(
+        classification_request.get('id') == 'cash-classification-fixture'
+        and classification_request.get('fields', {}).get('cashImpact') == 'CASH_OUT'
+        and classification_request.get('reason') == 'Verified the physical drawer movement',
+        'physical cash classification writes the explicit movement and correction reason through updateVoucher',
+    )
+    page.wait_for_function(
+        "Array.from(document.querySelectorAll('#rbody tr')).some(row => row.innerText.includes('Cash taken out of the drawer'))"
+    )
+    check(
+        'Cash taken out of the drawer' in page.locator('#rbody tr').filter(has_text='Cash Classification Fixture').inner_text(),
+        'Register reflects the server-confirmed physical cash classification',
+    )
     check(
         manager_row.locator('.voucher-kind').inner_text() == 'Payment',
         'manager register identifies cash-paid voucher rows explicitly',
@@ -7724,6 +7828,29 @@ with sync_playwright() as p:
         and 'Date range' in page.locator('#registerFilterSummary').inner_text(),
         'Register exposes the selected quick range and live applied-filter context',
     )
+
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ) as cash_movement_filter_response:
+        page.select_option('#rcashimpact', 'CASH_OUT')
+    cash_movement_filter_request = json.loads(cash_movement_filter_response.value.request.post_data or '{}')
+    check(
+        cash_movement_filter_request.get('cashImpact') == 'CASH_OUT',
+        'Register sends physical cash movement filters to the existing read model',
+    )
+    with page.expect_response(
+        lambda response: '/api?' in response.url
+        and json.loads(response.request.post_data or '{}').get('action') == 'registerPage'
+    ) as amount_review_filter_response:
+        page.select_option('#ramountValidity', 'INVALID')
+    amount_review_filter_request = json.loads(amount_review_filter_response.value.request.post_data or '{}')
+    check(
+        amount_review_filter_request.get('amountValidity') == 'INVALID',
+        'Register sends amount review filters to the existing read model',
+    )
+    page.select_option('#ramountValidity', 'ALL')
+    page.select_option('#rcashimpact', 'ALL')
 
     # Exercise the recorded movement report through the actual browser/API mock.
     go_view(page, 'reports')
