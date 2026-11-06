@@ -761,18 +761,6 @@ final class CashCloseService
     }
 
     /** @return list<array<string, mixed>> */
-    private function loadVouchersForDate(PDO $pdo, string $date, bool $lock): array
-    {
-        $sql = 'SELECT * FROM vouchers WHERE business_date = :date ORDER BY voucher_type, voucher_number';
-        if ($lock) {
-            $sql .= ' FOR UPDATE';
-        }
-        $query = $pdo->prepare($sql);
-        $query->execute(['date' => $date]);
-
-        return $query->fetchAll(PDO::FETCH_ASSOC);
-    }
-
     private function lockVoucherSequences(PDO $pdo): void
     {
         foreach (['PAYMENT', 'RECEIPT'] as $type) {
