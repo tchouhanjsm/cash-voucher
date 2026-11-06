@@ -157,6 +157,20 @@ final class VoucherController
         ], (string) $request->attributes->get('request_id'), $result['replayed'] ? 200 : 201);
     }
 
+    private function idempotencyKey(Request $request): string
+    {
+        $key = (string) $request->header('Idempotency-Key', '');
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $key)) {
+            throw new ApiException(
+                422,
+                'IDEMPOTENCY_KEY_REQUIRED',
+                'Send a valid Idempotency-Key header for every voucher mutation request.',
+            );
+        }
+
+        return $key;
+    }
+
     /**
      * @return array{id:string,name:string,email:string,role:string,mustChangePassword:bool,sessionId:string}
      */
