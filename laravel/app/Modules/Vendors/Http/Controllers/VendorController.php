@@ -108,7 +108,7 @@ final class VendorController
         return ApiResponse::success([
             'vendor' => $result['data']['vendor'],
             'replayed' => $result['replayed'],
-        ], (string) $request->attributes->get('request_id'), $result['replayed'] ? 200 : 200);
+        ], (string) $request->attributes->get('request_id'), 200);
     }
 
     private function save(
