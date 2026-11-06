@@ -54,6 +54,10 @@ assert.ok(
 );
 
 assert.ok(
+  ciWorkflow.includes("github.event.action || 'push'"),
+  'PR description edits use a separate CI concurrency group and cannot cancel source-sync validation.',
+);
+assert.ok(
   ciWorkflow.includes('workflow_call:') && browserWorkflow.includes('workflow_call:'),
   'CI / Quality and Browser E2E are reusable by the release workflow.',
 );
