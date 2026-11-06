@@ -1,6 +1,6 @@
 # Laravel migration phased backlog
 
-**Status:** PR #268 merged at `d50b75f`; PR #269 extends the isolated Laravel shadow API with vendor, voucher lifecycle/approval, private receipt and daily cash-close slices. Exact-head CI and code review are still open; none of this authorizes production use. Hosting qualification remains a hard gate.  
+**Status:** PR #268 merged at `d50b75f`; PR #269 extends the isolated Laravel shadow API with vendor, voucher lifecycle/approval, private receipt and daily cash-close slices. Exact-head CI, Browser E2E and autonomous monitor passed at `2b8318b`; code review and the tracked Composer lockfile remain open. None of this authorizes production use. Hosting qualification remains a hard gate.  
 **Delivery principle:** small vertical slices; no destructive work; one writer at all times.
 
 ## P0 — decision and qualification
@@ -23,7 +23,7 @@
 | CVL-014 Financial primitives         | Reuses existing PDO row-locked allocator, canonical idempotency unit of work and append-only audit writer           | MySQL CI concurrency/replay/rollback evidence                                           |
 | CVL-015 First voucher slice          | Merged in PR #268; creator-scoped list/create, duplicate review, sequence/idempotency/audit and approval safeguards | Continue contract parity as lifecycle routes expand                                     |
 
-CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269; exact-head MySQL CI, Browser E2E and code review remain acceptance gates. Hosting qualification, schema-baseline adoption and production use remain blocked. The shadow API is not yet routed from the PWA.
+CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. Exact-head CI, Browser E2E and monitor are green; review, Composer lockfile and hosting qualification remain gates. Hosting qualification, schema-baseline adoption and production use remain blocked. The shadow API is not yet routed from the PWA.
 
 ## P1 — Laravel foundation and parity
 
@@ -38,24 +38,24 @@ CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269; exact
 
 ## P2 — financial parity
 
-| ID      | Work                                                             | Dependencies     | Exit evidence                                                                                                                                                                      |
-| ------- | ---------------------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CVL-020 | Voucher update/cancel state machine and history                  | CVL-015          | PR #269 implements reasoned edit/cancel, closed-date protection, idempotency and before/after audit; transition suite pending clean CI                                             |
-| CVL-021 | Approval/rejection flow and pending/rejected reporting exclusion | CVL-020          | PR #269 implements pending-only approve/reject, no self-approval, immutable decision rows and audit; aggregation parity remains open                                               |
-| CVL-022 | Vendor catalog and immutable vendor name snapshot                | CVL-015          | PR #269 implements Manager/Owner CRUD, active state, unique name claims, idempotency and historical snapshot tests                                                                 |
-| CVL-023 | Cash-close preview/create/corrections                            | CVL-020, CVL-021 | PR #269 implements one MAIN drawer/day, prior-close carry-forward, reasoned gap opening, chronological idempotent close and append-only notes; MySQL suite pending exact-head pass |
-| CVL-024 | Read models, dashboard and reports                               | CVL-020–023      | Parity totals across dimensions; accountant read-only                                                                                                                              |
-| CVL-025 | User/admin operations, settings, support and audit browsing      | CVL-013          | Role and record-scope denial matrix                                                                                                                                                |
+| ID      | Work                                                             | Dependencies     | Exit evidence                                                                                                                                                                            |
+| ------- | ---------------------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CVL-020 | Voucher update/cancel state machine and history                  | CVL-015          | PR #269 implements reasoned edit/cancel, closed-date protection, idempotency and before/after audit; lifecycle tests included in 54-test / 326-assertion green MySQL suite               |
+| CVL-021 | Approval/rejection flow and pending/rejected reporting exclusion | CVL-020          | PR #269 implements pending-only approve/reject, no self-approval, immutable decision rows and audit; aggregation parity remains open                                                     |
+| CVL-022 | Vendor catalog and immutable vendor name snapshot                | CVL-015          | PR #269 implements Manager/Owner CRUD, active state, unique name claims, idempotency and historical snapshot tests                                                                       |
+| CVL-023 | Cash-close preview/create/corrections                            | CVL-020, CVL-021 | PR #269 implements one MAIN drawer/day, prior-close carry-forward, reasoned gap opening, chronological idempotent close and append-only notes; cash-close feature tests pass in CI #4152 |
+| CVL-024 | Read models, dashboard and reports                               | CVL-020–023      | Parity totals across dimensions; accountant read-only                                                                                                                                    |
+| CVL-025 | User/admin operations, settings, support and audit browsing      | CVL-013          | Role and record-scope denial matrix                                                                                                                                                      |
 
 ## P3 — receipts, offline and data portability
 
-| ID      | Work                                                    | Dependencies                                      | Exit evidence                                                                                                                                    |
-| ------- | ------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| CVL-030 | Private receipt upload/download and metadata integrity  | CVL-015, host private path                        | PR #269 implements private storage, signature/size/hash checks, own-record scope, 3-file limit and no public URL; exact-head MySQL tests pending |
-| CVL-031 | PWA transport adapter and Laravel API compatibility     | CVL-015, API golden contract                      | Existing IndexedDB outbox unchanged; retry/replay tests                                                                                          |
-| CVL-032 | Read-only export manifest for Sheets/Drive              | Owner-approved source read access; backup/restore | Deterministic export, redacted secret inventory                                                                                                  |
-| CVL-033 | Repeatable staging importer and exception ledger        | CVL-032, schema field mapping                     | Idempotent rerun, source-ID uniqueness, conflict quarantine                                                                                      |
-| CVL-034 | Shadow import and full financial/receipt reconciliation | CVL-033                                           | Zero unexplained variance; owner/accountant approval                                                                                             |
+| ID      | Work                                                    | Dependencies                                      | Exit evidence                                                                                                                                            |
+| ------- | ------------------------------------------------------- | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CVL-030 | Private receipt upload/download and metadata integrity  | CVL-015, host private path                        | PR #269 implements private storage, signature/size/hash checks, own-record scope, 3-file limit and no public URL; receipt feature tests pass in CI #4152 |
+| CVL-031 | PWA transport adapter and Laravel API compatibility     | CVL-015, API golden contract                      | Existing IndexedDB outbox unchanged; retry/replay tests                                                                                                  |
+| CVL-032 | Read-only export manifest for Sheets/Drive              | Owner-approved source read access; backup/restore | Deterministic export, redacted secret inventory                                                                                                          |
+| CVL-033 | Repeatable staging importer and exception ledger        | CVL-032, schema field mapping                     | Idempotent rerun, source-ID uniqueness, conflict quarantine                                                                                              |
+| CVL-034 | Shadow import and full financial/receipt reconciliation | CVL-033                                           | Zero unexplained variance; owner/accountant approval                                                                                                     |
 
 ## P4 — operational proof and cutover
 
