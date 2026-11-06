@@ -3578,7 +3578,8 @@ ok(
   !invalidPaymentRail.ok && invalidPaymentRail.code === 'VALIDATION',
   'server rejects unsupported payment rails',
 );
-const missingCashMovement = as(T, 'createVouchers', {
+const missingCashMovement = g.call('createVouchers', {
+  token: T,
   entries: [
     {
       clientId: 'missing-cash-movement-regression',

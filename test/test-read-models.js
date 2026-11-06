@@ -100,7 +100,11 @@ const cashOutPage = g.call('registerPage', {
   limit: 100,
 });
 assert.equal(cashOutPage.ok, true, 'owner can filter the Register by physical cash taken out');
-assert.equal(cashOutPage.data.totalCount, 2, 'cash-out filter matches both active payment fixtures');
+assert.equal(
+  cashOutPage.data.totalCount,
+  2,
+  'cash-out filter matches both active payment fixtures',
+);
 assert.ok(
   cashOutPage.data.items.every((item) => item.cashImpact === 'CASH_OUT'),
   'server filters Register rows by explicit physical drawer movement',
@@ -115,7 +119,11 @@ const cashInPage = g.call('registerPage', {
   limit: 100,
 });
 assert.equal(cashInPage.ok, true, 'owner can filter the Register by physical cash added');
-assert.equal(cashInPage.data.totalCount, 1, 'cash-in filter matches only the receipt fixture');
+assert.equal(
+  cashInPage.data.totalCount,
+  1,
+  'cash-in filter matches only the receipt fixture',
+);
 assert.equal(cashInPage.data.items[0].cashImpact, 'CASH_IN', 'receipt cash movement stays explicit');
 assert.equal(
   firstPage.data.totals.approvalExceptionCount,
@@ -446,6 +454,7 @@ const staffVoucher = g.call('createVouchers', {
       amount: 75,
       category: 'Other',
       paymentMethod: 'CASH',
+      cashImpact: 'CASH_OUT',
       type: 'PAYMENT',
     },
   ],

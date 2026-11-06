@@ -7162,7 +7162,7 @@ with sync_playwright() as p:
     # Simulate an unsafe legacy/imported API row through the server-backed register
     # response. The register no longer reads its visible rows from the bootstrap cache.
     legacy_xss_voucher_enabled = True
-    classification_fixture_state = {'cashImpact': 'UNCLASSIFIED', 'amount': 345}
+    classification_fixture_state = {'cashImpact': 'UNCLASSIFIED', 'amount': 'not-an-amount'}
 
     def inject_legacy_xss_voucher(route):
         request_data = json.loads(route.request.post_data or '{}')
@@ -7260,6 +7260,9 @@ with sync_playwright() as p:
                 and not any(
                     item.get('id') == 'cash-classification-fixture'
                     for item in data.get('items', [])
+                    if isinstance(item, dict)
+                )
+            ):
                     if isinstance(item, dict)
                 )
             ):
