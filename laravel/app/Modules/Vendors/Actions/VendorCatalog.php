@@ -211,6 +211,28 @@ final class VendorCatalog
                 $before = $this->snapshot($row);
                 $wasActive = (int) $row['is_active'] === 1;
                 if ($active && ! $wasActive) {
+                    // Claim the normalized name before activation. This serializes two
+                    // concurrent legacy-row activations and reserves names of inactive rows.
+                    $normalizedName = mb_strtolower((string) $row['display_name'], 'UTF-8');
+                    $claim = $connection->prepare(
+                        'INSERT IGNORE INTO vendor_name_claims (normalized_name, vendor_id, created_at_utc)
+                         VALUES (:name, :vendor_id, UTC_TIMESTAMP(6))'
+                    );
+                    $claim->execute(['name' => $normalizedName, 'vendor_id' => $vendorId]);
+
+                    $claimOwner = $connection->prepare(
+                        'SELECT vendor_id FROM vendor_name_claims WHERE normalized_name = :name LIMIT 1'
+                    );
+                    $claimOwner->execute(['name' => $normalizedName]);
+                    $claimedBy = $claimOwner->fetchColumn();
+                    if (! is_string($claimedBy) || ! hash_equals($vendorId, $claimedBy)) {
+                        throw new ApiException(
+                            409,
+                            'VENDOR_DUPLICATE',
+                            'Another vendor already reserves this name. Resolve the duplicate before activation.',
+                        );
+                    }
+
                     $duplicate = $connection->prepare(
                         'SELECT id FROM vendors
                          WHERE display_name = :name AND is_active = 1 AND id <> :id
@@ -286,8 +308,20 @@ final class VendorCatalog
 
         $category = $input['defaultCategory'] ?? '';
         $paymentMethod = $input['defaultPaymentMethod'] ?? '';
-        $category = is_string($category) ? trim($category) : '';
-        $paymentMethod = is_string($paymentMethod) ? trim($paymentMethod) : '';
+        if ($category === null) {
+            $category = '';
+        }
+        if ($paymentMethod === null) {
+            $paymentMethod = '';
+        }
+        if (! is_string($category)) {
+            throw new ApiException(422, 'VENDOR_CATEGORY_INVALID', 'Choose a valid default category.');
+        }
+        if (! is_string($paymentMethod)) {
+            throw new ApiException(422, 'VENDOR_PAYMENT_METHOD_INVALID', 'Choose a valid default payment method.');
+        }
+        $category = trim($category);
+        $paymentMethod = trim($paymentMethod);
         if ($category !== '' && mb_strlen($category, 'UTF-8') > 40) {
             throw new ApiException(422, 'VENDOR_CATEGORY_INVALID', 'Choose a valid default category.');
         }
