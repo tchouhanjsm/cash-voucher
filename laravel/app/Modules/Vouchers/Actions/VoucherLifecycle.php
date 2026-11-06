@@ -181,7 +181,8 @@ final class VoucherLifecycle
                 }
 
                 $approvalBefore = (string) $row['approval_status'];
-                if ((string) $row['voucher_type'] === 'PAYMENT' && $this->shouldReevaluateApproval($approvalBefore, $changes)) {
+                $materialApprovalChange = $this->hasMaterialApprovalChange($changes);
+                if ((string) $row['voucher_type'] === 'PAYMENT' && $materialApprovalChange) {
                     $oldAmountPaise = (int) $row['amount_paise'];
                     $oldDayTotal = $this->payeeDayTotal(
                         $connection,
@@ -209,10 +210,12 @@ final class VoucherLifecycle
                         && $newDayTotal >= self::PAYMENT_THRESHOLD_PAISE
                     );
 
-                    if (
-                        in_array($approvalBefore, ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'], true)
-                        || $crossedThreshold
-                    ) {
+                    $approvalManaged = in_array(
+                        $approvalBefore,
+                        ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'],
+                        true,
+                    );
+                    if (($approvalManaged && $materialApprovalChange) || $crossedThreshold) {
                         $nextApproval = $needsApproval ? 'PENDING' : 'NOT_REQUIRED';
                         if ($approvalBefore !== $nextApproval) {
                             $changes[] = ['field' => 'approvalStatus', 'before' => $approvalBefore, 'after' => $nextApproval];
@@ -435,13 +438,8 @@ final class VoucherLifecycle
     }
 
     /** @param list<array<string, mixed>> $changes */
-    private function shouldReevaluateApproval(string $status, array $changes): bool
+    private function hasMaterialApprovalChange(array $changes): bool
     {
-        $managed = in_array($status, ['PENDING', 'APPROVED', 'REJECTED', 'REVIEW_REQUIRED'], true);
-        if ($managed) {
-            return true;
-        }
-
         foreach ($changes as $change) {
             if (in_array($change['field'], ['amount', 'vendor', 'vendorId', 'date', 'cashImpact', 'paymentMethod'], true)) {
                 return true;
@@ -489,7 +487,7 @@ final class VoucherLifecycle
         $query = $pdo->prepare(
             'SELECT id, display_name FROM vendors
              WHERE is_active = 1 AND LOWER(TRIM(display_name)) = :name
-             ORDER BY id LIMIT 2'
+             ORDER BY id LIMIT 2 FOR SHARE'
         );
         $query->execute(['name' => $normalized]);
         $matches = $query->fetchAll(PDO::FETCH_ASSOC);
