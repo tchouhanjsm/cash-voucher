@@ -7357,6 +7357,12 @@ with sync_playwright() as p:
         'Manager amount correction uses the existing permission-checked updateVoucher API and reason',
     )
     page.wait_for_function(
+        "Array.from(document.querySelectorAll('#rbody tr')).some(row => row.innerText.includes('Cash Classification Fixture') && row.innerText.includes('345'))"
+    )
+    if page.locator('#registerAdvancedFilters').get_attribute('open') is None:
+        page.locator('#registerAdvancedFilters summary').click()
+    page.select_option('#ramountValidity', 'INVALID')
+    page.wait_for_function(
         "!Array.from(document.querySelectorAll('#rbody tr')).some(row => row.innerText.includes('Cash Classification Fixture'))"
     )
     page.wait_for_function(
@@ -7364,7 +7370,7 @@ with sync_playwright() as p:
     )
     check(
         'No vouchers match the current filters.' in page.locator('#rempty').inner_text(),
-        'corrected amount disappears from the active Needs review filter after server refresh',
+        'corrected amount disappears when Manager reapplies the Needs review filter',
     )
     page.select_option('#ramountValidity', 'ALL')
     page.wait_for_function(
