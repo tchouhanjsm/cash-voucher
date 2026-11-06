@@ -33,6 +33,7 @@ const branchPolicy = read('docs/CLIENT-MAIN-BRANCH-POLICY.md');
 const governanceVerifier = read('scripts/verify-client-main-governance.js');
 const governanceTest = read('test/test-client-main-governance.js');
 const ciWorkflow = read('.github/workflows/ci.yml');
+const browserWorkflow = read('.github/workflows/e2e.yml');
 const stagingWorkflow = read('.github/workflows/staging-uat.yml');
 const stagingWorkflowTest = read('test/test-staging-workflow.js');
 const stagingEvidenceWriter = read('scripts/staging-evidence.js');

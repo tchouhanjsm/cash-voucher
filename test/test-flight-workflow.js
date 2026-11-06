@@ -80,7 +80,9 @@ assert.match(
 );
 assert.match(ciWorkflow, /github.event.action != 'edited'/);
 assert.match(ciWorkflow, /node scripts\/check-pr-quality\.js/);
-assert.ok(ciWorkflow.includes("github.event.action == 'edited' || steps.dependencies.outcome == 'success'"));
+assert.ok(
+  ciWorkflow.includes("github.event.action == 'edited' || steps.dependencies.outcome == 'success'"),
+);
 assert.match(
   browserWorkflow,
   /pull_request:/,
@@ -97,14 +99,16 @@ const e2eRequirements = fs.readFileSync(path.join(root, 'requirements-e2e.txt'),
 assert.match(releaseWorkflow, /uses: \.\/\.github\/workflows\/ci\.yml/);
 assert.match(releaseWorkflow, /uses: \.\/\.github\/workflows\/e2e\.yml/);
 assert.match(releaseWorkflow, /git merge-base --is-ancestor/);
-assert.match(releaseWorkflow, /^permissions:\n  contents: read$/m);
-assert.match(releaseWorkflow, /publish:[\s\S]*?permissions:\n      contents: write/);
+assert.match(releaseWorkflow, /^permissions:\n {2}contents: read$/m);
+assert.match(releaseWorkflow, /publish:[\s\S]*?permissions:\n {6}contents: write/);
 assert.match(releaseWorkflow, /needs: \[release-guard, quality, browser\]/);
-assert.ok(!/playwright/.test(releaseWorkflow), 'release does not maintain a second E2E dependency/test implementation.');
+assert.ok(
+  !/playwright/.test(releaseWorkflow),
+  'release does not maintain a second E2E dependency/test implementation.',
+);
 assert.match(e2eRequirements, /^playwright==1\.64\.1$/m);
 assert.match(e2eRequirements, /^pyee==13\.0\.1$/m);
 assert.match(e2eRequirements, /^greenlet==3\.5\.6$/m);
 assert.match(e2eRequirements, /^typing-extensions==4\.16\.0$/m);
-
 
 console.log('Workflow policy OK — CI and Browser E2E gate PRs; Full Flight is manual on demand.');
