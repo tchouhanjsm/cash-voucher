@@ -233,6 +233,85 @@ final class VendorApiTest extends TestCase
         );
     }
 
+    public function test_vendor_active_state_replays_without_duplicate_audit_events(): void
+    {
+        $created = $this->withRoleSession('manager')
+            ->postJson('/api/v1/vendors', $this->validVendorPayload([
+                'defaultCategory' => '',
+                'defaultPaymentMethod' => '',
+            ]), ['Idempotency-Key' => 'vendor-state-create-'.bin2hex(random_bytes(4))])
+            ->assertCreated();
+        $vendorId = (string) $created->json('data.vendor.id');
+        $key = 'vendor-state-off-'.bin2hex(random_bytes(4));
+
+        $first = $this->withLegacySession()
+            ->postJson('/api/v1/vendors/'.$vendorId.'/active', ['active' => false], [
+                'Idempotency-Key' => $key,
+            ]);
+        $first->assertOk()
+            ->assertJsonPath('data.replayed', false)
+            ->assertJsonPath('data.vendor.active', false);
+
+        $this->withLegacySession()
+            ->postJson('/api/v1/vendors/'.$vendorId.'/active', ['active' => false], [
+                'Idempotency-Key' => $key,
+            ])
+            ->assertOk()
+            ->assertJsonPath('data.replayed', true)
+            ->assertJsonPath('data.vendor.active', false);
+
+        self::assertSame(
+            1,
+            DB::table('audit_events')
+                ->where('target_id', $vendorId)
+                ->where('event_type', 'VENDOR_DEACTIVATED')
+                ->count(),
+        );
+    }
+
+    public function test_failed_rename_keeps_the_original_name_claim_and_vendor_row(): void
+    {
+        $first = $this->withRoleSession('manager')
+            ->postJson('/api/v1/vendors', $this->validVendorPayload([
+                'name' => 'First Unique Supplier',
+                'defaultCategory' => '',
+                'defaultPaymentMethod' => '',
+            ]), ['Idempotency-Key' => 'vendor-claim-first'])
+            ->assertCreated();
+        $firstId = (string) $first->json('data.vendor.id');
+
+        $second = $this->withLegacySession()
+            ->postJson('/api/v1/vendors', $this->validVendorPayload([
+                'name' => 'Second Unique Supplier',
+                'defaultCategory' => '',
+                'defaultPaymentMethod' => '',
+            ]), ['Idempotency-Key' => 'vendor-claim-second'])
+            ->assertCreated();
+        $secondId = (string) $second->json('data.vendor.id');
+
+        $this->withLegacySession()
+            ->patchJson('/api/v1/vendors/'.$firstId, [
+                'name' => 'second unique supplier',
+            ], ['Idempotency-Key' => 'vendor-claim-conflict'])
+            ->assertStatus(409)
+            ->assertJsonPath('error.code', 'VENDOR_DUPLICATE');
+
+        self::assertSame('First Unique Supplier', DB::table('vendors')->where('id', $firstId)->value('display_name'));
+        self::assertSame('Second Unique Supplier', DB::table('vendors')->where('id', $secondId)->value('display_name'));
+
+        $this->withLegacySession()
+            ->patchJson('/api/v1/vendors/'.$firstId, [
+                'name' => 'First Supplier Renamed',
+            ], ['Idempotency-Key' => 'vendor-claim-recovery'])
+            ->assertOk()
+            ->assertJsonPath('data.vendor.name', 'First Supplier Renamed');
+
+        self::assertSame(
+            $firstId,
+            DB::table('vendor_name_claims')->where('normalized_name', 'first supplier renamed')->value('vendor_id'),
+        );
+    }
+
     public function test_same_idempotency_key_with_changed_vendor_payload_conflicts(): void
     {
         $payload = $this->validVendorPayload();
