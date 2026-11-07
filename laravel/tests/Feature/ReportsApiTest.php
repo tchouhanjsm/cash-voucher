@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
-use DateTimeImmutable;
-use DateTimeZone;
 use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
@@ -14,7 +12,7 @@ final class ReportsApiTest extends TestCase
     public function test_staff_dashboard_is_creator_scoped_and_excludes_unapproved_payments(): void
     {
         $today = $this->businessDate;
-        $ownPayment = $this->insertVoucherFixture($this->userId, 'Own Approved Payment', 10000, $today);
+        $this->insertVoucherFixture($this->userId, 'Own Approved Payment', 10000, $today);
         $pendingPayment = $this->insertVoucherFixture($this->userId, 'Own Pending Payment', 4000, $today);
         DB::table('vouchers')->where('id', $pendingPayment)->update(['approval_status' => 'PENDING']);
         $receipt = $this->insertVoucherFixture($this->userId, 'Own Receipt', 30000, $today);
@@ -105,7 +103,7 @@ final class ReportsApiTest extends TestCase
     public function test_recorded_movement_totals_include_cancelled_rows_but_exclude_pending_payments(): void
     {
         $today = $this->businessDate;
-        $approved = $this->insertVoucherFixture($this->userId, 'Approved Payment', 10000, $today);
+        $this->insertVoucherFixture($this->userId, 'Approved Payment', 10000, $today);
         $pending = $this->insertVoucherFixture($this->userId, 'Pending Payment', 5000, $today);
         DB::table('vouchers')->where('id', $pending)->update(['approval_status' => 'PENDING']);
         $cancelled = $this->insertVoucherFixture($this->userId, 'Cancelled Payment', 8000, $today);
