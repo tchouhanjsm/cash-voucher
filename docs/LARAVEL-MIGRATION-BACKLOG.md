@@ -1,6 +1,6 @@
 # Laravel migration phased backlog
 
-**Status:** PR #268 merged at `d50b75f`; PR #269 extends the isolated Laravel shadow API with vendor, voucher lifecycle/approval, private receipt and daily cash-close slices. Exact-head CI, Browser E2E and autonomous monitor passed at `2b8318b`; code review and the tracked Composer lockfile remain open. None of this authorizes production use. Hosting qualification remains a hard gate.  
+**Status:** PR #268 merged at `d50b75f`; PR #269 extends the isolated Laravel shadow API with vendor, voucher lifecycle/approval, private receipt and daily cash-close slices. CI #4153, Browser E2E #3817 and autonomous monitor #947 passed at `2fd854e`; code review and the tracked Composer lockfile remain open. None of this authorizes production use. Hosting qualification remains a hard gate.  
 **Delivery principle:** small vertical slices; no destructive work; one writer at all times.
 
 ## P0 — decision and qualification
@@ -43,7 +43,7 @@ CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. Exact
 | CVL-020 | Voucher update/cancel state machine and history                  | CVL-015          | PR #269 implements reasoned edit/cancel, closed-date protection, idempotency and before/after audit; lifecycle tests included in 54-test / 326-assertion green MySQL suite               |
 | CVL-021 | Approval/rejection flow and pending/rejected reporting exclusion | CVL-020          | PR #269 implements pending-only approve/reject, no self-approval, immutable decision rows and audit; aggregation parity remains open                                                     |
 | CVL-022 | Vendor catalog and immutable vendor name snapshot                | CVL-015          | PR #269 implements Manager/Owner CRUD, active state, unique name claims, idempotency and historical snapshot tests                                                                       |
-| CVL-023 | Cash-close preview/create/corrections                            | CVL-020, CVL-021 | PR #269 implements one MAIN drawer/day, prior-close carry-forward, reasoned gap opening, chronological idempotent close and append-only notes; cash-close feature tests pass in CI #4152 |
+| CVL-023 | Cash-close preview/create/corrections                            | CVL-020, CVL-021 | PR #269 implements one MAIN drawer/day, prior-close carry-forward, reasoned gap opening, chronological idempotent close and append-only notes; cash-close feature tests pass in CI #4153 (54 Laravel tests / 326 assertions across vendor, lifecycle, receipts and cash close) |
 | CVL-024 | Read models, dashboard and reports                               | CVL-020–023      | Parity totals across dimensions; accountant read-only                                                                                                                                    |
 | CVL-025 | User/admin operations, settings, support and audit browsing      | CVL-013          | Role and record-scope denial matrix                                                                                                                                                      |
 
