@@ -1,5 +1,5 @@
 const SESSION_MARKER = 'laravel-cookie-session';
-const CSRF_PATTERN = /^[a-f0-9]{64}$/D;
+const CSRF_PATTERN = /^[a-f0-9]{64}$/;
 
 function failure(message, code) {
   return Object.assign(new Error(message), { code });
@@ -54,16 +54,6 @@ function assertSameOriginBase(raw, origin) {
   return { origin: current.origin, pathname };
 }
 
-function appendQuery(path, values) {
-  const query = new URLSearchParams();
-  Object.entries(values || {}).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
-      query.set(key, String(value));
-    }
-  });
-  const suffix = query.toString();
-  return suffix ? path + '?' + suffix : path;
-}
 
 /**
  * Cookie-session transport for the isolated Laravel shadow API.
