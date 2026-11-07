@@ -290,6 +290,65 @@ final class CashCloseApiTest extends TestCase
         self::assertSame(0, DB::table('cash_closes')->where('business_date', $this->businessDate)->count());
     }
 
+    public function test_previous_close_lineage_must_reference_the_immediately_preceding_business_date(): void
+    {
+        $this->withRoleSession('manager');
+        $wrongPreviousDate = (new DateTimeImmutable($this->businessDate, new DateTimeZone('Asia/Kolkata')))
+            ->modify('-2 days')->format('Y-m-d');
+        $wrongPreviousId = $this->insertCloseRow($wrongPreviousDate, 7500);
+
+        $created = $this->postJson('/api/v1/cash-closes', [
+            'date' => $this->businessDate,
+            'openingCash' => '75.00',
+            'openingReason' => 'Manual opening float',
+            'countedCash' => '75.00',
+        ], ['Idempotency-Key' => 'cash-close-broken-carry-forward'])
+            ->assertCreated();
+        $closeId = (string) $created->json('data.close.id');
+
+        $tamper = $this->migrationPdo()->prepare(
+            'UPDATE cash_closes
+             SET opening_source = :source, opening_close_id = :previous, opening_reason = :reason
+             WHERE id = :id'
+        );
+        $tamper->execute([
+            'source' => 'PREVIOUS_CLOSE',
+            'previous' => $wrongPreviousId,
+            'reason' => '',
+            'id' => $closeId,
+        ]);
+
+        $this->getJson('/api/v1/cash-closes/preview?date='.$this->businessDate)
+            ->assertStatus(503)
+            ->assertJsonPath('error.code', 'CASH_CLOSE_DATA');
+    }
+
+    public function test_manual_opening_cannot_retain_a_previous_close_reference(): void
+    {
+        $this->withRoleSession('manager');
+        $unrelatedCloseDate = (new DateTimeImmutable($this->businessDate, new DateTimeZone('Asia/Kolkata')))
+            ->modify('-2 days')->format('Y-m-d');
+        $unrelatedCloseId = $this->insertCloseRow($unrelatedCloseDate, 4500);
+
+        $created = $this->postJson('/api/v1/cash-closes', [
+            'date' => $this->businessDate,
+            'openingCash' => '45.00',
+            'openingReason' => 'Manual opening float',
+            'countedCash' => '45.00',
+        ], ['Idempotency-Key' => 'cash-close-manual-with-parent'])
+            ->assertCreated();
+        $closeId = (string) $created->json('data.close.id');
+
+        $tamper = $this->migrationPdo()->prepare(
+            'UPDATE cash_closes SET opening_close_id = :previous WHERE id = :id'
+        );
+        $tamper->execute(['previous' => $unrelatedCloseId, 'id' => $closeId]);
+
+        $this->getJson('/api/v1/cash-closes/preview?date='.$this->businessDate)
+            ->assertStatus(503)
+            ->assertJsonPath('error.code', 'CASH_CLOSE_DATA');
+    }
+
     private function insertCloseVoucher(
         string $type,
         string $cashImpact,
