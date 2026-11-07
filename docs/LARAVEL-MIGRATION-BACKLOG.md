@@ -46,6 +46,7 @@ CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. CVL-0
 | CVL-023 | Daily cash-close preview, finalization and corrections | CVL-020, CVL-021 | MAIN drawer/day, carry-forward, gap opening, chronological idempotent snapshot and correction notes.                |
 | CVL-024 | Dashboard summary and recorded-movement reports        | CVL-020–023      | Creator-scoped dashboard, Manager/Owner team view, Accountant report-only, paginated totals and approval exclusion. |
 | CVL-025 | User/admin operations, settings and audit browsing     | CVL-013          | Role and record-scope denial matrix.                                                                                |
+
 ## P3 — receipts, offline and data portability
 
 | ID      | Work                                                    | Dependencies                                      | Exit evidence                                                                                                                                            |
