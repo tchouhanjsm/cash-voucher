@@ -31,34 +31,33 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 
 ## Implemented routes in this phase
 
-| Method | Route                                     | Scope                                                             |
-| ------ | ----------------------------------------- | ----------------------------------------------------------------- |
-| GET    | /api/v1/health/live                       | Public liveness, no DB dependency                                 |
-| GET    | /api/v1/health/ready                      | Public DB/schema readiness check                                  |
-| GET    | /api/v1/meta                              | Public rollout metadata                                           |
+| Method | Route                                     | Scope                                                                   |
+| ------ | ----------------------------------------- | ----------------------------------------------------------------------- |
+| GET    | /api/v1/health/live                       | Public liveness, no DB dependency                                       |
+| GET    | /api/v1/health/ready                      | Public DB/schema readiness check                                        |
+| GET    | /api/v1/meta                              | Public rollout metadata                                                 |
 | POST   | /api/v1/sessions                          | Login; legacy HMAC verification/upgrade; throttled; sets Secure cookies |
-| GET    | /api/v1/sessions/current                  | Restore session and current role                                  |
-| POST   | /api/v1/sessions/current/logout           | CSRF-protected logout; revokes active session and clears cookies   |
-| POST   | /api/v1/sessions/current/password         | CSRF-protected password change; revokes all sessions               |
-| GET    | /api/v1/vouchers                          | Authenticated, creator-scoped for staff; manager/owner view-all   |
-| POST   | /api/v1/vouchers/duplicate-check          | Authenticated create capability + CSRF                            |
-| POST   | /api/v1/vouchers                          | Single authenticated voucher create + CSRF + idempotency          |
-| GET    | /api/v1/vendors                           | Manager/owner vendor list; active by default                      |
-| POST   | /api/v1/vendors                           | Manager/owner vendor create + CSRF + idempotency                  |
-| PATCH  | /api/v1/vendors/{vendorId}                | Manager/owner vendor update + CSRF + idempotency                  |
-| POST   | /api/v1/vendors/{vendorId}/active         | Manager/owner desired active-state change + CSRF + idempotency    |
-| PATCH  | /api/v1/vouchers/{voucherId}              | Manager/owner correction with reason + idempotency                |
-| POST   | /api/v1/vouchers/{voucherId}/cancel       | Manager/owner cancellation with reason + idempotency              |
-| POST   | /api/v1/vouchers/{voucherId}/approval     | Manager/owner pending-payment approval + immutable event          |
-| POST   | /api/v1/vouchers/{voucherId}/rejection    | Manager/owner pending-payment rejection + reason                  |
-| POST   | /api/v1/vouchers/{voucherId}/receipts     | Staff-own or manager/owner; private image upload                  |
-| GET    | /api/v1/receipts/{receiptId}              | Staff-own or manager/owner; private image retrieval               |
-| GET    | /api/v1/cash-closes/preview               | Manager/owner server-side daily cash preview                      |
-| POST   | /api/v1/cash-closes                       | Manager/owner idempotent immutable daily close                    |
-| POST   | /api/v1/cash-closes/{closeId}/corrections | Manager/owner attributed correction note, append-only             |
-| GET    | /api/v1/dashboard/summary                 | Staff creator-scoped; Manager/Owner property-wide; SQL aggregates |
-| GET    | /api/v1/reports/recorded-movements        | Manager/Owner/Accountant read-only report with pagination         |
-
+| GET    | /api/v1/sessions/current                  | Restore session and current role                                        |
+| POST   | /api/v1/sessions/current/logout           | CSRF-protected logout; revokes active session and clears cookies        |
+| POST   | /api/v1/sessions/current/password         | CSRF-protected password change; revokes all sessions                    |
+| GET    | /api/v1/vouchers                          | Authenticated, creator-scoped for staff; manager/owner view-all         |
+| POST   | /api/v1/vouchers/duplicate-check          | Authenticated create capability + CSRF                                  |
+| POST   | /api/v1/vouchers                          | Single authenticated voucher create + CSRF + idempotency                |
+| GET    | /api/v1/vendors                           | Manager/owner vendor list; active by default                            |
+| POST   | /api/v1/vendors                           | Manager/owner vendor create + CSRF + idempotency                        |
+| PATCH  | /api/v1/vendors/{vendorId}                | Manager/owner vendor update + CSRF + idempotency                        |
+| POST   | /api/v1/vendors/{vendorId}/active         | Manager/owner desired active-state change + CSRF + idempotency          |
+| PATCH  | /api/v1/vouchers/{voucherId}              | Manager/owner correction with reason + idempotency                      |
+| POST   | /api/v1/vouchers/{voucherId}/cancel       | Manager/owner cancellation with reason + idempotency                    |
+| POST   | /api/v1/vouchers/{voucherId}/approval     | Manager/owner pending-payment approval + immutable event                |
+| POST   | /api/v1/vouchers/{voucherId}/rejection    | Manager/owner pending-payment rejection + reason                        |
+| POST   | /api/v1/vouchers/{voucherId}/receipts     | Staff-own or manager/owner; private image upload                        |
+| GET    | /api/v1/receipts/{receiptId}              | Staff-own or manager/owner; private image retrieval                     |
+| GET    | /api/v1/cash-closes/preview               | Manager/owner server-side daily cash preview                            |
+| POST   | /api/v1/cash-closes                       | Manager/owner idempotent immutable daily close                          |
+| POST   | /api/v1/cash-closes/{closeId}/corrections | Manager/owner attributed correction note, append-only                   |
+| GET    | /api/v1/dashboard/summary                 | Staff creator-scoped; Manager/Owner property-wide; SQL aggregates       |
+| GET    | /api/v1/reports/recorded-movements        | Manager/Owner/Accountant read-only report with pagination               |
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
 
 ## Financial invariants
