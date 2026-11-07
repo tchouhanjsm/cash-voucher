@@ -1,1 +1,18 @@
-PLACEHOLDER
+{
+  "_readme": [
+    "This file locks the dependencies of your project to a known state",
+    "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+    "This file is @generated automatically"
+  ],
+  "content-hash": "ab9c1c053f23955c8366c8c345ac54e9",
+  "packages": [],
+  "packages-dev": [],
+  "aliases": [],
+  "minimum-stability": "stable",
+  "stability-flags": {},
+  "prefer-stable": true,
+  "prefer-lowest": false,
+  "platform": {"php": "^8.3"},
+  "platform-dev": {},
+  "plugin-api-version": "2.11.0"
+}
