@@ -95,7 +95,7 @@ final class ReportsApiTest extends TestCase
             ->assertJsonPath('data.count', 1)
             ->assertJsonPath('data.activePaymentTotal', '100.00');
 
-        $this->withLegacySession()
+        $this->withRoleSession('staff')
             ->getJson('/api/v1/reports/recorded-movements?from='.$today.'&to='.$today)
             ->assertForbidden();
     }
