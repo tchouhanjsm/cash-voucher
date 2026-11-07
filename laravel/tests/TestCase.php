@@ -31,7 +31,7 @@ abstract class TestCase extends BaseTestCase
         $sequence = self::$businessDateSequence++;
         $this->businessDate = (new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata')))
             ->modify('-1000 days')
-            ->modify('+'.($sequence * 2).' days')
+            ->modify('+'.($sequence * 7).' days')
             ->format('Y-m-d');
 
         $this->insertUser($this->userId, 'staff');
@@ -97,7 +97,7 @@ abstract class TestCase extends BaseTestCase
             || $username !== 'root'
             || $password === ''
         ) {
-            throw new \\RuntimeException(
+            throw new \RuntimeException(
                 'Privileged test fixture access is restricted to the local cash_voucher_laravel_test schema.',
             );
         }
