@@ -7,7 +7,6 @@ namespace Tests\Feature;
 use CashVoucher\Api\Security\PasswordVerifier;
 use Illuminate\Testing\TestResponse;
 use Illuminate\Support\Facades\DB;
-use Symfony\Component\HttpFoundation\Cookie;
 use Tests\TestCase;
 
 final class AuthenticationApiTest extends TestCase
@@ -324,9 +323,10 @@ final class AuthenticationApiTest extends TestCase
     private function cookieValues(TestResponse $response): array
     {
         $values = [];
-        foreach ($response->headers->getCookies() as $cookie) {
-            if ($cookie instanceof Cookie) {
-                $values[$cookie->getName()] = $cookie->getValue();
+        foreach ($response->headers->all('set-cookie') as $header) {
+            $pair = explode('=', explode(';', $header, 2)[0], 2);
+            if (count($pair) === 2) {
+                $values[trim($pair[0])] = trim($pair[1]);
             }
         }
 
