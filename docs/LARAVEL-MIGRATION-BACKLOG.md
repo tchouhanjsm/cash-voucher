@@ -12,6 +12,7 @@
 | CVL-003 | Architecture review: Laravel 13 modular monolith; single-property DB; no dual write                                                 | CVL-002                                      | Owner-approved ADR                                        |
 | CVL-004 | Inventory source sheets/tabs/formulas/scripts/properties/triggers and Drive receipt/backups metadata (no production extraction yet) | Owner-approved read-only access; backup plan | Data dictionary and source manifest design                |
 | CVL-005 | Freeze action registry and API v1 response/authorization contract                                                                   | CVL-001                                      | Contract tests compare all registry actions to action map |
+
 ## Current implementation progress — active branch `feat/laravel-vendor-management-20261106` (PR #269)
 
 | Work item                            | Current evidence                                                                                                                    | Remaining                                                                                              |
@@ -21,6 +22,7 @@
 | CVL-013 Authentication compatibility | PR #269 adds login/current/logout/password routes by reusing existing auth primitives; session cookies and hashes remain compatible | Exact-head MySQL matrix for login, legacy upgrade, forced PIN, CSRF, rate limit, logout and revoke-all |
 | CVL-014 Financial primitives         | Reuses existing PDO row-locked allocator, canonical idempotency unit of work and append-only audit writer                           | MySQL CI concurrency/replay/rollback evidence                                                          |
 | CVL-015 First voucher slice          | Merged in PR #268; creator-scoped list/create, duplicate review, sequence/idempotency/audit and approval safeguards                 | Continue contract parity as lifecycle routes expand                                                    |
+
 CVL-013, CVL-020, CVL-021, CVL-022, CVL-023, CVL-024, CVL-025 and CVL-030 are implemented in PR #269. CVL-025 includes Owner-only user administration, settings, audit browsing and password reset; exact-head MySQL tests are pending. Review, the tracked Composer lockfile and hosting qualification remain gates. Hosting qualification, schema-baseline adoption and production use remain blocked. The shadow API is not yet routed from the PWA.
 
 ## P1 — Laravel foundation and parity
@@ -33,6 +35,7 @@ CVL-013, CVL-020, CVL-021, CVL-022, CVL-023, CVL-024, CVL-025 and CVL-030 are im
 | CVL-013 | Port legacy password verification/upgrade, session lifecycle, CSRF, throttling and role policies | CVL-011                   | PR #269 reuses current PHP security services; Laravel auth tests cover login, legacy upgrade, forced PIN, CSRF, rate limit, logout and revoke-all |
 | CVL-014 | Port voucher allocator, idempotency service and audit writer                                     | CVL-011                   | MySQL concurrency, replay/conflict and rollback tests                                                                                             |
 | CVL-015 | First authenticated voucher read/create vertical slice                                           | CVL-012, CVL-013, CVL-014 | Acceptance criteria in migration ADR met                                                                                                          |
+
 ## P2 — financial parity
 
 | ID      | Work                                                   | Dependencies     | Exit evidence                                                                                                                                    |
@@ -43,6 +46,7 @@ CVL-013, CVL-020, CVL-021, CVL-022, CVL-023, CVL-024, CVL-025 and CVL-030 are im
 | CVL-023 | Daily cash-close preview, finalization and corrections | CVL-020, CVL-021 | MAIN drawer/day, carry-forward, gap opening, chronological idempotent snapshot and correction notes.                                             |
 | CVL-024 | Dashboard summary and recorded-movement reports        | CVL-020–023      | Creator-scoped dashboard, Manager/Owner team view, Accountant report-only, paginated totals and approval exclusion.                              |
 | CVL-025 | User/admin operations, settings and audit browsing     | CVL-013          | PR #269 implements Owner-only user CRUD/reset, property settings, audit list and voucher history; role/record-scope tests pending exact-head CI. |
+
 ## P3 — receipts, offline and data portability
 
 | ID      | Work                                                    | Dependencies                                      | Exit evidence                                                                                                                                            |
@@ -52,6 +56,7 @@ CVL-013, CVL-020, CVL-021, CVL-022, CVL-023, CVL-024, CVL-025 and CVL-030 are im
 | CVL-032 | Read-only export manifest for Sheets/Drive              | Owner-approved source read access; backup/restore | Deterministic export, redacted secret inventory                                                                                                          |
 | CVL-033 | Repeatable staging importer and exception ledger        | CVL-032, schema field mapping                     | Idempotent rerun, source-ID uniqueness, conflict quarantine                                                                                              |
 | CVL-034 | Shadow import and full financial/receipt reconciliation | CVL-033                                           | Zero unexplained variance; owner/accountant approval                                                                                                     |
+
 ## P4 — operational proof and cutover
 
 | ID      | Work                                                        | Dependencies                   | Exit evidence                                                      |
@@ -62,6 +67,7 @@ CVL-013, CVL-020, CVL-021, CVL-022, CVL-023, CVL-024, CVL-025 and CVL-030 are im
 | CVL-043 | Owner-authorized single-writer cutover                      | All P0–P4                      | Laravel is sole writer; Apps Script frozen read-only               |
 | CVL-044 | Pilot and recovery review                                   | CVL-043                        | Defined observation window passed; RPO/RTO met; Hansei report      |
 | CVL-045 | Google dependency retirement                                | CVL-044, retention approvals   | No active consumer/deployment/trigger; archive and access reviewed |
+
 ## Cross-cutting blockers
 
 1. Actual hosting account plan/runtime capabilities are unverified; Laravel 13 is conditional until proven.
