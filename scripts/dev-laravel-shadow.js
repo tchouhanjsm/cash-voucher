@@ -188,13 +188,19 @@ if (require.main === module) {
     });
     server.listen(port, host, () => {
       process.stdout.write(
-        'Cash Voucher Laravel shadow dev server: http://'+host+':'+port+'\n'+
-        'Laravel API proxy: /api/v1/* → '+(process.env.CV_LARAVEL_PROXY_TARGET || 'http://127.0.0.1:8000')+'\n'+
-        'Local only. Do not enter production credentials or financial data.\n',
+        'Cash Voucher Laravel shadow dev server: http://' +
+          host +
+          ':' +
+          port +
+          '\n' +
+          'Laravel API proxy: /api/v1/* → ' +
+          (process.env.CV_LARAVEL_PROXY_TARGET || 'http://127.0.0.1:8000') +
+          '\n' +
+          'Local only. Do not enter production credentials or financial data.\n',
       );
     });
   } catch (error) {
-    process.stderr.write(String(error.message || error)+'\n');
+    process.stderr.write(String(error.message || error) + '\n');
     process.exitCode = 1;
   }
 }
