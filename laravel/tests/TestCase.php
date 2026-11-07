@@ -6,6 +6,7 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
+use PDO;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -74,6 +75,43 @@ abstract class TestCase extends BaseTestCase
         $this->insertSession($this->userId, $this->sessionToken, $this->csrfToken);
 
         return $this->withLegacySession();
+    }
+
+    /**
+     * Use the migration account only for test-fixture operations that the
+     * least-privilege runtime account must not be allowed to perform.
+     * This helper is hard-bound to the disposable Laravel test database.
+     */
+    protected function migrationPdo(): PDO
+    {
+        $appEnv = strtolower((string) (getenv('CV_APP_ENV') ?: ''));
+        $database = DB::connection()->getDatabaseName();
+        $host = (string) (getenv('CV_DB_HOST') ?: '127.0.0.1');
+        $username = (string) (getenv('CV_MIGRATION_DB_USER') ?: '');
+        $password = (string) (getenv('CV_MIGRATION_DB_PASSWORD') ?: '');
+
+        if (
+            $appEnv !== 'test'
+            || $database !== 'cash_voucher_laravel_test'
+            || ! in_array($host, ['127.0.0.1', 'localhost'], true)
+            || $username !== 'root'
+            || $password === ''
+        ) {
+            throw new \\RuntimeException(
+                'Privileged test fixture access is restricted to the local cash_voucher_laravel_test schema.',
+            );
+        }
+
+        return new PDO(
+            'mysql:host='.$host.';port='.(string) (getenv('CV_DB_PORT') ?: '3306').';dbname='.$database.';charset=utf8mb4',
+            $username,
+            $password,
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ],
+        );
     }
 
     protected function insertVendorFixture(string $name, bool $active = true): string
