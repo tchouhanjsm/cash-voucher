@@ -6,7 +6,7 @@ const localApiOverride = localDevHost ? localParams.get('api') : '';
 const localLaravelShadow = localDevHost && localParams.get('transport') === 'laravel-shadow';
 
 window.CV_CONFIG = {
-  API_URL: localLaravelShadow ? '' : localApiOverride || '',
+  API_URL: localApiOverride || '',
   API_TRANSPORT: localLaravelShadow ? 'laravel-cookie-shadow' : 'apps-script',
   LARAVEL_API_URL: localLaravelShadow ? new URL('/api/v1', location.origin).href : '',
   ENVIRONMENT: localApiOverride ? 'staging' : '',
