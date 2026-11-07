@@ -11,7 +11,7 @@ use Symfony\Component\HttpFoundation\Response;
 
 final class AuthenticateLegacySession
 {
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string $mode = ''): Response
     {
         $sessionToken = $request->cookie('cv_session');
 
@@ -52,7 +52,9 @@ final class AuthenticateLegacySession
             );
         }
 
-        if ((int) $session->must_change_password === 1) {
+        $mustChangePassword = (int) $session->must_change_password === 1;
+        $allowMustChange = $mode === 'allow-must-change';
+        if ($mustChangePassword && ! $allowMustChange) {
             throw new ApiException(
                 403,
                 'PASSWORD_CHANGE_REQUIRED',
@@ -91,7 +93,7 @@ final class AuthenticateLegacySession
             'name' => (string) $session->full_name,
             'email' => (string) $session->email,
             'role' => (string) $session->role,
-            'mustChangePassword' => false,
+            'mustChangePassword' => $mustChangePassword,
             'sessionId' => (string) $session->session_id,
         ]);
 

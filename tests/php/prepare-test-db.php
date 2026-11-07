@@ -31,6 +31,7 @@ try {
     $grants = [
         ['users', 'SELECT, INSERT, UPDATE'],
         ['vendors', 'SELECT, INSERT, UPDATE'],
+        ['vendor_name_claims', 'SELECT, INSERT, DELETE'],
         ['settings', 'SELECT, INSERT, UPDATE'],
         ['vouchers', 'SELECT, INSERT, UPDATE'],
         ['voucher_approval_events', 'SELECT, INSERT'],

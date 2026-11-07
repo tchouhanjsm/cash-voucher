@@ -5,8 +5,8 @@ This is an isolated Laravel 13 modular-monolith implementation under active migr
 ## Runtime boundary
 
 - Laravel 13 API routes live under /api/v1 when served from laravel/public.
-- Authentication reads the existing cv_session and cv_csrf session records. The existing PHP session issuer remains the only login/session issuer in this phase.
-- MySQL/MariaDB must already contain the reviewed root SQL schema versions 0001–0004.
+- Laravel login, current-session restoration, logout and password change reuse the existing AuthenticationService, PasswordVerifier, AuthenticationRateLimiter and SessionService from api/v1/src. The custom PHP API remains unchanged; both implementations use the same hashed cv_session/cv_csrf database contract. These Laravel routes are isolated shadow endpoints, and the PWA continues to use Apps Script.
+- MySQL/MariaDB must already contain the reviewed root SQL schema versions 0001–0005.
 - Laravel never runs schema migrations automatically. Do not run artisan migrate, migrate:fresh, db:wipe, or schema-changing commands from this project.
 - The first financial write uses the existing PDO voucher-number allocator, idempotency unit of work and audit writer from api/v1/src.
 - Voucher creation fails closed when the PAYMENT/RECEIPT number sequence is absent. It never guesses a historical next number.
@@ -31,20 +31,43 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 
 ## Implemented routes in this phase
 
-| Method | Route                            | Scope                                                           |
-| ------ | -------------------------------- | --------------------------------------------------------------- |
-| GET    | /api/v1/health/live              | Public liveness, no DB dependency                               |
-| GET    | /api/v1/health/ready             | Public DB/schema readiness check                                |
-| GET    | /api/v1/meta                     | Public rollout metadata                                         |
-| GET    | /api/v1/vouchers                 | Authenticated, creator-scoped for staff; manager/owner view-all |
-| POST   | /api/v1/vouchers/duplicate-check | Authenticated create capability + CSRF                          |
-| POST   | /api/v1/vouchers                 | Single authenticated voucher create + CSRF + idempotency        |
+| Method | Route                                     | Scope                                                                   |
+| ------ | ----------------------------------------- | ----------------------------------------------------------------------- |
+| GET    | /api/v1/health/live                       | Public liveness, no DB dependency                                       |
+| GET    | /api/v1/health/ready                      | Public DB/schema readiness check                                        |
+| GET    | /api/v1/meta                              | Public rollout metadata                                                 |
+| POST   | /api/v1/sessions                          | Login; legacy HMAC verification/upgrade; throttled; sets Secure cookies |
+| GET    | /api/v1/sessions/current                  | Restore session and current role                                        |
+| POST   | /api/v1/sessions/current/logout           | CSRF-protected logout; revokes active session and clears cookies        |
+| POST   | /api/v1/sessions/current/password         | CSRF-protected password change; revokes all sessions                    |
+| GET    | /api/v1/vouchers                          | Authenticated, creator-scoped for staff; manager/owner view-all         |
+| POST   | /api/v1/vouchers/duplicate-check          | Authenticated create capability + CSRF                                  |
+| POST   | /api/v1/vouchers                          | Single authenticated voucher create + CSRF + idempotency                |
+| GET    | /api/v1/vendors                           | Manager/owner vendor list; active by default                            |
+| POST   | /api/v1/vendors                           | Manager/owner vendor create + CSRF + idempotency                        |
+| PATCH  | /api/v1/vendors/{vendorId}                | Manager/owner vendor update + CSRF + idempotency                        |
+| POST   | /api/v1/vendors/{vendorId}/active         | Manager/owner desired active-state change + CSRF + idempotency          |
+| PATCH  | /api/v1/vouchers/{voucherId}              | Manager/owner correction with reason + idempotency                      |
+| POST   | /api/v1/vouchers/{voucherId}/cancel       | Manager/owner cancellation with reason + idempotency                    |
+| POST   | /api/v1/vouchers/{voucherId}/approval     | Manager/owner pending-payment approval + immutable event                |
+| POST   | /api/v1/vouchers/{voucherId}/rejection    | Manager/owner pending-payment rejection + reason                        |
+| POST   | /api/v1/vouchers/{voucherId}/receipts     | Staff-own or manager/owner; private image upload                        |
+| GET    | /api/v1/receipts/{receiptId}              | Staff-own or manager/owner; private image retrieval                     |
+| GET    | /api/v1/cash-closes/preview               | Manager/owner server-side daily cash preview                            |
+| POST   | /api/v1/cash-closes                       | Manager/owner idempotent immutable daily close                          |
+| POST   | /api/v1/cash-closes/{closeId}/corrections | Manager/owner attributed correction note, append-only                   |
+| GET    | /api/v1/dashboard/summary                 | Staff creator-scoped; Manager/Owner property-wide; SQL aggregates       |
+| GET    | /api/v1/reports/recorded-movements        | Manager/Owner/Accountant read-only report with pagination               |
 
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
 
 ## Financial invariants
 
 - Existing roles are reused unchanged: staff, manager, owner, accountant.
+- Password verification reuses the exact legacy Apps Script HMAC serialization and the existing php-sha384$ adaptive-hash format. Successful eligible legacy logins upgrade the hash in the same transaction that creates the session; plaintext passwords are never stored.
+- Session tokens and CSRF tokens are 256-bit random values; only SHA-256 digests are persisted. Cookies are Secure, HttpOnly for cv_session, SameSite=Strict and scoped to /api/v1; authenticated mutations require the CSRF double-submit value.
+- Login rate limits use HMAC-keyed account/composite/IP buckets. Unknown-user verification burns comparable password-hash work. Inactive and unknown-role accounts fail closed.
+- A short legacy PIN is accepted only when CV_ALLOW_LEGACY_SHORT_PASSWORDS=true and must_change_password=1; such a session can only restore, sign out or change its password. A successful password change uses an 8–128 character password and revokes every session.
 - Accountant has no voucher-register/create capability.
 - Staff can list only their own vouchers.
 - Voucher number allocation takes a per-type InnoDB row lock inside the idempotency transaction.
@@ -54,7 +77,20 @@ The API preserves the existing { ok, data|error, meta } envelope, request ID, an
 - Possible exact payee/date/amount payment duplicates require a ten-minute HMAC-signed confirmation token; the candidates are rechecked after acquiring the series row lock.
 - The ₹10,000 individual and payee/day cumulative active-payment approval threshold is preserved.
 - A cash-closed business date cannot accept another voucher.
-- Non-empty receipts and bulk requests are explicitly not supported by this slice; no receipt is silently discarded.
+- Vendor access is manager/owner only. Inactive vendors remain available to history but are excluded from default choices; names remain reserved when deactivated.
+- Vendor writes claim case-insensitive names in the same DB transaction, audit before/after snapshots and replay through actor/action/idempotency keys. Historical voucher vendor-name snapshots are never rewritten when a catalog entry changes.
+- Voucher edit requires a 3–200 character correction reason; cancelled vouchers cannot be edited, and both the original and destination dates are blocked after cash close.
+- Category/notes-only corrections preserve an existing approval. Material payment edits recalculate threshold eligibility and clear stale approval actor/time/reason only when the legacy workflow would do so.
+- Cancellation is active-only, requires a reason, is blocked after cash close and uses idempotency.
+- Approval/rejection is Manager/Owner-only, requires an active pending PAYMENT and prevents self-approval. The decision row in `voucher_approval_events`, generic audit event and replay response commit with the voucher update.
+- Receipt upload accepts JPEG/PNG/WebP only, verifies the actual MIME signature, enforces 1.6 MB and three files per voucher, and requires an active voucher on an open business date.
+- Receipt bytes live only on the configured private disk under a random storage key. SQL stores the key, type, byte size and SHA-256; download checks parent-voucher permission and verifies the hash before streaming with no-store headers. The key is never returned and no public storage symlink is configured.
+- Dashboard summary is a read-only SQL read model. Staff see only their own records; Manager/Owner see property-wide data and team totals. Accountant does not receive dashboard or voucher-register access.
+- Recorded-movement reporting requires the `reports` capability (Manager/Owner/Accountant); it is read-only, uses bounded ten-year filters and 1–200 page sizes, and returns full-set totals with decimal-string amounts. Pending/rejected payments are excluded from approved payment totals but remain visible as report rows.
+- Legacy vendor-name fallback resolves a vendor ID only when the normalized name matches exactly one catalog row; ambiguous historical matches remain unresolved and are counted.
+- Daily cash close is one `MAIN` drawer per Asia/Kolkata calendar day. It carries forward the previous date's accepted count; a gap requires a manual opening amount and reason. Closing is chronological and blocked by invalid vouchers, unresolved cash impact or pending/rejected payments.
+- Close totals are derived from active server-side vouchers only. The immutable close stores included IDs and cash-impact snapshots, expected/count/variance, actor and time zone. Same-key retries replay; a separate correction note never edits the close or restates totals.
+- Bulk voucher requests remain explicitly unsupported by this slice; they are not silently accepted.
 
 ## Tests
 
@@ -64,4 +100,4 @@ The CI suite runs against a dedicated `cash_voucher_laravel_test` schema on the 
     composer install
     vendor/bin/phpunit
 
-The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, login issuance, PWA transport changes, receipts, approval actions, cash close, exports/imports and production cutover remain separate gated work.
+The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, PWA transport changes, exports/imports and production cutover remain separate gated work.

@@ -6,9 +6,12 @@ use DateTimeImmutable;
 use DateTimeZone;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\DB;
+use PDO;
 
 abstract class TestCase extends BaseTestCase
 {
+    private static int $businessDateSequence = 0;
+
     protected string $userId;
     protected string $sessionToken;
     protected string $csrfToken;
@@ -21,7 +24,14 @@ abstract class TestCase extends BaseTestCase
         $this->userId = self::uuid();
         $this->sessionToken = bin2hex(random_bytes(32));
         $this->csrfToken = bin2hex(random_bytes(32));
-        $this->businessDate = (new DateTimeImmutable('yesterday', new DateTimeZone('Asia/Kolkata')))
+        // Every feature test receives a distinct historical business date. Shared
+        // synthetic cash-close rows must never poison a later test's date guard.
+        // Space synthetic dates one week apart in ascending order. A cash-close
+        // created by one test must not become a later-close blocker for another.
+        $sequence = self::$businessDateSequence++;
+        $this->businessDate = (new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata')))
+            ->modify('-1000 days')
+            ->modify('+'.($sequence * 7).' days')
             ->format('Y-m-d');
 
         $this->insertUser($this->userId, 'staff');
@@ -54,6 +64,82 @@ abstract class TestCase extends BaseTestCase
                 'cv_csrf' => $this->csrfToken,
             ])
             ->withHeaders($this->authenticatedHeaders());
+    }
+
+    protected function withRoleSession(string $role): static
+    {
+        $this->userId = self::uuid();
+        $this->sessionToken = bin2hex(random_bytes(32));
+        $this->csrfToken = bin2hex(random_bytes(32));
+        $this->insertUser($this->userId, $role);
+        $this->insertSession($this->userId, $this->sessionToken, $this->csrfToken);
+
+        return $this->withLegacySession();
+    }
+
+    /**
+     * Use the migration account only for test-fixture operations that the
+     * least-privilege runtime account must not be allowed to perform.
+     * This helper is hard-bound to the disposable Laravel test database.
+     */
+    protected function migrationPdo(): PDO
+    {
+        $appEnv = strtolower((string) (getenv('CV_APP_ENV') ?: ''));
+        $database = DB::connection()->getDatabaseName();
+        $host = (string) (getenv('CV_DB_HOST') ?: '127.0.0.1');
+        $username = (string) (getenv('CV_MIGRATION_DB_USER') ?: '');
+        $password = (string) (getenv('CV_MIGRATION_DB_PASSWORD') ?: '');
+
+        if (
+            $appEnv !== 'test'
+            || $database !== 'cash_voucher_laravel_test'
+            || ! in_array($host, ['127.0.0.1', 'localhost'], true)
+            || $username !== 'root'
+            || $password === ''
+        ) {
+            throw new \RuntimeException(
+                'Privileged test fixture access is restricted to the local cash_voucher_laravel_test schema.',
+            );
+        }
+
+        return new PDO(
+            'mysql:host='.$host.';port='.(string) (getenv('CV_DB_PORT') ?: '3306').';dbname='.$database.';charset=utf8mb4',
+            $username,
+            $password,
+            [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES => false,
+            ],
+        );
+    }
+
+    protected function insertVendorFixture(string $name, bool $active = true): string
+    {
+        $id = self::uuid();
+        $statement = DB::connection()->getPdo()->prepare(
+            'INSERT INTO vendors (
+                id, display_name, company_name, mobile, is_active,
+                default_category, default_payment_method, source_legacy_id,
+                created_by_user_id, created_at_utc, updated_at_utc
+            ) VALUES (
+                :id, :name, :company, :mobile, :active,
+                :category, :payment_method, NULL,
+                :creator, UTC_TIMESTAMP(6), UTC_TIMESTAMP(6)
+            )'
+        );
+        $statement->execute([
+            'id' => $id,
+            'name' => $name,
+            'company' => '',
+            'mobile' => '',
+            'active' => $active ? 1 : 0,
+            'category' => '',
+            'payment_method' => '',
+            'creator' => $this->userId,
+        ]);
+
+        return $id;
     }
 
     protected function createUser(string $role): string
@@ -133,7 +219,7 @@ abstract class TestCase extends BaseTestCase
         $statement->execute([
             'id' => self::uuid(),
             'date' => $date,
-            'drawer' => 'TEST-'.substr(self::uuid(), 0, 8),
+            'drawer' => 'MAIN',
             'source' => 'MANUAL',
             'opening_reason' => '',
             'variance_reason' => '',

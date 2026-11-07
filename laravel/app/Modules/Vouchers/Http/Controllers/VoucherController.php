@@ -5,6 +5,11 @@ namespace App\Modules\Vouchers\Http\Controllers;
 use App\Modules\Identity\RoleCapabilities;
 use App\Modules\Shared\ApiResponse;
 use App\Modules\Vouchers\Actions\StoreVoucher;
+use App\Modules\Vouchers\Actions\VoucherLifecycle;
+use App\Modules\Vouchers\Http\Requests\UpdateVoucherRequest;
+use App\Modules\Vouchers\Http\Requests\CancelVoucherRequest;
+use App\Modules\Vouchers\Http\Requests\ApproveVoucherRequest;
+use App\Modules\Vouchers\Http\Requests\RejectVoucherRequest;
 use App\Modules\Vouchers\Http\Requests\StoreVoucherRequest;
 use CashVoucher\Api\Support\ApiException;
 use Illuminate\Http\JsonResponse;
@@ -155,6 +160,110 @@ final class VoucherController
             'voucher' => $result['data'],
             'replayed' => $result['replayed'],
         ], (string) $request->attributes->get('request_id'), $result['replayed'] ? 200 : 201);
+    }
+
+    public function update(
+        UpdateVoucherRequest $request,
+        VoucherLifecycle $action,
+        string $voucherId,
+    ): JsonResponse {
+        $principal = $this->principal($request);
+        RoleCapabilities::require($principal, 'edit');
+        $validated = $request->validated();
+        $result = $action->update(
+            DB::connection()->getPdo(),
+            $voucherId,
+            $validated['fields'],
+            $validated['reason'],
+            $principal,
+            $this->idempotencyKey($request),
+        );
+
+        return ApiResponse::success([
+            'voucher' => $result['data']['voucher'],
+            'replayed' => $result['replayed'],
+        ], (string) $request->attributes->get('request_id'));
+    }
+
+    public function cancel(
+        CancelVoucherRequest $request,
+        VoucherLifecycle $action,
+        string $voucherId,
+    ): JsonResponse {
+        $principal = $this->principal($request);
+        RoleCapabilities::require($principal, 'cancel');
+        $validated = $request->validated();
+        $result = $action->cancel(
+            DB::connection()->getPdo(),
+            $voucherId,
+            $validated['reason'],
+            $principal,
+            $this->idempotencyKey($request),
+        );
+
+        return ApiResponse::success([
+            'voucher' => $result['data']['voucher'],
+            'replayed' => $result['replayed'],
+        ], (string) $request->attributes->get('request_id'));
+    }
+
+    public function approve(
+        ApproveVoucherRequest $request,
+        VoucherLifecycle $action,
+        string $voucherId,
+    ): JsonResponse {
+        $principal = $this->principal($request);
+        RoleCapabilities::require($principal, 'approvePayments');
+        $result = $action->decideApproval(
+            DB::connection()->getPdo(),
+            $voucherId,
+            'APPROVE',
+            '',
+            $principal,
+            $this->idempotencyKey($request),
+        );
+
+        return ApiResponse::success([
+            'voucher' => $result['data']['voucher'],
+            'replayed' => $result['replayed'],
+        ], (string) $request->attributes->get('request_id'));
+    }
+
+    public function reject(
+        RejectVoucherRequest $request,
+        VoucherLifecycle $action,
+        string $voucherId,
+    ): JsonResponse {
+        $principal = $this->principal($request);
+        RoleCapabilities::require($principal, 'approvePayments');
+        $validated = $request->validated();
+        $result = $action->decideApproval(
+            DB::connection()->getPdo(),
+            $voucherId,
+            'REJECT',
+            $validated['reason'],
+            $principal,
+            $this->idempotencyKey($request),
+        );
+
+        return ApiResponse::success([
+            'voucher' => $result['data']['voucher'],
+            'replayed' => $result['replayed'],
+        ], (string) $request->attributes->get('request_id'));
+    }
+
+    private function idempotencyKey(Request $request): string
+    {
+        $key = (string) $request->header('Idempotency-Key', '');
+        if (! preg_match('/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/D', $key)) {
+            throw new ApiException(
+                422,
+                'IDEMPOTENCY_KEY_REQUIRED',
+                'Send a valid Idempotency-Key header for every voucher mutation request.',
+            );
+        }
+
+        return $key;
     }
 
     /**

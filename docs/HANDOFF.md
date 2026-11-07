@@ -1,3 +1,22 @@
+## Latest delivery update — PR #269 Laravel financial and operations shadow slices (7 November 2026)
+
+- **PR / branch:** [PR #269](https://github.com/tchouhanjsm/cash-voucher/pull/269), `feat/laravel-vendor-management-20261106` → `client-main`. Current exact verified head: `219fc89149befe65b275e36216bff13f8c9da8ba`. PR remains draft.
+- **Base:** PR #268 merge `d50b75f71c559b2e68b6325cbcb039766360e28c`.
+- **Authentication (CVL-013):** Laravel login/current/logout/password routes reuse the PHP authentication, HMAC verifier, rate limiter and session services. The short legacy PIN forced-change path preserves the old hash until password change; the current PHP login/session service remains unchanged.
+- **Voucher lifecycle / approvals (CVL-020/021):** reasoned edit/cancel; closed-date protection; material-only approval invalidation; Manager/Owner approve/reject; no self-approval; append-only approval and audit rows.
+- **Vendor catalog (CVL-022):** Manager/Owner operations, concurrent case-insensitive name claims, legacy duplicate fail-closed handling, idempotency/audit and immutable voucher name snapshots.
+- **Receipts (CVL-030):** JPG/PNG/WebP signature/size checks, private opaque storage, three-file cap, staff-own/Manager/Owner access and download MIME/byte-size/SHA-256 verification.
+- **Daily cash close (CVL-023):** Manager/Owner preview/finalize/correction; one MAIN drawer/day; Asia/Kolkata dates; carry-forward or reasoned manual opening; explicit cash impact; pending/unclassified/invalid blockers; chronological idempotent snapshots; corrections do not restate. Carry-forward reads now validate that the parent is exactly the previous day’s MAIN close and that its counted amount matches the new opening; a manual opening may not retain a parent close ID.
+- **Dashboard and recorded-movement reporting (CVL-024):** Staff creator-scoped aggregates, Manager/Owner property-wide totals and Accountant report-only access.
+- **Owner operations (CVL-025):** user list/create/update/password reset, property settings, audit browser and voucher history; server-side role enforcement and audit.
+- **API contract guard:** Laravel `/meta` implemented-resource metadata and the actual HTTP method/URI route registry are checked together in `ApiSurfaceTest`. `docs/API-V1-CONTRACT.md` now inventories all Laravel shadow routes separately from the unchanged custom PHP adapter.
+- **Exact-head automated verification:** CI #4230 [passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42351148083), including **86 PHPUnit tests / 679 assertions** on disposable MySQL; Browser E2E #3891 [passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42351147996); Autonomous Development Monitor #1028 [passed](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42351148082). Formatting, JavaScript regressions, legacy PHP integration, production-migration refusal guard, Laravel lint, Composer validation/advisory and MySQL feature suite passed.
+- **Composer artifact:** CI-resolved lockfile [artifact 13564374452](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42349384893/artifacts/13564374452) is available for review, but `laravel/composer.lock` is not yet committed. This remains a merge blocker.
+- **Release boundary:** Apps Script remains the only production financial writer. No live SQL migration, production credential, data export/import, Clasp push, deployment, PWA endpoint switch, dual write, merge or cutover occurred.
+- **Open gates:** review and commit the tracked Composer lockfile; complete human code review; qualify real hosting (PHP 8.3+, Composer/CLI, isolated `laravel/public` document root, InnoDB limits, private storage, cron, SSL, secrets, encrypted off-host backup/restore). Preserve the vendor creator-email snapshot and legacy duplicate-name reconciliation before import. PWA/outbox transport, export manifest, importer, full reconciliation, restore proof, pilot and production cutover remain later slices.
+
+---
+
 ## Latest delivery update — Laravel 13 first financial slice (6 November 2026)
 
 - **Implementation branch:** `feat/laravel-13-financial-slice-20261106`, based on the merged Laravel planning PR #267 commit `2904212a5c366c46fa39a6485752fef75d1d921b`.

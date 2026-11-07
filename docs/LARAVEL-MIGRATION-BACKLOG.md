@@ -1,6 +1,6 @@
 # Laravel migration phased backlog
 
-**Status:** Planning baseline plus first isolated Laravel implementation in progress; not production authorization. Hosting qualification remains a hard gate.  
+**Status:** PR #268 merged at `d50b75f`; PR #269 implements isolated Laravel authentication, vendor, voucher lifecycle/approval, private receipt, daily cash-close, dashboard/report, Owner administration/settings and audit-browser slices. Exact-head CI #4230, Browser E2E #3891 and monitor #1028 passed at `219fc89` (86 PHPUnit tests / 679 assertions). Human review and tracked Composer lockfile remain open. No production authorization. Hosting qualification remains a hard gate.  
 **Delivery principle:** small vertical slices; no destructive work; one writer at all times.
 
 ## P0 — decision and qualification
@@ -13,49 +13,51 @@
 | CVL-004 | Inventory source sheets/tabs/formulas/scripts/properties/triggers and Drive receipt/backups metadata (no production extraction yet) | Owner-approved read-only access; backup plan | Data dictionary and source manifest design                |
 | CVL-005 | Freeze action registry and API v1 response/authorization contract                                                                   | CVL-001                                      | Contract tests compare all registry actions to action map |
 
-## Current implementation progress — branch feat/laravel-13-financial-slice-20261106
+## Current implementation progress — active branch `feat/laravel-vendor-management-20261106` (PR #269)
 
-| Work item                            | Current evidence                                                                                                                     | Remaining                                                                         |
-| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
-| CVL-010 Laravel scaffold             | Isolated Laravel 13 app, modular directories, API bootstrap, MySQL-only config and local env example committed on the feature branch | Commit reviewed Composer lockfile; exact-head CI and review                       |
-| CVL-012 API contract adapter         | JSON envelope, request IDs, no-store headers and error mapping implemented                                                           | Golden comparison against PHP response edge cases                                 |
-| CVL-013 Authentication compatibility | Consumes existing hashed cv_session/cv_csrf records, role parity, inactive/unknown and must-change fail-closed                       | Port login/legacy password upgrade/password change only in a later reviewed slice |
-| CVL-014 Financial primitives         | Reuses existing PDO row-locked allocator, canonical idempotency unit of work and append-only audit writer                            | MySQL CI concurrency/replay/rollback evidence                                     |
-| CVL-015 First voucher slice          | Creator-scoped list, duplicate-check and single create routes; cash-close date, approval threshold and missing-sequence safeguards   | Extend contract parity and validate exact-head checks                             |
+| Work item                            | Current evidence                                                                                                                                                          | Remaining                                                                               |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
+| CVL-010 Laravel scaffold             | Isolated Laravel 13 app, modular directories, API bootstrap and MySQL-only config merged in PR #268                                                                       | Commit CI-resolved Composer lockfile; clean install and audit must use the tracked lock |
+| CVL-012 API contract adapter         | JSON envelope, request IDs, no-store headers and error mapping implemented                                                                                                | Golden comparison against PHP response edge cases                                       |
+| CVL-013 Authentication compatibility | PR #269 reuses existing auth primitives for login/current/logout/password; exact MySQL matrix covers legacy upgrade, forced PIN, CSRF, rate limits, logout and revoke-all | Hosting secrets review and cutover remain gated                                         |
+| CVL-014 Financial primitives         | Reuses existing PDO row-locked allocator, canonical idempotency unit of work and append-only audit writer                                                                 | MySQL CI concurrency/replay/rollback evidence                                           |
+| CVL-015 First voucher slice          | Merged in PR #268; creator-scoped list/create, duplicate review, sequence/idempotency/audit and approval safeguards                                                       | Continue contract parity as lifecycle routes expand                                     |
 
-Hosting qualification, schema-baseline adoption and production use remain blocked. The shadow API is not yet routed from the PWA.
+CVL-013, CVL-020, CVL-021, CVL-022, CVL-023, CVL-024, CVL-025 and CVL-030 are implemented in PR #269. CVL-025 includes Owner-only user administration, property settings, audit browsing and password reset. Exact-head CI #4230 passed with 86 PHPUnit tests / 679 assertions; Browser E2E #3891 and Autonomous Development Monitor #1028 also passed. The route inventory test keeps `/meta` capabilities synchronized with actual registered routes, and cash-close tests verify carry-forward parent/date/amount integrity. The tracked Composer lockfile, human review and hosting qualification remain gates. Schema-baseline adoption, historical import, PWA/outbox transport and production use remain blocked. The shadow API is not routed from the PWA.
+
+**Exact-head evidence (7 November 2026):** [CI #4230](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42351148083) passed, including `OK (86 tests, 679 assertions)` on disposable MySQL; [Browser E2E #3891](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42351147996) passed; [Autonomous Development Monitor #1028](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42351148082) passed. The route inventory guard and cash-close carry-forward lineage corruption tests are included. The resolved Composer lock is retained as [artifact 13564374452](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42349384893/artifacts/13564374452) but `laravel/composer.lock` is not yet tracked. Keep PR #269 in draft until it is committed/reviewed and human code review plus real hosting qualification pass.
 
 ## P1 — Laravel foundation and parity
 
-| ID      | Work                                                                                             | Dependencies              | Exit evidence                                                           |
-| ------- | ------------------------------------------------------------------------------------------------ | ------------------------- | ----------------------------------------------------------------------- |
-| CVL-010 | Create Laravel 13 scaffold in isolated `laravel/`; lock dependencies; local/test config only     | CVL-002, CVL-003          | Clean Composer install/build, health route tests, no production secrets |
-| CVL-011 | Adopt existing migration history/schema baseline without re-running 0001–0004                    | CVL-010                   | Schema diff and migration adoption tests; checksums verified            |
-| CVL-012 | Port API envelope, request IDs, no-store, same-origin routing and exception mapping              | CVL-005, CVL-010          | Golden contract tests pass                                              |
-| CVL-013 | Port legacy password verification/upgrade, session lifecycle, CSRF, throttling and role policies | CVL-011                   | Synthetic legacy credential matrix; session/CSRF/rate-limit tests       |
-| CVL-014 | Port voucher allocator, idempotency service and audit writer                                     | CVL-011                   | MySQL concurrency, replay/conflict and rollback tests                   |
-| CVL-015 | First authenticated voucher read/create vertical slice                                           | CVL-012, CVL-013, CVL-014 | Acceptance criteria in migration ADR met                                |
+| ID      | Work                                                                                             | Dependencies              | Exit evidence                                                                                                                                     |
+| ------- | ------------------------------------------------------------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CVL-010 | Create Laravel 13 scaffold in isolated `laravel/`; lock dependencies; local/test config only     | CVL-002, CVL-003          | Clean Composer install/build, health route tests, no production secrets                                                                           |
+| CVL-011 | Adopt existing migration history/schema baseline without re-running 0001–0004                    | CVL-010                   | Schema diff and migration adoption tests; checksums verified                                                                                      |
+| CVL-012 | Port API envelope, request IDs, no-store, same-origin routing and exception mapping              | CVL-005, CVL-010          | Golden contract tests pass                                                                                                                        |
+| CVL-013 | Port legacy password verification/upgrade, session lifecycle, CSRF, throttling and role policies | CVL-011                   | PR #269 reuses current PHP security services; Laravel auth tests cover login, legacy upgrade, forced PIN, CSRF, rate limit, logout and revoke-all |
+| CVL-014 | Port voucher allocator, idempotency service and audit writer                                     | CVL-011                   | MySQL concurrency, replay/conflict and rollback tests                                                                                             |
+| CVL-015 | First authenticated voucher read/create vertical slice                                           | CVL-012, CVL-013, CVL-014 | Acceptance criteria in migration ADR met                                                                                                          |
 
 ## P2 — financial parity
 
-| ID      | Work                                                             | Dependencies     | Exit evidence                                                               |
-| ------- | ---------------------------------------------------------------- | ---------------- | --------------------------------------------------------------------------- |
-| CVL-020 | Voucher update/cancel state machine and history                  | CVL-015          | State-transition matrix and compensating-event tests                        |
-| CVL-021 | Approval/rejection flow and pending/rejected reporting exclusion | CVL-020          | Approval actor/reason trace and aggregation tests                           |
-| CVL-022 | Vendor catalog and immutable vendor name snapshot                | CVL-015          | Vendor scope, duplicate and historical snapshot tests                       |
-| CVL-023 | Cash-close preview/create/corrections                            | CVL-020, CVL-021 | Snapshot reproducibility, idempotent close and correction append-only tests |
-| CVL-024 | Read models, dashboard and reports                               | CVL-020–023      | Parity totals across dimensions; accountant read-only                       |
-| CVL-025 | User/admin operations, settings, support and audit browsing      | CVL-013          | Role and record-scope denial matrix                                         |
+| ID      | Work                                                   | Dependencies     | Exit evidence                                                                                                                                                        |
+| ------- | ------------------------------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CVL-020 | Voucher edit/cancel state machine                      | CVL-015          | Reasoned edit/cancel, closed-date protection, idempotency and before/after audit.                                                                                    |
+| CVL-021 | Payment approval/rejection                             | CVL-020          | Pending-only decisions, no self-approval, immutable decision event and audit.                                                                                        |
+| CVL-022 | Vendor catalog and immutable voucher name snapshots    | CVL-015          | Manager/Owner CRUD, unique name claims, idempotency and legacy duplicate safeguards.                                                                                 |
+| CVL-023 | Daily cash-close preview, finalization and corrections | CVL-020, CVL-021 | MAIN drawer/day, carry-forward, gap opening, chronological idempotent snapshot and correction notes; parent close must be previous day with matching counted amount. |
+| CVL-024 | Dashboard summary and recorded-movement reports        | CVL-020–023      | Creator-scoped dashboard, Manager/Owner team view, Accountant report-only, paginated totals and approval exclusion.                                                  |
+| CVL-025 | User/admin operations, settings and audit browsing     | CVL-013          | PR #269 implements Owner-only user CRUD/reset, property settings, audit list and voucher history; role/record-scope tests pending exact-head CI.                     |
 
 ## P3 — receipts, offline and data portability
 
-| ID      | Work                                                    | Dependencies                                      | Exit evidence                                               |
-| ------- | ------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------- |
-| CVL-030 | Private receipt upload/download and metadata integrity  | CVL-015, host private path                        | MIME/size/hash tests, unauthorized 403/404, no public URL   |
-| CVL-031 | PWA transport adapter and Laravel API compatibility     | CVL-015, API golden contract                      | Existing IndexedDB outbox unchanged; retry/replay tests     |
-| CVL-032 | Read-only export manifest for Sheets/Drive              | Owner-approved source read access; backup/restore | Deterministic export, redacted secret inventory             |
-| CVL-033 | Repeatable staging importer and exception ledger        | CVL-032, schema field mapping                     | Idempotent rerun, source-ID uniqueness, conflict quarantine |
-| CVL-034 | Shadow import and full financial/receipt reconciliation | CVL-033                                           | Zero unexplained variance; owner/accountant approval        |
+| ID      | Work                                                    | Dependencies                                      | Exit evidence                                                                                                                 |
+| ------- | ------------------------------------------------------- | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| CVL-030 | Private receipt upload/download and metadata integrity  | CVL-015, host private path                        | Implemented in PR #269; MySQL feature tests pass on exact head `b880b55`; actual host private-path qualification remains open |
+| CVL-031 | PWA transport adapter and Laravel API compatibility     | CVL-015, API golden contract                      | Existing IndexedDB outbox unchanged; retry/replay tests                                                                       |
+| CVL-032 | Read-only export manifest for Sheets/Drive              | Owner-approved source read access; backup/restore | Deterministic export, redacted secret inventory                                                                               |
+| CVL-033 | Repeatable staging importer and exception ledger        | CVL-032, schema field mapping                     | Idempotent rerun, source-ID uniqueness, conflict quarantine                                                                   |
+| CVL-034 | Shadow import and full financial/receipt reconciliation | CVL-033                                           | Zero unexplained variance; owner/accountant approval                                                                          |
 
 ## P4 — operational proof and cutover
 
@@ -97,3 +99,12 @@ The first implementation PR is limited to an **isolated local/test Laravel verti
 - A committed Composer lockfile, Composer audit, PHP lint, Laravel MySQL feature suite and all existing JS/PHP quality checks are required before PR can be marked ready.
 
 **PR is accepted only when all criteria pass on a clean CI run.** A green SQLite-only suite is insufficient for locking and MariaDB behavior. Do not wire the production PWA endpoint or deploy to customer hosting in this PR.
+
+## Vendor catalog implementation — next isolated slice
+
+**Branch:** `feat/laravel-vendor-management-20261106`  
+**Status:** Implementation prepared; exact-head CI and review are pending. This is not production authorization.
+
+The slice adds manager/owner-only Laravel vendor listing, creation, editing and desired active-state operations; it uses the shared idempotency transaction and append-only audit writer. Migration 0005 adds the unique case-insensitive vendor-name claim required to prevent concurrent duplicate creation. Tests cover authorization, replay/audit, inactive-name reservation, legacy-name ambiguity, rename snapshot preservation, invalid defaults and one-time payee classification. See [LARAVEL-VENDOR-INVENTORY.md](LARAVEL-VENDOR-INVENTORY.md) for the source field mapping.
+
+**Open gates:** the committed Composer lockfile defect from PR #268 remains unresolved; a CI artifact is not a substitute for a tracked lockfile. Actual PHP/Laravel/MySQL hosting qualification still needs the real hosting plan/account evidence. The vendor creator-email snapshot gap and the remaining non-vendor financial action/field inventory must be resolved before historical import. Apps Script remains the only production financial writer.

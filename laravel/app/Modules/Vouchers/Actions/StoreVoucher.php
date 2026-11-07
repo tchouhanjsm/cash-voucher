@@ -334,7 +334,7 @@ final class StoreVoucher
             return [(string) $vendor['id'], (string) $vendor['display_name'], 'REGISTERED'];
         }
 
-        return [null, (string) $voucher['vendor'], 'UNVERIFIED'];
+        return [null, (string) $voucher['vendor'], 'ONE_TIME'];
     }
 
     /**
