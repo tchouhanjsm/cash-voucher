@@ -40,14 +40,14 @@ CVL-013, CVL-020, CVL-021, CVL-022, CVL-023, CVL-024, CVL-025 and CVL-030 are im
 
 ## P2 — financial parity
 
-| ID      | Work                                                   | Dependencies     | Exit evidence                                                                                                                                    |
-| ------- | ------------------------------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| CVL-020 | Voucher edit/cancel state machine                      | CVL-015          | Reasoned edit/cancel, closed-date protection, idempotency and before/after audit.                                                                |
-| CVL-021 | Payment approval/rejection                             | CVL-020          | Pending-only decisions, no self-approval, immutable decision event and audit.                                                                    |
-| CVL-022 | Vendor catalog and immutable voucher name snapshots    | CVL-015          | Manager/Owner CRUD, unique name claims, idempotency and legacy duplicate safeguards.                                                             |
+| ID      | Work                                                   | Dependencies     | Exit evidence                                                                                                                                                        |
+| ------- | ------------------------------------------------------ | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CVL-020 | Voucher edit/cancel state machine                      | CVL-015          | Reasoned edit/cancel, closed-date protection, idempotency and before/after audit.                                                                                    |
+| CVL-021 | Payment approval/rejection                             | CVL-020          | Pending-only decisions, no self-approval, immutable decision event and audit.                                                                                        |
+| CVL-022 | Vendor catalog and immutable voucher name snapshots    | CVL-015          | Manager/Owner CRUD, unique name claims, idempotency and legacy duplicate safeguards.                                                                                 |
 | CVL-023 | Daily cash-close preview, finalization and corrections | CVL-020, CVL-021 | MAIN drawer/day, carry-forward, gap opening, chronological idempotent snapshot and correction notes; parent close must be previous day with matching counted amount. |
-| CVL-024 | Dashboard summary and recorded-movement reports        | CVL-020–023      | Creator-scoped dashboard, Manager/Owner team view, Accountant report-only, paginated totals and approval exclusion.                              |
-| CVL-025 | User/admin operations, settings and audit browsing     | CVL-013          | PR #269 implements Owner-only user CRUD/reset, property settings, audit list and voucher history; role/record-scope tests pending exact-head CI. |
+| CVL-024 | Dashboard summary and recorded-movement reports        | CVL-020–023      | Creator-scoped dashboard, Manager/Owner team view, Accountant report-only, paginated totals and approval exclusion.                                                  |
+| CVL-025 | User/admin operations, settings and audit browsing     | CVL-013          | PR #269 implements Owner-only user CRUD/reset, property settings, audit list and voucher history; role/record-scope tests pending exact-head CI.                     |
 
 ## P3 — receipts, offline and data portability
 
