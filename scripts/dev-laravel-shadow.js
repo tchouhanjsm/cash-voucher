@@ -62,15 +62,12 @@ function publicAssetPath(urlPath, rootDir = ROOT) {
 
   const segments = decoded.replace(/^\/+/, '').split('/');
   if (segments.length === 1 && segments[0] === '') segments[0] = 'index.html';
-  if (
-    segments.some((part) => !part || part === '.' || part === '..' || part.startsWith('.'))
-  ) {
+  if (segments.some((part) => !part || part === '.' || part === '..' || part.startsWith('.'))) {
     return null;
   }
 
   const isSingleFile = segments.length === 1 && SINGLE_FILES.has(segments[0]);
-  const isAssetDirectory =
-    segments.length >= 2 && ['frontend', 'icons'].includes(segments[0]);
+  const isAssetDirectory = segments.length >= 2 && ['frontend', 'icons'].includes(segments[0]);
   if (!isSingleFile && !isAssetDirectory) return null;
 
   const file = path.resolve(rootDir, ...segments);
@@ -136,13 +133,15 @@ function createLocalServer(options = {}) {
             'X-Content-Type-Options': 'nosniff',
           });
         }
-        response.end(JSON.stringify({
-          ok: false,
-          error: {
-            code: 'LOCAL_LARAVEL_UNAVAILABLE',
-            message: 'The local Laravel server is unavailable. Start it on 127.0.0.1:8000.',
-          },
-        }));
+        response.end(
+          JSON.stringify({
+            ok: false,
+            error: {
+              code: 'LOCAL_LARAVEL_UNAVAILABLE',
+              message: 'The local Laravel server is unavailable. Start it on 127.0.0.1:8000.',
+            },
+          }),
+        );
       });
       request.pipe(upstream);
       return;
