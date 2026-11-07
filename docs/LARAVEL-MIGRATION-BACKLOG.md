@@ -19,11 +19,11 @@
 | ------------------------------------ | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------- |
 | CVL-010 Laravel scaffold             | Isolated Laravel 13 app, modular directories, API bootstrap and MySQL-only config merged in PR #268                 | Commit CI-resolved Composer lockfile; clean install and audit must use the tracked lock |
 | CVL-012 API contract adapter         | JSON envelope, request IDs, no-store headers and error mapping implemented                                          | Golden comparison against PHP response edge cases                                       |
-| CVL-013 Authentication compatibility | Consumes existing hashed cv_session/cv_csrf records, role parity, inactive/unknown and must-change fail-closed      | Port login/legacy password upgrade/password change only in a later reviewed slice       |
+| CVL-013 Authentication compatibility | PR #269 adds login/current/logout/password routes by reusing existing auth primitives; session cookies and hashes remain compatible | Exact-head MySQL matrix for login, legacy upgrade, forced PIN, CSRF, rate limit, logout and revoke-all |
 | CVL-014 Financial primitives         | Reuses existing PDO row-locked allocator, canonical idempotency unit of work and append-only audit writer           | MySQL CI concurrency/replay/rollback evidence                                           |
 | CVL-015 First voucher slice          | Merged in PR #268; creator-scoped list/create, duplicate review, sequence/idempotency/audit and approval safeguards | Continue contract parity as lifecycle routes expand                                     |
 
-CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. CVL-024 now adds a creator-scoped dashboard summary and a Manager/Owner/Accountant recorded-movement report; the exact-head MySQL suite is pending. Review, the tracked Composer lockfile and hosting qualification remain gates. Hosting qualification, schema-baseline adoption and production use remain blocked. The shadow API is not yet routed from the PWA.
+CVL-013, CVL-020, CVL-021, CVL-022, CVL-023, CVL-024, CVL-025 and CVL-030 are implemented in PR #269. CVL-025 includes Owner-only user administration, settings, audit browsing and password reset; exact-head MySQL tests are pending. Review, the tracked Composer lockfile and hosting qualification remain gates. Hosting qualification, schema-baseline adoption and production use remain blocked. The shadow API is not yet routed from the PWA.
 
 ## P1 — Laravel foundation and parity
 
@@ -32,7 +32,7 @@ CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. CVL-0
 | CVL-010 | Create Laravel 13 scaffold in isolated `laravel/`; lock dependencies; local/test config only     | CVL-002, CVL-003          | Clean Composer install/build, health route tests, no production secrets |
 | CVL-011 | Adopt existing migration history/schema baseline without re-running 0001–0004                    | CVL-010                   | Schema diff and migration adoption tests; checksums verified            |
 | CVL-012 | Port API envelope, request IDs, no-store, same-origin routing and exception mapping              | CVL-005, CVL-010          | Golden contract tests pass                                              |
-| CVL-013 | Port legacy password verification/upgrade, session lifecycle, CSRF, throttling and role policies | CVL-011                   | Synthetic legacy credential matrix; session/CSRF/rate-limit tests       |
+| CVL-013 | Port legacy password verification/upgrade, session lifecycle, CSRF, throttling and role policies | CVL-011                   | PR #269 reuses current PHP security services; Laravel auth tests cover login, legacy upgrade, forced PIN, CSRF, rate limit, logout and revoke-all |
 | CVL-014 | Port voucher allocator, idempotency service and audit writer                                     | CVL-011                   | MySQL concurrency, replay/conflict and rollback tests                   |
 | CVL-015 | First authenticated voucher read/create vertical slice                                           | CVL-012, CVL-013, CVL-014 | Acceptance criteria in migration ADR met                                |
 
@@ -45,7 +45,7 @@ CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. CVL-0
 | CVL-022 | Vendor catalog and immutable voucher name snapshots    | CVL-015          | Manager/Owner CRUD, unique name claims, idempotency and legacy duplicate safeguards.                                |
 | CVL-023 | Daily cash-close preview, finalization and corrections | CVL-020, CVL-021 | MAIN drawer/day, carry-forward, gap opening, chronological idempotent snapshot and correction notes.                |
 | CVL-024 | Dashboard summary and recorded-movement reports        | CVL-020–023      | Creator-scoped dashboard, Manager/Owner team view, Accountant report-only, paginated totals and approval exclusion. |
-| CVL-025 | User/admin operations, settings and audit browsing     | CVL-013          | Role and record-scope denial matrix.                                                                                |
+| CVL-025 | User/admin operations, settings and audit browsing     | CVL-013          | PR #269 implements Owner-only user CRUD/reset, property settings, audit list and voucher history; role/record-scope tests pending exact-head CI. |
 
 ## P3 — receipts, offline and data portability
 
