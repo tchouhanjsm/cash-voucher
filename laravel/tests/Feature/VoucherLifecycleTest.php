@@ -121,7 +121,7 @@ final class VoucherLifecycleTest extends TestCase
             ->assertJsonPath('error.code', 'VOUCHER_NOT_EDITABLE');
     }
 
-    public function test_non_material_edit_preserves_approval_but_material_edit_recalculates_it(): void
+    public function test_non_material_notes_edit_preserves_approval_but_material_edit_recalculates_it(): void
     {
         $voucherId = $this->insertVoucherFixture($this->userId, 'Approval Recheck Supplier', 1_200_000);
         DB::table('vouchers')->where('id', $voucherId)->update([
@@ -133,8 +133,8 @@ final class VoucherLifecycleTest extends TestCase
 
         $this->withRoleSession('manager')
             ->patchJson('/api/v1/vouchers/'.$voucherId, [
-                'fields' => ['category' => 'Maintenance'],
-                'reason' => 'Correct expense category',
+                'fields' => ['notes' => 'Reviewed memo without changing payment terms'],
+                'reason' => 'Correct supporting memo',
             ], ['Idempotency-Key' => 'voucher-category-only'])
             ->assertOk()
             ->assertJsonPath('data.voucher.approvalStatus', 'APPROVED');
