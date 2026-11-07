@@ -9,6 +9,10 @@ use Tests\TestCase;
 
 final class SettingsApiTest extends TestCase
 {
+    private int $currentPaymentSequence;
+
+    private int $currentReceiptSequence;
+
     protected function setUp(): void
     {
         parent::setUp();
@@ -17,6 +21,15 @@ final class SettingsApiTest extends TestCase
             'next_number' => 1,
             'updated_at_utc' => now('UTC')->format('Y-m-d H:i:s'),
         ]);
+
+        $this->currentPaymentSequence = (int) DB::table('voucher_number_sequences')
+            ->where('voucher_type', 'PAYMENT')
+            ->value('next_number');
+        $this->currentReceiptSequence = (int) DB::table('voucher_number_sequences')
+            ->where('voucher_type', 'RECEIPT')
+            ->value('next_number');
+        self::assertGreaterThan(0, $this->currentPaymentSequence);
+        self::assertGreaterThan(0, $this->currentReceiptSequence);
     }
 
     public function test_staff_manager_and_accountant_cannot_read_or_change_owner_settings(): void
@@ -41,8 +54,8 @@ final class SettingsApiTest extends TestCase
         $this->withRoleSession('owner')
             ->getJson('/api/v1/settings')
             ->assertOk()
-            ->assertJsonPath('data.nextVoucherNo', 80000)
-            ->assertJsonPath('data.nextReceiptNo', 1)
+            ->assertJsonPath('data.nextVoucherNo', $this->currentPaymentSequence)
+            ->assertJsonPath('data.nextReceiptNo', $this->currentReceiptSequence)
             ->assertJsonPath('data.categories.0', 'Housekeeping')
             ->assertJsonPath('data.receiptCategories.0', 'Room Revenue')
             ->assertJsonPath('data.timeZone', 'Asia/Kolkata')
@@ -60,8 +73,8 @@ final class SettingsApiTest extends TestCase
             ->assertJsonPath('data.replayed', false)
             ->assertJsonPath('data.settings.propertyName', 'Heritage Property')
             ->assertJsonPath('data.settings.openingBalance', '125.50')
-            ->assertJsonPath('data.settings.nextVoucherNo', 80000)
-            ->assertJsonPath('data.settings.nextReceiptNo', 1)
+            ->assertJsonPath('data.settings.nextVoucherNo', $this->currentPaymentSequence)
+            ->assertJsonPath('data.settings.nextReceiptNo', $this->currentReceiptSequence)
             ->assertJsonPath('data.settings.categories', ['Other', 'Staff Salary'])
             ->assertJsonPath('data.settings.receiptCategories', ['Room Revenue', 'Other']);
 
@@ -87,12 +100,12 @@ final class SettingsApiTest extends TestCase
         $this->postJson('/api/v1/vouchers', [], ['Idempotency-Key' => 'dummy-settings-sequence'])
             ->assertUnprocessable();
 
-        $payload = $this->payload(['nextVoucherNo' => 79999]);
+        $payload = $this->payload(['nextVoucherNo' => $this->currentPaymentSequence - 1]);
         $owner->putJson('/api/v1/settings', $payload, ['Idempotency-Key' => 'settings-lower-sequence'])
             ->assertStatus(422)
             ->assertJsonPath('error.code', 'VOUCHER_SEQUENCE_INVALID');
 
-        self::assertSame(80000, (int) DB::table('voucher_number_sequences')->where('voucher_type', 'PAYMENT')->value('next_number'));
+        self::assertSame($this->currentPaymentSequence, (int) DB::table('voucher_number_sequences')->where('voucher_type', 'PAYMENT')->value('next_number'));
         self::assertSame($settingsBefore, $this->settingsSnapshot());
     }
 
@@ -133,8 +146,8 @@ final class SettingsApiTest extends TestCase
             'propertyAddress' => 'Fort Road, Jaisalmer',
             'categories' => ['Other'],
             'receiptCategories' => ['Room Revenue', 'Other'],
-            'nextVoucherNo' => 80000,
-            'nextReceiptNo' => 1,
+            'nextVoucherNo' => $this->currentPaymentSequence,
+            'nextReceiptNo' => $this->currentReceiptSequence,
             'openingBalance' => '125.50',
         ], $overrides);
     }
