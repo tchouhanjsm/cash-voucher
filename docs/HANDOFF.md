@@ -1,3 +1,18 @@
+## Latest delivery update — PR #269 Laravel financial and operations shadow slices (7 November 2026)
+
+- **PR / branch:** [PR #269](https://github.com/tchouhanjsm/cash-voucher/pull/269), `feat/laravel-vendor-management-20261106` → `client-main`. Current verified implementation head before this handoff update: `2fd854ea6e778bf80632de24578b050ca0441e4b`.
+- **Base:** PR #268 merge `d50b75f71c559b2e68b6325cbcb039766360e28c`.
+- **Vendor catalog (CVL-022):** Manager/Owner list/create/update/active-state routes; case-insensitive unique name claims; legacy duplicate ambiguity fails closed; idempotency/audit; voucher name snapshots remain immutable.
+- **Voucher lifecycle (CVL-020/021):** reasoned update/cancel; closed-date protection; approval invalidation only for material payment edits; Manager/Owner approve/reject; no self-approval; append-only decision and audit rows.
+- **Receipts (CVL-030):** JPG/PNG/WebP with signature and size checks; private opaque storage; max three per voucher; staff-own or Manager/Owner access; download verifies MIME, byte size and SHA-256. No public URL or symlink.
+- **Daily cash close (CVL-023):** Manager/Owner preview/finalize/correction-note routes; one MAIN drawer per Asia/Kolkata day; previous-close carry-forward or reasoned manual opening; explicit cash-impact-only totals; pending approvals/unclassified/invalid vouchers block; chronological, idempotent immutable snapshot; correction notes do not restate totals.
+- **Exact-head automated evidence at `2fd854e`:** CI #4153 passed (54 PHPUnit tests / 326 assertions, disposable MySQL, legacy PHP integration, lint, Composer validation/audit); Browser E2E #3817 passed; Autonomous Development Monitor #947 passed. Links are retained in PR #269.
+- **Handoff-only CI issue:** CI #4154 failed only the PR description validator because three required template headings were not exact matches. The passing application CI and Browser E2E on the same head remain valid. PR description is being aligned to `.github/pull_request_template.md`.
+- **Release boundary:** Apps Script remains the only production financial writer. No live SQL migration, production credential, data export/import, Clasp push, deployment, PWA endpoint change, dual write, merge or cutover occurred.
+- **Open gates:** tracked `laravel/composer.lock` is still not committed; normal code review and real hosting qualification are outstanding. Qualify PHP 8.3+, Composer/CLI, isolated `laravel/public` document root, InnoDB quotas, private storage, cron, SSL, secrets and encrypted off-host backup/restore. Preserve the legacy vendor creator-email snapshot gap and duplicate-name reconciliation as import blockers. Reports/read models, full importer/exporter, PWA/outbox transport, login/password lifecycle, historical reconciliation and production cutover remain future slices.
+
+---
+
 ## Latest delivery update — Laravel 13 first financial slice (6 November 2026)
 
 - **Implementation branch:** `feat/laravel-13-financial-slice-20261106`, based on the merged Laravel planning PR #267 commit `2904212a5c366c46fa39a6485752fef75d1d921b`.
