@@ -63,8 +63,8 @@ The Laravel application is under `laravel/` and is exercised only against the di
 | GET    | /api/v1/meta                              | Implemented; declares isolated-shadow rollout state                            |
 | POST   | /api/v1/sessions                          | Existing PHP-compatible login, legacy hash upgrade and throttling              |
 | GET    | /api/v1/sessions/current                  | Restore current user/role and forced-change state                              |
-| POST   | /api/v1/sessions/current/logout           | CSRF-protected session revocation and cookie expiry                             |
-| POST   | /api/v1/sessions/current/password         | Legacy-compatible password change and revoke-all                                |
+| POST   | /api/v1/sessions/current/logout           | CSRF-protected session revocation and cookie expiry                            |
+| POST   | /api/v1/sessions/current/password         | Legacy-compatible password change and revoke-all                               |
 | GET    | /api/v1/vouchers                          | Implemented; staff creator scope, manager/owner view-all, accountant denied    |
 | POST   | /api/v1/vouchers/duplicate-check          | Create capability, session + CSRF, short-lived HMAC confirmation               |
 | POST   | /api/v1/vouchers                          | Single voucher create; session + CSRF + required Idempotency-Key               |
