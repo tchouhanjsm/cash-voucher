@@ -75,10 +75,11 @@ final class AuthenticationApiTest extends TestCase
 
         $setCookies = $login->headers->all('set-cookie');
         self::assertCount(2, $setCookies);
-        self::assertStringContainsString('Secure', implode(';', $setCookies));
-        self::assertStringContainsString('SameSite=Strict', implode(';', $setCookies));
-        self::assertStringContainsString('HttpOnly', $setCookies[0]);
-        self::assertStringNotContainsString('HttpOnly', $setCookies[1]);
+        $normalizedCookieHeaders = strtolower(implode(';', $setCookies));
+        self::assertStringContainsString('secure', $normalizedCookieHeaders);
+        self::assertStringContainsString('samesite=strict', $normalizedCookieHeaders);
+        self::assertStringContainsString('httponly', strtolower($setCookies[0]));
+        self::assertStringNotContainsString('httponly', strtolower($setCookies[1]));
 
         $current = $this->withSessionCookies($cookies)
             ->getJson('/api/v1/sessions/current');
@@ -136,7 +137,7 @@ final class AuthenticationApiTest extends TestCase
         putenv('CV_ALLOW_LEGACY_SHORT_PASSWORDS=true');
 
         $pin = '4821';
-        [$userId, $email] = $this->createCredentialUser('manager', $pin, true);
+        [$userId, $email] = $this->createCredentialUser('manager', 'Fixture-Temporary-Password-2026!', true);
         $salt = 'forced-pin-'.bin2hex(random_bytes(8));
         $legacyHash = hash_hmac(
             'sha256',
