@@ -35,12 +35,22 @@ final class SettingsApiTest extends TestCase
         self::assertGreaterThan(0, $this->currentPaymentSequence);
         self::assertGreaterThan(0, $this->currentReceiptSequence);
 
-        // Several finance fixtures use explicit numeric voucher IDs instead of
-        // consuming the allocator. Settings must not request a next number that
-        // could collide with those already-issued test rows.
+        // Some shared financial fixtures create explicit numeric voucher numbers
+        // without advancing the allocator. Select the first safe next number above
+        // both the live sequence and the highest issued fixture number.
         $maxPaymentIssued = (int) DB::table('vouchers')
             ->where('voucher_type', 'PAYMENT')
-            ->whereRaw("voucher_number REGEXP '^[0-9]+
+            ->whereRaw('voucher_number REGEXP ?', ['^[0-9]+$'])
+            ->selectRaw('COALESCE(MAX(CAST(voucher_number AS UNSIGNED)), 0) AS max_number')
+            ->value('max_number');
+        $maxReceiptIssued = (int) DB::table('vouchers')
+            ->where('voucher_type', 'RECEIPT')
+            ->whereRaw('voucher_number REGEXP ?', ['^[0-9]+$'])
+            ->selectRaw('COALESCE(MAX(CAST(voucher_number AS UNSIGNED)), 0) AS max_number')
+            ->value('max_number');
+
+        $this->safeNextPaymentSequence = max($this->currentPaymentSequence, $maxPaymentIssued + 1);
+        $this->safeNextReceiptSequence = max($this->currentReceiptSequence, $maxReceiptIssued + 1);
     }
 
     public function test_staff_manager_and_accountant_cannot_read_or_change_owner_settings(): void
