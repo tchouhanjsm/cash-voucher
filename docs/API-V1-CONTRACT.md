@@ -65,7 +65,6 @@ The Laravel browser adapter is an opt-in, same-origin compatibility experiment. 
 
 The first supported browser actions are login, session restore, logout, password change, bootstrap, dashboard summary and a basic unfiltered/date/type/status register read. Search/facets/totals parity, vendor filters, dashboard daily-operations reads, receipts, bulk, duplicate confirmation, voucher/vendor/user/settings/audit/cash-close writes and all other unmapped legacy actions are rejected with `API_ACTION_UNSUPPORTED`. No action falls back to Apps Script from the Laravel adapter. Customer web builds hardcode `API_TRANSPORT=apps-script`; the Laravel switch exists only for explicit localhost development. IndexedDB storage/replay remains unchanged and must not be treated as safe to drain against the Laravel adapter until write and idempotency parity is completed.
 
-
 | Method | Path                                      | Shadow implementation                                                            |
 | ------ | ----------------------------------------- | -------------------------------------------------------------------------------- |
 | GET    | /api/v1/health/live                       | Public liveness; no database dependency                                          |
