@@ -236,24 +236,55 @@ final class VoucherApiTest extends TestCase
     public function test_missing_receipt_sequence_fails_closed_without_guessing_a_number(): void
     {
         $payload = $this->validPayload([
-            // Use a distinct date so the synthetic closed-date test cannot influence this check.
-            'date' => (new \DateTimeImmutable('-2 days', new \DateTimeZone('Asia/Kolkata')))->format('Y-m-d'),
+            // Keep this date separate from the current test's synthetic close date.
+            'date' => (new \\DateTimeImmutable('-5 days', new \\DateTimeZone('Asia/Kolkata')))->format('Y-m-d'),
             'type' => 'RECEIPT',
             'cashImpact' => 'CASH_IN',
             'vendor' => 'Receipt sequence test '.bin2hex(random_bytes(4)),
         ]);
 
-        $this->withLegacySession()
-            ->postJson('/api/v1/vouchers', $payload, [
-                'Idempotency-Key' => 'receipt-no-sequence-'.bin2hex(random_bytes(8)),
-            ])
-            ->assertStatus(503)
-            ->assertJsonPath('error.code', 'VOUCHER_SEQUENCE_NOT_INITIALIZED');
-
-        self::assertSame(
-            0,
-            DB::table('vouchers')->where('client_id', $payload['clientId'])->count(),
+        // Settings feature tests intentionally provision the RECEIPT series. Remove
+        // it briefly with the migration identity because the runtime account must
+        // never receive DELETE on voucher_number_sequences.
+        $admin = $this->migrationPdo();
+        $lookup = $admin->prepare(
+            'SELECT next_number, updated_at_utc
+             FROM voucher_number_sequences
+             WHERE voucher_type = :type LIMIT 1'
         );
+        $lookup->execute(['type' => 'RECEIPT']);
+        $previous = $lookup->fetch();
+        $delete = $admin->prepare('DELETE FROM voucher_number_sequences WHERE voucher_type = :type');
+        $delete->execute(['type' => 'RECEIPT']);
+
+        try {
+            $this->withLegacySession()
+                ->postJson('/api/v1/vouchers', $payload, [
+                    'Idempotency-Key' => 'receipt-no-sequence-'.bin2hex(random_bytes(8)),
+                ])
+                ->assertStatus(503)
+                ->assertJsonPath('error.code', 'VOUCHER_SEQUENCE_NOT_INITIALIZED');
+
+            self::assertSame(
+                0,
+                DB::table('vouchers')->where('client_id', $payload['clientId'])->count(),
+            );
+        } finally {
+            if (is_array($previous)) {
+                $restore = $admin->prepare(
+                    'INSERT INTO voucher_number_sequences (voucher_type, next_number, updated_at_utc)
+                     VALUES (:type, :number, :updated_at)
+                     ON DUPLICATE KEY UPDATE
+                        next_number = VALUES(next_number),
+                        updated_at_utc = VALUES(updated_at_utc)'
+                );
+                $restore->execute([
+                    'type' => 'RECEIPT',
+                    'number' => (int) $previous['next_number'],
+                    'updated_at' => (string) $previous['updated_at_utc'],
+                ]);
+            }
+        }
     }
 
     public function test_non_empty_receipts_are_not_silently_discarded_in_this_phase(): void
