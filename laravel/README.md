@@ -64,6 +64,13 @@ The API preserves the existing { ok, data|error, meta } envelope, request ID, an
 
 The bootstrap route is an isolated compatibility read only. It returns property settings and the initial PWA data shape with Staff creator scope, Manager/Owner property scope and an Accountant-empty voucher/vendor collection. The opening-balance setting is masked to zero for roles without view-all access. Owner onboarding checks are not yet available in Laravel. The PWA still uses its configured Apps Script endpoint; this route is not an endpoint-switch authorization.
 
+## Browser transport experiment (local only)
+
+The opt-in localhost flag `?transport=laravel-shadow` selects a same-origin cookie-session adapter for the limited read/auth surface described in [the API contract](../docs/API-V1-CONTRACT.md). The adapter does not expose or persist the HttpOnly `cv_session` secret. It holds only the verified CSRF value in memory and obtains a fresh value from the authenticated current-session route after reload. Cross-origin and non-HTTPS non-local hosts are rejected.
+
+Customer builds always set `API_TRANSPORT=apps-script`. Do not add the Laravel flag to a customer URL or change the configured Apps Script endpoint. Voucher writes, receipt transfers, duplicate-check confirmation, bulk, filters/facets/totals parity and the IndexedDB outbox drain are deliberately unsupported in this adapter; unsupported actions fail closed. Do not use the Laravel browser mode for financial entry or queue replay.
+
+
 ## Financial invariants
 
 - Existing roles are reused unchanged: staff, manager, owner, accountant.
