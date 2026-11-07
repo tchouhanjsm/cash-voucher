@@ -181,7 +181,7 @@ jobs:
 
       - name: Resolve isolated Laravel dependency graph
         if: ${{ always() && steps.dependencies.outcome == 'success' }}
-        run: composer update --working-dir=laravel --no-interaction --prefer-dist --no-progress
+        run: composer install --working-dir=laravel --no-interaction --prefer-dist --no-progress
 
       - name: Validate Laravel Composer manifest and dependency advisories
         if: ${{ always() && steps.dependencies.outcome == 'success' }}
