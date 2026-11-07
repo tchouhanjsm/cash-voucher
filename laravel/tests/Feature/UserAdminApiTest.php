@@ -116,6 +116,9 @@ final class UserAdminApiTest extends TestCase
     {
         $owner = $this->withRoleSession('owner');
         $ownerId = $this->userId;
+        // The disposable schema is shared across feature cases. Earlier cases may
+        // have created owner fixtures, so make this a true last-active-owner test.
+        DB::table('users')->where('role', 'owner')->where('id', '<>', $ownerId)->update(['is_active' => 0]);
         $email = (string) DB::table('users')->where('id', $ownerId)->value('email');
 
         $owner->patchJson('/api/v1/users/'.$ownerId, [
