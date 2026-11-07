@@ -54,7 +54,6 @@ function assertSameOriginBase(raw, origin) {
   return { origin: current.origin, pathname };
 }
 
-
 /**
  * Cookie-session transport for the isolated Laravel shadow API.
  *
@@ -102,11 +101,12 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       body = JSON.stringify(options.body);
     }
 
+    const url = makeUrl(route, options.query);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 70000);
     let response;
     try {
-      response = await send(makeUrl(route, options.query), {
+      response = await send(url, {
         method,
         mode: 'same-origin',
         credentials: 'same-origin',
@@ -133,7 +133,12 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     }
 
     const apiError = envelope?.error;
-    if (!response.ok || envelope?.ok !== true || !envelope?.data || typeof envelope.data !== 'object') {
+    if (
+      !response.ok ||
+      envelope?.ok !== true ||
+      !envelope?.data ||
+      typeof envelope.data !== 'object'
+    ) {
       const code = normalizeCode(apiError?.code, response.status);
       throw failure(
         typeof apiError?.message === 'string' && apiError.message
@@ -227,9 +232,20 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           ['cat', payload.cat],
           ['user', payload.user],
           ['approval', payload.approval && payload.approval !== 'ALL' ? payload.approval : ''],
-          ['paymentMethod', payload.paymentMethod && payload.paymentMethod !== 'ALL' ? payload.paymentMethod : ''],
-          ['cashImpact', payload.cashImpact && payload.cashImpact !== 'ALL' ? payload.cashImpact : ''],
-          ['amountValidity', payload.amountValidity && payload.amountValidity !== 'ALL' ? payload.amountValidity : ''],
+          [
+            'paymentMethod',
+            payload.paymentMethod && payload.paymentMethod !== 'ALL' ? payload.paymentMethod : '',
+          ],
+          [
+            'cashImpact',
+            payload.cashImpact && payload.cashImpact !== 'ALL' ? payload.cashImpact : '',
+          ],
+          [
+            'amountValidity',
+            payload.amountValidity && payload.amountValidity !== 'ALL'
+              ? payload.amountValidity
+              : '',
+          ],
         ].filter(([, value]) => value !== undefined && value !== null && value !== '');
         if (unsupported.length) {
           throw failure(
