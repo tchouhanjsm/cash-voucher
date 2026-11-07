@@ -29,6 +29,55 @@ Set CV_DUPLICATE_CONFIRMATION_KEY to an independent random value of at least 32 
 
 The APP_KEY is used by Laravel's encryption services; this API does not use Laravel cookie sessions. The browser authentication contract remains cv_session plus cv_csrf.
 
+## Local verification and browser smoke test
+
+Use Node 22 for the repository checks (`.nvmrc`). On the development Mac, invoke MacPorts PHP explicitly: `php` may still resolve to XAMPP PHP 8.2.4, while Laravel requires PHP 8.3 or newer.
+
+From the repository root:
+
+```bash
+nvm use 22
+npm ci
+npm test
+npm run lint
+npm run format:check
+npm run check:frontend
+```
+
+Laravel dependency, runtime and PHP syntax checks:
+
+```bash
+cd laravel
+/opt/local/bin/php83 /usr/local/bin/composer install --no-interaction --prefer-dist --no-progress
+/opt/local/bin/php83 /usr/local/bin/composer validate --no-check-publish
+/opt/local/bin/php83 artisan --version
+find app bootstrap config public routes tests -type f -name '*.php' -print0 | xargs -0 -n1 /opt/local/bin/php83 -l
+cd ..
+```
+
+For the browser smoke test, start Laravel in one terminal and the same-origin PWA proxy in another:
+
+```bash
+cd laravel
+/opt/local/bin/php83 artisan serve --host=127.0.0.1 --port=8000
+```
+
+```bash
+nvm use 22
+npm run dev:laravel-shadow
+```
+
+Open `http://127.0.0.1:4173/?transport=laravel-shadow`. The proxy binds only to loopback, serves an allow-list of PWA assets and forwards only `/api/v1/*` to Laravel on port 8000. It preserves the session and CSRF cookies so the browser uses one origin. Do not enter production credentials or real business data. The adapter rejects financial writes and unsupported actions.
+
+A real local login/bootstrap test requires an isolated disposable **MySQL 8.0** database with the root schema baseline applied and a test user. PHPUnit's `laravel/phpunit.xml` targets `cash_voucher_laravel_test` and its dedicated test account. XAMPP MariaDB 10.4.28 is not a substitute for the MySQL 8.0 test target; do not point the suite or migrations at XAMPP's operational database. When a separate MySQL 8.0 test instance is available, run the feature suite from `laravel/`:
+
+```bash
+cd laravel
+/opt/local/bin/php83 vendor/bin/phpunit
+```
+
+Do not run `artisan migrate`, `migrate:fresh`, `db:wipe` or schema-changing commands. Apply only the reviewed root SQL baseline to a disposable local database through the guarded CLI migration runner, using a local-only DDL account and explicit `CV_APP_ENV=local` plus `CV_ALLOW_SCHEMA_MIGRATIONS=true`. The CI feature suite currently supplies the isolated MySQL 8.0 evidence when local MySQL 8.0 is unavailable.
+
 ## Implemented routes in this phase
 
 | Method | Route                                     | Scope                                                                        |
