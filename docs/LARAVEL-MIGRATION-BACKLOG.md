@@ -23,7 +23,7 @@
 | CVL-014 Financial primitives         | Reuses existing PDO row-locked allocator, canonical idempotency unit of work and append-only audit writer           | MySQL CI concurrency/replay/rollback evidence                                           |
 | CVL-015 First voucher slice          | Merged in PR #268; creator-scoped list/create, duplicate review, sequence/idempotency/audit and approval safeguards | Continue contract parity as lifecycle routes expand                                     |
 
-CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. Exact-head CI, Browser E2E and monitor are green; review, Composer lockfile and hosting qualification remain gates. Hosting qualification, schema-baseline adoption and production use remain blocked. The shadow API is not yet routed from the PWA.
+CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. CVL-024 now adds a creator-scoped dashboard summary and a Manager/Owner/Accountant recorded-movement report; the exact-head MySQL suite is pending. Review, the tracked Composer lockfile and hosting qualification remain gates. Hosting qualification, schema-baseline adoption and production use remain blocked. The shadow API is not yet routed from the PWA.
 
 ## P1 — Laravel foundation and parity
 
@@ -38,15 +38,14 @@ CVL-020, CVL-021, CVL-022, CVL-023 and CVL-030 are implemented in PR #269. Exact
 
 ## P2 — financial parity
 
-| ID      | Work                                                             | Dependencies     | Exit evidence                                                                                                                                                                            |
-| ------- | ---------------------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| CVL-020 | Voucher update/cancel state machine and history                  | CVL-015          | PR #269 implements reasoned edit/cancel, closed-date protection, idempotency and before/after audit; lifecycle tests included in 54-test / 326-assertion green MySQL suite               |
-| CVL-021 | Approval/rejection flow and pending/rejected reporting exclusion | CVL-020          | PR #269 implements pending-only approve/reject, no self-approval, immutable decision rows and audit; aggregation parity remains open                                                     |
-| CVL-022 | Vendor catalog and immutable vendor name snapshot                | CVL-015          | PR #269 implements Manager/Owner CRUD, active state, unique name claims, idempotency and historical snapshot tests                                                                       |
-| CVL-023 | Cash-close preview/create/corrections                            | CVL-020, CVL-021 | PR #269 implements one MAIN drawer/day, prior-close carry-forward, reasoned gap opening, chronological idempotent close and append-only notes; cash-close feature tests pass in CI #4153 (54 Laravel tests / 326 assertions across vendor, lifecycle, receipts and cash close) |
-| CVL-024 | Read models, dashboard and reports                               | CVL-020–023      | Parity totals across dimensions; accountant read-only                                                                                                                                    |
-| CVL-025 | User/admin operations, settings, support and audit browsing      | CVL-013          | Role and record-scope denial matrix                                                                                                                                                      |
-
+| ID      | Work                                                   | Dependencies     | Exit evidence                                                                                                       |
+| ------- | ------------------------------------------------------ | ---------------- | ------------------------------------------------------------------------------------------------------------------- |
+| CVL-020 | Voucher edit/cancel state machine                      | CVL-015          | Reasoned edit/cancel, closed-date protection, idempotency and before/after audit.                                   |
+| CVL-021 | Payment approval/rejection                             | CVL-020          | Pending-only decisions, no self-approval, immutable decision event and audit.                                       |
+| CVL-022 | Vendor catalog and immutable voucher name snapshots    | CVL-015          | Manager/Owner CRUD, unique name claims, idempotency and legacy duplicate safeguards.                                |
+| CVL-023 | Daily cash-close preview, finalization and corrections | CVL-020, CVL-021 | MAIN drawer/day, carry-forward, gap opening, chronological idempotent snapshot and correction notes.                |
+| CVL-024 | Dashboard summary and recorded-movement reports        | CVL-020–023      | Creator-scoped dashboard, Manager/Owner team view, Accountant report-only, paginated totals and approval exclusion. |
+| CVL-025 | User/admin operations, settings and audit browsing     | CVL-013          | Role and record-scope denial matrix.                                                                                |
 ## P3 — receipts, offline and data portability
 
 | ID      | Work                                                    | Dependencies                                      | Exit evidence                                                                                                                                            |
