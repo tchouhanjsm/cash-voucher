@@ -6,6 +6,9 @@ use App\Modules\Receipts\Http\Controllers\ReceiptController;
 use App\Modules\Reports\Http\Controllers\ReportsController;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
 use App\Modules\Vendors\Http\Controllers\VendorController;
+use App\Modules\Users\Http\Controllers\UserController;
+use App\Modules\Settings\Http\Controllers\SettingsController;
+use App\Modules\Audit\Http\Controllers\AuditController;
 use CashVoucher\Api\Support\ApiException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
@@ -65,6 +68,14 @@ Route::prefix('v1')->group(function (): void {
                 'vendors:create',
                 'vendors:update',
                 'vendors:active-state',
+                'users:list',
+                'users:create',
+                'users:update',
+                'users:password-reset',
+                'settings:read',
+                'settings:update',
+                'audit:list',
+                'audit:voucher-history',
             ],
             'authentication' => 'shared-cv_session-cv_csrf',
         ], (string) request()->attributes->get('request_id'));
@@ -89,5 +100,13 @@ Route::prefix('v1')->group(function (): void {
         Route::post('/vendors', [VendorController::class, 'store']);
         Route::patch('/vendors/{vendorId}', [VendorController::class, 'update']);
         Route::post('/vendors/{vendorId}/active', [VendorController::class, 'setActive']);
+        Route::get('/users', [UserController::class, 'index']);
+        Route::post('/users', [UserController::class, 'store']);
+        Route::patch('/users/{userId}', [UserController::class, 'update']);
+        Route::post('/users/{userId}/password-reset', [UserController::class, 'resetPassword']);
+        Route::get('/settings', [SettingsController::class, 'show']);
+        Route::put('/settings', [SettingsController::class, 'save']);
+        Route::get('/audit-events', [AuditController::class, 'index']);
+        Route::get('/vouchers/{voucherId}/history', [AuditController::class, 'voucherHistory']);
     });
 });
