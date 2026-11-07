@@ -5,7 +5,7 @@ This is an isolated Laravel 13 modular-monolith implementation under active migr
 ## Runtime boundary
 
 - Laravel 13 API routes live under /api/v1 when served from laravel/public.
-- Authentication reads the existing cv_session and cv_csrf session records. The existing PHP session issuer remains the only login/session issuer in this phase.
+- Laravel login, current-session restoration, logout and password change reuse the existing AuthenticationService, PasswordVerifier, AuthenticationRateLimiter and SessionService from api/v1/src. The custom PHP API remains unchanged; both implementations use the same hashed cv_session/cv_csrf database contract. These Laravel routes are isolated shadow endpoints, and the PWA continues to use Apps Script.
 - MySQL/MariaDB must already contain the reviewed root SQL schema versions 0001–0005.
 - Laravel never runs schema migrations automatically. Do not run artisan migrate, migrate:fresh, db:wipe, or schema-changing commands from this project.
 - The first financial write uses the existing PDO voucher-number allocator, idempotency unit of work and audit writer from api/v1/src.
@@ -36,6 +36,10 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 | GET    | /api/v1/health/live                       | Public liveness, no DB dependency                                 |
 | GET    | /api/v1/health/ready                      | Public DB/schema readiness check                                  |
 | GET    | /api/v1/meta                              | Public rollout metadata                                           |
+| POST   | /api/v1/sessions                          | Login; legacy HMAC verification/upgrade; throttled; sets Secure cookies |
+| GET    | /api/v1/sessions/current                  | Restore session and current role                                  |
+| POST   | /api/v1/sessions/current/logout           | CSRF-protected logout; revokes active session and clears cookies   |
+| POST   | /api/v1/sessions/current/password         | CSRF-protected password change; revokes all sessions               |
 | GET    | /api/v1/vouchers                          | Authenticated, creator-scoped for staff; manager/owner view-all   |
 | POST   | /api/v1/vouchers/duplicate-check          | Authenticated create capability + CSRF                            |
 | POST   | /api/v1/vouchers                          | Single authenticated voucher create + CSRF + idempotency          |
@@ -60,6 +64,10 @@ The API preserves the existing { ok, data|error, meta } envelope, request ID, an
 ## Financial invariants
 
 - Existing roles are reused unchanged: staff, manager, owner, accountant.
+- Password verification reuses the exact legacy Apps Script HMAC serialization and the existing php-sha384$ adaptive-hash format. Successful eligible legacy logins upgrade the hash in the same transaction that creates the session; plaintext passwords are never stored.
+- Session tokens and CSRF tokens are 256-bit random values; only SHA-256 digests are persisted. Cookies are Secure, HttpOnly for cv_session, SameSite=Strict and scoped to /api/v1; authenticated mutations require the CSRF double-submit value.
+- Login rate limits use HMAC-keyed account/composite/IP buckets. Unknown-user verification burns comparable password-hash work. Inactive and unknown-role accounts fail closed.
+- A short legacy PIN is accepted only when CV_ALLOW_LEGACY_SHORT_PASSWORDS=true and must_change_password=1; such a session can only restore, sign out or change its password. A successful password change uses an 8–128 character password and revokes every session.
 - Accountant has no voucher-register/create capability.
 - Staff can list only their own vouchers.
 - Voucher number allocation takes a per-type InnoDB row lock inside the idempotency transaction.
@@ -92,4 +100,4 @@ The CI suite runs against a dedicated `cash_voucher_laravel_test` schema on the 
     composer install
     vendor/bin/phpunit
 
-The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, login issuance, PWA transport changes, cash close, exports/imports and production cutover remain separate gated work.
+The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, PWA transport changes, exports/imports and production cutover remain separate gated work.
