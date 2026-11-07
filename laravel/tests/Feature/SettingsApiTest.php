@@ -88,7 +88,7 @@ final class SettingsApiTest extends TestCase
         );
         self::assertSame('"Heritage Property"', DB::table('settings')->where('setting_key', 'propertyName')->value('value_json'));
         self::assertSame('["Other","Staff Salary"]', DB::table('settings')->where('setting_key', 'categories')->value('value_json'));
-        self::assertSame('80000', (string) DB::table('voucher_number_sequences')->where('voucher_type', 'PAYMENT')->value('next_number'));
+        self::assertSame((string) $this->currentPaymentSequence, (string) DB::table('voucher_number_sequences')->where('voucher_type', 'PAYMENT')->value('next_number'));
     }
 
     public function test_next_voucher_number_cannot_move_backwards_or_reuse_an_issued_number(): void
