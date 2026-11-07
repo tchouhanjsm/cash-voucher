@@ -50,6 +50,8 @@ final class AuthenticationApiTest extends TestCase
             'password' => $password,
         ]);
 
+        $cookies = $this->cookieValues($login);
+
         $login->assertOk()
             ->assertJsonPath('ok', true)
             ->assertJsonPath('data.user.id', $userId)
@@ -58,9 +60,8 @@ final class AuthenticationApiTest extends TestCase
             ->assertJsonPath('data.user.mustChangePassword', false)
             ->assertJsonMissingPath('data.sessionToken')
             ->assertJsonMissingPath('data.user.sessionToken')
-            ->assertJsonPath('data.csrfToken', fn ($value) => is_string($value) && preg_match('/^[a-f0-9]{64}$/D', $value) === 1);
+            ->assertJsonPath('data.csrfToken', $cookies['cv_csrf']);
 
-        $cookies = $this->cookieValues($login);
         self::assertSame(64, strlen($cookies['cv_session']));
         self::assertSame(64, strlen($cookies['cv_csrf']));
 
