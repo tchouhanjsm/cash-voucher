@@ -237,7 +237,7 @@ final class VoucherApiTest extends TestCase
     {
         $payload = $this->validPayload([
             // Keep this date separate from the current test's synthetic close date.
-            'date' => (new \\DateTimeImmutable('-5 days', new \\DateTimeZone('Asia/Kolkata')))->format('Y-m-d'),
+            'date' => (new \DateTimeImmutable('-5 days', new \DateTimeZone('Asia/Kolkata')))->format('Y-m-d'),
             'type' => 'RECEIPT',
             'cashImpact' => 'CASH_IN',
             'vendor' => 'Receipt sequence test '.bin2hex(random_bytes(4)),
