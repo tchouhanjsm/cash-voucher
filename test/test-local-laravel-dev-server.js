@@ -27,21 +27,26 @@ function close(server) {
 
 function get(port, path, options = {}) {
   return new Promise((resolve, reject) => {
-    const request = http.request({
-      host: '127.0.0.1',
-      port,
-      path,
-      method: options.method || 'GET',
-      headers: options.headers || {},
-    }, (response) => {
-      const chunks = [];
-      response.on('data', (chunk) => chunks.push(chunk));
-      response.on('end', () => resolve({
-        status: response.statusCode,
-        headers: response.headers,
-        body: Buffer.concat(chunks).toString('utf8'),
-      }));
-    });
+    const request = http.request(
+      {
+        host: '127.0.0.1',
+        port,
+        path,
+        method: options.method || 'GET',
+        headers: options.headers || {},
+      },
+      (response) => {
+        const chunks = [];
+        response.on('data', (chunk) => chunks.push(chunk));
+        response.on('end', () =>
+          resolve({
+            status: response.statusCode,
+            headers: response.headers,
+            body: Buffer.concat(chunks).toString('utf8'),
+          }),
+        );
+      },
+    );
     request.on('error', reject);
     if (options.body) request.write(options.body);
     request.end();
@@ -69,7 +74,7 @@ async function run() {
     '/%2e%2e/package.json',
     '/frontend/../../package.json',
   ]) {
-    assert.equal(publicAssetPath(denied), null, 'must not expose '+denied);
+    assert.equal(publicAssetPath(denied), null, 'must not expose ' + denied);
   }
 
   const forwarded = [];
@@ -87,7 +92,7 @@ async function run() {
       });
       response.setHeader('Set-Cookie', [
         'cv_session=opaque-session; Path=/api/v1; HttpOnly; Secure; SameSite=Strict',
-        'cv_csrf='+csrf+'; Path=/api/v1; Secure; SameSite=Strict',
+        'cv_csrf=' + csrf + '; Path=/api/v1; Secure; SameSite=Strict',
       ]);
       response.writeHead(200, {
         'Content-Type': 'application/json; charset=utf-8',
@@ -100,7 +105,7 @@ async function run() {
   const upstreamPort = await listen(upstream);
   const app = createLocalServer({
     host: '127.0.0.1',
-    proxyTarget: 'http://127.0.0.1:'+upstreamPort,
+    proxyTarget: 'http://127.0.0.1:' + upstreamPort,
   });
   const appPort = await listen(app);
 
@@ -113,7 +118,7 @@ async function run() {
     const denied = await get(appPort, '/laravel/.env');
     assert.equal(denied.status, 404);
 
-    const cookie = 'cv_session=opaque-session; cv_csrf='+csrf;
+    const cookie = 'cv_session=opaque-session; cv_csrf=' + csrf;
     const api = await get(appPort, '/api/v1/sessions/current', {
       method: 'POST',
       headers: {
