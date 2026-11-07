@@ -29,8 +29,8 @@ abstract class TestCase extends BaseTestCase
         // created by one test must not become a later-close blocker for another.
         $sequence = self::$businessDateSequence++;
         $this->businessDate = (new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata')))
-            ->modify('-400 days')
-            ->modify('+'.($sequence * 7).' days')
+            ->modify('-1000 days')
+            ->modify('+'.($sequence * 2).' days')
             ->format('Y-m-d');
 
         $this->insertUser($this->userId, 'staff');
@@ -181,7 +181,7 @@ abstract class TestCase extends BaseTestCase
         $statement->execute([
             'id' => self::uuid(),
             'date' => $date,
-            'drawer' => 'TEST-'.substr(self::uuid(), 0, 8),
+            'drawer' => 'MAIN',
             'source' => 'MANUAL',
             'opening_reason' => '',
             'variance_reason' => '',
