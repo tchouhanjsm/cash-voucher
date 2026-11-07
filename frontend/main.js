@@ -1,4 +1,5 @@
 import { createApi } from './core/api.js';
+import { createLaravelApi } from './core/laravel-api.js';
 import { createUnsavedWorkGuard } from './core/unsaved-work.js';
 import { $ } from './core/dom.js';
 import { registerActions, installActionDelegation } from './core/actions.js';
@@ -30,10 +31,21 @@ let auth;
 let payments;
 let navigation;
 
-const apiTransport = createApi({
-  getUrl: () => S.url,
-  getToken: () => S.token,
-});
+const runtimeConfig = window.CV_CONFIG || {};
+const USE_LARAVEL_SHADOW = runtimeConfig.API_TRANSPORT === 'laravel-cookie-shadow';
+const CONFIGURED_API_URL = USE_LARAVEL_SHADOW
+  ? runtimeConfig.LARAVEL_API_URL || ''
+  : runtimeConfig.API_URL || '';
+
+const apiTransport = USE_LARAVEL_SHADOW
+  ? createLaravelApi({
+      getUrl: () => S.url,
+      getOrigin: () => window.location.origin,
+    })
+  : createApi({
+      getUrl: () => S.url,
+      getToken: () => S.token,
+    });
 
 const unsavedWork = createUnsavedWorkGuard({
   onBlocked: () =>
@@ -303,7 +315,7 @@ function bindFeatures() {
 async function init() {
   try {
     const session = resolveApiSession({
-      configuredEndpoint: window.CV_CONFIG?.API_URL,
+      configuredEndpoint: CONFIGURED_API_URL,
       storedEndpoint: ls.get('cv.url'),
       token: ls.get('cv.token'),
       tokenEndpoint: ls.get(SESSION_ENDPOINT_STORAGE_KEY),
