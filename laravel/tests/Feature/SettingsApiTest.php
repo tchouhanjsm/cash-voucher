@@ -12,7 +12,7 @@ final class SettingsApiTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        DB::table('voucher_number_sequences')->insert([
+        DB::table('voucher_number_sequences')->insertOrIgnore([
             'voucher_type' => 'RECEIPT',
             'next_number' => 1,
             'updated_at_utc' => now('UTC')->format('Y-m-d H:i:s'),
@@ -21,6 +21,8 @@ final class SettingsApiTest extends TestCase
 
     public function test_staff_manager_and_accountant_cannot_read_or_change_owner_settings(): void
     {
+        $settingsBefore = $this->settingsSnapshot();
+
         foreach (['staff', 'manager', 'accountant'] as $role) {
             $this->withRoleSession($role)
                 ->getJson('/api/v1/settings')
@@ -31,7 +33,7 @@ final class SettingsApiTest extends TestCase
             ->putJson('/api/v1/settings', $this->payload(), ['Idempotency-Key' => 'settings-manager-denied'])
             ->assertForbidden();
 
-        self::assertSame(0, DB::table('settings')->count());
+        self::assertSame($settingsBefore, $this->settingsSnapshot());
     }
 
     public function test_owner_reads_safe_settings_and_sequence_values(): void
@@ -79,6 +81,7 @@ final class SettingsApiTest extends TestCase
     public function test_next_voucher_number_cannot_move_backwards_or_reuse_an_issued_number(): void
     {
         $owner = $this->withRoleSession('owner');
+        $settingsBefore = $this->settingsSnapshot();
 
         $this->insertVoucherFixture($this->userId, 'Settings Sequence Vendor', 10000);
         $this->postJson('/api/v1/vouchers', [], ['Idempotency-Key' => 'dummy-settings-sequence'])
@@ -90,12 +93,13 @@ final class SettingsApiTest extends TestCase
             ->assertJsonPath('error.code', 'VOUCHER_SEQUENCE_INVALID');
 
         self::assertSame(80000, (int) DB::table('voucher_number_sequences')->where('voucher_type', 'PAYMENT')->value('next_number'));
-        self::assertSame(0, DB::table('settings')->count());
+        self::assertSame($settingsBefore, $this->settingsSnapshot());
     }
 
     public function test_invalid_categories_and_opening_balance_fail_without_partial_updates(): void
     {
         $owner = $this->withRoleSession('owner');
+        $settingsBefore = $this->settingsSnapshot();
         $invalid = $this->payload(['categories' => []]);
         $owner->putJson('/api/v1/settings', $invalid, ['Idempotency-Key' => 'settings-empty-categories'])
             ->assertUnprocessable();
@@ -104,7 +108,21 @@ final class SettingsApiTest extends TestCase
         $owner->putJson('/api/v1/settings', $invalid, ['Idempotency-Key' => 'settings-scientific-amount'])
             ->assertUnprocessable();
 
-        self::assertSame(0, DB::table('settings')->count());
+        self::assertSame($settingsBefore, $this->settingsSnapshot());
+    }
+
+    /** @return list<array{setting_key:string,value_json:string}> */
+    private function settingsSnapshot(): array
+    {
+        return DB::table('settings')
+            ->select('setting_key', 'value_json')
+            ->orderBy('setting_key')
+            ->get()
+            ->map(static fn (object $row): array => [
+                'setting_key' => (string) $row->setting_key,
+                'value_json' => (string) $row->value_json,
+            ])
+            ->all();
     }
 
     /** @return array<string,mixed> */
