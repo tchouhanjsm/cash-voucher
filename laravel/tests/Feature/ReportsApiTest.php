@@ -13,7 +13,7 @@ final class ReportsApiTest extends TestCase
 {
     public function test_staff_dashboard_is_creator_scoped_and_excludes_unapproved_payments(): void
     {
-        $today = $this->today();
+        $today = $this->businessDate;
         $ownPayment = $this->insertVoucherFixture($this->userId, 'Own Approved Payment', 10000, $today);
         $pendingPayment = $this->insertVoucherFixture($this->userId, 'Own Pending Payment', 4000, $today);
         DB::table('vouchers')->where('id', $pendingPayment)->update(['approval_status' => 'PENDING']);
@@ -51,23 +51,33 @@ final class ReportsApiTest extends TestCase
     public function test_manager_dashboard_includes_team_breakdown_and_owner_configured_opening_balance(): void
     {
         $manager = $this->withRoleSession('manager');
-        $today = $this->today();
+        $today = $this->businessDate;
+        $baseline = DB::selectOne(
+            'SELECT
+                COALESCE(SUM(CASE WHEN voucher_type = ? AND approval_status IN (?, ?) AND status = ? AND amount_paise BETWEEN 1 AND 1000000000 THEN amount_paise ELSE 0 END), 0) AS payments,
+                COALESCE(SUM(CASE WHEN voucher_type = ? AND status = ? AND amount_paise BETWEEN 1 AND 1000000000 THEN amount_paise ELSE 0 END), 0) AS receipts
+             FROM vouchers',
+            ['PAYMENT', 'NOT_REQUIRED', 'APPROVED', 'ACTIVE', 'RECEIPT', 'ACTIVE'],
+        );
+        $baselineBookBalancePaise = (int) $baseline->receipts - (int) $baseline->payments;
         $this->insertVoucherFixture($this->userId, 'Manager Payment', 10000, $today);
         $receipt = $this->insertVoucherFixture($this->userId, 'Manager Receipt', 5000, $today);
         DB::table('vouchers')->where('id', $receipt)->update(['voucher_type' => 'RECEIPT']);
 
-        DB::table('settings')->insert([
-            'setting_key' => 'openingBalance',
-            'value_json' => json_encode('1000.00', JSON_THROW_ON_ERROR),
-            'updated_by_user_id' => $this->userId,
-            'updated_at_utc' => now('UTC')->format('Y-m-d H:i:s'),
-        ]);
+        DB::table('settings')->updateOrInsert(
+            ['setting_key' => 'openingBalance'],
+            [
+                'value_json' => json_encode('1000.00', JSON_THROW_ON_ERROR),
+                'updated_by_user_id' => $this->userId,
+                'updated_at_utc' => now('UTC')->format('Y-m-d H:i:s'),
+            ],
+        );
 
         $response = $manager->getJson('/api/v1/dashboard/summary?from='.$today.'&to='.$today);
         $response->assertOk()
             ->assertJsonPath('data.paid', '100.00')
             ->assertJsonPath('data.received', '50.00')
-            ->assertJsonPath('data.bookBalance', '950.00')
+            ->assertJsonPath('data.bookBalance', $this->formatPaise($baselineBookBalancePaise + 95000))
             ->assertJsonPath('data.byTeamMember.0.n', 1)
             ->assertJsonPath('data.byTeamMember.0.s', '100.00')
             ->assertJsonPath('data.byPaymentMethod.0.k', 'Cash');
@@ -75,7 +85,7 @@ final class ReportsApiTest extends TestCase
 
     public function test_accountant_can_read_recorded_movements_but_cannot_open_dashboard(): void
     {
-        $today = $this->today();
+        $today = $this->businessDate;
         $this->insertVoucherFixture($this->userId, 'Report Approved Payment', 10000, $today);
 
         $accountant = $this->withRoleSession('accountant');
@@ -94,7 +104,7 @@ final class ReportsApiTest extends TestCase
 
     public function test_recorded_movement_totals_include_cancelled_rows_but_exclude_pending_payments(): void
     {
-        $today = $this->today();
+        $today = $this->businessDate;
         $approved = $this->insertVoucherFixture($this->userId, 'Approved Payment', 10000, $today);
         $pending = $this->insertVoucherFixture($this->userId, 'Pending Payment', 5000, $today);
         DB::table('vouchers')->where('id', $pending)->update(['approval_status' => 'PENDING']);
@@ -129,7 +139,7 @@ final class ReportsApiTest extends TestCase
 
     public function test_recorded_movement_report_resolves_only_unique_legacy_vendor_names(): void
     {
-        $today = $this->today();
+        $today = $this->businessDate;
         $uniqueId = $this->insertVendorFixture('Unique Report Vendor');
         $uniqueVoucher = $this->insertVoucherFixture($this->userId, 'Unique Report Vendor', 10000, $today);
         $ambiguousVoucher = $this->insertVoucherFixture($this->userId, 'Legacy Duplicate Vendor', 20000, $today);
@@ -152,7 +162,7 @@ final class ReportsApiTest extends TestCase
 
     public function test_report_filters_and_date_range_are_validated_and_paginated(): void
     {
-        $today = $this->today();
+        $today = $this->businessDate;
         $voucher = $this->insertVoucherFixture($this->userId, 'Unrecorded Method Vendor', 10000, $today);
         DB::table('vouchers')->where('id', $voucher)->update(['payment_method' => '']);
 
@@ -177,8 +187,11 @@ final class ReportsApiTest extends TestCase
         )->assertUnprocessable();
     }
 
-    private function today(): string
+    private function formatPaise(int $paise): string
     {
-        return (new DateTimeImmutable('now', new DateTimeZone('Asia/Kolkata')))->format('Y-m-d');
+        $negative = $paise < 0 ? '-' : '';
+        $absolute = abs($paise);
+
+        return $negative.intdiv($absolute, 100).'.'.str_pad((string) ($absolute % 100), 2, '0', STR_PAD_LEFT);
     }
 }
