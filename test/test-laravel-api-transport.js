@@ -32,7 +32,12 @@ async function run() {
       return jsonResponse({
         ok: true,
         data: {
-          user: { id: 'user-1', email: 'staff@example.test', role: 'staff', mustChangePassword: false },
+          user: {
+            id: 'user-1',
+            email: 'staff@example.test',
+            role: 'staff',
+            mustChangePassword: false,
+          },
           csrfToken: csrf,
         },
       });
@@ -52,22 +57,27 @@ async function run() {
       });
     }
     if (String(url).includes('/dashboard/summary?')) {
-      return jsonResponse({ ok: true, data: { from: '2026-11-01', to: '2026-11-07', paid: '0.00' } });
+      return jsonResponse({
+        ok: true,
+        data: { from: '2026-11-01', to: '2026-11-07', paid: '0.00' },
+      });
     }
     if (String(url).includes('/vouchers?')) {
       return jsonResponse({
         ok: true,
         data: {
-          items: [{
-            id: 'voucher-1',
-            voucherNo: '204',
-            date: '2026-11-07',
-            vendor: 'Test supplier',
-            amount: '12.50',
-            type: 'PAYMENT',
-            status: 'ACTIVE',
-            createdBy: 'staff@example.test',
-          }],
+          items: [
+            {
+              id: 'voucher-1',
+              voucherNo: '204',
+              date: '2026-11-07',
+              vendor: 'Test supplier',
+              amount: '12.50',
+              type: 'PAYMENT',
+              status: 'ACTIVE',
+              createdBy: 'staff@example.test',
+            },
+          ],
           offset: 0,
           limit: 10,
           totalCount: 1,
@@ -81,10 +91,13 @@ async function run() {
     if (String(url).endsWith('/sessions/current/logout')) {
       return jsonResponse({ ok: true, data: { signedOut: true } });
     }
-    return jsonResponse({
-      ok: false,
-      error: { code: 'SESSION_EXPIRED', message: 'Your session expired.' },
-    }, 401);
+    return jsonResponse(
+      {
+        ok: false,
+        error: { code: 'SESSION_EXPIRED', message: 'Your session expired.' },
+      },
+      401,
+    );
   };
 
   const api = createLaravelApi({
@@ -185,10 +198,14 @@ async function run() {
   const expiredApi = createLaravelApi({
     getUrl: () => 'https://cash-voucher.example/api/v1',
     getOrigin: () => 'https://cash-voucher.example',
-    fetchImpl: async () => jsonResponse({
-      ok: false,
-      error: { code: 'SESSION_EXPIRED', message: 'Session expired.' },
-    }, 401),
+    fetchImpl: async () =>
+      jsonResponse(
+        {
+          ok: false,
+          error: { code: 'SESSION_EXPIRED', message: 'Session expired.' },
+        },
+        401,
+      ),
   });
   await assert.rejects(
     () => expiredApi('bootstrap'),
