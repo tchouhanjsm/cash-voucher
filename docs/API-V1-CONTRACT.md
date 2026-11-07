@@ -53,6 +53,7 @@ Set CV_AUTH_RATE_LIMIT_KEY to an independent random secret of at least 32 charac
 The PHP runtime reads environment variables directly; it does not parse .env. Use the local .env.example as a checklist only. Web workers receive the runtime account. The DDL-capable migration account must be available only to an operator's CLI environment. Database credentials must remain outside the public document root.
 
 ## Laravel 13 isolated shadow implementation
+
 The Laravel application is exercised only against a dedicated disposable CI MySQL schema. It does not replace or modify the custom PHP API routes, and the PWA continues to call Apps Script.
 
 | Method | Path                                      | Shadow implementation                                                            |
