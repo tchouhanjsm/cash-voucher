@@ -55,41 +55,41 @@ The PHP runtime reads environment variables directly; it does not parse .env. Us
 ## Laravel 13 isolated shadow implementation
 The Laravel application is exercised only against a dedicated disposable CI MySQL schema. It does not replace or modify the custom PHP API routes, and the PWA continues to call Apps Script.
 
-| Method | Path | Shadow implementation |
-| --- | --- | --- |
-| GET | /api/v1/health/live | Public liveness; no database dependency |
-| GET | /api/v1/health/ready | Public read-only schema readiness check; requires schema 0005 |
-| GET | /api/v1/meta | Public rollout and implemented-resource metadata |
-| POST | /api/v1/sessions | Existing PHP-compatible login, legacy hash upgrade and throttling |
-| GET | /api/v1/sessions/current | Restore current user, role and forced-change state |
-| POST | /api/v1/sessions/current/logout | CSRF-protected session revocation and cookie expiry |
-| POST | /api/v1/sessions/current/password | Legacy-compatible password change and revoke-all |
-| GET | /api/v1/vouchers | Staff creator scope; Manager/Owner view-all; Accountant denied |
-| POST | /api/v1/vouchers/duplicate-check | Create capability, shared session/CSRF and short-lived HMAC confirmation |
-| POST | /api/v1/vouchers | Single voucher create; shared session/CSRF and required idempotency key |
-| PATCH | /api/v1/vouchers/{voucherId} | Manager/Owner reasoned correction, before/after audit and closed-date protection |
-| POST | /api/v1/vouchers/{voucherId}/cancel | Manager/Owner reasoned cancellation, close-date protection and idempotency |
-| POST | /api/v1/vouchers/{voucherId}/approval | Manager/Owner pending-payment approval; self-approval denied |
-| POST | /api/v1/vouchers/{voucherId}/rejection | Manager/Owner pending-payment rejection; reason required |
-| POST | /api/v1/vouchers/{voucherId}/receipts | Staff-own or Manager/Owner private image attachment |
-| GET | /api/v1/receipts/{receiptId} | Staff-own or Manager/Owner private download with integrity verification |
-| GET | /api/v1/vendors | Manager/Owner only; active by default; paginated |
-| POST | /api/v1/vendors | Manager/Owner create; CSRF, idempotency and append-only audit |
-| PATCH | /api/v1/vendors/{vendorId} | Manager/Owner catalog update; issued voucher snapshots unchanged |
-| POST | /api/v1/vendors/{vendorId}/active | Manager/Owner desired active-state change; idempotent |
-| GET | /api/v1/cash-closes/preview | Manager/Owner server-authoritative MAIN drawer/day preview |
-| POST | /api/v1/cash-closes | Manager/Owner chronological, idempotent immutable daily close |
-| POST | /api/v1/cash-closes/{closeId}/corrections | Manager/Owner append-only attributed correction note; no restatement |
-| GET | /api/v1/dashboard/summary | Staff creator-scoped; Manager/Owner property-wide SQL aggregates |
-| GET | /api/v1/reports/recorded-movements | Manager/Owner/Accountant read-only filtered report with pagination |
-| GET | /api/v1/users | Owner-only user list |
-| POST | /api/v1/users | Owner-only user creation with idempotency and audit |
-| PATCH | /api/v1/users/{userId} | Owner-only user update and applicable session revocation |
-| POST | /api/v1/users/{userId}/password-reset | Owner-only password reset and session revocation |
-| GET | /api/v1/settings | Owner-only property settings |
-| PUT | /api/v1/settings | Owner-only settings update with sequence validation, idempotency and audit |
-| GET | /api/v1/audit-events | Owner-only cursor-paginated audit browser with sensitive-key redaction |
-| GET | /api/v1/vouchers/{voucherId}/history | Owner-only cursor-paginated voucher audit history |
+| Method | Path                                      | Shadow implementation                                                            |
+| ------ | ----------------------------------------- | -------------------------------------------------------------------------------- |
+| GET    | /api/v1/health/live                       | Public liveness; no database dependency                                          |
+| GET    | /api/v1/health/ready                      | Public read-only schema readiness check; requires schema 0005                    |
+| GET    | /api/v1/meta                              | Public rollout and implemented-resource metadata                                 |
+| POST   | /api/v1/sessions                          | Existing PHP-compatible login, legacy hash upgrade and throttling                |
+| GET    | /api/v1/sessions/current                  | Restore current user, role and forced-change state                               |
+| POST   | /api/v1/sessions/current/logout           | CSRF-protected session revocation and cookie expiry                              |
+| POST   | /api/v1/sessions/current/password         | Legacy-compatible password change and revoke-all                                 |
+| GET    | /api/v1/vouchers                          | Staff creator scope; Manager/Owner view-all; Accountant denied                   |
+| POST   | /api/v1/vouchers/duplicate-check          | Create capability, shared session/CSRF and short-lived HMAC confirmation         |
+| POST   | /api/v1/vouchers                          | Single voucher create; shared session/CSRF and required idempotency key          |
+| PATCH  | /api/v1/vouchers/{voucherId}              | Manager/Owner reasoned correction, before/after audit and closed-date protection |
+| POST   | /api/v1/vouchers/{voucherId}/cancel       | Manager/Owner reasoned cancellation, close-date protection and idempotency       |
+| POST   | /api/v1/vouchers/{voucherId}/approval     | Manager/Owner pending-payment approval; self-approval denied                     |
+| POST   | /api/v1/vouchers/{voucherId}/rejection    | Manager/Owner pending-payment rejection; reason required                         |
+| POST   | /api/v1/vouchers/{voucherId}/receipts     | Staff-own or Manager/Owner private image attachment                              |
+| GET    | /api/v1/receipts/{receiptId}              | Staff-own or Manager/Owner private download with integrity verification          |
+| GET    | /api/v1/vendors                           | Manager/Owner only; active by default; paginated                                 |
+| POST   | /api/v1/vendors                           | Manager/Owner create; CSRF, idempotency and append-only audit                    |
+| PATCH  | /api/v1/vendors/{vendorId}                | Manager/Owner catalog update; issued voucher snapshots unchanged                 |
+| POST   | /api/v1/vendors/{vendorId}/active         | Manager/Owner desired active-state change; idempotent                            |
+| GET    | /api/v1/cash-closes/preview               | Manager/Owner server-authoritative MAIN drawer/day preview                       |
+| POST   | /api/v1/cash-closes                       | Manager/Owner chronological, idempotent immutable daily close                    |
+| POST   | /api/v1/cash-closes/{closeId}/corrections | Manager/Owner append-only attributed correction note; no restatement             |
+| GET    | /api/v1/dashboard/summary                 | Staff creator-scoped; Manager/Owner property-wide SQL aggregates                 |
+| GET    | /api/v1/reports/recorded-movements        | Manager/Owner/Accountant read-only filtered report with pagination               |
+| GET    | /api/v1/users                             | Owner-only user list                                                             |
+| POST   | /api/v1/users                             | Owner-only user creation with idempotency and audit                              |
+| PATCH  | /api/v1/users/{userId}                    | Owner-only user update and applicable session revocation                         |
+| POST   | /api/v1/users/{userId}/password-reset     | Owner-only password reset and session revocation                                 |
+| GET    | /api/v1/settings                          | Owner-only property settings                                                     |
+| PUT    | /api/v1/settings                          | Owner-only settings update with sequence validation, idempotency and audit       |
+| GET    | /api/v1/audit-events                      | Owner-only cursor-paginated audit browser with sensitive-key redaction           |
+| GET    | /api/v1/vouchers/{voucherId}/history      | Owner-only cursor-paginated voucher audit history                                |
 
 Laravel now exposes shadow login, current-session, logout and password-change routes by reusing the existing PHP AuthenticationService, PasswordVerifier, AuthenticationRateLimiter and SessionService; no second password format or cookie contract was introduced. Eligible legacy HMAC hashes upgrade in the login/session transaction. Only the three session-lifecycle routes accept a forced-change session; all financial and administration routes continue to reject it. The custom PHP API routes are unchanged and the PWA still calls Apps Script. Neither implementation is production-routed by this PR.
 
