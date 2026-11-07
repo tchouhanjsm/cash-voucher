@@ -36,12 +36,10 @@ Use Node 22 for the repository checks (`.nvmrc`). On the development Mac, invoke
 From the repository root:
 
 ```bash
+nvm install 22
 nvm use 22
 npm ci
-npm test
-npm run lint
-npm run format:check
-npm run check:frontend
+npm run check
 ```
 
 Laravel dependency, runtime and PHP syntax checks:
