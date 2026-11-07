@@ -118,7 +118,7 @@ final class SettingsApiTest extends TestCase
             DB::table('settings')->where('setting_key', 'propertyName')->value('value_json'),
         );
         self::assertSame(
-            '["Other","Staff Salary"]',
+            '["Other", "Staff Salary"]',
             DB::table('settings')->where('setting_key', 'categories')->value('value_json'),
         );
         self::assertSame(
