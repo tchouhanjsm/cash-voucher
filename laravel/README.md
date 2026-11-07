@@ -58,6 +58,7 @@ The APP_KEY is used by Laravel's encryption services; this API does not use Lara
 | POST   | /api/v1/cash-closes/{closeId}/corrections | Manager/owner attributed correction note, append-only                   |
 | GET    | /api/v1/dashboard/summary                 | Staff creator-scoped; Manager/Owner property-wide; SQL aggregates       |
 | GET    | /api/v1/reports/recorded-movements        | Manager/Owner/Accountant read-only report with pagination               |
+
 The API preserves the existing { ok, data|error, meta } envelope, request ID, and no-store response policy. Money crosses the API boundary as a decimal string and is persisted as integer paise.
 
 ## Financial invariants
