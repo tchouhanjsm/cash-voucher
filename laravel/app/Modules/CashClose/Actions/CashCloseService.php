@@ -95,7 +95,7 @@ final class CashCloseService
             'blockedByLaterClose' => $later !== null,
             'laterCloseDate' => $later === null ? '' : (string) $later['business_date'],
             'requiresManualOpening' => $previous === null,
-            'previousClose' => $previous === null ? null : $this->presentClose($previous),
+            'previousClose' => $previous === null ? null : $this->presentClose($pdo, $previous),
             'openingCash' => $openingPaise === null ? null : $this->formatPaise($openingPaise),
             'openingSource' => $openingSource,
             'openingCloseId' => $openingCloseId,
@@ -203,6 +203,7 @@ final class CashCloseService
                     $openingCloseId = null;
                     $resolvedOpeningReason = '';
                     if (is_array($previous)) {
+                        $this->presentClose($connection, $previous);
                         $openingPaise = $this->storedNonNegativePaise($previous['counted_cash_paise'] ?? null, 'prior counted cash');
                         $openingSource = 'PREVIOUS_CLOSE';
                         $openingCloseId = (string) $previous['id'];
@@ -307,7 +308,7 @@ final class CashCloseService
                     if (! is_array($row)) {
                         throw new \RuntimeException('The saved close record could not be reloaded.');
                     }
-                    $present = $this->presentClose($row);
+                    $present = $this->presentClose($connection, $row);
 
                     return [
                         'close' => $present,
@@ -380,7 +381,7 @@ final class CashCloseService
                 if (! is_array($close)) {
                     throw new ApiException(404, 'CASH_CLOSE_NOT_FOUND', 'The saved cash close could not be found.');
                 }
-                $snapshot = $this->presentClose($close);
+                $snapshot = $this->presentClose($connection, $close);
                 if ($voucherId !== '' && ! in_array($voucherId, $snapshot['includedVoucherIds'], true)) {
                     throw new ApiException(
                         422,
@@ -633,7 +634,7 @@ final class CashCloseService
     /** @param array<string, mixed> $row @return array<string, mixed> */
     private function closeWithCorrections(PDO $pdo, array $row): array
     {
-        $close = $this->presentClose($row);
+        $close = $this->presentClose($pdo, $row);
         $query = $pdo->prepare(
             'SELECT id, cash_close_id, business_date, voucher_id, correction_type,
                     details, reason, created_by_user_id, created_at_utc
@@ -664,7 +665,7 @@ final class CashCloseService
     }
 
     /** @param array<string, mixed> $row @return array<string, mixed> */
-    private function presentClose(array $row): array
+    private function presentClose(PDO $pdo, array $row): array
     {
         try {
             $ids = json_decode((string) $row['included_voucher_ids'], true, 64, JSON_THROW_ON_ERROR);
@@ -672,7 +673,7 @@ final class CashCloseService
         } catch (Throwable $exception) {
             throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved cash-close snapshot is invalid.');
         }
-        if (! is_array($ids) || ! array_is_list($ids) || ! is_array($snapshot) || ! array_is_list($snapshot)) {
+        if (! is_array($ids) || ! array_is_list($ids) || ! is_array($snapshot) || ! array_is_list($snapshot) || count(array_unique($ids, SORT_STRING)) !== count($ids)) {
             throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved cash-close snapshot is invalid.');
         }
 
@@ -686,6 +687,7 @@ final class CashCloseService
             || ! $this->isUuid((string) ($row['request_id'] ?? ''))
             || ! preg_match('/^[a-f0-9]{64}$/D', (string) ($row['request_payload_hash'] ?? ''))
             || ! $this->isUuid((string) ($row['created_by_user_id'] ?? ''))
+            || ! preg_match('/^\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}(?:\\.\\d{1,6})?$/D', (string) ($row['created_at_utc'] ?? ''))
             || count($ids) !== count($snapshot)
             || (int) ($row['included_voucher_count'] ?? -1) !== count($snapshot)
         ) {
@@ -726,14 +728,40 @@ final class CashCloseService
             throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved cash-close variance is invalid.');
         }
         $variance = (int) $varianceRaw;
+        $openingSource = (string) $row['opening_source'];
+        $openingCloseId = $row['opening_close_id'] === null ? '' : (string) $row['opening_close_id'];
+        if ($openingSource === 'MANUAL') {
+            if ($openingCloseId !== '' || mb_strlen((string) ($row['opening_reason'] ?? ''), 'UTF-8') < 3) {
+                throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved manual opening source is inconsistent with its reason or previous-close reference.');
+            }
+        } else {
+            if (! $this->isUuid($openingCloseId)) {
+                throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved previous-close reference is invalid.');
+            }
+            $previousQuery = $pdo->prepare(
+                'SELECT business_date, drawer_key, counted_cash_paise
+                 FROM cash_closes
+                 WHERE id = :id
+                 LIMIT 1'
+            );
+            $previousQuery->execute(['id' => $openingCloseId]);
+            $previousRow = $previousQuery->fetch(PDO::FETCH_ASSOC);
+            if (
+                ! is_array($previousRow)
+                || (string) $previousRow['business_date'] !== $this->previousDate($date)
+                || (string) $previousRow['drawer_key'] !== self::DRAWER_KEY
+                || $this->storedNonNegativePaise($previousRow['counted_cash_paise'] ?? null, 'previous close counted cash') !== $opening
+            ) {
+                throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved carry-forward link does not point to the immediately preceding MAIN drawer close with the same counted amount.');
+            }
+        }
+
         if (
             $cashIn !== $cashInSaved
             || $cashOut !== $cashOutSaved
             || $expected !== $opening + $cashIn - $cashOut
             || $variance !== $counted - $expected
             || ($variance !== 0 && mb_strlen((string) ($row['variance_reason'] ?? ''), 'UTF-8') < 3)
-            || ((string) $row['opening_source'] === 'MANUAL' && mb_strlen((string) ($row['opening_reason'] ?? ''), 'UTF-8') < 3)
-            || ((string) $row['opening_source'] === 'PREVIOUS_CLOSE' && ! $this->isUuid((string) ($row['opening_close_id'] ?? '')))
         ) {
             throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved cash-close totals do not reconcile with its immutable snapshot.');
         }
@@ -743,8 +771,8 @@ final class CashCloseService
             'date' => $date,
             'drawerKey' => self::DRAWER_KEY,
             'openingCash' => $this->formatPaise($opening),
-            'openingSource' => (string) $row['opening_source'],
-            'openingCloseId' => $row['opening_close_id'] === null ? '' : (string) $row['opening_close_id'],
+            'openingSource' => $openingSource,
+            'openingCloseId' => $openingCloseId,
             'openingReason' => (string) ($row['opening_reason'] ?? ''),
             'cashInTotal' => $this->formatPaise($cashInSaved),
             'cashOutTotal' => $this->formatPaise($cashOutSaved),
