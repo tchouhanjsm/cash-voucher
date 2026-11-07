@@ -3,6 +3,7 @@
 use App\Modules\Shared\ApiResponse;
 use App\Modules\CashClose\Http\Controllers\CashCloseController;
 use App\Modules\Receipts\Http\Controllers\ReceiptController;
+use App\Modules\Reports\Http\Controllers\ReportsController;
 use App\Modules\Vouchers\Http\Controllers\VoucherController;
 use App\Modules\Vendors\Http\Controllers\VendorController;
 use CashVoucher\Api\Support\ApiException;
@@ -58,6 +59,8 @@ Route::prefix('v1')->group(function (): void {
                 'cash-close:preview',
                 'cash-close:create',
                 'cash-close:corrections',
+                'dashboard:summary',
+                'reports:recorded-movements',
                 'vendors:list',
                 'vendors:create',
                 'vendors:update',
@@ -69,6 +72,8 @@ Route::prefix('v1')->group(function (): void {
 
     Route::middleware('legacy.session')->group(function (): void {
         Route::get('/vouchers', [VoucherController::class, 'index']);
+        Route::get('/dashboard/summary', [ReportsController::class, 'dashboardSummary']);
+        Route::get('/reports/recorded-movements', [ReportsController::class, 'recordedMovementReport']);
         Route::get('/cash-closes/preview', [CashCloseController::class, 'preview']);
         Route::post('/cash-closes', [CashCloseController::class, 'create']);
         Route::post('/cash-closes/{closeId}/corrections', [CashCloseController::class, 'recordCorrection']);
