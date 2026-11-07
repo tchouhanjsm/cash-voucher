@@ -31,6 +31,7 @@ let auth;
 let payments;
 let navigation;
 
+// This opt-in is confined to the local source config; customer bundles hardcode Apps Script.
 const runtimeConfig = window.CV_CONFIG || {};
 const USE_LARAVEL_SHADOW = runtimeConfig.API_TRANSPORT === 'laravel-cookie-shadow';
 const CONFIGURED_API_URL = USE_LARAVEL_SHADOW
