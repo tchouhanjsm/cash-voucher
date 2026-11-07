@@ -673,8 +673,14 @@ final class CashCloseService
         } catch (Throwable $exception) {
             throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved cash-close snapshot is invalid.');
         }
-        if (! is_array($ids) || ! array_is_list($ids) || ! is_array($snapshot) || ! array_is_list($snapshot) || count(array_unique($ids, SORT_STRING)) !== count($ids)) {
+        if (! is_array($ids) || ! array_is_list($ids) || ! is_array($snapshot) || ! array_is_list($snapshot)) {
             throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved cash-close snapshot is invalid.');
+        }
+        if (
+            count(array_filter($ids, static fn (mixed $id): bool => is_string($id) && $id !== '')) !== count($ids)
+            || count(array_unique($ids, SORT_STRING)) !== count($ids)
+        ) {
+            throw new ApiException(503, 'CASH_CLOSE_DATA', 'The saved cash-close voucher IDs are invalid or duplicated.');
         }
 
         $date = (string) ($row['business_date'] ?? '');
