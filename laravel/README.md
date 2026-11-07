@@ -70,7 +70,6 @@ The opt-in localhost flag `?transport=laravel-shadow` selects a same-origin cook
 
 Customer builds always set `API_TRANSPORT=apps-script`. Do not add the Laravel flag to a customer URL or change the configured Apps Script endpoint. Voucher writes, receipt transfers, duplicate-check confirmation, bulk, filters/facets/totals parity and the IndexedDB outbox drain are deliberately unsupported in this adapter; unsupported actions fail closed. Do not use the Laravel browser mode for financial entry or queue replay.
 
-
 ## Financial invariants
 
 - Existing roles are reused unchanged: staff, manager, owner, accountant.
@@ -110,4 +109,4 @@ The CI suite runs against a dedicated `cash_voucher_laravel_test` schema on the 
     composer install
     vendor/bin/phpunit
 
-The dependency graph was resolved successfully in CI and uploaded as an artifact for review. The tracked `laravel/composer.lock` is still a merge gate; clean installs currently resolve the graph until that lockfile is committed. Hosting qualification, schema-baseline adoption, PWA transport changes, exports/imports and production cutover remain separate gated work.
+The tracked `laravel/composer.lock` is committed and Composer CI uses deterministic `composer install`. PR #270 merged this dependency change into `client-main`. Hosting qualification, schema-baseline adoption, PWA transport changes, exports/imports and production cutover remain separate gated work.
