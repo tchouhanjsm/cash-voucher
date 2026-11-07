@@ -14,7 +14,7 @@ See [Laravel Composer lockfile provenance](LARAVEL-COMPOSER-LOCKFILE-PROVENANCE.
 
 ## PR #269 implementation summary — Laravel financial and operations shadow slices (7 November 2026)
 
-- **PR / branch:** [PR #269](https://github.com/tchouhanjsm/cash-voucher/pull/269), `feat/laravel-vendor-management-20261106` → `client-main`. Current exact verified head: `219fc89149befe65b275e36216bff13f8c9da8ba`. PR remains draft.
+- **PR / branch:** [PR #269](https://github.com/tchouhanjsm/cash-voucher/pull/269), `feat/laravel-vendor-management-20261106` → `client-main`. Merged on 7 November 2026. Merge commit: `50eb17f5dfe663f3edf5afb2516aa8184776a635`; final PR head: `0d7b57fa73c81c4a0b9f3f981c5b297f280704c2`.
 - **Base:** PR #268 merge `d50b75f71c559b2e68b6325cbcb039766360e28c`.
 - **Authentication (CVL-013):** Laravel login/current/logout/password routes reuse the PHP authentication, HMAC verifier, rate limiter and session services. The short legacy PIN forced-change path preserves the old hash until password change; the current PHP login/session service remains unchanged.
 - **Voucher lifecycle / approvals (CVL-020/021):** reasoned edit/cancel; closed-date protection; material-only approval invalidation; Manager/Owner approve/reject; no self-approval; append-only approval and audit rows.
