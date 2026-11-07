@@ -9,11 +9,22 @@ use App\Modules\Vendors\Http\Controllers\VendorController;
 use App\Modules\Users\Http\Controllers\UserController;
 use App\Modules\Settings\Http\Controllers\SettingsController;
 use App\Modules\Audit\Http\Controllers\AuditController;
+use App\Modules\Identity\Http\Controllers\AuthenticationController;
 use CashVoucher\Api\Support\ApiException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function (): void {
+    // Login is public; all authenticated routes below reuse the shared cookie/session contract.
+    Route::post('/sessions', [AuthenticationController::class, 'login']);
+
+    // Forced-change users may only restore their session, sign out, or change password.
+    // This middleware mode does not apply to financial or administration endpoints.
+    Route::middleware('legacy.session:allow-must-change')->group(function (): void {
+        Route::get('/sessions/current', [AuthenticationController::class, 'current']);
+        Route::post('/sessions/current/logout', [AuthenticationController::class, 'logout']);
+        Route::post('/sessions/current/password', [AuthenticationController::class, 'changePassword']);
+    });
     Route::get('/health/live', function () {
         return ApiResponse::success(
             ['status' => 'live', 'service' => 'cash-voucher-laravel-api'],
@@ -50,6 +61,10 @@ Route::prefix('v1')->group(function (): void {
             'implementedResources' => [
                 'health',
                 'meta',
+                'sessions:login',
+                'sessions:current',
+                'sessions:logout',
+                'sessions:change-password',
                 'vouchers:list',
                 'vouchers:duplicate-check',
                 'vouchers:create',
