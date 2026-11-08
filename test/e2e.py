@@ -2219,6 +2219,13 @@ with sync_playwright() as p:
         and 'Mona' not in page.locator('.management-results-card tbody').inner_text(),
         'Users search narrows the current authorized list by name and email',
     )
+    page.fill('#users-search', 'no matching user')
+    check(
+        page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 0
+        and page.locator('#users-filter-empty').is_visible()
+        and 'No users match this search' in page.locator('#users-filter-empty').inner_text(),
+        'Users distinguishes an empty search result from an empty authorized user list',
+    )
     page.fill('#users-search', '')
     open_disclosure(page, '#users-filter-details')
     page.select_option('#users-filter-role', 'accountant')
@@ -2227,7 +2234,15 @@ with sync_playwright() as p:
         and page.locator('#users-filter-summary').inner_text() == '1 active',
         'Users role refinement reports its active state and filters without changing records',
     )
-    page.select_option('#users-filter-role', 'ALL')
+    page.click('#users-filter-details [data-act=usersclear]')
+    check(
+        page.locator('#users-search').input_value() == ''
+        and page.locator('#users-filter-role').input_value() == 'ALL'
+        and page.locator('#users-filter-status').input_value() == 'ALL'
+        and page.locator('#users-filter-summary').inner_text() == 'None active'
+        and page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 5,
+        'Clear filters resets Users search, role and status together and restores focus to search',
+    )
     page.locator('#users-filter-details > summary').click()
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
