@@ -727,7 +727,7 @@ export function createRegister({ api, go }) {
     const advancedFiltersOpen = advancedFilterCount > 0 ? ' open' : '';
     const advancedFilterCountLabel = advancedFilterCount
       ? advancedFilterCount + ' active'
-      : 'Type, status, approval, vendor and more';
+      : 'None active';
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
     const vendors =
       Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
@@ -762,7 +762,6 @@ export function createRegister({ api, go }) {
             Search vouchers
             <input id="rq" aria-label="Search vouchers by number, payee or note" placeholder="Voucher no., payee or note" value="${esc(R.q)}">
           </label>
-          <span class="register-search-hint">Search voucher number, payee or note</span>
         </div>
         <div class="register-date-presets" role="group" aria-label="Quick register date ranges">
           <span class="register-date-presets__label">Quick period</span>
