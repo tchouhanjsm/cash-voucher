@@ -166,7 +166,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v58'/,
+  /const C = 'cv2-v59'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -253,6 +253,22 @@ assert.match(
   payments,
   /cash-movement-fieldset/,
   'new voucher requires an explicit physical drawer movement choice',
+);
+
+assert.match(
+  payments,
+  /const cashImpactChoices = \[[\s\S]*?value: NT === 'RECEIPT' \? 'CASH_IN' : 'CASH_OUT'/,
+  'the cash-impact choices lead with the typical movement for the selected entry type',
+);
+assert.match(
+  payments,
+  /value: 'NO_CASH'/,
+  'the no-cash movement remains available for either entry type',
+);
+assert.match(
+  payments,
+  /value: NT === 'RECEIPT' \? 'CASH_OUT' : 'CASH_IN'/,
+  'the alternative physical cash movement remains available rather than being removed',
 );
 
 assert.match(
