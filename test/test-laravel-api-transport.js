@@ -136,7 +136,13 @@ async function run() {
         ok: true,
         data: {
           items: [
-            { id: 'user-1', name: 'Test owner', email: 'owner@example.test', role: 'owner', active: true },
+            {
+              id: 'user-1',
+              name: 'Test owner',
+              email: 'owner@example.test',
+              role: 'owner',
+              active: true,
+            },
           ],
           count: 1,
         },
