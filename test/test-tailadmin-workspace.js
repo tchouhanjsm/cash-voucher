@@ -273,6 +273,32 @@ assert.match(
 
 assert.match(
   payments,
+  /value="\$\{businessDate\(\)\}" max="\$\{addDays\(businessDate\(\), 1\)\}" required/,
+  "New Entry defaults to today's business date and constrains the date picker",
+);
+assert.match(
+  payments,
+  /amountInput\.inputMode = 'decimal'/,
+  'the INR amount field opens a decimal-friendly mobile keyboard',
+);
+assert.match(
+  payments,
+  /methodSelect\.required = true/,
+  'payment method remains a mandatory, separate field',
+);
+assert.match(
+  payments,
+  /input\.required = true;[\s\S]*?input\.name = 'cash-impact-/,
+  'physical drawer movement remains a mandatory grouped choice',
+);
+assert.match(
+  payments,
+  /\.append\(top, bottom, movement, optionalDetails\)/,
+  'category, payment method and physical cash movement remain outside optional details',
+);
+
+assert.match(
+  payments,
   /\$\('\.rv', \$\('#rows \.erow'\)\)\?\.focus\(\)/,
   'opening New Entry focuses the first payee or vendor field',
 );
