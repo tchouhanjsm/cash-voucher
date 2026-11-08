@@ -599,6 +599,7 @@ for (const selector of [
   '.dashboard-analysis-disclosure',
   '.users-list-toolbar',
   '.users-filter-details',
+  '.users-filter-actions',
   '.users-add-details',
   '.audit-primary-tools',
   '.audit-filter-details',
