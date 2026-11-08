@@ -243,6 +243,7 @@ async function run() {
     limit: 10,
   });
   assert.equal(page.items[0].no, 204);
+  assert.equal(page.items[0].amount, 12.5);
   assert.deepEqual(page.facets, { vendors: [], users: [] });
 
   const createdVendor = await api('saveVendor', {
@@ -363,6 +364,20 @@ async function run() {
   await assert.rejects(
     () => insecureApi('bootstrap'),
     (error) => error.code === 'ORIGIN_MISMATCH',
+  );
+
+  const unsafePrecisionApi = createLaravelApi({
+    getUrl: () => 'https://cash-voucher.example/api/v1',
+    getOrigin: () => 'https://cash-voucher.example',
+    fetchImpl: async () =>
+      jsonResponse({
+        ok: true,
+        data: { paid: '45035996273704.96' },
+      }),
+  });
+  await assert.rejects(
+    () => unsafePrecisionApi('dashboardSummary'),
+    (error) => error.code === 'AMOUNT_PRECISION_UNSAFE',
   );
 
   const expiredApi = createLaravelApi({
