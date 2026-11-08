@@ -80,10 +80,75 @@ final class SettingsApiTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.nextVoucherNo', $this->currentPaymentSequence)
             ->assertJsonPath('data.nextReceiptNo', $this->currentReceiptSequence)
+            ->assertJsonPath('data.voucherNumberSequencesInitialized', true)
             ->assertJsonPath('data.categories.0', 'Housekeeping')
             ->assertJsonPath('data.receiptCategories.0', 'Room Revenue')
             ->assertJsonPath('data.timeZone', 'Asia/Kolkata')
             ->assertJsonPath('data.currency', 'INR');
+    }
+
+    public function test_owner_can_read_and_update_property_settings_without_initialized_number_sequences(): void
+    {
+        $previousSequences = $this->removeNumberSequences();
+
+        try {
+            $owner = $this->withRoleSession('owner');
+            $owner->getJson('/api/v1/settings')
+                ->assertOk()
+                ->assertJsonPath('data.nextVoucherNo', null)
+                ->assertJsonPath('data.nextReceiptNo', null)
+                ->assertJsonPath('data.voucherNumberSequencesInitialized', false);
+
+            self::assertSame(0, DB::table('voucher_number_sequences')->count());
+
+            $owner->putJson('/api/v1/settings', $this->payload([
+                'propertyName' => 'First Run Property',
+                'nextVoucherNo' => null,
+                'nextReceiptNo' => null,
+            ]), [
+                'Idempotency-Key' => 'settings-first-run-'.bin2hex(random_bytes(6)),
+            ])
+                ->assertOk()
+                ->assertJsonPath('data.settings.propertyName', 'First Run Property')
+                ->assertJsonPath('data.settings.nextVoucherNo', null)
+                ->assertJsonPath('data.settings.nextReceiptNo', null)
+                ->assertJsonPath('data.settings.voucherNumberSequencesInitialized', false);
+
+            self::assertSame(0, DB::table('voucher_number_sequences')->count());
+            self::assertSame(
+                '"First Run Property"',
+                DB::table('settings')->where('setting_key', 'propertyName')->value('value_json'),
+            );
+        } finally {
+            $this->restoreNumberSequences($previousSequences);
+        }
+    }
+
+    public function test_owner_can_initialize_missing_number_sequences_with_explicit_next_numbers(): void
+    {
+        $previousSequences = $this->removeNumberSequences();
+
+        try {
+            $owner = $this->withRoleSession('owner');
+            $owner->putJson('/api/v1/settings', $this->payload(), [
+                'Idempotency-Key' => 'settings-sequence-init-'.bin2hex(random_bytes(6)),
+            ])
+                ->assertOk()
+                ->assertJsonPath('data.settings.nextVoucherNo', $this->safeNextPaymentSequence)
+                ->assertJsonPath('data.settings.nextReceiptNo', $this->safeNextReceiptSequence)
+                ->assertJsonPath('data.settings.voucherNumberSequencesInitialized', true);
+
+            self::assertSame(
+                $this->safeNextPaymentSequence,
+                (int) DB::table('voucher_number_sequences')->where('voucher_type', 'PAYMENT')->value('next_number'),
+            );
+            self::assertSame(
+                $this->safeNextReceiptSequence,
+                (int) DB::table('voucher_number_sequences')->where('voucher_type', 'RECEIPT')->value('next_number'),
+            );
+        } finally {
+            $this->restoreNumberSequences($previousSequences);
+        }
     }
 
     public function test_settings_update_is_idempotent_audited_and_keeps_legacy_settings_shape(): void
@@ -91,6 +156,10 @@ final class SettingsApiTest extends TestCase
         $owner = $this->withRoleSession('owner');
         $payload = $this->payload();
         $key = 'settings-save-'.bin2hex(random_bytes(5));
+        $previousAuditCount = DB::table('audit_events')
+            ->where('event_type', 'PROPERTY_SETTINGS_UPDATED')
+            ->where('target_id', 'property')
+            ->count();
 
         $first = $owner->putJson('/api/v1/settings', $payload, ['Idempotency-Key' => $key]);
         $first->assertOk()
@@ -107,7 +176,7 @@ final class SettingsApiTest extends TestCase
             ->assertJsonPath('data.replayed', true);
 
         self::assertSame(
-            1,
+            $previousAuditCount + 1,
             DB::table('audit_events')
                 ->where('event_type', 'PROPERTY_SETTINGS_UPDATED')
                 ->where('target_id', 'property')
@@ -177,6 +246,45 @@ final class SettingsApiTest extends TestCase
         ])->assertUnprocessable();
 
         self::assertSame($settingsBefore, $this->settingsSnapshot());
+    }
+
+    /** @return list<array{voucher_type:string,next_number:int,updated_at_utc:string}> */
+    private function removeNumberSequences(): array
+    {
+        $pdo = $this->migrationPdo();
+        $rows = $pdo->query(
+            "SELECT voucher_type, next_number, updated_at_utc
+             FROM voucher_number_sequences
+             WHERE voucher_type IN ('PAYMENT', 'RECEIPT')
+             ORDER BY voucher_type"
+        )->fetchAll();
+        $pdo->exec("DELETE FROM voucher_number_sequences WHERE voucher_type IN ('PAYMENT', 'RECEIPT')");
+
+        return $rows;
+    }
+
+    /** @param list<array{voucher_type:string,next_number:int,updated_at_utc:string}> $rows */
+    private function restoreNumberSequences(array $rows): void
+    {
+        if ($rows === []) {
+            return;
+        }
+
+        $pdo = $this->migrationPdo();
+        $restore = $pdo->prepare(
+            'INSERT INTO voucher_number_sequences (voucher_type, next_number, updated_at_utc)
+             VALUES (:type, :number, :updated_at)
+             ON DUPLICATE KEY UPDATE
+                next_number = VALUES(next_number),
+                updated_at_utc = VALUES(updated_at_utc)'
+        );
+        foreach ($rows as $row) {
+            $restore->execute([
+                'type' => (string) $row['voucher_type'],
+                'number' => (int) $row['next_number'],
+                'updated_at' => (string) $row['updated_at_utc'],
+            ]);
+        }
     }
 
     /** @return list<array{setting_key:string,value_json:string}> */

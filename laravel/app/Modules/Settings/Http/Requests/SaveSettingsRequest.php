@@ -28,8 +28,8 @@ final class SaveSettingsRequest extends FormRequest
             'categories.*' => ['required', 'string', 'max:40'],
             'receiptCategories' => ['required', 'array', 'list', 'min:1', 'max:60'],
             'receiptCategories.*' => ['required', 'string', 'max:40'],
-            'nextVoucherNo' => ['required', 'integer', 'min:1', 'max:999999999'],
-            'nextReceiptNo' => ['required', 'integer', 'min:1', 'max:999999999'],
+            'nextVoucherNo' => ['nullable', 'integer', 'min:1', 'max:999999999'],
+            'nextReceiptNo' => ['nullable', 'integer', 'min:1', 'max:999999999'],
             'openingBalance' => ['required', 'string', 'regex:/^-?(?:0|[1-9][0-9]{0,8})(?:\\.[0-9]{1,2})?$/D'],
         ];
     }

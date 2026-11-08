@@ -1,3 +1,15 @@
+## Current delivery focus — PR #273 property settings / sequence readiness (8 November 2026)
+
+- **PR / branch:** [PR #273](https://github.com/tchouhanjsm/cash-voucher/pull/273), `fix/laravel-settings-uninitialized-sequences-20261108` → `client-main`.
+- **Problem:** fresh Laravel bootstrap and Property Settings failed when either or both `PAYMENT` / `RECEIPT` rows were absent. Migration 0004 creates the sequence table but does not seed a reconciled counter.
+- **Implementation:** bootstrap and settings reads now return nullable next-number values plus `voucherNumberSequencesInitialized`; reads do not guess or create counters. Owner settings may be saved with blank series. Explicit supplied values are checked against existing issued numbers and the current counter, then inserted/advanced monotonically in the same transaction. Settings UI shows a reconciliation warning and blank inputs.
+- **Financial boundary:** voucher creation still fails closed when its own number series is absent. No default numbering, production data, Apps Script write path, schema migration, or dual writer was introduced.
+- **Regression coverage:** settings read/update without either series; explicit owner initialization; bootstrap read without sequences; existing missing-receipt create guard.
+- **Exact-head check history:** initial CI run [42464160925](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42464160925) surfaced a reviewed DOM-sink fingerprint change, the required PR-template headings, and an audit-count assertion that assumed a clean shared test database. The monitor [42464160951](https://github.com/tchouhanjsm/cash-voucher/actions/runs/42464160951) passed. Corrections are committed on the PR branch; follow-up CI and Browser E2E are required before merge.
+- **Release boundary:** PR only. No merge, production deployment, customer endpoint switch, Apps Script push, or real financial data access.
+
+---
+
 ## Current delivery focus — CVL-031 Laravel/PWA compatibility (7 November 2026)
 
 - **PR / branch:** [PR #271](https://github.com/tchouhanjsm/cash-voucher/pull/271), `feat/laravel-bootstrap-compat-20261107`, rebased directly on `client-main` after PR #270 merged.
