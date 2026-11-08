@@ -3780,9 +3780,9 @@ with sync_playwright() as p:
         'audit-log details are rendered as text, not executable HTML',
     )
     check(
-        'pages of 200' in page.locator('#audit-scope').inner_text().lower()
+        'load older adds earlier events' in page.locator('#audit-scope').inner_text().lower()
         and 'loaded pages only' in page.locator('#audit-scope').inner_text(),
-        'audit page explains server limit and filtered export scope',
+        'audit page explains cursor pagination and filtered export scope',
     )
     healthy_audit_text = page.locator('#aud-health').inner_text()
     check(
