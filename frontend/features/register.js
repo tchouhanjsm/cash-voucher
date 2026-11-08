@@ -774,43 +774,43 @@ export function createRegister({ api, go }) {
             <span>Filters</span>
             <span id="registerAdvancedFilterCount" class="register-advanced-filter-count">${advancedFilterCountLabel}</span>
           </summary>
-        <div class="register-primary-filter-grid">
-          <label class="register-filter-field" for="rt">
-            Transaction type
-            <select id="rt" aria-label="Filter by transaction type">
-              <option value="">Paid &amp; received</option>
-              <option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option>
-              <option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option>
-            </select>
-          </label>
-          <label class="register-filter-field" for="rs">
-            Status
-            <select id="rs" aria-label="Filter by status">
-              <option value="ACTIVE"${R.st === 'ACTIVE' ? ' selected' : ''}>Active</option>
-              <option value="CANCELLED"${R.st === 'CANCELLED' ? ' selected' : ''}>Cancelled</option>
-              <option value="ALL"${R.st === 'ALL' ? ' selected' : ''}>All</option>
-            </select>
-          </label>
-          <label class="register-filter-field" for="rapproval">
-            Approval
-            <select id="rapproval" aria-label="Filter by approval status">
-              ${[
-                ['ALL', 'All approval states'],
-                ['PENDING', 'Pending approval'],
-                ['APPROVED', 'Approved'],
-                ['REJECTED', 'Rejected'],
-                ['NOT_REQUIRED', 'Not required'],
-                ['REVIEW_REQUIRED', 'Needs review'],
-              ]
-                .map(
-                  ([key, label]) =>
-                    `<option value="${key}"${R.approval === key ? ' selected' : ''}>${label}</option>`,
-                )
-                .join('')}
-            </select>
-          </label>
-        </div>
-          <div class="register-filter-grid">
+          <div class="register-primary-filter-grid">
+            <label class="register-filter-field" for="rt">
+              Transaction type
+              <select id="rt" aria-label="Filter by transaction type">
+                <option value="">Paid &amp; received</option>
+                <option value="PAYMENT"${R.t === 'PAYMENT' ? ' selected' : ''}>Payments only</option>
+                <option value="RECEIPT"${R.t === 'RECEIPT' ? ' selected' : ''}>Received only</option>
+              </select>
+            </label>
+            <label class="register-filter-field" for="rs">
+              Status
+              <select id="rs" aria-label="Filter by status">
+                <option value="ACTIVE"${R.st === 'ACTIVE' ? ' selected' : ''}>Active</option>
+                <option value="CANCELLED"${R.st === 'CANCELLED' ? ' selected' : ''}>Cancelled</option>
+                <option value="ALL"${R.st === 'ALL' ? ' selected' : ''}>All</option>
+              </select>
+            </label>
+            <label class="register-filter-field" for="rapproval">
+              Approval
+              <select id="rapproval" aria-label="Filter by approval status">
+                ${[
+                  ['ALL', 'All approval states'],
+                  ['PENDING', 'Pending approval'],
+                  ['APPROVED', 'Approved'],
+                  ['REJECTED', 'Rejected'],
+                  ['NOT_REQUIRED', 'Not required'],
+                  ['REVIEW_REQUIRED', 'Needs review'],
+                ]
+                  .map(
+                    ([key, label]) =>
+                      `<option value="${key}"${R.approval === key ? ' selected' : ''}>${label}</option>`,
+                  )
+                  .join('')}
+              </select>
+            </label>
+          </div>
+            <div class="register-filter-grid">
             <label class="register-filter-field" for="rv">
               Vendor
               <select id="rv" aria-label="Filter by vendor">
