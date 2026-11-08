@@ -582,7 +582,7 @@ assert.match(
 );
 assert.match(
   administration,
-  /load older adds earlier events; search, filters and CSV export apply to loaded pages only/,
+  /Load older adds earlier events; search, filters and CSV export apply to loaded pages only/i,
   'Audit Log retains its pagination/export scope disclosure',
 );
 for (const selector of [
