@@ -8756,6 +8756,7 @@ with sync_playwright() as p:
         'Cash received mode updates its accessible selected state',
     )
     page.locator('[data-k=PAYMENT]').click()
+    page.locator('.entry-supporting-details > summary').click()
     page.locator('.rn').first.focus()
     page.keyboard.press('Tab')
     receipt_keyboard_focus = page.evaluate(
