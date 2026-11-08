@@ -148,6 +148,46 @@ final class BootstrapApiTest extends TestCase
             ->assertJsonPath('error.code', 'SESSION_REQUIRED');
     }
 
+    public function test_bootstrap_remains_available_when_number_sequences_are_uninitialized(): void
+    {
+        $pdo = $this->migrationPdo();
+        $previousSequences = $pdo->query(
+            "SELECT voucher_type, next_number, updated_at_utc
+             FROM voucher_number_sequences
+             WHERE voucher_type IN ('PAYMENT', 'RECEIPT')
+             ORDER BY voucher_type"
+        )->fetchAll();
+        $pdo->exec("DELETE FROM voucher_number_sequences WHERE voucher_type IN ('PAYMENT', 'RECEIPT')");
+
+        try {
+            $this->withLegacySession()
+                ->getJson('/api/v1/bootstrap')
+                ->assertOk()
+                ->assertJsonPath('data.settings.nextVoucherNo', null)
+                ->assertJsonPath('data.settings.nextReceiptNo', null)
+                ->assertJsonPath('data.settings.voucherNumberSequencesInitialized', false);
+
+            self::assertSame(0, DB::table('voucher_number_sequences')->count());
+        } finally {
+            if ($previousSequences !== []) {
+                $restore = $pdo->prepare(
+                    'INSERT INTO voucher_number_sequences (voucher_type, next_number, updated_at_utc)
+                     VALUES (:type, :number, :updated_at)
+                     ON DUPLICATE KEY UPDATE
+                        next_number = VALUES(next_number),
+                        updated_at_utc = VALUES(updated_at_utc)'
+                );
+                foreach ($previousSequences as $row) {
+                    $restore->execute([
+                        'type' => (string) $row['voucher_type'],
+                        'number' => (int) $row['next_number'],
+                        'updated_at' => (string) $row['updated_at_utc'],
+                    ]);
+                }
+            }
+        }
+    }
+
     private function setOpeningBalance(): void
     {
         DB::table('settings')->updateOrInsert(

@@ -416,14 +416,18 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   async function settings() {
+    const sequenceNotice =
+      S.settings?.voucherNumberSequencesInitialized === false
+        ? '<p class="muted" role="status">The payment and cash-received number series are not initialized. Reconcile each next number against the source ledger before entering it. Voucher creation remains blocked for any uninitialized series.</p>'
+        : '';
     $('#view').innerHTML =
       head('Settings', '', {
         section: 'Manage',
         description: 'Configure property defaults and review operational diagnostics.',
       }) +
       '<div class="settings-layout">' +
-      `<form id="sf" class="card settings-property-form" autocomplete="off"><h2>Property</h2><label>Name<input id="sn" value="${esc(S.settings.propertyName)}" required></label><label>Address (printed on vouchers)<textarea id="sa" rows="2">${esc(S.settings.propertyAddress)}</textarea></label>
-    <label>Categories (one per line)<textarea id="sc" rows="8">${esc(categories().join('\n'))}</textarea></label><div class="grid g2"><label>Next payment voucher no.<input id="sq" type="number" min="1" value="${esc(S.settings.nextVoucherNo)}"></label><label>Next cash-received no. (R-)<input id="sr" type="number" min="1" value="${esc(S.settings.nextReceiptNo)}"></label><label>Opening cash balance ₹<input id="so" inputmode="decimal" value="${esc(S.settings.openingBalance || 0)}"></label></div><label>Cash-received categories (one per line)<textarea id="sx" rows="5">${esc(rcats().join('\n'))}</textarea></label><button class="btn primary">Save settings</button></form>
+      `<form id="sf" class="card settings-property-form" autocomplete="off"><h2>Property</h2>${sequenceNotice}<label>Name<input id="sn" value="${esc(S.settings.propertyName)}" required></label><label>Address (printed on vouchers)<textarea id="sa" rows="2">${esc(S.settings.propertyAddress)}</textarea></label>
+    <label>Categories (one per line)<textarea id="sc" rows="8">${esc(categories().join('\n'))}</textarea></label><div class="grid g2"><label>Next payment voucher no.<input id="sq" type="number" min="1" value="${esc(S.settings.nextVoucherNo ?? '')}"></label><label>Next cash-received no. (R-)<input id="sr" type="number" min="1" value="${esc(S.settings.nextReceiptNo ?? '')}"></label><label>Opening cash balance ₹<input id="so" inputmode="decimal" value="${esc(S.settings.openingBalance || 0)}"></label></div><label>Cash-received categories (one per line)<textarea id="sx" rows="5">${esc(rcats().join('\n'))}</textarea></label><button class="btn primary">Save settings</button></form>
     <div class="settings-diagnostics">
     <section class="card" id="backup-status" aria-live="polite"><h2>🛡️ Backup &amp; recovery</h2><p class="muted">Loading backup status…</p></section>
     <section class="card" id="data-quality"><h2>🔎 Voucher data quality</h2><p class="muted">Scan saved vouchers for missing required values, invalid amounts/dates/statuses, and duplicate identifiers. This is a record-quality check, not an accounting or tax certification.</p><button class="btn primary" type="button" data-act="dqscan">Run data-quality scan</button><div id="dq-results" role="status" aria-live="polite"><p class="muted">Run a scan to review exceptions.</p></div></section>

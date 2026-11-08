@@ -55,8 +55,14 @@ final class PropertySettings
             function (PDO $connection) use ($values, $principal): array {
                 $oldSettings = $this->loadSettings($connection);
                 $sequences = $this->loadSequences($connection, true);
-                $this->validateNextNumber($connection, 'PAYMENT', $values['nextVoucherNo'], $sequences['PAYMENT']);
-                $this->validateNextNumber($connection, 'RECEIPT', $values['nextReceiptNo'], $sequences['RECEIPT']);
+                foreach ([
+                    'PAYMENT' => $values['nextVoucherNo'],
+                    'RECEIPT' => $values['nextReceiptNo'],
+                ] as $type => $requestedNumber) {
+                    if ($requestedNumber !== null) {
+                        $this->validateNextNumber($connection, $type, $requestedNumber, $sequences[$type]);
+                    }
+                }
 
                 $nextSettings = [
                     'propertyName' => $values['propertyName'],
@@ -82,23 +88,30 @@ final class PropertySettings
                     ]);
                 }
 
+                $upsertSequence = $connection->prepare(
+                    'INSERT INTO voucher_number_sequences (voucher_type, next_number, updated_at_utc)
+                     VALUES (:type, :next, UTC_TIMESTAMP(6))
+                     ON DUPLICATE KEY UPDATE
+                        next_number = GREATEST(next_number, VALUES(next_number)),
+                        updated_at_utc = UTC_TIMESTAMP(6)'
+                );
                 foreach (['PAYMENT' => $values['nextVoucherNo'], 'RECEIPT' => $values['nextReceiptNo']] as $type => $nextNumber) {
-                    if ($sequences[$type] === $nextNumber) {
+                    if ($nextNumber === null || $sequences[$type] === $nextNumber) {
                         continue;
                     }
-                    $update = $connection->prepare(
-                        'UPDATE voucher_number_sequences
-                         SET next_number = :next, updated_at_utc = UTC_TIMESTAMP(6)
-                         WHERE voucher_type = :type'
-                    );
-                    $update->execute(['next' => $nextNumber, 'type' => $type]);
-                    if ($update->rowCount() !== 1) {
-                        throw new ApiException(409, 'VOUCHER_SEQUENCE_NOT_INITIALIZED', 'The voucher number sequence is not initialized. No settings were changed.');
-                    }
+                    $upsertSequence->execute(['next' => $nextNumber, 'type' => $type]);
                 }
 
                 $afterSettings = $this->loadSettings($connection);
-                $afterSequences = $this->loadSequences($connection, false);
+                $afterSequences = $this->loadSequences($connection, true);
+                foreach ([
+                    'PAYMENT' => $values['nextVoucherNo'],
+                    'RECEIPT' => $values['nextReceiptNo'],
+                ] as $type => $requestedNumber) {
+                    if ($requestedNumber !== null) {
+                        $this->validateNextNumber($connection, $type, $requestedNumber, $afterSequences[$type]);
+                    }
+                }
                 $after = $this->present($afterSettings, $afterSequences);
                 $before = $this->present($oldSettings, $sequences);
                 $changes = [];
@@ -156,7 +169,7 @@ final class PropertySettings
         return $settings;
     }
 
-    /** @return array{PAYMENT:int,RECEIPT:int} */
+    /** @return array{PAYMENT:?int,RECEIPT:?int} */
     private function loadSequences(PDO $pdo, bool $lock): array
     {
         $sql = 'SELECT voucher_type, next_number FROM voucher_number_sequences WHERE voucher_type IN (?, ?)';
@@ -165,22 +178,23 @@ final class PropertySettings
         }
         $query = $pdo->prepare($sql);
         $query->execute(['PAYMENT', 'RECEIPT']);
-        $result = [];
+        $result = ['PAYMENT' => null, 'RECEIPT' => null];
         foreach ($query->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $type = (string) $row['voucher_type'];
             $value = (int) $row['next_number'];
-            if (in_array($type, ['PAYMENT', 'RECEIPT'], true) && $value > 0) {
-                $result[$type] = $value;
+            if (! in_array($type, ['PAYMENT', 'RECEIPT'], true)) {
+                continue;
             }
-        }
-        if (! isset($result['PAYMENT'], $result['RECEIPT'])) {
-            throw new ApiException(503, 'VOUCHER_SEQUENCE_NOT_INITIALIZED', 'Both voucher number sequences must be initialized before property settings can be read or changed.');
+            if ($value < 1) {
+                throw new ApiException(503, 'VOUCHER_SEQUENCE_INVALID', 'A voucher number sequence is invalid. Stop and inspect the sequence record.');
+            }
+            $result[$type] = $value;
         }
 
-        return ['PAYMENT' => $result['PAYMENT'], 'RECEIPT' => $result['RECEIPT']];
+        return $result;
     }
 
-    /** @param array<string,mixed> $settings @param array{PAYMENT:int,RECEIPT:int} $sequences @return array<string,mixed> */
+    /** @param array<string,mixed> $settings @param array{PAYMENT:?int,RECEIPT:?int} $sequences @return array<string,mixed> */
     private function present(array $settings, array $sequences): array
     {
         $categories = $settings['categories'] ?? self::DEFAULT_CATEGORIES;
@@ -197,13 +211,14 @@ final class PropertySettings
             'openingBalance' => $this->openingBalanceValue($settings['openingBalance'] ?? '0.00'),
             'nextVoucherNo' => $sequences['PAYMENT'],
             'nextReceiptNo' => $sequences['RECEIPT'],
+            'voucherNumberSequencesInitialized' => $sequences['PAYMENT'] !== null && $sequences['RECEIPT'] !== null,
             'timeZone' => 'Asia/Kolkata',
             'currency' => 'INR',
             'moneyStorageUnit' => 'paise',
         ];
     }
 
-    private function validateNextNumber(PDO $pdo, string $type, int $requested, int $current): void
+    private function validateNextNumber(PDO $pdo, string $type, int $requested, ?int $current): void
     {
         $query = $pdo->prepare(
             "SELECT COALESCE(MAX(CAST(voucher_number AS UNSIGNED)), 0)
@@ -212,7 +227,7 @@ final class PropertySettings
         );
         $query->execute(['type' => $type]);
         $maximumIssued = (int) $query->fetchColumn();
-        if ($requested <= $maximumIssued || $requested < $current) {
+        if ($requested <= $maximumIssued || ($current !== null && $requested < $current)) {
             throw new ApiException(
                 422,
                 'VOUCHER_SEQUENCE_INVALID',
@@ -239,8 +254,8 @@ final class PropertySettings
         }
 
         $openingBalance = $this->openingBalance($input['openingBalance'] ?? null);
-        $nextVoucherNo = $this->positiveInteger($input['nextVoucherNo'] ?? null, 'next voucher number');
-        $nextReceiptNo = $this->positiveInteger($input['nextReceiptNo'] ?? null, 'next receipt number');
+        $nextVoucherNo = $this->nullablePositiveInteger($input['nextVoucherNo'] ?? null, 'next voucher number');
+        $nextReceiptNo = $this->nullablePositiveInteger($input['nextReceiptNo'] ?? null, 'next receipt number');
 
         return [
             'propertyName' => $propertyName,
@@ -317,6 +332,15 @@ final class PropertySettings
         }
 
         throw new ApiException(503, 'SETTINGS_DATA_INVALID', 'Saved opening balance is malformed. Stop and inspect the settings record.');
+    }
+
+    private function nullablePositiveInteger(mixed $value, string $label): ?int
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return $this->positiveInteger($value, $label);
     }
 
     private function positiveInteger(mixed $value, string $label): int
