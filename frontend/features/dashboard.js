@@ -471,13 +471,21 @@ export function createDashboard({ api }) {
     const actions = document.createElement('div');
     actions.className = 'page-header-actions';
     if (can('create') && !staffHome) {
-      const create = document.createElement('button');
-      create.type = 'button';
-      create.className = 'btn primary';
-      create.dataset.act = 'ntype';
-      create.dataset.k = 'PAYMENT';
-      create.textContent = '+ New entry';
-      actions.appendChild(create);
+      const payment = document.createElement('button');
+      payment.type = 'button';
+      payment.className = 'btn primary';
+      payment.dataset.act = 'ntype';
+      payment.dataset.k = 'PAYMENT';
+      payment.textContent = 'Record a payment';
+      actions.appendChild(payment);
+
+      const receipt = document.createElement('button');
+      receipt.type = 'button';
+      receipt.className = 'btn';
+      receipt.dataset.act = 'ntype';
+      receipt.dataset.k = 'RECEIPT';
+      receipt.textContent = 'Cash received';
+      actions.appendChild(receipt);
     }
     const refresh = document.createElement('button');
     refresh.type = 'button';
@@ -1239,8 +1247,8 @@ export function createDashboard({ api }) {
         ? `<p class="muted" role="status">${invalidAmountCount} recorded voucher amount(s) are invalid and excluded from totals.</p>`
         : '');
 
+    const dailyPositionPanel = dailyCashPositionCard(dailyOperations, dailyOperationsError);
     const operationsPanels =
-      dailyCashPositionCard(dailyOperations, dailyOperationsError) +
       '<div class="dashboard-operations-grid">' +
       dailyCloseCard(dailyOperations, dailyOperationsError) +
       recentTransactionsCard(recentTransactions, recentTransactionsError, from, to) +
@@ -1259,23 +1267,28 @@ export function createDashboard({ api }) {
       </div>
       ${dashboardWarnings}
       ${operationsPanels}
-      <div class="dashboard-analysis-grid">
-        <div class="dashboard-analysis-primary">
-      <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend, from, to)}</div>
-      <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors)}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory)}</div></div>
+      <details class="dashboard-analysis-disclosure">
+        <summary>Financial analysis <span>Trends and breakdowns for the selected period</span></summary>
+        <div class="dashboard-analysis-disclosure__content">
+          <div class="dashboard-analysis-grid">
+            <div class="dashboard-analysis-primary">
+              <div class="card dashboard-trend"><h2>Spending trend <span class="muted">${esc(dmy(from))} – ${esc(dmy(to))}</span></h2>${trendSvg(summary.trend, from, to)}</div>
+              <div class="two dashboard-breakdowns"><div class="card dashboard-breakdown"><h2>Top vendors</h2>${bars(summary.topVendors)}</div><div class="card dashboard-breakdown"><h2>By category</h2>${bars(summary.byCategory)}</div></div>
+            </div>
+            <aside class="dashboard-analysis-secondary" aria-label="Payment analysis">
+              <div class="card dashboard-payment-methods"><h2>Approved payments by method</h2><p class="muted">Active approved payments in this period. Historical entries without a saved method appear as Not recorded.</p>${Array.isArray(summary.byPaymentMethod) ? bars(summary.byPaymentMethod, 5) : '<p class="muted">Payment-method breakdown is unavailable for this deployment.</p>'}</div>
+              ${
+                can('viewAll')
+                  ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(
+                      summary.byTeamMember.map((row) => ({ ...row, k: nm(row.k) })),
+                      10,
+                    )}</div>`
+                  : ''
+              }
+            </aside>
+          </div>
         </div>
-        <aside class="dashboard-analysis-secondary" aria-label="Payment analysis">
-      <div class="card dashboard-payment-methods"><h2>Approved payments by method</h2><p class="muted">Active approved payments in this period. Historical entries without a saved method appear as Not recorded.</p>${Array.isArray(summary.byPaymentMethod) ? bars(summary.byPaymentMethod, 5) : '<p class="muted">Payment-method breakdown is unavailable for this deployment.</p>'}</div>
-      ${
-        can('viewAll')
-          ? `<div class="card dashboard-team"><h2>By team member</h2>${bars(
-              summary.byTeamMember.map((row) => ({ ...row, k: nm(row.k) })),
-              10,
-            )}</div>`
-          : ''
-      }
-      </aside>
-      </div>
+      </details>
     `;
 
     const staffDashboardWarnings = malformedFieldCount
@@ -1290,19 +1303,25 @@ export function createDashboard({ api }) {
         ].join('')
       : periodIsEmpty
         ? [
-            needsAttention,
             periodControls(from, to),
+            dailyPositionPanel,
+            needsAttention,
             emptyPeriodPanel,
             dashboardWarnings,
             operationsPanels,
           ].join('')
-        : [needsAttention, periodControls(from, to), financialPanels].join('');
+        : [
+            periodControls(from, to),
+            dailyPositionPanel,
+            needsAttention,
+            financialPanels,
+          ].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
       head(
         staffHome ? 'My day' : can('viewAll') ? 'Dashboard' : 'My Dashboard',
-        `${staffHome ? '' : can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">+ New entry</button>' : ''}${refreshBtn}`,
+        `${staffHome ? '' : can('create') ? '<button type="button" class="btn primary" data-act="ntype" data-k="PAYMENT">Record a payment</button><button type="button" class="btn" data-act="ntype" data-k="RECEIPT">Cash received</button>' : ''}${refreshBtn}`,
         {
           section: 'Work',
           description: staffHome
