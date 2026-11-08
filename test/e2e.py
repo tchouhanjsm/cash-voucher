@@ -97,9 +97,20 @@ with sync_playwright() as p:
     context = browser.new_context(
         viewport={'width': 390, 'height': 800},
         color_scheme='light',
+        timezone_id='Asia/Kolkata',
         accept_downloads=True,
     )
     page = context.new_page()
+    # Keep the browser's business date aligned with BUSINESS_TODAY for the
+    # entire suite. A run that crosses midnight IST must not change the UI's
+    # quick-range dates after the Python expected date has already been read.
+    page.clock.install(
+        time=datetime.datetime.combine(
+            BUSINESS_TODAY,
+            datetime.time(hour=12),
+            tzinfo=ZoneInfo('Asia/Kolkata'),
+        )
+    )
 
     def choose_cash_impact_for_current_rows(impact):
         allowed_impacts = {'CASH_IN', 'CASH_OUT', 'NO_CASH'}
