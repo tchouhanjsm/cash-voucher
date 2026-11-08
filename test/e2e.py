@@ -793,6 +793,11 @@ with sync_playwright() as p:
     )
     comparison_case = {'paid': 1250, 'previousPaid': 1000}
     page.click('[data-act=range][data-k="7d"]')
+    check(
+        not page.locator('.dashboard-analysis-disclosure').evaluate('(element) => element.open'),
+        'Dashboard period analysis stays collapsed until requested',
+    )
+    open_disclosure(page, '.dashboard-analysis-disclosure')
     page.wait_for_selector('.dashboard-trend-chart', state='visible')
     page.unroute('**/api?*', inject_dashboard_comparison)
 
