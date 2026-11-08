@@ -416,6 +416,8 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     if (role) role.value = 'ALL';
     if (status) status.value = 'ALL';
     syncUserFilters();
+    const filters = $('#users-filter-details');
+    if (filters) filters.open = false;
     search?.focus();
   }
 
