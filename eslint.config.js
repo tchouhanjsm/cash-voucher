@@ -41,6 +41,8 @@ module.exports = [
   {
     ignores: [
       'node_modules/**',
+      '**/vendor/**',
+      '**/.phpunit.cache/**',
       '.git/**',
       'dist/**',
       'dist-template/**',
