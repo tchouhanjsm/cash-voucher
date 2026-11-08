@@ -1,6 +1,7 @@
 # Laravel migration phased backlog
 
 **Status:** PR #273 is merged into `client-main` at `650dc586e11f32d3eea488b30de28518f7c9a58c`; local bootstrap/login/settings now work with uninitialized voucher sequences and do not guess counters. PR #275 adds the next CVL-031 slice: opt-in Laravel transport for vendor create/update/active-state actions; exact-head CI and Browser E2E are pending. Customer builds still use Apps Script, and the IndexedDB outbox is not connected to Laravel. Full register/dashboard parity, voucher writes, receipt transfer, outbox replay, hosting qualification, historical import/reconciliation, backup/restore proof and cutover remain open. Apps Script remains the sole production financial writer.
+
 ## CVL-031 vendor write transport slice — 8 November 2026
 
 **Branch:** `feat/laravel-vendor-transport-clean-20261108`, based on the merged PR #273 integration head.
