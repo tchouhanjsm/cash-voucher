@@ -6628,6 +6628,21 @@ with sync_playwright() as p:
     )
 
     go_view(page, 'dash')
+    page.wait_for_function(
+        """() => {
+            const view = document.querySelector('#view');
+            return Boolean(
+                view?.querySelector('.dashboard-cash-position')
+                && view.querySelector('.daily-close-readiness')
+                && (
+                    view.querySelector('.dashboard-analysis-disclosure')
+                    || view.querySelector('.dashboard-empty-state')
+                    || view.querySelector('[role=alert]')
+                )
+            );
+        }""",
+        timeout=10000,
+    )
     initial_analysis = page.locator('.dashboard-analysis-disclosure')
     if initial_analysis.count() == 1:
         check(
@@ -6814,7 +6829,9 @@ with sync_playwright() as p:
         page.reload(wait_until='domcontentloaded')
     page.wait_for_selector('#nav button')
     go_view(page, 'dash')
-    page.wait_for_selector('.hb-l')
+    page.wait_for_selector('.dashboard-analysis-disclosure', state='attached')
+    open_disclosure(page, '.dashboard-analysis-disclosure')
+    page.wait_for_selector('.hb-l', state='visible')
     vendor_labels = page.locator('.two .card').nth(0).locator('.hb-l').all_inner_texts()
     category_labels = page.locator('.two .card').nth(1).locator('.hb-l').all_inner_texts()
     check(
