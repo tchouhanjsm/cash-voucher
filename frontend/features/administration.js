@@ -712,7 +712,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
           auditRows = [];
           malformedAuditCount = 0;
           auditNextBeforeRow = null;
-          auditTotalCount = 0;
+          auditTotalCount = null;
           populateAuditOptions();
           renderAuditRows();
         }
