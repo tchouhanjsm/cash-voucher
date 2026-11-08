@@ -750,22 +750,30 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         description: 'Review administrative events and export the loaded records.',
       }) +
       `<section class="card audit-panel" aria-describedby="audit-scope">
-        <p id="audit-scope" class="muted">Audit events load newest-first. Load older adds earlier events; filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
-        <div id="aud-health" aria-live="polite"><p class="muted">Loading audit-write health…</p></div>
-        <div class="filters audit-filters">
-          <label>Search<input id="aud-q" type="search" aria-label="Search audit events" placeholder="Search details, target or user"></label>
-          <label>User<select id="aud-user" aria-label="Filter audit events by user"><option value="">All users</option></select></label>
-          <label>Action<select id="aud-action" aria-label="Filter audit events by action"><option value="">All actions</option></select></label>
-          <label>From<input id="aud-from" type="date" aria-label="Audit start date"></label>
-          <label>To<input id="aud-to" type="date" aria-label="Audit end date"></label>
-          <button class="btn" type="button" data-act="audclear">Clear filters</button>
-          <button class="btn" type="button" data-act="audhealth">Export health snapshot (JSON)</button>
+        <p id="audit-scope" class="muted">Audit events load newest-first. Load older adds earlier events; search, filters and CSV export apply to loaded pages only. The log is not a tamper-evident ledger, and retention is not guaranteed by this view.</p>
+        <div class="audit-primary-tools">
+          <label class="audit-search-field" for="aud-q">Search audit events<input id="aud-q" type="search" aria-label="Search audit events" placeholder="Search details, target or user"></label>
           <button class="btn primary" type="button" data-act="audcsv">Export filtered CSV</button>
         </div>
+        <details class="audit-filter-details" id="auditFilters">
+          <summary>Filters <span id="audit-filter-summary">None active</span></summary>
+          <div class="filters audit-filters">
+            <label>User<select id="aud-user" aria-label="Filter audit events by user"><option value="">All users</option></select></label>
+            <label>Action<select id="aud-action" aria-label="Filter audit events by action"><option value="">All actions</option></select></label>
+            <label>From<input id="aud-from" type="date" aria-label="Audit start date"></label>
+            <label>To<input id="aud-to" type="date" aria-label="Audit end date"></label>
+            <div class="audit-filter-actions">
+              <button class="btn" type="button" data-act="audclear">Clear filters</button>
+              <button class="btn" type="button" data-act="audhealth">Export health snapshot (JSON)</button>
+            </div>
+          </div>
+        </details>
+        <div id="aud-health" aria-live="polite"><p class="muted">Loading audit-write health…</p></div>
         <p id="aud-count" class="muted" role="status" aria-live="polite">Loading audit events…</p>
         <button id="aud-more" class="btn hidden" type="button" data-act="audmore">Load older events</button>
         <div class="table-wrap"><table><thead><tr><th>When</th><th>User</th><th>Action</th><th>Target</th><th>Details</th></tr></thead><tbody id="aud"><tr><td colspan="5" class="muted">Loading…</td></tr></tbody></table></div>
       </section>`;
+    updateAuditFilterSummary();
 
     api('auditLog')
       .then((page) => {
@@ -1188,12 +1196,22 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         : '');
   }
 
+  function updateAuditFilterSummary() {
+    const activeCount = Number(Boolean(auditFilters.user)) +
+      Number(Boolean(auditFilters.action)) +
+      Number(Boolean(auditFilters.from)) +
+      Number(Boolean(auditFilters.to));
+    const summary = $('#audit-filter-summary');
+    if (summary) summary.textContent = activeCount ? activeCount + ' active' : 'None active';
+  }
+
   function clearAuditFilters() {
     Object.assign(auditFilters, { query: '', user: '', action: '', from: '', to: '' });
     ['aud-q', 'aud-user', 'aud-action', 'aud-from', 'aud-to'].forEach((id) => {
       const field = $('#' + id);
       if (field) field.value = '';
     });
+    updateAuditFilterSummary();
     renderAuditRows();
   }
 
@@ -1296,6 +1314,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     const key = values[field.id];
     if (!key) return;
     auditFilters[key] = field.value;
+    updateAuditFilterSummary();
     renderAuditRows();
   }
 
