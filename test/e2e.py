@@ -69,6 +69,12 @@ def click_with_draft_discard(page, button):
         page.remove_listener('dialog', handle_dialog)
 
 
+def open_disclosure(page, selector):
+    disclosure = page.locator(selector)
+    if disclosure.count() == 1 and not disclosure.evaluate('(element) => element.open'):
+        page.locator(selector + ' > summary').click()
+
+
 def go_view(page, view):
     """Navigate through the visible mobile shortcut or the accessible More sheet."""
     shortcut = page.locator(f'#nav [data-v="{view}"]')
@@ -2128,8 +2134,10 @@ with sync_playwright() as p:
     check(
         page.locator('#uf').evaluate("(form) => form.parentElement.classList.contains('form-panel')")
         and page.locator('#view .table-wrap[role=region]').count() == 1
-        and page.locator('#view table caption').inner_text() == 'Saved users',
-        'user administration uses the shared form panel and accessible table shell',
+        and page.locator('#view table caption').inner_text() == 'Saved users'
+        and page.locator('#users-search').is_visible()
+        and not page.locator('.users-add-details').evaluate('(element) => element.open'),
+        'Users opens on a searchable list while Add user stays a secondary disclosure',
     )
     check(
         page.locator('#nav [data-v=users]').get_attribute('aria-current') == 'page'
@@ -2143,6 +2151,7 @@ with sync_playwright() as p:
         ('Nina Accountant', 'accountant@test.com', 'accountant', 'Account#Start2026'),
         ('Approval Manager', 'approval-manager@test.com', 'manager', 'Lock#Start2026'),
     ]):
+        open_disclosure(page, '.users-add-details')
         page.fill('#un', name)
         page.fill('#ue', email)
         page.select_option('#ur', role)
@@ -2183,6 +2192,23 @@ with sync_playwright() as p:
             )
             raise
     check(page.locator('#view tbody tr').count() == 5, 'owner can list staff, managers and accountant users')
+    page.fill('#users-search', 'nina accountant')
+    check(
+        page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 1
+        and 'Nina Accountant' in page.locator('.management-results-card tbody').inner_text()
+        and 'Mona' not in page.locator('.management-results-card tbody').inner_text(),
+        'Users search narrows the current authorized list by name and email',
+    )
+    page.fill('#users-search', '')
+    open_disclosure(page, '#users-filter-details')
+    page.select_option('#users-filter-role', 'accountant')
+    check(
+        page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count() == 1
+        and page.locator('#users-filter-summary').inner_text() == '1 active',
+        'Users role refinement reports its active state and filters without changing records',
+    )
+    page.select_option('#users-filter-role', 'ALL')
+    page.locator('#users-filter-details > summary').click()
 
     # Owner cannot self-approve a new high-value payment; a manager can review it.
     go_view(page, 'new')
@@ -2886,8 +2912,12 @@ with sync_playwright() as p:
     check(
         manager_page.locator('#view .page-header h1').inner_text() == 'Dashboard'
         and manager_page.locator('.dashboard-staff-home').count() == 0
+        and manager_page.locator('.page-header-actions [data-k="PAYMENT"]').inner_text() == 'Record a payment'
+        and manager_page.locator('.page-header-actions [data-k="RECEIPT"]').inner_text() == 'Cash received'
         and manager_page.locator('.dashboard-cash-position').count() == 1
         and manager_page.locator('.daily-close-readiness').count() == 1
+        and manager_page.locator('.dashboard-cash-position').evaluate("(element) => element.compareDocumentPosition(document.querySelector('.needs')) & Node.DOCUMENT_POSITION_FOLLOWING") != 0
+        and not manager_page.locator('.dashboard-analysis-disclosure').evaluate('(element) => element.open')
         and (
             manager_stats == 6
             or (
@@ -3282,6 +3312,7 @@ with sync_playwright() as p:
     accountant_context.close()
     go_view(page, 'users')
     page.wait_for_selector('#uf')
+    open_disclosure(page, '.users-add-details')
     xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
     page.fill('#ue', 'stored-xss@test.com')
@@ -3770,6 +3801,13 @@ with sync_playwright() as p:
     page.route('**/api?*', inject_hostile_audit_detail)
     go_view(page, 'audit')
     page.wait_for_selector('#aud tr')
+    check(
+        page.locator('#aud-q').is_visible()
+        and page.locator('[data-act=audcsv]').is_visible()
+        and not page.locator('#auditFilters').evaluate('(element) => element.open')
+        and 'retention is not guaranteed' in page.locator('#audit-scope').inner_text(),
+        'Audit Log keeps search and CSV export visible, filters collapsed and retention scope disclosed',
+    )
     page.wait_for_function(
         "document.querySelector('#aud').innerText.includes('<svg onload=window.__xssFired=true></svg>')"
     )
@@ -3794,7 +3832,8 @@ with sync_playwright() as p:
         'no-known-failure state explains the dual-store blind spot without claiming complete audit history',
     )
     with page.expect_download() as audit_health_snapshot_download_info:
-        page.click('[data-act=audhealth]')
+        open_disclosure(page, '#auditFilters')
+    page.click('[data-act=audhealth]')
     audit_health_snapshot_download = audit_health_snapshot_download_info.value
     with open(audit_health_snapshot_download.path(), encoding='utf-8') as audit_health_snapshot_file:
         healthy_audit_snapshot = json.load(audit_health_snapshot_file)
@@ -3831,6 +3870,7 @@ with sync_playwright() as p:
         and audit_download.suggested_filename.endswith('.csv'),
         'audit export downloads a CSV for the active filters',
     )
+    open_disclosure(page, '#auditFilters')
     page.click('[data-act=audclear]')
     check(
         'No audit events match these filters.' not in page.locator('#aud').inner_text()
@@ -7787,7 +7827,8 @@ with sync_playwright() as p:
         'hostile monitor failure kind remains inert and does not execute',
     )
     with audit_page.expect_download() as degraded_snapshot_download_info:
-        audit_page.click('[data-act=audhealth]')
+        open_disclosure(audit_page, '#auditFilters')
+    audit_page.click('[data-act=audhealth]')
     degraded_snapshot_download = degraded_snapshot_download_info.value
     with open(degraded_snapshot_download.path(), encoding='utf-8') as degraded_snapshot_file:
         degraded_audit_snapshot = json.load(degraded_snapshot_file)
