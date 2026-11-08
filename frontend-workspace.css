@@ -3781,8 +3781,9 @@
   .app #view .users-filter-details {
     align-self: stretch;
   }
-  .app #view .users-filter-details > summary {
-    height: 100%;
+  .app #view .users-filter-details[open] {
+    position: relative;
+    z-index: 2;
   }
   .app #view .users-filter-grid {
     display: grid;
