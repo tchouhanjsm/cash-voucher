@@ -71,8 +71,12 @@ def click_with_draft_discard(page, button):
 
 def open_disclosure(page, selector):
     disclosure = page.locator(selector)
-    if disclosure.count() == 1 and not disclosure.evaluate('(element) => element.open'):
-        page.locator(selector + ' > summary').click()
+    if disclosure.count() != 1:
+        raise AssertionError(f'Expected one disclosure for {selector!r}, found {disclosure.count()}.')
+    if not disclosure.evaluate('(element) => element.open'):
+        disclosure.locator('summary').click()
+    if not disclosure.evaluate('(element) => element.open'):
+        raise AssertionError(f'Disclosure {selector!r} did not open after activating its summary.')
 
 
 def go_view(page, view):
