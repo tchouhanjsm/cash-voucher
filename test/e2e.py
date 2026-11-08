@@ -4753,6 +4753,7 @@ with sync_playwright() as p:
     page.fill('.ra', '1,250.50')
     page.select_option('.rc', 'Kitchen')
     xss_note = '<img src=x onerror=window.__xssFired=true>'
+    page.locator('.entry-supporting-details > summary').click()
     page.fill('.rn', xss_note)
     with open('/tmp/r.png', 'wb') as image_file:
         image_file.write(png)
