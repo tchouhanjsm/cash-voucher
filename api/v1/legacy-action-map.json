@@ -107,18 +107,21 @@
       "state": "planned"
     },
     "saveVendor": {
-      "method": ["POST", "PATCH"],
+      "method": [
+        "POST",
+        "PATCH"
+      ],
       "path": "/vendors[/{vendorId}]",
       "access": "vendors",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented"
     },
     "toggleVendor": {
       "method": "POST",
       "path": "/vendors/{vendorId}/active",
       "access": "vendors",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented"
     },
     "listUsers": {
       "method": "GET",
@@ -128,7 +131,10 @@
       "state": "planned"
     },
     "saveUser": {
-      "method": ["POST", "PATCH"],
+      "method": [
+        "POST",
+        "PATCH"
+      ],
       "path": "/users[/{userId}]",
       "access": "users",
       "kind": "write",
