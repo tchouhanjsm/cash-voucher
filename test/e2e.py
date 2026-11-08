@@ -2698,6 +2698,7 @@ with sync_playwright() as p:
 
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
+    open_disclosure(page, '.dashboard-analysis-disclosure')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('Spending trend') || "
         "document.querySelector('#view')?.innerText.includes('Dashboard totals unavailable')"
