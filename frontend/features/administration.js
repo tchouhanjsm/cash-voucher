@@ -339,6 +339,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
         .join('') +
       '</select></label>' +
       '<label for="users-filter-status">Status<select id="users-filter-status"><option value="ALL">All users</option><option value="ACTIVE">Active</option><option value="DISABLED">Disabled</option></select></label>' +
+      '<div class="users-filter-actions"><button type="button" class="btn" data-act="usersclear">Clear filters</button></div>' +
       '</div></details>' +
       '</div>' +
       '<p id="users-result-count" class="users-result-count" role="status" aria-live="polite"></p>' +
@@ -404,6 +405,18 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
       userFilters.status = event.target.value;
       syncUserFilters();
     }
+  }
+
+  function clearUserFilters() {
+    Object.assign(userFilters, { query: '', role: 'ALL', status: 'ALL' });
+    const search = $('#users-search');
+    const role = $('#users-filter-role');
+    const status = $('#users-filter-status');
+    if (search) search.value = '';
+    if (role) role.value = 'ALL';
+    if (status) status.value = 'ALL';
+    syncUserFilters();
+    search?.focus();
   }
 
   async function saveUser() {
@@ -2182,6 +2195,7 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     bind,
     vendors,
     users: usersView,
+    clearUserFilters,
     settings,
     audit: auditView,
     clearAuditFilters,
