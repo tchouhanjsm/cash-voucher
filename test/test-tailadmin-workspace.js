@@ -166,7 +166,7 @@ assert.doesNotMatch(
 
 assert.match(
   worker,
-  /const C = 'cv2-v58'/,
+  /const C = 'cv2-v59'/,
   'phase two screen implementation advances the app-shell cache',
 );
 assert.match(
@@ -253,6 +253,89 @@ assert.match(
   payments,
   /cash-movement-fieldset/,
   'new voucher requires an explicit physical drawer movement choice',
+);
+
+assert.match(
+  payments,
+  /const cashImpactChoices = \[[\s\S]*?value: NT === 'RECEIPT' \? 'CASH_IN' : 'CASH_OUT'/,
+  'the cash-impact choices lead with the typical movement for the selected entry type',
+);
+assert.match(
+  payments,
+  /value: 'NO_CASH'/,
+  'the no-cash movement remains available for either entry type',
+);
+assert.match(
+  payments,
+  /value: NT === 'RECEIPT' \? 'CASH_OUT' : 'CASH_IN'/,
+  'the alternative physical cash movement remains available rather than being removed',
+);
+
+assert.match(
+  payments,
+  /value="\$\{businessDate\(\)\}" max="\$\{addDays\(businessDate\(\), 1\)\}" required/,
+  "New Entry defaults to today's business date and constrains the date picker",
+);
+assert.match(
+  payments,
+  /amountInput\.inputMode = 'decimal'/,
+  'the INR amount field opens a decimal-friendly mobile keyboard',
+);
+assert.match(
+  payments,
+  /methodSelect\.required = true/,
+  'payment method remains a mandatory, separate field',
+);
+assert.match(
+  payments,
+  /input\.required = true;[\s\S]*?input\.name = 'cash-impact-/,
+  'physical drawer movement remains a mandatory grouped choice',
+);
+assert.match(
+  payments,
+  /\.append\(top, bottom, movement, optionalDetails\)/,
+  'category, payment method and physical cash movement remain outside optional details',
+);
+
+assert.match(
+  payments,
+  /\$\('\.rv', \$\('#rows \.erow'\)\)\?\.focus\(\)/,
+  'opening New Entry focuses the first payee or vendor field',
+);
+assert.match(
+  payments,
+  /entry-supporting-details/,
+  'notes and receipt attachments sit behind optional supporting details',
+);
+assert.match(
+  payments,
+  /optionalDetails\.open = true/,
+  'choosing receipt files reveals the optional details section',
+);
+assert.match(
+  payments,
+  /Save another /,
+  'a server-confirmed save offers a clear save-another action',
+);
+assert.match(
+  payments,
+  /Add another /,
+  'a device-queued save is described as adding another entry, not server confirmation',
+);
+assert.match(
+  styles,
+  /#nf\[data-workspace='entry-form-workspace'\]\s*\{[^}]*max-width:\s*800px/s,
+  'New Entry remains within an 800px desktop content width',
+);
+assert.match(
+  styles,
+  /\.erow \.entry-amount-field input\s*\{[^}]*font-size:\s*23px/s,
+  'the amount field is the strongest form input',
+);
+assert.match(
+  styles,
+  /\.entry-supporting-details > summary\s*\{[^}]*min-height:\s*44px/s,
+  'optional details remains keyboard- and touch-accessible',
 );
 assert.match(
   payments,
