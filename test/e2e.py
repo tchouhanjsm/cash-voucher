@@ -2712,6 +2712,16 @@ with sync_playwright() as p:
     )
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
+    page.wait_for_function(
+        "document.querySelector('.dashboard-analysis-disclosure') || "
+        "document.querySelector('#view [role=alert]')",
+        timeout=15000,
+    )
+    check(
+        len(dashboard_summary_interceptions) > 0
+        and page.locator('.dashboard-analysis-disclosure').count() == 1,
+        'authorized Dashboard analysis renders after the period summary request completes',
+    )
     open_disclosure(page, '.dashboard-analysis-disclosure')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes('Spending trend') || "
