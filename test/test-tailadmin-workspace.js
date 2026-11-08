@@ -365,6 +365,41 @@ assert.match(
   /syncRegisterFilterSummary/,
   'register announces active server-side refinements without reimplementing filtering',
 );
+
+const registerFilterStart = register.indexOf(
+  '<details class="register-advanced-filters" id="registerAdvancedFilters"',
+);
+const registerFilterEnd = register.indexOf('</details>', registerFilterStart);
+const registerFilterMarkup = register.slice(registerFilterStart, registerFilterEnd);
+assert.ok(
+  registerFilterStart >= 0 &&
+    registerFilterEnd > registerFilterStart &&
+    registerFilterMarkup.includes('register-primary-filter-grid') &&
+    registerFilterMarkup.includes('register-filter-grid') &&
+    registerFilterMarkup.includes('<span>Filters</span>'),
+  'transaction type, status, approval and advanced refinements share one collapsed Filters disclosure',
+);
+assert.ok(
+  register.includes('Boolean(R.t)') &&
+    register.includes("R.st !== 'ACTIVE'") &&
+    register.includes("R.approval !== 'ALL'"),
+  'the Filters summary counts transaction type, status and approval refinements',
+);
+assert.match(
+  register,
+  /voucher-row-status--\$\{statusClass\}/,
+  'each voucher row displays its current status separately from notes and approval state',
+);
+assert.match(
+  register,
+  /<h2>Recent transactions<\/h2>/,
+  'the register result area prioritizes recent transactions',
+);
+assert.match(
+  styles,
+  /#rbody \.voucher-row-status/,
+  'voucher status labels have a dedicated readable style',
+);
 assert.match(reports, /key: '90d'/, 'reports offer a ninety-day reporting window');
 assert.match(
   reports,
