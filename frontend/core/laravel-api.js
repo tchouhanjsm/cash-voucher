@@ -186,8 +186,8 @@ function mapAuditPage(page) {
       ['id', 'actorEmail', 'eventType', 'targetType', 'targetId', 'occurredAtUtc', 'reason'].some(
         (field) => typeof item[field] !== 'string',
       ) ||
-      (item.before !== null && (typeof item.before !== 'object' || Array.isArray(item.before))) ||
-      (item.after !== null && (typeof item.after !== 'object' || Array.isArray(item.after)))
+      (item.before !== null && typeof item.before !== 'object') ||
+      (item.after !== null && typeof item.after !== 'object')
     ) {
       throw failure('The Laravel audit API returned an invalid event.', 'API_RESPONSE_INVALID');
     }
