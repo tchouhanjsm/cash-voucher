@@ -292,8 +292,8 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     const rows = users
       .map(
         (user) =>
-          `<tr data-user-search="${esc((user.name + ' ' + user.email).toLowerCase())}" data-user-role="${esc(user.role)}" data-user-status="${user.active ? 'ACTIVE' : 'DISABLED'}"><td>${esc(user.name)}</td><td>${esc(user.email)}</td><td><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option value="${esc(role)}"${role === user.role ? ' selected' : ''}>${esc(displayRole(role))}</option>`).join('')}</select></td><td><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
-     <td class="r nw"><button class="btn sm" data-act="upassword" data-id="${esc(user.id)}">Reset password</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
+          `<tr data-user-search="${esc((user.name + ' ' + user.email).toLowerCase())}" data-user-role="${esc(user.role)}" data-user-status="${user.active ? 'ACTIVE' : 'DISABLED'}"><td data-label="Name">${esc(user.name)}</td><td data-label="Email">${esc(user.email)}</td><td data-label="Role"><select aria-label="Role for ${esc(user.name)}" data-act="urole" data-id="${esc(user.id)}" class="user-role-select">${roles.map((role) => `<option value="${esc(role)}"${role === user.role ? ' selected' : ''}>${esc(displayRole(role))}</option>`).join('')}</select></td><td data-label="Status"><span class="badge ${user.active ? '' : 'bad'}">${user.active ? 'ACTIVE' : 'DISABLED'}</span></td>
+     <td data-label="Actions" class="r nw"><button class="btn sm" data-act="upassword" data-id="${esc(user.id)}">Reset password</button> <button class="btn sm ${user.active ? 'danger' : ''}" data-act="utog" data-id="${esc(user.id)}">${user.active ? 'Disable' : 'Enable'}</button></td></tr>`,
       )
       .join('');
 
@@ -1187,13 +1187,14 @@ export function createAdministration({ api, getNavigation, signOut, isLaravelSha
     rows.forEach((row) => {
       const tr = document.createElement('tr');
       [
-        { value: String(row.time ?? '').replace('T', ' '), className: 'nw' },
-        { value: row.user },
-        { value: row.action, className: 'nw' },
-        { value: row.target },
-        { value: auditDetailsText(row) },
-      ].forEach(({ value, className }) => {
+        { label: 'When', value: String(row.time ?? '').replace('T', ' '), className: 'nw' },
+        { label: 'User', value: row.user },
+        { label: 'Action', value: row.action, className: 'nw' },
+        { label: 'Target', value: row.target },
+        { label: 'Details', value: auditDetailsText(row) },
+      ].forEach(({ label, value, className }) => {
         const cell = document.createElement('td');
+        cell.dataset.label = label;
         if (className) cell.className = className;
         cell.textContent = String(value ?? '');
         tr.appendChild(cell);
