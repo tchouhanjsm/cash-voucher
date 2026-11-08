@@ -966,7 +966,7 @@ export function createDashboard({ api }) {
       if (dashboardSummaryIssue(summary, from, to)) {
         throw Object.assign(
           new Error(
-            'The server returned incomplete or invalid dashboard summary data. Financial totals remain hidden. Refresh and retry; if this persists, verify that the frontend and Apps Script deployment are on compatible versions.',
+            'The server returned incomplete or invalid dashboard summary data. Financial totals remain hidden. Refresh and retry. If this continues, check the configured API response and server logs.',
           ),
           { code: 'BAD_SUMMARY' },
         );
@@ -983,7 +983,7 @@ export function createDashboard({ api }) {
       const unsupportedDashboardAction =
         error?.code === 'NOT_FOUND' && /unknown action/i.test(String(error?.message || ''));
       const message = unsupportedDashboardAction
-        ? 'The connected Apps Script deployment does not recognize dashboardSummary. The client and backend may be on different versions or this may be the wrong API URL. Verify the staging deployment identity and deploy the reviewed backend to that same staging project before retrying. Financial totals remain hidden.'
+        ? 'The configured API does not provide a compatible dashboard summary. Verify the dashboard route and response before relying on financial totals. Financial totals remain hidden.'
         : error?.message || 'The server could not calculate the dashboard. Refresh and retry.';
       appendStatusCard(errorBody, message, {
         title: 'Dashboard totals unavailable',
