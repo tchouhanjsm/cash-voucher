@@ -5308,7 +5308,6 @@ with sync_playwright() as p:
             vouchers = data.get('vouchers', [])
             if isinstance(vouchers, list) and vouchers:
                 vouchers[0]['no'] = number_payload
-                vouchers[0]['status'] = number_payload
         else:
             items = data.get('items', [])
             if items:
