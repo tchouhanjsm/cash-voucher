@@ -168,8 +168,14 @@ export function createAdministration({ api, getNavigation, signOut }) {
   }
 
   async function toggleVendor(id) {
+    const vendor = getVendorRows().rows.find((item) => item.id === id);
+    if (!vendor) {
+      toast('This vendor record is unavailable. Refresh the list and try again.', 'err');
+      return;
+    }
+
     try {
-      await api('toggleVendor', { id });
+      await api('toggleVendor', { id, active: !vendor.active });
       await getNavigation().load();
       if (S.view === 'vend') vendors();
     } catch (error) {
