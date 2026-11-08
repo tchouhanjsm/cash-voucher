@@ -175,12 +175,27 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
     }
   }
 
-  async function mutate(route, body = {}) {
+  function createIdempotencyKey() {
+    const cryptoApi = globalThis.crypto;
+    if (!cryptoApi || typeof cryptoApi.getRandomValues !== 'function') {
+      throw failure(
+        'Secure request identifiers are unavailable in this browser.',
+        'CRYPTO_UNAVAILABLE',
+      );
+    }
+    const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
+    return 'vendor-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
+  }
+
+  async function mutate(route, body = {}, options = {}) {
     const csrf = await refreshCsrf();
     return request(route, {
-      method: 'POST',
+      method: options.method || 'POST',
       body,
-      headers: { 'X-CSRF-Token': csrf },
+      headers: {
+        'X-CSRF-Token': csrf,
+        ...(options.idempotency ? { 'Idempotency-Key': createIdempotencyKey() } : {}),
+      },
     });
   }
 
@@ -284,6 +299,41 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           totals: {},
           facets: { vendors: [], users: [] },
         };
+      }
+
+      case 'saveVendor': {
+        const vendorId = typeof payload.id === 'string' ? payload.id.trim() : '';
+        const body = {};
+        for (const field of [
+          'name',
+          'company',
+          'mobile',
+          'defaultCategory',
+          'defaultPaymentMethod',
+        ]) {
+          if (Object.prototype.hasOwnProperty.call(payload, field)) {
+            body[field] = payload[field];
+          }
+        }
+        const route = vendorId ? '/vendors/' + encodeURIComponent(vendorId) : '/vendors';
+        const result = await mutate(route, body, {
+          method: vendorId ? 'PATCH' : 'POST',
+          idempotency: true,
+        });
+        return result.vendor;
+      }
+
+      case 'toggleVendor': {
+        const vendorId = typeof payload.id === 'string' ? payload.id.trim() : '';
+        if (!vendorId || typeof payload.active !== 'boolean') {
+          throw failure('A vendor ID and desired active state are required.', 'PAYLOAD_INVALID');
+        }
+        const result = await mutate(
+          '/vendors/' + encodeURIComponent(vendorId) + '/active',
+          { active: payload.active },
+          { idempotency: true },
+        );
+        return result.vendor;
       }
 
       default:

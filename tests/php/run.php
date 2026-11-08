@@ -172,15 +172,27 @@ sort($registeredActions);
 sort($mappedActions);
 check($registeredActions === array_values(array_diff($mappedActions, ['login'])), 'every registered Apps Script action has a versioned API contract mapping');
 check(isset($actionMap['actions']['login']), 'the special public login action is mapped separately');
+$implementedActions = array_keys(array_filter(
+    $actionMap['actions'],
+    static fn (array $action): bool => ($action['state'] ?? '') === 'implemented'
+));
+sort($implementedActions);
 check(
-    count(array_filter($actionMap['actions'], static fn (array $action): bool => ($action['state'] ?? '') === 'implemented')) === 3,
-    'only login, logout and password change are marked implemented in the replacement action map'
+    $implementedActions === ['changePassword', 'login', 'logout', 'saveVendor', 'toggleVendor'],
+    'only authentication and the explicitly ported vendor actions are marked implemented in the replacement action map'
 );
 check(
     ($actionMap['actions']['login']['state'] ?? null) === 'implemented'
     && ($actionMap['actions']['logout']['state'] ?? null) === 'implemented'
     && ($actionMap['actions']['changePassword']['state'] ?? null) === 'implemented',
     'the three shipped legacy authentication actions are explicitly tracked as implemented'
+);
+check(
+    ($actionMap['actions']['saveVendor']['state'] ?? null) === 'implemented'
+    && ($actionMap['actions']['saveVendor']['path'] ?? null) === '/vendors[/{vendorId}]'
+    && ($actionMap['actions']['toggleVendor']['state'] ?? null) === 'implemented'
+    && ($actionMap['actions']['toggleVendor']['path'] ?? null) === '/vendors/{vendorId}/active',
+    'vendor write actions are mapped only to their implemented Laravel endpoints'
 );
 
 // Integration checks run only with the restricted application account, never the migration account.

@@ -111,14 +111,14 @@
       "path": "/vendors[/{vendorId}]",
       "access": "vendors",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented"
     },
     "toggleVendor": {
       "method": "POST",
       "path": "/vendors/{vendorId}/active",
       "access": "vendors",
       "kind": "write",
-      "state": "planned"
+      "state": "implemented"
     },
     "listUsers": {
       "method": "GET",
