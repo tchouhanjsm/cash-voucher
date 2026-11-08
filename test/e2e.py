@@ -2819,12 +2819,12 @@ with sync_playwright() as p:
     page.click('[data-act=range][data-k="7d"]')
     page.wait_for_function(
         "document.querySelector('#view')?.innerText.includes("
-        "'The connected Apps Script deployment does not recognize dashboardSummary')"
+        "'The configured API does not provide a compatible dashboard summary.')"
     )
     unsupported_dashboard_text = page.locator('#view').inner_text()
     check(
         len(unsupported_dashboard_interceptions) == 1
-        and 'Verify the staging deployment identity' in unsupported_dashboard_text
+        and 'Verify the dashboard route and response' in unsupported_dashboard_text
         and 'Financial totals remain hidden.' in unsupported_dashboard_text
         and page.locator('#view .stat').count() == 0,
         'unsupported dashboardSummary action explains the staging mismatch and hides all totals',
