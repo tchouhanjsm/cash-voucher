@@ -567,6 +567,16 @@ assert.match(
 );
 assert.match(
   administration,
+  /<td data-label="Name">[\s\S]*?<td data-label="Email">[\s\S]*?<td data-label="Role">[\s\S]*?<td data-label="Status">[\s\S]*?<td data-label="Actions"/,
+  'Users table rows carry explicit mobile labels for every data and action column',
+);
+assert.match(
+  administration,
+  /label: 'When'[\s\S]*?label: 'User'[\s\S]*?label: 'Action'[\s\S]*?label: 'Target'[\s\S]*?label: 'Details'/,
+  'Audit Log renderer adds explicit mobile labels without changing event values',
+);
+assert.match(
+  administration,
   /<details class="users-add-details">/,
   'Add user is available as a secondary disclosure without removing the workflow',
 );
@@ -603,6 +613,8 @@ for (const selector of [
   '.users-add-details',
   '.audit-primary-tools',
   '.audit-filter-details',
+  '.management-results-card tbody td::before',
+  '.audit-panel tbody td::before',
 ]) {
   assert.ok(styles.includes(selector), 'minimal workspace styling covers ' + selector);
 }
