@@ -6570,7 +6570,13 @@ with sync_playwright() as p:
     )
 
     go_view(page, 'dash')
-    page.wait_for_selector('svg.chart')
+    check(
+        page.locator('.dashboard-analysis-disclosure').count() == 1
+        and not page.locator('.dashboard-analysis-disclosure').evaluate('(element) => element.open'),
+        'owner Dashboard keeps secondary period analysis collapsed on arrival',
+    )
+    open_disclosure(page, '.dashboard-analysis-disclosure')
+    page.wait_for_selector('svg.chart', state='visible')
     page.click('[data-k=mtd]')
     page.wait_for_selector('.stats')
     check(
