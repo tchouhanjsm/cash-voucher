@@ -85,6 +85,12 @@ async function run() {
         },
       });
     }
+    if (String(url).includes('/vendors/vendor-1/active')) {
+      return jsonResponse({ ok: true, data: { vendor: { id: 'vendor-1', name: 'Test supplier', active: false }, replayed: false } });
+    }
+    if (String(url).endsWith('/vendors') || String(url).endsWith('/vendors/vendor-1')) {
+      return jsonResponse({ ok: true, data: { vendor: { id: 'vendor-1', name: 'Test supplier', active: true }, replayed: false } });
+    }
     if (String(url).endsWith('/sessions/current')) {
       return jsonResponse({ ok: true, data: { user: { id: 'user-1' }, csrfToken: csrf } });
     }
@@ -140,6 +146,46 @@ async function run() {
   });
   assert.equal(page.items[0].no, 204);
   assert.deepEqual(page.facets, { vendors: [], users: [] });
+
+  const createdVendor = await api('saveVendor', {
+    name: 'Test supplier',
+    company: 'Test company',
+    mobile: '+91 98765 43210',
+    defaultCategory: 'Maintenance',
+    defaultPaymentMethod: 'UPI',
+  });
+  assert.equal(createdVendor.id, 'vendor-1');
+  assert.equal(requests[4].method, 'POST');
+  assert.match(requests[4].url, /\/vendors$/);
+  assert.equal(requests[4].headers['X-CSRF-Token'], csrf);
+  assert.match(requests[4].headers['Idempotency-Key'], /^vendor-[a-f0-9]{32}$/);
+  assert.deepEqual(JSON.parse(requests[4].body), {
+    name: 'Test supplier',
+    company: 'Test company',
+    mobile: '+91 98765 43210',
+    defaultCategory: 'Maintenance',
+    defaultPaymentMethod: 'UPI',
+  });
+
+  await api('saveVendor', { id: 'vendor-1', name: 'Test supplier renamed' });
+  assert.equal(requests[5].method, 'PATCH');
+  assert.match(requests[5].url, /\/vendors\/vendor-1$/);
+  assert.equal(JSON.parse(requests[5].body).name, 'Test supplier renamed');
+  assert.match(requests[5].headers['Idempotency-Key'], /^vendor-[a-f0-9]{32}$/);
+
+  const toggledVendor = await api('toggleVendor', { id: 'vendor-1', active: false });
+  assert.equal(toggledVendor.active, false);
+  assert.equal(requests[6].method, 'POST');
+  assert.match(requests[6].url, /\/vendors\/vendor-1\/active$/);
+  assert.deepEqual(JSON.parse(requests[6].body), { active: false });
+  assert.match(requests[6].headers['Idempotency-Key'], /^vendor-[a-f0-9]{32}$/);
+
+  const beforeInvalidVendor = requests.length;
+  await assert.rejects(
+    () => api('toggleVendor', { id: 'vendor-1' }),
+    (error) => error.code === 'PAYLOAD_INVALID',
+  );
+  assert.equal(requests.length, beforeInvalidVendor);
 
   const beforeUnsupported = requests.length;
   await assert.rejects(
@@ -219,7 +265,7 @@ async function run() {
   assert.match(buildSource, /LARAVEL_API_URL: ""/);
 
   console.log(
-    'Laravel cookie transport OK — same-origin only, HttpOnly session token not exposed, CSRF restored in memory, read filters are bounded, and unsupported writes fail closed.',
+    'Laravel cookie transport OK — same-origin only, HttpOnly session token not exposed, CSRF restored in memory, vendor create/update/state changes use CSRF and idempotency, and unsupported writes fail closed.',
   );
 }
 
