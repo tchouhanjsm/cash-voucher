@@ -259,6 +259,9 @@ export function createRegister({ api, go }) {
       Boolean(R.vendor),
       Boolean(R.cat),
       Boolean(R.user),
+      Boolean(R.t),
+      R.st !== 'ACTIVE',
+      R.approval !== 'ALL',
       R.paymentMethod !== 'ALL',
       R.cashImpact !== 'ALL',
       R.amountValidity !== 'ALL',
@@ -527,10 +530,22 @@ export function createRegister({ api, go }) {
           voucher.status === 'ACTIVE' &&
           approvalStatus === 'PENDING' &&
           scalarText(voucher.createdBy).toLowerCase() !== scalarText(S.me?.email).toLowerCase();
-        const cancelledNote =
+        const statusLabel =
           voucher.status === 'ACTIVE'
-            ? ''
-            : ` · <span class="badge bad">CANCELLED</span> ${esc(scalarText(voucher.cancelReason))}`;
+            ? 'Active'
+            : voucher.status === 'CANCELLED'
+              ? 'Cancelled'
+              : 'Needs review';
+        const statusClass =
+          voucher.status === 'ACTIVE'
+            ? 'active'
+            : voucher.status === 'CANCELLED'
+              ? 'cancelled'
+              : 'review';
+        const cancelledNote =
+          voucher.status === 'CANCELLED' && scalarText(voucher.cancelReason)
+            ? ` · Reason: ${esc(scalarText(voucher.cancelReason))}`
+            : '';
         const actions = [
           `<button class="btn sm" data-act="print" data-id="${esc(voucher.id)}">Print</button>`,
           can('audit')
@@ -565,6 +580,7 @@ export function createRegister({ api, go }) {
           <td class="nw">
             <b>${esc(voucherNo(voucher))}</b>
             <div class="cat voucher-kind">${kind}</div>
+            <div class="voucher-row-status voucher-row-status--${statusClass}">${statusLabel}</div>
           </td>
           <td class="nw">${esc(dmy(scalarText(voucher.date)))}</td>
           <td>
@@ -711,7 +727,7 @@ export function createRegister({ api, go }) {
     const advancedFiltersOpen = advancedFilterCount > 0 ? ' open' : '';
     const advancedFilterCountLabel = advancedFilterCount
       ? advancedFilterCount + ' active'
-      : 'Vendor, category, dates, payment and cash movement';
+      : 'Type, status, approval, vendor and more';
     const vouchers = Array.isArray(S.vouchers) ? S.vouchers.filter(isRecord) : [];
     const vendors =
       Array.isArray(pageFacets.vendors) && pageFacets.vendors.length
@@ -740,7 +756,6 @@ export function createRegister({ api, go }) {
             <h2 id="registerFiltersTitle">Search and refine</h2>
             <p class="muted">Search first. Add a filter when you need to narrow the results.</p>
           </div>
-          <span class="register-server-label">SERVER FILTERED</span>
         </div>
         <div class="register-search-row">
           <label class="register-search-field" for="rq">
@@ -754,6 +769,11 @@ export function createRegister({ api, go }) {
           ${datePresetButtons}
         </div>
         <p id="registerFilterSummary" class="register-filter-summary" role="status" aria-live="polite">Showing active vouchers. Search by voucher number, payee or note.</p>
+        <details class="register-advanced-filters" id="registerAdvancedFilters"${advancedFiltersOpen}>
+          <summary>
+            <span>Filters</span>
+            <span id="registerAdvancedFilterCount" class="register-advanced-filter-count">${advancedFilterCountLabel}</span>
+          </summary>
         <div class="register-primary-filter-grid">
           <label class="register-filter-field" for="rt">
             Transaction type
@@ -790,11 +810,6 @@ export function createRegister({ api, go }) {
             </select>
           </label>
         </div>
-        <details class="register-advanced-filters" id="registerAdvancedFilters"${advancedFiltersOpen}>
-          <summary>
-            <span>More filters</span>
-            <span id="registerAdvancedFilterCount" class="register-advanced-filter-count">${advancedFilterCountLabel}</span>
-          </summary>
           <div class="register-filter-grid">
             <label class="register-filter-field" for="rv">
               Vendor
@@ -862,8 +877,8 @@ export function createRegister({ api, go }) {
         <div class="register-results-summary">
           <div>
             <p class="page-eyebrow">REGISTER</p>
-            <h2>Voucher activity</h2>
-            <p class="muted">Authoritative entries and totals from the server-filtered register.</p>
+            <h2>Recent transactions</h2>
+            <p class="muted">Review voucher numbers, dates, payees, amounts and current status.</p>
             <p id="registerPageMeta" class="register-page-meta" role="status" aria-live="polite">Loading matching vouchers…</p>
           </div>
           <div id="rtot" class="register-totals"></div>
