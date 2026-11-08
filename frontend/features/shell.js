@@ -23,8 +23,15 @@ export function createShell({ go }) {
   function renderNetwork() {
     const online = navigator.onLine !== false && !S.offlineMode;
     const pill = $('#netPill');
-    pill.textContent = online ? 'Online' : 'Offline';
-    pill.classList.toggle('on', online);
+    pill.textContent = online ? 'Network available' : 'Offline';
+    pill.classList.remove('on');
+    pill.setAttribute(
+      'aria-label',
+      online
+        ? 'Browser network state is available; the application server has not been checked.'
+        : 'Browser reports that the network is offline.',
+    );
+    pill.title = 'This indicator reports the browser network state, not application server health.';
   }
 
   function render() {

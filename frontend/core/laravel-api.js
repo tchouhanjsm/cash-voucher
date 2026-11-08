@@ -13,6 +13,213 @@ function normalizeCode(code, status) {
   return code || 'API_ERROR';
 }
 
+const MAX_DISPLAYABLE_PAISE = 4_503_599_627_370_495n;
+
+function rupeesToNumber(value, label = 'amount') {
+  if (typeof value === 'number') {
+    if (!Number.isFinite(value)) {
+      throw failure('The Laravel API returned an invalid ' + label + '.', 'API_RESPONSE_INVALID');
+    }
+    const paise = Math.round(value * 100);
+    if (
+      Math.abs(value * 100 - paise) > 0.000001 ||
+      !Number.isSafeInteger(paise) ||
+      Math.abs(paise) > Number(MAX_DISPLAYABLE_PAISE)
+    ) {
+      throw failure(
+        'The Laravel API returned a ' + label + ' that cannot be displayed safely in INR.',
+        'AMOUNT_PRECISION_UNSAFE',
+      );
+    }
+    return paise / 100;
+  }
+
+  if (typeof value !== 'string' || !/^-?(?:0|[1-9][0-9]*)\.[0-9]{2}$/.test(value)) {
+    throw failure('The Laravel API returned an invalid ' + label + '.', 'API_RESPONSE_INVALID');
+  }
+
+  const negative = value.startsWith('-');
+  const unsigned = negative ? value.slice(1) : value;
+  const [rupees, paise] = unsigned.split('.');
+  const totalPaise = BigInt(rupees) * 100n + BigInt(paise);
+  if (totalPaise > MAX_DISPLAYABLE_PAISE) {
+    throw failure(
+      'The Laravel API returned a ' + label + ' that cannot be displayed safely in INR.',
+      'AMOUNT_PRECISION_UNSAFE',
+    );
+  }
+  return Number(negative ? -totalPaise : totalPaise) / 100;
+}
+
+function mapDashboardSummary(summary) {
+  if (!summary || typeof summary !== 'object' || Array.isArray(summary)) return summary;
+  const mapped = { ...summary };
+  for (const field of ['paid', 'previousPaid', 'received', 'todayPaid', 'bookBalance']) {
+    if (Object.prototype.hasOwnProperty.call(mapped, field)) {
+      mapped[field] = rupeesToNumber(mapped[field], field);
+    }
+  }
+  if (mapped.largest && typeof mapped.largest === 'object' && !Array.isArray(mapped.largest)) {
+    mapped.largest = {
+      ...mapped.largest,
+      amount: rupeesToNumber(mapped.largest.amount, 'largest payment'),
+    };
+  }
+  if (Array.isArray(mapped.trend)) {
+    mapped.trend = mapped.trend.map((row) =>
+      row && typeof row === 'object' && !Array.isArray(row)
+        ? { ...row, amount: rupeesToNumber(row.amount, 'trend amount') }
+        : row,
+    );
+  }
+  for (const field of ['topVendors', 'byCategory', 'byTeamMember', 'byPaymentMethod']) {
+    if (Array.isArray(mapped[field])) {
+      mapped[field] = mapped[field].map((row) =>
+        row && typeof row === 'object' && !Array.isArray(row)
+          ? { ...row, s: rupeesToNumber(row.s, field + ' amount') }
+          : row,
+      );
+    }
+  }
+  return mapped;
+}
+
+function mapDailyOperations(preview) {
+  if (
+    !preview ||
+    typeof preview !== 'object' ||
+    Array.isArray(preview) ||
+    typeof preview.closed !== 'boolean' ||
+    typeof preview.date !== 'string' ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(preview.date)
+  ) {
+    throw failure(
+      'The Laravel cash-close preview returned an invalid response.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  const closed = preview.closed;
+  const close = closed ? preview.close : null;
+  if (closed && (!close || typeof close !== 'object' || Array.isArray(close))) {
+    throw failure('The saved cash-close record is incomplete.', 'API_RESPONSE_INVALID');
+  }
+
+  const pendingApprovals = closed ? [] : preview.pendingApprovals;
+  const unclassified = closed ? [] : preview.unclassified;
+  const invalidVouchers = closed ? [] : preview.invalidVouchers;
+  if (
+    !Array.isArray(pendingApprovals) ||
+    !Array.isArray(unclassified) ||
+    !Array.isArray(invalidVouchers)
+  ) {
+    throw failure(
+      'The Laravel cash-close preview is missing required exception details.',
+      'API_RESPONSE_INVALID',
+    );
+  }
+
+  const source = closed ? close : preview;
+  const cashInTotal = rupeesToNumber(source.cashInTotal, 'cash received total');
+  const cashOutTotal = rupeesToNumber(source.cashOutTotal, 'cash paid total');
+  const expectedCash =
+    source.expectedCash === null || source.expectedCash === undefined
+      ? null
+      : rupeesToNumber(source.expectedCash, 'expected drawer cash');
+  const includedVouchers = closed ? close.includedVouchers : null;
+  if (closed && !Array.isArray(includedVouchers)) {
+    throw failure('The saved cash-close voucher snapshot is incomplete.', 'API_RESPONSE_INVALID');
+  }
+
+  const pendingApprovalCount = pendingApprovals.length;
+  const unclassifiedCount = unclassified.length;
+  const invalidVoucherCount = invalidVouchers.length;
+  const openingCashRequired =
+    !closed && preview.requiresManualOpening === true && preview.openingReady !== true;
+  const status = closed
+    ? 'CLOSED'
+    : preview.blockedByLaterClose === true
+      ? 'BLOCKED_BY_LATER_CLOSE'
+      : pendingApprovalCount || unclassifiedCount || invalidVoucherCount
+        ? 'BLOCKED'
+        : openingCashRequired
+          ? 'OPENING_CASH_REQUIRED'
+          : preview.readyToClose === true
+            ? 'READY_TO_CLOSE'
+            : 'REVIEW_REQUIRED';
+
+  return {
+    date: preview.date,
+    status,
+    pendingApprovalCount,
+    unclassifiedCount,
+    invalidVoucherCount,
+    openingCashRequired,
+    blockedByLaterClose: !closed && preview.blockedByLaterClose === true,
+    laterCloseDate: typeof preview.laterCloseDate === 'string' ? preview.laterCloseDate : '',
+    readyToClose: !closed && preview.readyToClose === true,
+    cashInTotal,
+    cashOutTotal,
+    noCashCount: closed
+      ? includedVouchers.filter((voucher) => voucher?.cashImpact === 'NO_CASH').length
+      : preview.noCashCount,
+    activeVoucherCount: closed ? close.includedVoucherCount : preview.activeVoucherCount,
+    expectedCash,
+    countedCash: closed ? rupeesToNumber(close.countedCash, 'counted drawer cash') : null,
+    variance: closed ? rupeesToNumber(close.variance, 'cash-close variance') : null,
+  };
+}
+
+function mapAuditPage(page) {
+  if (
+    !page ||
+    typeof page !== 'object' ||
+    Array.isArray(page) ||
+    !Array.isArray(page.items) ||
+    typeof page.hasMore !== 'boolean' ||
+    (page.nextCursor !== null && typeof page.nextCursor !== 'string') ||
+    (page.hasMore && !page.nextCursor)
+  ) {
+    throw failure('The Laravel audit API returned an invalid page.', 'API_RESPONSE_INVALID');
+  }
+
+  const rows = page.items.map((item) => {
+    if (
+      !item ||
+      typeof item !== 'object' ||
+      Array.isArray(item) ||
+      ['id', 'actorEmail', 'eventType', 'targetType', 'targetId', 'occurredAtUtc', 'reason'].some(
+        (field) => typeof item[field] !== 'string',
+      ) ||
+      (item.before !== null && typeof item.before !== 'object') ||
+      (item.after !== null && typeof item.after !== 'object')
+    ) {
+      throw failure('The Laravel audit API returned an invalid event.', 'API_RESPONSE_INVALID');
+    }
+    return {
+      id: item.id,
+      time: item.occurredAtUtc,
+      user: item.actorEmail,
+      action: item.eventType,
+      target: [item.targetType, item.targetId].filter(Boolean).join(' '),
+      details: JSON.stringify({
+        schemaVersion: 1,
+        eventId: item.id,
+        reason: item.reason,
+        before: item.before,
+        after: item.after,
+      }),
+    };
+  });
+
+  return {
+    rows,
+    totalCount: null,
+    nextBeforeRow: page.nextCursor,
+    auditHealth: null,
+  };
+}
+
 function assertSameOriginBase(raw, origin) {
   if (typeof raw !== 'string' || !raw.trim()) {
     throw failure('Laravel API URL is not configured.', 'NOURL');
@@ -235,10 +442,44 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         return result;
       }
 
-      case 'dashboardSummary':
-        return request('/dashboard/summary', {
+      case 'dashboardSummary': {
+        const summary = await request('/dashboard/summary', {
           query: { from: payload.from, to: payload.to },
         });
+        return mapDashboardSummary(summary);
+      }
+
+      case 'dailyOperationsSummary': {
+        const preview = await request('/cash-closes/preview');
+        return mapDailyOperations(preview);
+      }
+
+      case 'listUsers': {
+        const page = await request('/users');
+        if (!page || !Array.isArray(page.items)) {
+          throw failure(
+            'The Laravel users API returned an invalid response.',
+            'API_RESPONSE_INVALID',
+          );
+        }
+        return page.items.map((user) => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role,
+          active: user.active,
+        }));
+      }
+
+      case 'auditLog': {
+        const page = await request('/audit-events', {
+          query: {
+            limit: payload.limit ?? 50,
+            cursor: payload.beforeRow,
+          },
+        });
+        return mapAuditPage(page);
+      }
 
       case 'registerPage': {
         const unsupported = [
@@ -264,7 +505,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
         ].filter(([, value]) => value !== undefined && value !== null && value !== '');
         if (unsupported.length) {
           throw failure(
-            'The Laravel shadow register does not yet support all selected filters. Clear the unsupported filters or continue using the active Apps Script transport.',
+            'The selected register filters are not yet supported by the Laravel shadow API. Clear the unsupported filters to continue.',
             'API_ACTION_UNSUPPORTED',
           );
         }
@@ -283,6 +524,10 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
           ? page.items.map((item) => ({
               ...item,
               no: Number(item.voucherNo),
+              amount:
+                item.amount === null || item.amount === undefined
+                  ? null
+                  : rupeesToNumber(item.amount, 'voucher amount'),
               createdAt: '',
               updatedBy: '',
               updatedAt: '',
@@ -338,7 +583,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
 
       default:
         throw failure(
-          'This operation is not yet compatible with the Laravel shadow API. The active Apps Script transport has not been changed.',
+          'This operation is not yet available in the Laravel shadow API. No fallback write was attempted.',
           'API_ACTION_UNSUPPORTED',
         );
     }
