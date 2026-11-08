@@ -4019,9 +4019,11 @@ with sync_playwright() as p:
         'single-entry UPI workflow keeps its explicit drawer choice without showing batch-only totals',
     )
     check(
-        page.locator('#rows .erow .rv-quick-save').count() == 1,
-        'manager/owner can save a new payee without leaving entry',
+        page.locator('#rows .erow .rv-quick-save').count() == 1
+        and page.locator('#rows .erow .entry-supporting-details').evaluate('(element) => !element.open'),
+        'manager/owner can access payee setup from the collapsed optional details section',
     )
+    page.locator('#rows .erow .entry-supporting-details > summary').click()
     page.click('#rows .erow .rv-quick-save')
     page.wait_for_function("document.querySelector('#rows .erow .rv-quick-save') === null")
     check(
