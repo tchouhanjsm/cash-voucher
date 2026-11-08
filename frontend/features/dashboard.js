@@ -1310,12 +1310,7 @@ export function createDashboard({ api }) {
             dashboardWarnings,
             operationsPanels,
           ].join('')
-        : [
-            periodControls(from, to),
-            dailyPositionPanel,
-            needsAttention,
-            financialPanels,
-          ].join('');
+        : [periodControls(from, to), dailyPositionPanel, needsAttention, financialPanels].join('');
 
     $('#view').innerHTML =
       `<div class="dashboard-view">` +
