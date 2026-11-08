@@ -1,3 +1,15 @@
+## Current delivery focus — Laravel vendor write transport (8 November 2026)
+
+- **Branch:** `feat/laravel-vendor-transport-20261108`, stacked on PR #273's bootstrap/settings fix so the vendor slice can be reviewed independently after its prerequisite lands.
+- **Scope:** the local Laravel cookie transport now maps the existing Vendor UI's create, update and desired active-state actions to Laravel's authenticated `POST /vendors`, `PATCH /vendors/{vendorId}` and `POST /vendors/{vendorId}/active` routes.
+- **Security:** every mutation refreshes/uses the in-memory CSRF token, sends same-origin cookies, and includes a cryptographically random `Idempotency-Key`. The HttpOnly session cookie is not exposed to JavaScript. Unsupported actions still fail closed and never fall back to Apps Script.
+- **UI contract:** the Vendor screen sends the explicit target active state instead of asking the server to toggle implicitly. Existing role visibility and post-save refresh behavior are retained.
+- **Tests:** the transport contract test covers create/update/deactivate requests, method/path/body, CSRF and idempotency headers, invalid state payload rejection and unsupported-action fail-closed behavior. Exact-head CI and browser E2E are pending.
+- **Release boundary:** this remains opt-in local shadow transport. Customer builds still use Apps Script; no production endpoint change, queue drain, dual write, production data access or deployment is included.
+- **Next slice:** finish full register filter/facet/totals parity and dashboard daily-operations reads, then proceed through voucher mutation actions with duplicate confirmation and idempotency tests. Receipt transfer and outbox replay remain separate gates.
+
+---
+
 ## Current delivery focus — PR #273 property settings / sequence readiness (8 November 2026)
 
 - **PR / branch:** [PR #273](https://github.com/tchouhanjsm/cash-voucher/pull/273), `fix/laravel-settings-uninitialized-sequences-20261108` → `client-main`.
