@@ -184,10 +184,7 @@ export function createLaravelApi({ getUrl, getOrigin, fetchImpl } = {}) {
       );
     }
     const bytes = cryptoApi.getRandomValues(new Uint8Array(16));
-    return (
-      'vendor-' +
-      Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('')
-    );
+    return 'vendor-' + Array.from(bytes, (byte) => byte.toString(16).padStart(2, '0')).join('');
   }
 
   async function mutate(route, body = {}, options = {}) {
