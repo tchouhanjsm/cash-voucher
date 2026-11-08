@@ -2704,7 +2704,11 @@ with sync_playwright() as p:
         route.fulfill(status=200, content_type='application/json', body=json.dumps(payload))
 
     page.evaluate(
-        "() => { window.__dashboardOriginalMe = S.me; S.me = { ...S.me, perms: { ...S.me.perms, viewAll: true } }; }"
+        """async () => {
+            const { S } = await import('/frontend/core/state.js');
+            window.__dashboardOriginalMe = S.me;
+            S.me = { ...S.me, perms: { ...S.me.perms, viewAll: true } };
+        }"""
     )
     page.route('**/api?*', inject_hostile_dashboard_summary)
     page.click('[data-act=range][data-k="7d"]')
@@ -2735,7 +2739,11 @@ with sync_playwright() as p:
         'dashboard recovers with a successful live read after hostile test data is removed',
     )
     page.evaluate(
-        "() => { S.me = window.__dashboardOriginalMe; delete window.__dashboardOriginalMe; }"
+        """async () => {
+            const { S } = await import('/frontend/core/state.js');
+            S.me = window.__dashboardOriginalMe;
+            delete window.__dashboardOriginalMe;
+        }"""
     )
     try:
         page.wait_for_function(
