@@ -3798,6 +3798,16 @@
     font-size: 12px;
     font-weight: 700;
   }
+  .app #view .users-filter-actions {
+    display: flex;
+    grid-column: 1 / -1;
+    justify-content: flex-end;
+    padding-top: 10px;
+    border-top: 1px solid var(--workspace-border);
+  }
+  .app #view .users-filter-actions > .btn {
+    min-height: 44px;
+  }
   .app #view .users-filter-grid select {
     width: 100%;
     min-width: 0;
@@ -3890,6 +3900,9 @@
   .app #view .users-filter-grid,
   .app #view .audit-filter-details .audit-filters {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .app #view .users-filter-actions > .btn {
+    width: 100%;
   }
   .app #view .audit-primary-tools > .btn {
     width: 100%;
