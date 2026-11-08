@@ -4688,8 +4688,14 @@ with sync_playwright() as p:
         and page.locator('.rn').first.get_attribute('aria-label') == 'Note, row 1'
         and page.locator('.rv').first.evaluate("(element) => element.closest('label')?.innerText.includes('Paid to')")
         and page.locator('.ra').first.evaluate("(element) => element.closest('label')?.innerText.includes('Amount (₹)')")
-        and page.locator('.rn').first.evaluate("(element) => element.closest('label')?.innerText.includes('Note')"),
-        'payment fields have visible labels as well as explicit accessible names',
+        and page.locator('.rn').first.evaluate("(element) => element.closest('label')?.textContent.includes('Note')")
+        and page.locator('.entry-supporting-details').evaluate("(element) => !element.open"),
+        'payment labels remain explicit while optional notes and receipts start collapsed',
+    )
+    page.locator('.entry-supporting-details > summary').click()
+    check(
+        page.locator('.rn').is_visible(),
+        'opening optional details reveals the note field for keyboard and screen-reader use',
     )
     check(
         page.locator('.rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer']
