@@ -2108,7 +2108,7 @@ with sync_playwright() as p:
     })""")
 
     go_view(page, 'users')
-    page.wait_for_selector('#uf')
+    page.wait_for_selector('#uf', state='attached')
     user_label_metrics = page.locator('#uf').evaluate("""(form) => {
         const controls = [...form.querySelectorAll('input, select, textarea')].map((field) => ({
             id: field.id,
@@ -3316,7 +3316,7 @@ with sync_playwright() as p:
     accountant_page.set_viewport_size({'width': 390, 'height': 800})
     accountant_context.close()
     go_view(page, 'users')
-    page.wait_for_selector('#uf')
+    page.wait_for_selector('#uf', state='attached')
     open_disclosure(page, '.users-add-details')
     xss_payload = '<svg onload=window.__xssFired=true></svg>'
     page.fill('#un', xss_payload)
@@ -3384,7 +3384,7 @@ with sync_playwright() as p:
         'Users request failure is explicit and offers an in-context retry instead of an endless loading state',
     )
     page.click('#users-load-error [data-act=usersRetry]')
-    page.wait_for_selector('#uf', timeout=10000)
+    page.wait_for_selector('#uf', state='attached', timeout=10000)
     check(
         page.locator('#users-load-error').count() == 0
         and page.locator('#view tbody tr').count() > 0
@@ -3492,7 +3492,7 @@ with sync_playwright() as p:
     page.unroute('**/api?*', inject_malformed_user_rows)
     go_view(page, 'dash')
     go_view(page, 'users')
-    page.wait_for_selector('#uf')
+    page.wait_for_selector('#uf', state='attached')
     check(
         page.locator('#view tbody tr').count() == 6
         and page.locator('#view [role=status]').count() == 0,
