@@ -302,8 +302,7 @@ export function createPayments({ api, refresh }) {
     const cashImpactChoices = [
       {
         value: NT === 'RECEIPT' ? 'CASH_IN' : 'CASH_OUT',
-        label:
-          NT === 'RECEIPT' ? 'Cash added to the drawer' : 'Cash taken out of the drawer',
+        label: NT === 'RECEIPT' ? 'Cash added to the drawer' : 'Cash taken out of the drawer',
         description:
           NT === 'RECEIPT'
             ? 'Money was physically put into the drawer.'
@@ -316,8 +315,7 @@ export function createPayments({ api, refresh }) {
       },
       {
         value: NT === 'RECEIPT' ? 'CASH_OUT' : 'CASH_IN',
-        label:
-          NT === 'RECEIPT' ? 'Cash taken out of the drawer' : 'Cash added to the drawer',
+        label: NT === 'RECEIPT' ? 'Cash taken out of the drawer' : 'Cash added to the drawer',
         description:
           NT === 'RECEIPT'
             ? 'Money was physically taken from the drawer.'
