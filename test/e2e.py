@@ -5308,11 +5308,13 @@ with sync_playwright() as p:
             vouchers = data.get('vouchers', [])
             if isinstance(vouchers, list) and vouchers:
                 vouchers[0]['no'] = number_payload
+                vouchers[0]['status'] = number_payload
         else:
             items = data.get('items', [])
             if items:
                 items[0]['no'] = number_payload
                 items[0]['paymentMethod'] = number_payload
+                items[0]['status'] = number_payload
         route.fulfill(response=response, json=payload)
 
     page.route('**/api?*', tamper_register_page_voucher_number)
@@ -5324,8 +5326,10 @@ with sync_playwright() as p:
         page.locator('#rbody svg').count() == 0
         and number_payload in page.locator('#rbody').inner_text()
         and 'Unrecognized method' in page.locator('#rbody').inner_text()
+        and 'Needs review' in page.locator('#rbody').inner_text()
+        and page.locator('#rbody .voucher-row-status--review').count() == 1
         and not page.evaluate('window.__xssFired === true'),
-        'malformed voucher number and payment method remain inert in the register',
+        'malformed voucher number, method and status remain inert; status fails closed to Needs review',
     )
     page.locator('#rbody [data-act=print]').first.click()
     page.wait_for_function("document.querySelector('#printArea .pv') !== null")
