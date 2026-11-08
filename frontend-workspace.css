@@ -1295,17 +1295,6 @@
     font-size: 12px;
     line-height: 1.5;
   }
-  .register-server-label {
-    flex: 0 0 auto;
-    padding: 7px 10px;
-    border: 1px solid var(--workspace-border);
-    border-radius: 999px;
-    background: var(--workspace-soft);
-    color: var(--workspace-muted);
-    font-size: 9px;
-    font-weight: 850;
-    letter-spacing: 0.1em;
-  }
   .register-search-row {
     display: grid;
     grid-template-columns: minmax(0, 1fr) auto;
@@ -3595,10 +3584,6 @@
       align-items: flex-start;
       flex-direction: row;
       gap: 12px;
-    }
-    #rf .register-server-label {
-      font-size: 8px;
-      white-space: nowrap;
     }
     #rf .register-search-row {
       grid-template-columns: minmax(0, 1fr);
