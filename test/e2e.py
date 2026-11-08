@@ -2225,6 +2225,16 @@ with sync_playwright() as p:
         and user_mobile_metrics['headersPresent'],
         f'Users mobile rows expose labelled status/actions without horizontal table overflow; metrics={user_mobile_metrics}',
     )
+    page.fill('#users-search', 'nina accountant')
+    mobile_filtered_rows = page.locator('.management-results-card tbody tr[data-user-search]:not([hidden])').count()
+    mobile_hidden_rows = page.locator('.management-results-card tbody tr[data-user-search][hidden]').evaluate_all(
+        '(rows) => rows.every((row) => getComputedStyle(row).display === "none")'
+    )
+    check(
+        mobile_filtered_rows == 1 and mobile_hidden_rows,
+        'Users search continues hiding non-matching stacked rows on mobile',
+    )
+    page.fill('#users-search', '')
     page.set_viewport_size({'width': 1280, 'height': 800})
     page.fill('#users-search', 'nina accountant')
     check(
