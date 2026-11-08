@@ -539,6 +539,63 @@ assert.match(
   'flat period comparisons are not presented as downward movement',
 );
 
+// Dashboard and administration place everyday work ahead of secondary analysis.
+assert.match(
+  dashboard,
+  /data-k="PAYMENT">Record a payment[\s\S]*?data-k="RECEIPT">Cash received/,
+  'Dashboard exposes distinct payment and cash-received entry actions',
+);
+assert.match(
+  dashboard,
+  /dailyPositionPanel,[\s\S]*?needsAttention/,
+  'current-day drawer position is shown before the attention queue',
+);
+assert.match(
+  dashboard,
+  /<details class="dashboard-analysis-disclosure">/,
+  'period analytics are available but collapsed by default',
+);
+assert.match(
+  administration,
+  /users-list-toolbar[\s\S]*?users-search[\s\S]*?users-filter-details/,
+  'Users opens with contextual search and secondary role/status filters',
+);
+assert.match(
+  administration,
+  /data-user-search="[\s\S]*?data-user-role="[\s\S]*?data-user-status="/,
+  'user list filters operate on escaped fields from the authorized result set',
+);
+assert.match(
+  administration,
+  /<details class="users-add-details">/,
+  'Add user is available as a secondary disclosure without removing the workflow',
+);
+assert.match(
+  administration,
+  /<div class="audit-primary-tools"[\s\S]*?id="aud-q"[\s\S]*?data-act="audcsv"/,
+  'Audit Log keeps search and CSV export in its primary toolbar',
+);
+assert.match(
+  administration,
+  /<details class="audit-filter-details" id="auditFilters">[\s\S]*?aud-user[\s\S]*?aud-action[\s\S]*?audhealth/,
+  'Audit Log refinements and technical health export are grouped under Filters',
+);
+assert.match(
+  administration,
+  /load older adds earlier events; search, filters and CSV export apply to loaded pages only/,
+  'Audit Log retains its pagination/export scope disclosure',
+);
+for (const selector of [
+  '.dashboard-analysis-disclosure',
+  '.users-list-toolbar',
+  '.users-filter-details',
+  '.users-add-details',
+  '.audit-primary-tools',
+  '.audit-filter-details',
+]) {
+  assert.ok(styles.includes(selector), 'minimal workspace styling covers ' + selector);
+}
+
 console.log(
   'TailAdmin-inspired workspace OK — local design layer, responsive states, data integrity and PWA integration.',
 );
