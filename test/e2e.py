@@ -1478,7 +1478,7 @@ with sync_playwright() as p:
     check(
         all(row_semantics.values())
         and row_semantics['movementLegend'] == 'What happened to the physical cash?'
-        and row_semantics['movementValues'] == ['CASH_IN', 'CASH_OUT', 'NO_CASH']
+        and row_semantics['movementValues'] == ['CASH_OUT', 'NO_CASH', 'CASH_IN']
         and row_semantics['movementUnselected'],
         f'New Entry row exposes three explicit drawer choices with no silent default; semantics={row_semantics}',
     )
@@ -4019,9 +4019,11 @@ with sync_playwright() as p:
         'single-entry UPI workflow keeps its explicit drawer choice without showing batch-only totals',
     )
     check(
-        page.locator('#rows .erow .rv-quick-save').count() == 1,
-        'manager/owner can save a new payee without leaving entry',
+        page.locator('#rows .erow .rv-quick-save').count() == 1
+        and page.locator('#rows .erow .entry-supporting-details').evaluate('(element) => !element.open'),
+        'manager/owner can access payee setup from the collapsed optional details section',
     )
+    page.locator('#rows .erow .entry-supporting-details > summary').click()
     page.click('#rows .erow .rv-quick-save')
     page.wait_for_function("document.querySelector('#rows .erow .rv-quick-save') === null")
     check(
@@ -4686,8 +4688,14 @@ with sync_playwright() as p:
         and page.locator('.rn').first.get_attribute('aria-label') == 'Note, row 1'
         and page.locator('.rv').first.evaluate("(element) => element.closest('label')?.innerText.includes('Paid to')")
         and page.locator('.ra').first.evaluate("(element) => element.closest('label')?.innerText.includes('Amount (₹)')")
-        and page.locator('.rn').first.evaluate("(element) => element.closest('label')?.innerText.includes('Note')"),
-        'payment fields have visible labels as well as explicit accessible names',
+        and page.locator('.rn').first.evaluate("(element) => element.closest('label')?.textContent.includes('Note')")
+        and page.locator('.entry-supporting-details').evaluate("(element) => !element.open"),
+        'payment labels remain explicit while optional notes and receipts start collapsed',
+    )
+    page.locator('.entry-supporting-details > summary').click()
+    check(
+        page.locator('.rn').is_visible(),
+        'opening optional details reveals the note field for keyboard and screen-reader use',
     )
     check(
         page.locator('.rci option').all_text_contents() == ['Cash', 'UPI', 'Bank transfer']
@@ -8748,6 +8756,7 @@ with sync_playwright() as p:
         'Cash received mode updates its accessible selected state',
     )
     page.locator('[data-k=PAYMENT]').click()
+    page.locator('.entry-supporting-details > summary').click()
     page.locator('.rn').first.focus()
     page.keyboard.press('Tab')
     receipt_keyboard_focus = page.evaluate(
