@@ -2962,7 +2962,18 @@ with sync_playwright() as p:
         and manager_page.locator('.dashboard-cash-position').count() == 1
         and manager_page.locator('.daily-close-readiness').count() == 1
         and manager_page.locator('.dashboard-cash-position').evaluate("(element) => element.compareDocumentPosition(document.querySelector('.needs')) & Node.DOCUMENT_POSITION_FOLLOWING") != 0
-        and not manager_page.locator('.dashboard-analysis-disclosure').evaluate('(element) => element.open')
+        and (
+            (
+                manager_stats == 6
+                and manager_page.locator('.dashboard-analysis-disclosure').count() == 1
+                and not manager_page.locator('.dashboard-analysis-disclosure').evaluate('(element) => element.open')
+            )
+            or (
+                manager_stats == 0
+                and manager_empty_period == 1
+                and manager_page.locator('.dashboard-analysis-disclosure').count() == 0
+            )
+        )
         and (
             manager_stats == 6
             or (
